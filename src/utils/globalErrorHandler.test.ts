@@ -35,6 +35,8 @@ describe('globalErrorHandler', () => {
         reportBody: 'report',
         source: 'global',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
       }
       localStorage.setItem('hyle_pending_errors', JSON.stringify([mockError]))
 
@@ -59,6 +61,8 @@ describe('globalErrorHandler', () => {
         reportBody: 'report',
         source: 'global',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
       }
 
       storeError(mockError)
@@ -76,6 +80,8 @@ describe('globalErrorHandler', () => {
         reportBody: '',
         source: 'global',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
       }
       const error2: StoredError = {
         id: 'err_2',
@@ -84,6 +90,8 @@ describe('globalErrorHandler', () => {
         reportBody: '',
         source: 'promise',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-02T00:00:00.000Z',
       }
 
       storeError(error1)
@@ -97,18 +105,88 @@ describe('globalErrorHandler', () => {
     it('should limit stored errors to MAX_STORED_ERRORS', () => {
       // Store 15 errors (more than the limit of 10)
       for (let i = 0; i < 15; i++) {
+        const timestamp = new Date().toISOString();
         storeError({
           id: `err_${i}`,
-          timestamp: new Date().toISOString(),
+          timestamp,
           sanitizedError: { name: 'Error', message: `Error ${i}`, stack: '' },
           reportBody: '',
           source: 'global',
           reported: false,
+          occurrences: 1,
+          lastOccurrence: timestamp,
         })
       }
 
       const stored = getStoredErrors()
       expect(stored.length).toBeLessThanOrEqual(10)
+    })
+
+    it('should deduplicate errors and increment occurrence count', () => {
+      const timestamp1 = '2024-01-01T00:00:00.000Z';
+      const timestamp2 = '2024-01-01T00:01:00.000Z';
+
+      const error1: StoredError = {
+        id: 'err_1',
+        timestamp: timestamp1,
+        sanitizedError: { name: 'TypeError', message: 'Cannot read property', stack: 'TypeError: Cannot read property\n    at file.ts:10:5' },
+        reportBody: 'report',
+        source: 'global',
+        reported: false,
+        occurrences: 1,
+        lastOccurrence: timestamp1,
+      }
+
+      const error2: StoredError = {
+        id: 'err_2',
+        timestamp: timestamp2,
+        sanitizedError: { name: 'TypeError', message: 'Cannot read property', stack: 'TypeError: Cannot read property\n    at file.ts:10:5' },
+        reportBody: 'report',
+        source: 'global',
+        reported: false,
+        occurrences: 1,
+        lastOccurrence: timestamp2,
+      }
+
+      storeError(error1)
+      storeError(error2)
+
+      const stored = getStoredErrors()
+      expect(stored).toHaveLength(1)
+      expect(stored[0].occurrences).toBe(2)
+      expect(stored[0].lastOccurrence).toBe(timestamp2)
+    })
+
+    it('should not deduplicate different errors', () => {
+      const error1: StoredError = {
+        id: 'err_1',
+        timestamp: '2024-01-01T00:00:00.000Z',
+        sanitizedError: { name: 'TypeError', message: 'Cannot read property', stack: 'TypeError: Cannot read property\n    at file1.ts:10:5' },
+        reportBody: 'report1',
+        source: 'global',
+        reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
+      }
+
+      const error2: StoredError = {
+        id: 'err_2',
+        timestamp: '2024-01-01T00:01:00.000Z',
+        sanitizedError: { name: 'ReferenceError', message: 'x is not defined', stack: 'ReferenceError: x is not defined\n    at file2.ts:20:5' },
+        reportBody: 'report2',
+        source: 'global',
+        reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:01:00.000Z',
+      }
+
+      storeError(error1)
+      storeError(error2)
+
+      const stored = getStoredErrors()
+      expect(stored).toHaveLength(2)
+      expect(stored[0].occurrences).toBe(1)
+      expect(stored[1].occurrences).toBe(1)
     })
   })
 
@@ -121,6 +199,8 @@ describe('globalErrorHandler', () => {
         reportBody: '',
         source: 'global',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
       }
       storeError(mockError)
 
@@ -138,6 +218,8 @@ describe('globalErrorHandler', () => {
         reportBody: '',
         source: 'global',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
       })
       storeError({
         id: 'err_2',
@@ -146,6 +228,8 @@ describe('globalErrorHandler', () => {
         reportBody: '',
         source: 'promise',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-02T00:00:00.000Z',
       })
 
       markErrorReported('err_1')
@@ -167,6 +251,8 @@ describe('globalErrorHandler', () => {
         reportBody: '',
         source: 'global',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
       })
 
       clearStoredErrors()
@@ -185,6 +271,8 @@ describe('globalErrorHandler', () => {
         reportBody: '',
         source: 'global',
         reported: true,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
       })
       storeError({
         id: 'err_unreported',
@@ -193,6 +281,8 @@ describe('globalErrorHandler', () => {
         reportBody: '',
         source: 'promise',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-02T00:00:00.000Z',
       })
 
       clearReportedErrors()
@@ -208,26 +298,32 @@ describe('globalErrorHandler', () => {
       storeError({
         id: 'err_1',
         timestamp: '2024-01-01T00:00:00.000Z',
-        sanitizedError: { name: 'Error', message: 'Test', stack: '' },
+        sanitizedError: { name: 'TypeError', message: 'First error', stack: 'TypeError: First error\n    at file1.ts:1:1' },
         reportBody: '',
         source: 'global',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-01T00:00:00.000Z',
       })
       storeError({
         id: 'err_2',
         timestamp: '2024-01-02T00:00:00.000Z',
-        sanitizedError: { name: 'Error', message: 'Test', stack: '' },
+        sanitizedError: { name: 'ReferenceError', message: 'Second error', stack: 'ReferenceError: Second error\n    at file2.ts:2:2' },
         reportBody: '',
         source: 'global',
         reported: true,
+        occurrences: 1,
+        lastOccurrence: '2024-01-02T00:00:00.000Z',
       })
       storeError({
         id: 'err_3',
         timestamp: '2024-01-03T00:00:00.000Z',
-        sanitizedError: { name: 'Error', message: 'Test', stack: '' },
+        sanitizedError: { name: 'SyntaxError', message: 'Third error', stack: 'SyntaxError: Third error\n    at file3.ts:3:3' },
         reportBody: '',
         source: 'promise',
         reported: false,
+        occurrences: 1,
+        lastOccurrence: '2024-01-03T00:00:00.000Z',
       })
 
       expect(getUnreportedErrorCount()).toBe(2)

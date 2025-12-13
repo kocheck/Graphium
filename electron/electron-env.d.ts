@@ -27,5 +27,6 @@ interface Window {
   errorReporting: {
     getUsername: () => Promise<string>
     openExternal: (url: string) => Promise<boolean>
+    saveToFile: (reportContent: string) => Promise<{ success: boolean; filePath?: string; reason?: string }>
   }
 }

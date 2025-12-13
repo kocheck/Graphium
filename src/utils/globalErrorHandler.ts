@@ -20,6 +20,8 @@ export interface StoredError {
   reportBody: string;
   source: 'react' | 'global' | 'promise' | 'main';
   reported: boolean;
+  occurrences: number;
+  lastOccurrence: string;
 }
 
 /**
@@ -27,6 +29,24 @@ export interface StoredError {
  */
 function generateErrorId(): string {
   return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Generates a hash for error deduplication
+ * Uses error name, message, and first line of stack
+ */
+function generateErrorHash(sanitizedError: SanitizedError): string {
+  const stackFirstLine = sanitizedError.stack.split('\n')[0] || '';
+  const hashInput = `${sanitizedError.name}:${sanitizedError.message}:${stackFirstLine}`;
+
+  // Simple hash function (for deduplication, not cryptographic)
+  let hash = 0;
+  for (let i = 0; i < hashInput.length; i++) {
+    const char = hashInput.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
 }
 
 /**
@@ -47,13 +67,31 @@ export function getStoredErrors(): StoredError[] {
 
 /**
  * Stores an error in localStorage for later reporting
+ * Handles deduplication by incrementing occurrence count for duplicate errors
  */
 export function storeError(error: StoredError): void {
   try {
     const errors = getStoredErrors();
+    const errorHash = generateErrorHash(error.sanitizedError);
 
-    // Add new error at the beginning
-    errors.unshift(error);
+    // Check if this error already exists
+    const existingIndex = errors.findIndex(
+      (e) => generateErrorHash(e.sanitizedError) === errorHash
+    );
+
+    if (existingIndex !== -1) {
+      // Error already exists - increment occurrence count
+      const existing = errors[existingIndex];
+      existing.occurrences += 1;
+      existing.lastOccurrence = error.timestamp;
+
+      // Move to front of list
+      errors.splice(existingIndex, 1);
+      errors.unshift(existing);
+    } else {
+      // New error - add at the beginning
+      errors.unshift(error);
+    }
 
     // Keep only the most recent errors
     const trimmedErrors = errors.slice(0, MAX_STORED_ERRORS);
@@ -129,13 +167,16 @@ async function handleGlobalError(
     const reportBody = generateReportBody(sanitizedError);
 
     // Create stored error object
+    const timestamp = new Date().toISOString();
     const storedError: StoredError = {
       id: generateErrorId(),
-      timestamp: new Date().toISOString(),
+      timestamp,
       sanitizedError,
       reportBody,
       source,
       reported: false,
+      occurrences: 1,
+      lastOccurrence: timestamp,
     };
 
     // Persist to localStorage
@@ -195,6 +236,8 @@ function onMainProcessError(_event: unknown, errorData: MainProcessError): void 
     }),
     source: 'main',
     reported: false,
+    occurrences: 1,
+    lastOccurrence: errorData.timestamp,
   };
 
   storeError(storedError);

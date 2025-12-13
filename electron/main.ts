@@ -177,6 +177,26 @@ app.whenReady().then(() => {
     }
     return false
   })
+
+  ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
+    try {
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Save Error Report',
+        defaultPath: `hyle-error-report-${Date.now()}.txt`,
+        filters: [{ name: 'Text Files', extensions: ['txt'] }],
+      })
+
+      if (canceled || !filePath) {
+        return { success: false, reason: 'canceled' }
+      }
+
+      await fs.writeFile(filePath, reportContent, 'utf-8')
+      return { success: true, filePath }
+    } catch (error) {
+      console.error('Failed to save error report:', error)
+      return { success: false, reason: 'write-failed' }
+    }
+  })
   ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
     if (worldWindow && !worldWindow.isDestroyed()) {
         worldWindow.webContents.send('SYNC_WORLD_STATE', state)

@@ -11,6 +11,7 @@ interface State {
   sanitizedError: SanitizedError | null;
   reportBody: string;
   copyStatus: 'idle' | 'copied' | 'error';
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   userContext: string;
   showContextInput: boolean;
 }
@@ -33,6 +34,7 @@ class PrivacyErrorBoundary extends Component<Props, State> {
       sanitizedError: null,
       reportBody: '',
       copyStatus: 'idle',
+      saveStatus: 'idle',
       userContext: '',
       showContextInput: false,
     };
@@ -128,6 +130,55 @@ ${userContext.trim()}
     }
   };
 
+  handleSaveToFile = async (): Promise<void> => {
+    const { reportBody, userContext } = this.state;
+
+    try {
+      this.setState({ saveStatus: 'saving' });
+
+      // Build the final report with optional user context
+      let finalReport = reportBody;
+      if (userContext.trim()) {
+        finalReport = reportBody.replace(
+          '================================================================================\n                            END OF REPORT',
+          `--------------------------------------------------------------------------------
+                            USER CONTEXT (Optional)
+--------------------------------------------------------------------------------
+
+${userContext.trim()}
+
+================================================================================
+                            END OF REPORT`
+        );
+      }
+
+      // Save to file using native dialog
+      const result = await window.errorReporting.saveToFile(finalReport);
+
+      if (result.success) {
+        this.setState({ saveStatus: 'saved' });
+        // Reset status after 3 seconds
+        setTimeout(() => {
+          this.setState({ saveStatus: 'idle' });
+        }, 3000);
+      } else if (result.reason === 'canceled') {
+        // User canceled - just reset to idle
+        this.setState({ saveStatus: 'idle' });
+      } else {
+        this.setState({ saveStatus: 'error' });
+        setTimeout(() => {
+          this.setState({ saveStatus: 'idle' });
+        }, 3000);
+      }
+    } catch (err) {
+      console.error('Failed to save error report:', err);
+      this.setState({ saveStatus: 'error' });
+      setTimeout(() => {
+        this.setState({ saveStatus: 'idle' });
+      }, 3000);
+    }
+  };
+
   handleContextChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
     this.setState({ userContext: e.target.value });
   };
@@ -141,7 +192,7 @@ ${userContext.trim()}
   };
 
   render(): ReactNode {
-    const { hasError, sanitizedError, copyStatus, userContext, showContextInput } = this.state;
+    const { hasError, sanitizedError, copyStatus, saveStatus, userContext, showContextInput } = this.state;
     const { children } = this.props;
 
     if (hasError) {
@@ -304,6 +355,90 @@ ${userContext.trim()}
                         />
                       </svg>
                       Copy Report &amp; Email Support
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={this.handleSaveToFile}
+                  className={`flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${
+                    saveStatus === 'saved'
+                      ? 'bg-green-600 hover:bg-green-500'
+                      : saveStatus === 'error'
+                      ? 'bg-red-600 hover:bg-red-500'
+                      : saveStatus === 'saving'
+                      ? 'bg-neutral-700 cursor-wait'
+                      : 'bg-neutral-600 hover:bg-neutral-500'
+                  }`}
+                  disabled={saveStatus === 'saving'}
+                >
+                  {saveStatus === 'saved' ? (
+                    <>
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      Saved!
+                    </>
+                  ) : saveStatus === 'error' ? (
+                    <>
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                      Failed - Try Again
+                    </>
+                  ) : saveStatus === 'saving' ? (
+                    <>
+                      <svg
+                        className="w-5 h-5 animate-spin"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                      Save to File
                     </>
                   )}
                 </button>
