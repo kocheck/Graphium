@@ -28,7 +28,8 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
 
   const refreshErrors = useCallback(() => {
     const stored = getStoredErrors();
-    setErrors(stored);
+    // Create a new array to force React to re-render
+    setErrors([...stored]);
     setUnreportedCount(getUnreportedErrorCount());
   }, []);
 

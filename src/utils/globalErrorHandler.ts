@@ -97,8 +97,11 @@ export function storeError(error: StoredError): void {
     const trimmedErrors = errors.slice(0, MAX_STORED_ERRORS);
 
     localStorage.setItem(ERROR_STORAGE_KEY, JSON.stringify(trimmedErrors));
-  } catch {
-    console.warn('Failed to store error');
+
+    // Dispatch event to notify listeners
+    window.dispatchEvent(new CustomEvent('hyle-error', { detail: error }));
+  } catch (err) {
+    console.warn('Failed to store error:', err);
   }
 }
 
