@@ -41,6 +41,12 @@ describe('PrivacyErrorBoundary', () => {
       </PrivacyErrorBoundary>
     )
 
+    // First, should show loading state
+    await waitFor(() => {
+      expect(screen.getByText('Preparing error report...')).toBeInTheDocument()
+    })
+
+    // Then, after sanitization completes, should show error UI
     await waitFor(() => {
       expect(screen.getByText('Something went wrong')).toBeInTheDocument()
     })
