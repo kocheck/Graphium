@@ -242,4 +242,191 @@ describe('PrivacyErrorBoundary', () => {
       expect(screen.getByText(/Failed - Try Again/i)).toBeInTheDocument()
     })
   })
+
+  // Tests for handleSaveToFile method
+  describe('handleSaveToFile', () => {
+    it('should display Save to File button', async () => {
+      render(
+        <PrivacyErrorBoundary>
+          <ErrorTrigger />
+        </PrivacyErrorBoundary>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Save to File')).toBeInTheDocument()
+      })
+    })
+
+    it('should call saveToFile API when button is clicked', async () => {
+      render(
+        <PrivacyErrorBoundary>
+          <ErrorTrigger />
+        </PrivacyErrorBoundary>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Save to File')).toBeInTheDocument()
+      })
+
+      const button = screen.getByText('Save to File')
+      fireEvent.click(button)
+
+      await waitFor(() => {
+        expect(mockErrorReporting.saveToFile).toHaveBeenCalled()
+      })
+    })
+
+    it('should show saving status when save is in progress', async () => {
+      // Mock a delayed response
+      mockErrorReporting.saveToFile.mockImplementationOnce(
+        () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 100))
+      )
+
+      render(
+        <PrivacyErrorBoundary>
+          <ErrorTrigger />
+        </PrivacyErrorBoundary>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Save to File')).toBeInTheDocument()
+      })
+
+      const button = screen.getByText('Save to File')
+      fireEvent.click(button)
+
+      // Should show saving status
+      await waitFor(() => {
+        expect(screen.getByText('Saving...')).toBeInTheDocument()
+      })
+    })
+
+    it('should show success status after successful save', async () => {
+      mockErrorReporting.saveToFile.mockResolvedValueOnce({ 
+        success: true, 
+        filePath: '/path/to/error-report.txt' 
+      })
+
+      render(
+        <PrivacyErrorBoundary>
+          <ErrorTrigger />
+        </PrivacyErrorBoundary>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Save to File')).toBeInTheDocument()
+      })
+
+      const button = screen.getByText('Save to File')
+      fireEvent.click(button)
+
+      await waitFor(() => {
+        expect(screen.getByText('Saved!')).toBeInTheDocument()
+      })
+    })
+
+    it('should handle user cancellation gracefully', async () => {
+      mockErrorReporting.saveToFile.mockResolvedValueOnce({ 
+        success: false, 
+        reason: 'canceled' 
+      })
+
+      render(
+        <PrivacyErrorBoundary>
+          <ErrorTrigger />
+        </PrivacyErrorBoundary>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Save to File')).toBeInTheDocument()
+      })
+
+      const button = screen.getByText('Save to File')
+      fireEvent.click(button)
+
+      // Should return to idle state (button should say "Save to File" again)
+      await waitFor(() => {
+        expect(screen.getByText('Save to File')).toBeInTheDocument()
+      }, { timeout: 500 })
+    })
+
+    it('should show error status when save fails', async () => {
+      mockErrorReporting.saveToFile.mockResolvedValueOnce({ 
+        success: false, 
+        reason: 'error' 
+      })
+
+      render(
+        <PrivacyErrorBoundary>
+          <ErrorTrigger />
+        </PrivacyErrorBoundary>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Save to File')).toBeInTheDocument()
+      })
+
+      const button = screen.getByText('Save to File')
+      fireEvent.click(button)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed - Try Again/i)).toBeInTheDocument()
+      })
+    })
+
+    it('should handle saveToFile API errors gracefully', async () => {
+      mockErrorReporting.saveToFile.mockRejectedValueOnce(new Error('IPC error'))
+
+      render(
+        <PrivacyErrorBoundary>
+          <ErrorTrigger />
+        </PrivacyErrorBoundary>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Save to File')).toBeInTheDocument()
+      })
+
+      const button = screen.getByText('Save to File')
+      fireEvent.click(button)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed - Try Again/i)).toBeInTheDocument()
+      })
+    })
+
+    it('should include user context in saved report', async () => {
+      render(
+        <PrivacyErrorBoundary>
+          <ErrorTrigger />
+        </PrivacyErrorBoundary>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText(/Add context \(optional\)/i)).toBeInTheDocument()
+      })
+
+      // Expand context input
+      const contextToggle = screen.getByText(/Add context \(optional\)/i)
+      fireEvent.click(contextToggle)
+
+      // Add user context
+      await waitFor(() => {
+        const textarea = screen.getByPlaceholderText(/I was trying to/i)
+        fireEvent.change(textarea, { target: { value: 'Testing error reporting' } })
+      })
+
+      // Click save button
+      const saveButton = screen.getByText('Save to File')
+      fireEvent.click(saveButton)
+
+      // Verify saveToFile was called with context included
+      await waitFor(() => {
+        expect(mockErrorReporting.saveToFile).toHaveBeenCalled()
+        const callArg = mockErrorReporting.saveToFile.mock.calls[0][0]
+        expect(callArg).toContain('Testing error reporting')
+        expect(callArg).toContain('USER CONTEXT')
+      })
+    })
+  })
 })

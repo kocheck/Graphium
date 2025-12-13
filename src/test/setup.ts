@@ -5,6 +5,7 @@ import { vi } from 'vitest'
 const mockErrorReporting = {
   getUsername: vi.fn().mockResolvedValue('testuser'),
   openExternal: vi.fn().mockResolvedValue(true),
+  saveToFile: vi.fn().mockResolvedValue({ success: true, filePath: '/path/to/file.txt' }),
 }
 
 // Mock window.ipcRenderer for tests
