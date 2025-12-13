@@ -4,24 +4,53 @@ This document explains how error boundaries are set up in the Hyle application a
 
 ## Overview
 
-Hyle uses a **privacy-focused error boundary** system that:
+Hyle uses a **privacy-focused, local-first error boundary** system that:
 
 1. Catches JavaScript errors anywhere in the React component tree
-2. Sanitizes error information to remove PII (Personal Identifiable Information)
-3. Provides users with a friendly error UI
-4. Allows users to report errors via email with explicit consent
+2. Catches global errors and unhandled promise rejections
+3. Catches main process errors in Electron
+4. Sanitizes error information to remove PII (Personal Identifiable Information):
+   - Usernames in file paths
+   - Email addresses
+   - IP addresses (IPv4 and IPv6)
+   - UUIDs
+   - API keys and tokens
+   - Environment variables
+5. Persists errors locally for later reporting
+6. Provides users with a friendly error UI
+7. Allows users to add optional context about what they were doing
+8. Allows users to report errors via email with explicit consent
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      React Application                       │
+│                    Electron Main Process                     │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │              PrivacyErrorBoundary                      │  │
+│  │  uncaughtException / unhandledRejection handlers       │  │
+│  │           ↓ sanitized errors via IPC ↓                 │  │
+│  └───────────────────────────────────────────────────────┘  │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────┐
+│                    Renderer Process                          │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │         Global Error Handlers (globalErrorHandler)     │  │
+│  │  • window.onerror                                      │  │
+│  │  • unhandledrejection                                  │  │
+│  │  • main-process-error (IPC)                            │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                             │                                │
+│  ┌──────────────────────────▼────────────────────────────┐  │
+│  │              PrivacyErrorBoundary (React)              │  │
 │  │  ┌─────────────────────────────────────────────────┐  │  │
 │  │  │                    <App />                       │  │  │
 │  │  │         (your application components)            │  │  │
 │  │  └─────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                             │                                │
+│  ┌──────────────────────────▼────────────────────────────┐  │
+│  │              localStorage (error persistence)          │  │
 │  └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -57,11 +86,20 @@ Utility functions for sanitizing error data.
 
 #### `sanitizeStack(error: Error, username: string): SanitizedError`
 
-Removes PII from error stack traces by replacing usernames with `<USER>`.
+Removes PII from error stack traces. Sanitizes:
+- Usernames in file paths → `<USER>`
+- Email addresses → `<EMAIL>`
+- IPv4/IPv6 addresses → `<IP>`
+- UUIDs → `<UUID>`
+- Bearer tokens → `Bearer <TOKEN>`
+- API keys → `<REDACTED>`
+- Sensitive environment variables → `<ENV_VAR>`
 
 ```ts
 const sanitized = sanitizeStack(error, 'johnsmith');
 // "/Users/johnsmith/project/file.ts" becomes "/Users/<USER>/project/file.ts"
+// "user@example.com" becomes "<EMAIL>"
+// "192.168.1.1" becomes "<IP>"
 ```
 
 #### `generateReportBody(sanitizedError: SanitizedError): string`
@@ -71,6 +109,59 @@ Generates a formatted error report with system information.
 ```ts
 const report = generateReportBody(sanitizedError);
 // Returns formatted report with app version, platform, timestamp, and stack trace
+```
+
+### 3. Global Error Handler (`src/utils/globalErrorHandler.ts`)
+
+Catches errors outside React's component tree and persists them locally.
+
+**Functions:**
+
+#### `initGlobalErrorHandlers(): () => void`
+
+Initializes global error listeners. Call once at app startup. Returns a cleanup function.
+
+```ts
+// In main.tsx
+import { initGlobalErrorHandlers } from './utils/globalErrorHandler';
+initGlobalErrorHandlers();
+```
+
+#### `getStoredErrors(): StoredError[]`
+
+Retrieves all errors stored in localStorage.
+
+#### `storeError(error: StoredError): void`
+
+Manually stores an error (used internally).
+
+#### `markErrorReported(errorId: string): void`
+
+Marks an error as reported (useful for tracking).
+
+#### `clearStoredErrors(): void`
+
+Clears all stored errors.
+
+#### `clearReportedErrors(): void`
+
+Clears only errors that have been reported.
+
+#### `getUnreportedErrorCount(): number`
+
+Returns the count of errors not yet reported.
+
+#### `captureError(error: Error, source?): Promise<StoredError | null>`
+
+Manually capture and store an error (useful in try/catch blocks).
+
+```ts
+try {
+  riskyOperation();
+} catch (err) {
+  captureError(err, 'global');
+  // Error is sanitized and stored, but app continues
+}
 ```
 
 ## IPC Handlers (Electron)

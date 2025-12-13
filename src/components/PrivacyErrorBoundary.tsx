@@ -11,6 +11,8 @@ interface State {
   sanitizedError: SanitizedError | null;
   reportBody: string;
   copyStatus: 'idle' | 'copied' | 'error';
+  userContext: string;
+  showContextInput: boolean;
 }
 
 /**
@@ -31,6 +33,8 @@ class PrivacyErrorBoundary extends Component<Props, State> {
       sanitizedError: null,
       reportBody: '',
       copyStatus: 'idle',
+      userContext: '',
+      showContextInput: false,
     };
   }
 
@@ -74,12 +78,28 @@ class PrivacyErrorBoundary extends Component<Props, State> {
   }
 
   handleCopyAndEmail = async (): Promise<void> => {
-    const { reportBody } = this.state;
+    const { reportBody, userContext } = this.state;
     const { supportEmail } = this.props;
 
     try {
+      // Build the final report with optional user context
+      let finalReport = reportBody;
+      if (userContext.trim()) {
+        finalReport = reportBody.replace(
+          '================================================================================\n                            END OF REPORT',
+          `--------------------------------------------------------------------------------
+                            USER CONTEXT (Optional)
+--------------------------------------------------------------------------------
+
+${userContext.trim()}
+
+================================================================================
+                            END OF REPORT`
+        );
+      }
+
       // Copy the full report to clipboard
-      await navigator.clipboard.writeText(reportBody);
+      await navigator.clipboard.writeText(finalReport);
       this.setState({ copyStatus: 'copied' });
 
       // Create mailto link with instructions (not the actual report)
@@ -108,12 +128,20 @@ class PrivacyErrorBoundary extends Component<Props, State> {
     }
   };
 
+  handleContextChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    this.setState({ userContext: e.target.value });
+  };
+
+  toggleContextInput = (): void => {
+    this.setState((prev) => ({ showContextInput: !prev.showContextInput }));
+  };
+
   handleReload = (): void => {
     window.location.reload();
   };
 
   render(): ReactNode {
-    const { hasError, sanitizedError, copyStatus } = this.state;
+    const { hasError, sanitizedError, copyStatus, userContext, showContextInput } = this.state;
     const { children } = this.props;
 
     if (hasError) {
@@ -174,6 +202,44 @@ class PrivacyErrorBoundary extends Component<Props, State> {
               <div className="bg-blue-900/30 border border-blue-700/50 rounded p-3 text-sm text-blue-200">
                 <strong>Privacy Notice:</strong> Your username and personal file
                 paths have been replaced with &lt;USER&gt; to protect your privacy.
+              </div>
+
+              {/* Optional User Context */}
+              <div className="space-y-2">
+                <button
+                  onClick={this.toggleContextInput}
+                  className="text-sm text-neutral-400 hover:text-neutral-200 flex items-center gap-1"
+                >
+                  <svg
+                    className={`w-4 h-4 transition-transform ${showContextInput ? 'rotate-90' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                  Add context (optional) - What were you doing when this happened?
+                </button>
+
+                {showContextInput && (
+                  <div className="space-y-1">
+                    <textarea
+                      value={userContext}
+                      onChange={this.handleContextChange}
+                      placeholder="E.g., 'I was trying to import an image when...'"
+                      className="w-full h-24 bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-neutral-300 placeholder-neutral-500 resize-none focus:outline-none focus:border-blue-500"
+                      maxLength={500}
+                    />
+                    <div className="text-xs text-neutral-500 text-right">
+                      {userContext.length}/500 characters
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}

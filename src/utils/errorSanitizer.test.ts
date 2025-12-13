@@ -114,6 +114,82 @@ describe('errorSanitizer', () => {
 
       expect(result.name).toBe('TypeError')
     })
+
+    // PII Sanitization Tests
+    describe('PII sanitization', () => {
+      it('should sanitize email addresses', () => {
+        const error = new Error('User john.doe@example.com not found')
+        error.stack = 'Error: User john.doe@example.com not found\n    at auth.ts:1:1'
+
+        const result = sanitizeStack(error, 'testuser')
+
+        expect(result.message).toContain('<EMAIL>')
+        expect(result.message).not.toContain('john.doe@example.com')
+        expect(result.stack).not.toContain('john.doe@example.com')
+      })
+
+      it('should sanitize IPv4 addresses', () => {
+        const error = new Error('Connection to 192.168.1.100 failed')
+        error.stack = 'Error at 10.0.0.1:3000\n    at network.ts:1:1'
+
+        const result = sanitizeStack(error, 'testuser')
+
+        expect(result.message).toContain('<IP>')
+        expect(result.message).not.toContain('192.168.1.100')
+        expect(result.stack).not.toContain('10.0.0.1')
+      })
+
+      it('should sanitize UUIDs', () => {
+        const error = new Error('User 550e8400-e29b-41d4-a716-446655440000 not found')
+        error.stack = 'Error\n    at /app/users/550e8400-e29b-41d4-a716-446655440000.ts:1:1'
+
+        const result = sanitizeStack(error, 'testuser')
+
+        expect(result.message).toContain('<UUID>')
+        expect(result.message).not.toContain('550e8400-e29b-41d4-a716-446655440000')
+      })
+
+      it('should sanitize Bearer tokens', () => {
+        const error = new Error('Auth failed')
+        error.stack = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U\n    at auth.ts:1:1'
+
+        const result = sanitizeStack(error, 'testuser')
+
+        expect(result.stack).toContain('Bearer <TOKEN>')
+        expect(result.stack).not.toContain('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9')
+      })
+
+      it('should sanitize API keys in common formats', () => {
+        const error = new Error('API error')
+        error.stack = 'api_key=test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx\n    at api.ts:1:1'
+
+        const result = sanitizeStack(error, 'testuser')
+
+        expect(result.stack).toContain('<REDACTED>')
+        expect(result.stack).not.toContain('test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+      })
+
+      it('should sanitize environment variable patterns', () => {
+        const error = new Error('Config error')
+        error.stack = 'DATABASE_URL: postgres://user:pass@host/db\n    at config.ts:1:1'
+
+        const result = sanitizeStack(error, 'testuser')
+
+        expect(result.stack).toContain('<ENV_VAR>')
+        expect(result.stack).not.toContain('postgres://user:pass@host/db')
+      })
+
+      it('should handle multiple PII types in same error', () => {
+        const error = new Error('Error for user@test.com at 192.168.1.1')
+        error.stack = 'Error at /home/devuser/app.ts:1:1'
+
+        const result = sanitizeStack(error, 'devuser')
+
+        expect(result.message).toContain('<EMAIL>')
+        expect(result.message).toContain('<IP>')
+        expect(result.stack).toContain('/home/<USER>/app.ts')
+      })
+    })
   })
 
   describe('generateReportBody', () => {

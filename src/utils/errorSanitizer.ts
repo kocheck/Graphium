@@ -2,7 +2,8 @@
  * Error Sanitization Utility
  *
  * Provides functions to sanitize error stack traces by removing PII
- * (Personal Identifiable Information) such as usernames and file paths.
+ * (Personal Identifiable Information) such as usernames, email addresses,
+ * IP addresses, API keys, and file paths.
  */
 
 export interface SanitizedError {
@@ -12,7 +13,51 @@ export interface SanitizedError {
 }
 
 /**
- * Sanitizes an error stack trace by replacing the system username with <USER>.
+ * Patterns for detecting and sanitizing various types of PII
+ */
+const PII_PATTERNS = {
+  // Email addresses
+  email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+
+  // IPv4 addresses
+  ipv4: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
+
+  // IPv6 addresses (simplified pattern)
+  ipv6: /\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b|\b(?:[0-9a-fA-F]{1,4}:){1,7}:|:(?::[0-9a-fA-F]{1,4}){1,7}\b/g,
+
+  // API keys / tokens (common patterns: long alphanumeric strings)
+  apiKey: /\b(?:api[_-]?key|token|secret|password|auth)[=:]\s*['"]?([A-Za-z0-9_-]{20,})['"]?/gi,
+
+  // Bearer tokens
+  bearerToken: /Bearer\s+[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/gi,
+
+  // Environment variable values that look sensitive
+  envVar: /\b(?:DATABASE_URL|API_KEY|SECRET_KEY|PRIVATE_KEY|ACCESS_TOKEN|AUTH_TOKEN)[=:]\s*\S+/gi,
+
+  // UUIDs (could be user IDs)
+  uuid: /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi,
+
+  // Hostname patterns (but preserve localhost)
+  hostname: /\b(?!localhost\b)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b/g,
+};
+
+/**
+ * Sanitizes a string by removing common PII patterns
+ */
+function sanitizePII(text: string): string {
+  return text
+    .replace(PII_PATTERNS.email, '<EMAIL>')
+    .replace(PII_PATTERNS.ipv4, '<IP>')
+    .replace(PII_PATTERNS.ipv6, '<IP>')
+    .replace(PII_PATTERNS.bearerToken, 'Bearer <TOKEN>')
+    .replace(PII_PATTERNS.apiKey, '$1=<REDACTED>')
+    .replace(PII_PATTERNS.envVar, '<ENV_VAR>')
+    .replace(PII_PATTERNS.uuid, '<UUID>');
+}
+
+/**
+ * Sanitizes an error stack trace by replacing the system username with <USER>
+ * and removing other PII patterns.
  * This prevents PII from being exposed in error reports.
  *
  * @param error - The error object to sanitize
@@ -21,7 +66,7 @@ export interface SanitizedError {
  */
 export function sanitizeStack(error: Error, username: string): SanitizedError {
   const errorName = error.name || 'Error';
-  const errorMessage = error.message || 'Unknown error';
+  let errorMessage = error.message || 'Unknown error';
   let errorStack = error.stack || '';
 
   // Create regex patterns to match the username in various path formats
@@ -48,24 +93,21 @@ export function sanitizeStack(error: Error, username: string): SanitizedError {
       'gi'
     );
 
-    // Apply sanitization patterns
+    // Apply username sanitization
     errorStack = errorStack
       .replace(unixPathPattern, '$1<USER>$2')
       .replace(windowsPathPattern, '$1<USER>$2')
       .replace(genericPattern, '$1<USER>$2');
 
-    // Also sanitize the error message in case it contains paths
-    const sanitizedMessage = errorMessage
+    errorMessage = errorMessage
       .replace(unixPathPattern, '$1<USER>$2')
       .replace(windowsPathPattern, '$1<USER>$2')
       .replace(genericPattern, '$1<USER>$2');
-
-    return {
-      name: errorName,
-      message: sanitizedMessage,
-      stack: errorStack,
-    };
   }
+
+  // Apply general PII sanitization
+  errorStack = sanitizePII(errorStack);
+  errorMessage = sanitizePII(errorMessage);
 
   return {
     name: errorName,

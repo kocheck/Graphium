@@ -11,6 +11,70 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'media', privileges: { secure: true, supportFetchAPI: true, bypassCSP: true } }
 ])
 
+// ==================== Main Process Error Handling ====================
+
+/**
+ * Sanitizes main process errors by removing the username from paths
+ */
+function sanitizeMainProcessError(error: Error): { name: string; message: string; stack: string } {
+  const username = os.userInfo().username
+  const escapedUsername = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+  // Patterns to sanitize username from paths
+  const unixPathPattern = new RegExp(`(/(?:Users|home)/)${escapedUsername}(/|$)`, 'gi')
+  const windowsPathPattern = new RegExp(
+    `([A-Za-z]:[/\\\\](?:Users|Documents and Settings)[/\\\\])${escapedUsername}([/\\\\]|$)`,
+    'gi'
+  )
+  const genericPattern = new RegExp(`([\\\\/])${escapedUsername}([\\\\/])`, 'gi')
+
+  const sanitize = (text: string): string => {
+    return text
+      .replace(unixPathPattern, '$1<USER>$2')
+      .replace(windowsPathPattern, '$1<USER>$2')
+      .replace(genericPattern, '$1<USER>$2')
+  }
+
+  return {
+    name: error.name || 'Error',
+    message: sanitize(error.message || 'Unknown error'),
+    stack: sanitize(error.stack || ''),
+  }
+}
+
+/**
+ * Sends sanitized error to renderer process
+ */
+function sendErrorToRenderer(error: Error, source: string): void {
+  const sanitizedError = sanitizeMainProcessError(error)
+  const allWindows = BrowserWindow.getAllWindows()
+
+  allWindows.forEach((win) => {
+    if (!win.isDestroyed()) {
+      win.webContents.send('main-process-error', {
+        ...sanitizedError,
+        source,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  })
+}
+
+// Handle uncaught exceptions in main process
+process.on('uncaughtException', (error) => {
+  console.error('Main process uncaught exception:', error)
+  sendErrorToRenderer(error, 'main-uncaught')
+})
+
+// Handle unhandled promise rejections in main process
+process.on('unhandledRejection', (reason) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason))
+  console.error('Main process unhandled rejection:', error)
+  sendErrorToRenderer(error, 'main-promise')
+})
+
+// ==================================================================
+
 // The built directory structure
 //
 // ├─┬─┬ dist

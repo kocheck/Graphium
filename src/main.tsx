@@ -2,7 +2,12 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import PrivacyErrorBoundary from './components/PrivacyErrorBoundary.tsx'
+import { initGlobalErrorHandlers } from './utils/globalErrorHandler.ts'
 import './index.css'
+
+// Initialize global error handlers for non-React errors
+// This catches window.onerror and unhandled promise rejections
+initGlobalErrorHandlers()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
