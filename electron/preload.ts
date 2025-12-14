@@ -1,24 +1,137 @@
+/**
+ * Electron preload script for Hyle
+ *
+ * This script runs in a privileged context BEFORE the renderer process loads.
+ * It uses Electron's Context Bridge to safely expose IPC APIs to the renderer
+ * (React app) without giving full access to Node.js APIs.
+ *
+ * **Security pattern:**
+ * - Renderer process is sandboxed (no direct Node.js access)
+ * - Preload script has Node.js access (can use ipcRenderer)
+ * - Context Bridge creates a controlled API surface (window.ipcRenderer)
+ * - Renderer can only call whitelisted IPC methods
+ *
+ * **Exposed API:**
+ * ```typescript
+ * window.ipcRenderer.on(channel, listener)     // Subscribe to IPC events
+ * window.ipcRenderer.off(channel, listener)    // Unsubscribe from IPC events
+ * window.ipcRenderer.send(channel, ...args)    // Send one-way IPC message
+ * window.ipcRenderer.invoke(channel, ...args)  // Send IPC request, await response
+ * ```
+ *
+ * **Why this is secure:**
+ * - No eval() or arbitrary code execution
+ * - No access to require() or Node.js modules
+ * - IPC channels are validated by main process handlers
+ * - No file system access (must use IPC handlers in main process)
+ *
+ * See electron/main.ts for IPC handler implementations.
+ */
+
 import { ipcRenderer, contextBridge } from 'electron'
 
-// --------- Expose some API to the Renderer process ---------
+/**
+ * Expose IPC APIs to renderer process via Context Bridge
+ *
+ * Creates a global window.ipcRenderer object that React components can use
+ * to communicate with the main process. This API surface is intentionally
+ * limited to prevent security vulnerabilities.
+ *
+ * **Usage in renderer:**
+ * ```typescript
+ * // Send one-way message (fire-and-forget)
+ * window.ipcRenderer.send('create-world-window')
+ *
+ * // Request-response pattern (async)
+ * const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', data)
+ *
+ * // Subscribe to events from main process
+ * window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
+ *   console.log('Received state:', state)
+ * })
+ * ```
+ *
+ * **Type safety note:**
+ * TypeScript doesn't know about window.ipcRenderer by default, so renderer
+ * code uses @ts-ignore comments. Future improvement: Add type declarations
+ * in src/types/electron.d.ts.
+ */
 contextBridge.exposeInMainWorld('ipcRenderer', {
+  /**
+   * Subscribe to IPC events from main process
+   *
+   * Used by World Window to receive state updates (see SyncManager.tsx:85).
+   *
+   * @param channel - IPC channel name (e.g., 'SYNC_WORLD_STATE')
+   * @param listener - Callback fired when event is received
+   * @returns IPC listener reference (for cleanup via off())
+   */
   on(...args: Parameters<typeof ipcRenderer.on>) {
     const [channel, listener] = args
     return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
   },
+
+  /**
+   * Unsubscribe from IPC events
+   *
+   * Removes event listener to prevent memory leaks. Currently not fully
+   * implemented in renderer (TODO: proper cleanup in SyncManager.tsx:93-95).
+   *
+   * @param channel - IPC channel name
+   * @param listener - Listener to remove (must be same reference as passed to on())
+   */
   off(...args: Parameters<typeof ipcRenderer.off>) {
     const [channel, ...omit] = args
     return ipcRenderer.off(channel, ...omit)
   },
+
+  /**
+   * Send one-way IPC message to main process
+   *
+   * Fire-and-forget pattern (no response expected).
+   *
+   * @param channel - IPC channel name (e.g., 'create-world-window', 'SYNC_WORLD_STATE')
+   * @param args - Arguments to pass to main process handler
+   *
+   * @example
+   * // Create World View window (see App.tsx:119)
+   * window.ipcRenderer.send('create-world-window')
+   *
+   * @example
+   * // Broadcast state to World Window (see SyncManager.tsx:111)
+   * window.ipcRenderer.send('SYNC_WORLD_STATE', { tokens: [...], drawings: [...] })
+   */
   send(...args: Parameters<typeof ipcRenderer.send>) {
     const [channel, ...omit] = args
     return ipcRenderer.send(channel, ...omit)
   },
+
+  /**
+   * Send IPC request and await response from main process
+   *
+   * Request-response pattern (Promise-based).
+   *
+   * @param channel - IPC channel name (e.g., 'SAVE_CAMPAIGN', 'LOAD_CAMPAIGN', 'SAVE_ASSET_TEMP')
+   * @param args - Arguments to pass to main process handler
+   * @returns Promise resolving to handler's return value
+   *
+   * @example
+   * // Save campaign (see App.tsx:89)
+   * const success = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', gameState)
+   *
+   * @example
+   * // Load campaign (see App.tsx:103)
+   * const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN')
+   *
+   * @example
+   * // Save asset to temp storage (see AssetProcessor.ts:112)
+   * const filePath = await window.ipcRenderer.invoke('SAVE_ASSET_TEMP', buffer, 'goblin.webp')
+   */
   invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
     const [channel, ...omit] = args
     return ipcRenderer.invoke(channel, ...omit)
   },
 
-  // You can expose other APTs you need here.
+  // You can expose other APIs you need here.
   // ...
 })
