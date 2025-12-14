@@ -13,6 +13,7 @@ import ImageCropper from '../ImageCropper';
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
 const ZOOM_SCALE_BY = 1.1;
+const MIN_PINCH_DISTANCE = 0.001; // Guard against division by zero
 
 // Helper functions for touch/pinch calculations
 const calculatePinchDistance = (touch1: Touch, touch2: Touch): number => {
@@ -219,6 +220,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
       const touches = e.evt.touches;
       if (touches.length === 2) {
+          e.evt.preventDefault();
           const touch1 = touches[0];
           const touch2 = touches[1];
           lastPinchDistance.current = calculatePinchDistance(touch1, touch2);
@@ -228,26 +230,35 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
   const handleTouchMove = (e: KonvaEventObject<TouchEvent>) => {
       const touches = e.evt.touches;
-      if (touches.length === 2 && lastPinchDistance.current && lastPinchCenter.current) {
+      if (touches.length === 2) {
           e.evt.preventDefault();
           
-          const touch1 = touches[0];
-          const touch2 = touches[1];
-          const distance = calculatePinchDistance(touch1, touch2);
-          const center = calculatePinchCenter(touch1, touch2);
-          
-          // Prevent division by zero
-          if (lastPinchDistance.current < 0.001) return;
-          
-          // Calculate scale change
-          const scaleChange = distance / lastPinchDistance.current;
-          const newScale = scale * scaleChange;
-          
-          // Use the pinch center for zoom
-          performZoom(newScale, center.x, center.y, scale, position);
-          
-          lastPinchDistance.current = distance;
-          lastPinchCenter.current = center;
+          if (lastPinchDistance.current && lastPinchCenter.current) {
+              const touch1 = touches[0];
+              const touch2 = touches[1];
+              const distance = calculatePinchDistance(touch1, touch2);
+              const center = calculatePinchCenter(touch1, touch2);
+              
+              // Prevent division by zero
+              if (lastPinchDistance.current < MIN_PINCH_DISTANCE) return;
+              
+              // Convert viewport coordinates to canvas coordinates
+              const stageRect = containerRef.current?.getBoundingClientRect();
+              if (!stageRect) return;
+              
+              const canvasX = center.x - stageRect.left;
+              const canvasY = center.y - stageRect.top;
+              
+              // Calculate scale change
+              const scaleChange = distance / lastPinchDistance.current;
+              const newScale = scale * scaleChange;
+              
+              // Use the pinch center for zoom
+              performZoom(newScale, canvasX, canvasY, scale, position);
+              
+              lastPinchDistance.current = distance;
+              lastPinchCenter.current = center;
+          }
       }
   };
 
