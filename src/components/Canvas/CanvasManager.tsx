@@ -40,12 +40,15 @@ interface URLImageProps {
   scaleX?: number;
   scaleY?: number;
   id: string;
-  onSelect: (e: KonvaEventObject<MouseEvent>) => void;
-  onDragEnd: (x: number, y: number) => void;
+  onSelect?: (e: KonvaEventObject<MouseEvent>) => void;
+  onDragStart?: (e: KonvaEventObject<DragEvent>) => void;
+  onDragEnd?: (e: KonvaEventObject<DragEvent>) => void;
   draggable: boolean;
+  opacity?: number;
+  listening?: boolean;
 }
 
-const URLImage = ({ src, x, y, width, height, scaleX, scaleY, id, onSelect, onDragEnd, draggable, name }: URLImageProps) => {
+const URLImage = ({ src, x, y, width, height, scaleX, scaleY, id, onSelect, onDragEnd, onDragStart, draggable, name, opacity, listening }: URLImageProps) => {
   const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
   const [img, status] = useImage(safeSrc);
 
@@ -67,12 +70,15 @@ const URLImage = ({ src, x, y, width, height, scaleX, scaleY, id, onSelect, onDr
       draggable={draggable}
       onClick={onSelect}
       onTap={onSelect}
-      onDragEnd={(e) => {
-        onDragEnd(e.target.x(), e.target.y());
-      }}
+      onDragEnd={onDragEnd}
+      onDragStart={onDragStart}
+      opacity={opacity}
+      listening={listening}
     />
   );
 };
+// ... (skip down to CanvasManager return)
+
 
 interface CanvasManagerProps {
   tool?: 'select' | 'marker' | 'eraser';
@@ -98,7 +104,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   const updateTokenTransform = useGameStore(s => s.updateTokenTransform);
   const removeTokens = useGameStore(s => s.removeTokens);
   const removeDrawings = useGameStore(s => s.removeDrawings);
-  const setMap = useGameStore(s => s.setMap);
   const setIsCalibrating = useGameStore(s => s.setIsCalibrating);
   const updateMapScale = useGameStore(s => s.updateMapScale);
   const updateMapPosition = useGameStore(s => s.updateMapPosition);
@@ -115,11 +120,16 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   // Cropping State
   const [pendingCrop, setPendingCrop] = useState<{ src: string, x: number, y: number } | null>(null);
 
-  // Selection State
+  // Selection & Drag State
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, width: number, height: number, isVisible: boolean }>({ x: 0, y: 0, width: 0, height: 0, isVisible: false });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const transformerRef = useRef<any>(null);
   const selectionStart = useRef<{x: number, y: number} | null>(null);
+
+  // Ghost / Duplication State
+  // Ghost / Duplication State
+  const [draggedItemIds, setDraggedItemIds] = useState<string[]>([]);
+  const [isAltPressed, setIsAltPressed] = useState(false);
 
   // Navigation State
   const [isSpacePressed, setIsSpacePressed] = useState(false);
@@ -131,9 +141,14 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
 
-  // Handle Delete/Backspace
+    // Handle Delete/Backspace & Alt Key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Track Alt Key
+      if (e.key === 'Alt') {
+          setIsAltPressed(true);
+      }
+
       // Ignore if typing in an input
       if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return;
 
@@ -147,8 +162,18 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+        if (e.key === 'Alt') {
+            setIsAltPressed(false);
+        }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+    };
   }, [selectedIds, removeTokens, removeDrawings]);
 
   useEffect(() => {
@@ -806,7 +831,23 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
         </Layer>
 
         {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
+        {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
         <Layer>
+            {isAltPressed && drawings.filter(d => draggedItemIds.includes(d.id)).map(ghostLine => (
+                <Line
+                    key={`ghost-${ghostLine.id}`}
+                    id={`ghost-${ghostLine.id}`}
+                    name="ghost-drawing"
+                    points={ghostLine.points}
+                    stroke={ghostLine.color}
+                    strokeWidth={ghostLine.size}
+                    tension={0.5}
+                    lineCap="round"
+                    opacity={0.5}
+                    listening={false}
+                />
+            ))}
+
             {drawings.map((line) => (
                 <Line
                     key={line.id}
@@ -820,6 +861,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     globalCompositeOperation={
                         line.tool === 'eraser' ? 'destination-out' : 'source-over'
                     }
+                    draggable={tool === 'select'}
                     onClick={(e) => {
                         if (tool === 'select') {
                             if (e.evt.shiftKey) {
@@ -833,6 +875,55 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                             }
                         }
                     }}
+                    onDragStart={() => {
+                         if (selectedIds.includes(line.id)) {
+                             setDraggedItemIds(selectedIds);
+                         } else {
+                             setDraggedItemIds([line.id]);
+                         }
+                     }}
+                     onDragEnd={(e) => {
+                         const node = e.target;
+                         const x = node.x();
+                         const y = node.y();
+
+                         // Duplication Logic (Option/Alt + Drag)
+                         if (e.evt.altKey) {
+                             const idsToDuplicate = selectedIds.includes(line.id) ? selectedIds : [line.id];
+                             idsToDuplicate.forEach(id => {
+                                 // Check tokens first (generic handler?)
+                                 // Actually this is the Drawing loop, so we only handle drawings here?
+                                 // Wait, selectedIds can mix types.
+                                 // If I select a Token AND a Line, selectedIds has both.
+                                 // If I drag the Line, this handler fires.
+                                 // I should duplicate BOTH tokens and lines if they are in the selection.
+
+                                 const drawing = drawings.find(d => d.id === id);
+                                 if (drawing) {
+                                     addDrawing({ ...drawing, id: crypto.randomUUID() });
+                                 }
+
+                                 // If we support mixed selection, we might need to handle tokens here too?
+                                 // Currently, typically we might restrict drag to the type we are dragging?
+                                 // Or `selectedIds` is global.
+
+                                 const token = tokens.find(t => t.id === id);
+                                 if (token) {
+                                     addToken({ ...token, id: crypto.randomUUID() });
+                                 }
+                             });
+                         }
+
+                         // Update Position (Transform)
+                         // Drawings utilize `points` but usually we just move the node (x,y).
+                         // However, for persistence we should probably update the `points` OR store x,y offset.
+                         // But `Line` points are absolute.
+                         // If we move the Node, Konva applies a transform (x,y).
+                         // We should use `updateDrawingTransform`.
+                         updateDrawingTransform(line.id, x, y, line.scale || 1);
+
+                         setDraggedItemIds([]);
+                     }}
                 />
             ))}
              {/* Temp Line */}
@@ -852,6 +943,28 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
         {/* Layer 3: Tokens & UI */}
         <Layer>
+
+
+            {isAltPressed && tokens.filter(t => draggedItemIds.includes(t.id)).map(ghostToken => (
+                <URLImage
+                   key={`ghost-${ghostToken.id}`}
+                   id={`ghost-${ghostToken.id}`} // Unique ID
+                   src={ghostToken.src}
+                   x={ghostToken.x}
+                   y={ghostToken.y}
+                   width={gridSize * ghostToken.scale}
+                   height={gridSize * ghostToken.scale}
+                   scaleX={1}
+                   scaleY={1}
+                   draggable={false}
+                   listening={false}
+                   opacity={0.5}
+                   name="ghost-token"
+                   // No-op handlers
+                   onSelect={() => {}}
+                />
+            ))}
+
             {tokens.map((token) => (
                 <URLImage
                     key={token.id}
@@ -876,11 +989,39 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                              }
                          }
                     }}
-                     onDragEnd={(x, y) => {
+                     onDragStart={() => {
+                         if (selectedIds.includes(token.id)) {
+                             setDraggedItemIds(selectedIds);
+                         } else {
+                             setDraggedItemIds([token.id]);
+                         }
+                     }}
+                     onDragEnd={(e) => {
+                         const x = e.target.x();
+                         const y = e.target.y();
                          const width = gridSize * token.scale;
                          const height = gridSize * token.scale;
                          const snapped = snapToGrid(x, y, gridSize, width, height);
+
+                         // Duplication Logic (Option/Alt + Drag)
+                         if (e.evt.altKey) {
+                             const idsToDuplicate = selectedIds.includes(token.id) ? selectedIds : [token.id];
+                             idsToDuplicate.forEach(id => {
+                                 const t = tokens.find(tk => tk.id === id);
+                                 if (t) {
+                                     addToken({ ...t, id: crypto.randomUUID() });
+                                 }
+
+                                 // Also check drawings?
+                                 const d = drawings.find(dk => dk.id === id);
+                                 if (d) {
+                                     addDrawing({ ...d, id: crypto.randomUUID() });
+                                 }
+                             });
+                         }
+
                          updateTokenPosition(token.id, snapped.x, snapped.y);
+                         setDraggedItemIds([]);
                      }}
                 />
             ))}
