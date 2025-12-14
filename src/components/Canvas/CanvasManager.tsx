@@ -252,7 +252,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
       setScale(constrainedScale);
       setPosition(clampedPos);
-  }, [size.width, size.height, map, clampPosition]);
+  }, [size.width, size.height, map]);
 
   // Auto-center on map load
   const lastMapSrc = useRef<string | null>(null);
