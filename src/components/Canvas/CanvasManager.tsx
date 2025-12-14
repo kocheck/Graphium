@@ -43,6 +43,9 @@ const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) 
       }
     } catch (error) {
       console.error('Error in handleDragStart:', error);
+      // Reset state on error
+      setIsDuplicateMode(false);
+      setCursor(e.target.getStage(), 'default');
     }
   };
 
@@ -67,6 +70,9 @@ const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) 
       }
     } catch (error) {
       console.error('Error in handleDragMove:', error);
+      // Reset state on error
+      setIsDuplicateMode(false);
+      setCursor(e.target.getStage(), 'default');
     }
   };
 
