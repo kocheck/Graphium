@@ -573,9 +573,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
             {/* Transformer */}
             <Transformer
                 ref={transformerRef}
-                boundBoxFunc={(_oldBox, newBox) => {
-                    return newBox;
-                }}
                 onTransformEnd={(e) => {
                     const node = e.target;
                     const scaleX = node.scaleX();
