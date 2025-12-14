@@ -600,6 +600,24 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                         // Reset scale to 1 since the new scale is stored
                         node.scaleX(1);
                         node.scaleY(1);
+                    } else if (node.name() === 'drawing') {
+                        // Handle drawing (Line) transformation
+                        // Use average of scaleX and scaleY for uniform scaling
+                        const transformScale = (scaleX + scaleY) / 2;
+                        const drawing = drawings.find(d => d.id === node.id());
+                        if (drawing) {
+                            // Multiply current scale by transformation scale, or set to transformScale if not previously scaled
+                            const newScale = (drawing.scale || 1) * transformScale;
+                            updateDrawingTransform(
+                                node.id(),
+                                node.x(),
+                                node.y(),
+                                newScale
+                            );
+                        }
+                        // Reset scale to 1 since the new scale is stored
+                        node.scaleX(1);
+                        node.scaleY(1);
                     }
                 }}
             />
