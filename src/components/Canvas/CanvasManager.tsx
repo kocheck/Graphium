@@ -89,6 +89,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
   // Navigation State
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   
@@ -157,6 +158,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
         if (isEditableElement(e.target)) return;
         
         if (e.code === 'Space' && !e.repeat) {
+            e.preventDefault();
             setIsSpacePressed(true);
         }
         
@@ -478,12 +480,18 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
         scaleY={scale}
         x={position.x}
         y={position.y}
+        onDragStart={(e) => {
+            if (e.target === e.target.getStage()) {
+                setIsDragging(true);
+            }
+        }}
         onDragEnd={(e) => {
             if (e.target === e.target.getStage()) {
                 setPosition({ x: e.target.x(), y: e.target.y() });
+                setIsDragging(false);
             }
         }}
-        style={{ cursor: isSpacePressed ? 'grab' : (tool === 'select' ? 'default' : 'crosshair') }}
+        style={{ cursor: (isSpacePressed && isDragging) ? 'grabbing' : (isSpacePressed ? 'grab' : (tool === 'select' ? 'default' : 'crosshair')) }}
       >
         <Layer>
             <GridOverlay width={size.width} height={size.height} gridSize={gridSize} />
