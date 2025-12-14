@@ -889,25 +889,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                          if (e.evt.altKey) {
                              const idsToDuplicate = selectedIds.includes(line.id) ? selectedIds : [line.id];
                              idsToDuplicate.forEach(id => {
-                                 // Check tokens first (generic handler?)
-                                 // Actually this is the Drawing loop, so we only handle drawings here?
-                                 // Wait, selectedIds can mix types.
-                                 // If I select a Token AND a Line, selectedIds has both.
-                                 // If I drag the Line, this handler fires.
-                                 // I should duplicate BOTH tokens and lines if they are in the selection.
-
+                                 // Only duplicate drawings here; tokens are handled in their own handler.
                                  const drawing = drawings.find(d => d.id === id);
                                  if (drawing) {
                                      addDrawing({ ...drawing, id: crypto.randomUUID() });
-                                 }
-
-                                 // If we support mixed selection, we might need to handle tokens here too?
-                                 // Currently, typically we might restrict drag to the type we are dragging?
-                                 // Or `selectedIds` is global.
-
-                                 const token = tokens.find(t => t.id === id);
-                                 if (token) {
-                                     addToken({ ...token, id: crypto.randomUUID() });
                                  }
                              });
                          }
