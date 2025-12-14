@@ -53,7 +53,6 @@ const URLImage = ({ src, x, y, width, height, scaleX, scaleY, id, onSelect, onDr
   const [img, status] = useImage(safeSrc);
 
   useEffect(() => {
-      // console.log(`URLImage [${id}] status:`, status);
   }, [id, status]);
 
   return (
@@ -77,7 +76,6 @@ const URLImage = ({ src, x, y, width, height, scaleX, scaleY, id, onSelect, onDr
     />
   );
 };
-// ... (skip down to CanvasManager return)
 
 
 interface CanvasManagerProps {
@@ -126,7 +124,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   const transformerRef = useRef<any>(null);
   const selectionStart = useRef<{x: number, y: number} | null>(null);
 
-  // Ghost / Duplication State
   // Ghost / Duplication State
   const [draggedItemIds, setDraggedItemIds] = useState<string[]>([]);
   const [isAltPressed, setIsAltPressed] = useState(false);
@@ -192,7 +189,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   }, []);
 
   // Reusable zoom function
-  // TODO: Add clamping to zoom
   const performZoom = useCallback((newScale: number, centerX: number, centerY: number, currentScale: number, currentPos: { x: number, y: number }) => {
       // Apply min/max constraints
       const constrainedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
@@ -207,9 +203,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
           y: centerY - pointTo.y * constrainedScale,
       };
 
+      // Clamp position to prevent getting lost in the void
+      const clampedPos = clampPosition(newPos, constrainedScale);
+
       setScale(constrainedScale);
-      setPosition(newPos);
-  }, []);
+      setPosition(clampedPos);
+  }, [size.width, size.height, map]);
 
   // Auto-center on map load
   const lastMapSrc = useRef<string | null>(null);
@@ -520,68 +519,15 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     // CALIBRATION LOGIC
     if (isCalibrating && calibrationStart.current && calibrationRect) {
          if (calibrationRect.width > 5 && calibrationRect.height > 5 && map) {
-             // 1. Calculate new scale
-             // The drawn box represents ONE Grid Cell (gridSize)
-             // Drawn Size (in current map space) = calibrationRect.width
-             // We want this Drawn Size to BECOME gridSize
-             // Current Map Scale * Factor = New Map Scale
-             // Factor = gridSize / Drawn Size (in UN-SCALED MAP UNITS?? No.)
-             // Everything is in Stage Coordinates (which are scaled by Stage Scale, but getRelativePointerPosition handles that).
-             // However, the Map Image is rendered at `map.scale`.
-             // The user drew a box of `w` pixels on the screen (canvas space).
-             // They want `w` pixels to conform to `gridSize` pixels.
-             // Wait. The grid overlay is fixed at `gridSize`.
-             // If I draw a box that is 100px wide, and I say "This is a grid cell", and grid cell is 50px.
-             // Then the visual content is 2x too big. I need to shrink it by 0.5.
-             // So, Scale Factor = gridSize / calibrationRect.width.
-             // New Map Scale = map.scale * Factor.
-
-             const scaleFactor = gridSize / Math.max(calibrationRect.width, calibrationRect.height); // Use max dim?
+             // Calibration: Scale and align the map so the drawn box represents one grid cell.
+             // 1. Calculate scale factor: gridSize / drawn box size
+             // 2. Apply scale to map
+             // 3. Shift map position so the scaled box aligns with the nearest grid line
+             const avgDim = (calibrationRect.width + calibrationRect.height) / 2;
+             const scaleFactor = gridSize / avgDim; // Use average of width and height for scale factor
              const newScale = map.scale * scaleFactor;
 
-             // 2. Calculate Align Offset
-             // We want the top-left of the drawn box (calibrationRect.x, y) to align with a grid line.
-             // calibrationRect.x is in Canvas Coordinates.
-             // The Map is at map.x.
-             // We want the point `calibrationRect.x` (relative to Map Origin) to fall on a multiple of `gridSize` (scaled?).
-             // Let's simplify: Shift the map so that calibrationRect.x aligns with the NEAREST grid line.
-             // Actually, usually users draw the box over a printed grid square on the map.
-             // So we want that printed square to align with our virtual grid.
-             // Virtual Grid lines are at 0, 50, 100...
-             // Drawn Box is at X.
-             // We want to shift map by `delta` so that X + delta = 0 (or multiple of 50).
-             // NO. We assume the grid starts at (0,0) of the world.
-             // We want to move the Map so that the Drawn Box Left aligns with a Grid Line.
-             // Nearest Grid Line to X is `round(X / gridSize) * gridSize`.
-             // Diff = Nearest - X.
-             // We shift Top Left of map by Diff?
-             // Not exactly, because we just scaled the map around (0,0) or center?
-             // Konva scales images around their x,y? Defaults to top left.
-             // If we change scale, the image grows/shrinks from its own origin (map.x, map.y).
-             // So if we just update scale, the point under the mouse moves.
-             // We should probably Scale around the center of the drawn box?
-             // That's complex.
-             // Simplified Logic:
-             // 1. Apply Scale.
-             // 2. Then shift Map so that the scaled drawn box top-left aligns with a module of gridSize.
-
-             // Where is the drawn box relative to the map origin *before* rescale?
-             // RelX = calibrationRect.x - map.x
-             // RelY = calibrationRect.y - map.y
-
-             // After rescale (by scaleFactor), this distance becomes:
-             // NewRelX = RelX * scaleFactor
-
-             // So the New Canvas X of the box head is:
-             // NewBoxX = map.x + NewRelX
-             // We want NewBoxX to be `N * gridSize`.
-             // Ideally 0, or closest.
-             // Let's force it to align with the grid line at `0` for simplicity? No, that jumps the map.
-             // Align with `Math.round(NewBoxX / gridSize) * gridSize`.
-             // TargetX = Math.round(NewBoxX / gridSize) * gridSize
-             // Adjustment = TargetX - NewBoxX.
-             // NewMapX = map.x + Adjustment.
-
+             // Calculate position adjustment after rescaling
              const relX = calibrationRect.x - map.x;
              const relY = calibrationRect.y - map.y;
 
@@ -708,8 +654,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       };
   };
 
-  // ... (Zoom logic needs to use clampPosition too, but for now pan is main issue)
-
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
       const stage = e.target.getStage();
@@ -722,9 +666,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       // Zoom with Ctrl/Cmd + scroll
       if (e.evt.ctrlKey || e.evt.metaKey) {
           const newScale = e.evt.deltaY < 0 ? oldScale * ZOOM_SCALE_BY : oldScale / ZOOM_SCALE_BY;
-          // Zoom clamp handles min/max scale.
-          // We SHOULD also clamp position after zoom, but performZoom sets it directly.
-          // Let's wrap performZoom's setPosition?
           performZoom(newScale, pointer.x, pointer.y, oldScale, { x: stage.x(), y: stage.y() });
       } else {
           // Pan
@@ -799,12 +740,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
             }
         }}
         onDragMove={(e) => {
-             // Realtime clamping?
+             // We intentionally do NOT clamp the stage position in real time during drag.
+             // Real-time clamping can cause jittery or unnatural movement, especially if the user drags quickly or hits the edge.
+             // Instead, we allow free dragging and only clamp the position on drag end (see onDragEnd above).
+             // This provides a smoother and more predictable user experience.
              if (e.target === e.target.getStage()) {
-                // To clamp in realtime, we have to override the position.
-                // It might be jittery.
-                // Let's just let them drag, and snap back on end?
-                // Or soft clamp?
+                 // No action needed here; see comment above.
              }
         }}
         style={{ cursor: (isSpacePressed && isDragging) ? 'grabbing' : (isSpacePressed ? 'grab' : (tool === 'select' ? 'default' : 'crosshair')) }}
@@ -926,8 +867,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
         {/* Layer 3: Tokens & UI */}
         <Layer>
-
-
             {isAltPressed && tokens.filter(t => draggedItemIds.includes(t.id)).map(ghostToken => (
                 <URLImage
                    key={`ghost-${ghostToken.id}`}
@@ -990,15 +929,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                          if (e.evt.altKey) {
                              const idsToDuplicate = selectedIds.includes(token.id) ? selectedIds : [token.id];
                              idsToDuplicate.forEach(id => {
+                                 // Only duplicate tokens here; drawings are handled in their own handler.
                                  const t = tokens.find(tk => tk.id === id);
                                  if (t) {
                                      addToken({ ...t, id: crypto.randomUUID() });
-                                 }
-
-                                 // Also check drawings?
-                                 const d = drawings.find(dk => dk.id === id);
-                                 if (d) {
-                                     addDrawing({ ...d, id: crypto.randomUUID() });
                                  }
                              });
                          }
