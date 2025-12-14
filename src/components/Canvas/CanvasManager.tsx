@@ -188,6 +188,50 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Helper to clamp position to keep map in view
+  const clampPosition = useCallback((newPos: { x: number, y: number }, newScale: number) => {
+      // If no map, allow free movement? Or constrain to some large box?
+      // Let's constrain to a 10000x10000 box if no map.
+      // If map exists, constrain so at least a bit of the map is visible?
+      // Or constrain so the center of the view cannot go too far from map?
+
+      const bounds = map ? {
+          minX: map.x,
+          maxX: map.x + (map.width * map.scale),
+          minY: map.y,
+          maxY: map.y + (map.height * map.scale)
+      } : { minX: -5000, maxX: 5000, minY: -5000, maxY: 5000 };
+
+      // We are constraining the POSITION of the stage (which acts as the camera offset).
+      // Stage X moves content right. Positive Stage X = Content Shift Right.
+      // Viewport X = -StageX / Scale.
+      // We want Clamp(ViewportX, BoundsMin - Buffer, BoundsMax + Buffer).
+
+      // Let's constrain the center of the viewport.
+      // Viewport Center X = (-newPos.x + size.width/2) / newScale
+      // We want ViewportCenter to be within MapBounds (expanded).
+
+      const viewportCenterX = (-newPos.x + size.width/2) / newScale;
+      const viewportCenterY = (-newPos.y + size.height/2) / newScale;
+
+      // Allow 1000px padding
+      const allowedMinX = bounds.minX - 1000;
+      const allowedMaxX = bounds.maxX + 1000;
+      const allowedMinY = bounds.minY - 1000;
+      const allowedMaxY = bounds.maxY + 1000;
+
+      // Hard clamp center
+      const clampedCenterX = Math.max(allowedMinX, Math.min(allowedMaxX, viewportCenterX));
+      const clampedCenterY = Math.max(allowedMinY, Math.min(allowedMaxY, viewportCenterY));
+
+      // Convert back to Stage Position
+      // newPos.x = - (Center * Scale - ScreenW/2)
+      return {
+          x: -(clampedCenterX * newScale - size.width/2),
+          y: -(clampedCenterY * newScale - size.height/2)
+      };
+  }, [map, size.width, size.height]);
+
   // Reusable zoom function
   const performZoom = useCallback((newScale: number, centerX: number, centerY: number, currentScale: number, currentPos: { x: number, y: number }) => {
       // Apply min/max constraints
@@ -523,8 +567,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
              // 1. Calculate scale factor: gridSize / drawn box size
              // 2. Apply scale to map
              // 3. Shift map position so the scaled box aligns with the nearest grid line
+             // Using average of dimensions handles non-square rectangles reasonably.
+             // This works best when users draw approximately square boxes around grid cells.
              const avgDim = (calibrationRect.width + calibrationRect.height) / 2;
-             const scaleFactor = gridSize / avgDim; // Use average of width and height for scale factor
+             const scaleFactor = gridSize / avgDim;
              const newScale = map.scale * scaleFactor;
 
              // Calculate position adjustment after rescaling
@@ -609,50 +655,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       width: size.width / scale,
       height: size.height / scale
   };
-
-  // Helper to clamp position to keep map in view
-  const clampPosition = useCallback((newPos: { x: number, y: number }, newScale: number) => {
-      // If no map, allow free movement? Or constrain to some large box?
-      // Let's constrain to a 10000x10000 box if no map.
-      // If map exists, constrain so at least a bit of the map is visible?
-      // Or constrain so the center of the view cannot go too far from map?
-
-      const bounds = map ? {
-          minX: map.x,
-          maxX: map.x + (map.width * map.scale),
-          minY: map.y,
-          maxY: map.y + (map.height * map.scale)
-      } : { minX: -5000, maxX: 5000, minY: -5000, maxY: 5000 };
-
-      // We are constraining the POSITION of the stage (which acts as the camera offset).
-      // Stage X moves content right. Positive Stage X = Content Shift Right.
-      // Viewport X = -StageX / Scale.
-      // We want Clamp(ViewportX, BoundsMin - Buffer, BoundsMax + Buffer).
-
-      // Let's constrain the center of the viewport.
-      // Viewport Center X = (-newPos.x + size.width/2) / newScale
-      // We want ViewportCenter to be within MapBounds (expanded).
-
-      const viewportCenterX = (-newPos.x + size.width/2) / newScale;
-      const viewportCenterY = (-newPos.y + size.height/2) / newScale;
-
-      // Allow 1000px padding
-      const allowedMinX = bounds.minX - 1000;
-      const allowedMaxX = bounds.maxX + 1000;
-      const allowedMinY = bounds.minY - 1000;
-      const allowedMaxY = bounds.maxY + 1000;
-
-      // Hard clamp center
-      const clampedCenterX = Math.max(allowedMinX, Math.min(allowedMaxX, viewportCenterX));
-      const clampedCenterY = Math.max(allowedMinY, Math.min(allowedMaxY, viewportCenterY));
-
-      // Convert back to Stage Position
-      // newPos.x = - (Center * Scale - ScreenW/2)
-      return {
-          x: -(clampedCenterX * newScale - size.width/2),
-          y: -(clampedCenterY * newScale - size.height/2)
-      };
-  }, [map, size.width, size.height]);
 
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
