@@ -533,19 +533,19 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     height={gridSize * token.scale}
                     draggable={tool === 'select'}
                     onSelect={(e) => {
-                        if (tool === 'select') {
-                            e.evt.stopPropagation();
-                            if (e.evt.shiftKey) {
-                                // Toggle selection: deselect if already selected, select if not
-                                if (selectedIds.includes(token.id)) {
-                                    setSelectedIds(selectedIds.filter(id => id !== token.id));
-                                } else {
-                                    setSelectedIds([...selectedIds, token.id]);
-                                }
-                            } else {
-                                setSelectedIds([token.id]);
-                            }
-                        }
+                         if (tool === 'select') {
+                             e.evt.stopPropagation();
+                             if (e.evt.shiftKey) {
+                                 // Toggle selection: deselect if already selected, select if not
+                                 if (selectedIds.includes(token.id)) {
+                                     setSelectedIds(selectedIds.filter(id => id !== token.id));
+                                 } else {
+                                     setSelectedIds([...selectedIds, token.id]);
+                                 }
+                             } else {
+                                 setSelectedIds([token.id]);
+                             }
+                         }
                     }}
                     onDragEnd={(x, y) => {
                         updateTokenPosition(token.id, x, y);
