@@ -1,13 +1,18 @@
 import Konva from 'konva';
 import { Stage, Layer, Image as KonvaImage, Line, Rect, Transformer } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import useImage from 'use-image';
 import { processImage } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
 import { useGameStore } from '../../store/gameStore';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
+
+// Zoom constants
+const MIN_SCALE = 0.1;
+const MAX_SCALE = 5;
+const ZOOM_SCALE_BY = 1.1;
 
 interface URLImageProps {
   src: string;
@@ -91,13 +96,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Zoom constants
-  const MIN_SCALE = 0.1;
-  const MAX_SCALE = 5;
-  const ZOOM_SCALE_BY = 1.1;
-
   // Reusable zoom function
-  const performZoom = (newScale: number, centerX: number, centerY: number, currentScale: number, currentPos: { x: number, y: number }) => {
+  const performZoom = useCallback((newScale: number, centerX: number, centerY: number, currentScale: number, currentPos: { x: number, y: number }) => {
       // Apply min/max constraints
       const constrainedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
 
@@ -113,10 +113,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
       setScale(constrainedScale);
       setPosition(newPos);
-  };
+  }, []);
 
   // Keyboard zoom (centered on viewport)
-  const handleKeyboardZoom = (zoomIn: boolean) => {
+  const handleKeyboardZoom = useCallback((zoomIn: boolean) => {
       if (!containerRef.current) return;
       
       const centerX = size.width / 2;
@@ -124,7 +124,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       const newScale = zoomIn ? scale * ZOOM_SCALE_BY : scale / ZOOM_SCALE_BY;
       
       performZoom(newScale, centerX, centerY, scale, position);
-  };
+  }, [scale, position, size.width, size.height, performZoom]);
 
   useEffect(() => {
     const isEditableElement = (el: EventTarget | null): boolean => {
