@@ -1,23 +1,101 @@
 import { Stage, Layer, Image as KonvaImage, Line } from 'react-konva';
 import { useRef, useEffect, useState } from 'react';
 import useImage from 'use-image';
+import Konva from 'konva';
 import { processImage } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
-import { useGameStore } from '../../store/gameStore';
+import { useGameStore, Token } from '../../store/gameStore';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
 
-const URLImage = ({ src, x, y, width, height }: any) => {
-  const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
+interface URLImageProps {
+  token: Token;
+  width: number;
+  height: number;
+  onDuplicate: (token: Token, newX: number, newY: number) => void;
+  onMove: (id: string, newX: number, newY: number) => void;
+}
+
+const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) => {
+  const safeSrc = token.src.startsWith('file:') ? token.src.replace('file:', 'media:') : token.src;
   const [img] = useImage(safeSrc);
+  const [isDuplicateMode, setIsDuplicateMode] = useState(false);
+  const originalPos = useRef({ x: token.x, y: token.y });
+
+  const handleDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
+    originalPos.current = { x: token.x, y: token.y };
+    const altPressed = e.evt.altKey;
+    setIsDuplicateMode(altPressed);
+    
+    // Update cursor
+    if (altPressed) {
+      const container = e.target.getStage()?.container();
+      if (container) {
+        container.style.cursor = 'copy';
+      }
+    }
+  };
+
+  const handleDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const altPressed = e.evt.altKey;
+    const wasDuplicateMode = isDuplicateMode;
+    
+    if (altPressed !== wasDuplicateMode) {
+      setIsDuplicateMode(altPressed);
+      
+      // Update cursor
+      const container = e.target.getStage()?.container();
+      if (container) {
+        container.style.cursor = altPressed ? 'copy' : 'grabbing';
+      }
+
+      // If switching to duplicate mode, reset position to original
+      if (altPressed) {
+        e.target.position({
+          x: originalPos.current.x,
+          y: originalPos.current.y,
+        });
+      }
+    }
+  };
+
+  const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const newPos = e.target.position();
+    const altPressed = e.evt.altKey;
+
+    // Reset cursor
+    const container = e.target.getStage()?.container();
+    if (container) {
+      container.style.cursor = 'default';
+    }
+
+    if (altPressed) {
+      // Duplicate mode - create new token at new position
+      onDuplicate(token, newPos.x, newPos.y);
+      // Reset dragged token to original position
+      e.target.position({
+        x: originalPos.current.x,
+        y: originalPos.current.y,
+      });
+    } else {
+      // Move mode - update token position
+      onMove(token.id, newPos.x, newPos.y);
+    }
+    
+    setIsDuplicateMode(false);
+  };
+
   return (
     <KonvaImage
       image={img}
-      x={x}
-      y={y}
+      x={token.x}
+      y={token.y}
       width={width}
       height={height}
       draggable
+      onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
     />
   );
 };
@@ -29,7 +107,7 @@ interface CanvasManagerProps {
 const CanvasManager = ({ tool = 'select' }: CanvasManagerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-  const { tokens, drawings, gridSize, addToken, addDrawing } = useGameStore();
+  const { tokens, drawings, gridSize, addToken, addDrawing, updateTokenPosition } = useGameStore();
 
   const isDrawing = useRef(false);
   const currentLine = useRef<any>(null); // Temp line points
@@ -37,6 +115,22 @@ const CanvasManager = ({ tool = 'select' }: CanvasManagerProps) => {
 
   // Cropping State
   const [pendingCrop, setPendingCrop] = useState<{ src: string, x: number, y: number } | null>(null);
+
+  // Handler for duplicating a token
+  const handleTokenDuplicate = (originalToken: Token, newX: number, newY: number) => {
+    const newToken: Token = {
+      ...originalToken,
+      id: crypto.randomUUID(),
+      x: newX,
+      y: newY,
+    };
+    addToken(newToken);
+  };
+
+  // Handler for moving a token
+  const handleTokenMove = (id: string, newX: number, newY: number) => {
+    updateTokenPosition(id, newX, newY);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -228,11 +322,11 @@ const CanvasManager = ({ tool = 'select' }: CanvasManagerProps) => {
             {tokens.map((token) => (
                 <URLImage
                     key={token.id}
-                    src={token.src}
-                    x={token.x}
-                    y={token.y}
+                    token={token}
                     width={gridSize * token.scale}
                     height={gridSize * token.scale}
+                    onDuplicate={handleTokenDuplicate}
+                    onMove={handleTokenMove}
                 />
             ))}
         </Layer>
