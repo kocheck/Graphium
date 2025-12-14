@@ -39,9 +39,10 @@ interface URLImageProps {
   id: string;
   onSelect: (e: KonvaEventObject<MouseEvent>) => void;
   onDragEnd: (x: number, y: number) => void;
+  draggable: boolean;
 }
 
-const URLImage = ({ src, x, y, width, height, id, onSelect, onDragEnd }: URLImageProps) => {
+const URLImage = ({ src, x, y, width, height, id, onSelect, onDragEnd, draggable }: URLImageProps) => {
   const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
   const [img] = useImage(safeSrc);
 
@@ -54,7 +55,7 @@ const URLImage = ({ src, x, y, width, height, id, onSelect, onDragEnd }: URLImag
       y={y}
       width={width}
       height={height}
-      draggable
+      draggable={draggable}
       onClick={onSelect}
       onTap={onSelect}
       onDragEnd={(e) => {
@@ -526,6 +527,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     y={token.y}
                     width={gridSize * token.scale}
                     height={gridSize * token.scale}
+                    draggable={tool === 'select'}
                     onSelect={(e) => {
                          if (tool === 'select') {
                              if (e.evt.shiftKey) {
