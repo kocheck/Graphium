@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol, net } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, shell } from 'electron'
+import os from 'node:os'
 import JSZip from 'jszip'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -9,6 +10,70 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 protocol.registerSchemesAsPrivileged([
   { scheme: 'media', privileges: { secure: true, supportFetchAPI: true, bypassCSP: true } }
 ])
+
+// ==================== Main Process Error Handling ====================
+
+/**
+ * Sanitizes main process errors by removing the username from paths
+ */
+function sanitizeMainProcessError(error: Error): { name: string; message: string; stack: string } {
+  const username = os.userInfo().username
+  const escapedUsername = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+  // Patterns to sanitize username from paths
+  const unixPathPattern = new RegExp(`(/(?:Users|home)/)${escapedUsername}(/|$)`, 'gi')
+  const windowsPathPattern = new RegExp(
+    `([A-Za-z]:[/\\\\](?:Users|Documents and Settings)[/\\\\])${escapedUsername}([/\\\\]|$)`,
+    'gi'
+  )
+  const genericPattern = new RegExp(`([\\\\/])${escapedUsername}([\\\\/])`, 'gi')
+
+  const sanitize = (text: string): string => {
+    return text
+      .replace(unixPathPattern, '$1<USER>$2')
+      .replace(windowsPathPattern, '$1<USER>$2')
+      .replace(genericPattern, '$1<USER>$2')
+  }
+
+  return {
+    name: error.name || 'Error',
+    message: sanitize(error.message || 'Unknown error'),
+    stack: sanitize(error.stack || ''),
+  }
+}
+
+/**
+ * Sends sanitized error to renderer process
+ */
+function sendErrorToRenderer(error: Error, source: string): void {
+  const sanitizedError = sanitizeMainProcessError(error)
+  const allWindows = BrowserWindow.getAllWindows()
+
+  allWindows.forEach((win) => {
+    if (!win.isDestroyed()) {
+      win.webContents.send('main-process-error', {
+        ...sanitizedError,
+        source,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  })
+}
+
+// Handle uncaught exceptions in main process
+process.on('uncaughtException', (error) => {
+  console.error('Main process uncaught exception:', error)
+  sendErrorToRenderer(error, 'main-uncaught')
+})
+
+// Handle unhandled promise rejections in main process
+process.on('unhandledRejection', (reason) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason))
+  console.error('Main process unhandled rejection:', error)
+  sendErrorToRenderer(error, 'main-promise')
+})
+
+// ==================================================================
 
 // The built directory structure
 //
@@ -98,6 +163,40 @@ app.whenReady().then(() => {
 
   createMainWindow()
   ipcMain.on('create-world-window', createWorldWindow)
+
+  // Error reporting IPC handlers
+  ipcMain.handle('get-username', () => {
+    return os.userInfo().username
+  })
+
+  ipcMain.handle('open-external', async (_event, url: string) => {
+    // Only allow mailto: and https: URLs for security
+    if (url.startsWith('mailto:') || url.startsWith('https:')) {
+      await shell.openExternal(url)
+      return true
+    }
+    return false
+  })
+
+  ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
+    try {
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Save Error Report',
+        defaultPath: `hyle-error-report-${Date.now()}.txt`,
+        filters: [{ name: 'Text Files', extensions: ['txt'] }],
+      })
+
+      if (canceled || !filePath) {
+        return { success: false, reason: 'canceled' }
+      }
+
+      await fs.writeFile(filePath, reportContent, 'utf-8')
+      return { success: true, filePath }
+    } catch (error) {
+      console.error('Failed to save error report:', error)
+      return { success: false, reason: 'write-failed' }
+    }
+  })
   ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
     if (worldWindow && !worldWindow.isDestroyed()) {
         worldWindow.webContents.send('SYNC_WORLD_STATE', state)

@@ -22,3 +22,22 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   // You can expose other APTs you need here.
   // ...
 })
+
+// --------- Error Reporting API ---------
+contextBridge.exposeInMainWorld('errorReporting', {
+  /**
+   * Get the system username for PII sanitization
+   */
+  getUsername: (): Promise<string> => ipcRenderer.invoke('get-username'),
+
+  /**
+   * Open an external URL (mailto: or https:) in the default application
+   */
+  openExternal: (url: string): Promise<boolean> => ipcRenderer.invoke('open-external', url),
+
+  /**
+   * Save error report to a file using native save dialog
+   */
+  saveToFile: (reportContent: string): Promise<{ success: boolean; filePath?: string; reason?: string }> =>
+    ipcRenderer.invoke('save-error-report', reportContent),
+})
