@@ -513,6 +513,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     }
                     onClick={(e) => {
                         if (tool === 'select') {
+                            e.evt.stopPropagation();
                             if (e.evt.shiftKey) {
                                 // Toggle selection: deselect if already selected, select if not
                                 if (selectedIds.includes(line.id)) {
@@ -541,6 +542,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     draggable={tool === 'select'}
                     onSelect={(e) => {
                          if (tool === 'select') {
+                             e.evt.stopPropagation();
                              if (e.evt.shiftKey) {
                                  // Toggle selection: deselect if already selected, select if not
                                  if (selectedIds.includes(token.id)) {
