@@ -505,7 +505,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     }
                     onClick={(e) => {
                         if (tool === 'select') {
-                            e.cancelBubble = true;
+                            e.evt.stopPropagation();
                             if (e.evt.shiftKey) {
                                 if (!selectedIds.includes(line.id)) {
                                     setSelectedIds([...selectedIds, line.id]);
@@ -530,7 +530,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     height={gridSize * token.scale}
                     onSelect={(e) => {
                          if (tool === 'select') {
-                             e.cancelBubble = true;
+                             e.evt.stopPropagation();
                              if (e.evt.shiftKey) {
                                  if (!selectedIds.includes(token.id)) {
                                      setSelectedIds([...selectedIds, token.id]);
