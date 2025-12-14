@@ -77,12 +77,6 @@ export const useGameStore = create<GameState>((set) => ({
   removeDrawings: (ids) => set((state) => ({ drawings: state.drawings.filter(d => !ids.includes(d.id)) })),
   updateDrawingTransform: (id, x, y, scale) => set((state) => ({
     drawings: state.drawings.map((d) => d.id === id ? { ...d, x, y, scale } : d)
-    // Drawing interface doesn't have x, y. It has points[].
-    // But Konva Group/Line can be transformed.
-    // If we transform a Line, it gets x, y (offset) and scale.
-    // So we should add x, y to Drawing interface too, or handle points?
-    // The Transformer usually changes node.x/y/scale.
-    // So we need x, y, scale in Drawing.
   })),
   setGridSize: (size) => set({ gridSize: size }),
   setTokens: (tokens) => set({ tokens }),
