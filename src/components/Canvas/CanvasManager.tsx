@@ -507,7 +507,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                         if (tool === 'select') {
                             e.evt.stopPropagation();
                             if (e.evt.shiftKey) {
-                                if (!selectedIds.includes(line.id)) {
+                                // Toggle selection: deselect if already selected, select if not
+                                if (selectedIds.includes(line.id)) {
+                                    setSelectedIds(selectedIds.filter(id => id !== line.id));
+                                } else {
                                     setSelectedIds([...selectedIds, line.id]);
                                 }
                             } else {
@@ -528,11 +531,15 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     y={token.y}
                     width={gridSize * token.scale}
                     height={gridSize * token.scale}
+                    draggable={tool === 'select'}
                     onSelect={(e) => {
                         if (tool === 'select') {
                             e.evt.stopPropagation();
                             if (e.evt.shiftKey) {
-                                if (!selectedIds.includes(token.id)) {
+                                // Toggle selection: deselect if already selected, select if not
+                                if (selectedIds.includes(token.id)) {
+                                    setSelectedIds(selectedIds.filter(id => id !== token.id));
+                                } else {
                                     setSelectedIds([...selectedIds, token.id]);
                                 }
                             } else {
