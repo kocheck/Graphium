@@ -39,9 +39,10 @@ interface URLImageProps {
   id: string;
   onSelect: (e: KonvaEventObject<MouseEvent>) => void;
   onDragEnd: (x: number, y: number) => void;
+  draggable: boolean;
 }
 
-const URLImage = ({ src, x, y, width, height, id, onSelect, onDragEnd }: URLImageProps) => {
+const URLImage = ({ src, x, y, width, height, id, onSelect, onDragEnd, draggable }: URLImageProps) => {
   const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
   const [img] = useImage(safeSrc);
 
@@ -54,7 +55,7 @@ const URLImage = ({ src, x, y, width, height, id, onSelect, onDragEnd }: URLImag
       y={y}
       width={width}
       height={height}
-      draggable
+      draggable={draggable}
       onClick={onSelect}
       onTap={onSelect}
       onDragEnd={(e) => {
@@ -89,6 +90,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
   // Navigation State
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   
@@ -446,7 +448,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
             transformerRef.current.getLayer().batchDraw();
         }
     }
-  }, [selectedIds, tokens, drawings]); // Update when selection or items change
+  }, [selectedIds]); // Only update when selection changes; nodes are automatically updated by React Konva
 
   return (
     <div
@@ -479,12 +481,18 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
         scaleY={scale}
         x={position.x}
         y={position.y}
+        onDragStart={(e) => {
+            if (e.target === e.target.getStage()) {
+                setIsDragging(true);
+            }
+        }}
         onDragEnd={(e) => {
             if (e.target === e.target.getStage()) {
                 setPosition({ x: e.target.x(), y: e.target.y() });
+                setIsDragging(false);
             }
         }}
-        style={{ cursor: isSpacePressed ? 'grab' : (tool === 'select' ? 'default' : 'crosshair') }}
+        style={{ cursor: (isSpacePressed && isDragging) ? 'grabbing' : (isSpacePressed ? 'grab' : (tool === 'select' ? 'default' : 'crosshair')) }}
       >
         <Layer>
             <GridOverlay width={size.width} height={size.height} gridSize={gridSize} />
