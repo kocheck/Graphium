@@ -43,7 +43,10 @@ const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) 
       setCursor(e.target.getStage(), altPressed ? 'copy' : 'grabbing');
     } catch (error) {
       console.error('Error in handleDragStart:', error);
-      setCursor(e.target.getStage(), 'default');
+      // Safely reset cursor with null check
+      if (e.target) {
+        setCursor(e.target.getStage(), 'default');
+      }
     }
   };
 
@@ -55,7 +58,10 @@ const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) 
       setCursor(e.target.getStage(), altPressed ? 'copy' : 'grabbing');
     } catch (error) {
       console.error('Error in handleDragMove:', error);
-      setCursor(e.target.getStage(), 'default');
+      // Safely reset cursor with null check
+      if (e.target) {
+        setCursor(e.target.getStage(), 'default');
+      }
     }
   };
 
@@ -81,7 +87,10 @@ const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) 
       }
     } catch (error) {
       console.error('Error in handleDragEnd:', error);
-      setCursor(e.target.getStage(), 'default');
+      // Safely reset cursor with null check
+      if (e.target) {
+        setCursor(e.target.getStage(), 'default');
+      }
     }
   };
 
