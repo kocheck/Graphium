@@ -448,7 +448,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
             transformerRef.current.getLayer().batchDraw();
         }
     }
-  }, [selectedIds, tokens, drawings]); // Update when selection or items change
+  }, [selectedIds]); // Only update when selection changes; nodes are automatically updated by React Konva
 
   return (
     <div
