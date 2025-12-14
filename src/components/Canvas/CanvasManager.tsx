@@ -15,12 +15,14 @@ interface URLImageProps {
   height: number;
   onDuplicate: (token: Token, newX: number, newY: number) => void;
   onMove: (id: string, newX: number, newY: number) => void;
+  onAnnounce?: (message: string) => void;
 }
 
-const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) => {
+const URLImage = ({ token, width, height, onDuplicate, onMove, onAnnounce }: URLImageProps) => {
   const safeSrc = token.src.startsWith('file:') ? token.src.replace('file:', 'media:') : token.src;
   const [img] = useImage(safeSrc);
   const originalPos = useRef({ x: 0, y: 0 });
+  const lastModeRef = useRef<'move' | 'copy' | null>(null);
 
   // Helper function to safely update cursor
   const setCursor = (stage: Konva.Stage | null | undefined, cursor: string) => {
@@ -38,9 +40,16 @@ const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) 
     try {
       originalPos.current = { x: token.x, y: token.y };
       const altPressed = e.evt.altKey;
+      const mode = altPressed ? 'copy' : 'move';
+      lastModeRef.current = mode;
       
       // Update cursor based on mode
       setCursor(e.target.getStage(), altPressed ? 'copy' : 'grabbing');
+      
+      // Announce mode for screen readers
+      if (onAnnounce) {
+        onAnnounce(altPressed ? 'Duplicate mode active' : 'Move mode active');
+      }
     } catch (error) {
       console.error('Error in handleDragStart:', error);
       // Safely reset cursor with null check
@@ -53,9 +62,16 @@ const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) 
   const handleDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
     try {
       const altPressed = e.evt.altKey;
+      const mode = altPressed ? 'copy' : 'move';
       
       // Update cursor dynamically as alt key state changes
       setCursor(e.target.getStage(), altPressed ? 'copy' : 'grabbing');
+      
+      // Announce mode change if it switched during drag
+      if (lastModeRef.current !== mode && onAnnounce) {
+        lastModeRef.current = mode;
+        onAnnounce(altPressed ? 'Duplicate mode active' : 'Move mode active');
+      }
     } catch (error) {
       console.error('Error in handleDragMove:', error);
       // Safely reset cursor with null check
@@ -81,10 +97,21 @@ const URLImage = ({ token, width, height, onDuplicate, onMove }: URLImageProps) 
           x: originalPos.current.x,
           y: originalPos.current.y,
         });
+        // Announce result
+        if (onAnnounce) {
+          onAnnounce('Token duplicated');
+        }
       } else {
         // Move mode - update token position
         onMove(token.id, newPos.x, newPos.y);
+        // Announce result
+        if (onAnnounce) {
+          onAnnounce('Token moved');
+        }
       }
+      
+      // Reset mode tracking
+      lastModeRef.current = null;
     } catch (error) {
       console.error('Error in handleDragEnd:', error);
       // Safely reset cursor with null check
@@ -124,6 +151,16 @@ const CanvasManager = ({ tool = 'select' }: CanvasManagerProps) => {
 
   // Cropping State
   const [pendingCrop, setPendingCrop] = useState<{ src: string, x: number, y: number } | null>(null);
+  
+  // Accessibility: ARIA live region for screen reader announcements
+  const [ariaAnnouncement, setAriaAnnouncement] = useState<string>('');
+
+  // Handler to announce messages to screen readers
+  const handleAnnounce = (message: string) => {
+    setAriaAnnouncement(message);
+    // Clear announcement after a short delay to allow for new announcements
+    setTimeout(() => setAriaAnnouncement(''), 1000);
+  };
 
   // Handler for duplicating a token
   const handleTokenDuplicate = (originalToken: Token, newX: number, newY: number) => {
@@ -286,6 +323,16 @@ const CanvasManager = ({ tool = 'select' }: CanvasManagerProps) => {
         onDragOver={handleDragOver}
         onDrop={handleDrop}
     >
+      {/* ARIA live region for screen reader announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {ariaAnnouncement}
+      </div>
+
       {pendingCrop && (
         <ImageCropper
             imageSrc={pendingCrop.src}
@@ -344,6 +391,7 @@ const CanvasManager = ({ tool = 'select' }: CanvasManagerProps) => {
                         height={gridSize * token.scale}
                         onDuplicate={handleTokenDuplicate}
                         onMove={handleTokenMove}
+                        onAnnounce={handleAnnounce}
                     />
                 </TokenErrorBoundary>
             ))}
