@@ -21,13 +21,28 @@ const Sidebar = () => {
 
         try {
             const src = await processImage(file, 'MAP');
-            setMap({
-                src,
-                x: 0,
-                y: 0,
-                scale: 1
-            });
-            setIsCalibrating(true);
+
+             // Create a temporary image to get dimensions using a safe Object URL
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
+            img.src = objectUrl;
+            img.onload = () => {
+                 console.log("Map Image Loaded", { width: img.width, height: img.height, src });
+                 setMap({
+                    src, // Keep the processed path for the store
+                    x: 0,
+                    y: 0,
+                    width: img.width,
+                    height: img.height,
+                    scale: 1
+                });
+                setIsCalibrating(true);
+                URL.revokeObjectURL(objectUrl);
+            };
+            img.onerror = (e) => {
+                console.error("Map Image Failed to Load for Dimensions", e);
+                URL.revokeObjectURL(objectUrl);
+            }
         } catch (err) {
             console.error("Failed to upload map", err);
         }

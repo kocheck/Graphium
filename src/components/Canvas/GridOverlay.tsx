@@ -2,8 +2,7 @@ import React from 'react';
 import { Group, Line, Circle } from 'react-konva';
 
 interface GridOverlayProps {
-  width: number;
-  height: number;
+  visibleBounds: { x: number; y: number; width: number; height: number };
   gridSize: number;
   stroke?: string;
   opacity?: number;
@@ -11,8 +10,7 @@ interface GridOverlayProps {
 }
 
 const GridOverlay: React.FC<GridOverlayProps> = ({
-  width,
-  height,
+  visibleBounds,
   gridSize,
   stroke = '#222',
   opacity = 0.5,
@@ -21,14 +19,24 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
   if (type === 'HIDDEN') return null;
 
   const elements = [];
+  const { x, y, width, height } = visibleBounds || { x: 0, y: 0, width: 0, height: 0 };
+
+  // Calculate start and end grid numbers based on visible bounds
+  // We want to draw lines covering the visible area.
+  // Start X = first multiple of gridSize <= x
+  const startX = Math.floor(x / gridSize) * gridSize;
+  const endX = Math.ceil((x + width) / gridSize) * gridSize;
+
+  const startY = Math.floor(y / gridSize) * gridSize;
+  const endY = Math.ceil((y + height) / gridSize) * gridSize;
 
   if (type === 'LINES') {
     // Vertical lines
-    for (let x = 0; x <= width; x += gridSize) {
+    for (let ix = startX; ix <= endX; ix += gridSize) {
       elements.push(
         <Line
-          key={`v-${x}`}
-          points={[x, 0, x, height]}
+          key={`v-${ix}`}
+          points={[ix, y, ix, y + height]} // Draw from top of view to bottom
           stroke={stroke}
           strokeWidth={1}
           opacity={opacity}
@@ -37,11 +45,11 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
     }
 
     // Horizontal lines
-    for (let y = 0; y <= height; y += gridSize) {
+    for (let iy = startY; iy <= endY; iy += gridSize) {
       elements.push(
         <Line
-          key={`h-${y}`}
-          points={[0, y, width, y]}
+          key={`h-${iy}`}
+          points={[x, iy, x + width, iy]}
           stroke={stroke}
           strokeWidth={1}
           opacity={opacity}
@@ -50,13 +58,13 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
     }
   } else if (type === 'DOTS') {
     // Render dots at intersections
-    for (let x = 0; x <= width; x += gridSize) {
-      for (let y = 0; y <= height; y += gridSize) {
+    for (let ix = startX; ix <= endX; ix += gridSize) {
+      for (let iy = startY; iy <= endY; iy += gridSize) {
         elements.push(
           <Circle
-            key={`dot-${x}-${y}`}
-            x={x}
-            y={y}
+            key={`dot-${ix}-${iy}`}
+            x={ix}
+            y={iy}
             radius={2}
             fill={stroke}
             opacity={opacity}

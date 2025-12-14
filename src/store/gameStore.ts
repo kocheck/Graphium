@@ -23,6 +23,8 @@ export interface MapConfig {
   src: string;
   x: number;
   y: number;
+  width: number;
+  height: number;
   scale: number;
 }
 
@@ -35,9 +37,13 @@ export interface GameState {
   gridType: GridType;
   map: MapConfig | null;
   addToken: (token: Token) => void;
+  removeToken: (id: string) => void; // Add default remove
+  removeTokens: (ids: string[]) => void; // Batch remove
   updateTokenPosition: (id: string, x: number, y: number) => void;
   updateTokenTransform: (id: string, x: number, y: number, scale: number) => void;
   addDrawing: (drawing: Drawing) => void;
+  removeDrawing: (id: string) => void; // Add default remove
+  removeDrawings: (ids: string[]) => void; // Batch remove
   updateDrawingTransform: (id: string, x: number, y: number, scale: number) => void;
   setGridSize: (size: number) => void;
   setState: (state: GameState) => void; // Generic set state
@@ -57,15 +63,20 @@ export const useGameStore = create<GameState>((set) => ({
   gridType: 'LINES',
   map: null,
   addToken: (token) => set((state) => ({ tokens: [...state.tokens, token] })),
+  removeToken: (id) => set((state) => ({ tokens: state.tokens.filter(t => t.id !== id) })),
+  removeTokens: (ids) => set((state) => ({ tokens: state.tokens.filter(t => !ids.includes(t.id)) })),
   updateTokenPosition: (id, x, y) => set((state) => ({
     tokens: state.tokens.map((t) => t.id === id ? { ...t, x, y } : t)
   })),
   updateTokenTransform: (id, x, y, scale) => set((state) => ({
     tokens: state.tokens.map((t) => t.id === id ? { ...t, x, y, scale } : t)
   })),
+
   addDrawing: (drawing) => set((state) => ({ drawings: [...state.drawings, drawing] })),
+  removeDrawing: (id) => set((state) => ({ drawings: state.drawings.filter(d => d.id !== id) })),
+  removeDrawings: (ids) => set((state) => ({ drawings: state.drawings.filter(d => !ids.includes(d.id)) })),
   updateDrawingTransform: (id, x, y, scale) => set((state) => ({
-    drawings: state.drawings.map((d) => d.id === id ? { ...d, x, y, scale } : d) // Wait, Drawing points are absolute?
+    drawings: state.drawings.map((d) => d.id === id ? { ...d, x, y, scale } : d)
     // Drawing interface doesn't have x, y. It has points[].
     // But Konva Group/Line can be transformed.
     // If we transform a Line, it gets x, y (offset) and scale.

@@ -19,7 +19,19 @@ Hyle is a lightweight, local-first desktop application for Dungeon Masters. It r
   - **Cropping UI**: Built-in tool to crop and zoom tokens before importing.
 - **Drawing Tools**: Simple marker and eraser tools for quick sketches and fog of war.
 - **Persistence**: Save your entire session to a `.hyle` file (a compressed ZIP archive of your scene and assets) and load it back instantly.
-- **Grid System**: Automatic grid snapping for tokens.
+- **Advanced Grid System**:
+  - **Dynamic Snapping**: Tokens snap to grid intersections (2x2) or cell centers (1x1) automatically.
+  - **Infinite Grid**: The grid extends infinitely and only renders what is visible.
+  - **Visual Modes**: Toggle between Lines, Dots, or Hidden grid.
+- **Smart Map Tools**:
+  - **Auto-Center**: Camera automatically focuses on new maps.
+  - **Calibration**: Interactive "Draw to Calibrate" tool to perfectly align your map's grid.
+  - **Viewport Constraints**: Prevents getting lost in the void by keeping the map in view.
+- **Keyboard Shortcuts**:
+  - `V`: Select Tool
+  - `M`: Marker Tool
+  - `E`: Eraser Tool
+  - `I`: Color Picker
 
 ## 🚀 Getting Started
 
