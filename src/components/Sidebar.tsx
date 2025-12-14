@@ -154,4 +154,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-// Force HMR update
