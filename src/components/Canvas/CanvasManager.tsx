@@ -1,5 +1,6 @@
 import Konva from 'konva';
 import { Stage, Layer, Image as KonvaImage, Line, Rect, Transformer } from 'react-konva';
+import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState } from 'react';
 import useImage from 'use-image';
 import { processImage } from '../../utils/AssetProcessor';
@@ -15,7 +16,7 @@ interface URLImageProps {
   width: number;
   height: number;
   id: string;
-  onSelect: (e: any) => void;
+  onSelect: (e: KonvaEventObject<MouseEvent>) => void;
   onDragEnd: (x: number, y: number) => void;
 }
 
@@ -470,17 +471,23 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     const scaleX = node.scaleX();
                     const scaleY = node.scaleY();
                     
-                    // Update token transform in store (use average scale for uniform scaling)
+                    // Update token transform in store
                     if (node.name() === 'token') {
-                        const avgScale = (scaleX + scaleY) / 2;
-                        updateTokenTransform(
-                            node.id(),
-                            node.x(),
-                            node.y(),
-                            avgScale
-                        );
+                        // Use average of scaleX and scaleY for uniform scaling
+                        const transformScale = (scaleX + scaleY) / 2;
+                        const token = tokens.find(t => t.id === node.id());
+                        if (token) {
+                            // Multiply current scale by transformation scale
+                            const newScale = token.scale * transformScale;
+                            updateTokenTransform(
+                                node.id(),
+                                node.x(),
+                                node.y(),
+                                newScale
+                            );
+                        }
                         
-                        // Reset scale after updating store
+                        // Reset scale to 1 since the new scale is stored
                         node.scaleX(1);
                         node.scaleY(1);
                     }
