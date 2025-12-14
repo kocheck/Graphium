@@ -805,6 +805,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     draggable={tool === 'select'}
                     onClick={(e) => {
                         if (tool === 'select') {
+                            e.evt.stopPropagation();
                             if (e.evt.shiftKey) {
                                 if (selectedIds.includes(line.id)) {
                                     setSelectedIds(selectedIds.filter(id => id !== line.id));
@@ -902,6 +903,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     draggable={tool === 'select'}
                     onSelect={(e) => {
                          if (tool === 'select') {
+                             e.evt.stopPropagation();
                              if (e.evt.shiftKey) {
                                  if (selectedIds.includes(token.id)) {
                                      setSelectedIds(selectedIds.filter(id => id !== token.id));
