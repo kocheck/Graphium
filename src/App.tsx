@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import CanvasManager from './components/Canvas/CanvasManager'
 import SyncManager from './components/SyncManager'
 import Sidebar from './components/Sidebar'
@@ -7,6 +7,34 @@ import { useGameStore } from './store/gameStore'
 function App() {
   const [tool, setTool] = useState<'select' | 'marker' | 'eraser'>('select');
   const [color, setColor] = useState('#df4b26');
+  const colorInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'v':
+          setTool('select');
+          break;
+        case 'm':
+          setTool('marker');
+          break;
+        case 'e':
+          setTool('eraser');
+          break;
+        case 'i':
+          colorInputRef.current?.click();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div className="w-full h-screen bg-neutral-900 text-white flex overflow-hidden">
@@ -20,17 +48,18 @@ function App() {
         <div className="fixed top-4 right-4 bg-neutral-800 p-2 rounded shadow flex gap-2 z-50">
            <button
              className={`px-3 py-1 rounded text-sm font-medium ${tool === 'select' ? 'bg-blue-600' : 'bg-neutral-600 hover:bg-neutral-500'}`}
-             onClick={() => setTool('select')}>Select</button>
+             onClick={() => setTool('select')}>Select (V)</button>
            <button
              className={`px-3 py-1 rounded text-sm font-medium ${tool === 'marker' ? 'bg-blue-600' : 'bg-neutral-600 hover:bg-neutral-500'}`}
-             onClick={() => setTool('marker')}>Marker</button>
+             onClick={() => setTool('marker')}>Marker (M)</button>
            <button
              className={`px-3 py-1 rounded text-sm font-medium ${tool === 'eraser' ? 'bg-blue-600' : 'bg-neutral-600 hover:bg-neutral-500'}`}
-             onClick={() => setTool('eraser')}>Eraser</button>
+             onClick={() => setTool('eraser')}>Eraser (E)</button>
            <div className="w-px bg-neutral-600 mx-1"></div>
-           <label className="sr-only">
-             Marker Color
+           <label className="flex items-center gap-2 cursor-pointer">
+             <span className="text-sm font-medium">Color (I)</span>
              <input
+               ref={colorInputRef}
                type="color"
                value={color}
                onChange={(e) => setColor(e.target.value)}

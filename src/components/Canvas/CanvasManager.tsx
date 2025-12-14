@@ -31,6 +31,7 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number, y: num
 };
 
 interface URLImageProps {
+  name?: string;
   src: string;
   x: number;
   y: number;
@@ -44,19 +45,23 @@ interface URLImageProps {
   draggable: boolean;
 }
 
-const URLImage = ({ src, x, y, width, height, scaleX, scaleY, id, onSelect, onDragEnd, draggable }: URLImageProps) => {
+const URLImage = ({ src, x, y, width, height, scaleX, scaleY, id, onSelect, onDragEnd, draggable, name }: URLImageProps) => {
   const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
-  const [img] = useImage(safeSrc);
+  const [img, status] = useImage(safeSrc);
+
+  useEffect(() => {
+      // console.log(`URLImage [${id}] status:`, status);
+  }, [id, status]);
 
   return (
     <KonvaImage
-      name="token"
-      id={id}
+      name={name} // Use passed name, usually 'token' or 'map-image'
+      id={id} // Ensure ID is passed down!
       image={img}
       x={x}
       y={y}
-      width={width || img?.width}
-      height={height || img?.height}
+      width={width}
+      height={height}
       scaleX={scaleX}
       scaleY={scaleY}
       draggable={draggable}
@@ -77,11 +82,27 @@ interface CanvasManagerProps {
 const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-  const {
-    tokens, drawings, map, gridSize, gridType, isCalibrating,
-    addToken, addDrawing, updateTokenPosition, updateTokenTransform,
-    setMap, setIsCalibrating, updateMapScale, updateMapPosition, updateDrawingTransform
-  } = useGameStore();
+
+  // Atomic selectors to prevent infinite re-render loops and avoid useShallow crashes
+  const map = useGameStore(s => s.map);
+  const tokens = useGameStore(s => s.tokens);
+  const drawings = useGameStore(s => s.drawings);
+  const gridSize = useGameStore(s => s.gridSize);
+  const gridType = useGameStore(s => s.gridType);
+  const isCalibrating = useGameStore(s => s.isCalibrating);
+
+  // Actions - these are stable
+  const addToken = useGameStore(s => s.addToken);
+  const addDrawing = useGameStore(s => s.addDrawing);
+  const updateTokenPosition = useGameStore(s => s.updateTokenPosition);
+  const updateTokenTransform = useGameStore(s => s.updateTokenTransform);
+  const removeTokens = useGameStore(s => s.removeTokens);
+  const removeDrawings = useGameStore(s => s.removeDrawings);
+  const setMap = useGameStore(s => s.setMap);
+  const setIsCalibrating = useGameStore(s => s.setIsCalibrating);
+  const updateMapScale = useGameStore(s => s.updateMapScale);
+  const updateMapPosition = useGameStore(s => s.updateMapPosition);
+  const updateDrawingTransform = useGameStore(s => s.updateDrawingTransform);
 
   const isDrawing = useRef(false);
   const currentLine = useRef<any>(null); // Temp line points
@@ -110,6 +131,26 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
 
+  // Handle Delete/Backspace
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+          if (selectedIds.length > 0) {
+              console.log('Deleting selected items:', selectedIds);
+              removeTokens(selectedIds);
+              removeDrawings(selectedIds);
+              setSelectedIds([]); // Clear selection
+          }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIds, removeTokens, removeDrawings]);
+
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current) {
@@ -127,6 +168,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   }, []);
 
   // Reusable zoom function
+  // TODO: Add clamping to zoom
   const performZoom = useCallback((newScale: number, centerX: number, centerY: number, currentScale: number, currentPos: { x: number, y: number }) => {
       // Apply min/max constraints
       const constrainedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
@@ -144,6 +186,21 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       setScale(constrainedScale);
       setPosition(newPos);
   }, []);
+
+  // Auto-center on map load
+  const lastMapSrc = useRef<string | null>(null);
+  useEffect(() => {
+      if (map && map.src !== lastMapSrc.current) {
+          lastMapSrc.current = map.src;
+          const mapCenterX = map.x + (map.width * map.scale) / 2;
+          const mapCenterY = map.y + (map.height * map.scale) / 2;
+          const newX = (size.width / 2) - (mapCenterX * scale);
+          const newY = (size.height / 2) - (mapCenterY * scale);
+          setPosition({ x: newX, y: newY });
+      } else if (!map) {
+          lastMapSrc.current = null;
+      }
+  }, [map, size.width, size.height]); // Exclude scale to avoid re-centering on zoom
 
   // Keyboard zoom (centered on viewport)
   const handleKeyboardZoom = useCallback((zoomIn: boolean) => {
@@ -208,28 +265,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     };
   }, [handleKeyboardZoom]);
 
-  const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
-      e.evt.preventDefault();
-      const stage = e.target.getStage();
-      if (!stage) return;
-
-      const oldScale = stage.scaleX();
-      const pointer = stage.getPointerPosition();
-      if (!pointer) return;
-
-      // Zoom with Ctrl/Cmd + scroll
-      if (e.evt.ctrlKey || e.evt.metaKey) {
-          const newScale = e.evt.deltaY < 0 ? oldScale * ZOOM_SCALE_BY : oldScale / ZOOM_SCALE_BY;
-          performZoom(newScale, pointer.x, pointer.y, oldScale, { x: stage.x(), y: stage.y() });
-      } else {
-          // Pan
-          const newPos = {
-              x: stage.x() - e.evt.deltaX,
-              y: stage.y() - e.evt.deltaY,
-          };
-          setPosition(newPos);
-      }
-  };
+  // handleWheel moved to below to use clamp logic
 
   // Touch event handlers for pinch-to-zoom
   const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
@@ -294,12 +330,21 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
     const stageRect = containerRef.current?.getBoundingClientRect();
     if (!stageRect) return;
-    const rawX = e.clientX - stageRect.left;
-    const rawY = e.clientY - stageRect.top;
+
+    // 1. Get pointer relative to the container DOM element
+    const pointerX = e.clientX - stageRect.left;
+    const pointerY = e.clientY - stageRect.top;
+
+    // 2. Transform into World Coordinates (reverse stage transform)
+    // Stage Transform: Screen = World * Scale + Position
+    // World = (Screen - Position) / Scale
+    const worldX = (pointerX - position.x) / scale;
+    const worldY = (pointerY - position.y) / scale;
 
     // Initial snap for drop (assuming standard 1x1 if unknown, or center on mouse)
     // We don't know image size yet, so we snap top-left to grid line nearby.
-    const { x, y } = snapToGrid(rawX, rawY, gridSize);
+    // Use WORLD coordinates for snapping.
+    const { x, y } = snapToGrid(worldX, worldY, gridSize);
 
     // Check for JSON (Library Item)
     const jsonData = e.dataTransfer.getData('application/json');
@@ -386,7 +431,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
     // Select Tool Logic
     const clickedOnStage = e.target === e.target.getStage();
-    if (clickedOnStage) {
+    const clickedOnMap = e.target.id() === 'map';
+
+    if (clickedOnStage || clickedOnMap) {
         // Start Selection Rect
         const pos = e.target.getStage().getRelativePointerPosition();
         selectionStart.current = { x: pos.x, y: pos.y };
@@ -434,7 +481,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     }
 
     // Selection Rect Update
-    if (selectionRect.isVisible && selectionStart.current) {
+    if (selectionStart.current) {
         const stage = e.target.getStage();
         const pos = stage.getRelativePointerPosition();
         const x = Math.min(pos.x, selectionStart.current.x);
@@ -554,14 +601,116 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
         setSelectionRect({ ...selectionRect, isVisible: false });
 
+        // Transform selection box to Window/Stage-Container coordinates to match getClientRect()
+        // box is in World Coordinates (Layer Local)
+        // We need it in Stage Container Coordinates
+        const scaleX = stage.scaleX();
+        const scaleY = stage.scaleY();
+        const stageX = stage.x();
+        const stageY = stage.y();
+
+        const clientBox = {
+            x: box.x * scaleX + stageX,
+            y: box.y * scaleY + stageY,
+            width: box.width * scaleX,
+            height: box.height * scaleY
+        };
+
         // Find all shapes that intersect with selection rect
         const shapes = stage.find('.token, .drawing');
-        const selected = shapes.filter((shape: any) =>
-            shape.id() && Konva.Util.haveIntersection(box, shape.getClientRect())
-        );
+        const selected = shapes.filter((shape: any) => {
+            if (!shape.id()) return false;
+            // shape.getClientRect() returns rect relative to stage container by default
+            return Konva.Util.haveIntersection(clientBox, shape.getClientRect());
+        });
+
         setSelectedIds(selected.map((n: any) => n.id()));
         selectionStart.current = null;
     }
+  };
+
+  // Calculate visible bounds in CANVAS coordinates (unscaled)
+  // The Stage is transformed by scale and position (-x, -y).
+  // Visible region top-left: -position.x / scale, -position.y / scale
+  // Visible region dimensions: size.width / scale, size.height / scale
+  const visibleBounds = {
+      x: -position.x / scale,
+      y: -position.y / scale,
+      width: size.width / scale,
+      height: size.height / scale
+  };
+
+  // Helper to clamp position to keep map in view
+  const clampPosition = (newPos: { x: number, y: number }, newScale: number) => {
+      // If no map, allow free movement? Or constrain to some large box?
+      // Let's constrain to a 10000x10000 box if no map.
+      // If map exists, constrain so at least a bit of the map is visible?
+      // Or constrain so the center of the view cannot go too far from map?
+
+      const bounds = map ? {
+          minX: map.x,
+          maxX: map.x + (map.width * map.scale),
+          minY: map.y,
+          maxY: map.y + (map.height * map.scale)
+      } : { minX: -5000, maxX: 5000, minY: -5000, maxY: 5000 };
+
+      // We are constraining the POSITION of the stage (which acts as the camera offset).
+      // Stage X moves content right. Positive Stage X = Content Shift Right.
+      // Viewport X = -StageX / Scale.
+      // We want Clamp(ViewportX, BoundsMin - Buffer, BoundsMax + Buffer).
+
+      // Let's constrain the center of the viewport.
+      // Viewport Center X = (-newPos.x + size.width/2) / newScale
+      // We want ViewportCenter to be within MapBounds (expanded).
+
+      const viewportCenterX = (-newPos.x + size.width/2) / newScale;
+      const viewportCenterY = (-newPos.y + size.height/2) / newScale;
+
+      // Allow 1000px padding
+      const allowedMinX = bounds.minX - 1000;
+      const allowedMaxX = bounds.maxX + 1000;
+      const allowedMinY = bounds.minY - 1000;
+      const allowedMaxY = bounds.maxY + 1000;
+
+      // Hard clamp center
+      const clampedCenterX = Math.max(allowedMinX, Math.min(allowedMaxX, viewportCenterX));
+      const clampedCenterY = Math.max(allowedMinY, Math.min(allowedMaxY, viewportCenterY));
+
+      // Convert back to Stage Position
+      // newPos.x = - (Center * Scale - ScreenW/2)
+      return {
+          x: -(clampedCenterX * newScale - size.width/2),
+          y: -(clampedCenterY * newScale - size.height/2)
+      };
+  };
+
+  // ... (Zoom logic needs to use clampPosition too, but for now pan is main issue)
+
+  const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
+      e.evt.preventDefault();
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      const oldScale = stage.scaleX();
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+
+      // Zoom with Ctrl/Cmd + scroll
+      if (e.evt.ctrlKey || e.evt.metaKey) {
+          const newScale = e.evt.deltaY < 0 ? oldScale * ZOOM_SCALE_BY : oldScale / ZOOM_SCALE_BY;
+          // Zoom clamp handles min/max scale.
+          // We SHOULD also clamp position after zoom, but performZoom sets it directly.
+          // Let's wrap performZoom's setPosition?
+          performZoom(newScale, pointer.x, pointer.y, oldScale, { x: stage.x(), y: stage.y() });
+      } else {
+          // Pan
+          const rawNewPos = {
+              x: stage.x() - e.evt.deltaX,
+              y: stage.y() - e.evt.deltaY,
+          };
+          const clampedPos = clampPosition(rawNewPos, scale);
+          setPosition(clampedPos);
+      }
   };
 
   // Update Transformer nodes
@@ -614,38 +763,55 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
         }}
         onDragEnd={(e) => {
             if (e.target === e.target.getStage()) {
-                setPosition({ x: e.target.x(), y: e.target.y() });
+                // When space-drag ends, we should ensure we are clamped.
+                // React-Konva Draggable updates the internal node position, but not our state "position" until we sync it?
+                // Or does it?
+                // We typically need to sync state onDragEnd.
+                const rawPos = { x: e.target.x(), y: e.target.y() };
+                const clamped = clampPosition(rawPos, scale);
+                // If clamped is different, we snap back
+                setPosition(clamped);
                 setIsDragging(false);
             }
         }}
+        onDragMove={(e) => {
+             // Realtime clamping?
+             if (e.target === e.target.getStage()) {
+                // To clamp in realtime, we have to override the position.
+                // It might be jittery.
+                // Let's just let them drag, and snap back on end?
+                // Or soft clamp?
+             }
+        }}
         style={{ cursor: (isSpacePressed && isDragging) ? 'grabbing' : (isSpacePressed ? 'grab' : (tool === 'select' ? 'default' : 'crosshair')) }}
       >
-        <Layer>
-            {/* Map Layer */}
+        {/* Layer 1: Background & Map (Listening False to let internal events pass to Stage for selection) */}
+        <Layer listening={false}>
             {map && (
                 <URLImage
                     key="bg-map"
+                    name="map-image"
                     id="map"
                     src={map.src}
                     x={map.x}
                     y={map.y}
                     scaleX={map.scale}
                     scaleY={map.scale}
-                    draggable={tool === 'select' && isSpacePressed} // Only draggable in pan mode? Or separate mode?
-                    // For now, lock map to prevent accidental moves
+                    draggable={false}
                     onSelect={() => {}}
                     onDragEnd={() => {}}
                 />
             )}
+            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} />
+        </Layer>
 
-            <GridOverlay width={size.width} height={size.height} gridSize={gridSize} type={gridType} />
-
-            {/* Drawings */}
+        {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
+        <Layer>
             {drawings.map((line) => (
                 <Line
                     key={line.id}
                     id={line.id}
-                    name="drawing" // name for selection
+                    name="drawing"
                     points={line.points}
                     stroke={line.color}
                     strokeWidth={line.size}
@@ -657,7 +823,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     onClick={(e) => {
                         if (tool === 'select') {
                             if (e.evt.shiftKey) {
-                                // Toggle selection: deselect if already selected, select if not
                                 if (selectedIds.includes(line.id)) {
                                     setSelectedIds(selectedIds.filter(id => id !== line.id));
                                 } else {
@@ -670,43 +835,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     }}
                 />
             ))}
-
-            {/* Tokens */}
-            {tokens.map((token) => (
-                <URLImage
-                    key={token.id}
-                    id={token.id}
-                    src={token.src}
-                    x={token.x}
-                    y={token.y}
-                    width={gridSize * token.scale}
-                    height={gridSize * token.scale}
-                    draggable={tool === 'select'}
-                    onSelect={(e) => {
-                         if (tool === 'select') {
-                             if (e.evt.shiftKey) {
-                                 // Toggle selection: deselect if already selected, select if not
-                                 if (selectedIds.includes(token.id)) {
-                                     setSelectedIds(selectedIds.filter(id => id !== token.id));
-                                 } else {
-                                     setSelectedIds([...selectedIds, token.id]);
-                                 }
-                             } else {
-                                 setSelectedIds([token.id]);
-                             }
-                         }
-                    }}
-                     onDragEnd={(x, y) => {
-                         // Apply dimension-based snapping
-                         const width = gridSize * token.scale;
-                         const height = gridSize * token.scale;
-                         const snapped = snapToGrid(x, y, gridSize, width, height);
-                         updateTokenPosition(token.id, snapped.x, snapped.y);
-                     }}
-                />
-            ))}
-
-            {/* Temp Line */}
+             {/* Temp Line */}
             {tempLine && (
                 <Line
                     points={tempLine.points}
@@ -719,6 +848,42 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     }
                 />
             )}
+        </Layer>
+
+        {/* Layer 3: Tokens & UI */}
+        <Layer>
+            {tokens.map((token) => (
+                <URLImage
+                    key={token.id}
+                    name="token"
+                    id={token.id}
+                    src={token.src}
+                    x={token.x}
+                    y={token.y}
+                    width={gridSize * token.scale}
+                    height={gridSize * token.scale}
+                    draggable={tool === 'select'}
+                    onSelect={(e) => {
+                         if (tool === 'select') {
+                             if (e.evt.shiftKey) {
+                                 if (selectedIds.includes(token.id)) {
+                                     setSelectedIds(selectedIds.filter(id => id !== token.id));
+                                 } else {
+                                     setSelectedIds([...selectedIds, token.id]);
+                                 }
+                             } else {
+                                 setSelectedIds([token.id]);
+                             }
+                         }
+                    }}
+                     onDragEnd={(x, y) => {
+                         const width = gridSize * token.scale;
+                         const height = gridSize * token.scale;
+                         const snapped = snapToGrid(x, y, gridSize, width, height);
+                         updateTokenPosition(token.id, snapped.x, snapped.y);
+                     }}
+                />
+            ))}
 
             {/* Selection Rect */}
             {selectionRect.isVisible && (
@@ -747,7 +912,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                 />
             )}
 
-            {/* Transformer */}
             <Transformer
                 ref={transformerRef}
                 onTransformEnd={(e) => {
