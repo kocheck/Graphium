@@ -214,11 +214,11 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       const viewportCenterX = (-newPos.x + size.width/2) / newScale;
       const viewportCenterY = (-newPos.y + size.height/2) / newScale;
 
-      // Allow 1000px padding
-      const allowedMinX = bounds.minX - 1000;
-      const allowedMaxX = bounds.maxX + 1000;
-      const allowedMinY = bounds.minY - 1000;
-      const allowedMaxY = bounds.maxY + 1000;
+      // Apply padding around bounds
+      const allowedMinX = bounds.minX - VIEWPORT_CLAMP_PADDING;
+      const allowedMaxX = bounds.maxX + VIEWPORT_CLAMP_PADDING;
+      const allowedMinY = bounds.minY - VIEWPORT_CLAMP_PADDING;
+      const allowedMaxY = bounds.maxY + VIEWPORT_CLAMP_PADDING;
 
       // Hard clamp center
       const clampedCenterX = Math.max(allowedMinX, Math.min(allowedMaxX, viewportCenterX));
@@ -248,13 +248,11 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       };
 
       // Clamp position to prevent getting lost in the void
-      // Clamp position to keep viewport within bounds
       const clampedPos = clampPosition(newPos, constrainedScale);
 
       setScale(constrainedScale);
       setPosition(clampedPos);
   }, [size.width, size.height, map, clampPosition]);
-  }, [clampPosition]);
 
   // Auto-center on map load
   const lastMapSrc = useRef<string | null>(null);
