@@ -31,10 +31,14 @@ export default defineConfig({
         command: 'npm run preview',
         port: 4173,
         reuseExistingServer: false,
+        timeout: 120000, // 2 minutes
+        stdout: 'pipe',
+        stderr: 'pipe',
       }
     : {
         command: 'npm run dev',
         port: 5173,
         reuseExistingServer: true,
+        timeout: 120000, // 2 minutes
       },
 })

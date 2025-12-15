@@ -8,36 +8,39 @@
 
 export function injectMockElectronAPIs() {
   // Mock ipcRenderer API
-  (window as any).ipcRenderer = {
-    on: () => {},
-    off: () => {},
-    send: () => {},
-    invoke: async () => ({}),
-  }
+  window.ipcRenderer = {
+    on: function() {},
+    off: function() {},
+    send: function() {},
+    invoke: function() { return Promise.resolve({}) },
+  };
 
   // Mock themeAPI with functional implementations
-  (window as any).themeAPI = {
-    getThemeState: async () => ({
-      mode: 'system',
-      effectiveTheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-    }),
-    setThemeMode: async (mode: string) => {
+  window.themeAPI = {
+    getThemeState: function() {
+      return Promise.resolve({
+        mode: 'system',
+        effectiveTheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+      });
+    },
+    setThemeMode: function(mode) {
       // Apply theme to DOM
       const effectiveTheme = mode === 'system'
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : mode
-      document.documentElement.setAttribute('data-theme', effectiveTheme)
+        : mode;
+      document.documentElement.setAttribute('data-theme', effectiveTheme);
+      return Promise.resolve();
     },
-    onThemeChanged: (callback: any) => {
+    onThemeChanged: function(callback) {
       // Return cleanup function
-      return () => {}
+      return function() {};
     },
-  }
+  };
 
   // Mock errorReporting API
-  (window as any).errorReporting = {
-    getUsername: async () => 'test-user',
-    openExternal: async () => true,
-    saveToFile: async () => ({ success: true }),
-  }
+  window.errorReporting = {
+    getUsername: function() { return Promise.resolve('test-user') },
+    openExternal: function() { return Promise.resolve(true) },
+    saveToFile: function() { return Promise.resolve({ success: true }) },
+  };
 }
