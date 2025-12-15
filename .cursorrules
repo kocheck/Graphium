@@ -50,3 +50,320 @@ hyle/
 │   └── App.tsx        # Root component (Architect View)
 └── docs/
     └── ERROR_BOUNDARIES.md  # Error handling architecture
+```
+
+## Domain Glossary
+
+**Critical Terms:**
+
+- **Architect View**: The DM's control window with full controls, toolbar, sidebar
+- **World View**: Clean player-facing window that displays only the canvas (no UI chrome)
+- **Token**: Draggable image representing a character/creature on the battlemap (snaps to grid)
+- **Drawing**: Freehand marker/eraser stroke (for fog of war, spell effects, etc.)
+- **Map**: Background image for the battlemap (with calibration system)
+- **Grid**: Tactical positioning overlay (LINES mode, DOTS mode, or HIDDEN)
+- **Grid Snapping**: Automatic alignment of tokens to grid (smart: cell centers for 1x1, intersections for 2x2)
+- **Campaign File**: `.hyle` ZIP archive containing manifest.json + assets/ directory
+- **Temp Assets**: Processed images stored in userData/temp_assets/ until campaign save
+- **IPC (Inter-Process Communication)**: Electron's system for main ↔ renderer communication
+- **Sync Manager**: Component that broadcasts Architect state changes to World View via IPC
+- **Asset Processor**: Utility that resizes images and converts to WebP format
+- **Custom Protocol**: `media://` URL scheme for secure local file access in renderer
+- **Viewport**: Camera position and zoom level on the canvas
+- **Calibration Mode**: Interactive tool to align map grid with in-game grid by drawing a reference square
+- **Toast**: Temporary notification message (success/error/info)
+- **Error Boundary**: React component that catches errors and shows fallback UI
+- **PII Sanitization**: Removal of usernames, emails, IPs from error reports
+
+**Grid Terms:**
+- **Grid Size**: Pixel size of one grid cell (default: 50px = 5ft in D&D)
+- **Grid Type**: Visual style - LINES (traditional), DOTS (minimal), HIDDEN (none)
+- **Snap to Intersection**: Align token corner to grid line crossing (for even-sized tokens)
+- **Snap to Cell Center**: Align token center to grid cell middle (for odd-sized tokens)
+- **Viewport Culling**: Only render grid elements within visible camera bounds (performance)
+
+**State Terms:**
+- **GameState**: Zustand store containing all game data (tokens, drawings, map, grid settings, toast)
+- **Store Subscription**: Zustand pattern for reacting to state changes (used by SyncManager)
+- **Immutable Update**: Creating new object/array references when mutating state (required for Zustand)
+
+## Core Patterns
+
+### 1. State Management Pattern
+
+**Zustand Store** (src/store/gameStore.ts):
+```typescript
+// ✅ CORRECT: Immutable updates
+addToken: (token) => set((state) => ({
+  tokens: [...state.tokens, token]  // New array
+}))
+
+// ❌ WRONG: Direct mutation (breaks reactivity)
+addToken: (token) => set((state) => {
+  state.tokens.push(token)  // DON'T DO THIS
+  return { tokens: state.tokens }
+})
+```
+
+**Access Patterns:**
+```typescript
+// Component rendering (triggers re-render):
+const tokens = useGameStore((state) => state.tokens)
+
+// Event handlers (no re-render):
+const handleClick = () => {
+  const { addToken } = useGameStore.getState()
+  addToken(newToken)
+}
+
+// Subscriptions (side effects):
+useEffect(() => {
+  const unsub = useGameStore.subscribe((state) => {
+    window.ipcRenderer.send('SYNC_WORLD_STATE', state)
+  })
+  return unsub
+}, [])
+```
+
+### 2. IPC Communication Pattern
+
+**Architecture:** Architect (Producer) → Main Process (Relay) → World (Consumer)
+
+**Sending from Renderer:**
+```typescript
+// One-way send (no response)
+window.ipcRenderer.send('SYNC_WORLD_STATE', gameState)
+
+// Request-response (async)
+const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', gameState)
+```
+
+**Receiving in Main Process:**
+```typescript
+// Handle send (no response)
+ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
+  worldWindow?.webContents.send('SYNC_WORLD_STATE', state)
+})
+
+// Handle invoke (with response)
+ipcMain.handle('SAVE_CAMPAIGN', async (_event, state) => {
+  // ... save logic
+  return { success: true, path: filePath }
+})
+```
+
+### 3. Error Handling Pattern
+
+**Three Layers:**
+1. **PrivacyErrorBoundary** - Wraps entire app, catches React errors
+2. **TokenErrorBoundary** - Per-token isolation (one bad token doesn't crash canvas)
+3. **globalErrorHandler** - Catches window.onerror, unhandledrejection, main process errors
+
+**PII Sanitization:**
+```typescript
+// Automatic sanitization before display/storage:
+// "/Users/johnsmith/file.ts" → "/Users/<USER>/file.ts"
+// "user@example.com" → "<EMAIL>"
+// "Bearer sk-1234..." → "Bearer <TOKEN>"
+```
+
+**Error Persistence:**
+- Errors stored in localStorage (`hyle_errors`)
+- User can review and optionally report via email
+- Consent-based reporting (privacy-first)
+
+### 4. Asset Processing Pattern
+
+**Flow:** Upload → Resize → WebP Conversion → Temp Storage → Campaign Save
+
+```typescript
+// 1. User uploads image
+const file = e.target.files[0]
+
+// 2. Process image (resize + WebP)
+const tempUrl = await processImage(file, 'TOKEN')
+// Returns: "file:///Users/.../temp_assets/1234567890-goblin.webp"
+
+// 3. Use in game (temp storage)
+addToken({ id: uuid(), x, y, src: tempUrl, scale: 1 })
+
+// 4. Save campaign (copy to .hyle ZIP)
+await window.ipcRenderer.invoke('SAVE_CAMPAIGN', gameState)
+// Assets copied from temp_assets/ → campaign.hyle/assets/
+```
+
+### 5. Grid Snapping Pattern
+
+**Smart Snapping** (based on token size):
+```typescript
+// Even-sized tokens (0x0, 2x2, 4x4) → Snap to intersections
+const pos = snapToGrid(x, y, gridSize, 100, 100)  // 2x2 token
+// Returns corner aligned to grid intersection
+
+// Odd-sized tokens (1x1, 3x3, 5x5) → Snap to cell centers
+const pos = snapToGrid(x, y, gridSize, 50, 50)   // 1x1 token
+// Returns corner such that center aligns to cell center
+
+// Legacy mode (no dimensions) → Simple rounding
+const pos = snapToGrid(x, y, gridSize)
+// Returns top-left corner snapped to nearest grid point
+```
+
+### 6. Viewport Pattern
+
+**Clamping:** Prevents camera from going too far from content
+```typescript
+// Keep viewport within bounds of map/tokens
+const clampedPosition = clampPosition(newPos, stageSize, contentBounds)
+
+// Applied during:
+// - Pan (drag canvas)
+// - Zoom (mousewheel)
+// - Auto-center on map upload
+```
+
+## Common Tasks
+
+### Add a New IPC Channel
+
+1. **Define in preload.ts** (expose to renderer):
+```typescript
+contextBridge.exposeInMainWorld('ipcRenderer', {
+  invoke: (...args) => ipcRenderer.invoke(...args),
+  // ... existing methods
+})
+```
+
+2. **Implement handler in main.ts**:
+```typescript
+ipcMain.handle('MY_CHANNEL', async (_event, arg) => {
+  // ... logic
+  return result
+})
+```
+
+3. **Call from renderer**:
+```typescript
+const result = await window.ipcRenderer.invoke('MY_CHANNEL', data)
+```
+
+### Add a New State Property
+
+1. **Update GameState interface** (src/store/gameStore.ts):
+```typescript
+export interface GameState {
+  // ... existing properties
+  myNewProp: string
+  setMyNewProp: (value: string) => void
+}
+```
+
+2. **Add initial value and action**:
+```typescript
+export const useGameStore = create<GameState>((set) => ({
+  // ... existing state
+  myNewProp: 'default',
+  setMyNewProp: (value) => set({ myNewProp: value })
+}))
+```
+
+3. **Use in components**:
+```typescript
+const myNewProp = useGameStore((state) => state.myNewProp)
+const { setMyNewProp } = useGameStore()
+```
+
+### Add a New Toast Notification
+
+```typescript
+const { showToast } = useGameStore()
+
+// Error (red)
+showToast('Failed to upload map', 'error')
+
+// Success (green)
+showToast('Campaign saved successfully', 'success')
+
+// Info (blue)
+showToast('World View opened', 'info')
+```
+
+### Add Error Handling to a Component
+
+```typescript
+// Wrap component with error boundary
+import TokenErrorBoundary from './TokenErrorBoundary'
+
+<TokenErrorBoundary tokenId={token.id}>
+  <MyComponent />
+</TokenErrorBoundary>
+```
+
+### Add a New Tool to Canvas
+
+1. **Add tool type** (src/App.tsx or types file):
+```typescript
+type Tool = 'select' | 'marker' | 'eraser' | 'myNewTool'
+```
+
+2. **Add toolbar button** (src/App.tsx):
+```tsx
+<button onClick={() => setTool('myNewTool')}>
+  My Tool
+</button>
+```
+
+3. **Implement tool logic** (src/components/Canvas/CanvasManager.tsx):
+```typescript
+const handleMouseDown = (e) => {
+  if (tool === 'myNewTool') {
+    // ... tool logic
+  }
+}
+```
+
+## Anti-Patterns
+
+**❌ DON'T:**
+- Mutate Zustand state directly (`state.tokens.push(...)`)
+- Send state from World View back to Architect (one-way sync only)
+- Use `file://` URLs directly in renderer (use `media://` protocol)
+- Store sensitive data in error reports (always sanitize)
+- Create commits without explicit user request
+- Skip PII sanitization for any user-facing error messages
+- Use `cat`, `grep`, `find` in bash when specialized tools exist (use Read, Grep, Glob instead)
+- Block the main process with sync file operations (use async fs promises)
+- Create overlapping error boundaries (one per isolation boundary)
+- Toast for every minor event (reserve for user-actionable feedback)
+
+**✅ DO:**
+- Use Zustand actions for all state updates
+- Keep World View as read-only consumer
+- Convert `file://` to `media://` for renderer security
+- Sanitize all errors before showing to user
+- Ask before creating git commits
+- Use async/await for all file I/O
+- Keep IPC handlers lightweight (offload heavy work to utilities)
+- Batch state updates when possible (better performance)
+- Test error boundaries don't interfere with normal error recovery
+- Provide clear, actionable toast messages
+
+## New Features in NEXT Branch
+
+**Major additions:**
+- **Error Boundaries**: Privacy-focused error catching with PII sanitization
+- **Toast Notifications**: Temporary success/error/info messages
+- **Map Upload & Calibration**: Upload maps, interactive grid calibration
+- **Grid Type Selector**: Switch between LINES, DOTS, HIDDEN modes
+- **Smart Grid Snapping**: Even tokens → intersections, odd tokens → cell centers
+- **Viewport Clamping**: Prevents camera from drifting too far from content
+- **Batch Operations**: removeTokens(), removeDrawings() for efficient bulk deletes
+- **Transform Operations**: updateTokenTransform(), updateDrawingTransform()
+- **Test Coverage**: Vitest setup with tests for key components/utilities
+
+**Files to review for examples:**
+- Error handling: `src/utils/errorSanitizer.ts`, `src/components/PrivacyErrorBoundary.tsx`
+- Toast: `src/components/Toast.tsx`
+- Grid: `src/utils/grid.ts`, `src/components/Canvas/GridOverlay.tsx`
+- Map: `src/components/Sidebar.tsx` (upload/calibration UI)
+- Tests: `src/**/*.test.tsx`
