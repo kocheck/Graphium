@@ -1,7 +1,61 @@
+/**
+ * Sidebar Component - Map Upload, Grid Settings, and Token Library
+ *
+ * Primary control panel for map management, grid configuration, and token access.
+ * Fixed left sidebar providing core VTT functionality.
+ *
+ * **Map upload and processing:**
+ * 1. User selects image file via file input
+ * 2. processImage() copies to user data directory (persistent storage)
+ * 3. Create temporary Object URL to read dimensions
+ * 4. Initialize map at (0,0) with original dimensions, scale=1
+ * 5. Auto-enable calibration mode for grid alignment
+ * 6. Revoke Object URL to prevent memory leaks
+ *
+ * **Map calibration workflow:**
+ * When user clicks "Calibrate via Draw":
+ * 1. Enters calibration mode (isCalibrating = true)
+ * 2. User draws rectangle on map representing one grid cell
+ * 3. Canvas.tsx calculates scale: gridSize / drawnRectangleSize
+ * 4. Map rescaled so drawn rectangle = exactly gridSize pixels
+ * 5. Result: Grid overlay perfectly aligns with map grid
+ *
+ * **Why calibration is needed:**
+ * Maps vary in resolution. A 5ft grid square might be 50px, 100px, or 250px
+ * depending on the map image. Calibration measures the map's actual grid
+ * size and scales the map so it matches our gridSize (default 50px).
+ *
+ * **Grid types:**
+ * - LINES: Traditional grid with vertical/horizontal lines
+ * - DOTS: Minimalist grid with dots at intersections
+ * - HIDDEN: No grid overlay (clean view)
+ *
+ * **Token library:**
+ * Draggable token assets for quick placement on canvas.
+ * Uses HTML5 drag-and-drop API with JSON payload.
+ *
+ * **Error handling:**
+ * - Image load failures show error toast
+ * - Upload errors show error toast
+ * - File input reset to allow re-upload of same file
+ *
+ * @example
+ * // Usage in App.tsx
+ * <div className="flex">
+ *   <Sidebar />
+ *   <Canvas />
+ * </div>
+ *
+ * @component
+ */
+
 import React, { useRef } from 'react';
 import { useGameStore, GridType } from '../store/gameStore';
 import { processImage } from '../utils/AssetProcessor';
 
+/**
+ * Sidebar component provides map upload, grid settings, and token library
+ */
 const Sidebar = () => {
     const {
         setMap, gridType, setGridType,
@@ -10,11 +64,36 @@ const Sidebar = () => {
     } = useGameStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    /**
+     * Handles drag start for library tokens
+     * Sets JSON payload with token type and image source
+     *
+     * @param e - Drag event
+     * @param type - Token type (e.g., 'LIBRARY_TOKEN')
+     * @param src - Image source URL
+     */
     const handleDragStart = (e: React.DragEvent, type: string, src: string) => {
         e.dataTransfer.setData('application/json', JSON.stringify({ type, src }));
         // Also set a drag image if we want
     };
 
+    /**
+     * Handles map image upload and initialization
+     *
+     * **Process:**
+     * 1. Process image (copy to user data directory)
+     * 2. Create Object URL to read dimensions
+     * 3. Initialize map state with dimensions and scale=1
+     * 4. Enable calibration mode for grid alignment
+     * 5. Clean up Object URL
+     *
+     * **Error handling:**
+     * - Shows error toast on upload failure
+     * - Shows error toast on image load failure
+     * - Resets file input to allow re-upload
+     *
+     * @param e - File input change event
+     */
     const handleMapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;

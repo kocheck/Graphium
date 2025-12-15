@@ -1,6 +1,49 @@
+/**
+ * Toast Notification Component
+ *
+ * Displays transient notification messages at the top of the screen.
+ * Integrated with gameStore for centralized notification management.
+ *
+ * **Features:**
+ * - Auto-dismiss after 5 seconds
+ * - Manual dismiss via close button
+ * - Three types: error (red), success (green), info (blue)
+ * - Fixed positioning at top-center with slide-down animation
+ * - High z-index (100) to appear above all other content
+ * - Accessible with ARIA labels
+ *
+ * **Integration with gameStore:**
+ * Toast messages are dispatched via gameStore methods:
+ * - `showToast(message, type)` - Show new toast
+ * - `clearToast()` - Dismiss current toast
+ *
+ * Only one toast is shown at a time (newer toasts replace older ones).
+ *
+ * @example
+ * // Show success toast
+ * const { showToast } = useGameStore();
+ * showToast('Map uploaded successfully!', 'success');
+ *
+ * @example
+ * // Show error toast
+ * const { showToast } = useGameStore();
+ * showToast('Failed to load game state', 'error');
+ *
+ * @example
+ * // Show info toast
+ * const { showToast } = useGameStore();
+ * showToast('Autosave enabled', 'info');
+ *
+ * @component
+ * @returns {JSX.Element | null} Toast notification or null if no active toast
+ */
+
 import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 
+/**
+ * Toast component displays notification messages
+ */
 const Toast = () => {
     const { toast, clearToast } = useGameStore();
 

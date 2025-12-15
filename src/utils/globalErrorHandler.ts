@@ -1,18 +1,90 @@
 /**
- * Global Error Handler
+ * Global Error Handler for Hyle
  *
- * Catches errors outside React's lifecycle:
- * - window.onerror (global JS errors)
- * - unhandledrejection (unhandled promise rejections)
+ * Catches errors outside React's lifecycle and persists them for later reporting.
+ * Part of the 3-layer error handling architecture:
  *
- * Persists errors locally so they can be reported later.
+ * **Layer 1: React Error Boundaries** (PrivacyErrorBoundary, TokenErrorBoundary)
+ * - Catches errors in React component tree
+ * - Provides fallback UI
+ *
+ * **Layer 2: Global Error Handlers** (this file)
+ * - Catches window.onerror (global JS errors)
+ * - Catches unhandledrejection (promise rejections)
+ * - Receives main process errors via IPC
+ *
+ * **Layer 3: Main Process Handlers** (electron/main.ts)
+ * - Catches uncaughtException
+ * - Catches unhandledRejection
+ * - Sanitizes and sends to renderer
+ *
+ * **Error persistence flow:**
+ * 1. Error occurs (global, promise, or main process)
+ * 2. Handler catches and sanitizes error
+ * 3. Generate unique ID and report body
+ * 4. Store in localStorage with deduplication
+ * 5. Dispatch custom event for UI updates
+ * 6. User can review/report via PendingErrorsIndicator
+ *
+ * **Deduplication:**
+ * Same error occurring multiple times increments occurrence count
+ * instead of creating duplicate entries. Identified by hash of:
+ * error name + message + first stack line
+ *
+ * **Privacy guarantee:**
+ * All errors sanitized before storage (PII removed).
+ * Stored in localStorage (`hyle_pending_errors`).
+ * User must explicitly consent to send reports.
+ *
+ * See docs/ERROR_BOUNDARIES.md for complete architecture.
+ *
+ * @example
+ * // Initialize in main.tsx
+ * import { initGlobalErrorHandlers } from './utils/globalErrorHandler';
+ * const cleanup = initGlobalErrorHandlers();
+ * // Cleanup on unmount if needed
+ *
+ * @example
+ * // Manually capture error
+ * import { captureError } from './utils/globalErrorHandler';
+ * try {
+ *   riskyOperation();
+ * } catch (error) {
+ *   await captureError(error, 'global');
+ *   // Error stored, user can report later
+ * }
+ *
+ * @example
+ * // Listen for new errors in UI
+ * useEffect(() => {
+ *   const handleError = (e: CustomEvent) => {
+ *     setErrorCount(prev => prev + 1);
+ *   };
+ *   window.addEventListener('hyle-error', handleError);
+ *   return () => window.removeEventListener('hyle-error', handleError);
+ * }, []);
  */
 
 import { sanitizeStack, generateReportBody, SanitizedError } from './errorSanitizer';
 
+/** localStorage key for persisting errors */
 const ERROR_STORAGE_KEY = 'hyle_pending_errors';
+
+/** Maximum errors to keep in localStorage (FIFO when exceeded) */
 const MAX_STORED_ERRORS = 10;
 
+/**
+ * Stored error with metadata for tracking and reporting
+ *
+ * @property id - Unique identifier for this error instance
+ * @property timestamp - ISO timestamp of first occurrence
+ * @property sanitizedError - PII-free error object
+ * @property reportBody - Formatted report ready for email/file export
+ * @property source - Where error originated ('react', 'global', 'promise', 'main')
+ * @property reported - Whether user has sent this error report
+ * @property occurrences - How many times this error occurred (deduplication)
+ * @property lastOccurrence - ISO timestamp of most recent occurrence
+ */
 export interface StoredError {
   id: string;
   timestamp: string;
