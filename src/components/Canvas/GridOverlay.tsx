@@ -74,6 +74,12 @@ import { Group, Line, Circle } from 'react-konva';
 const MAX_DOTS_THRESHOLD = 10000;
 
 /**
+ * Flag to prevent console warning spam when grid is too dense
+ * Only logs warning once per threshold crossing
+ */
+let hasWarnedAboutDensity = false;
+
+/**
  * Props for GridOverlay component
  *
  * @property visibleBounds - Current viewport bounds in canvas coordinates
@@ -155,7 +161,10 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
     // If there would be too many dots, fall back to a simpler grid or skip
     if (totalDots > MAX_DOTS_THRESHOLD) {
       const step = Math.ceil(Math.sqrt(totalDots / MAX_DOTS_THRESHOLD)) * gridSize;
-      console.warn(`Grid too dense for DOTS mode (${totalDots} dots > ${MAX_DOTS_THRESHOLD}), rendering subset with step size ${step}px`);
+      if (!hasWarnedAboutDensity) {
+        console.warn(`Grid too dense for DOTS mode (${totalDots} dots > ${MAX_DOTS_THRESHOLD}), rendering subset with step size ${step}px`);
+        hasWarnedAboutDensity = true;
+      }
       // Render a subset by increasing step size
       for (let ix = startX; ix <= endX; ix += step) {
         for (let iy = startY; iy <= endY; iy += step) {
@@ -172,7 +181,8 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
         }
       }
     } else {
-      // Normal rendering
+      // Normal rendering - reset warning flag when back under threshold
+      hasWarnedAboutDensity = false;
       for (let ix = startX; ix <= endX; ix += gridSize) {
         for (let iy = startY; iy <= endY; iy += gridSize) {
           elements.push(

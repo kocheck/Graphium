@@ -14,7 +14,7 @@ import TokenErrorBoundary from './TokenErrorBoundary';
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
 const ZOOM_SCALE_BY = 1.1;
-const MIN_PINCH_DISTANCE = 0.001; // Guard against division by zero
+const MIN_PINCH_DISTANCE = 0.001; // Guard against near-zero division or very small distances that could cause extreme scale changes
 const VIEWPORT_CLAMP_PADDING = 1000; // Padding around map bounds for viewport constraints
 
 // Helper functions for touch/pinch calculations
