@@ -29,6 +29,11 @@ Hyle is a local-first desktop application built with Electron that provides a du
 │  │  │  │   ├─ Temp asset storage                           │  │ │
 │  │  │  │   └─ Asset extraction/archival                    │  │ │
 │  │  │  │                                                    │  │ │
+│  │  │  ├─ Theme Manager (themeManager.ts)                  │  │ │
+│  │  │  │   ├─ Theme persistence (electron-store)           │  │ │
+│  │  │  │   ├─ OS theme sync (nativeTheme API)              │  │ │
+│  │  │  │   └─ Theme state broadcast to renderers           │  │ │
+│  │  │  │                                                    │  │ │
 │  │  │  └─ Custom Protocol Handler                          │  │ │
 │  │  │      └─ media:// → file:// translation               │  │ │
 │  │  └──────────────────────────────────────────────────────┘  │ │
@@ -44,6 +49,7 @@ Hyle is a local-first desktop application built with Electron that provides a du
 │  │  │  │  (DM Control)       │  │  (Projector)        │   │  │ │
 │  │  │  │                     │  │                     │   │  │ │
 │  │  │  │  React App          │  │  React App          │   │  │ │
+│  │  │  │  ├─ ThemeManager    │  │  ├─ ThemeManager    │   │  │ │
 │  │  │  │  ├─ Toolbar         │  │  └─ Canvas Only     │   │  │ │
 │  │  │  │  ├─ Sidebar         │  │                     │   │  │ │
 │  │  │  │  ├─ Canvas          │  │  Zustand Store      │   │  │ │
@@ -116,6 +122,9 @@ World Window:
 | `SAVE_ASSET_TEMP` | Renderer→Main | invoke | Save uploaded asset, return file path |
 | `SAVE_CAMPAIGN` | Renderer→Main | invoke | Save .hyle file, return success bool |
 | `LOAD_CAMPAIGN` | Renderer→Main | invoke | Load .hyle file, return GameState |
+| `get-theme-state` | Renderer→Main | invoke | Get current theme mode and effective theme |
+| `set-theme-mode` | Renderer→Main | invoke | Set theme mode (light/dark/system) |
+| `theme-changed` | Main→Renderer | send | Broadcast theme updates to all windows |
 
 **State Broadcast Flow:**
 ```
@@ -223,12 +232,86 @@ Fetches from: file://...
 Returns image data
 ```
 
+#### Theme Manager (`electron/themeManager.ts`)
+**Responsibilities:**
+- Persist user theme preference (light/dark/system)
+- Synchronize with OS theme changes
+- Broadcast theme updates to all renderer windows
+
+**Storage:**
+```typescript
+Location: {app.getPath('userData')}/theme-preferences.json
+Schema: { theme: 'light' | 'dark' | 'system' }
+Default: 'system'
+```
+
+**Key Functions:**
+```typescript
+getThemeMode(): ThemeMode
+  - Returns stored theme preference
+
+setThemeMode(mode: ThemeMode): void
+  - Updates electron-store
+  - Sets nativeTheme.themeSource
+  - Broadcasts to all renderer windows
+
+getEffectiveTheme(): 'light' | 'dark'
+  - Resolves 'system' to actual theme
+  - Queries nativeTheme.shouldUseDarkColors
+
+initializeThemeManager(): void
+  - Applies stored preference on app launch
+  - Registers nativeTheme.on('updated') listener
+```
+
+**Theme Broadcast Flow:**
+```
+User selects theme (menu or IPC)
+    ↓
+setThemeMode() called
+    ↓
+electron-store persists preference
+    ↓
+nativeTheme.themeSource updated
+    ↓
+broadcastThemeToRenderers()
+    ↓
+Sends 'theme-changed' IPC to Main Window
+    ↓
+Sends 'theme-changed' IPC to World Window (if exists)
+    ↓
+ThemeManager components receive event
+    ↓
+Apply data-theme attribute to <html>
+    ↓
+CSS variables update
+    ↓
+UI re-renders with new colors
+```
+
+**Application Menu Integration:**
+```typescript
+View → Theme
+  ├─ ● Light
+  ├─ ○ Dark
+  └─ ○ System (default)
+
+Menu items call: setThemeMode('light' | 'dark' | 'system')
+Radio buttons reflect: getThemeState().mode
+```
+
 ### Renderer Process Architecture
 
 #### React Component Tree
 
 ```
 App.tsx (root component)
+│
+├─── ThemeManager (no visual output)
+│     └─── useEffect
+│           ├─── Fetch initial theme from main process (IPC)
+│           ├─── Apply data-theme attribute to <html>
+│           └─── Subscribe to 'theme-changed' IPC events
 │
 ├─── SyncManager (no visual output)
 │     └─── useEffect
@@ -1122,6 +1205,179 @@ Hyle/
 └── README.md                   # Project documentation
 ```
 
+## Theme System Architecture
+
+### Overview
+The theme system provides accessible light/dark mode with WCAG AA compliance. It uses a two-layer architecture: Radix Colors for raw color scales and semantic CSS variables for component styling.
+
+### Component: ThemeManager (`src/components/ThemeManager.tsx`)
+
+**Purpose:** Renderer-side component that applies theme to the DOM.
+
+**Responsibilities:**
+- Fetch initial theme state from main process on mount
+- Apply `data-theme` attribute to `<html>` element
+- Subscribe to theme change broadcasts
+- Prevent theme flash on load (FOUC)
+
+**Implementation:**
+```typescript
+export function ThemeManager() {
+  useEffect(() => {
+    async function initializeTheme() {
+      // 1. Get theme from main process
+      const { effectiveTheme } = await window.themeAPI.getThemeState()
+
+      // 2. Apply data-theme attribute
+      document.documentElement.setAttribute('data-theme', effectiveTheme)
+
+      // 3. Subscribe to theme changes
+      const cleanup = window.themeAPI.onThemeChanged(({ effectiveTheme }) => {
+        document.documentElement.setAttribute('data-theme', effectiveTheme)
+      })
+
+      // 4. Remove loading class to enable transitions
+      document.body.classList.remove('theme-loading')
+
+      return cleanup
+    }
+
+    initializeTheme()
+  }, [])
+
+  return null // No visual output
+}
+```
+
+**FOUC Prevention Flow:**
+```
+index.html synchronous script (before CSS loads)
+    ↓
+Detect system theme: matchMedia('prefers-color-scheme: dark')
+    ↓
+Apply initial data-theme="light"|"dark"
+    ↓
+Add class="theme-loading" to <body>
+    ↓
+CSS loads (theme variables already applied, no flash)
+    ↓
+ThemeManager mounts
+    ↓
+Fetch actual preference from main process
+    ↓
+Update data-theme if different from system default
+    ↓
+Remove theme-loading class
+    ↓
+Enable CSS transitions
+```
+
+### CSS Architecture
+
+**File Structure:**
+```
+src/styles/
+├── theme.css       # Radix overrides + semantic variables
+└── app.css         # Theme-aware component classes
+```
+
+**theme.css** - Two-layer system:
+```css
+/* Layer 1: Radix Colors (raw scales) */
+[data-theme="dark"] {
+  --slate-1: #111113;   /* Darkest background */
+  --slate-12: #eeeef0;  /* Lightest text */
+  --blue-9: #0090ff;    /* Accent solid */
+  /* ... 12 steps per color */
+}
+
+/* Layer 2: Semantic Variables (abstraction) */
+:root, [data-theme="light"] {
+  --app-bg-base: var(--slate-1);        /* Page background */
+  --app-bg-surface: var(--slate-3);     /* Elevated surfaces */
+  --app-text-primary: var(--slate-12);  /* Main text */
+  --app-accent-solid: var(--blue-9);    /* Primary buttons */
+  /* ... 30+ semantic variables */
+}
+```
+
+**app.css** - Component classes using semantic variables:
+```css
+.app-root {
+  background: var(--app-bg-base);
+  color: var(--app-text-primary);
+}
+
+.toolbar {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border-subtle);
+}
+
+.btn-tool.active {
+  background: var(--app-accent-solid);
+  color: white;
+}
+```
+
+### Theme-Aware Canvas
+
+**Grid Color Synchronization:**
+The GridOverlay component uses `--app-border-default` for stroke color. CanvasManager detects theme changes using MutationObserver:
+
+```typescript
+// CanvasManager.tsx
+const [gridColor, setGridColor] = useState('#222');
+
+useEffect(() => {
+  const updateGridColor = () => {
+    const color = getComputedStyle(document.documentElement)
+      .getPropertyValue('--app-border-default').trim();
+    setGridColor(color);
+  };
+
+  // Update on mount
+  updateGridColor();
+
+  // Watch for data-theme changes
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === 'data-theme') {
+        updateGridColor();
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, { attributes: true });
+  return () => observer.disconnect();
+}, []);
+
+// Pass to GridOverlay
+<GridOverlay stroke={gridColor} />
+```
+
+**Design Decision:** User-selected marker colors remain consistent across themes (not theme-aware). This ensures map annotations maintain visual consistency regardless of DM's theme preference.
+
+### Accessibility Compliance
+
+**WCAG 2.1 Level AA Status:** ✅ Compliant
+
+All text and UI components meet minimum contrast requirements:
+- Normal text: ≥ 4.5:1 contrast ratio
+- Large text: ≥ 3:1 contrast ratio
+- UI components: ≥ 3:1 contrast ratio
+
+**Radix Guarantees:**
+- Steps 1-3: Background surfaces (safe for backgrounds)
+- Steps 9-12: High contrast (safe for text on Step 1-3)
+- Step 11-12 on Step 1-2: Always ≥ 4.5:1 (WCAG AA pass)
+
+**Testing:** Automated with Playwright + axe-core (see `tests/accessibility.spec.ts`)
+
+### Documentation
+- **THEMING.md** - Developer guide for using the theme system
+- **WCAG_CONTRAST_AUDIT.md** - Detailed accessibility compliance audit
+- **THEME_IMPLEMENTATION_SUMMARY.md** - Implementation review summary
+
 ## Build and Deployment
 
 ### Development Build
@@ -1158,6 +1414,7 @@ Hyle's architecture prioritizes:
 1. **Real-time synchronization** between DM and player views
 2. **Performance** through optimized rendering and asset processing
 3. **Data ownership** via local-first design
-4. **Extensibility** for planned features (fog of war, more tools)
+4. **Accessibility** with WCAG AA compliant theming
+5. **Extensibility** for planned features (fog of war, more tools)
 
-The dual-window pattern with IPC state sync is the core architectural pattern that all features must respect. Understanding this flow is critical for adding new functionality.
+The dual-window pattern with IPC state sync is the core architectural pattern that all features must respect. Understanding this flow is critical for adding new functionality. The theme system demonstrates how to extend Electron's main process capabilities (nativeTheme, electron-store) and synchronize state to renderer processes via IPC.
