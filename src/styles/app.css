@@ -106,3 +106,8 @@
   border: 1px solid var(--app-accent-solid);
   color: var(--app-accent-text-contrast);
 }
+
+/* Canvas */
+.canvas-container {
+  background: var(--app-bg-base);
+}

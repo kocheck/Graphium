@@ -87,6 +87,34 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
+  // Get grid color from CSS variable (theme-aware)
+  const [gridColor, setGridColor] = useState('#222');
+
+  useEffect(() => {
+    const updateGridColor = () => {
+      const computedColor = getComputedStyle(document.documentElement).getPropertyValue('--app-border-default').trim();
+      if (computedColor) {
+        setGridColor(computedColor);
+      }
+    };
+
+    // Initial color
+    updateGridColor();
+
+    // Listen for theme changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-theme') {
+          updateGridColor();
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+
+    return () => observer.disconnect();
+  }, []);
+
   // Atomic selectors to prevent infinite re-render loops and avoid useShallow crashes
   const map = useGameStore(s => s.map);
   const tokens = useGameStore(s => s.tokens);
@@ -671,7 +699,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   return (
     <div
         ref={containerRef}
-        className="w-full h-full bg-neutral-900 overflow-hidden relative"
+        className="canvas-container w-full h-full overflow-hidden relative"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
     >
@@ -747,7 +775,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     onDragEnd={() => {}}
                 />
             )}
-            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} />
+            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} />
         </Layer>
 
         {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
