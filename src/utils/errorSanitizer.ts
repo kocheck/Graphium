@@ -1,11 +1,55 @@
 /**
- * Error Sanitization Utility
+ * Error Sanitization Utility for Privacy-First Error Reporting
  *
  * Provides functions to sanitize error stack traces by removing PII
- * (Personal Identifiable Information) such as usernames, email addresses,
- * IP addresses, API keys, and file paths.
+ * (Personal Identifiable Information) before displaying errors to users
+ * or sending error reports.
+ *
+ * **Why sanitization is critical:**
+ * - Error stack traces contain file paths with usernames: `/Users/johnsmith/...`
+ * - Error messages may include emails, API keys, or sensitive data
+ * - Electron apps expose local filesystem structure in errors
+ *
+ * **What gets sanitized:**
+ * - Usernames in file paths → `<USER>`
+ * - Email addresses → `<EMAIL>`
+ * - IPv4/IPv6 addresses → `<IP>`
+ * - UUIDs (potential user IDs) → `<UUID>`
+ * - Bearer tokens → `Bearer <TOKEN>`
+ * - API keys/secrets → `<REDACTED>`
+ * - Environment variables → `<ENV_VAR>`
+ *
+ * **Usage flow:**
+ * 1. Catch error in boundary or handler
+ * 2. Get system username (via IPC from main process)
+ * 3. Call `sanitizeStack(error, username)`
+ * 4. Store/display sanitized error
+ * 5. Optionally generate report with `generateReportBody()`
+ *
+ * See docs/ERROR_BOUNDARIES.md for complete architecture.
+ *
+ * @example
+ * // Basic sanitization
+ * const username = await window.ipcRenderer.invoke('get-username');
+ * const sanitized = sanitizeStack(error, username);
+ * console.error(sanitized.message); // Safe to display
+ *
+ * @example
+ * // Generate email report
+ * const sanitized = sanitizeStack(error, username);
+ * const reportBody = generateReportBody(sanitized);
+ * // User can review and send via email
  */
 
+/**
+ * Sanitized error object safe for public viewing/reporting
+ *
+ * All PII has been removed from name, message, and stack trace.
+ *
+ * @property name - Error type (e.g., 'TypeError', 'ReferenceError')
+ * @property message - Error message with PII removed
+ * @property stack - Stack trace with PII removed
+ */
 export interface SanitizedError {
   name: string;
   message: string;
@@ -43,6 +87,27 @@ const PII_PATTERNS = {
 
 /**
  * Sanitizes a string by removing common PII patterns
+ *
+ * Applies regex replacements for email, IP addresses, API keys, tokens,
+ * environment variables, and UUIDs. Order matters - more specific patterns
+ * (like bearerToken) should be replaced before generic ones.
+ *
+ * **Patterns matched:**
+ * - Emails: `user@example.com` → `<EMAIL>`
+ * - IPv4: `192.168.1.1` → `<IP>`
+ * - IPv6: `2001:0db8::1` → `<IP>`
+ * - Bearer tokens: `Bearer abc.def.ghi` → `Bearer <TOKEN>`
+ * - API keys: `api_key=sk-1234...` → `<REDACTED>`
+ * - Env vars: `DATABASE_URL=postgres://...` → `<ENV_VAR>`
+ * - UUIDs: `550e8400-e29b-41d4-a716-446655440000` → `<UUID>`
+ *
+ * @param text - String to sanitize (error message or stack trace)
+ * @returns Sanitized string with PII replaced
+ *
+ * @example
+ * const msg = "Error connecting to user@example.com at 192.168.1.1";
+ * const sanitized = sanitizePII(msg);
+ * // Returns: "Error connecting to <EMAIL> at <IP>"
  */
 function sanitizePII(text: string): string {
   return text
@@ -56,13 +121,56 @@ function sanitizePII(text: string): string {
 }
 
 /**
- * Sanitizes an error stack trace by replacing the system username with <USER>
- * and removing other PII patterns.
- * This prevents PII from being exposed in error reports.
+ * Sanitizes an error stack trace by removing usernames and PII
  *
- * @param error - The error object to sanitize
- * @param username - The system username to scrub from the stack trace
- * @returns A sanitized error object safe for public viewing
+ * This is the main entry point for error sanitization. Removes the system
+ * username from file paths and applies all PII pattern replacements to both
+ * the error message and stack trace.
+ *
+ * **Username sanitization:**
+ * Handles multiple path formats:
+ * - Unix: `/Users/johnsmith/project/` → `/Users/<USER>/project/`
+ * - macOS: `/home/johnsmith/project/` → `/home/<USER>/project/`
+ * - Windows: `C:\Users\johnsmith\project\` → `C:\Users\<USER>\project\`
+ *
+ * **Why this matters:**
+ * - File paths in stack traces expose system username
+ * - Error messages may contain local file paths
+ * - Electron apps show full filesystem paths in errors
+ * - Sanitized errors are safe to display in UI or send via email
+ *
+ * **Algorithm:**
+ * 1. Extract error name, message, and stack
+ * 2. Escape special regex characters in username
+ * 3. Create patterns for Unix/Windows/generic paths
+ * 4. Replace username in paths with `<USER>`
+ * 5. Apply PII sanitization (emails, IPs, tokens, etc.)
+ * 6. Return sanitized error object
+ *
+ * @param error - The error object to sanitize (from try/catch or error boundary)
+ * @param username - The system username to remove (get via IPC: 'get-username')
+ * @returns Sanitized error object safe for display/storage/reporting
+ *
+ * @example
+ * // In error boundary component
+ * const username = await window.ipcRenderer.invoke('get-username');
+ * const sanitized = sanitizeStack(error, username);
+ * setErrorState(sanitized);  // Safe to display
+ *
+ * @example
+ * // Before sanitization
+ * const error = new Error('File not found');
+ * error.stack = `at /Users/johnsmith/hyle/src/App.tsx:42
+ *   at user@example.com (192.168.1.1)`;
+ *
+ * const sanitized = sanitizeStack(error, 'johnsmith');
+ * // After sanitization:
+ * // stack: "at /Users/<USER>/hyle/src/App.tsx:42\n  at <EMAIL> (<IP>)"
+ *
+ * @example
+ * // With no username (privacy fallback)
+ * const sanitized = sanitizeStack(error, '');
+ * // Still sanitizes emails, IPs, tokens, etc.
  */
 export function sanitizeStack(error: Error, username: string): SanitizedError {
   const errorName = error.name || 'Error';
@@ -117,10 +225,70 @@ export function sanitizeStack(error: Error, username: string): SanitizedError {
 }
 
 /**
- * Generates a formatted error report body with system information.
+ * Generates a formatted error report body with system information
  *
- * @param sanitizedError - The sanitized error object
- * @returns A formatted string suitable for error reporting
+ * Creates a human-readable error report suitable for email or file export.
+ * Includes sanitized error details plus non-sensitive system context (app version,
+ * platform, user agent) to help with debugging.
+ *
+ * **Report sections:**
+ * 1. **Header**: Timestamp, app version, platform
+ * 2. **Error Details**: Error type and sanitized message
+ * 3. **Stack Trace**: Full sanitized stack trace
+ *
+ * **Privacy guarantee:**
+ * Only accepts pre-sanitized errors. No PII is added to the report.
+ * System info (platform, user agent) contains no username or identifying data.
+ *
+ * **Usage flow:**
+ * 1. User encounters error
+ * 2. Error caught and sanitized
+ * 3. User clicks "Report Error" button
+ * 4. Generate report body
+ * 5. User reviews report (can add context)
+ * 6. User sends via email (consent-based)
+ *
+ * @param sanitizedError - Pre-sanitized error from sanitizeStack()
+ * @returns Formatted plain-text report ready for email/file export
+ *
+ * @example
+ * // Generate report for email
+ * const sanitized = sanitizeStack(error, username);
+ * const reportBody = generateReportBody(sanitized);
+ * const mailtoLink = `mailto:support@hyle.app?subject=Error Report&body=${encodeURIComponent(reportBody)}`;
+ * window.open(mailtoLink);
+ *
+ * @example
+ * // Save report to file
+ * const sanitized = sanitizeStack(error, username);
+ * const reportBody = generateReportBody(sanitized);
+ * const result = await window.ipcRenderer.invoke('save-error-report', reportBody);
+ * // User chooses where to save the .txt file
+ *
+ * @example
+ * // Example report output:
+ * // ================================================================================
+ * //                            HYLE ERROR REPORT
+ * // ================================================================================
+ * //
+ * // Timestamp: 2025-01-15T10:30:45.123Z
+ * // App Version: 1.0.0
+ * // Platform: MacIntel
+ * // User Agent: Mozilla/5.0 ...
+ * //
+ * // --------------------------------------------------------------------------------
+ * //                               ERROR DETAILS
+ * // --------------------------------------------------------------------------------
+ * //
+ * // Error Type: TypeError
+ * // Message: Cannot read property 'x' of undefined
+ * //
+ * // --------------------------------------------------------------------------------
+ * //                               STACK TRACE
+ * // --------------------------------------------------------------------------------
+ * //
+ * // at /Users/<USER>/hyle/src/components/Canvas/CanvasManager.tsx:142
+ * // at handleDrop ...
  */
 export function generateReportBody(sanitizedError: SanitizedError): string {
   // Get app version from package.json (exposed via Vite's define)

@@ -1,0 +1,195 @@
+name: Documentation Check (Simple)
+
+# This is a simpler version that doesn't require Claude API
+# It uses pattern matching to suggest documentation updates
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  check-documentation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} > changed_files.txt
+
+          echo "Changed files:"
+          cat changed_files.txt
+
+          # Set flags for different file types
+          echo "has_electron=$(grep -q '^electron/' changed_files.txt && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_components=$(grep -q '^src/components/' changed_files.txt && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_store=$(grep -q '^src/store/' changed_files.txt && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_utils=$(grep -q '^src/utils/' changed_files.txt && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_ipc=$(grep -E '(ipcMain|ipcRenderer)' $(git diff origin/${{ github.base_ref }}...${{ github.sha }} --name-only) 2>/dev/null | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Generate documentation suggestions
+        id: suggestions
+        run: |
+          suggestions=""
+
+          # Check for Electron/IPC changes
+          if [ "${{ steps.files.outputs.has_electron }}" = "true" ] || [ "${{ steps.files.outputs.has_ipc }}" -gt "0" ]; then
+            suggestions="${suggestions}
+          ### 🔌 IPC Changes Detected
+
+          Files in \`electron/\` or IPC-related code were modified.
+
+          **Please review:**
+          - [\`IPC_API.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/IPC_API.md) - If IPC channels added/changed
+          - [\`electron/README.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/electron/README.md) - If main process logic changed
+          - [\`.cursorrules\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/.cursorrules) - If new IPC patterns added
+
+          **Check if you need to:**
+          - Document new IPC channels with usage examples
+          - Update IPC handler documentation
+          - Add JSDoc to new IPC-related functions
+          "
+          fi
+
+          # Check for component changes
+          if [ "${{ steps.files.outputs.has_components }}" = "true" ]; then
+            suggestions="${suggestions}
+          ### ⚛️ Component Changes Detected
+
+          Files in \`src/components/\` were modified.
+
+          **Please review:**
+          - [\`src/components/README.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/src/components/README.md) - If component structure changed
+          - Modified component files - Ensure JSDoc is up-to-date
+          - [\`ARCHITECTURE.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/ARCHITECTURE.md) - If component hierarchy changed
+
+          **Check if you need to:**
+          - Add JSDoc to new components/functions
+          - Update component descriptions in README
+          - Document new props/interfaces
+          "
+          fi
+
+          # Check for store changes
+          if [ "${{ steps.files.outputs.has_store }}" = "true" ]; then
+            suggestions="${suggestions}
+          ### 🗄️ State Management Changes Detected
+
+          Files in \`src/store/\` were modified.
+
+          **Please review:**
+          - [\`src/store/README.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/src/store/README.md) - If state structure changed
+          - [\`ARCHITECTURE.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/ARCHITECTURE.md) - If data flow changed
+          - [\`.cursorrules\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/.cursorrules) - If state patterns changed
+
+          **Check if you need to:**
+          - Document new state properties
+          - Update action/mutation documentation
+          - Add examples for new state usage
+          "
+          fi
+
+          # Check for utility changes
+          if [ "${{ steps.files.outputs.has_utils }}" = "true" ]; then
+            suggestions="${suggestions}
+          ### 🛠️ Utility Changes Detected
+
+          Files in \`src/utils/\` were modified.
+
+          **Please review:**
+          - [\`src/utils/README.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/src/utils/README.md) - If utilities added/changed
+          - Modified utility files - Ensure JSDoc is complete
+
+          **Check if you need to:**
+          - Add JSDoc with @param, @returns, @example
+          - Document utility purpose and use cases
+          - Add usage examples
+          "
+          fi
+
+          # Check for package.json changes
+          if grep -q '^package.json$' changed_files.txt; then
+            suggestions="${suggestions}
+          ### 📦 Dependencies Changed
+
+          \`package.json\` was modified.
+
+          **Please review:**
+          - [\`ARCHITECTURE.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/ARCHITECTURE.md) - Update tech stack section if new major dependencies
+          - [\`.cursorrules\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/.cursorrules) - Update dependencies list
+          - [\`DECISIONS.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/DECISIONS.md) - Document why new dependencies were added
+
+          **Check if you need to:**
+          - Document why new packages were chosen
+          - Update tech stack overview
+          - Add to preferred patterns if new utility library
+          "
+          fi
+
+          # If no specific patterns matched, provide general guidance
+          if [ -z "$suggestions" ]; then
+            suggestions="
+          ### ✅ No Specific Patterns Detected
+
+          This PR doesn't modify commonly-documented areas, but please still review:
+
+          **General checklist:**
+          - [ ] JSDoc added to all new functions/components
+          - [ ] Inline comments for complex logic
+          - [ ] Examples added to JSDoc blocks
+          - [ ] Cross-references use file:line format
+
+          See [DOCUMENTATION.md](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/DOCUMENTATION.md) for complete documentation standards.
+          "
+          fi
+
+          # Save suggestions to file
+          echo "$suggestions" > suggestions.md
+
+      - name: Post PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const suggestions = fs.readFileSync('suggestions.md', 'utf8');
+
+            const comment = `## 📚 Documentation Check (Rule-Based)
+
+            This PR was analyzed for potential documentation impacts.
+
+            ${suggestions}
+
+            ---
+
+            ### 📖 Documentation Standards
+
+            All changes should follow Hyle's documentation standards:
+
+            1. **JSDoc for all functions** - Include @param, @returns, @example
+            2. **Cross-references** - Use \`file:line\` format (e.g., \`App.tsx:89\`)
+            3. **Examples in JSDoc** - Real, runnable code examples
+            4. **Update relevant READMEs** - If component/directory structure changed
+            5. **Document "why"** - Not just "what", explain rationale
+
+            **Complete documentation guide:** [DOCUMENTATION.md](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/DOCUMENTATION.md)
+
+            <sub>Rule-based check • For AI-powered analysis, see [documentation-check.yml](.github/workflows/documentation-check.yml)</sub>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

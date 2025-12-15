@@ -1,11 +1,85 @@
+/**
+ * Privacy-Focused React Error Boundary
+ *
+ * Catches errors in the React component tree and provides a privacy-safe
+ * error reporting interface. Part of the 3-layer error handling architecture.
+ *
+ * **Core features:**
+ * - Catches all React component errors (render, lifecycle, event handlers)
+ * - Automatically sanitizes errors to remove PII (usernames, file paths)
+ * - Displays user-friendly error UI with sanitized stack traces
+ * - Provides multiple reporting options: email, file export
+ * - Optional user context input (max 500 chars)
+ * - Privacy notice to inform users about sanitization
+ *
+ * **Privacy guarantees:**
+ * - All usernames replaced with `<USER>`
+ * - All absolute file paths replaced with relative paths
+ * - Component stack traces included (also sanitized)
+ * - Clipboard used for email to avoid URL length limits
+ * - User controls when/if to send error reports
+ *
+ * **Error reporting flow:**
+ * 1. Error occurs in React component tree
+ * 2. Error boundary catches via componentDidCatch
+ * 3. Error sanitized asynchronously (removes PII)
+ * 4. Loading state -> sanitized error UI
+ * 5. User can:
+ *    - Add optional context (what they were doing)
+ *    - Copy report & open email client
+ *    - Save report to file
+ *    - Reload app
+ *
+ * **Integration with error handling architecture:**
+ * - Layer 1 (this component): Catches React errors
+ * - Layer 2 (globalErrorHandler): Catches global JS/promise errors
+ * - Layer 3 (main.ts): Catches main process errors
+ *
+ * See errorSanitizer.ts for PII removal implementation.
+ * See globalErrorHandler.ts for non-React error handling.
+ * See docs/ERROR_BOUNDARIES.md for complete architecture.
+ *
+ * @example
+ * // Wrap entire app
+ * <PrivacyErrorBoundary supportEmail="support@hyle.app">
+ *   <App />
+ * </PrivacyErrorBoundary>
+ *
+ * @example
+ * // Wrap critical sections
+ * <PrivacyErrorBoundary>
+ *   <GameCanvas />
+ * </PrivacyErrorBoundary>
+ *
+ * @component
+ */
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { sanitizeStack, generateReportBody, SanitizedError } from '../utils/errorSanitizer';
 
+/**
+ * Props for PrivacyErrorBoundary
+ *
+ * @property children - React components to protect with error boundary
+ * @property supportEmail - Email address for error reports (default: support@example.com)
+ */
 interface Props {
   children: ReactNode;
   supportEmail?: string;
 }
 
+/**
+ * State for PrivacyErrorBoundary
+ *
+ * @property hasError - Whether an error has been caught
+ * @property isLoading - Whether error is being sanitized (async operation)
+ * @property sanitizedError - PII-free error object, null until sanitization complete
+ * @property reportBody - Formatted error report ready for email/file export
+ * @property copyStatus - Status of copy-to-clipboard operation
+ * @property saveStatus - Status of save-to-file operation
+ * @property userContext - Optional user-provided context (what they were doing)
+ * @property showContextInput - Whether context input textarea is visible
+ */
 interface State {
   hasError: boolean;
   isLoading: boolean;
@@ -18,10 +92,10 @@ interface State {
 }
 
 /**
- * Privacy-focused Error Boundary component.
+ * Privacy-focused Error Boundary component
  *
  * Catches React errors, sanitizes them to remove PII (usernames, file paths),
- * and provides a user-friendly interface for reporting errors via email.
+ * and provides a user-friendly interface for reporting errors.
  */
 class PrivacyErrorBoundary extends Component<Props, State> {
   static defaultProps = {
@@ -42,15 +116,33 @@ class PrivacyErrorBoundary extends Component<Props, State> {
     };
   }
 
+  /**
+   * React lifecycle method called when error is caught
+   * Immediately sets hasError to show error UI, isLoading for async sanitization
+   */
   static getDerivedStateFromError(): Partial<State> {
     return { hasError: true, isLoading: true };
   }
 
+  /**
+   * React lifecycle method called after error is caught
+   * Delegates to async method to avoid blocking React lifecycle
+   *
+   * @param error - The error that was thrown
+   * @param errorInfo - React error info including component stack
+   */
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Delegate to async method to keep componentDidCatch synchronous per React lifecycle requirements
     this.sanitizeAndSetError(error, errorInfo);
   }
 
+  /**
+   * Sanitizes error and generates report body asynchronously
+   * Fallback to safe error if sanitization fails
+   *
+   * @param error - The error that was thrown
+   * @param errorInfo - React error info including component stack
+   */
   private async sanitizeAndSetError(error: Error, errorInfo: ErrorInfo): Promise<void> {
     try {
       // Get the system username for sanitization
@@ -87,6 +179,11 @@ class PrivacyErrorBoundary extends Component<Props, State> {
     }
   }
 
+  /**
+   * Copies error report to clipboard and opens email client
+   * Uses clipboard to avoid mailto URL length limits
+   * Includes optional user context if provided
+   */
   handleCopyAndEmail = async (): Promise<void> => {
     const { reportBody, userContext } = this.state;
     const { supportEmail } = this.props;
@@ -142,6 +239,10 @@ ${userContext.trim()}
     }
   };
 
+  /**
+   * Saves error report to file using native save dialog
+   * Includes optional user context if provided
+   */
   handleSaveToFile = async (): Promise<void> => {
     const { reportBody, userContext } = this.state;
 
@@ -191,14 +292,23 @@ ${userContext.trim()}
     }
   };
 
+  /**
+   * Updates user context state as user types
+   */
   handleContextChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
     this.setState({ userContext: e.target.value });
   };
 
+  /**
+   * Toggles visibility of context input textarea
+   */
   toggleContextInput = (): void => {
     this.setState((prev) => ({ showContextInput: !prev.showContextInput }));
   };
 
+  /**
+   * Reloads the application to attempt recovery from error
+   */
   handleReload = (): void => {
     window.location.reload();
   };
