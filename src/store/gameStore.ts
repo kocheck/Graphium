@@ -9,7 +9,7 @@ import { create } from 'zustand';
  * @property id - Unique identifier (generated with crypto.randomUUID())
  * @property x - X coordinate in pixels, grid-snapped (e.g., 0, 50, 100, 150...)
  * @property y - Y coordinate in pixels, grid-snapped (e.g., 0, 50, 100, 150...)
- * @property src - Image URL (file:// for uploaded, https:// for library, media:// for renderer)
+ * @property src - Image URL (file:// for uploaded, https:// for library). Note: Only file:// and https:// URLs are stored in the store; conversion to media:// is performed at render time (e.g., in the URLImage component).
  * @property scale - Size multiplier for grid cells (1 = 1x1, 2 = 2x2 for Large creatures)
  *
  * @example
@@ -127,7 +127,7 @@ export type GridType = 'LINES' | 'DOTS' | 'HIDDEN';
 /**
  * ToastMessage represents a temporary notification
  *
- * Toasts appear at top of screen, auto-dismiss after 3 seconds.
+ * Toasts appear at top of screen, auto-dismiss after 5 seconds.
  * Used for user feedback (save success, upload errors, etc.).
  *
  * @property message - Text content to display
