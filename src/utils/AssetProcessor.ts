@@ -107,6 +107,9 @@ export const processImage = async (file: File, type: AssetType): Promise<string>
   });
 
   // 5. Send to main process for file storage
+  if (!window.ipcRenderer) {
+    throw new Error('IPC not available for asset processing');
+  }
   const buffer = await blob.arrayBuffer();
   // @ts-ignore - IPC types not available, will be fixed with proper type declarations
   const filePath = await window.ipcRenderer.invoke('SAVE_ASSET_TEMP', buffer, file.name.replace(/\.[^/.]+$/, "") + ".webp");

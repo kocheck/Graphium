@@ -12,6 +12,10 @@ jobs:
   accessibility-audit:
     name: WCAG AA Contrast Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Checkout code

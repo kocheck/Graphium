@@ -21,6 +21,7 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import fs from 'fs'
+import { injectMockElectronAPIs } from './helpers/mockElectronAPIs'
 
 test.describe('Accessibility Audit', () => {
   test.beforeEach(async ({ page }) => {
@@ -31,10 +32,13 @@ test.describe('Accessibility Audit', () => {
       ? 'http://localhost:4173' // Vite preview server
       : 'http://localhost:5173' // Vite dev server
 
+    // Inject mock Electron APIs before the page loads
+    await page.addInitScript(injectMockElectronAPIs)
+
     await page.goto(baseURL)
 
-    // Wait for app to fully render
-    await page.waitForSelector('#root')
+    // Wait for app to fully render (visible, not just present)
+    await page.waitForSelector('#root:visible', { timeout: 60000 })
   })
 
   test('Light theme - no WCAG AA violations', async ({ page }) => {

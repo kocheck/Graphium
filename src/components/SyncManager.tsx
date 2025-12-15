@@ -71,6 +71,12 @@ import { useGameStore } from '../store/gameStore';
  */
 const SyncManager = () => {
   useEffect(() => {
+    // Skip if ipcRenderer is not available (e.g., in browser testing)
+    if (!window.ipcRenderer) {
+      console.warn('[SyncManager] ipcRenderer not available, sync disabled');
+      return;
+    }
+
     // Detect window type from URL parameter
     // World Window URL: http://localhost:5173?type=world
     // Architect Window URL: http://localhost:5173 (no params)

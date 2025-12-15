@@ -118,6 +118,10 @@ function App() {
            <div className="toolbar-divider w-px mx-1"></div>
            {/* Save button: Serialize campaign to .hyle ZIP file */}
            <button className="btn btn-default" onClick={async () => {
+              if (!window.ipcRenderer) {
+                alert('IPC not available');
+                return;
+              }
               try {
                   // Extract campaign data from store (exclude actions)
                   const state = useGameStore.getState();
@@ -136,10 +140,14 @@ function App() {
                   console.error(e);
                   alert('Failed to save: ' + e);
               }
-           }}>Save</button>
+           }} disabled={!window.ipcRenderer}>Save</button>
 
            {/* Load button: Deserialize .hyle file and restore state */}
            <button className="btn btn-default" onClick={async () => {
+              if (!window.ipcRenderer) {
+                alert('IPC not available');
+                return;
+              }
               try {
                 // IPC invoke to main process (shows open dialog, extracts ZIP)
                 // See electron/main.ts:145-181 for handler implementation
@@ -154,13 +162,19 @@ function App() {
                   console.error(e);
                   alert('Failed to load: ' + e);
               }
-           }}>Load</button>
+           }} disabled={!window.ipcRenderer}>Load</button>
 
            <div className="toolbar-divider w-px mx-1"></div>
 
            {/* World View button: Create projector window for players */}
            {/* See electron/main.ts:55-73 for createWorldWindow() implementation */}
-           <button className="btn btn-default" onClick={() => window.ipcRenderer.send('create-world-window')}>
+           <button className="btn btn-default" onClick={() => {
+             if (!window.ipcRenderer) {
+               alert('IPC not available');
+               return;
+             }
+             window.ipcRenderer.send('create-world-window');
+           }} disabled={!window.ipcRenderer}>
              World View
            </button>
         </div>
