@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 const Toast = () => {
@@ -16,8 +16,8 @@ const Toast = () => {
 
     if (!toast) return null;
 
-    const bgColor = toast.type === 'error' ? 'bg-red-600' : 
-                    toast.type === 'success' ? 'bg-green-600' : 
+    const bgColor = toast.type === 'error' ? 'bg-red-600' :
+                    toast.type === 'success' ? 'bg-green-600' :
                     'bg-blue-600';
 
     return (
@@ -27,7 +27,7 @@ const Toast = () => {
                     {toast.type === 'error' ? '⚠️' : toast.type === 'success' ? '✓' : 'ℹ️'}
                 </span>
                 <span className="flex-1">{toast.message}</span>
-                <button 
+                <button
                     onClick={clearToast}
                     className="text-white/80 hover:text-white text-xl leading-none"
                     aria-label="Close notification"

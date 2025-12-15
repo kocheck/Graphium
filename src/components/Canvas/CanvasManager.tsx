@@ -136,99 +136,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
 
-    // Consolidated keyboard event handling for canvas operations
-  useEffect(() => {
-    const isEditableElement = (el: EventTarget | null): boolean => {
-      if (!(el instanceof HTMLElement)) return false;
-      const tag = el.tagName.toLowerCase();
-      return (
-        tag === 'input' ||
-        tag === 'textarea' ||
-        el.isContentEditable
-      );
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Track Alt Key (always track, even in inputs, for drag operations)
-      if (e.key === 'Alt') {
-          setIsAltPressed(true);
-      }
-
-      // Ignore other operations if typing in an input
-      if (isEditableElement(e.target)) return;
-
-      // Delete/Backspace - remove selected items
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-          if (selectedIds.length > 0) {
-              removeTokens(selectedIds);
-              removeDrawings(selectedIds);
-              setSelectedIds([]);
-          }
-      }
-
-      // Space - enable pan mode
-      if (e.code === 'Space' && !e.repeat) {
-          e.preventDefault();
-          setIsSpacePressed(true);
-      }
-
-      // Zoom in with + or =
-      if ((e.code === 'Equal' || e.code === 'NumpadAdd') && !e.repeat) {
-          e.preventDefault();
-          handleKeyboardZoom(true);
-      }
-
-      // Zoom out with -
-      if ((e.code === 'Minus' || e.code === 'NumpadSubtract') && !e.repeat) {
-          e.preventDefault();
-          handleKeyboardZoom(false);
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-        // Always track Alt key release
-        if (e.key === 'Alt') {
-            setIsAltPressed(false);
-        }
-        
-        // Space key release
-        if (!isEditableElement(e.target) && e.code === 'Space') {
-            setIsSpacePressed(false);
-        }
-    };
-
-    const handleBlur = () => {
-        setIsSpacePressed(false);
-        setIsAltPressed(false);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleBlur);
-
-    return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('keyup', handleKeyUp);
-        window.removeEventListener('blur', handleBlur);
-    };
-  }, [selectedIds, removeTokens, removeDrawings, handleKeyboardZoom]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current) {
-        setSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize();
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   // Helper function to clamp viewport position within bounds
   const clampPosition = useCallback((newPos: { x: number, y: number }, newScale: number) => {
       // If no map, allow free movement? Or constrain to some large box?
@@ -294,25 +201,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       setPosition(clampedPos);
   }, [size.width, size.height, map, clampPosition]);
 
-  // Auto-center on map load
-  const lastMapSrc = useRef<string | null>(null);
-  useEffect(() => {
-      if (map && map.src !== lastMapSrc.current) {
-          lastMapSrc.current = map.src;
-          const mapCenterX = map.x + (map.width * map.scale) / 2;
-          const mapCenterY = map.y + (map.height * map.scale) / 2;
-          // Use setScale callback to get current scale value instead of stale closure
-          setScale(currentScale => {
-              const newX = (size.width / 2) - (mapCenterX * currentScale);
-              const newY = (size.height / 2) - (mapCenterY * currentScale);
-              setPosition({ x: newX, y: newY });
-              return currentScale; // Return unchanged scale
-          });
-      } else if (!map) {
-          lastMapSrc.current = null;
-      }
-  }, [map, size.width, size.height]); // Exclude scale to avoid re-centering on zoom
-
   // Keyboard zoom (centered on viewport)
   const handleKeyboardZoom = useCallback((zoomIn: boolean) => {
       if (!containerRef.current) return;
@@ -323,6 +211,101 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
       performZoom(newScale, centerX, centerY, scale, position);
   }, [scale, position, size.width, size.height, performZoom]);
+
+    // Consolidated keyboard event handling for canvas operations
+  useEffect(() => {
+    const isEditableElement = (el: EventTarget | null): boolean => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName.toLowerCase();
+      return (
+        tag === 'input' ||
+        tag === 'textarea' ||
+        el.isContentEditable
+      );
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Track Alt Key (always track, even in inputs, for drag operations)
+      if (e.key === 'Alt') {
+          setIsAltPressed(true);
+      }
+
+      // Ignore other operations if typing in an input
+      if (isEditableElement(e.target)) return;
+
+      // Delete/Backspace - remove selected items
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+          if (selectedIds.length > 0) {
+              removeTokens(selectedIds);
+              removeDrawings(selectedIds);
+              setSelectedIds([]);
+          }
+      }
+
+      // Space - enable pan mode
+      if (e.code === 'Space' && !e.repeat) {
+          e.preventDefault();
+          setIsSpacePressed(true);
+      }
+
+      // Zoom in with + or =
+      if ((e.code === 'Equal' || e.code === 'NumpadAdd') && !e.repeat) {
+          e.preventDefault();
+          handleKeyboardZoom(true);
+      }
+
+      // Zoom out with -
+      if ((e.code === 'Minus' || e.code === 'NumpadSubtract') && !e.repeat) {
+          e.preventDefault();
+          handleKeyboardZoom(false);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+        // Always track Alt key release
+        if (e.key === 'Alt') {
+            setIsAltPressed(false);
+        }
+
+        // Space key release
+        if (!isEditableElement(e.target) && e.code === 'Space') {
+            setIsSpacePressed(false);
+        }
+    };
+
+    const handleBlur = () => {
+        setIsSpacePressed(false);
+        setIsAltPressed(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+        window.removeEventListener('blur', handleBlur);
+    };
+  }, [selectedIds, removeTokens, removeDrawings, handleKeyboardZoom]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        setSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+
 
   // handleWheel moved to below to use clamp logic
 
