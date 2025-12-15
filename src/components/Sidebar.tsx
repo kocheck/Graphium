@@ -102,7 +102,14 @@ const Sidebar = () => {
             const src = await processImage(file, 'MAP');
 
              // Create a temporary image to get dimensions using a safe Object URL
-            const objectUrl = URL.createObjectURL(file);
+            let objectUrl: string;
+            try {
+                objectUrl = URL.createObjectURL(file);
+            } catch (err) {
+                console.error("Failed to create object URL for map image", err);
+                showToast('Failed to process map image. The file may be invalid or unsupported.', 'error');
+                return;
+            }
             const img = new Image();
             img.src = objectUrl;
             img.onload = () => {

@@ -160,9 +160,13 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
     
     // If there would be too many dots, fall back to a simpler grid or skip
     if (totalDots > MAX_DOTS_THRESHOLD) {
-      const step = Math.ceil(Math.sqrt(totalDots / MAX_DOTS_THRESHOLD)) * gridSize;
+      // Use a power-of-2 step multiplier to maintain grid alignment and predictable iteration
+      const minMultiplier = Math.ceil(Math.sqrt(totalDots / MAX_DOTS_THRESHOLD));
+      // Find the next power of 2 greater than or equal to minMultiplier
+      const powerOf2Multiplier = Math.pow(2, Math.ceil(Math.log2(minMultiplier)));
+      const step = gridSize * powerOf2Multiplier;
       if (!hasWarnedAboutDensity) {
-        console.warn(`Grid too dense for DOTS mode (${totalDots} dots > ${MAX_DOTS_THRESHOLD}), rendering subset with step size ${step}px`);
+        console.warn(`Grid too dense for DOTS mode (${totalDots} dots > ${MAX_DOTS_THRESHOLD}), rendering subset with step size ${step}px (multiplier: ${powerOf2Multiplier})`);
         hasWarnedAboutDensity = true;
       }
       // Render a subset by increasing step size

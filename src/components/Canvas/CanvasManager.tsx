@@ -16,6 +16,7 @@ const MAX_SCALE = 5;
 const ZOOM_SCALE_BY = 1.1;
 const MIN_PINCH_DISTANCE = 0.001; // Guard against near-zero division or very small distances that could cause extreme scale changes
 const VIEWPORT_CLAMP_PADDING = 1000; // Padding around map bounds for viewport constraints
+const DEFAULT_BOUNDS_SIZE = 5000; // Default bounds size when no map is present
 
 // Helper functions for touch/pinch calculations
 const calculatePinchDistance = (touch1: Touch, touch2: Touch): number => {
@@ -148,7 +149,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
           maxX: map.x + (map.width * map.scale),
           minY: map.y,
           maxY: map.y + (map.height * map.scale)
-      } : { minX: -5000, maxX: 5000, minY: -5000, maxY: 5000 };
+      } : { minX: -DEFAULT_BOUNDS_SIZE, maxX: DEFAULT_BOUNDS_SIZE, minY: -DEFAULT_BOUNDS_SIZE, maxY: DEFAULT_BOUNDS_SIZE };
       // We are constraining the POSITION of the stage (which acts as the camera offset).
       // Stage X moves content right. Positive Stage X = Content Shift Right.
       // Viewport X = -StageX / Scale.

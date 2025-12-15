@@ -190,20 +190,16 @@ class PrivacyErrorBoundary extends Component<Props, State> {
 
     try {
       // Build the final report with optional user context
-      let finalReport = reportBody;
-      if (userContext.trim()) {
-        finalReport = reportBody.replace(
-          '================================================================================\n                            END OF REPORT',
-          `--------------------------------------------------------------------------------
+      const userContextBlock = userContext.trim()
+        ? `--------------------------------------------------------------------------------
                             USER CONTEXT (Optional)
 --------------------------------------------------------------------------------
 
 ${userContext.trim()}
 
-================================================================================
-                            END OF REPORT`
-        );
-      }
+`
+        : '';
+      const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
       // Copy the full report to clipboard
       await navigator.clipboard.writeText(finalReport);
@@ -250,20 +246,16 @@ ${userContext.trim()}
       this.setState({ saveStatus: 'saving' });
 
       // Build the final report with optional user context
-      let finalReport = reportBody;
-      if (userContext.trim()) {
-        finalReport = reportBody.replace(
-          '================================================================================\n                            END OF REPORT',
-          `--------------------------------------------------------------------------------
+      const userContextBlock = userContext.trim()
+        ? `--------------------------------------------------------------------------------
                             USER CONTEXT (Optional)
 --------------------------------------------------------------------------------
 
 ${userContext.trim()}
 
-================================================================================
-                            END OF REPORT`
-        );
-      }
+`
+        : '';
+      const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
       // Save to file using native dialog
       const result = await window.errorReporting.saveToFile(finalReport);
