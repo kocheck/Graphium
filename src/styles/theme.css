@@ -157,11 +157,12 @@
   --app-text-disabled: var(--slate-9);     /* Disabled text (below AA threshold - intentional) */
 
   /* ===== Interactive (Blue) ===== */
-  --app-accent-bg: var(--blue-3);          /* Accent background (buttons, tags) */
+  --app-accent-bg: var(--slate-12);          /* Accent background (buttons, tags) */
   --app-accent-bg-hover: var(--blue-4);    /* Accent hover state */
   --app-accent-bg-active: var(--blue-5);   /* Accent active state */
-  --app-accent-solid: var(--blue-9);       /* Solid accent (primary buttons) */
-  --app-accent-solid-hover: var(--blue-10); /* Solid accent hover */
+  --app-accent-solid: #0070C1;             /* Solid accent - WCAG AA compliant with white (4.51:1) */
+  --app-accent-solid-hover: #005A9C;       /* Solid accent hover - darker for 6:1 contrast */
+  --app-accent-solid-text: white;          /* Text color for solid buttons */
   --app-accent-text: var(--blue-11);       /* Accent text (links) */
   --app-accent-text-contrast: var(--blue-12); /* High contrast accent text */
 
@@ -225,8 +226,9 @@
   --app-accent-bg: var(--blue-3);
   --app-accent-bg-hover: var(--blue-4);
   --app-accent-bg-active: var(--blue-5);
-  --app-accent-solid: var(--blue-9);
-  --app-accent-solid-hover: var(--blue-10);
+  --app-accent-solid: #0070C1;             /* Solid accent - WCAG AA compliant with white */
+  --app-accent-solid-hover: #005A9C;       /* Solid accent hover */
+  --app-accent-solid-text: white;          /* Text color for solid buttons */
   --app-accent-text: var(--blue-11);
   --app-accent-text-contrast: var(--blue-12);
 

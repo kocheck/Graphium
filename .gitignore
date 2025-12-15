@@ -26,3 +26,8 @@ dist-ssr
 # Electron
 release
 dist-electron
+
+# Playwright
+playwright-report
+test-results
+accessibility-violations*.json
