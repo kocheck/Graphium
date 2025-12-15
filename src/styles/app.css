@@ -1,0 +1,113 @@
+/**
+ * Application-specific styles using theme variables
+ *
+ * This file provides utility classes that work with the theme system.
+ * Use these classes instead of hardcoded Tailwind colors.
+ */
+
+/* Root container */
+.app-root {
+  background: var(--app-bg-base);
+  color: var(--app-text-primary);
+}
+
+/* Toolbar */
+.toolbar {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border-subtle);
+}
+
+.toolbar-divider {
+  background: var(--app-border-subtle);
+}
+
+/* Buttons */
+.btn {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.btn-default {
+  background: var(--app-bg-active);
+  color: var(--app-text-primary);
+}
+
+.btn-default:hover {
+  background: var(--app-bg-hover);
+}
+
+.btn-primary {
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+}
+
+.btn-primary:hover {
+  background: var(--app-accent-solid-hover);
+}
+
+/* Tool buttons - active state */
+.btn-tool {
+  background: var(--app-bg-active);
+  color: var(--app-text-primary);
+}
+
+.btn-tool:hover {
+  background: var(--app-bg-hover);
+}
+
+.btn-tool.active {
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+}
+
+.btn-tool.active:hover {
+  background: var(--app-accent-solid-hover);
+}
+
+/* Sidebar */
+.sidebar {
+  background: var(--app-bg-surface);
+  border-right: 1px solid var(--app-border-subtle);
+  color: var(--app-text-primary);
+}
+
+.sidebar-section {
+  border-top: 1px solid var(--app-border-subtle);
+}
+
+.sidebar-input {
+  background: var(--app-bg-active);
+  border: 1px solid var(--app-border-default);
+  color: var(--app-text-primary);
+}
+
+.sidebar-input:focus {
+  outline: none;
+  border-color: var(--app-accent-solid);
+}
+
+.sidebar-token {
+  background: var(--app-bg-active);
+  color: var(--app-text-primary);
+}
+
+.sidebar-token:hover {
+  background: var(--app-bg-hover);
+}
+
+/* Info boxes */
+.info-box {
+  background: var(--app-accent-bg);
+  border: 1px solid var(--app-accent-solid);
+  color: var(--app-accent-text-contrast);
+}
+
+/* Canvas */
+.canvas-container {
+  background: var(--app-bg-base);
+}

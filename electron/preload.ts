@@ -136,6 +136,39 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   // ...
 })
 
+// --------- Theme API ---------
+contextBridge.exposeInMainWorld('themeAPI', {
+  /**
+   * Get current theme state
+   * @returns {mode: 'light'|'dark'|'system', effectiveTheme: 'light'|'dark'}
+   */
+  getThemeState: (): Promise<{ mode: string; effectiveTheme: string }> =>
+    ipcRenderer.invoke('get-theme-state'),
+
+  /**
+   * Set theme mode
+   * @param mode - 'light', 'dark', or 'system'
+   */
+  setThemeMode: (mode: string): Promise<void> =>
+    ipcRenderer.invoke('set-theme-mode', mode),
+
+  /**
+   * Listen for theme changes from main process
+   * @param callback - Called when theme changes
+   * @returns Cleanup function
+   */
+  onThemeChanged: (callback: (data: { mode: string; effectiveTheme: string }) => void) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const listener = (_event: any, data: { mode: string; effectiveTheme: string }) => callback(data)
+    ipcRenderer.on('theme-changed', listener)
+
+    // Return cleanup function
+    return () => {
+      ipcRenderer.off('theme-changed', listener)
+    }
+  },
+})
+
 // --------- Error Reporting API ---------
 contextBridge.exposeInMainWorld('errorReporting', {
   /**

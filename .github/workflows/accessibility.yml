@@ -1,0 +1,85 @@
+name: Accessibility Audit
+
+# Run on all pull requests to NEXT branch
+# Ensures WCAG AA compliance before merging
+on:
+  pull_request:
+    branches:
+      - NEXT
+      - main
+
+jobs:
+  accessibility-audit:
+    name: WCAG AA Contrast Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build:web
+
+      - name: Run accessibility tests
+        run: npm run test:a11y
+        continue-on-error: false  # Fail the build on accessibility violations
+        env:
+          CI: true
+
+      - name: Upload accessibility report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'accessibility-violations.json';
+
+            let violations = [];
+            if (fs.existsSync(reportPath)) {
+              violations = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            }
+
+            const comment = `## ❌ Accessibility Audit Failed
+
+            This pull request introduces WCAG AA contrast violations. Please fix the following issues before merging:
+
+            ${violations.length > 0 ? violations.map(v => `- **${v.id}**: ${v.description}\n  - Impact: ${v.impact}\n  - Affected elements: ${v.nodes.length}`).join('\n') : 'See uploaded report for details.'}
+
+            ### Resources
+            - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+            - [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)
+            - [Radix Colors Documentation](https://www.radix-ui.com/colors)
+
+            **Reminder:** Always use semantic CSS variables (e.g., \`--app-text-primary\`) instead of raw color values.
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

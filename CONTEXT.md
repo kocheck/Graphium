@@ -587,6 +587,7 @@ Campaign files must be:
 6. Campaign save/load (.hyle files)
 7. Drag-and-drop asset upload
 8. Library tokens (hardcoded examples)
+9. Accessible theme system with light/dark mode (Radix Colors, WCAG AA compliant)
 
 ### High Priority (Next to Implement) 🔥
 

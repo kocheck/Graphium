@@ -108,7 +108,7 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
   visibleBounds,
   gridSize,
   stroke = '#222',
-  opacity = 0.5,
+  opacity = 0.5, // THEME ADJUSTMENT: Modify this value to change grid visibility (0.0 = invisible, 1.0 = fully opaque)
   type = 'LINES'
 }) => {
   if (type === 'HIDDEN') return null;

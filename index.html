@@ -5,6 +5,34 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hyle: World given form</title>
+
+    <!--
+      FOUC Prevention: Apply theme before first paint
+
+      This script runs BEFORE CSS/React loads to prevent flash of wrong theme.
+      It synchronously reads system theme and applies data-theme attribute.
+      ThemeManager component will sync with stored preference later.
+    -->
+    <script>
+      (function() {
+        // Detect system theme preference
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = systemPrefersDark ? 'dark' : 'light';
+
+        // Apply theme immediately (before CSS loads)
+        document.documentElement.setAttribute('data-theme', theme);
+
+        // Add 'theme-loading' class to body when it's available
+        // ThemeManager will remove this after syncing with stored preference
+        if (document.body) {
+          document.body.classList.add('theme-loading');
+        } else {
+          document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('theme-loading');
+          });
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

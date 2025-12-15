@@ -232,8 +232,10 @@ async function handleGlobalError(
   source: StoredError['source']
 ): Promise<StoredError | null> {
   try {
-    // Get username for sanitization
-    const username = await window.errorReporting.getUsername();
+    // Get username for sanitization (fallback if errorReporting not available)
+    const username = window.errorReporting
+      ? await window.errorReporting.getUsername()
+      : 'unknown';
 
     // Sanitize the error
     const sanitizedError = sanitizeStack(error, username);

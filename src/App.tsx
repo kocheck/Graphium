@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import CanvasManager from './components/Canvas/CanvasManager'
 import SyncManager from './components/SyncManager'
+import { ThemeManager } from './components/ThemeManager'
 import Sidebar from './components/Sidebar'
 import Toast from './components/Toast'
 import { useGameStore } from './store/gameStore'
@@ -83,7 +84,8 @@ function App() {
   }, []);
 
   return (
-    <div className="w-full h-screen bg-neutral-900 text-white flex overflow-hidden">
+    <div className="app-root w-full h-screen flex overflow-hidden">
+      <ThemeManager />
       <SyncManager />
       <Toast />
 
@@ -92,17 +94,17 @@ function App() {
       <div className="flex-1 relative h-full">
         <CanvasManager tool={tool} color={color} />
         {/* Toolbar */}
-        <div className="fixed top-4 right-4 bg-neutral-800 p-2 rounded shadow flex gap-2 z-50">
+        <div className="toolbar fixed top-4 right-4 p-2 rounded shadow flex gap-2 z-50">
            <button
-             className={`px-3 py-1 rounded text-sm font-medium ${tool === 'select' ? 'bg-blue-600' : 'bg-neutral-600 hover:bg-neutral-500'}`}
+             className={`btn btn-tool ${tool === 'select' ? 'active' : ''}`}
              onClick={() => setTool('select')}>Select (V)</button>
            <button
-             className={`px-3 py-1 rounded text-sm font-medium ${tool === 'marker' ? 'bg-blue-600' : 'bg-neutral-600 hover:bg-neutral-500'}`}
+             className={`btn btn-tool ${tool === 'marker' ? 'active' : ''}`}
              onClick={() => setTool('marker')}>Marker (M)</button>
            <button
-             className={`px-3 py-1 rounded text-sm font-medium ${tool === 'eraser' ? 'bg-blue-600' : 'bg-neutral-600 hover:bg-neutral-500'}`}
+             className={`btn btn-tool ${tool === 'eraser' ? 'active' : ''}`}
              onClick={() => setTool('eraser')}>Eraser (E)</button>
-           <div className="w-px bg-neutral-600 mx-1"></div>
+           <div className="toolbar-divider w-px mx-1"></div>
            <label className="flex items-center gap-2 cursor-pointer">
              <span className="text-sm font-medium">Color (I)</span>
              <input
@@ -113,9 +115,13 @@ function App() {
                className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
              />
            </label>
-           <div className="w-px bg-neutral-600 mx-1"></div>
+           <div className="toolbar-divider w-px mx-1"></div>
            {/* Save button: Serialize campaign to .hyle ZIP file */}
-           <button className="px-3 py-1 bg-neutral-600 hover:bg-neutral-500 rounded text-sm font-medium" onClick={async () => {
+           <button className="btn btn-default" onClick={async () => {
+              if (!window.ipcRenderer) {
+                alert('IPC not available');
+                return;
+              }
               try {
                   // Extract campaign data from store (exclude actions)
                   const state = useGameStore.getState();
@@ -134,10 +140,14 @@ function App() {
                   console.error(e);
                   alert('Failed to save: ' + e);
               }
-           }}>Save</button>
+           }} disabled={!window.ipcRenderer}>Save</button>
 
            {/* Load button: Deserialize .hyle file and restore state */}
-           <button className="px-3 py-1 bg-neutral-600 hover:bg-neutral-500 rounded text-sm font-medium" onClick={async () => {
+           <button className="btn btn-default" onClick={async () => {
+              if (!window.ipcRenderer) {
+                alert('IPC not available');
+                return;
+              }
               try {
                 // IPC invoke to main process (shows open dialog, extracts ZIP)
                 // See electron/main.ts:145-181 for handler implementation
@@ -152,13 +162,19 @@ function App() {
                   console.error(e);
                   alert('Failed to load: ' + e);
               }
-           }}>Load</button>
+           }} disabled={!window.ipcRenderer}>Load</button>
 
-           <div className="w-px bg-neutral-600 mx-1"></div>
+           <div className="toolbar-divider w-px mx-1"></div>
 
            {/* World View button: Create projector window for players */}
            {/* See electron/main.ts:55-73 for createWorldWindow() implementation */}
-           <button className="px-3 py-1 bg-neutral-600 hover:bg-neutral-500 rounded text-sm font-medium" onClick={() => window.ipcRenderer.send('create-world-window')}>
+           <button className="btn btn-default" onClick={() => {
+             if (!window.ipcRenderer) {
+               alert('IPC not available');
+               return;
+             }
+             window.ipcRenderer.send('create-world-window');
+           }} disabled={!window.ipcRenderer}>
              World View
            </button>
         </div>

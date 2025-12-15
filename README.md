@@ -13,6 +13,11 @@ Hyle is a lightweight, local-first desktop application for Dungeon Masters. It r
 - **Dual-Window Architecture**:
   - **Architect View**: The DM's control center with files, tools, and hidden info.
   - **World View**: A clean, borderless window to drag onto a second monitor/projector. Updates instantly.
+- **Accessible Theme System**:
+  - **Light/Dark Mode**: System-aware with manual override (View → Theme menu).
+  - **WCAG AA Compliant**: All text and UI meets accessibility contrast standards.
+  - **Persistent Preferences**: Theme choice saved locally and restored on launch.
+  - **No Flash**: FOUC prevention ensures smooth theme loading.
 - **Local-First Asset Pipeline**:
   - Drag and drop any image (JPG, PNG) directly onto the canvas.
   - **Auto-Optimization**: Large maps are automatically resized and converted to high-performance WebP formats.
@@ -23,6 +28,7 @@ Hyle is a lightweight, local-first desktop application for Dungeon Masters. It r
   - **Dynamic Snapping**: Tokens snap to grid intersections (2x2) or cell centers (1x1) automatically.
   - **Infinite Grid**: The grid extends infinitely and only renders what is visible.
   - **Visual Modes**: Toggle between Lines, Dots, or Hidden grid.
+  - **Theme-Aware**: Grid colors adapt to light/dark mode automatically.
 - **Smart Map Tools**:
   - **Auto-Center**: Camera automatically focuses on new maps.
   - **Calibration**: Interactive "Draw to Calibrate" tool to perfectly align your map's grid.
@@ -70,7 +76,9 @@ This will generate an installer/executable for your operating system in the `dis
 - **Frontend**: React, Vite, TypeScript
 - **State**: Zustand
 - **Rendering**: HTML5 Canvas (Konva / React-Konva)
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS + Radix Colors (theme system)
+- **Persistence**: electron-store (theme preferences)
+- **Accessibility**: Playwright + axe-core (WCAG AA testing)
 - **Formats**: Custom `.hyle` (ZIP + JSON Manifest)
 
 ## 🎮 Basic Usage

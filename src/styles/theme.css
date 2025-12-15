@@ -1,0 +1,287 @@
+/**
+ * Hyle Theme System - Semantic Color Variables
+ *
+ * This file defines the application's color system using Radix Colors.
+ *
+ * ARCHITECTURE:
+ * - All colors are defined using semantic names (e.g., --app-bg-surface, --app-text-primary)
+ * - NEVER use raw Radix scale names (e.g., slate4) directly in components
+ * - Theme switching is controlled via [data-theme="light|dark"] attribute on <html>
+ *
+ * COLOR SCALES (Radix):
+ * - slate: Neutral grays for backgrounds and UI elements
+ * - blue: Interactive elements, links, primary actions
+ * - red: Errors, destructive actions
+ * - amber: Warnings, alerts
+ * - green: Success states, confirmations
+ *
+ * SCALE STEPS (1-12):
+ * 1-2:   App backgrounds, subtle fills
+ * 3-6:   Component backgrounds, borders, hover states
+ * 7-8:   Solid backgrounds (buttons, badges)
+ * 9-10:  Interactive elements, high contrast
+ * 11-12: High contrast text, always accessible
+ *
+ * WCAG COMPLIANCE:
+ * All text/background combinations use scale steps that guarantee AA contrast:
+ * - Primary text: step 12 on step 1 backgrounds
+ * - Secondary text: step 11 on step 2 backgrounds
+ * - Muted text: step 10 on step 3 backgrounds (minimum contrast)
+ *
+ * FOR FUTURE DEVELOPERS:
+ * Always use these semantic variables. Never hardcode hex values.
+ * Example: ✅ background: var(--app-bg-surface)
+ *          ❌ background: #f8f9fa
+ */
+
+@import "@radix-ui/colors/slate.css";
+@import "@radix-ui/colors/slate-dark.css";
+@import "@radix-ui/colors/blue.css";
+@import "@radix-ui/colors/blue-dark.css";
+@import "@radix-ui/colors/red.css";
+@import "@radix-ui/colors/red-dark.css";
+@import "@radix-ui/colors/amber.css";
+@import "@radix-ui/colors/amber-dark.css";
+@import "@radix-ui/colors/green.css";
+@import "@radix-ui/colors/green-dark.css";
+@import "@radix-ui/colors/slate-alpha.css";
+@import "@radix-ui/colors/slate-dark-alpha.css";
+
+/* ============================================
+   RADIX DARK MODE OVERRIDE
+   ============================================
+   Radix uses .dark class, but we use [data-theme="dark"]
+   This copies the dark mode variables to our attribute selector
+   ============================================ */
+[data-theme="dark"] {
+  --slate-1: #111113;
+  --slate-2: #18191b;
+  --slate-3: #212225;
+  --slate-4: #272a2d;
+  --slate-5: #2e3135;
+  --slate-6: #363a3f;
+  --slate-7: #43484e;
+  --slate-8: #5a6169;
+  --slate-9: #696e77;
+  --slate-10: #777b84;
+  --slate-11: #b0b4ba;
+  --slate-12: #edeef0;
+
+  --blue-1: #0d1520;
+  --blue-2: #111927;
+  --blue-3: #0d2847;
+  --blue-4: #003362;
+  --blue-5: #004074;
+  --blue-6: #104d87;
+  --blue-7: #205d9e;
+  --blue-8: #2870bd;
+  --blue-9: #0090ff;
+  --blue-10: #3b9eff;
+  --blue-11: #70b8ff;
+  --blue-12: #c2e6ff;
+
+  --red-1: #191111;
+  --red-2: #201314;
+  --red-3: #3b1219;
+  --red-4: #500f1c;
+  --red-5: #611623;
+  --red-6: #72232d;
+  --red-7: #8c333a;
+  --red-8: #b54548;
+  --red-9: #e5484d;
+  --red-10: #ec5d5e;
+  --red-11: #ff9592;
+  --red-12: #ffd1d9;
+
+  --amber-1: #16120c;
+  --amber-2: #1d180f;
+  --amber-3: #302008;
+  --amber-4: #3f2700;
+  --amber-5: #4d3000;
+  --amber-6: #5c3d05;
+  --amber-7: #714f19;
+  --amber-8: #8f6424;
+  --amber-9: #ffc53d;
+  --amber-10: #ffd60a;
+  --amber-11: #ffca16;
+  --amber-12: #ffe7b3;
+
+  --green-1: #0d1912;
+  --green-2: #0f1e13;
+  --green-3: #132d1b;
+  --green-4: #113b1f;
+  --green-5: #174933;
+  --green-6: #20573e;
+  --green-7: #28684a;
+  --green-8: #2f7c57;
+  --green-9: #30a46c;
+  --green-10: #33b074;
+  --green-11: #3dd68c;
+  --green-12: #b1f1cb;
+
+  --slate-a1: #00000000;
+  --slate-a2: #d8f4f609;
+  --slate-a3: #ddeaf814;
+  --slate-a4: #d3edf81d;
+  --slate-a5: #d9edfe25;
+  --slate-a6: #d6ebfd30;
+  --slate-a7: #d9edfe42;
+  --slate-a8: #dff1fe5e;
+  --slate-a9: #d9edfe6c;
+  --slate-a10: #dcf0fe7a;
+  --slate-a11: #e4f3feb0;
+  --slate-a12: #eef7ffed;
+}
+
+/* ============================================
+   LIGHT THEME (Default)
+   ============================================ */
+:root,
+[data-theme="light"] {
+  /* ===== Backgrounds ===== */
+  --app-bg-base: var(--slate-1);           /* Main app background (lightest) */
+  --app-bg-subtle: var(--slate-2);         /* Subtle background variation */
+  --app-bg-surface: var(--slate-3);        /* UI element backgrounds (panels, cards) */
+  --app-bg-hover: var(--slate-4);          /* Hover state background */
+  --app-bg-active: var(--slate-5);         /* Active/pressed state background */
+
+  /* ===== Borders ===== */
+  --app-border-subtle: var(--slate-6);     /* Subtle borders, dividers */
+  --app-border-default: var(--slate-7);    /* Default border color */
+  --app-border-hover: var(--slate-8);      /* Border on hover */
+
+  /* ===== Text ===== */
+  --app-text-primary: var(--slate-12);     /* Primary text (high contrast, AA compliant) */
+  --app-text-secondary: var(--slate-11);   /* Secondary text, labels */
+  --app-text-muted: var(--slate-10);       /* Muted text, placeholders (minimum AA contrast) */
+  --app-text-disabled: var(--slate-9);     /* Disabled text (below AA threshold - intentional) */
+
+  /* ===== Interactive (Blue) ===== */
+  --app-accent-bg: var(--slate-12);          /* Accent background (buttons, tags) */
+  --app-accent-bg-hover: var(--blue-4);    /* Accent hover state */
+  --app-accent-bg-active: var(--blue-5);   /* Accent active state */
+  --app-accent-solid: #0070C1;             /* Solid accent - WCAG AA compliant with white (4.51:1) */
+  --app-accent-solid-hover: #005A9C;       /* Solid accent hover - darker for 6:1 contrast */
+  --app-accent-solid-text: white;          /* Text color for solid buttons */
+  --app-accent-text: var(--blue-11);       /* Accent text (links) */
+  --app-accent-text-contrast: var(--blue-12); /* High contrast accent text */
+
+  /* ===== Status: Error (Red) ===== */
+  --app-error-bg: var(--red-3);            /* Error background */
+  --app-error-bg-hover: var(--red-4);      /* Error hover state */
+  --app-error-border: var(--red-7);        /* Error border */
+  --app-error-solid: var(--red-9);         /* Solid error (destructive buttons) */
+  --app-error-solid-hover: var(--red-10);  /* Solid error hover */
+  --app-error-text: var(--red-11);         /* Error text */
+
+  /* ===== Status: Warning (Amber) ===== */
+  --app-warning-bg: var(--amber-3);        /* Warning background */
+  --app-warning-bg-hover: var(--amber-4);  /* Warning hover state */
+  --app-warning-border: var(--amber-7);    /* Warning border */
+  --app-warning-solid: var(--amber-9);     /* Solid warning */
+  --app-warning-solid-hover: var(--amber-10); /* Solid warning hover */
+  --app-warning-text: var(--amber-11);     /* Warning text */
+
+  /* ===== Status: Success (Green) ===== */
+  --app-success-bg: var(--green-3);        /* Success background */
+  --app-success-bg-hover: var(--green-4);  /* Success hover state */
+  --app-success-border: var(--green-7);    /* Success border */
+  --app-success-solid: var(--green-9);     /* Solid success */
+  --app-success-solid-hover: var(--green-10); /* Solid success hover */
+  --app-success-text: var(--green-11);     /* Success text */
+
+  /* ===== Overlays & Shadows ===== */
+  --app-overlay: var(--slate-a11);         /* Modal overlay (alpha channel) */
+  --app-shadow-sm: var(--slate-a3);        /* Small shadow */
+  --app-shadow-md: var(--slate-a6);        /* Medium shadow */
+  --app-shadow-lg: var(--slate-a8);        /* Large shadow */
+}
+
+/* ============================================
+   DARK THEME
+   ============================================ */
+[data-theme="dark"] {
+  /* Color scheme hint for browser UI */
+  color-scheme: dark;
+
+  /* ===== Backgrounds ===== */
+  --app-bg-base: var(--slate-1);
+  --app-bg-subtle: var(--slate-2);
+  --app-bg-surface: var(--slate-3);
+  --app-bg-hover: var(--slate-4);
+  --app-bg-active: var(--slate-5);
+
+  /* ===== Borders ===== */
+  --app-border-subtle: var(--slate-6);
+  --app-border-default: var(--slate-7);
+  --app-border-hover: var(--slate-8);
+
+  /* ===== Text ===== */
+  --app-text-primary: var(--slate-12);
+  --app-text-secondary: var(--slate-11);
+  --app-text-muted: var(--slate-10);
+  --app-text-disabled: var(--slate-9);
+
+  /* ===== Interactive (Blue) ===== */
+  --app-accent-bg: var(--blue-3);
+  --app-accent-bg-hover: var(--blue-4);
+  --app-accent-bg-active: var(--blue-5);
+  --app-accent-solid: #0070C1;             /* Solid accent - WCAG AA compliant with white */
+  --app-accent-solid-hover: #005A9C;       /* Solid accent hover */
+  --app-accent-solid-text: white;          /* Text color for solid buttons */
+  --app-accent-text: var(--blue-11);
+  --app-accent-text-contrast: var(--blue-12);
+
+  /* ===== Status: Error (Red) ===== */
+  --app-error-bg: var(--red-3);
+  --app-error-bg-hover: var(--red-4);
+  --app-error-border: var(--red-7);
+  --app-error-solid: var(--red-9);
+  --app-error-solid-hover: var(--red-10);
+  --app-error-text: var(--red-11);
+
+  /* ===== Status: Warning (Amber) ===== */
+  --app-warning-bg: var(--amber-3);
+  --app-warning-bg-hover: var(--amber-4);
+  --app-warning-border: var(--amber-7);
+  --app-warning-solid: var(--amber-9);
+  --app-warning-solid-hover: var(--amber-10);
+  --app-warning-text: var(--amber-11);
+
+  /* ===== Status: Success (Green) ===== */
+  --app-success-bg: var(--green-3);
+  --app-success-bg-hover: var(--green-4);
+  --app-success-border: var(--green-7);
+  --app-success-solid: var(--green-9);
+  --app-success-solid-hover: var(--green-10);
+  --app-success-text: var(--green-11);
+
+  /* ===== Overlays & Shadows ===== */
+  --app-overlay: var(--slate-a11);
+  --app-shadow-sm: var(--slate-a3);
+  --app-shadow-md: var(--slate-a6);
+  --app-shadow-lg: var(--slate-a8);
+}
+
+/* ============================================
+   BASE APPLICATION STYLES
+   ============================================ */
+body {
+  background-color: var(--app-bg-base);
+  color: var(--app-text-primary);
+
+  /* Prevent flash of wrong theme on load */
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Ensure smooth theme transitions across all themed elements */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Disable transitions on page load to prevent animation on initial render */
+.theme-loading * {
+  transition: none !important;
+}

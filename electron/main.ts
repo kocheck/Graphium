@@ -24,11 +24,17 @@
  * See ARCHITECTURE.md for complete IPC documentation.
  */
 
-import { app, BrowserWindow, ipcMain, dialog, protocol, net } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu } from 'electron'
 import JSZip from 'jszip'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import {
+  initializeThemeManager,
+  getThemeState,
+  setThemeMode,
+  type ThemeMode,
+} from './themeManager.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -60,6 +66,115 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 // Window references (null when closed)
 let mainWindow: BrowserWindow | null
 let worldWindow: BrowserWindow | null
+
+/**
+ * Build application menu with theme options
+ *
+ * Creates native menu bar with:
+ * - File menu (standard app controls)
+ * - View menu (theme selection)
+ * - Help menu (future: docs, about)
+ *
+ * Theme submenu allows selecting:
+ * - Light mode (force light theme)
+ * - Dark mode (force dark theme)
+ * - System (follow OS preference) ← default
+ */
+function buildApplicationMenu() {
+  const currentTheme = getThemeState().mode
+
+  const template: Electron.MenuItemConstructorOptions[] = [
+    // App menu (macOS only - shows app name)
+    ...(process.platform === 'darwin'
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: 'about' as const },
+              { type: 'separator' as const },
+              { role: 'services' as const },
+              { type: 'separator' as const },
+              { role: 'hide' as const },
+              { role: 'hideOthers' as const },
+              { role: 'unhide' as const },
+              { type: 'separator' as const },
+              { role: 'quit' as const },
+            ],
+          },
+        ]
+      : []),
+
+    // File menu
+    {
+      label: 'File',
+      submenu: [
+        process.platform === 'darwin'
+          ? ({ role: 'close' } as const)
+          : ({ role: 'quit' } as const),
+      ],
+    },
+
+    // View menu with theme options
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Theme',
+          submenu: [
+            {
+              label: 'Light',
+              type: 'radio',
+              checked: currentTheme === 'light',
+              click: () => setThemeMode('light'),
+            },
+            {
+              label: 'Dark',
+              type: 'radio',
+              checked: currentTheme === 'dark',
+              click: () => setThemeMode('dark'),
+            },
+            {
+              label: 'System',
+              type: 'radio',
+              checked: currentTheme === 'system',
+              click: () => setThemeMode('system'),
+            },
+          ],
+        },
+        { type: 'separator' },
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+
+    // Window menu
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        ...(process.platform === 'darwin'
+          ? [
+              { type: 'separator' as const },
+              { role: 'front' as const },
+              { type: 'separator' as const },
+              { role: 'window' as const },
+            ]
+          : [{ role: 'close' as const }]),
+      ],
+    },
+  ]
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
+}
 
 /**
  * Creates the main Architect Window (DM control panel)
@@ -197,6 +312,12 @@ app.whenReady().then(() => {
   protocol.handle('media', (request) => {
     return net.fetch('file://' + request.url.slice('media://'.length))
   })
+
+  // Initialize theme system (must be before window creation)
+  initializeThemeManager()
+
+  // Build application menu with theme options
+  buildApplicationMenu()
 
   createMainWindow()
 
@@ -418,4 +539,28 @@ app.whenReady().then(() => {
 
     return state;  // Return state with file:// URLs
  });
+
+ /**
+  * IPC handler: get-theme-state
+  *
+  * Returns current theme state to renderer on mount.
+  * Called by ThemeManager component when app initializes.
+  *
+  * @returns Object with mode ('light'|'dark'|'system') and effectiveTheme ('light'|'dark')
+  */
+ ipcMain.handle('get-theme-state', () => {
+   return getThemeState()
+ })
+
+ /**
+  * IPC handler: set-theme-mode
+  *
+  * Updates theme preference and broadcasts to all windows.
+  * Called when user selects theme from application menu.
+  *
+  * @param mode - Theme mode to set ('light', 'dark', or 'system')
+  */
+ ipcMain.handle('set-theme-mode', (_event, mode: ThemeMode) => {
+   setThemeMode(mode)
+ })
 })
