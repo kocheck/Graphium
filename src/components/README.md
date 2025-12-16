@@ -648,7 +648,7 @@ const handleDrop = (e: React.DragEvent) => {
 
 ## Related Documentation
 
-- **Canvas/README.md** - Canvas-specific component docs
-- **ARCHITECTURE.md** - Overall component architecture
-- **CONVENTIONS.md** - Component structure standards
-- **src/README.md** - Renderer process overview
+- **[Canvas System](../../docs/components/canvas.md)** - Canvas-specific component docs
+- **[Architecture Overview](../../docs/architecture/ARCHITECTURE.md)** - Overall component architecture
+- **[Code Conventions](../../docs/guides/CONVENTIONS.md)** - Component structure standards
+- **[Renderer Process](../README.md)** - Renderer process overview

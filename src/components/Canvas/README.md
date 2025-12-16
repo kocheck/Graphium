@@ -720,8 +720,7 @@ const handleDragOver = (e: React.DragEvent) => {
 
 ## Related Documentation
 
-- **components/README.md** - Parent component directory docs
-- **ARCHITECTURE.md** - Rendering engine details
-- **CONVENTIONS.md** - Component structure standards
-- **utils/grid.ts** - Grid snapping utility
-- **utils/AssetProcessor.ts** - Image optimization
+- **[Canvas System Documentation](../../../docs/components/canvas.md)** - Complete canvas documentation
+- **[Component Overview](../../README.md)** - Parent component directory docs
+- **[Architecture Overview](../../../docs/architecture/ARCHITECTURE.md)** - Rendering engine details
+- **[Code Conventions](../../../docs/guides/CONVENTIONS.md)** - Component structure standards

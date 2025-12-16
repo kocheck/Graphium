@@ -629,8 +629,8 @@ useGameStore.setState({ tokens: newTokens });  // Actually works!
 
 ## Related Documentation
 
-- **ARCHITECTURE.md** - State management architecture
-- **CONVENTIONS.md** - Store mutation rules
-- **src/README.md** - Renderer process overview
-- **components/SyncManager.tsx** - Store subscription usage
-- **CONTEXT.md** - Business rules for state
+- **[State Management Guide](../../docs/components/state-management.md)** - Complete store documentation
+- **[Architecture Overview](../../docs/architecture/ARCHITECTURE.md#state-management)** - State management architecture
+- **[Code Conventions](../../docs/guides/CONVENTIONS.md)** - Store mutation rules
+- **[Renderer Process](../README.md)** - Renderer process overview
+- **[Domain Context](../../docs/context/CONTEXT.md)** - Business rules for state

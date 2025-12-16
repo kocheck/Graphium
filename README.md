@@ -91,6 +91,17 @@ This will generate an installer/executable for your operating system in the `dis
     *   Use the "Marker" tool to draw boundaries.
 4.  **Save/Load**: Use the "Save" and "Load" buttons to persist your campaign.
 
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
+
+- **[Documentation Index](docs/index.md)** - Start here for AI-optimized navigation
+- **[Architecture](docs/architecture/ARCHITECTURE.md)** - System design and technical details
+- **[Domain Context](docs/context/CONTEXT.md)** - Business rules and D&D concepts
+- **[Tutorials](docs/guides/TUTORIALS.md)** - Step-by-step development guides
+- **[Troubleshooting](docs/guides/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Contributing](CONTRIBUTING.md)** - Guidelines for contributors
+
 ## 📄 License
 
 MIT

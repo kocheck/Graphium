@@ -679,9 +679,9 @@ try {
 
 ## Related Documentation
 
-- **ARCHITECTURE.md** - Overall system design
-- **CONVENTIONS.md** - Code style and patterns
-- **CONTEXT.md** - Business rules and workflows
-- **components/README.md** - Component-specific docs
-- **store/README.md** - State management details
-- **utils/README.md** - Utility function reference
+- **[Architecture Overview](../docs/architecture/ARCHITECTURE.md)** - Overall system design
+- **[Code Conventions](../docs/guides/CONVENTIONS.md)** - Code style and patterns
+- **[Domain Context](../docs/context/CONTEXT.md)** - Business rules and workflows
+- **[Component Documentation](../docs/components/)** - Component-specific guides
+- **[State Management](../docs/components/state-management.md)** - State management details
+- **[Tutorials](../docs/guides/TUTORIALS.md)** - Step-by-step development guides
