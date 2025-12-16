@@ -690,7 +690,7 @@ const handleUpload = async (file: File) => {
 
 ## Related Documentation
 
-- **CONVENTIONS.md** - Code style guidelines
-- **src/README.md** - Renderer process overview
-- **components/Canvas/CanvasManager.tsx** - Asset processing usage
-- **ARCHITECTURE.md** - Utility role in architecture
+- **[Code Conventions](../../docs/guides/CONVENTIONS.md)** - Code style guidelines
+- **[Renderer Process](../README.md)** - Renderer process overview
+- **[Canvas System](../../docs/components/canvas.md)** - Asset processing usage
+- **[Architecture Overview](../../docs/architecture/ARCHITECTURE.md)** - Utility role in architecture
