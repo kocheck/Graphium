@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useGameStore, Token } from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
 
 interface TokenInspectorProps {
   selectedTokenIds: string[];
