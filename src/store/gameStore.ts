@@ -236,7 +236,7 @@ export interface GameState {
   removeDrawings: (ids: string[]) => void;
   updateDrawingTransform: (id: string, x: number, y: number, scale: number) => void;
   setGridSize: (size: number) => void;
-  setState: (state: GameState) => void;
+  setState: (state: Partial<GameState>) => void;
   setTokens: (tokens: Token[]) => void;
   setMap: (map: MapConfig | null) => void;
   updateMapPosition: (x: number, y: number) => void;
@@ -332,51 +332,51 @@ export const useGameStore = create<GameState>((set) => ({
   toast: null,
 
   // Token actions
-  addToken: (token) => set((state) => ({ tokens: [...state.tokens, token] })),
-  removeToken: (id) => set((state) => ({ tokens: state.tokens.filter(t => t.id !== id) })),
-  removeTokens: (ids) => set((state) => ({ tokens: state.tokens.filter(t => !ids.includes(t.id)) })),
-  updateTokenPosition: (id, x, y) => set((state) => ({
-    tokens: state.tokens.map((t) => t.id === id ? { ...t, x, y } : t)
+  addToken: (token: Token) => set((state) => ({ tokens: [...state.tokens, token] })),
+  removeToken: (id: string) => set((state) => ({ tokens: state.tokens.filter((t: Token) => t.id !== id) })),
+  removeTokens: (ids: string[]) => set((state) => ({ tokens: state.tokens.filter((t: Token) => !ids.includes(t.id)) })),
+  updateTokenPosition: (id: string, x: number, y: number) => set((state) => ({
+    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, x, y } : t)
   })),
-  updateTokenTransform: (id, x, y, scale) => set((state) => ({
-    tokens: state.tokens.map((t) => t.id === id ? { ...t, x, y, scale } : t)
+  updateTokenTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
+    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, x, y, scale } : t)
   })),
-  updateTokenProperties: (id, properties) => set((state) => ({
-    tokens: state.tokens.map((t) => t.id === id ? { ...t, ...properties } : t)
+  updateTokenProperties: (id: string, properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>) => set((state) => ({
+    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, ...properties } : t)
   })),
 
   // Drawing actions
-  addDrawing: (drawing) => set((state) => ({ drawings: [...state.drawings, drawing] })),
-  removeDrawing: (id) => set((state) => ({ drawings: state.drawings.filter(d => d.id !== id) })),
-  removeDrawings: (ids) => set((state) => ({ drawings: state.drawings.filter(d => !ids.includes(d.id)) })),
-  updateDrawingTransform: (id, x, y, scale) => set((state) => ({
-    drawings: state.drawings.map((d) => d.id === id ? { ...d, x, y, scale } : d)
+  addDrawing: (drawing: Drawing) => set((state) => ({ drawings: [...state.drawings, drawing] })),
+  removeDrawing: (id: string) => set((state) => ({ drawings: state.drawings.filter((d: Drawing) => d.id !== id) })),
+  removeDrawings: (ids: string[]) => set((state) => ({ drawings: state.drawings.filter((d: Drawing) => !ids.includes(d.id)) })),
+  updateDrawingTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
+    drawings: state.drawings.map((d: Drawing) => d.id === id ? { ...d, x, y, scale } : d)
   })),
 
   // Grid actions
-  setGridSize: (size) => set({ gridSize: size }),
-  setGridType: (type) => set({ gridType: type }),
+  setGridSize: (size: number) => set({ gridSize: size }),
+  setGridType: (type: GridType) => set({ gridType: type }),
 
   // Map actions
-  setMap: (map) => set({ map }),
-  updateMapPosition: (x, y) => set((state) => ({
+  setMap: (map: MapConfig | null) => set({ map }),
+  updateMapPosition: (x: number, y: number) => set((state) => ({
     map: state.map ? { ...state.map, x, y } : null
   })),
-  updateMapScale: (scale) => set((state) => ({
+  updateMapScale: (scale: number) => set((state) => ({
     map: state.map ? { ...state.map, scale } : null
   })),
-  updateMapTransform: (scale, x, y) => set((state) => ({
+  updateMapTransform: (scale: number, x: number, y: number) => set((state) => ({
     map: state.map ? { ...state.map, scale, x, y } : null
   })),
 
   // Calibration actions
-  setIsCalibrating: (isCalibrating) => set({ isCalibrating }),
+  setIsCalibrating: (isCalibrating: boolean) => set({ isCalibrating }),
 
   // Bulk state actions
-  setTokens: (tokens) => set({ tokens }),
-  setState: (state) => set(state),
+  setTokens: (tokens: Token[]) => set({ tokens }),
+  setState: (state: Partial<GameState>) => set(state),
 
   // Toast actions
-  showToast: (message, type) => set({ toast: { message, type } }),
+  showToast: (message: string, type: 'error' | 'success' | 'info') => set({ toast: { message, type } }),
   clearToast: () => set({ toast: null }),
 }));
