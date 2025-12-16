@@ -106,7 +106,7 @@ export function broadcastThemeToRenderers(): void {
   const effectiveTheme = getEffectiveTheme()
   const mode = getThemeMode()
 
-  BrowserWindow.getAllWindows().forEach((window) => {
+  BrowserWindow.getAllWindows().forEach((window: BrowserWindow) => {
     window.webContents.send('theme-changed', {
       mode,
       effectiveTheme,

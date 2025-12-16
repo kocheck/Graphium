@@ -24,7 +24,7 @@
  * See ARCHITECTURE.md for complete IPC documentation.
  */
 
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, IpcMainEvent, IpcMainInvokeEvent } from 'electron'
 import JSZip from 'jszip'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -309,7 +309,7 @@ app.whenReady().then(() => {
    *
    * See CanvasManager.URLImage component for usage (src/components/Canvas/CanvasManager.tsx:47-52).
    */
-  protocol.handle('media', (request) => {
+  protocol.handle('media', (request: Request) => {
     return net.fetch('file://' + request.url.slice('media://'.length))
   })
 
@@ -343,7 +343,7 @@ app.whenReady().then(() => {
    * - Main process relays to World Window
    * - World Window subscribes and updates local store
    */
-  ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
+  ipcMain.on('SYNC_WORLD_STATE', (_event: IpcMainEvent, state: unknown) => {
     if (worldWindow && !worldWindow.isDestroyed()) {
         worldWindow.webContents.send('SYNC_WORLD_STATE', state)
     }
@@ -377,7 +377,7 @@ app.whenReady().then(() => {
    * );
    * // Returns: "file:///Users/.../Hyle/temp_assets/1234567890-goblin.webp"
    */
-  ipcMain.handle('SAVE_ASSET_TEMP', async (_event, buffer: ArrayBuffer, name: string) => {
+  ipcMain.handle('SAVE_ASSET_TEMP', async (_event: IpcMainInvokeEvent, buffer: ArrayBuffer, name: string) => {
     const tempDir = path.join(app.getPath('userData'), 'temp_assets');
     await fs.mkdir(tempDir, { recursive: true });  // Create if doesn't exist
     const fileName = `${Date.now()}-${name}`;  // Timestamp prevents collisions
@@ -427,7 +427,7 @@ app.whenReady().then(() => {
    *   gridSize: 50
    * });
    */
-  ipcMain.handle('SAVE_CAMPAIGN', async (_event, gameState: any) => {
+  ipcMain.handle('SAVE_CAMPAIGN', async (_event: IpcMainInvokeEvent, gameState: unknown) => {
     const { filePath } = await dialog.showSaveDialog({
       filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }]
     });
@@ -560,7 +560,7 @@ app.whenReady().then(() => {
   *
   * @param mode - Theme mode to set ('light', 'dark', or 'system')
   */
- ipcMain.handle('set-theme-mode', (_event, mode: ThemeMode) => {
+ ipcMain.handle('set-theme-mode', (_event: IpcMainInvokeEvent, mode: ThemeMode) => {
    setThemeMode(mode)
  })
 })

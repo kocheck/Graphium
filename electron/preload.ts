@@ -28,7 +28,7 @@
  * See electron/main.ts for IPC handler implementations.
  */
 
-import { ipcRenderer, contextBridge } from 'electron'
+import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron'
 
 /**
  * Expose IPC APIs to renderer process via Context Bridge
@@ -68,7 +68,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    */
   on(...args: Parameters<typeof ipcRenderer.on>) {
     const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
+    return ipcRenderer.on(channel, (event: IpcRendererEvent, ...args: unknown[]) => listener(event, ...args))
   },
 
   /**
@@ -158,8 +158,7 @@ contextBridge.exposeInMainWorld('themeAPI', {
    * @returns Cleanup function
    */
   onThemeChanged: (callback: (data: { mode: string; effectiveTheme: string }) => void) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const listener = (_event: any, data: { mode: string; effectiveTheme: string }) => callback(data)
+    const listener = (_event: IpcRendererEvent, data: { mode: string; effectiveTheme: string }) => callback(data)
     ipcRenderer.on('theme-changed', listener)
 
     // Return cleanup function
