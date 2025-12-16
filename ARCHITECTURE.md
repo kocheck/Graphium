@@ -318,11 +318,16 @@ App.tsx (root component)
 │           ├─── [MAIN WINDOW] Subscribe to store → IPC send
 │           └─── [WORLD WINDOW] Listen to IPC → update store
 │
-├─── Sidebar (Main Window only)
+├─── Sidebar (Architect View only)
 │     └─── Library token grid
 │           └─── Draggable divs with JSON data
 │
-└─── CanvasManager (both windows)
+├─── Toolbar (Architect View only)
+│     ├─── Tool buttons (Select, Marker, Eraser)
+│     ├─── Save/Load campaign buttons
+│     └─── World View button
+│
+└─── CanvasManager (both views, but with interaction restrictions)
       │
       ├─── Stage (react-konva root)
       │     │
@@ -344,6 +349,109 @@ App.tsx (root component)
             └─── Cropper (react-easy-crop)
                   └─── Confirm/Cancel buttons
 ```
+
+#### World View Sanitization Architecture
+
+**Purpose:** Remove DM-specific UI elements and restrict editing capabilities in the World View
+(player-facing projection window) while maintaining full functionality in the Architect View
+(DM's control panel).
+
+**Detection Mechanism:**
+Window type is detected via the `?type=world` URL query parameter, which is set by the main
+process during World Window creation (electron/main.ts:259). The `useWindowType()` hook
+(src/utils/useWindowType.ts) encapsulates this detection logic for reuse across components.
+
+```typescript
+// src/utils/useWindowType.ts
+export const useWindowType = () => {
+  const params = new URLSearchParams(window.location.search);
+  const isWorldView = params.get('type') === 'world';
+  return { isWorldView, isArchitectView: !isWorldView };
+};
+```
+
+**UI Sanitization (App.tsx:121-128):**
+
+Conditional rendering based on window type ensures World View shows only the game canvas:
+
+```typescript
+// Architect View renders: ThemeManager, SyncManager, Toast, Sidebar, Toolbar, CanvasManager
+// World View renders: ThemeManager, SyncManager, Toast, CanvasManager (no Sidebar, no Toolbar)
+
+const { isArchitectView, isWorldView } = useWindowType();
+
+return (
+  <>
+    <ThemeManager />  {/* Both views */}
+    <SyncManager />   {/* Both views */}
+    <Toast />         {/* Both views */}
+
+    {isArchitectView && <Sidebar />}   {/* DM only */}
+
+    <CanvasManager isWorldView={isWorldView} />  {/* Both views, different modes */}
+
+    {isArchitectView && (
+      <Toolbar>  {/* DM only */}
+        {/* Tool buttons, Save/Load, World View button */}
+      </Toolbar>
+    )}
+  </>
+);
+```
+
+**Interaction Restrictions (CanvasManager.tsx):**
+
+CanvasManager receives `isWorldView` prop and restricts editing capabilities while preserving
+navigation features:
+
+| Feature | Architect View | World View | Implementation |
+|---------|---------------|------------|----------------|
+| **Pan canvas** | ✅ Enabled | ✅ Enabled | No restrictions (space+drag, wheel scroll) |
+| **Zoom** | ✅ Enabled | ✅ Enabled | No restrictions (ctrl+wheel, pinch, +/-) |
+| **Select tokens** | ✅ Enabled | ✅ Enabled | No restrictions (click to select) |
+| **Drag tokens** | ✅ Enabled | ✅ Enabled | No restrictions (drag to move) |
+| **Drawing tools** | ✅ Enabled | ❌ Blocked | `if (isWorldView) return` in handleMouseDown/Move/Up |
+| **File drops** | ✅ Enabled | ❌ Blocked | `if (isWorldView) return` in handleDrop/DragOver |
+| **Delete tokens** | ✅ Enabled | ❌ Blocked | `if (isWorldView) return` in Delete/Backspace handler |
+| **Calibration** | ✅ Enabled | ❌ Blocked | `if (isWorldView) return` in calibration handlers |
+| **Transform** | ✅ Enabled | ❌ Blocked | `{!isWorldView && <Transformer />}` conditional render |
+| **Duplication** | ✅ Enabled | ❌ Blocked | `if (isAltPressed && !isWorldView)` in drag handlers |
+
+**Restriction Pattern:**
+```typescript
+// Early return pattern for blocking interactions
+const handleDrop = (e: React.DragEvent) => {
+  if (isWorldView) return; // Block file drops in World View
+  // ... process drop
+};
+
+// Conditional rendering for UI elements
+{!isWorldView && <Transformer ref={transformerRef} />}
+```
+
+**State Synchronization:**
+- **Architect View**: PRODUCER mode - all state changes broadcast via IPC
+- **World View**: CONSUMER mode - receives state updates via IPC, never modifies state
+- Token dragging in World View updates position locally but does NOT broadcast changes
+  (only Architect View broadcasts)
+
+**Benefits:**
+1. **Security**: Players cannot accidentally modify game state
+2. **Immersion**: Clean canvas view without DM controls improves player experience
+3. **Simplicity**: Same React app, no code duplication, single source of truth
+4. **Performance**: No IPC overhead for detection (pure client-side logic)
+5. **Maintainability**: Clear separation via single `isWorldView` prop
+
+**Design Decision Rationale:**
+- Chose URL parameter over IPC flag: Simpler, no async initialization, works on first render
+- Chose component-level restrictions over separate routes: Reduces code duplication
+- Kept token dragging enabled: Allows DM to demonstrate movement on projector
+- Blocked transformation: Prevents accidental resizing during projection
+
+**See also:**
+- Implementation: src/utils/useWindowType.ts, src/App.tsx:77-78, src/components/Canvas/CanvasManager.tsx:91
+- Window creation: electron/main.ts:243-263
+- State sync: src/components/SyncManager.tsx:80-122
 
 #### State Management Architecture
 
