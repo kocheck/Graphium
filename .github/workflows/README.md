@@ -289,4 +289,173 @@ A rule-based alternative that doesn't use AI:
 
 ---
 
-**Last updated:** 2025-01-15
+## Build and Release Workflow
+
+**File:** `build-release.yml`
+
+**Purpose:** Automatically builds Hyle for macOS, Windows, and Linux when you create a version tag, then creates a GitHub release with all the installers.
+
+### Features
+
+- ✅ Multi-platform builds (macOS, Windows, Linux)
+- ✅ Automatic artifact uploads to GitHub releases
+- ✅ Triggered by version tags (e.g., v0.0.1, v1.2.3)
+- ✅ Build caching for faster runs
+- ✅ No secrets required - uses built-in GITHUB_TOKEN
+
+### How It Works
+
+1. You push a version tag (e.g., `v0.0.1`)
+2. GitHub Actions automatically:
+   - Builds macOS DMG (on macOS runner)
+   - Builds Windows NSIS installer (on Windows runner)
+   - Builds Linux AppImage (on Ubuntu runner)
+3. Creates a GitHub release with all installers attached
+
+### Usage
+
+**Step 1: Update version in package.json**
+
+```json
+{
+  "version": "0.0.1"
+}
+```
+
+**Step 2: Commit and push your changes**
+
+```bash
+git add .
+git commit -m "Prepare v0.0.1 release"
+git push
+```
+
+**Step 3: Create and push a version tag**
+
+```bash
+git tag -a v0.0.1 -m "v0.0.1 - Hyle: Protos"
+git push origin v0.0.1
+```
+
+**Step 4: Wait for the build**
+
+- Go to Actions tab on GitHub
+- Watch the "Build and Release" workflow run
+- All three platforms will build in parallel (takes ~10-15 minutes)
+
+**Step 5: Add release notes**
+
+Once the release is created, you can edit it to add your release notes:
+
+```bash
+gh release edit v0.0.1 --notes-file release-notes.md
+```
+
+Or edit directly on GitHub.
+
+### Build Outputs
+
+The workflow creates these installers:
+
+- **macOS**: `Hyle-Mac-0.0.1-Installer.dmg` (~94 MB)
+- **Windows**: `Hyle-Windows-0.0.1-Setup.exe` (~85 MB)
+- **Linux**: `Hyle-Linux-0.0.1.AppImage` (~95 MB)
+
+Each includes a `.blockmap` file for delta updates.
+
+### Advanced Options
+
+**Create a pre-release:**
+
+Add `prerelease: true` to the release job:
+
+```yaml
+- name: Create Release
+  uses: softprops/action-gh-release@v1
+  with:
+    prerelease: true  # Add this line
+```
+
+**Add release notes automatically:**
+
+```yaml
+- name: Create Release
+  uses: softprops/action-gh-release@v1
+  with:
+    generate_release_notes: true  # Change to true
+```
+
+**Draft release instead of publishing:**
+
+```yaml
+- name: Create Release
+  uses: softprops/action-gh-release@v1
+  with:
+    draft: true  # Change to true
+```
+
+### Troubleshooting
+
+**Issue: Build fails on macOS**
+
+- Check that `electron-builder.json5` has proper mac configuration
+- Verify all dependencies are in package.json
+- Code signing is optional - builds will work without it
+
+**Issue: Build fails on Windows**
+
+- Check for Windows-specific path issues
+- Verify NSIS configuration in electron-builder.json5
+- Check build logs for specific errors
+
+**Issue: Build fails on Linux**
+
+- Verify AppImage target in electron-builder.json5
+- Check for missing system dependencies
+- Review build logs for linker errors
+
+**Issue: Release not created**
+
+- Verify GITHUB_TOKEN has write permissions
+- Check that tag format matches `v*.*.*` pattern
+- Ensure you pushed the tag (not just created it locally)
+
+**Issue: Artifacts not uploaded**
+
+- Check file paths in upload-artifact steps
+- Verify files were actually created in release/*/
+- Review artifact upload logs
+
+### Cost
+
+**GitHub Actions minutes:**
+
+- Free tier: 2,000 minutes/month for private repos
+- Unlimited for public repos
+- This workflow uses ~30 minutes per release (all platforms)
+
+**Typical usage:**
+
+- 10 releases/month = 300 minutes (~15% of free tier)
+
+### Security Notes
+
+- ✅ Uses built-in GITHUB_TOKEN (no secrets needed)
+- ✅ Builds run in isolated GitHub-hosted runners
+- ✅ Artifacts are stored securely in GitHub
+- ⚠️ Installers are NOT code-signed (users will see security warnings)
+
+To add code signing, you'll need to:
+1. Get a developer certificate (Apple Developer, Windows Code Signing)
+2. Add certificates as repository secrets
+3. Update workflow to use signing keys
+
+### See Also
+
+- [Electron Builder docs](https://www.electron.build/)
+- [GitHub Actions docs](https://docs.github.com/en/actions)
+- [Creating releases docs](https://docs.github.com/en/repositories/releasing-projects-on-github)
+
+---
+
+**Last updated:** 2025-12-15
