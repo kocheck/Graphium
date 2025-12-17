@@ -5,6 +5,7 @@ import { ThemeManager } from './components/ThemeManager'
 import Sidebar from './components/Sidebar'
 import Toast from './components/Toast'
 import TokenInspector from './components/TokenInspector'
+import ResourceMonitor from './components/ResourceMonitor'
 import { useGameStore } from './store/gameStore'
 import { useWindowType } from './utils/useWindowType'
 
@@ -86,6 +87,10 @@ function App() {
 
   // Selected tokens state (for TokenInspector)
   const [selectedTokenIds, setSelectedTokenIds] = useState<string[]>([]);
+
+  // Resource Monitor state (from store)
+  const showResourceMonitor = useGameStore((state) => state.showResourceMonitor);
+  const setShowResourceMonitor = useGameStore((state) => state.setShowResourceMonitor);
 
   // Filter selected IDs to only include tokens (not drawings)
   const tokens = useGameStore((s) => s.tokens);
@@ -236,8 +241,22 @@ function App() {
            }} disabled={!window.ipcRenderer}>
              World View
            </button>
+
+           <div className="toolbar-divider w-px mx-1"></div>
+
+           {/* Resource Monitor toggle: Performance diagnostics overlay */}
+           <button
+             className={`btn btn-default ${showResourceMonitor ? 'active' : ''}`}
+             onClick={() => setShowResourceMonitor(!showResourceMonitor)}
+             title="Toggle Performance Monitor (View → Performance)"
+           >
+             ⚡ Performance
+           </button>
         </div>
         )}
+
+        {/* Resource Monitor: Performance diagnostics overlay (Architect View only) */}
+        {isArchitectView && showResourceMonitor && <ResourceMonitor />}
 
         {/* Token Inspector (only show in Architect View when tokens selected) */}
         {isArchitectView && selectedTokensOnly.length > 0 && (

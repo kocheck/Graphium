@@ -248,6 +248,8 @@ export interface GameState {
   toast: ToastMessage | null;
   showToast: (message: string, type: 'error' | 'success' | 'info') => void;
   clearToast: () => void;
+  showResourceMonitor: boolean;
+  setShowResourceMonitor: (show: boolean) => void;
 }
 
 /**
@@ -379,4 +381,8 @@ export const useGameStore = create<GameState>((set) => ({
   // Toast actions
   showToast: (message: string, type: 'error' | 'success' | 'info') => set({ toast: { message, type } }),
   clearToast: () => set({ toast: null }),
+
+  // Resource Monitor toggle
+  showResourceMonitor: false,
+  setShowResourceMonitor: (show: boolean) => set({ showResourceMonitor: show }),
 }));
