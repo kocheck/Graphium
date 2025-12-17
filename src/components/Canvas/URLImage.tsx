@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import Konva from 'konva';
-import { KonvaEventObject } from 'konva/lib/Node';
+import { KonvaEventObject, Filter } from 'konva/lib/Node';
 
 export interface URLImageProps {
   name?: string;
@@ -20,7 +20,7 @@ export interface URLImageProps {
   draggable: boolean;
   opacity?: number;
   listening?: boolean;
-  filters?: Konva.Filter[];
+  filters?: Filter[];
   blurRadius?: number;
   brightness?: number;
 }
