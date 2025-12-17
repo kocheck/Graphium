@@ -370,6 +370,69 @@ All optimized code includes:
 
 ---
 
+## ⚡ Resource Monitor - Performance Diagnostics Tool
+
+**Location:** Toolbar → "⚡ Performance" button (Architect View only)
+
+To validate these optimizations and diagnose future performance issues, we've added a real-time Resource Monitor overlay.
+
+### Metrics Tracked:
+
+1. **FPS (Frames Per Second)** - Target: 60fps
+   - Color-coded: Green (55+), Yellow (30-54), Red (<30)
+   - Validates FOW caching effectiveness
+
+2. **Memory Usage** - JavaScript heap size
+   - Warning at 80%+ usage
+   - Detects memory leaks
+
+3. **IPC Metrics** - Messages/sec and Bandwidth
+   - Validates delta sync effectiveness
+   - Warning if bandwidth > 100KB/s
+
+4. **Web Worker Tracking** - Active worker count
+   - Detects resource leaks
+   - Warning if > 2 workers active
+
+5. **Entity Counts** - Tokens and Drawings
+   - Affects render complexity
+
+### Validation Scenarios:
+
+**Verify Delta IPC:**
+```
+1. Open Resource Monitor
+2. Drag token rapidly
+3. Check IPC Bandwidth
+
+Expected: < 1 KB/s (delta working)
+Broken: > 100 KB/s (full state broadcasts)
+```
+
+**Verify FOW Caching:**
+```
+1. Add 10 PC tokens + 100 walls
+2. Pan/zoom without moving tokens
+3. Check FPS
+
+Expected: 60 FPS (caching working)
+Broken: < 30 FPS (recalculating every frame)
+```
+
+**Verify Worker Cleanup:**
+```
+1. Upload 5 images, cancel all
+2. Wait 5 seconds
+3. Check Active Workers
+
+Expected: 0 workers (cleanup working)
+Broken: > 0 workers (leak detected)
+```
+
+**Error Handling:** The Resource Monitor is wrapped in the global PrivacyErrorBoundary and includes extensive try-catch blocks to prevent crashes if browser APIs are unavailable.
+
+---
+
 ## Verification Checklist
 
 - [x] Delta IPC reduces traffic by 95%+
@@ -379,6 +442,7 @@ All optimized code includes:
 - [x] Progress callbacks enable UI feedback
 - [x] Code is well-documented
 - [x] Performance metrics validated
+- [x] Resource Monitor available for diagnostics
 
 ---
 
@@ -387,7 +451,8 @@ All optimized code includes:
 For questions about these optimizations:
 1. Check inline code comments in modified files
 2. Review this document for architecture patterns
-3. Profile with Chrome DevTools to validate improvements
+3. Use the Resource Monitor (⚡ Performance button) for live diagnostics
+4. Profile with Chrome DevTools to validate improvements
 
 ---
 

@@ -176,37 +176,76 @@ const ResourceMonitor = () => {
   /**
    * IPC Message Interceptor
    * Tracks message count and bandwidth
+   *
+   * **Error Handling:** Wrapped in try-catch to prevent crashes if:
+   * - IPC methods don't exist or are malformed
+   * - JSON.stringify fails on circular references
+   * - Method interception fails in strict mode
    */
   useEffect(() => {
     if (!window.ipcRenderer) return;
 
-    const originalSend = window.ipcRenderer.send;
-    const originalOn = window.ipcRenderer.on;
+    // Guard: Check if IPC methods exist and are functions
+    if (typeof window.ipcRenderer.send !== 'function' ||
+        typeof window.ipcRenderer.on !== 'function') {
+      console.warn('[ResourceMonitor] IPC methods not available, skipping interception');
+      return;
+    }
 
-    // Intercept send (outgoing messages)
-    window.ipcRenderer.send = function(channel: string, ...args: any[]) {
-      ipcMessageCountRef.current++;
-      // Estimate message size (rough approximation)
-      const size = JSON.stringify(args).length;
-      ipcBytesRef.current += size;
-      return originalSend.call(this, channel, ...args);
-    };
+    let originalSend: any;
+    let originalOn: any;
 
-    // Intercept on (incoming messages)
-    window.ipcRenderer.on = function(channel: string, listener: any) {
-      const wrappedListener = (...args: any[]) => {
-        ipcMessageCountRef.current++;
-        const size = JSON.stringify(args).length;
-        ipcBytesRef.current += size;
-        listener(...args);
+    try {
+      originalSend = window.ipcRenderer.send;
+      originalOn = window.ipcRenderer.on;
+
+      // Intercept send (outgoing messages)
+      window.ipcRenderer.send = function(channel: string, ...args: any[]) {
+        try {
+          ipcMessageCountRef.current++;
+          // Estimate message size (rough approximation, with circular ref protection)
+          const size = JSON.stringify(args).length;
+          ipcBytesRef.current += size;
+        } catch (err) {
+          // Ignore errors in metrics collection (don't break IPC)
+          console.warn('[ResourceMonitor] Failed to track IPC send:', err);
+        }
+        return originalSend.call(this, channel, ...args);
       };
-      return originalOn.call(this, channel, wrappedListener);
-    };
+
+      // Intercept on (incoming messages)
+      window.ipcRenderer.on = function(channel: string, listener: any) {
+        const wrappedListener = (...args: any[]) => {
+          try {
+            ipcMessageCountRef.current++;
+            const size = JSON.stringify(args).length;
+            ipcBytesRef.current += size;
+          } catch (err) {
+            // Ignore errors in metrics collection
+            console.warn('[ResourceMonitor] Failed to track IPC receive:', err);
+          }
+          listener(...args);
+        };
+        return originalOn.call(this, channel, wrappedListener);
+      };
+    } catch (err) {
+      console.error('[ResourceMonitor] Failed to intercept IPC methods:', err);
+      // Don't throw - just skip interception
+      return;
+    }
 
     return () => {
       // Restore original methods (cleanup)
-      window.ipcRenderer.send = originalSend;
-      window.ipcRenderer.on = originalOn;
+      try {
+        if (originalSend && window.ipcRenderer) {
+          window.ipcRenderer.send = originalSend;
+        }
+        if (originalOn && window.ipcRenderer) {
+          window.ipcRenderer.on = originalOn;
+        }
+      } catch (err) {
+        console.error('[ResourceMonitor] Failed to restore IPC methods:', err);
+      }
     };
   }, []);
 
