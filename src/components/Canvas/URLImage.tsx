@@ -20,7 +20,7 @@ export interface URLImageProps {
   draggable: boolean;
   opacity?: number;
   listening?: boolean;
-  filters?: ((imageData: ImageData) => void)[];
+  filters?: Konva.Filter[];
   blurRadius?: number;
   brightness?: number;
 }
