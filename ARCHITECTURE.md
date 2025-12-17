@@ -50,9 +50,9 @@ Hyle is a local-first desktop application built with Electron that provides a du
 │  │  │  │                     │  │                     │   │  │ │
 │  │  │  │  React App          │  │  React App          │   │  │ │
 │  │  │  │  ├─ ThemeManager    │  │  ├─ ThemeManager    │   │  │ │
-│  │  │  │  ├─ Toolbar         │  │  └─ Canvas Only     │   │  │ │
-│  │  │  │  ├─ Sidebar         │  │                     │   │  │ │
-│  │  │  │  ├─ Canvas          │  │  Zustand Store      │   │  │ │
+│  │  │  │  ├─ Toolbar         │  │  ├─ Canvas          │   │  │ │
+│  │  │  │  ├─ Sidebar         │  │  └─ Minimal UI      │   │  │ │
+│  │  │  │  ├─ Canvas          │  │                     │   │  │ │
 │  │  │  │  └─ Save/Load UI    │  │  (Read-only)        │   │  │ │
 │  │  │  │                     │  │                     │   │  │ │
 │  │  │  │  Zustand Store      │  │  SyncManager        │   │  │ │
@@ -556,10 +556,11 @@ Display on screen (60fps)
 ```
 
 **Layer Order (bottom to top):**
-1. **GridOverlay** - Background grid lines (non-interactive, `listening={false}`)
-2. **Drawings** - Marker/eraser strokes (below tokens so markers don't obscure pieces)
-3. **Temp Line** - Active drawing preview (rendered during drag)
-4. **Tokens** - Draggable images (top layer, interactive)
+1. **GridOverlay** - Background grid lines (non-interactive)
+2. **FogOfWarLayer** - (World View only) Overlay containing Blurred Map + Vision Cutouts
+3. **Background Map** - Base image (Sharp in Architect View, Sharp in World View visible through cutouts)
+4. **Drawings** - Marker/eraser strokes
+5. **Tokens** - Draggable images (top layer, interactive)
 
 **Performance Optimization:**
 - GridOverlay has `listening={false}` (no event handlers, saves CPU)

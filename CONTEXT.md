@@ -138,11 +138,12 @@ This allows rapid feature development with AI pair programming.
 **Architect View**
 - The DM's control window
 - Contains toolbar, sidebar, Save/Load buttons, and "World View" button
+- **Token Inspector**: Selected tokens show summary card; click "Edit" to modify properties
 - Source of truth for state (Main Window in architecture docs)
 
 **World View**
 - The player-facing display window
-- Shows only the canvas (no UI controls)
+- Shows the canvas and minimal navigation controls (Center on Party)
 - Read-only (receives state updates from Architect View)
 - Typically dragged to second monitor/projector
 
@@ -177,9 +178,9 @@ This allows rapid feature development with AI pair programming.
   - Tokens: max 512px (performance optimization)
   - All converted to WebP (85% quality, lossy compression)
 
-**Fog of War** (Planned Feature)
-- Black overlay obscuring unexplored areas
-- DMs can "reveal" areas as players explore
+**Fog of War**
+- Blurred and darkened overlay obscuring unexplored areas (soft gradient edges)
+- DMs can "reveal" areas as players explore (via token vision)
 - World View always shows fog, Architect View can toggle visibility
 
 **Library** (Partially Implemented)

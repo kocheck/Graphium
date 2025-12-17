@@ -27,6 +27,7 @@ Hyle is a lightweight, local-first desktop application for Dungeon Masters. It r
   - **Wall Tool**: Draw vision-blocking walls (invisible to players, dashed red in DM view).
 - **Fog of War System**:
   - **Dynamic Vision**: PC tokens reveal areas based on configurable vision radius (darkvision support).
+  - **Blurred Aesthetic**: Unseen areas are blurred and darkened rather than hidden by a solid black overlay, preserving context while obscuring details.
   - **Wall Occlusion**: Walls block line of sight using real-time raycasting algorithm.
   - **Token Inspector**: Edit token properties (name, type, vision radius) in DM view.
 - **Persistence**: Save your entire session to a `.hyle` file (a compressed ZIP archive of your scene and assets) and load it back instantly.
@@ -37,6 +38,7 @@ Hyle is a lightweight, local-first desktop application for Dungeon Masters. It r
   - **Theme-Aware**: Grid colors adapt to light/dark mode automatically.
 - **Smart Map Tools**:
   - **Auto-Center**: Camera automatically focuses on new maps.
+  - **Center on Party**: One-click button to instantly frame all PC tokens in the view.
   - **Calibration**: Interactive "Draw to Calibrate" tool to perfectly align your map's grid.
   - **Viewport Constraints**: Prevents getting lost in the void by keeping the map in view.
 - **Keyboard Shortcuts**:

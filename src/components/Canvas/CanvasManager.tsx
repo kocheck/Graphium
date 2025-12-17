@@ -15,6 +15,7 @@ import URLImage from './URLImage';
 // Zoom constants
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
+export const BLUR_FILTERS = [Konva.Filters.Blur, Konva.Filters.Brighten]; // Static reference to prevent unnecessary cache invalidation
 const ZOOM_SCALE_BY = 1.1;
 const MIN_PINCH_DISTANCE = 0.001; // Guard against near-zero division or very small distances that could cause extreme scale changes
 const VIEWPORT_CLAMP_PADDING = 1000; // Padding around map bounds for viewport constraints
@@ -870,7 +871,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         {/* Layer 1: Background & Map (Listening False to let internal events pass to Stage for selection) */}
         <Layer listening={false}>
             {map && (
-                <URLImage
+                 <URLImage
                     key="bg-map"
                     name="map-image"
                     id="map"
@@ -887,29 +888,21 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                 />
             )}
 
-            {/* World View: Render blurred map as background (Fog) */}
-            {isWorldView && map && (
-                 <URLImage
-                    key="bg-map-blurred"
-                    name="map-image-blurred"
-                    id="map-blurred"
-                    src={map.src}
-                    x={map.x}
-                    y={map.y}
-                    width={map.width}
-                    height={map.height}
-                    scaleX={map.scale}
-                    scaleY={map.scale}
-                    draggable={false}
-                    listening={false}
-                    filters={[Konva.Filters.Blur, Konva.Filters.Brighten]}
-                    blurRadius={60}
-                    brightness={-0.94}
-                    onSelect={() => {}}
-                />
-            )}
             <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} />
         </Layer>
+
+        {/* Fog of War Layer (World View only) - Renders Overlay */}
+        {isWorldView && (
+             <Layer listening={false}>
+              <FogOfWarLayer
+                tokens={tokens}
+                drawings={drawings}
+                gridSize={gridSize}
+                visibleBounds={visibleBounds}
+                map={map}
+              />
+            </Layer>
+        )}
 
         {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
         <Layer>
@@ -1027,16 +1020,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
             )}
         </Layer>
 
-        {/* Fog of War Layer (World View only) */}
-        {isWorldView && (
-          <FogOfWarLayer
-            tokens={tokens}
-            drawings={drawings}
-            gridSize={gridSize}
-            visibleBounds={visibleBounds}
-            map={map}
-          />
-        )}
+
 
         {/* Layer 3: Tokens & UI */}
         <Layer>

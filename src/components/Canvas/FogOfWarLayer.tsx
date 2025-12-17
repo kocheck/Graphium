@@ -1,4 +1,4 @@
-import { Layer, Shape, Group } from 'react-konva';
+import { Shape, Group } from 'react-konva';
 import { Token, Drawing, MapConfig } from '../../store/gameStore';
 import URLImage from './URLImage';
 
@@ -28,6 +28,8 @@ interface WallSegment {
 
 // ... logic ...
 
+import { BLUR_FILTERS } from './CanvasManager';
+
 const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) => {
   // Extract PC tokens with vision
   const pcTokens = tokens.filter(
@@ -49,45 +51,38 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
       }
     });
 
-  // If no PC tokens or all have 0 vision, we show essentially "No Vision".
-  // This means NO sharp map is rendered. We just return null (so only blurred background is seen).
-  if (pcTokens.length === 0) {
-    return (
-       <Layer listening={false}>
-          {/* No sharp map rendered = Full Fog (only background layer visible) */}
-       </Layer>
-    );
-  }
+  if (!map) return null;
 
   return (
-    <Layer listening={false}>
+    <Group listening={false}>
       {/*
-        Group for isolation:
-        1. Render Sharp Map (Source Over)
-        2. Render Vision Polygons (Destination In) -> Masks the sharp map
+        Destination-Out Strategy:
+        1. Render the Blurred Map (The "Fog") as the base of this group.
+        2. Render Vision Polygons with destination-out.
+        3. This "erases" the Fog where vision exists, revealing the Sharp Map underneath.
+        4. Since it uses "erase" (Cutout), multiple vision polygons effectively UNION (A U B).
       */}
       <Group>
-        {/* The Sharp Map */}
-        {map && (
-             <URLImage
-                key="bg-map-sharp"
-                name="map-image-sharp"
-                id="map-sharp"
-                src={map.src}
-                x={map.x}
-                y={map.y}
-                width={map.width}
-                height={map.height}
-                scaleX={map.scale}
-                scaleY={map.scale}
-                draggable={false}
-                listening={false}
-                // No filters = Sharp
-            />
-        )}
+        {/* The Blurred Map (Fog) */}
+        <URLImage
+            key="bg-map-blurred"
+            name="map-image-blurred"
+            id="map-blurred"
+            src={map.src}
+            x={map.x}
+            y={map.y}
+            width={map.width}
+            height={map.height}
+            scaleX={map.scale}
+            scaleY={map.scale}
+            draggable={false}
+            listening={false}
+            filters={BLUR_FILTERS}
+            blurRadius={60}
+            brightness={-0.94}
+        />
 
-        {/* The Vision Mask (Composite: Destination In) */}
-        {/* This will keep the map ONLY where we draw these shapes */}
+        {/* The Vision "Holes" (Composite: Destination Out) */}
         {pcTokens.map((token) => {
             const tokenCenterX = token.x + (gridSize * token.scale) / 2;
             const tokenCenterY = token.y + (gridSize * token.scale) / 2;
@@ -112,9 +107,11 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
                   }
                   ctx.closePath();
 
-                  // Radial Gradient for Soft Fog Edge
-                  // Center: Token Center
-                  // Radius: Vision Radius
+                  // Radial Gradient for Soft Fog Edge interaction
+                  // Since we are DESTINATION-OUT:
+                  // 1.0 Alpha (Opaque) = Fully Erased = Fully Visible Sharp Map
+                  // 0.0 Alpha (Transparent) = Not Erased = Fog Remains
+
                   const gradient = ctx.createRadialGradient(
                     tokenCenterX,
                     tokenCenterY,
@@ -124,23 +121,22 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
                     visionRadiusPx
                   );
 
-                  // Opaque (1) = Sharp Map Visible
-                  // Transparent (0) = Sharp Map Invisible (reveals blurred fog)
+                  // Center: Fully Visible (Erase Fog)
                   gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-                  gradient.addColorStop(0.6, 'rgba(0, 0, 0, 1)'); // Sharp until 80%
-                  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');   // Fade to transparent at edge
+                  gradient.addColorStop(0.6, 'rgba(0, 0, 0, 1)'); // Keep sharp center
+
+                  // Edge: Fog Starts to Return (Alpha goes to 0, so we stop erasing)
+                  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
                   ctx.fillStyle = gradient;
                   ctx.fill();
-                  // We don't stroke here as it might create a hard line
                 }}
-                // fill="black" // Removed in favor of sceneFunc gradient
-                globalCompositeOperation="destination-in"
+                globalCompositeOperation="destination-out"
               />
             );
         })}
       </Group>
-    </Layer>
+    </Group>
   );
 };
 

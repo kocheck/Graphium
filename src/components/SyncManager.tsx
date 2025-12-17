@@ -1,6 +1,28 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 
+// Basic throttle implementation to limit IPC frequency
+// Ensures leading edge execution and trailing edge (so final state is always sent)
+function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
+  let lastFunc: ReturnType<typeof setTimeout>;
+  let lastRan: number;
+
+  return function(this: unknown, ...args: Parameters<T>) {
+    if (!lastRan) {
+      func.apply(this, args);
+      lastRan = Date.now();
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(() => {
+        if ((Date.now() - lastRan) >= limit) {
+          func.apply(this, args);
+          lastRan = Date.now();
+        }
+      }, limit - (Date.now() - lastRan));
+    }
+  } as T;
+}
+
 /**
  * SyncManager handles real-time state synchronization between windows
  *
@@ -87,8 +109,7 @@ const SyncManager = () => {
       // CONSUMER MODE: World View receives state updates from Architect View
 
       // Listen for IPC messages from main process
-      // @ts-ignore - ipcRenderer types not available, will be fixed with proper type declarations
-      const removeListener = window.ipcRenderer.on('SYNC_WORLD_STATE', (_event, state) => {
+      window.ipcRenderer.on('SYNC_WORLD_STATE', (_event, state) => {
         // Update local store with received state (replaces all data)
         useGameStore.setState(state);
       });
@@ -104,7 +125,7 @@ const SyncManager = () => {
       // PRODUCER MODE: Architect View broadcasts state changes
 
       // Subscribe to ALL store changes
-      const unsub = useGameStore.subscribe((state) => {
+      const handleStoreUpdate = (state: any) => {
         // Extract only the data we want to sync (exclude actions)
         const syncState = {
           tokens: state.tokens,
@@ -115,9 +136,14 @@ const SyncManager = () => {
         };
 
         // Send to main process for broadcast to World Window
-        // @ts-ignore - ipcRenderer types not available, will be fixed with proper type declarations
+        // @ts-ignore - ipcRenderer types not available
         window.ipcRenderer.send('SYNC_WORLD_STATE', syncState);
-      });
+      };
+
+      // Throttle updates to ~30fps (33ms) to prevent IPC flooding
+      const throttledSync = throttle(handleStoreUpdate, 32);
+
+      const unsub = useGameStore.subscribe(throttledSync);
 
       // Cleanup function (unsubscribe on unmount)
       return () => unsub();
