@@ -755,7 +755,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   }, [selectedIds]); // Only update when selection changes; nodes are automatically updated by React Konva
 
 
-  const centerOnPCTokens = () => {
+  const centerOnPCTokens = useCallback(() => {
     const pcTokens = tokens.filter(t => t.type === 'PC');
     if (pcTokens.length === 0) return;
 
@@ -806,7 +806,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     // Animate or Instant? Instant for now.
     setScale(newScale);
     setPosition({ x: newX, y: newY });
-  };
+  }, [tokens, gridSize, size]);
 
   return (
     <div

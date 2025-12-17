@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 interface TokenInspectorProps {
@@ -31,8 +31,11 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
   const tokens = useGameStore((s) => s.tokens);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
 
-  // Get selected tokens
-  const selectedTokens = tokens.filter((t) => selectedTokenIds.includes(t.id));
+  // Get selected tokens (memoized to avoid unnecessary recalculations)
+  const selectedTokens = useMemo(
+    () => tokens.filter((t) => selectedTokenIds.includes(t.id)),
+    [tokens, selectedTokenIds]
+  );
 
   // Local state for editing
   const [name, setName] = useState('');
@@ -53,7 +56,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
       setType('NPC');
       setVisionRadius(0);
     }
-  }, [selectedTokenIds.join(',')]); // Dependency on comma-separated IDs
+  }, [selectedTokens]); // Only re-run when selected tokens actually change
 
   if (selectedTokens.length === 0) {
     return null;
@@ -81,9 +84,21 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
   };
 
   return (
-    <div className="token-inspector fixed bottom-4 right-4 w-80 p-4 rounded shadow-lg z-50 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700">
+    <div
+      className="token-inspector fixed bottom-4 right-4 w-80 p-4 rounded shadow-lg z-50"
+      style={{
+        backgroundColor: 'var(--app-bg-surface)',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'var(--app-border-default)',
+        boxShadow: '0 10px 15px -3px var(--app-shadow-lg), 0 4px 6px -2px var(--app-shadow-md)'
+      }}
+    >
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+        <h3
+          className="text-lg font-semibold"
+          style={{ color: 'var(--app-text-primary)' }}
+        >
           {selectedTokens.length === 1
             ? (selectedTokens[0].name || 'Unnamed Token')
             : `${selectedTokens.length} Tokens Selected`}
@@ -91,7 +106,9 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
         {isEditing && (
             <button
                 onClick={() => setIsEditing(false)}
-                className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                style={{ color: 'var(--app-text-muted)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-text-secondary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
             >
                 ✕
             </button>
@@ -102,14 +119,20 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
         /* Summary View */
         <div>
             {selectedTokens.length === 1 && (
-                 <div className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                 <div className="text-sm mb-4" style={{ color: 'var(--app-text-secondary)' }}>
                     <p>Type: {selectedTokens[0].type || 'NPC'}</p>
                     <p>Vision: {selectedTokens[0].visionRadius || 0} ft</p>
                  </div>
             )}
             <button
                 onClick={() => setIsEditing(true)}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors"
+                className="w-full py-2 rounded font-medium transition-colors"
+                style={{
+                  backgroundColor: 'var(--app-accent-solid)',
+                  color: 'var(--app-accent-solid-text)'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--app-accent-solid-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--app-accent-solid)'}
             >
                 Edit Properties
             </button>
@@ -119,7 +142,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
         <div className="space-y-4">
             {/* Token Name */}
             <div>
-                <label className="block text-sm font-medium mb-1 text-neutral-700 dark:text-neutral-300">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-secondary)' }}>
                 Name
                 </label>
                 <input
@@ -129,45 +152,65 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
                 placeholder={
                     selectedTokens.length > 1 ? 'Multiple tokens' : 'Token name'
                 }
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+                style={{
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: 'var(--app-border-default)',
+                  backgroundColor: 'var(--app-bg-base)',
+                  color: 'var(--app-text-primary)',
+                  outlineColor: 'var(--app-accent-solid)'
+                }}
                 />
             </div>
 
             {/* Token Type */}
             <div>
-                <label className="block text-sm font-medium mb-1 text-neutral-700 dark:text-neutral-300">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-secondary)' }}>
                 Type
                 </label>
                 <div className="flex gap-2">
                 <button
                     onClick={() => handleTypeChange('PC')}
-                    className={`flex-1 px-3 py-2 rounded font-medium transition-colors ${
-                    type === 'PC'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
-                    }`}
+                    className="flex-1 px-3 py-2 rounded font-medium transition-colors"
+                    style={{
+                      backgroundColor: type === 'PC' ? 'var(--app-accent-solid)' : 'var(--app-bg-hover)',
+                      color: type === 'PC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (type !== 'PC') e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (type !== 'PC') e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                    }}
                 >
                     PC
                 </button>
                 <button
                     onClick={() => handleTypeChange('NPC')}
-                    className={`flex-1 px-3 py-2 rounded font-medium transition-colors ${
-                    type === 'NPC'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
-                    }`}
+                    className="flex-1 px-3 py-2 rounded font-medium transition-colors"
+                    style={{
+                      backgroundColor: type === 'NPC' ? 'var(--app-accent-solid)' : 'var(--app-bg-hover)',
+                      color: type === 'NPC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (type !== 'NPC') e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (type !== 'NPC') e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                    }}
                 >
                     NPC
                 </button>
                 </div>
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="mt-1 text-xs" style={{ color: 'var(--app-text-muted)' }}>
                 Only PC tokens emit vision for Fog of War
                 </p>
             </div>
 
             {/* Vision Radius */}
             <div>
-                <label className="block text-sm font-medium mb-1 text-neutral-700 dark:text-neutral-300">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-secondary)' }}>
                 Vision Radius (feet)
                 </label>
                 <div className="grid grid-cols-4 gap-2 mb-2">
@@ -175,11 +218,17 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
                     <button
                     key={radius}
                     onClick={() => handleVisionRadiusChange(radius)}
-                    className={`px-2 py-1 text-sm rounded font-medium transition-colors ${
-                        visionRadius === radius
-                        ? 'bg-green-500 text-white'
-                        : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
-                    }`}
+                    className="px-2 py-1 text-sm rounded font-medium transition-colors"
+                    style={{
+                      backgroundColor: visionRadius === radius ? 'var(--app-success-solid)' : 'var(--app-bg-hover)',
+                      color: visionRadius === radius ? 'white' : 'var(--app-text-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (visionRadius !== radius) e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (visionRadius !== radius) e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                    }}
                     >
                     {radius}
                     </button>
@@ -192,17 +241,32 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
                 min="0"
                 max="300"
                 step="5"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+                style={{
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: 'var(--app-border-default)',
+                  backgroundColor: 'var(--app-bg-base)',
+                  color: 'var(--app-text-primary)',
+                  outlineColor: 'var(--app-success-solid)'
+                }}
                 />
             </div>
 
             {/* Token Info Footer */}
             {selectedTokens.length === 1 && (
-                <div className="pt-3 border-t border-neutral-300 dark:border-neutral-700">
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <div
+                  className="pt-3"
+                  style={{
+                    borderTopWidth: '1px',
+                    borderTopStyle: 'solid',
+                    borderTopColor: 'var(--app-border-subtle)'
+                  }}
+                >
+                <p className="text-xs" style={{ color: 'var(--app-text-muted)' }}>
                     <strong>Scale:</strong> {selectedTokens[0].scale}x
                 </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
                     <strong>Position:</strong> ({Math.round(selectedTokens[0].x)},{' '}
                     {Math.round(selectedTokens[0].y)})
                 </p>

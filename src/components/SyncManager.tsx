@@ -5,16 +5,16 @@ import { useGameStore } from '../store/gameStore';
 // Ensures leading edge execution and trailing edge (so final state is always sent)
 function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
   let lastFunc: ReturnType<typeof setTimeout>;
-  let lastRan: number;
+  let lastRan: number | undefined;
 
   return function(this: unknown, ...args: Parameters<T>) {
-    if (!lastRan) {
+    if (lastRan === undefined) {
       func.apply(this, args);
       lastRan = Date.now();
     } else {
       clearTimeout(lastFunc);
       lastFunc = setTimeout(() => {
-        if ((Date.now() - lastRan) >= limit) {
+        if ((Date.now() - lastRan!) >= limit) {
           func.apply(this, args);
           lastRan = Date.now();
         }

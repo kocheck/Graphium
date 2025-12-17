@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import Konva from 'konva';
-import { KonvaEventObject } from 'konva/lib/Node';
+import { KonvaEventObject, Filter } from 'konva/lib/Node';
 
 export interface URLImageProps {
   name?: string;
@@ -20,7 +20,7 @@ export interface URLImageProps {
   draggable: boolean;
   opacity?: number;
   listening?: boolean;
-  filters?: any[];
+  filters?: Filter[];
   blurRadius?: number;
   brightness?: number;
 }
@@ -31,9 +31,17 @@ const URLImage = ({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSele
   const imageRef = useRef<Konva.Image>(null);
 
   useEffect(() => {
+    // Apply cache when filters are present
     if (imageRef.current && filters && img) {
         imageRef.current.cache();
     }
+
+    // Cleanup: clear cache on unmount or before re-caching
+    return () => {
+      if (imageRef.current) {
+        imageRef.current.clearCache();
+      }
+    };
   }, [img, filters, width, height, blurRadius, brightness]);
 
   return (

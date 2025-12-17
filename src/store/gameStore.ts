@@ -333,24 +333,24 @@ export const useGameStore = create<GameState>((set) => ({
 
   // Token actions
   addToken: (token: Token) => set((state) => ({ tokens: [...state.tokens, token] })),
-  removeToken: (id: string) => set((state) => ({ tokens: state.tokens.filter((t: Token) => t.id !== id) })),
-  removeTokens: (ids: string[]) => set((state) => ({ tokens: state.tokens.filter((t: Token) => !ids.includes(t.id)) })),
+  removeToken: (id: string) => set((state) => ({ tokens: state.tokens.filter(t => t.id !== id) })),
+  removeTokens: (ids: string[]) => set((state) => ({ tokens: state.tokens.filter(t => !ids.includes(t.id)) })),
   updateTokenPosition: (id: string, x: number, y: number) => set((state) => ({
-    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, x, y } : t)
+    tokens: state.tokens.map(t => t.id === id ? { ...t, x, y } : t)
   })),
   updateTokenTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
-    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, x, y, scale } : t)
+    tokens: state.tokens.map(t => t.id === id ? { ...t, x, y, scale } : t)
   })),
   updateTokenProperties: (id: string, properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>) => set((state) => ({
-    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, ...properties } : t)
+    tokens: state.tokens.map(t => t.id === id ? { ...t, ...properties } : t)
   })),
 
   // Drawing actions
   addDrawing: (drawing: Drawing) => set((state) => ({ drawings: [...state.drawings, drawing] })),
-  removeDrawing: (id: string) => set((state) => ({ drawings: state.drawings.filter((d: Drawing) => d.id !== id) })),
-  removeDrawings: (ids: string[]) => set((state) => ({ drawings: state.drawings.filter((d: Drawing) => !ids.includes(d.id)) })),
+  removeDrawing: (id: string) => set((state) => ({ drawings: state.drawings.filter(d => d.id !== id) })),
+  removeDrawings: (ids: string[]) => set((state) => ({ drawings: state.drawings.filter(d => !ids.includes(d.id)) })),
   updateDrawingTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
-    drawings: state.drawings.map((d: Drawing) => d.id === id ? { ...d, x, y, scale } : d)
+    drawings: state.drawings.map(d => d.id === id ? { ...d, x, y, scale } : d)
   })),
 
   // Grid actions

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import CanvasManager from './components/Canvas/CanvasManager'
 import SyncManager from './components/SyncManager'
 import { ThemeManager } from './components/ThemeManager'
@@ -89,8 +89,11 @@ function App() {
 
   // Filter selected IDs to only include tokens (not drawings)
   const tokens = useGameStore((s) => s.tokens);
-  const selectedTokensOnly = selectedTokenIds.filter((id) =>
-    tokens.some((t) => t.id === id)
+  const selectedTokensOnly = useMemo(() =>
+    selectedTokenIds.filter((id) =>
+      tokens.some((t) => t.id === id)
+    ),
+    [selectedTokenIds, tokens]
   );
 
   useEffect(() => {
@@ -99,6 +102,9 @@ function App() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
+
+      // Prevent tool switching in World View (player mode)
+      if (!isArchitectView) return;
 
       switch (e.key.toLowerCase()) {
         case 'v':
@@ -121,7 +127,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isArchitectView]);
 
   return (
     <div className="app-root w-full h-screen flex overflow-hidden">
@@ -233,8 +239,8 @@ function App() {
         </div>
         )}
 
-        {/* Token Inspector (only show when tokens selected) */}
-        {selectedTokensOnly.length > 0 && (
+        {/* Token Inspector (only show in Architect View when tokens selected) */}
+        {isArchitectView && selectedTokensOnly.length > 0 && (
           <TokenInspector selectedTokenIds={selectedTokensOnly} />
         )}
       </div>

@@ -33,7 +33,7 @@ import { BLUR_FILTERS } from './CanvasManager';
 const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) => {
   // Extract PC tokens with vision
   const pcTokens = tokens.filter(
-    (t) => t.type === 'PC' && (t.visionRadius ?? 60) > 0
+    (t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0
   );
 
   // Extract walls from drawings
@@ -86,7 +86,7 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
         {pcTokens.map((token) => {
             const tokenCenterX = token.x + (gridSize * token.scale) / 2;
             const tokenCenterY = token.y + (gridSize * token.scale) / 2;
-            const visionRadiusPx = ((token.visionRadius ?? 60) / 5) * gridSize;
+            const visionRadiusPx = ((token.visionRadius ?? 0) / 5) * gridSize;
 
             const visibilityPolygon = calculateVisibilityPolygon(
               tokenCenterX,
