@@ -1,18 +1,21 @@
 import Konva from 'konva';
-import { Stage, Layer, Image as KonvaImage, Line, Rect, Transformer } from 'react-konva';
+import { Stage, Layer, Line, Rect, Transformer } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState, useCallback } from 'react';
-import useImage from 'use-image';
 import { processImage } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
 import { useGameStore } from '../../store/gameStore';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
 import TokenErrorBoundary from './TokenErrorBoundary';
+import FogOfWarLayer from './FogOfWarLayer';
+
+import URLImage from './URLImage';
 
 // Zoom constants
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
+export const BLUR_FILTERS = [Konva.Filters.Blur, Konva.Filters.Brighten]; // Static reference to prevent unnecessary cache invalidation
 const ZOOM_SCALE_BY = 1.1;
 const MIN_PINCH_DISTANCE = 0.001; // Guard against near-zero division or very small distances that could cause extreme scale changes
 const VIEWPORT_CLAMP_PADDING = 1000; // Padding around map bounds for viewport constraints
@@ -33,57 +36,58 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number, y: num
     };
 };
 
-interface URLImageProps {
-  name?: string;
-  src: string;
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  scaleX?: number;
-  scaleY?: number;
-  id: string;
-  onSelect?: (e: KonvaEventObject<MouseEvent>) => void;
-  onDragStart?: (e: KonvaEventObject<DragEvent>) => void;
-  onDragEnd?: (e: KonvaEventObject<DragEvent>) => void;
-  draggable: boolean;
-  opacity?: number;
-  listening?: boolean;
-}
 
-const URLImage = ({ src, x, y, width, height, scaleX, scaleY, id, onSelect, onDragEnd, onDragStart, draggable, name, opacity, listening }: URLImageProps) => {
-  const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
-  const [img] = useImage(safeSrc);
-
-  return (
-    <KonvaImage
-      name={name} // Use passed name, usually 'token' or 'map-image'
-      id={id} // Ensure ID is passed down!
-      image={img}
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      scaleX={scaleX}
-      scaleY={scaleY}
-      draggable={draggable}
-      onClick={onSelect}
-      onTap={onSelect}
-      onDragEnd={onDragEnd}
-      onDragStart={onDragStart}
-      opacity={opacity}
-      listening={listening}
-    />
-  );
-};
-
-
+/**
+ * Props for CanvasManager component
+ *
+ * @property {string} tool - Active drawing/interaction tool (select, marker, eraser)
+ * @property {string} color - Color for marker tool (hex format)
+ * @property {boolean} isWorldView - If true, restricts interactions for player-facing World View
+ */
 interface CanvasManagerProps {
-  tool?: 'select' | 'marker' | 'eraser';
+  tool?: 'select' | 'marker' | 'eraser' | 'wall';
   color?: string;
+  isWorldView?: boolean;
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
-const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProps) => {
+/**
+ * CanvasManager - Main canvas component for battlemap rendering and interaction
+ *
+ * This component handles all canvas rendering (map, tokens, drawings, grid) and user
+ * interactions (panning, zooming, drawing, token manipulation). It operates in two modes
+ * based on the window type:
+ *
+ * **Architect View (DM Mode):**
+ * - Full editing capabilities (draw, erase, add/remove tokens)
+ * - File drop support (drag images onto canvas)
+ * - Calibration tools (grid alignment)
+ * - Token transformation (scale, rotate)
+ * - Token duplication (Alt+drag)
+ * - Delete tokens/drawings (Delete/Backspace)
+ *
+ * **World View (Player Mode):**
+ * - ✅ ALLOWED: Pan canvas (mouse drag, space+drag, wheel scroll)
+ * - ✅ ALLOWED: Zoom (ctrl+wheel, pinch, +/- keys)
+ * - ✅ ALLOWED: Select and drag tokens (for DM to demonstrate movement)
+ * - ❌ BLOCKED: Drawing tools (marker, eraser, wall)
+ * - ❌ BLOCKED: File drops (add tokens/maps)
+ * - ❌ BLOCKED: Calibration mode
+ * - ❌ BLOCKED: Token transformation (scale, rotate)
+ * - ❌ BLOCKED: Token duplication (Alt+drag)
+ * - ❌ BLOCKED: Delete tokens/drawings
+ *
+ * **Interaction Restriction Pattern:**
+ * When `isWorldView={true}`, interaction handlers check the flag and return early
+ * to prevent editing operations. Navigation (pan/zoom) remains fully functional.
+ *
+ * @param {CanvasManagerProps} props - Component props
+ * @returns Canvas with interactive battlemap
+ *
+ * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
+ * @see {@link file://../../App.tsx App.tsx} for UI sanitization
+ */
+const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false, onSelectionChange }: CanvasManagerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -164,6 +168,13 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   // Touch/Pinch State
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
+
+  // Notify parent of selection changes
+  useEffect(() => {
+    if (onSelectionChange) {
+      onSelectionChange(selectedIds);
+    }
+  }, [selectedIds, onSelectionChange]);
 
   // Helper function to clamp viewport position within bounds
   const clampPosition = useCallback((newPos: { x: number, y: number }, newScale: number) => {
@@ -255,7 +266,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Track Alt Key (always track, even in inputs, for drag operations)
-      if (e.key === 'Alt') {
+      // Disabled in World View to prevent duplication
+      if (e.key === 'Alt' && !isWorldView) {
           setIsAltPressed(true);
       }
 
@@ -263,7 +275,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
       if (isEditableElement(e.target)) return;
 
       // Delete/Backspace - remove selected items
+      // BLOCKED in World View (players cannot delete tokens/drawings)
       if (e.key === 'Delete' || e.key === 'Backspace') {
+          if (isWorldView) return; // Block deletion in World View
           if (selectedIds.length > 0) {
               removeTokens(selectedIds);
               removeDrawings(selectedIds);
@@ -393,10 +407,14 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    // BLOCKED in World View (no file drops allowed)
+    if (isWorldView) return;
     e.preventDefault();
   };
 
   const handleDrop = async (e: React.DragEvent) => {
+    // BLOCKED in World View (no file drops allowed)
+    if (isWorldView) return;
     e.preventDefault();
 
     const stageRect = containerRef.current?.getBoundingClientRect();
@@ -478,7 +496,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     if (isSpacePressed) return; // Allow panning
 
     // CALIBRATION LOGIC
+    // BLOCKED in World View (players cannot calibrate grid)
     if (isCalibrating) {
+        if (isWorldView) return; // Block calibration in World View
         const stage = e.target.getStage();
         const pos = stage.getRelativePointerPosition();
         calibrationStart.current = { x: pos.x, y: pos.y };
@@ -486,16 +506,31 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
         return;
     }
 
-    // If marker/eraser, draw
+    // If marker/eraser/wall, draw
+    // BLOCKED in World View (players cannot draw)
     if (tool !== 'select') {
+        if (isWorldView) return; // Block drawing tools in World View
         isDrawing.current = true;
         const pos = e.target.getStage().getRelativePointerPosition();
+
+        // Set color and size based on tool type
+        let drawColor = color;
+        let drawSize = 5;
+
+        if (tool === 'eraser') {
+            drawColor = '#000000';
+            drawSize = 20;
+        } else if (tool === 'wall') {
+            drawColor = '#ff0000'; // Red color for walls (visible in DM view only)
+            drawSize = 8;
+        }
+
         currentLine.current = {
             id: crypto.randomUUID(),
             tool: tool,
             points: [pos.x, pos.y],
-            color: tool === 'eraser' ? '#000000' : color,
-            size: tool === 'eraser' ? 20 : 5,
+            color: drawColor,
+            size: drawSize,
         };
         return;
     }
@@ -530,10 +565,29 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     if (isSpacePressed) return;
 
     if (tool !== 'select') {
+        // BLOCKED in World View (no drawing tools)
+        if (isWorldView) return;
         if (!isDrawing.current) return;
         const stage = e.target.getStage();
-        const point = stage.getRelativePointerPosition();
+        let point = stage.getRelativePointerPosition();
         const cur = currentLine.current;
+
+        // Shift-key axis locking: Lock to horizontal or vertical
+        if (e.evt.shiftKey && cur.points.length >= 2) {
+            const startX = cur.points[0];
+            const startY = cur.points[1];
+            const dx = Math.abs(point.x - startX);
+            const dy = Math.abs(point.y - startY);
+
+            if (dx > dy) {
+                // Lock to horizontal (X axis)
+                point = { x: point.x, y: startY };
+            } else {
+                // Lock to vertical (Y axis)
+                point = { x: startX, y: point.y };
+            }
+        }
+
         cur.points = cur.points.concat([point.x, point.y]);
         setTempLine({...cur});
         return;
@@ -565,7 +619,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
 
   const handleMouseUp = (e: any) => {
     // CALIBRATION LOGIC
+    // BLOCKED in World View
     if (isCalibrating && calibrationStart.current && calibrationRect) {
+         if (isWorldView) return; // Block calibration in World View
          if (calibrationRect.width > 5 && calibrationRect.height > 5 && map) {
              // Calibration: Scale and align the map so the drawn box represents one grid cell.
              // 1. Calculate scale factor: gridSize / drawn box size
@@ -604,6 +660,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     }
 
     if (tool !== 'select') {
+         // BLOCKED in World View (no drawing tools)
+         if (isWorldView) return;
          if (!isDrawing.current) return;
          isDrawing.current = false;
          if (tempLine) {
@@ -696,6 +754,60 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
     }
   }, [selectedIds]); // Only update when selection changes; nodes are automatically updated by React Konva
 
+
+  const centerOnPCTokens = () => {
+    const pcTokens = tokens.filter(t => t.type === 'PC');
+    if (pcTokens.length === 0) return;
+
+    // Calculate bounds of all PC tokens
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    pcTokens.forEach(token => {
+        const tokenSize = gridSize * token.scale;
+        minX = Math.min(minX, token.x);
+        minY = Math.min(minY, token.y);
+        maxX = Math.max(maxX, token.x + tokenSize);
+        maxY = Math.max(maxY, token.y + tokenSize);
+    });
+
+    // Add some padding around the tokens
+    const padding = gridSize * 2;
+    minX -= padding;
+    minY -= padding;
+    maxX += padding;
+    maxY += padding;
+
+    const boundsWidth = maxX - minX;
+    const boundsHeight = maxY - minY;
+
+    // Calculate scale to fit
+    const scaleX = size.width / boundsWidth;
+    const scaleY = size.height / boundsHeight;
+    const newScale = Math.min(scaleX, scaleY, MAX_SCALE); // Don't zoom in too much
+
+    // Calculate center of the bounds
+    const centerX = minX + boundsWidth / 2;
+    const centerY = minY + boundsHeight / 2;
+
+    // Calculate position to center the bounds
+    // Position formula: - (Center * Scale - ScreenCenter)
+    const newX = - (centerX * newScale - size.width / 2);
+    const newY = - (centerY * newScale - size.height / 2);
+
+    // We should clamp this new position to ensure we don't go out of "world" bounds excessively?
+    // Actually, if we are focusing on tokens, they are by definition "interesting", so we should allowed to go there.
+    // But we can pass it through clampPosition just to be safe if it respects the bounds logic.
+    // However, clampPosition relies on map bounds. If tokens are outside map, we might have issues?
+    // Let's trust the calculated position for now, or just clamp scale.
+
+    // Animate or Instant? Instant for now.
+    setScale(newScale);
+    setPosition({ x: newX, y: newY });
+  };
+
   return (
     <div
         ref={containerRef}
@@ -759,7 +871,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
         {/* Layer 1: Background & Map (Listening False to let internal events pass to Stage for selection) */}
         <Layer listening={false}>
             {map && (
-                <URLImage
+                 <URLImage
                     key="bg-map"
                     name="map-image"
                     id="map"
@@ -775,8 +887,22 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     onDragEnd={() => {}}
                 />
             )}
+
             <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} />
         </Layer>
+
+        {/* Fog of War Layer (World View only) - Renders Overlay */}
+        {isWorldView && (
+             <Layer listening={false}>
+              <FogOfWarLayer
+                tokens={tokens}
+                drawings={drawings}
+                gridSize={gridSize}
+                visibleBounds={visibleBounds}
+                map={map}
+              />
+            </Layer>
+        )}
 
         {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
         <Layer>
@@ -790,7 +916,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     strokeWidth={ghostLine.size}
                     tension={0.5}
                     lineCap="round"
-                    opacity={0.5}
+                    dash={ghostLine.tool === 'wall' ? [10, 5] : undefined}
+                    opacity={ghostLine.tool === 'wall' && isWorldView ? 0 : 0.5}
                     listening={false}
                 />
             ))}
@@ -809,6 +936,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     strokeWidth={line.size}
                     tension={0.5}
                     lineCap="round"
+                    dash={line.tool === 'wall' ? [10, 5] : undefined}
+                    opacity={line.tool === 'wall' && isWorldView ? 0 : 1}
                     globalCompositeOperation={
                         line.tool === 'eraser' ? 'destination-out' : 'source-over'
                     }
@@ -840,8 +969,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                          const y = node.y();
 
                          // Duplication Logic (Option/Alt + Drag)
+                         // BLOCKED in World View (players cannot duplicate drawings)
                          // Use isAltPressed state for consistency instead of e.evt.altKey
-                         if (isAltPressed) {
+                         if (isAltPressed && !isWorldView) {
                              const idsToDuplicate = selectedIds.includes(line.id) ? selectedIds : [line.id];
                              idsToDuplicate.forEach(id => {
                                  // Only duplicate drawings here; tokens are handled in their own handler.
@@ -881,12 +1011,16 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     strokeWidth={tempLine.size}
                     tension={0.5}
                     lineCap="round"
+                    dash={tempLine.tool === 'wall' ? [10, 5] : undefined}
+                    opacity={tempLine.tool === 'wall' && isWorldView ? 0 : 1}
                     globalCompositeOperation={
                         tempLine.tool === 'eraser' ? 'destination-out' : 'source-over'
                     }
                 />
             )}
         </Layer>
+
+
 
         {/* Layer 3: Tokens & UI */}
         <Layer>
@@ -951,8 +1085,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                          const snapped = snapToGrid(x, y, gridSize, width, height);
 
                          // Duplication Logic (Option/Alt + Drag)
+                         // BLOCKED in World View (players cannot duplicate tokens)
                          // Use isAltPressed state for consistency instead of e.evt.altKey
-                         if (isAltPressed) {
+                         if (isAltPressed && !isWorldView) {
                              const idsToDuplicate = selectedIds.includes(token.id) ? selectedIds : [token.id];
                              idsToDuplicate.forEach(id => {
                                  // Only duplicate tokens here; drawings are handled in their own handler.
@@ -997,6 +1132,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                 />
             )}
 
+            {/* Transformer: BLOCKED in World View (players cannot scale/rotate) */}
+            {!isWorldView && (
             <Transformer
                 ref={transformerRef}
                 onTransformEnd={(e) => {
@@ -1044,8 +1181,24 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26' }: CanvasManagerProp
                     }
                 }}
             />
+            )}
         </Layer>
       </Stage>
+
+      {/* World View Controls */}
+      {isWorldView && (
+        <div className="absolute bottom-4 right-4 z-50">
+            <button
+                className="bg-neutral-800 text-white border border-neutral-600 hover:bg-neutral-700 px-4 py-2 rounded shadow flex items-center gap-2"
+                onClick={centerOnPCTokens}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                </svg>
+                Center on Party
+            </button>
+        </div>
+      )}
     </div>
   );
 };

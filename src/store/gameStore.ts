@@ -11,6 +11,9 @@ import { create } from 'zustand';
  * @property y - Y coordinate in pixels, grid-snapped (e.g., 0, 50, 100, 150...)
  * @property src - Image URL (file:// for uploaded, https:// for library). Note: Only file:// and https:// URLs are stored in the store; conversion to media:// is performed at render time (e.g., in the URLImage component).
  * @property scale - Size multiplier for grid cells (1 = 1x1, 2 = 2x2 for Large creatures)
+ * @property type - Token type: 'PC' (player character with vision) or 'NPC' (no vision). Defaults to 'NPC' for backward compatibility.
+ * @property visionRadius - Vision range in feet (e.g., 60 for darkvision). Only applies to PC tokens. 0 = no vision.
+ * @property name - Optional display name for the token (shown in inspector/UI)
  *
  * @example
  * const goblin: Token = {
@@ -18,17 +21,23 @@ import { create } from 'zustand';
  *   x: 150,  // Grid-snapped
  *   y: 100,
  *   src: 'file:///Users/.../temp_assets/goblin.webp',
- *   scale: 1  // Medium creature (1x1)
+ *   scale: 1,  // Medium creature (1x1)
+ *   type: 'NPC',
+ *   visionRadius: 0,
+ *   name: 'Goblin Scout'
  * };
  *
  * @example
- * // Large creature (2x2 grid cells)
- * const dragon: Token = {
+ * // Player character with darkvision
+ * const playerToken: Token = {
  *   id: crypto.randomUUID(),
  *   x: 200,
  *   y: 200,
- *   src: 'file:///path/dragon.webp',
- *   scale: 2
+ *   src: 'file:///path/player.webp',
+ *   scale: 1,
+ *   type: 'PC',
+ *   visionRadius: 60,  // 60ft darkvision
+ *   name: 'Drizzt'
  * };
  */
 export interface Token {
@@ -37,19 +46,23 @@ export interface Token {
   y: number;
   src: string;
   scale: number;
+  type?: 'PC' | 'NPC';
+  visionRadius?: number;
+  name?: string;
 }
 
 /**
- * Drawing represents a freehand stroke drawn with marker or eraser tool
+ * Drawing represents a freehand stroke drawn with marker, eraser, or wall tool
  *
  * Drawings are temporary markings (spell effects, hazard zones, movement paths, etc.).
+ * Walls are special drawings that block vision for Fog of War calculations.
  * Synchronized in real-time to World View for player visibility.
  *
  * @property id - Unique identifier (generated with crypto.randomUUID())
- * @property tool - Tool used: 'marker' (visible stroke) or 'eraser' (destination-out blend)
+ * @property tool - Tool used: 'marker' (visible stroke), 'eraser' (destination-out blend), or 'wall' (vision blocker)
  * @property points - Flat array of coordinates [x1, y1, x2, y2, ...] forming the stroke path
- * @property color - Hex color (e.g., '#df4b26' for marker, '#000000' for eraser)
- * @property size - Stroke width in pixels (5 for marker, 20 for eraser)
+ * @property color - Hex color (e.g., '#df4b26' for marker, '#000000' for eraser, '#ff0000' for wall)
+ * @property size - Stroke width in pixels (5 for marker, 20 for eraser, 8 for wall)
  * @property scale - Optional size multiplier for future scaling support
  * @property x - Optional X offset for future transform support
  * @property y - Optional Y offset for future transform support
@@ -71,10 +84,19 @@ export interface Token {
  *   color: '#000000',  // Rendered with destination-out
  *   size: 20
  * };
+ *
+ * @example
+ * const wallSegment: Drawing = {
+ *   id: crypto.randomUUID(),
+ *   tool: 'wall',
+ *   points: [150, 100, 350, 100],  // Horizontal wall
+ *   color: '#ff0000',  // Red (DM view only)
+ *   size: 8
+ * };
  */
 export interface Drawing {
   id: string;
-  tool: 'marker' | 'eraser';
+  tool: 'marker' | 'eraser' | 'wall';
   points: number[];
   color: string;
   size: number;
@@ -168,6 +190,7 @@ export interface ToastMessage {
  * @property removeTokens - Removes multiple tokens (batch delete)
  * @property updateTokenPosition - Updates x/y of existing token
  * @property updateTokenTransform - Updates x/y/scale together (atomic)
+ * @property updateTokenProperties - Updates token properties (type, visionRadius, name)
  *
  * **Drawing Actions:**
  * @property addDrawing - Adds new drawing stroke
@@ -207,6 +230,7 @@ export interface GameState {
   removeTokens: (ids: string[]) => void;
   updateTokenPosition: (id: string, x: number, y: number) => void;
   updateTokenTransform: (id: string, x: number, y: number, scale: number) => void;
+  updateTokenProperties: (id: string, properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>) => void;
   addDrawing: (drawing: Drawing) => void;
   removeDrawing: (id: string) => void;
   removeDrawings: (ids: string[]) => void;
@@ -309,21 +333,24 @@ export const useGameStore = create<GameState>((set) => ({
 
   // Token actions
   addToken: (token: Token) => set((state) => ({ tokens: [...state.tokens, token] })),
-  removeToken: (id: string) => set((state) => ({ tokens: state.tokens.filter(t => t.id !== id) })),
-  removeTokens: (ids: string[]) => set((state) => ({ tokens: state.tokens.filter(t => !ids.includes(t.id)) })),
+  removeToken: (id: string) => set((state) => ({ tokens: state.tokens.filter((t: Token) => t.id !== id) })),
+  removeTokens: (ids: string[]) => set((state) => ({ tokens: state.tokens.filter((t: Token) => !ids.includes(t.id)) })),
   updateTokenPosition: (id: string, x: number, y: number) => set((state) => ({
-    tokens: state.tokens.map((t) => t.id === id ? { ...t, x, y } : t)
+    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, x, y } : t)
   })),
   updateTokenTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
-    tokens: state.tokens.map((t) => t.id === id ? { ...t, x, y, scale } : t)
+    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, x, y, scale } : t)
+  })),
+  updateTokenProperties: (id: string, properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>) => set((state) => ({
+    tokens: state.tokens.map((t: Token) => t.id === id ? { ...t, ...properties } : t)
   })),
 
   // Drawing actions
   addDrawing: (drawing: Drawing) => set((state) => ({ drawings: [...state.drawings, drawing] })),
-  removeDrawing: (id: string) => set((state) => ({ drawings: state.drawings.filter(d => d.id !== id) })),
-  removeDrawings: (ids: string[]) => set((state) => ({ drawings: state.drawings.filter(d => !ids.includes(d.id)) })),
+  removeDrawing: (id: string) => set((state) => ({ drawings: state.drawings.filter((d: Drawing) => d.id !== id) })),
+  removeDrawings: (ids: string[]) => set((state) => ({ drawings: state.drawings.filter((d: Drawing) => !ids.includes(d.id)) })),
   updateDrawingTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
-    drawings: state.drawings.map((d) => d.id === id ? { ...d, x, y, scale } : d)
+    drawings: state.drawings.map((d: Drawing) => d.id === id ? { ...d, x, y, scale } : d)
   })),
 
   // Grid actions

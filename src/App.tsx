@@ -4,43 +4,63 @@ import SyncManager from './components/SyncManager'
 import { ThemeManager } from './components/ThemeManager'
 import Sidebar from './components/Sidebar'
 import Toast from './components/Toast'
+import TokenInspector from './components/TokenInspector'
 import { useGameStore } from './store/gameStore'
+import { useWindowType } from './utils/useWindowType'
 
 /**
- * App is the root component for Hyle's Architect View (DM control panel)
+ * App is the root component for Hyle's dual-window architecture
  *
- * This component orchestrates the main UI layout and tool state management.
- * It combines the three core components (SyncManager, Sidebar, CanvasManager)
- * and provides the toolbar for tool selection and campaign management.
+ * This component renders differently based on window type:
+ * - **Architect View** (Main Window): Full DM control panel with UI and editing tools
+ * - **World View** (Player Window): Sanitized canvas-only display for projection
  *
- * **Component hierarchy:**
+ * **UI Sanitization Logic:**
+ * Uses the `useWindowType()` hook to detect window type and conditionally render
+ * DM-specific UI components. This ensures the World View shows only the game canvas
+ * without exposing editing tools, save/load controls, or the asset library.
+ *
+ * **Component hierarchy (Architect View):**
  * ```
  * App (root)
- *   ├── SyncManager (invisible, handles IPC sync)
- *   ├── Sidebar (left panel, token library)
+ *   ├── ThemeManager (invisible, syncs theme across windows)
+ *   ├── SyncManager (invisible, handles IPC state sync)
+ *   ├── Toast (notifications)
+ *   ├── Sidebar (left panel, token library) ← ARCHITECT ONLY
  *   └── Main area
  *       ├── CanvasManager (battlemap canvas)
- *       └── Toolbar (floating top-right)
- *           ├── Tool buttons (Select, Marker, Eraser)
+ *       └── Toolbar (floating top-right) ← ARCHITECT ONLY
+ *           ├── Tool buttons (Select, Marker, Eraser, Wall)
  *           ├── Save/Load campaign buttons
  *           └── World View button
  * ```
  *
+ * **Component hierarchy (World View):**
+ * ```
+ * App (root)
+ *   ├── ThemeManager (invisible, syncs theme across windows)
+ *   ├── SyncManager (invisible, receives IPC state updates)
+ *   ├── Toast (notifications)
+ *   └── Main area
+ *       └── CanvasManager (battlemap canvas only, interaction-restricted)
+ * ```
+ *
  * **Tool state:**
- * Manages the active drawing/interaction tool and passes it to CanvasManager.
- * Tool changes affect CanvasManager behavior (pan, draw marker, draw eraser).
+ * Only managed in Architect View. Passed to CanvasManager to control drawing/interaction
+ * mode (select, marker, eraser). World View always uses select mode with limited interactions.
  *
  * **Campaign management:**
+ * Only available in Architect View:
  * - Save button: Serializes store state to .hyle ZIP file via IPC
  * - Load button: Deserializes .hyle file and updates store via IPC
  * - Both use Electron dialog API (handled by main process)
  *
- * **World View:**
- * - Creates separate projector window via IPC
- * - World Window receives read-only state updates via SyncManager
- * - DM controls from this window, players see World Window
+ * **World View creation:**
+ * "World View" button in Architect View toolbar creates the player-facing window via IPC.
+ * The World Window is a separate BrowserWindow that loads the same React app with
+ * `?type=world` query parameter for UI differentiation.
  *
- * @returns Root UI with Sidebar, CanvasManager, and toolbar
+ * @returns Root UI with conditional rendering based on window type
  *
  * @example
  * // This is the root component rendered in main.tsx:
@@ -49,12 +69,29 @@ import { useGameStore } from './store/gameStore'
  *     <App />
  *   </React.StrictMode>
  * )
+ *
+ * @see {@link file://./utils/useWindowType.ts useWindowType} for window detection
+ * @see {@link file://./components/SyncManager.tsx SyncManager} for state synchronization
+ * @see {@link file://./components/Canvas/CanvasManager.tsx CanvasManager} for interaction restrictions
  */
 function App() {
+  // Detect window type for UI sanitization
+  const { isArchitectView, isWorldView } = useWindowType();
+
   // Active tool state (controls CanvasManager behavior)
-  const [tool, setTool] = useState<'select' | 'marker' | 'eraser'>('select');
+  // Only used in Architect View; World View always uses 'select' with restricted interactions
+  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall'>('select');
   const [color, setColor] = useState('#df4b26');
   const colorInputRef = useRef<HTMLInputElement>(null);
+
+  // Selected tokens state (for TokenInspector)
+  const [selectedTokenIds, setSelectedTokenIds] = useState<string[]>([]);
+
+  // Filter selected IDs to only include tokens (not drawings)
+  const tokens = useGameStore((s) => s.tokens);
+  const selectedTokensOnly = selectedTokenIds.filter((id) =>
+    tokens.some((t) => t.id === id)
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -73,6 +110,9 @@ function App() {
         case 'e':
           setTool('eraser');
           break;
+        case 'w':
+          setTool('wall');
+          break;
         case 'i':
           colorInputRef.current?.click();
           break;
@@ -85,15 +125,25 @@ function App() {
 
   return (
     <div className="app-root w-full h-screen flex overflow-hidden">
+      {/* Global components (rendered in both Architect and World View) */}
       <ThemeManager />
       <SyncManager />
       <Toast />
 
-      <Sidebar />
+      {/* Sidebar: Only render in Architect View (DM's token library) */}
+      {isArchitectView && <Sidebar />}
 
       <div className="flex-1 relative h-full">
-        <CanvasManager tool={tool} color={color} />
-        {/* Toolbar */}
+        {/* CanvasManager: Rendered in both views, but with different interaction modes */}
+        <CanvasManager
+          tool={tool}
+          color={color}
+          isWorldView={isWorldView}
+          onSelectionChange={setSelectedTokenIds}
+        />
+
+        {/* Toolbar: Only render in Architect View (DM controls) */}
+        {isArchitectView && (
         <div className="toolbar fixed top-4 right-4 p-2 rounded shadow flex gap-2 z-50">
            <button
              className={`btn btn-tool ${tool === 'select' ? 'active' : ''}`}
@@ -104,6 +154,9 @@ function App() {
            <button
              className={`btn btn-tool ${tool === 'eraser' ? 'active' : ''}`}
              onClick={() => setTool('eraser')}>Eraser (E)</button>
+           <button
+             className={`btn btn-tool ${tool === 'wall' ? 'active' : ''}`}
+             onClick={() => setTool('wall')}>Wall (W)</button>
            <div className="toolbar-divider w-px mx-1"></div>
            <label className="flex items-center gap-2 cursor-pointer">
              <span className="text-sm font-medium">Color (I)</span>
@@ -178,6 +231,12 @@ function App() {
              World View
            </button>
         </div>
+        )}
+
+        {/* Token Inspector (only show when tokens selected) */}
+        {selectedTokensOnly.length > 0 && (
+          <TokenInspector selectedTokenIds={selectedTokensOnly} />
+        )}
       </div>
     </div>
   )
