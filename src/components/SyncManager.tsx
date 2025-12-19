@@ -24,6 +24,45 @@ function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T
 }
 
 /**
+ * Deep equality check for simple objects with primitive values and arrays
+ * More reliable than JSON.stringify which can fail due to property ordering
+ */
+function isEqual(obj1: any, obj2: any): boolean {
+  if (obj1 === obj2) return true;
+  if (obj1 == null || obj2 == null) return false;
+  
+  // Handle arrays
+  if (Array.isArray(obj1) && Array.isArray(obj2)) {
+    if (obj1.length !== obj2.length) return false;
+    for (let i = 0; i < obj1.length; i++) {
+      if (!isEqual(obj1[i], obj2[i])) return false;
+    }
+    return true;
+  }
+  
+  // If one is array and other is not, they're not equal
+  if (Array.isArray(obj1) || Array.isArray(obj2)) return false;
+  
+  // Handle objects
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+  
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  // Use Set for O(1) lookup instead of includes() for O(n) lookup
+  const keys2Set = new Set(keys2);
+  
+  for (const key of keys1) {
+    if (!keys2Set.has(key)) return false;
+    if (!isEqual(obj1[key], obj2[key])) return false;
+  }
+  
+  return true;
+}
+
+/**
  * Action types for delta-based state synchronization
  */
 type SyncAction =
@@ -32,6 +71,7 @@ type SyncAction =
   | { type: 'TOKEN_UPDATE'; payload: { id: string; changes: Partial<any> } }
   | { type: 'TOKEN_REMOVE'; payload: { id: string } }
   | { type: 'DRAWING_ADD'; payload: any }
+  | { type: 'DRAWING_UPDATE'; payload: { id: string; changes: Partial<any> } }
   | { type: 'DRAWING_REMOVE'; payload: { id: string } }
   | { type: 'MAP_UPDATE'; payload: any }
   | { type: 'GRID_UPDATE'; payload: { gridSize?: number; gridType?: string } };
@@ -222,14 +262,16 @@ const SyncManager = () => {
           const prevToken = prevTokenMap.get(token.id);
           if (prevToken) {
             const changes: any = {};
-            // Check each property for changes
-            if (token.x !== prevToken.x) changes.x = token.x;
-            if (token.y !== prevToken.y) changes.y = token.y;
-            if (token.scale !== prevToken.scale) changes.scale = token.scale;
-            if (token.src !== prevToken.src) changes.src = token.src;
-            if (token.type !== prevToken.type) changes.type = token.type;
-            if (token.visionRadius !== prevToken.visionRadius) changes.visionRadius = token.visionRadius;
-            if (token.name !== prevToken.name) changes.name = token.name;
+            // Check each property for changes (excluding immutable identifier)
+            Object.keys(token).forEach((key) => {
+              if (key === 'id') {
+                return;
+              }
+              // Use loose typing here because tokens are typed as `any`
+              if ((token as any)[key] !== (prevToken as any)[key]) {
+                (changes as any)[key] = (token as any)[key];
+              }
+            });
 
             if (Object.keys(changes).length > 0) {
               actions.push({
@@ -240,7 +282,8 @@ const SyncManager = () => {
           }
         });
 
-        // Check for drawing changes (similar logic)
+        // Check for drawing changes
+        const prevDrawingMap = new Map(prevState.drawings.map((d: any) => [d.id, d]));
         const prevDrawingIds = new Set(prevState.drawings.map((d: any) => d.id));
         const currentDrawingIds = new Set(currentState.drawings.map((d: any) => d.id));
 
@@ -258,8 +301,33 @@ const SyncManager = () => {
           }
         });
 
+        // Updated drawings (check properties like points, color, tool changes)
+        currentState.drawings.forEach((drawing: any) => {
+          const prevDrawing = prevDrawingMap.get(drawing.id);
+          if (prevDrawing) {
+            const changes: any = {};
+            // Check each property for changes (excluding immutable identifier)
+            Object.keys(drawing).forEach((key) => {
+              if (key === 'id') {
+                return;
+              }
+              // Use isEqual for consistent deep comparison
+              if (!isEqual(drawing[key], prevDrawing[key])) {
+                changes[key] = drawing[key];
+              }
+            });
+
+            if (Object.keys(changes).length > 0) {
+              actions.push({
+                type: 'DRAWING_UPDATE',
+                payload: { id: drawing.id, changes }
+              });
+            }
+          }
+        });
+
         // Check for map changes
-        if (JSON.stringify(prevState.map) !== JSON.stringify(currentState.map)) {
+        if (!isEqual(prevState.map, currentState.map)) {
           actions.push({ type: 'MAP_UPDATE', payload: currentState.map });
         }
 

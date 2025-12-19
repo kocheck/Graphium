@@ -24,7 +24,7 @@ This document details the performance optimizations implemented in the NEXT bran
 
 ### The Problem
 
-**Location:** `src/components/SyncManager.tsx:128-140`
+**Location:** `src/components/SyncManager.tsx`
 
 Every single state change (token drag, drawing stroke) broadcast the ENTIRE game state via IPC:
 
@@ -92,7 +92,7 @@ Only send what changed:
 
 ### The Problem
 
-**Location:** `src/components/Canvas/FogOfWarLayer.tsx:153-223`
+**Location:** `src/components/Canvas/FogOfWarLayer.tsx`
 
 Visibility polygons were recalculated on EVERY render:
 
@@ -165,7 +165,7 @@ const visibilityCache = useMemo(() => {
 
 ### The Problem
 
-**Location:** `src/utils/AssetProcessor.ts:67-118`
+**Location (previous implementation):** `src/utils/AssetProcessor.ts`
 
 Image resize and WebP conversion blocked the UI thread:
 

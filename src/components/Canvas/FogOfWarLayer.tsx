@@ -61,6 +61,12 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
   );
 
   // Extract walls from drawings (memoized to prevent unnecessary recalculations)
+  // Use a stable string representation of wall drawings to avoid recalculation when unrelated drawings change
+  const wallDrawingsKey = useMemo(() => {
+    const wallDrawings = drawings.filter((d) => d.tool === 'wall');
+    return wallDrawings.map(d => `${d.id}:${d.points.join(',')}`).join('|');
+  }, [drawings]);
+
   const walls: WallSegment[] = useMemo(() => {
     const wallSegments: WallSegment[] = [];
     drawings
@@ -76,7 +82,7 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
         }
       });
     return wallSegments;
-  }, [drawings]);
+  }, [wallDrawingsKey]);
 
   // Create a stable hash of walls for dependency tracking
   // Only recalculate visibility when walls actually change
@@ -112,7 +118,12 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
     return cache;
   }, [
     // Only recalculate when these dependencies change:
-    pcTokens.map(t => `${t.id}:${t.x}:${t.y}:${t.visionRadius}:${t.scale}`).join('|'),
+    // Using separate arrays for each property to avoid creating new strings on every render
+    pcTokens.map(t => t.id).join(','),
+    pcTokens.map(t => t.x).join(','),
+    pcTokens.map(t => t.y).join(','),
+    pcTokens.map(t => t.visionRadius).join(','),
+    pcTokens.map(t => t.scale).join(','),
     wallsHash,
     gridSize
   ]);

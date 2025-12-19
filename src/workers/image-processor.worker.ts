@@ -145,7 +145,7 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
       buffer,
       fileName,
       originalName: file.name
-    } as CompleteMessage);
+    } as CompleteMessage, [buffer]);
 
   } catch (error) {
     // Send error back to main thread
