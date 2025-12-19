@@ -140,8 +140,11 @@ function processImageWithWorker(
 ): ProcessingHandle {
   let worker: Worker | null = null;
   let isCancelled = false;
+  let rejectPromise: ((reason?: any) => void) | null = null;
 
   const promise = new Promise<string>((resolve, reject) => {
+    // Capture reject for cancel function
+    rejectPromise = reject;
     // Create worker instance
     worker = new Worker(
       new URL('../workers/image-processor.worker.ts', import.meta.url),
@@ -237,6 +240,10 @@ function processImageWithWorker(
       if (worker) {
         worker.terminate();
         worker = null;
+      }
+      // Reject the promise with a cancellation error
+      if (rejectPromise) {
+        rejectPromise(new Error('Image processing cancelled'));
       }
     }
   };
@@ -354,6 +361,18 @@ export const processBatch = (
   onProgress?: ProgressCallback
 ): ProcessingHandle => {
   const totalFiles = files.length;
+  
+  // Handle empty array case
+  if (totalFiles === 0) {
+    if (onProgress) {
+      onProgress(100);
+    }
+    return {
+      promise: Promise.resolve([]),
+      cancel: () => {}
+    };
+  }
+  
   const fileProgress = new Map<number, number>();
   const handles: ProcessingHandle[] = [];
 

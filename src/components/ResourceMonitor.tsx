@@ -78,9 +78,6 @@ const ResourceMonitor = () => {
   const ipcBytesRef = useRef(0);
   const lastIPCResetRef = useRef(Date.now());
 
-  // Render time tracking
-  const renderStartRef = useRef(0);
-
   // Get store data
   const tokens = useGameStore((state) => state.tokens);
   const drawings = useGameStore((state) => state.drawings);
@@ -136,14 +133,15 @@ const ResourceMonitor = () => {
         };
       }
 
-      // Count active workers (approximation via Performance API)
-      let activeWorkers = 0;
-      if (performance.getEntriesByType) {
-        const workerEntries = performance.getEntriesByType('resource').filter(
-          (entry: any) => entry.initiatorType === 'worker'
-        );
-        activeWorkers = workerEntries.length;
-      }
+      // Active worker count
+      // NOTE: Using Performance API resource entries to infer active workers is unreliable,
+      // as terminated workers still appear in the resource list. Until a dedicated worker
+      // registry (e.g., in AssetProcessor) is wired into this component, we report 0 here
+      // rather than a misleading approximate value.
+      const activeWorkers = 0;
+
+      // If a reliable source of truth for active workers becomes available, replace the
+      // above with that data (e.g., from useGameStore or a dedicated tracking module).
 
       // Calculate IPC bandwidth
       const now = Date.now();
@@ -181,6 +179,10 @@ const ResourceMonitor = () => {
    * - IPC methods don't exist or are malformed
    * - JSON.stringify fails on circular references
    * - Method interception fails in strict mode
+   * 
+   * **Cleanup Strategy:** When this component unmounts, wrapped listeners remain
+   * in place for existing listeners, but tracking is disabled via the isTracking flag.
+   * This prevents memory leaks while ensuring IPC continues to function normally.
    */
   useEffect(() => {
     if (!window.ipcRenderer) return;
@@ -194,6 +196,7 @@ const ResourceMonitor = () => {
 
     let originalSend: any;
     let originalOn: any;
+    let isTracking = true;
 
     try {
       originalSend = window.ipcRenderer.send;
@@ -201,14 +204,16 @@ const ResourceMonitor = () => {
 
       // Intercept send (outgoing messages)
       window.ipcRenderer.send = function(channel: string, ...args: any[]) {
-        try {
-          ipcMessageCountRef.current++;
-          // Estimate message size (rough approximation, with circular ref protection)
-          const size = JSON.stringify(args).length;
-          ipcBytesRef.current += size;
-        } catch (err) {
-          // Ignore errors in metrics collection (don't break IPC)
-          console.warn('[ResourceMonitor] Failed to track IPC send:', err);
+        if (isTracking) {
+          try {
+            ipcMessageCountRef.current++;
+            // Estimate message size (rough approximation, with circular ref protection)
+            const size = JSON.stringify(args).length;
+            ipcBytesRef.current += size;
+          } catch (err) {
+            // Ignore errors in metrics collection (don't break IPC)
+            console.warn('[ResourceMonitor] Failed to track IPC send:', err);
+          }
         }
         return originalSend.call(this, channel, ...args);
       };
@@ -216,13 +221,15 @@ const ResourceMonitor = () => {
       // Intercept on (incoming messages)
       window.ipcRenderer.on = function(channel: string, listener: any) {
         const wrappedListener = (...args: any[]) => {
-          try {
-            ipcMessageCountRef.current++;
-            const size = JSON.stringify(args).length;
-            ipcBytesRef.current += size;
-          } catch (err) {
-            // Ignore errors in metrics collection
-            console.warn('[ResourceMonitor] Failed to track IPC receive:', err);
+          if (isTracking) {
+            try {
+              ipcMessageCountRef.current++;
+              const size = JSON.stringify(args).length;
+              ipcBytesRef.current += size;
+            } catch (err) {
+              // Ignore errors in metrics collection
+              console.warn('[ResourceMonitor] Failed to track IPC receive:', err);
+            }
           }
           listener(...args);
         };
@@ -235,6 +242,9 @@ const ResourceMonitor = () => {
     }
 
     return () => {
+      // Disable tracking before restoring to prevent metrics updates during cleanup
+      isTracking = false;
+      
       // Restore original methods (cleanup)
       try {
         if (originalSend && window.ipcRenderer) {
