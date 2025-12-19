@@ -137,7 +137,7 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
             draggable={false}
             listening={false}
             filters={BLUR_FILTERS}
-            blurRadius={60}
+            blurRadius={20}
             brightness={-0.94}
         />
 

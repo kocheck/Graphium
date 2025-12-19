@@ -183,7 +183,8 @@ const SyncManager = () => {
 
     if (isWorldView) {
       // ============================================================
-      // CONSUMER MODE: World View receives and applies delta updates
+      // BIDIRECTIONAL MODE: World View receives updates AND can send updates
+      // (Enables DM to demonstrate token movement on projector)
       // ============================================================
 
       const handleSyncAction = (_event: any, action: SyncAction) => {
@@ -269,8 +270,88 @@ const SyncManager = () => {
       // have occurred since it opened
       window.ipcRenderer.send('REQUEST_INITIAL_STATE');
 
+      // ============================================================
+      // BIDIRECTIONAL SYNC: World View can also send token updates
+      // (Allows DM to demonstrate movement on projector)
+      // ============================================================
+
+      // Track previous state for detecting World View changes
+      const worldViewPrevStateRef = useRef<any>(null);
+
+      /**
+       * Detect changes made in World View and send to Architect View
+       * Only syncs token positions to avoid conflicts with other properties
+       */
+      const detectWorldViewChanges = (prevState: any, currentState: any): SyncAction[] => {
+        const actions: SyncAction[] = [];
+
+        // Skip if no previous state (initial load)
+        if (!prevState) {
+          return actions;
+        }
+
+        // Check for token position changes (most common in World View)
+        const prevTokenMap = new Map(prevState.tokens.map((t: any) => [t.id, t]));
+        const currentTokenMap = new Map(currentState.tokens.map((t: any) => [t.id, t]));
+
+        // Updated tokens - only send position changes
+        currentState.tokens.forEach((token: any) => {
+          const prevToken = prevTokenMap.get(token.id);
+          if (prevToken) {
+            const changes: any = {};
+
+            // Only sync position changes from World View
+            // Avoid syncing other properties to prevent conflicts with Architect View
+            if (!isEqual(token.x, prevToken.x)) {
+              changes.x = token.x;
+            }
+            if (!isEqual(token.y, prevToken.y)) {
+              changes.y = token.y;
+            }
+
+            if (Object.keys(changes).length > 0) {
+              actions.push({
+                type: 'TOKEN_UPDATE',
+                payload: { id: token.id, changes }
+              });
+            }
+          }
+        });
+
+        return actions;
+      };
+
+      /**
+       * Handle World View store updates and send to Architect View
+       */
+      const handleWorldViewUpdate = (state: any) => {
+        // Detect what changed
+        const actions = detectWorldViewChanges(worldViewPrevStateRef.current, state);
+
+        // Send each action via IPC to Architect View
+        actions.forEach(action => {
+          window.ipcRenderer.send('SYNC_FROM_WORLD_VIEW', action);
+        });
+
+        // Update previous state reference
+        worldViewPrevStateRef.current = {
+          tokens: [...state.tokens],
+          drawings: [...state.drawings],
+          gridSize: state.gridSize,
+          gridType: state.gridType,
+          map: state.map ? { ...state.map } : null
+        };
+      };
+
+      // Throttle World View updates to prevent IPC flooding
+      const throttledWorldViewSync = throttle(handleWorldViewUpdate, 32);
+
+      // Subscribe to World View's store changes
+      const unsubWorldView = useGameStore.subscribe(throttledWorldViewSync);
+
       // Cleanup function
       return () => {
+        unsubWorldView();
         // Note: Current preload implementation may not support proper cleanup
         // Listeners are cleaned up when window closes
       };
