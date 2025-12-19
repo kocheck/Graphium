@@ -414,7 +414,7 @@ export const processBatch = (
       handles.forEach(handle => handle.cancel());
       // Clear progress tracking and handle references to avoid stale state
       fileProgress.clear();
-      handles.length = 0;
+      handles.splice(0); // Clear array in place
     }
   };
 };

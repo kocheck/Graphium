@@ -184,13 +184,13 @@ const SyncManager = () => {
 
           case 'DRAWING_UPDATE':
             // Update specific drawing properties
-            const drawingUpdatePayload = action.payload as { id: string; changes: Partial<any> };
-            const currentDrawing = store.drawings.find(d => d.id === drawingUpdatePayload.id);
+            const { id: drawingId, changes: drawingChanges } = action.payload as { id: string; changes: Partial<any> };
+            const currentDrawing = store.drawings.find(d => d.id === drawingId);
             if (currentDrawing) {
               // Only update if drawing exists
               useGameStore.setState({
                 drawings: store.drawings.map(d =>
-                  d.id === drawingUpdatePayload.id ? { ...d, ...drawingUpdatePayload.changes } : d
+                  d.id === drawingId ? { ...d, ...drawingChanges } : d
                 )
               });
             }
