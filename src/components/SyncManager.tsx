@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, GridType } from '../store/gameStore';
 
 // Basic throttle implementation to limit IPC frequency
 // Ensures leading edge execution and trailing edge (so final state is always sent)
@@ -196,7 +196,7 @@ const SyncManager = () => {
             // Update grid settings
             useGameStore.setState({
               ...(action.payload.gridSize !== undefined && { gridSize: action.payload.gridSize }),
-              ...(action.payload.gridType !== undefined && { gridType: action.payload.gridType }),
+              ...(action.payload.gridType !== undefined && { gridType: action.payload.gridType as GridType }),
             });
             break;
 
@@ -312,8 +312,8 @@ const SyncManager = () => {
                 return;
               }
               // Use isEqual for consistent deep comparison
-              if (!isEqual(drawing[key], prevDrawing[key])) {
-                changes[key] = drawing[key];
+              if (!isEqual((drawing as any)[key], (prevDrawing as any)[key])) {
+                changes[key] = (drawing as any)[key];
               }
             });
 

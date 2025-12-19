@@ -45,8 +45,6 @@ interface ErrorMessage {
   fileName: string;
 }
 
-type WorkerMessage = ProgressMessage | CompleteMessage | ErrorMessage;
-
 // Maximum dimensions for different asset types
 const MAX_MAP_DIMENSION = 4096;
 const MAX_TOKEN_DIMENSION = 512;
@@ -139,13 +137,13 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
       fileName
     } as ProgressMessage);
 
-    // Step 6: Send result back to main thread
+    // Step 6: Send result back to main thread with transferable ArrayBuffer
     postMessage({
       type: 'COMPLETE',
       buffer,
       fileName,
       originalName: file.name
-    } as CompleteMessage, [buffer]);
+    } as CompleteMessage, { transfer: [buffer] });
 
   } catch (error) {
     // Send error back to main thread

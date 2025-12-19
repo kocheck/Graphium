@@ -36,6 +36,14 @@ export interface ProcessingHandle {
 }
 
 /**
+ * Cancellable batch processing handle returned by processBatch
+ */
+export interface BatchProcessingHandle {
+  promise: Promise<string[]>;
+  cancel: () => void;
+}
+
+/**
  * Processes and optimizes uploaded images for use as maps or tokens
  *
  * **PERFORMANCE OPTIMIZATION:** This function now uses Web Workers for non-blocking
@@ -359,7 +367,7 @@ export const processBatch = (
   files: File[],
   type: AssetType,
   onProgress?: ProgressCallback
-): ProcessingHandle => {
+): BatchProcessingHandle => {
   const totalFiles = files.length;
   
   // Handle empty array case
