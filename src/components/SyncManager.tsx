@@ -170,6 +170,9 @@ const SyncManager = () => {
   // Track previous state for diffing
   const prevStateRef = useRef<any>(null);
 
+  // Track previous state for World View changes (bidirectional sync)
+  const worldViewPrevStateRef = useRef<any>(null);
+
   useEffect(() => {
     // Skip if ipcRenderer is not available (e.g., in browser testing)
     if (!window.ipcRenderer) {
@@ -274,9 +277,6 @@ const SyncManager = () => {
       // BIDIRECTIONAL SYNC: World View can also send token updates
       // (Allows DM to demonstrate movement on projector)
       // ============================================================
-
-      // Track previous state for detecting World View changes
-      const worldViewPrevStateRef = useRef<any>(null);
 
       /**
        * Detect changes made in World View and send to Architect View
