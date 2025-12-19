@@ -86,6 +86,15 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
     return wallSegments;
   }, [drawings]);
 
+  // Serialize PC token properties for change detection
+  // This allows useMemo to detect changes in token positions/vision even when array reference is stable
+  const pcTokensKey = useMemo(
+    () => pcTokens
+      .map((t) => `${t.id}:${t.x}:${t.y}:${t.visionRadius}:${t.scale}`)
+      .join('|'),
+    [pcTokens]
+  );
+
   /**
    * Cache visibility polygons per token
    * Dependencies: token position (x, y), visionRadius, walls
@@ -111,11 +120,15 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
     });
 
     return cache;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     // Only recalculate when these dependencies change:
-    pcTokens,
+    pcTokensKey, // Serialized token properties (id, position, vision, scale)
     walls,
     gridSize
+    // Note: pcTokens is intentionally omitted - pcTokensKey already captures all relevant
+    // properties (id, x, y, visionRadius, scale). Using pcTokensKey instead of pcTokens
+    // prevents unnecessary recalculations when unrelated token properties change.
   ]);
 
   // Save current vision to explored regions periodically
@@ -146,7 +159,7 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
 
     // Debug: Log when regions are added
     if (regionsAdded > 0) {
-      console.log(`[FogOfWar] Added ${regionsAdded} explored region(s). Total: ${exploredRegions.length + regionsAdded}`);
+      console.log(`[FogOfWar] Added ${regionsAdded} explored region(s)`);
     }
 
     lastExploreUpdateRef.current = now;

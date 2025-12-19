@@ -192,6 +192,13 @@ export interface ExploredRegion {
 }
 
 /**
+ * Maximum number of explored regions to store in memory.
+ * Prevents unbounded growth during long sessions.
+ * Oldest regions are evicted when this limit is reached (FIFO).
+ */
+const MAX_EXPLORED_REGIONS = 200;
+
+/**
  * GameState is the central state interface for Hyle
  *
  * All game data (tokens, drawings, map, settings) and actions to mutate it.
@@ -416,9 +423,19 @@ export const useGameStore = create<GameState>((set) => ({
   setIsCalibrating: (isCalibrating: boolean) => set({ isCalibrating }),
 
   // Explored fog actions
-  addExploredRegion: (region: ExploredRegion) => set((state) => ({
-    exploredRegions: [...state.exploredRegions, region]
-  })),
+  addExploredRegion: (region: ExploredRegion) => set((state) => {
+    const newRegions = [...state.exploredRegions, region];
+    
+    // Implement FIFO eviction if we exceed the maximum
+    // Remove oldest regions first to prevent unbounded memory growth
+    if (newRegions.length > MAX_EXPLORED_REGIONS) {
+      return {
+        exploredRegions: newRegions.slice(-MAX_EXPLORED_REGIONS)
+      };
+    }
+    
+    return { exploredRegions: newRegions };
+  }),
   clearExploredRegions: () => set({ exploredRegions: [] }),
 
   // Daylight mode actions

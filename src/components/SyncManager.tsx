@@ -422,6 +422,11 @@ const SyncManager = () => {
         currentState.tokens.forEach((token: any) => {
           const prevToken = prevTokenMap.get(token.id);
           if (prevToken) {
+            // Fast path: if the entire token is deeply equal, skip per-property checks
+            if (isEqual(token, prevToken)) {
+              return;
+            }
+
             const changes: any = {};
             // Check each property for changes (excluding immutable identifier)
             Object.keys(token).forEach((key) => {
@@ -530,8 +535,14 @@ const SyncManager = () => {
               ? structuredClone(state.map)
               : JSON.parse(JSON.stringify(state.map));
           } catch (err) {
-            console.warn('[SyncManager] Failed to clone map state:', err);
+            console.error(
+              `[SyncManager] Failed to deep clone map state, falling back to shallow copy. ` +
+              `This may cause missed updates for nested map properties.`,
+              err
+            );
             // Fallback to shallow copy if deep cloning fails
+            // Note: MapConfig is currently a flat object, so shallow copy is sufficient
+            // If MapConfig gains nested properties in the future, this will need revisiting
             mapClone = { ...state.map };
           }
         }

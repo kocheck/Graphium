@@ -176,9 +176,6 @@ function processImageWithWorker(
 
         case 'COMPLETE':
           try {
-            // Check cancellation flag before processing completion
-            if (isCancelled) return;
-
             // Send buffer to main process for file storage
             if (!window.ipcRenderer) {
               throw new Error('IPC not available for asset processing');
@@ -193,7 +190,7 @@ function processImageWithWorker(
               webpFileName
             );
 
-            // Check cancellation again after async IPC operation
+            // Check cancellation after async IPC operation
             if (isCancelled) return;
 
             // Complete progress
