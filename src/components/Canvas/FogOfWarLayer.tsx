@@ -132,6 +132,7 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
     }
 
     // Add current visibility to explored regions
+    let regionsAdded = 0;
     pcTokens.forEach((token) => {
       const polygon = visibilityCache.get(token.id);
       if (polygon && polygon.length > 0) {
@@ -139,8 +140,14 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
           points: polygon,
           timestamp: now
         });
+        regionsAdded++;
       }
     });
+
+    // Debug: Log when regions are added
+    if (regionsAdded > 0) {
+      console.log(`[FogOfWar] Added ${regionsAdded} explored region(s). Total: ${exploredRegions.length + regionsAdded}`);
+    }
 
     lastExploreUpdateRef.current = now;
   }, [tokens, pcTokens, visibilityCache, addExploredRegion]);
@@ -193,7 +200,9 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
               }
               ctx.closePath();
               // Semi-transparent black = partially erases fog = dimmed map shows through
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // 50% erase = dimmed effect
+              // Higher alpha = more fog erased = lighter/more visible
+              // 0.8 = erases 80% of fog, leaves 20% = nicely dimmed effect
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
               ctx.fill();
             }}
             globalCompositeOperation="destination-out"
