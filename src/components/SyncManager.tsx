@@ -24,22 +24,36 @@ function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T
 }
 
 /**
- * Deep equality check for simple objects with primitive values
+ * Deep equality check for simple objects with primitive values and arrays
  * More reliable than JSON.stringify which can fail due to property ordering
  */
 function isEqual(obj1: any, obj2: any): boolean {
   if (obj1 === obj2) return true;
   if (obj1 == null || obj2 == null) return false;
+  
+  // Handle arrays
+  if (Array.isArray(obj1) && Array.isArray(obj2)) {
+    if (obj1.length !== obj2.length) return false;
+    for (let i = 0; i < obj1.length; i++) {
+      if (!isEqual(obj1[i], obj2[i])) return false;
+    }
+    return true;
+  }
+  
   if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+  if (Array.isArray(obj1) !== Array.isArray(obj2)) return false;
   
   const keys1 = Object.keys(obj1);
   const keys2 = Object.keys(obj2);
   
   if (keys1.length !== keys2.length) return false;
   
+  // Use Set for O(1) lookup instead of includes() for O(n) lookup
+  const keys2Set = new Set(keys2);
+  
   for (const key of keys1) {
-    if (!keys2.includes(key)) return false;
-    if (obj1[key] !== obj2[key]) return false;
+    if (!keys2Set.has(key)) return false;
+    if (!isEqual(obj1[key], obj2[key])) return false;
   }
   
   return true;
@@ -294,12 +308,8 @@ const SyncManager = () => {
               if (key === 'id') {
                 return;
               }
-              // Deep comparison for arrays (e.g., points)
-              if (Array.isArray(drawing[key]) && Array.isArray(prevDrawing[key])) {
-                if (JSON.stringify(drawing[key]) !== JSON.stringify(prevDrawing[key])) {
-                  changes[key] = drawing[key];
-                }
-              } else if (drawing[key] !== prevDrawing[key]) {
+              // Use isEqual for consistent deep comparison
+              if (!isEqual(drawing[key], prevDrawing[key])) {
                 changes[key] = drawing[key];
               }
             });
