@@ -309,11 +309,10 @@ const SyncManager = () => {
 
         // Check for token position changes (most common in World View)
         const prevTokenMap = new Map(prevState.tokens.map((t: any) => [t.id, t]));
-        const currentTokenMap = new Map(currentState.tokens.map((t: any) => [t.id, t]));
 
         // Updated tokens - only send position changes
         currentState.tokens.forEach((token: any) => {
-          const prevToken = prevTokenMap.get(token.id);
+          const prevToken: any = prevTokenMap.get(token.id);
           if (prevToken) {
             const changes: any = {};
 

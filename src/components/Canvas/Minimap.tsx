@@ -36,7 +36,6 @@ interface WorldBounds {
 }
 
 const MINIMAP_SIZE = 200; // px
-const MINIMAP_PADDING = 16; // px from edges
 const DEFAULT_BOUNDS_SIZE = 2000; // Default world bounds when no map/tokens
 const TOKEN_PADDING = 500; // Padding around tokens when calculating bounds
 
