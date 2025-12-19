@@ -84,13 +84,6 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
     return wallSegments;
   }, [wallDrawingsKey]);
 
-  // Create a stable hash of walls for dependency tracking
-  // Only recalculate visibility when walls actually change
-  const wallsHash = useMemo(
-    () => JSON.stringify(walls.map(w => [w.start.x, w.start.y, w.end.x, w.end.y])),
-    [walls]
-  );
-
   /**
    * Cache visibility polygons per token
    * Dependencies: token position (x, y), visionRadius, walls
@@ -118,13 +111,8 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
     return cache;
   }, [
     // Only recalculate when these dependencies change:
-    // Using separate arrays for each property to avoid creating new strings on every render
-    pcTokens.map(t => t.id).join(','),
-    pcTokens.map(t => t.x).join(','),
-    pcTokens.map(t => t.y).join(','),
-    pcTokens.map(t => t.visionRadius).join(','),
-    pcTokens.map(t => t.scale).join(','),
-    wallsHash,
+    pcTokens,
+    walls,
     gridSize
   ]);
 

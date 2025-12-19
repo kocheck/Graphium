@@ -200,6 +200,7 @@ function processImageWithWorker(
               worker.terminate();
               worker = null;
             }
+            rejectPromise = null; // Clear to prevent double-rejection
             resolve(filePath as string);
           } catch (error) {
             // Cleanup and reject
@@ -207,6 +208,7 @@ function processImageWithWorker(
               worker.terminate();
               worker = null;
             }
+            rejectPromise = null; // Clear to prevent double-rejection
             reject(error);
           }
           break;
@@ -217,6 +219,7 @@ function processImageWithWorker(
             worker.terminate();
             worker = null;
           }
+          rejectPromise = null; // Clear to prevent double-rejection
           reject(new Error(message.error));
           break;
       }
@@ -228,6 +231,7 @@ function processImageWithWorker(
         worker.terminate();
         worker = null;
       }
+      rejectPromise = null; // Clear to prevent double-rejection
       reject(new Error(`Worker error: ${error.message}`));
     };
 
@@ -252,6 +256,7 @@ function processImageWithWorker(
       // Reject the promise with a cancellation error
       if (rejectPromise) {
         rejectPromise(new Error('Image processing cancelled'));
+        rejectPromise = null; // Clear to prevent double-rejection
       }
     }
   };
@@ -407,6 +412,9 @@ export const processBatch = (
     cancel: () => {
       // Cancel all workers
       handles.forEach(handle => handle.cancel());
+      // Clear progress tracking and handle references to avoid stale state
+      fileProgress.clear();
+      handles.splice(0, handles.length); // Clear array in place
     }
   };
 };

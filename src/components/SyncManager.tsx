@@ -182,6 +182,20 @@ const SyncManager = () => {
             store.addDrawing(action.payload);
             break;
 
+          case 'DRAWING_UPDATE':
+            // Update specific drawing properties
+            const { id: drawingId, changes: drawingChanges } = action.payload as { id: string; changes: Partial<any> };
+            const currentDrawing = store.drawings.find(d => d.id === drawingId);
+            if (currentDrawing) {
+              // Only update if drawing exists
+              useGameStore.setState({
+                drawings: store.drawings.map(d =>
+                  d.id === drawingId ? { ...d, ...drawingChanges } : d
+                )
+              });
+            }
+            break;
+
           case 'DRAWING_REMOVE':
             // Remove drawing from array
             store.removeDrawing(action.payload.id);
@@ -267,8 +281,8 @@ const SyncManager = () => {
               if (key === 'id') {
                 return;
               }
-              // Use loose typing here because tokens are typed as `any`
-              if ((token as any)[key] !== (prevToken as any)[key]) {
+              // Use isEqual for consistent deep comparison (handles nested objects/arrays)
+              if (!isEqual((token as any)[key], (prevToken as any)[key])) {
                 (changes as any)[key] = (token as any)[key];
               }
             });
@@ -284,19 +298,18 @@ const SyncManager = () => {
 
         // Check for drawing changes
         const prevDrawingMap = new Map(prevState.drawings.map((d: any) => [d.id, d]));
-        const prevDrawingIds = new Set(prevState.drawings.map((d: any) => d.id));
-        const currentDrawingIds = new Set(currentState.drawings.map((d: any) => d.id));
+        const currentDrawingMap = new Map(currentState.drawings.map((d: any) => [d.id, d]));
 
         // New drawings
         currentState.drawings.forEach((drawing: any) => {
-          if (!prevDrawingIds.has(drawing.id)) {
+          if (!prevDrawingMap.has(drawing.id)) {
             actions.push({ type: 'DRAWING_ADD', payload: drawing });
           }
         });
 
         // Removed drawings
         prevState.drawings.forEach((drawing: any) => {
-          if (!currentDrawingIds.has(drawing.id)) {
+          if (!currentDrawingMap.has(drawing.id)) {
             actions.push({ type: 'DRAWING_REMOVE', payload: { id: drawing.id } });
           }
         });
