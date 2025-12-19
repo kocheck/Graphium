@@ -375,7 +375,8 @@ const SyncManager = () => {
               drawings: currentState.drawings,
               gridSize: currentState.gridSize,
               gridType: currentState.gridType,
-              map: currentState.map
+              map: currentState.map,
+              exploredRegions: currentState.exploredRegions
             }
           });
           return actions;
@@ -540,7 +541,8 @@ const SyncManager = () => {
             drawings: currentState.drawings,
             gridSize: currentState.gridSize,
             gridType: currentState.gridType,
-            map: currentState.map
+            map: currentState.map,
+            exploredRegions: currentState.exploredRegions
           }
         };
         // Send initial state to World View

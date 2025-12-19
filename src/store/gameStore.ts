@@ -167,6 +167,31 @@ export interface ToastMessage {
 }
 
 /**
+ * ExploredRegion represents an area that PC tokens have previously seen
+ *
+ * Used for "explored fog of war" where previously seen areas remain dimly visible.
+ * Each region is a polygon (array of points) representing one vision snapshot.
+ *
+ * @property points - Array of {x, y} points forming the explored polygon
+ * @property timestamp - When this region was explored (for potential decay effects)
+ *
+ * @example
+ * const exploredArea: ExploredRegion = {
+ *   points: [
+ *     { x: 100, y: 100 },
+ *     { x: 200, y: 100 },
+ *     { x: 200, y: 200 },
+ *     { x: 100, y: 200 }
+ *   ],
+ *   timestamp: Date.now()
+ * };
+ */
+export interface ExploredRegion {
+  points: Array<{ x: number; y: number }>;
+  timestamp: number;
+}
+
+/**
  * GameState is the central state interface for Hyle
  *
  * All game data (tokens, drawings, map, settings) and actions to mutate it.
@@ -181,6 +206,7 @@ export interface ToastMessage {
  * @property gridSize - Size of grid cells in pixels (default: 50)
  * @property gridType - Visual style: 'LINES', 'DOTS', or 'HIDDEN'
  * @property map - Background map configuration (null if no map loaded)
+ * @property exploredRegions - Areas PC tokens have previously seen (for dimmed fog)
  * @property isCalibrating - Whether map calibration mode is active
  * @property toast - Current toast notification (null if none visible)
  *
@@ -211,6 +237,10 @@ export interface ToastMessage {
  * **Calibration Actions:**
  * @property setIsCalibrating - Enters/exits map calibration mode
  *
+ * **Explored Fog Actions:**
+ * @property addExploredRegion - Adds newly explored area to history
+ * @property clearExploredRegions - Resets exploration (new map/session)
+ *
  * **Bulk State Actions:**
  * @property setState - Bulk state update (for load/sync operations)
  * @property setTokens - Replaces entire tokens array
@@ -225,6 +255,7 @@ export interface GameState {
   gridSize: number;
   gridType: GridType;
   map: MapConfig | null;
+  exploredRegions: ExploredRegion[];
   addToken: (token: Token) => void;
   removeToken: (id: string) => void;
   removeTokens: (ids: string[]) => void;
@@ -245,6 +276,8 @@ export interface GameState {
   isCalibrating: boolean;
   setIsCalibrating: (isCalibrating: boolean) => void;
   setGridType: (type: GridType) => void;
+  addExploredRegion: (region: ExploredRegion) => void;
+  clearExploredRegions: () => void;
   toast: ToastMessage | null;
   showToast: (message: string, type: 'error' | 'success' | 'info') => void;
   clearToast: () => void;
@@ -330,6 +363,7 @@ export const useGameStore = create<GameState>((set) => ({
   gridSize: 50,
   gridType: 'LINES',
   map: null,
+  exploredRegions: [],
   isCalibrating: false,
   toast: null,
 
@@ -373,6 +407,12 @@ export const useGameStore = create<GameState>((set) => ({
 
   // Calibration actions
   setIsCalibrating: (isCalibrating: boolean) => set({ isCalibrating }),
+
+  // Explored fog actions
+  addExploredRegion: (region: ExploredRegion) => set((state) => ({
+    exploredRegions: [...state.exploredRegions, region]
+  })),
+  clearExploredRegions: () => set({ exploredRegions: [] }),
 
   // Bulk state actions
   setTokens: (tokens: Token[]) => set({ tokens }),
