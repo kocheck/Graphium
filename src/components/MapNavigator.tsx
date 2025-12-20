@@ -79,32 +79,26 @@ const MapNavigator: React.FC = () => {
                 </span>
             </h2>
 
-            <div className="space-y-2 mb-4" role="list" aria-label="Campaign maps">
+            <ul className="space-y-2 mb-4" aria-label="Campaign maps">
                 {maps.map(map => {
                     const isActive = map.id === activeMapId;
                     return (
-                        <div
+                        <li
                             key={map.id}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`${isActive ? 'Current map: ' : 'Switch to '}${map.name}`}
-                            aria-current={isActive ? 'page' : undefined}
                             className={`
-                                group flex items-center justify-between p-2 rounded cursor-pointer transition
+                                group flex items-center justify-between p-2 rounded transition
                                 ${isActive
                                     ? 'bg-[var(--app-accent-bg)] border border-[var(--app-accent-border)]'
-                                    : 'bg-[var(--app-bg-subtle)] hover:bg-[var(--app-bg-hover)]'
+                                    : 'bg-[var(--app-bg-subtle)]'
                                 }
                             `}
-                            onClick={() => switchMap(map.id)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    switchMap(map.id);
-                                }
-                            }}
                         >
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                            <button
+                                onClick={() => switchMap(map.id)}
+                                aria-label={`${isActive ? 'Current map: ' : 'Switch to '}${map.name}`}
+                                aria-current={isActive ? 'page' : undefined}
+                                className="flex-1 min-w-0 flex items-center gap-2 text-left hover:opacity-80 transition"
+                            >
                                 <span className="text-lg leading-none">
                                     {isActive ? '📍' : '🗺️'}
                                 </span>
@@ -131,7 +125,7 @@ const MapNavigator: React.FC = () => {
                                         {map.name}
                                     </span>
                                 )}
-                            </div>
+                            </button>
 
                             <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
@@ -141,6 +135,7 @@ const MapNavigator: React.FC = () => {
                                     }}
                                     className="p-1 hover:text-[var(--app-accent-text)]"
                                     title="Rename"
+                                    aria-label={`Rename ${map.name}`}
                                 >
                                     ✏️
                                 </button>
@@ -148,15 +143,16 @@ const MapNavigator: React.FC = () => {
                                     onClick={(e) => handleDelete(e, map.id, map.name)}
                                     className="p-1 hover:text-red-500"
                                     title="Delete"
+                                    aria-label={`Delete ${map.name}`}
                                     disabled={maps.length <= 1}
                                 >
                                     🗑️
                                 </button>
                             </div>
-                        </div>
+                        </li>
                     );
                 })}
-            </div>
+            </ul>
 
             <button
                 onClick={() => {
