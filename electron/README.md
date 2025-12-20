@@ -468,7 +468,7 @@ if (!safePath.startsWith(app.getPath('userData'))) {
 
 ## Related Documentation
 
-- **ARCHITECTURE.md** - Overall system architecture
-- **CONTEXT.md** - Business rules and file format details
-- **src/components/SyncManager.tsx** - Renderer-side IPC handling
-- **IPC_API.md** (planned) - Complete IPC channel reference
+- **[Electron Documentation](../docs/components/electron.md)** - Main process overview
+- **[IPC API Reference](../docs/architecture/IPC_API.md)** - Complete IPC channel documentation
+- **[Architecture Overview](../docs/architecture/ARCHITECTURE.md)** - Overall system architecture
+- **[Domain Context](../docs/context/CONTEXT.md)** - Business rules and file format details

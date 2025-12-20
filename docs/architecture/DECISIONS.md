@@ -16,6 +16,7 @@ This document records significant architectural and technical decisions made dur
 10. [Drawing Tool Performance Pattern](#10-drawing-tool-performance-pattern)
 11. [Image Cropping Workflow](#11-image-cropping-workflow)
 12. [Session-Based Asset Storage](#12-session-based-asset-storage)
+13. [World View Sanitization](#13-world-view-sanitization)
 
 ---
 
@@ -667,6 +668,102 @@ userData/sessions/1702834598123/assets/dragon.webp
 
 ---
 
+## 13. World View Sanitization
+
+**Decision:** Use URL query parameter detection with component-level conditional rendering and interaction blocking to sanitize the World View (player projection window).
+
+### Context
+
+The World View was showing the full DM interface (sidebar, toolbar, editing tools) and allowing all interactions (drawing, deleting, file drops), defeating its purpose as a clean player-facing display.
+
+**Problems to solve:**
+1. **UI Leak:** World View displayed DM-only controls (save/load buttons, tool palette, asset library)
+2. **Interaction Leaks:** Players could accidentally draw, delete tokens, or modify the map
+3. **State Sync:** Ensure World View updates correctly while preventing it from broadcasting changes
+
+### Alternatives Considered
+
+1. **Separate React application for World View**
+   - Pros: Complete isolation, no conditional logic
+   - Cons: Code duplication, harder to maintain sync, double bundle size
+
+2. **React Router with separate routes**
+   - Pros: Clear separation, idiomatic React pattern
+   - Cons: Unnecessary complexity for single-page app, adds routing overhead
+
+3. **IPC flag for window type**
+   - Pros: Centralized window type management
+   - Cons: Async initialization delays first render, adds IPC overhead
+
+4. **CSS-only hiding (display: none)**
+   - Pros: Simplest implementation
+   - Cons: Doesn't block interactions, sensitive UI still in DOM
+
+### Decision: URL Parameter + Conditional Rendering + Interaction Blocking
+
+**Implementation:**
+- **Detection:** `?type=world` URL query parameter set by main process
+- **Hook:** `useWindowType()` utility hook for reusable window detection
+- **UI Sanitization:** Conditional rendering in App.tsx (hide Sidebar/Toolbar in World View)
+- **Interaction Restrictions:** Component-level blocks in CanvasManager (early returns for editing operations)
+
+```typescript
+// Detection hook (src/utils/useWindowType.ts)
+export const useWindowType = () => {
+  const params = new URLSearchParams(window.location.search);
+  const isWorldView = params.get('type') === 'world';
+  return { isWorldView, isArchitectView: !isWorldView };
+};
+
+// UI sanitization (src/App.tsx)
+const { isArchitectView, isWorldView } = useWindowType();
+return (
+  <>
+    {isArchitectView && <Sidebar />}
+    <CanvasManager isWorldView={isWorldView} />
+    {isArchitectView && <Toolbar />}
+  </>
+);
+
+// Interaction blocking (src/components/Canvas/CanvasManager.tsx)
+const handleDrop = (e: React.DragEvent) => {
+  if (isWorldView) return; // Block file drops in World View
+  // ... process drop
+};
+```
+
+**Restrictions in World View:**
+- ✅ **Allowed:** Pan, zoom, select/drag tokens (for DM demonstration)
+- ❌ **Blocked:** Drawing tools, file drops, deletion, calibration, transformation, duplication
+
+**Rationale:**
+- **Simple:** Works on first render, no async initialization
+- **Maintainable:** Single codebase, clear separation via props
+- **Performance:** Zero IPC overhead, pure client-side logic
+- **Security:** Interaction blocks prevent accidental modifications
+- **UX:** Clean canvas-only view for players
+
+**Implementation Files:**
+- `src/utils/useWindowType.ts` (new)
+- `src/App.tsx` (updated with conditional rendering)
+- `src/components/Canvas/CanvasManager.tsx` (updated with interaction blocks)
+- `electron/main.ts` (unchanged, already sets ?type=world)
+
+**Trade-offs:**
+- ✅ Zero code duplication
+- ✅ Same bundle size (no separate app)
+- ✅ Easy to extend (add more restrictions)
+- ✅ Testable (just pass isWorldView={true} in tests)
+- ❌ Conditional logic in components (acceptable tradeoff)
+- ❌ UI components still loaded in memory (negligible for desktop app)
+
+**Considered but rejected:**
+- Separate routing: Overkill for two modes of same component tree
+- IPC flag: Adds async complexity and IPC overhead
+- CSS-only: Doesn't prevent interactions
+
+---
+
 ## Summary Table
 
 | Decision | Alternative | Rationale |
@@ -683,6 +780,7 @@ userData/sessions/1702834598123/assets/dragon.webp
 | MouseUp commit | Real-time sync | 100x less IPC traffic |
 | Dual-path crop | Always crop | Fast library workflow, quality file uploads |
 | Session dirs | Temp reuse | No conflicts, simple |
+| URL param sanitization | Separate React app | Zero duplication, same bundle, testable |
 
 ---
 

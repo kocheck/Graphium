@@ -38,6 +38,7 @@ export interface GameState {
   // Actions
   addToken: (token: Token) => void;
   updateTokenPosition: (id: string, x: number, y: number) => void;
+  updateTokenProperties: (id: string, properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>) => void;
   addDrawing: (drawing: Drawing) => void;
   setGridSize: (size: number) => void;
   setState: (state: Partial<GameState>) => void;
@@ -45,19 +46,22 @@ export interface GameState {
 }
 
 export interface Token {
-  id: string;       // crypto.randomUUID()
-  x: number;        // Grid-snapped X coordinate (pixels)
-  y: number;        // Grid-snapped Y coordinate (pixels)
-  src: string;      // file:// URL or https:// URL
-  scale: number;    // Size multiplier (1 = 1x1 grid cell, 2 = 2x2, etc.)
+  id: string;           // crypto.randomUUID()
+  x: number;            // Grid-snapped X coordinate (pixels)
+  y: number;            // Grid-snapped Y coordinate (pixels)
+  src: string;          // file:// URL or https:// URL
+  scale: number;        // Size multiplier (1 = 1x1 grid cell, 2 = 2x2, etc.)
+  type?: 'PC' | 'NPC';  // Token type (PC = player character with vision, NPC = no vision)
+  visionRadius?: number; // Vision range in feet (e.g., 60 for darkvision, 0 = blind)
+  name?: string;        // Display name (shown in Token Inspector)
 }
 
 export interface Drawing {
-  id: string;              // crypto.randomUUID()
-  tool: 'marker' | 'eraser';
-  points: number[];        // [x1, y1, x2, y2, x3, y3, ...]
-  color: string;           // Hex color ('#df4b26' for marker, '#000000' for eraser)
-  size: number;            // Stroke width (5 for marker, 20 for eraser)
+  id: string;                        // crypto.randomUUID()
+  tool: 'marker' | 'eraser' | 'wall'; // Tool type (wall blocks vision for fog of war)
+  points: number[];                   // [x1, y1, x2, y2, x3, y3, ...]
+  color: string;                      // Hex color ('#df4b26' marker, '#000000' eraser, '#ff0000' wall)
+  size: number;                       // Stroke width (5 marker, 20 eraser, 8 wall)
 }
 ```
 
@@ -629,8 +633,8 @@ useGameStore.setState({ tokens: newTokens });  // Actually works!
 
 ## Related Documentation
 
-- **ARCHITECTURE.md** - State management architecture
-- **CONVENTIONS.md** - Store mutation rules
-- **src/README.md** - Renderer process overview
-- **components/SyncManager.tsx** - Store subscription usage
-- **CONTEXT.md** - Business rules for state
+- **[State Management Guide](../../docs/components/state-management.md)** - Complete store documentation
+- **[Architecture Overview](../../docs/architecture/ARCHITECTURE.md#state-management)** - State management architecture
+- **[Code Conventions](../../docs/guides/CONVENTIONS.md)** - Store mutation rules
+- **[Renderer Process](../README.md)** - Renderer process overview
+- **[Domain Context](../../docs/context/CONTEXT.md)** - Business rules for state

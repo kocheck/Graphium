@@ -178,7 +178,8 @@ setPendingCrop({ src: objectUrl, x, y });
 // 3. User confirms → receive Blob
 const handleCropConfirm = async (blob: Blob) => {
   const file = new File([blob], "token.webp", { type: 'image/webp' });
-  const src = await processImage(file, 'TOKEN');
+  const handle = processImage(file, 'TOKEN');
+  const src = await handle.promise;
   addToken({ id: crypto.randomUUID(), x, y, src, scale: 1 });
   setPendingCrop(null);
 };
@@ -648,7 +649,7 @@ const handleDrop = (e: React.DragEvent) => {
 
 ## Related Documentation
 
-- **Canvas/README.md** - Canvas-specific component docs
-- **ARCHITECTURE.md** - Overall component architecture
-- **CONVENTIONS.md** - Component structure standards
-- **src/README.md** - Renderer process overview
+- **[Canvas System](../../docs/components/canvas.md)** - Canvas-specific component docs
+- **[Architecture Overview](../../docs/architecture/ARCHITECTURE.md)** - Overall component architecture
+- **[Code Conventions](../../docs/guides/CONVENTIONS.md)** - Component structure standards
+- **[Renderer Process](../README.md)** - Renderer process overview

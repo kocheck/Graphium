@@ -49,20 +49,47 @@
  * @component
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useGameStore, GridType } from '../store/gameStore';
-import { processImage } from '../utils/AssetProcessor';
+import { processImage, ProcessingHandle } from '../utils/AssetProcessor';
+import MapNavigator from './MapNavigator';
 
 /**
  * Sidebar component provides map upload, grid settings, and token library
  */
 const Sidebar = () => {
-    const {
-        setMap, gridType, setGridType,
-        map, updateMapPosition, updateMapScale,
-        isCalibrating, setIsCalibrating, showToast
-    } = useGameStore();
+    const setMap = useGameStore(state => state.setMap);
+    const gridType = useGameStore(state => state.gridType);
+    const setGridType = useGameStore(state => state.setGridType);
+    const map = useGameStore(state => state.map);
+    const updateMapPosition = useGameStore(state => state.updateMapPosition);
+    const updateMapScale = useGameStore(state => state.updateMapScale);
+    const isCalibrating = useGameStore(state => state.isCalibrating);
+    const setIsCalibrating = useGameStore(state => state.setIsCalibrating);
+    const showToast = useGameStore(state => state.showToast);
+    const showConfirmDialog = useGameStore(state => state.showConfirmDialog);
+    const isDaylightMode = useGameStore(state => state.isDaylightMode);
+    const setDaylightMode = useGameStore(state => state.setDaylightMode);
+
+    // Campaign Token Library
+    const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
+    const addTokenToLibrary = useGameStore(state => state.addTokenToLibrary);
+    const removeTokenFromLibrary = useGameStore(state => state.removeTokenFromLibrary);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const tokenInputRef = useRef<HTMLInputElement>(null);
+    const processingHandleRef = useRef<ProcessingHandle | null>(null);
+
+    // Cleanup: Cancel any active processing on unmount
+    useEffect(() => {
+        return () => {
+            if (processingHandleRef.current) {
+                console.log('[Sidebar] Cancelling in-flight map processing on unmount');
+                processingHandleRef.current.cancel();
+                processingHandleRef.current = null;
+            }
+        };
+    }, []);
 
     /**
      * Handles drag start for library tokens
@@ -79,27 +106,28 @@ const Sidebar = () => {
 
     /**
      * Handles map image upload and initialization
-     *
-     * **Process:**
-     * 1. Process image (copy to user data directory)
-     * 2. Create Object URL to read dimensions
-     * 3. Initialize map state with dimensions and scale=1
-     * 4. Enable calibration mode for grid alignment
-     * 5. Clean up Object URL
-     *
-     * **Error handling:**
-     * - Shows error toast on upload failure
-     * - Shows error toast on image load failure
-     * - Resets file input to allow re-upload
-     *
-     * @param e - File input change event
+     * ... (comments truncated)
      */
     const handleMapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        // ... (implementation same as before)
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Cancel any previous processing
+        if (processingHandleRef.current) {
+            processingHandleRef.current.cancel();
+            processingHandleRef.current = null;
+        }
+
         try {
-            const src = await processImage(file, 'MAP');
+            // Use new ProcessingHandle API
+            const handle = processImage(file, 'MAP');
+            processingHandleRef.current = handle;
+
+            const src = await handle.promise;
+
+            // Clear handle after successful completion
+            processingHandleRef.current = null;
 
              // Create a temporary image to get dimensions using a safe Object URL
             let objectUrl: string;
@@ -132,15 +160,54 @@ const Sidebar = () => {
         } catch (err) {
             console.error("Failed to upload map", err);
             showToast('Failed to upload map. Please ensure the file is a valid image.', 'error');
+            // Clear handle on error
+            processingHandleRef.current = null;
         } finally {
             // Reset the file input so the same file can be uploaded again
             e.target.value = '';
         }
     };
 
+    /**
+     * Handles token image upload and addition to library
+     */
+    const handleTokenUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Cancel previous processing
+        if (processingHandleRef.current) {
+            processingHandleRef.current.cancel();
+            processingHandleRef.current = null;
+        }
+
+        try {
+            const handle = processImage(file, 'TOKEN');
+            processingHandleRef.current = handle;
+            const src = await handle.promise;
+            processingHandleRef.current = null;
+
+            addTokenToLibrary({
+                id: crypto.randomUUID(),
+                name: file.name.split('.')[0] || 'New Token',
+                src,
+                defaultScale: 1,
+            });
+        } catch (err) {
+            console.error("Failed to upload token", err);
+            showToast('Failed to upload token.', 'error');
+            processingHandleRef.current = null;
+        } finally {
+            e.target.value = '';
+        }
+    };
+
     return (
         <div className="sidebar w-64 flex flex-col p-4 z-10 shrink-0 overflow-y-auto">
-            <h2 className="text-xl font-bold mb-6">Library</h2>
+            {/* Campaign Navigation */}
+            <MapNavigator />
+
+            <div className="w-full h-px bg-[var(--app-border-default)] my-6"></div>
 
             <div className="mb-8">
                 <h3 className="text-sm mb-3 uppercase font-bold tracking-wider" style={{ color: 'var(--app-text-secondary)' }}>Map Settings</h3>
@@ -176,6 +243,22 @@ const Sidebar = () => {
                             <option value="DOTS">Dots</option>
                             <option value="HIDDEN">Hidden</option>
                         </select>
+                    </div>
+
+                    {/* Daylight Mode Toggle */}
+                    <div>
+                        <label className="flex items-center justify-between cursor-pointer">
+                            <span className="text-xs uppercase font-semibold" style={{ color: 'var(--app-text-secondary)' }}>Daylight Mode</span>
+                            <input
+                                type="checkbox"
+                                checked={isDaylightMode}
+                                onChange={(e) => setDaylightMode(e.target.checked)}
+                                className="w-4 h-4 rounded cursor-pointer"
+                            />
+                        </label>
+                        <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
+                            {isDaylightMode ? '☀️ Fog of War disabled' : '🌙 Fog of War enabled'}
+                        </p>
                     </div>
 
                     {/* Map Calibration */}
@@ -223,23 +306,62 @@ const Sidebar = () => {
             </div>
 
             <div className="mb-4">
-                <h3 className="text-sm mb-3 uppercase font-bold tracking-wider" style={{ color: 'var(--app-text-secondary)' }}>Tokens</h3>
-                <div className="grid grid-cols-2 gap-2">
-                     <div
-                        className="sidebar-token w-full aspect-square rounded cursor-grab flex items-center justify-center transition"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'LIBRARY_TOKEN', 'https://konvajs.org/assets/lion.png')}
-                     >
-                        🦁
-                    </div>
-                     <div
-                        className="sidebar-token w-full aspect-square rounded cursor-grab flex items-center justify-center transition"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'LIBRARY_TOKEN', 'https://konvajs.org/assets/yoda.jpg')}
-                     >
-                        👽
-                    </div>
+                <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm uppercase font-bold tracking-wider" style={{ color: 'var(--app-text-secondary)' }}>Token Library</h3>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={tokenInputRef}
+                        className="hidden"
+                        onChange={handleTokenUpload}
+                    />
+                    <button
+                        onClick={() => tokenInputRef.current?.click()}
+                        className="text-xs btn btn-sm btn-ghost px-2 py-1 rounded"
+                        title="Add Token to Library"
+                    >
+                        ➕ Add
+                    </button>
                 </div>
+
+                {(!tokenLibrary || tokenLibrary.length === 0) ? (
+                    <div className="text-center text-xs py-4 italic" style={{ color: 'var(--app-text-muted)' }}>
+                        No tokens in library. Upload or drag & drop to map.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                        {tokenLibrary.map(token => (
+                            <div
+                                key={token.id}
+                                className="sidebar-token w-full aspect-square rounded cursor-grab flex flex-col items-center justify-center transition p-1 relative group"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, 'LIBRARY_TOKEN', token.src)}
+                            >
+                                <img
+                                    src={token.src}
+                                    alt={token.name}
+                                    className="w-full h-full object-contain pointer-events-none"
+                                />
+                                <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center gap-1 rounded">
+                                    <button
+                                        className="text-xs bg-red-500/80 hover:bg-red-500 text-white rounded px-2 py-1"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            showConfirmDialog(
+                                                'Remove this token from library?',
+                                                () => removeTokenFromLibrary(token.id),
+                                                'Remove'
+                                            );
+                                        }}
+                                    >
+                                        🗑️
+                                    </button>
+                                </div>
+                                <span className="text-[10px] truncate max-w-full mt-1 bg-black/50 px-1 rounded text-white absolute bottom-1">{token.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

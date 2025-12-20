@@ -355,9 +355,10 @@ const handleDrop = async (e: React.DragEvent) => {
 
 // 2. User crops
 const handleCropConfirm = async (blob: Blob) => {
-  // 3. Process image (resize, convert to WebP)
+  // 3. Process image (resize, convert to WebP) - Returns cancellable handle
   const file = new File([blob], "token.webp", { type: 'image/webp' });
-  const src = await processImage(file, 'TOKEN');  // Returns file:// URL
+  const handle = processImage(file, 'TOKEN');
+  const src = await handle.promise;  // Get file:// URL from promise
 
   // 4. Add to store
   addToken({ id: crypto.randomUUID(), x, y, src, scale: 1 });
@@ -679,9 +680,9 @@ try {
 
 ## Related Documentation
 
-- **ARCHITECTURE.md** - Overall system design
-- **CONVENTIONS.md** - Code style and patterns
-- **CONTEXT.md** - Business rules and workflows
-- **components/README.md** - Component-specific docs
-- **store/README.md** - State management details
-- **utils/README.md** - Utility function reference
+- **[Architecture Overview](../docs/architecture/ARCHITECTURE.md)** - Overall system design
+- **[Code Conventions](../docs/guides/CONVENTIONS.md)** - Code style and patterns
+- **[Domain Context](../docs/context/CONTEXT.md)** - Business rules and workflows
+- **[Component Documentation](../docs/components/)** - Component-specific guides
+- **[State Management](../docs/components/state-management.md)** - State management details
+- **[Tutorials](../docs/guides/TUTORIALS.md)** - Step-by-step development guides

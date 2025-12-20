@@ -398,6 +398,55 @@ Error boundaries do **NOT** catch errors in:
 
 For these cases, use traditional try/catch blocks and consider logging to console or a local error store.
 
+## Components with Special Error Handling
+
+### ResourceMonitor (`src/components/ResourceMonitor.tsx`)
+
+The Resource Monitor is a performance diagnostics overlay that tracks FPS, memory usage, IPC metrics, and Web Worker activity. It includes extensive error handling to prevent crashes:
+
+**Error-Prone Operations:**
+- IPC method interception (modifies `window.ipcRenderer.send` and `.on`)
+- Performance API access (`performance.memory`, Chrome/Edge only)
+- JSON.stringify on IPC messages (may contain circular references)
+
+**Error Handling Strategy:**
+1. **Global Coverage**: Already wrapped in `PrivacyErrorBoundary` via `main.tsx`
+2. **Method Guards**: Checks if IPC methods exist before interception
+3. **Try-Catch Blocks**: Wraps all IPC operations to prevent breaking message passing
+4. **Graceful Degradation**: If APIs unavailable, shows warning instead of crashing
+
+**Example Safeguards:**
+```typescript
+// Check if IPC methods exist
+if (typeof window.ipcRenderer.send !== 'function') {
+  console.warn('[ResourceMonitor] IPC methods not available, skipping');
+  return;
+}
+
+// Wrap metrics collection
+try {
+  const size = JSON.stringify(args).length;
+  ipcBytesRef.current += size;
+} catch (err) {
+  // Don't break IPC if JSON.stringify fails
+  console.warn('[ResourceMonitor] Failed to track IPC:', err);
+}
+```
+
+**Why This Matters:**
+- IPC interception could break core app functionality if not handled carefully
+- Performance APIs may not exist in all browsers (Firefox doesn't support `performance.memory`)
+- Circular references in IPC data would crash JSON.stringify
+
+### AssetProcessingErrorBoundary (`src/components/AssetProcessingErrorBoundary.tsx`)
+
+Wraps file upload and image processing operations to catch:
+- Web Worker errors (async failures)
+- Corrupt or unsupported file formats
+- IPC storage failures
+
+See `src/components/Canvas/CanvasManager.tsx` for usage example.
+
 ## Troubleshooting
 
 ### Error boundary not catching errors
