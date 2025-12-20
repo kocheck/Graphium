@@ -223,6 +223,8 @@ export interface GameState {
   setTokens: (tokens: Token[]) => void;
   showToast: (message: string, type: 'error' | 'success' | 'info') => void;
   clearToast: () => void;
+  showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) => void;
+  clearConfirmDialog: () => void;
   setShowResourceMonitor: (show: boolean) => void;
 }
 
