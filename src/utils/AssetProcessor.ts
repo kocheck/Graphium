@@ -183,7 +183,6 @@ function processImageWithWorker(
 
             const webpFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
 
-            // @ts-expect-error - IPC types not available
             const filePath = await window.ipcRenderer.invoke(
               'SAVE_ASSET_TEMP',
               message.buffer,
@@ -337,7 +336,6 @@ async function processImageMainThread(
   }
   const buffer = await blob.arrayBuffer();
 
-  // @ts-expect-error - IPC types not available, will be fixed with proper type declarations
   const filePath = await window.ipcRenderer.invoke(
     'SAVE_ASSET_TEMP',
     buffer,
