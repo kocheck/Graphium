@@ -4,10 +4,12 @@ import SyncManager from './components/SyncManager'
 import { ThemeManager } from './components/ThemeManager'
 import Sidebar from './components/Sidebar'
 import Toast from './components/Toast'
+import ConfirmDialog from './components/ConfirmDialog'
 import TokenInspector from './components/TokenInspector'
 import ResourceMonitor from './components/ResourceMonitor'
 import { useGameStore } from './store/gameStore'
 import { useWindowType } from './utils/useWindowType'
+import AutoSaveManager from './components/AutoSaveManager';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -90,7 +92,6 @@ function App() {
 
   // Resource Monitor state (from store)
   const showResourceMonitor = useGameStore((state) => state.showResourceMonitor);
-  const setShowResourceMonitor = useGameStore((state) => state.setShowResourceMonitor);
 
   // Filter selected IDs to only include tokens (not drawings)
   const tokens = useGameStore((s) => s.tokens);
@@ -134,15 +135,67 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isArchitectView]);
 
+  // Handle Menu Commands (IPC)
+  useEffect(() => {
+    if (!window.ipcRenderer) return;
+
+    const handleSave = async () => {
+        try {
+            const store = useGameStore.getState();
+            store.syncActiveMapToCampaign();
+            const campaignToSave = useGameStore.getState().campaign;
+            // @ts-ignore
+            const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', campaignToSave);
+            if (result) store.showToast('Campaign Saved Successfully!', 'success');
+        } catch (e) {
+            console.error(e);
+            useGameStore.getState().showToast('Failed to save: ' + e, 'error');
+        }
+    };
+
+    const handleLoad = async () => {
+        try {
+            // @ts-ignore
+            const campaign = await window.ipcRenderer.invoke('LOAD_CAMPAIGN');
+            if (campaign) {
+                useGameStore.getState().loadCampaign(campaign);
+                useGameStore.getState().showToast('Campaign Loaded!', 'success');
+            }
+        } catch (e) {
+            console.error(e);
+            useGameStore.getState().showToast('Failed to load: ' + e, 'error');
+        }
+    };
+
+    const handleToggleMonitor = () => {
+        useGameStore.getState().setShowResourceMonitor(!useGameStore.getState().showResourceMonitor);
+    };
+
+    window.ipcRenderer.on('MENU_SAVE_CAMPAIGN', handleSave);
+    window.ipcRenderer.on('MENU_LOAD_CAMPAIGN', handleLoad);
+    window.ipcRenderer.on('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
+
+    return () => {
+        window.ipcRenderer.off('MENU_SAVE_CAMPAIGN', handleSave);
+        window.ipcRenderer.off('MENU_LOAD_CAMPAIGN', handleLoad);
+        window.ipcRenderer.off('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
+    };
+  }, []); // Empty dependency array as handlers use getState()
+
   return (
     <div className="app-root w-full h-screen flex overflow-hidden">
       {/* Global components (rendered in both Architect and World View) */}
       <ThemeManager />
       <SyncManager />
       <Toast />
+      <ConfirmDialog />
+
+      {/* Auto-save (Architect View only) */}
+      {isArchitectView && <AutoSaveManager />}
 
       {/* Sidebar: Only render in Architect View (DM's token library) */}
       {isArchitectView && <Sidebar />}
+
 
       <div className="flex-1 relative h-full">
         {/* CanvasManager: Rendered in both views, but with different interaction modes */}
@@ -179,79 +232,6 @@ function App() {
                className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
              />
            </label>
-           <div className="toolbar-divider w-px mx-1"></div>
-           {/* Save button: Serialize campaign to .hyle ZIP file */}
-           <button className="btn btn-default" onClick={async () => {
-              if (!window.ipcRenderer) {
-                alert('IPC not available');
-                return;
-              }
-              try {
-                  // Extract campaign data from store (exclude actions)
-                  const state = useGameStore.getState();
-                  const dataToSave = {
-                      tokens: state.tokens,
-                      drawings: state.drawings,
-                      gridSize: state.gridSize
-                  };
-
-                  // IPC invoke to main process (shows save dialog, creates ZIP)
-                  // See electron/main.ts:116-143 for handler implementation
-                  // @ts-ignore
-                  const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', dataToSave);
-                  if (result) alert('Campaign Saved Successfully!');
-              } catch (e) {
-                  console.error(e);
-                  alert('Failed to save: ' + e);
-              }
-           }} disabled={!window.ipcRenderer}>Save</button>
-
-           {/* Load button: Deserialize .hyle file and restore state */}
-           <button className="btn btn-default" onClick={async () => {
-              if (!window.ipcRenderer) {
-                alert('IPC not available');
-                return;
-              }
-              try {
-                // IPC invoke to main process (shows open dialog, extracts ZIP)
-                // See electron/main.ts:145-181 for handler implementation
-                // @ts-ignore
-                const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN');
-                if (state) {
-                    // Bulk update store with loaded state
-                    useGameStore.getState().setState(state);
-                    alert('Campaign Loaded!');
-                }
-              } catch (e) {
-                  console.error(e);
-                  alert('Failed to load: ' + e);
-              }
-           }} disabled={!window.ipcRenderer}>Load</button>
-
-           <div className="toolbar-divider w-px mx-1"></div>
-
-           {/* World View button: Create projector window for players */}
-           {/* See electron/main.ts:55-73 for createWorldWindow() implementation */}
-           <button className="btn btn-default" onClick={() => {
-             if (!window.ipcRenderer) {
-               alert('IPC not available');
-               return;
-             }
-             window.ipcRenderer.send('create-world-window');
-           }} disabled={!window.ipcRenderer}>
-             World View
-           </button>
-
-           <div className="toolbar-divider w-px mx-1"></div>
-
-           {/* Resource Monitor toggle: Performance diagnostics overlay */}
-           <button
-             className={`btn btn-default ${showResourceMonitor ? 'active' : ''}`}
-             onClick={() => setShowResourceMonitor(!showResourceMonitor)}
-             title="Toggle Performance Monitor (View → Performance)"
-           >
-             ⚡ Performance
-           </button>
         </div>
         )}
 

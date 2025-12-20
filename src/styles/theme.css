@@ -163,7 +163,7 @@
   --app-accent-solid: #0070C1;             /* Solid accent - WCAG AA compliant with white (4.51:1) */
   --app-accent-solid-hover: #005A9C;       /* Solid accent hover - darker for 6:1 contrast */
   --app-accent-solid-text: white;          /* Text color for solid buttons */
-  --app-accent-text: var(--blue-11);       /* Accent text (links) */
+  --app-accent-text: var(--blue-12);       /* Accent text (links) - blue-12 for AA compliance */
   --app-accent-text-contrast: var(--blue-12); /* High contrast accent text */
 
   /* ===== Status: Error (Red) ===== */
@@ -205,11 +205,11 @@
   color-scheme: dark;
 
   /* ===== Backgrounds ===== */
-  --app-bg-base: var(--slate-1);
-  --app-bg-subtle: var(--slate-2);
-  --app-bg-surface: var(--slate-3);
-  --app-bg-hover: var(--slate-4);
-  --app-bg-active: var(--slate-5);
+  --app-bg-base: #111113;                  /* slate-1 */
+  --app-bg-subtle: #18191b;                /* slate-2 */
+  --app-bg-surface: #212225;               /* slate-3 */
+  --app-bg-hover: #272a2d;                 /* slate-4 */
+  --app-bg-active: #2e3135;                /* slate-5 */
 
   /* ===== Borders ===== */
   --app-border-subtle: var(--slate-6);
