@@ -374,7 +374,7 @@ app.whenReady().then(() => {
    * 3. Architect View responds with FULL_SYNC containing current state
    * 4. Main process broadcasts FULL_SYNC to World View
    */
-  ipcMain.on('REQUEST_INITIAL_STATE', (_event: IpcMainEvent) => {
+  ipcMain.on('REQUEST_INITIAL_STATE', () => {
     // Relay request to main window (Architect View)
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('REQUEST_INITIAL_STATE')
@@ -473,7 +473,7 @@ let currentCampaignPath: string | null = null;
    * @param zip - JSZip instance to add files to
    * @returns Modified campaign object with relative asset paths
    */
-  async function serializeCampaignToZip(campaign: any, zip: JSZip): Promise<any> {
+  async function serializeCampaignToZip(campaign: unknown, zip: JSZip): Promise<unknown> {
       const assetsFolder = zip.folder("assets");
       
       // Deep clone to avoid mutating original state
@@ -542,7 +542,7 @@ let currentCampaignPath: string | null = null;
    *
    * @param campaign - Campaign data from useGameStore.campaign
    */
-  ipcMain.handle('SAVE_CAMPAIGN', async (_event: IpcMainInvokeEvent, campaign: any) => {
+  ipcMain.handle('SAVE_CAMPAIGN', async (_event: IpcMainInvokeEvent, campaign: unknown) => {
     const { filePath } = await dialog.showSaveDialog({
       filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }]
     });
@@ -571,7 +571,7 @@ let currentCampaignPath: string | null = null;
    * Saves the campaign to the last known path without user interaction.
    * Uses atomic write (write to temp + rename) to prevent corruption.
    */
-  ipcMain.handle('AUTO_SAVE', async (_event: IpcMainInvokeEvent, campaign: any) => {
+  ipcMain.handle('AUTO_SAVE', async (_event: IpcMainInvokeEvent, campaign: unknown) => {
       if (!currentCampaignPath) return false; // No file open, cannot auto-save
 
       try {
@@ -621,15 +621,60 @@ let currentCampaignPath: string | null = null;
     const manifestStr = await zip.file("manifest.json")?.async("string");
     if (!manifestStr) throw new Error("Invalid Hyle file");
 
-    let loadedData = JSON.parse(manifestStr);
-    let campaign: any;
+    type TokenWithSrc = {
+      src: string;
+      [key: string]: unknown;
+    };
+
+    type MapData = {
+      id: string;
+      name: string;
+      tokens?: TokenWithSrc[];
+      drawings?: unknown[];
+      map?: {
+        src?: string | null;
+        [key: string]: unknown;
+      } | null;
+      gridSize?: number;
+      gridType?: string;
+      exploredRegions?: unknown[];
+      isDaylightMode?: boolean;
+      [key: string]: unknown;
+    };
+
+    type LegacyGameState = {
+      maps?: undefined;
+      tokens?: TokenWithSrc[];
+      drawings?: unknown[];
+      map?: {
+        src?: string | null;
+        [key: string]: unknown;
+      } | null;
+      gridSize?: number;
+      gridType?: string;
+      exploredRegions?: unknown[];
+      isDaylightMode?: boolean;
+      [key: string]: unknown;
+    };
+
+    type CampaignManifest = {
+      id: string;
+      name: string;
+      maps: Record<string, MapData>;
+      activeMapId: string;
+      tokenLibrary?: TokenWithSrc[];
+      [key: string]: unknown;
+    };
+
+    const loadedData: CampaignManifest | LegacyGameState = JSON.parse(manifestStr);
+    let campaign: CampaignManifest;
 
     // --- MIGRATION: Check if Legacy File ---
     if (!loadedData.maps) {
         // Legacy format: loadedData is a GameState object (tokens, map, etc.)
         // Convert to Campaign structure
         const mapId = randomUUID();
-        const mapData = {
+        const mapData: MapData = {
             id: mapId,
             name: 'Imported Map',
             tokens: loadedData.tokens || [],

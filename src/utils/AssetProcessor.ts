@@ -148,7 +148,7 @@ function processImageWithWorker(
 ): ProcessingHandle {
   let worker: Worker | null = null;
   let isCancelled = false;
-  let rejectPromise: ((reason?: any) => void) | null = null;
+  let rejectPromise: ((reason?: unknown) => void) | null = null;
 
   const promise = new Promise<string>((resolve, reject) => {
     // Capture reject for cancel function
@@ -183,7 +183,7 @@ function processImageWithWorker(
 
             const webpFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
 
-            // @ts-ignore - IPC types not available
+            // @ts-expect-error - IPC types not available
             const filePath = await window.ipcRenderer.invoke(
               'SAVE_ASSET_TEMP',
               message.buffer,
@@ -337,7 +337,7 @@ async function processImageMainThread(
   }
   const buffer = await blob.arrayBuffer();
 
-  // @ts-ignore - IPC types not available, will be fixed with proper type declarations
+  // @ts-expect-error - IPC types not available, will be fixed with proper type declarations
   const filePath = await window.ipcRenderer.invoke(
     'SAVE_ASSET_TEMP',
     buffer,

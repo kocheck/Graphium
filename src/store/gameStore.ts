@@ -393,7 +393,9 @@ export const useGameStore = create<GameState>((set, get) => {
 
       // Now delete from store (need to fetch fresh state after potential switch)
       set((currentState) => {
-        const { [mapId]: deleted, ...remainingMaps } = currentState.campaign.maps;
+        const remainingMaps = Object.fromEntries(
+          Object.entries(currentState.campaign.maps).filter(([id]) => id !== mapId)
+        );
         return {
           campaign: {
             ...currentState.campaign,
