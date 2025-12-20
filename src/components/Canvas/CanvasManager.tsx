@@ -140,6 +140,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const setIsCalibrating = useGameStore(s => s.setIsCalibrating);
   const updateMapTransform = useGameStore(s => s.updateMapTransform);
   const updateDrawingTransform = useGameStore(s => s.updateDrawingTransform);
+  const addTokenToLibrary = useGameStore(s => s.addTokenToLibrary);
 
   const isDrawing = useRef(false);
   const currentLine = useRef<any>(null); // Temp line points
@@ -510,6 +511,14 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
           y: pendingCrop.y,
           src,
           scale: 1,
+        });
+
+        // Save to Campaign Token Library automatically
+        addTokenToLibrary({
+            id: crypto.randomUUID(),
+            name: file.name.split('.')[0] || 'New Token',
+            src,
+            defaultScale: 1,
         });
 
         // TODO: In future, add UI to swap to Map or set 'processImage' type based on user choice

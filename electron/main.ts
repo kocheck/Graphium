@@ -108,6 +108,23 @@ function buildApplicationMenu() {
     {
       label: 'File',
       submenu: [
+        {
+          label: 'Open Campaign...',
+          accelerator: 'CmdOrCtrl+O',
+          click: () => {
+             const win = BrowserWindow.getFocusedWindow();
+             if (win) win.webContents.send('MENU_LOAD_CAMPAIGN');
+          }
+        },
+        {
+          label: 'Save Campaign',
+          accelerator: 'CmdOrCtrl+S',
+          click: () => {
+             const win = BrowserWindow.getFocusedWindow();
+             if (win) win.webContents.send('MENU_SAVE_CAMPAIGN');
+          }
+        },
+        { type: 'separator' },
         process.platform === 'darwin'
           ? ({ role: 'close' } as const)
           : ({ role: 'quit' } as const),
@@ -140,6 +157,20 @@ function buildApplicationMenu() {
               click: () => setThemeMode('system'),
             },
           ],
+        },
+        { type: 'separator' },
+        {
+            label: 'World View (Projector)',
+            accelerator: 'CmdOrCtrl+Shift+W',
+            click: () => createWorldWindow()
+        },
+        {
+            label: 'Performance Monitor',
+            accelerator: 'CmdOrCtrl+P',
+            click: () => {
+                const win = BrowserWindow.getFocusedWindow();
+                if (win) win.webContents.send('MENU_TOGGLE_RESOURCE_MONITOR');
+            }
         },
         { type: 'separator' },
         { role: 'reload' },
@@ -430,72 +461,91 @@ app.whenReady().then(() => {
     return `file://${filePath}`;  // Return file:// URL for renderer
   })
 
+// Track the currently open campaign file path for auto-save
+let currentCampaignPath: string | null = null;
+
   /**
    * IPC handler: SAVE_CAMPAIGN
    *
    * Serializes campaign state to a .hyle ZIP file.
-   * Called by App.tsx:89 when user clicks "Save" button.
+   * Handles multi-map campaigns by iterating through all maps and collecting assets.
    *
-   * **.hyle file structure:**
-   * ```
-   * campaign.hyle (ZIP archive)
-   *   ├── manifest.json  (serialized game state)
-   *   └── assets/
-   *       ├── 1234567890-goblin.webp
-   *       ├── 1234567891-dragon.webp
-   *       └── ... (all token images)
-   * ```
-   *
-   * **Algorithm:**
-   * 1. Show native save dialog (user chooses file path)
-   * 2. Create ZIP archive
-   * 3. For each token with file:// URL:
-   *    - Read image file from temp_assets/
-   *    - Add to ZIP as assets/{basename}
-   *    - Rewrite token.src to relative path "assets/{basename}"
-   * 4. Add modified state as manifest.json
-   * 5. Write ZIP to disk
-   *
-   * **Why rewrite paths:**
-   * file:// URLs are machine-specific (e.g., /Users/alice/...). Relative paths
-   * make .hyle files portable across machines (e.g., shared with other DMs).
-   *
-   * @param gameState - Campaign data from useGameStore (tokens, drawings, gridSize)
-   * @returns true if saved successfully, false if user cancelled
-   *
-   * @example
-   * // Called from App.tsx Save button:
-   * const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', {
-   *   tokens: [...],
-   *   drawings: [...],
-   *   gridSize: 50
-   * });
+   * @param campaign - Campaign data from useGameStore.campaign
    */
-  ipcMain.handle('SAVE_CAMPAIGN', async (_event: IpcMainInvokeEvent, gameState: unknown) => {
+  ipcMain.handle('SAVE_CAMPAIGN', async (_event: IpcMainInvokeEvent, campaign: any) => {
     const { filePath } = await dialog.showSaveDialog({
       filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }]
     });
-    if (!filePath) return false;  // User cancelled
+    if (!filePath) return false;
+
+    // Update current path for auto-save
+    currentCampaignPath = filePath;
 
     const zip = new JSZip();
     const assetsFolder = zip.folder("assets");
 
     // Deep clone to avoid mutating original state
-    const stateToSave = JSON.parse(JSON.stringify(gameState));
+    const campaignToSave = JSON.parse(JSON.stringify(campaign));
 
-    // Copy token assets into ZIP and rewrite paths
-    for (const token of stateToSave.tokens) {
-       if (token.src.startsWith('file://')) {
-           const absolutePath = fileURLToPath(token.src);  // file:// → /Users/...
-           const basename = path.basename(absolutePath);   // Extract filename
-           const content = await fs.readFile(absolutePath);
-           assetsFolder?.file(basename, content);          // Add to ZIP
-           token.src = `assets/${basename}`;               // Rewrite to relative path
-       }
+    // Track processed files to avoid duplication
+    // Key: Absolute source path, Value: Relative destination path in zip
+    const processedAssets = new Map<string, string>();
+
+    // Helper to process an image asset
+    const processAsset = async (src: string): Promise<string> => {
+        if (!src || !src.startsWith('file://')) return src;
+
+        const absolutePath = fileURLToPath(src);
+
+        // If already processed, return the existing relative path
+        if (processedAssets.has(absolutePath)) {
+            return processedAssets.get(absolutePath)!;
+        }
+
+        const basename = path.basename(absolutePath);
+        // Handle name collisions if different files have same name
+        // (Simple version: just use basename, assume uniqueness for now or append timestamp if needed)
+        // For robustness, check if file exists in zip?
+        // Let's stick to basename for now, relying on timestamps in temp filenames
+
+        const content = await fs.readFile(absolutePath).catch(() => null);
+        if (content) {
+            assetsFolder?.file(basename, content);
+            const relativePath = `assets/${basename}`;
+            processedAssets.set(absolutePath, relativePath);
+            return relativePath;
+        }
+        return src; // Keep original if read fails (shouldn't happen)
+    };
+
+    // Iterate all maps and process assets
+    if (campaignToSave.maps) {
+        for (const mapId in campaignToSave.maps) {
+            const map = campaignToSave.maps[mapId];
+
+            // 1. Process Map Background
+            if (map.map && map.map.src) {
+                map.map.src = await processAsset(map.map.src);
+            }
+
+            // 2. Process Tokens
+            if (map.tokens) {
+                for (const token of map.tokens) {
+                    token.src = await processAsset(token.src);
+                }
+            }
+        }
+    }
+
+    // 3. Process Campaign Token Library
+    if (campaignToSave.tokenLibrary) {
+        for (const item of campaignToSave.tokenLibrary) {
+            item.src = await processAsset(item.src);
+        }
     }
 
     // Add manifest.json with modified state
-    zip.file("manifest.json", JSON.stringify(stateToSave));
+    zip.file("manifest.json", JSON.stringify(campaignToSave));
 
     // Write ZIP to disk
     const content = await zip.generateAsync({ type: "nodebuffer" });
@@ -503,85 +553,171 @@ app.whenReady().then(() => {
     return true;
  });
 
+  /**
+   * IPC handler: AUTO_SAVE
+   *
+   * Saves the campaign to the last known path without user interaction.
+   * Uses atomic write (write to temp + rename) to prevent corruption.
+   */
+  ipcMain.handle('AUTO_SAVE', async (_event: IpcMainInvokeEvent, campaign: any) => {
+      if (!currentCampaignPath) return false; // No file open, cannot auto-save
+
+      try {
+          const zip = new JSZip();
+          const assetsFolder = zip.folder("assets");
+          const campaignToSave = JSON.parse(JSON.stringify(campaign));
+          const processedAssets = new Map<string, string>();
+
+          // Reuse asset processing logic (dup code, could be refactored to helper)
+          const processAsset = async (src: string): Promise<string> => {
+              if (!src || !src.startsWith('file://')) return src;
+              const absolutePath = fileURLToPath(src);
+              if (processedAssets.has(absolutePath)) return processedAssets.get(absolutePath)!;
+              const basename = path.basename(absolutePath);
+              const content = await fs.readFile(absolutePath).catch(() => null);
+              if (content) {
+                  assetsFolder?.file(basename, content);
+                  const relativePath = `assets/${basename}`;
+                  processedAssets.set(absolutePath, relativePath);
+                  return relativePath;
+              }
+              return src;
+          };
+
+          if (campaignToSave.maps) {
+              for (const mapId in campaignToSave.maps) {
+                  const map = campaignToSave.maps[mapId];
+                  if (map.map && map.map.src) map.map.src = await processAsset(map.map.src);
+                  if (map.tokens) {
+                      for (const token of map.tokens) token.src = await processAsset(token.src);
+                  }
+              }
+          }
+
+          if (campaignToSave.tokenLibrary) {
+              for (const item of campaignToSave.tokenLibrary) {
+                  item.src = await processAsset(item.src);
+              }
+          }
+
+          zip.file("manifest.json", JSON.stringify(campaignToSave));
+          const content = await zip.generateAsync({ type: "nodebuffer" });
+
+          // Atomic write: write to .tmp file then rename
+          const tempPath = currentCampaignPath + '.tmp';
+          await fs.writeFile(tempPath, content);
+          await fs.rename(tempPath, currentCampaignPath);
+
+          return true;
+      } catch (err) {
+          console.error("Auto-save failed:", err);
+          return false;
+      }
+  });
+
  /**
   * IPC handler: LOAD_CAMPAIGN
   *
   * Deserializes a .hyle ZIP file and restores campaign state.
-  * Called by App.tsx:103 when user clicks "Load" button.
-  *
-  * **Algorithm:**
-  * 1. Show native open dialog (user chooses .hyle file)
-  * 2. Read ZIP file from disk
-  * 3. Extract manifest.json (parse campaign state)
-  * 4. Create session directory (userData/sessions/{timestamp}/)
-  * 5. For each token with relative path (assets/...):
-  *    - Extract image from ZIP
-  *    - Write to session directory
-  *    - Rewrite token.src to file:// URL
-  * 6. Return modified state to renderer
-  *
-  * **Why session directories:**
-  * Each load creates a new session folder to avoid conflicts. This allows:
-  * - Multiple campaigns to be loaded in succession without cleanup
-  * - Session assets to persist until next load
-  * - Clean separation between temp uploads and loaded campaigns
-  *
-  * **Path translation:**
-  * ZIP: assets/goblin.webp (relative)
-  * → Extracted to: /Users/.../sessions/1234567890/assets/goblin.webp
-  * → Returned as: file:///Users/.../sessions/1234567890/assets/goblin.webp
-  *
-  * @returns Campaign state with file:// URLs, or null if user cancelled
-  *
-  * @example
-  * // Called from App.tsx Load button:
-  * const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN');
-  * if (state) {
-  *   useGameStore.getState().setState(state);  // Restore state
-  * }
+  * Handles migration from legacy single-map files to new Campaign format.
   */
  ipcMain.handle('LOAD_CAMPAIGN', async () => {
     const { filePaths } = await dialog.showOpenDialog({
       filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }]
     });
-    if (filePaths.length === 0) return null;  // User cancelled
+    if (filePaths.length === 0) return null;
+
+    currentCampaignPath = filePaths[0]; // Set path for auto-save
 
     // Read and parse ZIP file
     const zipContent = await fs.readFile(filePaths[0]);
     const zip = await JSZip.loadAsync(zipContent);
 
-    // Create unique session directory for this load operation
+    // Create unique session directory
     const sessionDir = path.join(app.getPath('userData'), 'sessions', Date.now().toString());
     await fs.mkdir(sessionDir, { recursive: true });
 
-    // Extract manifest.json (campaign state)
+    // Extract manifest
     const manifestStr = await zip.file("manifest.json")?.async("string");
     if (!manifestStr) throw new Error("Invalid Hyle file");
 
-    const state = JSON.parse(manifestStr);
+    let loadedData = JSON.parse(manifestStr);
+    let campaign: any;
 
-    // Extract assets from ZIP and rewrite paths to file:// URLs
+    // --- MIGRATION: Check if Legacy File ---
+    if (!loadedData.maps) {
+        // Legacy format: loadedData is a GameState object (tokens, map, etc.)
+        // Convert to Campaign structure
+        const mapId = crypto.randomUUID();
+        const mapData = {
+            id: mapId,
+            name: 'Imported Map',
+            tokens: loadedData.tokens || [],
+            drawings: loadedData.drawings || [],
+            map: loadedData.map || null,
+            gridSize: loadedData.gridSize || 50,
+            gridType: loadedData.gridType || 'LINES',
+            exploredRegions: loadedData.exploredRegions || [],
+            isDaylightMode: loadedData.isDaylightMode || false
+        };
+
+        campaign = {
+            id: crypto.randomUUID(),
+            name: 'Imported Campaign',
+            maps: { [mapId]: mapData },
+            activeMapId: mapId,
+            tokenLibrary: [] // Initialize empty library for legacy
+        };
+    } else {
+        // New format
+        campaign = loadedData;
+    }
+
+    // Extract assets and restore paths
     const assets = zip.folder("assets");
     if (assets) {
         const assetsDir = path.join(sessionDir, 'assets');
         await fs.mkdir(assetsDir, { recursive: true });
 
-        // Restore each token asset
-        for (const token of state.tokens) {
-            if (token.src.startsWith('assets/')) {
-                const relativePath = token.src;
-                const fileName = path.basename(relativePath);
+        const restoreAsset = async (src: string): Promise<string> => {
+            if (src && src.startsWith('assets/')) {
+                const fileName = path.basename(src);
                 const fileData = await assets.file(fileName)?.async("nodebuffer");
                 if (fileData) {
                     const destPath = path.join(assetsDir, fileName);
                     await fs.writeFile(destPath, fileData);
-                    token.src = `file://${destPath}`;  // Rewrite to absolute file:// URL
+                    return `file://${destPath}`;
                 }
+            }
+            return src;
+        };
+
+        // Restore assets for ALL maps
+        for (const mapId in campaign.maps) {
+            const map = campaign.maps[mapId];
+
+            // 1. Restore Map Background
+            if (map.map && map.map.src) {
+                map.map.src = await restoreAsset(map.map.src);
+            }
+
+            // 2. Restore Tokens
+            if (map.tokens) {
+                for (const token of map.tokens) {
+                    token.src = await restoreAsset(token.src);
+                }
+            }
+        }
+
+        // 3. Restore Campaign Token Library assets
+        if (campaign.tokenLibrary) {
+            for (const item of campaign.tokenLibrary) {
+                item.src = await restoreAsset(item.src);
             }
         }
     }
 
-    return state;  // Return state with file:// URLs
+    return campaign;
  });
 
  /**
