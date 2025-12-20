@@ -4,6 +4,7 @@ import SyncManager from './components/SyncManager'
 import { ThemeManager } from './components/ThemeManager'
 import Sidebar from './components/Sidebar'
 import Toast from './components/Toast'
+import ConfirmDialog from './components/ConfirmDialog'
 import TokenInspector from './components/TokenInspector'
 import ResourceMonitor from './components/ResourceMonitor'
 import { useGameStore } from './store/gameStore'
@@ -187,6 +188,7 @@ function App() {
       <ThemeManager />
       <SyncManager />
       <Toast />
+      <ConfirmDialog />
 
       {/* Auto-save (Architect View only) */}
       {isArchitectView && <AutoSaveManager />}

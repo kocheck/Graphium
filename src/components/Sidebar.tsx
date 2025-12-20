@@ -67,6 +67,7 @@ const Sidebar = () => {
     const isCalibrating = useGameStore(state => state.isCalibrating);
     const setIsCalibrating = useGameStore(state => state.setIsCalibrating);
     const showToast = useGameStore(state => state.showToast);
+    const showConfirmDialog = useGameStore(state => state.showConfirmDialog);
     const isDaylightMode = useGameStore(state => state.isDaylightMode);
     const setDaylightMode = useGameStore(state => state.setDaylightMode);
 
@@ -346,9 +347,11 @@ const Sidebar = () => {
                                         className="text-xs bg-red-500/80 hover:bg-red-500 text-white rounded px-2 py-1"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if(confirm('Remove this token from library?')) {
-                                                removeTokenFromLibrary(token.id);
-                                            }
+                                            showConfirmDialog(
+                                                'Remove this token from library?',
+                                                () => removeTokenFromLibrary(token.id),
+                                                'Remove'
+                                            );
                                         }}
                                     >
                                         🗑️

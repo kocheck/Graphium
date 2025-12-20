@@ -95,6 +95,15 @@ export interface ToastMessage {
 }
 
 /**
+ * ConfirmDialog represents a confirmation dialog state
+ */
+export interface ConfirmDialog {
+  message: string;
+  onConfirm: () => void;
+  confirmText?: string;
+}
+
+/**
  * ExploredRegion represents an area that PC tokens have previously seen
  */
 export interface ExploredRegion {
@@ -158,6 +167,7 @@ export interface GameState {
   // --- UI/System State (Not persisted in MapData) ---
   isCalibrating: boolean;
   toast: ToastMessage | null;
+  confirmDialog: ConfirmDialog | null;
   showResourceMonitor: boolean;
 
   // --- Campaign State ---
@@ -234,6 +244,7 @@ export const useGameStore = create<GameState>((set, get) => {
     // --- Initial State (System) ---
     isCalibrating: false,
     toast: null,
+    confirmDialog: null,
     showResourceMonitor: false,
     campaign: initialCampaign,
 
@@ -485,6 +496,9 @@ export const useGameStore = create<GameState>((set, get) => {
     setState: (state: Partial<GameState>) => set(state),
     showToast: (message: string, type: 'error' | 'success' | 'info') => set({ toast: { message, type } }),
     clearToast: () => set({ toast: null }),
+    showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) =>
+      set({ confirmDialog: { message, onConfirm, confirmText } }),
+    clearConfirmDialog: () => set({ confirmDialog: null }),
     setShowResourceMonitor: (show: boolean) => set({ showResourceMonitor: show }),
   };
 });
