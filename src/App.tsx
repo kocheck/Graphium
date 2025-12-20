@@ -91,7 +91,6 @@ function App() {
 
   // Resource Monitor state (from store)
   const showResourceMonitor = useGameStore((state) => state.showResourceMonitor);
-  const setShowResourceMonitor = useGameStore((state) => state.setShowResourceMonitor);
 
   // Filter selected IDs to only include tokens (not drawings)
   const tokens = useGameStore((s) => s.tokens);
@@ -168,7 +167,7 @@ function App() {
     };
 
     const handleToggleMonitor = () => {
-        setShowResourceMonitor(!useGameStore.getState().showResourceMonitor);
+        useGameStore.getState().setShowResourceMonitor(!useGameStore.getState().showResourceMonitor);
     };
 
     window.ipcRenderer.on('MENU_SAVE_CAMPAIGN', handleSave);

@@ -29,6 +29,7 @@ import JSZip from 'jszip'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import {
   initializeThemeManager,
   getThemeState,
@@ -648,7 +649,7 @@ let currentCampaignPath: string | null = null;
     if (!loadedData.maps) {
         // Legacy format: loadedData is a GameState object (tokens, map, etc.)
         // Convert to Campaign structure
-        const mapId = crypto.randomUUID();
+        const mapId = randomUUID();
         const mapData = {
             id: mapId,
             name: 'Imported Map',
@@ -662,7 +663,7 @@ let currentCampaignPath: string | null = null;
         };
 
         campaign = {
-            id: crypto.randomUUID(),
+            id: randomUUID(),
             name: 'Imported Campaign',
             maps: { [mapId]: mapData },
             activeMapId: mapId,

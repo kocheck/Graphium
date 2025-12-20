@@ -24,10 +24,26 @@ const MapNavigator: React.FC = () => {
     };
 
     const handleFinishEdit = () => {
-        if (editingMapId) {
-            renameMap(editingMapId, editName);
-            setEditingMapId(null);
+        if (!editingMapId) {
+            return;
         }
+
+        const newName = editName.trim();
+
+        // Prevent renaming to an empty or whitespace-only name.
+        if (!newName) {
+            // Revert to the original name if available.
+            const originalMap =
+                campaign && campaign.maps ? campaign.maps[editingMapId] : undefined;
+            if (originalMap) {
+                setEditName(originalMap.name);
+            }
+            setEditingMapId(null);
+            return;
+        }
+
+        renameMap(editingMapId, newName);
+        setEditingMapId(null);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -130,7 +146,18 @@ const MapNavigator: React.FC = () => {
             </div>
 
             <button
-                onClick={() => addMap(`Map ${maps.length + 1}`)}
+                onClick={() => {
+                    const mapNumbers = maps
+                        .map((m) => {
+                            const match = /^Map (\d+)$/.exec(m.name);
+                            return match ? parseInt(match[1], 10) : 0;
+                        })
+                        .filter((n) => n > 0);
+                    const nextNumber = mapNumbers.length > 0
+                        ? Math.max(...mapNumbers) + 1
+                        : maps.length + 1;
+                    addMap(`Map ${nextNumber}`);
+                }}
                 className="btn btn-secondary w-full py-2 text-sm flex items-center justify-center gap-2 border-dashed border-2"
             >
                 <span>➕</span> New Map

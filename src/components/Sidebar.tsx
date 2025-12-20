@@ -334,13 +334,7 @@ const Sidebar = () => {
                                 key={token.id}
                                 className="sidebar-token w-full aspect-square rounded cursor-grab flex flex-col items-center justify-center transition p-1 relative group"
                                 draggable
-                                onDragStart={(e) => handleDragStart(e, 'LIBRARY_TOKEN', JSON.stringify({
-                                    src: token.src,
-                                    name: token.name,
-                                    scale: token.defaultScale,
-                                    visionRadius: token.defaultVisionRadius,
-                                    type: token.defaultType
-                                }))}
+                                onDragStart={(e) => handleDragStart(e, 'LIBRARY_TOKEN', token.src)}
                             >
                                 <img
                                     src={token.src}
