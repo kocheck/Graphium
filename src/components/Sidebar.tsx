@@ -67,6 +67,7 @@ const Sidebar = () => {
     const isCalibrating = useGameStore(state => state.isCalibrating);
     const setIsCalibrating = useGameStore(state => state.setIsCalibrating);
     const showToast = useGameStore(state => state.showToast);
+    const showConfirmDialog = useGameStore(state => state.showConfirmDialog);
     const isDaylightMode = useGameStore(state => state.isDaylightMode);
     const setDaylightMode = useGameStore(state => state.setDaylightMode);
 
@@ -334,13 +335,7 @@ const Sidebar = () => {
                                 key={token.id}
                                 className="sidebar-token w-full aspect-square rounded cursor-grab flex flex-col items-center justify-center transition p-1 relative group"
                                 draggable
-                                onDragStart={(e) => handleDragStart(e, 'LIBRARY_TOKEN', JSON.stringify({
-                                    src: token.src,
-                                    name: token.name,
-                                    scale: token.defaultScale,
-                                    visionRadius: token.defaultVisionRadius,
-                                    type: token.defaultType
-                                }))}
+                                onDragStart={(e) => handleDragStart(e, 'LIBRARY_TOKEN', token.src)}
                             >
                                 <img
                                     src={token.src}
@@ -352,9 +347,11 @@ const Sidebar = () => {
                                         className="text-xs bg-red-500/80 hover:bg-red-500 text-white rounded px-2 py-1"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if(confirm('Remove this token from library?')) {
-                                                removeTokenFromLibrary(token.id);
-                                            }
+                                            showConfirmDialog(
+                                                'Remove this token from library?',
+                                                () => removeTokenFromLibrary(token.id),
+                                                'Remove'
+                                            );
                                         }}
                                     >
                                         🗑️

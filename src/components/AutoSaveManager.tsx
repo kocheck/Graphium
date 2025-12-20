@@ -11,15 +11,19 @@ import { useGameStore } from '../store/gameStore';
  * no file path has been established (handled by main process).
  */
 const AutoSaveManager = () => {
-    const syncActiveMapToCampaign = useGameStore(state => state.syncActiveMapToCampaign);
-
     useEffect(() => {
         if (!window.ipcRenderer) return;
 
+        let isSaving = false;
+
         const intervalId = setInterval(async () => {
+            if (isSaving) {
+                return;
+            }
+            isSaving = true;
             try {
                 // Ensure latest map state is in campaign object
-                syncActiveMapToCampaign();
+                useGameStore.getState().syncActiveMapToCampaign();
 
                 // Get latest campaign data
                 const campaign = useGameStore.getState().campaign;
@@ -33,11 +37,13 @@ const AutoSaveManager = () => {
                 }
             } catch (err) {
                 console.error('[AutoSave] Failed:', err);
+            } finally {
+                isSaving = false;
             }
         }, 60 * 1000); // 60 seconds
 
         return () => clearInterval(intervalId);
-    }, [syncActiveMapToCampaign]);
+    }, []);
 
     return null; // Invisible component
 };

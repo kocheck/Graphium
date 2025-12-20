@@ -29,6 +29,7 @@ import JSZip from 'jszip'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import {
   initializeThemeManager,
   getThemeState,
@@ -465,6 +466,75 @@ app.whenReady().then(() => {
 let currentCampaignPath: string | null = null;
 
   /**
+   * Helper function to serialize campaign assets to a ZIP file.
+   * Processes all map backgrounds, tokens, and library assets.
+   * 
+   * @param campaign - Campaign data to serialize
+   * @param zip - JSZip instance to add files to
+   * @returns Modified campaign object with relative asset paths
+   */
+  async function serializeCampaignToZip(campaign: any, zip: JSZip): Promise<any> {
+      const assetsFolder = zip.folder("assets");
+      
+      // Deep clone to avoid mutating original state
+      const campaignToSave = JSON.parse(JSON.stringify(campaign));
+      
+      // Track processed files to avoid duplication
+      // Key: Absolute source path, Value: Relative destination path in zip
+      const processedAssets = new Map<string, string>();
+      
+      // Helper to process an image asset
+      const processAsset = async (src: string): Promise<string> => {
+          if (!src || !src.startsWith('file://')) return src;
+          
+          const absolutePath = fileURLToPath(src);
+          
+          // If already processed, return the existing relative path
+          if (processedAssets.has(absolutePath)) {
+              return processedAssets.get(absolutePath)!;
+          }
+          
+          const basename = path.basename(absolutePath);
+          const content = await fs.readFile(absolutePath).catch(() => null);
+          if (content) {
+              assetsFolder?.file(basename, content);
+              const relativePath = `assets/${basename}`;
+              processedAssets.set(absolutePath, relativePath);
+              return relativePath;
+          }
+          return src; // Keep original if read fails
+      };
+      
+      // Iterate all maps and process assets
+      if (campaignToSave.maps) {
+          for (const mapId in campaignToSave.maps) {
+              const map = campaignToSave.maps[mapId];
+              
+              // 1. Process Map Background
+              if (map.map && map.map.src) {
+                  map.map.src = await processAsset(map.map.src);
+              }
+              
+              // 2. Process Tokens
+              if (map.tokens) {
+                  for (const token of map.tokens) {
+                      token.src = await processAsset(token.src);
+                  }
+              }
+          }
+      }
+      
+      // 3. Process Campaign Token Library
+      if (campaignToSave.tokenLibrary) {
+          for (const item of campaignToSave.tokenLibrary) {
+              item.src = await processAsset(item.src);
+          }
+      }
+      
+      return campaignToSave;
+  }
+
+  /**
    * IPC handler: SAVE_CAMPAIGN
    *
    * Serializes campaign state to a .hyle ZIP file.
@@ -482,67 +552,9 @@ let currentCampaignPath: string | null = null;
     currentCampaignPath = filePath;
 
     const zip = new JSZip();
-    const assetsFolder = zip.folder("assets");
-
-    // Deep clone to avoid mutating original state
-    const campaignToSave = JSON.parse(JSON.stringify(campaign));
-
-    // Track processed files to avoid duplication
-    // Key: Absolute source path, Value: Relative destination path in zip
-    const processedAssets = new Map<string, string>();
-
-    // Helper to process an image asset
-    const processAsset = async (src: string): Promise<string> => {
-        if (!src || !src.startsWith('file://')) return src;
-
-        const absolutePath = fileURLToPath(src);
-
-        // If already processed, return the existing relative path
-        if (processedAssets.has(absolutePath)) {
-            return processedAssets.get(absolutePath)!;
-        }
-
-        const basename = path.basename(absolutePath);
-        // Handle name collisions if different files have same name
-        // (Simple version: just use basename, assume uniqueness for now or append timestamp if needed)
-        // For robustness, check if file exists in zip?
-        // Let's stick to basename for now, relying on timestamps in temp filenames
-
-        const content = await fs.readFile(absolutePath).catch(() => null);
-        if (content) {
-            assetsFolder?.file(basename, content);
-            const relativePath = `assets/${basename}`;
-            processedAssets.set(absolutePath, relativePath);
-            return relativePath;
-        }
-        return src; // Keep original if read fails (shouldn't happen)
-    };
-
-    // Iterate all maps and process assets
-    if (campaignToSave.maps) {
-        for (const mapId in campaignToSave.maps) {
-            const map = campaignToSave.maps[mapId];
-
-            // 1. Process Map Background
-            if (map.map && map.map.src) {
-                map.map.src = await processAsset(map.map.src);
-            }
-
-            // 2. Process Tokens
-            if (map.tokens) {
-                for (const token of map.tokens) {
-                    token.src = await processAsset(token.src);
-                }
-            }
-        }
-    }
-
-    // 3. Process Campaign Token Library
-    if (campaignToSave.tokenLibrary) {
-        for (const item of campaignToSave.tokenLibrary) {
-            item.src = await processAsset(item.src);
-        }
-    }
+    
+    // Use shared helper to process campaign assets
+    const campaignToSave = await serializeCampaignToZip(campaign, zip);
 
     // Add manifest.json with modified state
     zip.file("manifest.json", JSON.stringify(campaignToSave));
@@ -564,41 +576,9 @@ let currentCampaignPath: string | null = null;
 
       try {
           const zip = new JSZip();
-          const assetsFolder = zip.folder("assets");
-          const campaignToSave = JSON.parse(JSON.stringify(campaign));
-          const processedAssets = new Map<string, string>();
-
-          // Reuse asset processing logic (dup code, could be refactored to helper)
-          const processAsset = async (src: string): Promise<string> => {
-              if (!src || !src.startsWith('file://')) return src;
-              const absolutePath = fileURLToPath(src);
-              if (processedAssets.has(absolutePath)) return processedAssets.get(absolutePath)!;
-              const basename = path.basename(absolutePath);
-              const content = await fs.readFile(absolutePath).catch(() => null);
-              if (content) {
-                  assetsFolder?.file(basename, content);
-                  const relativePath = `assets/${basename}`;
-                  processedAssets.set(absolutePath, relativePath);
-                  return relativePath;
-              }
-              return src;
-          };
-
-          if (campaignToSave.maps) {
-              for (const mapId in campaignToSave.maps) {
-                  const map = campaignToSave.maps[mapId];
-                  if (map.map && map.map.src) map.map.src = await processAsset(map.map.src);
-                  if (map.tokens) {
-                      for (const token of map.tokens) token.src = await processAsset(token.src);
-                  }
-              }
-          }
-
-          if (campaignToSave.tokenLibrary) {
-              for (const item of campaignToSave.tokenLibrary) {
-                  item.src = await processAsset(item.src);
-              }
-          }
+          
+          // Use shared helper to process campaign assets
+          const campaignToSave = await serializeCampaignToZip(campaign, zip);
 
           zip.file("manifest.json", JSON.stringify(campaignToSave));
           const content = await zip.generateAsync({ type: "nodebuffer" });
@@ -648,7 +628,7 @@ let currentCampaignPath: string | null = null;
     if (!loadedData.maps) {
         // Legacy format: loadedData is a GameState object (tokens, map, etc.)
         // Convert to Campaign structure
-        const mapId = crypto.randomUUID();
+        const mapId = randomUUID();
         const mapData = {
             id: mapId,
             name: 'Imported Map',
@@ -662,7 +642,7 @@ let currentCampaignPath: string | null = null;
         };
 
         campaign = {
-            id: crypto.randomUUID(),
+            id: randomUUID(),
             name: 'Imported Campaign',
             maps: { [mapId]: mapData },
             activeMapId: mapId,

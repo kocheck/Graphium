@@ -95,6 +95,15 @@ export interface ToastMessage {
 }
 
 /**
+ * ConfirmDialog represents a confirmation dialog state
+ */
+export interface ConfirmDialog {
+  message: string;
+  onConfirm: () => void;
+  confirmText?: string;
+}
+
+/**
  * ExploredRegion represents an area that PC tokens have previously seen
  */
 export interface ExploredRegion {
@@ -158,6 +167,7 @@ export interface GameState {
   // --- UI/System State (Not persisted in MapData) ---
   isCalibrating: boolean;
   toast: ToastMessage | null;
+  confirmDialog: ConfirmDialog | null;
   showResourceMonitor: boolean;
 
   // --- Campaign State ---
@@ -234,6 +244,7 @@ export const useGameStore = create<GameState>((set, get) => {
     // --- Initial State (System) ---
     isCalibrating: false,
     toast: null,
+    confirmDialog: null,
     showResourceMonitor: false,
     campaign: initialCampaign,
 
@@ -346,17 +357,39 @@ export const useGameStore = create<GameState>((set, get) => {
         return;
       }
 
-      // If deleting active map, switch first
-      let nextActiveId = activeMapId;
+      // If deleting active map, switch first without syncing the map being deleted
       if (mapId === activeMapId) {
         const mapIds = Object.keys(maps);
         const currentIndex = mapIds.indexOf(mapId);
         // Try next, or prev
-        nextActiveId = mapIds[currentIndex + 1] || mapIds[currentIndex - 1];
-        get().switchMap(nextActiveId);
+        const nextActiveId = mapIds[currentIndex + 1] || mapIds[currentIndex - 1];
+
+        // Directly switch active map without calling switchMap to avoid syncing the deleted map
+        set((currentState) => {
+          const nextMap = currentState.campaign.maps[nextActiveId];
+          if (!nextMap) {
+            // If for some reason the next map cannot be found, leave state unchanged
+            return currentState;
+          }
+
+          return {
+            ...currentState,
+            campaign: {
+              ...currentState.campaign,
+              activeMapId: nextActiveId,
+            },
+            tokens: nextMap.tokens,
+            drawings: nextMap.drawings,
+            map: nextMap.map,
+            gridSize: nextMap.gridSize,
+            gridType: nextMap.gridType,
+            exploredRegions: nextMap.exploredRegions,
+            isDaylightMode: nextMap.isDaylightMode,
+          };
+        });
       }
 
-      // Now delete from store (need to fetch fresh state after switchMap)
+      // Now delete from store (need to fetch fresh state after potential switch)
       set((currentState) => {
         const { [mapId]: deleted, ...remainingMaps } = currentState.campaign.maps;
         return {
@@ -463,6 +496,9 @@ export const useGameStore = create<GameState>((set, get) => {
     setState: (state: Partial<GameState>) => set(state),
     showToast: (message: string, type: 'error' | 'success' | 'info') => set({ toast: { message, type } }),
     clearToast: () => set({ toast: null }),
+    showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) =>
+      set({ confirmDialog: { message, onConfirm, confirmText } }),
+    clearConfirmDialog: () => set({ confirmDialog: null }),
     setShowResourceMonitor: (show: boolean) => set({ showResourceMonitor: show }),
   };
 });

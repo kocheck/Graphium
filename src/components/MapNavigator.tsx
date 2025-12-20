@@ -14,6 +14,7 @@ const MapNavigator: React.FC = () => {
     const switchMap = useGameStore(state => state.switchMap);
     const deleteMap = useGameStore(state => state.deleteMap);
     const renameMap = useGameStore(state => state.renameMap);
+    const showConfirmDialog = useGameStore(state => state.showConfirmDialog);
 
     const [editingMapId, setEditingMapId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
@@ -24,10 +25,26 @@ const MapNavigator: React.FC = () => {
     };
 
     const handleFinishEdit = () => {
-        if (editingMapId) {
-            renameMap(editingMapId, editName);
-            setEditingMapId(null);
+        if (!editingMapId) {
+            return;
         }
+
+        const newName = editName.trim();
+
+        // Prevent renaming to an empty or whitespace-only name.
+        if (!newName) {
+            // Revert to the original name if available.
+            const originalMap =
+                campaign && campaign.maps ? campaign.maps[editingMapId] : undefined;
+            if (originalMap) {
+                setEditName(originalMap.name);
+            }
+            setEditingMapId(null);
+            return;
+        }
+
+        renameMap(editingMapId, newName);
+        setEditingMapId(null);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -40,9 +57,11 @@ const MapNavigator: React.FC = () => {
 
     const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
         e.stopPropagation();
-        if (confirm(`Are you sure you want to delete map "${name}"? This cannot be undone.`)) {
-            deleteMap(id);
-        }
+        showConfirmDialog(
+            `Are you sure you want to delete map "${name}"? This cannot be undone.`,
+            () => deleteMap(id),
+            'Delete'
+        );
     };
 
     if (!campaign) return null;
@@ -60,12 +79,16 @@ const MapNavigator: React.FC = () => {
                 </span>
             </h2>
 
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2 mb-4" role="list" aria-label="Campaign maps">
                 {maps.map(map => {
                     const isActive = map.id === activeMapId;
                     return (
                         <div
                             key={map.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`${isActive ? 'Current map: ' : 'Switch to '}${map.name}`}
+                            aria-current={isActive ? 'page' : undefined}
                             className={`
                                 group flex items-center justify-between p-2 rounded cursor-pointer transition
                                 ${isActive
@@ -74,6 +97,12 @@ const MapNavigator: React.FC = () => {
                                 }
                             `}
                             onClick={() => switchMap(map.id)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    switchMap(map.id);
+                                }
+                            }}
                         >
                             <div className="flex-1 min-w-0 flex items-center gap-2">
                                 <span className="text-lg leading-none">
@@ -130,7 +159,18 @@ const MapNavigator: React.FC = () => {
             </div>
 
             <button
-                onClick={() => addMap(`Map ${maps.length + 1}`)}
+                onClick={() => {
+                    const mapNumbers = maps
+                        .map((m) => {
+                            const match = /^Map (\d+)$/.exec(m.name);
+                            return match ? parseInt(match[1], 10) : 0;
+                        })
+                        .filter((n) => n > 0);
+                    const nextNumber = mapNumbers.length > 0
+                        ? Math.max(...mapNumbers) + 1
+                        : maps.length + 1;
+                    addMap(`Map ${nextNumber}`);
+                }}
                 className="btn btn-secondary w-full py-2 text-sm flex items-center justify-center gap-2 border-dashed border-2"
             >
                 <span>➕</span> New Map
