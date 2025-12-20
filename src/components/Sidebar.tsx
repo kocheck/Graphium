@@ -49,9 +49,9 @@
  * @component
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useGameStore, GridType } from '../store/gameStore';
-import { processImage } from '../utils/AssetProcessor';
+import { processImage, ProcessingHandle } from '../utils/AssetProcessor';
 
 /**
  * Sidebar component provides map upload, grid settings, and token library
@@ -60,9 +60,22 @@ const Sidebar = () => {
     const {
         setMap, gridType, setGridType,
         map, updateMapPosition, updateMapScale,
-        isCalibrating, setIsCalibrating, showToast
+        isCalibrating, setIsCalibrating, showToast,
+        isDaylightMode, setDaylightMode
     } = useGameStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const processingHandleRef = useRef<ProcessingHandle | null>(null);
+
+    // Cleanup: Cancel any active processing on unmount
+    useEffect(() => {
+        return () => {
+            if (processingHandleRef.current) {
+                console.log('[Sidebar] Cancelling in-flight map processing on unmount');
+                processingHandleRef.current.cancel();
+                processingHandleRef.current = null;
+            }
+        };
+    }, []);
 
     /**
      * Handles drag start for library tokens
@@ -98,8 +111,21 @@ const Sidebar = () => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Cancel any previous processing
+        if (processingHandleRef.current) {
+            processingHandleRef.current.cancel();
+            processingHandleRef.current = null;
+        }
+
         try {
-            const src = await processImage(file, 'MAP');
+            // Use new ProcessingHandle API
+            const handle = processImage(file, 'MAP');
+            processingHandleRef.current = handle;
+
+            const src = await handle.promise;
+
+            // Clear handle after successful completion
+            processingHandleRef.current = null;
 
              // Create a temporary image to get dimensions using a safe Object URL
             let objectUrl: string;
@@ -132,6 +158,8 @@ const Sidebar = () => {
         } catch (err) {
             console.error("Failed to upload map", err);
             showToast('Failed to upload map. Please ensure the file is a valid image.', 'error');
+            // Clear handle on error
+            processingHandleRef.current = null;
         } finally {
             // Reset the file input so the same file can be uploaded again
             e.target.value = '';
@@ -176,6 +204,22 @@ const Sidebar = () => {
                             <option value="DOTS">Dots</option>
                             <option value="HIDDEN">Hidden</option>
                         </select>
+                    </div>
+
+                    {/* Daylight Mode Toggle */}
+                    <div>
+                        <label className="flex items-center justify-between cursor-pointer">
+                            <span className="text-xs uppercase font-semibold" style={{ color: 'var(--app-text-secondary)' }}>Daylight Mode</span>
+                            <input
+                                type="checkbox"
+                                checked={isDaylightMode}
+                                onChange={(e) => setDaylightMode(e.target.checked)}
+                                className="w-4 h-4 rounded cursor-pointer"
+                            />
+                        </label>
+                        <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
+                            {isDaylightMode ? '☀️ Fog of War disabled' : '🌙 Fog of War enabled'}
+                        </p>
                     </div>
 
                     {/* Map Calibration */}

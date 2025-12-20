@@ -355,9 +355,10 @@ const handleDrop = async (e: React.DragEvent) => {
 
 // 2. User crops
 const handleCropConfirm = async (blob: Blob) => {
-  // 3. Process image (resize, convert to WebP)
+  // 3. Process image (resize, convert to WebP) - Returns cancellable handle
   const file = new File([blob], "token.webp", { type: 'image/webp' });
-  const src = await processImage(file, 'TOKEN');  // Returns file:// URL
+  const handle = processImage(file, 'TOKEN');
+  const src = await handle.promise;  // Get file:// URL from promise
 
   // 4. Add to store
   addToken({ id: crypto.randomUUID(), x, y, src, scale: 1 });

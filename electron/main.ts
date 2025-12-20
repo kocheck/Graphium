@@ -330,6 +330,50 @@ app.whenReady().then(() => {
   ipcMain.on('create-world-window', createWorldWindow)
 
   /**
+   * IPC handler: REQUEST_INITIAL_STATE
+   *
+   * When World View opens, it requests the current game state from Architect View.
+   * This ensures World View displays the current map/tokens even if no state changes
+   * have occurred since it opened.
+   *
+   * **Data flow:**
+   * 1. World View opens and sends REQUEST_INITIAL_STATE
+   * 2. Main process relays request to Architect View
+   * 3. Architect View responds with FULL_SYNC containing current state
+   * 4. Main process broadcasts FULL_SYNC to World View
+   */
+  ipcMain.on('REQUEST_INITIAL_STATE', (_event: IpcMainEvent) => {
+    // Relay request to main window (Architect View)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('REQUEST_INITIAL_STATE')
+    }
+  })
+
+  /**
+   * IPC handler: SYNC_FROM_WORLD_VIEW
+   *
+   * Handles token updates from World View (when DM demonstrates movement on projector).
+   * Relays the update to Architect View, which will then broadcast it back to World View
+   * via the normal SYNC_WORLD_STATE channel.
+   *
+   * **Data flow:**
+   * 1. User drags token in World View
+   * 2. World View sends SYNC_FROM_WORLD_VIEW → Main Process (here)
+   * 3. Main Process relays to Architect View via SYNC_WORLD_STATE
+   * 4. Architect View applies update to its store
+   * 5. Architect View's subscription broadcasts update back to World View
+   * 6. World View receives update (no-op since position already matches)
+   *
+   * This creates a round-trip but ensures Architect View remains the source of truth.
+   */
+  ipcMain.on('SYNC_FROM_WORLD_VIEW', (_event: IpcMainEvent, action: unknown) => {
+    // Relay World View changes to Architect View (main window)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('SYNC_WORLD_STATE', action)
+    }
+  })
+
+  /**
    * IPC handler: SYNC_WORLD_STATE
    *
    * Broadcasts state changes from Architect Window to World Window.

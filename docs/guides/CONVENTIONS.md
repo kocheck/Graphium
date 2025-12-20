@@ -636,7 +636,8 @@ const handleDragEnd = (e: any) => {
 const handleDrop = async (e: React.DragEvent) => {
   e.preventDefault();
   const file = e.dataTransfer.files[0];
-  const src = await processImage(file, 'TOKEN');
+  const handle = processImage(file, 'TOKEN');
+  const src = await handle.promise;
   addToken({ id: crypto.randomUUID(), x, y, src, scale: 1 });
 };
 

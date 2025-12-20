@@ -181,8 +181,9 @@ const handleCropConfirm = async (blob: Blob) => {
   try {
     const file = new File([blob], "token.webp", { type: 'image/webp' });
 
-    // Process image (resize, convert to WebP, save to temp)
-    const src = await processImage(file, 'TOKEN');
+    // Process image (resize, convert to WebP, save to temp) - Returns cancellable handle
+    const handle = processImage(file, 'TOKEN');
+    const src = await handle.promise;
 
     addToken({
       id: crypto.randomUUID(),

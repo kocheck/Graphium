@@ -180,8 +180,9 @@ ipcMain.handle('SAVE_CAMPAIGN', async (_event, state) => {
 // 1. User uploads image
 const file = e.target.files[0]
 
-// 2. Process image (resize + WebP)
-const tempUrl = await processImage(file, 'TOKEN')
+// 2. Process image (resize + WebP) - Returns cancellable handle
+const handle = processImage(file, 'TOKEN')
+const tempUrl = await handle.promise
 // Returns: "file:///Users/.../temp_assets/1234567890-goblin.webp"
 
 // 3. Use in game (temp storage)

@@ -178,7 +178,8 @@ setPendingCrop({ src: objectUrl, x, y });
 // 3. User confirms → receive Blob
 const handleCropConfirm = async (blob: Blob) => {
   const file = new File([blob], "token.webp", { type: 'image/webp' });
-  const src = await processImage(file, 'TOKEN');
+  const handle = processImage(file, 'TOKEN');
+  const src = await handle.promise;
   addToken({ id: crypto.randomUUID(), x, y, src, scale: 1 });
   setPendingCrop(null);
 };

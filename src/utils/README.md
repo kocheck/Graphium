@@ -120,8 +120,9 @@ export const processImage = async (file: File, type: AssetType): Promise<string>
 const handleCropConfirm = async (blob: Blob) => {
   const file = new File([blob], "token.webp", { type: 'image/webp' });
 
-  // Process image (resize, convert, save)
-  const src = await processImage(file, 'TOKEN');
+  // Process image (resize, convert, save) - Returns cancellable handle
+  const handle = processImage(file, 'TOKEN');
+  const src = await handle.promise;
   // Returns: file:///Users/.../Hyle/temp_assets/1234567890-token.webp
 
   addToken({
@@ -138,7 +139,8 @@ const handleCropConfirm = async (blob: Blob) => {
 
 ```typescript
 try {
-  const src = await processImage(file, 'TOKEN');
+  const handle = processImage(file, 'TOKEN');
+  const src = await handle.promise;
   addToken({ id, x, y, src, scale: 1 });
 } catch (error) {
   console.error('[AssetProcessor] Failed to process image:', error);

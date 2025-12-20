@@ -1,14 +1,17 @@
 import Konva from 'konva';
 import { Stage, Layer, Line, Rect, Transformer } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
-import { useRef, useEffect, useState, useCallback } from 'react';
-import { processImage } from '../../utils/AssetProcessor';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
 import { useGameStore } from '../../store/gameStore';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
 import TokenErrorBoundary from './TokenErrorBoundary';
+import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import FogOfWarLayer from './FogOfWarLayer';
+import Minimap from './Minimap';
+import MinimapErrorBoundary from './MinimapErrorBoundary';
 
 import URLImage from './URLImage';
 
@@ -149,6 +152,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   // Cropping State
   const [pendingCrop, setPendingCrop] = useState<{ src: string, x: number, y: number } | null>(null);
 
+  // Asset Processing State - Track active processing to prevent worker leaks
+  const processingHandleRef = useRef<ProcessingHandle | null>(null);
+
   // Selection & Drag State
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, width: number, height: number, isVisible: boolean }>({ x: 0, y: 0, width: 0, height: 0, isVisible: false });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -178,25 +184,35 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
   // Helper function to clamp viewport position within bounds
   const clampPosition = useCallback((newPos: { x: number, y: number }, newScale: number) => {
-      // If no map, allow free movement? Or constrain to some large box?
-      // Let's constrain to a 10000x10000 box if no map.
-      // If map exists, constrain so at least a bit of the map is visible?
-      // Or constrain so the center of the view cannot go too far from map?
+      // Calculate bounds including both map and token positions
+      // This ensures we can navigate to tokens even if they're outside the map
+      let bounds = {
+          minX: -DEFAULT_BOUNDS_SIZE,
+          maxX: DEFAULT_BOUNDS_SIZE,
+          minY: -DEFAULT_BOUNDS_SIZE,
+          maxY: DEFAULT_BOUNDS_SIZE
+      };
 
-      const bounds = map ? {
-          minX: map.x,
-          maxX: map.x + (map.width * map.scale),
-          minY: map.y,
-          maxY: map.y + (map.height * map.scale)
-      } : { minX: -DEFAULT_BOUNDS_SIZE, maxX: DEFAULT_BOUNDS_SIZE, minY: -DEFAULT_BOUNDS_SIZE, maxY: DEFAULT_BOUNDS_SIZE };
-      // We are constraining the POSITION of the stage (which acts as the camera offset).
-      // Stage X moves content right. Positive Stage X = Content Shift Right.
-      // Viewport X = -StageX / Scale.
-      // We want Clamp(ViewportX, BoundsMin - Buffer, BoundsMax + Buffer).
+      if (map) {
+          bounds = {
+              minX: map.x,
+              maxX: map.x + (map.width * map.scale),
+              minY: map.y,
+              maxY: map.y + (map.height * map.scale)
+          };
+      }
 
-      // Let's constrain the center of the viewport.
-      // Viewport Center X = (-newPos.x + size.width/2) / newScale
-      // We want ViewportCenter to be within MapBounds (expanded).
+      // Expand bounds to include PC tokens (so we can always navigate to party)
+      const pcTokens = tokens.filter(t => t.type === 'PC');
+      if (pcTokens.length > 0) {
+          pcTokens.forEach(token => {
+              const tokenSize = gridSize * token.scale;
+              bounds.minX = Math.min(bounds.minX, token.x);
+              bounds.minY = Math.min(bounds.minY, token.y);
+              bounds.maxX = Math.max(bounds.maxX, token.x + tokenSize);
+              bounds.maxY = Math.max(bounds.maxY, token.y + tokenSize);
+          });
+      }
 
       const viewportCenterX = (-newPos.x + size.width/2) / newScale;
       const viewportCenterY = (-newPos.y + size.height/2) / newScale;
@@ -217,7 +233,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
           x: -(clampedCenterX * newScale - size.width/2),
           y: -(clampedCenterY * newScale - size.height/2)
       };
-  }, [map, size.width, size.height]);
+  }, [map, tokens, gridSize, size.width, size.height]);
 
   // Reusable zoom function
   const performZoom = useCallback((newScale: number, centerX: number, centerY: number, currentScale: number, currentPos: { x: number, y: number }) => {
@@ -466,6 +482,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const handleCropConfirm = async (blob: Blob) => {
     if (!pendingCrop) return;
 
+    // Cancel any previous processing
+    if (processingHandleRef.current) {
+      processingHandleRef.current.cancel();
+      processingHandleRef.current = null;
+    }
+
     try {
         const file = new File([blob], "token.webp", { type: 'image/webp' });
 
@@ -473,7 +495,14 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         // we could process as MAP. But determining "Shift was held" during async drop/crop is hard.
         // For now, we assume TOKEN from crop.
 
-        const src = await processImage(file, 'TOKEN'); // Default to Token for now
+        // Start processing and store handle for cleanup
+        const handle = processImage(file, 'TOKEN'); // Default to Token for now
+        processingHandleRef.current = handle;
+
+        const src = await handle.promise;
+
+        // Clear handle after successful completion
+        processingHandleRef.current = null;
 
         addToken({
           id: crypto.randomUUID(),
@@ -486,6 +515,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         // TODO: In future, add UI to swap to Map or set 'processImage' type based on user choice
     } catch (err) {
         console.error("Crop save failed", err);
+        // Clear handle on error
+        processingHandleRef.current = null;
     } finally {
         setPendingCrop(null);
     }
@@ -708,15 +739,16 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   };
 
   // Calculate visible bounds in CANVAS coordinates (unscaled)
+  // Memoized to prevent recalculation on every render
   // The Stage is transformed by scale and position (-x, -y).
   // Visible region top-left: -position.x / scale, -position.y / scale
   // Visible region dimensions: size.width / scale, size.height / scale
-  const visibleBounds = {
+  const visibleBounds = useMemo(() => ({
       x: -position.x / scale,
       y: -position.y / scale,
       width: size.width / scale,
       height: size.height / scale
-  };
+  }), [position.x, position.y, scale, size.width, size.height]);
 
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
@@ -754,6 +786,17 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     }
   }, [selectedIds]); // Only update when selection changes; nodes are automatically updated by React Konva
 
+  // Cleanup: Cancel any active image processing on unmount
+  // CRITICAL: Prevents worker leak if component unmounts during processing
+  useEffect(() => {
+    return () => {
+      if (processingHandleRef.current) {
+        console.log('[CanvasManager] Cancelling in-flight image processing on unmount');
+        processingHandleRef.current.cancel();
+        processingHandleRef.current = null;
+      }
+    };
+  }, []); // Run only on mount/unmount
 
   const centerOnPCTokens = useCallback(() => {
     const pcTokens = tokens.filter(t => t.type === 'PC');
@@ -786,7 +829,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     // Calculate scale to fit
     const scaleX = size.width / boundsWidth;
     const scaleY = size.height / boundsHeight;
-    const newScale = Math.min(scaleX, scaleY, MAX_SCALE); // Don't zoom in too much
+    let newScale = Math.min(scaleX, scaleY, MAX_SCALE); // Don't zoom in too much
+
+    // Also ensure we don't zoom out too much
+    newScale = Math.max(newScale, MIN_SCALE);
 
     // Calculate center of the bounds
     const centerX = minX + boundsWidth / 2;
@@ -797,16 +843,25 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     const newX = - (centerX * newScale - size.width / 2);
     const newY = - (centerY * newScale - size.height / 2);
 
-    // We should clamp this new position to ensure we don't go out of "world" bounds excessively?
-    // Actually, if we are focusing on tokens, they are by definition "interesting", so we should allowed to go there.
-    // But we can pass it through clampPosition just to be safe if it respects the bounds logic.
-    // However, clampPosition relies on map bounds. If tokens are outside map, we might have issues?
-    // Let's trust the calculated position for now, or just clamp scale.
+    // For "Center on Party", we want to allow navigation to tokens even if they're
+    // outside the map bounds. The viewport constraints will still prevent going too far.
+    // We'll apply a modified clamp that considers both map and token positions.
+    const clampedPos = clampPosition({ x: newX, y: newY }, newScale);
 
-    // Animate or Instant? Instant for now.
     setScale(newScale);
-    setPosition({ x: newX, y: newY });
-  }, [tokens, gridSize, size]);
+    setPosition(clampedPos);
+  }, [tokens, gridSize, size, clampPosition]);
+
+  // Navigate to a specific world coordinate (used by minimap)
+  const navigateToWorldPosition = useCallback((worldX: number, worldY: number) => {
+    // Calculate the stage position needed to center this world coordinate
+    const newX = -(worldX * scale - size.width / 2);
+    const newY = -(worldY * scale - size.height / 2);
+
+    // Clamp to valid bounds
+    const clampedPos = clampPosition({ x: newX, y: newY }, scale);
+    setPosition(clampedPos);
+  }, [scale, size, clampPosition]);
 
   return (
     <div
@@ -816,11 +871,13 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         onDrop={handleDrop}
     >
       {pendingCrop && (
-        <ImageCropper
-            imageSrc={pendingCrop.src}
-            onConfirm={handleCropConfirm}
-            onCancel={() => setPendingCrop(null)}
-        />
+        <AssetProcessingErrorBoundary>
+          <ImageCropper
+              imageSrc={pendingCrop.src}
+              onConfirm={handleCropConfirm}
+              onCancel={() => setPendingCrop(null)}
+          />
+        </AssetProcessingErrorBoundary>
       )}
 
       <Stage
@@ -1187,17 +1244,32 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
       {/* World View Controls */}
       {isWorldView && (
-        <div className="absolute bottom-4 right-4 z-50">
-            <button
-                className="bg-neutral-800 text-white border border-neutral-600 hover:bg-neutral-700 px-4 py-2 rounded shadow flex items-center gap-2"
-                onClick={centerOnPCTokens}
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                </svg>
-                Center on Party
-            </button>
-        </div>
+        <>
+          {/* Center on Party Button */}
+          <div className="absolute bottom-4 right-4 z-50">
+              <button
+                  className="bg-neutral-800 text-white border border-neutral-600 hover:bg-neutral-700 px-4 py-2 rounded shadow flex items-center gap-2"
+                  onClick={centerOnPCTokens}
+              >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                  </svg>
+                  Center on Party
+              </button>
+          </div>
+
+          {/* Minimap for Navigation */}
+          <MinimapErrorBoundary>
+            <Minimap
+              position={position}
+              scale={scale}
+              viewportSize={size}
+              map={map}
+              tokens={tokens}
+              onNavigate={navigateToWorldPosition}
+            />
+          </MinimapErrorBoundary>
+        </>
       )}
     </div>
   );
