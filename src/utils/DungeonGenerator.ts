@@ -492,7 +492,8 @@ export class DungeonGenerator {
     const start = segment[0];
     const end = segment[1];
 
-    // Split the wall around the doorway - keep ALL segments except the exact doorway opening
+    // Split the wall around the doorway - only remove the 1-grid-cell doorway
+    // Keep wall segments that are at least 1 grid cell long
     if (direction === 'north' || direction === 'south') {
       // Horizontal wall - split left and right of doorway
       const doorwayLeft = centerX - doorwaySize / 2;
@@ -501,13 +502,15 @@ export class DungeonGenerator {
       const leftSegment: Point[] = [];
       const rightSegment: Point[] = [];
 
-      // Keep left segment if it exists (even if small)
-      if (doorwayLeft > start.x + 1) {
+      // Keep left segment only if it's at least 1 grid cell long
+      const leftLength = doorwayLeft - start.x;
+      if (leftLength >= gridSize) {
         leftSegment.push(start, { x: doorwayLeft, y: start.y });
       }
 
-      // Keep right segment if it exists (even if small)
-      if (doorwayRight < end.x - 1) {
+      // Keep right segment only if it's at least 1 grid cell long
+      const rightLength = end.x - doorwayRight;
+      if (rightLength >= gridSize) {
         rightSegment.push({ x: doorwayRight, y: end.y }, end);
       }
 
@@ -531,13 +534,15 @@ export class DungeonGenerator {
       const topSegment: Point[] = [];
       const bottomSegment: Point[] = [];
 
-      // Keep top segment if it exists (even if small)
-      if (doorwayTop > start.y + 1) {
+      // Keep top segment only if it's at least 1 grid cell long
+      const topLength = doorwayTop - start.y;
+      if (topLength >= gridSize) {
         topSegment.push(start, { x: start.x, y: doorwayTop });
       }
 
-      // Keep bottom segment if it exists (even if small)
-      if (doorwayBottom < end.y - 1) {
+      // Keep bottom segment only if it's at least 1 grid cell long
+      const bottomLength = end.y - doorwayBottom;
+      if (bottomLength >= gridSize) {
         bottomSegment.push({ x: end.x, y: doorwayBottom }, end);
       }
 
