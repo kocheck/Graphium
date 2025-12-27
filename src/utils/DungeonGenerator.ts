@@ -492,37 +492,35 @@ export class DungeonGenerator {
     const start = segment[0];
     const end = segment[1];
 
-    // Split the wall around the doorway
-    const minSegmentLength = gridSize / 4; // Minimum wall segment length to keep (more permissive)
-
+    // Split the wall around the doorway - keep ALL segments except the exact doorway opening
     if (direction === 'north' || direction === 'south') {
       // Horizontal wall - split left and right of doorway
       const doorwayLeft = centerX - doorwaySize / 2;
       const doorwayRight = centerX + doorwaySize / 2;
 
-      // Keep left segment if it's long enough
       const leftSegment: Point[] = [];
-      const leftLength = doorwayLeft - start.x;
-      if (leftLength >= minSegmentLength) {
+      const rightSegment: Point[] = [];
+
+      // Keep left segment if it exists (even if small)
+      if (doorwayLeft > start.x + 1) {
         leftSegment.push(start, { x: doorwayLeft, y: start.y });
       }
 
-      // Keep right segment if it's long enough
-      const rightSegment: Point[] = [];
-      const rightLength = end.x - doorwayRight;
-      if (rightLength >= minSegmentLength) {
+      // Keep right segment if it exists (even if small)
+      if (doorwayRight < end.x - 1) {
         rightSegment.push({ x: doorwayRight, y: end.y }, end);
       }
 
-      // Combine segments (or set to undefined if nothing left)
+      // Combine segments
       if (leftSegment.length > 0 && rightSegment.length > 0) {
-        // Store both segments by extending the points array
+        // Both segments exist - store as 4-point array
         wallSegments[direction] = [...leftSegment, ...rightSegment];
       } else if (leftSegment.length > 0) {
         wallSegments[direction] = leftSegment;
       } else if (rightSegment.length > 0) {
         wallSegments[direction] = rightSegment;
       } else {
+        // Entire wall is doorway
         wallSegments[direction] = undefined;
       }
     } else {
@@ -530,28 +528,29 @@ export class DungeonGenerator {
       const doorwayTop = centerY - doorwaySize / 2;
       const doorwayBottom = centerY + doorwaySize / 2;
 
-      // Keep top segment if it's long enough
       const topSegment: Point[] = [];
-      const topLength = doorwayTop - start.y;
-      if (topLength >= minSegmentLength) {
+      const bottomSegment: Point[] = [];
+
+      // Keep top segment if it exists (even if small)
+      if (doorwayTop > start.y + 1) {
         topSegment.push(start, { x: start.x, y: doorwayTop });
       }
 
-      // Keep bottom segment if it's long enough
-      const bottomSegment: Point[] = [];
-      const bottomLength = end.y - doorwayBottom;
-      if (bottomLength >= minSegmentLength) {
+      // Keep bottom segment if it exists (even if small)
+      if (doorwayBottom < end.y - 1) {
         bottomSegment.push({ x: end.x, y: doorwayBottom }, end);
       }
 
-      // Combine segments (or set to undefined if nothing left)
+      // Combine segments
       if (topSegment.length > 0 && bottomSegment.length > 0) {
+        // Both segments exist - store as 4-point array
         wallSegments[direction] = [...topSegment, ...bottomSegment];
       } else if (topSegment.length > 0) {
         wallSegments[direction] = topSegment;
       } else if (bottomSegment.length > 0) {
         wallSegments[direction] = bottomSegment;
       } else {
+        // Entire wall is doorway
         wallSegments[direction] = undefined;
       }
     }
