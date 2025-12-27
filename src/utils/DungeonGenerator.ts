@@ -431,7 +431,75 @@ export class DungeonGenerator {
     this.removeConnectingWalls(sourcePiece, direction, sourceRoomDoorway);
     this.removeConnectingWalls(newRoom, this.getOppositeDirection(direction), newRoomDoorway);
 
+    // Trim corridor walls where they meet the rooms
+    this.trimCorridorWalls(corridor, direction, gridSize);
+
     return { corridor, newRoom };
+  }
+
+  /**
+   * Trims corridor side walls so they don't extend into connecting room walls
+   */
+  private trimCorridorWalls(corridor: DungeonPiece, direction: Direction, gridSize: number): void {
+    // For north-south corridors, trim the east and west walls
+    // For east-west corridors, trim the north and south walls
+    if (direction === 'north' || direction === 'south') {
+      // Trim east wall (shorten by gridSize at each end)
+      if (corridor.wallSegments.east && corridor.wallSegments.east.length === 2) {
+        const [start, end] = corridor.wallSegments.east;
+        const trimmedStart = { x: start.x, y: start.y + gridSize };
+        const trimmedEnd = { x: end.x, y: end.y - gridSize };
+
+        // Only keep wall if there's still length after trimming
+        if (trimmedEnd.y - trimmedStart.y >= gridSize) {
+          corridor.wallSegments.east = [trimmedStart, trimmedEnd];
+        } else {
+          corridor.wallSegments.east = undefined;
+        }
+      }
+
+      // Trim west wall (shorten by gridSize at each end)
+      if (corridor.wallSegments.west && corridor.wallSegments.west.length === 2) {
+        const [start, end] = corridor.wallSegments.west;
+        const trimmedStart = { x: start.x, y: start.y - gridSize };
+        const trimmedEnd = { x: end.x, y: end.y + gridSize };
+
+        // Only keep wall if there's still length after trimming
+        if (trimmedStart.y - trimmedEnd.y >= gridSize) {
+          corridor.wallSegments.west = [trimmedStart, trimmedEnd];
+        } else {
+          corridor.wallSegments.west = undefined;
+        }
+      }
+    } else {
+      // Trim north wall (shorten by gridSize at each end)
+      if (corridor.wallSegments.north && corridor.wallSegments.north.length === 2) {
+        const [start, end] = corridor.wallSegments.north;
+        const trimmedStart = { x: start.x + gridSize, y: start.y };
+        const trimmedEnd = { x: end.x - gridSize, y: end.y };
+
+        // Only keep wall if there's still length after trimming
+        if (trimmedEnd.x - trimmedStart.x >= gridSize) {
+          corridor.wallSegments.north = [trimmedStart, trimmedEnd];
+        } else {
+          corridor.wallSegments.north = undefined;
+        }
+      }
+
+      // Trim south wall (shorten by gridSize at each end)
+      if (corridor.wallSegments.south && corridor.wallSegments.south.length === 2) {
+        const [start, end] = corridor.wallSegments.south;
+        const trimmedStart = { x: start.x - gridSize, y: start.y };
+        const trimmedEnd = { x: end.x + gridSize, y: end.y };
+
+        // Only keep wall if there's still length after trimming
+        if (trimmedStart.x - trimmedEnd.x >= gridSize) {
+          corridor.wallSegments.south = [trimmedStart, trimmedEnd];
+        } else {
+          corridor.wallSegments.south = undefined;
+        }
+      }
+    }
   }
 
   /**
