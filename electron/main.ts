@@ -68,6 +68,9 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 let mainWindow: BrowserWindow | null
 let worldWindow: BrowserWindow | null
 
+// Global pause state - persists across map changes
+let isGamePaused = false
+
 /**
  * Build application menu with theme options
  *
@@ -767,5 +770,38 @@ let currentCampaignPath: string | null = null;
   */
  ipcMain.handle('set-theme-mode', (_event: IpcMainInvokeEvent, mode: ThemeMode) => {
    setThemeMode(mode)
+ })
+
+ /**
+  * IPC handler: TOGGLE_PAUSE
+  *
+  * Toggles the game pause state and broadcasts the new state to both windows.
+  * When paused, the World View displays a loading overlay to hide DM actions.
+  *
+  * @returns New pause state
+  */
+ ipcMain.handle('TOGGLE_PAUSE', () => {
+   isGamePaused = !isGamePaused
+
+   // Broadcast new pause state to all windows
+   if (mainWindow && !mainWindow.isDestroyed()) {
+     mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+   }
+   if (worldWindow && !worldWindow.isDestroyed()) {
+     worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+   }
+
+   return isGamePaused
+ })
+
+ /**
+  * IPC handler: GET_PAUSE_STATE
+  *
+  * Returns the current pause state. Used when windows first load to sync state.
+  *
+  * @returns Current pause state
+  */
+ ipcMain.handle('GET_PAUSE_STATE', () => {
+   return isGamePaused
  })
 })
