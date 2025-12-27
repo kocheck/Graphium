@@ -10,6 +10,7 @@ import ConfirmDialog from './components/ConfirmDialog'
 import TokenInspector from './components/TokenInspector'
 import ResourceMonitor from './components/ResourceMonitor'
 import { useGameStore } from './store/gameStore'
+import type { TokenLibraryItem } from './store/gameStore'
 import { useWindowType } from './utils/useWindowType'
 import AutoSaveManager from './components/AutoSaveManager'
 import CommandPalette from './components/AssetLibrary/CommandPalette'
@@ -141,7 +142,7 @@ function App() {
 
             // Merge with existing library (avoid duplicates by ID)
             const existingIds = new Set(currentLibrary.map((item) => item.id));
-            const newItems = libraryItems.filter((item: any) => !existingIds.has(item.id));
+            const newItems = (libraryItems as TokenLibraryItem[]).filter((item) => !existingIds.has(item.id));
 
             if (newItems.length === 0) {
               return state;

@@ -157,7 +157,6 @@ const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
                   key={item.id}
                   role="option"
                   aria-selected={index === selectedIndex}
-                  tabIndex={0}
                   onClick={() => handleSelectItem(item.id)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {

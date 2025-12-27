@@ -52,6 +52,8 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   const removeTokenFromLibrary = useGameStore(state => state.removeTokenFromLibrary);
   const showConfirmDialog = useGameStore(state => state.showConfirmDialog);
   const showToast = useGameStore(state => state.showToast);
+  const addToken = useGameStore(state => state.addToken);
+  const map = useGameStore(state => state.map);
 
   // Get categories from library
   const categories = ['All', ...getCategories(tokenLibrary)];
@@ -294,7 +296,6 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
                     {/* Keyboard-accessible add button */}
                     <button
                       onClick={() => {
-                        const { addToken, map } = useGameStore.getState();
                         addLibraryTokenToMap(item, addToken, map);
                         showToast(`Added ${item.name} to map`, 'success');
                       }}
