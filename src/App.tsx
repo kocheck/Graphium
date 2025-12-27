@@ -2,14 +2,19 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import CanvasManager from './components/Canvas/CanvasManager'
 import SyncManager from './components/SyncManager'
 import { ThemeManager } from './components/ThemeManager'
+import { PauseManager } from './components/PauseManager'
+import { LoadingOverlay } from './components/LoadingOverlay'
 import Sidebar from './components/Sidebar'
 import Toast from './components/Toast'
 import ConfirmDialog from './components/ConfirmDialog'
 import TokenInspector from './components/TokenInspector'
 import ResourceMonitor from './components/ResourceMonitor'
 import { useGameStore } from './store/gameStore'
+import type { TokenLibraryItem } from './store/gameStore'
 import { useWindowType } from './utils/useWindowType'
-import AutoSaveManager from './components/AutoSaveManager';
+import AutoSaveManager from './components/AutoSaveManager'
+import CommandPalette from './components/AssetLibrary/CommandPalette'
+import { useCommandPalette } from './hooks/useCommandPalette';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -90,8 +95,28 @@ function App() {
   // Selected tokens state (for TokenInspector)
   const [selectedTokenIds, setSelectedTokenIds] = useState<string[]>([]);
 
+  // Command Palette state (Cmd+P)
+  const [isPaletteOpen, setPaletteOpen] = useCommandPalette();
+
   // Resource Monitor state (from store)
   const showResourceMonitor = useGameStore((state) => state.showResourceMonitor);
+
+  // Pause state (from store)
+  const isGamePaused = useGameStore((state) => state.isGamePaused);
+  const showToast = useGameStore((state) => state.showToast);
+
+  // Handle pause toggle
+  const handlePauseToggle = async () => {
+    if (!window.ipcRenderer) return;
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('TOGGLE_PAUSE');
+    } catch (e) {
+      console.error('[App] Failed to toggle pause:', e);
+      showToast('Failed to toggle pause state', 'error');
+    }
+  };
+
 
   // Filter selected IDs to only include tokens (not drawings)
   const tokens = useGameStore((s) => s.tokens);
@@ -101,6 +126,46 @@ function App() {
     ),
     [selectedTokenIds, tokens]
   );
+
+  // Load library index on startup (Architect View only)
+  useEffect(() => {
+    if (!isArchitectView || !window.ipcRenderer) return;
+
+    const loadLibrary = async () => {
+      try {
+        // @ts-ignore
+        const libraryItems = await window.ipcRenderer.invoke('LOAD_LIBRARY_INDEX');
+
+        // Update store with loaded library items
+        if (libraryItems && Array.isArray(libraryItems)) {
+          useGameStore.setState((state) => {
+            const currentLibrary = state.campaign.tokenLibrary;
+
+            // Merge with existing library (avoid duplicates by ID)
+            const existingIds = new Set(currentLibrary.map((item) => item.id));
+            const newItems = (libraryItems as TokenLibraryItem[]).filter((item) => !existingIds.has(item.id));
+
+            if (newItems.length === 0) {
+              return state;
+            }
+
+            return {
+              campaign: {
+                ...state.campaign,
+                tokenLibrary: [...currentLibrary, ...newItems],
+              },
+            };
+          });
+        }
+      } catch (error) {
+        console.error('[App] Failed to load library index:', error);
+        // Don't show toast - this is a non-critical error on startup
+      }
+    };
+
+    loadLibrary();
+  }, [isArchitectView]);
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -187,8 +252,12 @@ function App() {
       {/* Global components (rendered in both Architect and World View) */}
       <ThemeManager />
       <SyncManager />
+      <PauseManager />
       <Toast />
       <ConfirmDialog />
+
+      {/* Loading Overlay: Only render in World View to block players' view */}
+      {isWorldView && <LoadingOverlay />}
 
       {/* Auto-save (Architect View only) */}
       {isArchitectView && <AutoSaveManager />}
@@ -209,6 +278,33 @@ function App() {
         {/* Toolbar: Only render in Architect View (DM controls) */}
         {isArchitectView && (
         <div className="toolbar fixed top-4 right-4 p-2 rounded shadow flex gap-2 z-50">
+           {/* Play/Pause Button */}
+           <button
+             className={`btn btn-tool flex items-center gap-2 font-semibold ${
+               isGamePaused
+                 ? 'bg-red-500 hover:bg-red-600 text-white'
+                 : 'bg-green-500 hover:bg-green-600 text-white'
+             }`}
+             onClick={handlePauseToggle}
+             title={isGamePaused ? 'Click to resume - Players will see the updated map' : 'Click to pause - Players will see a loading screen'}
+           >
+             {isGamePaused ? (
+               <>
+                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                   <path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5z" />
+                 </svg>
+                 <span>PAUSED</span>
+               </>
+             ) : (
+               <>
+                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                 </svg>
+                 <span>PLAYING</span>
+               </>
+             )}
+           </button>
+           <div className="toolbar-divider w-px mx-1"></div>
            <button
              className={`btn btn-tool ${tool === 'select' ? 'active' : ''}`}
              onClick={() => setTool('select')}>Select (V)</button>
@@ -241,6 +337,14 @@ function App() {
         {/* Token Inspector (only show in Architect View when tokens selected) */}
         {isArchitectView && selectedTokensOnly.length > 0 && (
           <TokenInspector selectedTokenIds={selectedTokensOnly} />
+        )}
+
+        {/* Command Palette: Quick asset search (Cmd+P, Architect View only) */}
+        {isArchitectView && (
+          <CommandPalette
+            isOpen={isPaletteOpen}
+            onClose={() => setPaletteOpen(false)}
+          />
         )}
       </div>
     </div>

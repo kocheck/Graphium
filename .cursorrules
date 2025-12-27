@@ -33,10 +33,13 @@ hyle/
 │   │   ├── Canvas/    # Konva canvas components
 │   │   │   ├── CanvasManager.tsx      # Main canvas (viewport, camera, tools)
 │   │   │   ├── GridOverlay.tsx        # Tactical grid (LINES/DOTS/HIDDEN)
+│   │   │   ├── FogOfWarLayer.tsx      # Fog of war overlay (World View only)
 │   │   │   └── TokenErrorBoundary.tsx # Per-token error isolation
 │   │   ├── ImageCropper.tsx           # Token cropping UI
 │   │   ├── Sidebar.tsx                # Map/grid controls + token library
 │   │   ├── SyncManager.tsx            # IPC state sync manager
+│   │   ├── PauseManager.tsx           # Game pause state sync manager
+│   │   ├── LoadingOverlay.tsx         # World View pause screen
 │   │   ├── Toast.tsx                  # Notification system
 │   │   ├── PendingErrorsIndicator.tsx # Error reporting UI
 │   │   └── PrivacyErrorBoundary.tsx   # App-wide error boundary
@@ -63,6 +66,8 @@ hyle/
 - **Map**: Background image for the battlemap (with calibration system)
 - **Grid**: Tactical positioning overlay (LINES mode, DOTS mode, or HIDDEN)
 - **Grid Snapping**: Automatic alignment of tokens to grid (smart: cell centers for 1x1, intersections for 2x2)
+- **Fog of War**: Vision-based fog overlay (World View only) with three states: Unexplored (dark), Explored (dimmed), Current Vision (clear)
+- **Daylight Mode**: Toggle to enable/disable fog of war (when enabled, fog is hidden)
 - **Campaign File**: `.hyle` ZIP archive containing manifest.json + assets/ directory
 - **Temp Assets**: Processed images stored in userData/temp_assets/ until campaign save
 - **IPC (Inter-Process Communication)**: Electron's system for main ↔ renderer communication
@@ -74,6 +79,9 @@ hyle/
 - **Toast**: Temporary notification message (success/error/info)
 - **Error Boundary**: React component that catches errors and shows fallback UI
 - **PII Sanitization**: Removal of usernames, emails, IPs from error reports
+- **Game Pause**: DM feature to freeze World View with loading overlay while preparing scenes
+- **Loading Overlay**: Full-screen World View blocker shown when game is paused
+- **Pause Manager**: System component that synchronizes pause state via IPC
 
 **Grid Terms:**
 - **Grid Size**: Pixel size of one grid cell (default: 50px = 5ft in D&D)
@@ -360,6 +368,8 @@ const handleMouseDown = (e) => {
 - **Viewport Clamping**: Prevents camera from drifting too far from content
 - **Batch Operations**: removeTokens(), removeDrawings() for efficient bulk deletes
 - **Transform Operations**: updateTokenTransform(), updateDrawingTransform()
+- **Fog of War**: Vision-based fog overlay with explored regions (works with or without map)
+- **Daylight Mode Toggle**: Modern toggle switch component for enabling/disabling fog
 - **Test Coverage**: Vitest setup with tests for key components/utilities
 
 **Files to review for examples:**
@@ -367,4 +377,5 @@ const handleMouseDown = (e) => {
 - Toast: `src/components/Toast.tsx`
 - Grid: `src/utils/grid.ts`, `src/components/Canvas/GridOverlay.tsx`
 - Map: `src/components/Sidebar.tsx` (upload/calibration UI)
+- Fog of War: `src/components/Canvas/FogOfWarLayer.tsx`, `src/components/ToggleSwitch.tsx`
 - Tests: `src/**/*.test.tsx`

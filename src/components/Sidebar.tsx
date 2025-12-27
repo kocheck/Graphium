@@ -49,10 +49,13 @@
  * @component
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useGameStore, GridType } from '../store/gameStore';
 import { processImage, ProcessingHandle } from '../utils/AssetProcessor';
 import MapNavigator from './MapNavigator';
+import AddToLibraryDialog from './AssetLibrary/AddToLibraryDialog';
+import LibraryManager from './AssetLibrary/LibraryManager';
+import ToggleSwitch from './ToggleSwitch';
 
 /**
  * Sidebar component provides map upload, grid settings, and token library
@@ -73,12 +76,20 @@ const Sidebar = () => {
 
     // Campaign Token Library
     const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
-    const addTokenToLibrary = useGameStore(state => state.addTokenToLibrary);
     const removeTokenFromLibrary = useGameStore(state => state.removeTokenFromLibrary);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const tokenInputRef = useRef<HTMLInputElement>(null);
     const processingHandleRef = useRef<ProcessingHandle | null>(null);
+
+    // Library dialog state
+    const [isAddToLibraryOpen, setIsAddToLibraryOpen] = useState(false);
+    const [pendingLibraryImage, setPendingLibraryImage] = useState<{
+        src: string;
+        blob: Blob;
+        name: string;
+    } | null>(null);
+    const [isLibraryManagerOpen, setIsLibraryManagerOpen] = useState(false);
 
     // Cleanup: Cancel any active processing on unmount
     useEffect(() => {
@@ -187,12 +198,17 @@ const Sidebar = () => {
             const src = await handle.promise;
             processingHandleRef.current = null;
 
-            addTokenToLibrary({
-                id: crypto.randomUUID(),
-                name: file.name.split('.')[0] || 'New Token',
+            // Convert file:// URL to blob for AddToLibraryDialog
+            const response = await fetch(src);
+            const blob = await response.blob();
+
+            // Open AddToLibraryDialog to collect metadata
+            setPendingLibraryImage({
                 src,
-                defaultScale: 1,
+                blob,
+                name: file.name.split('.')[0] || 'New Token'
             });
+            setIsAddToLibraryOpen(true);
         } catch (err) {
             console.error("Failed to upload token", err);
             showToast('Failed to upload token.', 'error');
@@ -247,18 +263,12 @@ const Sidebar = () => {
 
                     {/* Daylight Mode Toggle */}
                     <div>
-                        <label className="flex items-center justify-between cursor-pointer">
-                            <span className="text-xs uppercase font-semibold" style={{ color: 'var(--app-text-secondary)' }}>Daylight Mode</span>
-                            <input
-                                type="checkbox"
-                                checked={isDaylightMode}
-                                onChange={(e) => setDaylightMode(e.target.checked)}
-                                className="w-4 h-4 rounded cursor-pointer"
-                            />
-                        </label>
-                        <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
-                            {isDaylightMode ? '☀️ Fog of War disabled' : '🌙 Fog of War enabled'}
-                        </p>
+                        <ToggleSwitch
+                            checked={isDaylightMode}
+                            onChange={(checked) => setDaylightMode(checked)}
+                            label="Daylight Mode"
+                            description={isDaylightMode ? '☀️ Fog of War disabled' : '🌙 Fog of War enabled'}
+                        />
                     </div>
 
                     {/* Map Calibration */}
@@ -308,20 +318,29 @@ const Sidebar = () => {
             <div className="mb-4">
                 <div className="flex justify-between items-center mb-3">
                     <h3 className="text-sm uppercase font-bold tracking-wider" style={{ color: 'var(--app-text-secondary)' }}>Token Library</h3>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        ref={tokenInputRef}
-                        className="hidden"
-                        onChange={handleTokenUpload}
-                    />
-                    <button
-                        onClick={() => tokenInputRef.current?.click()}
-                        className="text-xs btn btn-sm btn-ghost px-2 py-1 rounded"
-                        title="Add Token to Library"
-                    >
-                        ➕ Add
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setIsLibraryManagerOpen(true)}
+                            className="text-xs btn btn-sm btn-ghost px-2 py-1 rounded"
+                            title="Manage Persistent Library"
+                        >
+                            📚 Library
+                        </button>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={tokenInputRef}
+                            className="hidden"
+                            onChange={handleTokenUpload}
+                        />
+                        <button
+                            onClick={() => tokenInputRef.current?.click()}
+                            className="text-xs btn btn-sm btn-ghost px-2 py-1 rounded"
+                            title="Add Token to Library"
+                        >
+                            ➕ Add
+                        </button>
+                    </div>
                 </div>
 
                 {(!tokenLibrary || tokenLibrary.length === 0) ? (
@@ -363,6 +382,28 @@ const Sidebar = () => {
                     </div>
                 )}
             </div>
+
+            {/* Library Manager Modal */}
+            <LibraryManager
+                isOpen={isLibraryManagerOpen}
+                onClose={() => setIsLibraryManagerOpen(false)}
+            />
+
+            {/* Add to Library Dialog */}
+            <AddToLibraryDialog
+                isOpen={isAddToLibraryOpen}
+                imageSrc={pendingLibraryImage?.src || null}
+                imageBlob={pendingLibraryImage?.blob || null}
+                suggestedName={pendingLibraryImage?.name}
+                onClose={() => {
+                    setIsAddToLibraryOpen(false);
+                    setPendingLibraryImage(null);
+                }}
+                onConfirm={() => {
+                    setIsAddToLibraryOpen(false);
+                    setPendingLibraryImage(null);
+                }}
+            />
         </div>
     );
 };

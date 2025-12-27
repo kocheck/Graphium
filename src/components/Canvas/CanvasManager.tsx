@@ -4,7 +4,9 @@ import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
-import { useGameStore } from '../../store/gameStore';
+import { useGameStore, Drawing } from '../../store/gameStore';
+import { usePreferencesStore } from '../../store/preferencesStore';
+import { simplifyPath, snapPointToPaths } from '../../utils/pathOptimization';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
 import TokenErrorBoundary from './TokenErrorBoundary';
@@ -129,6 +131,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const gridSize = useGameStore(s => s.gridSize);
   const gridType = useGameStore(s => s.gridType);
   const isCalibrating = useGameStore(s => s.isCalibrating);
+  const isDaylightMode = useGameStore(s => s.isDaylightMode);
+
+  // Preferences
+  const wallToolPrefs = usePreferencesStore(s => s.wallTool);
 
   // Actions - these are stable
   const addToken = useGameStore(s => s.addToken);
@@ -144,8 +150,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const showConfirmDialog = useGameStore(s => s.showConfirmDialog);
 
   const isDrawing = useRef(false);
-  const currentLine = useRef<any>(null); // Temp line points
-  const [tempLine, setTempLine] = useState<any>(null);
+  const currentLine = useRef<Drawing | null>(null); // Temp line points
+  const [tempLine, setTempLine] = useState<Drawing | null>(null);
 
   // Calibration State
   const calibrationStart = useRef<{x: number, y: number} | null>(null);
@@ -514,20 +520,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
           scale: 1,
         });
 
-        // Ask the user whether they want to save this cropped token to the Campaign Token Library
-        showConfirmDialog(
-            'Save this cropped token to your campaign library for future use?',
-            () => {
-                addTokenToLibrary({
-                    id: crypto.randomUUID(),
-                    name: file.name.split('.')[0] || 'New Token',
-                    src,
-                    defaultScale: 1,
-                });
-            },
-            'Save to Library'
-        );
-
+        // Note: Users can add tokens to library via Sidebar or Library Manager
         // TODO: In future, add UI to swap to Map or set 'processImage' type based on user choice
     } catch (err) {
         console.error("Crop save failed", err);
@@ -618,6 +611,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         const stage = e.target.getStage();
         let point = stage.getRelativePointerPosition();
         const cur = currentLine.current;
+
+        // Guard against null currentLine
+        if (!cur) return;
 
         // Shift-key axis locking: Lock to horizontal or vertical
         if (e.evt.shiftKey && cur.points.length >= 2) {
@@ -712,7 +708,52 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
          if (!isDrawing.current) return;
          isDrawing.current = false;
          if (tempLine) {
-             addDrawing(tempLine);
+             let processedLine: Drawing = { ...tempLine };
+
+             // Apply path smoothing for wall tool (if enabled)
+             if (processedLine.tool === 'wall' && wallToolPrefs.enableSmoothing) {
+                 const originalPoints = processedLine.points;
+                 const smoothedPoints = simplifyPath(originalPoints, wallToolPrefs.smoothingEpsilon);
+
+                 // Only use smoothed version if it has enough points
+                 if (smoothedPoints.length >= wallToolPrefs.minPoints * 2) {
+                     processedLine = { ...processedLine, points: smoothedPoints };
+                 }
+             }
+
+             // Apply geometry snapping for wall tool (if enabled)
+             if (processedLine.tool === 'wall' && wallToolPrefs.enableSnapping) {
+                 const existingWallPaths = drawings
+                     .filter(d => d.tool === 'wall')
+                     .map(w => w.points);
+
+                 if (existingWallPaths.length > 0 && processedLine.points.length >= 4) {
+                     const points = [...processedLine.points];
+
+                     // Snap start point
+                     const startPoint = { x: points[0], y: points[1] };
+                     const startSnap = snapPointToPaths(startPoint, existingWallPaths, wallToolPrefs.snapThreshold);
+
+                     if (startSnap.snapped) {
+                         points[0] = startSnap.point.x;
+                         points[1] = startSnap.point.y;
+                     }
+
+                     // Snap end point
+                     const endIdx = points.length - 2;
+                     const endPoint = { x: points[endIdx], y: points[endIdx + 1] };
+                     const endSnap = snapPointToPaths(endPoint, existingWallPaths, wallToolPrefs.snapThreshold);
+
+                     if (endSnap.snapped) {
+                         points[endIdx] = endSnap.point.x;
+                         points[endIdx + 1] = endSnap.point.y;
+                     }
+
+                     processedLine = { ...processedLine, points };
+                 }
+             }
+
+             addDrawing(processedLine);
              setTempLine(null);
          }
          return;
@@ -965,7 +1006,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         </Layer>
 
         {/* Fog of War Layer (World View only) - Renders Overlay */}
-        {isWorldView && (
+        {isWorldView && !isDaylightMode && (
              <Layer listening={false}>
               <FogOfWarLayer
                 tokens={tokens}
@@ -1014,9 +1055,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                     globalCompositeOperation={
                         line.tool === 'eraser' ? 'destination-out' : 'source-over'
                     }
-                    draggable={tool === 'select'}
+                    draggable={tool === 'select' && line.tool !== 'wall'}
                     onClick={(e) => {
-                        if (tool === 'select') {
+                        if (tool === 'select' && line.tool !== 'wall') {
                             e.evt.stopPropagation();
                             if (e.evt.shiftKey) {
                                 if (selectedIds.includes(line.id)) {

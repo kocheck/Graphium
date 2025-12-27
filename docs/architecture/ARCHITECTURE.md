@@ -1156,18 +1156,28 @@ function isValidGameState(data: unknown): data is GameState {
 
 ## Future Architecture Considerations
 
-### Planned: Fog of War System
-**Approach:**
-1. Add `fogShapes: FogShape[]` to gameStore
-2. Render fog as top layer (above tokens, below UI)
-3. Use `globalCompositeOperation: 'destination-out'` for reveals
-4. Add "Reveal Fog" tool (draws transparent areas in fog)
-5. World View always shows fog, Architect View has toggle
+### Implemented: Fog of War System
+**Status:** ✅ Implemented
 
-**Challenges:**
-- Performance with large fog areas (many vector shapes)
-- Save/load fog state (increase file size)
-- Sync fog updates (same as drawings, commit on mouseUp)
+**Implementation:**
+1. `exploredRegions: ExploredRegion[]` in gameStore tracks previously seen areas
+2. `FogOfWarLayer` renders fog overlay (World View only)
+3. Uses `globalCompositeOperation: 'destination-out'` for vision cutouts
+4. Three-state fog: Unexplored (dark), Explored (dimmed), Current Vision (clear)
+5. Daylight Mode toggle in Sidebar (Architect View) controls fog visibility
+6. Works with or without map (hand-drawn maps supported)
+
+**Features:**
+- Raycasting-based vision calculation (360-degree raycasting with wall occlusion)
+- Explored fog of war (previously seen areas remain dimly visible)
+- Performance optimized with visibility polygon caching
+- Syncs between Architect and World View via IPC
+
+**Files:**
+- Component: `src/components/Canvas/FogOfWarLayer.tsx`
+- State: `src/store/gameStore.ts` (exploredRegions, isDaylightMode)
+- UI: `src/components/Sidebar.tsx` (ToggleSwitch for Daylight Mode)
+- Rendering: `src/components/Canvas/CanvasManager.tsx` (conditional fog layer)
 
 ### Planned: Additional Drawing Tools
 **Shapes:**

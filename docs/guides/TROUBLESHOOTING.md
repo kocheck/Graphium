@@ -572,6 +572,105 @@ interface Window {
 
 ---
 
+### Issue: TypeScript Build Fails with "Cannot find type definition file for 'node'"
+
+**Symptoms:**
+- `npm run build:web` fails with error: `error TS2688: Cannot find type definition file for 'node'`
+- Build works locally but fails in CI (GitHub Actions)
+- Error message mentions `compilerOptions` in `tsconfig.json`
+
+**Cause:**
+
+TypeScript compilation fails because it cannot find the `@types/node` package. This happens when:
+1. Dependencies aren't installed (`node_modules/@types/node` is missing)
+2. The `tsconfig.json` references `"types": ["node"]` but the type definitions are unavailable
+
+**Solution:**
+
+```bash
+# Ensure dependencies are installed
+npm ci
+
+# Verify @types/node exists
+ls node_modules/@types/node
+
+# If missing, reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Rebuild
+npm run build:web
+```
+
+**CI-Specific Fix:**
+
+In GitHub Actions workflows, ensure the workflow includes dependency installation:
+
+```yaml
+- name: Install dependencies
+  run: npm ci
+
+- name: Build application
+  run: npm run build:web
+```
+
+**Root Cause Prevention:**
+
+This issue occurs when:
+- `npm ci` is skipped or fails silently
+- Cache is corrupted
+- `package.json` has `@types/node` in devDependencies but it's not installed
+
+Always ensure `npm ci` completes successfully before running TypeScript compilation.
+
+---
+
+### Issue: TypeScript Null Safety Errors in Canvas Components
+
+**Symptoms:**
+- Build fails with "is possibly 'null'" errors
+- Error in `CanvasManager.tsx` accessing properties on refs
+- Error: `'cur' is possibly 'null'`
+
+**Cause:**
+
+TypeScript strict null checks detect potential null reference errors when accessing `useRef` values without proper null guards.
+
+**Solution:**
+
+Add null checks before accessing ref values:
+
+```typescript
+// ❌ WRONG: No null check
+const cur = currentLine.current;
+if (e.evt.shiftKey && cur.points.length >= 2) {
+  // Error: cur might be null
+}
+
+// ✅ CORRECT: Add guard clause
+const cur = currentLine.current;
+if (!cur) return;  // Guard against null
+
+if (e.evt.shiftKey && cur.points.length >= 2) {
+  // Safe: cur is guaranteed non-null
+}
+```
+
+**Prevention:**
+
+Always add null guards when accessing refs typed as `RefObject<T | null>`:
+
+```typescript
+const myRef = useRef<MyType | null>(null);
+
+// In event handlers:
+const value = myRef.current;
+if (!value) return;  // Guard clause
+// Now safe to use value
+```
+
+---
+
 ## Platform-Specific Issues
 
 ### macOS Issues

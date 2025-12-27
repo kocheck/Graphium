@@ -20,16 +20,22 @@
  * - 'SAVE_ASSET_TEMP': Saves processed asset to temp directory
  * - 'SAVE_CAMPAIGN': Serializes campaign to .hyle ZIP file
  * - 'LOAD_CAMPAIGN': Deserializes .hyle file and restores assets
+ * - 'SELECT_LIBRARY_PATH': Opens directory picker for library location
+ * - 'SAVE_ASSET_TO_LIBRARY': Saves asset to persistent library
+ * - 'LOAD_LIBRARY_INDEX': Loads library metadata index
+ * - 'DELETE_LIBRARY_ASSET': Removes asset from library
+ * - 'UPDATE_LIBRARY_METADATA': Updates library asset metadata
  *
  * See ARCHITECTURE.md for complete IPC documentation.
  */
 
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, IpcMainEvent, IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, IpcMainEvent, IpcMainInvokeEvent, shell } from 'electron'
 import JSZip from 'jszip'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
+import os from 'node:os'
 import {
   initializeThemeManager,
   getThemeState,
@@ -67,6 +73,9 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 // Window references (null when closed)
 let mainWindow: BrowserWindow | null
 let worldWindow: BrowserWindow | null
+
+// Global pause state - persists across map changes
+let isGamePaused = false
 
 /**
  * Build application menu with theme options
@@ -167,7 +176,7 @@ function buildApplicationMenu() {
         },
         {
             label: 'Performance Monitor',
-            accelerator: 'CmdOrCtrl+P',
+            accelerator: 'CmdOrCtrl+Shift+M',
             click: () => {
                 const win = BrowserWindow.getFocusedWindow();
                 if (win) win.webContents.send('MENU_TOGGLE_RESOURCE_MONITOR');
@@ -468,32 +477,32 @@ let currentCampaignPath: string | null = null;
   /**
    * Helper function to serialize campaign assets to a ZIP file.
    * Processes all map backgrounds, tokens, and library assets.
-   * 
+   *
    * @param campaign - Campaign data to serialize
    * @param zip - JSZip instance to add files to
    * @returns Modified campaign object with relative asset paths
    */
   async function serializeCampaignToZip(campaign: unknown, zip: JSZip): Promise<unknown> {
       const assetsFolder = zip.folder("assets");
-      
+
       // Deep clone to avoid mutating original state
       const campaignToSave = JSON.parse(JSON.stringify(campaign));
-      
+
       // Track processed files to avoid duplication
       // Key: Absolute source path, Value: Relative destination path in zip
       const processedAssets = new Map<string, string>();
-      
+
       // Helper to process an image asset
       const processAsset = async (src: string): Promise<string> => {
           if (!src || !src.startsWith('file://')) return src;
-          
+
           const absolutePath = fileURLToPath(src);
-          
+
           // If already processed, return the existing relative path
           if (processedAssets.has(absolutePath)) {
               return processedAssets.get(absolutePath)!;
           }
-          
+
           const basename = path.basename(absolutePath);
           const content = await fs.readFile(absolutePath).catch(() => null);
           if (content) {
@@ -504,17 +513,17 @@ let currentCampaignPath: string | null = null;
           }
           return src; // Keep original if read fails
       };
-      
+
       // Iterate all maps and process assets
       if (campaignToSave.maps) {
           for (const mapId in campaignToSave.maps) {
               const map = campaignToSave.maps[mapId];
-              
+
               // 1. Process Map Background
               if (map.map && map.map.src) {
                   map.map.src = await processAsset(map.map.src);
               }
-              
+
               // 2. Process Tokens
               if (map.tokens) {
                   for (const token of map.tokens) {
@@ -523,14 +532,14 @@ let currentCampaignPath: string | null = null;
               }
           }
       }
-      
+
       // 3. Process Campaign Token Library
       if (campaignToSave.tokenLibrary) {
           for (const item of campaignToSave.tokenLibrary) {
               item.src = await processAsset(item.src);
           }
       }
-      
+
       return campaignToSave;
   }
 
@@ -552,7 +561,7 @@ let currentCampaignPath: string | null = null;
     currentCampaignPath = filePath;
 
     const zip = new JSZip();
-    
+
     // Use shared helper to process campaign assets
     const campaignToSave = await serializeCampaignToZip(campaign, zip);
 
@@ -576,7 +585,7 @@ let currentCampaignPath: string | null = null;
 
       try {
           const zip = new JSZip();
-          
+
           // Use shared helper to process campaign assets
           const campaignToSave = await serializeCampaignToZip(campaign, zip);
 
@@ -768,4 +777,309 @@ let currentCampaignPath: string | null = null;
  ipcMain.handle('set-theme-mode', (_event: IpcMainInvokeEvent, mode: ThemeMode) => {
    setThemeMode(mode)
  })
+
+ /**
+  * IPC handler: TOGGLE_PAUSE
+  *
+  * Toggles the game pause state and broadcasts the new state to both windows.
+  * When paused, the World View displays a loading overlay to hide DM actions.
+  *
+  * @returns New pause state
+  */
+ ipcMain.handle('TOGGLE_PAUSE', () => {
+   isGamePaused = !isGamePaused
+
+   // Broadcast new pause state to all windows
+   if (mainWindow && !mainWindow.isDestroyed()) {
+     mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+   }
+   if (worldWindow && !worldWindow.isDestroyed()) {
+     worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+   }
+
+   return isGamePaused
+ })
+
+ /**
+  * IPC handler: GET_PAUSE_STATE
+  *
+  * Returns the current pause state. Used when windows first load to sync state.
+  *
+  * @returns Current pause state
+  */
+ ipcMain.handle('GET_PAUSE_STATE', () => {
+   return isGamePaused
+ })
+
+ /**
+  * IPC handler: SELECT_LIBRARY_PATH
+  *
+  * Opens a native directory picker dialog for user to select their token library location.
+  * This allows users to choose where their persistent token library will be stored.
+  *
+  * @returns Selected directory path, or null if user cancelled
+  */
+ ipcMain.handle('SELECT_LIBRARY_PATH', async () => {
+   const result = await dialog.showOpenDialog({
+     properties: ['openDirectory', 'createDirectory'],
+     title: 'Select Token Library Location'
+   });
+   if (result.canceled) return null;
+   return result.filePaths[0];
+ })
+
+ /**
+  * IPC handler: SAVE_ASSET_TO_LIBRARY
+  *
+  * Saves a token asset to the persistent library directory.
+  * Creates both full-size and thumbnail versions of the image.
+  *
+  * **Note on concurrency:**
+  * This handler uses a read-modify-write pattern for index.json which could
+  * result in lost updates if multiple saves happen simultaneously. Since this
+  * application is designed for single-user local use, concurrent access is not
+  * expected. If concurrent operations become a requirement, consider implementing
+  * a file locking mechanism or atomic update pattern.
+  *
+  * @param fullSizeBuffer - Full-resolution WebP image as ArrayBuffer
+  * @param thumbnailBuffer - 128x128 thumbnail WebP image as ArrayBuffer
+  * @param metadata - Asset metadata (id, name, category, tags)
+  * @returns Complete TokenLibraryItem with file:// URLs
+  */
+ ipcMain.handle('SAVE_ASSET_TO_LIBRARY', async (
+   _event: IpcMainInvokeEvent,
+   {
+     fullSizeBuffer,
+     thumbnailBuffer,
+     metadata
+   }: {
+     fullSizeBuffer: ArrayBuffer;
+     thumbnailBuffer: ArrayBuffer;
+     metadata: {
+       id: string;
+       name: string;
+       category: string;
+       tags: string[];
+     };
+   }
+ ) => {
+   const libraryPath = path.join(app.getPath('userData'), 'library', 'assets');
+   await fs.mkdir(libraryPath, { recursive: true });
+
+   // Save full-size image
+   const filename = `${metadata.id}.webp`;
+   const fullPath = path.join(libraryPath, filename);
+   await fs.writeFile(fullPath, Buffer.from(fullSizeBuffer));
+
+   // Save thumbnail
+   const thumbFilename = `thumb-${metadata.id}.webp`;
+   const thumbPath = path.join(libraryPath, thumbFilename);
+   await fs.writeFile(thumbPath, Buffer.from(thumbnailBuffer));
+
+   // Update index.json
+   const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+   let index: { items: unknown[] } = { items: [] };
+
+   try {
+     const indexData = await fs.readFile(indexPath, 'utf-8');
+     index = JSON.parse(indexData);
+     
+     // Validate index structure to prevent runtime errors on corruption
+     if (!index.items || !Array.isArray(index.items)) {
+       console.warn('[MAIN] Invalid index.json structure, resetting to empty array');
+       index.items = [];
+     }
+   } catch {
+     // Index doesn't exist yet, use empty array
+   }
+
+   const newItem = {
+     ...metadata,
+     src: `file://${fullPath}`,
+     thumbnailSrc: `file://${thumbPath}`,
+     dateAdded: Date.now()
+   };
+
+   index.items.push(newItem);
+   await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+
+   return newItem;
+ })
+
+ /**
+  * IPC handler: LOAD_LIBRARY_INDEX
+  *
+  * Loads the library metadata index from disk.
+  * Returns empty array if index doesn't exist yet.
+  *
+  * @returns Array of TokenLibraryItem objects
+  */
+ ipcMain.handle('LOAD_LIBRARY_INDEX', async () => {
+   const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+
+   try {
+     const data = await fs.readFile(indexPath, 'utf-8');
+     const index = JSON.parse(data);
+     return index.items || [];
+   } catch {
+     // Index doesn't exist or is corrupted
+     return [];
+   }
+ })
+
+ /**
+  * IPC handler: DELETE_LIBRARY_ASSET
+  *
+  * Removes an asset from the library (both files and metadata).
+  * Deletes full-size image, thumbnail, and updates index.json.
+  *
+  * **Note on concurrency:**
+  * This handler uses a read-modify-write pattern for index.json which could
+  * result in lost updates if multiple operations happen simultaneously. Since
+  * this application is designed for single-user local use, concurrent access
+  * is not expected. If concurrent operations become a requirement, consider
+  * implementing a file locking mechanism or atomic update pattern.
+  *
+  * @param assetId - UUID of the asset to delete
+  * @returns true if successful
+  */
+ ipcMain.handle('DELETE_LIBRARY_ASSET', async (_event: IpcMainInvokeEvent, assetId: string) => {
+   const libraryPath = path.join(app.getPath('userData'), 'library', 'assets');
+
+   try {
+     // Delete full-size image
+     await fs.unlink(path.join(libraryPath, `${assetId}.webp`));
+
+     // Delete thumbnail
+     await fs.unlink(path.join(libraryPath, `thumb-${assetId}.webp`));
+   } catch (err) {
+     console.error('[MAIN] Failed to delete library asset files:', err);
+     // Continue to update index even if files don't exist
+   }
+
+   // Update index.json
+   const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+
+   try {
+     const data = await fs.readFile(indexPath, 'utf-8');
+     const index = JSON.parse(data);
+
+     // Validate index structure before modifying
+     if (!index.items || !Array.isArray(index.items)) {
+       console.warn('[MAIN] Invalid index.json structure during delete');
+       index.items = [];
+     }
+
+     index.items = index.items.filter((item: { id: string }) => item.id !== assetId);
+     await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+   } catch (err) {
+     console.error('[MAIN] Failed to update library index:', err);
+     throw err;
+   }
+
+   return true;
+ })
+
+ /**
+  * IPC handler: UPDATE_LIBRARY_METADATA
+  *
+  * Updates metadata for a library asset (name, category, tags).
+  * Does not modify the asset files themselves.
+  *
+  * @param assetId - UUID of the asset to update
+  * @param updates - Partial metadata updates
+  * @returns Updated TokenLibraryItem
+  */
+ ipcMain.handle('UPDATE_LIBRARY_METADATA', async (
+   _event: IpcMainInvokeEvent,
+   assetId: string,
+   updates: { name?: string; category?: string; tags?: string[] }
+ ) => {
+   const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+
+   const data = await fs.readFile(indexPath, 'utf-8');
+   const index = JSON.parse(data);
+
+   if (!index.items) {
+     throw new Error('Library index is corrupted');
+   }
+
+   const itemIndex = index.items.findIndex((item: { id: string }) => item.id === assetId);
+
+   if (itemIndex === -1) {
+     throw new Error(`Asset ${assetId} not found in library`);
+   }
+
+   // Apply updates
+   index.items[itemIndex] = {
+     ...index.items[itemIndex],
+     ...updates
+   };
+
+   await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+
+   return index.items[itemIndex];
+ })
+
+  /**
+   * IPC handler: get-username
+   *
+   * Returns the system username for PII sanitization in error reports.
+   * Used by error boundaries and global error handlers to remove usernames
+   * from file paths in stack traces.
+   *
+   * @returns System username (e.g., 'johnsmith' on macOS/Linux)
+   */
+  ipcMain.handle('get-username', () => {
+    return os.userInfo().username
+  })
+
+  /**
+   * IPC handler: open-external
+   *
+   * Opens an external URL (mailto: or https:) in the default application.
+   * Used by error reporting UI to open email clients or documentation.
+   *
+   * @param url - URL to open (must be mailto: or https:)
+   * @returns Success status
+   */
+  ipcMain.handle('open-external', async (_event: IpcMainInvokeEvent, url: string) => {
+    // Security: Only allow mailto: and https: URLs
+    if (url.startsWith('mailto:') || url.startsWith('https:')) {
+      await shell.openExternal(url)
+      return true
+    }
+    return false
+  })
+
+  /**
+   * IPC handler: save-error-report
+   *
+   * Saves an error report to a file using the native save dialog.
+   * Used by error reporting UI to let users save error reports locally.
+   *
+   * @param reportContent - The error report content to save
+   * @returns Success status and optional file path
+   */
+  ipcMain.handle('save-error-report', async (_event: IpcMainInvokeEvent, reportContent: string) => {
+    try {
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Save Error Report',
+        defaultPath: `hyle-error-report-${Date.now()}.txt`,
+        filters: [
+          { name: 'Text Files', extensions: ['txt'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      })
+
+      if (canceled || !filePath) {
+        return { success: false, reason: 'User canceled' }
+      }
+
+      await fs.writeFile(filePath, reportContent, 'utf-8')
+      return { success: true, filePath }
+    } catch (error) {
+      return { success: false, reason: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
 })

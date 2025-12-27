@@ -194,6 +194,35 @@ ipcMain.handle('open-external', async (_event, url: string) => {
 });
 ```
 
+### `save-error-report`
+
+Saves an error report to a file using the native save dialog.
+
+```ts
+// Main process (electron/main.ts)
+ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
+  try {
+    const { filePath, canceled } = await dialog.showSaveDialog({
+      title: 'Save Error Report',
+      defaultPath: `hyle-error-report-${Date.now()}.txt`,
+      filters: [
+        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, reason: 'User canceled' };
+    }
+
+    await fs.writeFile(filePath, reportContent, 'utf-8');
+    return { success: true, filePath };
+  } catch (error) {
+    return { success: false, reason: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+```
+
 ## Preload API
 
 The error reporting API is exposed via `contextBridge`:
@@ -202,6 +231,7 @@ The error reporting API is exposed via `contextBridge`:
 // Available in renderer process
 window.errorReporting.getUsername(): Promise<string>
 window.errorReporting.openExternal(url: string): Promise<boolean>
+window.errorReporting.saveToFile(reportContent: string): Promise<{ success: boolean; filePath?: string; reason?: string }>
 ```
 
 ## Setup Checklist
@@ -210,8 +240,11 @@ Ensure the following are in place for error boundaries to work correctly:
 
 ### 1. Main Process Setup (`electron/main.ts`)
 
-- [ ] Import `shell` from `electron`
-- [ ] Import `os` from `node:os`
+- [x] Import `shell` from `electron`
+- [x] Import `os` from `node:os`
+- [x] Register `get-username` handler
+- [x] Register `open-external` handler
+- [x] Register `save-error-report` handler
 - [ ] Add `get-username` IPC handler
 - [ ] Add `open-external` IPC handler
 

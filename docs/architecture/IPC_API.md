@@ -678,6 +678,342 @@ throw new Error("Invalid Hyle file")
 
 ---
 
+### 6. TOGGLE_PAUSE
+
+**Pattern:** Invoke/Handle (Request-Response)
+**Direction:** Architect Window → Main Process
+**Purpose:** Toggles game pause state and broadcasts to both windows
+
+#### Usage
+
+**Caller:** `src/App.tsx:107` (handlePauseToggle function)
+
+**Renderer (Architect):**
+```typescript
+// DM clicks pause/play button in toolbar
+const newState = await window.ipcRenderer.invoke('TOGGLE_PAUSE')
+```
+
+**Main Process:** `electron/main.ts:780`
+```typescript
+ipcMain.handle('TOGGLE_PAUSE', () => {
+  isGamePaused = !isGamePaused
+
+  // Broadcast to both windows
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+  }
+  if (worldWindow && !worldWindow.isDestroyed()) {
+    worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+  }
+
+  return isGamePaused
+})
+```
+
+#### Returns
+
+**Type:** `boolean`
+
+New pause state (`true` = paused, `false` = playing)
+
+#### Behavior
+
+- **Global State:** Main process maintains `isGamePaused` variable that persists across map changes
+- **Defaults to false:** Game starts in playing state on app launch
+- **Broadcasts:** After toggling, sends `PAUSE_STATE_CHANGED` event to both windows
+- **Immediate Effect:** World View shows/hides LoadingOverlay based on new state
+- **DM View:** Never shows overlay, DM can always see and edit the map
+
+#### Related Files
+
+- Trigger: `src/App.tsx` (Pause/Play button in toolbar)
+- Handler: `electron/main.ts` (TOGGLE_PAUSE handler)
+- State Consumer: `src/components/PauseManager.tsx` (receives broadcast)
+- UI Effect: `src/components/LoadingOverlay.tsx` (shows/hides in World View)
+
+---
+
+### 7. GET_PAUSE_STATE
+
+**Pattern:** Invoke/Handle (Request-Response)
+**Direction:** Renderer → Main Process
+**Purpose:** Fetches current pause state when window opens
+
+#### Usage
+
+**Caller:** `src/components/PauseManager.tsx:69`
+
+**Renderer (Both Windows):**
+```typescript
+// PauseManager fetches initial state on mount
+const isPaused = await window.ipcRenderer.invoke('GET_PAUSE_STATE')
+setIsGamePaused(isPaused)
+```
+
+**Main Process:** `electron/main.ts:801`
+```typescript
+ipcMain.handle('GET_PAUSE_STATE', () => {
+  return isGamePaused
+})
+```
+
+#### Returns
+
+**Type:** `boolean`
+
+Current pause state (`true` = paused, `false` = playing)
+
+#### Behavior
+
+- **Called on mount:** PauseManager fetches state when component initializes
+- **Ensures sync:** Handles case where window opens after pause was toggled
+- **No side effects:** Read-only operation, doesn't modify state
+- **Fast response:** Simple boolean return, no async operations
+
+#### Use Cases
+
+1. **World View opens while paused:** Immediately shows LoadingOverlay
+2. **Architect View reopens:** Displays correct button state (PAUSED/PLAYING)
+3. **State recovery:** Ensures UI matches main process state after window reload
+
+#### Error Handling
+
+```typescript
+window.ipcRenderer.invoke('GET_PAUSE_STATE')
+  .catch((error) => {
+    console.error('[PauseManager] Failed to fetch pause state:', error)
+    showToast('Failed to sync pause state', 'error')
+  })
+```
+
+---
+
+### 8. PAUSE_STATE_CHANGED
+
+**Pattern:** Broadcast (Main → Renderer event)
+**Direction:** Main Process → Both Windows
+**Purpose:** Notifies renderers when pause state changes
+
+#### Usage
+
+**Sender:** `electron/main.ts:784-789` (TOGGLE_PAUSE handler)
+
+**Main Process (Broadcaster):**
+```typescript
+// After toggling pause state
+if (mainWindow && !mainWindow.isDestroyed()) {
+  mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+}
+if (worldWindow && !worldWindow.isDestroyed()) {
+  worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+}
+```
+
+**Renderer (Subscriber):** `src/components/PauseManager.tsx:85`
+```typescript
+window.ipcRenderer.on('PAUSE_STATE_CHANGED', (_event, isPaused: boolean) => {
+  setIsGamePaused(isPaused)
+})
+```
+
+#### Payload
+
+**Type:** `boolean`
+
+New pause state (`true` = paused, `false` = playing)
+
+#### Behavior
+
+- **Broadcast to all:** Both Architect and World windows receive update
+- **Triggers re-render:** Zustand store update causes React components to re-render
+- **Immediate UI update:**
+  - **Architect View:** Pause button changes color/text (GREEN "PLAYING" ↔ RED "PAUSED")
+  - **World View:** LoadingOverlay appears/disappears
+- **State sync:** Keeps all windows synchronized with main process
+
+#### Data Flow
+
+```
+DM clicks button → App.tsx invokes TOGGLE_PAUSE
+  → Main toggles isGamePaused
+  → Main broadcasts PAUSE_STATE_CHANGED
+  → PauseManager receives event (both windows)
+  → Updates gameStore.isGamePaused
+  → React components re-render:
+    - App.tsx: Button updates
+    - LoadingOverlay: Shows/hides (World View only)
+```
+
+#### Cleanup
+
+**Important:** Always remove listener in useEffect cleanup to prevent memory leaks
+
+```typescript
+useEffect(() => {
+  const handler = (_event, isPaused) => setIsGamePaused(isPaused)
+  window.ipcRenderer.on('PAUSE_STATE_CHANGED', handler)
+
+  return () => {
+    window.ipcRenderer.off('PAUSE_STATE_CHANGED', handler)
+  }
+}, [])
+```
+
+---
+
+### 9. get-username
+
+**Pattern:** Invoke/Handle (Request-Response)
+**Direction:** Renderer → Main Process
+**Purpose:** Returns the system username for PII sanitization in error reports
+
+#### Usage
+
+**Caller:** `src/utils/errorSanitizer.ts`, `src/components/PrivacyErrorBoundary.tsx`
+
+**Renderer:**
+```typescript
+const username = await window.errorReporting.getUsername()
+// Returns: "johnsmith" (or current system username)
+```
+
+**Main Process:** `electron/main.ts`
+```typescript
+ipcMain.handle('get-username', () => {
+  return os.userInfo().username
+})
+```
+
+#### Returns
+
+`string` - System username (e.g., `"johnsmith"` on macOS/Linux)
+
+#### Purpose
+
+Used by error reporting system to sanitize file paths in stack traces:
+- `/Users/johnsmith/project/file.ts` → `/Users/<USER>/project/file.ts`
+
+#### Related Files
+
+- Handler: `electron/main.ts` (get-username handler)
+- Preload: `electron/preload.ts` (exposed as `window.errorReporting.getUsername()`)
+- Usage: `src/utils/errorSanitizer.ts`, `src/components/PrivacyErrorBoundary.tsx`
+
+---
+
+### 10. open-external
+
+**Pattern:** Invoke/Handle (Request-Response)
+**Direction:** Renderer → Main Process
+**Purpose:** Opens external URLs (mailto: or https:) in the default application
+
+#### Usage
+
+**Caller:** `src/components/PrivacyErrorBoundary.tsx`
+
+**Renderer:**
+```typescript
+const success = await window.errorReporting.openExternal('mailto:support@example.com')
+// Opens email client with mailto link
+```
+
+**Main Process:** `electron/main.ts`
+```typescript
+ipcMain.handle('open-external', async (_event, url: string) => {
+  if (url.startsWith('mailto:') || url.startsWith('https:')) {
+    await shell.openExternal(url)
+    return true
+  }
+  return false
+})
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | `string` | URL to open (must start with `mailto:` or `https:`) |
+
+#### Returns
+
+`boolean` - `true` if URL was opened successfully, `false` if URL format is invalid
+
+#### Security
+
+Only allows `mailto:` and `https:` URLs to prevent security issues. Other protocols are rejected.
+
+#### Related Files
+
+- Handler: `electron/main.ts` (open-external handler)
+- Preload: `electron/preload.ts` (exposed as `window.errorReporting.openExternal()`)
+- Usage: `src/components/PrivacyErrorBoundary.tsx` (error report email links)
+
+---
+
+### 11. save-error-report
+
+**Pattern:** Invoke/Handle (Request-Response)
+**Direction:** Renderer → Main Process
+**Purpose:** Saves an error report to a file using the native save dialog
+
+#### Usage
+
+**Caller:** `src/components/PrivacyErrorBoundary.tsx`
+
+**Renderer:**
+```typescript
+const result = await window.errorReporting.saveToFile(reportContent)
+if (result.success) {
+  console.log('Saved to:', result.filePath)
+} else {
+  console.error('Failed:', result.reason)
+}
+```
+
+**Main Process:** `electron/main.ts`
+```typescript
+ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    title: 'Save Error Report',
+    defaultPath: `hyle-error-report-${Date.now()}.txt`,
+    filters: [
+      { name: 'Text Files', extensions: ['txt'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  })
+
+  if (canceled || !filePath) {
+    return { success: false, reason: 'User canceled' }
+  }
+
+  await fs.writeFile(filePath, reportContent, 'utf-8')
+  return { success: true, filePath }
+})
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `reportContent` | `string` | The error report content to save (sanitized) |
+
+#### Returns
+
+`{ success: boolean; filePath?: string; reason?: string }`
+
+- `success`: `true` if file was saved, `false` if user canceled or error occurred
+- `filePath`: Absolute path to saved file (only present if `success === true`)
+- `reason`: Error message or "User canceled" (only present if `success === false`)
+
+#### Related Files
+
+- Handler: `electron/main.ts` (save-error-report handler)
+- Preload: `electron/preload.ts` (exposed as `window.errorReporting.saveToFile()`)
+- Usage: `src/components/PrivacyErrorBoundary.tsx` (save error report button)
+
+---
+
 ## Best Practices
 
 ### 1. Type Safety
