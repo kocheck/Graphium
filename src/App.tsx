@@ -97,6 +97,7 @@ function App() {
 
   // Pause state (from store)
   const isGamePaused = useGameStore((state) => state.isGamePaused);
+  const showToast = useGameStore((state) => state.showToast);
 
   // Handle pause toggle
   const handlePauseToggle = async () => {
@@ -105,7 +106,8 @@ function App() {
       // @ts-ignore
       await window.ipcRenderer.invoke('TOGGLE_PAUSE');
     } catch (e) {
-      console.error('Failed to toggle pause:', e);
+      console.error('[App] Failed to toggle pause:', e);
+      showToast('Failed to toggle pause state', 'error');
     }
   };
 
