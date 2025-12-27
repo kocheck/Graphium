@@ -198,6 +198,16 @@ export class DungeonGenerator {
   private roomTemplates: RoomTemplate[];
   private corridorTemplate: CorridorTemplate;
 
+  // Named constants for magic numbers
+  private static readonly RETRIES_PER_ROOM = 10; // Retry limit multiplier
+  private static readonly RETRY_THRESHOLD_FRACTION = 0.5; // Give up after half the retries
+  private static readonly ROOM_SPACING_CELLS = 1; // Padding between pieces (in grid cells)
+  private static readonly MIN_WALL_SEGMENT_FRACTION = 0.25; // Minimum wall segment size (1/4 grid cell)
+  private static readonly ROOM_MIN_SPACING_CELLS = 2; // Minimum spacing between rooms (in grid cells)
+  private static readonly CORRIDOR_CONNECTION_OFFSET_PX = 1; // Offset to avoid wall overlap (in pixels)
+  private static readonly ROOM_INTERSECTION_PADDING_PX = 5; // Padding for intersection detection (in pixels)
+  private static readonly DOORWAY_DETECTION_TOLERANCE_FRACTION = 0.5; // Tolerance for doorway edge detection (1/2 grid cell)
+
   constructor(options: DungeonGeneratorOptions) {
     // Set defaults
     this.options = {
@@ -265,7 +275,7 @@ export class DungeonGenerator {
     usedDirections.set(firstRoom, new Set());
 
     // Grow the dungeon organically
-    const maxRetries = this.options.numRooms * 10; // Prevent infinite loops
+    const maxRetries = this.options.numRooms * DungeonGenerator.RETRIES_PER_ROOM; // Prevent infinite loops
     let retries = 0;
     let roomsAdded = 1; // We already have the first room
 
@@ -308,7 +318,7 @@ export class DungeonGenerator {
       }
 
       // If we've tried many times without success, give up
-      if (!added && retries >= maxRetries / 2) {
+      if (!added && retries >= maxRetries * DungeonGenerator.RETRY_THRESHOLD_FRACTION) {
         break;
       }
     }
@@ -616,7 +626,7 @@ export class DungeonGenerator {
     const { bounds, wallSegments } = piece;
     const { gridSize } = this.options;
     const doorwaySize = gridSize; // Opening size (1 grid cell)
-    const minSegmentSize = gridSize / 4; // Minimum meaningful segment size
+    const minSegmentSize = gridSize * DungeonGenerator.MIN_WALL_SEGMENT_FRACTION; // Minimum meaningful segment size
 
     // Use exact doorway position if provided, otherwise calculate from bounds
     let centerX: number, centerY: number;
@@ -731,7 +741,7 @@ export class DungeonGenerator {
    */
   private piecesOverlap(newPiece: DungeonPiece, existingPieces: DungeonPiece[]): boolean {
     const { gridSize } = this.options;
-    const padding = gridSize; // 1 grid cell padding
+    const padding = gridSize * DungeonGenerator.ROOM_SPACING_CELLS; // Padding between pieces
 
     for (const existing of existingPieces) {
       if (this.boundsOverlap(newPiece.bounds, existing.bounds, padding)) {
@@ -804,203 +814,10 @@ export class DungeonGenerator {
   }
 
   /**
-   * Tries to add a new room adjacent to an existing room
-   * Returns the new room, corridor, and doorway info if successful
-   */
-  private tryAddAdjacentRoom(
-    sourceRoom: Room,
-    roomDoorways: Map<Room, Point[]>
-  ): { newRoom: Room; corridor: Drawing[]; doorways: { room: Room; point: Point }[] } | null {
-    const { gridSize } = this.options;
-    const corridorLength = gridSize * 2; // 2 grid cells for corridor
-
-    // Try all 4 directions: right, left, bottom, top
-    const directions = ['right', 'left', 'bottom', 'top'].sort(() => Math.random() - 0.5);
-
-    for (const direction of directions) {
-      let newRoom: Room;
-      let doorwaySource: Point;
-      let doorwayNew: Point;
-
-      // Calculate new room position based on direction
-      switch (direction) {
-        case 'right':
-          doorwaySource = {
-            x: sourceRoom.x + sourceRoom.width,
-            y: sourceRoom.y + sourceRoom.height / 2,
-          };
-          newRoom = this.createRoomAtPosition(
-            sourceRoom.x + sourceRoom.width + corridorLength,
-            sourceRoom.y + sourceRoom.height / 2 - gridSize * 2
-          );
-          doorwayNew = {
-            x: newRoom.x,
-            y: newRoom.y + newRoom.height / 2,
-          };
-          break;
-
-        case 'left':
-          doorwaySource = {
-            x: sourceRoom.x,
-            y: sourceRoom.y + sourceRoom.height / 2,
-          };
-          newRoom = this.createRoomAtPosition(
-            sourceRoom.x - corridorLength,
-            sourceRoom.y + sourceRoom.height / 2 - gridSize * 2
-          );
-          doorwayNew = {
-            x: newRoom.x + newRoom.width,
-            y: newRoom.y + newRoom.height / 2,
-          };
-          newRoom.x -= newRoom.width; // Adjust to be on the left
-          break;
-
-        case 'bottom':
-          doorwaySource = {
-            x: sourceRoom.x + sourceRoom.width / 2,
-            y: sourceRoom.y + sourceRoom.height,
-          };
-          newRoom = this.createRoomAtPosition(
-            sourceRoom.x + sourceRoom.width / 2 - gridSize * 2,
-            sourceRoom.y + sourceRoom.height + corridorLength
-          );
-          doorwayNew = {
-            x: newRoom.x + newRoom.width / 2,
-            y: newRoom.y,
-          };
-          break;
-
-        case 'top':
-          doorwaySource = {
-            x: sourceRoom.x + sourceRoom.width / 2,
-            y: sourceRoom.y,
-          };
-          newRoom = this.createRoomAtPosition(
-            sourceRoom.x + sourceRoom.width / 2 - gridSize * 2,
-            sourceRoom.y - corridorLength
-          );
-          doorwayNew = {
-            x: newRoom.x + newRoom.width / 2,
-            y: newRoom.y + newRoom.height,
-          };
-          newRoom.y -= newRoom.height; // Adjust to be on top
-          break;
-
-        default:
-          continue;
-      }
-
-      // Check if new room overlaps with existing rooms
-      if (!this.hasOverlap(newRoom)) {
-        // Create straight corridor between the rooms
-        const corridor = this.createStraightCorridor(doorwaySource, doorwayNew, direction);
-
-        return {
-          newRoom,
-          corridor,
-          doorways: [
-            { room: sourceRoom, point: doorwaySource },
-            { room: newRoom, point: doorwayNew },
-          ],
-        };
-      }
-    }
-
-    return null; // Couldn't find a valid position
-  }
-
-  /**
-   * Creates a straight corridor between two points
-   */
-  private createStraightCorridor(
-    start: Point,
-    end: Point,
-    direction: 'right' | 'left' | 'bottom' | 'top'
-  ): Drawing[] {
-    const { wallColor, wallSize, gridSize } = this.options;
-    const corridorWidth = gridSize;
-    const drawings: Drawing[] = [];
-
-    if (direction === 'right' || direction === 'left') {
-      // Horizontal corridor
-      const x1 = Math.min(start.x, end.x);
-      const x2 = Math.max(start.x, end.x);
-      const y = (start.y + end.y) / 2;
-
-      // Top wall
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [x1, y - corridorWidth / 2, x2, y - corridorWidth / 2],
-        color: wallColor,
-        size: wallSize,
-      });
-
-      // Bottom wall
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [x1, y + corridorWidth / 2, x2, y + corridorWidth / 2],
-        color: wallColor,
-        size: wallSize,
-      });
-    } else {
-      // Vertical corridor
-      const y1 = Math.min(start.y, end.y);
-      const y2 = Math.max(start.y, end.y);
-      const x = (start.x + end.x) / 2;
-
-      // Left wall
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [x - corridorWidth / 2, y1, x - corridorWidth / 2, y2],
-        color: wallColor,
-        size: wallSize,
-      });
-
-      // Right wall
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [x + corridorWidth / 2, y1, x + corridorWidth / 2, y2],
-        color: wallColor,
-        size: wallSize,
-      });
-    }
-
-    return drawings;
-  }
-
-  /**
-   * Generates a random room with size constraints
-   */
-  private generateRandomRoom(): Room {
-    const { minRoomSize, maxRoomSize, gridSize, canvasWidth, canvasHeight } = this.options;
-
-    // Room size in grid cells
-    const widthCells = Math.floor(Math.random() * (maxRoomSize - minRoomSize + 1)) + minRoomSize;
-    const heightCells = Math.floor(Math.random() * (maxRoomSize - minRoomSize + 1)) + minRoomSize;
-
-    // Convert to pixels
-    const width = widthCells * gridSize;
-    const height = heightCells * gridSize;
-
-    // Random position (snapped to grid)
-    const maxX = Math.floor((canvasWidth - width) / gridSize);
-    const maxY = Math.floor((canvasHeight - height) / gridSize);
-
-    const x = Math.floor(Math.random() * maxX) * gridSize;
-    const y = Math.floor(Math.random() * maxY) * gridSize;
-
-    return { x, y, width, height };
-  }
-
-  /**
    * Checks if a room overlaps with existing rooms (with padding)
    */
   private hasOverlap(newRoom: Room): boolean {
-    const padding = this.options.gridSize * 2; // 2 grid cells of padding
+    const padding = this.options.gridSize * DungeonGenerator.ROOM_MIN_SPACING_CELLS; // Minimum spacing between rooms
 
     for (const room of this.rooms) {
       if (
@@ -1014,385 +831,6 @@ export class DungeonGenerator {
     }
 
     return false;
-  }
-
-  /**
-   * Creates wall drawings for a rectangular room with optional doorways
-   * Returns an array of Drawing objects (one per wall segment)
-   */
-  private createRoomWalls(room: Room, doorways: Point[] = []): Drawing[] {
-    const { x, y, width, height } = room;
-    const { wallColor, wallSize, gridSize } = this.options;
-    const doorSize = gridSize; // Door opening size
-    const drawings: Drawing[] = [];
-
-    // If no doorways, create simple closed rectangle
-    if (doorways.length === 0) {
-      const points = [
-        x, y, // Top-left
-        x + width, y, // Top-right
-        x + width, y + height, // Bottom-right
-        x, y + height, // Bottom-left
-        x, y, // Back to top-left (close the rectangle)
-      ];
-
-      return [{
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points,
-        color: wallColor,
-        size: wallSize,
-      }];
-    }
-
-    // Determine which side each doorway is on (use gridSize/2 as threshold for better tolerance)
-    const threshold = gridSize / 2;
-    const topDoors = doorways.filter(d => Math.abs(d.y - y) < threshold);
-    const bottomDoors = doorways.filter(d => Math.abs(d.y - (y + height)) < threshold);
-    const leftDoors = doorways.filter(d => Math.abs(d.x - x) < threshold);
-    const rightDoors = doorways.filter(d => Math.abs(d.x - (x + width)) < threshold);
-
-    // Helper to create wall segments with door gaps
-    const createWallSegments = (start: Point, end: Point, doors: Point[], isVertical: boolean) => {
-      if (doors.length === 0) {
-        drawings.push({
-          id: crypto.randomUUID(),
-          tool: 'wall',
-          points: [start.x, start.y, end.x, end.y],
-          color: wallColor,
-          size: wallSize,
-        });
-        return;
-      }
-
-      // Sort doors by position along the wall
-      const sortedDoors = [...doors].sort((a, b) =>
-        isVertical ? a.y - b.y : a.x - b.x
-      );
-
-      let current = start;
-      for (const door of sortedDoors) {
-        const doorStart = isVertical
-          ? { x: door.x, y: door.y - doorSize / 2 }
-          : { x: door.x - doorSize / 2, y: door.y };
-        const doorEnd = isVertical
-          ? { x: door.x, y: door.y + doorSize / 2 }
-          : { x: door.x + doorSize / 2, y: door.y };
-
-        // Add wall segment before door
-        const hasSegmentBefore = isVertical
-          ? current.y < doorStart.y - 1
-          : current.x < doorStart.x - 1;
-
-        if (hasSegmentBefore) {
-          drawings.push({
-            id: crypto.randomUUID(),
-            tool: 'wall',
-            points: [current.x, current.y, doorStart.x, doorStart.y],
-            color: wallColor,
-            size: wallSize,
-          });
-        }
-
-        // Skip the door opening, continue after it
-        current = doorEnd;
-      }
-
-      // Add remaining wall segment after last door
-      const hasSegmentAfter = isVertical
-        ? current.y < end.y - 1
-        : current.x < end.x - 1;
-
-      if (hasSegmentAfter) {
-        drawings.push({
-          id: crypto.randomUUID(),
-          tool: 'wall',
-          points: [current.x, current.y, end.x, end.y],
-          color: wallColor,
-          size: wallSize,
-        });
-      }
-    };
-
-    // Top wall (left to right)
-    createWallSegments({ x, y }, { x: x + width, y }, topDoors, false);
-    // Right wall (top to bottom)
-    createWallSegments({ x: x + width, y }, { x: x + width, y: y + height }, rightDoors, true);
-    // Bottom wall (right to left)
-    createWallSegments({ x: x + width, y: y + height }, { x, y: y + height }, bottomDoors, false);
-    // Left wall (bottom to top)
-    createWallSegments({ x, y: y + height }, { x, y }, leftDoors, true);
-
-    return drawings;
-  }
-
-  /**
-   * Gets the center point of a room
-   */
-  private getRoomCenter(room: Room): Point {
-    return {
-      x: room.x + room.width / 2,
-      y: room.y + room.height / 2,
-    };
-  }
-
-  /**
-   * Finds the best connection point on room1's edge facing room2
-   */
-  private getConnectionPoint(room1: Room, room2: Room): Point {
-    const center1 = this.getRoomCenter(room1);
-    const center2 = this.getRoomCenter(room2);
-
-    const dx = center2.x - center1.x;
-    const dy = center2.y - center1.y;
-
-    // Determine which side of room1 faces room2
-    if (Math.abs(dx) > Math.abs(dy)) {
-      // Connect horizontally (left or right side)
-      if (dx > 0) {
-        // Connect from right side of room1
-        return {
-          x: room1.x + room1.width,
-          y: room1.y + room1.height / 2,
-        };
-      } else {
-        // Connect from left side of room1
-        return {
-          x: room1.x,
-          y: room1.y + room1.height / 2,
-        };
-      }
-    } else {
-      // Connect vertically (top or bottom side)
-      if (dy > 0) {
-        // Connect from bottom side of room1
-        return {
-          x: room1.x + room1.width / 2,
-          y: room1.y + room1.height,
-        };
-      } else {
-        // Connect from top side of room1
-        return {
-          x: room1.x + room1.width / 2,
-          y: room1.y,
-        };
-      }
-    }
-  }
-
-  /**
-   * Checks if a point is inside a room
-   */
-  private isPointInRoom(point: Point, room: Room): boolean {
-    return (
-      point.x >= room.x &&
-      point.x <= room.x + room.width &&
-      point.y >= room.y &&
-      point.y <= room.y + room.height
-    );
-  }
-
-  /**
-   * Checks if a line segment intersects with any room
-   */
-  private lineIntersectsRoom(start: Point, end: Point, room: Room): boolean {
-    // Expand room slightly to ensure corridors don't draw on room boundaries
-    const padding = 5;
-    const expandedRoom = {
-      x: room.x - padding,
-      y: room.y - padding,
-      width: room.width + padding * 2,
-      height: room.height + padding * 2,
-    };
-
-    // Check if either endpoint is inside the room
-    if (this.isPointInRoom(start, expandedRoom) || this.isPointInRoom(end, expandedRoom)) {
-      return true;
-    }
-
-    // Check if line intersects room boundaries
-    // For simplicity, we'll use a bounding box check
-    const lineMinX = Math.min(start.x, end.x);
-    const lineMaxX = Math.max(start.x, end.x);
-    const lineMinY = Math.min(start.y, end.y);
-    const lineMaxY = Math.max(start.y, end.y);
-
-    return !(
-      lineMaxX < expandedRoom.x ||
-      lineMinX > expandedRoom.x + expandedRoom.width ||
-      lineMaxY < expandedRoom.y ||
-      lineMinY > expandedRoom.y + expandedRoom.height
-    );
-  }
-
-  /**
-   * Creates corridor walls connecting two rooms using L-shaped path
-   * Returns both wall drawings and doorway positions
-   */
-  private createCorridor(
-    room1: Room,
-    room2: Room
-  ): { drawings: Drawing[]; doorways: { room: Room; point: Point }[] } {
-    const { wallColor, wallSize, gridSize } = this.options;
-    const corridorWidth = gridSize;
-
-    // Get connection points on room edges
-    const start = this.getConnectionPoint(room1, room2);
-    const end = this.getConnectionPoint(room2, room1);
-
-    const drawings: Drawing[] = [];
-    const doorways: { room: Room; point: Point }[] = [];
-
-    // Add doorways at connection points
-    doorways.push({ room: room1, point: start });
-    doorways.push({ room: room2, point: end });
-
-    // Choose whether to go horizontal-first or vertical-first randomly
-    const horizontalFirst = Math.random() > 0.5;
-
-    // Calculate offset from room edges to avoid overlap with room walls
-    // Determine which direction each connection is facing
-    const isStartHorizontal = start.x === room1.x || start.x === room1.x + room1.width;
-    const isEndHorizontal = end.x === room2.x || end.x === room2.x + room2.width;
-
-    // Offset connection points slightly away from rooms
-    const offset = 1; // Small offset to avoid wall overlap
-    const adjustedStart = { ...start };
-    const adjustedEnd = { ...end };
-
-    if (isStartHorizontal) {
-      adjustedStart.x += start.x === room1.x ? -offset : offset;
-    } else {
-      adjustedStart.y += start.y === room1.y ? -offset : offset;
-    }
-
-    if (isEndHorizontal) {
-      adjustedEnd.x += end.x === room2.x ? -offset : offset;
-    } else {
-      adjustedEnd.y += end.y === room2.y ? -offset : offset;
-    }
-
-    if (horizontalFirst) {
-      // Horizontal segment first, then vertical
-      const bendPoint = { x: adjustedEnd.x, y: adjustedStart.y };
-
-      // Top wall of horizontal corridor
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [
-          adjustedStart.x,
-          adjustedStart.y - corridorWidth / 2,
-          bendPoint.x,
-          bendPoint.y - corridorWidth / 2,
-        ],
-        color: wallColor,
-        size: wallSize,
-      });
-
-      // Bottom wall of horizontal corridor
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [
-          adjustedStart.x,
-          adjustedStart.y + corridorWidth / 2,
-          bendPoint.x,
-          bendPoint.y + corridorWidth / 2,
-        ],
-        color: wallColor,
-        size: wallSize,
-      });
-
-      // Left wall of vertical corridor
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [
-          adjustedEnd.x - corridorWidth / 2,
-          bendPoint.y,
-          adjustedEnd.x - corridorWidth / 2,
-          adjustedEnd.y,
-        ],
-        color: wallColor,
-        size: wallSize,
-      });
-
-      // Right wall of vertical corridor
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [
-          adjustedEnd.x + corridorWidth / 2,
-          bendPoint.y,
-          adjustedEnd.x + corridorWidth / 2,
-          adjustedEnd.y,
-        ],
-        color: wallColor,
-        size: wallSize,
-      });
-    } else {
-      // Vertical segment first, then horizontal
-      const bendPoint = { x: adjustedStart.x, y: adjustedEnd.y };
-
-      // Left wall of vertical corridor
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [
-          adjustedStart.x - corridorWidth / 2,
-          adjustedStart.y,
-          bendPoint.x - corridorWidth / 2,
-          bendPoint.y,
-        ],
-        color: wallColor,
-        size: wallSize,
-      });
-
-      // Right wall of vertical corridor
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [
-          adjustedStart.x + corridorWidth / 2,
-          adjustedStart.y,
-          bendPoint.x + corridorWidth / 2,
-          bendPoint.y,
-        ],
-        color: wallColor,
-        size: wallSize,
-      });
-
-      // Top wall of horizontal corridor
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [
-          bendPoint.x,
-          adjustedEnd.y - corridorWidth / 2,
-          adjustedEnd.x,
-          adjustedEnd.y - corridorWidth / 2,
-        ],
-        color: wallColor,
-        size: wallSize,
-      });
-
-      // Bottom wall of horizontal corridor
-      drawings.push({
-        id: crypto.randomUUID(),
-        tool: 'wall',
-        points: [
-          bendPoint.x,
-          adjustedEnd.y + corridorWidth / 2,
-          adjustedEnd.x,
-          adjustedEnd.y + corridorWidth / 2,
-        ],
-        color: wallColor,
-        size: wallSize,
-      });
-    }
-
-    return { drawings, doorways };
   }
 
   /**

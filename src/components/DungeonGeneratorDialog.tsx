@@ -7,7 +7,10 @@ import { DungeonGenerator } from '../utils/DungeonGenerator';
  * generate procedural dungeons on the canvas.
  */
 export const DungeonGeneratorDialog: React.FC = () => {
-  const { addDrawing, gridSize, clearDungeonDialog, dungeonDialog } = useGameStore();
+  const addDrawing = useGameStore((state) => state.addDrawing);
+  const gridSize = useGameStore((state) => state.gridSize);
+  const clearDungeonDialog = useGameStore((state) => state.clearDungeonDialog);
+  const dungeonDialog = useGameStore((state) => state.dungeonDialog);
   const [numRooms, setNumRooms] = useState(5);
   const [minRoomSize, setMinRoomSize] = useState(3);
   const [maxRoomSize, setMaxRoomSize] = useState(8);
@@ -30,16 +33,25 @@ export const DungeonGeneratorDialog: React.FC = () => {
   if (!dungeonDialog) return null;
 
   const handleGenerate = () => {
+    // Use the current window size for the canvas, with fallbacks to preserve existing behavior
+    const canvasWidth = window.innerWidth || 1920;
+    const canvasHeight = window.innerHeight || 1080;
+
+    // Use default wall settings
+    // TODO: Once wall tool settings are in the store, use those instead of defaults
+    const wallColor = '#ff0000'; // Default red
+    const wallSize = 8; // Default size
+
     // Generate the dungeon
     const generator = new DungeonGenerator({
       numRooms,
       minRoomSize,
       maxRoomSize,
       gridSize,
-      canvasWidth: 1920,
-      canvasHeight: 1080,
-      wallColor: '#ff0000',
-      wallSize: 8,
+      canvasWidth,
+      canvasHeight,
+      wallColor,
+      wallSize,
     });
 
     const drawings = generator.generate();
