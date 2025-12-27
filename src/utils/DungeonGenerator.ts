@@ -203,10 +203,6 @@ export class DungeonGenerator {
   private static readonly RETRY_THRESHOLD_FRACTION = 0.5; // Give up after half the retries
   private static readonly ROOM_SPACING_CELLS = 1; // Padding between pieces (in grid cells)
   private static readonly MIN_WALL_SEGMENT_FRACTION = 0.25; // Minimum wall segment size (1/4 grid cell)
-  private static readonly ROOM_MIN_SPACING_CELLS = 2; // Minimum spacing between rooms (in grid cells)
-  private static readonly CORRIDOR_CONNECTION_OFFSET_PX = 1; // Offset to avoid wall overlap (in pixels)
-  private static readonly ROOM_INTERSECTION_PADDING_PX = 5; // Padding for intersection detection (in pixels)
-  private static readonly DOORWAY_DETECTION_TOLERANCE_FRACTION = 0.5; // Tolerance for doorway edge detection (1/2 grid cell)
 
   constructor(options: DungeonGeneratorOptions) {
     // Set defaults
@@ -811,26 +807,6 @@ export class DungeonGenerator {
     }
 
     return drawings;
-  }
-
-  /**
-   * Checks if a room overlaps with existing rooms (with padding)
-   */
-  private hasOverlap(newRoom: Room): boolean {
-    const padding = this.options.gridSize * DungeonGenerator.ROOM_MIN_SPACING_CELLS; // Minimum spacing between rooms
-
-    for (const room of this.rooms) {
-      if (
-        newRoom.x < room.x + room.width + padding &&
-        newRoom.x + newRoom.width > room.x - padding &&
-        newRoom.y < room.y + room.height + padding &&
-        newRoom.y + newRoom.height > room.y - padding
-      ) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   /**
