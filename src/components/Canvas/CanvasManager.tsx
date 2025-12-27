@@ -6,7 +6,7 @@ import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
 import { useGameStore, Drawing } from '../../store/gameStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
-import { simplifyPath, snapPointToPaths, arePathsOverlapping } from '../../utils/pathOptimization';
+import { simplifyPath, snapPointToPaths } from '../../utils/pathOptimization';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
 import TokenErrorBoundary from './TokenErrorBoundary';
@@ -149,8 +149,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const showConfirmDialog = useGameStore(s => s.showConfirmDialog);
 
   const isDrawing = useRef(false);
-  const currentLine = useRef<any>(null); // Temp line points
-  const [tempLine, setTempLine] = useState<any>(null);
+  const currentLine = useRef<Drawing | null>(null); // Temp line points
+  const [tempLine, setTempLine] = useState<Drawing | null>(null);
 
   // Calibration State
   const calibrationStart = useRef<{x: number, y: number} | null>(null);
@@ -717,7 +717,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
          if (!isDrawing.current) return;
          isDrawing.current = false;
          if (tempLine) {
-             let processedLine = { ...tempLine };
+             let processedLine: Drawing = { ...tempLine };
 
              // Apply path smoothing for wall tool (if enabled)
              if (processedLine.tool === 'wall' && wallToolPrefs.enableSmoothing) {
@@ -726,7 +726,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
                  // Only use smoothed version if it has enough points
                  if (smoothedPoints.length >= wallToolPrefs.minPoints * 2) {
-                     processedLine.points = smoothedPoints;
+                     processedLine = { ...processedLine, points: smoothedPoints };
                  }
              }
 
@@ -736,24 +736,28 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                  const existingWallPaths = existingWalls.map(w => w.points);
 
                  if (existingWallPaths.length > 0 && processedLine.points.length >= 4) {
+                     const points = [...processedLine.points];
+                     
                      // Snap start point
-                     const startPoint = { x: processedLine.points[0], y: processedLine.points[1] };
+                     const startPoint = { x: points[0], y: points[1] };
                      const startSnap = snapPointToPaths(startPoint, existingWallPaths, wallToolPrefs.snapThreshold);
 
                      if (startSnap.snapped) {
-                         processedLine.points[0] = startSnap.point.x;
-                         processedLine.points[1] = startSnap.point.y;
+                         points[0] = startSnap.point.x;
+                         points[1] = startSnap.point.y;
                      }
 
                      // Snap end point
-                     const endIdx = processedLine.points.length - 2;
-                     const endPoint = { x: processedLine.points[endIdx], y: processedLine.points[endIdx + 1] };
+                     const endIdx = points.length - 2;
+                     const endPoint = { x: points[endIdx], y: points[endIdx + 1] };
                      const endSnap = snapPointToPaths(endPoint, existingWallPaths, wallToolPrefs.snapThreshold);
 
                      if (endSnap.snapped) {
-                         processedLine.points[endIdx] = endSnap.point.x;
-                         processedLine.points[endIdx + 1] = endSnap.point.y;
+                         points[endIdx] = endSnap.point.x;
+                         points[endIdx + 1] = endSnap.point.y;
                      }
+                     
+                     processedLine = { ...processedLine, points };
                  }
              }
 
