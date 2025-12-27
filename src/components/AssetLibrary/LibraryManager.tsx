@@ -22,6 +22,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import type { TokenLibraryItem } from '../../store/gameStore';
 import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzySearch';
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
@@ -141,7 +142,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
    * Handle drag start for library tokens
    * Allows dragging tokens from library to canvas
    */
-  const handleDragStart = (e: React.DragEvent, libraryToken: any) => {
+  const handleDragStart = (e: React.DragEvent, libraryToken: TokenLibraryItem) => {
     e.dataTransfer.setData(
       'application/json',
       JSON.stringify({

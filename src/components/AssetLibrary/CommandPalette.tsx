@@ -66,11 +66,15 @@ const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
    * Uses useCallback to prevent stale closure issues
    */
   const handleSelectItem = useCallback((itemId: string) => {
-    const { campaign: { tokenLibrary: currentTokenLibrary }, map: currentMap, addToken } = useGameStore.getState();
+    const state = useGameStore.getState();
+    const currentTokenLibrary = state.campaign.tokenLibrary;
+    const currentMap = state.map;
+    const currentAddToken = state.addToken;
+    
     const item = currentTokenLibrary.find(i => i.id === itemId);
     if (!item) return;
 
-    addLibraryTokenToMap(item, addToken, currentMap);
+    addLibraryTokenToMap(item, currentAddToken, currentMap);
     onClose();
     setQuery(''); // Reset search
   }, [onClose]);

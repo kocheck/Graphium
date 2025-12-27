@@ -4,7 +4,7 @@
  * Shared helpers for token operations across components.
  */
 
-import type { TokenLibraryItem } from '../store/gameStore';
+import type { Token, TokenLibraryItem, MapConfig } from '../store/gameStore';
 
 /**
  * Add a library token to the map at the center position
@@ -16,16 +16,16 @@ import type { TokenLibraryItem } from '../store/gameStore';
  */
 export function addLibraryTokenToMap(
   libraryItem: TokenLibraryItem,
-  addToken: (token: any) => void,
-  map: any
-): any {
+  addToken: (token: Token) => void,
+  map: MapConfig | null
+): Token {
   // Calculate center of current viewport or map
   // Default to (500, 500) if no map loaded
   const centerX = map ? map.x + (map.width * map.scale) / 2 : 500;
   const centerY = map ? map.y + (map.height * map.scale) / 2 : 500;
 
   // Create token from library item
-  const newToken = {
+  const newToken: Token = {
     id: crypto.randomUUID(),
     x: centerX,
     y: centerY,
