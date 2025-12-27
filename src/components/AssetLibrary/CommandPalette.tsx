@@ -69,15 +69,14 @@ const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
     const state = useGameStore.getState();
     const currentTokenLibrary = state.campaign.tokenLibrary;
     const currentMap = state.map;
-    const currentAddToken = state.addToken;
     
     const item = currentTokenLibrary.find(i => i.id === itemId);
     if (!item) return;
 
-    addLibraryTokenToMap(item, currentAddToken, currentMap);
+    addLibraryTokenToMap(item, addToken, currentMap);
     onClose();
     setQuery(''); // Reset search
-  }, [onClose]);
+  }, [addToken, onClose]);
 
   // Auto-focus search input when modal opens
   useEffect(() => {
