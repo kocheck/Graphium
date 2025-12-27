@@ -193,11 +193,12 @@ export class DungeonGenerator {
       }];
     }
 
-    // Determine which side each doorway is on
-    const topDoors = doorways.filter(d => Math.abs(d.y - y) < 5);
-    const bottomDoors = doorways.filter(d => Math.abs(d.y - (y + height)) < 5);
-    const leftDoors = doorways.filter(d => Math.abs(d.x - x) < 5);
-    const rightDoors = doorways.filter(d => Math.abs(d.x - (x + width)) < 5);
+    // Determine which side each doorway is on (use gridSize/2 as threshold for better tolerance)
+    const threshold = gridSize / 2;
+    const topDoors = doorways.filter(d => Math.abs(d.y - y) < threshold);
+    const bottomDoors = doorways.filter(d => Math.abs(d.y - (y + height)) < threshold);
+    const leftDoors = doorways.filter(d => Math.abs(d.x - x) < threshold);
+    const rightDoors = doorways.filter(d => Math.abs(d.x - (x + width)) < threshold);
 
     // Helper to create wall segments with door gaps
     const createWallSegments = (start: Point, end: Point, doors: Point[], isVertical: boolean) => {
@@ -397,86 +398,146 @@ export class DungeonGenerator {
     // Choose whether to go horizontal-first or vertical-first randomly
     const horizontalFirst = Math.random() > 0.5;
 
-    // Helper to add a wall segment only if it doesn't intersect rooms
-    const addWallIfClear = (p1: Point, p2: Point) => {
-      // Check if this wall segment intersects with any room (except the connected rooms at endpoints)
-      let intersectsRoom = false;
+    // Calculate offset from room edges to avoid overlap with room walls
+    // Determine which direction each connection is facing
+    const isStartHorizontal = start.x === room1.x || start.x === room1.x + room1.width;
+    const isEndHorizontal = end.x === room2.x || end.x === room2.x + room2.width;
 
-      for (const room of this.rooms) {
-        // Skip checking the two rooms we're connecting (corridors can touch their edges)
-        if (room === room1 || room === room2) continue;
+    // Offset connection points slightly away from rooms
+    const offset = 1; // Small offset to avoid wall overlap
+    const adjustedStart = { ...start };
+    const adjustedEnd = { ...end };
 
-        if (this.lineIntersectsRoom(p1, p2, room)) {
-          intersectsRoom = true;
-          break;
-        }
-      }
+    if (isStartHorizontal) {
+      adjustedStart.x += start.x === room1.x ? -offset : offset;
+    } else {
+      adjustedStart.y += start.y === room1.y ? -offset : offset;
+    }
 
-      if (!intersectsRoom) {
-        drawings.push({
-          id: crypto.randomUUID(),
-          tool: 'wall',
-          points: [p1.x, p1.y, p2.x, p2.y],
-          color: wallColor,
-          size: wallSize,
-        });
-      }
-    };
+    if (isEndHorizontal) {
+      adjustedEnd.x += end.x === room2.x ? -offset : offset;
+    } else {
+      adjustedEnd.y += end.y === room2.y ? -offset : offset;
+    }
 
     if (horizontalFirst) {
-      // Horizontal segment first
-      const bendPoint = { x: end.x, y: start.y };
+      // Horizontal segment first, then vertical
+      const bendPoint = { x: adjustedEnd.x, y: adjustedStart.y };
 
       // Top wall of horizontal corridor
-      addWallIfClear(
-        { x: start.x, y: start.y - corridorWidth / 2 },
-        { x: bendPoint.x, y: bendPoint.y - corridorWidth / 2 }
-      );
+      drawings.push({
+        id: crypto.randomUUID(),
+        tool: 'wall',
+        points: [
+          adjustedStart.x,
+          adjustedStart.y - corridorWidth / 2,
+          bendPoint.x,
+          bendPoint.y - corridorWidth / 2,
+        ],
+        color: wallColor,
+        size: wallSize,
+      });
 
       // Bottom wall of horizontal corridor
-      addWallIfClear(
-        { x: start.x, y: start.y + corridorWidth / 2 },
-        { x: bendPoint.x, y: bendPoint.y + corridorWidth / 2 }
-      );
+      drawings.push({
+        id: crypto.randomUUID(),
+        tool: 'wall',
+        points: [
+          adjustedStart.x,
+          adjustedStart.y + corridorWidth / 2,
+          bendPoint.x,
+          bendPoint.y + corridorWidth / 2,
+        ],
+        color: wallColor,
+        size: wallSize,
+      });
 
       // Left wall of vertical corridor
-      addWallIfClear(
-        { x: end.x - corridorWidth / 2, y: bendPoint.y },
-        { x: end.x - corridorWidth / 2, y: end.y }
-      );
+      drawings.push({
+        id: crypto.randomUUID(),
+        tool: 'wall',
+        points: [
+          adjustedEnd.x - corridorWidth / 2,
+          bendPoint.y,
+          adjustedEnd.x - corridorWidth / 2,
+          adjustedEnd.y,
+        ],
+        color: wallColor,
+        size: wallSize,
+      });
 
       // Right wall of vertical corridor
-      addWallIfClear(
-        { x: end.x + corridorWidth / 2, y: bendPoint.y },
-        { x: end.x + corridorWidth / 2, y: end.y }
-      );
+      drawings.push({
+        id: crypto.randomUUID(),
+        tool: 'wall',
+        points: [
+          adjustedEnd.x + corridorWidth / 2,
+          bendPoint.y,
+          adjustedEnd.x + corridorWidth / 2,
+          adjustedEnd.y,
+        ],
+        color: wallColor,
+        size: wallSize,
+      });
     } else {
-      // Vertical segment first
-      const bendPoint = { x: start.x, y: end.y };
+      // Vertical segment first, then horizontal
+      const bendPoint = { x: adjustedStart.x, y: adjustedEnd.y };
 
       // Left wall of vertical corridor
-      addWallIfClear(
-        { x: start.x - corridorWidth / 2, y: start.y },
-        { x: bendPoint.x - corridorWidth / 2, y: bendPoint.y }
-      );
+      drawings.push({
+        id: crypto.randomUUID(),
+        tool: 'wall',
+        points: [
+          adjustedStart.x - corridorWidth / 2,
+          adjustedStart.y,
+          bendPoint.x - corridorWidth / 2,
+          bendPoint.y,
+        ],
+        color: wallColor,
+        size: wallSize,
+      });
 
       // Right wall of vertical corridor
-      addWallIfClear(
-        { x: start.x + corridorWidth / 2, y: start.y },
-        { x: bendPoint.x + corridorWidth / 2, y: bendPoint.y }
-      );
+      drawings.push({
+        id: crypto.randomUUID(),
+        tool: 'wall',
+        points: [
+          adjustedStart.x + corridorWidth / 2,
+          adjustedStart.y,
+          bendPoint.x + corridorWidth / 2,
+          bendPoint.y,
+        ],
+        color: wallColor,
+        size: wallSize,
+      });
 
       // Top wall of horizontal corridor
-      addWallIfClear(
-        { x: bendPoint.x, y: end.y - corridorWidth / 2 },
-        { x: end.x, y: end.y - corridorWidth / 2 }
-      );
+      drawings.push({
+        id: crypto.randomUUID(),
+        tool: 'wall',
+        points: [
+          bendPoint.x,
+          adjustedEnd.y - corridorWidth / 2,
+          adjustedEnd.x,
+          adjustedEnd.y - corridorWidth / 2,
+        ],
+        color: wallColor,
+        size: wallSize,
+      });
 
       // Bottom wall of horizontal corridor
-      addWallIfClear(
-        { x: bendPoint.x, y: end.y + corridorWidth / 2 },
-        { x: end.x, y: end.y + corridorWidth / 2 }
-      );
+      drawings.push({
+        id: crypto.randomUUID(),
+        tool: 'wall',
+        points: [
+          bendPoint.x,
+          adjustedEnd.y + corridorWidth / 2,
+          adjustedEnd.x,
+          adjustedEnd.y + corridorWidth / 2,
+        ],
+        color: wallColor,
+        size: wallSize,
+      });
     }
 
     return { drawings, doorways };
