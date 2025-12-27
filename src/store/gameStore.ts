@@ -170,6 +170,7 @@ export interface GameState {
   confirmDialog: ConfirmDialog | null;
   showResourceMonitor: boolean;
   dungeonDialog: boolean;
+  isGamePaused: boolean;
 
   // --- Campaign State ---
   campaign: Campaign;
@@ -229,6 +230,7 @@ export interface GameState {
   setShowResourceMonitor: (show: boolean) => void;
   showDungeonDialog: () => void;
   clearDungeonDialog: () => void;
+  setIsGamePaused: (isPaused: boolean) => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => {
@@ -252,6 +254,7 @@ export const useGameStore = create<GameState>((set, get) => {
     confirmDialog: null,
     showResourceMonitor: false,
     dungeonDialog: false,
+    isGamePaused: false,
     campaign: initialCampaign,
 
     // --- Campaign Actions ---
@@ -510,5 +513,6 @@ export const useGameStore = create<GameState>((set, get) => {
     setShowResourceMonitor: (show: boolean) => set({ showResourceMonitor: show }),
     showDungeonDialog: () => set({ dungeonDialog: true }),
     clearDungeonDialog: () => set({ dungeonDialog: false }),
+    setIsGamePaused: (isPaused: boolean) => set({ isGamePaused: isPaused }),
   };
 });

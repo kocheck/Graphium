@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import CanvasManager from './components/Canvas/CanvasManager'
 import SyncManager from './components/SyncManager'
 import { ThemeManager } from './components/ThemeManager'
+import { PauseManager } from './components/PauseManager'
+import { LoadingOverlay } from './components/LoadingOverlay'
 import Sidebar from './components/Sidebar'
 import Toast from './components/Toast'
 import ConfirmDialog from './components/ConfirmDialog'
@@ -92,6 +94,20 @@ function App() {
 
   // Resource Monitor state (from store)
   const showResourceMonitor = useGameStore((state) => state.showResourceMonitor);
+
+  // Pause state (from store)
+  const isGamePaused = useGameStore((state) => state.isGamePaused);
+
+  // Handle pause toggle
+  const handlePauseToggle = async () => {
+    if (!window.ipcRenderer) return;
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('TOGGLE_PAUSE');
+    } catch (e) {
+      console.error('Failed to toggle pause:', e);
+    }
+  };
 
   // Filter selected IDs to only include tokens (not drawings)
   const tokens = useGameStore((s) => s.tokens);
@@ -187,8 +203,10 @@ function App() {
       {/* Global components (rendered in both Architect and World View) */}
       <ThemeManager />
       <SyncManager />
+      <PauseManager />
       <Toast />
       <ConfirmDialog />
+      <LoadingOverlay />
 
       {/* Auto-save (Architect View only) */}
       {isArchitectView && <AutoSaveManager />}
@@ -209,6 +227,33 @@ function App() {
         {/* Toolbar: Only render in Architect View (DM controls) */}
         {isArchitectView && (
         <div className="toolbar fixed top-4 right-4 p-2 rounded shadow flex gap-2 z-50">
+           {/* Play/Pause Button */}
+           <button
+             className={`btn btn-tool flex items-center gap-2 font-semibold ${
+               isGamePaused
+                 ? 'bg-red-500 hover:bg-red-600 text-white'
+                 : 'bg-green-500 hover:bg-green-600 text-white'
+             }`}
+             onClick={handlePauseToggle}
+             title={isGamePaused ? 'Click to resume - Players will see the updated map' : 'Click to pause - Players will see a loading screen'}
+           >
+             {isGamePaused ? (
+               <>
+                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                   <path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5z" />
+                 </svg>
+                 <span>PAUSED</span>
+               </>
+             ) : (
+               <>
+                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                 </svg>
+                 <span>PLAYING</span>
+               </>
+             )}
+           </button>
+           <div className="toolbar-divider w-px mx-1"></div>
            <button
              className={`btn btn-tool ${tool === 'select' ? 'active' : ''}`}
              onClick={() => setTool('select')}>Select (V)</button>
