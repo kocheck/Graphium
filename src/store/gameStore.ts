@@ -169,6 +169,7 @@ export interface GameState {
   toast: ToastMessage | null;
   confirmDialog: ConfirmDialog | null;
   showResourceMonitor: boolean;
+  dungeonDialog: boolean;
 
   // --- Campaign State ---
   campaign: Campaign;
@@ -226,6 +227,8 @@ export interface GameState {
   showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) => void;
   clearConfirmDialog: () => void;
   setShowResourceMonitor: (show: boolean) => void;
+  showDungeonDialog: () => void;
+  clearDungeonDialog: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => {
@@ -248,6 +251,7 @@ export const useGameStore = create<GameState>((set, get) => {
     toast: null,
     confirmDialog: null,
     showResourceMonitor: false,
+    dungeonDialog: false,
     campaign: initialCampaign,
 
     // --- Campaign Actions ---
@@ -504,5 +508,7 @@ export const useGameStore = create<GameState>((set, get) => {
       set({ confirmDialog: { message, onConfirm, confirmText } }),
     clearConfirmDialog: () => set({ confirmDialog: null }),
     setShowResourceMonitor: (show: boolean) => set({ showResourceMonitor: show }),
+    showDungeonDialog: () => set({ dungeonDialog: true }),
+    clearDungeonDialog: () => set({ dungeonDialog: false }),
   };
 });
