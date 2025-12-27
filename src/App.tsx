@@ -206,7 +206,9 @@ function App() {
       <PauseManager />
       <Toast />
       <ConfirmDialog />
-      <LoadingOverlay />
+
+      {/* Loading Overlay: Only render in World View to block players' view */}
+      {isWorldView && <LoadingOverlay />}
 
       {/* Auto-save (Architect View only) */}
       {isArchitectView && <AutoSaveManager />}
