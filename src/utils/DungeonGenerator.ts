@@ -403,10 +403,100 @@ export class DungeonGenerator {
   }
 
   /**
-   * Removes wall segment in the specified direction
+   * Splits a wall segment to create a doorway opening
+   * Instead of removing the entire wall, we keep the parts on either side of the opening
    */
   private removeConnectingWalls(piece: DungeonPiece, direction: Direction): void {
-    piece.wallSegments[direction] = undefined;
+    const { bounds, wallSegments } = piece;
+    const { gridSize } = this.options;
+    const doorwaySize = gridSize; // Opening size (1 grid cell)
+
+    // Calculate the center point where the doorway should be
+    let centerX: number, centerY: number;
+
+    switch (direction) {
+      case 'north':
+        centerX = bounds.x + bounds.width / 2;
+        centerY = bounds.y;
+        break;
+      case 'south':
+        centerX = bounds.x + bounds.width / 2;
+        centerY = bounds.y + bounds.height;
+        break;
+      case 'east':
+        centerX = bounds.x + bounds.width;
+        centerY = bounds.y + bounds.height / 2;
+        break;
+      case 'west':
+        centerX = bounds.x;
+        centerY = bounds.y + bounds.height / 2;
+        break;
+    }
+
+    // Get the current wall segment
+    const segment = wallSegments[direction];
+    if (!segment || segment.length < 2) return;
+
+    const start = segment[0];
+    const end = segment[1];
+
+    // Split the wall around the doorway
+    if (direction === 'north' || direction === 'south') {
+      // Horizontal wall - split left and right of doorway
+      const doorwayLeft = centerX - doorwaySize / 2;
+      const doorwayRight = centerX + doorwaySize / 2;
+
+      // Keep left segment if it's long enough
+      const leftSegment: Point[] = [];
+      if (start.x < doorwayLeft - 5) {
+        leftSegment.push(start, { x: doorwayLeft, y: start.y });
+      }
+
+      // Keep right segment if it's long enough
+      const rightSegment: Point[] = [];
+      if (end.x > doorwayRight + 5) {
+        rightSegment.push({ x: doorwayRight, y: end.y }, end);
+      }
+
+      // Combine segments (or set to undefined if nothing left)
+      if (leftSegment.length > 0 && rightSegment.length > 0) {
+        // Store both segments by extending the points array
+        wallSegments[direction] = [...leftSegment, ...rightSegment];
+      } else if (leftSegment.length > 0) {
+        wallSegments[direction] = leftSegment;
+      } else if (rightSegment.length > 0) {
+        wallSegments[direction] = rightSegment;
+      } else {
+        wallSegments[direction] = undefined;
+      }
+    } else {
+      // Vertical wall - split top and bottom of doorway
+      const doorwayTop = centerY - doorwaySize / 2;
+      const doorwayBottom = centerY + doorwaySize / 2;
+
+      // Keep top segment if it's long enough
+      const topSegment: Point[] = [];
+      if (start.y < doorwayTop - 5) {
+        topSegment.push(start, { x: start.x, y: doorwayTop });
+      }
+
+      // Keep bottom segment if it's long enough
+      const bottomSegment: Point[] = [];
+      if (end.y > doorwayBottom + 5) {
+        bottomSegment.push({ x: end.x, y: doorwayBottom }, end);
+      }
+
+      // Combine segments (or set to undefined if nothing left)
+      if (topSegment.length > 0 && bottomSegment.length > 0) {
+        wallSegments[direction] = [...topSegment, ...bottomSegment];
+      } else if (topSegment.length > 0) {
+        wallSegments[direction] = topSegment;
+      } else if (bottomSegment.length > 0) {
+        wallSegments[direction] = bottomSegment;
+      } else {
+        wallSegments[direction] = undefined;
+      }
+    }
   }
 
   /**
@@ -439,6 +529,7 @@ export class DungeonGenerator {
 
   /**
    * Converts a dungeon piece to Drawing objects
+   * Handles both simple walls (2 points) and split walls (4 points with doorway gap)
    */
   private pieceToDrawings(piece: DungeonPiece): Drawing[] {
     const { wallColor, wallSize } = this.options;
@@ -449,18 +540,36 @@ export class DungeonGenerator {
       const segment = piece.wallSegments[direction];
 
       if (segment && segment.length >= 2) {
-        const points: number[] = [];
-        for (const point of segment) {
-          points.push(point.x, point.y);
-        }
+        // Check if this is a split wall (4 points) or simple wall (2 points)
+        if (segment.length === 2) {
+          // Simple wall - draw as single line
+          drawings.push({
+            id: crypto.randomUUID(),
+            tool: 'wall',
+            points: [segment[0].x, segment[0].y, segment[1].x, segment[1].y],
+            color: wallColor,
+            size: wallSize,
+          });
+        } else if (segment.length === 4) {
+          // Split wall with doorway - draw as two separate lines
+          // First segment (e.g., left side or top side)
+          drawings.push({
+            id: crypto.randomUUID(),
+            tool: 'wall',
+            points: [segment[0].x, segment[0].y, segment[1].x, segment[1].y],
+            color: wallColor,
+            size: wallSize,
+          });
 
-        drawings.push({
-          id: crypto.randomUUID(),
-          tool: 'wall',
-          points,
-          color: wallColor,
-          size: wallSize,
-        });
+          // Second segment (e.g., right side or bottom side)
+          drawings.push({
+            id: crypto.randomUUID(),
+            tool: 'wall',
+            points: [segment[2].x, segment[2].y, segment[3].x, segment[3].y],
+            color: wallColor,
+            size: wallSize,
+          });
+        }
       }
     }
 
