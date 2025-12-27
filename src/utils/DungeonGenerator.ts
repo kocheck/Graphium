@@ -385,6 +385,10 @@ export class DungeonGenerator {
         break;
     }
 
+    // Snap room position to grid for proper alignment
+    newRoom.bounds.x = Math.round(newRoom.bounds.x / gridSize) * gridSize;
+    newRoom.bounds.y = Math.round(newRoom.bounds.y / gridSize) * gridSize;
+
     // Realign wall segments after position adjustment
     this.updateWallSegments(newRoom);
 
@@ -397,10 +401,11 @@ export class DungeonGenerator {
       return null;
     }
 
-    // Calculate exact doorway positions where corridor connects
+    // Calculate exact doorway positions AFTER grid snapping
+    // Source room doorway remains at corridor connection point
     const sourceRoomDoorway = { x: connX, y: connY };
 
-    // Calculate new room doorway position
+    // Recalculate new room doorway position based on grid-aligned position
     let newRoomDoorwayX: number, newRoomDoorwayY: number;
     switch (direction) {
       case 'north':
@@ -488,7 +493,7 @@ export class DungeonGenerator {
     const end = segment[1];
 
     // Split the wall around the doorway
-    const minSegmentLength = gridSize / 2; // Minimum wall segment length to keep
+    const minSegmentLength = gridSize / 4; // Minimum wall segment length to keep (more permissive)
 
     if (direction === 'north' || direction === 'south') {
       // Horizontal wall - split left and right of doorway
