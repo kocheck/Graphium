@@ -381,9 +381,34 @@ export class DungeonGenerator {
       return null;
     }
 
-    // Remove wall segments where pieces connect
-    this.removeConnectingWalls(sourcePiece, direction);
-    this.removeConnectingWalls(newRoom, this.getOppositeDirection(direction));
+    // Calculate exact doorway positions where corridor connects
+    const sourceRoomDoorway = { x: connX, y: connY };
+
+    // Calculate new room doorway position
+    let newRoomDoorwayX: number, newRoomDoorwayY: number;
+    switch (direction) {
+      case 'north':
+        newRoomDoorwayX = newRoom.bounds.x + newRoom.bounds.width / 2;
+        newRoomDoorwayY = newRoom.bounds.y + newRoom.bounds.height;
+        break;
+      case 'south':
+        newRoomDoorwayX = newRoom.bounds.x + newRoom.bounds.width / 2;
+        newRoomDoorwayY = newRoom.bounds.y;
+        break;
+      case 'east':
+        newRoomDoorwayX = newRoom.bounds.x;
+        newRoomDoorwayY = newRoom.bounds.y + newRoom.bounds.height / 2;
+        break;
+      case 'west':
+        newRoomDoorwayX = newRoom.bounds.x + newRoom.bounds.width;
+        newRoomDoorwayY = newRoom.bounds.y + newRoom.bounds.height / 2;
+        break;
+    }
+    const newRoomDoorway = { x: newRoomDoorwayX, y: newRoomDoorwayY };
+
+    // Remove wall segments where pieces connect using exact positions
+    this.removeConnectingWalls(sourcePiece, direction, sourceRoomDoorway);
+    this.removeConnectingWalls(newRoom, this.getOppositeDirection(direction), newRoomDoorway);
 
     return { corridor, newRoom };
   }
@@ -406,31 +431,37 @@ export class DungeonGenerator {
    * Splits a wall segment to create a doorway opening
    * Instead of removing the entire wall, we keep the parts on either side of the opening
    */
-  private removeConnectingWalls(piece: DungeonPiece, direction: Direction): void {
+  private removeConnectingWalls(piece: DungeonPiece, direction: Direction, doorwayPosition?: Point): void {
     const { bounds, wallSegments } = piece;
     const { gridSize } = this.options;
     const doorwaySize = gridSize; // Opening size (1 grid cell)
 
-    // Calculate the center point where the doorway should be
+    // Use exact doorway position if provided, otherwise calculate from bounds
     let centerX: number, centerY: number;
 
-    switch (direction) {
-      case 'north':
-        centerX = bounds.x + bounds.width / 2;
-        centerY = bounds.y;
-        break;
-      case 'south':
-        centerX = bounds.x + bounds.width / 2;
-        centerY = bounds.y + bounds.height;
-        break;
-      case 'east':
-        centerX = bounds.x + bounds.width;
-        centerY = bounds.y + bounds.height / 2;
-        break;
-      case 'west':
-        centerX = bounds.x;
-        centerY = bounds.y + bounds.height / 2;
-        break;
+    if (doorwayPosition) {
+      centerX = doorwayPosition.x;
+      centerY = doorwayPosition.y;
+    } else {
+      // Fallback: calculate the center point where the doorway should be
+      switch (direction) {
+        case 'north':
+          centerX = bounds.x + bounds.width / 2;
+          centerY = bounds.y;
+          break;
+        case 'south':
+          centerX = bounds.x + bounds.width / 2;
+          centerY = bounds.y + bounds.height;
+          break;
+        case 'east':
+          centerX = bounds.x + bounds.width;
+          centerY = bounds.y + bounds.height / 2;
+          break;
+        case 'west':
+          centerX = bounds.x;
+          centerY = bounds.y + bounds.height / 2;
+          break;
+      }
     }
 
     // Get the current wall segment
