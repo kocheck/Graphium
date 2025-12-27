@@ -24,12 +24,13 @@
  * See ARCHITECTURE.md for complete IPC documentation.
  */
 
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, IpcMainEvent, IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, IpcMainEvent, IpcMainInvokeEvent, shell } from 'electron'
 import JSZip from 'jszip'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
+import os from 'node:os'
 import {
   initializeThemeManager,
   getThemeState,
@@ -471,32 +472,32 @@ let currentCampaignPath: string | null = null;
   /**
    * Helper function to serialize campaign assets to a ZIP file.
    * Processes all map backgrounds, tokens, and library assets.
-   * 
+   *
    * @param campaign - Campaign data to serialize
    * @param zip - JSZip instance to add files to
    * @returns Modified campaign object with relative asset paths
    */
   async function serializeCampaignToZip(campaign: unknown, zip: JSZip): Promise<unknown> {
       const assetsFolder = zip.folder("assets");
-      
+
       // Deep clone to avoid mutating original state
       const campaignToSave = JSON.parse(JSON.stringify(campaign));
-      
+
       // Track processed files to avoid duplication
       // Key: Absolute source path, Value: Relative destination path in zip
       const processedAssets = new Map<string, string>();
-      
+
       // Helper to process an image asset
       const processAsset = async (src: string): Promise<string> => {
           if (!src || !src.startsWith('file://')) return src;
-          
+
           const absolutePath = fileURLToPath(src);
-          
+
           // If already processed, return the existing relative path
           if (processedAssets.has(absolutePath)) {
               return processedAssets.get(absolutePath)!;
           }
-          
+
           const basename = path.basename(absolutePath);
           const content = await fs.readFile(absolutePath).catch(() => null);
           if (content) {
@@ -507,17 +508,17 @@ let currentCampaignPath: string | null = null;
           }
           return src; // Keep original if read fails
       };
-      
+
       // Iterate all maps and process assets
       if (campaignToSave.maps) {
           for (const mapId in campaignToSave.maps) {
               const map = campaignToSave.maps[mapId];
-              
+
               // 1. Process Map Background
               if (map.map && map.map.src) {
                   map.map.src = await processAsset(map.map.src);
               }
-              
+
               // 2. Process Tokens
               if (map.tokens) {
                   for (const token of map.tokens) {
@@ -526,14 +527,14 @@ let currentCampaignPath: string | null = null;
               }
           }
       }
-      
+
       // 3. Process Campaign Token Library
       if (campaignToSave.tokenLibrary) {
           for (const item of campaignToSave.tokenLibrary) {
               item.src = await processAsset(item.src);
           }
       }
-      
+
       return campaignToSave;
   }
 
@@ -555,7 +556,7 @@ let currentCampaignPath: string | null = null;
     currentCampaignPath = filePath;
 
     const zip = new JSZip();
-    
+
     // Use shared helper to process campaign assets
     const campaignToSave = await serializeCampaignToZip(campaign, zip);
 
@@ -579,7 +580,7 @@ let currentCampaignPath: string | null = null;
 
       try {
           const zip = new JSZip();
-          
+
           // Use shared helper to process campaign assets
           const campaignToSave = await serializeCampaignToZip(campaign, zip);
 
@@ -804,4 +805,66 @@ let currentCampaignPath: string | null = null;
  ipcMain.handle('GET_PAUSE_STATE', () => {
    return isGamePaused
  })
+
+  /**
+   * IPC handler: get-username
+   *
+   * Returns the system username for PII sanitization in error reports.
+   * Used by error boundaries and global error handlers to remove usernames
+   * from file paths in stack traces.
+   *
+   * @returns System username (e.g., 'johnsmith' on macOS/Linux)
+   */
+  ipcMain.handle('get-username', () => {
+    return os.userInfo().username
+  })
+
+  /**
+   * IPC handler: open-external
+   *
+   * Opens an external URL (mailto: or https:) in the default application.
+   * Used by error reporting UI to open email clients or documentation.
+   *
+   * @param url - URL to open (must be mailto: or https:)
+   * @returns Success status
+   */
+  ipcMain.handle('open-external', async (_event: IpcMainInvokeEvent, url: string) => {
+    // Security: Only allow mailto: and https: URLs
+    if (url.startsWith('mailto:') || url.startsWith('https:')) {
+      await shell.openExternal(url)
+      return true
+    }
+    return false
+  })
+
+  /**
+   * IPC handler: save-error-report
+   *
+   * Saves an error report to a file using the native save dialog.
+   * Used by error reporting UI to let users save error reports locally.
+   *
+   * @param reportContent - The error report content to save
+   * @returns Success status and optional file path
+   */
+  ipcMain.handle('save-error-report', async (_event: IpcMainInvokeEvent, reportContent: string) => {
+    try {
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Save Error Report',
+        defaultPath: `hyle-error-report-${Date.now()}.txt`,
+        filters: [
+          { name: 'Text Files', extensions: ['txt'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      })
+
+      if (canceled || !filePath) {
+        return { success: false, reason: 'User canceled' }
+      }
+
+      await fs.writeFile(filePath, reportContent, 'utf-8')
+      return { success: true, filePath }
+    } catch (error) {
+      return { success: false, reason: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
 })

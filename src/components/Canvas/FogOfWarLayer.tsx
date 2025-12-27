@@ -43,7 +43,7 @@ import { BLUR_FILTERS } from './CanvasManager';
  * - Frame rate: 22fps → 60fps (173% improvement)
  * - CPU usage: ~80% → ~15% (static scenes)
  */
-const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) => {
+const FogOfWarLayer = ({ tokens, drawings, gridSize, visibleBounds, map }: FogOfWarLayerProps) => {
   // Get explored regions and actions from store
   const exploredRegions = useGameStore((state) => state.exploredRegions);
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
@@ -155,7 +155,27 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
     lastExploreUpdateRef.current = now;
   }, [tokens, pcTokens, visibilityCache, addExploredRegion]);
 
-  if (!map) return null;
+  // Calculate fog coverage area
+  // If map exists, use map bounds; otherwise use a large area covering the canvas
+  const fogBounds = useMemo(() => {
+    if (map) {
+      return {
+        x: map.x,
+        y: map.y,
+        width: map.width * map.scale,
+        height: map.height * map.scale,
+      };
+    }
+    // No map: cover a large area (10,000x10,000) centered around visible area
+    // This ensures fog covers hand-drawn maps and tokens
+    const padding = 5000;
+    return {
+      x: visibleBounds.x - padding,
+      y: visibleBounds.y - padding,
+      width: visibleBounds.width + padding * 2,
+      height: visibleBounds.height + padding * 2,
+    };
+  }, [map, visibleBounds]);
 
   return (
     <Group listening={false}>
@@ -172,7 +192,9 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
       */}
       <Group>
         {/* Layer 1: Full Fog (Unexplored Areas) */}
-        <URLImage
+        {map ? (
+          // With map: Use blurred/darkened map image
+          <URLImage
             key="bg-map-unexplored"
             name="map-image-unexplored"
             id="map-unexplored"
@@ -188,7 +210,18 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, map }: FogOfWarLayerProps) 
             filters={BLUR_FILTERS}
             blurRadius={20}
             brightness={-0.94}
-        />
+          />
+        ) : (
+          // No map: Render solid dark fog overlay
+          <Shape
+            key="fog-overlay-no-map"
+            sceneFunc={(ctx) => {
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.94)'; // Very dark, similar to blurred map brightness
+              ctx.fillRect(fogBounds.x, fogBounds.y, fogBounds.width, fogBounds.height);
+            }}
+            listening={false}
+          />
+        )}
 
         {/* Layer 2: Explored Areas (Partial Erase for Dimmed Effect) */}
         {exploredRegions.map((region, index) => (

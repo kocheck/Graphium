@@ -131,6 +131,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const gridSize = useGameStore(s => s.gridSize);
   const gridType = useGameStore(s => s.gridType);
   const isCalibrating = useGameStore(s => s.isCalibrating);
+  const isDaylightMode = useGameStore(s => s.isDaylightMode);
 
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);
@@ -741,7 +742,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
                  if (existingWallPaths.length > 0 && processedLine.points.length >= 4) {
                      const points = [...processedLine.points];
-                     
+
                      // Snap start point
                      const startPoint = { x: points[0], y: points[1] };
                      const startSnap = snapPointToPaths(startPoint, existingWallPaths, wallToolPrefs.snapThreshold);
@@ -760,7 +761,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                          points[endIdx] = endSnap.point.x;
                          points[endIdx + 1] = endSnap.point.y;
                      }
-                     
+
                      processedLine = { ...processedLine, points };
                  }
              }
@@ -1018,7 +1019,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         </Layer>
 
         {/* Fog of War Layer (World View only) - Renders Overlay */}
-        {isWorldView && (
+        {isWorldView && !isDaylightMode && (
              <Layer listening={false}>
               <FogOfWarLayer
                 tokens={tokens}

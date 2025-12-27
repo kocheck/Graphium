@@ -862,6 +862,158 @@ useEffect(() => {
 
 ---
 
+### 9. get-username
+
+**Pattern:** Invoke/Handle (Request-Response)
+**Direction:** Renderer → Main Process
+**Purpose:** Returns the system username for PII sanitization in error reports
+
+#### Usage
+
+**Caller:** `src/utils/errorSanitizer.ts`, `src/components/PrivacyErrorBoundary.tsx`
+
+**Renderer:**
+```typescript
+const username = await window.errorReporting.getUsername()
+// Returns: "johnsmith" (or current system username)
+```
+
+**Main Process:** `electron/main.ts`
+```typescript
+ipcMain.handle('get-username', () => {
+  return os.userInfo().username
+})
+```
+
+#### Returns
+
+`string` - System username (e.g., `"johnsmith"` on macOS/Linux)
+
+#### Purpose
+
+Used by error reporting system to sanitize file paths in stack traces:
+- `/Users/johnsmith/project/file.ts` → `/Users/<USER>/project/file.ts`
+
+#### Related Files
+
+- Handler: `electron/main.ts` (get-username handler)
+- Preload: `electron/preload.ts` (exposed as `window.errorReporting.getUsername()`)
+- Usage: `src/utils/errorSanitizer.ts`, `src/components/PrivacyErrorBoundary.tsx`
+
+---
+
+### 10. open-external
+
+**Pattern:** Invoke/Handle (Request-Response)
+**Direction:** Renderer → Main Process
+**Purpose:** Opens external URLs (mailto: or https:) in the default application
+
+#### Usage
+
+**Caller:** `src/components/PrivacyErrorBoundary.tsx`
+
+**Renderer:**
+```typescript
+const success = await window.errorReporting.openExternal('mailto:support@example.com')
+// Opens email client with mailto link
+```
+
+**Main Process:** `electron/main.ts`
+```typescript
+ipcMain.handle('open-external', async (_event, url: string) => {
+  if (url.startsWith('mailto:') || url.startsWith('https:')) {
+    await shell.openExternal(url)
+    return true
+  }
+  return false
+})
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | `string` | URL to open (must start with `mailto:` or `https:`) |
+
+#### Returns
+
+`boolean` - `true` if URL was opened successfully, `false` if URL format is invalid
+
+#### Security
+
+Only allows `mailto:` and `https:` URLs to prevent security issues. Other protocols are rejected.
+
+#### Related Files
+
+- Handler: `electron/main.ts` (open-external handler)
+- Preload: `electron/preload.ts` (exposed as `window.errorReporting.openExternal()`)
+- Usage: `src/components/PrivacyErrorBoundary.tsx` (error report email links)
+
+---
+
+### 11. save-error-report
+
+**Pattern:** Invoke/Handle (Request-Response)
+**Direction:** Renderer → Main Process
+**Purpose:** Saves an error report to a file using the native save dialog
+
+#### Usage
+
+**Caller:** `src/components/PrivacyErrorBoundary.tsx`
+
+**Renderer:**
+```typescript
+const result = await window.errorReporting.saveToFile(reportContent)
+if (result.success) {
+  console.log('Saved to:', result.filePath)
+} else {
+  console.error('Failed:', result.reason)
+}
+```
+
+**Main Process:** `electron/main.ts`
+```typescript
+ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    title: 'Save Error Report',
+    defaultPath: `hyle-error-report-${Date.now()}.txt`,
+    filters: [
+      { name: 'Text Files', extensions: ['txt'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  })
+
+  if (canceled || !filePath) {
+    return { success: false, reason: 'User canceled' }
+  }
+
+  await fs.writeFile(filePath, reportContent, 'utf-8')
+  return { success: true, filePath }
+})
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `reportContent` | `string` | The error report content to save (sanitized) |
+
+#### Returns
+
+`{ success: boolean; filePath?: string; reason?: string }`
+
+- `success`: `true` if file was saved, `false` if user canceled or error occurred
+- `filePath`: Absolute path to saved file (only present if `success === true`)
+- `reason`: Error message or "User canceled" (only present if `success === false`)
+
+#### Related Files
+
+- Handler: `electron/main.ts` (save-error-report handler)
+- Preload: `electron/preload.ts` (exposed as `window.errorReporting.saveToFile()`)
+- Usage: `src/components/PrivacyErrorBoundary.tsx` (save error report button)
+
+---
+
 ## Best Practices
 
 ### 1. Type Safety

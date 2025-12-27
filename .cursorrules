@@ -33,6 +33,7 @@ hyle/
 │   │   ├── Canvas/    # Konva canvas components
 │   │   │   ├── CanvasManager.tsx      # Main canvas (viewport, camera, tools)
 │   │   │   ├── GridOverlay.tsx        # Tactical grid (LINES/DOTS/HIDDEN)
+│   │   │   ├── FogOfWarLayer.tsx      # Fog of war overlay (World View only)
 │   │   │   └── TokenErrorBoundary.tsx # Per-token error isolation
 │   │   ├── ImageCropper.tsx           # Token cropping UI
 │   │   ├── Sidebar.tsx                # Map/grid controls + token library
@@ -65,6 +66,8 @@ hyle/
 - **Map**: Background image for the battlemap (with calibration system)
 - **Grid**: Tactical positioning overlay (LINES mode, DOTS mode, or HIDDEN)
 - **Grid Snapping**: Automatic alignment of tokens to grid (smart: cell centers for 1x1, intersections for 2x2)
+- **Fog of War**: Vision-based fog overlay (World View only) with three states: Unexplored (dark), Explored (dimmed), Current Vision (clear)
+- **Daylight Mode**: Toggle to enable/disable fog of war (when enabled, fog is hidden)
 - **Campaign File**: `.hyle` ZIP archive containing manifest.json + assets/ directory
 - **Temp Assets**: Processed images stored in userData/temp_assets/ until campaign save
 - **IPC (Inter-Process Communication)**: Electron's system for main ↔ renderer communication
@@ -365,6 +368,8 @@ const handleMouseDown = (e) => {
 - **Viewport Clamping**: Prevents camera from drifting too far from content
 - **Batch Operations**: removeTokens(), removeDrawings() for efficient bulk deletes
 - **Transform Operations**: updateTokenTransform(), updateDrawingTransform()
+- **Fog of War**: Vision-based fog overlay with explored regions (works with or without map)
+- **Daylight Mode Toggle**: Modern toggle switch component for enabling/disabling fog
 - **Test Coverage**: Vitest setup with tests for key components/utilities
 
 **Files to review for examples:**
@@ -372,4 +377,5 @@ const handleMouseDown = (e) => {
 - Toast: `src/components/Toast.tsx`
 - Grid: `src/utils/grid.ts`, `src/components/Canvas/GridOverlay.tsx`
 - Map: `src/components/Sidebar.tsx` (upload/calibration UI)
+- Fog of War: `src/components/Canvas/FogOfWarLayer.tsx`, `src/components/ToggleSwitch.tsx`
 - Tests: `src/**/*.test.tsx`

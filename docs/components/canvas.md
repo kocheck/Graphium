@@ -25,6 +25,24 @@ Renders grid lines on canvas.
 
 Generates vertical and horizontal grid lines as non-interactive Konva Line components.
 
+### FogOfWarLayer.tsx
+Renders fog of war overlay with vision-based reveals.
+
+**Location**: `/src/components/Canvas/FogOfWarLayer.tsx`
+
+**Features:**
+- Three-state fog: Unexplored (dark), Explored (dimmed), Current Vision (clear)
+- Raycasting-based vision calculation (360-degree with wall occlusion)
+- Works with or without map (supports hand-drawn maps)
+- Only renders in World View when Daylight Mode is disabled
+
+**Props:**
+- `tokens: Token[]` - All tokens (filters to PC tokens with vision internally)
+- `drawings: Drawing[]` - All drawings (filters to walls for occlusion)
+- `gridSize: number` - Grid size for feet-to-pixels conversion
+- `visibleBounds: { x, y, width, height }` - Canvas viewport bounds
+- `map: MapConfig | null` - Optional map background
+
 ### TokenLayer.tsx
 Placeholder component - currently unused.
 
