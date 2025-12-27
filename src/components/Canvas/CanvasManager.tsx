@@ -146,8 +146,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const setIsCalibrating = useGameStore(s => s.setIsCalibrating);
   const updateMapTransform = useGameStore(s => s.updateMapTransform);
   const updateDrawingTransform = useGameStore(s => s.updateDrawingTransform);
-  const addTokenToLibrary = useGameStore(s => s.addTokenToLibrary);
-  const showConfirmDialog = useGameStore(s => s.showConfirmDialog);
 
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null); // Temp line points
