@@ -394,61 +394,39 @@ export class DungeonGenerator {
         break;
     }
 
-    // Create corridor
+    // Create corridor (already positioned correctly from grid-aligned connection point)
     const corridor = this.createCorridorPiece(connX, connY, direction);
 
-    // Grid-snap corridor position for proper alignment
-    corridor.bounds.x = Math.round(corridor.bounds.x / gridSize) * gridSize;
-    corridor.bounds.y = Math.round(corridor.bounds.y / gridSize) * gridSize;
+    // Create new room with random size
+    const newRoom = this.createRoom(0, 0);
 
-    // Update corridor wall segments after snapping
-    this.updateWallSegments(corridor);
-
-    // Calculate new room position at end of corridor
+    // Calculate and grid-snap room position to align with corridor endpoint
     const { bounds: corrBounds } = corridor;
-    let roomX: number, roomY: number;
 
     switch (direction) {
       case 'north':
-        roomX = corrBounds.x + corrBounds.width / 2;
-        roomY = corrBounds.y;
+        // Room's bottom edge should align with corridor's top edge
+        newRoom.bounds.y = corrBounds.y - newRoom.bounds.height;
+        newRoom.bounds.x = connX - newRoom.bounds.width / 2;
         break;
       case 'south':
-        roomX = corrBounds.x + corrBounds.width / 2;
-        roomY = corrBounds.y + corrBounds.height;
+        // Room's top edge should align with corridor's bottom edge
+        newRoom.bounds.y = corrBounds.y + corrBounds.height;
+        newRoom.bounds.x = connX - newRoom.bounds.width / 2;
         break;
       case 'east':
-        roomX = corrBounds.x + corrBounds.width;
-        roomY = corrBounds.y + corrBounds.height / 2;
+        // Room's left edge should align with corridor's right edge
+        newRoom.bounds.x = corrBounds.x + corrBounds.width;
+        newRoom.bounds.y = connY - newRoom.bounds.height / 2;
         break;
       case 'west':
-        roomX = corrBounds.x;
-        roomY = corrBounds.y + corrBounds.height / 2;
+        // Room's right edge should align with corridor's left edge
+        newRoom.bounds.x = corrBounds.x - newRoom.bounds.width;
+        newRoom.bounds.y = connY - newRoom.bounds.height / 2;
         break;
     }
 
-    // Create new room (adjust position to align with corridor)
-    const newRoom = this.createRoom(roomX, roomY);
-
-    // Adjust room position based on direction to align properly
-    switch (direction) {
-      case 'north':
-        newRoom.bounds.x -= newRoom.bounds.width / 2;
-        newRoom.bounds.y -= newRoom.bounds.height;
-        break;
-      case 'south':
-        newRoom.bounds.x -= newRoom.bounds.width / 2;
-        break;
-      case 'east':
-        newRoom.bounds.y -= newRoom.bounds.height / 2;
-        break;
-      case 'west':
-        newRoom.bounds.x -= newRoom.bounds.width;
-        newRoom.bounds.y -= newRoom.bounds.height / 2;
-        break;
-    }
-
-    // Snap room position to grid for proper alignment
+    // Grid-snap room position
     newRoom.bounds.x = Math.round(newRoom.bounds.x / gridSize) * gridSize;
     newRoom.bounds.y = Math.round(newRoom.bounds.y / gridSize) * gridSize;
 
