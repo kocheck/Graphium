@@ -146,8 +146,6 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const setIsCalibrating = useGameStore(s => s.setIsCalibrating);
   const updateMapTransform = useGameStore(s => s.updateMapTransform);
   const updateDrawingTransform = useGameStore(s => s.updateDrawingTransform);
-  const addTokenToLibrary = useGameStore(s => s.addTokenToLibrary);
-  const showConfirmDialog = useGameStore(s => s.showConfirmDialog);
 
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null); // Temp line points
@@ -520,20 +518,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
           scale: 1,
         });
 
-        // Ask the user whether they want to save this cropped token to the Campaign Token Library
-        showConfirmDialog(
-            'Save this cropped token to your campaign library for future use?',
-            () => {
-                addTokenToLibrary({
-                    id: crypto.randomUUID(),
-                    name: file.name.split('.')[0] || 'New Token',
-                    src,
-                    defaultScale: 1,
-                });
-            },
-            'Save to Library'
-        );
-
+        // Note: Users can add tokens to library via Sidebar or Library Manager
         // TODO: In future, add UI to swap to Map or set 'processImage' type based on user choice
     } catch (err) {
         console.error("Crop save failed", err);

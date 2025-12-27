@@ -20,7 +20,7 @@
  * @component
  */
 
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzySearch';
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
@@ -34,7 +34,6 @@ interface LibraryManagerProps {
 const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [editingItem, setEditingItem] = useState<string | null>(null);
 
   // Upload state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -49,7 +48,6 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   // Store selectors
   const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
   const removeTokenFromLibrary = useGameStore(state => state.removeTokenFromLibrary);
-  const updateLibraryToken = useGameStore(state => state.updateLibraryToken);
   const showConfirmDialog = useGameStore(state => state.showConfirmDialog);
   const showToast = useGameStore(state => state.showToast);
 
@@ -105,7 +103,6 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
       async () => {
         try {
           // Delete from filesystem via IPC
-          // @ts-expect-error - ipcRenderer types
           await window.ipcRenderer.invoke('DELETE_LIBRARY_ASSET', itemId);
 
           // Remove from store

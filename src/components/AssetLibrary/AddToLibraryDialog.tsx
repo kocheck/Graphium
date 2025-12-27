@@ -17,7 +17,7 @@
  * @component
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
 interface AddToLibraryDialogProps {
@@ -136,7 +136,6 @@ const AddToLibraryDialog = ({
       const id = crypto.randomUUID();
 
       // Save to library via IPC
-      // @ts-expect-error - ipcRenderer types
       const savedItem = await window.ipcRenderer.invoke('SAVE_ASSET_TO_LIBRARY', {
         fullSizeBuffer,
         thumbnailBuffer,

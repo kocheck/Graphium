@@ -76,7 +76,6 @@ const Sidebar = () => {
 
     // Campaign Token Library
     const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
-    const addTokenToLibrary = useGameStore(state => state.addTokenToLibrary);
     const removeTokenFromLibrary = useGameStore(state => state.removeTokenFromLibrary);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -199,12 +198,17 @@ const Sidebar = () => {
             const src = await handle.promise;
             processingHandleRef.current = null;
 
-            addTokenToLibrary({
-                id: crypto.randomUUID(),
-                name: file.name.split('.')[0] || 'New Token',
+            // Convert file:// URL to blob for AddToLibraryDialog
+            const response = await fetch(src);
+            const blob = await response.blob();
+
+            // Open AddToLibraryDialog to collect metadata
+            setPendingLibraryImage({
                 src,
-                defaultScale: 1,
+                blob,
+                name: file.name.split('.')[0] || 'New Token'
             });
+            setIsAddToLibraryOpen(true);
         } catch (err) {
             console.error("Failed to upload token", err);
             showToast('Failed to upload token.', 'error');

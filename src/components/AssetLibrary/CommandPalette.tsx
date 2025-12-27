@@ -29,7 +29,7 @@
  * @component
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { fuzzySearch } from '../../utils/fuzzySearch';
 
