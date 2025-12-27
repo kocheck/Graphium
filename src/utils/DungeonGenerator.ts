@@ -27,6 +27,7 @@ type Direction = 'north' | 'south' | 'east' | 'west';
  * DungeonPiece represents a prefab room or corridor with its walls
  */
 interface DungeonPiece {
+  type: 'room' | 'corridor';
   bounds: Room;
   wallSegments: {
     north?: Point[];
@@ -34,6 +35,24 @@ interface DungeonPiece {
     east?: Point[];
     west?: Point[];
   };
+}
+
+/**
+ * RoomTemplate defines a reusable room type that can be instantiated
+ */
+interface RoomTemplate {
+  type: string;
+  minSize: number;
+  maxSize: number;
+  createPiece: (x: number, y: number, widthCells: number, heightCells: number, gridSize: number) => DungeonPiece;
+}
+
+/**
+ * CorridorTemplate defines corridor specifications
+ */
+interface CorridorTemplate {
+  lengthInCells: number; // How many grid cells long
+  widthInCells: number;  // How many grid cells wide (typically 1)
 }
 
 /**
@@ -58,6 +77,8 @@ export interface DungeonGeneratorOptions {
 export class DungeonGenerator {
   private options: Required<DungeonGeneratorOptions>;
   private rooms: Room[] = [];
+  private roomTemplates: RoomTemplate[];
+  private corridorTemplate: CorridorTemplate;
 
   constructor(options: DungeonGeneratorOptions) {
     // Set defaults
@@ -71,6 +92,39 @@ export class DungeonGenerator {
       wallColor: options.wallColor ?? '#ff0000',
       wallSize: options.wallSize ?? 8,
     };
+
+    // Initialize room templates
+    this.roomTemplates = this.initializeRoomTemplates();
+
+    // Initialize corridor template (4 grid cells long for visible walls)
+    this.corridorTemplate = {
+      lengthInCells: 4,
+      widthInCells: 1,
+    };
+  }
+
+  /**
+   * Initialize available room templates
+   * Future: Add more room types here (L-shaped, T-shaped, circular, etc.)
+   */
+  private initializeRoomTemplates(): RoomTemplate[] {
+    return [
+      {
+        type: 'rectangular',
+        minSize: this.options.minRoomSize,
+        maxSize: this.options.maxRoomSize,
+        createPiece: (x, y, widthCells, heightCells, gridSize) =>
+          this.createRectangularRoom(x, y, widthCells, heightCells, gridSize),
+      },
+      // Future templates can be added here:
+      // {
+      //   type: 'l-shaped',
+      //   minSize: 4,
+      //   maxSize: 8,
+      //   createPiece: (x, y, widthCells, heightCells, gridSize) =>
+      //     this.createLShapedRoom(x, y, widthCells, heightCells, gridSize),
+      // },
+    ];
   }
 
   /**
@@ -87,7 +141,7 @@ export class DungeonGenerator {
     const startX = Math.round((canvasWidth / 2) / gridSize) * gridSize;
     const startY = Math.round((canvasHeight / 2) / gridSize) * gridSize;
 
-    const firstRoom = this.createRoomPiece(startX, startY);
+    const firstRoom = this.createRoom(startX, startY);
     pieces.push(firstRoom);
     this.rooms.push(firstRoom.bounds);
     usedDirections.set(firstRoom, new Set());
@@ -150,38 +204,41 @@ export class DungeonGenerator {
   }
 
   /**
-   * Creates a prefab room piece at the specified position
+   * Creates a room using a random template from the available room types
    */
-  private createRoomPiece(x: number, y: number): DungeonPiece {
-    const { minRoomSize, maxRoomSize, gridSize } = this.options;
+  private createRoom(x: number, y: number): DungeonPiece {
+    // Randomly select a room template
+    const template = this.roomTemplates[Math.floor(Math.random() * this.roomTemplates.length)];
 
-    const widthCells = Math.floor(Math.random() * (maxRoomSize - minRoomSize + 1)) + minRoomSize;
-    const heightCells = Math.floor(Math.random() * (maxRoomSize - minRoomSize + 1)) + minRoomSize;
+    // Generate random size within template bounds
+    const widthCells = Math.floor(Math.random() * (template.maxSize - template.minSize + 1)) + template.minSize;
+    const heightCells = Math.floor(Math.random() * (template.maxSize - template.minSize + 1)) + template.minSize;
 
+    // Use template's creation function
+    return template.createPiece(x, y, widthCells, heightCells, this.options.gridSize);
+  }
+
+  /**
+   * Creates a rectangular room piece (the default room type)
+   */
+  private createRectangularRoom(
+    x: number,
+    y: number,
+    widthCells: number,
+    heightCells: number,
+    gridSize: number
+  ): DungeonPiece {
     const width = widthCells * gridSize;
     const height = heightCells * gridSize;
 
-    // Create wall segments for each side (without doorways initially)
-    // Each segment is stored as points that can be drawn as a line
     return {
+      type: 'room',
       bounds: { x, y, width, height },
       wallSegments: {
-        north: [
-          { x, y },
-          { x: x + width, y },
-        ],
-        east: [
-          { x: x + width, y },
-          { x: x + width, y: y + height },
-        ],
-        south: [
-          { x: x + width, y: y + height },
-          { x, y: y + height },
-        ],
-        west: [
-          { x, y: y + height },
-          { x, y },
-        ],
+        north: [{ x, y }, { x: x + width, y }],
+        east: [{ x: x + width, y }, { x: x + width, y: y + height }],
+        south: [{ x: x + width, y: y + height }, { x, y: y + height }],
+        west: [{ x, y: y + height }, { x, y }],
       },
     };
   }
@@ -192,12 +249,11 @@ export class DungeonGenerator {
   private createCorridorPiece(
     fromX: number,
     fromY: number,
-    direction: Direction,
-    length: number = 2
+    direction: Direction
   ): DungeonPiece {
     const { gridSize } = this.options;
-    const corridorWidth = gridSize;
-    const corridorLength = length * gridSize;
+    const corridorWidth = this.corridorTemplate.widthInCells * gridSize;
+    const corridorLength = this.corridorTemplate.lengthInCells * gridSize;
 
     let bounds: Room;
     let wallSegments: DungeonPiece['wallSegments'];
@@ -288,7 +344,7 @@ export class DungeonGenerator {
         break;
     }
 
-    return { bounds, wallSegments };
+    return { type: 'corridor', bounds, wallSegments };
   }
 
   /**
@@ -365,7 +421,7 @@ export class DungeonGenerator {
     }
 
     // Create new room (adjust position to align with corridor)
-    const newRoom = this.createRoomPiece(roomX, roomY);
+    const newRoom = this.createRoom(roomX, roomY);
 
     // Adjust room position based on direction to align properly
     switch (direction) {
@@ -431,75 +487,7 @@ export class DungeonGenerator {
     this.removeConnectingWalls(sourcePiece, direction, sourceRoomDoorway);
     this.removeConnectingWalls(newRoom, this.getOppositeDirection(direction), newRoomDoorway);
 
-    // Trim corridor walls where they meet the rooms
-    this.trimCorridorWalls(corridor, direction, gridSize);
-
     return { corridor, newRoom };
-  }
-
-  /**
-   * Trims corridor side walls so they don't extend into connecting room walls
-   */
-  private trimCorridorWalls(corridor: DungeonPiece, direction: Direction, gridSize: number): void {
-    // For north-south corridors, trim the east and west walls
-    // For east-west corridors, trim the north and south walls
-    if (direction === 'north' || direction === 'south') {
-      // Trim east wall (shorten by gridSize at each end)
-      if (corridor.wallSegments.east && corridor.wallSegments.east.length === 2) {
-        const [start, end] = corridor.wallSegments.east;
-        const trimmedStart = { x: start.x, y: start.y + gridSize };
-        const trimmedEnd = { x: end.x, y: end.y - gridSize };
-
-        // Only keep wall if there's still length after trimming
-        if (trimmedEnd.y - trimmedStart.y >= gridSize) {
-          corridor.wallSegments.east = [trimmedStart, trimmedEnd];
-        } else {
-          corridor.wallSegments.east = undefined;
-        }
-      }
-
-      // Trim west wall (shorten by gridSize at each end)
-      if (corridor.wallSegments.west && corridor.wallSegments.west.length === 2) {
-        const [start, end] = corridor.wallSegments.west;
-        const trimmedStart = { x: start.x, y: start.y - gridSize };
-        const trimmedEnd = { x: end.x, y: end.y + gridSize };
-
-        // Only keep wall if there's still length after trimming
-        if (trimmedStart.y - trimmedEnd.y >= gridSize) {
-          corridor.wallSegments.west = [trimmedStart, trimmedEnd];
-        } else {
-          corridor.wallSegments.west = undefined;
-        }
-      }
-    } else {
-      // Trim north wall (shorten by gridSize at each end)
-      if (corridor.wallSegments.north && corridor.wallSegments.north.length === 2) {
-        const [start, end] = corridor.wallSegments.north;
-        const trimmedStart = { x: start.x + gridSize, y: start.y };
-        const trimmedEnd = { x: end.x - gridSize, y: end.y };
-
-        // Only keep wall if there's still length after trimming
-        if (trimmedEnd.x - trimmedStart.x >= gridSize) {
-          corridor.wallSegments.north = [trimmedStart, trimmedEnd];
-        } else {
-          corridor.wallSegments.north = undefined;
-        }
-      }
-
-      // Trim south wall (shorten by gridSize at each end)
-      if (corridor.wallSegments.south && corridor.wallSegments.south.length === 2) {
-        const [start, end] = corridor.wallSegments.south;
-        const trimmedStart = { x: start.x - gridSize, y: start.y };
-        const trimmedEnd = { x: end.x + gridSize, y: end.y };
-
-        // Only keep wall if there's still length after trimming
-        if (trimmedStart.x - trimmedEnd.x >= gridSize) {
-          corridor.wallSegments.south = [trimmedStart, trimmedEnd];
-        } else {
-          corridor.wallSegments.south = undefined;
-        }
-      }
-    }
   }
 
   /**
