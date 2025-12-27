@@ -175,8 +175,14 @@ const AddToLibraryDialog = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-neutral-900 rounded-lg w-full max-w-md overflow-hidden">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={handleClose}
+    >
+      <div 
+        className="bg-neutral-900 rounded-lg w-full max-w-md overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-4 border-b border-neutral-700">
           <h2 className="text-lg font-bold text-white">Add to Library</h2>

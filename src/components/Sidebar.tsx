@@ -336,7 +336,7 @@ const Sidebar = () => {
                         <button
                             onClick={() => tokenInputRef.current?.click()}
                             className="text-xs btn btn-sm btn-ghost px-2 py-1 rounded"
-                            title="Add Token to Campaign"
+                            title="Add Token to Library"
                         >
                             ➕ Add
                         </button>

@@ -136,20 +136,24 @@ function App() {
 
         // Update store with loaded library items
         if (libraryItems && Array.isArray(libraryItems)) {
-          const currentLibrary = useGameStore.getState().campaign.tokenLibrary;
+          useGameStore.setState((state) => {
+            const currentLibrary = state.campaign.tokenLibrary;
 
-          // Merge with existing library (avoid duplicates by ID)
-          const existingIds = new Set(currentLibrary.map(item => item.id));
-          const newItems = libraryItems.filter((item: any) => !existingIds.has(item.id));
+            // Merge with existing library (avoid duplicates by ID)
+            const existingIds = new Set(currentLibrary.map((item) => item.id));
+            const newItems = libraryItems.filter((item: any) => !existingIds.has(item.id));
 
-          if (newItems.length > 0) {
-            useGameStore.setState((state) => ({
+            if (newItems.length === 0) {
+              return state;
+            }
+
+            return {
               campaign: {
                 ...state.campaign,
-                tokenLibrary: [...currentLibrary, ...newItems]
-              }
-            }));
-          }
+                tokenLibrary: [...currentLibrary, ...newItems],
+              },
+            };
+          });
         }
       } catch (error) {
         console.error('[App] Failed to load library index:', error);

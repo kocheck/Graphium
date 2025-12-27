@@ -20,7 +20,7 @@
  * @component
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzySearch';
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
@@ -54,9 +54,21 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   // Get categories from library
   const categories = ['All', ...getCategories(tokenLibrary)];
 
-  // Filter and search
-  let filteredItems = fuzzySearch(tokenLibrary, searchQuery);
-  filteredItems = filterByCategory(filteredItems, selectedCategory);
+  // Filter and search (optimized: category filter first to reduce fuzzy search work)
+  const filteredItems = useMemo(() => {
+    const categoryFiltered = filterByCategory(tokenLibrary, selectedCategory);
+    return fuzzySearch(categoryFiltered, searchQuery);
+  }, [tokenLibrary, selectedCategory, searchQuery]);
+
+  // Cleanup processing handle on unmount
+  useEffect(() => {
+    return () => {
+      if (processingHandleRef.current) {
+        processingHandleRef.current.cancel();
+        processingHandleRef.current = null;
+      }
+    };
+  }, []);
 
   /**
    * Handle file upload
@@ -73,10 +85,10 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
       const src = await handle.promise;
       processingHandleRef.current = null;
 
-      // Read the processed file back as blob
-      // Note: We can't directly access the file:// URL, so we'll use a workaround
-      // by creating a blob from the original file for now
-      const blob = file;
+      // Read the processed file back as blob so thumbnails and saved assets
+      // are generated from the optimized image, not the original upload
+      const response = await fetch(src);
+      const blob = await response.blob();
 
       setPendingImage({
         src,
@@ -122,16 +134,16 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
    * Handle drag start for library tokens
    * Allows dragging tokens from library to canvas
    */
-  const handleDragStart = (e: React.DragEvent, item: any) => {
+  const handleDragStart = (e: React.DragEvent, libraryToken: any) => {
     e.dataTransfer.setData(
       'application/json',
       JSON.stringify({
         type: 'LIBRARY_TOKEN',
-        src: item.src,
-        name: item.name,
-        defaultScale: item.defaultScale,
-        defaultType: item.defaultType,
-        defaultVisionRadius: item.defaultVisionRadius,
+        src: libraryToken.src,
+        name: libraryToken.name,
+        defaultScale: libraryToken.defaultScale,
+        defaultType: libraryToken.defaultType,
+        defaultVisionRadius: libraryToken.defaultVisionRadius,
       })
     );
   };
@@ -139,9 +151,15 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
       {/* Modal container */}
-      <div className="w-full max-w-6xl h-[80vh] bg-neutral-900 rounded-lg shadow-2xl overflow-hidden flex flex-col">
+      <div 
+        className="w-full max-w-6xl h-[80vh] bg-neutral-900 rounded-lg shadow-2xl overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-4 border-b border-neutral-700 bg-neutral-800">
           <div className="flex items-center justify-between mb-4">
@@ -178,6 +196,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
           {/* Search and filter */}
           <div className="flex gap-3">
             <input
+              aria-label="Search library assets"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -185,6 +204,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
               className="flex-1 bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
             />
             <select
+              aria-label="Filter by category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
@@ -234,7 +254,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
                     <button
                       onClick={() => handleDelete(item.id, item.name)}
                       className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Delete"
+                      aria-label={`Delete ${item.name}`}
                     >
                       <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -263,6 +283,32 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
                         )}
                       </div>
                     )}
+                    {/* Keyboard-accessible add button */}
+                    <button
+                      onClick={() => {
+                        // Trigger drag-drop equivalent: add token to center of map
+                        const addToken = useGameStore.getState().addToken;
+                        const map = useGameStore.getState().map;
+                        const centerX = map ? map.x + (map.width * map.scale) / 2 : 500;
+                        const centerY = map ? map.y + (map.height * map.scale) / 2 : 500;
+                        
+                        addToken({
+                          id: crypto.randomUUID(),
+                          x: centerX,
+                          y: centerY,
+                          src: item.src,
+                          scale: item.defaultScale || 1,
+                          type: item.defaultType,
+                          visionRadius: item.defaultVisionRadius,
+                          name: item.name,
+                        });
+                        showToast(`Added ${item.name} to map`, 'success');
+                      }}
+                      className="w-full mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs font-medium"
+                      aria-label={`Add ${item.name} to map`}
+                    >
+                      Add to Map
+                    </button>
                   </div>
                 </div>
               ))}

@@ -834,6 +834,13 @@ let currentCampaignPath: string | null = null;
   * Saves a token asset to the persistent library directory.
   * Creates both full-size and thumbnail versions of the image.
   *
+  * **Note on concurrency:**
+  * This handler uses a read-modify-write pattern for index.json which could
+  * result in lost updates if multiple saves happen simultaneously. Since this
+  * application is designed for single-user local use, concurrent access is not
+  * expected. If concurrent operations become a requirement, consider implementing
+  * a file locking mechanism or atomic update pattern.
+  *
   * @param fullSizeBuffer - Full-resolution WebP image as ArrayBuffer
   * @param thumbnailBuffer - 128x128 thumbnail WebP image as ArrayBuffer
   * @param metadata - Asset metadata (id, name, category, tags)
@@ -876,6 +883,12 @@ let currentCampaignPath: string | null = null;
    try {
      const indexData = await fs.readFile(indexPath, 'utf-8');
      index = JSON.parse(indexData);
+     
+     // Validate index structure to prevent runtime errors on corruption
+     if (!index.items || !Array.isArray(index.items)) {
+       console.warn('[MAIN] Invalid index.json structure, resetting to empty array');
+       index.items = [];
+     }
    } catch {
      // Index doesn't exist yet, use empty array
    }
@@ -920,6 +933,13 @@ let currentCampaignPath: string | null = null;
   * Removes an asset from the library (both files and metadata).
   * Deletes full-size image, thumbnail, and updates index.json.
   *
+  * **Note on concurrency:**
+  * This handler uses a read-modify-write pattern for index.json which could
+  * result in lost updates if multiple operations happen simultaneously. Since
+  * this application is designed for single-user local use, concurrent access
+  * is not expected. If concurrent operations become a requirement, consider
+  * implementing a file locking mechanism or atomic update pattern.
+  *
   * @param assetId - UUID of the asset to delete
   * @returns true if successful
   */
@@ -944,10 +964,14 @@ let currentCampaignPath: string | null = null;
      const data = await fs.readFile(indexPath, 'utf-8');
      const index = JSON.parse(data);
 
-     if (index.items) {
-       index.items = index.items.filter((item: { id: string }) => item.id !== assetId);
-       await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+     // Validate index structure before modifying
+     if (!index.items || !Array.isArray(index.items)) {
+       console.warn('[MAIN] Invalid index.json structure during delete');
+       index.items = [];
      }
+
+     index.items = index.items.filter((item: { id: string }) => item.id !== assetId);
+     await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
    } catch (err) {
      console.error('[MAIN] Failed to update library index:', err);
      throw err;
