@@ -19,6 +19,24 @@ interface Point {
 }
 
 /**
+ * Direction for corridor connections
+ */
+type Direction = 'north' | 'south' | 'east' | 'west';
+
+/**
+ * DungeonPiece represents a prefab room or corridor with its walls
+ */
+interface DungeonPiece {
+  bounds: Room;
+  wallSegments: {
+    north?: Point[];
+    south?: Point[];
+    east?: Point[];
+    west?: Point[];
+  };
+}
+
+/**
  * DungeonGeneratorOptions configures dungeon generation parameters
  */
 export interface DungeonGeneratorOptions {
@@ -56,75 +74,397 @@ export class DungeonGenerator {
   }
 
   /**
-   * Generates a dungeon using organic growth algorithm
-   * Builds one room/corridor at a time for perfect alignment
+   * Generates a dungeon using prefab pieces for perfect alignment
    */
   public generate(): Drawing[] {
     this.rooms = [];
     const drawings: Drawing[] = [];
-    const roomDoorways = new Map<Room, Point[]>();
+    const pieces: DungeonPiece[] = [];
+    const usedDirections = new Map<DungeonPiece, Set<Direction>>();
 
-    // Start with the first room at a central location
+    // Start with the first room at canvas center
     const { canvasWidth, canvasHeight, gridSize } = this.options;
-    const firstRoom = this.createRoomAtPosition(
-      canvasWidth / 2 - (4 * gridSize) / 2,
-      canvasHeight / 2 - (4 * gridSize) / 2
-    );
-    this.rooms.push(firstRoom);
-    roomDoorways.set(firstRoom, []);
+    const startX = Math.round((canvasWidth / 2) / gridSize) * gridSize;
+    const startY = Math.round((canvasHeight / 2) / gridSize) * gridSize;
+
+    const firstRoom = this.createRoomPiece(startX, startY);
+    pieces.push(firstRoom);
+    this.rooms.push(firstRoom.bounds);
+    usedDirections.set(firstRoom, new Set());
 
     // Grow the dungeon organically
     for (let i = 1; i < this.options.numRooms; i++) {
-      // Pick a random existing room to grow from
-      const sourceRoom = this.rooms[Math.floor(Math.random() * this.rooms.length)];
+      // Pick a random existing piece to grow from
+      const sourceIndex = Math.floor(Math.random() * pieces.length);
+      const sourcePiece = pieces[sourceIndex];
+      const usedDirs = usedDirections.get(sourcePiece) || new Set();
 
-      // Try to add a new room adjacent to it
-      const result = this.tryAddAdjacentRoom(sourceRoom, roomDoorways);
+      // Try all available directions
+      const availableDirs: Direction[] = ['north', 'south', 'east', 'west']
+        .filter(dir => !usedDirs.has(dir as Direction))
+        .sort(() => Math.random() - 0.5) as Direction[];
 
-      if (result) {
-        const { newRoom, corridor, doorways } = result;
+      let added = false;
+      for (const direction of availableDirs) {
+        const result = this.tryAddPieceInDirection(sourcePiece, direction, pieces);
 
-        // Add the new room
-        this.rooms.push(newRoom);
-        roomDoorways.set(newRoom, []);
+        if (result) {
+          const { corridor, newRoom } = result;
 
-        // Add corridor walls
-        drawings.push(...corridor);
+          // Add pieces
+          pieces.push(corridor, newRoom);
+          this.rooms.push(newRoom.bounds);
 
-        // Record doorways for both rooms
-        for (const { room, point } of doorways) {
-          const doors = roomDoorways.get(room) || [];
-          doors.push(point);
-          roomDoorways.set(room, doors);
+          // Mark directions as used
+          usedDirs.add(direction);
+          usedDirections.set(newRoom, new Set([this.getOppositeDirection(direction)]));
+
+          added = true;
+          break;
         }
+      }
+
+      // If we couldn't add to this piece, try another
+      if (!added && pieces.length < this.options.numRooms) {
+        i--;
       }
     }
 
-    // Draw all room walls with their doorways
-    for (const room of this.rooms) {
-      const doorways = roomDoorways.get(room) || [];
-      const roomWalls = this.createRoomWalls(room, doorways);
-      drawings.push(...roomWalls);
+    // Convert all pieces to drawings
+    for (const piece of pieces) {
+      drawings.push(...this.pieceToDrawings(piece));
     }
 
     return drawings;
   }
 
   /**
-   * Creates a room at a specific position with random size
+   * Creates a prefab room piece at the specified position
    */
-  private createRoomAtPosition(x: number, y: number): Room {
+  private createRoomPiece(x: number, y: number): DungeonPiece {
     const { minRoomSize, maxRoomSize, gridSize } = this.options;
 
     const widthCells = Math.floor(Math.random() * (maxRoomSize - minRoomSize + 1)) + minRoomSize;
     const heightCells = Math.floor(Math.random() * (maxRoomSize - minRoomSize + 1)) + minRoomSize;
 
+    const width = widthCells * gridSize;
+    const height = heightCells * gridSize;
+
+    // Create wall segments for each side (without doorways initially)
+    // Each segment is stored as points that can be drawn as a line
     return {
-      x: Math.round(x / gridSize) * gridSize,
-      y: Math.round(y / gridSize) * gridSize,
-      width: widthCells * gridSize,
-      height: heightCells * gridSize,
+      bounds: { x, y, width, height },
+      wallSegments: {
+        north: [
+          { x, y },
+          { x: x + width, y },
+        ],
+        east: [
+          { x: x + width, y },
+          { x: x + width, y: y + height },
+        ],
+        south: [
+          { x: x + width, y: y + height },
+          { x, y: y + height },
+        ],
+        west: [
+          { x, y: y + height },
+          { x, y },
+        ],
+      },
     };
+  }
+
+  /**
+   * Creates a corridor piece connecting in the specified direction
+   */
+  private createCorridorPiece(
+    fromX: number,
+    fromY: number,
+    direction: Direction,
+    length: number = 2
+  ): DungeonPiece {
+    const { gridSize } = this.options;
+    const corridorWidth = gridSize;
+    const corridorLength = length * gridSize;
+
+    let bounds: Room;
+    let wallSegments: DungeonPiece['wallSegments'];
+
+    switch (direction) {
+      case 'north':
+        bounds = {
+          x: fromX - corridorWidth / 2,
+          y: fromY - corridorLength,
+          width: corridorWidth,
+          height: corridorLength,
+        };
+        wallSegments = {
+          north: undefined, // Open end (connects to next room)
+          south: undefined, // Open end (connects to previous room)
+          east: [
+            { x: bounds.x + bounds.width, y: bounds.y },
+            { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
+          ],
+          west: [
+            { x: bounds.x, y: bounds.y + bounds.height },
+            { x: bounds.x, y: bounds.y },
+          ],
+        };
+        break;
+
+      case 'south':
+        bounds = {
+          x: fromX - corridorWidth / 2,
+          y: fromY,
+          width: corridorWidth,
+          height: corridorLength,
+        };
+        wallSegments = {
+          north: undefined,
+          south: undefined,
+          east: [
+            { x: bounds.x + bounds.width, y: bounds.y },
+            { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
+          ],
+          west: [
+            { x: bounds.x, y: bounds.y + bounds.height },
+            { x: bounds.x, y: bounds.y },
+          ],
+        };
+        break;
+
+      case 'east':
+        bounds = {
+          x: fromX,
+          y: fromY - corridorWidth / 2,
+          width: corridorLength,
+          height: corridorWidth,
+        };
+        wallSegments = {
+          north: [
+            { x: bounds.x, y: bounds.y },
+            { x: bounds.x + bounds.width, y: bounds.y },
+          ],
+          south: [
+            { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
+            { x: bounds.x, y: bounds.y + bounds.height },
+          ],
+          east: undefined,
+          west: undefined,
+        };
+        break;
+
+      case 'west':
+        bounds = {
+          x: fromX - corridorLength,
+          y: fromY - corridorWidth / 2,
+          width: corridorLength,
+          height: corridorWidth,
+        };
+        wallSegments = {
+          north: [
+            { x: bounds.x, y: bounds.y },
+            { x: bounds.x + bounds.width, y: bounds.y },
+          ],
+          south: [
+            { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
+            { x: bounds.x, y: bounds.y + bounds.height },
+          ],
+          east: undefined,
+          west: undefined,
+        };
+        break;
+    }
+
+    return { bounds, wallSegments };
+  }
+
+  /**
+   * Gets the opposite direction
+   */
+  private getOppositeDirection(dir: Direction): Direction {
+    const opposites: Record<Direction, Direction> = {
+      north: 'south',
+      south: 'north',
+      east: 'west',
+      west: 'east',
+    };
+    return opposites[dir];
+  }
+
+  /**
+   * Tries to add a corridor and room in the specified direction
+   */
+  private tryAddPieceInDirection(
+    sourcePiece: DungeonPiece,
+    direction: Direction,
+    existingPieces: DungeonPiece[]
+  ): { corridor: DungeonPiece; newRoom: DungeonPiece } | null {
+    const { bounds } = sourcePiece;
+    const { gridSize } = this.options;
+
+    // Calculate connection point on source piece
+    let connX: number, connY: number;
+
+    switch (direction) {
+      case 'north':
+        connX = bounds.x + bounds.width / 2;
+        connY = bounds.y;
+        break;
+      case 'south':
+        connX = bounds.x + bounds.width / 2;
+        connY = bounds.y + bounds.height;
+        break;
+      case 'east':
+        connX = bounds.x + bounds.width;
+        connY = bounds.y + bounds.height / 2;
+        break;
+      case 'west':
+        connX = bounds.x;
+        connY = bounds.y + bounds.height / 2;
+        break;
+    }
+
+    // Create corridor
+    const corridor = this.createCorridorPiece(connX, connY, direction);
+
+    // Calculate new room position at end of corridor
+    const { bounds: corrBounds } = corridor;
+    let roomX: number, roomY: number;
+
+    switch (direction) {
+      case 'north':
+        roomX = corrBounds.x + corrBounds.width / 2;
+        roomY = corrBounds.y;
+        break;
+      case 'south':
+        roomX = corrBounds.x + corrBounds.width / 2;
+        roomY = corrBounds.y + corrBounds.height;
+        break;
+      case 'east':
+        roomX = corrBounds.x + corrBounds.width;
+        roomY = corrBounds.y + corrBounds.height / 2;
+        break;
+      case 'west':
+        roomX = corrBounds.x;
+        roomY = corrBounds.y + corrBounds.height / 2;
+        break;
+    }
+
+    // Create new room (adjust position to align with corridor)
+    const newRoom = this.createRoomPiece(roomX, roomY);
+
+    // Adjust room position based on direction to align properly
+    switch (direction) {
+      case 'north':
+        newRoom.bounds.x -= newRoom.bounds.width / 2;
+        newRoom.bounds.y -= newRoom.bounds.height;
+        break;
+      case 'south':
+        newRoom.bounds.x -= newRoom.bounds.width / 2;
+        break;
+      case 'east':
+        newRoom.bounds.y -= newRoom.bounds.height / 2;
+        break;
+      case 'west':
+        newRoom.bounds.x -= newRoom.bounds.width;
+        newRoom.bounds.y -= newRoom.bounds.height / 2;
+        break;
+    }
+
+    // Realign wall segments after position adjustment
+    this.updateWallSegments(newRoom);
+
+    // Check for collisions
+    if (this.piecesOverlap(corridor, existingPieces) || this.piecesOverlap(newRoom, existingPieces)) {
+      return null;
+    }
+
+    // Remove wall segments where pieces connect
+    this.removeConnectingWalls(sourcePiece, direction);
+    this.removeConnectingWalls(newRoom, this.getOppositeDirection(direction));
+
+    return { corridor, newRoom };
+  }
+
+  /**
+   * Updates wall segments after position adjustment
+   */
+  private updateWallSegments(piece: DungeonPiece): void {
+    const { x, y, width, height } = piece.bounds;
+
+    piece.wallSegments = {
+      north: piece.wallSegments.north ? [{ x, y }, { x: x + width, y }] : undefined,
+      east: piece.wallSegments.east ? [{ x: x + width, y }, { x: x + width, y: y + height }] : undefined,
+      south: piece.wallSegments.south ? [{ x: x + width, y: y + height }, { x, y: y + height }] : undefined,
+      west: piece.wallSegments.west ? [{ x, y: y + height }, { x, y }] : undefined,
+    };
+  }
+
+  /**
+   * Removes wall segment in the specified direction
+   */
+  private removeConnectingWalls(piece: DungeonPiece, direction: Direction): void {
+    piece.wallSegments[direction] = undefined;
+  }
+
+  /**
+   * Checks if a piece overlaps with any existing pieces
+   */
+  private piecesOverlap(newPiece: DungeonPiece, existingPieces: DungeonPiece[]): boolean {
+    const { gridSize } = this.options;
+    const padding = gridSize; // 1 grid cell padding
+
+    for (const existing of existingPieces) {
+      if (this.boundsOverlap(newPiece.bounds, existing.bounds, padding)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Checks if two bounding boxes overlap with padding
+   */
+  private boundsOverlap(a: Room, b: Room, padding: number = 0): boolean {
+    return !(
+      a.x + a.width + padding < b.x ||
+      a.x > b.x + b.width + padding ||
+      a.y + a.height + padding < b.y ||
+      a.y > b.y + b.height + padding
+    );
+  }
+
+  /**
+   * Converts a dungeon piece to Drawing objects
+   */
+  private pieceToDrawings(piece: DungeonPiece): Drawing[] {
+    const { wallColor, wallSize } = this.options;
+    const drawings: Drawing[] = [];
+
+    // Draw each wall segment that exists
+    for (const direction of ['north', 'south', 'east', 'west'] as Direction[]) {
+      const segment = piece.wallSegments[direction];
+
+      if (segment && segment.length >= 2) {
+        const points: number[] = [];
+        for (const point of segment) {
+          points.push(point.x, point.y);
+        }
+
+        drawings.push({
+          id: crypto.randomUUID(),
+          tool: 'wall',
+          points,
+          color: wallColor,
+          size: wallSize,
+        });
+      }
+    }
+
+    return drawings;
   }
 
   /**
