@@ -198,8 +198,11 @@ const Sidebar = () => {
             const src = await handle.promise;
             processingHandleRef.current = null;
 
-            // Convert file:// URL to blob for AddToLibraryDialog
-            const response = await fetch(src);
+            // Convert file:// URL to media:// for fetch (Electron security requirement)
+            const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
+
+            // Convert to blob for AddToLibraryDialog
+            const response = await fetch(safeSrc);
             const blob = await response.blob();
 
             // Open AddToLibraryDialog to collect metadata
