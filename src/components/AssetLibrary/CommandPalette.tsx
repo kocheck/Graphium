@@ -47,7 +47,6 @@ const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
   // Store selectors
   const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
   const addToken = useGameStore(state => state.addToken);
-  const map = useGameStore(state => state.map);
 
   // Fuzzy search results (memoized to avoid re-running on every render)
   const results = useMemo(
