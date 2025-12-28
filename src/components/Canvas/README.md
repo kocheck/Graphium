@@ -273,10 +273,13 @@ const handleTokenDragStart = (e, tokenId) => {
   dragStartOffsetsRef.current.set(tokenId, { x: 0, y: 0 });
   // Broadcast TOKEN_DRAG_START to World View for all dragged tokens
   tokenIds.forEach(id => {
-    window.ipcRenderer.send('SYNC_WORLD_STATE', {
-      type: 'TOKEN_DRAG_START',
-      payload: { id, x: token.x, y: token.y }
-    });
+    const token = tokens.find(t => t.id === id);
+    if (token) {
+      window.ipcRenderer.send('SYNC_WORLD_STATE', {
+        type: 'TOKEN_DRAG_START',
+        payload: { id, x: token.x, y: token.y }
+      });
+    }
   });
 };
 
