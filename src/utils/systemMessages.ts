@@ -43,7 +43,6 @@ export type MessageIntent =
 
   // Loading States
   | 'LOADING_PAUSE_OVERLAY'
-  | 'LOADING_SAVING'
   | 'LOADING_ERROR_REPORT'
 
   // Error Boundary Messages
@@ -296,15 +295,6 @@ const messageSpellbook: Record<MessageIntent, string[]> = {
     "🌙 The realm sleeps. Awaiting the Dungeon Master's signal...",
   ],
 
-  LOADING_SAVING: [
-    "💾 Saving to the ethereal plane...",
-    "📜 The scribes are working...",
-    "✨ Inscribing your deeds...",
-    "🎲 Rolling for preservation...",
-    "⏳ Committing to the timeline...",
-    "🔮 Archiving your progress...",
-  ],
-
   LOADING_ERROR_REPORT: [
     "🔍 Sanitizing error data for privacy...",
     "🛡️ Preparing error report (personal info redacted)...",
@@ -406,24 +396,9 @@ export function rollForMessage(
   // Apply dynamic replacements if provided (e.g., {error}, {mapName}, {itemName})
   if (replacements) {
     Object.entries(replacements).forEach(([key, value]) => {
-      selectedMessage = selectedMessage.replace(`{${key}}`, value);
+      selectedMessage = selectedMessage.replaceAll(`{${key}}`, value);
     });
   }
 
   return selectedMessage;
-}
-
-// ============================================================================
-// HELPER: Get a random message without type checking (for edge cases)
-// ============================================================================
-
-/**
- * Gets a random message for intents that might not be in the MessageIntent type yet.
- * Useful during migration or for dynamic message keys.
- */
-export function rollForMessageUnsafe(
-  intent: string,
-  replacements?: Record<string, string>
-): string {
-  return rollForMessage(intent as MessageIntent, replacements);
 }

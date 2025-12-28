@@ -23,9 +23,9 @@ interface ErrorFallbackUIProps {
 export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps) {
   const clearDungeonDialog = useGameStore((state) => state.clearDungeonDialog);
 
-  // Roll for random error messages (memoized to keep them stable)
-  const errorTitle = useMemo(() => rollForMessage('ERROR_DUNGEON_GENERATION_TITLE'), []);
-  const errorDesc = useMemo(() => rollForMessage('ERROR_DUNGEON_GENERATION_DESC'), []);
+  // Roll for random error messages (memoized per error instance to keep them stable)
+  const errorTitle = useMemo(() => rollForMessage('ERROR_DUNGEON_GENERATION_TITLE'), [error]);
+  const errorDesc = useMemo(() => rollForMessage('ERROR_DUNGEON_GENERATION_DESC'), [error]);
 
   const handleClose = () => {
     onReset();
