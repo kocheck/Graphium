@@ -20,9 +20,8 @@ interface StairsShapeProps {
  * - Visible to both DM and players
  *
  * @param stairs - Stairs object from gameStore
- * @param isWorldView - If true, player view (currently no difference from DM view)
  */
-const StairsShape = ({ stairs, isWorldView }: StairsShapeProps) => {
+const StairsShape = ({ stairs }: StairsShapeProps) => {
   // Color scheme based on type
   const fillColor = stairs.type === 'up' ? '#c0c0c0' : '#808080'; // Light gray for up, dark gray for down
   const strokeColor = '#000000';
@@ -54,10 +53,10 @@ const StairsShape = ({ stairs, isWorldView }: StairsShapeProps) => {
       {renderStairTreads(stairs, strokeColor, halfWidth, halfHeight)}
 
       {/* Directional arrow */}
-      {renderDirectionalArrow(stairs, arrowColor, halfWidth, halfHeight)}
+      {renderDirectionalArrow(stairs, arrowColor)}
 
       {/* Type indicator (UP/DOWN text) */}
-      {renderTypeIndicator(stairs, halfWidth, halfHeight)}
+      {renderTypeIndicator()}
     </Group>
   );
 };
@@ -114,10 +113,8 @@ function renderStairTreads(stairs: Stairs, strokeColor: string, halfWidth: numbe
  *
  * @param stairs - Stairs object
  * @param arrowColor - Color for the arrow
- * @param halfWidth - Half width for centering
- * @param halfHeight - Half height for centering
  */
-function renderDirectionalArrow(stairs: Stairs, arrowColor: string, halfWidth: number, halfHeight: number) {
+function renderDirectionalArrow(stairs: Stairs, arrowColor: string) {
   const centerX = 0; // Already centered by Group
   const centerY = 0; // Already centered by Group
   const arrowSize = Math.min(stairs.width, stairs.height) * 0.3;
@@ -160,7 +157,7 @@ function renderDirectionalArrow(stairs: Stairs, arrowColor: string, halfWidth: n
  * For now, this is primarily handled by color and arrow color.
  * Could add text labels if needed in the future.
  */
-function renderTypeIndicator(stairs: Stairs, halfWidth: number, halfHeight: number) {
+function renderTypeIndicator() {
   // Optional: Could add "UP" or "DOWN" text here
   // For now, the arrow color (blue/red) indicates the type
   return null;
