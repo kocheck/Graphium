@@ -242,8 +242,14 @@ export class WebStorageService implements IStorageService {
       const db = await this.getDB();
       const items = await db.getAll('library');
 
+      // Type for stored library items (includes internal blob properties)
+      interface StoredLibraryItem extends TokenLibraryItem {
+        _fullSizeBlob?: Blob;
+        _thumbnailBlob?: Blob;
+      }
+
       // Recreate Object URLs from stored blobs
-      const itemsWithURLs = items.map((item: any) => {
+      const itemsWithURLs = items.map((item: StoredLibraryItem) => {
         const fullSizeBlob = item._fullSizeBlob;
         const thumbnailBlob = item._thumbnailBlob;
 
@@ -327,6 +333,16 @@ export class WebStorageService implements IStorageService {
     try {
       localStorage.setItem('hyle-theme', mode);
       console.log(`[WebStorageService] Set theme mode: ${mode}`);
+      
+      // Broadcast theme change to other tabs
+      try {
+        const themeChannel = new BroadcastChannel('hyle-theme-sync');
+        themeChannel.postMessage({ type: 'THEME_CHANGED', mode });
+        themeChannel.close();
+      } catch (broadcastError) {
+        // BroadcastChannel not supported or failed - ignore
+        console.warn('[WebStorageService] Failed to broadcast theme change:', broadcastError);
+      }
     } catch (error) {
       console.error('[WebStorageService] Set theme mode failed:', error);
       throw error;
@@ -360,6 +376,7 @@ export class WebStorageService implements IStorageService {
    */
   private async processCampaignAssets(campaign: Campaign, assetsFolder: JSZip): Promise<void> {
     const processedAssets = new Map<string, string>(); // URL → relative path in ZIP
+    let assetCounter = 0; // Ensures uniqueness even within same millisecond
 
     const processAsset = async (src: string): Promise<string> => {
       if (!src || (!src.startsWith('blob:') && !src.startsWith('http:') && !src.startsWith('https:') && !src.startsWith('file:'))) {
@@ -377,8 +394,8 @@ export class WebStorageService implements IStorageService {
         const blob = await response.blob();
         const buffer = await blob.arrayBuffer();
 
-        // Generate unique filename
-        const filename = `asset-${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+        // Generate unique filename (timestamp + counter for guaranteed uniqueness)
+        const filename = `asset-${Date.now()}-${assetCounter++}-${Math.random().toString(36).slice(2)}.webp`;
         assetsFolder.file(filename, buffer);
 
         const relativePath = `assets/${filename}`;

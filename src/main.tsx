@@ -24,7 +24,73 @@ async function initApp() {
     console.log('[main] Storage initialized successfully')
   } catch (error) {
     console.error('[main] Failed to initialize storage:', error)
-    // Continue anyway - components will handle storage errors
+    
+    // Show user-friendly error screen instead of rendering broken app
+    const root = document.getElementById('root')
+    if (root) {
+      root.innerHTML = `
+        <div style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          background-color: #0a0a0a;
+          color: #ffffff;
+          font-family: system-ui, -apple-system, sans-serif;
+          padding: 2rem;
+          text-align: center;
+        ">
+          <div style="max-width: 500px;">
+            <h1 style="font-size: 2rem; margin-bottom: 1rem; color: #ef4444;">
+              Failed to Initialize Storage
+            </h1>
+            <p style="font-size: 1rem; margin-bottom: 2rem; color: #a3a3a3; line-height: 1.5;">
+              Hyle couldn't initialize its storage system. This may be due to:
+            </p>
+            <ul style="text-align: left; margin-bottom: 2rem; color: #a3a3a3; line-height: 1.8;">
+              <li>Insufficient browser permissions (IndexedDB blocked)</li>
+              <li>Private/Incognito mode restrictions</li>
+              <li>Corrupted local data</li>
+            </ul>
+            <button 
+              onclick="window.location.reload()" 
+              style="
+                background-color: #3b82f6;
+                color: white;
+                border: none;
+                padding: 0.75rem 1.5rem;
+                font-size: 1rem;
+                border-radius: 0.375rem;
+                cursor: pointer;
+                margin-right: 0.5rem;
+              "
+              onmouseover="this.style.backgroundColor='#2563eb'"
+              onmouseout="this.style.backgroundColor='#3b82f6'"
+            >
+              Retry
+            </button>
+            <button 
+              onclick="localStorage.clear(); indexedDB.deleteDatabase('hyle-db'); window.location.reload()" 
+              style="
+                background-color: transparent;
+                color: #a3a3a3;
+                border: 1px solid #525252;
+                padding: 0.75rem 1.5rem;
+                font-size: 1rem;
+                border-radius: 0.375rem;
+                cursor: pointer;
+              "
+              onmouseover="this.style.borderColor='#737373'"
+              onmouseout="this.style.borderColor='#525252'"
+            >
+              Clear Data & Retry
+            </button>
+          </div>
+        </div>
+      `
+    }
+    return // Don't render React app if storage failed
   }
 
   // Render React app

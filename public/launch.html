@@ -181,10 +181,10 @@
     // Fetch latest release from GitHub API and update download link
     (async function() {
       const downloadBtn = document.getElementById('download-desktop');
+      // TODO: Update with actual GitHub repository owner/name
+      const GITHUB_REPO = 'your-org/hyle';
 
       try {
-        // TODO: Update with actual GitHub repository owner/name
-        const GITHUB_REPO = 'your-org/hyle';
         const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
 
         if (!response.ok) {

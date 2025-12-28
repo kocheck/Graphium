@@ -104,8 +104,24 @@ export function ThemeManager() {
             }
           }
 
+          // Subscribe to cross-tab theme changes (for multi-window sync)
+          const themeChannel = new BroadcastChannel('hyle-theme-sync')
+          const handleCrossTabThemeChange = (event: MessageEvent) => {
+            if (event.data?.type === 'THEME_CHANGED') {
+              const newMode = event.data.mode as 'light' | 'dark' | 'system'
+              const newTheme = resolveEffectiveTheme(newMode)
+              applyTheme(newTheme)
+            }
+          }
+
           mediaQuery.addEventListener('change', handleSystemThemeChange)
-          cleanup = () => mediaQuery.removeEventListener('change', handleSystemThemeChange)
+          themeChannel.addEventListener('message', handleCrossTabThemeChange)
+          
+          cleanup = () => {
+            mediaQuery.removeEventListener('change', handleSystemThemeChange)
+            themeChannel.removeEventListener('message', handleCrossTabThemeChange)
+            themeChannel.close()
+          }
         }
 
         // Enable smooth transitions after initial theme is applied
