@@ -30,7 +30,7 @@ try {
 
   // Monkey-patch console.log to capture generation logs
   const originalLog = console.log;
-  const generationLogs = [];
+  const generationLogs: string[] = [];
   console.log = (...args) => {
     const msg = args.join(' ');
     if (msg.includes('Piece') || msg.includes('door') || msg.includes('Room')) {
