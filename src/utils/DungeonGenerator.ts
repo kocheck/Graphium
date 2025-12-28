@@ -238,7 +238,7 @@ export class DungeonGenerator {
     // Initialize corridor template (4 grid cells long for visible walls)
     this.corridorTemplate = {
       lengthInCells: 4,
-      widthInCells: 1,
+      widthInCells: 2,  // 2 cells wide allows both walls AND doors to align to grid
     };
   }
 
@@ -412,9 +412,10 @@ export class DungeonGenerator {
 
     switch (direction) {
       case 'north':
-        // Grid-snap corridor edges to align walls with grid lines
+        // Grid-snap corridor CENTER (works because width=2 cells, so center is grid-aligned)
+        const northCenterX = Math.round(fromX / gridSize) * gridSize;
         bounds = {
-          x: Math.round((fromX - corridorWidth / 2) / gridSize) * gridSize,
+          x: northCenterX - corridorWidth / 2,
           y: fromY - corridorLength,
           width: corridorWidth,
           height: corridorLength,
@@ -434,9 +435,10 @@ export class DungeonGenerator {
         break;
 
       case 'south':
-        // Grid-snap corridor edges to align walls with grid lines
+        // Grid-snap corridor CENTER (works because width=2 cells, so center is grid-aligned)
+        const southCenterX = Math.round(fromX / gridSize) * gridSize;
         bounds = {
-          x: Math.round((fromX - corridorWidth / 2) / gridSize) * gridSize,
+          x: southCenterX - corridorWidth / 2,
           y: fromY,
           width: corridorWidth,
           height: corridorLength,
@@ -456,10 +458,11 @@ export class DungeonGenerator {
         break;
 
       case 'east':
-        // Grid-snap corridor edges to align walls with grid lines
+        // Grid-snap corridor CENTER (works because width=2 cells, so center is grid-aligned)
+        const eastCenterY = Math.round(fromY / gridSize) * gridSize;
         bounds = {
           x: fromX,
-          y: Math.round((fromY - corridorWidth / 2) / gridSize) * gridSize,
+          y: eastCenterY - corridorWidth / 2,
           width: corridorLength,
           height: corridorWidth,
         };
@@ -478,10 +481,11 @@ export class DungeonGenerator {
         break;
 
       case 'west':
-        // Grid-snap corridor edges to align walls with grid lines
+        // Grid-snap corridor CENTER (works because width=2 cells, so center is grid-aligned)
+        const westCenterY = Math.round(fromY / gridSize) * gridSize;
         bounds = {
           x: fromX - corridorLength,
-          y: Math.round((fromY - corridorWidth / 2) / gridSize) * gridSize,
+          y: westCenterY - corridorWidth / 2,
           width: corridorLength,
           height: corridorWidth,
         };
