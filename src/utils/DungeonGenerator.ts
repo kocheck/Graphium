@@ -412,8 +412,10 @@ export class DungeonGenerator {
 
     switch (direction) {
       case 'north':
+        // Grid-snap the corridor CENTER for proper door alignment
+        const northCenterX = Math.round(fromX / gridSize) * gridSize;
         bounds = {
-          x: Math.round((fromX - corridorWidth / 2) / gridSize) * gridSize,
+          x: northCenterX - corridorWidth / 2,
           y: fromY - corridorLength,
           width: corridorWidth,
           height: corridorLength,
@@ -433,8 +435,10 @@ export class DungeonGenerator {
         break;
 
       case 'south':
+        // Grid-snap the corridor CENTER for proper door alignment
+        const southCenterX = Math.round(fromX / gridSize) * gridSize;
         bounds = {
-          x: Math.round((fromX - corridorWidth / 2) / gridSize) * gridSize,
+          x: southCenterX - corridorWidth / 2,
           y: fromY,
           width: corridorWidth,
           height: corridorLength,
@@ -454,9 +458,11 @@ export class DungeonGenerator {
         break;
 
       case 'east':
+        // Grid-snap the corridor CENTER for proper door alignment
+        const eastCenterY = Math.round(fromY / gridSize) * gridSize;
         bounds = {
           x: fromX,
-          y: Math.round((fromY - corridorWidth / 2) / gridSize) * gridSize,
+          y: eastCenterY - corridorWidth / 2,
           width: corridorLength,
           height: corridorWidth,
         };
@@ -475,9 +481,11 @@ export class DungeonGenerator {
         break;
 
       case 'west':
+        // Grid-snap the corridor CENTER for proper door alignment
+        const westCenterY = Math.round(fromY / gridSize) * gridSize;
         bounds = {
           x: fromX - corridorLength,
-          y: Math.round((fromY - corridorWidth / 2) / gridSize) * gridSize,
+          y: westCenterY - corridorWidth / 2,
           width: corridorLength,
           height: corridorWidth,
         };
