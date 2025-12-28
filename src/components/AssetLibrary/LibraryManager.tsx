@@ -175,8 +175,8 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
       <div
         className={`w-full flex flex-col overflow-hidden shadow-2xl ${
           isMobile
-            ? 'h-full bg-neutral-900'
-            : 'max-w-6xl h-[80vh] bg-neutral-900 rounded-lg'
+            ? 'h-full'
+            : 'max-w-6xl h-[80vh] rounded-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -225,14 +225,12 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search assets..."
               className="flex-1 bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none text-base"
-              style={{ fontSize: '16px' }}
             />
             <select
               aria-label="Filter by category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none text-base"
-              style={{ fontSize: '16px' }}
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>

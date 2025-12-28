@@ -98,7 +98,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, isGamePaused, onPauseTo
               }}
               className="w-full px-4 py-4 text-left flex items-center gap-3 min-h-[56px]"
               style={{
-                backgroundColor: isGamePaused ? '#dc2626' : '#10b981',
+                backgroundColor: isGamePaused ? 'var(--app-error-solid)' : 'var(--app-success-solid)',
                 color: 'white',
                 borderBottomWidth: '1px',
                 borderBottomStyle: 'solid',
@@ -177,7 +177,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, isGamePaused, onPauseTo
 
       {/* Bottom Navigation Bar */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around safe-area-inset-bottom"
+        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
         style={{
           backgroundColor: 'var(--app-bg-surface)',
           borderTopWidth: '1px',
