@@ -396,7 +396,9 @@ export function rollForMessage(
   // Apply dynamic replacements if provided (e.g., {error}, {mapName}, {itemName})
   if (replacements) {
     Object.entries(replacements).forEach(([key, value]) => {
-      selectedMessage = selectedMessage.replaceAll(`{${key}}`, value);
+      // Use regex with global flag for ES2020 compatibility (replaceAll requires ES2021)
+      const regex = new RegExp(`\\{${key}\\}`, 'g');
+      selectedMessage = selectedMessage.replace(regex, value);
     });
   }
 
