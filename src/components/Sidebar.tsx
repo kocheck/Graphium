@@ -56,6 +56,8 @@ import MapNavigator from './MapNavigator';
 import AddToLibraryDialog from './AssetLibrary/AddToLibraryDialog';
 import LibraryManager from './AssetLibrary/LibraryManager';
 import ToggleSwitch from './ToggleSwitch';
+import MobileSidebarDrawer from './MobileSidebarDrawer';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 /**
  * Sidebar component provides map upload, grid settings, and token library
@@ -90,6 +92,11 @@ const Sidebar = () => {
         name: string;
     } | null>(null);
     const [isLibraryManagerOpen, setIsLibraryManagerOpen] = useState(false);
+
+    // Mobile drawer state
+    const isMobile = useIsMobile();
+    const isMobileDrawerOpen = useGameStore(state => state.isMobileSidebarOpen);
+    const setMobileDrawerOpen = useGameStore(state => state.setMobileSidebarOpen);
 
     // Cleanup: Cancel any active processing on unmount
     useEffect(() => {
@@ -221,8 +228,9 @@ const Sidebar = () => {
         }
     };
 
-    return (
-        <div className="sidebar w-64 flex flex-col p-4 z-10 shrink-0 overflow-y-auto">
+    // Sidebar content (same for mobile and desktop)
+    const sidebarContent = (
+        <div className={`sidebar flex flex-col p-4 z-10 overflow-y-auto ${isMobile ? 'w-full h-full' : 'w-64 shrink-0'}`}>
             {/* Campaign Navigation */}
             <MapNavigator />
 
@@ -409,6 +417,17 @@ const Sidebar = () => {
             />
         </div>
     );
+
+    // Render: Mobile drawer or desktop sidebar
+    if (isMobile) {
+        return (
+            <MobileSidebarDrawer isOpen={isMobileDrawerOpen} onClose={() => setMobileDrawerOpen(false)}>
+                {sidebarContent}
+            </MobileSidebarDrawer>
+        );
+    }
+
+    return sidebarContent;
 };
 
 export default Sidebar;

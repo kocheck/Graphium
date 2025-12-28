@@ -16,6 +16,7 @@ import AutoSaveManager from './components/AutoSaveManager'
 import CommandPalette from './components/AssetLibrary/CommandPalette'
 import { useCommandPalette } from './hooks/useCommandPalette'
 import { getStorage } from './services/storage';
+import { useIsMobile } from './hooks/useMediaQuery';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -86,6 +87,10 @@ import { getStorage } from './services/storage';
 function App() {
   // Detect window type for UI sanitization
   const { isArchitectView, isWorldView } = useWindowType();
+
+  // Mobile responsiveness
+  const isMobile = useIsMobile();
+  const setMobileSidebarOpen = useGameStore((state) => state.setMobileSidebarOpen);
 
   // Active tool state (controls CanvasManager behavior)
   // Only used in Architect View; World View always uses 'select' with restricted interactions
@@ -270,6 +275,27 @@ function App() {
 
 
       <div className="flex-1 relative h-full">
+        {/* Mobile Hamburger Menu Button (top-left, Architect View only) */}
+        {isArchitectView && isMobile && (
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="fixed top-4 left-4 z-50 p-3 rounded shadow-lg"
+            style={{
+              backgroundColor: 'var(--app-bg-surface)',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--app-border-default)',
+              minWidth: '48px',
+              minHeight: '48px',
+            }}
+            aria-label="Open menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        )}
+
         {/* CanvasManager: Rendered in both views, but with different interaction modes */}
         <CanvasManager
           tool={tool}
