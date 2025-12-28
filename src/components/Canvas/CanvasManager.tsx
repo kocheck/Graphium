@@ -545,8 +545,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
       dragBroadcastThrottleRef.current.set(tokenId, now);
 
       // Broadcast to World View via IPC
-      if (window.ipcRenderer && !isWorldView) {
-        window.ipcRenderer.send('SYNC_WORLD_STATE', {
+      const ipcRenderer = window.ipcRenderer;
+      if (ipcRenderer && !isWorldView) {
+        ipcRenderer.send('SYNC_WORLD_STATE', {
           type: 'TOKEN_DRAG_MOVE',
           payload: { id: tokenId, x, y }
         });
@@ -583,11 +584,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     });
 
     // Broadcast drag start to World View
-    if (window.ipcRenderer && !isWorldView) {
+    const ipcRenderer = window.ipcRenderer;
+    if (ipcRenderer && !isWorldView) {
       tokenIds.forEach(id => {
         const token = tokens.find(t => t.id === id);
         if (token) {
-          window.ipcRenderer.send('SYNC_WORLD_STATE', {
+          ipcRenderer.send('SYNC_WORLD_STATE', {
             type: 'TOKEN_DRAG_START',
             payload: { id, x: token.x, y: token.y }
           });
@@ -664,11 +666,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     }
 
     // Broadcast drag end to World View with committed positions
-    if (window.ipcRenderer && !isWorldView) {
+    const ipcRenderer = window.ipcRenderer;
+    if (ipcRenderer && !isWorldView) {
       tokenIds.forEach(id => {
         const pos = committedPositions.get(id);
         if (pos) {
-          window.ipcRenderer.send('SYNC_WORLD_STATE', {
+          ipcRenderer.send('SYNC_WORLD_STATE', {
             type: 'TOKEN_DRAG_END',
             payload: { id, x: pos.x, y: pos.y }
           });

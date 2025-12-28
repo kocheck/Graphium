@@ -203,7 +203,8 @@ function App() {
 
   // Handle Menu Commands (Electron IPC)
   useEffect(() => {
-    if (!window.ipcRenderer) return;
+    const ipcRenderer = window.ipcRenderer;
+    if (!ipcRenderer) return;
 
     const handleSave = async () => {
         try {
@@ -237,14 +238,14 @@ function App() {
         useGameStore.getState().setShowResourceMonitor(!useGameStore.getState().showResourceMonitor);
     };
 
-    window.ipcRenderer.on('MENU_SAVE_CAMPAIGN', handleSave);
-    window.ipcRenderer.on('MENU_LOAD_CAMPAIGN', handleLoad);
-    window.ipcRenderer.on('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
+    ipcRenderer.on('MENU_SAVE_CAMPAIGN', handleSave);
+    ipcRenderer.on('MENU_LOAD_CAMPAIGN', handleLoad);
+    ipcRenderer.on('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
 
     return () => {
-        window.ipcRenderer.off('MENU_SAVE_CAMPAIGN', handleSave);
-        window.ipcRenderer.off('MENU_LOAD_CAMPAIGN', handleLoad);
-        window.ipcRenderer.off('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
+        ipcRenderer.off('MENU_SAVE_CAMPAIGN', handleSave);
+        ipcRenderer.off('MENU_LOAD_CAMPAIGN', handleLoad);
+        ipcRenderer.off('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
     };
   }, []); // Empty dependency array as handlers use getState()
 
@@ -328,10 +329,10 @@ function App() {
            <button
              className="btn btn-tool"
              onClick={() => {
-               const isElectron = Boolean(window.ipcRenderer);
-               if (isElectron) {
+               const ipcRenderer = window.ipcRenderer;
+               if (ipcRenderer) {
                  // Electron: Use IPC to create separate window
-                 window.ipcRenderer.send('create-world-window');
+                 ipcRenderer.send('create-world-window');
                } else {
                  // Web: Open in new tab with ?type=world parameter
                  const baseUrl = window.location.origin + window.location.pathname;

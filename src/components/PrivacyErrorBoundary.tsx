@@ -224,7 +224,10 @@ ${userContext.trim()}
       const mailtoUrl = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
 
       // Open the default email client
-      await window.errorReporting.openExternal(mailtoUrl);
+      const errorReporting = window.errorReporting;
+      if (errorReporting) {
+        await errorReporting.openExternal(mailtoUrl);
+      }
 
       // Reset copy status after 3 seconds
       setTimeout(() => {
@@ -268,7 +271,16 @@ ${userContext.trim()}
       const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
       // Save to file using native dialog
-      const result = await window.errorReporting.saveToFile(finalReport);
+      const errorReporting = window.errorReporting;
+      if (!errorReporting) {
+        this.setState({ saveStatus: 'error' });
+        setTimeout(() => {
+          this.setState({ saveStatus: 'idle' });
+        }, 3000);
+        return;
+      }
+
+      const result = await errorReporting.saveToFile(finalReport);
 
       if (result.success) {
         this.setState({ saveStatus: 'saved' });

@@ -22,16 +22,7 @@
 import { useEffect } from 'react'
 import { getStorage } from '../services/storage'
 
-// TypeScript declarations for window.themeAPI (exposed by preload.ts)
-declare global {
-  interface Window {
-    themeAPI: {
-      getThemeState: () => Promise<{ mode: string; effectiveTheme: string }>
-      setThemeMode: (mode: string) => Promise<void>
-      onThemeChanged: (callback: (data: { mode: string; effectiveTheme: string }) => void) => () => void
-    }
-  }
-}
+// Note: window.themeAPI types are defined in vite-env.d.ts
 
 /**
  * Apply theme to DOM

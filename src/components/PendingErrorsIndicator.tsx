@@ -62,7 +62,10 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
       const mailtoUrl = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
 
       // Open email client
-      await window.errorReporting.openExternal(mailtoUrl);
+      const errorReporting = window.errorReporting;
+      if (errorReporting) {
+        await errorReporting.openExternal(mailtoUrl);
+      }
 
       // Mark as reported
       markErrorReported(error.id);
@@ -79,10 +82,13 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
 
   const handleSaveError = async (error: StoredError) => {
     try {
-      const result = await window.errorReporting.saveToFile(error.reportBody);
-      if (result.success) {
-        markErrorReported(error.id);
-        refreshErrors();
+      const errorReporting = window.errorReporting;
+      if (errorReporting) {
+        const result = await errorReporting.saveToFile(error.reportBody);
+        if (result.success) {
+          markErrorReported(error.id);
+          refreshErrors();
+        }
       }
     } catch (err) {
       console.error('Failed to save error:', err);

@@ -178,7 +178,8 @@ const SyncManager = () => {
 
   useEffect(() => {
     // Detect platform: Electron vs Web
-    const isElectron = Boolean(window.ipcRenderer);
+    const ipcRenderer = window.ipcRenderer;
+    const isElectron = Boolean(ipcRenderer);
     const isWeb = !isElectron;
 
     // Detect window type from URL parameter
@@ -355,14 +356,14 @@ const SyncManager = () => {
 
         // Request initial state from Architect View
         channel.postMessage({ type: 'REQUEST_INITIAL_STATE' });
-      } else if (isElectron) {
+      } else if (isElectron && ipcRenderer) {
         // Electron: Listen for IPC messages from main process
-        window.ipcRenderer.on('SYNC_WORLD_STATE', handleSyncAction);
+        ipcRenderer.on('SYNC_WORLD_STATE', handleSyncAction);
 
         // Request initial state from Architect View when World View mounts
         // This ensures World View has the current game state even if no changes
         // have occurred since it opened
-        window.ipcRenderer.send('REQUEST_INITIAL_STATE');
+        ipcRenderer.send('REQUEST_INITIAL_STATE');
       }
 
       // ============================================================
@@ -424,9 +425,9 @@ const SyncManager = () => {
           if (isWeb && channel) {
             // Web: Send via BroadcastChannel
             channel.postMessage(action);
-          } else if (isElectron) {
+          } else if (isElectron && ipcRenderer) {
             // Electron: Send via IPC to Architect View
-            window.ipcRenderer.send('SYNC_FROM_WORLD_VIEW', action);
+            ipcRenderer.send('SYNC_FROM_WORLD_VIEW', action);
           }
         });
 
@@ -606,10 +607,9 @@ const SyncManager = () => {
           if (isWeb && channel) {
             // Web: Send via BroadcastChannel
             channel.postMessage(action);
-          } else if (isElectron) {
+          } else if (isElectron && ipcRenderer) {
             // Electron: Send via IPC
-            // @ts-ignore - ipcRenderer types not available
-            window.ipcRenderer.send('SYNC_WORLD_STATE', action);
+            ipcRenderer.send('SYNC_WORLD_STATE', action);
           }
         });
 
@@ -675,9 +675,9 @@ const SyncManager = () => {
           if (event && event.data?.type === 'REQUEST_INITIAL_STATE') {
             channel.postMessage(initialSyncAction);
           }
-        } else if (isElectron) {
+        } else if (isElectron && ipcRenderer) {
           // Electron: Send via IPC to World View
-          window.ipcRenderer.send('SYNC_WORLD_STATE', initialSyncAction);
+          ipcRenderer.send('SYNC_WORLD_STATE', initialSyncAction);
         }
 
         // Initialize prevStateRef so subsequent changes are detected correctly
@@ -747,11 +747,11 @@ const SyncManager = () => {
             handleSyncFromWorldView(null, message);
           }
         };
-      } else if (isElectron) {
+      } else if (isElectron && ipcRenderer) {
         // Electron: Listen for IPC initial state requests
-        window.ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
+        ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
         // Electron: Listen for bidirectional sync from World View
-        window.ipcRenderer.on('SYNC_FROM_WORLD_VIEW', handleSyncFromWorldView);
+        ipcRenderer.on('SYNC_FROM_WORLD_VIEW', handleSyncFromWorldView);
       }
 
       // Cleanup function (unsubscribe on unmount)
