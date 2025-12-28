@@ -49,13 +49,12 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     // Update state so the next render will show the fallback UI
-    // Roll for error messages once when error occurs to keep them stable across re-renders
     return {
       hasError: true,
       error,
       errorInfo: null,
-      errorTitle: rollForMessage('ERROR_ASSET_PROCESSING_TITLE'),
-      errorDesc: rollForMessage('ERROR_ASSET_PROCESSING_DESC')
+      errorTitle: undefined,
+      errorDesc: undefined
     };
   }
 
@@ -64,10 +63,16 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     console.error('[AssetProcessingErrorBoundary] Caught error:', error);
     console.error('[AssetProcessingErrorBoundary] Error info:', errorInfo);
 
-    // Update state with full error info
+    // Roll for error messages once when error occurs to keep them stable across re-renders
+    const errorTitle = rollForMessage('ERROR_ASSET_PROCESSING_TITLE');
+    const errorDesc = rollForMessage('ERROR_ASSET_PROCESSING_DESC');
+
+    // Update state with full error info and rolled messages
     this.setState({
       error,
-      errorInfo
+      errorInfo,
+      errorTitle,
+      errorDesc
     });
   }
 
@@ -78,7 +83,9 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      errorTitle: undefined,
+      errorDesc: undefined
     });
   };
 
