@@ -17,8 +17,8 @@ import { useGameStore } from '../store/gameStore';
  */
 const DoorControls = () => {
   const doors = useGameStore(state => state.doors);
-  const updateDoorState = useGameStore(state => state.updateDoorState);
-  const updateDoorLock = useGameStore(state => state.updateDoorLock);
+  const updateAllDoorStates = useGameStore(state => state.updateAllDoorStates);
+  const updateAllDoorLocks = useGameStore(state => state.updateAllDoorLocks);
 
   const doorCount = doors.length;
   const openDoorCount = doors.filter(d => d.isOpen).length;
@@ -26,27 +26,15 @@ const DoorControls = () => {
   const lockedDoorCount = doors.filter(d => d.isLocked).length;
 
   const handleOpenAll = () => {
-    doors.forEach(door => {
-      if (!door.isOpen && !door.isLocked) {
-        updateDoorState(door.id, true);
-      }
-    });
+    updateAllDoorStates(true);
   };
 
   const handleCloseAll = () => {
-    doors.forEach(door => {
-      if (door.isOpen) {
-        updateDoorState(door.id, false);
-      }
-    });
+    updateAllDoorStates(false);
   };
 
   const handleUnlockAll = () => {
-    doors.forEach(door => {
-      if (door.isLocked) {
-        updateDoorLock(door.id, false);
-      }
-    });
+    updateAllDoorLocks(false);
   };
 
   // Don't show controls if there are no doors

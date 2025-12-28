@@ -285,6 +285,8 @@ export interface GameState {
   toggleDoor: (id: string) => void;
   updateDoorState: (id: string, isOpen: boolean) => void;
   updateDoorLock: (id: string, isLocked: boolean) => void;
+  updateAllDoorStates: (isOpen: boolean) => void;
+  updateAllDoorLocks: (isLocked: boolean) => void;
 
   // Stairs Actions
   addStairs: (stairs: Stairs) => void;
@@ -589,6 +591,12 @@ export const useGameStore = create<GameState>((set, get) => {
     })),
     updateDoorLock: (id: string, isLocked: boolean) => set((state) => ({
       doors: state.doors.map(d => d.id === id ? { ...d, isLocked } : d)
+    })),
+    updateAllDoorStates: (isOpen: boolean) => set((state) => ({
+      doors: state.doors.map(d => d.isLocked ? d : { ...d, isOpen })
+    })),
+    updateAllDoorLocks: (isLocked: boolean) => set((state) => ({
+      doors: state.doors.map(d => ({ ...d, isLocked }))
     })),
 
     // --- Stairs Actions ---
