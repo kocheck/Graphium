@@ -13,6 +13,7 @@ import TokenErrorBoundary from './TokenErrorBoundary';
 import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import FogOfWarLayer from './FogOfWarLayer';
 import DoorLayer from './DoorLayer';
+import StairsLayer from './StairsLayer';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
 
@@ -130,6 +131,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const tokens = useGameStore(s => s.tokens);
   const drawings = useGameStore(s => s.drawings);
   const doors = useGameStore(s => s.doors);
+  const stairs = useGameStore(s => s.stairs);
   const gridSize = useGameStore(s => s.gridSize);
   const gridType = useGameStore(s => s.gridType);
   const isCalibrating = useGameStore(s => s.isCalibrating);
@@ -1308,6 +1310,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                     }
                 />
             )}
+
+            {/* Stairs (Architectural elements, rendered with drawings) */}
+            <StairsLayer
+                stairs={stairs}
+                isWorldView={isWorldView}
+            />
         </Layer>
 
         {/* Layer 3: Tokens & UI */}

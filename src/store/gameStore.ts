@@ -57,6 +57,7 @@ export interface MapData {
   tokens: Token[];
   drawings: Drawing[];
   doors: Door[];
+  stairs: Stairs[];
   map: MapConfig | null;
   gridSize: number;
   gridType: GridType;
@@ -154,6 +155,30 @@ export interface Door {
 }
 
 /**
+ * Stairs represents a staircase connecting different levels in a dungeon
+ *
+ * Stairs are rendered with a stepped pattern and directional arrows.
+ * They provide visual indication of level transitions in multi-floor dungeons.
+ *
+ * @property id - Unique identifier
+ * @property x - Top-left position X in world coordinates
+ * @property y - Top-left position Y in world coordinates
+ * @property direction - Which compass direction the stairs face ('north', 'south', 'east', 'west')
+ * @property type - Whether stairs go up or down ('up' or 'down')
+ * @property width - Width in pixels (typically 2 * gridSize for 2-cell width)
+ * @property height - Height in pixels (typically 2 * gridSize for 2-cell height)
+ */
+export interface Stairs {
+  id: string;
+  x: number;
+  y: number;
+  direction: 'north' | 'south' | 'east' | 'west';
+  type: 'up' | 'down';
+  width: number;
+  height: number;
+}
+
+/**
  * Maximum number of explored regions to store in memory.
  */
 const MAX_EXPLORED_REGIONS = 200;
@@ -167,6 +192,7 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
   tokens: [],
   drawings: [],
   doors: [],
+  stairs: [],
   map: null,
   gridSize: 50,
   gridType: 'LINES',
@@ -202,6 +228,7 @@ export interface GameState {
   tokens: Token[];
   drawings: Drawing[];
   doors: Door[];
+  stairs: Stairs[];
   gridSize: number;
   gridType: GridType;
   map: MapConfig | null;
@@ -259,6 +286,11 @@ export interface GameState {
   updateDoorState: (id: string, isOpen: boolean) => void;
   updateDoorLock: (id: string, isLocked: boolean) => void;
 
+  // Stairs Actions
+  addStairs: (stairs: Stairs) => void;
+  removeStairs: (id: string) => void;
+  removeMultipleStairs: (ids: string[]) => void;
+
   // Map/Grid Attributes Actions
   setGridSize: (size: number) => void;
   setGridType: (type: GridType) => void;
@@ -297,6 +329,7 @@ export const useGameStore = create<GameState>((set, get) => {
     tokens: initialMap.tokens,
     drawings: initialMap.drawings,
     doors: initialMap.doors,
+    stairs: initialMap.stairs,
     gridSize: initialMap.gridSize,
     gridType: initialMap.gridType,
     map: initialMap.map,
@@ -329,6 +362,7 @@ export const useGameStore = create<GameState>((set, get) => {
         tokens: activeMap.tokens || [],
         drawings: activeMap.drawings || [],
         doors: activeMap.doors || [],
+        stairs: activeMap.stairs || [],
         gridSize: activeMap.gridSize || 50,
         gridType: activeMap.gridType || 'LINES',
         map: activeMap.map || null,
@@ -370,6 +404,7 @@ export const useGameStore = create<GameState>((set, get) => {
         tokens: state.tokens,
         drawings: state.drawings,
         doors: state.doors,
+        stairs: state.stairs,
         map: state.map,
         gridSize: state.gridSize,
         gridType: state.gridType,
@@ -407,6 +442,7 @@ export const useGameStore = create<GameState>((set, get) => {
         tokens: newMap.tokens,
         drawings: newMap.drawings,
         doors: newMap.doors,
+        stairs: newMap.stairs,
         map: newMap.map,
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
@@ -449,6 +485,7 @@ export const useGameStore = create<GameState>((set, get) => {
             tokens: nextMap.tokens,
             drawings: nextMap.drawings,
             doors: nextMap.doors,
+            stairs: nextMap.stairs || [],
             map: nextMap.map,
             gridSize: nextMap.gridSize,
             gridType: nextMap.gridType,
@@ -494,6 +531,7 @@ export const useGameStore = create<GameState>((set, get) => {
         tokens: newMap.tokens || [],
         drawings: newMap.drawings || [],
         doors: newMap.doors || [],
+        stairs: newMap.stairs || [],
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
         map: newMap.map,
@@ -552,6 +590,11 @@ export const useGameStore = create<GameState>((set, get) => {
     updateDoorLock: (id: string, isLocked: boolean) => set((state) => ({
       doors: state.doors.map(d => d.id === id ? { ...d, isLocked } : d)
     })),
+
+    // --- Stairs Actions ---
+    addStairs: (stairs: Stairs) => set((state) => ({ stairs: [...state.stairs, stairs] })),
+    removeStairs: (id: string) => set((state) => ({ stairs: state.stairs.filter(s => s.id !== id) })),
+    removeMultipleStairs: (ids: string[]) => set((state) => ({ stairs: state.stairs.filter(s => !ids.includes(s.id)) })),
 
     // --- Grid/Map Actions ---
     setGridSize: (size: number) => set({ gridSize: size }),
