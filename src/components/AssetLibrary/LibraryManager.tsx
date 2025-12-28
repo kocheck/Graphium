@@ -29,6 +29,7 @@ import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 import AddToLibraryDialog from './AddToLibraryDialog';
 import { getStorage } from '../../services/storage';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import { rollForMessage } from '../../utils/systemMessages';
 
 interface LibraryManagerProps {
   isOpen: boolean;
@@ -108,12 +109,12 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
         setIsAddDialogOpen(true);
       } catch (fetchErr) {
         console.error('[LibraryManager] Failed to read processed file:', fetchErr);
-        showToast('Failed to read processed image', 'error');
+        showToast(rollForMessage('PROCESSED_IMAGE_READ_FAILED'), 'error');
         processingHandleRef.current = null;
       }
     } catch (err) {
       console.error('[LibraryManager] Failed to process upload:', err);
-      showToast('Failed to process image', 'error');
+      showToast(rollForMessage('IMAGE_PROCESS_FAILED'), 'error');
       processingHandleRef.current = null;
     } finally {
       e.target.value = ''; // Reset input
@@ -126,7 +127,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
    */
   const handleDelete = async (itemId: string, itemName: string) => {
     showConfirmDialog(
-      `Delete "${itemName}" from library? This cannot be undone.`,
+      rollForMessage('CONFIRM_LIBRARY_ASSET_DELETE', { assetName: itemName }),
       async () => {
         try {
           // Delete from storage (filesystem or IndexedDB)
@@ -136,10 +137,10 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
           // Remove from store
           removeTokenFromLibrary(itemId);
 
-          showToast('Asset deleted successfully', 'success');
+          showToast(rollForMessage('ASSET_DELETED_SUCCESS'), 'success');
         } catch (error) {
           console.error('[LibraryManager] Failed to delete asset:', error);
-          showToast('Failed to delete asset', 'error');
+          showToast(rollForMessage('ASSET_DELETE_FAILED'), 'error');
         }
       },
       'Delete'
@@ -310,7 +311,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
                     <button
                       onClick={() => {
                         addLibraryTokenToMap(item, addToken, map);
-                        showToast(`Added ${item.name} to map`, 'success');
+                        showToast(rollForMessage('ASSET_ADDED_TO_MAP_SUCCESS', { itemName: item.name }), 'success');
                       }}
                       className="w-full mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs font-medium"
                       aria-label={`Add ${item.name} to map`}

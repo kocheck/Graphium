@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { rollForMessage } from '../utils/systemMessages';
 
 /**
  * Token represents a character, creature, or object on the battlemap
@@ -377,7 +378,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
       // Prevent deleting the last map
       if (Object.keys(maps).length <= 1) {
-        get().showToast('Cannot delete the only map', 'error');
+        get().showToast(rollForMessage('CANNOT_DELETE_ONLY_MAP'), 'error');
         return;
       }
 

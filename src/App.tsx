@@ -18,6 +18,7 @@ import { useCommandPalette } from './hooks/useCommandPalette'
 import { getStorage } from './services/storage';
 import { useIsMobile } from './hooks/useMediaQuery';
 import MobileToolbar from './components/MobileToolbar';
+import { rollForMessage } from './utils/systemMessages';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -120,7 +121,7 @@ function App() {
       await window.ipcRenderer.invoke('TOGGLE_PAUSE');
     } catch (e) {
       console.error('[App] Failed to toggle pause:', e);
-      showToast('Failed to toggle pause state', 'error');
+      showToast(rollForMessage('PAUSE_TOGGLE_FAILED'), 'error');
     }
   };
 
@@ -219,10 +220,10 @@ function App() {
             const campaignToSave = useGameStore.getState().campaign;
             const storage = getStorage();
             const result = await storage.saveCampaign(campaignToSave);
-            if (result) store.showToast('Campaign Saved Successfully!', 'success');
+            if (result) store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
         } catch (e) {
             console.error(e);
-            useGameStore.getState().showToast('Failed to save: ' + e, 'error');
+            useGameStore.getState().showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
         }
     };
 
@@ -232,11 +233,11 @@ function App() {
             const campaign = await storage.loadCampaign();
             if (campaign) {
                 useGameStore.getState().loadCampaign(campaign);
-                useGameStore.getState().showToast('Campaign Loaded!', 'success');
+                useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
             }
         } catch (e) {
             console.error(e);
-            useGameStore.getState().showToast('Failed to load: ' + e, 'error');
+            useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
         }
     };
 

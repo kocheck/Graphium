@@ -58,6 +58,7 @@ import LibraryManager from './AssetLibrary/LibraryManager';
 import ToggleSwitch from './ToggleSwitch';
 import MobileSidebarDrawer from './MobileSidebarDrawer';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { rollForMessage } from '../utils/systemMessages';
 
 /**
  * Sidebar component provides map upload, grid settings, and token library
@@ -153,7 +154,7 @@ const Sidebar = () => {
                 objectUrl = URL.createObjectURL(file);
             } catch (err) {
                 console.error("Failed to create object URL for map image", err);
-                showToast('Failed to process map image. The file may be invalid or unsupported.', 'error');
+                showToast(rollForMessage('MAP_IMAGE_PROCESS_FAILED'), 'error');
                 return;
             }
             const img = new Image();
@@ -173,11 +174,11 @@ const Sidebar = () => {
             img.onerror = (e) => {
                 console.error("Map Image Failed to Load for Dimensions", e);
                 URL.revokeObjectURL(objectUrl);
-                showToast('Failed to load map image. Please check the file format and try again.', 'error');
+                showToast(rollForMessage('MAP_IMAGE_LOAD_FAILED'), 'error');
             }
         } catch (err) {
             console.error("Failed to upload map", err);
-            showToast('Failed to upload map. Please ensure the file is a valid image.', 'error');
+            showToast(rollForMessage('MAP_UPLOAD_FAILED'), 'error');
             // Clear handle on error
             processingHandleRef.current = null;
         } finally {
@@ -221,7 +222,7 @@ const Sidebar = () => {
             setIsAddToLibraryOpen(true);
         } catch (err) {
             console.error("Failed to upload token", err);
-            showToast('Failed to upload token.', 'error');
+            showToast(rollForMessage('TOKEN_UPLOAD_FAILED'), 'error');
             processingHandleRef.current = null;
         } finally {
             e.target.value = '';
@@ -381,7 +382,7 @@ const Sidebar = () => {
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             showConfirmDialog(
-                                                'Remove this token from library?',
+                                                rollForMessage('CONFIRM_TOKEN_REMOVAL'),
                                                 () => removeTokenFromLibrary(token.id),
                                                 'Remove'
                                             );

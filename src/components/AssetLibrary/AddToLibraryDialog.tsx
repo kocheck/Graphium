@@ -21,6 +21,7 @@ import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { getStorage } from '../../services/storage';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import { rollForMessage } from '../../utils/systemMessages';
 
 interface AddToLibraryDialogProps {
   isOpen: boolean;
@@ -112,12 +113,12 @@ const AddToLibraryDialog = ({
    */
   const handleSave = async () => {
     if (!name.trim()) {
-      showToast('Please enter a name', 'error');
+      showToast(rollForMessage('LIBRARY_NAME_REQUIRED'), 'error');
       return;
     }
 
     if (!imageBlob || !imageSrc) {
-      showToast('No image data available', 'error');
+      showToast(rollForMessage('LIBRARY_IMAGE_DATA_MISSING'), 'error');
       return;
     }
 
@@ -156,12 +157,12 @@ const AddToLibraryDialog = ({
       // Add to store
       addTokenToLibrary(savedItem);
 
-      showToast('Added to library successfully', 'success');
+      showToast(rollForMessage('ASSET_ADDED_TO_LIBRARY_SUCCESS'), 'success');
       onConfirm();
       handleClose();
     } catch (error) {
       console.error('[AddToLibraryDialog] Failed to save to library:', error);
-      showToast('Failed to save to library', 'error');
+      showToast(rollForMessage('LIBRARY_SAVE_FAILED'), 'error');
     } finally {
       setIsLoading(false);
     }

@@ -1,4 +1,5 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
+import { rollForMessage } from '../utils/systemMessages';
 
 interface Props {
   children: ReactNode;
@@ -88,10 +89,10 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
           fontFamily: 'system-ui, sans-serif'
         }}>
           <h3 style={{ color: '#c33', margin: '0 0 10px 0' }}>
-            ❌ Asset Processing Error
+            {rollForMessage('ERROR_ASSET_PROCESSING_TITLE')}
           </h3>
           <p style={{ margin: '10px 0' }}>
-            Failed to process uploaded file. This might happen if:
+            {rollForMessage('ERROR_ASSET_PROCESSING_DESC')}
           </p>
           <ul style={{ margin: '10px 0 10px 20px' }}>
             <li>The file is corrupt or unsupported</li>
