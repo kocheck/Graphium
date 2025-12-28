@@ -71,7 +71,7 @@ async function initApp() {
               Retry
             </button>
             <button 
-              onclick="localStorage.clear(); indexedDB.deleteDatabase('hyle-db'); window.location.reload()" 
+              onclick="localStorage.clear(); indexedDB.deleteDatabase('hyle-storage'); window.location.reload()"
               style="
                 background-color: transparent;
                 color: #a3a3a3;

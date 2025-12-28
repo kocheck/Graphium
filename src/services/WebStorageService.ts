@@ -46,7 +46,12 @@ export class WebStorageService implements IStorageService {
   private libraryURLs: Map<string, { fullSize: string; thumbnail: string }> = new Map(); // assetId → URLs
 
   constructor() {
-    this.dbPromise = this.initDB();
+    this.dbPromise = this.initDB().catch((error) => {
+      console.error('[WebStorageService] Failed to initialize IndexedDB', error);
+      this.db = null;
+      // Re-throw to propagate to main.tsx initialization
+      throw error;
+    });
   }
 
   /**
@@ -117,6 +122,9 @@ export class WebStorageService implements IStorageService {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      // Clean up temp assets now that they're saved to campaign ZIP
+      this.cleanupTempAssets();
+
       console.log('[WebStorageService] Campaign downloaded successfully');
       return true;
     } catch (error) {
@@ -173,6 +181,9 @@ export class WebStorageService implements IStorageService {
 
           // Restore assets from ZIP to Object URLs
           await this.restoreCampaignAssets(campaign, zip);
+
+          // Clean up old temp assets from previous session
+          this.cleanupTempAssets();
 
           console.log('[WebStorageService] Campaign loaded successfully');
           resolve(campaign);
@@ -247,7 +258,8 @@ export class WebStorageService implements IStorageService {
       const src = URL.createObjectURL(fullSizeBlob);
       const thumbnailSrc = URL.createObjectURL(thumbnailBlob);
 
-      const item: TokenLibraryItem & { _fullSizeBlob?: Blob; _thumbnailBlob?: Blob } = {
+      // Store item with internal blob properties for persistence
+      const itemWithBlobs: TokenLibraryItem & { _fullSizeBlob?: Blob; _thumbnailBlob?: Blob } = {
         ...metadata,
         src,
         thumbnailSrc,
@@ -257,10 +269,12 @@ export class WebStorageService implements IStorageService {
         _thumbnailBlob: thumbnailBlob
       };
 
-      await db.put('library', item);
+      await db.put('library', itemWithBlobs);
 
+      // Return clean item without internal properties
+      const { _fullSizeBlob, _thumbnailBlob, ...cleanItem } = itemWithBlobs;
       console.log(`[WebStorageService] Saved asset to library: ${metadata.name}`);
-      return item;
+      return cleanItem as TokenLibraryItem;
     } catch (error) {
       console.error('[WebStorageService] Save to library failed:', error);
       throw new Error(`Failed to save to library: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -440,6 +454,21 @@ export class WebStorageService implements IStorageService {
         return src; // Already a relative path or invalid
       }
 
+      // Validate URL security: only allow blob URLs and same-origin HTTP(S)
+      if (src.startsWith('http:') || src.startsWith('https:')) {
+        try {
+          const url = new URL(src);
+          const currentOrigin = window.location.origin;
+          if (url.origin !== currentOrigin) {
+            console.warn(`[WebStorageService] Rejecting cross-origin URL: ${src.substring(0, 50)}...`);
+            return src; // Return as-is, don't process cross-origin URLs
+          }
+        } catch (error) {
+          console.error(`[WebStorageService] Invalid URL: ${src.substring(0, 50)}...`, error);
+          return src;
+        }
+      }
+
       // Check if already processed
       if (processedAssets.has(src)) {
         return processedAssets.get(src)!;
@@ -448,6 +477,9 @@ export class WebStorageService implements IStorageService {
       try {
         // Fetch blob data
         const response = await fetch(src);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         const blob = await response.blob();
         const buffer = await blob.arrayBuffer();
 

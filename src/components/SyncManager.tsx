@@ -189,11 +189,13 @@ const SyncManager = () => {
     // TRANSPORT SETUP: BroadcastChannel (Web) or IPC (Electron)
     // ============================================================
     let channel: BroadcastChannel | null = null;
+    // Generate unique tab ID to filter out self-messages in BroadcastChannel
+    const tabIdRef = useRef<string>(crypto.randomUUID());
 
     if (isWeb) {
       // Create BroadcastChannel for cross-tab communication
       channel = new BroadcastChannel('hyle-sync');
-      console.log('[SyncManager] Using BroadcastChannel transport (web)');
+      console.log('[SyncManager] Using BroadcastChannel transport (web), tab ID:', tabIdRef.current);
     } else {
       console.log('[SyncManager] Using IPC transport (electron)');
     }
@@ -350,11 +352,15 @@ const SyncManager = () => {
         // Web: Listen for BroadcastChannel messages
         channel.onmessage = (event) => {
           const action = event.data;
+          // Filter out messages from this tab
+          if (action._senderId === tabIdRef.current) {
+            return;
+          }
           handleSyncAction(null, action);
         };
 
-        // Request initial state from Architect View
-        channel.postMessage({ type: 'REQUEST_INITIAL_STATE' });
+        // Request initial state from Architect View with tab ID
+        channel.postMessage({ type: 'REQUEST_INITIAL_STATE', _senderId: tabIdRef.current });
       } else if (isElectron) {
         // Electron: Listen for IPC messages from main process
         window.ipcRenderer.on('SYNC_WORLD_STATE', handleSyncAction);
@@ -422,8 +428,8 @@ const SyncManager = () => {
         // Send each action via appropriate transport
         actions.forEach(action => {
           if (isWeb && channel) {
-            // Web: Send via BroadcastChannel
-            channel.postMessage(action);
+            // Web: Send via BroadcastChannel with tab ID to filter self-messages
+            channel.postMessage({ ...action, _senderId: tabIdRef.current });
           } else if (isElectron) {
             // Electron: Send via IPC to Architect View
             window.ipcRenderer.send('SYNC_FROM_WORLD_VIEW', action);
@@ -604,8 +610,8 @@ const SyncManager = () => {
         // Send each action via appropriate transport
         actions.forEach(action => {
           if (isWeb && channel) {
-            // Web: Send via BroadcastChannel
-            channel.postMessage(action);
+            // Web: Send via BroadcastChannel with tab ID to filter self-messages
+            channel.postMessage({ ...action, _senderId: tabIdRef.current });
           } else if (isElectron) {
             // Electron: Send via IPC
             // @ts-ignore - ipcRenderer types not available
@@ -673,7 +679,8 @@ const SyncManager = () => {
         if (isWeb && channel) {
           // Web: Check if this is a BroadcastChannel message requesting initial state
           if (event && event.data?.type === 'REQUEST_INITIAL_STATE') {
-            channel.postMessage(initialSyncAction);
+            // Include tab ID to prevent sender from receiving its own response
+            channel.postMessage({ ...initialSyncAction, _senderId: tabIdRef.current });
           }
         } else if (isElectron) {
           // Electron: Send via IPC to World View
@@ -736,6 +743,11 @@ const SyncManager = () => {
         // Handle both initial state requests AND bidirectional sync from World View
         channel.onmessage = (event) => {
           const message = event.data;
+          
+          // Filter out messages from this tab
+          if (message._senderId === tabIdRef.current) {
+            return;
+          }
           
           // Handle initial state request
           if (message?.type === 'REQUEST_INITIAL_STATE') {
