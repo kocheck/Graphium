@@ -86,7 +86,7 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
     }
   };
 
-  const thickness = door.thickness ?? 8;
+  const thickness = door.thickness ?? 12; // Thicker default for better visibility
   const halfSize = door.size / 2;
 
   // Determine cursor style based on mode and lock state

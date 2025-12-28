@@ -627,27 +627,47 @@ export class DungeonGenerator {
       return null;
     }
 
-    // Calculate exact doorway positions AFTER grid snapping
-    // Both doorways must be grid-aligned for proper wall removal
+    // Calculate exact doorway positions AFTER grid snapping AND corridor adjustment
+    // Doorways must align with the corridor's actual connection points
     let sourceRoomDoorwayX: number, sourceRoomDoorwayY: number;
     let newRoomDoorwayX: number, newRoomDoorwayY: number;
 
+    // Use corridor's adjusted bounds to determine exact door positions
+    const adjustedCorridor = corridor.bounds;
+
     switch (direction) {
       case 'north':
+        // Source room door at bottom, new room door at top
+        // Use corridor's X position (center) for alignment
+        const northCorrCenterX = adjustedCorridor.x + adjustedCorridor.width / 2;
+        sourceRoomDoorwayX = Math.round(northCorrCenterX / gridSize) * gridSize;
+        sourceRoomDoorwayY = bounds.y; // Source room's top edge
+        newRoomDoorwayX = Math.round(northCorrCenterX / gridSize) * gridSize;
+        newRoomDoorwayY = newRoom.bounds.y + newRoom.bounds.height; // New room's bottom edge
+        break;
       case 'south':
-        // Horizontal alignment - doorway X must be on grid
-        sourceRoomDoorwayX = Math.round((bounds.x + bounds.width / 2) / gridSize) * gridSize;
-        sourceRoomDoorwayY = direction === 'north' ? bounds.y : bounds.y + bounds.height;
-        newRoomDoorwayX = Math.round((newRoom.bounds.x + newRoom.bounds.width / 2) / gridSize) * gridSize;
-        newRoomDoorwayY = direction === 'north' ? newRoom.bounds.y + newRoom.bounds.height : newRoom.bounds.y;
+        // Source room door at bottom, new room door at top
+        const southCorrCenterX = adjustedCorridor.x + adjustedCorridor.width / 2;
+        sourceRoomDoorwayX = Math.round(southCorrCenterX / gridSize) * gridSize;
+        sourceRoomDoorwayY = bounds.y + bounds.height; // Source room's bottom edge
+        newRoomDoorwayX = Math.round(southCorrCenterX / gridSize) * gridSize;
+        newRoomDoorwayY = newRoom.bounds.y; // New room's top edge
         break;
       case 'east':
+        // Use corridor's Y position (center) for alignment
+        const eastCorrCenterY = adjustedCorridor.y + adjustedCorridor.height / 2;
+        sourceRoomDoorwayX = bounds.x + bounds.width; // Source room's right edge
+        sourceRoomDoorwayY = Math.round(eastCorrCenterY / gridSize) * gridSize;
+        newRoomDoorwayX = newRoom.bounds.x; // New room's left edge
+        newRoomDoorwayY = Math.round(eastCorrCenterY / gridSize) * gridSize;
+        break;
       case 'west':
-        // Vertical alignment - doorway Y must be on grid
-        sourceRoomDoorwayX = direction === 'east' ? bounds.x + bounds.width : bounds.x;
-        sourceRoomDoorwayY = Math.round((bounds.y + bounds.height / 2) / gridSize) * gridSize;
-        newRoomDoorwayX = direction === 'east' ? newRoom.bounds.x : newRoom.bounds.x + newRoom.bounds.width;
-        newRoomDoorwayY = Math.round((newRoom.bounds.y + newRoom.bounds.height / 2) / gridSize) * gridSize;
+        // Use corridor's Y position (center) for alignment
+        const westCorrCenterY = adjustedCorridor.y + adjustedCorridor.height / 2;
+        sourceRoomDoorwayX = bounds.x; // Source room's left edge
+        sourceRoomDoorwayY = Math.round(westCorrCenterY / gridSize) * gridSize;
+        newRoomDoorwayX = newRoom.bounds.x + newRoom.bounds.width; // New room's right edge
+        newRoomDoorwayY = Math.round(westCorrCenterY / gridSize) * gridSize;
         break;
     }
 
@@ -843,7 +863,7 @@ export class DungeonGenerator {
       isOpen: false,        // Doors start closed
       isLocked: false,      // Doors start unlocked
       size: gridSize,       // Door size matches grid
-      thickness: 8,         // Standard door thickness
+      thickness: 12,        // Thicker for better visibility (especially in fog of war)
       swingDirection,
     };
   }

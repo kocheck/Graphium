@@ -138,7 +138,7 @@ export interface ExploredRegion {
  * @property isOpen - Current state (true = open, false = closed)
  * @property isLocked - Whether door requires unlocking (shows lock icon)
  * @property size - Door width/height in pixels (typically gridSize)
- * @property thickness - Visual thickness for rendering (default: 8px)
+ * @property thickness - Visual thickness for rendering (default: 12px for better visibility)
  * @property swingDirection - Which way door opens: 'left', 'right', 'up', 'down' (for swing arc)
  */
 export interface Door {
