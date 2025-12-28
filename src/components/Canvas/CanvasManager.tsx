@@ -7,6 +7,7 @@ import { snapToGrid } from '../../utils/grid';
 import { useGameStore, Drawing } from '../../store/gameStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { simplifyPath, snapPointToPaths } from '../../utils/pathOptimization';
+import { isRectInAnyPolygon } from '../../types/geometry';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
 import TokenErrorBoundary from './TokenErrorBoundary';
@@ -136,6 +137,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const gridType = useGameStore(s => s.gridType);
   const isCalibrating = useGameStore(s => s.isCalibrating);
   const isDaylightMode = useGameStore(s => s.isDaylightMode);
+  const activeVisionPolygons = useGameStore(s => s.activeVisionPolygons);
 
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);
@@ -1353,6 +1355,31 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                 const displayX = dragPos ? dragPos.x : token.x;
                 const displayY = dragPos ? dragPos.y : token.y;
                 const isDragging = draggingTokenIds.has(token.id);
+
+                // Check if token should be visible based on Fog of War rules
+                // In World View with Fog of War enabled:
+                // - PC tokens: Always visible (players need to see their own characters)
+                // - NPC tokens: Only visible in active vision areas (hidden in explored-but-not-visible areas)
+                // In DM mode (Architect View) or Daylight mode: All tokens always visible
+                let isVisible = true;
+                if (isWorldView && !isDaylightMode) {
+                  if (token.type === 'NPC') {
+                    // NPCs only visible in active vision
+                    isVisible = isRectInAnyPolygon(
+                      displayX,
+                      displayY,
+                      gridSize * token.scale,
+                      gridSize * token.scale,
+                      activeVisionPolygons
+                    );
+                  }
+                  // PC tokens always visible (type === 'PC' or undefined)
+                }
+
+                // Don't render tokens that aren't visible
+                if (!isVisible) {
+                  return null;
+                }
 
                 return (
                 <TokenErrorBoundary key={token.id} tokenId={token.id}>

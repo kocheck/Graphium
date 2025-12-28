@@ -244,6 +244,10 @@ export interface GameState {
   isGamePaused: boolean;
   isMobileSidebarOpen: boolean;
 
+  // --- Vision State (Computed, not persisted) ---
+  /** Active vision polygons for current PC tokens (used for token visibility) */
+  activeVisionPolygons: Array<Array<{ x: number; y: number }>>;
+
   // --- Campaign State ---
   campaign: Campaign;
 
@@ -307,6 +311,9 @@ export interface GameState {
   addExploredRegion: (region: ExploredRegion) => void;
   clearExploredRegions: () => void;
 
+  // Vision Actions
+  setActiveVisionPolygons: (polygons: Array<Array<{ x: number; y: number }>>) => void;
+
   // System Actions
   setIsCalibrating: (isCalibrating: boolean) => void;
   setDaylightMode: (enabled: boolean) => void;
@@ -348,6 +355,7 @@ export const useGameStore = create<GameState>((set, get) => {
     dungeonDialog: false,
     isGamePaused: false,
     isMobileSidebarOpen: false,
+    activeVisionPolygons: [],
     campaign: initialCampaign,
 
     // --- Campaign Actions ---
@@ -630,6 +638,7 @@ export const useGameStore = create<GameState>((set, get) => {
       return { exploredRegions: newRegions };
     }),
     clearExploredRegions: () => set({ exploredRegions: [] }),
+    setActiveVisionPolygons: (polygons: Array<Array<{ x: number; y: number }>>) => set({ activeVisionPolygons: polygons }),
     setDaylightMode: (enabled: boolean) => set({ isDaylightMode: enabled }),
     setTokens: (tokens: Token[]) => set({ tokens }),
     setState: (state: Partial<GameState>) => set(state),

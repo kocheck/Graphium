@@ -48,6 +48,7 @@ const FogOfWarLayer = ({ tokens, drawings, doors, gridSize, visibleBounds, map }
   // Get explored regions and actions from store
   const exploredRegions = useGameStore((state) => state.exploredRegions);
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
+  const setActiveVisionPolygons = useGameStore((state) => state.setActiveVisionPolygons);
 
   // Track last update time for throttling exploration tracking
   const lastExploreUpdateRef = useRef<number>(0);
@@ -145,6 +146,13 @@ const FogOfWarLayer = ({ tokens, drawings, doors, gridSize, visibleBounds, map }
     // properties (id, x, y, visionRadius, scale). Using pcTokensKey instead of pcTokens
     // prevents unnecessary recalculations when unrelated token properties change.
   ]);
+
+  // Update active vision polygons in store for token visibility checking
+  // This allows tokens to be hidden in explored (but not currently visible) areas
+  useEffect(() => {
+    const activePolygons = Array.from(visibilityCache.values());
+    setActiveVisionPolygons(activePolygons);
+  }, [visibilityCache, setActiveVisionPolygons]);
 
   // Save current vision to explored regions periodically
   // Triggers when token positions change (not just when pcTokens array reference changes)
