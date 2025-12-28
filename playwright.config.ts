@@ -28,7 +28,7 @@ export default defineConfig({
   // Web server configuration for CI
   webServer: process.env.CI
     ? {
-        command: 'npm run preview',
+        command: 'npm run preview:web',
         port: 4173,
         reuseExistingServer: false,
         timeout: 120000, // 2 minutes
