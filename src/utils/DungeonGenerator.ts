@@ -255,27 +255,28 @@ export class DungeonGenerator {
         createPiece: (x, y, widthCells, heightCells, gridSize) =>
           this.createRectangularRoom(x, y, widthCells, heightCells, gridSize),
       },
-      {
-        type: 'l-shaped',
-        minSize: 4, // L-shapes need minimum 4 cells
-        maxSize: this.options.maxRoomSize,
-        createPiece: (x, y, widthCells, heightCells, gridSize) =>
-          this.createLShapedRoom(x, y, widthCells, heightCells, gridSize),
-      },
-      {
-        type: 't-shaped',
-        minSize: 5, // T-shapes need minimum 5 cells
-        maxSize: this.options.maxRoomSize,
-        createPiece: (x, y, widthCells, heightCells, gridSize) =>
-          this.createTShapedRoom(x, y, widthCells, heightCells, gridSize),
-      },
-      {
-        type: 'cross-shaped',
-        minSize: 5, // Cross needs minimum 5 cells
-        maxSize: this.options.maxRoomSize,
-        createPiece: (x, y, widthCells, heightCells, gridSize) =>
-          this.createCrossShapedRoom(x, y, widthCells, heightCells, gridSize),
-      },
+      // TODO: Complex room shapes disabled - need proper collision detection for non-rectangular shapes
+      // {
+      //   type: 'l-shaped',
+      //   minSize: 4,
+      //   maxSize: this.options.maxRoomSize,
+      //   createPiece: (x, y, widthCells, heightCells, gridSize) =>
+      //     this.createLShapedRoom(x, y, widthCells, heightCells, gridSize),
+      // },
+      // {
+      //   type: 't-shaped',
+      //   minSize: 5,
+      //   maxSize: this.options.maxRoomSize,
+      //   createPiece: (x, y, widthCells, heightCells, gridSize) =>
+      //     this.createTShapedRoom(x, y, widthCells, heightCells, gridSize),
+      // },
+      // {
+      //   type: 'cross-shaped',
+      //   minSize: 5,
+      //   maxSize: this.options.maxRoomSize,
+      //   createPiece: (x, y, widthCells, heightCells, gridSize) =>
+      //     this.createCrossShapedRoom(x, y, widthCells, heightCells, gridSize),
+      // },
     ];
   }
 
