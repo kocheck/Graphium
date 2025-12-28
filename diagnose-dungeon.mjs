@@ -1,8 +1,11 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 /**
  * Standalone diagnostic script for DungeonGenerator
  * Tests door generation and grid alignment without needing test framework
+ * 
+ * Usage: npx tsx diagnose-dungeon.mjs
+ * Requires: tsx package (npx will install it automatically)
  */
 
 import { DungeonGenerator } from './src/utils/DungeonGenerator.ts';
