@@ -585,6 +585,39 @@ export class DungeonGenerator {
     // Realign wall segments after position adjustment
     this.updateWallSegments(newRoom);
 
+    // CRITICAL FIX: Recalculate corridor position to align with snapped room
+    // The room may have shifted during grid-snapping, so we need to adjust the corridor
+    const snappedRoomCenter = {
+      x: newRoom.bounds.x + newRoom.bounds.width / 2,
+      y: newRoom.bounds.y + newRoom.bounds.height / 2,
+    };
+
+    // Adjust corridor endpoint to match snapped room edge
+    switch (direction) {
+      case 'north':
+        // Corridor connects source room (south end) to new room (north end)
+        // Adjust corridor X to align with new room center
+        const northOffsetX = Math.round(snappedRoomCenter.x / gridSize) * gridSize - connX;
+        corridor.bounds.x += northOffsetX;
+        this.updateWallSegments(corridor);
+        break;
+      case 'south':
+        const southOffsetX = Math.round(snappedRoomCenter.x / gridSize) * gridSize - connX;
+        corridor.bounds.x += southOffsetX;
+        this.updateWallSegments(corridor);
+        break;
+      case 'east':
+        const eastOffsetY = Math.round(snappedRoomCenter.y / gridSize) * gridSize - connY;
+        corridor.bounds.y += eastOffsetY;
+        this.updateWallSegments(corridor);
+        break;
+      case 'west':
+        const westOffsetY = Math.round(snappedRoomCenter.y / gridSize) * gridSize - connY;
+        corridor.bounds.y += westOffsetY;
+        this.updateWallSegments(corridor);
+        break;
+    }
+
     // Check for collisions (exclude source piece since corridor connects to it)
     const piecesToCheck = excludeFromCollision
       ? existingPieces.filter(p => p !== excludeFromCollision)

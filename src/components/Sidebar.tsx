@@ -57,6 +57,7 @@ import AddToLibraryDialog from './AssetLibrary/AddToLibraryDialog';
 import LibraryManager from './AssetLibrary/LibraryManager';
 import ToggleSwitch from './ToggleSwitch';
 import MobileSidebarDrawer from './MobileSidebarDrawer';
+import DoorControls from './DoorControls';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
 /**
@@ -325,6 +326,9 @@ const Sidebar = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Door Controls Section */}
+            <DoorControls />
 
             <div className="mb-4">
                 <div className="flex justify-between items-center mb-3">

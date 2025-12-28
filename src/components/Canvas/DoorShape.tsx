@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { Group, Rect, Arc, Path, Circle } from 'react-konva';
 import type { Door } from '../../store/gameStore';
 
@@ -15,6 +16,10 @@ interface DoorShapeProps {
  * - Open: Swing arc showing door position
  * - Locked: Small lock icon overlaid on the door
  *
+ * **Animation:**
+ * - Smooth transition when opening/closing (300ms easeInOut)
+ * - animationProgress: 0 (closed) → 1 (fully open)
+ *
  * **Interaction:**
  * - DM Mode: Click to toggle open/closed
  * - World View: Non-interactive (read-only)
@@ -24,6 +29,56 @@ interface DoorShapeProps {
  * @param onToggle - Callback when door is clicked (DM only)
  */
 const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
+  // Animation state: 0 = fully closed, 1 = fully open
+  const [animationProgress, setAnimationProgress] = useState(door.isOpen ? 1 : 0);
+  const animationFrameRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+
+  const ANIMATION_DURATION = 300; // milliseconds
+
+  // Animate when door.isOpen changes
+  useEffect(() => {
+    const targetProgress = door.isOpen ? 1 : 0;
+
+    // If already at target, no animation needed
+    if (animationProgress === targetProgress) return;
+
+    // Start animation
+    startTimeRef.current = performance.now();
+    const initialProgress = animationProgress;
+
+    const animate = (currentTime: number) => {
+      if (!startTimeRef.current) return;
+
+      const elapsed = currentTime - startTimeRef.current;
+      const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
+
+      // Ease-in-out function for smooth animation
+      const eased = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+      const newProgress = initialProgress + (targetProgress - initialProgress) * eased;
+      setAnimationProgress(newProgress);
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        setAnimationProgress(targetProgress);
+        startTimeRef.current = null;
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    // Cleanup on unmount or when animation changes
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [door.isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleClick = () => {
     // Only allow toggling in DM mode (not World View)
     if (!isWorldView && onToggle && !door.isLocked) {
@@ -48,13 +103,134 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
       listening={!isWorldView}  // DM can click, players cannot
       opacity={isWorldView ? 0.9 : 1}
     >
-      {door.isOpen ? renderOpenDoor(door, halfSize, thickness, cursor) : renderClosedDoor(door, halfSize, thickness, cursor)}
+      {/* Render door with animated transition */}
+      {animationProgress < 1
+        ? renderAnimatedDoor(door, halfSize, thickness, cursor, animationProgress)
+        : renderOpenDoor(door, halfSize, thickness, cursor)}
 
       {/* Lock icon overlay (shown when door is locked) */}
       {door.isLocked && renderLockIcon(door)}
     </Group>
   );
 };
+
+/**
+ * Renders an animated door during open/close transition
+ *
+ * Interpolates between closed (progress=0) and open (progress=1) states.
+ * The door gradually fades from solid rectangle to swing arc.
+ *
+ * @param door - Door object
+ * @param halfSize - Half of door size
+ * @param thickness - Door thickness
+ * @param cursor - Cursor style
+ * @param progress - Animation progress (0 = closed, 1 = open)
+ */
+function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, cursor: string, progress: number) {
+  const swingAngle = 90 * progress; // Gradually increase swing angle from 0° to 90°
+  const closedOpacity = 1 - progress; // Fade out closed door
+  const openOpacity = progress; // Fade in open door
+
+  return (
+    <>
+      {/* Closed door (fading out) */}
+      {progress < 0.95 && (
+        <Group opacity={closedOpacity}>
+          {door.orientation === 'horizontal' ? (
+            <Rect
+              x={-halfSize}
+              y={-thickness / 2}
+              width={door.size}
+              height={thickness}
+              fill="#ffffff"
+              stroke="#000000"
+              strokeWidth={2}
+              shadowColor="rgba(0,0,0,0.3)"
+              shadowBlur={4}
+              shadowOffsetX={1}
+              shadowOffsetY={1}
+            />
+          ) : (
+            <Rect
+              x={-thickness / 2}
+              y={-halfSize}
+              width={thickness}
+              height={door.size}
+              fill="#ffffff"
+              stroke="#000000"
+              strokeWidth={2}
+              shadowColor="rgba(0,0,0,0.3)"
+              shadowBlur={4}
+              shadowOffsetX={1}
+              shadowOffsetY={1}
+            />
+          )}
+        </Group>
+      )}
+
+      {/* Open door arc (fading in) */}
+      {progress > 0.05 && (
+        <Group opacity={openOpacity}>
+          {renderSwingArc(door, halfSize, thickness, swingAngle)}
+        </Group>
+      )}
+    </>
+  );
+}
+
+/**
+ * Renders the swing arc for an open door
+ *
+ * @param door - Door object
+ * @param halfSize - Half of door size
+ * @param thickness - Door thickness
+ * @param swingAngle - Current swing angle (0-90 degrees)
+ */
+function renderSwingArc(door: Door, halfSize: number, thickness: number, swingAngle: number) {
+  let arcX = 0;
+  let arcY = 0;
+  let startAngle = 0;
+
+  if (door.orientation === 'horizontal') {
+    if (door.swingDirection === 'left') {
+      arcX = -halfSize;
+      arcY = 0;
+      startAngle = 0;
+    } else {
+      arcX = halfSize;
+      arcY = 0;
+      startAngle = 90;
+    }
+  } else {
+    if (door.swingDirection === 'up') {
+      arcX = 0;
+      arcY = -halfSize;
+      startAngle = 270;
+    } else {
+      arcX = 0;
+      arcY = halfSize;
+      startAngle = 180;
+    }
+  }
+
+  return (
+    <Arc
+      x={arcX}
+      y={arcY}
+      innerRadius={halfSize - thickness / 2}
+      outerRadius={halfSize + thickness / 2}
+      angle={swingAngle}
+      rotation={startAngle}
+      fill="rgba(255, 255, 255, 0.4)"
+      stroke="#000000"
+      strokeWidth={1}
+      dash={[4, 4]}
+      shadowColor="rgba(0,0,0,0.2)"
+      shadowBlur={2}
+      hitStrokeWidth={0}
+    />
+  );
+}
 
 /**
  * Renders a closed door as a white rectangle with black outline
