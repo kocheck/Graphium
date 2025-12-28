@@ -181,6 +181,14 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 - **[Troubleshooting](docs/guides/TROUBLESHOOTING.md)** - Common issues and solutions
 - **[Contributing](CONTRIBUTING.md)** - Guidelines for contributors
 
+## ☕ Support
+
+If you enjoy using Hyle and would like to support its development, consider buying me a coffee!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/kocheck)
+
+[Support on Buy Me a Coffee →](https://buymeacoffee.com/kocheck)
+
 ## 📄 License
 
 MIT
