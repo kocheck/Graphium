@@ -1,5 +1,5 @@
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
-import type { Campaign, TokenLibraryItem, Token, MapConfig, Drawing } from '../store/gameStore';
+import type { Campaign, TokenLibraryItem } from '../store/gameStore';
 import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
 
@@ -50,7 +50,7 @@ export class WebStorageService implements IStorageService {
    */
   private async initDB(): Promise<IDBPDatabase> {
     const db = await openDB(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion, newVersion, transaction) {
+      upgrade(db, oldVersion, newVersion, _transaction) {
         console.log(`[WebStorageService] Upgrading DB from ${oldVersion} to ${newVersion}`);
 
         // Token library store
