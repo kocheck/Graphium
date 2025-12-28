@@ -7,15 +7,28 @@ import { useGameStore } from '../store/gameStore';
 // Mock the DungeonGenerator
 vi.mock('../utils/DungeonGenerator', () => ({
   DungeonGenerator: vi.fn().mockImplementation(() => ({
-    generate: vi.fn().mockReturnValue([
-      {
-        id: 'test-drawing-1',
-        tool: 'wall',
-        points: [0, 0, 100, 0],
-        color: '#ff0000',
-        size: 8,
-      },
-    ]),
+    generate: vi.fn().mockReturnValue({
+      drawings: [
+        {
+          id: 'test-drawing-1',
+          tool: 'wall',
+          points: [0, 0, 100, 0],
+          color: '#ff0000',
+          size: 8,
+        },
+      ],
+      doors: [
+        {
+          id: 'test-door-1',
+          x: 50,
+          y: 50,
+          size: 50,
+          isOpen: false,
+          isLocked: false,
+          orientation: 'horizontal',
+        },
+      ],
+    }),
   })),
 }));
 
@@ -26,6 +39,7 @@ describe('DungeonGeneratorDialog', () => {
     useGameStore.setState({
       dungeonDialog: false,
       drawings: [],
+      doors: [],
     });
   });
 
