@@ -237,7 +237,6 @@ function renderOpenDoor(door: Door, halfSize: number, thickness: number) {
   let arcX = 0;
   let arcY = 0;
   let startAngle = 0;
-  let endAngle = swingAngle;
 
   if (door.orientation === 'horizontal') {
     // Horizontal door swings vertically
@@ -245,13 +244,11 @@ function renderOpenDoor(door: Door, halfSize: number, thickness: number) {
       arcX = -halfSize;
       arcY = 0;
       startAngle = 0;
-      endAngle = 90;
     } else {
       // right
       arcX = halfSize;
       arcY = 0;
       startAngle = 90;
-      endAngle = 180;
     }
   } else {
     // Vertical door swings horizontally
@@ -259,13 +256,11 @@ function renderOpenDoor(door: Door, halfSize: number, thickness: number) {
       arcX = 0;
       arcY = -halfSize;
       startAngle = 270;
-      endAngle = 360;
     } else {
       // down
       arcX = 0;
       arcY = halfSize;
       startAngle = 180;
-      endAngle = 270;
     }
   }
 
@@ -351,7 +346,6 @@ function renderOpenDoorEdge(door: Door, halfSize: number, thickness: number) {
  * Shows a simple padlock symbol to indicate the door is locked.
  */
 function renderLockIcon(door: Door) {
-  const lockSize = 8;
   const offsetY = door.orientation === 'horizontal' ? 6 : 0;
   const offsetX = door.orientation === 'vertical' ? 6 : 0;
 
