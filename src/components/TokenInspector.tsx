@@ -5,6 +5,7 @@ import MobileBottomSheet from './MobileBottomSheet';
 
 interface TokenInspectorProps {
   selectedTokenIds: string[];
+  onClose?: () => void;
 }
 
 /**
@@ -28,8 +29,9 @@ interface TokenInspectorProps {
  * - Custom: Manual input
  *
  * @param selectedTokenIds - Array of token IDs currently selected
+ * @param onClose - Optional callback to deselect tokens (used on mobile)
  */
-const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
+const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
   const tokens = useGameStore((s) => s.tokens);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
 
@@ -90,15 +92,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
 
   // Inspector content (same for mobile and desktop)
   const inspectorContent = (
-    <div
-      className={isMobile ? 'w-full' : 'p-4'}
-      style={!isMobile ? {
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'var(--app-border-default)',
-        boxShadow: '0 10px 15px -3px var(--app-shadow-lg), 0 4px 6px -2px var(--app-shadow-md)'
-      } : {}}
-    >
+    <div className={isMobile ? 'w-full' : 'p-4'}>
       <div className="flex justify-between items-center mb-3">
         <h3
           className="text-lg font-semibold"
@@ -223,7 +217,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
                     <button
                     key={radius}
                     onClick={() => handleVisionRadiusChange(radius)}
-                    className="px-2 py-3 text-sm rounded font-medium transition-colors min-h-[44px]"
+                    className="px-2 text-sm rounded font-medium transition-colors min-h-[44px]"
                     style={{
                       backgroundColor: visionRadius === radius ? 'var(--app-success-solid)' : 'var(--app-bg-hover)',
                       color: visionRadius === radius ? 'white' : 'var(--app-text-primary)'
@@ -285,7 +279,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
   // Render: Mobile bottom sheet or desktop fixed panel
   if (isMobile) {
     return (
-      <MobileBottomSheet isOpen={true} onClose={() => {/* Tokens will be deselected by clicking elsewhere */}}>
+      <MobileBottomSheet isOpen={true} onClose={() => onClose?.()}>
         {inspectorContent}
       </MobileBottomSheet>
     );
@@ -297,6 +291,10 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
       className="token-inspector fixed bottom-4 right-4 w-80 rounded shadow-lg z-50"
       style={{
         backgroundColor: 'var(--app-bg-surface)',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'var(--app-border-default)',
+        boxShadow: '0 10px 15px -3px var(--app-shadow-lg), 0 4px 6px -2px var(--app-shadow-md)'
       }}
     >
       {inspectorContent}

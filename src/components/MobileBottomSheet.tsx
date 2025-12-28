@@ -62,7 +62,10 @@ const MobileBottomSheet = ({ isOpen, onClose, children }: MobileBottomSheetProps
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
         aria-hidden="true"
       />
 

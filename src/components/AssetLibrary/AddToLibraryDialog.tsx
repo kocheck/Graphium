@@ -188,8 +188,8 @@ const AddToLibraryDialog = ({
       <div
         className={`w-full overflow-hidden ${
           isMobile
-            ? 'h-full bg-neutral-900'
-            : 'max-w-md bg-neutral-900 rounded-lg'
+            ? 'h-full'
+            : 'max-w-md rounded-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
         style={{

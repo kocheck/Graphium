@@ -388,7 +388,10 @@ function App() {
 
         {/* Token Inspector (only show in Architect View when tokens selected) */}
         {isArchitectView && selectedTokensOnly.length > 0 && (
-          <TokenInspector selectedTokenIds={selectedTokensOnly} />
+          <TokenInspector 
+            selectedTokenIds={selectedTokensOnly} 
+            onClose={() => setSelectedTokenIds([])}
+          />
         )}
 
         {/* Command Palette: Quick asset search (Cmd+P, Architect View only) */}
