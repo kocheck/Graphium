@@ -51,8 +51,34 @@ hyle/
 │   │   ├── errorSanitizer.ts    # PII removal from errors
 │   │   └── globalErrorHandler.ts # Global error catching
 │   └── App.tsx        # Root component (Architect View)
-└── docs/
-    └── ERROR_BOUNDARIES.md  # Error handling architecture
+└── docs/               # Documentation (organized by category)
+    ├── index.md        # Main documentation entry point
+    ├── documentation-inventory.md  # Complete documentation catalog
+    ├── architecture/   # System design & performance docs (ALL CAPS)
+    ├── components/     # Component implementation docs (lowercase-hyphen)
+    ├── context/        # Domain knowledge & business rules (ALL CAPS)
+    ├── features/       # Feature implementation docs (lowercase-hyphen)
+    ├── guides/         # How-to guides & conventions (ALL CAPS)
+    └── planning/       # Project planning & migration docs (lowercase-hyphen)
+```
+
+## Documentation Structure
+
+**Quick Start:** See `docs/index.md` for the main documentation entry point
+
+**For AI Assistants:**
+- This file (`.cursorrules`) - Quick reference and patterns
+- `docs/documentation-inventory.md` - Complete documentation catalog
+- `docs/architecture/ARCHITECTURE.md` - System architecture
+- `docs/context/CONTEXT.md` - Domain knowledge
+- `docs/guides/CONVENTIONS.md` - Code standards
+
+**Documentation Organization:**
+- **Architecture docs** (ALL CAPS): System design, decisions, IPC, performance
+- **Feature docs** (lowercase-hyphen): Specific feature implementations
+- **Component docs** (lowercase-hyphen): Component implementation details
+- **Guides** (ALL CAPS): Conventions, tutorials, troubleshooting
+- **Planning** (lowercase-hyphen): Migration plans, PR summaries
 ```
 
 ## Domain Glossary

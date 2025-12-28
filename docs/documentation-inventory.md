@@ -4,31 +4,31 @@ This document provides a complete overview of Hyle's documentation, organized by
 
 ## Documentation Inventory
 
-### Root-Level Documentation (7 files)
+### Core Documentation Files
 
 | File | Purpose | Lines | Target Audience |
 |------|---------|-------|-----------------|
-| [`.cursorrules`](./.cursorrules) | AI assistant primary reference | 290 | AI assistants |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | System architecture and data flows | 1,200 | Developers, AI assistants |
-| [`CONVENTIONS.md`](./CONVENTIONS.md) | Code standards and patterns | 650 | Developers, AI assistants |
-| [`CONTEXT.md`](./CONTEXT.md) | Domain knowledge and business rules | 750 | Developers, AI assistants |
-| [`IPC_API.md`](./IPC_API.md) | Complete IPC channel reference | 1,100 | Developers |
-| [`DECISIONS.md`](./DECISIONS.md) | Architectural decision records | 800 | Architects, developers |
-| [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md) | Common issues and solutions | 950 | Developers, users |
-| [`TUTORIALS.md`](./TUTORIALS.md) | Step-by-step workflow guides | 1,500 | Developers, AI assistants |
+| [`../.cursorrules`](../.cursorrules) | AI assistant primary reference | 290 | AI assistants |
+| [`architecture/ARCHITECTURE.md`](architecture/ARCHITECTURE.md) | System architecture and data flows | 1,200 | Developers, AI assistants |
+| [`guides/CONVENTIONS.md`](guides/CONVENTIONS.md) | Code standards and patterns | 650 | Developers, AI assistants |
+| [`context/CONTEXT.md`](context/CONTEXT.md) | Domain knowledge and business rules | 750 | Developers, AI assistants |
+| [`architecture/IPC_API.md`](architecture/IPC_API.md) | Complete IPC channel reference | 1,100 | Developers |
+| [`architecture/DECISIONS.md`](architecture/DECISIONS.md) | Architectural decision records | 800 | Architects, developers |
+| [`guides/TROUBLESHOOTING.md`](guides/TROUBLESHOOTING.md) | Common issues and solutions | 950 | Developers, users |
+| [`guides/TUTORIALS.md`](guides/TUTORIALS.md) | Step-by-step workflow guides | 1,500 | Developers, AI assistants |
 
-**Total: ~7,240 lines of root documentation**
+**Total: ~7,240 lines of core documentation**
 
 ### Directory-Level READMEs (6 files)
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| [`electron/README.md`](./electron/README.md) | Main process documentation | 350 |
-| [`src/README.md`](./src/README.md) | Renderer process overview | 300 |
-| [`src/components/README.md`](./src/components/README.md) | Component organization | 320 |
-| [`src/components/Canvas/README.md`](./src/components/Canvas/README.md) | Canvas system deep dive | 360 |
-| [`src/store/README.md`](./src/store/README.md) | State management patterns | 340 |
-| [`src/utils/README.md`](./src/utils/README.md) | Utility functions reference | 290 |
+| [`../electron/README.md`](../electron/README.md) | Main process documentation | 350 |
+| [`../src/README.md`](../src/README.md) | Renderer process overview | 300 |
+| [`../src/components/README.md`](../src/components/README.md) | Component organization | 320 |
+| [`../src/components/Canvas/README.md`](../src/components/Canvas/README.md) | Canvas system deep dive | 360 |
+| [`../src/store/README.md`](../src/store/README.md) | State management patterns | 340 |
+| [`../src/utils/README.md`](../src/utils/README.md) | Utility functions reference | 290 |
 
 **Total: ~1,960 lines of directory documentation**
 
@@ -76,35 +76,35 @@ This document provides a complete overview of Hyle's documentation, organized by
 
 ### For AI Assistants
 
-**Start here:** [`.cursorrules`](./.cursorrules) - Complete AI context in one file
+**Start here:** [`../.cursorrules`](../.cursorrules) - Complete AI context in one file
 
 **Key references:**
-- Tech stack & patterns → [`.cursorrules`](./.cursorrules)
-- Architecture diagrams → [`ARCHITECTURE.md`](./ARCHITECTURE.md)
-- Code conventions → [`CONVENTIONS.md`](./CONVENTIONS.md)
-- Domain knowledge → [`CONTEXT.md`](./CONTEXT.md)
-- IPC channels → [`IPC_API.md`](./IPC_API.md)
+- Tech stack & patterns → [`../.cursorrules`](../.cursorrules)
+- Architecture diagrams → [`architecture/ARCHITECTURE.md`](architecture/ARCHITECTURE.md)
+- Code conventions → [`guides/CONVENTIONS.md`](guides/CONVENTIONS.md)
+- Domain knowledge → [`context/CONTEXT.md`](context/CONTEXT.md)
+- IPC channels → [`architecture/IPC_API.md`](architecture/IPC_API.md)
 
 ### For Developers
 
-**Start here:** [`ARCHITECTURE.md`](./ARCHITECTURE.md) - System overview
+**Start here:** [`architecture/ARCHITECTURE.md`](architecture/ARCHITECTURE.md) - System overview
 
 **Common tasks:**
-- Adding a feature → [`TUTORIALS.md`](./TUTORIALS.md#tutorial-2-adding-a-new-ipc-channel)
-- Fixing a bug → [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md)
-- Understanding IPC → [`IPC_API.md`](./IPC_API.md)
-- Code style → [`CONVENTIONS.md`](./CONVENTIONS.md)
-- Design decisions → [`DECISIONS.md`](./DECISIONS.md)
+- Adding a feature → [`guides/TUTORIALS.md`](guides/TUTORIALS.md#tutorial-2-adding-a-new-ipc-channel)
+- Fixing a bug → [`guides/TROUBLESHOOTING.md`](guides/TROUBLESHOOTING.md)
+- Understanding IPC → [`architecture/IPC_API.md`](architecture/IPC_API.md)
+- Code style → [`guides/CONVENTIONS.md`](guides/CONVENTIONS.md)
+- Design decisions → [`architecture/DECISIONS.md`](architecture/DECISIONS.md)
 
 ### For New Contributors
 
 **Onboarding path:**
 
-1. Read [`CONTEXT.md`](./CONTEXT.md) - Understand the project
-2. Read [`ARCHITECTURE.md`](./ARCHITECTURE.md) - Understand the system
-3. Follow [`TUTORIALS.md#tutorial-1`](./TUTORIALS.md#tutorial-1-getting-started) - Set up dev environment
-4. Review [`CONVENTIONS.md`](./CONVENTIONS.md) - Learn code standards
-5. Try [`TUTORIALS.md#tutorial-3`](./TUTORIALS.md#tutorial-3-creating-a-new-component) - Create a component
+1. Read [`context/CONTEXT.md`](context/CONTEXT.md) - Understand the project
+2. Read [`architecture/ARCHITECTURE.md`](architecture/ARCHITECTURE.md) - Understand the system
+3. Follow [`guides/TUTORIALS.md#tutorial-1`](guides/TUTORIALS.md#tutorial-1-getting-started) - Set up dev environment
+4. Review [`guides/CONVENTIONS.md`](guides/CONVENTIONS.md) - Learn code standards
+5. Try [`guides/TUTORIALS.md#tutorial-3`](guides/TUTORIALS.md#tutorial-3-creating-a-new-component) - Create a component
 6. Read inline JSDoc in files you'll work with
 
 ## Documentation Standards
@@ -164,25 +164,25 @@ Documentation is optimized for AI assistants:
 
 Use this checklist to validate documentation completeness:
 
-### Root Documentation ✅
+### Core Documentation ✅
 
-- [x] `.cursorrules` exists and is up-to-date
-- [x] `ARCHITECTURE.md` covers all system components
-- [x] `CONVENTIONS.md` documents all code patterns
-- [x] `CONTEXT.md` explains domain concepts
-- [x] `IPC_API.md` documents all IPC channels
-- [x] `DECISIONS.md` records architectural choices
-- [x] `TROUBLESHOOTING.md` covers common issues
-- [x] `TUTORIALS.md` provides step-by-step guides
+- [x] `../.cursorrules` exists and is up-to-date
+- [x] `architecture/ARCHITECTURE.md` covers all system components
+- [x] `guides/CONVENTIONS.md` documents all code patterns
+- [x] `context/CONTEXT.md` explains domain concepts
+- [x] `architecture/IPC_API.md` documents all IPC channels
+- [x] `architecture/DECISIONS.md` records architectural choices
+- [x] `guides/TROUBLESHOOTING.md` covers common issues
+- [x] `guides/TUTORIALS.md` provides step-by-step guides
 
 ### Directory READMEs ✅
 
-- [x] `electron/README.md` documents main process
-- [x] `src/README.md` documents renderer process
-- [x] `src/components/README.md` lists all components
-- [x] `src/components/Canvas/README.md` explains canvas system
-- [x] `src/store/README.md` explains state management
-- [x] `src/utils/README.md` documents utility functions
+- [x] `../electron/README.md` documents main process
+- [x] `../src/README.md` documents renderer process
+- [x] `../src/components/README.md` lists all components
+- [x] `../src/components/Canvas/README.md` explains canvas system
+- [x] `../src/store/README.md` explains state management
+- [x] `../src/utils/README.md` documents utility functions
 
 ### Inline Documentation ✅
 
@@ -207,7 +207,7 @@ Use this checklist to validate documentation completeness:
 
 ### API Documentation ✅
 
-- [x] All 5 IPC channels documented in `IPC_API.md`
+- [x] All 5 IPC channels documented in `architecture/IPC_API.md`
 - [x] Each channel has: usage, parameters, returns, examples
 - [x] Communication patterns explained
 - [x] Error cases documented
@@ -215,11 +215,11 @@ Use this checklist to validate documentation completeness:
 
 ### Cross-References ✅
 
-- [x] JSDoc references IPC_API.md for IPC usage
-- [x] IPC_API.md references implementation files
-- [x] ARCHITECTURE.md references component files
-- [x] TUTORIALS.md references all relevant docs
-- [x] TROUBLESHOOTING.md references architecture
+- [x] JSDoc references architecture/IPC_API.md for IPC usage
+- [x] architecture/IPC_API.md references implementation files
+- [x] architecture/ARCHITECTURE.md references component files
+- [x] guides/TUTORIALS.md references all relevant docs
+- [x] guides/TROUBLESHOOTING.md references architecture
 
 ## Documentation Metrics
 
@@ -257,12 +257,12 @@ Average root doc size:             900 lines
 
 **After code changes:**
 - Update inline JSDoc if function signature changes
-- Update IPC_API.md if adding/changing IPC channels
-- Update ARCHITECTURE.md if adding new components
-- Update DECISIONS.md if making architectural changes
+- Update architecture/IPC_API.md if adding/changing IPC channels
+- Update architecture/ARCHITECTURE.md if adding new components
+- Update architecture/DECISIONS.md if making architectural changes
 
 **Regular maintenance:**
-- Monthly: Review TROUBLESHOOTING.md for new common issues
+- Monthly: Review guides/TROUBLESHOOTING.md for new common issues
 - Quarterly: Review all documentation for accuracy
 - Per release: Update version numbers and "Last updated" dates
 
@@ -272,7 +272,7 @@ When reviewing PRs, check:
 
 - [ ] New functions have JSDoc with @param, @returns, @example
 - [ ] New components have file header documentation
-- [ ] New IPC channels are documented in IPC_API.md
+- [ ] New IPC channels are documented in architecture/IPC_API.md
 - [ ] Breaking changes are documented in relevant files
 - [ ] Examples are tested and work
 - [ ] Cross-references are accurate (file:line)
@@ -356,12 +356,12 @@ Documentation is organized in layers:
 - Domain glossary
 - Common tasks
 
-**Layer 2 - Conceptual:** ARCHITECTURE.md, CONTEXT.md, CONVENTIONS.md (~2,200 lines)
+**Layer 2 - Conceptual:** architecture/ARCHITECTURE.md, context/CONTEXT.md, guides/CONVENTIONS.md (~2,200 lines)
 - System architecture
 - Design philosophy
 - Code standards
 
-**Layer 3 - Reference:** IPC_API.md, Directory READMEs (~3,060 lines)
+**Layer 3 - Reference:** architecture/IPC_API.md, Directory READMEs (~3,060 lines)
 - API documentation
 - Component organization
 - Implementation details
@@ -371,7 +371,7 @@ Documentation is organized in layers:
 - Implementation notes
 - Examples at call sites
 
-**Layer 5 - Guides:** TUTORIALS.md, TROUBLESHOOTING.md (~2,450 lines)
+**Layer 5 - Guides:** guides/TUTORIALS.md, guides/TROUBLESHOOTING.md (~2,450 lines)
 - Step-by-step workflows
 - Common issues and solutions
 
@@ -393,10 +393,9 @@ Keep documentation maintainable:
 
 ## See Also
 
-- **Project README:** See main README.md for project overview
-- **Contributing:** See CONTRIBUTING.md for contribution guidelines (if exists)
-- **License:** See LICENSE for licensing information (if exists)
-- **Changelog:** See CHANGELOG.md for release history (if exists)
+- **Project README:** See ../README.md for project overview
+- **Contributing:** See ../CONTRIBUTING.md for contribution guidelines
+- **License:** See ../LICENSE for licensing information
 
 ---
 

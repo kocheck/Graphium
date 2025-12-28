@@ -51,16 +51,19 @@ The workflow runs automatically when:
 
 The workflow analyzes code changes against:
 
-**Root Documentation (8 files):**
-- `.cursorrules` - AI assistant reference
-- `ARCHITECTURE.md` - System architecture
-- `CONVENTIONS.md` - Code standards
-- `CONTEXT.md` - Domain knowledge
-- `IPC_API.md` - IPC channel reference
-- `DECISIONS.md` - Architectural decisions
-- `TROUBLESHOOTING.md` - Common issues
-- `TUTORIALS.md` - Workflow guides
-- `DOCUMENTATION.md` - Documentation index
+**Core Documentation:**
+- `.cursorrules` - AI assistant reference (root)
+- `docs/documentation-inventory.md` - Documentation catalog
+- `docs/architecture/ARCHITECTURE.md` - System architecture
+- `docs/architecture/DECISIONS.md` - Architectural decisions
+- `docs/architecture/IPC_API.md` - IPC channel reference
+- `docs/architecture/PERFORMANCE_OPTIMIZATIONS.md` - Performance analysis
+- `docs/context/CONTEXT.md` - Domain knowledge
+- `docs/guides/CONVENTIONS.md` - Code standards
+- `docs/guides/TROUBLESHOOTING.md` - Common issues
+- `docs/guides/TUTORIALS.md` - Workflow guides
+- `docs/features/*` - Feature implementation docs
+- `docs/planning/*` - Project planning docs
 
 **Directory READMEs (6 files):**
 - `electron/README.md`
@@ -90,7 +93,7 @@ GitHub Copilot has analyzed this PR for documentation impact.
 - `.cursorrules` - Update with new clear drawings pattern
 
 **Required Changes:**
-1. **IPC_API.md**: Add new section documenting CLEAR_DRAWINGS channel with usage, parameters, examples
+1. **docs/architecture/IPC_API.md**: Add new section documenting CLEAR_DRAWINGS channel with usage, parameters, examples
 2. **App.tsx JSDoc**: Document new button handler with rationale and cross-reference to IPC handler
 3. **.cursorrules**: Add clear drawings to common tasks section
 
@@ -98,7 +101,7 @@ GitHub Copilot has analyzed this PR for documentation impact.
 None required
 
 ---
-[View Documentation Index](DOCUMENTATION.md)
+[View Documentation Index](../../docs/documentation-inventory.md)
 ```
 
 ### Customization
@@ -255,8 +258,8 @@ GitHub Models provides access to AI models through Azure OpenAI Service:
 
 ### See Also
 
-- [DOCUMENTATION.md](../../DOCUMENTATION.md) - Documentation inventory
-- [CONVENTIONS.md](../../CONVENTIONS.md) - Documentation standards
+- [Documentation Inventory](../../docs/documentation-inventory.md) - Complete documentation catalog
+- [Documentation Standards](../../docs/guides/CONVENTIONS.md) - Documentation conventions
 - [GitHub Actions docs](https://docs.github.com/en/actions)
 - [GitHub Models docs](https://docs.github.com/en/github-models)
 - [GitHub Copilot docs](https://docs.github.com/en/copilot)

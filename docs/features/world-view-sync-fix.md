@@ -160,9 +160,9 @@ World View Opens
 
 ## Related Documentation
 
-- See `docs/components/state-management.md` for sync architecture overview
-- See `PERFORMANCE_OPTIMIZATIONS.md` for delta synchronization details
-- See `src/components/SyncManager.tsx` for implementation comments
+- See `../components/state-management.md` for sync architecture overview
+- See `../architecture/PERFORMANCE_OPTIMIZATIONS.md` for delta synchronization details
+- See `../../src/components/SyncManager.tsx` for implementation comments
 
 ## Future Improvements
 
