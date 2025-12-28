@@ -1,12 +1,13 @@
 import { useMemo, useEffect, useRef } from 'react';
 import { Shape, Group } from 'react-konva';
-import { Token, Drawing, MapConfig, useGameStore } from '../../store/gameStore';
+import { Token, Drawing, Door, MapConfig, useGameStore } from '../../store/gameStore';
 import URLImage from './URLImage';
 import { Point, WallSegment } from '../../types/geometry';
 
 interface FogOfWarLayerProps {
   tokens: Token[];
   drawings: Drawing[];
+  doors: Door[];
   gridSize: number;
   visibleBounds: {
     x: number;
@@ -43,7 +44,7 @@ import { BLUR_FILTERS } from './CanvasManager';
  * - Frame rate: 22fps → 60fps (173% improvement)
  * - CPU usage: ~80% → ~15% (static scenes)
  */
-const FogOfWarLayer = ({ tokens, drawings, gridSize, visibleBounds, map }: FogOfWarLayerProps) => {
+const FogOfWarLayer = ({ tokens, drawings, doors, gridSize, visibleBounds, map }: FogOfWarLayerProps) => {
   // Get explored regions and actions from store
   const exploredRegions = useGameStore((state) => state.exploredRegions);
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
@@ -58,9 +59,11 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, visibleBounds, map }: FogOf
     [tokens]
   );
 
-  // Extract walls from drawings (memoized to prevent unnecessary recalculations)
+  // Extract walls from drawings AND closed doors (memoized to prevent unnecessary recalculations)
   const walls: WallSegment[] = useMemo(() => {
     const wallSegments: WallSegment[] = [];
+
+    // Add static walls from drawings
     drawings
       .filter((d) => d.tool === 'wall')
       .forEach((wall) => {
@@ -73,8 +76,30 @@ const FogOfWarLayer = ({ tokens, drawings, gridSize, visibleBounds, map }: FogOf
           });
         }
       });
+
+    // Add CLOSED doors as blocking walls
+    // Open doors allow vision through, closed doors block it
+    doors
+      .filter(door => !door.isOpen)  // Only closed doors block vision
+      .forEach(door => {
+        const halfSize = door.size / 2;
+        if (door.orientation === 'horizontal') {
+          // Horizontal door: blocks east-west vision
+          wallSegments.push({
+            start: { x: door.x - halfSize, y: door.y },
+            end: { x: door.x + halfSize, y: door.y },
+          });
+        } else {
+          // Vertical door: blocks north-south vision
+          wallSegments.push({
+            start: { x: door.x, y: door.y - halfSize },
+            end: { x: door.x, y: door.y + halfSize },
+          });
+        }
+      });
+
     return wallSegments;
-  }, [drawings]);
+  }, [drawings, doors]);  // Re-calculate when drawings OR doors change
 
   // Serialize PC token properties for change detection
   // This allows useMemo to detect changes in token positions/vision even when array reference is stable

@@ -57,6 +57,8 @@ export interface MapData {
   name: string;
   tokens: Token[];
   drawings: Drawing[];
+  doors: Door[];
+  stairs: Stairs[];
   map: MapConfig | null;
   gridSize: number;
   gridType: GridType;
@@ -125,6 +127,59 @@ export interface ExploredRegion {
 }
 
 /**
+ * Door represents an interactive door object in the dungeon
+ *
+ * Doors are rendered as white rectangles with black outlines (standard tabletop symbol).
+ * When open, they display a swing arc to show the door's position.
+ * Closed doors block Fog of War vision, while open doors allow vision through.
+ *
+ * @property id - Unique identifier
+ * @property x - Center position X in world coordinates
+ * @property y - Center position Y in world coordinates
+ * @property orientation - Door alignment ('horizontal' = east-west wall, 'vertical' = north-south wall)
+ * @property isOpen - Current state (true = open, false = closed)
+ * @property isLocked - Whether door requires unlocking (shows lock icon)
+ * @property size - Door width/height in pixels (typically gridSize)
+ * @property thickness - Visual thickness for rendering (default: 12px for better visibility)
+ * @property swingDirection - Which way door opens: 'left', 'right', 'up', 'down' (for swing arc)
+ */
+export interface Door {
+  id: string;
+  x: number;
+  y: number;
+  orientation: 'horizontal' | 'vertical';
+  isOpen: boolean;
+  isLocked: boolean;
+  size: number;
+  thickness?: number;
+  swingDirection?: 'left' | 'right' | 'up' | 'down';
+}
+
+/**
+ * Stairs represents a staircase connecting different levels in a dungeon
+ *
+ * Stairs are rendered with a stepped pattern and directional arrows.
+ * They provide visual indication of level transitions in multi-floor dungeons.
+ *
+ * @property id - Unique identifier
+ * @property x - Center position X in world coordinates
+ * @property y - Center position Y in world coordinates
+ * @property direction - Which compass direction the stairs face ('north', 'south', 'east', 'west')
+ * @property type - Whether stairs go up or down ('up' or 'down')
+ * @property width - Width in pixels (typically 2 * gridSize for 2-cell width)
+ * @property height - Height in pixels (typically 2 * gridSize for 2-cell height)
+ */
+export interface Stairs {
+  id: string;
+  x: number;
+  y: number;
+  direction: 'north' | 'south' | 'east' | 'west';
+  type: 'up' | 'down';
+  width: number;
+  height: number;
+}
+
+/**
  * Maximum number of explored regions to store in memory.
  */
 const MAX_EXPLORED_REGIONS = 200;
@@ -137,6 +192,8 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
   name,
   tokens: [],
   drawings: [],
+  doors: [],
+  stairs: [],
   map: null,
   gridSize: 50,
   gridType: 'LINES',
@@ -171,6 +228,8 @@ export interface GameState {
   // --- Active Map State (Proxied for Component Compatibility) ---
   tokens: Token[];
   drawings: Drawing[];
+  doors: Door[];
+  stairs: Stairs[];
   gridSize: number;
   gridType: GridType;
   map: MapConfig | null;
@@ -220,6 +279,23 @@ export interface GameState {
   removeDrawings: (ids: string[]) => void;
   updateDrawingTransform: (id: string, x: number, y: number, scale: number) => void;
 
+  // Door Actions
+  addDoor: (door: Door) => void;
+  removeDoor: (id: string) => void;
+  removeDoors: (ids: string[]) => void;
+  toggleDoor: (id: string) => void;
+  updateDoorState: (id: string, isOpen: boolean) => void;
+  updateDoorLock: (id: string, isLocked: boolean) => void;
+  /** Updates all unlocked doors to the specified state (locked doors are skipped) */
+  updateAllDoorStates: (isOpen: boolean) => void;
+  /** Updates all doors to the specified lock state */
+  updateAllDoorLocks: (isLocked: boolean) => void;
+
+  // Stairs Actions
+  addStairs: (stairs: Stairs) => void;
+  removeStairs: (id: string) => void;
+  removeMultipleStairs: (ids: string[]) => void;
+
   // Map/Grid Attributes Actions
   setGridSize: (size: number) => void;
   setGridType: (type: GridType) => void;
@@ -257,6 +333,8 @@ export const useGameStore = create<GameState>((set, get) => {
     // --- Initial State (Active Map) ---
     tokens: initialMap.tokens,
     drawings: initialMap.drawings,
+    doors: initialMap.doors,
+    stairs: initialMap.stairs,
     gridSize: initialMap.gridSize,
     gridType: initialMap.gridType,
     map: initialMap.map,
@@ -288,6 +366,8 @@ export const useGameStore = create<GameState>((set, get) => {
         // Hydrate active map state
         tokens: activeMap.tokens || [],
         drawings: activeMap.drawings || [],
+        doors: activeMap.doors || [],
+        stairs: activeMap.stairs || [],
         gridSize: activeMap.gridSize || 50,
         gridType: activeMap.gridType || 'LINES',
         map: activeMap.map || null,
@@ -328,6 +408,8 @@ export const useGameStore = create<GameState>((set, get) => {
         ...state.campaign.maps[activeId], // Preserve name/id
         tokens: state.tokens,
         drawings: state.drawings,
+        doors: state.doors,
+        stairs: state.stairs,
         map: state.map,
         gridSize: state.gridSize,
         gridType: state.gridType,
@@ -364,6 +446,8 @@ export const useGameStore = create<GameState>((set, get) => {
         // Switch to new map immediately
         tokens: newMap.tokens,
         drawings: newMap.drawings,
+        doors: newMap.doors,
+        stairs: newMap.stairs,
         map: newMap.map,
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
@@ -405,6 +489,8 @@ export const useGameStore = create<GameState>((set, get) => {
             },
             tokens: nextMap.tokens,
             drawings: nextMap.drawings,
+            doors: nextMap.doors || [],
+            stairs: nextMap.stairs || [],
             map: nextMap.map,
             gridSize: nextMap.gridSize,
             gridType: nextMap.gridType,
@@ -449,6 +535,8 @@ export const useGameStore = create<GameState>((set, get) => {
         // Hydrate active map state
         tokens: newMap.tokens || [],
         drawings: newMap.drawings || [],
+        doors: newMap.doors || [],
+        stairs: newMap.stairs || [],
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
         map: newMap.map,
@@ -493,6 +581,31 @@ export const useGameStore = create<GameState>((set, get) => {
     updateDrawingTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
       drawings: state.drawings.map(d => d.id === id ? { ...d, x, y, scale } : d)
     })),
+
+    // --- Door Actions ---
+    addDoor: (door: Door) => set((state) => ({ doors: [...state.doors, door] })),
+    removeDoor: (id: string) => set((state) => ({ doors: state.doors.filter(d => d.id !== id) })),
+    removeDoors: (ids: string[]) => set((state) => ({ doors: state.doors.filter(d => !ids.includes(d.id)) })),
+    toggleDoor: (id: string) => set((state) => ({
+      doors: state.doors.map(d => d.id === id ? { ...d, isOpen: !d.isOpen } : d)
+    })),
+    updateDoorState: (id: string, isOpen: boolean) => set((state) => ({
+      doors: state.doors.map(d => d.id === id ? { ...d, isOpen } : d)
+    })),
+    updateDoorLock: (id: string, isLocked: boolean) => set((state) => ({
+      doors: state.doors.map(d => d.id === id ? { ...d, isLocked } : d)
+    })),
+    updateAllDoorStates: (isOpen: boolean) => set((state) => ({
+      doors: state.doors.map(d => d.isLocked ? d : { ...d, isOpen })
+    })),
+    updateAllDoorLocks: (isLocked: boolean) => set((state) => ({
+      doors: state.doors.map(d => ({ ...d, isLocked }))
+    })),
+
+    // --- Stairs Actions ---
+    addStairs: (stairs: Stairs) => set((state) => ({ stairs: [...state.stairs, stairs] })),
+    removeStairs: (id: string) => set((state) => ({ stairs: state.stairs.filter(s => s.id !== id) })),
+    removeMultipleStairs: (ids: string[]) => set((state) => ({ stairs: state.stairs.filter(s => !ids.includes(s.id)) })),
 
     // --- Grid/Map Actions ---
     setGridSize: (size: number) => set({ gridSize: size }),
