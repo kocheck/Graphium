@@ -50,19 +50,19 @@ export class ElectronStorageService implements IStorageService {
 
   async saveCampaign(campaign: Campaign): Promise<boolean> {
     this.ensureIPC();
-    // @ts-ignore - IPC types not available in renderer
+    // @ts-expect-error - IPC types not available in renderer
     return await window.ipcRenderer.invoke('SAVE_CAMPAIGN', campaign);
   }
 
   async autoSaveCampaign(campaign: Campaign): Promise<boolean> {
     this.ensureIPC();
-    // @ts-ignore - IPC types not available in renderer
+    // @ts-expect-error - IPC types not available in renderer
     return await window.ipcRenderer.invoke('AUTO_SAVE', campaign);
   }
 
   async loadCampaign(): Promise<Campaign | null> {
     this.ensureIPC();
-    // @ts-ignore - IPC types not available in renderer
+    // @ts-expect-error - IPC types not available in renderer
     return await window.ipcRenderer.invoke('LOAD_CAMPAIGN');
   }
 
@@ -70,7 +70,7 @@ export class ElectronStorageService implements IStorageService {
 
   async saveAssetTemp(buffer: ArrayBuffer, fileName: string): Promise<string> {
     this.ensureIPC();
-    // @ts-ignore - IPC types not available in renderer
+    // @ts-expect-error - IPC types not available in renderer
     const filePath = await window.ipcRenderer.invoke('SAVE_ASSET_TEMP', buffer, fileName);
     return filePath as string;
   }
@@ -83,7 +83,7 @@ export class ElectronStorageService implements IStorageService {
     metadata: LibraryMetadata
   ): Promise<TokenLibraryItem> {
     this.ensureIPC();
-    // @ts-ignore - IPC types not available in renderer
+    // @ts-expect-error - IPC types not available in renderer
     return await window.ipcRenderer.invoke('SAVE_ASSET_TO_LIBRARY', {
       fullSizeBuffer,
       thumbnailBuffer,
@@ -93,14 +93,14 @@ export class ElectronStorageService implements IStorageService {
 
   async loadLibraryIndex(): Promise<TokenLibraryItem[]> {
     this.ensureIPC();
-    // @ts-ignore - IPC types not available in renderer
+    // @ts-expect-error - IPC types not available in renderer
     const items = await window.ipcRenderer.invoke('LOAD_LIBRARY_INDEX');
     return items || [];
   }
 
   async deleteLibraryAsset(assetId: string): Promise<void> {
     this.ensureIPC();
-    // @ts-ignore - IPC types not available in renderer
+    // @ts-expect-error - IPC types not available in renderer
     await window.ipcRenderer.invoke('DELETE_LIBRARY_ASSET', assetId);
   }
 
@@ -109,7 +109,7 @@ export class ElectronStorageService implements IStorageService {
     updates: Partial<LibraryMetadata>
   ): Promise<TokenLibraryItem> {
     this.ensureIPC();
-    // @ts-ignore - IPC types not available in renderer
+    // @ts-expect-error - IPC types not available in renderer
     return await window.ipcRenderer.invoke('UPDATE_LIBRARY_METADATA', assetId, updates);
   }
 
@@ -123,7 +123,7 @@ export class ElectronStorageService implements IStorageService {
     }
 
     try {
-      // @ts-ignore - themeAPI types not available
+      // @ts-expect-error - themeAPI types not available
       const state = await window.themeAPI.getThemeState();
       return state.mode as ThemeMode;
     } catch (error) {
@@ -139,7 +139,7 @@ export class ElectronStorageService implements IStorageService {
     }
 
     try {
-      // @ts-ignore - themeAPI types not available
+      // @ts-expect-error - themeAPI types not available
       await window.themeAPI.setThemeMode(mode);
     } catch (error) {
       console.error('[ElectronStorageService] Failed to set theme mode:', error);

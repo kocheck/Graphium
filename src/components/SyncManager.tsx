@@ -182,12 +182,6 @@ const SyncManager = () => {
     const params = new URLSearchParams(window.location.search);
     const isWorldView = params.get('type') === 'world';
 
-    // Skip sync if neither platform is available
-    if (!isElectron && !isWeb) {
-      console.warn('[SyncManager] No sync transport available');
-      return;
-    }
-
     // ============================================================
     // TRANSPORT SETUP: BroadcastChannel (Web) or IPC (Electron)
     // ============================================================
@@ -655,14 +649,56 @@ const SyncManager = () => {
         };
       };
 
+      // Handle incoming sync actions from World View (bidirectional sync)
+      // World View can send token position updates back to Architect View
+      const handleSyncFromWorldView = (_event: any, action: SyncAction) => {
+        const store = useGameStore.getState();
+
+        switch (action.type) {
+          case 'TOKEN_UPDATE':
+            // Update specific token properties (usually position from World View)
+            const { id, changes } = action.payload;
+            const currentToken = store.tokens.find(t => t.id === id);
+            if (currentToken) {
+              const newTokens = store.tokens.map(t =>
+                t.id === id ? { ...t, ...changes } : t
+              );
+              useGameStore.setState({ tokens: newTokens });
+
+              // Update prevState to prevent echoing this change back
+              if (prevStateRef.current) {
+                prevStateRef.current.tokens = [...newTokens];
+              }
+            }
+            break;
+
+          default:
+            // Architect View only expects position updates from World View
+            console.warn('[SyncManager] Unexpected sync action from World View:', action.type);
+        }
+      };
+
       if (isWeb && channel) {
-        // Web: Listen for BroadcastChannel messages (initial state requests)
+        // Web: Listen for BroadcastChannel messages
+        // Handle both initial state requests AND bidirectional sync from World View
         channel.onmessage = (event) => {
-          handleInitialStateRequest(event);
+          const message = event.data;
+          
+          // Handle initial state request
+          if (message?.type === 'REQUEST_INITIAL_STATE') {
+            handleInitialStateRequest(event);
+          } 
+          // Handle sync actions from World View (bidirectional sync)
+          else if (message?.type && message.payload !== undefined) {
+            // Apply sync action to Architect View's store
+            handleSyncFromWorldView(null, message);
+          }
         };
       } else if (isElectron) {
         // Electron: Listen for IPC initial state requests
         window.ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
+        // Electron: Listen for bidirectional sync from World View
+        window.ipcRenderer.on('SYNC_FROM_WORLD_VIEW', handleSyncFromWorldView);
       }
 
       // Cleanup function (unsubscribe on unmount)

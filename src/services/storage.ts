@@ -20,7 +20,7 @@ let storageInstance: IStorageService | null = null;
  * We need runtime detection because the same build might run in both environments
  * during development (Vite dev server with Electron).
  *
- * @throws {Error} If storage already initialized
+ * Note: If storage is already initialized, logs a warning and returns early.
  *
  * @example
  * // In src/main.tsx (before rendering React)

@@ -50,7 +50,7 @@ export class WebStorageService implements IStorageService {
    */
   private async initDB(): Promise<IDBPDatabase> {
     const db = await openDB(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion, newVersion, _transaction) {
+      upgrade(db, oldVersion, newVersion) {
         console.log(`[WebStorageService] Upgrading DB from ${oldVersion} to ${newVersion}`);
 
         // Token library store
