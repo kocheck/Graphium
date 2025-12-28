@@ -245,6 +245,8 @@ const SyncManager = () => {
           case 'TOKEN_DRAG_START':
             // Token drag started - update position temporarily (for visual feedback)
             // This allows World View to show the token moving in real-time
+            // NOTE: Uses direct setState for performance - drag events are high-frequency
+            // and we want to minimize overhead by avoiding store action indirection
             const { id: dragStartId, x: dragStartX, y: dragStartY } = action.payload;
             const dragStartToken = store.tokens.find(t => t.id === dragStartId);
             if (dragStartToken) {
@@ -262,6 +264,8 @@ const SyncManager = () => {
           case 'TOKEN_DRAG_MOVE':
             // Token is being dragged - update position in real-time (throttled from Architect)
             // This provides smooth visual feedback during drag
+            // NOTE: Uses direct setState for performance - drag events are high-frequency
+            // and we want to minimize overhead by avoiding store action indirection
             const { id: dragMoveId, x: dragMoveX, y: dragMoveY } = action.payload;
             const dragMoveToken = store.tokens.find(t => t.id === dragMoveId);
             if (dragMoveToken) {
@@ -281,11 +285,9 @@ const SyncManager = () => {
             // This is the authoritative position update
             const { id: dragEndId, x: dragEndX, y: dragEndY } = action.payload;
             store.updateTokenPosition(dragEndId, dragEndX, dragEndY);
-            // Update prevState to prevent echo
+            // Update prevState to prevent echo, using the fresh store state
             if (worldViewPrevStateRef.current) {
-              const updatedTokens = store.tokens.map(t =>
-                t.id === dragEndId ? { ...t, x: dragEndX, y: dragEndY } : t
-              );
+              const { tokens: updatedTokens } = useGameStore.getState();
               worldViewPrevStateRef.current.tokens = [...updatedTokens];
             }
             break;

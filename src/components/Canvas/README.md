@@ -266,13 +266,17 @@ const [draggingTokenIds, setDraggingTokenIds] = useState<Set<string>>(new Set())
 
 // On dragStart: Track dragging state, store offsets for multi-token drag
 const handleTokenDragStart = (e, tokenId) => {
-  setDraggingTokenIds(new Set([tokenId]));
+  // Check if token is in selection - if so, drag all selected tokens
+  const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
+  setDraggingTokenIds(new Set(tokenIds));
   // Store initial offsets for multi-token drag
   dragStartOffsetsRef.current.set(tokenId, { x: 0, y: 0 });
-  // Broadcast TOKEN_DRAG_START to World View
-  window.ipcRenderer.send('SYNC_WORLD_STATE', {
-    type: 'TOKEN_DRAG_START',
-    payload: { id: tokenId, x: token.x, y: token.y }
+  // Broadcast TOKEN_DRAG_START to World View for all dragged tokens
+  tokenIds.forEach(id => {
+    window.ipcRenderer.send('SYNC_WORLD_STATE', {
+      type: 'TOKEN_DRAG_START',
+      payload: { id, x: token.x, y: token.y }
+    });
   });
 };
 

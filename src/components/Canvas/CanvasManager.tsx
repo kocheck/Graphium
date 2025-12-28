@@ -168,7 +168,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const selectionStart = useRef<{x: number, y: number} | null>(null);
 
   // Ghost / Duplication State
-  const [draggedItemIds, setDraggedItemIds] = useState<string[]>([]);
+  const [itemsForDuplication, setItemsForDuplication] = useState<string[]>([]);
   const [isAltPressed, setIsAltPressed] = useState(false);
 
   // Real-time Drag Tracking (for performance and multi-user sync)
@@ -562,7 +562,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
     // Track dragging state
     setDraggingTokenIds(new Set(tokenIds));
-    setDraggedItemIds(tokenIds);
+    setItemsForDuplication(tokenIds);
 
     // Store initial offsets for multi-token drag
     const primaryX = e.target.x();
@@ -637,35 +637,42 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
     const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
 
+    // Store committed positions to avoid redundant lookups and use fresh data
+    const committedPositions = new Map<string, { x: number, y: number }>();
+
     // Handle multi-token drag end
     if (tokenIds.length > 1) {
-      const offsetX = snapped.x - token.x;
-      const offsetY = snapped.y - token.y;
+      // Get current drag position for primary token (or fall back to stored position)
+      const dragPos = dragPositionsRef.current.get(tokenId) ?? { x: token.x, y: token.y };
+      const offsetX = snapped.x - dragPos.x;
+      const offsetY = snapped.y - dragPos.y;
 
       tokenIds.forEach(id => {
         const t = tokens.find(tk => tk.id === id);
         if (t) {
-          const newX = t.x + offsetX;
-          const newY = t.y + offsetY;
+          const dragPosForToken = dragPositionsRef.current.get(id) ?? { x: t.x, y: t.y };
+          const newX = dragPosForToken.x + offsetX;
+          const newY = dragPosForToken.y + offsetY;
           const snappedPos = snapToGrid(newX, newY, gridSize, gridSize * t.scale, gridSize * t.scale);
           updateTokenPosition(id, snappedPos.x, snappedPos.y);
+          // Store the committed position
+          committedPositions.set(id, { x: snappedPos.x, y: snappedPos.y });
         }
       });
     } else {
       // Single token drag
       updateTokenPosition(tokenId, snapped.x, snapped.y);
+      committedPositions.set(tokenId, { x: snapped.x, y: snapped.y });
     }
 
-    // Broadcast drag end to World View
+    // Broadcast drag end to World View with committed positions
     if (window.ipcRenderer && !isWorldView) {
       tokenIds.forEach(id => {
-        const t = tokens.find(tk => tk.id === id);
-        if (t) {
-          const finalX = id === tokenId ? snapped.x : t.x;
-          const finalY = id === tokenId ? snapped.y : t.y;
+        const pos = committedPositions.get(id);
+        if (pos) {
           window.ipcRenderer.send('SYNC_WORLD_STATE', {
             type: 'TOKEN_DRAG_END',
-            payload: { id, x: finalX, y: finalY }
+            payload: { id, x: pos.x, y: pos.y }
           });
         }
       });
@@ -678,20 +685,21 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
       dragStartOffsetsRef.current.delete(id);
     });
     setDraggingTokenIds(new Set());
-    setDraggedItemIds([]);
+    setItemsForDuplication([]);
 
     // Duplication Logic (Option/Alt + Drag)
     // BLOCKED in World View (players cannot duplicate tokens)
     if (isAltPressed && !isWorldView) {
       tokenIds.forEach(id => {
         const t = tokens.find(tk => tk.id === id);
-        if (t) {
-          const snappedPos = snapToGrid(t.x, t.y, gridSize, gridSize * t.scale, gridSize * t.scale);
-          addToken({ ...t, id: crypto.randomUUID(), x: snappedPos.x, y: snappedPos.y });
+        const pos = committedPositions.get(id);
+        if (t && pos) {
+          // Use the newly committed position for duplication
+          addToken({ ...t, id: crypto.randomUUID(), x: pos.x, y: pos.y });
         }
       });
     }
-  }, [selectedIds, tokens, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, snapToGrid]);
+  }, [selectedIds, tokens, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken]);
 
   // Drawing Handlers
   const handleMouseDown = (e: any) => {
@@ -1182,7 +1190,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
         {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
         <Layer>
-            {isAltPressed && drawings.filter(d => draggedItemIds.includes(d.id)).map(ghostLine => (
+            {isAltPressed && drawings.filter(d => itemsForDuplication.includes(d.id)).map(ghostLine => (
                 <Line
                     key={`ghost-${ghostLine.id}`}
                     id={`ghost-${ghostLine.id}`}
@@ -1300,7 +1308,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
         {/* Layer 3: Tokens & UI */}
         <Layer>
-            {isAltPressed && tokens.filter(t => draggedItemIds.includes(t.id)).map(ghostToken => (
+            {isAltPressed && tokens.filter(t => itemsForDuplication.includes(t.id)).map(ghostToken => (
                 <URLImage
                    key={`ghost-${ghostToken.id}`}
                    id={`ghost-${ghostToken.id}`} // Unique ID

@@ -230,9 +230,9 @@ TOKEN_DRAG_END → World View (commits final snapped position)
 ```
 
 **Performance:**
-- Drag position updates use refs (no store updates during drag) = no React re-renders
+- Architect View drag position updates use refs (no Architect store updates during `dragMove`) = minimal React re-renders in Architect View
+- World View store is updated for `TOKEN_DRAG_START`, `TOKEN_DRAG_MOVE`, and `TOKEN_DRAG_END` events to reflect real-time token positions
 - IPC broadcasts throttled to 16ms intervals (~60fps) to prevent IPC spam
-- World View receives smooth position updates during drag
 - Visual feedback: Dragging tokens show 0.7 opacity in both views
 
 #### Related Files
