@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
 
 /**
  * Playwright Configuration for Hyle E2E Tests
