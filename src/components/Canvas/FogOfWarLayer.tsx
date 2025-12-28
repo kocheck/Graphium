@@ -45,10 +45,22 @@ import { BLUR_FILTERS } from './CanvasManager';
  * - CPU usage: ~80% → ~15% (static scenes)
  */
 const FogOfWarLayer = ({ tokens, drawings, doors, gridSize, visibleBounds, map }: FogOfWarLayerProps) => {
+  console.log('[FogOfWarLayer] COMPONENT RENDERING - Start');
+  console.log('[FogOfWarLayer] Props:', {
+    tokensCount: tokens.length,
+    doorsCount: doors.length,
+    drawingsCount: drawings.length,
+    hasMap: !!map
+  });
+
   // Get explored regions and actions from store
   const exploredRegions = useGameStore((state) => state.exploredRegions);
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
   const setActiveVisionPolygons = useGameStore((state) => state.setActiveVisionPolygons);
+
+  console.log('[FogOfWarLayer] Store state:', {
+    exploredRegionsCount: exploredRegions.length
+  });
 
   // Track last update time for throttling exploration tracking
   const lastExploreUpdateRef = useRef<number>(0);
@@ -59,6 +71,13 @@ const FogOfWarLayer = ({ tokens, drawings, doors, gridSize, visibleBounds, map }
     () => {
       const pcs = tokens.filter((t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0);
       console.log('[FogOfWarLayer] PC tokens with vision:', pcs.length, 'out of', tokens.length, 'total tokens');
+
+      if (pcs.length === 0 && tokens.some(t => t.type === 'PC')) {
+        console.warn('[FogOfWarLayer] WARNING: PC tokens exist but NONE have vision radius set!');
+        console.warn('[FogOfWarLayer] Set vision radius on PC tokens in TokenInspector (try 60ft)');
+        console.warn('[FogOfWarLayer] Without vision, the entire map will be covered in fog!');
+      }
+
       return pcs;
     },
     [tokens]
@@ -215,6 +234,8 @@ const FogOfWarLayer = ({ tokens, drawings, doors, gridSize, visibleBounds, map }
       height: visibleBounds.height + padding * 2,
     };
   }, [map, visibleBounds]);
+
+  console.log('[FogOfWarLayer] RENDERING JSX - PC tokens:', pcTokens.length, 'Fog bounds:', fogBounds);
 
   return (
     <Group listening={false}>
