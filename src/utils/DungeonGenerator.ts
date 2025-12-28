@@ -1,4 +1,4 @@
-import type { Drawing } from '../store/gameStore';
+import type { Drawing, Door } from '../store/gameStore';
 
 /**
  * Room represents a rectangular bounding box for dungeon pieces
@@ -38,12 +38,17 @@ type Direction = 'north' | 'south' | 'east' | 'west';
  * Pieces are the building blocks of dungeons. Each piece has:
  * - Defined bounds (position and size)
  * - Wall segments for each cardinal direction
+ * - Doorway positions (converted to Door objects after generation)
  * - Type identifier for different generation rules
  *
  * **Wall Segment Format:**
  * - undefined = no wall (open connection)
  * - 2 points = solid wall [start, end]
- * - 4 points = wall with doorway [leftStart, leftEnd, rightStart, rightEnd]
+ * - 4 points = wall with doorway [leftStart, leftEnd, rightStart, rightEnd] (legacy - prefer doorways field)
+ *
+ * **Doorways Field:**
+ * - Maps direction to door center position
+ * - Used to create explicit Door objects in the final dungeon
  *
  * @example
  * // Room with solid north wall
@@ -51,11 +56,15 @@ type Direction = 'north' | 'south' | 'east' | 'west';
  *
  * @example
  * // Room with doorway in south wall
- * { south: [{ x: 0, y: 100 }, { x: 25, y: 100 }, { x: 75, y: 100 }, { x: 100, y: 100 }] }
+ * {
+ *   south: [{ x: 0, y: 100 }, { x: 100, y: 100 }],
+ *   doorways: { south: { x: 50, y: 100 } }
+ * }
  *
  * @property type - 'room' or 'corridor' for generation rules
  * @property bounds - Bounding box defining piece position and size
  * @property wallSegments - Wall definitions for each cardinal direction
+ * @property doorways - Door positions for each direction (optional)
  */
 interface DungeonPiece {
   type: 'room' | 'corridor';
@@ -65,6 +74,12 @@ interface DungeonPiece {
     south?: Point[];
     east?: Point[];
     west?: Point[];
+  };
+  doorways?: {
+    north?: Point;
+    south?: Point;
+    east?: Point;
+    west?: Point;
   };
 }
 
@@ -253,10 +268,13 @@ export class DungeonGenerator {
 
   /**
    * Generates a dungeon using prefab pieces for perfect alignment
+   *
+   * @returns Object containing both wall drawings and door objects
    */
-  public generate(): Drawing[] {
+  public generate(): { drawings: Drawing[]; doors: Door[] } {
     this.rooms = [];
     const drawings: Drawing[] = [];
+    const doors: Door[] = [];
     const pieces: DungeonPiece[] = [];
     const usedDirections = new Map<DungeonPiece, Set<Direction>>();
 
@@ -319,12 +337,22 @@ export class DungeonGenerator {
       }
     }
 
-    // Convert all pieces to drawings
+    // Convert all pieces to drawings and doors
     for (const piece of pieces) {
       drawings.push(...this.pieceToDrawings(piece));
+
+      // Extract doors from doorways field
+      if (piece.doorways) {
+        for (const direction of ['north', 'south', 'east', 'west'] as Direction[]) {
+          const doorPosition = piece.doorways[direction];
+          if (doorPosition) {
+            doors.push(this.createDoorFromPosition(doorPosition, direction));
+          }
+        }
+      }
     }
 
-    return drawings;
+    return { drawings, doors };
   }
 
   /**
@@ -615,16 +643,21 @@ export class DungeonGenerator {
   }
 
   /**
-   * Splits a wall segment to create a doorway opening
-   * Instead of removing the entire wall, we keep the parts on either side of the opening
+   * Marks a doorway position on a piece and keeps the wall solid
+   *
+   * **NEW BEHAVIOR:** Instead of splitting the wall into segments with gaps,
+   * we now keep walls solid and track doorway positions separately.
+   * Door objects are created later from the doorways field.
+   *
+   * @param piece - The dungeon piece to modify
+   * @param direction - Which wall direction to place the door
+   * @param doorwayPosition - Exact center position of the door
    */
   private removeConnectingWalls(piece: DungeonPiece, direction: Direction, doorwayPosition?: Point): void {
-    const { bounds, wallSegments } = piece;
+    const { bounds } = piece;
     const { gridSize } = this.options;
-    const doorwaySize = gridSize; // Opening size (1 grid cell)
-    const minSegmentSize = gridSize * DungeonGenerator.MIN_WALL_SEGMENT_FRACTION; // Minimum meaningful segment size
 
-    // Use exact doorway position if provided, otherwise calculate from bounds
+    // Calculate doorway position if not provided
     let centerX: number, centerY: number;
 
     if (doorwayPosition) {
@@ -646,90 +679,17 @@ export class DungeonGenerator {
       }
     }
 
-    // Get the current wall segment
-    const segment = wallSegments[direction];
-    if (!segment || segment.length < 2) return;
-
-    const start = segment[0];
-    const end = segment[1];
-
-    // Split the wall around the doorway - only remove the 1-grid-cell doorway
-    // Keep ALL wall segments unless the entire wall IS the doorway
-    if (direction === 'north' || direction === 'south') {
-      // Horizontal wall - split left and right of doorway
-      const doorwayLeft = centerX - doorwaySize / 2;
-      const doorwayRight = centerX + doorwaySize / 2;
-      const wallWidth = Math.abs(end.x - start.x);
-
-      // Only remove wall if it's entirely a doorway
-      if (wallWidth <= doorwaySize + minSegmentSize) {
-        wallSegments[direction] = undefined;
-        return;
-      }
-
-      const leftSegment: Point[] = [];
-      const rightSegment: Point[] = [];
-
-      // Keep left segment if it's meaningful
-      const leftLength = Math.abs(doorwayLeft - start.x);
-      if (leftLength > minSegmentSize) {
-        leftSegment.push(start, { x: doorwayLeft, y: start.y });
-      }
-
-      // Keep right segment if it's meaningful
-      const rightLength = Math.abs(end.x - doorwayRight);
-      if (rightLength > minSegmentSize) {
-        rightSegment.push({ x: doorwayRight, y: end.y }, end);
-      }
-
-      // Combine segments
-      if (leftSegment.length > 0 && rightSegment.length > 0) {
-        wallSegments[direction] = [...leftSegment, ...rightSegment];
-      } else if (leftSegment.length > 0) {
-        wallSegments[direction] = leftSegment;
-      } else if (rightSegment.length > 0) {
-        wallSegments[direction] = rightSegment;
-      } else {
-        wallSegments[direction] = undefined;
-      }
-    } else {
-      // Vertical wall - split top and bottom of doorway
-      const doorwayTop = centerY - doorwaySize / 2;
-      const doorwayBottom = centerY + doorwaySize / 2;
-      const wallHeight = Math.abs(end.y - start.y);
-
-      // Only remove wall if it's entirely a doorway
-      if (wallHeight <= doorwaySize + minSegmentSize) {
-        wallSegments[direction] = undefined;
-        return;
-      }
-
-      const topSegment: Point[] = [];
-      const bottomSegment: Point[] = [];
-
-      // Keep top segment if it's meaningful
-      const topLength = Math.abs(doorwayTop - start.y);
-      if (topLength > minSegmentSize) {
-        topSegment.push(start, { x: start.x, y: doorwayTop });
-      }
-
-      // Keep bottom segment if it's meaningful
-      const bottomLength = Math.abs(end.y - doorwayBottom);
-      if (bottomLength > minSegmentSize) {
-        bottomSegment.push({ x: end.x, y: doorwayBottom }, end);
-      }
-
-      // Combine segments
-      if (topSegment.length > 0 && bottomSegment.length > 0) {
-        wallSegments[direction] = [...topSegment, ...bottomSegment];
-      } else if (topSegment.length > 0) {
-        wallSegments[direction] = topSegment;
-      } else if (bottomSegment.length > 0) {
-        wallSegments[direction] = bottomSegment;
-      } else {
-        wallSegments[direction] = undefined;
-      }
+    // Initialize doorways object if it doesn't exist
+    if (!piece.doorways) {
+      piece.doorways = {};
     }
+
+    // Store the doorway position
+    piece.doorways[direction] = { x: centerX, y: centerY };
+
+    // Keep the wall SOLID (no splitting into segments with gaps)
+    // The Door component will render on top of the wall later
+    // Wall remains as a simple 2-point segment
   }
 
   /**
@@ -807,6 +767,52 @@ export class DungeonGenerator {
     }
 
     return drawings;
+  }
+
+  /**
+   * Creates a Door object from a doorway position and direction
+   *
+   * @param position - Center position of the door
+   * @param direction - Direction the door faces (determines orientation and swing)
+   * @returns Door object ready to be added to gameStore
+   */
+  private createDoorFromPosition(position: Point, direction: Direction): Door {
+    const { gridSize } = this.options;
+
+    // Determine orientation based on direction
+    // North/South walls have horizontal doors (door swings east-west)
+    // East/West walls have vertical doors (door swings north-south)
+    const orientation = (direction === 'north' || direction === 'south') ? 'horizontal' : 'vertical';
+
+    // Determine swing direction (doors swing into rooms, away from corridors)
+    // For now, default to standard directions
+    let swingDirection: 'left' | 'right' | 'up' | 'down';
+    switch (direction) {
+      case 'north':
+        swingDirection = 'left';  // Door swings to the left (west)
+        break;
+      case 'south':
+        swingDirection = 'right'; // Door swings to the right (east)
+        break;
+      case 'east':
+        swingDirection = 'down';  // Door swings downward (south)
+        break;
+      case 'west':
+        swingDirection = 'up';    // Door swings upward (north)
+        break;
+    }
+
+    return {
+      id: crypto.randomUUID(),
+      x: position.x,
+      y: position.y,
+      orientation,
+      isOpen: false,        // Doors start closed
+      isLocked: false,      // Doors start unlocked
+      size: gridSize,       // Door size matches grid
+      thickness: 8,         // Standard door thickness
+      swingDirection,
+    };
   }
 
   /**

@@ -10,8 +10,11 @@ import { useGameStore } from '../store/gameStore';
  */
 export const DungeonGeneratorDialog: React.FC = () => {
   const addDrawing = useGameStore((state) => state.addDrawing);
+  const addDoor = useGameStore((state) => state.addDoor);
   const removeDrawings = useGameStore((state) => state.removeDrawings);
+  const removeDoors = useGameStore((state) => state.removeDoors);
   const existingDrawings = useGameStore((state) => state.drawings);
+  const existingDoors = useGameStore((state) => state.doors);
   const gridSize = useGameStore((state) => state.gridSize);
   const clearDungeonDialog = useGameStore((state) => state.clearDungeonDialog);
   const dungeonDialog = useGameStore((state) => state.dungeonDialog);
@@ -58,15 +61,17 @@ export const DungeonGeneratorDialog: React.FC = () => {
       wallSize,
     });
 
-    const drawings = generator.generate();
+    const { drawings, doors } = generator.generate();
 
-    // Clear existing drawings if requested
+    // Clear existing drawings and doors if requested
     if (clearCanvas) {
       removeDrawings(existingDrawings.map(d => d.id));
+      removeDoors(existingDoors.map(d => d.id));
     }
 
-    // Add all generated wall drawings to the store
+    // Add all generated wall drawings and doors to the store
     drawings.forEach(drawing => addDrawing(drawing));
+    doors.forEach(door => addDoor(door));
 
     // Close the dialog
     clearDungeonDialog();
