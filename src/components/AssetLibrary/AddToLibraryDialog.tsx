@@ -20,6 +20,7 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { getStorage } from '../../services/storage';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface AddToLibraryDialogProps {
   isOpen: boolean;
@@ -44,6 +45,9 @@ const AddToLibraryDialog = ({
   const [category, setCategory] = useState('Monsters');
   const [tagsInput, setTagsInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Mobile responsiveness
+  const isMobile = useIsMobile();
 
   const addTokenToLibrary = useGameStore(state => state.addTokenToLibrary);
   const showToast = useGameStore(state => state.showToast);
@@ -177,13 +181,20 @@ const AddToLibraryDialog = ({
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleClose}
     >
-      <div 
-        className="bg-neutral-900 rounded-lg w-full max-w-md overflow-hidden"
+      <div
+        className={`w-full overflow-hidden ${
+          isMobile
+            ? 'h-full'
+            : 'max-w-md rounded-lg'
+        }`}
         onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: 'var(--app-bg-surface)',
+        }}
       >
         {/* Header */}
         <div className="p-4 border-b border-neutral-700">

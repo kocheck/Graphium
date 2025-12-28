@@ -16,6 +16,8 @@ import AutoSaveManager from './components/AutoSaveManager'
 import CommandPalette from './components/AssetLibrary/CommandPalette'
 import { useCommandPalette } from './hooks/useCommandPalette'
 import { getStorage } from './services/storage';
+import { useIsMobile } from './hooks/useMediaQuery';
+import MobileToolbar from './components/MobileToolbar';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -86,6 +88,10 @@ import { getStorage } from './services/storage';
 function App() {
   // Detect window type for UI sanitization
   const { isArchitectView, isWorldView } = useWindowType();
+
+  // Mobile responsiveness
+  const isMobile = useIsMobile();
+  const setMobileSidebarOpen = useGameStore((state) => state.setMobileSidebarOpen);
 
   // Active tool state (controls CanvasManager behavior)
   // Only used in Architect View; World View always uses 'select' with restricted interactions
@@ -270,6 +276,27 @@ function App() {
 
 
       <div className="flex-1 relative h-full">
+        {/* Mobile Hamburger Menu Button (top-left, Architect View only) */}
+        {isArchitectView && isMobile && (
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="fixed top-4 left-4 z-50 p-3 rounded shadow-lg"
+            style={{
+              backgroundColor: 'var(--app-bg-surface)',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--app-border-default)',
+              minWidth: '48px',
+              minHeight: '48px',
+            }}
+            aria-label="Open menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        )}
+
         {/* CanvasManager: Rendered in both views, but with different interaction modes */}
         <CanvasManager
           tool={tool}
@@ -278,8 +305,8 @@ function App() {
           onSelectionChange={setSelectedTokenIds}
         />
 
-        {/* Toolbar: Only render in Architect View (DM controls) */}
-        {isArchitectView && (
+        {/* Toolbar: Desktop or Mobile (Architect View only) */}
+        {isArchitectView && !isMobile && (
         <div className="toolbar fixed top-4 right-4 p-2 rounded shadow flex gap-2 z-50">
            {/* Play/Pause Button */}
            <button
@@ -361,7 +388,10 @@ function App() {
 
         {/* Token Inspector (only show in Architect View when tokens selected) */}
         {isArchitectView && selectedTokensOnly.length > 0 && (
-          <TokenInspector selectedTokenIds={selectedTokensOnly} />
+          <TokenInspector 
+            selectedTokenIds={selectedTokensOnly} 
+            onClose={() => setSelectedTokenIds([])}
+          />
         )}
 
         {/* Command Palette: Quick asset search (Cmd+P, Architect View only) */}
@@ -369,6 +399,18 @@ function App() {
           <CommandPalette
             isOpen={isPaletteOpen}
             onClose={() => setPaletteOpen(false)}
+          />
+        )}
+
+        {/* Mobile Toolbar: Bottom navigation bar (Architect View only, mobile only) */}
+        {isArchitectView && isMobile && (
+          <MobileToolbar
+            tool={tool}
+            setTool={setTool}
+            color={color}
+            setColor={setColor}
+            isGamePaused={isGamePaused}
+            onPauseToggle={handlePauseToggle}
           />
         )}
       </div>

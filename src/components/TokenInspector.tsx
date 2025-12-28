@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import MobileBottomSheet from './MobileBottomSheet';
 
 interface TokenInspectorProps {
   selectedTokenIds: string[];
+  onClose?: () => void;
 }
 
 /**
@@ -26,10 +29,14 @@ interface TokenInspectorProps {
  * - Custom: Manual input
  *
  * @param selectedTokenIds - Array of token IDs currently selected
+ * @param onClose - Optional callback to deselect tokens (used on mobile)
  */
-const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
+const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
   const tokens = useGameStore((s) => s.tokens);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
+
+  // Mobile responsiveness
+  const isMobile = useIsMobile();
 
   // Get selected tokens (memoized to avoid unnecessary recalculations)
   const selectedTokens = useMemo(
@@ -83,17 +90,9 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
     });
   };
 
-  return (
-    <div
-      className="token-inspector fixed bottom-4 right-4 w-80 p-4 rounded shadow-lg z-50"
-      style={{
-        backgroundColor: 'var(--app-bg-surface)',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'var(--app-border-default)',
-        boxShadow: '0 10px 15px -3px var(--app-shadow-lg), 0 4px 6px -2px var(--app-shadow-md)'
-      }}
-    >
+  // Inspector content (same for mobile and desktop)
+  const inspectorContent = (
+    <div className={isMobile ? 'w-full' : 'p-4'}>
       <div className="flex justify-between items-center mb-3">
         <h3
           className="text-lg font-semibold"
@@ -126,7 +125,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
             )}
             <button
                 onClick={() => setIsEditing(true)}
-                className="w-full py-2 rounded font-medium transition-colors"
+                className="w-full py-3 rounded font-medium transition-colors min-h-[44px]"
                 style={{
                   backgroundColor: 'var(--app-accent-solid)',
                   color: 'var(--app-accent-solid-text)'
@@ -172,7 +171,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
                 <div className="flex gap-2">
                 <button
                     onClick={() => handleTypeChange('PC')}
-                    className="flex-1 px-3 py-2 rounded font-medium transition-colors"
+                    className="flex-1 px-3 py-3 rounded font-medium transition-colors min-h-[44px]"
                     style={{
                       backgroundColor: type === 'PC' ? 'var(--app-accent-solid)' : 'var(--app-bg-hover)',
                       color: type === 'PC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)'
@@ -188,7 +187,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
                 </button>
                 <button
                     onClick={() => handleTypeChange('NPC')}
-                    className="flex-1 px-3 py-2 rounded font-medium transition-colors"
+                    className="flex-1 px-3 py-3 rounded font-medium transition-colors min-h-[44px]"
                     style={{
                       backgroundColor: type === 'NPC' ? 'var(--app-accent-solid)' : 'var(--app-bg-hover)',
                       color: type === 'NPC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)'
@@ -218,7 +217,7 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
                     <button
                     key={radius}
                     onClick={() => handleVisionRadiusChange(radius)}
-                    className="px-2 py-1 text-sm rounded font-medium transition-colors"
+                    className="px-2 text-sm rounded font-medium transition-colors min-h-[44px]"
                     style={{
                       backgroundColor: visionRadius === radius ? 'var(--app-success-solid)' : 'var(--app-bg-hover)',
                       color: visionRadius === radius ? 'white' : 'var(--app-text-primary)'
@@ -274,6 +273,31 @@ const TokenInspector = ({ selectedTokenIds }: TokenInspectorProps) => {
             )}
         </div>
       )}
+    </div>
+  );
+
+  // Render: Mobile bottom sheet or desktop fixed panel
+  if (isMobile) {
+    return (
+      <MobileBottomSheet isOpen={true} onClose={() => onClose?.()}>
+        {inspectorContent}
+      </MobileBottomSheet>
+    );
+  }
+
+  // Desktop: Fixed bottom-right panel
+  return (
+    <div
+      className="token-inspector fixed bottom-4 right-4 w-80 rounded shadow-lg z-50"
+      style={{
+        backgroundColor: 'var(--app-bg-surface)',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'var(--app-border-default)',
+        boxShadow: '0 10px 15px -3px var(--app-shadow-lg), 0 4px 6px -2px var(--app-shadow-md)'
+      }}
+    >
+      {inspectorContent}
     </div>
   );
 };
