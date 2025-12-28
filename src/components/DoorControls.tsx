@@ -79,7 +79,7 @@ const DoorControls = () => {
           className="btn btn-default w-full text-xs py-2 px-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
           title="Open all unlocked doors"
         >
-          🚪 Open All ({closedDoorCount - lockedDoorCount})
+          🚪 Open All ({Math.max(0, closedDoorCount - lockedDoorCount)})
         </button>
 
         <button

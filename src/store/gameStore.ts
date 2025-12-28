@@ -488,7 +488,7 @@ export const useGameStore = create<GameState>((set, get) => {
             },
             tokens: nextMap.tokens,
             drawings: nextMap.drawings,
-            doors: nextMap.doors,
+            doors: nextMap.doors || [],
             stairs: nextMap.stairs || [],
             map: nextMap.map,
             gridSize: nextMap.gridSize,
