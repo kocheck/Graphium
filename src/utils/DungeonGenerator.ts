@@ -244,7 +244,7 @@ export class DungeonGenerator {
 
   /**
    * Initialize available room templates
-   * Includes rectangular, L-shaped, T-shaped, and cross-shaped rooms
+   * Currently only includes rectangular rooms for reliable generation and collision detection.
    */
   private initializeRoomTemplates(): RoomTemplate[] {
     return [
