@@ -372,9 +372,12 @@ const Sidebar = () => {
                                     alt={token.name}
                                     className="w-full h-full object-contain pointer-events-none"
                                 />
-                                <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center gap-1 rounded">
+                                {/* Delete button overlay: visible on mobile, hover-only on desktop */}
+                                <div className={`absolute inset-0 bg-black/60 items-center justify-center gap-1 rounded ${
+                                    isMobile ? 'flex' : 'hidden group-hover:flex'
+                                }`}>
                                     <button
-                                        className="text-xs bg-red-500/80 hover:bg-red-500 text-white rounded px-2 py-1"
+                                        className="text-xs bg-red-500/80 hover:bg-red-500 active:bg-red-600 text-white rounded px-2 py-1 min-h-[32px] min-w-[32px]"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             showConfirmDialog(

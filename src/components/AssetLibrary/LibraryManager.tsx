@@ -28,6 +28,7 @@ import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 import AddToLibraryDialog from './AddToLibraryDialog';
 import { getStorage } from '../../services/storage';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface LibraryManagerProps {
   isOpen: boolean;
@@ -37,6 +38,9 @@ interface LibraryManagerProps {
 const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // Mobile responsiveness
+  const isMobile = useIsMobile();
 
   // Upload state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -163,14 +167,21 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={onClose}
     >
-      {/* Modal container */}
-      <div 
-        className="w-full max-w-6xl h-[80vh] bg-neutral-900 rounded-lg shadow-2xl overflow-hidden flex flex-col"
+      {/* Modal container: Full-screen on mobile, centered on desktop */}
+      <div
+        className={`w-full flex flex-col overflow-hidden shadow-2xl ${
+          isMobile
+            ? 'h-full bg-neutral-900'
+            : 'max-w-6xl h-[80vh] bg-neutral-900 rounded-lg'
+        }`}
         onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: 'var(--app-bg-base)',
+        }}
       >
         {/* Header */}
         <div className="p-4 border-b border-neutral-700 bg-neutral-800">
@@ -213,13 +224,15 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search assets..."
-              className="flex-1 bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="flex-1 bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none text-base"
+              style={{ fontSize: '16px' }}
             />
             <select
               aria-label="Filter by category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none text-base"
+              style={{ fontSize: '16px' }}
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
