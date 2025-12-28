@@ -401,14 +401,16 @@ export class WebStorageService implements IStorageService {
       localStorage.setItem('hyle-theme', mode);
       console.log(`[WebStorageService] Set theme mode: ${mode}`);
       
-      // Broadcast theme change to other tabs
-      try {
-        const themeChannel = new BroadcastChannel('hyle-theme-sync');
-        themeChannel.postMessage({ type: 'THEME_CHANGED', mode });
-        themeChannel.close();
-      } catch (broadcastError) {
-        // BroadcastChannel not supported or failed - ignore
-        console.warn('[WebStorageService] Failed to broadcast theme change:', broadcastError);
+      // Broadcast theme change to other tabs (if supported)
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          const themeChannel = new BroadcastChannel('hyle-theme-sync');
+          themeChannel.postMessage({ type: 'THEME_CHANGED', mode });
+          themeChannel.close();
+        } catch (broadcastError) {
+          // BroadcastChannel failed - ignore
+          console.warn('[WebStorageService] BroadcastChannel failed:', broadcastError);
+        }
       }
     } catch (error) {
       console.error('[WebStorageService] Set theme mode failed:', error);
