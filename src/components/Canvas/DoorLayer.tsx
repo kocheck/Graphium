@@ -27,13 +27,6 @@ interface DoorLayerProps {
  * @param onToggleDoor - Callback when a door is toggled (DM only)
  */
 const DoorLayer = ({ doors, isWorldView, onToggleDoor }: DoorLayerProps) => {
-  // Debug: Log door rendering info
-  console.log('[DoorLayer] Rendering', {
-    doorCount: doors.length,
-    isWorldView,
-    doors: doors.map(d => ({ id: d.id, x: d.x, y: d.y, isOpen: d.isOpen }))
-  });
-
   return (
     <>
       {doors.map((door) => (
