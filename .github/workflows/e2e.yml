@@ -1,10 +1,13 @@
 name: E2E Tests (Playwright)
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [main]
+  # Hybrid setup: CI runs only on main branch (post-merge)
+  # Developers run tests locally via pre-push hook
+  # To enable full CI with PR checks, uncomment below:
+  # pull_request:
+  #   branches: [main]
 
 # Cancel in-progress runs when new commit is pushed
 concurrency:
