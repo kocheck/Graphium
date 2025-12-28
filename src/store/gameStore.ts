@@ -285,7 +285,9 @@ export interface GameState {
   toggleDoor: (id: string) => void;
   updateDoorState: (id: string, isOpen: boolean) => void;
   updateDoorLock: (id: string, isLocked: boolean) => void;
+  /** Updates all unlocked doors to the specified state (locked doors are skipped) */
   updateAllDoorStates: (isOpen: boolean) => void;
+  /** Updates all doors to the specified lock state */
   updateAllDoorLocks: (isLocked: boolean) => void;
 
   // Stairs Actions

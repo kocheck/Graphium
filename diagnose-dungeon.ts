@@ -20,7 +20,7 @@ try {
   // Create generator
   console.log('\n[1/6] Creating DungeonGenerator...');
   const generator = new DungeonGenerator({
-    numRooms: 5,  // Fixed: was 'roomCount', should be 'numRooms'
+    numRooms: 5,
     gridSize
   });
   console.log('✅ Generator created with numRooms:', 5);

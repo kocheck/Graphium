@@ -41,6 +41,7 @@ describe('DungeonGenerator - Door and Corridor Alignment', () => {
       gridSize
     });
 
+    // Generate dungeon to verify it runs without errors
     generator.generate();
 
     // Expected corridor width (2 cells * gridSize)
