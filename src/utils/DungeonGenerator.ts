@@ -94,13 +94,13 @@ interface DungeonPiece {
  * **Extension Point:** Add new templates in initializeRoomTemplates()
  *
  * @example
- * // L-shaped room template
+ * // Rectangular room template
  * {
- *   type: 'l-shaped',
- *   minSize: 4,
+ *   type: 'rectangular',
+ *   minSize: 3,
  *   maxSize: 8,
  *   createPiece: (x, y, widthCells, heightCells, gridSize) =>
- *     this.createLShapedRoom(x, y, widthCells, heightCells, gridSize)
+ *     this.createRectangularRoom(x, y, widthCells, heightCells, gridSize)
  * }
  *
  * @property type - Unique identifier for this room type
@@ -244,7 +244,7 @@ export class DungeonGenerator {
 
   /**
    * Initialize available room templates
-   * Includes rectangular, L-shaped, T-shaped, and cross-shaped rooms
+   * Currently only includes rectangular rooms for reliable generation and collision detection.
    */
   private initializeRoomTemplates(): RoomTemplate[] {
     return [
@@ -405,195 +405,6 @@ export class DungeonGenerator {
         east: [{ x: x + width, y }, { x: x + width, y: y + height }],
         south: [{ x: x + width, y: y + height }, { x, y: y + height }],
         west: [{ x, y: y + height }, { x, y }],
-      },
-    };
-  }
-
-  /**
-   * Creates an L-shaped room piece
-   * The L has a main rectangle with a smaller extension
-   */
-  private createLShapedRoom(
-    x: number,
-    y: number,
-    widthCells: number,
-    heightCells: number,
-    gridSize: number
-  ): DungeonPiece {
-    const width = widthCells * gridSize;
-    const height = heightCells * gridSize;
-
-    // L-shape: main rectangle + extension
-    // Extension is 40-60% of the size
-    const extensionWidth = Math.floor(widthCells * 0.5) * gridSize;
-    const extensionHeight = Math.floor(heightCells * 0.5) * gridSize;
-
-    // Randomly choose L orientation (4 possible orientations)
-    const orientation = Math.floor(Math.random() * 4);
-
-    // Create walls based on orientation
-    const wallSegments: DungeonPiece['wallSegments'] = {
-      north: undefined,
-      east: undefined,
-      south: undefined,
-      west: undefined,
-    };
-
-    switch (orientation) {
-      case 0: // Extension on bottom-right
-        wallSegments.north = [{ x, y }, { x: x + width, y }];
-        wallSegments.east = [
-          { x: x + width, y },
-          { x: x + width, y: y + extensionHeight },
-          { x: x + extensionWidth, y: y + extensionHeight },
-          { x: x + extensionWidth, y: y + height },
-          { x: x + width, y: y + height },
-        ];
-        wallSegments.south = [{ x: x + width, y: y + height }, { x, y: y + height }];
-        wallSegments.west = [{ x, y: y + height }, { x, y }];
-        break;
-
-      case 1: // Extension on bottom-left
-        wallSegments.north = [{ x, y }, { x: x + width, y }];
-        wallSegments.east = [{ x: x + width, y }, { x: x + width, y: y + height }];
-        wallSegments.south = [{ x: x + width, y: y + height }, { x: x + width - extensionWidth, y: y + height }];
-        wallSegments.west = [
-          { x: x + width - extensionWidth, y: y + height },
-          { x: x + width - extensionWidth, y: y + extensionHeight },
-          { x, y: y + extensionHeight },
-          { x, y },
-        ];
-        break;
-
-      case 2: // Extension on top-right
-        wallSegments.north = [
-          { x, y },
-          { x, y: y + height - extensionHeight },
-          { x: x + extensionWidth, y: y + height - extensionHeight },
-          { x: x + extensionWidth, y },
-          { x: x + width, y },
-        ];
-        wallSegments.east = [{ x: x + width, y }, { x: x + width, y: y + height }];
-        wallSegments.south = [{ x: x + width, y: y + height }, { x, y: y + height }];
-        wallSegments.west = [{ x, y: y + height }, { x, y }];
-        break;
-
-      case 3: // Extension on top-left
-        wallSegments.north = [
-          { x, y },
-          { x: x + width, y },
-          { x: x + width, y: y + height - extensionHeight },
-          { x: x + width - extensionWidth, y: y + height - extensionHeight },
-          { x: x + width - extensionWidth, y },
-        ];
-        wallSegments.east = [{ x: x + width, y }, { x: x + width, y: y + height }];
-        wallSegments.south = [{ x: x + width, y: y + height }, { x, y: y + height }];
-        wallSegments.west = [{ x, y: y + height }, { x, y }];
-        break;
-    }
-
-    return {
-      type: 'room',
-      bounds: { x, y, width, height },
-      wallSegments,
-    };
-  }
-
-  /**
-   * Creates a T-shaped room piece
-   * Consists of a horizontal bar with a vertical stem
-   */
-  private createTShapedRoom(
-    x: number,
-    y: number,
-    widthCells: number,
-    heightCells: number,
-    gridSize: number
-  ): DungeonPiece {
-    const width = widthCells * gridSize;
-    const height = heightCells * gridSize;
-
-    // T-shape dimensions
-    const stemWidth = Math.ceil(widthCells / 3) * gridSize;
-    const stemOffset = (width - stemWidth) / 2;
-
-    // Simple T: horizontal bar at top, stem going down
-    const barHeight = Math.ceil(heightCells / 3) * gridSize;
-
-    return {
-      type: 'room',
-      bounds: { x, y, width, height },
-      wallSegments: {
-        north: [{ x, y }, { x: x + width, y }],
-        east: [
-          { x: x + width, y },
-          { x: x + width, y: y + barHeight },
-          { x: x + stemOffset + stemWidth, y: y + barHeight },
-          { x: x + stemOffset + stemWidth, y: y + height },
-        ],
-        south: [{ x: x + stemOffset + stemWidth, y: y + height }, { x: x + stemOffset, y: y + height }],
-        west: [
-          { x: x + stemOffset, y: y + height },
-          { x: x + stemOffset, y: y + barHeight },
-          { x, y: y + barHeight },
-          { x, y },
-        ],
-      },
-    };
-  }
-
-  /**
-   * Creates a cross/plus-shaped room piece
-   * Four arms extending from a central area
-   */
-  private createCrossShapedRoom(
-    x: number,
-    y: number,
-    widthCells: number,
-    heightCells: number,
-    gridSize: number
-  ): DungeonPiece {
-    const width = widthCells * gridSize;
-    const height = heightCells * gridSize;
-
-    // Cross dimensions - arms are 1/3 of total width/height
-    const armWidth = Math.ceil(widthCells / 3) * gridSize;
-    const armHeight = Math.ceil(heightCells / 3) * gridSize;
-    const leftArmStart = (width - armWidth) / 2;
-    const topArmStart = (height - armHeight) / 2;
-
-    return {
-      type: 'room',
-      bounds: { x, y, width, height },
-      wallSegments: {
-        // North wall (top arm)
-        north: [
-          { x, y: y + topArmStart },
-          { x: x + leftArmStart, y: y + topArmStart },
-          { x: x + leftArmStart, y },
-          { x: x + leftArmStart + armWidth, y },
-          { x: x + leftArmStart + armWidth, y: y + topArmStart },
-          { x: x + width, y: y + topArmStart },
-        ],
-        // East wall (right arm)
-        east: [
-          { x: x + width, y: y + topArmStart },
-          { x: x + width, y: y + topArmStart + armHeight },
-          { x: x + leftArmStart + armWidth, y: y + topArmStart + armHeight },
-          { x: x + leftArmStart + armWidth, y: y + height },
-        ],
-        // South wall (bottom arm)
-        south: [
-          { x: x + leftArmStart + armWidth, y: y + height },
-          { x: x + leftArmStart, y: y + height },
-          { x: x + leftArmStart, y: y + topArmStart + armHeight },
-          { x, y: y + topArmStart + armHeight },
-        ],
-        // West wall (left arm)
-        west: [
-          { x, y: y + topArmStart + armHeight },
-          { x, y: y + topArmStart },
-        ],
       },
     };
   }

@@ -25,13 +25,6 @@ interface StairsLayerProps {
  * @param isWorldView - If true, player view (currently no behavioral difference)
  */
 const StairsLayer = ({ stairs, isWorldView }: StairsLayerProps) => {
-  // Debug: Log stairs rendering info
-  console.log('[StairsLayer] Rendering', {
-    stairsCount: stairs.length,
-    isWorldView,
-    stairs: stairs.map(s => ({ id: s.id, x: s.x, y: s.y, type: s.type, direction: s.direction }))
-  });
-
   return (
     <>
       {stairs.map((stair) => (

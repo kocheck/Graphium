@@ -161,8 +161,8 @@ export interface Door {
  * They provide visual indication of level transitions in multi-floor dungeons.
  *
  * @property id - Unique identifier
- * @property x - Top-left position X in world coordinates
- * @property y - Top-left position Y in world coordinates
+ * @property x - Center position X in world coordinates
+ * @property y - Center position Y in world coordinates
  * @property direction - Which compass direction the stairs face ('north', 'south', 'east', 'west')
  * @property type - Whether stairs go up or down ('up' or 'down')
  * @property width - Width in pixels (typically 2 * gridSize for 2-cell width)
@@ -285,6 +285,10 @@ export interface GameState {
   toggleDoor: (id: string) => void;
   updateDoorState: (id: string, isOpen: boolean) => void;
   updateDoorLock: (id: string, isLocked: boolean) => void;
+  /** Updates all unlocked doors to the specified state (locked doors are skipped) */
+  updateAllDoorStates: (isOpen: boolean) => void;
+  /** Updates all doors to the specified lock state */
+  updateAllDoorLocks: (isLocked: boolean) => void;
 
   // Stairs Actions
   addStairs: (stairs: Stairs) => void;
@@ -589,6 +593,12 @@ export const useGameStore = create<GameState>((set, get) => {
     })),
     updateDoorLock: (id: string, isLocked: boolean) => set((state) => ({
       doors: state.doors.map(d => d.id === id ? { ...d, isLocked } : d)
+    })),
+    updateAllDoorStates: (isOpen: boolean) => set((state) => ({
+      doors: state.doors.map(d => d.isLocked ? d : { ...d, isOpen })
+    })),
+    updateAllDoorLocks: (isLocked: boolean) => set((state) => ({
+      doors: state.doors.map(d => ({ ...d, isLocked }))
     })),
 
     // --- Stairs Actions ---

@@ -77,7 +77,7 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [door.isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [door.isOpen]); // animationProgress is intentionally excluded - it's managed by the animation loop, not a dependency
 
   const handleClick = () => {
     // Only allow toggling in DM mode (not World View)
@@ -89,12 +89,6 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
   const thickness = door.thickness ?? 12; // Thicker default for better visibility
   const halfSize = door.size / 2;
 
-  // Determine cursor style based on mode and lock state
-  let cursor = 'default';
-  if (!isWorldView) {
-    cursor = door.isLocked ? 'not-allowed' : 'pointer';
-  }
-
   return (
     <Group
       x={door.x}
@@ -105,8 +99,8 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
     >
       {/* Render door with animated transition */}
       {animationProgress < 1
-        ? renderAnimatedDoor(door, halfSize, thickness, cursor, animationProgress)
-        : renderOpenDoor(door, halfSize, thickness, cursor)}
+        ? renderAnimatedDoor(door, halfSize, thickness, animationProgress)
+        : renderOpenDoor(door, halfSize, thickness)}
 
       {/* Lock icon overlay (shown when door is locked) */}
       {door.isLocked && renderLockIcon(door)}
@@ -123,10 +117,9 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
  * @param door - Door object
  * @param halfSize - Half of door size
  * @param thickness - Door thickness
- * @param cursor - Cursor style
  * @param progress - Animation progress (0 = closed, 1 = open)
  */
-function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, cursor: string, progress: number) {
+function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, progress: number) {
   const swingAngle = 90 * progress; // Gradually increase swing angle from 0° to 90°
   const closedOpacity = 1 - progress; // Fade out closed door
   const openOpacity = progress; // Fade in open door
@@ -233,73 +226,11 @@ function renderSwingArc(door: Door, halfSize: number, thickness: number, swingAn
 }
 
 /**
- * Renders a closed door as a white rectangle with black outline
- *
- * This matches the standard tabletop RPG door symbol for immediate recognition.
- */
-function renderClosedDoor(door: Door, halfSize: number, thickness: number, cursor: string) {
-  if (door.orientation === 'horizontal') {
-    return (
-      <>
-        {/* Main door rectangle */}
-        <Rect
-          x={-halfSize}
-          y={-thickness / 2}
-          width={door.size}
-          height={thickness}
-          fill="#ffffff"           // White fill
-          stroke="#000000"         // Black outline
-          strokeWidth={2}
-          shadowColor="rgba(0,0,0,0.3)"
-          shadowBlur={4}
-          shadowOffsetX={1}
-          shadowOffsetY={1}
-          hitStrokeWidth={0}       // Don't expand hit area beyond visible shape
-        />
-        {/* Subtle door handle/knob */}
-        <Circle
-          x={halfSize - 10}
-          y={0}
-          radius={2}
-          fill="#666666"           // Dark gray knob
-        />
-      </>
-    );
-  } else {
-    // Vertical door
-    return (
-      <>
-        <Rect
-          x={-thickness / 2}
-          y={-halfSize}
-          width={thickness}
-          height={door.size}
-          fill="#ffffff"
-          stroke="#000000"
-          strokeWidth={2}
-          shadowColor="rgba(0,0,0,0.3)"
-          shadowBlur={4}
-          shadowOffsetX={1}
-          shadowOffsetY={1}
-          hitStrokeWidth={0}
-        />
-        <Circle
-          x={0}
-          y={halfSize - 10}
-          radius={2}
-          fill="#666666"
-        />
-      </>
-    );
-  }
-}
-
-/**
  * Renders an open door as a swing arc
  *
  * The arc shows the door swung open to provide visual feedback that the door is accessible.
  */
-function renderOpenDoor(door: Door, halfSize: number, thickness: number, cursor: string) {
+function renderOpenDoor(door: Door, halfSize: number, thickness: number) {
   const swingAngle = 90; // Door swings 90 degrees when open
 
   // Calculate arc parameters based on swing direction

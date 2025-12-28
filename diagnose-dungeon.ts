@@ -1,11 +1,14 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 /**
  * Standalone diagnostic script for DungeonGenerator
  * Tests door generation and grid alignment without needing test framework
+ * 
+ * Usage: npx tsx diagnose-dungeon.ts
+ * Requires: tsx package (npx will install it automatically)
  */
 
-import { DungeonGenerator } from './src/utils/DungeonGenerator.ts';
+import { DungeonGenerator } from './src/utils/DungeonGenerator';
 
 console.log('='.repeat(60));
 console.log('DUNGEON GENERATOR DIAGNOSTIC TOOL');
@@ -17,7 +20,7 @@ try {
   // Create generator
   console.log('\n[1/6] Creating DungeonGenerator...');
   const generator = new DungeonGenerator({
-    numRooms: 5,  // Fixed: was 'roomCount', should be 'numRooms'
+    numRooms: 5,
     gridSize
   });
   console.log('✅ Generator created with numRooms:', 5);

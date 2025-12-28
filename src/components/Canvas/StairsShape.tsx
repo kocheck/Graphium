@@ -28,6 +28,10 @@ const StairsShape = ({ stairs, isWorldView }: StairsShapeProps) => {
   const strokeColor = '#000000';
   const arrowColor = stairs.type === 'up' ? '#4a90e2' : '#e24a4a'; // Blue for up, red for down
 
+  // Calculate top-left offset for center positioning
+  const halfWidth = stairs.width / 2;
+  const halfHeight = stairs.height / 2;
+
   return (
     <Group
       x={stairs.x}
@@ -37,8 +41,8 @@ const StairsShape = ({ stairs, isWorldView }: StairsShapeProps) => {
     >
       {/* Background rectangle */}
       <Rect
-        x={0}
-        y={0}
+        x={-halfWidth}
+        y={-halfHeight}
         width={stairs.width}
         height={stairs.height}
         fill={fillColor}
@@ -47,13 +51,13 @@ const StairsShape = ({ stairs, isWorldView }: StairsShapeProps) => {
       />
 
       {/* Render stair treads based on direction */}
-      {renderStairTreads(stairs, strokeColor)}
+      {renderStairTreads(stairs, strokeColor, halfWidth, halfHeight)}
 
       {/* Directional arrow */}
-      {renderDirectionalArrow(stairs, arrowColor)}
+      {renderDirectionalArrow(stairs, arrowColor, halfWidth, halfHeight)}
 
       {/* Type indicator (UP/DOWN text) */}
-      {renderTypeIndicator(stairs)}
+      {renderTypeIndicator(stairs, halfWidth, halfHeight)}
     </Group>
   );
 };
@@ -63,8 +67,10 @@ const StairsShape = ({ stairs, isWorldView }: StairsShapeProps) => {
  *
  * @param stairs - Stairs object
  * @param strokeColor - Color for tread lines
+ * @param halfWidth - Half width for centering
+ * @param halfHeight - Half height for centering
  */
-function renderStairTreads(stairs: Stairs, strokeColor: string) {
+function renderStairTreads(stairs: Stairs, strokeColor: string, halfWidth: number, halfHeight: number) {
   const numSteps = 5; // Number of visible step lines
   const lines = [];
 
@@ -72,11 +78,11 @@ function renderStairTreads(stairs: Stairs, strokeColor: string) {
     // Horizontal treads for north/south stairs
     const stepHeight = stairs.height / numSteps;
     for (let i = 1; i < numSteps; i++) {
-      const y = i * stepHeight;
+      const y = i * stepHeight - halfHeight;
       lines.push(
         <Line
           key={`tread-${i}`}
-          points={[0, y, stairs.width, y]}
+          points={[-halfWidth, y, halfWidth, y]}
           stroke={strokeColor}
           strokeWidth={1}
           opacity={0.6}
@@ -87,11 +93,11 @@ function renderStairTreads(stairs: Stairs, strokeColor: string) {
     // Vertical treads for east/west stairs
     const stepWidth = stairs.width / numSteps;
     for (let i = 1; i < numSteps; i++) {
-      const x = i * stepWidth;
+      const x = i * stepWidth - halfWidth;
       lines.push(
         <Line
           key={`tread-${i}`}
-          points={[x, 0, x, stairs.height]}
+          points={[x, -halfHeight, x, halfHeight]}
           stroke={strokeColor}
           strokeWidth={1}
           opacity={0.6}
@@ -108,10 +114,12 @@ function renderStairTreads(stairs: Stairs, strokeColor: string) {
  *
  * @param stairs - Stairs object
  * @param arrowColor - Color for the arrow
+ * @param halfWidth - Half width for centering
+ * @param halfHeight - Half height for centering
  */
-function renderDirectionalArrow(stairs: Stairs, arrowColor: string) {
-  const centerX = stairs.width / 2;
-  const centerY = stairs.height / 2;
+function renderDirectionalArrow(stairs: Stairs, arrowColor: string, halfWidth: number, halfHeight: number) {
+  const centerX = 0; // Already centered by Group
+  const centerY = 0; // Already centered by Group
   const arrowSize = Math.min(stairs.width, stairs.height) * 0.3;
 
   let arrowPath = '';
@@ -152,7 +160,7 @@ function renderDirectionalArrow(stairs: Stairs, arrowColor: string) {
  * For now, this is primarily handled by color and arrow color.
  * Could add text labels if needed in the future.
  */
-function renderTypeIndicator(stairs: Stairs) {
+function renderTypeIndicator(stairs: Stairs, halfWidth: number, halfHeight: number) {
   // Optional: Could add "UP" or "DOWN" text here
   // For now, the arrow color (blue/red) indicates the type
   return null;
