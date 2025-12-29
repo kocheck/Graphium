@@ -1878,8 +1878,8 @@ const CanvasManager = ({
                     y={selectionRect.y}
                     width={selectionRect.width}
                     height={selectionRect.height}
-                    fill="rgba(0, 161, 255, 0.3)"
-                    stroke="#00a1ff"
+                    fill="rgba(37, 99, 235, 0.3)"
+                    stroke="#2563eb"
                     listening={false}
                 />
             )}
