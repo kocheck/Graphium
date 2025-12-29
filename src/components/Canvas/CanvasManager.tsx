@@ -273,6 +273,7 @@ const CanvasManager = ({
   // Real-time Drag Tracking (for performance and multi-user sync)
   const dragPositionsRef = useRef<Map<string, { x: number, y: number }>>(new Map());
   const [draggingTokenIds, setDraggingTokenIds] = useState<Set<string>>(new Set());
+  const [dragRenderTick, setDragRenderTick] = useState(0); // Force re-render during drag
   const dragBroadcastThrottleRef = useRef<Map<string, number>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number, y: number }>>(new Map()); // For multi-token drag
   const DRAG_BROADCAST_THROTTLE_MS = 16; // ~60fps
@@ -796,8 +797,8 @@ const CanvasManager = ({
         });
       }
 
-      // Force layer redraw to show updated token positions
-      tokenLayerRef.current?.batchDraw();
+      // Force React re-render so components recalculate displayX/displayY from updated ref
+      setDragRenderTick(tick => tick + 1);
     }
   }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, throttleDragBroadcast, isWorldView]);
 
@@ -896,6 +897,7 @@ const CanvasManager = ({
     // Reset drag state
     setTokenMouseDownStart(null);
     setIsDraggingWithThreshold(false);
+    setDragRenderTick(0);
   }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast]);
 
   // Drawing Handlers

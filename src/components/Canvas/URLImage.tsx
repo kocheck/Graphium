@@ -58,8 +58,8 @@ const URLImage = ({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSele
       scaleX={scaleX}
       scaleY={scaleY}
       draggable={draggable}
-      onClick={onSelect}
-      onTap={onSelect}
+      onMouseDown={onSelect}
+      onTouchStart={onSelect}
       onDragEnd={onDragEnd}
       onDragStart={onDragStart}
       onDragMove={onDragMove}
