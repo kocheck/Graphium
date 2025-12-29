@@ -14,7 +14,7 @@ export interface URLImageProps {
   scaleX?: number;
   scaleY?: number;
   id: string;
-  onSelect?: (e: KonvaEventObject<MouseEvent>) => void;
+  onSelect?: (e: KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onDragStart?: (e: KonvaEventObject<DragEvent>) => void;
   onDragMove?: (e: KonvaEventObject<DragEvent>) => void;
   onDragEnd?: (e: KonvaEventObject<DragEvent>) => void;
@@ -58,8 +58,8 @@ const URLImage = ({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSele
       scaleX={scaleX}
       scaleY={scaleY}
       draggable={draggable}
-      onClick={onSelect}
-      onTap={onSelect}
+      onMouseDown={onSelect}
+      onTouchStart={onSelect}
       onDragEnd={onDragEnd}
       onDragStart={onDragStart}
       onDragMove={onDragMove}
