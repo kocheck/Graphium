@@ -15,10 +15,20 @@ import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import FogOfWarLayer from './FogOfWarLayer';
 import DoorLayer from './DoorLayer';
 import StairsLayer from './StairsLayer';
+import PaperNoiseOverlay from './PaperNoiseOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
+import MeasurementOverlay from './MeasurementOverlay';
 
 import URLImage from './URLImage';
+
+import { MeasurementMode, Measurement } from '../../types/measurement';
+import {
+  euclideanDistance,
+  pixelsToFeet,
+  calculateConeVertices,
+  DistanceMode
+} from '../../utils/measurement';
 
 // Zoom constants
 const MIN_SCALE = 0.1;
@@ -48,17 +58,19 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number, y: num
 /**
  * Props for CanvasManager component
  *
- * @property {string} tool - Active drawing/interaction tool (select, marker, eraser, wall, door)
+ * @property {string} tool - Active drawing/interaction tool (select, marker, eraser, wall, door, measure)
  * @property {string} color - Color for marker tool (hex format)
  * @property {string} doorOrientation - Orientation for door placement (horizontal, vertical)
  * @property {boolean} isWorldView - If true, restricts interactions for player-facing World View
+ * @property {MeasurementMode} measurementMode - Active measurement mode (ruler, blast, cone)
  */
 interface CanvasManagerProps {
-  tool?: 'select' | 'marker' | 'eraser' | 'wall' | 'door';
+  tool?: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
   color?: string;
   doorOrientation?: 'horizontal' | 'vertical';
   isWorldView?: boolean;
   onSelectionChange?: (selectedIds: string[]) => void;
+  measurementMode?: MeasurementMode;
 }
 
 /**
@@ -97,7 +109,14 @@ interface CanvasManagerProps {
  * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
  * @see {@link file://../../App.tsx App.tsx} for UI sanitization
  */
-const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = 'horizontal', isWorldView = false, onSelectionChange }: CanvasManagerProps) => {
+const CanvasManager = ({
+  tool = 'select',
+  color = '#df4b26',
+  doorOrientation = 'horizontal',
+  isWorldView = false,
+  onSelectionChange,
+  measurementMode = 'ruler'
+}: CanvasManagerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -183,6 +202,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);
 
+  // Measurement state
+  const activeMeasurement = useGameStore(s => s.activeMeasurement);
+  const dmMeasurement = useGameStore(s => s.dmMeasurement);
+
   // Actions - these are stable
   const addToken = useGameStore(s => s.addToken);
   const addDrawing = useGameStore(s => s.addDrawing);
@@ -195,6 +218,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
   const setIsCalibrating = useGameStore(s => s.setIsCalibrating);
   const updateMapTransform = useGameStore(s => s.updateMapTransform);
   const updateDrawingTransform = useGameStore(s => s.updateDrawingTransform);
+  const setActiveMeasurement = useGameStore(s => s.setActiveMeasurement);
 
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null); // Temp line points
@@ -202,6 +226,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
 
   // Door Tool State
   const [doorPreviewPos, setDoorPreviewPos] = useState<{ x: number, y: number } | null>(null);
+
+  // Measurement State
+  const isMeasuring = useRef(false);
+  const measurementStart = useRef<{ x: number, y: number } | null>(null);
 
   // Calibration State
   const calibrationStart = useRef<{x: number, y: number} | null>(null);
@@ -229,6 +257,14 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
   const dragBroadcastThrottleRef = useRef<Map<string, number>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number, y: number }>>(new Map()); // For multi-token drag
   const DRAG_BROADCAST_THROTTLE_MS = 16; // ~60fps
+
+  // Press-and-Hold Drag State (threshold-based drag detection)
+  const DRAG_THRESHOLD = 5; // pixels - minimum movement to trigger drag
+  const [tokenMouseDownStart, setTokenMouseDownStart] = useState<{ x: number, y: number, tokenId: string, stagePos: { x: number, y: number } } | null>(null);
+  const [isDraggingWithThreshold, setIsDraggingWithThreshold] = useState(false);
+
+  // Empty handlers for disabled Konva drag events (defined once to prevent re-renders)
+  const emptyDragHandler = useCallback(() => {}, []);
 
   // Navigation State
   const [isSpacePressed, setIsSpacePressed] = useState(false);
@@ -363,6 +399,14 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
               removeTokens(selectedIds);
               removeDrawings(selectedIds);
               setSelectedIds([]);
+          }
+      }
+
+      // Escape - clear active measurement
+      if (e.key === 'Escape') {
+          if (isWorldView) return; // Block in World View
+          if (activeMeasurement) {
+              setActiveMeasurement(null);
           }
       }
 
@@ -607,153 +651,216 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
     }
   }, [isWorldView]);
 
-  // Token Drag Handlers (Real-time sync)
-  const handleTokenDragStart = useCallback((_e: KonvaEventObject<DragEvent>, tokenId: string) => {
-    const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
-    const primaryToken = tokens.find(t => t.id === tokenId);
-    if (!primaryToken) return;
+  // Token Mouse Handlers (Threshold-based Press-and-Hold)
+  const handleTokenMouseDown = useCallback((e: KonvaEventObject<MouseEvent>, tokenId: string) => {
+    if (tool !== 'select') return;
 
-    // Track dragging state
-    setDraggingTokenIds(new Set(tokenIds));
-    setItemsForDuplication(tokenIds);
+    // Record the initial pointer position and the token's starting stage position
+    const stage = e.target.getStage();
+    if (!stage) return;
 
-    // Store initial offsets for multi-token drag
-    dragStartOffsetsRef.current.clear();
+    const pointerPos = stage.getRelativePointerPosition();
+    if (!pointerPos) return;
 
-    tokenIds.forEach(id => {
-      const token = tokens.find(t => t.id === id);
-      if (token) {
-        if (id === tokenId) {
-          dragStartOffsetsRef.current.set(id, { x: 0, y: 0 });
-        } else {
-          // Store offset from primary token
-          dragStartOffsetsRef.current.set(id, {
-            x: token.x - primaryToken.x,
-            y: token.y - primaryToken.y
-          });
-        }
-      }
-    });
-
-    // Broadcast drag start to World View
-    const ipcRenderer = window.ipcRenderer;
-    if (ipcRenderer && !isWorldView) {
-      tokenIds.forEach(id => {
-        const token = tokens.find(t => t.id === id);
-        if (token) {
-          ipcRenderer.send('SYNC_WORLD_STATE', {
-            type: 'TOKEN_DRAG_START',
-            payload: { id, x: token.x, y: token.y }
-          });
-        }
-      });
-    }
-  }, [selectedIds, tokens, isWorldView]);
-
-  const handleTokenDragMove = useCallback((e: KonvaEventObject<DragEvent>, tokenId: string) => {
-    const x = e.target.x();
-    const y = e.target.y();
-
-    // Update local drag position (no store update for performance)
-    dragPositionsRef.current.set(tokenId, { x, y });
-
-    // Throttled broadcast to World View
-    throttleDragBroadcast(tokenId, x, y);
-
-    // If dragging multiple tokens, update their relative positions
-    const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
-    if (tokenIds.length > 1) {
-      tokenIds.forEach(id => {
-        if (id !== tokenId) {
-          const offset = dragStartOffsetsRef.current.get(id);
-          if (offset) {
-            const newX = x + offset.x;
-            const newY = y + offset.y;
-            dragPositionsRef.current.set(id, { x: newX, y: newY });
-            throttleDragBroadcast(id, newX, newY);
-          }
-        }
-      });
-    }
-  }, [selectedIds, throttleDragBroadcast]);
-
-  const handleTokenDragEnd = useCallback((e: KonvaEventObject<DragEvent>, tokenId: string) => {
-    const x = e.target.x();
-    const y = e.target.y();
     const token = tokens.find(t => t.id === tokenId);
     if (!token) return;
 
-    const width = gridSize * token.scale;
-    const height = gridSize * token.scale;
-    const snapped = snapToGrid(x, y, gridSize, width, height);
+    e.evt.stopPropagation();
 
-    const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
+    // Store the initial mouse position and token position
+    setTokenMouseDownStart({
+      x: pointerPos.x,
+      y: pointerPos.y,
+      tokenId,
+      stagePos: { x: token.x, y: token.y }
+    });
+    setIsDraggingWithThreshold(false);
+  }, [tool, tokens]);
 
-    // Store committed positions to avoid redundant lookups and use fresh data
-    const committedPositions = new Map<string, { x: number, y: number }>();
+  const handleTokenMouseMove = useCallback((e: KonvaEventObject<MouseEvent>) => {
+    if (!tokenMouseDownStart || tool !== 'select') return;
 
-    // Handle multi-token drag end
-    if (tokenIds.length > 1) {
-      // Get current drag position for primary token (or fall back to stored position)
-      const dragPos = dragPositionsRef.current.get(tokenId) ?? { x: token.x, y: token.y };
-      const offsetX = snapped.x - dragPos.x;
-      const offsetY = snapped.y - dragPos.y;
+    const stage = e.target.getStage();
+    if (!stage) return;
 
+    const pointerPos = stage.getRelativePointerPosition();
+    if (!pointerPos) return;
+
+    // Calculate distance moved
+    const dx = pointerPos.x - tokenMouseDownStart.x;
+    const dy = pointerPos.y - tokenMouseDownStart.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If we've moved more than the threshold, start dragging
+    if (!isDraggingWithThreshold && distance > DRAG_THRESHOLD) {
+      setIsDraggingWithThreshold(true);
+
+      const tokenId = tokenMouseDownStart.tokenId;
+      const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
+      const primaryToken = tokens.find(t => t.id === tokenId);
+      if (!primaryToken) return;
+
+      // Initialize drag state
+      setDraggingTokenIds(new Set(tokenIds));
+      setItemsForDuplication(tokenIds);
+
+      // Store initial offsets for multi-token drag
+      dragStartOffsetsRef.current.clear();
       tokenIds.forEach(id => {
-        const t = tokens.find(tk => tk.id === id);
-        if (t) {
-          const dragPosForToken = dragPositionsRef.current.get(id) ?? { x: t.x, y: t.y };
-          const newX = dragPosForToken.x + offsetX;
-          const newY = dragPosForToken.y + offsetY;
-          const snappedPos = snapToGrid(newX, newY, gridSize, gridSize * t.scale, gridSize * t.scale);
-          updateTokenPosition(id, snappedPos.x, snappedPos.y);
-          // Store the committed position
-          committedPositions.set(id, { x: snappedPos.x, y: snappedPos.y });
+        const token = tokens.find(t => t.id === id);
+        if (token) {
+          if (id === tokenId) {
+            dragStartOffsetsRef.current.set(id, { x: 0, y: 0 });
+          } else {
+            dragStartOffsetsRef.current.set(id, {
+              x: token.x - primaryToken.x,
+              y: token.y - primaryToken.y
+            });
+          }
         }
       });
-    } else {
-      // Single token drag
-      updateTokenPosition(tokenId, snapped.x, snapped.y);
-      committedPositions.set(tokenId, { x: snapped.x, y: snapped.y });
+
+      // Broadcast drag start to World View
+      const ipcRenderer = window.ipcRenderer;
+      if (ipcRenderer && !isWorldView) {
+        tokenIds.forEach(id => {
+          const token = tokens.find(t => t.id === id);
+          if (token) {
+            ipcRenderer.send('SYNC_WORLD_STATE', {
+              type: 'TOKEN_DRAG_START',
+              payload: { id, x: token.x, y: token.y }
+            });
+          }
+        });
+      }
     }
 
-    // Broadcast drag end to World View with committed positions
-    const ipcRenderer = window.ipcRenderer;
-    if (ipcRenderer && !isWorldView) {
-      tokenIds.forEach(id => {
-        const pos = committedPositions.get(id);
-        if (pos) {
-          ipcRenderer.send('SYNC_WORLD_STATE', {
-            type: 'TOKEN_DRAG_END',
-            payload: { id, x: pos.x, y: pos.y }
+    // If we're dragging, update positions
+    if (isDraggingWithThreshold) {
+      const tokenId = tokenMouseDownStart.tokenId;
+      const worldDx = dx;
+      const worldDy = dy;
+      const newX = tokenMouseDownStart.stagePos.x + worldDx;
+      const newY = tokenMouseDownStart.stagePos.y + worldDy;
+
+      // Update drag position for primary token
+      dragPositionsRef.current.set(tokenId, { x: newX, y: newY });
+      throttleDragBroadcast(tokenId, newX, newY);
+
+      // Update multi-token positions
+      const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
+      if (tokenIds.length > 1) {
+        tokenIds.forEach(id => {
+          if (id !== tokenId) {
+            const offset = dragStartOffsetsRef.current.get(id);
+            if (offset) {
+              const offsetX = newX + offset.x;
+              const offsetY = newY + offset.y;
+              dragPositionsRef.current.set(id, { x: offsetX, y: offsetY });
+              throttleDragBroadcast(id, offsetX, offsetY);
+            }
+          }
+        });
+      }
+    }
+  }, [tokenMouseDownStart, isDraggingWithThreshold, tool, tokens, selectedIds, throttleDragBroadcast, isWorldView]);
+
+  const handleTokenMouseUp = useCallback((e: KonvaEventObject<MouseEvent>) => {
+    if (!tokenMouseDownStart) return;
+
+    const tokenId = tokenMouseDownStart.tokenId;
+    const token = tokens.find(t => t.id === tokenId);
+    if (!token) {
+      setTokenMouseDownStart(null);
+      setIsDraggingWithThreshold(false);
+      return;
+    }
+
+    // If we were dragging, finalize the drag
+    if (isDraggingWithThreshold) {
+      const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
+      const committedPositions = new Map<string, { x: number, y: number }>();
+
+      // Get the final position and snap to grid
+      const dragPos = dragPositionsRef.current.get(tokenId);
+      if (dragPos) {
+        const width = gridSize * token.scale;
+        const height = gridSize * token.scale;
+        const snapped = snapToGrid(dragPos.x, dragPos.y, gridSize, width, height);
+
+        // Handle multi-token drag end
+        if (tokenIds.length > 1) {
+          const offsetX = snapped.x - dragPos.x;
+          const offsetY = snapped.y - dragPos.y;
+
+          tokenIds.forEach(id => {
+            const t = tokens.find(tk => tk.id === id);
+            if (t) {
+              const dragPosForToken = dragPositionsRef.current.get(id) ?? { x: t.x, y: t.y };
+              const newX = dragPosForToken.x + offsetX;
+              const newY = dragPosForToken.y + offsetY;
+              const snappedPos = snapToGrid(newX, newY, gridSize, gridSize * t.scale, gridSize * t.scale);
+              updateTokenPosition(id, snappedPos.x, snappedPos.y);
+              committedPositions.set(id, { x: snappedPos.x, y: snappedPos.y });
+            }
+          });
+        } else {
+          updateTokenPosition(tokenId, snapped.x, snapped.y);
+          committedPositions.set(tokenId, { x: snapped.x, y: snapped.y });
+        }
+
+        // Broadcast drag end to World View
+        const ipcRenderer = window.ipcRenderer;
+        if (ipcRenderer && !isWorldView) {
+          tokenIds.forEach(id => {
+            const pos = committedPositions.get(id);
+            if (pos) {
+              ipcRenderer.send('SYNC_WORLD_STATE', {
+                type: 'TOKEN_DRAG_END',
+                payload: { id, x: pos.x, y: pos.y }
+              });
+            }
           });
         }
-      });
-    }
 
-    // Clear drag state
-    tokenIds.forEach(id => {
-      dragPositionsRef.current.delete(id);
-      dragBroadcastThrottleRef.current.delete(id);
-      dragStartOffsetsRef.current.delete(id);
-    });
-    setDraggingTokenIds(new Set());
-    setItemsForDuplication([]);
-
-    // Duplication Logic (Option/Alt + Drag)
-    // BLOCKED in World View (players cannot duplicate tokens)
-    if (isAltPressed && !isWorldView) {
-      tokenIds.forEach(id => {
-        const t = tokens.find(tk => tk.id === id);
-        const pos = committedPositions.get(id);
-        if (t && pos) {
-          // Use the newly committed position for duplication
-          addToken({ ...t, id: crypto.randomUUID(), x: pos.x, y: pos.y });
+        // Duplication Logic (Option/Alt + Drag)
+        if (isAltPressed && !isWorldView) {
+          tokenIds.forEach(id => {
+            const t = tokens.find(tk => tk.id === id);
+            const pos = committedPositions.get(id);
+            if (t && pos) {
+              addToken({ ...t, id: crypto.randomUUID(), x: pos.x, y: pos.y });
+            }
+          });
         }
+      }
+
+      // Clear drag state
+      tokenIds.forEach(id => {
+        dragPositionsRef.current.delete(id);
+        dragBroadcastThrottleRef.current.delete(id);
+        dragStartOffsetsRef.current.delete(id);
       });
+      setDraggingTokenIds(new Set());
+      setItemsForDuplication([]);
+    } else {
+      // No drag occurred - treat as selection click
+      e.evt.stopPropagation();
+      if (e.evt.shiftKey) {
+        if (selectedIds.includes(tokenId)) {
+          setSelectedIds(selectedIds.filter(id => id !== tokenId));
+        } else {
+          setSelectedIds([...selectedIds, tokenId]);
+        }
+      } else {
+        setSelectedIds([tokenId]);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapToGrid is imported from utils/grid and is a pure utility function with no dependencies
-  }, [selectedIds, tokens, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken]);
+
+    // Reset drag state
+    setTokenMouseDownStart(null);
+    setIsDraggingWithThreshold(false);
+  }, [tokenMouseDownStart, isDraggingWithThreshold, tokens, selectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast]);
 
   // Drawing Handlers
   const handleMouseDown = (e: any) => {
@@ -765,6 +872,11 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
       return;
     }
 
+    // Clear active measurement when clicking (unless we're starting a new measurement)
+    if (tool !== 'measure' && activeMeasurement) {
+        setActiveMeasurement(null);
+    }
+
     // CALIBRATION LOGIC
     // BLOCKED in World View (players cannot calibrate grid)
     if (isCalibrating) {
@@ -773,6 +885,15 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
         const pos = stage.getRelativePointerPosition();
         calibrationStart.current = { x: pos.x, y: pos.y };
         setCalibrationRect({ x: pos.x, y: pos.y, width: 0, height: 0 });
+        return;
+    }
+
+    // If measure tool, start measurement
+    if (tool === 'measure') {
+        if (isWorldView) return; // Block measurement creation in World View
+        isMeasuring.current = true;
+        const pos = e.target.getStage().getRelativePointerPosition();
+        measurementStart.current = { x: pos.x, y: pos.y };
         return;
     }
 
@@ -847,6 +968,72 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
     } else {
       // Clear door preview when not using door tool
       setDoorPreviewPos(null);
+    }
+
+    // Handle token dragging with threshold
+    if (tokenMouseDownStart) {
+      handleTokenMouseMove(e);
+      return;
+    }
+
+    // Handle measurement tool
+    if (tool === 'measure' && isMeasuring.current && measurementStart.current) {
+        const stage = e.target.getStage();
+        const pos = stage.getRelativePointerPosition();
+        const origin = measurementStart.current;
+
+        let measurement: Measurement;
+
+        switch (measurementMode) {
+            case 'ruler': {
+                const distanceFeet = pixelsToFeet(
+                    euclideanDistance(origin, pos),
+                    gridSize,
+                    DistanceMode.EUCLIDEAN
+                );
+                measurement = {
+                    id: 'active',
+                    type: 'ruler',
+                    origin,
+                    end: pos,
+                    distanceFeet
+                };
+                break;
+            }
+            case 'blast': {
+                const radius = euclideanDistance(origin, pos);
+                const radiusFeet = pixelsToFeet(radius, gridSize, DistanceMode.EUCLIDEAN);
+                measurement = {
+                    id: 'active',
+                    type: 'blast',
+                    origin,
+                    radius,
+                    radiusFeet
+                };
+                break;
+            }
+            case 'cone': {
+                const vertices = calculateConeVertices(origin, pos);
+                const lengthFeet = pixelsToFeet(
+                    euclideanDistance(origin, pos),
+                    gridSize,
+                    DistanceMode.EUCLIDEAN
+                );
+                measurement = {
+                    id: 'active',
+                    type: 'cone',
+                    origin,
+                    target: pos,
+                    lengthFeet,
+                    angleDegrees: 53,
+                    vertices
+                };
+                break;
+            }
+        }
+
+        setActiveMeasurement(measurement);
+        return;
     }
 
     if (tool !== 'select') {
@@ -935,6 +1122,21 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
         console.log('[CanvasManager] Door placed successfully! Total doors should now be:', doors.length + 1);
       }
       return;
+    }
+
+    // Handle token mouse up (drag end or selection)
+    if (tokenMouseDownStart) {
+      handleTokenMouseUp(e);
+      return;
+    }
+
+    // MEASUREMENT LOGIC
+    if (tool === 'measure' && isMeasuring.current) {
+        isMeasuring.current = false;
+        measurementStart.current = null;
+        // Keep the measurement visible until user clicks elsewhere or hits Esc
+        // The measurement will be cleared in the next mousedown or by Esc key
+        return;
     }
 
     // CALIBRATION LOGIC
@@ -1278,6 +1480,19 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
                 />
             )}
 
+            {/* Paper Noise Texture Overlay - Adds subtle texture to map */}
+            {map && (
+                <PaperNoiseOverlay
+                    x={map.x}
+                    y={map.y}
+                    width={map.width}
+                    height={map.height}
+                    scaleX={map.scale}
+                    scaleY={map.scale}
+                    opacity={0.15}
+                />
+            )}
+
             <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} />
         </Layer>
 
@@ -1512,25 +1727,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
                     y={displayY}
                     width={gridSize * token.scale}
                     height={gridSize * token.scale}
-                    draggable={tool === 'select'}
+                    draggable={false}
                     opacity={isDragging ? 0.7 : undefined}
-                    onSelect={(e) => {
-                         if (tool === 'select') {
-                             e.evt.stopPropagation();
-                             if (e.evt.shiftKey) {
-                                 if (selectedIds.includes(token.id)) {
-                                     setSelectedIds(selectedIds.filter(id => id !== token.id));
-                                 } else {
-                                     setSelectedIds([...selectedIds, token.id]);
-                                 }
-                             } else {
-                                 setSelectedIds([token.id]);
-                             }
-                         }
-                    }}
-                     onDragStart={(e) => handleTokenDragStart(e, token.id)}
-                     onDragMove={(e) => handleTokenDragMove(e, token.id)}
-                     onDragEnd={(e) => handleTokenDragEnd(e, token.id)}
+                    onSelect={(e) => handleTokenMouseDown(e, token.id)}
+                    onDragStart={emptyDragHandler}
+                    onDragMove={emptyDragHandler}
+                    onDragEnd={emptyDragHandler}
                 />
                 </TokenErrorBoundary>
                 );
@@ -1562,6 +1764,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', doorOrientation = '
                     listening={false}
                 />
             )}
+
+            {/* Measurement Overlay - Shows active measurement (Architect View) or DM's broadcast (World View) */}
+            <MeasurementOverlay
+                measurement={isWorldView ? dmMeasurement : activeMeasurement}
+                gridSize={gridSize}
+            />
 
             {/* Transformer: BLOCKED in World View (players cannot scale/rotate) */}
             {!isWorldView && (

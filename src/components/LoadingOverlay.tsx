@@ -74,10 +74,18 @@
  */
 
 import { useGameStore } from '../store/gameStore';
+import { rollForMessage } from '../utils/systemMessages';
+import { useMemo } from 'react';
 
 export function LoadingOverlay() {
   // Subscribe to pause state from Zustand store
   const isGamePaused = useGameStore((state) => state.isGamePaused);
+
+  // Roll for a random loading message; stable during a pause, re-rolls when pause state changes
+  const loadingMessage = useMemo(
+    () => rollForMessage('LOADING_PAUSE_OVERLAY'),
+    [isGamePaused],
+  );
 
   // Don't render overlay when game is not paused
   if (!isGamePaused) {
@@ -99,7 +107,7 @@ export function LoadingOverlay() {
 
         {/* Loading Message */}
         <h2 className="text-3xl font-bold text-white mb-2">Please Wait</h2>
-        <p className="text-xl text-gray-300">The Dungeon Master is preparing the next scene...</p>
+        <p className="text-xl text-gray-300">{loadingMessage}</p>
       </div>
     </div>
   );

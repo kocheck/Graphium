@@ -52,6 +52,7 @@
 
 import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { rollForMessage } from '../utils/systemMessages';
 
 export function PauseManager() {
   const setIsGamePaused = useGameStore((state) => state.setIsGamePaused);
@@ -72,7 +73,7 @@ export function PauseManager() {
       })
       .catch((error: Error) => {
         console.error('[PauseManager] Failed to fetch initial pause state:', error);
-        showToast('Failed to sync pause state', 'error');
+        showToast(rollForMessage('PAUSE_STATE_SYNC_FAILED'), 'error');
       });
 
     /**

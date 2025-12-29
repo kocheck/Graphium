@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { rollForMessage } from '../utils/systemMessages';
 
 /**
  * MapNavigator component
@@ -58,7 +59,7 @@ const MapNavigator: React.FC = () => {
     const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
         e.stopPropagation();
         showConfirmDialog(
-            `Are you sure you want to delete map "${name}"? This cannot be undone.`,
+            rollForMessage('CONFIRM_MAP_DELETE', { mapName: name }),
             () => deleteMap(id),
             'Delete'
         );

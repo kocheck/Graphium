@@ -8,6 +8,8 @@
  */
 
 import { useGameStore } from '../store/gameStore';
+import { rollForMessage } from '../utils/systemMessages';
+import { useMemo } from 'react';
 
 interface ErrorFallbackUIProps {
   error?: Error;
@@ -20,6 +22,10 @@ interface ErrorFallbackUIProps {
  */
 export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps) {
   const clearDungeonDialog = useGameStore((state) => state.clearDungeonDialog);
+
+  // Roll for random error messages (memoized per error instance to keep them stable)
+  const errorTitle = useMemo(() => rollForMessage('ERROR_DUNGEON_GENERATION_TITLE'), [error]);
+  const errorDesc = useMemo(() => rollForMessage('ERROR_DUNGEON_GENERATION_DESC'), [error]);
 
   const handleClose = () => {
     onReset();
@@ -51,10 +57,10 @@ export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps) {
               className="text-lg font-semibold mb-2"
               style={{ color: 'var(--app-text)' }}
             >
-              Dungeon Generation Error
+              {errorTitle}
             </h2>
             <p className="text-sm mb-3" style={{ color: 'var(--app-text-muted)' }}>
-              Something went wrong while generating the dungeon. This can happen if:
+              {errorDesc}
             </p>
             <ul className="text-sm space-y-1 mb-3 ml-4 list-disc" style={{ color: 'var(--app-text-muted)' }}>
               <li>Room size constraints are too restrictive</li>

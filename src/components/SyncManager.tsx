@@ -153,14 +153,8 @@ type SyncAction =
   | { type: 'DOOR_REMOVE'; payload: { id: string } }
   | { type: 'DOOR_TOGGLE'; payload: { id: string } }
   | { type: 'MAP_UPDATE'; payload: any }
-  | {
-      type: 'GRID_UPDATE';
-      payload: {
-        gridSize?: number;
-        gridType?: string;
-        isDaylightMode?: boolean;
-      };
-    };
+  | { type: 'GRID_UPDATE'; payload: { gridSize?: number; gridType?: string; isDaylightMode?: boolean } }
+  | { type: 'MEASUREMENT_UPDATE'; payload: any | null }; // Broadcast measurement to World View
 
 /**
  * SyncManager handles real-time state synchronization between windows
@@ -547,6 +541,11 @@ const SyncManager = () => {
                 isDaylightMode: action.payload.isDaylightMode,
               }),
             });
+            break;
+
+          case 'MEASUREMENT_UPDATE':
+            // Update DM's measurement in World View
+            store.setDmMeasurement(action.payload);
             break;
 
           default:
@@ -1016,6 +1015,16 @@ const SyncManager = () => {
         }
         if (Object.keys(gridChanges).length > 0) {
           actions.push({ type: 'GRID_UPDATE', payload: gridChanges });
+        }
+
+        // Check for measurement changes (only sync if broadcast is enabled)
+        if (currentState.broadcastMeasurement) {
+          if (!isEqual(prevState.activeMeasurement, currentState.activeMeasurement)) {
+            actions.push({ type: 'MEASUREMENT_UPDATE', payload: currentState.activeMeasurement });
+          }
+        } else if (prevState.broadcastMeasurement && !currentState.broadcastMeasurement) {
+          // If broadcast was just disabled, clear the measurement in World View
+          actions.push({ type: 'MEASUREMENT_UPDATE', payload: null });
         }
 
         return actions;

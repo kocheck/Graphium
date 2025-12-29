@@ -29,8 +29,8 @@ import { useState, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 interface MobileToolbarProps {
-  tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door';
-  setTool: (tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door') => void;
+  tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
+  setTool: (tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure') => void;
   color: string;
   setColor: (color: string) => void;
   doorOrientation?: 'horizontal' | 'vertical';

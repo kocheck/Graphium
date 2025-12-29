@@ -18,6 +18,7 @@ import { useCommandPalette } from './hooks/useCommandPalette'
 import { getStorage } from './services/storage';
 import { useIsMobile } from './hooks/useMediaQuery';
 import MobileToolbar from './components/MobileToolbar';
+import { rollForMessage } from './utils/systemMessages';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -95,12 +96,18 @@ function App() {
 
   // Active tool state (controls CanvasManager behavior)
   // Only used in Architect View; World View always uses 'select' with restricted interactions
-  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'door'>('select');
+  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure'>('select');
   const [color, setColor] = useState('#df4b26');
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Door tool state
   const [doorOrientation, setDoorOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+
+  // Measurement tool state
+  const [measurementMode, setMeasurementMode] = useState<'ruler' | 'blast' | 'cone'>('ruler');
+  const broadcastMeasurement = useGameStore((state) => state.broadcastMeasurement);
+  const setBroadcastMeasurement = useGameStore((state) => state.setBroadcastMeasurement);
+  const setActiveMeasurement = useGameStore((state) => state.setActiveMeasurement);
 
   // Selected tokens state (for TokenInspector)
   const [selectedTokenIds, setSelectedTokenIds] = useState<string[]>([]);
@@ -123,7 +130,7 @@ function App() {
       await window.ipcRenderer.invoke('TOGGLE_PAUSE');
     } catch (e) {
       console.error('[App] Failed to toggle pause:', e);
-      showToast('Failed to toggle pause state', 'error');
+      showToast(rollForMessage('PAUSE_TOGGLE_FAILED'), 'error');
     }
   };
 
@@ -176,6 +183,10 @@ function App() {
     loadLibrary();
   }, [isArchitectView]);
 
+  // Clear active measurement when measurement mode changes to prevent confusion
+  useEffect(() => {
+    setActiveMeasurement(null);
+  }, [measurementMode, setActiveMeasurement]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -217,13 +228,16 @@ function App() {
           setTool('door');
           break;
         case 'r':
-          // Toggle door orientation when 'R' is pressed (rotate)
+          // If door tool is active, rotate door orientation
+          // Otherwise, switch to measure tool
           if (tool === 'door') {
             setDoorOrientation(prev => {
               const newOrientation = prev === 'horizontal' ? 'vertical' : 'horizontal';
               console.log('[App] R key pressed - door orientation changed from', prev, 'to', newOrientation);
               return newOrientation;
             });
+          } else {
+            setTool('measure');
           }
           break;
         case 'i':
@@ -234,7 +248,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isArchitectView]);
+  }, [isArchitectView, tool]);
 
   // Handle Menu Commands (Electron IPC)
   useEffect(() => {
@@ -248,10 +262,10 @@ function App() {
             const campaignToSave = useGameStore.getState().campaign;
             const storage = getStorage();
             const result = await storage.saveCampaign(campaignToSave);
-            if (result) store.showToast('Campaign Saved Successfully!', 'success');
+            if (result) store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
         } catch (e) {
             console.error(e);
-            useGameStore.getState().showToast('Failed to save: ' + e, 'error');
+            useGameStore.getState().showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
         }
     };
 
@@ -261,11 +275,11 @@ function App() {
             const campaign = await storage.loadCampaign();
             if (campaign) {
                 useGameStore.getState().loadCampaign(campaign);
-                useGameStore.getState().showToast('Campaign Loaded!', 'success');
+                useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
             }
         } catch (e) {
             console.error(e);
-            useGameStore.getState().showToast('Failed to load: ' + e, 'error');
+            useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
         }
     };
 
@@ -333,6 +347,7 @@ function App() {
           doorOrientation={doorOrientation}
           isWorldView={isWorldView}
           onSelectionChange={setSelectedTokenIds}
+          measurementMode={measurementMode}
         />
 
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
@@ -391,6 +406,45 @@ function App() {
                {doorOrientation === 'horizontal' ? '↔' : '↕'}
              </button>
            )}
+           <div className="toolbar-divider w-px mx-1"></div>
+           {/* Measurement Tool with Mode Selector */}
+           <div className="flex gap-1 items-center">
+             <button
+               className={`btn btn-tool ${tool === 'measure' ? 'active' : ''}`}
+               onClick={() => setTool('measure')}
+               title="Measurement & AoE Tool">
+               📏 Measure (R)
+             </button>
+             {tool === 'measure' && (
+               <div className="flex gap-1 ml-1 items-center">
+                 <button
+                   className={`btn btn-mode ${measurementMode === 'ruler' ? 'active' : ''}`}
+                   onClick={() => setMeasurementMode('ruler')}
+                   title="Ruler: Measure distance between two points">
+                   Ruler
+                 </button>
+                 <button
+                   className={`btn btn-mode ${measurementMode === 'blast' ? 'active' : ''}`}
+                   onClick={() => setMeasurementMode('blast')}
+                   title="Blast: Circular AoE (e.g., Fireball)">
+                   Blast
+                 </button>
+                 <button
+                   className={`btn btn-mode ${measurementMode === 'cone' ? 'active' : ''}`}
+                   onClick={() => setMeasurementMode('cone')}
+                   title="Cone: 53° cone AoE (e.g., Burning Hands)">
+                   Cone
+                 </button>
+                 <div className="toolbar-divider w-px mx-1 h-6"></div>
+                 <button
+                   className={`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}`}
+                   onClick={() => setBroadcastMeasurement(!broadcastMeasurement)}
+                   title="Broadcast measurements to players in World View">
+                   {broadcastMeasurement ? '📡 Broadcasting' : '📡 Local Only'}
+                 </button>
+               </div>
+             )}
+           </div>
            <div className="toolbar-divider w-px mx-1"></div>
            <button
              className="btn btn-tool"
