@@ -1,11 +1,12 @@
 import { useMemo, useEffect, useRef } from 'react';
 import { Shape, Group } from 'react-konva';
-import { Token, Drawing, Door, MapConfig, useGameStore } from '../../store/gameStore';
+import { Drawing, Door, MapConfig, useGameStore } from '../../store/gameStore';
+import { ResolvedTokenData } from '../../hooks/useTokenData';
 import URLImage from './URLImage';
 import { Point, WallSegment } from '../../types/geometry';
 
 interface FogOfWarLayerProps {
-  tokens: Token[];
+  tokens: ResolvedTokenData[];
   drawings: Drawing[];
   doors: Door[];
   gridSize: number;

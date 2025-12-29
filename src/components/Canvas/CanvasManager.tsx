@@ -1679,7 +1679,7 @@ const CanvasManager = ({
               />
             )}
 
-            {isAltPressed && tokens.filter(t => itemsForDuplication.includes(t.id)).map(ghostToken => (
+            {isAltPressed && resolvedTokens.filter(t => itemsForDuplication.includes(t.id)).map(ghostToken => (
                 <URLImage
                    key={`ghost-${ghostToken.id}`}
                    id={`ghost-${ghostToken.id}`} // Unique ID

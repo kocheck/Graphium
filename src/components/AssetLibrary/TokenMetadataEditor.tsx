@@ -15,7 +15,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import type { TokenLibraryItem } from '../../store/gameStore';
 import { useGameStore } from '../../store/gameStore';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 
