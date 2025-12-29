@@ -179,6 +179,11 @@ function App() {
     loadLibrary();
   }, [isArchitectView]);
 
+  // Clear active measurement when measurement mode changes to prevent confusion
+  useEffect(() => {
+    const setActiveMeasurement = useGameStore.getState().setActiveMeasurement;
+    setActiveMeasurement(null);
+  }, [measurementMode]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
