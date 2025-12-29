@@ -137,7 +137,7 @@ export const calculateConeVertices = (
   origin: Point,
   target: Point,
   coneAngleDegrees: number = 53
-): Point[] => {
+): [Point, Point, Point] => {
   // Calculate the central axis angle
   const centralAngle = calculateAngle(origin, target);
   const length = euclideanDistance(origin, target);

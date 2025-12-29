@@ -23,7 +23,7 @@
 import React from 'react';
 import { Group, Line, Circle, Text } from 'react-konva';
 import { Measurement } from '../../types/measurement';
-import { calculateConeVertices, formatDistance, formatRadius, formatCone } from '../../utils/measurement';
+import { formatDistance, formatRadius, formatCone } from '../../utils/measurement';
 
 interface MeasurementOverlayProps {
   /** Active measurement to display (null = no measurement) */
@@ -87,26 +87,26 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
 
         {/* Distance label */}
         <Text
-          x={midX}
+          x={midX - gridSize}
           y={midY - 20}
+          width={gridSize * 2}
           text={text}
           fontSize={16}
           fontStyle="bold"
           fill={textColor}
           padding={4}
           align="center"
-          offsetX={text.length * 4} // Center the text horizontally
         />
         <Text
-          x={midX}
+          x={midX - gridSize}
           y={midY - 20}
+          width={gridSize * 2}
           text={text}
           fontSize={16}
           fontStyle="bold"
           fill={textBgColor}
           padding={4}
           align="center"
-          offsetX={text.length * 4}
           shadowColor="black"
           shadowBlur={4}
           shadowOffset={{ x: 0, y: 0 }}
@@ -148,15 +148,15 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
         <Group>
           {/* Text background */}
           <Text
-            x={textX}
+            x={textX - gridSize}
             y={textY}
+            width={gridSize * 2}
             text={text}
             fontSize={16}
             fontStyle="bold"
             fill={textBgColor}
             padding={6}
             align="center"
-            offsetX={text.length * 4.5}
             shadowColor="black"
             shadowBlur={4}
             shadowOffset={{ x: 0, y: 0 }}
@@ -164,15 +164,15 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
           />
           {/* Text foreground */}
           <Text
-            x={textX}
+            x={textX - gridSize}
             y={textY}
+            width={gridSize * 2}
             text={text}
             fontSize={16}
             fontStyle="bold"
             fill={textColor}
             padding={6}
             align="center"
-            offsetX={text.length * 4.5}
           />
         </Group>
       </Group>
@@ -220,15 +220,15 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
         <Group>
           {/* Text background */}
           <Text
-            x={textX}
+            x={textX - gridSize}
             y={textY}
+            width={gridSize * 2}
             text={text}
             fontSize={16}
             fontStyle="bold"
             fill={textBgColor}
             padding={6}
             align="center"
-            offsetX={text.length * 4}
             shadowColor="black"
             shadowBlur={4}
             shadowOffset={{ x: 0, y: 0 }}
@@ -236,15 +236,15 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
           />
           {/* Text foreground */}
           <Text
-            x={textX}
+            x={textX - gridSize}
             y={textY}
+            width={gridSize * 2}
             text={text}
             fontSize={16}
             fontStyle="bold"
             fill={textColor}
             padding={6}
             align="center"
-            offsetX={text.length * 4}
           />
         </Group>
       </Group>

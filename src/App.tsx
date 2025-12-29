@@ -366,26 +366,26 @@ function App() {
              {tool === 'measure' && (
                <div className="flex gap-1 ml-1 items-center">
                  <button
-                   className={`btn btn-sm ${measurementMode === 'ruler' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                   className={`btn btn-mode ${measurementMode === 'ruler' ? 'active' : ''}`}
                    onClick={() => setMeasurementMode('ruler')}
                    title="Ruler: Measure distance between two points">
                    Ruler
                  </button>
                  <button
-                   className={`btn btn-sm ${measurementMode === 'blast' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                   className={`btn btn-mode ${measurementMode === 'blast' ? 'active' : ''}`}
                    onClick={() => setMeasurementMode('blast')}
                    title="Blast: Circular AoE (e.g., Fireball)">
                    Blast
                  </button>
                  <button
-                   className={`btn btn-sm ${measurementMode === 'cone' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                   className={`btn btn-mode ${measurementMode === 'cone' ? 'active' : ''}`}
                    onClick={() => setMeasurementMode('cone')}
                    title="Cone: 53° cone AoE (e.g., Burning Hands)">
                    Cone
                  </button>
                  <div className="toolbar-divider w-px mx-1 h-6"></div>
                  <button
-                   className={`btn btn-sm ${broadcastMeasurement ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                   className={`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}`}
                    onClick={() => setBroadcastMeasurement(!broadcastMeasurement)}
                    title="Broadcast measurements to players in World View">
                    {broadcastMeasurement ? '📡 Broadcasting' : '📡 Local Only'}

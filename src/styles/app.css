@@ -69,6 +69,48 @@
   background: var(--app-accent-solid-hover);
 }
 
+/* Measurement mode buttons (smaller, used as sub-options) */
+.btn-mode {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--app-bg-active);
+  color: var(--app-text-primary);
+}
+
+.btn-mode:hover {
+  background: var(--app-bg-hover);
+}
+
+.btn-mode.active {
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+}
+
+.btn-mode.active:hover {
+  background: var(--app-accent-solid-hover);
+}
+
+/* Broadcast toggle button (success state for active) */
+.btn-broadcast {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--app-bg-active);
+  color: var(--app-text-primary);
+}
+
+.btn-broadcast:hover {
+  background: var(--app-bg-hover);
+}
+
+.btn-broadcast.active {
+  background: var(--app-success-solid);
+  color: white;
+}
+
+.btn-broadcast.active:hover {
+  background: var(--app-success-solid-hover);
+}
+
 /* Sidebar */
 .sidebar {
   background: var(--app-bg-surface);
