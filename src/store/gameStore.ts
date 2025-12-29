@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { rollForMessage } from '../utils/systemMessages';
+import { Measurement } from '../types/measurement';
 
 /**
  * Token represents a character, creature, or object on the battlemap
@@ -245,6 +246,11 @@ export interface GameState {
   isGamePaused: boolean;
   isMobileSidebarOpen: boolean;
 
+  // --- Measurement State (Temporary, not persisted) ---
+  activeMeasurement: Measurement | null;
+  broadcastMeasurement: boolean;
+  dmMeasurement: Measurement | null; // For World View to display DM's measurement
+
   // --- Campaign State ---
   campaign: Campaign;
 
@@ -322,6 +328,11 @@ export interface GameState {
   clearDungeonDialog: () => void;
   setIsGamePaused: (isPaused: boolean) => void;
   setMobileSidebarOpen: (isOpen: boolean) => void;
+
+  // Measurement Actions
+  setActiveMeasurement: (measurement: Measurement | null) => void;
+  setBroadcastMeasurement: (broadcast: boolean) => void;
+  setDmMeasurement: (measurement: Measurement | null) => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => {
@@ -349,6 +360,12 @@ export const useGameStore = create<GameState>((set, get) => {
     dungeonDialog: false,
     isGamePaused: false,
     isMobileSidebarOpen: false,
+
+    // --- Initial State (Measurement) ---
+    activeMeasurement: null,
+    broadcastMeasurement: false,
+    dmMeasurement: null,
+
     campaign: initialCampaign,
 
     // --- Campaign Actions ---
@@ -644,5 +661,10 @@ export const useGameStore = create<GameState>((set, get) => {
     clearDungeonDialog: () => set({ dungeonDialog: false }),
     setIsGamePaused: (isPaused: boolean) => set({ isGamePaused: isPaused }),
     setMobileSidebarOpen: (isOpen: boolean) => set({ isMobileSidebarOpen: isOpen }),
+
+    // --- Measurement Actions ---
+    setActiveMeasurement: (measurement: Measurement | null) => set({ activeMeasurement: measurement }),
+    setBroadcastMeasurement: (broadcast: boolean) => set({ broadcastMeasurement: broadcast }),
+    setDmMeasurement: (measurement: Measurement | null) => set({ dmMeasurement: measurement }),
   };
 });

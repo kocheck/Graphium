@@ -29,8 +29,8 @@ import { useState, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 interface MobileToolbarProps {
-  tool: 'select' | 'marker' | 'eraser' | 'wall';
-  setTool: (tool: 'select' | 'marker' | 'eraser' | 'wall') => void;
+  tool: 'select' | 'marker' | 'eraser' | 'wall' | 'measure';
+  setTool: (tool: 'select' | 'marker' | 'eraser' | 'wall' | 'measure') => void;
   color: string;
   setColor: (color: string) => void;
   isGamePaused: boolean;

@@ -17,8 +17,17 @@ import StairsLayer from './StairsLayer';
 import PaperNoiseOverlay from './PaperNoiseOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
+import MeasurementOverlay from './MeasurementOverlay';
 
 import URLImage from './URLImage';
+
+import { MeasurementMode, Measurement } from '../../types/measurement';
+import {
+  euclideanDistance,
+  pixelsToFeet,
+  calculateConeVertices,
+  DistanceMode
+} from '../../utils/measurement';
 
 // Zoom constants
 const MIN_SCALE = 0.1;
@@ -48,15 +57,17 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number, y: num
 /**
  * Props for CanvasManager component
  *
- * @property {string} tool - Active drawing/interaction tool (select, marker, eraser)
+ * @property {string} tool - Active drawing/interaction tool (select, marker, eraser, wall, measure)
  * @property {string} color - Color for marker tool (hex format)
  * @property {boolean} isWorldView - If true, restricts interactions for player-facing World View
+ * @property {MeasurementMode} measurementMode - Active measurement mode (ruler, blast, cone)
  */
 interface CanvasManagerProps {
-  tool?: 'select' | 'marker' | 'eraser' | 'wall';
+  tool?: 'select' | 'marker' | 'eraser' | 'wall' | 'measure';
   color?: string;
   isWorldView?: boolean;
   onSelectionChange?: (selectedIds: string[]) => void;
+  measurementMode?: MeasurementMode;
 }
 
 /**
@@ -95,7 +106,13 @@ interface CanvasManagerProps {
  * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
  * @see {@link file://../../App.tsx App.tsx} for UI sanitization
  */
-const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false, onSelectionChange }: CanvasManagerProps) => {
+const CanvasManager = ({
+  tool = 'select',
+  color = '#df4b26',
+  isWorldView = false,
+  onSelectionChange,
+  measurementMode = 'ruler'
+}: CanvasManagerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -141,6 +158,10 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);
 
+  // Measurement state
+  const activeMeasurement = useGameStore(s => s.activeMeasurement);
+  const dmMeasurement = useGameStore(s => s.dmMeasurement);
+
   // Actions - these are stable
   const addToken = useGameStore(s => s.addToken);
   const addDrawing = useGameStore(s => s.addDrawing);
@@ -152,10 +173,15 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const setIsCalibrating = useGameStore(s => s.setIsCalibrating);
   const updateMapTransform = useGameStore(s => s.updateMapTransform);
   const updateDrawingTransform = useGameStore(s => s.updateDrawingTransform);
+  const setActiveMeasurement = useGameStore(s => s.setActiveMeasurement);
 
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null); // Temp line points
   const [tempLine, setTempLine] = useState<Drawing | null>(null);
+
+  // Measurement State
+  const isMeasuring = useRef(false);
+  const measurementStart = useRef<{ x: number, y: number } | null>(null);
 
   // Calibration State
   const calibrationStart = useRef<{x: number, y: number} | null>(null);
@@ -325,6 +351,14 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
               removeTokens(selectedIds);
               removeDrawings(selectedIds);
               setSelectedIds([]);
+          }
+      }
+
+      // Escape - clear active measurement
+      if (e.key === 'Escape') {
+          if (isWorldView) return; // Block in World View
+          if (activeMeasurement) {
+              setActiveMeasurement(null);
           }
       }
 
@@ -784,6 +818,11 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const handleMouseDown = (e: any) => {
     if (isSpacePressed) return; // Allow panning
 
+    // Clear active measurement when clicking (unless we're starting a new measurement)
+    if (tool !== 'measure' && activeMeasurement) {
+        setActiveMeasurement(null);
+    }
+
     // CALIBRATION LOGIC
     // BLOCKED in World View (players cannot calibrate grid)
     if (isCalibrating) {
@@ -792,6 +831,15 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         const pos = stage.getRelativePointerPosition();
         calibrationStart.current = { x: pos.x, y: pos.y };
         setCalibrationRect({ x: pos.x, y: pos.y, width: 0, height: 0 });
+        return;
+    }
+
+    // If measure tool, start measurement
+    if (tool === 'measure') {
+        if (isWorldView) return; // Block measurement creation in World View
+        isMeasuring.current = true;
+        const pos = e.target.getStage().getRelativePointerPosition();
+        measurementStart.current = { x: pos.x, y: pos.y };
         return;
     }
 
@@ -859,6 +907,66 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
       return;
     }
 
+    // Handle measurement tool
+    if (tool === 'measure' && isMeasuring.current && measurementStart.current) {
+        const stage = e.target.getStage();
+        const pos = stage.getRelativePointerPosition();
+        const origin = measurementStart.current;
+
+        let measurement: Measurement;
+
+        switch (measurementMode) {
+            case 'ruler': {
+                const distanceFeet = pixelsToFeet(
+                    euclideanDistance(origin, pos),
+                    gridSize,
+                    DistanceMode.EUCLIDEAN
+                );
+                measurement = {
+                    id: 'active',
+                    type: 'ruler',
+                    origin,
+                    end: pos,
+                    distanceFeet
+                };
+                break;
+            }
+            case 'blast': {
+                const radius = euclideanDistance(origin, pos);
+                const radiusFeet = pixelsToFeet(radius, gridSize, DistanceMode.EUCLIDEAN);
+                measurement = {
+                    id: 'active',
+                    type: 'blast',
+                    origin,
+                    radius,
+                    radiusFeet
+                };
+                break;
+            }
+            case 'cone': {
+                const vertices = calculateConeVertices(origin, pos);
+                const lengthFeet = pixelsToFeet(
+                    euclideanDistance(origin, pos),
+                    gridSize,
+                    DistanceMode.EUCLIDEAN
+                );
+                measurement = {
+                    id: 'active',
+                    type: 'cone',
+                    origin,
+                    target: pos,
+                    lengthFeet,
+                    angleDegrees: 53,
+                    vertices
+                };
+                break;
+            }
+        }
+
+        setActiveMeasurement(measurement);
+        return;
+    }
+
     if (tool !== 'select') {
         // BLOCKED in World View (no drawing tools)
         if (isWorldView) return;
@@ -920,6 +1028,15 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     if (tokenMouseDownStart) {
       handleTokenMouseUp(e);
       return;
+    }
+
+    // MEASUREMENT LOGIC
+    if (tool === 'measure' && isMeasuring.current) {
+        isMeasuring.current = false;
+        measurementStart.current = null;
+        // Keep the measurement visible until user clicks elsewhere or hits Esc
+        // The measurement will be cleared in the next mousedown or by Esc key
+        return;
     }
 
     // CALIBRATION LOGIC
@@ -1499,6 +1616,12 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                     listening={false}
                 />
             )}
+
+            {/* Measurement Overlay - Shows active measurement (Architect View) or DM's broadcast (World View) */}
+            <MeasurementOverlay
+                measurement={isWorldView ? dmMeasurement : activeMeasurement}
+                gridSize={gridSize}
+            />
 
             {/* Transformer: BLOCKED in World View (players cannot scale/rotate) */}
             {!isWorldView && (

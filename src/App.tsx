@@ -96,9 +96,15 @@ function App() {
 
   // Active tool state (controls CanvasManager behavior)
   // Only used in Architect View; World View always uses 'select' with restricted interactions
-  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall'>('select');
+  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'measure'>('select');
   const [color, setColor] = useState('#df4b26');
   const colorInputRef = useRef<HTMLInputElement>(null);
+
+  // Measurement tool state
+  const [measurementMode, setMeasurementMode] = useState<'ruler' | 'blast' | 'cone'>('ruler');
+  const broadcastMeasurement = useGameStore((state) => state.broadcastMeasurement);
+  const setBroadcastMeasurement = useGameStore((state) => state.setBroadcastMeasurement);
+  const setActiveMeasurement = useGameStore((state) => state.setActiveMeasurement);
 
   // Selected tokens state (for TokenInspector)
   const [selectedTokenIds, setSelectedTokenIds] = useState<string[]>([]);
@@ -174,6 +180,10 @@ function App() {
     loadLibrary();
   }, [isArchitectView]);
 
+  // Clear active measurement when measurement mode changes to prevent confusion
+  useEffect(() => {
+    setActiveMeasurement(null);
+  }, [measurementMode, setActiveMeasurement]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -197,6 +207,9 @@ function App() {
           break;
         case 'w':
           setTool('wall');
+          break;
+        case 'r':
+          setTool('measure');
           break;
         case 'i':
           colorInputRef.current?.click();
@@ -304,6 +317,7 @@ function App() {
           color={color}
           isWorldView={isWorldView}
           onSelectionChange={setSelectedTokenIds}
+          measurementMode={measurementMode}
         />
 
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
@@ -348,6 +362,45 @@ function App() {
            <button
              className={`btn btn-tool ${tool === 'wall' ? 'active' : ''}`}
              onClick={() => setTool('wall')}>Wall (W)</button>
+           <div className="toolbar-divider w-px mx-1"></div>
+           {/* Measurement Tool with Mode Selector */}
+           <div className="flex gap-1 items-center">
+             <button
+               className={`btn btn-tool ${tool === 'measure' ? 'active' : ''}`}
+               onClick={() => setTool('measure')}
+               title="Measurement & AoE Tool">
+               📏 Measure (R)
+             </button>
+             {tool === 'measure' && (
+               <div className="flex gap-1 ml-1 items-center">
+                 <button
+                   className={`btn btn-mode ${measurementMode === 'ruler' ? 'active' : ''}`}
+                   onClick={() => setMeasurementMode('ruler')}
+                   title="Ruler: Measure distance between two points">
+                   Ruler
+                 </button>
+                 <button
+                   className={`btn btn-mode ${measurementMode === 'blast' ? 'active' : ''}`}
+                   onClick={() => setMeasurementMode('blast')}
+                   title="Blast: Circular AoE (e.g., Fireball)">
+                   Blast
+                 </button>
+                 <button
+                   className={`btn btn-mode ${measurementMode === 'cone' ? 'active' : ''}`}
+                   onClick={() => setMeasurementMode('cone')}
+                   title="Cone: 53° cone AoE (e.g., Burning Hands)">
+                   Cone
+                 </button>
+                 <div className="toolbar-divider w-px mx-1 h-6"></div>
+                 <button
+                   className={`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}`}
+                   onClick={() => setBroadcastMeasurement(!broadcastMeasurement)}
+                   title="Broadcast measurements to players in World View">
+                   {broadcastMeasurement ? '📡 Broadcasting' : '📡 Local Only'}
+                 </button>
+               </div>
+             )}
+           </div>
            <div className="toolbar-divider w-px mx-1"></div>
            <button
              className="btn btn-tool"
