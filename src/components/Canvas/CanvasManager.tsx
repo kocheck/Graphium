@@ -17,6 +17,7 @@ import StairsLayer from './StairsLayer';
 import PaperNoiseOverlay from './PaperNoiseOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
+import { resolveTokenData } from '../../hooks/useTokenData';
 
 import URLImage from './URLImage';
 
@@ -130,6 +131,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   // Atomic selectors to prevent infinite re-render loops and avoid useShallow crashes
   const map = useGameStore(s => s.map);
   const tokens = useGameStore(s => s.tokens);
+  const tokenLibrary = useGameStore(s => s.campaign.tokenLibrary);
   const drawings = useGameStore(s => s.drawings);
   const doors = useGameStore(s => s.doors);
   const stairs = useGameStore(s => s.stairs);
@@ -137,6 +139,14 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const gridType = useGameStore(s => s.gridType);
   const isCalibrating = useGameStore(s => s.isCalibrating);
   const isDaylightMode = useGameStore(s => s.isDaylightMode);
+
+  // Resolve token data by merging instance properties with library defaults
+  // This implements the Prototype/Instance pattern where tokens can inherit
+  // properties (scale, type, visionRadius, name) from their library prototypes
+  const resolvedTokens = useMemo(
+    () => tokens.map(token => resolveTokenData(token, tokenLibrary)),
+    [tokens, tokenLibrary]
+  );
 
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);
@@ -230,7 +240,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
       }
 
       // Expand bounds to include PC tokens (so we can always navigate to party)
-      const pcTokens = tokens.filter(t => t.type === 'PC');
+      const pcTokens = resolvedTokens.filter(t => t.type === 'PC');
       if (pcTokens.length > 0) {
           pcTokens.forEach(token => {
               const tokenSize = gridSize * token.scale;
@@ -484,12 +494,15 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         try {
             const data = JSON.parse(jsonData);
             if (data.type === 'LIBRARY_TOKEN') {
+                // Create token instance with reference to library item
+                // Metadata (scale, type, visionRadius, name) will be inherited from library
                 addToken({
                     id: crypto.randomUUID(),
                     x,
                     y,
                     src: data.src,
-                    scale: 1,
+                    libraryItemId: data.libraryItemId, // Reference to prototype
+                    // scale, type, visionRadius, name are NOT set - they inherit from library
                 });
                 return;
             }
@@ -580,7 +593,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     const pointerPos = stage.getRelativePointerPosition();
     if (!pointerPos) return;
 
-    const token = tokens.find(t => t.id === tokenId);
+    const token = resolvedTokens.find(t => t.id === tokenId);
     if (!token) return;
 
     e.evt.stopPropagation();
@@ -593,7 +606,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
       stagePos: { x: token.x, y: token.y }
     });
     setIsDraggingWithThreshold(false);
-  }, [tool, tokens]);
+  }, [tool, resolvedTokens]);
 
   const handleTokenMouseMove = useCallback((e: KonvaEventObject<MouseEvent>) => {
     if (!tokenMouseDownStart || tool !== 'select') return;
@@ -615,7 +628,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
       const tokenId = tokenMouseDownStart.tokenId;
       const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
-      const primaryToken = tokens.find(t => t.id === tokenId);
+      const primaryToken = resolvedTokens.find(t => t.id === tokenId);
       if (!primaryToken) return;
 
       // Initialize drag state
@@ -625,7 +638,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
       // Store initial offsets for multi-token drag
       dragStartOffsetsRef.current.clear();
       tokenIds.forEach(id => {
-        const token = tokens.find(t => t.id === id);
+        const token = resolvedTokens.find(t => t.id === id);
         if (token) {
           if (id === tokenId) {
             dragStartOffsetsRef.current.set(id, { x: 0, y: 0 });
@@ -642,7 +655,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
       const ipcRenderer = window.ipcRenderer;
       if (ipcRenderer && !isWorldView) {
         tokenIds.forEach(id => {
-          const token = tokens.find(t => t.id === id);
+          const token = resolvedTokens.find(t => t.id === id);
           if (token) {
             ipcRenderer.send('SYNC_WORLD_STATE', {
               type: 'TOKEN_DRAG_START',
@@ -681,13 +694,13 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         });
       }
     }
-  }, [tokenMouseDownStart, isDraggingWithThreshold, tool, tokens, selectedIds, throttleDragBroadcast, isWorldView]);
+  }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, throttleDragBroadcast, isWorldView]);
 
   const handleTokenMouseUp = useCallback((e: KonvaEventObject<MouseEvent>) => {
     if (!tokenMouseDownStart) return;
 
     const tokenId = tokenMouseDownStart.tokenId;
-    const token = tokens.find(t => t.id === tokenId);
+    const token = resolvedTokens.find(t => t.id === tokenId);
     if (!token) {
       setTokenMouseDownStart(null);
       setIsDraggingWithThreshold(false);
@@ -712,7 +725,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
           const offsetY = snapped.y - dragPos.y;
 
           tokenIds.forEach(id => {
-            const t = tokens.find(tk => tk.id === id);
+            const t = resolvedTokens.find(tk => tk.id === id);
             if (t) {
               const dragPosForToken = dragPositionsRef.current.get(id) ?? { x: t.x, y: t.y };
               const newX = dragPosForToken.x + offsetX;
@@ -778,7 +791,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     // Reset drag state
     setTokenMouseDownStart(null);
     setIsDraggingWithThreshold(false);
-  }, [tokenMouseDownStart, isDraggingWithThreshold, tokens, selectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast]);
+  }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, selectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast]);
 
   // Drawing Handlers
   const handleMouseDown = (e: any) => {
@@ -1117,7 +1130,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   }, []); // Run only on mount/unmount
 
   const centerOnPCTokens = useCallback(() => {
-    const pcTokens = tokens.filter(t => t.type === 'PC');
+    const pcTokens = resolvedTokens.filter(t => t.type === 'PC');
     if (pcTokens.length === 0) return;
 
     // Calculate bounds of all PC tokens
@@ -1168,7 +1181,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
 
     setScale(newScale);
     setPosition(clampedPos);
-  }, [tokens, gridSize, size, clampPosition]);
+  }, [resolvedTokens, gridSize, size, clampPosition]);
 
   // Navigate to a specific world coordinate (used by minimap)
   const navigateToWorldPosition = useCallback((worldX: number, worldY: number) => {
@@ -1283,7 +1296,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         {isWorldView && !isDaylightMode && (
              <Layer listening={false}>
               <FogOfWarLayer
-                tokens={tokens}
+                tokens={resolvedTokens}
                 drawings={drawings}
                 doors={doors}
                 gridSize={gridSize}
@@ -1444,7 +1457,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                 />
             ))}
 
-            {tokens.map((token) => {
+            {resolvedTokens.map((token) => {
                 // Use drag position if available (for real-time visual feedback)
                 const dragPos = dragPositionsRef.current.get(token.id);
                 const displayX = dragPos ? dragPos.x : token.x;
@@ -1513,7 +1526,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                     if (node.name() === 'token') {
                         // Use average of scaleX and scaleY for uniform scaling
                         const transformScale = (scaleX + scaleY) / 2;
-                        const token = tokens.find(t => t.id === node.id());
+                        const token = resolvedTokens.find(t => t.id === node.id());
                         if (token) {
                             // Multiply current scale by transformation scale
                             const newScale = token.scale * transformScale;
@@ -1576,7 +1589,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
               scale={scale}
               viewportSize={size}
               map={map}
-              tokens={tokens}
+              tokens={resolvedTokens}
               onNavigate={navigateToWorldPosition}
             />
           </MinimapErrorBoundary>

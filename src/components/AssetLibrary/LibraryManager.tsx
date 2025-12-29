@@ -27,6 +27,7 @@ import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzyS
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 import AddToLibraryDialog from './AddToLibraryDialog';
+import TokenMetadataEditor from './TokenMetadataEditor';
 import { getStorage } from '../../services/storage';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { rollForMessage } from '../../utils/systemMessages';
@@ -52,6 +53,10 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const processingHandleRef = useRef<ProcessingHandle | null>(null);
+
+  // Metadata editor state
+  const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   // Store selectors
   const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
@@ -150,17 +155,16 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   /**
    * Handle drag start for library tokens
    * Allows dragging tokens from library to canvas
+   * Passes library item ID to create instance reference
    */
   const handleDragStart = (e: React.DragEvent, libraryToken: TokenLibraryItem) => {
     e.dataTransfer.setData(
       'application/json',
       JSON.stringify({
         type: 'LIBRARY_TOKEN',
+        libraryItemId: libraryToken.id, // Reference to prototype
         src: libraryToken.src,
-        name: libraryToken.name,
-        defaultScale: libraryToken.defaultScale,
-        defaultType: libraryToken.defaultType,
-        defaultVisionRadius: libraryToken.defaultVisionRadius,
+        // Note: metadata (name, scale, type, visionRadius) will be inherited from library
       })
     );
   };
@@ -274,16 +278,36 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
-                    {/* Delete button (shows on hover) */}
-                    <button
-                      onClick={() => handleDelete(item.id, item.name)}
-                      className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label={`Delete ${item.name}`}
-                    >
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    {/* Action buttons (show on hover) */}
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Edit button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingItemId(item.id);
+                          setIsMetadataEditorOpen(true);
+                        }}
+                        className="p-1.5 bg-blue-600 hover:bg-blue-500 rounded"
+                        aria-label={`Edit ${item.name}`}
+                      >
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      {/* Delete button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item.id, item.name);
+                        }}
+                        className="p-1.5 bg-red-600 hover:bg-red-500 rounded"
+                        aria-label={`Delete ${item.name}`}
+                      >
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Metadata */}
@@ -354,6 +378,16 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
         onConfirm={() => {
           setIsAddDialogOpen(false);
           setPendingImage(null);
+        }}
+      />
+
+      {/* Token Metadata Editor */}
+      <TokenMetadataEditor
+        isOpen={isMetadataEditorOpen}
+        libraryItemId={editingItemId}
+        onClose={() => {
+          setIsMetadataEditorOpen(false);
+          setEditingItemId(null);
         }}
       />
     </div>

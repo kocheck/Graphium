@@ -2,18 +2,45 @@ import { create } from 'zustand';
 import { rollForMessage } from '../utils/systemMessages';
 
 /**
- * Token represents a character, creature, or object on the battlemap
- * ... (same documentation as before)
+ * TokenMetadata represents the shared metadata properties between library items and map tokens
+ * This interface defines the properties that can be inherited from prototypes (library items)
+ * or overridden on instances (map tokens).
+ */
+export interface TokenMetadata {
+  name?: string;
+  type?: 'PC' | 'NPC';
+  visionRadius?: number;
+  scale?: number;
+}
+
+/**
+ * Token represents a character, creature, or object on the battlemap (Instance)
+ *
+ * Implements a Prototype/Instance pattern:
+ * - If libraryItemId is set, this token references a library item as its prototype
+ * - Properties like name, type, visionRadius, scale act as OVERRIDES when present
+ * - If a property is undefined, it should fall back to the library item's default value
+ * - Position (x, y) and src are always instance-specific
+ *
+ * @property libraryItemId - Optional reference to a TokenLibraryItem (prototype)
+ * @property x - Position X in world coordinates (instance-specific)
+ * @property y - Position Y in world coordinates (instance-specific)
+ * @property src - Image file:// URL (instance-specific or inherited)
+ * @property scale - Size multiplier override (falls back to library defaultScale)
+ * @property type - Token type override (falls back to library defaultType)
+ * @property visionRadius - Vision radius override (falls back to library defaultVisionRadius)
+ * @property name - Name override (falls back to library name)
  */
 export interface Token {
   id: string;
   x: number;
   y: number;
   src: string;
-  scale: number;
-  type?: 'PC' | 'NPC';
-  visionRadius?: number;
-  name?: string;
+  libraryItemId?: string; // Reference to library item prototype
+  scale?: number; // Override for library defaultScale
+  type?: 'PC' | 'NPC'; // Override for library defaultType
+  visionRadius?: number; // Override for library defaultVisionRadius
+  name?: string; // Override for library name
 }
 
 /**
