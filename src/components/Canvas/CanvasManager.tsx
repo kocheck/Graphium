@@ -188,6 +188,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const [tokenMouseDownStart, setTokenMouseDownStart] = useState<{ x: number, y: number, tokenId: string, stagePos: { x: number, y: number } } | null>(null);
   const [isDraggingWithThreshold, setIsDraggingWithThreshold] = useState(false);
 
+  // Empty handlers for disabled Konva drag events (defined once to prevent re-renders)
+  const emptyDragHandler = useCallback(() => {}, []);
+
   // Navigation State
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -569,11 +572,11 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
   const handleTokenMouseDown = useCallback((e: KonvaEventObject<MouseEvent>, tokenId: string) => {
     if (tool !== 'select') return;
 
-    // Record the start position in both screen and stage coordinates
+    // Record the initial pointer position and the token's starting stage position
     const stage = e.target.getStage();
     if (!stage) return;
 
-    const pointerPos = stage.getPointerPosition();
+    const pointerPos = stage.getRelativePointerPosition();
     if (!pointerPos) return;
 
     const token = tokens.find(t => t.id === tokenId);
@@ -597,7 +600,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     const stage = e.target.getStage();
     if (!stage) return;
 
-    const pointerPos = stage.getPointerPosition();
+    const pointerPos = stage.getRelativePointerPosition();
     if (!pointerPos) return;
 
     // Calculate distance moved
@@ -652,8 +655,8 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
     // If we're dragging, update positions
     if (isDraggingWithThreshold) {
       const tokenId = tokenMouseDownStart.tokenId;
-      const worldDx = dx / scale;
-      const worldDy = dy / scale;
+      const worldDx = dx;
+      const worldDy = dy;
       const newX = tokenMouseDownStart.stagePos.x + worldDx;
       const newY = tokenMouseDownStart.stagePos.y + worldDy;
 
@@ -677,7 +680,7 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
         });
       }
     }
-  }, [tokenMouseDownStart, isDraggingWithThreshold, tool, tokens, selectedIds, scale, throttleDragBroadcast, isWorldView]);
+  }, [tokenMouseDownStart, isDraggingWithThreshold, tool, tokens, selectedIds, throttleDragBroadcast, isWorldView]);
 
   const handleTokenMouseUp = useCallback((e: KonvaEventObject<MouseEvent>) => {
     if (!tokenMouseDownStart) return;
@@ -1448,9 +1451,9 @@ const CanvasManager = ({ tool = 'select', color = '#df4b26', isWorldView = false
                     draggable={false}
                     opacity={isDragging ? 0.7 : undefined}
                     onSelect={(e) => handleTokenMouseDown(e, token.id)}
-                    onDragStart={() => {}}
-                    onDragMove={() => {}}
-                    onDragEnd={() => {}}
+                    onDragStart={emptyDragHandler}
+                    onDragMove={emptyDragHandler}
+                    onDragEnd={emptyDragHandler}
                 />
                 </TokenErrorBoundary>
                 );
