@@ -9,18 +9,44 @@
  * - Default Vision Radius
  * - Default Type (PC/NPC)
  *
- * Used by:
+ * **Features:**
+ * - Form validation (required name, positive scale, non-negative vision radius)
+ * - Tag parsing (comma-separated, auto-trimmed, empty tags filtered)
+ * - Conditional fields (vision radius only shown for PC tokens)
+ * - Toast notifications for success/errors
+ * - Mobile-responsive layout
+ *
+ * **Used by:**
  * - LibraryManager (edit button on token cards)
  * - CommandPalette (edit action in search results)
+ *
+ * @example
+ * ```tsx
+ * <TokenMetadataEditor
+ *   isOpen={isEditing}
+ *   libraryItemId={selectedTokenId}
+ *   onClose={() => setIsEditing(false)}
+ * />
+ * ```
  */
 
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 
+/**
+ * Props for TokenMetadataEditor component
+ *
+ * @property {boolean} isOpen - Controls modal visibility
+ * @property {string | null} libraryItemId - ID of library item to edit (null = modal hidden)
+ * @property {() => void} onClose - Callback when modal should close
+ */
 interface TokenMetadataEditorProps {
+  /** Controls modal visibility */
   isOpen: boolean;
+  /** ID of library item to edit (null = modal hidden) */
   libraryItemId: string | null;
+  /** Callback when modal should close */
   onClose: () => void;
 }
 

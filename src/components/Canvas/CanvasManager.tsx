@@ -19,6 +19,7 @@ import StairsLayer from './StairsLayer';
 import PaperNoiseOverlay from './PaperNoiseOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
+import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import MeasurementOverlay from './MeasurementOverlay';
 import { resolveTokenData } from '../../hooks/useTokenData';
 
@@ -1596,15 +1597,17 @@ const CanvasManager = ({
             )}
 
             {/* Paper Noise Texture Overlay - Adds texture to entire canvas background */}
-            <PaperNoiseOverlay
-                x={map ? map.x : visibleBounds.x}
-                y={map ? map.y : visibleBounds.y}
-                width={map ? map.width : visibleBounds.width}
-                height={map ? map.height : visibleBounds.height}
-                scaleX={map ? map.scale : 1}
-                scaleY={map ? map.scale : 1}
-                opacity={0.25}
-            />
+            <CanvasOverlayErrorBoundary overlayName="PaperNoiseOverlay">
+              <PaperNoiseOverlay
+                  x={map ? map.x : visibleBounds.x}
+                  y={map ? map.y : visibleBounds.y}
+                  width={map ? map.width : visibleBounds.width}
+                  height={map ? map.height : visibleBounds.height}
+                  scaleX={map ? map.scale : 1}
+                  scaleY={map ? map.scale : 1}
+                  opacity={0.25}
+              />
+            </CanvasOverlayErrorBoundary>
 
             <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} />
         </Layer>
@@ -1897,10 +1900,12 @@ const CanvasManager = ({
             )}
 
             {/* Measurement Overlay - Shows active measurement (Architect View) or DM's broadcast (World View) */}
-            <MeasurementOverlay
-                measurement={isWorldView ? dmMeasurement : activeMeasurement}
-                gridSize={gridSize}
-            />
+            <CanvasOverlayErrorBoundary overlayName="MeasurementOverlay">
+              <MeasurementOverlay
+                  measurement={isWorldView ? dmMeasurement : activeMeasurement}
+                  gridSize={gridSize}
+              />
+            </CanvasOverlayErrorBoundary>
 
             {/* Transformer: BLOCKED in World View (players cannot scale/rotate) */}
             {!isWorldView && (

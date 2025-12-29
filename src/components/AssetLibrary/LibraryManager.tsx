@@ -28,6 +28,7 @@ import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 import AddToLibraryDialog from './AddToLibraryDialog';
 import TokenMetadataEditor from './TokenMetadataEditor';
+import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
 import { getStorage } from '../../services/storage';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { rollForMessage } from '../../utils/systemMessages';
@@ -382,14 +383,21 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
       />
 
       {/* Token Metadata Editor */}
-      <TokenMetadataEditor
-        isOpen={isMetadataEditorOpen}
-        libraryItemId={editingItemId}
+      <LibraryModalErrorBoundary
         onClose={() => {
           setIsMetadataEditorOpen(false);
           setEditingItemId(null);
         }}
-      />
+      >
+        <TokenMetadataEditor
+          isOpen={isMetadataEditorOpen}
+          libraryItemId={editingItemId}
+          onClose={() => {
+            setIsMetadataEditorOpen(false);
+            setEditingItemId(null);
+          }}
+        />
+      </LibraryModalErrorBoundary>
     </div>
   );
 };
