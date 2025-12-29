@@ -14,6 +14,7 @@ import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import FogOfWarLayer from './FogOfWarLayer';
 import DoorLayer from './DoorLayer';
 import StairsLayer from './StairsLayer';
+import PaperNoiseOverlay from './PaperNoiseOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
 import MeasurementOverlay from './MeasurementOverlay';
@@ -1368,6 +1369,19 @@ const CanvasManager = ({
                     draggable={false}
                     onSelect={() => {}}
                     onDragEnd={() => {}}
+                />
+            )}
+
+            {/* Paper Noise Texture Overlay - Adds subtle texture to map */}
+            {map && (
+                <PaperNoiseOverlay
+                    x={map.x}
+                    y={map.y}
+                    width={map.width}
+                    height={map.height}
+                    scaleX={map.scale}
+                    scaleY={map.scale}
+                    opacity={0.15}
                 />
             )}
 
