@@ -1578,18 +1578,16 @@ const CanvasManager = ({
                 />
             )}
 
-            {/* Paper Noise Texture Overlay - Adds subtle texture to map */}
-            {map && (
-                <PaperNoiseOverlay
-                    x={map.x}
-                    y={map.y}
-                    width={map.width}
-                    height={map.height}
-                    scaleX={map.scale}
-                    scaleY={map.scale}
-                    opacity={0.5}
-                />
-            )}
+            {/* Paper Noise Texture Overlay - Adds texture to entire canvas background */}
+            <PaperNoiseOverlay
+                x={map ? map.x : visibleBounds.x}
+                y={map ? map.y : visibleBounds.y}
+                width={map ? map.width : visibleBounds.width}
+                height={map ? map.height : visibleBounds.height}
+                scaleX={map ? map.scale : 1}
+                scaleY={map ? map.scale : 1}
+                opacity={0.5}
+            />
 
             <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} />
         </Layer>
