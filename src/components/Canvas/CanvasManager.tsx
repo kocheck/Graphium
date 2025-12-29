@@ -264,6 +264,7 @@ const CanvasManager = ({
   const selectionRectRef = useRef<Konva.Rect | null>(null); // Direct ref to Konva Rect for performance
   const selectionRectCoordsRef = useRef<{ x: number, y: number, width: number, height: number }>({ x: 0, y: 0, width: 0, height: 0 }); // Coords during drag
   const animationFrameRef = useRef<number | null>(null); // RAF handle for throttling
+  const tokenLayerRef = useRef<Konva.Layer | null>(null); // Direct ref to token layer for drag updates
 
   // Ghost / Duplication State
   const [itemsForDuplication, setItemsForDuplication] = useState<string[]>([]);
@@ -794,6 +795,9 @@ const CanvasManager = ({
           }
         });
       }
+
+      // Force layer redraw to show updated token positions
+      tokenLayerRef.current?.batchDraw();
     }
   }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, throttleDragBroadcast, isWorldView]);
 
@@ -1747,7 +1751,7 @@ const CanvasManager = ({
         </Layer>
 
         {/* Layer 3: Tokens, Doors & UI */}
-        <Layer>
+        <Layer ref={tokenLayerRef}>
             {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
             {(() => {
               console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
