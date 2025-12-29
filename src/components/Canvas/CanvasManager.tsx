@@ -162,42 +162,44 @@ const CanvasManager = ({
 
   // DIAGNOSTIC REPORT - Copy/paste this entire block for debugging
   console.log('═══════════════════════════════════════════════════════');
-  console.log('🎮 CANVAS MANAGER DIAGNOSTIC REPORT');
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('🖥️  VIEW MODE:', isWorldView ? '🌍 WORLD VIEW (Player)' : '🎨 DM VIEW (Architect)');
-  console.log('☀️  DAYLIGHT MODE:', isDaylightMode ? '✅ ON (no fog)' : '❌ OFF (fog enabled)');
-  console.log('');
-  console.log('📊 COUNTS:');
-  console.log(`  - Total Tokens: ${tokens.length}`);
-  console.log(`  - PC Tokens: ${tokens.filter(t => t.type === 'PC').length}`);
-  console.log(`  - NPC Tokens: ${tokens.filter(t => t.type === 'NPC').length}`);
-  console.log(`  - Doors: ${doors.length}`);
-  console.log(`  - Stairs: ${stairs.length}`);
-  console.log(`  - Wall Drawings: ${drawings.filter(d => d.tool === 'wall').length}`);
-  console.log(`  - Active Vision Polygons: ${activeVisionPolygons.length}`);
-  console.log('');
-  console.log('🔍 VISION SETUP:');
-  const pcTokens = tokens.filter(t => t.type === 'PC');
-  if (pcTokens.length === 0) {
-    console.log('  ⚠️ NO PC TOKENS! Add a PC token to enable vision.');
-  } else {
-    pcTokens.forEach(t => {
-      const hasVision = (t.visionRadius ?? 0) > 0;
-      console.log(`  - ${t.name || 'PC'}: Vision = ${t.visionRadius || 'NOT SET'} ${hasVision ? '✅' : '❌ SET VISION RADIUS!'}`);
-    });
+  if (import.meta.env.DEV) {
+    console.log('🎮 CANVAS MANAGER DIAGNOSTIC REPORT');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🖥️  VIEW MODE:', isWorldView ? '🌍 WORLD VIEW (Player)' : '🎨 DM VIEW (Architect)');
+    console.log('☀️  DAYLIGHT MODE:', isDaylightMode ? '✅ ON (no fog)' : '❌ OFF (fog enabled)');
+    console.log('');
+    console.log('📊 COUNTS:');
+    console.log(`  - Total Tokens: ${tokens.length}`);
+    console.log(`  - PC Tokens: ${tokens.filter(t => t.type === 'PC').length}`);
+    console.log(`  - NPC Tokens: ${tokens.filter(t => t.type === 'NPC').length}`);
+    console.log(`  - Doors: ${doors.length}`);
+    console.log(`  - Stairs: ${stairs.length}`);
+    console.log(`  - Wall Drawings: ${drawings.filter(d => d.tool === 'wall').length}`);
+    console.log(`  - Active Vision Polygons: ${activeVisionPolygons.length}`);
+    console.log('');
+    console.log('🔍 VISION SETUP:');
+    const pcTokens = tokens.filter(t => t.type === 'PC');
+    if (pcTokens.length === 0) {
+      console.log('  ⚠️ NO PC TOKENS! Add a PC token to enable vision.');
+    } else {
+      pcTokens.forEach(t => {
+        const hasVision = (t.visionRadius ?? 0) > 0;
+        console.log(`  - ${t.name || 'PC'}: Vision = ${t.visionRadius || 'NOT SET'} ${hasVision ? '✅' : '❌ SET VISION RADIUS!'}`);
+      });
+    }
+    console.log('');
+    console.log('🚪 DOOR STATUS:');
+    if (doors.length === 0) {
+      console.log('  ℹ️  No doors placed yet. Press D to place doors.');
+    } else {
+      console.log(`  - Total: ${doors.length}`);
+      console.log(`  - Closed (blocking): ${doors.filter(d => !d.isOpen).length}`);
+      console.log(`  - Open (transparent): ${doors.filter(d => d.isOpen).length}`);
+    }
+    console.log('');
+    console.log('✅ FOG WILL RENDER:', !isDaylightMode && isWorldView ? 'YES' : `NO (${isDaylightMode ? 'Daylight ON' : 'DM View'})`);
+    console.log('═══════════════════════════════════════════════════════');
   }
-  console.log('');
-  console.log('🚪 DOOR STATUS:');
-  if (doors.length === 0) {
-    console.log('  ℹ️  No doors placed yet. Press D to place doors.');
-  } else {
-    console.log(`  - Total: ${doors.length}`);
-    console.log(`  - Closed (blocking): ${doors.filter(d => !d.isOpen).length}`);
-    console.log(`  - Open (transparent): ${doors.filter(d => d.isOpen).length}`);
-  }
-  console.log('');
-  console.log('✅ FOG WILL RENDER:', !isDaylightMode && isWorldView ? 'YES' : `NO (${isDaylightMode ? 'Daylight ON' : 'DM View'})`);
-  console.log('═══════════════════════════════════════════════════════');
 
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);

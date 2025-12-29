@@ -53,48 +53,49 @@ const FogOfWarLayer = ({ tokens, drawings, doors, gridSize, visibleBounds, map }
     hasMap: !!map
   });
 
-  // DIAGNOSTIC REPORT - Copy/paste this entire block for debugging
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('🔍 VISION SYSTEM DIAGNOSTIC REPORT');
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('📊 TOKENS:');
-  tokens.forEach(t => {
-    console.log(`  - ${t.type} Token "${t.name || t.id.substring(0, 8)}":`, {
-      id: t.id,
-      position: `(${t.x}, ${t.y})`,
-      visionRadius: t.visionRadius || 'NOT SET',
-      type: t.type
-    });
-  });
-  console.log(`  Total PC tokens: ${tokens.filter(t => t.type === 'PC').length}`);
-  console.log(`  PC tokens with vision: ${tokens.filter(t => t.type === 'PC' && (t.visionRadius ?? 0) > 0).length}`);
-  console.log('');
-  console.log('🚪 DOORS:');
-  if (doors.length === 0) {
-    console.log('  ⚠️ NO DOORS PLACED!');
-  } else {
-    doors.forEach(d => {
-      console.log(`  - Door ${d.id.substring(0, 8)}:`, {
-        position: `(${d.x}, ${d.y})`,
-        orientation: d.orientation,
-        isOpen: d.isOpen ? '✅ OPEN (vision passes through)' : '🚫 CLOSED (blocks vision)',
-        isLocked: d.isLocked
-      });
-    });
-    console.log(`  Total doors: ${doors.length}`);
-    console.log(`  Closed doors (blocking): ${doors.filter(d => !d.isOpen).length}`);
-    console.log(`  Open doors (transparent): ${doors.filter(d => d.isOpen).length}`);
-  }
-  console.log('═══════════════════════════════════════════════════════');
-
   // Get explored regions and actions from store
   const exploredRegions = useGameStore((state) => state.exploredRegions);
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
   const setActiveVisionPolygons = useGameStore((state) => state.setActiveVisionPolygons);
 
-  console.log('[FogOfWarLayer] Store state:', {
-    exploredRegionsCount: exploredRegions.length
-  });
+  // DIAGNOSTIC REPORT - Only in development mode
+  if (import.meta.env.DEV) {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🔍 VISION SYSTEM DIAGNOSTIC REPORT');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📊 TOKENS:');
+    tokens.forEach(t => {
+      console.log(`  - ${t.type} Token "${t.name || t.id.substring(0, 8)}":`, {
+        id: t.id,
+        position: `(${t.x}, ${t.y})`,
+        visionRadius: t.visionRadius || 'NOT SET',
+        type: t.type
+      });
+    });
+    console.log(`  Total PC tokens: ${tokens.filter(t => t.type === 'PC').length}`);
+    console.log(`  PC tokens with vision: ${tokens.filter(t => t.type === 'PC' && (t.visionRadius ?? 0) > 0).length}`);
+    console.log('');
+    console.log('🚪 DOORS:');
+    if (doors.length === 0) {
+      console.log('  ⚠️ NO DOORS PLACED!');
+    } else {
+      doors.forEach(d => {
+        console.log(`  - Door ${d.id.substring(0, 8)}:`, {
+          position: `(${d.x}, ${d.y})`,
+          orientation: d.orientation,
+          isOpen: d.isOpen ? '✅ OPEN (vision passes through)' : '🚫 CLOSED (blocks vision)',
+          isLocked: d.isLocked
+        });
+      });
+      console.log(`  Total doors: ${doors.length}`);
+      console.log(`  Closed doors (blocking): ${doors.filter(d => !d.isOpen).length}`);
+      console.log(`  Open doors (transparent): ${doors.filter(d => d.isOpen).length}`);
+    }
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[FogOfWarLayer] Store state:', {
+      exploredRegionsCount: exploredRegions.length
+    });
+  }
 
   // Track last update time for throttling exploration tracking
   const lastExploreUpdateRef = useRef<number>(0);

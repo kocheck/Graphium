@@ -612,40 +612,27 @@ export const useGameStore = create<GameState>((set, get) => {
       // Prevent duplicates - only add if door doesn't already exist
       const exists = state.doors.some(d => d.id === door.id);
       if (exists) {
-        console.warn('[gameStore] addDoor: Door already exists, skipping:', door.id);
-        return state; // No change
+        return state; // Silent deduplication
       }
-      console.log('[gameStore] addDoor: Adding new door:', door.id);
       return { doors: [...state.doors, door] };
     }),
     removeDoor: (id: string) => set((state) => ({ doors: state.doors.filter(d => d.id !== id) })),
     removeDoors: (ids: string[]) => set((state) => ({ doors: state.doors.filter(d => !ids.includes(d.id)) })),
     toggleDoor: (id: string) => set((state) => {
-      console.log('[gameStore] toggleDoor called for:', id);
-      console.log('[gameStore] Current doors:', state.doors.map(d => ({id: d.id, isOpen: d.isOpen})));
       const door = state.doors.find(d => d.id === id);
-      const newDoors = state.doors.map(d => {
-        if (d.id === id) {
-          const newDoor = { ...d, isOpen: !d.isOpen };
-          console.log('[gameStore] Toggling door', id, 'from', d.isOpen, 'to', newDoor.isOpen);
-          return newDoor;
-        }
-        return d;
-      });
-      console.log('[gameStore] New doors state:', newDoors.map(d => ({id: d.id, isOpen: d.isOpen})));
-      // Verify array reference changed
-      console.log('[gameStore] Array reference changed:', newDoors !== state.doors);
+      if (!door) return state; // Door not found, no change
+      
+      const newDoors = state.doors.map(d => 
+        d.id === id ? { ...d, isOpen: !d.isOpen } : d
+      );
 
       // DIRECT SYNC: Send DOOR_TOGGLE immediately (bypasses subscription/throttle)
       // This ensures door toggles always sync, even if the subscription system has issues
-      if (door && typeof window !== 'undefined') {
-        // @ts-ignore
+      if (typeof window !== 'undefined') {
+        // @ts-expect-error - window.hyleSync is injected by SyncManager
         const hyleSync = window.hyleSync;
         if (hyleSync && typeof hyleSync === 'function') {
-          console.log('[gameStore] Sending DOOR_TOGGLE directly via window.hyleSync');
           hyleSync({ type: 'DOOR_TOGGLE', payload: { id } });
-        } else {
-          console.warn('[gameStore] window.hyleSync not available, door toggle may not sync');
         }
       }
 

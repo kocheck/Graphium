@@ -18,32 +18,31 @@
  * - Verify visual updates match state changes
  */
 
-import { test, expect, BrowserContext } from '@playwright/test';
+import { test, expect, BrowserContext, Page } from '@playwright/test';
 import { bypassLandingPageAndInjectState } from '../helpers/bypassLandingPage';
-import { createNewCampaign } from '../helpers/campaignHelpers';
 
 /**
  * Helper to create World View context
  */
-async function createWorldViewContext(context: BrowserContext): Promise<{ page: any; close: () => Promise<void> }> {
+async function createWorldViewContext(context: BrowserContext): Promise<{ page: Page; close: () => Promise<void> }> {
   const page = await context.newPage();
 
   // Mock Electron APIs for web compatibility
   await page.addInitScript(() => {
-    // @ts-ignore
+    // @ts-expect-error - Mocking Electron IPC for web tests
     window.ipcRenderer = {
       on: () => {},
       off: () => {},
       send: () => {},
       invoke: () => Promise.resolve({}),
     };
-    // @ts-ignore
+    // @ts-expect-error - Mocking theme API for web tests
     window.themeAPI = {
       getThemeState: () => Promise.resolve({ mode: 'light', effectiveTheme: 'light' }),
       setThemeMode: () => Promise.resolve(),
       onThemeChanged: () => () => {},
     };
-    // @ts-ignore
+    // @ts-expect-error - Mocking error reporting for web tests
     window.errorReporting = {
       getUsername: () => Promise.resolve('test-user'),
       openExternal: () => Promise.resolve(true),
@@ -69,7 +68,7 @@ async function createWorldViewContext(context: BrowserContext): Promise<{ page: 
 /**
  * Helper to place a door in DM View via UI
  */
-async function placeDoor(page: any, position: { x: number; y: number }, orientation: 'horizontal' | 'vertical' = 'horizontal') {
+async function placeDoor(page: Page, position: { x: number; y: number }, orientation: 'horizontal' | 'vertical' = 'horizontal') {
   // Select door tool (press 'D' key)
   await page.keyboard.press('D');
   await page.waitForTimeout(100);
@@ -88,82 +87,9 @@ async function placeDoor(page: any, position: { x: number; y: number }, orientat
   await page.waitForTimeout(200);
 }
 
-/**
- * Helper to toggle a door in DM View
- */
-async function toggleDoor(page: any, doorId: string) {
-  // Find door by ID (we'll need to add data-testid to doors)
-  // For now, we'll click at the door's position
-  // This is a limitation - we should add data-testid="door-{id}" to DoorShape
-  const doorElement = page.locator(`[data-testid="door-${doorId}"]`);
-
-  // If door has test ID, click it
-  const count = await doorElement.count();
-  if (count > 0) {
-    await doorElement.click();
-  } else {
-    // Fallback: Use console to toggle door via store
-    await page.evaluate((id) => {
-      // @ts-ignore
-      if (window.useGameStore) {
-        // @ts-ignore
-        const store = window.useGameStore.getState();
-        store.toggleDoor(id);
-      }
-    }, doorId);
-  }
-
-  await page.waitForTimeout(100);
-}
-
-/**
- * Helper to get door state by checking console logs
- * This is a workaround since we can't easily access the store from tests
- */
-async function getDoorStateFromLogs(page: any, doorId: string): Promise<{ isOpen: boolean } | null> {
-  // Check console logs for door state
-  const logs = await page.evaluate(() => {
-    // This would require capturing console.log, which is complex
-    // For now, we'll use a different approach
-    return null;
-  });
-  return null;
-}
-
-/**
- * Helper to get door count by checking console logs or DOM
- * Since we can't easily access the store, we'll verify sync via BroadcastChannel messages
- */
-async function verifyDoorSync(page: any, expectedCount: number): Promise<boolean> {
-  // Wait a bit for any sync messages
-  await page.waitForTimeout(500);
-
-  // For now, we'll just verify the page loaded
-  // A more complete test would capture BroadcastChannel messages
-  return true;
-}
-
-/**
- * Helper to expose store to window for testing
- */
-async function exposeStoreForTesting(page: any) {
-  await page.addInitScript(() => {
-    // This will be set up after the app loads
-    // We'll inject it via evaluate after navigation
-  });
-
-  // After page loads, expose store
-  await page.evaluate(() => {
-    // Import and expose store
-    // Note: This requires the store to be accessible
-    // We may need to modify the app to expose it for testing
-  });
-}
-
 test.describe('Door Synchronization', () => {
-  test.beforeEach(async ({ context }) => {
-    // Set up shared storage context so both tabs share BroadcastChannel
-    // This is important for BroadcastChannel to work across tabs
+  test.beforeEach(async () => {
+    // Note: BroadcastChannel sharing between tabs is automatic in the same origin
   });
 
   test('should sync door placement from DM View to World View', async ({ context }) => {
@@ -207,10 +133,6 @@ test.describe('Door Synchronization', () => {
     // Wait for sync to propagate
     await dmPage.waitForTimeout(2000);
     await worldPage.waitForTimeout(2000);
-
-    // Verify sync messages were sent and received
-    const doorAddSent = syncMessages.some(msg => msg.includes('DOOR_ADD'));
-    const doorAddReceived = worldSyncMessages.some(msg => msg.includes('DOOR_ADD') || msg.includes('received DOOR_ADD'));
 
     // Basic verification - if we see sync messages, the mechanism is working
     // A more complete test would verify the actual door state
