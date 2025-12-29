@@ -225,6 +225,8 @@ const CanvasManager = ({
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null); // Temp line points
   const [tempLine, setTempLine] = useState<Drawing | null>(null);
+  const tempLineRef = useRef<any>(null); // Direct ref to Konva Line for performance
+  const drawingAnimationFrameRef = useRef<number | null>(null); // RAF handle for drawing
 
   // Door Tool State
   const [doorPreviewPos, setDoorPreviewPos] = useState<{ x: number, y: number } | null>(null);
@@ -248,6 +250,9 @@ const CanvasManager = ({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const transformerRef = useRef<any>(null);
   const selectionStart = useRef<{x: number, y: number} | null>(null);
+  const selectionRectRef = useRef<any>(null); // Direct ref to Konva Rect for performance
+  const selectionRectCoordsRef = useRef<{ x: number, y: number, width: number, height: number }>({ x: 0, y: 0, width: 0, height: 0 }); // Coords during drag
+  const animationFrameRef = useRef<number | null>(null); // RAF handle for throttling
 
   // Ghost / Duplication State
   const [itemsForDuplication, setItemsForDuplication] = useState<string[]>([]);
@@ -936,6 +941,16 @@ const CanvasManager = ({
         // Start Selection Rect
         const pos = e.target.getStage().getRelativePointerPosition();
         selectionStart.current = { x: pos.x, y: pos.y };
+
+        // Use refs for performance - avoid React state updates during drag
+        selectionRectCoordsRef.current = {
+            x: pos.x,
+            y: pos.y,
+            width: 0,
+            height: 0
+        };
+
+        // Only set visibility state once (not on every move)
         setSelectionRect({
             x: pos.x,
             y: pos.y,
@@ -943,6 +958,7 @@ const CanvasManager = ({
             height: 0,
             isVisible: true
         });
+
         // Clear selection if not modified? (e.g. shift click logic could be added)
         if (!e.evt.shiftKey) {
              setSelectedIds([]);
@@ -1065,8 +1081,25 @@ const CanvasManager = ({
             }
         }
 
+        // Update points in ref (no copy needed)
         cur.points = cur.points.concat([point.x, point.y]);
-        setTempLine({...cur});
+
+        // Cancel previous animation frame
+        if (drawingAnimationFrameRef.current) {
+            cancelAnimationFrame(drawingAnimationFrameRef.current);
+        }
+
+        // Throttle visual updates with RAF
+        drawingAnimationFrameRef.current = requestAnimationFrame(() => {
+            // Update Konva shape directly
+            if (tempLineRef.current) {
+                tempLineRef.current.points(cur.points);
+                tempLineRef.current.getLayer()?.batchDraw();
+            } else {
+                // Initial render - need to set state to create the component
+                setTempLine({...cur});
+            }
+        });
         return;
     }
 
@@ -1082,7 +1115,7 @@ const CanvasManager = ({
         return;
     }
 
-    // Selection Rect Update
+    // Selection Rect Update - Use refs + RAF for performance
     if (selectionStart.current) {
         const stage = e.target.getStage();
         const pos = stage.getRelativePointerPosition();
@@ -1090,7 +1123,26 @@ const CanvasManager = ({
         const y = Math.min(pos.y, selectionStart.current.y);
         const width = Math.abs(pos.x - selectionStart.current.x);
         const height = Math.abs(pos.y - selectionStart.current.y);
-        setSelectionRect({ x, y, width, height, isVisible: true });
+
+        // Store coords in ref (no re-render)
+        selectionRectCoordsRef.current = { x, y, width, height };
+
+        // Cancel previous animation frame to avoid stacking updates
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+        }
+
+        // Throttle visual updates with RAF (~60fps max)
+        animationFrameRef.current = requestAnimationFrame(() => {
+            // Update Konva shape directly without triggering React re-render
+            if (selectionRectRef.current) {
+                selectionRectRef.current.x(x);
+                selectionRectRef.current.y(y);
+                selectionRectRef.current.width(width);
+                selectionRectRef.current.height(height);
+                selectionRectRef.current.getLayer()?.batchDraw();
+            }
+        });
     }
   };
 
@@ -1187,6 +1239,13 @@ const CanvasManager = ({
          if (isWorldView) return;
          if (!isDrawing.current) return;
          isDrawing.current = false;
+
+         // Cancel any pending drawing animation frame
+         if (drawingAnimationFrameRef.current) {
+             cancelAnimationFrame(drawingAnimationFrameRef.current);
+             drawingAnimationFrameRef.current = null;
+         }
+
          if (tempLine) {
              let processedLine: Drawing = { ...tempLine };
 
@@ -1241,11 +1300,25 @@ const CanvasManager = ({
 
     // End Selection
     if (selectionRect.isVisible) {
+        // Cancel any pending animation frame
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+
         // Calculate Intersection
         const stage = e.target.getStage();
-        const box = selectionRect;
+        // Use the ref coords (most up-to-date) instead of state
+        const box = selectionRectCoordsRef.current;
 
-        setSelectionRect({ ...selectionRect, isVisible: false });
+        // Commit final state to React
+        setSelectionRect({
+            x: box.x,
+            y: box.y,
+            width: box.width,
+            height: box.height,
+            isVisible: false
+        });
 
         // Transform selection box to Window/Stage-Container coordinates to match getClientRect()
         // box is in World Coordinates (Layer Local)
@@ -1331,6 +1404,15 @@ const CanvasManager = ({
         console.log('[CanvasManager] Cancelling in-flight image processing on unmount');
         processingHandleRef.current.cancel();
         processingHandleRef.current = null;
+      }
+      // Cancel pending animation frames on unmount
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (drawingAnimationFrameRef.current) {
+        cancelAnimationFrame(drawingAnimationFrameRef.current);
+        drawingAnimationFrameRef.current = null;
       }
     };
   }, []); // Run only on mount/unmount
@@ -1618,6 +1700,7 @@ const CanvasManager = ({
              {/* Temp Line */}
             {tempLine && (
                 <Line
+                    ref={tempLineRef}
                     points={tempLine.points}
                     stroke={tempLine.color}
                     strokeWidth={tempLine.size}
@@ -1743,6 +1826,7 @@ const CanvasManager = ({
             {/* Selection Rect */}
             {selectionRect.isVisible && (
                 <Rect
+                    ref={selectionRectRef}
                     x={selectionRect.x}
                     y={selectionRect.y}
                     width={selectionRect.width}
