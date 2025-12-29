@@ -96,9 +96,12 @@ function App() {
 
   // Active tool state (controls CanvasManager behavior)
   // Only used in Architect View; World View always uses 'select' with restricted interactions
-  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'measure'>('select');
+  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure'>('select');
   const [color, setColor] = useState('#df4b26');
   const colorInputRef = useRef<HTMLInputElement>(null);
+
+  // Door tool state
+  const [doorOrientation, setDoorOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
 
   // Measurement tool state
   const [measurementMode, setMeasurementMode] = useState<'ruler' | 'blast' | 'cone'>('ruler');
@@ -195,6 +198,19 @@ function App() {
       // Prevent tool switching in World View (player mode)
       if (!isArchitectView) return;
 
+      // Handle arrow keys separately (they don't need toLowerCase)
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        if (tool === 'door') {
+          e.preventDefault(); // Prevent page scrolling
+          setDoorOrientation(prev => {
+            const newOrientation = prev === 'horizontal' ? 'vertical' : 'horizontal';
+            console.log('[App] Arrow key pressed - door orientation changed from', prev, 'to', newOrientation);
+            return newOrientation;
+          });
+        }
+        return;
+      }
+
       switch (e.key.toLowerCase()) {
         case 'v':
           setTool('select');
@@ -208,8 +224,21 @@ function App() {
         case 'w':
           setTool('wall');
           break;
+        case 'd':
+          setTool('door');
+          break;
         case 'r':
-          setTool('measure');
+          // If door tool is active, rotate door orientation
+          // Otherwise, switch to measure tool
+          if (tool === 'door') {
+            setDoorOrientation(prev => {
+              const newOrientation = prev === 'horizontal' ? 'vertical' : 'horizontal';
+              console.log('[App] R key pressed - door orientation changed from', prev, 'to', newOrientation);
+              return newOrientation;
+            });
+          } else {
+            setTool('measure');
+          }
           break;
         case 'i':
           colorInputRef.current?.click();
@@ -219,7 +248,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isArchitectView]);
+  }, [isArchitectView, tool]);
 
   // Handle Menu Commands (Electron IPC)
   useEffect(() => {
@@ -315,6 +344,7 @@ function App() {
         <CanvasManager
           tool={tool}
           color={color}
+          doorOrientation={doorOrientation}
           isWorldView={isWorldView}
           onSelectionChange={setSelectedTokenIds}
           measurementMode={measurementMode}
@@ -362,6 +392,20 @@ function App() {
            <button
              className={`btn btn-tool ${tool === 'wall' ? 'active' : ''}`}
              onClick={() => setTool('wall')}>Wall (W)</button>
+           <button
+             className={`btn btn-tool ${tool === 'door' ? 'active' : ''}`}
+             onClick={() => setTool('door')}
+             title="Place doors - Click to place, R to rotate">
+             Door (D)
+           </button>
+           {tool === 'door' && (
+             <button
+               className="btn btn-tool text-xs px-2"
+               onClick={() => setDoorOrientation(prev => prev === 'horizontal' ? 'vertical' : 'horizontal')}
+               title="Toggle door orientation (R)">
+               {doorOrientation === 'horizontal' ? '↔' : '↕'}
+             </button>
+           )}
            <div className="toolbar-divider w-px mx-1"></div>
            {/* Measurement Tool with Mode Selector */}
            <div className="flex gap-1 items-center">
@@ -463,6 +507,8 @@ function App() {
             setTool={setTool}
             color={color}
             setColor={setColor}
+            doorOrientation={doorOrientation}
+            setDoorOrientation={setDoorOrientation}
             isGamePaused={isGamePaused}
             onPauseToggle={handlePauseToggle}
           />

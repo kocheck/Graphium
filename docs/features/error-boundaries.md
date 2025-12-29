@@ -78,6 +78,16 @@ import PrivacyErrorBoundary from './components/PrivacyErrorBoundary';
 </PrivacyErrorBoundary>
 ```
 
+**Protected Components:**
+
+All components in the app are protected by PrivacyErrorBoundary, including:
+- `SyncManager` - Multi-window state synchronization
+- `CanvasManager` - Battlemap canvas rendering
+- `Sidebar` - Token library and controls
+- All other app components
+
+If any component throws an error, PrivacyErrorBoundary catches it and displays a user-friendly error UI with sanitized stack traces.
+
 ### 2. Error Sanitizer (`src/utils/errorSanitizer.ts`)
 
 Utility functions for sanitizing error data.

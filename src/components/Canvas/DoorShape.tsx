@@ -38,6 +38,7 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
 
   // Animate when door.isOpen changes
   useEffect(() => {
+    console.log('[DoorShape] door.isOpen changed:', door.id, 'from', animationProgress === 1 ? 'open' : 'closed', 'to', door.isOpen ? 'open' : 'closed');
     const targetProgress = door.isOpen ? 1 : 0;
 
     // If already at target, no animation needed
@@ -80,14 +81,20 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
   }, [door.isOpen]); // animationProgress is intentionally excluded - it's managed by the animation loop, not a dependency
 
   const handleClick = () => {
+    console.log('[DoorShape] handleClick called for door:', door.id, 'isWorldView:', isWorldView, 'onToggle:', !!onToggle, 'isLocked:', door.isLocked);
     // Only allow toggling in DM mode (not World View)
     if (!isWorldView && onToggle && !door.isLocked) {
+      console.log('[DoorShape] Calling onToggle for door:', door.id);
       onToggle(door.id);
+    } else {
+      console.log('[DoorShape] Click blocked - isWorldView:', isWorldView, 'hasOnToggle:', !!onToggle, 'isLocked:', door.isLocked);
     }
   };
 
   const thickness = door.thickness ?? 12; // Thicker default for better visibility
   const halfSize = door.size / 2;
+
+  console.log('[DoorShape] Rendering door:', door.id, 'isWorldView:', isWorldView, 'isOpen:', door.isOpen, 'position:', door.x, door.y);
 
   return (
     <Group
@@ -99,8 +106,8 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
     >
       {/* Render door with animated transition */}
       {animationProgress < 1
-        ? renderAnimatedDoor(door, halfSize, thickness, animationProgress)
-        : renderOpenDoor(door, halfSize, thickness)}
+        ? renderAnimatedDoor(door, halfSize, thickness, animationProgress, isWorldView)
+        : renderOpenDoor(door, halfSize, thickness, isWorldView)}
 
       {/* Lock icon overlay (shown when door is locked) */}
       {door.isLocked && renderLockIcon(door)}
@@ -118,8 +125,9 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
  * @param halfSize - Half of door size
  * @param thickness - Door thickness
  * @param progress - Animation progress (0 = closed, 1 = open)
+ * @param isWorldView - Whether this is World View (for enhanced visibility)
  */
-function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, progress: number) {
+function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, progress: number, isWorldView: boolean = false) {
   const swingAngle = 90 * progress; // Gradually increase swing angle from 0° to 90°
   const closedOpacity = 1 - progress; // Fade out closed door
   const openOpacity = progress; // Fade in open door
@@ -137,9 +145,9 @@ function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, pro
               height={thickness}
               fill="#ffffff"
               stroke="#000000"
-              strokeWidth={2}
-              shadowColor="rgba(0,0,0,0.3)"
-              shadowBlur={4}
+              strokeWidth={isWorldView ? 3 : 2}
+              shadowColor={isWorldView ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.3)"}
+              shadowBlur={isWorldView ? 10 : 4}
               shadowOffsetX={1}
               shadowOffsetY={1}
             />
@@ -151,9 +159,9 @@ function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, pro
               height={door.size}
               fill="#ffffff"
               stroke="#000000"
-              strokeWidth={2}
-              shadowColor="rgba(0,0,0,0.3)"
-              shadowBlur={4}
+              strokeWidth={isWorldView ? 3 : 2}
+              shadowColor={isWorldView ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.3)"}
+              shadowBlur={isWorldView ? 10 : 4}
               shadowOffsetX={1}
               shadowOffsetY={1}
             />
@@ -164,7 +172,7 @@ function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, pro
       {/* Open door arc (fading in) */}
       {progress > 0.05 && (
         <Group opacity={openOpacity}>
-          {renderSwingArc(door, halfSize, thickness, swingAngle)}
+          {renderSwingArc(door, halfSize, thickness, swingAngle, isWorldView)}
         </Group>
       )}
     </>
@@ -178,8 +186,9 @@ function renderAnimatedDoor(door: Door, halfSize: number, thickness: number, pro
  * @param halfSize - Half of door size
  * @param thickness - Door thickness
  * @param swingAngle - Current swing angle (0-90 degrees)
+ * @param isWorldView - Whether this is World View (for enhanced visibility)
  */
-function renderSwingArc(door: Door, halfSize: number, thickness: number, swingAngle: number) {
+function renderSwingArc(door: Door, halfSize: number, thickness: number, swingAngle: number, _isWorldView: boolean = false) {
   let arcX = 0;
   let arcY = 0;
   let startAngle = 0;
@@ -230,7 +239,7 @@ function renderSwingArc(door: Door, halfSize: number, thickness: number, swingAn
  *
  * The arc shows the door swung open to provide visual feedback that the door is accessible.
  */
-function renderOpenDoor(door: Door, halfSize: number, thickness: number) {
+function renderOpenDoor(door: Door, halfSize: number, thickness: number, _isWorldView: boolean = false) {
   const swingAngle = 90; // Door swings 90 degrees when open
 
   // Calculate arc parameters based on swing direction

@@ -29,28 +29,46 @@
  * See ARCHITECTURE.md for complete IPC documentation.
  */
 
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, IpcMainEvent, IpcMainInvokeEvent, shell } from 'electron'
-import JSZip from 'jszip'
-import { fileURLToPath } from 'node:url'
-import path from 'node:path'
-import fs from 'node:fs/promises'
-import { randomUUID } from 'node:crypto'
-import os from 'node:os'
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  protocol,
+  net,
+  Menu,
+  IpcMainEvent,
+  IpcMainInvokeEvent,
+  shell,
+} from 'electron';
+import JSZip from 'jszip';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import os from 'node:os';
 import {
   initializeThemeManager,
   getThemeState,
   setThemeMode,
   type ThemeMode,
-} from './themeManager.js'
+} from './themeManager.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Register custom protocol BEFORE app.whenReady()
 // This allows media:// URLs to work in renderer process
 // See app.whenReady() handler for protocol.handle() implementation
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'media', privileges: { secure: true, supportFetchAPI: true, bypassCSP: true } }
-])
+  {
+    scheme: 'media',
+    privileges: {
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+    },
+  },
+]);
 
 // The built directory structure
 //
@@ -61,21 +79,26 @@ protocol.registerSchemesAsPrivileged([
 // │ │ ├── main.js
 // │ │ └── preload.mjs
 // │
-process.env.APP_ROOT = path.join(__dirname, '..')
+process.env.APP_ROOT = path.join(__dirname, '..');
 
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
-export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
-export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
+export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
+export const MAIN_DIST = path.join(
+  process.env.APP_ROOT,
+  'dist-electron'
+);
+export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
+process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
+  ? path.join(process.env.APP_ROOT, 'public')
+  : RENDERER_DIST;
 
 // Window references (null when closed)
-let mainWindow: BrowserWindow | null
-let worldWindow: BrowserWindow | null
+let mainWindow: BrowserWindow | null;
+let worldWindow: BrowserWindow | null;
 
 // Global pause state - persists across map changes
-let isGamePaused = false
+let isGamePaused = false;
 
 /**
  * Build application menu with theme options
@@ -91,7 +114,7 @@ let isGamePaused = false
  * - System (follow OS preference) ← default
  */
 function buildApplicationMenu() {
-  const currentTheme = getThemeState().mode
+  const currentTheme = getThemeState().mode;
 
   const template: Electron.MenuItemConstructorOptions[] = [
     // App menu (macOS only - shows app name)
@@ -122,17 +145,17 @@ function buildApplicationMenu() {
           label: 'Open Campaign...',
           accelerator: 'CmdOrCtrl+O',
           click: () => {
-             const win = BrowserWindow.getFocusedWindow();
-             if (win) win.webContents.send('MENU_LOAD_CAMPAIGN');
-          }
+            const win = BrowserWindow.getFocusedWindow();
+            if (win) win.webContents.send('MENU_LOAD_CAMPAIGN');
+          },
         },
         {
           label: 'Save Campaign',
           accelerator: 'CmdOrCtrl+S',
           click: () => {
-             const win = BrowserWindow.getFocusedWindow();
-             if (win) win.webContents.send('MENU_SAVE_CAMPAIGN');
-          }
+            const win = BrowserWindow.getFocusedWindow();
+            if (win) win.webContents.send('MENU_SAVE_CAMPAIGN');
+          },
         },
         { type: 'separator' },
         process.platform === 'darwin'
@@ -170,17 +193,18 @@ function buildApplicationMenu() {
         },
         { type: 'separator' },
         {
-            label: 'World View (Projector)',
-            accelerator: 'CmdOrCtrl+Shift+W',
-            click: () => createWorldWindow()
+          label: 'World View (Projector)',
+          accelerator: 'CmdOrCtrl+Shift+W',
+          click: () => createWorldWindow(),
         },
         {
-            label: 'Performance Monitor',
-            accelerator: 'CmdOrCtrl+Shift+M',
-            click: () => {
-                const win = BrowserWindow.getFocusedWindow();
-                if (win) win.webContents.send('MENU_TOGGLE_RESOURCE_MONITOR');
-            }
+          label: 'Performance Monitor',
+          accelerator: 'CmdOrCtrl+Shift+M',
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (win)
+              win.webContents.send('MENU_TOGGLE_RESOURCE_MONITOR');
+          },
         },
         { type: 'separator' },
         { role: 'reload' },
@@ -211,10 +235,10 @@ function buildApplicationMenu() {
           : [{ role: 'close' as const }]),
       ],
     },
-  ]
+  ];
 
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 }
 
 /**
@@ -240,18 +264,21 @@ function createMainWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
-  })
+  });
 
   // Test active push message to Renderer-process (legacy from template)
   mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow?.webContents.send('main-process-message', (new Date).toLocaleString())
-  })
+    mainWindow?.webContents.send(
+      'main-process-message',
+      new Date().toLocaleString()
+    );
+  });
 
   // Load renderer (dev server in development, static files in production)
   if (VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(VITE_DEV_SERVER_URL)
+    mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'))
+    mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
   }
 }
 
@@ -284,8 +311,8 @@ function createMainWindow() {
 function createWorldWindow() {
   // Singleton pattern: reuse existing window if it exists
   if (worldWindow && !worldWindow.isDestroyed()) {
-    worldWindow.focus()
-    return
+    worldWindow.focus();
+    return;
   }
 
   worldWindow = new BrowserWindow({
@@ -293,13 +320,15 @@ function createWorldWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
-  })
+  });
 
   // Load same app with ?type=world query parameter
   if (VITE_DEV_SERVER_URL) {
-    worldWindow.loadURL(`${VITE_DEV_SERVER_URL}?type=world`)
+    worldWindow.loadURL(`${VITE_DEV_SERVER_URL}?type=world`);
   } else {
-    worldWindow.loadFile(path.join(RENDERER_DIST, 'index.html'), { query: { type: 'world' } })
+    worldWindow.loadFile(path.join(RENDERER_DIST, 'index.html'), {
+      query: { type: 'world' },
+    });
   }
 }
 
@@ -308,19 +337,19 @@ function createWorldWindow() {
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit()
-    mainWindow = null
-    worldWindow = null
+    app.quit();
+    mainWindow = null;
+    worldWindow = null;
   }
-})
+});
 
 app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
-    createMainWindow()
+    createMainWindow();
   }
-})
+});
 
 /**
  * App initialization: Set up protocol handlers and IPC listeners
@@ -351,16 +380,18 @@ app.whenReady().then(() => {
    * See CanvasManager.URLImage component for usage (src/components/Canvas/CanvasManager.tsx:47-52).
    */
   protocol.handle('media', (request: Request) => {
-    return net.fetch('file://' + request.url.slice('media://'.length))
-  })
+    return net.fetch(
+      'file://' + request.url.slice('media://'.length)
+    );
+  });
 
   // Initialize theme system (must be before window creation)
-  initializeThemeManager()
+  initializeThemeManager();
 
   // Build application menu with theme options
-  buildApplicationMenu()
+  buildApplicationMenu();
 
-  createMainWindow()
+  createMainWindow();
 
   /**
    * IPC handler: create-world-window
@@ -368,7 +399,7 @@ app.whenReady().then(() => {
    * Creates the World View window when user clicks "World View" button in toolbar.
    * See App.tsx:119 for caller.
    */
-  ipcMain.on('create-world-window', createWorldWindow)
+  ipcMain.on('create-world-window', createWorldWindow);
 
   /**
    * IPC handler: REQUEST_INITIAL_STATE
@@ -386,9 +417,9 @@ app.whenReady().then(() => {
   ipcMain.on('REQUEST_INITIAL_STATE', () => {
     // Relay request to main window (Architect View)
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('REQUEST_INITIAL_STATE')
+      mainWindow.webContents.send('REQUEST_INITIAL_STATE');
     }
-  })
+  });
 
   /**
    * IPC handler: SYNC_FROM_WORLD_VIEW
@@ -407,12 +438,15 @@ app.whenReady().then(() => {
    *
    * This creates a round-trip but ensures Architect View remains the source of truth.
    */
-  ipcMain.on('SYNC_FROM_WORLD_VIEW', (_event: IpcMainEvent, action: unknown) => {
-    // Relay World View changes to Architect View (main window)
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('SYNC_WORLD_STATE', action)
+  ipcMain.on(
+    'SYNC_FROM_WORLD_VIEW',
+    (_event: IpcMainEvent, action: unknown) => {
+      // Relay World View changes to Architect View (main window)
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('SYNC_WORLD_STATE', action);
+      }
     }
-  })
+  );
 
   /**
    * IPC handler: SYNC_WORLD_STATE
@@ -428,11 +462,36 @@ app.whenReady().then(() => {
    * - Main process relays to World Window
    * - World Window subscribes and updates local store
    */
-  ipcMain.on('SYNC_WORLD_STATE', (_event: IpcMainEvent, state: unknown) => {
-    if (worldWindow && !worldWindow.isDestroyed()) {
-        worldWindow.webContents.send('SYNC_WORLD_STATE', state)
+  ipcMain.on(
+    'SYNC_WORLD_STATE',
+    (_event: IpcMainEvent, state: unknown) => {
+      const action = state as any;
+      const actionType = action?.type || 'unknown';
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[Main Process] SYNC_WORLD_STATE received (${actionType}), relaying to World View`
+        );
+      }
+      if (worldWindow && !worldWindow.isDestroyed()) {
+        worldWindow.webContents.send('SYNC_WORLD_STATE', state);
+      } else if (process.env.NODE_ENV === 'development') {
+        console.warn(
+          '[Main Process] Cannot send SYNC_WORLD_STATE - World View window not available'
+        );
+      }
     }
-  })
+  );
+
+  // Handler for renderer logs (so we can see World View logs in terminal)
+  // Only used in development mode
+  if (process.env.NODE_ENV === 'development') {
+    ipcMain.on(
+      'LOG_TO_TERMINAL',
+      (_event: IpcMainEvent, message: string) => {
+        console.log(message);
+      }
+    );
+  }
 
   /**
    * IPC handler: SAVE_ASSET_TEMP
@@ -462,17 +521,27 @@ app.whenReady().then(() => {
    * );
    * // Returns: "file:///Users/.../Hyle/temp_assets/1234567890-goblin.webp"
    */
-  ipcMain.handle('SAVE_ASSET_TEMP', async (_event: IpcMainInvokeEvent, buffer: ArrayBuffer, name: string) => {
-    const tempDir = path.join(app.getPath('userData'), 'temp_assets');
-    await fs.mkdir(tempDir, { recursive: true });  // Create if doesn't exist
-    const fileName = `${Date.now()}-${name}`;  // Timestamp prevents collisions
-    const filePath = path.join(tempDir, fileName);
-    await fs.writeFile(filePath, Buffer.from(buffer));
-    return `file://${filePath}`;  // Return file:// URL for renderer
-  })
+  ipcMain.handle(
+    'SAVE_ASSET_TEMP',
+    async (
+      _event: IpcMainInvokeEvent,
+      buffer: ArrayBuffer,
+      name: string
+    ) => {
+      const tempDir = path.join(
+        app.getPath('userData'),
+        'temp_assets'
+      );
+      await fs.mkdir(tempDir, { recursive: true }); // Create if doesn't exist
+      const fileName = `${Date.now()}-${name}`; // Timestamp prevents collisions
+      const filePath = path.join(tempDir, fileName);
+      await fs.writeFile(filePath, Buffer.from(buffer));
+      return `file://${filePath}`; // Return file:// URL for renderer
+    }
+  );
 
-// Track the currently open campaign file path for auto-save
-let currentCampaignPath: string | null = null;
+  // Track the currently open campaign file path for auto-save
+  let currentCampaignPath: string | null = null;
 
   /**
    * Helper function to serialize campaign assets to a ZIP file.
@@ -482,65 +551,70 @@ let currentCampaignPath: string | null = null;
    * @param zip - JSZip instance to add files to
    * @returns Modified campaign object with relative asset paths
    */
-  async function serializeCampaignToZip(campaign: unknown, zip: JSZip): Promise<unknown> {
-      const assetsFolder = zip.folder("assets");
+  async function serializeCampaignToZip(
+    campaign: unknown,
+    zip: JSZip
+  ): Promise<unknown> {
+    const assetsFolder = zip.folder('assets');
 
-      // Deep clone to avoid mutating original state
-      const campaignToSave = JSON.parse(JSON.stringify(campaign));
+    // Deep clone to avoid mutating original state
+    const campaignToSave = JSON.parse(JSON.stringify(campaign));
 
-      // Track processed files to avoid duplication
-      // Key: Absolute source path, Value: Relative destination path in zip
-      const processedAssets = new Map<string, string>();
+    // Track processed files to avoid duplication
+    // Key: Absolute source path, Value: Relative destination path in zip
+    const processedAssets = new Map<string, string>();
 
-      // Helper to process an image asset
-      const processAsset = async (src: string): Promise<string> => {
-          if (!src || !src.startsWith('file://')) return src;
+    // Helper to process an image asset
+    const processAsset = async (src: string): Promise<string> => {
+      if (!src || !src.startsWith('file://')) return src;
 
-          const absolutePath = fileURLToPath(src);
+      const absolutePath = fileURLToPath(src);
 
-          // If already processed, return the existing relative path
-          if (processedAssets.has(absolutePath)) {
-              return processedAssets.get(absolutePath)!;
-          }
-
-          const basename = path.basename(absolutePath);
-          const content = await fs.readFile(absolutePath).catch(() => null);
-          if (content) {
-              assetsFolder?.file(basename, content);
-              const relativePath = `assets/${basename}`;
-              processedAssets.set(absolutePath, relativePath);
-              return relativePath;
-          }
-          return src; // Keep original if read fails
-      };
-
-      // Iterate all maps and process assets
-      if (campaignToSave.maps) {
-          for (const mapId in campaignToSave.maps) {
-              const map = campaignToSave.maps[mapId];
-
-              // 1. Process Map Background
-              if (map.map && map.map.src) {
-                  map.map.src = await processAsset(map.map.src);
-              }
-
-              // 2. Process Tokens
-              if (map.tokens) {
-                  for (const token of map.tokens) {
-                      token.src = await processAsset(token.src);
-                  }
-              }
-          }
+      // If already processed, return the existing relative path
+      if (processedAssets.has(absolutePath)) {
+        return processedAssets.get(absolutePath)!;
       }
 
-      // 3. Process Campaign Token Library
-      if (campaignToSave.tokenLibrary) {
-          for (const item of campaignToSave.tokenLibrary) {
-              item.src = await processAsset(item.src);
-          }
+      const basename = path.basename(absolutePath);
+      const content = await fs
+        .readFile(absolutePath)
+        .catch(() => null);
+      if (content) {
+        assetsFolder?.file(basename, content);
+        const relativePath = `assets/${basename}`;
+        processedAssets.set(absolutePath, relativePath);
+        return relativePath;
       }
+      return src; // Keep original if read fails
+    };
 
-      return campaignToSave;
+    // Iterate all maps and process assets
+    if (campaignToSave.maps) {
+      for (const mapId in campaignToSave.maps) {
+        const map = campaignToSave.maps[mapId];
+
+        // 1. Process Map Background
+        if (map.map && map.map.src) {
+          map.map.src = await processAsset(map.map.src);
+        }
+
+        // 2. Process Tokens
+        if (map.tokens) {
+          for (const token of map.tokens) {
+            token.src = await processAsset(token.src);
+          }
+        }
+      }
+    }
+
+    // 3. Process Campaign Token Library
+    if (campaignToSave.tokenLibrary) {
+      for (const item of campaignToSave.tokenLibrary) {
+        item.src = await processAsset(item.src);
+      }
+    }
+
+    return campaignToSave;
   }
 
   /**
@@ -551,28 +625,34 @@ let currentCampaignPath: string | null = null;
    *
    * @param campaign - Campaign data from useGameStore.campaign
    */
-  ipcMain.handle('SAVE_CAMPAIGN', async (_event: IpcMainInvokeEvent, campaign: unknown) => {
-    const { filePath } = await dialog.showSaveDialog({
-      filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }]
-    });
-    if (!filePath) return false;
+  ipcMain.handle(
+    'SAVE_CAMPAIGN',
+    async (_event: IpcMainInvokeEvent, campaign: unknown) => {
+      const { filePath } = await dialog.showSaveDialog({
+        filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }],
+      });
+      if (!filePath) return false;
 
-    // Update current path for auto-save
-    currentCampaignPath = filePath;
+      // Update current path for auto-save
+      currentCampaignPath = filePath;
 
-    const zip = new JSZip();
+      const zip = new JSZip();
 
-    // Use shared helper to process campaign assets
-    const campaignToSave = await serializeCampaignToZip(campaign, zip);
+      // Use shared helper to process campaign assets
+      const campaignToSave = await serializeCampaignToZip(
+        campaign,
+        zip
+      );
 
-    // Add manifest.json with modified state
-    zip.file("manifest.json", JSON.stringify(campaignToSave));
+      // Add manifest.json with modified state
+      zip.file('manifest.json', JSON.stringify(campaignToSave));
 
-    // Write ZIP to disk
-    const content = await zip.generateAsync({ type: "nodebuffer" });
-    await fs.writeFile(filePath, content);
-    return true;
- });
+      // Write ZIP to disk
+      const content = await zip.generateAsync({ type: 'nodebuffer' });
+      await fs.writeFile(filePath, content);
+      return true;
+    }
+  );
 
   /**
    * IPC handler: AUTO_SAVE
@@ -580,39 +660,47 @@ let currentCampaignPath: string | null = null;
    * Saves the campaign to the last known path without user interaction.
    * Uses atomic write (write to temp + rename) to prevent corruption.
    */
-  ipcMain.handle('AUTO_SAVE', async (_event: IpcMainInvokeEvent, campaign: unknown) => {
+  ipcMain.handle(
+    'AUTO_SAVE',
+    async (_event: IpcMainInvokeEvent, campaign: unknown) => {
       if (!currentCampaignPath) return false; // No file open, cannot auto-save
 
       try {
-          const zip = new JSZip();
+        const zip = new JSZip();
 
-          // Use shared helper to process campaign assets
-          const campaignToSave = await serializeCampaignToZip(campaign, zip);
+        // Use shared helper to process campaign assets
+        const campaignToSave = await serializeCampaignToZip(
+          campaign,
+          zip
+        );
 
-          zip.file("manifest.json", JSON.stringify(campaignToSave));
-          const content = await zip.generateAsync({ type: "nodebuffer" });
+        zip.file('manifest.json', JSON.stringify(campaignToSave));
+        const content = await zip.generateAsync({
+          type: 'nodebuffer',
+        });
 
-          // Atomic write: write to .tmp file then rename
-          const tempPath = currentCampaignPath + '.tmp';
-          await fs.writeFile(tempPath, content);
-          await fs.rename(tempPath, currentCampaignPath);
+        // Atomic write: write to .tmp file then rename
+        const tempPath = currentCampaignPath + '.tmp';
+        await fs.writeFile(tempPath, content);
+        await fs.rename(tempPath, currentCampaignPath);
 
-          return true;
+        return true;
       } catch (err) {
-          console.error("Auto-save failed:", err);
-          return false;
+        console.error('Auto-save failed:', err);
+        return false;
       }
-  });
+    }
+  );
 
- /**
-  * IPC handler: LOAD_CAMPAIGN
-  *
-  * Deserializes a .hyle ZIP file and restores campaign state.
-  * Handles migration from legacy single-map files to new Campaign format.
-  */
- ipcMain.handle('LOAD_CAMPAIGN', async () => {
+  /**
+   * IPC handler: LOAD_CAMPAIGN
+   *
+   * Deserializes a .hyle ZIP file and restores campaign state.
+   * Handles migration from legacy single-map files to new Campaign format.
+   */
+  ipcMain.handle('LOAD_CAMPAIGN', async () => {
     const { filePaths } = await dialog.showOpenDialog({
-      filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }]
+      filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }],
     });
     if (filePaths.length === 0) return null;
 
@@ -623,12 +711,18 @@ let currentCampaignPath: string | null = null;
     const zip = await JSZip.loadAsync(zipContent);
 
     // Create unique session directory
-    const sessionDir = path.join(app.getPath('userData'), 'sessions', Date.now().toString());
+    const sessionDir = path.join(
+      app.getPath('userData'),
+      'sessions',
+      Date.now().toString()
+    );
     await fs.mkdir(sessionDir, { recursive: true });
 
     // Extract manifest
-    const manifestStr = await zip.file("manifest.json")?.async("string");
-    if (!manifestStr) throw new Error("Invalid Hyle file");
+    const manifestStr = await zip
+      .file('manifest.json')
+      ?.async('string');
+    if (!manifestStr) throw new Error('Invalid Hyle file');
 
     type TokenWithSrc = {
       src: string;
@@ -675,351 +769,409 @@ let currentCampaignPath: string | null = null;
       [key: string]: unknown;
     };
 
-    const loadedData: CampaignManifest | LegacyGameState = JSON.parse(manifestStr);
+    const loadedData: CampaignManifest | LegacyGameState =
+      JSON.parse(manifestStr);
     let campaign: CampaignManifest;
 
     // --- MIGRATION: Check if Legacy File ---
     if (!loadedData.maps) {
-        // Legacy format: loadedData is a GameState object (tokens, map, etc.)
-        // Convert to Campaign structure
-        const mapId = randomUUID();
-        const mapData: MapData = {
-            id: mapId,
-            name: 'Imported Map',
-            tokens: loadedData.tokens || [],
-            drawings: loadedData.drawings || [],
-            map: loadedData.map || null,
-            gridSize: loadedData.gridSize || 50,
-            gridType: loadedData.gridType || 'LINES',
-            exploredRegions: loadedData.exploredRegions || [],
-            isDaylightMode: loadedData.isDaylightMode || false
-        };
+      // Legacy format: loadedData is a GameState object (tokens, map, etc.)
+      // Convert to Campaign structure
+      const mapId = randomUUID();
+      const mapData: MapData = {
+        id: mapId,
+        name: 'Imported Map',
+        tokens: loadedData.tokens || [],
+        drawings: loadedData.drawings || [],
+        map: loadedData.map || null,
+        gridSize: loadedData.gridSize || 50,
+        gridType: loadedData.gridType || 'LINES',
+        exploredRegions: loadedData.exploredRegions || [],
+        isDaylightMode: loadedData.isDaylightMode || false,
+      };
 
-        campaign = {
-            id: randomUUID(),
-            name: 'Imported Campaign',
-            maps: { [mapId]: mapData },
-            activeMapId: mapId,
-            tokenLibrary: [] // Initialize empty library for legacy
-        };
+      campaign = {
+        id: randomUUID(),
+        name: 'Imported Campaign',
+        maps: { [mapId]: mapData },
+        activeMapId: mapId,
+        tokenLibrary: [], // Initialize empty library for legacy
+      };
     } else {
-        // New format
-        campaign = loadedData;
+      // New format
+      campaign = loadedData;
     }
 
     // Extract assets and restore paths
-    const assets = zip.folder("assets");
+    const assets = zip.folder('assets');
     if (assets) {
-        const assetsDir = path.join(sessionDir, 'assets');
-        await fs.mkdir(assetsDir, { recursive: true });
+      const assetsDir = path.join(sessionDir, 'assets');
+      await fs.mkdir(assetsDir, { recursive: true });
 
-        const restoreAsset = async (src: string): Promise<string> => {
-            if (src && src.startsWith('assets/')) {
-                const fileName = path.basename(src);
-                const fileData = await assets.file(fileName)?.async("nodebuffer");
-                if (fileData) {
-                    const destPath = path.join(assetsDir, fileName);
-                    await fs.writeFile(destPath, fileData);
-                    return `file://${destPath}`;
-                }
-            }
-            return src;
-        };
+      const restoreAsset = async (src: string): Promise<string> => {
+        if (src && src.startsWith('assets/')) {
+          const fileName = path.basename(src);
+          const fileData = await assets
+            .file(fileName)
+            ?.async('nodebuffer');
+          if (fileData) {
+            const destPath = path.join(assetsDir, fileName);
+            await fs.writeFile(destPath, fileData);
+            return `file://${destPath}`;
+          }
+        }
+        return src;
+      };
 
-        // Restore assets for ALL maps
-        for (const mapId in campaign.maps) {
-            const map = campaign.maps[mapId];
+      // Restore assets for ALL maps
+      for (const mapId in campaign.maps) {
+        const map = campaign.maps[mapId];
 
-            // 1. Restore Map Background
-            if (map.map && map.map.src) {
-                map.map.src = await restoreAsset(map.map.src);
-            }
-
-            // 2. Restore Tokens
-            if (map.tokens) {
-                for (const token of map.tokens) {
-                    token.src = await restoreAsset(token.src);
-                }
-            }
+        // 1. Restore Map Background
+        if (map.map && map.map.src) {
+          map.map.src = await restoreAsset(map.map.src);
         }
 
-        // 3. Restore Campaign Token Library assets
-        if (campaign.tokenLibrary) {
-            for (const item of campaign.tokenLibrary) {
-                item.src = await restoreAsset(item.src);
-            }
+        // 2. Restore Tokens
+        if (map.tokens) {
+          for (const token of map.tokens) {
+            token.src = await restoreAsset(token.src);
+          }
         }
+      }
+
+      // 3. Restore Campaign Token Library assets
+      if (campaign.tokenLibrary) {
+        for (const item of campaign.tokenLibrary) {
+          item.src = await restoreAsset(item.src);
+        }
+      }
     }
 
     return campaign;
- });
+  });
 
- /**
-  * IPC handler: get-theme-state
-  *
-  * Returns current theme state to renderer on mount.
-  * Called by ThemeManager component when app initializes.
-  *
-  * @returns Object with mode ('light'|'dark'|'system') and effectiveTheme ('light'|'dark')
-  */
- ipcMain.handle('get-theme-state', () => {
-   return getThemeState()
- })
+  /**
+   * IPC handler: get-theme-state
+   *
+   * Returns current theme state to renderer on mount.
+   * Called by ThemeManager component when app initializes.
+   *
+   * @returns Object with mode ('light'|'dark'|'system') and effectiveTheme ('light'|'dark')
+   */
+  ipcMain.handle('get-theme-state', () => {
+    return getThemeState();
+  });
 
- /**
-  * IPC handler: set-theme-mode
-  *
-  * Updates theme preference and broadcasts to all windows.
-  * Called when user selects theme from application menu.
-  *
-  * @param mode - Theme mode to set ('light', 'dark', or 'system')
-  */
- ipcMain.handle('set-theme-mode', (_event: IpcMainInvokeEvent, mode: ThemeMode) => {
-   setThemeMode(mode)
- })
+  /**
+   * IPC handler: set-theme-mode
+   *
+   * Updates theme preference and broadcasts to all windows.
+   * Called when user selects theme from application menu.
+   *
+   * @param mode - Theme mode to set ('light', 'dark', or 'system')
+   */
+  ipcMain.handle(
+    'set-theme-mode',
+    (_event: IpcMainInvokeEvent, mode: ThemeMode) => {
+      setThemeMode(mode);
+    }
+  );
 
- /**
-  * IPC handler: TOGGLE_PAUSE
-  *
-  * Toggles the game pause state and broadcasts the new state to both windows.
-  * When paused, the World View displays a loading overlay to hide DM actions.
-  *
-  * @returns New pause state
-  */
- ipcMain.handle('TOGGLE_PAUSE', () => {
-   isGamePaused = !isGamePaused
+  /**
+   * IPC handler: TOGGLE_PAUSE
+   *
+   * Toggles the game pause state and broadcasts the new state to both windows.
+   * When paused, the World View displays a loading overlay to hide DM actions.
+   *
+   * @returns New pause state
+   */
+  ipcMain.handle('TOGGLE_PAUSE', () => {
+    isGamePaused = !isGamePaused;
 
-   // Broadcast new pause state to all windows
-   if (mainWindow && !mainWindow.isDestroyed()) {
-     mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
-   }
-   if (worldWindow && !worldWindow.isDestroyed()) {
-     worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
-   }
+    // Broadcast new pause state to all windows
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(
+        'PAUSE_STATE_CHANGED',
+        isGamePaused
+      );
+    }
+    if (worldWindow && !worldWindow.isDestroyed()) {
+      worldWindow.webContents.send(
+        'PAUSE_STATE_CHANGED',
+        isGamePaused
+      );
+    }
 
-   return isGamePaused
- })
+    return isGamePaused;
+  });
 
- /**
-  * IPC handler: GET_PAUSE_STATE
-  *
-  * Returns the current pause state. Used when windows first load to sync state.
-  *
-  * @returns Current pause state
-  */
- ipcMain.handle('GET_PAUSE_STATE', () => {
-   return isGamePaused
- })
+  /**
+   * IPC handler: GET_PAUSE_STATE
+   *
+   * Returns the current pause state. Used when windows first load to sync state.
+   *
+   * @returns Current pause state
+   */
+  ipcMain.handle('GET_PAUSE_STATE', () => {
+    return isGamePaused;
+  });
 
- /**
-  * IPC handler: SELECT_LIBRARY_PATH
-  *
-  * Opens a native directory picker dialog for user to select their token library location.
-  * This allows users to choose where their persistent token library will be stored.
-  *
-  * @returns Selected directory path, or null if user cancelled
-  */
- ipcMain.handle('SELECT_LIBRARY_PATH', async () => {
-   const result = await dialog.showOpenDialog({
-     properties: ['openDirectory', 'createDirectory'],
-     title: 'Select Token Library Location'
-   });
-   if (result.canceled) return null;
-   return result.filePaths[0];
- })
+  /**
+   * IPC handler: SELECT_LIBRARY_PATH
+   *
+   * Opens a native directory picker dialog for user to select their token library location.
+   * This allows users to choose where their persistent token library will be stored.
+   *
+   * @returns Selected directory path, or null if user cancelled
+   */
+  ipcMain.handle('SELECT_LIBRARY_PATH', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Select Token Library Location',
+    });
+    if (result.canceled) return null;
+    return result.filePaths[0];
+  });
 
- /**
-  * IPC handler: SAVE_ASSET_TO_LIBRARY
-  *
-  * Saves a token asset to the persistent library directory.
-  * Creates both full-size and thumbnail versions of the image.
-  *
-  * **Note on concurrency:**
-  * This handler uses a read-modify-write pattern for index.json which could
-  * result in lost updates if multiple saves happen simultaneously. Since this
-  * application is designed for single-user local use, concurrent access is not
-  * expected. If concurrent operations become a requirement, consider implementing
-  * a file locking mechanism or atomic update pattern.
-  *
-  * @param fullSizeBuffer - Full-resolution WebP image as ArrayBuffer
-  * @param thumbnailBuffer - 128x128 thumbnail WebP image as ArrayBuffer
-  * @param metadata - Asset metadata (id, name, category, tags)
-  * @returns Complete TokenLibraryItem with file:// URLs
-  */
- ipcMain.handle('SAVE_ASSET_TO_LIBRARY', async (
-   _event: IpcMainInvokeEvent,
-   {
-     fullSizeBuffer,
-     thumbnailBuffer,
-     metadata
-   }: {
-     fullSizeBuffer: ArrayBuffer;
-     thumbnailBuffer: ArrayBuffer;
-     metadata: {
-       id: string;
-       name: string;
-       category: string;
-       tags: string[];
-     };
-   }
- ) => {
-   const libraryPath = path.join(app.getPath('userData'), 'library', 'assets');
-   await fs.mkdir(libraryPath, { recursive: true });
+  /**
+   * IPC handler: SAVE_ASSET_TO_LIBRARY
+   *
+   * Saves a token asset to the persistent library directory.
+   * Creates both full-size and thumbnail versions of the image.
+   *
+   * **Note on concurrency:**
+   * This handler uses a read-modify-write pattern for index.json which could
+   * result in lost updates if multiple saves happen simultaneously. Since this
+   * application is designed for single-user local use, concurrent access is not
+   * expected. If concurrent operations become a requirement, consider implementing
+   * a file locking mechanism or atomic update pattern.
+   *
+   * @param fullSizeBuffer - Full-resolution WebP image as ArrayBuffer
+   * @param thumbnailBuffer - 128x128 thumbnail WebP image as ArrayBuffer
+   * @param metadata - Asset metadata (id, name, category, tags)
+   * @returns Complete TokenLibraryItem with file:// URLs
+   */
+  ipcMain.handle(
+    'SAVE_ASSET_TO_LIBRARY',
+    async (
+      _event: IpcMainInvokeEvent,
+      {
+        fullSizeBuffer,
+        thumbnailBuffer,
+        metadata,
+      }: {
+        fullSizeBuffer: ArrayBuffer;
+        thumbnailBuffer: ArrayBuffer;
+        metadata: {
+          id: string;
+          name: string;
+          category: string;
+          tags: string[];
+        };
+      }
+    ) => {
+      const libraryPath = path.join(
+        app.getPath('userData'),
+        'library',
+        'assets'
+      );
+      await fs.mkdir(libraryPath, { recursive: true });
 
-   // Save full-size image
-   const filename = `${metadata.id}.webp`;
-   const fullPath = path.join(libraryPath, filename);
-   await fs.writeFile(fullPath, Buffer.from(fullSizeBuffer));
+      // Save full-size image
+      const filename = `${metadata.id}.webp`;
+      const fullPath = path.join(libraryPath, filename);
+      await fs.writeFile(fullPath, Buffer.from(fullSizeBuffer));
 
-   // Save thumbnail
-   const thumbFilename = `thumb-${metadata.id}.webp`;
-   const thumbPath = path.join(libraryPath, thumbFilename);
-   await fs.writeFile(thumbPath, Buffer.from(thumbnailBuffer));
+      // Save thumbnail
+      const thumbFilename = `thumb-${metadata.id}.webp`;
+      const thumbPath = path.join(libraryPath, thumbFilename);
+      await fs.writeFile(thumbPath, Buffer.from(thumbnailBuffer));
 
-   // Update index.json
-   const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
-   let index: { items: unknown[] } = { items: [] };
+      // Update index.json
+      const indexPath = path.join(
+        app.getPath('userData'),
+        'library',
+        'index.json'
+      );
+      let index: { items: unknown[] } = { items: [] };
 
-   try {
-     const indexData = await fs.readFile(indexPath, 'utf-8');
-     index = JSON.parse(indexData);
-     
-     // Validate index structure to prevent runtime errors on corruption
-     if (!index.items || !Array.isArray(index.items)) {
-       console.warn('[MAIN] Invalid index.json structure, resetting to empty array');
-       index.items = [];
-     }
-   } catch {
-     // Index doesn't exist yet, use empty array
-   }
+      try {
+        const indexData = await fs.readFile(indexPath, 'utf-8');
+        index = JSON.parse(indexData);
 
-   const newItem = {
-     ...metadata,
-     src: `file://${fullPath}`,
-     thumbnailSrc: `file://${thumbPath}`,
-     dateAdded: Date.now()
-   };
+        // Validate index structure to prevent runtime errors on corruption
+        if (!index.items || !Array.isArray(index.items)) {
+          console.warn(
+            '[MAIN] Invalid index.json structure, resetting to empty array'
+          );
+          index.items = [];
+        }
+      } catch {
+        // Index doesn't exist yet, use empty array
+      }
 
-   index.items.push(newItem);
-   await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+      const newItem = {
+        ...metadata,
+        src: `file://${fullPath}`,
+        thumbnailSrc: `file://${thumbPath}`,
+        dateAdded: Date.now(),
+      };
 
-   return newItem;
- })
+      index.items.push(newItem);
+      await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
 
- /**
-  * IPC handler: LOAD_LIBRARY_INDEX
-  *
-  * Loads the library metadata index from disk.
-  * Returns empty array if index doesn't exist yet.
-  *
-  * @returns Array of TokenLibraryItem objects
-  */
- ipcMain.handle('LOAD_LIBRARY_INDEX', async () => {
-   const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+      return newItem;
+    }
+  );
 
-   try {
-     const data = await fs.readFile(indexPath, 'utf-8');
-     const index = JSON.parse(data);
-     return index.items || [];
-   } catch {
-     // Index doesn't exist or is corrupted
-     return [];
-   }
- })
+  /**
+   * IPC handler: LOAD_LIBRARY_INDEX
+   *
+   * Loads the library metadata index from disk.
+   * Returns empty array if index doesn't exist yet.
+   *
+   * @returns Array of TokenLibraryItem objects
+   */
+  ipcMain.handle('LOAD_LIBRARY_INDEX', async () => {
+    const indexPath = path.join(
+      app.getPath('userData'),
+      'library',
+      'index.json'
+    );
 
- /**
-  * IPC handler: DELETE_LIBRARY_ASSET
-  *
-  * Removes an asset from the library (both files and metadata).
-  * Deletes full-size image, thumbnail, and updates index.json.
-  *
-  * **Note on concurrency:**
-  * This handler uses a read-modify-write pattern for index.json which could
-  * result in lost updates if multiple operations happen simultaneously. Since
-  * this application is designed for single-user local use, concurrent access
-  * is not expected. If concurrent operations become a requirement, consider
-  * implementing a file locking mechanism or atomic update pattern.
-  *
-  * @param assetId - UUID of the asset to delete
-  * @returns true if successful
-  */
- ipcMain.handle('DELETE_LIBRARY_ASSET', async (_event: IpcMainInvokeEvent, assetId: string) => {
-   const libraryPath = path.join(app.getPath('userData'), 'library', 'assets');
+    try {
+      const data = await fs.readFile(indexPath, 'utf-8');
+      const index = JSON.parse(data);
+      return index.items || [];
+    } catch {
+      // Index doesn't exist or is corrupted
+      return [];
+    }
+  });
 
-   try {
-     // Delete full-size image
-     await fs.unlink(path.join(libraryPath, `${assetId}.webp`));
+  /**
+   * IPC handler: DELETE_LIBRARY_ASSET
+   *
+   * Removes an asset from the library (both files and metadata).
+   * Deletes full-size image, thumbnail, and updates index.json.
+   *
+   * **Note on concurrency:**
+   * This handler uses a read-modify-write pattern for index.json which could
+   * result in lost updates if multiple operations happen simultaneously. Since
+   * this application is designed for single-user local use, concurrent access
+   * is not expected. If concurrent operations become a requirement, consider
+   * implementing a file locking mechanism or atomic update pattern.
+   *
+   * @param assetId - UUID of the asset to delete
+   * @returns true if successful
+   */
+  ipcMain.handle(
+    'DELETE_LIBRARY_ASSET',
+    async (_event: IpcMainInvokeEvent, assetId: string) => {
+      const libraryPath = path.join(
+        app.getPath('userData'),
+        'library',
+        'assets'
+      );
 
-     // Delete thumbnail
-     await fs.unlink(path.join(libraryPath, `thumb-${assetId}.webp`));
-   } catch (err) {
-     console.error('[MAIN] Failed to delete library asset files:', err);
-     // Continue to update index even if files don't exist
-   }
+      try {
+        // Delete full-size image
+        await fs.unlink(path.join(libraryPath, `${assetId}.webp`));
 
-   // Update index.json
-   const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+        // Delete thumbnail
+        await fs.unlink(
+          path.join(libraryPath, `thumb-${assetId}.webp`)
+        );
+      } catch (err) {
+        console.error(
+          '[MAIN] Failed to delete library asset files:',
+          err
+        );
+        // Continue to update index even if files don't exist
+      }
 
-   try {
-     const data = await fs.readFile(indexPath, 'utf-8');
-     const index = JSON.parse(data);
+      // Update index.json
+      const indexPath = path.join(
+        app.getPath('userData'),
+        'library',
+        'index.json'
+      );
 
-     // Validate index structure before modifying
-     if (!index.items || !Array.isArray(index.items)) {
-       console.warn('[MAIN] Invalid index.json structure during delete');
-       index.items = [];
-     }
+      try {
+        const data = await fs.readFile(indexPath, 'utf-8');
+        const index = JSON.parse(data);
 
-     index.items = index.items.filter((item: { id: string }) => item.id !== assetId);
-     await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
-   } catch (err) {
-     console.error('[MAIN] Failed to update library index:', err);
-     throw err;
-   }
+        // Validate index structure before modifying
+        if (!index.items || !Array.isArray(index.items)) {
+          console.warn(
+            '[MAIN] Invalid index.json structure during delete'
+          );
+          index.items = [];
+        }
 
-   return true;
- })
+        index.items = index.items.filter(
+          (item: { id: string }) => item.id !== assetId
+        );
+        await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+      } catch (err) {
+        console.error('[MAIN] Failed to update library index:', err);
+        throw err;
+      }
 
- /**
-  * IPC handler: UPDATE_LIBRARY_METADATA
-  *
-  * Updates metadata for a library asset (name, category, tags).
-  * Does not modify the asset files themselves.
-  *
-  * @param assetId - UUID of the asset to update
-  * @param updates - Partial metadata updates
-  * @returns Updated TokenLibraryItem
-  */
- ipcMain.handle('UPDATE_LIBRARY_METADATA', async (
-   _event: IpcMainInvokeEvent,
-   assetId: string,
-   updates: { name?: string; category?: string; tags?: string[] }
- ) => {
-   const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+      return true;
+    }
+  );
 
-   const data = await fs.readFile(indexPath, 'utf-8');
-   const index = JSON.parse(data);
+  /**
+   * IPC handler: UPDATE_LIBRARY_METADATA
+   *
+   * Updates metadata for a library asset (name, category, tags).
+   * Does not modify the asset files themselves.
+   *
+   * @param assetId - UUID of the asset to update
+   * @param updates - Partial metadata updates
+   * @returns Updated TokenLibraryItem
+   */
+  ipcMain.handle(
+    'UPDATE_LIBRARY_METADATA',
+    async (
+      _event: IpcMainInvokeEvent,
+      assetId: string,
+      updates: { name?: string; category?: string; tags?: string[] }
+    ) => {
+      const indexPath = path.join(
+        app.getPath('userData'),
+        'library',
+        'index.json'
+      );
 
-   if (!index.items) {
-     throw new Error('Library index is corrupted');
-   }
+      const data = await fs.readFile(indexPath, 'utf-8');
+      const index = JSON.parse(data);
 
-   const itemIndex = index.items.findIndex((item: { id: string }) => item.id === assetId);
+      if (!index.items) {
+        throw new Error('Library index is corrupted');
+      }
 
-   if (itemIndex === -1) {
-     throw new Error(`Asset ${assetId} not found in library`);
-   }
+      const itemIndex = index.items.findIndex(
+        (item: { id: string }) => item.id === assetId
+      );
 
-   // Apply updates
-   index.items[itemIndex] = {
-     ...index.items[itemIndex],
-     ...updates
-   };
+      if (itemIndex === -1) {
+        throw new Error(`Asset ${assetId} not found in library`);
+      }
 
-   await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+      // Apply updates
+      index.items[itemIndex] = {
+        ...index.items[itemIndex],
+        ...updates,
+      };
 
-   return index.items[itemIndex];
- })
+      await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+
+      return index.items[itemIndex];
+    }
+  );
 
   /**
    * IPC handler: get-username
@@ -1031,8 +1183,8 @@ let currentCampaignPath: string | null = null;
    * @returns System username (e.g., 'johnsmith' on macOS/Linux)
    */
   ipcMain.handle('get-username', () => {
-    return os.userInfo().username
-  })
+    return os.userInfo().username;
+  });
 
   /**
    * IPC handler: open-external
@@ -1043,14 +1195,17 @@ let currentCampaignPath: string | null = null;
    * @param url - URL to open (must be mailto: or https:)
    * @returns Success status
    */
-  ipcMain.handle('open-external', async (_event: IpcMainInvokeEvent, url: string) => {
-    // Security: Only allow mailto: and https: URLs
-    if (url.startsWith('mailto:') || url.startsWith('https:')) {
-      await shell.openExternal(url)
-      return true
+  ipcMain.handle(
+    'open-external',
+    async (_event: IpcMainInvokeEvent, url: string) => {
+      // Security: Only allow mailto: and https: URLs
+      if (url.startsWith('mailto:') || url.startsWith('https:')) {
+        await shell.openExternal(url);
+        return true;
+      }
+      return false;
     }
-    return false
-  })
+  );
 
   /**
    * IPC handler: save-error-report
@@ -1061,25 +1216,32 @@ let currentCampaignPath: string | null = null;
    * @param reportContent - The error report content to save
    * @returns Success status and optional file path
    */
-  ipcMain.handle('save-error-report', async (_event: IpcMainInvokeEvent, reportContent: string) => {
-    try {
-      const { filePath, canceled } = await dialog.showSaveDialog({
-        title: 'Save Error Report',
-        defaultPath: `hyle-error-report-${Date.now()}.txt`,
-        filters: [
-          { name: 'Text Files', extensions: ['txt'] },
-          { name: 'All Files', extensions: ['*'] },
-        ],
-      })
+  ipcMain.handle(
+    'save-error-report',
+    async (_event: IpcMainInvokeEvent, reportContent: string) => {
+      try {
+        const { filePath, canceled } = await dialog.showSaveDialog({
+          title: 'Save Error Report',
+          defaultPath: `hyle-error-report-${Date.now()}.txt`,
+          filters: [
+            { name: 'Text Files', extensions: ['txt'] },
+            { name: 'All Files', extensions: ['*'] },
+          ],
+        });
 
-      if (canceled || !filePath) {
-        return { success: false, reason: 'User canceled' }
+        if (canceled || !filePath) {
+          return { success: false, reason: 'User canceled' };
+        }
+
+        await fs.writeFile(filePath, reportContent, 'utf-8');
+        return { success: true, filePath };
+      } catch (error) {
+        return {
+          success: false,
+          reason:
+            error instanceof Error ? error.message : 'Unknown error',
+        };
       }
-
-      await fs.writeFile(filePath, reportContent, 'utf-8')
-      return { success: true, filePath }
-    } catch (error) {
-      return { success: false, reason: error instanceof Error ? error.message : 'Unknown error' }
     }
-  })
-})
+  );
+});

@@ -29,15 +29,17 @@ import { useState, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 interface MobileToolbarProps {
-  tool: 'select' | 'marker' | 'eraser' | 'wall' | 'measure';
-  setTool: (tool: 'select' | 'marker' | 'eraser' | 'wall' | 'measure') => void;
+  tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
+  setTool: (tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure') => void;
   color: string;
   setColor: (color: string) => void;
+  doorOrientation?: 'horizontal' | 'vertical';
+  setDoorOrientation?: (orientation: 'horizontal' | 'vertical') => void;
   isGamePaused: boolean;
   onPauseToggle: () => void;
 }
 
-const MobileToolbar = ({ tool, setTool, color, setColor, isGamePaused, onPauseToggle }: MobileToolbarProps) => {
+const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'horizontal', setDoorOrientation, isGamePaused, onPauseToggle }: MobileToolbarProps) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -115,6 +117,47 @@ const MobileToolbar = ({ tool, setTool, color, setColor, isGamePaused, onPauseTo
               <span className="font-semibold">
                 {isGamePaused ? 'PAUSED - Click to Resume' : 'PLAYING - Click to Pause'}
               </span>
+            </button>
+
+            {/* Door Tool */}
+            <button
+              onClick={() => {
+                setTool('door');
+                setShowMoreMenu(false);
+              }}
+              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px]"
+              style={{
+                color: 'var(--app-text-primary)',
+                backgroundColor: tool === 'door' ? 'var(--app-accent-bg)' : 'transparent',
+                borderBottomWidth: '1px',
+                borderBottomStyle: 'solid',
+                borderBottomColor: 'var(--app-border-subtle)',
+              }}
+            >
+              <span className="text-xl">🚪</span>
+              <div className="flex-1">
+                <span>Place Door</span>
+                {tool === 'door' && (
+                  <div className="text-xs opacity-70 mt-1">
+                    {doorOrientation === 'horizontal' ? 'Horizontal ↔' : 'Vertical ↕'}
+                  </div>
+                )}
+              </div>
+              {tool === 'door' && setDoorOrientation && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDoorOrientation(doorOrientation === 'horizontal' ? 'vertical' : 'horizontal');
+                  }}
+                  className="px-3 py-1 rounded text-sm"
+                  style={{
+                    backgroundColor: 'var(--app-accent-solid)',
+                    color: 'white',
+                  }}
+                >
+                  Rotate
+                </button>
+              )}
             </button>
 
             {/* Color Picker */}

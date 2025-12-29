@@ -7,6 +7,7 @@ import { snapToGrid } from '../../utils/grid';
 import { useGameStore, Drawing } from '../../store/gameStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { simplifyPath, snapPointToPaths } from '../../utils/pathOptimization';
+import { isRectInAnyPolygon } from '../../types/geometry';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
 import TokenErrorBoundary from './TokenErrorBoundary';
@@ -57,14 +58,16 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number, y: num
 /**
  * Props for CanvasManager component
  *
- * @property {string} tool - Active drawing/interaction tool (select, marker, eraser, wall, measure)
+ * @property {string} tool - Active drawing/interaction tool (select, marker, eraser, wall, door, measure)
  * @property {string} color - Color for marker tool (hex format)
+ * @property {string} doorOrientation - Orientation for door placement (horizontal, vertical)
  * @property {boolean} isWorldView - If true, restricts interactions for player-facing World View
  * @property {MeasurementMode} measurementMode - Active measurement mode (ruler, blast, cone)
  */
 interface CanvasManagerProps {
-  tool?: 'select' | 'marker' | 'eraser' | 'wall' | 'measure';
+  tool?: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
   color?: string;
+  doorOrientation?: 'horizontal' | 'vertical';
   isWorldView?: boolean;
   onSelectionChange?: (selectedIds: string[]) => void;
   measurementMode?: MeasurementMode;
@@ -109,6 +112,7 @@ interface CanvasManagerProps {
 const CanvasManager = ({
   tool = 'select',
   color = '#df4b26',
+  doorOrientation = 'horizontal',
   isWorldView = false,
   onSelectionChange,
   measurementMode = 'ruler'
@@ -154,6 +158,46 @@ const CanvasManager = ({
   const gridType = useGameStore(s => s.gridType);
   const isCalibrating = useGameStore(s => s.isCalibrating);
   const isDaylightMode = useGameStore(s => s.isDaylightMode);
+  const activeVisionPolygons = useGameStore(s => s.activeVisionPolygons);
+
+  // DIAGNOSTIC REPORT - Copy/paste this entire block for debugging
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('🎮 CANVAS MANAGER DIAGNOSTIC REPORT');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('🖥️  VIEW MODE:', isWorldView ? '🌍 WORLD VIEW (Player)' : '🎨 DM VIEW (Architect)');
+  console.log('☀️  DAYLIGHT MODE:', isDaylightMode ? '✅ ON (no fog)' : '❌ OFF (fog enabled)');
+  console.log('');
+  console.log('📊 COUNTS:');
+  console.log(`  - Total Tokens: ${tokens.length}`);
+  console.log(`  - PC Tokens: ${tokens.filter(t => t.type === 'PC').length}`);
+  console.log(`  - NPC Tokens: ${tokens.filter(t => t.type === 'NPC').length}`);
+  console.log(`  - Doors: ${doors.length}`);
+  console.log(`  - Stairs: ${stairs.length}`);
+  console.log(`  - Wall Drawings: ${drawings.filter(d => d.tool === 'wall').length}`);
+  console.log(`  - Active Vision Polygons: ${activeVisionPolygons.length}`);
+  console.log('');
+  console.log('🔍 VISION SETUP:');
+  const pcTokens = tokens.filter(t => t.type === 'PC');
+  if (pcTokens.length === 0) {
+    console.log('  ⚠️ NO PC TOKENS! Add a PC token to enable vision.');
+  } else {
+    pcTokens.forEach(t => {
+      const hasVision = (t.visionRadius ?? 0) > 0;
+      console.log(`  - ${t.name || 'PC'}: Vision = ${t.visionRadius || 'NOT SET'} ${hasVision ? '✅' : '❌ SET VISION RADIUS!'}`);
+    });
+  }
+  console.log('');
+  console.log('🚪 DOOR STATUS:');
+  if (doors.length === 0) {
+    console.log('  ℹ️  No doors placed yet. Press D to place doors.');
+  } else {
+    console.log(`  - Total: ${doors.length}`);
+    console.log(`  - Closed (blocking): ${doors.filter(d => !d.isOpen).length}`);
+    console.log(`  - Open (transparent): ${doors.filter(d => d.isOpen).length}`);
+  }
+  console.log('');
+  console.log('✅ FOG WILL RENDER:', !isDaylightMode && isWorldView ? 'YES' : `NO (${isDaylightMode ? 'Daylight ON' : 'DM View'})`);
+  console.log('═══════════════════════════════════════════════════════');
 
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);
@@ -165,6 +209,7 @@ const CanvasManager = ({
   // Actions - these are stable
   const addToken = useGameStore(s => s.addToken);
   const addDrawing = useGameStore(s => s.addDrawing);
+  const addDoor = useGameStore(s => s.addDoor);
   const updateTokenPosition = useGameStore(s => s.updateTokenPosition);
   const updateTokenTransform = useGameStore(s => s.updateTokenTransform);
   const removeTokens = useGameStore(s => s.removeTokens);
@@ -178,6 +223,9 @@ const CanvasManager = ({
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null); // Temp line points
   const [tempLine, setTempLine] = useState<Drawing | null>(null);
+
+  // Door Tool State
+  const [doorPreviewPos, setDoorPreviewPos] = useState<{ x: number, y: number } | null>(null);
 
   // Measurement State
   const isMeasuring = useRef(false);
@@ -818,6 +866,12 @@ const CanvasManager = ({
   const handleMouseDown = (e: any) => {
     if (isSpacePressed) return; // Allow panning
 
+    // DOOR TOOL - Do nothing on mouse down, wait for mouse up
+    if (tool === 'door') {
+      console.log('[CanvasManager] Door tool active - ignoring mouseDown');
+      return;
+    }
+
     // Clear active measurement when clicking (unless we're starting a new measurement)
     if (tool !== 'measure' && activeMeasurement) {
         setActiveMeasurement(null);
@@ -900,6 +954,21 @@ const CanvasManager = ({
 
   const handleMouseMove = (e: any) => {
     if (isSpacePressed) return;
+
+    // DOOR TOOL PREVIEW - Show preview while hovering
+    if (tool === 'door' && !isWorldView) {
+      const stage = e.target.getStage();
+      const pos = stage.getRelativePointerPosition();
+
+      // Snap to grid for preview
+      const snapped = snapToGrid(pos.x, pos.y, gridSize);
+
+      setDoorPreviewPos(snapped);
+      return;
+    } else {
+      // Clear door preview when not using door tool
+      setDoorPreviewPos(null);
+    }
 
     // Handle token dragging with threshold
     if (tokenMouseDownStart) {
@@ -1024,6 +1093,37 @@ const CanvasManager = ({
   };
 
   const handleMouseUp = (e: any) => {
+    // DOOR TOOL LOGIC - Click to place
+    // BLOCKED in World View (players cannot place doors)
+    if (tool === 'door' && !isWorldView) {
+      const clickedOnStage = e.target === e.target.getStage();
+      const clickedOnMap = e.target.id() === 'map';
+
+      if (clickedOnStage || clickedOnMap) {
+        const stage = e.target.getStage();
+        const pos = stage.getRelativePointerPosition();
+
+        // Snap to grid
+        const snapped = snapToGrid(pos.x, pos.y, gridSize);
+
+        // Create door at snapped position
+        const newDoor = {
+          id: crypto.randomUUID(),
+          x: snapped.x,
+          y: snapped.y,
+          orientation: doorOrientation,
+          isOpen: false,
+          isLocked: false,
+          size: gridSize, // Door size matches grid size
+        };
+
+        console.log('[CanvasManager] Attempting to place door:', newDoor);
+        addDoor(newDoor);
+        console.log('[CanvasManager] Door placed successfully! Total doors should now be:', doors.length + 1);
+      }
+      return;
+    }
+
     // Handle token mouse up (drag end or selection)
     if (tokenMouseDownStart) {
       handleTokenMouseUp(e);
@@ -1397,7 +1497,10 @@ const CanvasManager = ({
         </Layer>
 
         {/* Fog of War Layer (World View only) - Renders Overlay */}
-        {isWorldView && !isDaylightMode && (
+        {(() => {
+          const shouldRenderFog = isWorldView && !isDaylightMode;
+          console.log('[CanvasManager] Fog condition:', { isWorldView, isDaylightMode, shouldRenderFog });
+          return shouldRenderFog ? (
              <Layer listening={false}>
               <FogOfWarLayer
                 tokens={tokens}
@@ -1408,7 +1511,8 @@ const CanvasManager = ({
                 map={map}
               />
             </Layer>
-        )}
+          ) : null;
+        })()}
 
         {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
         <Layer>
@@ -1530,17 +1634,36 @@ const CanvasManager = ({
                 stairs={stairs}
                 isWorldView={isWorldView}
             />
-
-            {/* Doors (Architectural elements, rendered with walls but before tokens) */}
-            <DoorLayer
-                doors={doors}
-                isWorldView={isWorldView}
-                onToggleDoor={toggleDoor}
-            />
         </Layer>
 
-        {/* Layer 3: Tokens & UI */}
+        {/* Layer 3: Tokens, Doors & UI */}
         <Layer>
+            {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
+            {(() => {
+              console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
+              return (
+                <DoorLayer
+                    doors={doors}
+                    isWorldView={isWorldView}
+                    onToggleDoor={toggleDoor}
+                />
+              );
+            })()}
+
+            {/* Door Preview - Show preview when hovering with door tool */}
+            {doorPreviewPos && tool === 'door' && !isWorldView && (
+              <Rect
+                x={doorPreviewPos.x - gridSize / 2}
+                y={doorPreviewPos.y - gridSize / 2}
+                width={doorOrientation === 'horizontal' ? gridSize : gridSize / 5}
+                height={doorOrientation === 'horizontal' ? gridSize / 5 : gridSize}
+                fill="rgba(255, 255, 255, 0.5)"
+                stroke="white"
+                strokeWidth={2}
+                listening={false}
+              />
+            )}
+
             {isAltPressed && tokens.filter(t => itemsForDuplication.includes(t.id)).map(ghostToken => (
                 <URLImage
                    key={`ghost-${ghostToken.id}`}
@@ -1567,6 +1690,31 @@ const CanvasManager = ({
                 const displayX = dragPos ? dragPos.x : token.x;
                 const displayY = dragPos ? dragPos.y : token.y;
                 const isDragging = draggingTokenIds.has(token.id);
+
+                // Check if token should be visible based on Fog of War rules
+                // In World View with Fog of War enabled:
+                // - PC tokens: Always visible (players need to see their own characters)
+                // - NPC tokens: Only visible in active vision areas (hidden in explored-but-not-visible areas)
+                // In DM mode (Architect View) or Daylight mode: All tokens always visible
+                let isVisible = true;
+                if (isWorldView && !isDaylightMode) {
+                  if (token.type === 'NPC') {
+                    // NPCs only visible in active vision
+                    isVisible = isRectInAnyPolygon(
+                      displayX,
+                      displayY,
+                      gridSize * token.scale,
+                      gridSize * token.scale,
+                      activeVisionPolygons
+                    );
+                  }
+                  // PC tokens always visible (type === 'PC' or undefined)
+                }
+
+                // Don't render tokens that aren't visible
+                if (!isVisible) {
+                  return null;
+                }
 
                 return (
                 <TokenErrorBoundary key={token.id} tokenId={token.id}>
