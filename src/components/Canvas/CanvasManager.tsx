@@ -1587,7 +1587,7 @@ const CanvasManager = ({
                     height={map.height}
                     scaleX={map.scale}
                     scaleY={map.scale}
-                    opacity={0.3}
+                    opacity={0.5}
                 />
             )}
 

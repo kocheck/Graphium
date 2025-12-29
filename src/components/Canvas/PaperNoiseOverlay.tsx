@@ -26,7 +26,7 @@ const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
   height,
   scaleX,
   scaleY,
-  opacity = 0.3,
+  opacity = 0.5,
 }) => {
   const [patternImage, setPatternImage] = useState<HTMLImageElement | null>(null);
 
@@ -53,18 +53,25 @@ const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
     // Load the SVG as an image for Konva
     const img = new Image();
     img.onload = () => {
+      console.log('[PaperNoiseOverlay] Pattern image loaded successfully');
       setPatternImage(img);
+    };
+    img.onerror = (err) => {
+      console.error('[PaperNoiseOverlay] Failed to load pattern image:', err);
     };
     img.src = dataUri;
 
     return () => {
       img.onload = null;
+      img.onerror = null;
     };
   }, []);
 
   if (!patternImage) {
     return null;
   }
+
+  console.log('[PaperNoiseOverlay] Rendering with opacity:', opacity);
 
   return (
     <Rect
@@ -79,8 +86,8 @@ const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
       fillPatternScale={{ x: 1, y: 1 }}
       opacity={opacity}
       listening={false}
-      // Using multiply blend mode for subtle texture that darkens slightly
-      globalCompositeOperation="multiply"
+      // Using overlay blend mode for more visible texture
+      globalCompositeOperation="overlay"
     />
   );
 };
