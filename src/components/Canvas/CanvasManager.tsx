@@ -354,6 +354,14 @@ const CanvasManager = ({
           }
       }
 
+      // Escape - clear active measurement
+      if (e.key === 'Escape') {
+          if (isWorldView) return; // Block in World View
+          if (activeMeasurement) {
+              setActiveMeasurement(null);
+          }
+      }
+
       // Space - enable pan mode
       if (e.code === 'Space' && !e.repeat) {
           e.preventDefault();
@@ -828,6 +836,7 @@ const CanvasManager = ({
 
     // If measure tool, start measurement
     if (tool === 'measure') {
+        if (isWorldView) return; // Block measurement creation in World View
         isMeasuring.current = true;
         const pos = e.target.getStage().getRelativePointerPosition();
         measurementStart.current = { x: pos.x, y: pos.y };

@@ -203,6 +203,9 @@ function App() {
         case 'w':
           setTool('wall');
           break;
+        case 'r':
+          setTool('measure');
+          break;
         case 'i':
           colorInputRef.current?.click();
           break;
@@ -361,7 +364,7 @@ function App() {
                className={`btn btn-tool ${tool === 'measure' ? 'active' : ''}`}
                onClick={() => setTool('measure')}
                title="Measurement & AoE Tool">
-               📏 Measure
+               📏 Measure (R)
              </button>
              {tool === 'measure' && (
                <div className="flex gap-1 ml-1 items-center">

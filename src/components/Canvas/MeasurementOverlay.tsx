@@ -96,18 +96,7 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
           fill={textColor}
           padding={4}
           align="center"
-        />
-        <Text
-          x={midX - gridSize}
-          y={midY - 20}
-          width={gridSize * 2}
-          text={text}
-          fontSize={16}
-          fontStyle="bold"
-          fill={textBgColor}
-          padding={4}
-          align="center"
-          shadowColor="black"
+          shadowColor={textBgColor}
           shadowBlur={4}
           shadowOffset={{ x: 0, y: 0 }}
           shadowOpacity={0.8}
@@ -145,36 +134,21 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
         />
 
         {/* Radius label */}
-        <Group>
-          {/* Text background */}
-          <Text
-            x={textX - gridSize}
-            y={textY}
-            width={gridSize * 2}
-            text={text}
-            fontSize={16}
-            fontStyle="bold"
-            fill={textBgColor}
-            padding={6}
-            align="center"
-            shadowColor="black"
-            shadowBlur={4}
-            shadowOffset={{ x: 0, y: 0 }}
-            shadowOpacity={0.8}
-          />
-          {/* Text foreground */}
-          <Text
-            x={textX - gridSize}
-            y={textY}
-            width={gridSize * 2}
-            text={text}
-            fontSize={16}
-            fontStyle="bold"
-            fill={textColor}
-            padding={6}
-            align="center"
-          />
-        </Group>
+        <Text
+          x={textX - gridSize}
+          y={textY}
+          width={gridSize * 2}
+          text={text}
+          fontSize={16}
+          fontStyle="bold"
+          fill={textColor}
+          padding={6}
+          align="center"
+          shadowColor={textBgColor}
+          shadowBlur={4}
+          shadowOffset={{ x: 0, y: 0 }}
+          shadowOpacity={0.8}
+        />
       </Group>
     );
   };
@@ -217,36 +191,21 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
         />
 
         {/* Cone label */}
-        <Group>
-          {/* Text background */}
-          <Text
-            x={textX - gridSize}
-            y={textY}
-            width={gridSize * 2}
-            text={text}
-            fontSize={16}
-            fontStyle="bold"
-            fill={textBgColor}
-            padding={6}
-            align="center"
-            shadowColor="black"
-            shadowBlur={4}
-            shadowOffset={{ x: 0, y: 0 }}
-            shadowOpacity={0.8}
-          />
-          {/* Text foreground */}
-          <Text
-            x={textX - gridSize}
-            y={textY}
-            width={gridSize * 2}
-            text={text}
-            fontSize={16}
-            fontStyle="bold"
-            fill={textColor}
-            padding={6}
-            align="center"
-          />
-        </Group>
+        <Text
+          x={textX - gridSize}
+          y={textY}
+          width={gridSize * 2}
+          text={text}
+          fontSize={16}
+          fontStyle="bold"
+          fill={textColor}
+          padding={6}
+          align="center"
+          shadowColor={textBgColor}
+          shadowBlur={4}
+          shadowOffset={{ x: 0, y: 0 }}
+          shadowOpacity={0.8}
+        />
       </Group>
     );
   };
