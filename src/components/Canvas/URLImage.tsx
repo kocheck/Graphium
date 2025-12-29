@@ -28,10 +28,9 @@ export interface URLImageProps {
   shadowBlur?: number;
   shadowOffsetX?: number;
   shadowOffsetY?: number;
-  zIndex?: number;
 }
 
-const URLImage = ({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSelect, onDragEnd, onDragStart, onDragMove, draggable, name, opacity, listening, filters, blurRadius, brightness, shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY, zIndex }: URLImageProps) => {
+const URLImage = ({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSelect, onDragEnd, onDragStart, onDragMove, draggable, name, opacity, listening, filters, blurRadius, brightness, shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY }: URLImageProps) => {
   const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
   const [img] = useImage(safeSrc);
   const imageRef = useRef<Konva.Image>(null);
@@ -77,7 +76,6 @@ const URLImage = ({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSele
       shadowBlur={shadowBlur}
       shadowOffsetX={shadowOffsetX}
       shadowOffsetY={shadowOffsetY}
-      zIndex={zIndex}
     />
   );
 };

@@ -277,6 +277,7 @@ const CanvasManager = ({
   const dragBroadcastThrottleRef = useRef<Map<string, number>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number, y: number }>>(new Map()); // For multi-token drag
   const DRAG_BROADCAST_THROTTLE_MS = 16; // ~60fps
+  const [dragUpdateCounter, setDragUpdateCounter] = useState(0); // Forces re-renders during drag
 
   // Press-and-Hold Drag State (threshold-based drag detection)
   const DRAG_THRESHOLD = 5; // pixels - minimum movement to trigger drag
@@ -797,10 +798,8 @@ const CanvasManager = ({
         });
       }
 
-      // Redraw token layer directly instead of forcing a full React re-render
-      if (tokenLayerRef.current) {
-        tokenLayerRef.current.batchDraw();
-      }
+      // Force React re-render to update visual position during drag
+      setDragUpdateCounter(prev => prev + 1);
     }
   }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, setSelectedIds, throttleDragBroadcast, isWorldView]);
 
@@ -882,6 +881,7 @@ const CanvasManager = ({
       });
       setDraggingTokenIds(new Set());
       setItemsForDuplication([]);
+      setDragUpdateCounter(0); // Reset counter
     } else {
       // No drag occurred - treat as selection click
       e.evt.stopPropagation();
@@ -1855,7 +1855,6 @@ const CanvasManager = ({
                     shadowBlur={isDragging ? 20 : undefined}
                     shadowOffsetX={isDragging ? 5 : undefined}
                     shadowOffsetY={isDragging ? 5 : undefined}
-                    zIndex={isDragging ? 1000 : undefined}
                     onSelect={(e) => handleTokenMouseDown(e, token.id)}
                     onDragStart={emptyDragHandler}
                     onDragMove={emptyDragHandler}
