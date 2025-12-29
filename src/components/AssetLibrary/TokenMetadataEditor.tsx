@@ -76,12 +76,12 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
       return;
     }
 
-    if (parsedScale !== undefined && (parsedScale <= 0 || isNaN(parsedScale))) {
+    if (parsedScale !== undefined && (isNaN(parsedScale) || parsedScale <= 0)) {
       showToast('Scale must be a positive number', 'error');
       return;
     }
 
-    if (parsedVisionRadius !== undefined && (parsedVisionRadius < 0 || isNaN(parsedVisionRadius))) {
+    if (parsedVisionRadius !== undefined && (isNaN(parsedVisionRadius) || parsedVisionRadius < 0)) {
       showToast('Vision radius must be a non-negative number', 'error');
       return;
     }

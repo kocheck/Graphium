@@ -2,6 +2,7 @@ import Konva from 'konva';
 import { Stage, Layer, Line, Rect, Transformer } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/shallow';
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
 import { useGameStore, Drawing } from '../../store/gameStore';
@@ -152,7 +153,7 @@ const CanvasManager = ({
   // Atomic selectors to prevent infinite re-render loops and avoid useShallow crashes
   const map = useGameStore(s => s.map);
   const tokens = useGameStore(s => s.tokens);
-  const tokenLibrary = useGameStore(s => s.campaign.tokenLibrary);
+  const tokenLibrary = useGameStore(useShallow(s => s.campaign.tokenLibrary));
   const drawings = useGameStore(s => s.drawings);
   const doors = useGameStore(s => s.doors);
   const stairs = useGameStore(s => s.stairs);
