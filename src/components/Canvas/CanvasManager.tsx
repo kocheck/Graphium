@@ -674,7 +674,7 @@ const CanvasManager = ({
   }, [isWorldView]);
 
   // Token Mouse Handlers (Threshold-based Press-and-Hold)
-  const handleTokenMouseDown = useCallback((e: KonvaEventObject<MouseEvent>, tokenId: string) => {
+  const handleTokenMouseDown = useCallback((e: KonvaEventObject<MouseEvent | TouchEvent>, tokenId: string) => {
     if (tool !== 'select') return;
 
     // Record the initial pointer position and the token's starting stage position

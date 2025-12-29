@@ -14,7 +14,7 @@ export interface URLImageProps {
   scaleX?: number;
   scaleY?: number;
   id: string;
-  onSelect?: (e: KonvaEventObject<MouseEvent>) => void;
+  onSelect?: (e: KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onDragStart?: (e: KonvaEventObject<DragEvent>) => void;
   onDragMove?: (e: KonvaEventObject<DragEvent>) => void;
   onDragEnd?: (e: KonvaEventObject<DragEvent>) => void;
