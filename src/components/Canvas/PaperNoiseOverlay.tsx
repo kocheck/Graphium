@@ -53,7 +53,6 @@ const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
     // Load the SVG as an image for Konva
     const img = new Image();
     img.onload = () => {
-      console.log('[PaperNoiseOverlay] Pattern image loaded successfully');
       setPatternImage(img);
     };
     img.onerror = (err) => {
@@ -70,8 +69,6 @@ const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
   if (!patternImage) {
     return null;
   }
-
-  console.log('[PaperNoiseOverlay] Rendering with opacity:', opacity);
 
   return (
     <Rect
