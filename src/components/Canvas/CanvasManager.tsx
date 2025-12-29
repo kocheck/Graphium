@@ -278,6 +278,7 @@ const CanvasManager = ({
   const dragStartOffsetsRef = useRef<Map<string, { x: number, y: number }>>(new Map()); // For multi-token drag
   const DRAG_BROADCAST_THROTTLE_MS = 16; // ~60fps
   const [dragUpdateCounter, setDragUpdateCounter] = useState(0); // Forces re-renders during drag
+  const dragUpdateScheduledRef = useRef(false); // RAF throttle for drag position updates
   const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null); // Track hovered token for interactive feedback
 
   // Press-and-Hold Drag State (threshold-based drag detection)
@@ -800,7 +801,14 @@ const CanvasManager = ({
       }
 
       // Force React re-render to update visual position during drag
-      setDragUpdateCounter(prev => prev + 1);
+      // Throttled via RAF to prevent excessive re-renders (max 60fps)
+      if (!dragUpdateScheduledRef.current) {
+        dragUpdateScheduledRef.current = true;
+        requestAnimationFrame(() => {
+          setDragUpdateCounter(prev => prev + 1);
+          dragUpdateScheduledRef.current = false;
+        });
+      }
     }
   }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, setSelectedIds, throttleDragBroadcast, isWorldView]);
 
@@ -1842,9 +1850,16 @@ const CanvasManager = ({
                 // - Resting: Subtle shadow to show depth (always present)
                 // - Hover: Slight lift effect (scale 1.02, enhanced shadow)
                 // - Dragging: Strong lift effect (scale 1.05, strong shadow, reduced opacity)
+                // Note: shadowForStrokeEnabled=false improves performance significantly
                 const getVisualProps = () => {
+                  // Common performance optimization: disable shadow for strokes
+                  const baseShadowProps = {
+                    shadowForStrokeEnabled: false, // Performance: Only shadow fill, not stroke
+                  };
+
                   if (isDragging) {
                     return {
+                      ...baseShadowProps,
                       opacity: 0.5,
                       scaleX: 1.05,
                       scaleY: 1.05,
@@ -1856,6 +1871,7 @@ const CanvasManager = ({
                   }
                   if (isHovered) {
                     return {
+                      ...baseShadowProps,
                       scaleX: 1.02,
                       scaleY: 1.02,
                       shadowColor: 'rgba(0, 0, 0, 0.4)',
@@ -1866,6 +1882,7 @@ const CanvasManager = ({
                   }
                   // Resting state - subtle shadow for depth
                   return {
+                    ...baseShadowProps,
                     scaleX: 1,
                     scaleY: 1,
                     shadowColor: 'rgba(0, 0, 0, 0.25)',

@@ -15,6 +15,17 @@
  * - Logs error to console with token ID for debugging
  * - Other tokens continue rendering normally
  *
+ * **Visual Effects & Performance:**
+ * Tokens now render with dynamic shadows and scaling for visual feedback:
+ * - Resting state: Subtle shadow (6px blur) for depth perception
+ * - Hover state: Enhanced shadow (12px blur) + 2% scale increase
+ * - Dragging state: Strong shadow (20px blur) + 5% scale + opacity change
+ *
+ * Performance optimizations applied:
+ * - shadowForStrokeEnabled=false (only shadow fills, not strokes)
+ * - RAF-throttled re-renders during drag (max 60fps)
+ * - Konva-level caching for complex visual effects
+ *
  * **Difference from PrivacyErrorBoundary:**
  * - PrivacyErrorBoundary: App-level, shows error UI, sanitizes for reporting
  * - TokenErrorBoundary: Token-level, silently hides broken tokens, logs only
