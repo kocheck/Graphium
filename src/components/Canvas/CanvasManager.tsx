@@ -225,7 +225,7 @@ const CanvasManager = ({
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null); // Temp line points
   const [tempLine, setTempLine] = useState<Drawing | null>(null);
-  const tempLineRef = useRef<any>(null); // Direct ref to Konva Line for performance
+  const tempLineRef = useRef<Konva.Line | null>(null); // Direct ref to Konva Line for performance
   const drawingAnimationFrameRef = useRef<number | null>(null); // RAF handle for drawing
 
   // Door Tool State
@@ -250,7 +250,7 @@ const CanvasManager = ({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const transformerRef = useRef<any>(null);
   const selectionStart = useRef<{x: number, y: number} | null>(null);
-  const selectionRectRef = useRef<any>(null); // Direct ref to Konva Rect for performance
+  const selectionRectRef = useRef<Konva.Rect | null>(null); // Direct ref to Konva Rect for performance
   const selectionRectCoordsRef = useRef<{ x: number, y: number, width: number, height: number }>({ x: 0, y: 0, width: 0, height: 0 }); // Coords during drag
   const animationFrameRef = useRef<number | null>(null); // RAF handle for throttling
 
@@ -1081,7 +1081,7 @@ const CanvasManager = ({
             }
         }
 
-        // Update points in ref (no copy needed)
+        // Update points in ref: create a new points array and assign it to the ref object
         cur.points = cur.points.concat([point.x, point.y]);
 
         // Cancel previous animation frame
