@@ -11,9 +11,6 @@ interface PaperNoiseOverlayProps {
   opacity?: number;
 }
 
-// Constant scale for pattern - avoids creating new object on each render
-const PATTERN_SCALE = { x: 1, y: 1 };
-
 /**
  * PaperNoiseOverlay - Adds a subtle paper texture over the map background
  *
@@ -79,7 +76,7 @@ const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
       scaleY={scaleY}
       fillPatternImage={patternImage}
       fillPatternRepeat="repeat"
-      fillPatternScale={PATTERN_SCALE}
+      fillPatternScale={{ x: 1, y: 1 }}
       opacity={opacity}
       listening={false}
       // Using multiply blend mode for subtle texture that darkens slightly
