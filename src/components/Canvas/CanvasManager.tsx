@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import { Stage, Layer, Line, Rect, Transformer } from 'react-konva';
+import { Stage, Layer, Line, Rect, Transformer, Group } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
@@ -264,6 +264,7 @@ const CanvasManager = ({
   const selectionRectRef = useRef<Konva.Rect | null>(null); // Direct ref to Konva Rect for performance
   const selectionRectCoordsRef = useRef<{ x: number, y: number, width: number, height: number }>({ x: 0, y: 0, width: 0, height: 0 }); // Coords during drag
   const animationFrameRef = useRef<number | null>(null); // RAF handle for throttling
+  const tokenLayerRef = useRef<Konva.Layer | null>(null); // Direct ref to token layer for drag updates
 
   // Ghost / Duplication State
   const [itemsForDuplication, setItemsForDuplication] = useState<string[]>([]);
@@ -673,7 +674,7 @@ const CanvasManager = ({
   }, [isWorldView]);
 
   // Token Mouse Handlers (Threshold-based Press-and-Hold)
-  const handleTokenMouseDown = useCallback((e: KonvaEventObject<MouseEvent>, tokenId: string) => {
+  const handleTokenMouseDown = useCallback((e: KonvaEventObject<MouseEvent | TouchEvent>, tokenId: string) => {
     if (tool !== 'select') return;
 
     // Record the initial pointer position and the token's starting stage position
@@ -717,7 +718,18 @@ const CanvasManager = ({
       setIsDraggingWithThreshold(true);
 
       const tokenId = tokenMouseDownStart.tokenId;
-      const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
+
+      // If token is not already selected, select it immediately for fluid drag behavior
+      // This allows "grab and drag" in one motion without requiring a separate click to select
+      let tokenIds: string[];
+      if (selectedIds.includes(tokenId)) {
+        tokenIds = selectedIds;
+      } else {
+        // Select the token immediately when starting to drag it
+        tokenIds = e.evt.shiftKey ? [...selectedIds, tokenId] : [tokenId];
+        setSelectedIds(tokenIds);
+      }
+
       const primaryToken = resolvedTokens.find(t => t.id === tokenId);
       if (!primaryToken) return;
 
@@ -783,8 +795,13 @@ const CanvasManager = ({
           }
         });
       }
+
+      // Redraw token layer directly instead of forcing a full React re-render
+      if (tokenLayerRef.current) {
+        tokenLayerRef.current.batchDraw();
+      }
     }
-  }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, throttleDragBroadcast, isWorldView]);
+  }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, setSelectedIds, throttleDragBroadcast, isWorldView]);
 
   const handleTokenMouseUp = useCallback((e: KonvaEventObject<MouseEvent>) => {
     if (!tokenMouseDownStart) return;
@@ -881,7 +898,7 @@ const CanvasManager = ({
     // Reset drag state
     setTokenMouseDownStart(null);
     setIsDraggingWithThreshold(false);
-  }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast]);
+  }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, setSelectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast]);
 
   // Drawing Handlers
   const handleMouseDown = (e: any) => {
@@ -1733,8 +1750,10 @@ const CanvasManager = ({
             />
         </Layer>
 
-        {/* Layer 3: Tokens, Doors & UI */}
-        <Layer>
+        {/* Layer 3: Tokens, Doors & UI
+          NOTE: tokenLayerRef is used for low-level performance optimizations during
+          token drag updates via direct Konva batchDraw() calls instead of full React re-renders */}
+        <Layer ref={tokenLayerRef}>
             {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
             {(() => {
               console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
@@ -1787,6 +1806,7 @@ const CanvasManager = ({
                 const displayX = dragPos ? dragPos.x : token.x;
                 const displayY = dragPos ? dragPos.y : token.y;
                 const isDragging = draggingTokenIds.has(token.id);
+                const isSelected = selectedIds.includes(token.id);
 
                 // Check if token should be visible based on Fog of War rules
                 // In World View with Fog of War enabled:
@@ -1814,9 +1834,9 @@ const CanvasManager = ({
                 }
 
                 return (
-                <TokenErrorBoundary key={token.id} tokenId={token.id}>
+                <Group key={token.id}>
+                <TokenErrorBoundary tokenId={token.id}>
                 <URLImage
-                    key={token.id}
                     name="token"
                     id={token.id}
                     src={token.src}
@@ -1831,7 +1851,20 @@ const CanvasManager = ({
                     onDragMove={emptyDragHandler}
                     onDragEnd={emptyDragHandler}
                 />
+                {/* Selection border - visible feedback when token is selected */}
+                {isSelected && (
+                  <Rect
+                    x={displayX}
+                    y={displayY}
+                    width={gridSize * token.scale}
+                    height={gridSize * token.scale}
+                    stroke="#2563eb"
+                    strokeWidth={3}
+                    listening={false}
+                  />
+                )}
                 </TokenErrorBoundary>
+                </Group>
                 );
             })}
 
@@ -1843,8 +1876,8 @@ const CanvasManager = ({
                     y={selectionRect.y}
                     width={selectionRect.width}
                     height={selectionRect.height}
-                    fill="rgba(0, 161, 255, 0.3)"
-                    stroke="#00a1ff"
+                    fill="rgba(37, 99, 235, 0.3)"
+                    stroke="#2563eb"
                     listening={false}
                 />
             )}
