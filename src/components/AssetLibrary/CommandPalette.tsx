@@ -34,6 +34,7 @@ import { useGameStore } from '../../store/gameStore';
 import { fuzzySearch } from '../../utils/fuzzySearch';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 import TokenMetadataEditor from './TokenMetadataEditor';
+import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -241,14 +242,21 @@ const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
       </div>
 
       {/* Token Metadata Editor */}
-      <TokenMetadataEditor
-        isOpen={isMetadataEditorOpen}
-        libraryItemId={editingItemId}
+      <LibraryModalErrorBoundary
         onClose={() => {
           setIsMetadataEditorOpen(false);
           setEditingItemId(null);
         }}
-      />
+      >
+        <TokenMetadataEditor
+          isOpen={isMetadataEditorOpen}
+          libraryItemId={editingItemId}
+          onClose={() => {
+            setIsMetadataEditorOpen(false);
+            setEditingItemId(null);
+          }}
+        />
+      </LibraryModalErrorBoundary>
     </div>
   );
 };
