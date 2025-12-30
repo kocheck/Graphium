@@ -164,6 +164,20 @@ function buildApplicationMenu() {
       ],
     },
 
+    // Insert menu
+    {
+      label: 'Insert',
+      submenu: [
+        {
+          label: 'Generate Dungeon...',
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (win) win.webContents.send('MENU_GENERATE_DUNGEON');
+          },
+        },
+      ],
+    },
+
     // View menu with theme options
     {
       label: 'View',
