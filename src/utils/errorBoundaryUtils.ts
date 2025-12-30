@@ -138,10 +138,11 @@ export function captureErrorContext(
       const legacyPerformance = performance as Performance & { timing?: PerformanceTiming };
       const timing = legacyPerformance.timing;
       
-      // Only check that timing object and required properties exist (not their values)
+      // Validate timing object exists, is an object, and has required numeric properties
       // Note: Values can legitimately be 0 if events haven't occurred yet
       if (
         timing != null &&
+        typeof timing === 'object' &&
         typeof timing.navigationStart === 'number' &&
         typeof timing.loadEventEnd === 'number' &&
         typeof timing.domContentLoadedEventEnd === 'number'

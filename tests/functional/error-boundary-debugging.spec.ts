@@ -112,7 +112,8 @@ test.describe('Error Boundary System', () => {
       try {
         utils.addBreadcrumb('Breadcrumb verification test');
         return true;
-      } catch {
+      } catch (error) {
+        console.error('Failed to add breadcrumb:', error);
         return false;
       }
     });
