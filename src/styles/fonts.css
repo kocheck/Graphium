@@ -2,7 +2,11 @@
  * IBM Plex Font Definitions
  *
  * This file defines local font-face declarations for IBM Plex Sans and IBM Plex Mono.
- * Fonts are served locally from src/assets/fonts/ for offline capability and privacy.
+ * Fonts are loaded from the @ibm/plex npm package and bundled by Vite for offline capability and privacy.
+ *
+ * License: SIL Open Font License 1.1
+ * Source: https://github.com/IBM/plex
+ * Package: https://www.npmjs.com/package/@ibm/plex
  *
  * Font Weights:
  * - Regular: 400
@@ -21,7 +25,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../assets/fonts/ibm-plex-sans/IBMPlexSans-Regular.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Regular.woff2') format('woff2');
 }
 
 /* IBM Plex Sans - Medium (500) */
@@ -30,7 +34,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('../assets/fonts/ibm-plex-sans/IBMPlexSans-Medium.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Medium.woff2') format('woff2');
 }
 
 /* IBM Plex Sans - SemiBold (600) */
@@ -39,7 +43,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('../assets/fonts/ibm-plex-sans/IBMPlexSans-SemiBold.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-SemiBold.woff2') format('woff2');
 }
 
 /* IBM Plex Sans - Bold (700) */
@@ -48,7 +52,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('../assets/fonts/ibm-plex-sans/IBMPlexSans-Bold.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Bold.woff2') format('woff2');
 }
 
 /* ============================================
@@ -61,7 +65,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../assets/fonts/ibm-plex-mono/IBMPlexMono-Regular.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Regular.woff2') format('woff2');
 }
 
 /* IBM Plex Mono - Medium (500) */
@@ -70,7 +74,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('../assets/fonts/ibm-plex-mono/IBMPlexMono-Medium.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Medium.woff2') format('woff2');
 }
 
 /* IBM Plex Mono - SemiBold (600) */
@@ -79,7 +83,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('../assets/fonts/ibm-plex-mono/IBMPlexMono-SemiBold.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-SemiBold.woff2') format('woff2');
 }
 
 /* IBM Plex Mono - Bold (700) */
@@ -88,7 +92,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('../assets/fonts/ibm-plex-mono/IBMPlexMono-Bold.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Bold.woff2') format('woff2');
 }
 
 /* ============================================
