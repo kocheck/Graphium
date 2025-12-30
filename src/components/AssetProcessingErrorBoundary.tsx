@@ -86,6 +86,32 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
       // Fallback to basic logging if utils fail to load
       console.error('[AssetProcessingErrorBoundary] Caught error:', error);
       console.error('[AssetProcessingErrorBoundary] Error info:', errorInfo);
+
+      // Ensure E2E tests still receive an error marker even if the utilities fail to load
+      if (isDev || isTest) {
+        interface ErrorWindow extends Window {
+          __LAST_ASSET_PROCESSING_ERROR__?: {
+            error: string;
+            timestamp: number;
+            context: {
+              componentName: string;
+              props: Record<string, unknown>;
+              state: Record<string, unknown>;
+              importFailed: boolean;
+            };
+          };
+        }
+        (window as unknown as ErrorWindow).__LAST_ASSET_PROCESSING_ERROR__ = {
+          error: error.message,
+          timestamp: Date.now(),
+          context: {
+            componentName: 'AssetProcessingErrorBoundary',
+            props: this.props as Record<string, unknown>,
+            state: this.state as Record<string, unknown>,
+            importFailed: true,
+          },
+        };
+      }
     });
 
     // Legacy logging for backward compatibility

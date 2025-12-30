@@ -5,6 +5,11 @@
  * These helpers make it easy to verify error boundaries catch errors correctly,
  * log appropriate information, and maintain application stability.
  *
+ * **Note on Type Duplication:**
+ * Interface definitions like ErrorWindow are duplicated within each page.evaluate()
+ * block because the code inside evaluate() runs in the browser context and cannot
+ * import types from Node.js modules. This duplication is intentional and necessary.
+ *
  * **Usage:**
  * ```typescript
  * import { checkForTokenErrors, clearAllErrors, getErrorHistory } from '../helpers/errorBoundaryHelpers';
@@ -23,12 +28,14 @@ import type { Page } from '@playwright/test';
 /**
  * Error information returned by test helpers
  */
+export type TestErrorContext = Record<string, unknown>;
+
 export interface TestErrorInfo {
   tokenId?: string;
   overlayName?: string;
   error: string;
   timestamp: number;
-  context?: any;
+  context?: TestErrorContext;
 }
 
 /**
@@ -39,7 +46,10 @@ export interface TestErrorInfo {
  */
 export async function checkForTokenErrors(page: Page): Promise<TestErrorInfo | null> {
   return await page.evaluate(() => {
-    return (window as any).__LAST_TOKEN_ERROR__ || null;
+    interface ErrorWindow extends Window {
+      __LAST_TOKEN_ERROR__?: TestErrorInfo;
+    }
+    return (window as unknown as ErrorWindow).__LAST_TOKEN_ERROR__ || null;
   });
 }
 
@@ -51,7 +61,10 @@ export async function checkForTokenErrors(page: Page): Promise<TestErrorInfo | n
  */
 export async function checkForOverlayErrors(page: Page): Promise<TestErrorInfo | null> {
   return await page.evaluate(() => {
-    return (window as any).__LAST_OVERLAY_ERROR__ || null;
+    interface ErrorWindow extends Window {
+      __LAST_OVERLAY_ERROR__?: TestErrorInfo;
+    }
+    return (window as unknown as ErrorWindow).__LAST_OVERLAY_ERROR__ || null;
   });
 }
 
@@ -63,7 +76,10 @@ export async function checkForOverlayErrors(page: Page): Promise<TestErrorInfo |
  */
 export async function checkForAssetProcessingErrors(page: Page): Promise<TestErrorInfo | null> {
   return await page.evaluate(() => {
-    return (window as any).__LAST_ASSET_PROCESSING_ERROR__ || null;
+    interface ErrorWindow extends Window {
+      __LAST_ASSET_PROCESSING_ERROR__?: TestErrorInfo;
+    }
+    return (window as unknown as ErrorWindow).__LAST_ASSET_PROCESSING_ERROR__ || null;
   });
 }
 
@@ -75,7 +91,10 @@ export async function checkForAssetProcessingErrors(page: Page): Promise<TestErr
  */
 export async function getAllOverlayErrors(page: Page): Promise<TestErrorInfo[]> {
   return await page.evaluate(() => {
-    return (window as any).__OVERLAY_ERRORS__ || [];
+    interface ErrorWindow extends Window {
+      __OVERLAY_ERRORS__?: TestErrorInfo[];
+    }
+    return (window as unknown as ErrorWindow).__OVERLAY_ERRORS__ || [];
   });
 }
 
@@ -85,9 +104,14 @@ export async function getAllOverlayErrors(page: Page): Promise<TestErrorInfo[]> 
  * @param page - Playwright Page object
  * @returns Array of error contexts
  */
-export async function getErrorHistory(page: Page): Promise<any[]> {
+export async function getErrorHistory(page: Page): Promise<unknown[]> {
   return await page.evaluate(() => {
-    const utils = (window as any).__ERROR_UTILS__;
+    interface ErrorUtilsWindow extends Window {
+      __ERROR_UTILS__?: {
+        getErrorHistory: () => unknown[];
+      };
+    }
+    const utils = (window as unknown as ErrorUtilsWindow).__ERROR_UTILS__;
     return utils ? utils.getErrorHistory() : [];
   });
 }
@@ -99,12 +123,22 @@ export async function getErrorHistory(page: Page): Promise<any[]> {
  */
 export async function clearAllErrors(page: Page): Promise<void> {
   await page.evaluate(() => {
-    delete (window as any).__LAST_TOKEN_ERROR__;
-    delete (window as any).__LAST_OVERLAY_ERROR__;
-    delete (window as any).__LAST_ASSET_PROCESSING_ERROR__;
-    delete (window as any).__OVERLAY_ERRORS__;
+    interface ErrorWindow extends Window {
+      __LAST_TOKEN_ERROR__?: TestErrorInfo;
+      __LAST_OVERLAY_ERROR__?: TestErrorInfo;
+      __LAST_ASSET_PROCESSING_ERROR__?: TestErrorInfo;
+      __OVERLAY_ERRORS__?: TestErrorInfo[];
+      __ERROR_UTILS__?: {
+        clearErrorHistory: () => void;
+      };
+    }
+    const win = window as unknown as ErrorWindow;
+    delete win.__LAST_TOKEN_ERROR__;
+    delete win.__LAST_OVERLAY_ERROR__;
+    delete win.__LAST_ASSET_PROCESSING_ERROR__;
+    delete win.__OVERLAY_ERRORS__;
 
-    const utils = (window as any).__ERROR_UTILS__;
+    const utils = win.__ERROR_UTILS__;
     if (utils) {
       utils.clearErrorHistory();
     }
@@ -120,7 +154,12 @@ export async function clearAllErrors(page: Page): Promise<void> {
  */
 export async function addBreadcrumb(page: Page, action: string): Promise<void> {
   await page.evaluate((actionText) => {
-    const utils = (window as any).__ERROR_UTILS__;
+    interface ErrorUtilsWindow extends Window {
+      __ERROR_UTILS__?: {
+        addBreadcrumb: (action: string) => void;
+      };
+    }
+    const utils = (window as unknown as ErrorUtilsWindow).__ERROR_UTILS__;
     if (utils) {
       utils.addBreadcrumb(actionText);
     }
@@ -139,19 +178,29 @@ export async function exportErrorToClipboard(
   errorType: 'token' | 'overlay' | 'asset'
 ): Promise<boolean> {
   return await page.evaluate((type) => {
-    const utils = (window as any).__ERROR_UTILS__;
+    interface ErrorWindow extends Window {
+      __LAST_TOKEN_ERROR__?: TestErrorInfo;
+      __LAST_OVERLAY_ERROR__?: TestErrorInfo;
+      __LAST_ASSET_PROCESSING_ERROR__?: TestErrorInfo;
+      __ERROR_UTILS__?: {
+        exportErrorToClipboard: (context: TestErrorContext) => Promise<boolean>;
+      };
+    }
+    
+    const win = window as unknown as ErrorWindow;
+    const utils = win.__ERROR_UTILS__;
     if (!utils) return false;
 
-    let error: any;
+    let error: TestErrorInfo | undefined;
     switch (type) {
       case 'token':
-        error = (window as any).__LAST_TOKEN_ERROR__;
+        error = win.__LAST_TOKEN_ERROR__;
         break;
       case 'overlay':
-        error = (window as any).__LAST_OVERLAY_ERROR__;
+        error = win.__LAST_OVERLAY_ERROR__;
         break;
       case 'asset':
-        error = (window as any).__LAST_ASSET_PROCESSING_ERROR__;
+        error = win.__LAST_ASSET_PROCESSING_ERROR__;
         break;
     }
 
@@ -270,8 +319,15 @@ export async function triggerTestError(
 ): Promise<void> {
   await page.evaluate(
     ({ type, msg }) => {
+      interface TestErrorWindow extends Window {
+        __TRIGGER_TEST_ERROR__?: {
+          type: string;
+          message: string;
+          triggered: boolean;
+        };
+      }
       // Store error trigger in window for component to pick up
-      (window as any).__TRIGGER_TEST_ERROR__ = {
+      (window as unknown as TestErrorWindow).__TRIGGER_TEST_ERROR__ = {
         type,
         message: msg,
         triggered: false,
@@ -296,23 +352,35 @@ export async function getErrorPerformanceMetrics(
   timing?: { loadTime: number; domReady: number };
 } | null> {
   return await page.evaluate((type) => {
-    let error: any;
+    interface ErrorWindow extends Window {
+      __LAST_TOKEN_ERROR__?: TestErrorInfo;
+      __LAST_OVERLAY_ERROR__?: TestErrorInfo;
+      __LAST_ASSET_PROCESSING_ERROR__?: TestErrorInfo;
+    }
+    
+    const win = window as unknown as ErrorWindow;
+    let error: TestErrorInfo | undefined;
     switch (type) {
       case 'token':
-        error = (window as any).__LAST_TOKEN_ERROR__;
+        error = win.__LAST_TOKEN_ERROR__;
         break;
       case 'overlay':
-        error = (window as any).__LAST_OVERLAY_ERROR__;
+        error = win.__LAST_OVERLAY_ERROR__;
         break;
       case 'asset':
-        error = (window as any).__LAST_ASSET_PROCESSING_ERROR__;
+        error = win.__LAST_ASSET_PROCESSING_ERROR__;
         break;
     }
 
-    if (!error || !error.context || !error.context.performance) {
+    if (!error || !error.context) {
       return null;
     }
 
-    return error.context.performance;
+    const performance = (error.context as Record<string, unknown>).performance as {
+      memory?: { used: number; total: number; limit: number };
+      timing?: { loadTime: number; domReady: number };
+    } | undefined;
+
+    return performance || null;
   }, errorType);
 }

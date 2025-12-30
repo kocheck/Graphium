@@ -37,8 +37,8 @@ export interface ErrorContext {
   };
   componentStack?: string | null;
   componentName?: string;
-  props?: Record<string, any>;
-  state?: Record<string, any>;
+  props?: Record<string, unknown>;
+  state?: Record<string, unknown>;
   environment: {
     isDev: boolean;
     isTest: boolean;
@@ -90,8 +90,8 @@ export function captureErrorContext(
   errorInfo: React.ErrorInfo,
   options: {
     componentName?: string;
-    props?: Record<string, any>;
-    state?: Record<string, any>;
+    props?: Record<string, unknown>;
+    state?: Record<string, unknown>;
   } = {}
 ): ErrorContext {
   const isDev = import.meta.env.DEV;
@@ -103,11 +103,23 @@ export function captureErrorContext(
     performanceMetrics = {};
 
     // Memory usage (Chrome only)
-    if ((performance as any).memory) {
+    interface PerformanceMemoryInfo {
+      usedJSHeapSize: number;
+      totalJSHeapSize: number;
+      jsHeapSizeLimit: number;
+    }
+
+    interface PerformanceWithMemory extends Performance {
+      memory?: PerformanceMemoryInfo;
+    }
+
+    const performanceWithMemory = performance as unknown as PerformanceWithMemory;
+
+    if (performanceWithMemory.memory) {
       performanceMetrics.memory = {
-        usedJSHeapSize: (performance as any).memory.usedJSHeapSize,
-        totalJSHeapSize: (performance as any).memory.totalJSHeapSize,
-        jsHeapSizeLimit: (performance as any).memory.jsHeapSizeLimit,
+        usedJSHeapSize: performanceWithMemory.memory.usedJSHeapSize,
+        totalJSHeapSize: performanceWithMemory.memory.totalJSHeapSize,
+        jsHeapSizeLimit: performanceWithMemory.memory.jsHeapSizeLimit,
       };
     }
 
@@ -156,8 +168,9 @@ export function captureErrorContext(
 /**
  * Sanitize data for logging (remove functions, circular refs, large objects)
  */
-function sanitizeForLogging(data: any): any {
-  if (!data) return data;
+function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined {
+  if (!data) return undefined;
+  if (typeof data !== 'object') return undefined;
 
   try {
     // Use JSON stringify with replacer to handle functions and circular refs
@@ -191,9 +204,9 @@ function sanitizeForLogging(data: any): any {
       })
     );
 
-    return sanitized;
-  } catch (e) {
-    return '[Failed to sanitize]';
+    return sanitized as Record<string, unknown>;
+  } catch {
+    return undefined;
   }
 }
 
@@ -244,10 +257,9 @@ export function logErrorWithContext(context: ErrorContext): void {
   if (context.performance) {
     console.groupCollapsed('Performance Metrics');
     if (context.performance.memory) {
-      const { usedJSHeapSize, totalJSHeapSize, jsHeapSizeLimit } = context.performance.memory;
+      const { usedJSHeapSize, jsHeapSizeLimit } = context.performance.memory;
       console.log('Memory Usage:', {
         used: `${(usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
-        total: `${(totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
         limit: `${(jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`,
         percentage: `${((usedJSHeapSize / jsHeapSizeLimit) * 100).toFixed(1)}%`,
       });
@@ -383,7 +395,17 @@ export function formatErrorReport(context: ErrorContext): string {
  * Expose error utilities to window for testing and debugging
  */
 if (typeof window !== 'undefined' && (import.meta.env.DEV || import.meta.env.MODE === 'test')) {
-  (window as any).__ERROR_UTILS__ = {
+  interface ErrorUtilsWindow extends Window {
+    __ERROR_UTILS__?: {
+      getErrorHistory: typeof getErrorHistory;
+      clearErrorHistory: typeof clearErrorHistory;
+      addBreadcrumb: typeof addBreadcrumb;
+      exportErrorToClipboard: typeof exportErrorToClipboard;
+      formatErrorReport: typeof formatErrorReport;
+    };
+  }
+  
+  (window as ErrorUtilsWindow).__ERROR_UTILS__ = {
     getErrorHistory,
     clearErrorHistory,
     addBreadcrumb,

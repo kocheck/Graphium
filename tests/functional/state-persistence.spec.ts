@@ -329,7 +329,14 @@ test.describe('Drawing Tool Persistence', () => {
 
     // Get the drawing count before drawing
     const drawingCountBefore = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       return store?.getState?.()?.drawings?.length || 0;
     });
 
@@ -367,11 +374,29 @@ test.describe('Drawing Tool Persistence', () => {
     await page.mouse.up();
 
     // Wait for drawing to be committed to store
-    await page.waitForTimeout(100);
+    await page.waitForFunction(() => {
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      const drawings = store?.getState?.()?.drawings;
+      return Array.isArray(drawings) && drawings.length > 0;
+    });
 
     // Verify drawing was added to store
     const drawingCountAfter = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       return store?.getState?.()?.drawings?.length || 0;
     });
 
@@ -382,7 +407,18 @@ test.describe('Drawing Tool Persistence', () => {
 
     // Verify the drawing has the expected properties
     const drawingData = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: Array<{
+              tool?: string;
+              points?: unknown[];
+              id?: string;
+            }>;
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings[0];
     });
@@ -398,7 +434,14 @@ test.describe('Drawing Tool Persistence', () => {
 
     // Verify drawing persisted after reload
     const drawingsAfterReload = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       return store?.getState?.()?.drawings || [];
     });
 
@@ -444,9 +487,21 @@ test.describe('Drawing Tool Persistence', () => {
 
     // Verify wall was added
     const wallData = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface DrawingData {
+        tool?: string;
+        color?: string;
+        size?: number;
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
-      return drawings.find((d: any) => d.tool === 'wall');
+      return drawings.find((d) => d.tool === 'wall');
     });
 
     expect(wallData, 'Wall drawing should exist').toBeTruthy();
@@ -458,9 +513,19 @@ test.describe('Drawing Tool Persistence', () => {
     await page.waitForLoadState('networkidle');
 
     const wallAfterReload = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface DrawingData {
+        tool?: string;
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
-      return drawings.find((d: any) => d.tool === 'wall');
+      return drawings.find((d) => d.tool === 'wall');
     });
 
     expect(
@@ -499,9 +564,19 @@ test.describe('Drawing Tool Persistence', () => {
 
     // Verify eraser stroke was added
     const eraserData = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface DrawingData {
+        tool?: string;
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
-      return drawings.find((d: any) => d.tool === 'eraser');
+      return drawings.find((d) => d.tool === 'eraser');
     });
 
     expect(eraserData, 'Eraser stroke should exist').toBeTruthy();
@@ -513,9 +588,19 @@ test.describe('Drawing Tool Persistence', () => {
     await page.waitForLoadState('networkidle');
 
     const eraserAfterReload = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface DrawingData {
+        tool?: string;
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
-      return drawings.find((d: any) => d.tool === 'eraser');
+      return drawings.find((d) => d.tool === 'eraser');
     });
 
     expect(

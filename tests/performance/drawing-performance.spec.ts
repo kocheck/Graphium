@@ -6,6 +6,11 @@
  *
  * Target: < 0.1ms input processing latency (excluding rendering)
  * Target: < 16.6ms frame time (60fps)
+ *
+ * **Note on Type Duplication:**
+ * Interface definitions are duplicated within each page.evaluate() block because
+ * the code inside evaluate() runs in the browser context and cannot import types
+ * from Node.js modules. This duplication is intentional and necessary.
  */
 
 import { test, expect } from '@playwright/test';
@@ -60,7 +65,17 @@ test.describe('Drawing Tool Performance', () => {
 
     // Verify all points were captured
     const drawingData = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface DrawingData {
+        points?: unknown[];
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings[0];
     });
@@ -86,7 +101,14 @@ test.describe('Drawing Tool Performance', () => {
 
     // Inject performance monitoring
     await page.evaluate(() => {
-      (window as any).__DRAWING_PERF__ = {
+      interface DrawingPerfWindow extends Window {
+        __DRAWING_PERF__?: {
+          frameCount: number;
+          totalFrameTime: number;
+          maxFrameTime: number;
+        };
+      }
+      (window as unknown as DrawingPerfWindow).__DRAWING_PERF__ = {
         frameCount: 0,
         totalFrameTime: 0,
         maxFrameTime: 0,
@@ -101,11 +123,20 @@ test.describe('Drawing Tool Performance', () => {
           const frameTime = timestamp - lastTimestamp;
           lastTimestamp = timestamp;
 
-          if ((window as any).__DRAWING_PERF__) {
-            (window as any).__DRAWING_PERF__.frameCount++;
-            (window as any).__DRAWING_PERF__.totalFrameTime += frameTime;
-            (window as any).__DRAWING_PERF__.maxFrameTime = Math.max(
-              (window as any).__DRAWING_PERF__.maxFrameTime,
+          interface DrawingPerfWindow extends Window {
+            __DRAWING_PERF__?: {
+              frameCount: number;
+              totalFrameTime: number;
+              maxFrameTime: number;
+            };
+          }
+
+          const win = window as unknown as DrawingPerfWindow;
+          if (win.__DRAWING_PERF__) {
+            win.__DRAWING_PERF__.frameCount++;
+            win.__DRAWING_PERF__.totalFrameTime += frameTime;
+            win.__DRAWING_PERF__.maxFrameTime = Math.max(
+              win.__DRAWING_PERF__.maxFrameTime,
               frameTime
             );
           }
@@ -133,7 +164,15 @@ test.describe('Drawing Tool Performance', () => {
 
     // Collect performance metrics
     const perfMetrics = await page.evaluate(() => {
-      const perf = (window as any).__DRAWING_PERF__;
+      interface DrawingPerfWindow extends Window {
+        __DRAWING_PERF__?: {
+          frameCount: number;
+          totalFrameTime: number;
+          maxFrameTime: number;
+        };
+      }
+      const perf = (window as unknown as DrawingPerfWindow).__DRAWING_PERF__;
+      if (!perf) return { frameCount: 0, avgFrameTime: 0, maxFrameTime: 0, fps: 0 };
       return {
         frameCount: perf.frameCount,
         avgFrameTime: perf.totalFrameTime / perf.frameCount,
@@ -149,6 +188,9 @@ test.describe('Drawing Tool Performance', () => {
     console.log(`  - Average FPS: ${perfMetrics.fps.toFixed(1)}`);
 
     // Verify performance targets
+    // NOTE: These thresholds (16.6ms/60fps avg, 33ms/30fps max) may be too strict for CI
+    // environments or slower machines. If tests fail on CI but pass locally, consider
+    // increasing thresholds or making them environment-specific (e.g., relaxed on CI).
     expect(
       perfMetrics.avgFrameTime,
       'Average frame time should be under 16.6ms (60fps)'
@@ -191,7 +233,17 @@ test.describe('Drawing Tool Performance', () => {
 
     // Verify deduplication worked
     const drawingData = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface DrawingData {
+        points?: unknown[];
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings[0];
     });
@@ -251,7 +303,14 @@ test.describe('Drawing Tool Performance', () => {
 
     // Verify all drawings were created
     const drawingsCount = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings.length;
     });
@@ -298,7 +357,14 @@ test.describe('Drawing Memory Management', () => {
 
     // Verify all drawings were created
     const drawingsCount = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings.length;
     });
@@ -308,13 +374,18 @@ test.describe('Drawing Memory Management', () => {
       'Should have created 50 drawings'
     ).toBe(50);
 
-    // Verify no memory leaks by checking that refs are cleaned up
+    // NOTE: Memory leak detection requires Chrome DevTools Protocol (CDP) for real heap snapshots.
+    // This simplified check always passes and doesn't actually verify memory cleanup.
+    // To properly test for memory leaks, consider either:
+    // 1. Using Playwright's CDP integration to take heap snapshots before/after
+    // 2. Monitoring process memory usage via CDP
+    // 3. Removing this assertion if proper memory testing isn't feasible in this environment
     const refsCleanedUp = await page.evaluate(() => {
       // This is a simplified check - in production you'd use Chrome DevTools memory profiler
       return true;
     });
 
-    expect(refsCleanedUp, 'Memory should be properly managed').toBe(true);
+    expect(refsCleanedUp, 'Memory should be properly managed (placeholder assertion - see note above)').toBe(true);
 
     console.log(`Memory Management Test Results:`);
     console.log(`  - Drawings created: ${drawingsCount}`);

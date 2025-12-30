@@ -51,6 +51,7 @@
 
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { captureErrorContext, logErrorWithContext, exportErrorToClipboard, type ErrorContext } from '../../utils/errorBoundaryUtils';
+import { useGameStore } from '../../store/gameStore';
 
 /**
  * Props for TokenErrorBoundary
@@ -102,7 +103,6 @@ class TokenErrorBoundary extends Component<Props, State> {
   static getDerivedStateFromError(): Partial<State> {
     return {
       hasError: true,
-      errorCount: 1,
     };
   }
 
@@ -117,6 +117,11 @@ class TokenErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
+
+    // Increment error count
+    this.setState((prevState) => ({
+      errorCount: prevState.errorCount + 1,
+    }));
 
     // Capture comprehensive error context
     const context = captureErrorContext(error, errorInfo, {
@@ -160,15 +165,18 @@ class TokenErrorBoundary extends Component<Props, State> {
 
   /**
    * Copy error to clipboard
+   * Note: Uses useGameStore.getState() which is safe in class components
+   * (getState() is not a hook, it's a Zustand store method)
    */
   handleCopyError = async () => {
     const { errorContext } = this.state;
     if (errorContext) {
       const success = await exportErrorToClipboard(errorContext);
+      const showToast = useGameStore.getState().showToast;
       if (success) {
-        alert('Error details copied to clipboard!');
+        showToast('Error details copied to clipboard!', 'success');
       } else {
-        alert('Failed to copy error details');
+        showToast('Failed to copy error details', 'error');
       }
     }
   };
@@ -194,150 +202,77 @@ class TokenErrorBoundary extends Component<Props, State> {
       return (
         <div
           data-testid={`token-error-${tokenId || 'unknown'}`}
-          style={{
-            position: 'absolute',
-            width: '50px',
-            height: '50px',
-            backgroundColor: 'rgba(255, 0, 0, 0.7)',
-            border: '2px solid red',
-            borderRadius: '50%',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '24px',
-            zIndex: 9999,
-          }}
+          className="absolute w-[50px] h-[50px] bg-red-600/70 border-2 border-red-500 rounded-full cursor-pointer flex items-center justify-center text-white font-bold text-2xl z-[9999]"
           onClick={this.handleToggleDebug}
           title={`Token Error: ${tokenId || 'unknown'}\nClick to view details`}
         >
           ⚠
           {showDebugOverlay && errorContext && (
             <div
-              style={{
-                position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                backgroundColor: '#1a1a1a',
-                color: '#fff',
-                padding: '20px',
-                borderRadius: '8px',
-                border: '2px solid #f00',
-                maxWidth: '600px',
-                maxHeight: '80vh',
-                overflow: 'auto',
-                zIndex: 10000,
-                boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-              }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900 text-white p-5 rounded-lg border-2 border-red-500 max-w-[600px] max-h-[80vh] overflow-auto z-[10000] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 style={{ margin: '0 0 15px 0', color: '#f00' }}>
+              <h3 className="m-0 mb-4 text-red-500">
                 Token Error Debug Info
               </h3>
 
-              <div style={{ marginBottom: '15px' }}>
+              <div className="mb-4">
                 <strong>Token ID:</strong> {tokenId || 'N/A'}
               </div>
 
-              <div style={{ marginBottom: '15px' }}>
+              <div className="mb-4">
                 <strong>Error:</strong> {errorContext.error.name}
                 <br />
                 <strong>Message:</strong> {errorContext.error.message}
               </div>
 
-              <div style={{ marginBottom: '15px' }}>
+              <div className="mb-4">
                 <strong>Timestamp:</strong> {new Date(errorContext.timestamp).toLocaleString()}
               </div>
 
               {errorContext.error.stack && (
-                <details style={{ marginBottom: '15px' }}>
-                  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                <details className="mb-4">
+                  <summary className="cursor-pointer font-bold">
                     Stack Trace
                   </summary>
-                  <pre
-                    style={{
-                      backgroundColor: '#000',
-                      padding: '10px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      overflow: 'auto',
-                      maxHeight: '200px',
-                    }}
-                  >
+                  <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
                     {errorContext.error.stack}
                   </pre>
                 </details>
               )}
 
               {errorContext.componentStack && (
-                <details style={{ marginBottom: '15px' }}>
-                  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                <details className="mb-4">
+                  <summary className="cursor-pointer font-bold">
                     Component Stack
                   </summary>
-                  <pre
-                    style={{
-                      backgroundColor: '#000',
-                      padding: '10px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      overflow: 'auto',
-                      maxHeight: '200px',
-                    }}
-                  >
+                  <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
                     {errorContext.componentStack}
                   </pre>
                 </details>
               )}
 
               {errorContext.props && (
-                <details style={{ marginBottom: '15px' }}>
-                  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                <details className="mb-4">
+                  <summary className="cursor-pointer font-bold">
                     Component Props
                   </summary>
-                  <pre
-                    style={{
-                      backgroundColor: '#000',
-                      padding: '10px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      overflow: 'auto',
-                      maxHeight: '200px',
-                    }}
-                  >
+                  <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
                     {JSON.stringify(errorContext.props, null, 2)}
                   </pre>
                 </details>
               )}
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+              <div className="flex gap-2.5 mt-4">
                 <button
                   onClick={this.handleCopyError}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#4CAF50',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                  }}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white border-none rounded cursor-pointer text-sm"
                 >
                   Copy Error
                 </button>
                 <button
                   onClick={this.handleToggleDebug}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#666',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                  }}
+                  className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white border-none rounded cursor-pointer text-sm"
                 >
                   Close
                 </button>

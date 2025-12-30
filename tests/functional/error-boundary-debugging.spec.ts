@@ -74,7 +74,10 @@ test.describe('Error Boundary System', () => {
 
     // Check that error utilities are available in dev mode
     const hasErrorUtils = await page.evaluate(() => {
-      return !!(window as any).__ERROR_UTILS__;
+      interface ErrorUtilsWindow extends Window {
+        __ERROR_UTILS__?: unknown;
+      }
+      return !!(window as unknown as ErrorUtilsWindow).__ERROR_UTILS__;
     });
 
     expect(
@@ -87,9 +90,14 @@ test.describe('Error Boundary System', () => {
     await addBreadcrumb(page, 'Test breadcrumb 2');
 
     const breadcrumbsWork = await page.evaluate(() => {
-      const utils = (window as any).__ERROR_UTILS__;
+      interface ErrorUtilsWindow extends Window {
+        __ERROR_UTILS__?: {
+          addBreadcrumb?: unknown;
+        };
+      }
+      const utils = (window as unknown as ErrorUtilsWindow).__ERROR_UTILS__;
       // We can't directly access breadcrumbs, but we can verify the function exists
-      return typeof utils.addBreadcrumb === 'function';
+      return typeof utils?.addBreadcrumb === 'function';
     });
 
     expect(breadcrumbsWork, 'Breadcrumb system should be functional').toBe(true);
@@ -100,7 +108,10 @@ test.describe('Error Boundary System', () => {
 
     // Verify game store is accessible
     const storeExists = await page.evaluate(() => {
-      return !!(window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: unknown;
+      }
+      return !!(window as unknown as GameStoreWindow).__GAME_STORE__;
     });
 
     expect(
@@ -110,7 +121,16 @@ test.describe('Error Boundary System', () => {
 
     // Verify we can access store state
     const storeState = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            campaign?: unknown;
+            drawings?: unknown[];
+            tokens?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState?.();
       return {
         hasCampaign: !!state?.campaign,
@@ -225,7 +245,14 @@ test.describe('Error Boundary Integration', () => {
 
     // Verify all drawings were created
     const drawingCount = await page.evaluate(() => {
-      const store = (window as any).__GAME_STORE__;
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       return store?.getState?.()?.drawings?.length || 0;
     });
 
@@ -241,7 +268,14 @@ test.describe('Performance Metrics During Errors', () => {
     await bypassLandingPageAndInjectState(page);
 
     const hasPerformanceTracking = await page.evaluate(() => {
-      const utils = (window as any).__ERROR_UTILS__;
+      interface ErrorUtilsWindow extends Window {
+        __ERROR_UTILS__?: {
+          getErrorHistory?: unknown;
+          clearErrorHistory?: unknown;
+          formatErrorReport?: unknown;
+        };
+      }
+      const utils = (window as unknown as ErrorUtilsWindow).__ERROR_UTILS__;
       if (!utils) return false;
 
       // Verify the utility functions exist
