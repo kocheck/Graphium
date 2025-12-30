@@ -6,6 +6,15 @@ import {
   clearReportedErrors,
   StoredError,
 } from '../utils/globalErrorHandler';
+import {
+  RiErrorWarningLine,
+  RiCloseLine,
+  RiArrowRightSLine,
+  RiArrowLeftSLine,
+  RiCheckLine,
+  RiGithubFill,
+  RiSaveLine,
+} from '@remixicon/react';
 
 // Constants for GitHub issue URL construction
 const MAX_GITHUB_URL_LENGTH = 2000;
@@ -162,19 +171,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
           onClick={() => setIsExpanded(true)}
           className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2 shadow-lg transition-colors"
         >
-          <svg
-            className="w-5 h-5 text-amber-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
+          <RiErrorWarningLine className="w-5 h-5 text-amber-500" />
           <span className="text-neutral-200 text-sm">
             {errors.length} Error{errors.length !== 1 ? 's' : ''}
           </span>
@@ -199,14 +196,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
               }}
               className="text-neutral-400 hover:text-neutral-200"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <RiCloseLine className="w-5 h-5" />
             </button>
           </div>
 
@@ -243,19 +233,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                         {formatTimestamp(error.lastOccurrence || error.timestamp)}
                       </p>
                     </div>
-                    <svg
-                      className="w-4 h-4 text-neutral-500 flex-shrink-0 mt-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <RiArrowRightSLine className="w-4 h-4 text-neutral-500 flex-shrink-0 mt-1" />
                   </div>
                 </button>
               ))}
@@ -271,14 +249,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                   onClick={() => setSelectedError(null)}
                   className="flex items-center gap-1 text-sm text-neutral-400 hover:text-neutral-200"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
+                  <RiArrowLeftSLine className="w-4 h-4" />
                   Back to list
                 </button>
 
@@ -320,16 +291,12 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                   >
                     {reportStatus === 'opened' ? (
                       <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
+                        <RiCheckLine className="w-4 h-4" />
                         Opened!
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-                        </svg>
+                        <RiGithubFill className="w-4 h-4" />
                         Report on GitHub
                       </>
                     )}
@@ -338,14 +305,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                     onClick={() => handleSaveError(selectedError)}
                     className="flex-1 px-3 py-2 rounded text-sm font-medium bg-neutral-600 hover:bg-neutral-500 flex items-center justify-center gap-2"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
-                    </svg>
+                    <RiSaveLine className="w-4 h-4" />
                     Save
                   </button>
                 </div>

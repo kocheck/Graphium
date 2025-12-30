@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@radix-ui/colors": "^3.0.0",
+    "@remixicon/react": "^4.8.0",
     "electron-store": "^11.0.2",
     "fs-extra": "^11.3.2",
     "idb": "^8.0.3",
