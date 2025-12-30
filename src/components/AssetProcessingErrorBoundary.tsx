@@ -59,7 +59,36 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error details for debugging
+    const isDev = import.meta.env.DEV;
+    const isTest = import.meta.env.MODE === 'test';
+
+    // Import error boundary utilities dynamically to avoid circular deps
+    import('../utils/errorBoundaryUtils').then(({ captureErrorContext, logErrorWithContext }) => {
+      // Capture comprehensive error context
+      const context = captureErrorContext(error, errorInfo, {
+        componentName: 'AssetProcessingErrorBoundary',
+        props: this.props,
+        state: this.state,
+      });
+
+      // Log with full context
+      logErrorWithContext(context);
+
+      // Expose to window for E2E testing
+      if (isDev || isTest) {
+        (window as any).__LAST_ASSET_PROCESSING_ERROR__ = {
+          error: error.message,
+          timestamp: Date.now(),
+          context,
+        };
+      }
+    }).catch(() => {
+      // Fallback to basic logging if utils fail to load
+      console.error('[AssetProcessingErrorBoundary] Caught error:', error);
+      console.error('[AssetProcessingErrorBoundary] Error info:', errorInfo);
+    });
+
+    // Legacy logging for backward compatibility
     console.error('[AssetProcessingErrorBoundary] Caught error:', error);
     console.error('[AssetProcessingErrorBoundary] Error info:', errorInfo);
 
