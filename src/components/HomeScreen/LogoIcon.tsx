@@ -1,10 +1,57 @@
+import { useState, useEffect } from 'react';
+
+interface LogoIconProps {
+  size?: number;
+  animate?: boolean;
+  onAnimationComplete?: (roll: number) => void;
+}
+
 /**
  * LogoIcon - Placeholder SVG icon for Hyle branding
  *
  * A twenty-sided die (d20) representing tabletop gaming and fortune.
  * This is a placeholder that can be replaced with the final logo design.
+ *
+ * Features:
+ * - Optional dice roll animation on mount
+ * - 3D rotation effect
+ * - Displays random roll result (weighted toward natural 20)
  */
-export function LogoIcon({ size = 80 }: { size?: number }) {
+export function LogoIcon({ size = 80, animate = false, onAnimationComplete }: LogoIconProps) {
+  const [isRolling, setIsRolling] = useState(false);
+  const [displayNumber, setDisplayNumber] = useState(20);
+  const [rotation, setRotation] = useState(0);
+
+  useEffect(() => {
+    if (animate) {
+      // Start the roll animation
+      setIsRolling(true);
+
+      // Randomize displayed number during spin
+      const spinInterval = setInterval(() => {
+        setDisplayNumber(Math.floor(Math.random() * 20) + 1);
+        setRotation(prev => prev + 45);
+      }, 50);
+
+      // Stop after 800ms and show final roll
+      setTimeout(() => {
+        clearInterval(spinInterval);
+
+        // Weighted roll: 15% chance for natural 20, otherwise random
+        const finalRoll = Math.random() < 0.15 ? 20 : Math.floor(Math.random() * 20) + 1;
+        setDisplayNumber(finalRoll);
+        setRotation(0);
+        setIsRolling(false);
+
+        if (onAnimationComplete) {
+          onAnimationComplete(finalRoll);
+        }
+      }, 800);
+
+      return () => clearInterval(spinInterval);
+    }
+  }, [animate, onAnimationComplete]);
+
   return (
     <svg
       width={size}
@@ -12,7 +59,11 @@ export function LogoIcon({ size = 80 }: { size?: number }) {
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))' }}
+      style={{
+        filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))',
+        transform: `rotate(${rotation}deg) ${isRolling ? 'scale(1.1)' : 'scale(1)'}`,
+        transition: isRolling ? 'none' : 'transform 0.3s ease-out',
+      }}
     >
       {/* D20 Icosahedron - simplified geometric representation */}
 
@@ -57,7 +108,7 @@ export function LogoIcon({ size = 80 }: { size?: number }) {
         opacity="0.4"
       />
 
-      {/* "20" in the center - the critical success number */}
+      {/* Dynamic number in the center */}
       <text
         x="50"
         y="50"
@@ -68,7 +119,7 @@ export function LogoIcon({ size = 80 }: { size?: number }) {
         textAnchor="middle"
         dominantBaseline="middle"
       >
-        20
+        {displayNumber}
       </text>
 
       {/* Gradient definition */}

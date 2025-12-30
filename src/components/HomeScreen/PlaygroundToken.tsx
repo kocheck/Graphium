@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Circle, Group, Text } from 'react-konva';
+import Konva from 'konva';
 
 interface PlaygroundTokenProps {
   id: string;
@@ -8,14 +9,20 @@ interface PlaygroundTokenProps {
   color: string;
   label: string;
   size?: number;
+  flavorText?: string;
+  easterEggTrigger?: number;
+  showHint?: boolean;
 }
 
 /**
- * PlaygroundToken - A simple draggable token for the HomeScreen demo
+ * PlaygroundToken - Enhanced draggable token for the HomeScreen demo
  *
- * Provides a delightful interactive element on the landing page
- * to showcase the app's core drag-and-drop functionality.
- * These tokens don't persist or affect actual game state.
+ * Features:
+ * - Draggable with hover effects
+ * - Subtle idle breathing animation
+ * - Easter egg celebration animation
+ * - Optional pulsing hint for discoverability
+ * - Flavor text on hover (via HTML tooltip)
  */
 export function PlaygroundToken({
   id,
@@ -24,10 +31,60 @@ export function PlaygroundToken({
   color,
   label,
   size = 40,
+  flavorText,
+  easterEggTrigger = 0,
+  showHint = false,
 }: PlaygroundTokenProps) {
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [idleOffset, setIdleOffset] = useState(0);
+  const groupRef = useRef<Konva.Group>(null);
+
+  // Idle breathing animation
+  useEffect(() => {
+    const amplitude = 3; // pixels
+    const frequency = 2000; // milliseconds
+    let startTime = Date.now();
+
+    const animate = () => {
+      if (!isDragging) {
+        const elapsed = Date.now() - startTime;
+        const offset = Math.sin((elapsed / frequency) * Math.PI * 2) * amplitude;
+        setIdleOffset(offset);
+      }
+      requestAnimationFrame(animate);
+    };
+
+    const animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [isDragging]);
+
+  // Easter egg celebration animation
+  useEffect(() => {
+    if (easterEggTrigger > 0 && groupRef.current) {
+      const group = groupRef.current;
+
+      // Jump animation
+      const jumpTween = new Konva.Tween({
+        node: group,
+        duration: 0.3,
+        y: group.y() - 40,
+        easing: Konva.Easings.EaseOut,
+        onFinish: () => {
+          // Land animation
+          new Konva.Tween({
+            node: group,
+            duration: 0.2,
+            y: position.y,
+            easing: Konva.Easings.BounceEaseOut,
+          }).play();
+        },
+      });
+
+      jumpTween.play();
+    }
+  }, [easterEggTrigger, position.y]);
 
   const handleDragStart = () => {
     setIsDragging(true);
@@ -42,19 +99,31 @@ export function PlaygroundToken({
   };
 
   const scale = isDragging ? 1.15 : isHovered ? 1.05 : 1;
-  const shadowBlur = isDragging ? 20 : isHovered ? 10 : 5;
+  const shadowBlur = isDragging ? 20 : isHovered ? 10 : showHint ? 15 : 5;
 
   return (
     <Group
+      ref={groupRef}
       id={id}
       x={position.x}
-      y={position.y}
+      y={position.y + idleOffset}
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Hint pulsing outer glow */}
+      {showHint && (
+        <Circle
+          radius={size / 2 + 8}
+          stroke={color}
+          strokeWidth={3}
+          opacity={0.4 + Math.sin(Date.now() / 500) * 0.2}
+          listening={false}
+        />
+      )}
+
       {/* Token circle */}
       <Circle
         radius={size / 2}
@@ -87,6 +156,26 @@ export function PlaygroundToken({
         scaleX={scale}
         scaleY={scale}
       />
+
+      {/* Flavor text on hover */}
+      {isHovered && flavorText && (
+        <Text
+          text={flavorText}
+          fontSize={10}
+          fontFamily="IBM Plex Sans, sans-serif"
+          fill="#fff"
+          fontStyle="italic"
+          align="center"
+          width={size * 4}
+          x={-size * 2}
+          y={-size - 30}
+          listening={false}
+          padding={6}
+          shadowColor="rgba(0, 0, 0, 0.9)"
+          shadowBlur={8}
+          opacity={0.95}
+        />
+      )}
     </Group>
   );
 }
