@@ -1,0 +1,128 @@
+/**
+ * IBM Plex Font Definitions
+ *
+ * This file defines local font-face declarations for IBM Plex Sans and IBM Plex Mono.
+ * Fonts are loaded from the @ibm/plex npm package and bundled by Vite for offline capability and privacy.
+ *
+ * License: SIL Open Font License 1.1
+ * Source: https://github.com/IBM/plex
+ * Package: https://www.npmjs.com/package/@ibm/plex
+ *
+ * Font Weights:
+ * - Regular: 400
+ * - Medium: 500
+ * - SemiBold: 600
+ * - Bold: 700
+ */
+
+/* ============================================
+   IBM PLEX SANS (Primary UI Font)
+   ============================================ */
+
+/* IBM Plex Sans - Regular (400) */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Regular.woff2') format('woff2');
+}
+
+/* IBM Plex Sans - Medium (500) */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Medium.woff2') format('woff2');
+}
+
+/* IBM Plex Sans - SemiBold (600) */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-SemiBold.woff2') format('woff2');
+}
+
+/* IBM Plex Sans - Bold (700) */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Bold.woff2') format('woff2');
+}
+
+/* ============================================
+   IBM PLEX MONO (Code Blocks & Data Tables)
+   ============================================ */
+
+/* IBM Plex Mono - Regular (400) */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Regular.woff2') format('woff2');
+}
+
+/* IBM Plex Mono - Medium (500) */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Medium.woff2') format('woff2');
+}
+
+/* IBM Plex Mono - SemiBold (600) */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-SemiBold.woff2') format('woff2');
+}
+
+/* IBM Plex Mono - Bold (700) */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Bold.woff2') format('woff2');
+}
+
+/* ============================================
+   GLOBAL FONT APPLICATION
+   ============================================ */
+
+/* Apply IBM Plex Sans globally with system font fallback stack */
+body {
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               'Helvetica Neue', Arial, sans-serif;
+  /* font-feature-settings for enhanced typography */
+  font-feature-settings: 'liga' 1, 'calt' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Apply IBM Plex Mono to code elements */
+code,
+kbd,
+samp,
+pre,
+.font-mono {
+  font-family: 'IBM Plex Mono', 'SF Mono', Monaco, 'Cascadia Code',
+               'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+/* Data table styling with monospace for better number alignment */
+table.data-table,
+.numeric-data {
+  font-family: 'IBM Plex Mono', 'SF Mono', Monaco, monospace;
+  font-variant-numeric: tabular-nums;
+}
