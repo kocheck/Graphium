@@ -59,11 +59,13 @@ import { useGameStore } from '../../store/gameStore';
  * @property children - Token component to protect
  * @property tokenId - Optional token ID for error logging/debugging
  * @property tokenData - Optional token data for debugging context
+ * @property onShowToast - Optional callback to show toast notifications (improves testability and reusability)
  */
 interface Props {
   children: ReactNode;
   tokenId?: string;
   tokenData?: Record<string, unknown>;
+  onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 /**
@@ -118,16 +120,15 @@ class TokenErrorBoundary extends Component<Props, State> {
     const { tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
 
-    // Increment error count
-    this.setState((prevState) => ({
-      errorCount: prevState.errorCount + 1,
-    }));
+    // Calculate next error count from current state
+    // In componentDidCatch, this.state is synchronously accessible and stable
+    const nextErrorCount = this.state.errorCount + 1;
 
-    // Capture comprehensive error context
+    // Capture comprehensive error context with updated error count
     const context = captureErrorContext(error, errorInfo, {
       componentName: 'TokenErrorBoundary',
       props: { tokenId, tokenData },
-      state: this.state,
+      state: { ...this.state, errorCount: nextErrorCount },
     });
 
     // Log with full context
@@ -140,10 +141,11 @@ class TokenErrorBoundary extends Component<Props, State> {
       console.error('Token Data:', tokenData);
     }
 
-    // Store context in state for dev mode debugging
-    if (isDev) {
-      this.setState({ errorContext: context });
-    }
+    // Update state using functional form to handle rapid error occurrences safely
+    this.setState((prevState) => ({
+      errorCount: nextErrorCount,
+      errorContext: isDev ? context : prevState.errorContext,
+    }));
 
     // Expose to window for E2E testing
     if (isDev || import.meta.env.MODE === 'test') {
@@ -168,9 +170,14 @@ class TokenErrorBoundary extends Component<Props, State> {
    */
   handleCopyError = async () => {
     const { errorContext } = this.state;
+    const { onShowToast } = this.props;
+    
     if (errorContext) {
       const success = await exportErrorToClipboard(errorContext);
-      const showToast = useGameStore.getState().showToast;
+      
+      // Use callback if provided, otherwise fall back to direct store access
+      const showToast = onShowToast || useGameStore.getState().showToast;
+      
       if (success) {
         showToast('Error details copied to clipboard!', 'success');
       } else {

@@ -133,13 +133,25 @@ export function captureErrorContext(
         loadTime: navigationEntry.loadEventEnd - navigationEntry.startTime,
         domReady: navigationEntry.domContentLoadedEventEnd - navigationEntry.startTime,
       };
-    } else if ((performance as Performance & { timing?: PerformanceTiming }).timing) {
+    } else {
       // Legacy fallback for environments without Navigation Timing Level 2
-      const timing = (performance as Performance & { timing: PerformanceTiming }).timing;
-      performanceMetrics.timing = {
-        loadTime: timing.loadEventEnd - timing.navigationStart,
-        domReady: timing.domContentLoadedEventEnd - timing.navigationStart,
-      };
+      const legacyPerformance = performance as Performance & { timing?: PerformanceTiming };
+      const timing = legacyPerformance.timing;
+      
+      // Validate timing object exists, is an object, and has required numeric properties
+      // Note: Values can legitimately be 0 if events haven't occurred yet
+      if (
+        timing != null &&
+        typeof timing === 'object' &&
+        typeof timing.navigationStart === 'number' &&
+        typeof timing.loadEventEnd === 'number' &&
+        typeof timing.domContentLoadedEventEnd === 'number'
+      ) {
+        performanceMetrics.timing = {
+          loadTime: timing.loadEventEnd - timing.navigationStart,
+          domReady: timing.domContentLoadedEventEnd - timing.navigationStart,
+        };
+      }
     }
   }
 
@@ -165,8 +177,12 @@ export function captureErrorContext(
   };
 
   // Store in history (dev/test only)
-  // NOTE: errorHistory is intentionally mutable for performance reasons.
-  // This global array is used for debugging and doesn't need Zustand-style immutability.
+  // NOTE: errorHistory is intentionally mutable for debugging utilities.
+  // Unlike Zustand state (which requires immutable updates), this is a module-level
+  // array used only for dev/test error tracking. Mutable updates are acceptable here
+  // because: (1) this is not React state, (2) high-frequency error logging would create
+  // performance overhead with immutable array copies, and (3) error history doesn't
+  // need time-travel or state comparison features.
   if (isDev || isTest) {
     errorHistory.push(context);
     if (errorHistory.length > MAX_ERROR_HISTORY) {

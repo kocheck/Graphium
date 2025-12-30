@@ -252,15 +252,24 @@ test.describe('Drawing Tool Performance', () => {
 
     expect(drawingData, 'Drawing should exist').toBeTruthy();
 
-    // Should have significantly fewer points than total mouse moves
-    // Expected: ~4 points (start point, maybe a couple intermediate, end point)
+    // Validate data integrity: points array should have even length (x,y pairs)
     expect(
-      drawingData.points.length,
-      'Should deduplicate repeated points (expecting < 10 points)'
-    ).toBeLessThan(10);
+      drawingData.points.length % 2,
+      'Points array should have even length (x,y pairs)'
+    ).toBe(0);
+
+    // Should have significantly fewer points than total mouse moves
+    // With proper deduplication: start position + end position = 2 points (4 array values)
+    // We allow up to 4 points (8 array values) to account for potential intermediate rendering
+    const pointCount = drawingData.points.length / 2;
+    expect(
+      pointCount,
+      'Should deduplicate repeated points (expecting ≤ 4 point pairs)'
+    ).toBeLessThanOrEqual(4);
 
     console.log(`Deduplication Test Results:`);
-    console.log(`  - Points captured: ${drawingData.points.length / 2}`);
+    console.log(`  - Point pairs captured (logical points): ${pointCount}`);
+    console.log(`  - Raw points array length: ${drawingData.points.length}`);
   });
 
   test('should handle multiple concurrent drawing tools efficiently', async ({ page }) => {

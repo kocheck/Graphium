@@ -85,22 +85,41 @@ test.describe('Error Boundary System', () => {
       'Error utilities should be available in dev/test mode'
     ).toBe(true);
 
-    // Verify breadcrumb system works
+    // Verify breadcrumb system works by adding breadcrumbs and checking the history
     await addBreadcrumb(page, 'Test breadcrumb 1');
     await addBreadcrumb(page, 'Test breadcrumb 2');
+    await addBreadcrumb(page, 'Test breadcrumb 3');
 
-    const breadcrumbsWork = await page.evaluate(() => {
+    // Get error history (breadcrumbs are captured in error contexts)
+    // We verify the system is functional by checking if getErrorHistory is callable
+    const errorHistory = await getErrorHistory(page);
+
+    // Verify breadcrumbs can be added without errors
+    const breadcrumbSystemWorks = await page.evaluate(() => {
       interface ErrorUtilsWindow extends Window {
         __ERROR_UTILS__?: {
-          addBreadcrumb?: unknown;
+          addBreadcrumb?: (action: string) => void;
         };
       }
       const utils = (window as unknown as ErrorUtilsWindow).__ERROR_UTILS__;
-      // We can't directly access breadcrumbs, but we can verify the function exists
-      return typeof utils?.addBreadcrumb === 'function';
+      
+      // Verify function exists and is callable
+      if (typeof utils?.addBreadcrumb !== 'function') {
+        return false;
+      }
+      
+      // Try calling it to ensure it doesn't throw
+      try {
+        utils.addBreadcrumb('Breadcrumb verification test');
+        return true;
+      } catch (error) {
+        console.error('Failed to add breadcrumb:', error);
+        return false;
+      }
     });
 
-    expect(breadcrumbsWork, 'Breadcrumb system should be functional').toBe(true);
+    expect(breadcrumbSystemWorks, 'Breadcrumb system should be functional').toBe(true);
+    expect(Array.isArray(errorHistory), 'Error history should be retrievable').toBe(true);
   });
 
   test('should expose game store for debugging', async ({ page }) => {
