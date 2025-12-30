@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
 import { getRecentCampaigns, addRecentCampaignWithPlatform, removeRecentCampaign, type RecentCampaign } from '../utils/recentCampaigns';
 import { rollForMessage } from '../utils/systemMessages';
+import { BackgroundCanvas } from './HomeScreen/BackgroundCanvas';
+import { PlaygroundToken } from './HomeScreen/PlaygroundToken';
+import { VignetteOverlay } from './HomeScreen/VignetteOverlay';
 
 interface HomeScreenProps {
   onStartEditor: () => void;
@@ -118,11 +121,53 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     setRecentCampaigns(getRecentCampaigns());
   };
 
+  // Generate random playground tokens (memoized to prevent recreation on re-renders)
+  const playgroundTokens = useMemo(() => {
+    const tokens = [
+      { id: 'demo-hero', color: '#3b82f6', label: 'Hero' },
+      { id: 'demo-monster', color: '#ef4444', label: 'Dragon' },
+      { id: 'demo-npc', color: '#8b5cf6', label: 'Wizard' },
+      { id: 'demo-ally', color: '#10b981', label: 'Ranger' },
+      { id: 'demo-enemy', color: '#f59e0b', label: 'Goblin' },
+    ];
+
+    // Distribute tokens around the viewport in a scattered pattern
+    return tokens.map((token, index) => {
+      const angle = (index / tokens.length) * Math.PI * 2;
+      const distance = 200 + Math.random() * 150;
+      return {
+        ...token,
+        x: window.innerWidth / 2 + Math.cos(angle) * distance,
+        y: window.innerHeight / 2 + Math.sin(angle) * distance,
+      };
+    });
+  }, []);
+
   return (
     <div className="home-screen w-full h-screen flex flex-col items-center justify-center" style={{
+      position: 'relative',
+      overflow: 'hidden',
       background: 'var(--app-bg-base)',
       color: 'var(--app-text-primary)',
     }}>
+      {/* Background Layer - Paper texture and grid */}
+      <BackgroundCanvas width={window.innerWidth} height={window.innerHeight}>
+        {/* Playground tokens - draggable demo elements */}
+        {playgroundTokens.map((token) => (
+          <PlaygroundToken
+            key={token.id}
+            id={token.id}
+            x={token.x}
+            y={token.y}
+            color={token.color}
+            label={token.label}
+          />
+        ))}
+      </BackgroundCanvas>
+
+      {/* Vignette overlay - creates fade to infinity effect */}
+      <VignetteOverlay />
+
       <style>{`
         .home-action-button {
           --border-color: var(--app-border-default);
@@ -145,8 +190,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           --remove-bg: var(--app-bg-active);
         }
       `}</style>
-      {/* Main Content Container */}
-      <div className="max-w-2xl w-full px-8">
+
+      {/* Main Content Container - Above background and vignette */}
+      <div className="max-w-2xl w-full px-8" style={{
+        position: 'relative',
+        zIndex: 10,
+      }}>
         {/* Branding */}
         <div className="text-center mb-12">
           <h1 className="text-6xl font-bold mb-4" style={{
@@ -304,7 +353,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-8 text-center" style={{ color: 'var(--app-text-muted)' }}>
+      <div className="absolute bottom-8 text-center" style={{
+        color: 'var(--app-text-muted)',
+        position: 'relative',
+        zIndex: 10,
+      }}>
         <p className="text-sm">
           Version {__APP_VERSION__} · {isElectron ? 'Desktop' : 'Web'} Edition
         </p>
