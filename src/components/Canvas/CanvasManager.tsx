@@ -298,6 +298,31 @@ const CanvasManager = ({
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
 
+  /**
+   * Determines the appropriate cursor style based on current interaction state.
+   * Priority order (highest to lowest):
+   * 1. Space + panning (isDragging) → 'grabbing'
+   * 2. Space pressed (ready to pan) → 'grab'
+   * 3. Token dragging → 'grabbing'
+   * 4. Select tool → 'default'
+   * 5. Other tools (marker, eraser, wall) → 'crosshair'
+   */
+  const getCursorStyle = useCallback((): React.CSSProperties['cursor'] => {
+    if (isSpacePressed && isDragging) {
+      return 'grabbing';
+    }
+    if (isSpacePressed) {
+      return 'grab';
+    }
+    if (isDraggingWithThreshold) {
+      return 'grabbing';
+    }
+    if (tool === 'select') {
+      return 'default';
+    }
+    return 'crosshair';
+  }, [isSpacePressed, isDragging, isDraggingWithThreshold, tool]);
+
   // Notify parent of selection changes
   useEffect(() => {
     if (onSelectionChange) {
@@ -1580,7 +1605,7 @@ const CanvasManager = ({
                  // No action needed here; see comment above.
              }
         }}
-        style={{ cursor: (isSpacePressed && isDragging) ? 'grabbing' : (isSpacePressed ? 'grab' : (isDraggingWithThreshold ? 'grabbing' : (tool === 'select' ? 'default' : 'crosshair'))) }}
+        style={{ cursor: getCursorStyle() }}
       >
         {/* Layer 1: Background & Map (Listening False to let internal events pass to Stage for selection) */}
         <Layer listening={false}>
