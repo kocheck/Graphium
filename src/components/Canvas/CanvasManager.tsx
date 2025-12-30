@@ -1013,15 +1013,17 @@ const CanvasManager = ({
   useEffect(() => {
     if (!stageRef.current || tool === 'select') return;
 
-    const canvas = stageRef.current.content?.querySelector('canvas');
-    if (!canvas) {
-      console.error('[CanvasManager] Canvas element not found for direct DOM listener!', 'stageRef.current:', stageRef.current, 'content:', stageRef.current?.content);
+    // Konva creates multiple canvas elements (one per Layer)
+    // We need to attach to ALL of them
+    const canvases = stageRef.current.content?.querySelectorAll('canvas');
+    if (!canvases || canvases.length === 0) {
+      console.error('[CanvasManager] No canvas elements found for direct DOM listener!', 'stageRef.current:', stageRef.current, 'content:', stageRef.current?.content);
       return;
     }
-    console.log('[CanvasManager] Canvas element found:', canvas);
+    console.log('[CanvasManager] Found', canvases.length, 'canvas elements');
 
     const handleCanvasMouseDown = (e: MouseEvent) => {
-      console.log('[CanvasManager] RAW DOM mousedown on canvas!', 'tool:', tool);
+      console.log('[CanvasManager] RAW DOM mousedown on canvas!', 'tool:', tool, 'canvas:', e.currentTarget);
 
       try {
         // Convert DOM event to Konva-like event object
@@ -1047,12 +1049,16 @@ const CanvasManager = ({
       }
     };
 
-    console.log('[CanvasManager] Attaching direct DOM mousedown listener to canvas');
-    canvas.addEventListener('mousedown', handleCanvasMouseDown);
+    console.log('[CanvasManager] Attaching direct DOM mousedown listeners to all canvases');
+    canvases.forEach(canvas => {
+      canvas.addEventListener('mousedown', handleCanvasMouseDown);
+    });
 
     return () => {
-      console.log('[CanvasManager] Removing direct DOM mousedown listener from canvas');
-      canvas.removeEventListener('mousedown', handleCanvasMouseDown);
+      console.log('[CanvasManager] Removing direct DOM mousedown listeners from all canvases');
+      canvases.forEach(canvas => {
+        canvas.removeEventListener('mousedown', handleCanvasMouseDown);
+      });
     };
   }, [tool, handleMouseDown]);
 
