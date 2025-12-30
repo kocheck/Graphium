@@ -1282,8 +1282,10 @@ const CanvasManager = ({
              drawingAnimationFrameRef.current = null;
          }
 
-         if (tempLine) {
-             let processedLine: Drawing = { ...tempLine };
+         // Use currentLine.current instead of tempLine to avoid race condition
+         // tempLine is set asynchronously via RAF, so it might not be ready yet
+         if (currentLine.current) {
+             let processedLine: Drawing = { ...currentLine.current };
 
              // Apply path smoothing for wall tool (if enabled)
              if (processedLine.tool === 'wall' && wallToolPrefs.enableSmoothing) {
@@ -1329,8 +1331,11 @@ const CanvasManager = ({
              }
 
              addDrawing(processedLine);
-             setTempLine(null);
          }
+
+         // Clean up
+         currentLine.current = null;
+         setTempLine(null);
          return;
     }
 
@@ -1526,7 +1531,8 @@ const CanvasManager = ({
         onDrop={handleDrop}
         onMouseDown={(e) => {
           // CRITICAL FIX: Handle drawing tools at container level since Stage mousedown is blocked
-          if (tool !== 'select' && !isSpacePressed && stageRef.current) {
+          // Only for marker, wall, eraser - not door or measure
+          if ((tool === 'marker' || tool === 'wall' || tool === 'eraser') && !isSpacePressed && stageRef.current) {
             // Convert browser coordinates to Konva stage coordinates
             const stage = stageRef.current;
             const container = stage.container();
@@ -1558,7 +1564,8 @@ const CanvasManager = ({
         }}
         onMouseMove={(e) => {
           // CRITICAL FIX: Handle mouse move at DIV level for drawing tools
-          if (tool !== 'select' && stageRef.current && isDrawing.current) {
+          // Only for marker, wall, eraser when actively drawing
+          if ((tool === 'marker' || tool === 'wall' || tool === 'eraser') && stageRef.current && isDrawing.current) {
             // Convert browser coordinates to Konva stage coordinates
             const stage = stageRef.current;
             const container = stage.container();
@@ -1588,7 +1595,7 @@ const CanvasManager = ({
         }}
         onMouseUp={(e) => {
           // CRITICAL FIX: Handle mouseup at container level to match mousedown handling
-          if (tool !== 'select' && stageRef.current) {
+          if (tool !== 'select' && tool !== 'door' && tool !== 'measure' && stageRef.current && isDrawing.current) {
             // Convert browser coordinates to Konva stage coordinates
             const stage = stageRef.current;
             const container = stage.container();
@@ -1640,8 +1647,20 @@ const CanvasManager = ({
             handleMouseDown(e);
           }
         }}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseMove={(e) => {
+          // For drawing tools, mouse move is handled at DIV level
+          // Stage only handles select tool and other non-drawing tools
+          if (tool === 'select' || tool === 'door' || tool === 'measure') {
+            handleMouseMove(e);
+          }
+        }}
+        onMouseUp={(e) => {
+          // For drawing tools, mouse up is handled at DIV level
+          // Stage only handles select tool and other non-drawing tools
+          if (tool === 'select' || tool === 'door' || tool === 'measure') {
+            handleMouseUp(e);
+          }
+        }}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
         onTouchStart={handleTouchStart}
