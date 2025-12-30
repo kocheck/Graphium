@@ -35,7 +35,7 @@ export interface ErrorContext {
     message: string;
     stack?: string;
   };
-  componentStack?: string;
+  componentStack?: string | null;
   componentName?: string;
   props?: Record<string, any>;
   state?: Record<string, any>;
@@ -163,7 +163,7 @@ function sanitizeForLogging(data: any): any {
     // Use JSON stringify with replacer to handle functions and circular refs
     const seen = new WeakSet();
     const sanitized = JSON.parse(
-      JSON.stringify(data, (key, value) => {
+      JSON.stringify(data, (_key, value) => {
         // Skip functions
         if (typeof value === 'function') {
           return '[Function]';
@@ -356,7 +356,7 @@ export function formatErrorReport(context: ErrorContext): string {
   if (context.performance) {
     lines.push('Performance Metrics:');
     if (context.performance.memory) {
-      const { usedJSHeapSize, totalJSHeapSize, jsHeapSizeLimit } = context.performance.memory;
+      const { usedJSHeapSize, jsHeapSizeLimit } = context.performance.memory;
       lines.push(`  Memory: ${(usedJSHeapSize / 1024 / 1024).toFixed(2)} MB / ${(jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`);
     }
     if (context.performance.timing) {
