@@ -413,7 +413,7 @@ function App() {
 
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
         {isArchitectView && !isMobile && (
-        <div className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-2 rounded shadow flex items-center gap-2 z-50">
+        <div className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-2 rounded shadow-2xl flex items-center gap-2 z-50 bg-neutral-900/95 backdrop-blur-sm border border-neutral-700">
            {/* Play/Pause Button */}
            <Tooltip content={isGamePaused ? 'Resume - Players will see the map' : 'Pause - Hide map from players'}>
              <button
