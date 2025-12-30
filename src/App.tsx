@@ -21,6 +21,7 @@ import { useIsMobile } from './hooks/useMediaQuery';
 import MobileToolbar from './components/MobileToolbar';
 import { rollForMessage } from './utils/systemMessages';
 import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
+import Tooltip from './components/Tooltip';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -399,99 +400,107 @@ function App() {
         {isArchitectView && !isMobile && (
         <div className="toolbar fixed top-4 right-4 p-2 rounded shadow flex gap-2 z-50">
            {/* Play/Pause Button */}
-           <button
-             className={`btn btn-tool flex items-center justify-center font-semibold ${
-               isGamePaused
-                 ? 'bg-red-500 hover:bg-red-600 text-white'
-                 : 'bg-green-500 hover:bg-green-600 text-white'
-             }`}
-             onClick={handlePauseToggle}
-             title={isGamePaused ? 'Resume - Players will see the updated map' : 'Pause - Players will see a loading screen'}
-             aria-label={isGamePaused ? 'Resume game' : 'Pause game'}
-           >
-             {isGamePaused ? (
-               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-               </svg>
-             ) : (
-               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                 <path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5z" />
-               </svg>
-             )}
-           </button>
+           <Tooltip content={isGamePaused ? 'Resume - Players will see the map' : 'Pause - Hide map from players'}>
+             <button
+               className={`btn btn-tool flex items-center justify-center font-semibold ${
+                 isGamePaused
+                   ? 'bg-red-500 hover:bg-red-600 text-white'
+                   : 'bg-green-500 hover:bg-green-600 text-white'
+               }`}
+               onClick={handlePauseToggle}
+               aria-label={isGamePaused ? 'Resume game' : 'Pause game'}
+             >
+               {isGamePaused ? (
+                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                 </svg>
+               ) : (
+                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                   <path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5z" />
+                 </svg>
+               )}
+             </button>
+           </Tooltip>
            <div className="toolbar-divider w-px mx-1"></div>
            {/* Select Tool */}
-           <button
-             className={`btn btn-tool ${tool === 'select' ? 'active' : ''}`}
-             onClick={() => setTool('select')}
-             title="Select (V)"
-             aria-label="Select tool">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-             </svg>
-           </button>
+           <Tooltip content="Select (V)">
+             <button
+               className={`btn btn-tool ${tool === 'select' ? 'active' : ''}`}
+               onClick={() => setTool('select')}
+               aria-label="Select tool">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+               </svg>
+             </button>
+           </Tooltip>
            {/* Marker Tool */}
-           <button
-             className={`btn btn-tool ${tool === 'marker' ? 'active' : ''}`}
-             onClick={() => setTool('marker')}
-             title="Marker (M)"
-             aria-label="Marker tool">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-             </svg>
-           </button>
+           <Tooltip content="Marker (M)">
+             <button
+               className={`btn btn-tool ${tool === 'marker' ? 'active' : ''}`}
+               onClick={() => setTool('marker')}
+               aria-label="Marker tool">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+               </svg>
+             </button>
+           </Tooltip>
            {/* Eraser Tool */}
-           <button
-             className={`btn btn-tool ${tool === 'eraser' ? 'active' : ''}`}
-             onClick={() => setTool('eraser')}
-             title="Eraser (E)"
-             aria-label="Eraser tool">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-             </svg>
-           </button>
+           <Tooltip content="Eraser (E)">
+             <button
+               className={`btn btn-tool ${tool === 'eraser' ? 'active' : ''}`}
+               onClick={() => setTool('eraser')}
+               aria-label="Eraser tool">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+               </svg>
+             </button>
+           </Tooltip>
            {/* Wall Tool */}
-           <button
-             className={`btn btn-tool ${tool === 'wall' ? 'active' : ''}`}
-             onClick={() => setTool('wall')}
-             title="Wall (W)"
-             aria-label="Wall tool">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h7m10 0h-7m-7 5h7m10 0h-7m-7 5h7m10 0h-7m-7 5h7m10 0h-7" />
-             </svg>
-           </button>
+           <Tooltip content="Wall (W)">
+             <button
+               className={`btn btn-tool ${tool === 'wall' ? 'active' : ''}`}
+               onClick={() => setTool('wall')}
+               aria-label="Wall tool">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h7m10 0h-7m-7 5h7m10 0h-7m-7 5h7m10 0h-7m-7 5h7m10 0h-7" />
+               </svg>
+             </button>
+           </Tooltip>
            {/* Door Tool */}
-           <button
-             className={`btn btn-tool ${tool === 'door' ? 'active' : ''}`}
-             onClick={() => setTool('door')}
-             title="Door (D) - Arrow keys or R to rotate"
-             aria-label="Door tool">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v10m8-10v10M5 7h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2z" />
-             </svg>
-           </button>
+           <Tooltip content="Door (D) - Arrow keys or R to rotate">
+             <button
+               className={`btn btn-tool ${tool === 'door' ? 'active' : ''}`}
+               onClick={() => setTool('door')}
+               aria-label="Door tool">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v10m8-10v10M5 7h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2z" />
+               </svg>
+             </button>
+           </Tooltip>
            {/* Door Orientation Toggle (only visible when door tool active) */}
            {tool === 'door' && (
-             <button
-               className="btn btn-tool text-lg px-2"
-               onClick={() => setDoorOrientation(prev => prev === 'horizontal' ? 'vertical' : 'horizontal')}
-               title="Toggle door orientation (R)"
-               aria-label="Toggle door orientation">
-               {doorOrientation === 'horizontal' ? '↔' : '↕'}
-             </button>
+             <Tooltip content="Toggle orientation (R)">
+               <button
+                 className="btn btn-tool text-lg px-2"
+                 onClick={() => setDoorOrientation(prev => prev === 'horizontal' ? 'vertical' : 'horizontal')}
+                 aria-label="Toggle door orientation">
+                 {doorOrientation === 'horizontal' ? '↔' : '↕'}
+               </button>
+             </Tooltip>
            )}
            <div className="toolbar-divider w-px mx-1"></div>
            {/* Measurement Tool with Mode Selector */}
            <div className="flex gap-1 items-center">
-             <button
-               className={`btn btn-tool ${tool === 'measure' ? 'active' : ''}`}
-               onClick={() => setTool('measure')}
-               title="Measure (R) - Distance, Blast, and Cone AoE"
-               aria-label="Measure tool">
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-               </svg>
-             </button>
+             <Tooltip content="Measure (R) - Distance, Blast, Cone">
+               <button
+                 className={`btn btn-tool ${tool === 'measure' ? 'active' : ''}`}
+                 onClick={() => setTool('measure')}
+                 aria-label="Measure tool">
+                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                 </svg>
+               </button>
+             </Tooltip>
              {tool === 'measure' && (
                <div className="flex gap-1 ml-1 items-center">
                  <button
@@ -526,17 +535,18 @@ function App() {
            {tool === 'marker' && (
              <>
                <div className="toolbar-divider w-px mx-1"></div>
-               <label className="flex items-center gap-2 cursor-pointer">
-                 <span className="text-sm font-medium">Color (I)</span>
-                 <input
-                   ref={colorInputRef}
-                   type="color"
-                   value={color}
-                   onChange={(e) => setColor(e.target.value)}
-                   className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
-                   title="Choose marker color (press I to open)"
-                 />
-               </label>
+               <Tooltip content="Marker color (I)">
+                 <label className="flex items-center gap-2 cursor-pointer">
+                   <span className="text-sm font-medium">Color (I)</span>
+                   <input
+                     ref={colorInputRef}
+                     type="color"
+                     value={color}
+                     onChange={(e) => setColor(e.target.value)}
+                     className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
+                   />
+                 </label>
+               </Tooltip>
              </>
            )}
         </div>
