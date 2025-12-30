@@ -6,6 +6,8 @@ import { rollForMessage } from '../utils/systemMessages';
 import { BackgroundCanvas } from './HomeScreen/BackgroundCanvas';
 import { PlaygroundToken } from './HomeScreen/PlaygroundToken';
 import { VignetteOverlay } from './HomeScreen/VignetteOverlay';
+import { LogoIcon } from './HomeScreen/LogoIcon';
+import { AboutModal } from './HomeScreen/AboutModal';
 
 interface HomeScreenProps {
   onStartEditor: () => void;
@@ -23,6 +25,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   const [recentCampaigns, setRecentCampaigns] = useState<RecentCampaign[]>([]);
   const [isElectron, setIsElectron] = useState(false);
   const [isMac, setIsMac] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const loadCampaign = useGameStore((state) => state.loadCampaign);
   const showToast = useGameStore((state) => state.showToast);
@@ -198,17 +201,43 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       }}>
         {/* Branding */}
         <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold mb-4" style={{
-            background: 'linear-gradient(135deg, var(--app-accent-solid), var(--app-accent-text))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>
-            Hyle
-          </h1>
-          <p className="text-xl" style={{ color: 'var(--app-text-secondary)' }}>
-            Virtual Tabletop for Dungeon Masters
-          </p>
+          <button
+            onClick={() => setIsAboutOpen(true)}
+            className="logo-button"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '1rem',
+              borderRadius: '12px',
+              transition: 'all 0.3s ease',
+              display: 'inline-block',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.background = 'rgba(var(--app-accent-solid-rgb, 59, 130, 246), 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+            aria-label="Open About Hyle dialog"
+          >
+            <div style={{ marginBottom: '0.75rem' }}>
+              <LogoIcon size={80} />
+            </div>
+            <h1 className="text-6xl font-bold mb-4" style={{
+              background: 'linear-gradient(135deg, var(--app-accent-solid), var(--app-accent-text))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>
+              Hyle
+            </h1>
+            <p className="text-xl" style={{ color: 'var(--app-text-secondary)' }}>
+              Virtual Tabletop for Dungeon Masters
+            </p>
+          </button>
         </div>
 
         {/* Mac App Download Banner (Web only, Mac only) */}
@@ -362,6 +391,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           Version {__APP_VERSION__} · {isElectron ? 'Desktop' : 'Web'} Edition
         </p>
       </div>
+
+      {/* About Modal */}
+      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
     </div>
   );
 }
