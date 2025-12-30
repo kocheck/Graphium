@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Stage, Layer, Rect } from 'react-konva';
 import PaperNoiseOverlay from '../Canvas/PaperNoiseOverlay';
 import GridOverlay from '../Canvas/GridOverlay';
+import { PlaygroundDrawings } from './PlaygroundDrawings';
 
 interface BackgroundCanvasProps {
   width: number;
@@ -91,6 +92,11 @@ export function BackgroundCanvas({ width, height, children }: BackgroundCanvasPr
             opacity={0.3}
             type="DOTS"
           />
+        </Layer>
+
+        {/* Drawings Layer - tactical markers and annotations */}
+        <Layer listening={false}>
+          <PlaygroundDrawings />
         </Layer>
 
         {/* Content Layer - for draggable tokens */}
