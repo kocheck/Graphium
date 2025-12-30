@@ -201,6 +201,7 @@ Hyle is forged from the following mystical technologies:
 - **📦 State Management**: Zustand (simple, elegant, powerful)
 - **🎨 Rendering Engine**: HTML5 Canvas powered by **Konva** / **React-Konva**
 - **🎭 Styling**: Tailwind CSS + Radix Colors (theme system)
+- **🔤 Typography**: IBM Plex Sans & IBM Plex Mono (via [@ibm/plex](https://github.com/IBM/plex))
 - **💾 Persistence Layer**: electron-store (theme preferences)
 - **♿ Accessibility**: Playwright + axe-core (WCAG AA testing)
 - **📜 File Format**: Custom `.hyle` files (ZIP archives containing JSON manifests)
@@ -275,11 +276,26 @@ Want to join the party? Check out the [Contributing Guide](CONTRIBUTING.md) and 
 
 ## 📜 **License (The Fine Print)**
 
+### **Application License**
+
 **MIT License**
 
 This software is licensed under the MIT License. You are free to use, modify, and distribute it as you see fit. See the LICENSE file for full details.
 
 > *In short: Do what you want, just don't blame me if your dragon TPKs the party.*
+
+### **Third-Party Fonts**
+
+**IBM Plex Sans & IBM Plex Mono**
+
+This project uses the IBM Plex typeface family, designed by Mike Abbink, Bold Monday, and the IBM Brand & Experience team.
+
+- **Copyright:** © 2017 IBM Corp.
+- **License:** [SIL Open Font License 1.1](https://github.com/IBM/plex/blob/master/LICENSE.txt)
+- **Source:** [@ibm/plex](https://github.com/IBM/plex) npm package
+- **Authors:** Mike Abbink, Bold Monday, IBM Brand & Experience
+
+The IBM Plex fonts are licensed separately under the SIL OFL 1.1, which permits redistribution, modification, and use in both commercial and non-commercial applications. Full license text is included in the `node_modules/@ibm/plex/LICENSE.txt` file when you install dependencies.
 
 ---
 
