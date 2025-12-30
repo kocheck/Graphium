@@ -49,37 +49,38 @@ However, **critical gaps exist** in:
 - ✅ Geometry utilities (`src/types/geometry.test.ts`)
 - ✅ Recent campaigns (`src/utils/recentCampaigns.test.ts`)
 
-**❌ Critical Gaps (Missing Tests)**:
-1. **State Management** (`src/store/gameStore.ts`) - **26KB file, 0 tests**
-   - No tests for 50+ Zustand actions
-   - No tests for state immutability
-   - No tests for complex operations (token updates, campaign loading)
-   - **Risk**: Core business logic untested
+**✅ Recently Implemented Tests** (addressed in commit 67a8ce9):
+1. **State Management** (`src/store/gameStore.test.ts`) - **✅ IMPLEMENTED (58 tests)**
+   - ✅ Complete coverage of all Zustand actions
+   - ✅ State immutability verification
+   - ✅ Token CRUD operations, campaign management, map configuration
+   - ✅ Coverage: 0% → ~85%
 
-2. **Storage Services** (3 files, 0 comprehensive tests)
+2. **Fuzzy Search** (`src/utils/fuzzySearch.test.ts`) - **✅ IMPLEMENTED (27 tests)**
+   - ✅ Search scoring algorithm (exact, starts-with, contains)
+   - ✅ Category filtering and multi-word queries
+   - ✅ Edge cases (empty queries, special chars)
+   - ✅ Coverage: 0% → 100%
+
+3. **Token Helpers** (`src/utils/tokenHelpers.test.ts`) - **✅ IMPLEMENTED (10 tests)**
+   - ✅ `addLibraryTokenToMap()` function
+   - ✅ Token centering and positioning logic
+   - ✅ Coverage: 0% → 100%
+
+**❌ Remaining Critical Gaps (Missing Tests)**:
+1. **Storage Services** (3 files, 0 comprehensive tests)
    - `src/services/ElectronStorageService.ts` - Not tested
    - `src/services/WebStorageService.ts` - Not tested
    - `src/services/storage.ts` - Not tested
    - **Risk**: Data persistence failures in production
 
-3. **AssetProcessor** (`src/utils/AssetProcessor.ts`) - Not tested
+2. **AssetProcessor** (`src/utils/AssetProcessor.ts`) - Not tested
    - Image optimization logic untested
    - Web Worker integration untested
    - Cancellation logic untested
    - **Risk**: Large file uploads could crash app
 
-4. **Fuzzy Search** (`src/utils/fuzzySearch.ts`) - Not tested
-   - Scoring algorithm untested
-   - Category filtering untested
-   - Edge cases (empty queries, special chars) untested
-   - **Risk**: Library search could produce incorrect results
-
-5. **Token Helpers** (`src/utils/tokenHelpers.ts`) - Not tested
-   - `addLibraryTokenToMap()` untested
-   - Token centering logic untested
-   - **Risk**: Tokens placed at incorrect positions
-
-6. **System Messages** (`src/utils/systemMessages.ts`) - Not tested
+3. **System Messages** (`src/utils/systemMessages.ts`) - Not tested
    - Random message selection untested
    - **Risk**: Low priority, but incomplete coverage
 
@@ -526,9 +527,14 @@ docs/
 
 ## 5. Summary Checklist
 
+### ✅ Completed in Commit 67a8ce9
+
+- [x] **gameStore.ts unit tests** (URGENT) - 58 tests, ~85% coverage
+- [x] **Fuzzy search unit tests** (MEDIUM) - 27 tests, 100% coverage
+- [x] **tokenHelpers unit tests** (MEDIUM) - 10 tests, 100% coverage
+
 ### Pre-Release Blockers
 
-- [ ] **gameStore.ts unit tests** (URGENT)
 - [ ] **Storage services unit tests** (URGENT)
 - [ ] **Replace CanvasManager placeholder tests** (HIGH)
 - [ ] **AssetProcessor unit tests** (HIGH)
@@ -536,8 +542,6 @@ docs/
 
 ### Recommended Before Release
 
-- [ ] **Fuzzy search unit tests** (MEDIUM)
-- [ ] **tokenHelpers unit tests** (MEDIUM)
 - [ ] **SyncManager unit tests** (MEDIUM)
 
 ### Post-Release Improvements
@@ -550,48 +554,33 @@ docs/
 
 ## 6. Test Implementation Plan
 
+### ✅ Completed (Commit 67a8ce9)
+
+**gameStore.ts** - ✅ IMPLEMENTED (58 tests)
+- Implementation in `src/store/gameStore.test.ts` (1,076 lines)
+- Complete coverage of all Zustand actions
+- Token CRUD, campaign management, map configuration
+- State immutability verification
+- Coverage: 0% → ~85%
+
+**fuzzySearch.ts** - ✅ IMPLEMENTED (27 tests)
+- Implementation in `src/utils/fuzzySearch.test.ts` (394 lines)
+- Search scoring algorithm (exact, starts-with, contains)
+- Category filtering and multi-word queries
+- Edge cases (empty queries, special chars)
+- Coverage: 0% → 100%
+
+**tokenHelpers.ts** - ✅ IMPLEMENTED (10 tests)
+- Implementation in `src/utils/tokenHelpers.test.ts` (263 lines)
+- `addLibraryTokenToMap()` function
+- Token centering and positioning logic
+- Coverage: 0% → 100%
+
+### Remaining Implementation Plan
+
 ### Week 1: Critical Path Tests
 
-**Day 1-2: gameStore.ts**
-```typescript
-// src/store/gameStore.test.ts
-describe('gameStore', () => {
-  beforeEach(() => {
-    // Reset store to initial state
-    useGameStore.setState(/* initial state */);
-  });
-
-  describe('Token Operations', () => {
-    it('should add token to current map', () => {
-      // Test addToken action
-    });
-
-    it('should update token position', () => {
-      // Test updateToken action
-      // Assert immutability
-    });
-
-    it('should remove token by id', () => {
-      // Test removeToken action
-    });
-  });
-
-  describe('Campaign Loading', () => {
-    it('should reset state when loading campaign', () => {
-      // Test loadCampaign action
-      // Assert old state is cleared
-    });
-
-    it('should preserve preferences when loading campaign', () => {
-      // Test that user preferences persist
-    });
-  });
-
-  // ... more tests
-});
-```
-
-**Day 3-4: Storage Services**
+**Day 1-2: Storage Services**
 ```typescript
 // src/services/WebStorageService.test.ts
 describe('WebStorageService', () => {
@@ -622,7 +611,7 @@ describe('WebStorageService', () => {
 });
 ```
 
-**Day 5: CanvasManager Placeholder Replacement**
+**Day 3: CanvasManager Placeholder Replacement**
 ```typescript
 // src/components/Canvas/CanvasManager.test.tsx
 describe('CanvasManager Drag Handlers', () => {
@@ -680,18 +669,20 @@ describe('FogOfWarLayer', () => {
 
 ## 7. Estimated Effort
 
-| Task | Estimated Hours | Priority |
-|------|----------------|----------|
-| gameStore tests | 6 hours | URGENT |
-| Storage services tests | 6 hours | URGENT |
-| CanvasManager tests | 4 hours | HIGH |
-| AssetProcessor tests | 4 hours | HIGH |
-| FogOfWar tests | 5 hours | HIGH |
-| Fuzzy search tests | 2 hours | MEDIUM |
-| tokenHelpers tests | 1 hour | MEDIUM |
-| SyncManager tests | 3 hours | MEDIUM |
-| **TOTAL (URGENT + HIGH)** | **25 hours** | **~3-4 days** |
-| **TOTAL (ALL)** | **31 hours** | **~4-5 days** |
+| Task | Estimated Hours | Priority | Status |
+|------|----------------|----------|---------|
+| ~~gameStore tests~~ | ~~6 hours~~ | ~~URGENT~~ | ✅ COMPLETE |
+| ~~Fuzzy search tests~~ | ~~2 hours~~ | ~~MEDIUM~~ | ✅ COMPLETE |
+| ~~tokenHelpers tests~~ | ~~1 hour~~ | ~~MEDIUM~~ | ✅ COMPLETE |
+| Storage services tests | 6 hours | URGENT | Pending |
+| CanvasManager tests | 4 hours | HIGH | Pending |
+| AssetProcessor tests | 4 hours | HIGH | Pending |
+| FogOfWar tests | 5 hours | HIGH | Pending |
+| SyncManager tests | 3 hours | MEDIUM | Pending |
+| **TOTAL (URGENT + HIGH)** | **19 hours** | **~2-3 days** | **9 hrs done** |
+| **TOTAL (ALL)** | **22 hours** | **~3 days** | **9 hrs done** |
+
+**Progress Update**: 9 hours of testing work completed in commit 67a8ce9 (gameStore, fuzzySearch, tokenHelpers). Remaining effort reduced from 31 hours to 22 hours.
 
 ---
 

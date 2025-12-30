@@ -742,7 +742,6 @@ describe('gameStore', () => {
       store.addMap('Map 1');
       const map1Id = useGameStore.getState().campaign.activeMapId;
       store.addMap('Map 2');
-      const map2Id = useGameStore.getState().campaign.activeMapId;
 
       expect(Object.keys(useGameStore.getState().campaign.maps)).toHaveLength(3); // initial + 2
 
