@@ -26,7 +26,6 @@
  */
 
 import { useState, useRef } from 'react';
-import { useGameStore } from '../store/gameStore';
 import {
   RiPlayFill,
   RiPauseFill,
@@ -39,6 +38,7 @@ import {
   RiLayoutMasonryLine,
   RiMoreLine,
 } from '@remixicon/react';
+import { useGameStore } from '../store/gameStore';
 
 interface MobileToolbarProps {
   tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';

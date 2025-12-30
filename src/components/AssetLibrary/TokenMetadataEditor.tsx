@@ -31,9 +31,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useGameStore } from '../../store/gameStore';
-import { useIsMobile } from '../../hooks/useMediaQuery';
 import { RiCloseLine } from '@remixicon/react';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import { useGameStore } from '../../store/gameStore';
 
 /**
  * Props for TokenMetadataEditor component
