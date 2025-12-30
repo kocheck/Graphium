@@ -58,6 +58,12 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { sanitizeStack, generateReportBody, SanitizedError } from '../utils/errorSanitizer';
 import { rollForMessage } from '../utils/systemMessages';
 
+// Constants for GitHub issue URL construction
+const MAX_GITHUB_URL_LENGTH = 2000;
+const MAX_ISSUE_TITLE_LENGTH = 200;
+// Safety margin to account for URL-encoded ellipsis character (… becomes %E2%80%A6)
+const TITLE_ELLIPSIS_MARGIN = 10;
+
 /**
  * Props for PrivacyErrorBoundary
  *
@@ -74,7 +80,7 @@ interface Props {
  * @property isLoading - Whether error is being sanitized (async operation)
  * @property sanitizedError - PII-free error object, null until sanitization complete
  * @property reportBody - Formatted error report ready for email/file export
- * @property copyStatus - Status of copy-to-clipboard operation
+ * @property reportStatus - Status of GitHub issue reporting operation
  * @property saveStatus - Status of save-to-file operation
  * @property userContext - Optional user-provided context (what they were doing)
  * @property showContextInput - Whether context input textarea is visible
@@ -84,7 +90,7 @@ interface State {
   isLoading: boolean;
   sanitizedError: SanitizedError | null;
   reportBody: string;
-  copyStatus: 'idle' | 'copied' | 'error';
+  reportStatus: 'idle' | 'copied' | 'error';
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   userContext: string;
   showContextInput: boolean;
@@ -104,7 +110,7 @@ class PrivacyErrorBoundary extends Component<Props, State> {
       isLoading: false,
       sanitizedError: null,
       reportBody: '',
-      copyStatus: 'idle',
+      reportStatus: 'idle',
       saveStatus: 'idle',
       userContext: '',
       showContextInput: false,
@@ -202,20 +208,48 @@ ${userContext.trim()}
         : '';
       const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
-      // Construct GitHub issue URL
-      const issueTitle = `Bug Report: ${sanitizedError?.name || 'Error'}`;
-      const githubUrl = `https://github.com/kocheck/Hyle/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(finalReport)}`;
+      // Construct GitHub issue URL with title truncation and URL length validation
+      const rawTitle = `Bug Report: ${sanitizedError?.name || 'Error'}`;
+      const issueTitle =
+        rawTitle.length > MAX_ISSUE_TITLE_LENGTH
+          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
+          : rawTitle;
+      
+      const params = new URLSearchParams({
+        body: finalReport,
+        title: issueTitle,
+      });
+      let githubUrl = `https://github.com/kocheck/Hyle/issues/new?${params.toString()}`;
+      
+      // Enforce URL length limit to prevent browser issues
+      if (githubUrl.length > MAX_GITHUB_URL_LENGTH) {
+        const baseUrl = 'https://github.com/kocheck/Hyle/issues/new';
+        const titleParam = `?title=${encodeURIComponent(issueTitle)}`;
+        const bodyPrefix = '&body=';
+        const baseWithTitle = `${baseUrl}${titleParam}`;
+        
+        const allowedBodyLength = MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
+        
+        if (allowedBodyLength > 0) {
+          const encodedBody = encodeURIComponent(finalReport);
+          const truncatedBody = encodedBody.slice(0, allowedBodyLength);
+          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedBody}`;
+        } else {
+          // In the unlikely event the base URL is already too long, drop the body entirely
+          githubUrl = baseWithTitle;
+        }
+      }
 
       // Open GitHub in browser
       const errorReporting = window.errorReporting;
       if (errorReporting) {
         await errorReporting.openExternal(githubUrl);
-        this.setState({ copyStatus: 'copied' });
+        this.setState({ reportStatus: 'copied' });
       }
 
       // Reset copy status after 3 seconds
       setTimeout(() => {
-        this.setState({ copyStatus: 'idle' });
+        this.setState({ reportStatus: 'idle' });
       }, 3000);
     } catch (err) {
       if (err instanceof Error) {
@@ -223,11 +257,11 @@ ${userContext.trim()}
       } else {
         console.error('Failed to open GitHub:', typeof err === 'string' ? err : '[Unknown error]');
       }
-      this.setState({ copyStatus: 'error' });
+      this.setState({ reportStatus: 'error' });
 
       // Reset error status after 3 seconds
       setTimeout(() => {
-        this.setState({ copyStatus: 'idle' });
+        this.setState({ reportStatus: 'idle' });
       }, 3000);
     }
   };
@@ -312,7 +346,7 @@ ${userContext.trim()}
   };
 
   render(): ReactNode {
-    const { hasError, isLoading, sanitizedError, copyStatus, saveStatus, userContext, showContextInput } = this.state;
+    const { hasError, isLoading, sanitizedError, reportStatus, saveStatus, userContext, showContextInput } = this.state;
     const { children } = this.props;
 
     if (hasError) {
@@ -436,14 +470,14 @@ ${userContext.trim()}
                     <button
                       onClick={this.handleReportOnGitHub}
                       className={`flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${
-                        copyStatus === 'copied'
+                        reportStatus === 'copied'
                           ? 'bg-green-600 hover:bg-green-500'
-                          : copyStatus === 'error'
+                          : reportStatus === 'error'
                           ? 'bg-red-600 hover:bg-red-500'
                           : 'bg-blue-600 hover:bg-blue-500'
                       }`}
                     >
-                      {copyStatus === 'copied' ? (
+                      {reportStatus === 'copied' ? (
                         <>
                           <svg
                             className="w-5 h-5"
@@ -460,7 +494,7 @@ ${userContext.trim()}
                           </svg>
                           Opened GitHub!
                         </>
-                      ) : copyStatus === 'error' ? (
+                      ) : reportStatus === 'error' ? (
                         <>
                           <svg
                             className="w-5 h-5"

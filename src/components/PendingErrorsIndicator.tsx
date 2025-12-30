@@ -7,6 +7,12 @@ import {
   StoredError,
 } from '../utils/globalErrorHandler';
 
+// Constants for GitHub issue URL construction
+const MAX_GITHUB_URL_LENGTH = 2000;
+const MAX_ISSUE_TITLE_LENGTH = 200;
+// Safety margin to account for URL-encoded ellipsis character (… becomes %E2%80%A6)
+const TITLE_ELLIPSIS_MARGIN = 10;
+
 interface PendingErrorsIndicatorProps {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
@@ -22,7 +28,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [errors, setErrors] = useState<StoredError[]>([]);
   const [selectedError, setSelectedError] = useState<StoredError | null>(null);
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [reportStatus, setReportStatus] = useState<'idle' | 'copied' | 'error'>('idle');
 
   const refreshErrors = useCallback(() => {
     const stored = getStoredErrors();
@@ -47,17 +53,41 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
 
   const handleReportError = async (error: StoredError) => {
     try {
-      // Construct GitHub issue URL
-      const issueTitle = `Bug Report: ${error.sanitizedError.name}`;
+      // GitHub issue URLs can break if they get too long, so enforce a conservative limit
+      const rawTitle = `Bug Report: ${error.sanitizedError.name}`;
+      const issueTitle =
+        rawTitle.length > MAX_ISSUE_TITLE_LENGTH
+          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
+          : rawTitle;
       const issueBody = error.reportBody;
 
-      const githubUrl = `https://github.com/kocheck/Hyle/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(issueBody)}`;
+      const encodedTitle = encodeURIComponent(issueTitle);
+      const encodedBody = encodeURIComponent(issueBody);
+
+      const baseUrl = `https://github.com/kocheck/Hyle/issues/new`;
+      const baseWithTitle = `${baseUrl}?title=${encodedTitle}`;
+      const bodyPrefix = '&body=';
+
+      let githubUrl = `${baseWithTitle}${bodyPrefix}${encodedBody}`;
+
+      if (githubUrl.length > MAX_GITHUB_URL_LENGTH) {
+        const allowedBodyLength =
+          MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
+
+        if (allowedBodyLength <= 0) {
+          // In the unlikely event the base URL is already too long, drop the body entirely
+          githubUrl = baseWithTitle;
+        } else {
+          const truncatedBody = encodedBody.slice(0, allowedBodyLength);
+          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedBody}`;
+        }
+      }
 
       // Open GitHub in browser
       const errorReporting = window.errorReporting;
       if (errorReporting) {
         await errorReporting.openExternal(githubUrl);
-        setCopyStatus('copied');
+        setReportStatus('copied');
       }
 
       // Mark as reported
@@ -65,11 +95,11 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
       refreshErrors();
 
       // Reset copy status
-      setTimeout(() => setCopyStatus('idle'), 3000);
+      setTimeout(() => setReportStatus('idle'), 3000);
     } catch (err) {
       console.error('Failed to report error:', err);
-      setCopyStatus('error');
-      setTimeout(() => setCopyStatus('idle'), 3000);
+      setReportStatus('error');
+      setTimeout(() => setReportStatus('idle'), 3000);
     }
   };
 
@@ -268,14 +298,14 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                   <button
                     onClick={() => handleReportError(selectedError)}
                     className={`flex-1 px-3 py-2 rounded text-sm font-medium flex items-center justify-center gap-2 ${
-                      copyStatus === 'copied'
+                      reportStatus === 'copied'
                         ? 'bg-green-600 hover:bg-green-500'
-                        : copyStatus === 'error'
+                        : reportStatus === 'error'
                         ? 'bg-red-600 hover:bg-red-500'
                         : 'bg-blue-600 hover:bg-blue-500'
                     }`}
                   >
-                    {copyStatus === 'copied' ? (
+                    {reportStatus === 'copied' ? (
                       <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

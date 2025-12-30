@@ -298,7 +298,7 @@ export function generateReportBody(sanitizedError: SanitizedError): string {
 
   const report = `## Description
 
-*Please describe what you were doing when the error occurred...*
+*Review and, if helpful, expand on the pre-filled context below about what you were doing when the error occurred.*
 
 {{USER_CONTEXT}}
 
@@ -317,7 +317,7 @@ export function generateReportBody(sanitizedError: SanitizedError): string {
 ### Stack Trace
 
 \`\`\`
-${sanitizedError.stack}
+${sanitizedError.stack.replace(/`/g, '\\`')}
 \`\`\`
 `.trim();
 
