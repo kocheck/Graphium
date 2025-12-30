@@ -233,6 +233,7 @@ const CanvasManager = ({
   const updateMapTransform = useGameStore(s => s.updateMapTransform);
   const updateDrawingTransform = useGameStore(s => s.updateDrawingTransform);
   const setActiveMeasurement = useGameStore(s => s.setActiveMeasurement);
+  const showToast = useGameStore(s => s.showToast);
 
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null); // Temp line points
@@ -1947,7 +1948,7 @@ const CanvasManager = ({
 
                 return (
                 <Group key={token.id}>
-                <TokenErrorBoundary tokenId={token.id}>
+                <TokenErrorBoundary tokenId={token.id} onShowToast={showToast}>
                 <URLImage
                     ref={(node) => {
                       if (node) {

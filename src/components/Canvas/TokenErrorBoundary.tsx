@@ -59,11 +59,13 @@ import { useGameStore } from '../../store/gameStore';
  * @property children - Token component to protect
  * @property tokenId - Optional token ID for error logging/debugging
  * @property tokenData - Optional token data for debugging context
+ * @property onShowToast - Optional callback to show toast notifications (improves testability and reusability)
  */
 interface Props {
   children: ReactNode;
   tokenId?: string;
   tokenData?: Record<string, unknown>;
+  onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 /**
@@ -168,9 +170,14 @@ class TokenErrorBoundary extends Component<Props, State> {
    */
   handleCopyError = async () => {
     const { errorContext } = this.state;
+    const { onShowToast } = this.props;
+    
     if (errorContext) {
       const success = await exportErrorToClipboard(errorContext);
-      const showToast = useGameStore.getState().showToast;
+      
+      // Use callback if provided, otherwise fall back to direct store access
+      const showToast = onShowToast || useGameStore.getState().showToast;
+      
       if (success) {
         showToast('Error details copied to clipboard!', 'success');
       } else {

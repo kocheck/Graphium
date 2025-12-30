@@ -42,6 +42,7 @@ export interface ErrorInfo {
   error: string;
   timestamp: number;
   context?: ErrorContext;
+  utilsLoadedSuccessfully?: boolean; // Indicates whether enhanced error utilities loaded
 }
 
 declare global {

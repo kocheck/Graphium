@@ -105,19 +105,23 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
           error: error.message,
           timestamp: Date.now(),
           context,
+          utilsLoadedSuccessfully: true, // Flag indicating enhanced error utilities loaded
         };
       }
-    }).catch(() => {
+    }).catch((importError) => {
       // Fallback to basic logging if utils fail to load
+      console.error('[AssetProcessingErrorBoundary] Failed to load error utilities:', importError);
       console.error('[AssetProcessingErrorBoundary] Caught error:', error);
       console.error('[AssetProcessingErrorBoundary] Error info:', errorInfo);
 
       // Ensure E2E tests still receive an error marker even if the utilities fail to load
+      // Flag indicates degraded error handling state
       if (isDev || isTest) {
         window.__LAST_ASSET_PROCESSING_ERROR__ = {
           error: error.message,
           timestamp: Date.now(),
           context: createFallbackContext(),
+          utilsLoadedSuccessfully: false, // Flag indicating error utilities failed to load
         };
       }
     });
