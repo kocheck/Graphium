@@ -10,6 +10,7 @@
  */
 
 import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 interface TooltipProps {
   content: string;
@@ -67,7 +68,7 @@ const Tooltip = ({ content, children, delay = 100 }: TooltipProps) => {
         {children}
       </div>
 
-      {isVisible && (
+      {isVisible && createPortal(
         <div
           className="fixed z-[9999] pointer-events-none"
           style={{
@@ -83,7 +84,8 @@ const Tooltip = ({ content, children, delay = 100 }: TooltipProps) => {
               className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 w-2 h-2 rotate-45 bg-neutral-900 border-r border-b border-neutral-600"
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
