@@ -210,7 +210,7 @@ ${userContext.trim()}
       const rawTitle = `Bug Report: ${sanitizedError?.name || 'Error'}`;
       const issueTitle =
         rawTitle.length > MAX_ISSUE_TITLE_LENGTH
-          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - 1)}…`
+          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - 10)}…`
           : rawTitle;
       
       const params = new URLSearchParams({

@@ -55,7 +55,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
       const rawTitle = `Bug Report: ${error.sanitizedError.name}`;
       const issueTitle =
         rawTitle.length > MAX_ISSUE_TITLE_LENGTH
-          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - 1)}…`
+          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - 10)}…`
           : rawTitle;
       const issueBody = error.reportBody;
 
