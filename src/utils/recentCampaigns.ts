@@ -57,7 +57,7 @@ export function getRecentCampaigns(): RecentCampaign[] {
 
 /**
  * Add or update a campaign in the recent list
- * @param campaign Campaign to add/update
+ * @param campaign Campaign to add/update (must include lastOpened timestamp)
  */
 export function addRecentCampaign(campaign: RecentCampaign): void {
   try {
@@ -66,8 +66,8 @@ export function addRecentCampaign(campaign: RecentCampaign): void {
     // Remove existing entry if present (by id)
     const filtered = existing.filter(c => c.id !== campaign.id);
 
-    // Add new entry at the top
-    const updated = [{ ...campaign, lastOpened: Date.now() }, ...filtered].slice(0, MAX_RECENT);
+    // Add new entry at the top (caller is responsible for setting lastOpened)
+    const updated = [campaign, ...filtered].slice(0, MAX_RECENT);
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   } catch (error) {
@@ -87,6 +87,7 @@ export function addRecentCampaignWithPlatform(
   filePath?: string
 ): void {
   const isElectron = typeof window !== 'undefined' && window.ipcRenderer !== undefined;
+  const timestamp = Date.now();
   
   if (isElectron && filePath) {
     addRecentCampaign({
@@ -94,14 +95,14 @@ export function addRecentCampaignWithPlatform(
       id,
       name,
       filePath,
-      lastOpened: Date.now(),
+      lastOpened: timestamp,
     });
   } else {
     addRecentCampaign({
       platform: 'web',
       id,
       name,
-      lastOpened: Date.now(),
+      lastOpened: timestamp,
     });
   }
 }
