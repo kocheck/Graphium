@@ -277,7 +277,7 @@ const CanvasManager = ({
   const dragBroadcastThrottleRef = useRef<Map<string, number>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number, y: number }>>(new Map()); // For multi-token drag
   const DRAG_BROADCAST_THROTTLE_MS = 16; // ~60fps
-  const dragUpdateScheduledRef = useRef(false); // RAF throttle for Konva layer redraws during drag
+  const tokenNodesRef = useRef<Map<string, any>>(new Map()); // Direct refs to Konva nodes for smooth drag without React re-renders
   const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null); // Track hovered token for interactive feedback
 
   // Press-and-Hold Drag State (threshold-based drag detection)
@@ -819,18 +819,28 @@ const CanvasManager = ({
               const offsetY = newY + offset.y;
               dragPositionsRef.current.set(id, { x: offsetX, y: offsetY });
               throttleDragBroadcast(id, offsetX, offsetY);
+
+              // Directly update Konva node position (no React re-render needed)
+              const node = tokenNodesRef.current.get(id);
+              if (node) {
+                node.x(offsetX);
+                node.y(offsetY);
+              }
             }
           }
         });
       }
 
-      // Update Konva layer directly to reflect drag positions without triggering a React re-render
-      if (!dragUpdateScheduledRef.current && tokenLayerRef.current) {
-        dragUpdateScheduledRef.current = true;
-        requestAnimationFrame(() => {
-          tokenLayerRef.current?.batchDraw();
-          dragUpdateScheduledRef.current = false;
-        });
+      // Directly update Konva node position for primary token (no React re-render needed)
+      const node = tokenNodesRef.current.get(tokenId);
+      if (node) {
+        node.x(newX);
+        node.y(newY);
+      }
+
+      // Batch redraw the layer for smooth visual updates
+      if (tokenLayerRef.current) {
+        tokenLayerRef.current.batchDraw();
       }
     }
   }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, setSelectedIds, throttleDragBroadcast, isWorldView]);
@@ -1924,6 +1934,13 @@ const CanvasManager = ({
                 <Group key={token.id}>
                 <TokenErrorBoundary tokenId={token.id}>
                 <URLImage
+                    ref={(node) => {
+                      if (node) {
+                        tokenNodesRef.current.set(token.id, node);
+                      } else {
+                        tokenNodesRef.current.delete(token.id);
+                      }
+                    }}
                     name="token"
                     id={token.id}
                     src={token.src}

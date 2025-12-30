@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import Konva from 'konva';
@@ -33,10 +33,13 @@ export interface URLImageProps {
   shadowForStrokeEnabled?: boolean;
 }
 
-const URLImage = ({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSelect, onDragEnd, onDragStart, onDragMove, onMouseEnter, onMouseLeave, draggable, name, opacity, listening, filters, blurRadius, brightness, shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY, shadowForStrokeEnabled }: URLImageProps) => {
+const URLImage = forwardRef<Konva.Image, URLImageProps>(({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSelect, onDragEnd, onDragStart, onDragMove, onMouseEnter, onMouseLeave, draggable, name, opacity, listening, filters, blurRadius, brightness, shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY, shadowForStrokeEnabled }, ref) => {
   const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
   const [img] = useImage(safeSrc);
   const imageRef = useRef<Konva.Image>(null);
+
+  // Expose the Konva node to parent via ref
+  useImperativeHandle(ref, () => imageRef.current as Konva.Image);
 
   useEffect(() => {
     // Apply cache when filters are present
@@ -84,6 +87,8 @@ const URLImage = ({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSele
       shadowForStrokeEnabled={shadowForStrokeEnabled}
     />
   );
-};
+});
+
+URLImage.displayName = 'URLImage';
 
 export default URLImage;
