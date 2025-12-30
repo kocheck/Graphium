@@ -451,7 +451,7 @@ function App() {
            {/* Select Tool */}
            <Tooltip content="Select (V)">
              <button
-               className={`btn btn-tool ${tool === 'select' ? 'active' : ''}`}
+               className={`btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}`}
                onClick={() => setTool('select')}
                aria-label="Select tool">
                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -462,7 +462,7 @@ function App() {
            {/* Marker Tool */}
            <Tooltip content="Marker (M)">
              <button
-               className={`btn btn-tool ${tool === 'marker' ? 'active' : ''}`}
+               className={`btn btn-tool p-2 ${tool === 'marker' ? 'active' : ''}`}
                onClick={() => setTool('marker')}
                aria-label="Marker tool">
                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -473,7 +473,7 @@ function App() {
            {/* Eraser Tool */}
            <Tooltip content="Eraser (E)">
              <button
-               className={`btn btn-tool ${tool === 'eraser' ? 'active' : ''}`}
+               className={`btn btn-tool p-2 ${tool === 'eraser' ? 'active' : ''}`}
                onClick={() => setTool('eraser')}
                aria-label="Eraser tool">
                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -484,7 +484,7 @@ function App() {
            {/* Wall Tool */}
            <Tooltip content="Wall (W)">
              <button
-               className={`btn btn-tool ${tool === 'wall' ? 'active' : ''}`}
+               className={`btn btn-tool p-2 ${tool === 'wall' ? 'active' : ''}`}
                onClick={() => setTool('wall')}
                aria-label="Wall tool">
                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -495,7 +495,7 @@ function App() {
            {/* Door Tool */}
            <Tooltip content="Door (D) - Arrow keys or R to rotate">
              <button
-               className={`btn btn-tool ${tool === 'door' ? 'active' : ''}`}
+               className={`btn btn-tool p-2 ${tool === 'door' ? 'active' : ''}`}
                onClick={() => setTool('door')}
                aria-label="Door tool">
                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -519,7 +519,7 @@ function App() {
            <div className="flex gap-1 items-center">
              <Tooltip content="Measure (R) - Distance, Blast, Cone">
                <button
-                 className={`btn btn-tool ${tool === 'measure' ? 'active' : ''}`}
+                 className={`btn btn-tool p-2 ${tool === 'measure' ? 'active' : ''}`}
                  onClick={() => setTool('measure')}
                  aria-label="Measure tool">
                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

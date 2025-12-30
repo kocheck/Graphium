@@ -178,6 +178,10 @@ const CommandPalette = ({
         handleSelectItem(selectedIndex);
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
+        // Check if there are any selectable items at all
+        const hasSelectableItems = results.some(item => item.type !== 'section');
+        if (!hasSelectableItems) return;
+
         // Skip section headers
         let nextIndex = selectedIndex + 1;
         while (nextIndex < results.length && results[nextIndex].type === 'section') {
@@ -188,6 +192,10 @@ const CommandPalette = ({
         }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
+        // Check if there are any selectable items at all
+        const hasSelectableItems = results.some(item => item.type !== 'section');
+        if (!hasSelectableItems) return;
+
         // Skip section headers
         let prevIndex = selectedIndex - 1;
         while (prevIndex >= 0 && results[prevIndex].type === 'section') {

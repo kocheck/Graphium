@@ -57,6 +57,10 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
     height: number;
   } | null>(null);
 
+  // Local state for grid settings in CREATE mode
+  const [pendingGridType, setPendingGridType] = useState<GridType>('LINES');
+  const [pendingDaylightMode, setPendingDaylightMode] = useState(false);
+
   // Load current map data when in EDIT mode
   useEffect(() => {
     if (mode === 'EDIT' && mapId && campaign.maps[mapId]) {
@@ -76,8 +80,11 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
       setMapName(`Map ${nextNumber}`);
       // Clear pending map data when opening in CREATE mode
       setPendingMapData(null);
+      // Initialize pending grid settings from current store state
+      setPendingGridType(gridType);
+      setPendingDaylightMode(isDaylightMode);
     }
-  }, [mode, mapId, campaign.maps, isOpen]);
+  }, [mode, mapId, campaign.maps, isOpen, gridType, isDaylightMode]);
 
   // Cleanup processing on unmount
   useEffect(() => {
@@ -162,8 +169,15 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
 
     if (mode === 'CREATE') {
       // Create new map
+      // NOTE: addMap() switches to the new map immediately, making it the active map.
+      // After addMap() completes, the newly created map becomes the current active map.
+      // We then call setMap() to apply the pending map image to this newly active map.
       addMap(trimmedName || 'Untitled Map');
       
+      // Apply pending grid settings
+      setGridType(pendingGridType);
+      setDaylightMode(pendingDaylightMode);
+
       // Apply pending map data if it exists
       if (pendingMapData) {
         setMap({
@@ -306,8 +320,8 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
             </label>
             <select
               id="grid-type-select"
-              value={gridType}
-              onChange={(e) => setGridType(e.target.value as GridType)}
+              value={mode === 'CREATE' ? pendingGridType : gridType}
+              onChange={(e) => mode === 'CREATE' ? setPendingGridType(e.target.value as GridType) : setGridType(e.target.value as GridType)}
               className="sidebar-input w-full rounded px-3 py-2 text-sm"
             >
               <option value="LINES">Lines</option>
@@ -319,10 +333,10 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
           {/* Fog of War */}
           <div>
             <ToggleSwitch
-              checked={isDaylightMode}
-              onChange={(checked) => setDaylightMode(checked)}
+              checked={mode === 'CREATE' ? pendingDaylightMode : isDaylightMode}
+              onChange={(checked) => mode === 'CREATE' ? setPendingDaylightMode(checked) : setDaylightMode(checked)}
               label="Daylight Mode"
-              description={isDaylightMode ? '☀️ Fog of War disabled' : '🌙 Fog of War enabled'}
+              description={(mode === 'CREATE' ? pendingDaylightMode : isDaylightMode) ? '☀️ Fog of War disabled' : '🌙 Fog of War enabled'}
             />
           </div>
 

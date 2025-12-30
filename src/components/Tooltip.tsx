@@ -9,20 +9,32 @@
  * @component
  */
 
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 interface TooltipProps {
   content: string;
   children: ReactNode;
   delay?: number; // Delay in milliseconds before showing tooltip
+  offset?: number; // Vertical offset in pixels from element (default: 50)
 }
 
-const Tooltip = ({ content, children, delay = 100 }: TooltipProps) => {
+const Tooltip = ({ content, children, delay = 100, offset = 50 }: TooltipProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const updatePosition = useCallback(() => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const newPosition = {
+        top: rect.top - offset, // Position above the element with configurable offset
+        left: rect.left + rect.width / 2, // Center horizontally
+      };
+      setPosition(newPosition);
+    }
+  }, [offset]);
 
   const handleMouseEnter = () => {
     timeoutRef.current = setTimeout(() => {
@@ -36,17 +48,6 @@ const Tooltip = ({ content, children, delay = 100 }: TooltipProps) => {
       clearTimeout(timeoutRef.current);
     }
     setIsVisible(false);
-  };
-
-  const updatePosition = () => {
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const newPosition = {
-        top: rect.top - 50, // Position well above the element (increased for bottom toolbar)
-        left: rect.left + rect.width / 2, // Center horizontally
-      };
-      setPosition(newPosition);
-    }
   };
 
   useEffect(() => {

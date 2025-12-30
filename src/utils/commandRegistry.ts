@@ -47,10 +47,6 @@ export function createCommandRegistry(handlers: {
   // Generation handlers
   openDungeonGenerator: () => void;
 
-  // System handlers (future)
-  saveCampaign?: () => void;
-  loadCampaign?: () => void;
-
   // State getters
   isGamePaused: boolean;
 }): CommandRegistry {
