@@ -188,7 +188,7 @@ const Sidebar = () => {
 
     // Sidebar content (same for mobile and desktop)
     const sidebarContent = (
-        <div className={`sidebar flex flex-col p-4 z-10 overflow-y-auto ${isMobile ? 'w-full h-full' : isSidebarCollapsed ? 'w-16 shrink-0' : 'w-64 shrink-0'}`}>
+        <div className={`sidebar flex flex-col p-4 z-10 overflow-y-auto transition-all duration-300 ${isMobile ? 'w-full h-full' : isSidebarCollapsed ? 'w-16 shrink-0' : 'w-64 shrink-0'}`}>
             {/* Header Section */}
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">

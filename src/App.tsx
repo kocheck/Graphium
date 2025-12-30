@@ -379,7 +379,7 @@ function App() {
       {isArchitectView && <Sidebar />}
 
 
-      <div className="flex-1 relative h-full">
+      <div className="flex-1 relative h-full transition-all duration-300">
         {/* Mobile Hamburger Menu Button (top-left, Architect View only) */}
         {isArchitectView && isMobile && (
           <button
