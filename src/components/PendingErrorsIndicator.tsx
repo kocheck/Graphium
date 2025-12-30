@@ -7,8 +7,13 @@ import {
   StoredError,
 } from '../utils/globalErrorHandler';
 
+// Constants for GitHub issue URL construction
+const MAX_GITHUB_URL_LENGTH = 2000;
+const MAX_ISSUE_TITLE_LENGTH = 200;
+// Safety margin to account for URL-encoded ellipsis character (… becomes %E2%80%A6)
+const TITLE_ELLIPSIS_MARGIN = 10;
+
 interface PendingErrorsIndicatorProps {
-  supportEmail?: string;
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
 
@@ -17,14 +22,13 @@ interface PendingErrorsIndicatorProps {
  * Allows users to review, report, or dismiss stored errors.
  */
 const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
-  supportEmail = 'support@example.com',
   position = 'bottom-right',
 }) => {
   const [unreportedCount, setUnreportedCount] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [errors, setErrors] = useState<StoredError[]>([]);
   const [selectedError, setSelectedError] = useState<StoredError | null>(null);
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [reportStatus, setReportStatus] = useState<'idle' | 'opened' | 'error'>('idle');
 
   const refreshErrors = useCallback(() => {
     const stored = getStoredErrors();
@@ -49,34 +53,66 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
 
   const handleReportError = async (error: StoredError) => {
     try {
-      // Copy the report to clipboard
-      await navigator.clipboard.writeText(error.reportBody);
-      setCopyStatus('copied');
+      // GitHub issue URLs can break if they get too long, so enforce a conservative limit
+      const rawTitle = `Bug Report: ${error.sanitizedError.name}`;
+      const issueTitle =
+        rawTitle.length > MAX_ISSUE_TITLE_LENGTH
+          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
+          : rawTitle;
+      const issueBody = error.reportBody;
 
-      // Create mailto link
-      const subject = encodeURIComponent('Hyle Error Report');
-      const body = encodeURIComponent(
-        'Please paste the error report from your clipboard here.\n\n' +
-          '(The error report has been copied to your clipboard for privacy reasons.)'
-      );
-      const mailtoUrl = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
+      const encodedTitle = encodeURIComponent(issueTitle);
+      const encodedBody = encodeURIComponent(issueBody);
 
-      // Open email client
+      const baseUrl = `https://github.com/kocheck/Hyle/issues/new`;
+      const baseWithTitle = `${baseUrl}?title=${encodedTitle}`;
+      const bodyPrefix = '&body=';
+
+      let githubUrl = `${baseWithTitle}${bodyPrefix}${encodedBody}`;
+
+      if (githubUrl.length > MAX_GITHUB_URL_LENGTH) {
+        const allowedBodyLength =
+          MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
+
+        if (allowedBodyLength <= 0) {
+          // In the unlikely event the base URL is already too long, drop the body entirely
+          githubUrl = baseWithTitle;
+        } else {
+          // Truncate non-encoded string first, then encode to avoid breaking escape sequences
+          let currentLength = 0;
+          const encodedChunks: string[] = [];
+          
+          for (const char of issueBody) {
+            const encodedChar = encodeURIComponent(char);
+            if (currentLength + encodedChar.length > allowedBodyLength) {
+              break;
+            }
+            encodedChunks.push(encodedChar);
+            currentLength += encodedChar.length;
+          }
+          
+          const truncatedEncodedBody = encodedChunks.join('');
+          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedEncodedBody}`;
+        }
+      }
+
+      // Open GitHub in browser
       const errorReporting = window.errorReporting;
       if (errorReporting) {
-        await errorReporting.openExternal(mailtoUrl);
+        await errorReporting.openExternal(githubUrl);
+        setReportStatus('opened');
       }
 
       // Mark as reported
       markErrorReported(error.id);
       refreshErrors();
 
-      // Reset copy status
-      setTimeout(() => setCopyStatus('idle'), 3000);
+      // Reset report status
+      setTimeout(() => setReportStatus('idle'), 3000);
     } catch (err) {
       console.error('Failed to report error:', err);
-      setCopyStatus('error');
-      setTimeout(() => setCopyStatus('idle'), 3000);
+      setReportStatus('error');
+      setTimeout(() => setReportStatus('idle'), 3000);
     }
   };
 
@@ -275,31 +311,26 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                   <button
                     onClick={() => handleReportError(selectedError)}
                     className={`flex-1 px-3 py-2 rounded text-sm font-medium flex items-center justify-center gap-2 ${
-                      copyStatus === 'copied'
+                      reportStatus === 'opened'
                         ? 'bg-green-600 hover:bg-green-500'
-                        : copyStatus === 'error'
+                        : reportStatus === 'error'
                         ? 'bg-red-600 hover:bg-red-500'
                         : 'bg-blue-600 hover:bg-blue-500'
                     }`}
                   >
-                    {copyStatus === 'copied' ? (
+                    {reportStatus === 'opened' ? (
                       <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Copied!
+                        Opened!
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                          />
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
                         </svg>
-                        Email
+                        Report on GitHub
                       </>
                     )}
                   </button>

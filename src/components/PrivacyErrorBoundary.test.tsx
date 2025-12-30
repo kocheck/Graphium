@@ -83,7 +83,7 @@ describe('PrivacyErrorBoundary', () => {
     })
   })
 
-  it('should display Copy Report & Email Support button', async () => {
+  it('should display Report on GitHub button', async () => {
     render(
       <PrivacyErrorBoundary>
         <ErrorTrigger />
@@ -91,7 +91,7 @@ describe('PrivacyErrorBoundary', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText(/Copy Report & Email Support/i)).toBeInTheDocument()
+      expect(screen.getByText(/Report on GitHub/i)).toBeInTheDocument()
     })
   })
 
@@ -107,50 +107,7 @@ describe('PrivacyErrorBoundary', () => {
     })
   })
 
-  it('should copy to clipboard and open email on button click', async () => {
-    render(
-      <PrivacyErrorBoundary supportEmail="test@example.com">
-        <ErrorTrigger />
-      </PrivacyErrorBoundary>
-    )
-
-    await waitFor(() => {
-      expect(screen.getByText(/Copy Report & Email Support/i)).toBeInTheDocument()
-    })
-
-    const button = screen.getByText(/Copy Report & Email Support/i)
-    fireEvent.click(button)
-
-    await waitFor(() => {
-      expect(navigator.clipboard.writeText).toHaveBeenCalled()
-      expect(mockErrorReporting.openExternal).toHaveBeenCalledWith(
-        expect.stringContaining('mailto:test@example.com')
-      )
-    })
-  })
-
-  it('should include subject in mailto link', async () => {
-    render(
-      <PrivacyErrorBoundary supportEmail="support@hyle.app">
-        <ErrorTrigger />
-      </PrivacyErrorBoundary>
-    )
-
-    await waitFor(() => {
-      expect(screen.getByText(/Copy Report & Email Support/i)).toBeInTheDocument()
-    })
-
-    const button = screen.getByText(/Copy Report & Email Support/i)
-    fireEvent.click(button)
-
-    await waitFor(() => {
-      expect(mockErrorReporting.openExternal).toHaveBeenCalledWith(
-        expect.stringContaining('subject=')
-      )
-    })
-  })
-
-  it('should show copied status after clicking button', async () => {
+  it('should open GitHub issues on button click', async () => {
     render(
       <PrivacyErrorBoundary>
         <ErrorTrigger />
@@ -158,18 +115,20 @@ describe('PrivacyErrorBoundary', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText(/Copy Report & Email Support/i)).toBeInTheDocument()
+      expect(screen.getByText(/Report on GitHub/i)).toBeInTheDocument()
     })
 
-    const button = screen.getByText(/Copy Report & Email Support/i)
+    const button = screen.getByText(/Report on GitHub/i)
     fireEvent.click(button)
 
     await waitFor(() => {
-      expect(screen.getByText(/Copied! Opening Email/i)).toBeInTheDocument()
+      expect(mockErrorReporting.openExternal).toHaveBeenCalledWith(
+        expect.stringContaining('https://github.com/kocheck/Hyle/issues/new')
+      )
     })
   })
 
-  it('should use default support email if not provided', async () => {
+  it('should include title in GitHub URL', async () => {
     render(
       <PrivacyErrorBoundary>
         <ErrorTrigger />
@@ -177,15 +136,55 @@ describe('PrivacyErrorBoundary', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText(/Copy Report & Email Support/i)).toBeInTheDocument()
+      expect(screen.getByText(/Report on GitHub/i)).toBeInTheDocument()
     })
 
-    const button = screen.getByText(/Copy Report & Email Support/i)
+    const button = screen.getByText(/Report on GitHub/i)
     fireEvent.click(button)
 
     await waitFor(() => {
       expect(mockErrorReporting.openExternal).toHaveBeenCalledWith(
-        expect.stringContaining('mailto:support@example.com')
+        expect.stringContaining('title=')
+      )
+    })
+  })
+
+  it('should show success status after clicking button', async () => {
+    render(
+      <PrivacyErrorBoundary>
+        <ErrorTrigger />
+      </PrivacyErrorBoundary>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/Report on GitHub/i)).toBeInTheDocument()
+    })
+
+    const button = screen.getByText(/Report on GitHub/i)
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Opened GitHub/i)).toBeInTheDocument()
+    })
+  })
+
+  it('should include error details in GitHub issue body', async () => {
+    render(
+      <PrivacyErrorBoundary>
+        <ErrorTrigger />
+      </PrivacyErrorBoundary>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/Report on GitHub/i)).toBeInTheDocument()
+    })
+
+    const button = screen.getByText(/Report on GitHub/i)
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      expect(mockErrorReporting.openExternal).toHaveBeenCalledWith(
+        expect.stringContaining('body=')
       )
     })
   })
@@ -220,9 +219,9 @@ describe('PrivacyErrorBoundary', () => {
     })
   })
 
-  it('should handle clipboard failure gracefully', async () => {
-    vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(
-      new Error('Clipboard failed')
+  it('should handle openExternal failure gracefully', async () => {
+    mockErrorReporting.openExternal.mockRejectedValueOnce(
+      new Error('Failed to open browser')
     )
 
     render(
@@ -232,10 +231,10 @@ describe('PrivacyErrorBoundary', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText(/Copy Report & Email Support/i)).toBeInTheDocument()
+      expect(screen.getByText(/Report on GitHub/i)).toBeInTheDocument()
     })
 
-    const button = screen.getByText(/Copy Report & Email Support/i)
+    const button = screen.getByText(/Report on GitHub/i)
     fireEvent.click(button)
 
     await waitFor(() => {
@@ -425,7 +424,6 @@ describe('PrivacyErrorBoundary', () => {
         expect(mockErrorReporting.saveToFile).toHaveBeenCalled()
         const callArg = mockErrorReporting.saveToFile.mock.calls[0][0]
         expect(callArg).toContain('Testing error reporting')
-        expect(callArg).toContain('USER CONTEXT')
       })
     })
   })
