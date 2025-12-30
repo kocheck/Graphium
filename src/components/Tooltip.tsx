@@ -75,7 +75,7 @@ const Tooltip = ({ content, children, delay = 100 }: TooltipProps) => {
             transform: 'translateX(-50%)',
           }}
         >
-          <div className="px-3 py-1.5 rounded-md shadow-lg text-sm font-medium whitespace-nowrap bg-neutral-900 text-white border border-neutral-600">
+          <div className="relative px-3 py-1.5 rounded-md shadow-lg text-sm font-medium whitespace-nowrap bg-neutral-900 text-white border border-neutral-600">
             {content}
             {/* Tooltip arrow */}
             <div
