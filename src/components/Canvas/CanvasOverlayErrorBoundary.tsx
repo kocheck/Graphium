@@ -114,24 +114,22 @@ class CanvasOverlayErrorBoundary extends Component<
 
     // Expose to window for E2E testing
     if (isDev || isTest) {
-      if (!(window as any).__OVERLAY_ERRORS__) {
-        (window as any).__OVERLAY_ERRORS__ = [];
-      }
+      const previousErrors = Array.isArray(window.__OVERLAY_ERRORS__)
+        ? window.__OVERLAY_ERRORS__
+        : [];
 
-      (window as any).__OVERLAY_ERRORS__.push({
+      const nextErrorEntry = {
         overlayName,
         error: error.message,
         timestamp: Date.now(),
         context,
-      });
+      };
 
-      // Keep only last 10 errors
-      if ((window as any).__OVERLAY_ERRORS__.length > 10) {
-        (window as any).__OVERLAY_ERRORS__.shift();
-      }
+      // Keep only last 10 errors using an immutable update
+      window.__OVERLAY_ERRORS__ = [...previousErrors, nextErrorEntry].slice(-10);
 
       // Update last error pointer
-      (window as any).__LAST_OVERLAY_ERROR__ = {
+      window.__LAST_OVERLAY_ERROR__ = {
         overlayName,
         error: error.message,
         timestamp: Date.now(),

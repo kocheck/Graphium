@@ -5,22 +5,34 @@
 import type { useGameStore } from './store/gameStore';
 
 export interface ErrorContext {
+  timestamp: number;
+  error: {
+    name: string;
+    message: string;
+    stack?: string;
+  };
+  componentStack?: string | null;
   componentName?: string;
   props?: Record<string, unknown>;
   state?: Record<string, unknown>;
+  environment: {
+    isDev: boolean;
+    isTest: boolean;
+    userAgent: string;
+    url: string;
+  };
   performance?: {
     memory?: {
       usedJSHeapSize: number;
       totalJSHeapSize: number;
       jsHeapSizeLimit: number;
     };
-    timing?: Record<string, number>;
+    timing?: {
+      loadTime: number;
+      domReady: number;
+    };
   };
-  breadcrumbs?: Array<{
-    timestamp: number;
-    action: string;
-    data?: Record<string, unknown>;
-  }>;
+  breadcrumbs?: string[];
   importFailed?: boolean;
 }
 
@@ -40,10 +52,18 @@ declare global {
     // Error boundary debugging
     __LAST_TOKEN_ERROR__?: ErrorInfo;
     __LAST_OVERLAY_ERROR__?: ErrorInfo;
+    __OVERLAY_ERRORS__?: Array<ErrorInfo>;
     __LAST_ASSET_PROCESSING_ERROR__?: ErrorInfo;
     __ERROR_HISTORY__?: Array<ErrorInfo>;
     
     // Error boundary utilities
+    __ERROR_UTILS__?: {
+      getErrorHistory: () => Array<ErrorContext>;
+      clearErrorHistory: () => void;
+      addBreadcrumb: (action: string) => void;
+      exportErrorToClipboard: (context: ErrorContext) => Promise<boolean>;
+      formatErrorReport: (context: ErrorContext) => string;
+    };
     __clearErrorHistory__?: () => void;
     __getErrorHistory__?: () => Array<ErrorInfo>;
     __simulateTokenError__?: (tokenId: string) => void;

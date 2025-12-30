@@ -1160,10 +1160,11 @@ const CanvasManager = ({
             }
         }
 
-        // Performance optimization: Skip duplicate points to reduce memory and render overhead
+        // Performance optimization: Skip consecutive duplicate points to reduce memory and render overhead
+        // Note: This only deduplicates consecutive points, not all duplicates in the array
         const lastIdx = cur.points.length - 2;
         if (lastIdx >= 0 && cur.points[lastIdx] === point.x && cur.points[lastIdx + 1] === point.y) {
-            return; // Skip duplicate point
+            return; // Skip consecutive duplicate point
         }
 
         // Performance optimization: Use push (in-place mutation) instead of concat (array copy)

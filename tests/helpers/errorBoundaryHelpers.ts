@@ -26,7 +26,9 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Error information returned by test helpers
+ * Test helper type matching ErrorInfo from src/window.d.ts
+ * 
+ * @see src/window.d.ts for canonical definition
  */
 export type TestErrorContext = Record<string, unknown>;
 
@@ -46,6 +48,8 @@ export interface TestErrorInfo {
  */
 export async function checkForTokenErrors(page: Page): Promise<TestErrorInfo | null> {
   return await page.evaluate(() => {
+    // NOTE: Interface is redefined here because page.evaluate() runs in browser context
+    // and cannot import types from Node.js. See src/window.d.ts for canonical definition.
     interface ErrorWindow extends Window {
       __LAST_TOKEN_ERROR__?: TestErrorInfo;
     }
@@ -177,7 +181,9 @@ export async function exportErrorToClipboard(
   page: Page,
   errorType: 'token' | 'overlay' | 'asset'
 ): Promise<boolean> {
-  return await page.evaluate((type) => {
+  return await page.evaluate(async (type) => {
+    // NOTE: Interface is redefined here because page.evaluate() runs in browser context
+    // and cannot import types from Node.js. See src/window.d.ts for canonical definition.
     interface ErrorWindow extends Window {
       __LAST_TOKEN_ERROR__?: TestErrorInfo;
       __LAST_OVERLAY_ERROR__?: TestErrorInfo;
@@ -206,7 +212,8 @@ export async function exportErrorToClipboard(
 
     if (!error || !error.context) return false;
 
-    return utils.exportErrorToClipboard(error.context);
+    // Await the promise to avoid Promise<Promise<boolean>> nesting
+    return await utils.exportErrorToClipboard(error.context);
   }, errorType);
 }
 

@@ -123,9 +123,19 @@ export function captureErrorContext(
       };
     }
 
-    // Page load timing
-    if (performance.timing) {
-      const timing = performance.timing;
+    // Page load timing - prefer Navigation Timing Level 2 API, fallback to deprecated API
+    const navigationEntries = performance.getEntriesByType?.('navigation') as PerformanceNavigationTiming[] | undefined;
+    const navigationEntry = navigationEntries?.[0];
+
+    if (navigationEntry) {
+      // Modern Navigation Timing Level 2 API
+      performanceMetrics.timing = {
+        loadTime: navigationEntry.loadEventEnd - navigationEntry.startTime,
+        domReady: navigationEntry.domContentLoadedEventEnd - navigationEntry.startTime,
+      };
+    } else if ((performance as Performance & { timing?: PerformanceTiming }).timing) {
+      // Legacy fallback for environments without Navigation Timing Level 2
+      const timing = (performance as Performance & { timing: PerformanceTiming }).timing;
       performanceMetrics.timing = {
         loadTime: timing.loadEventEnd - timing.navigationStart,
         domReady: timing.domContentLoadedEventEnd - timing.navigationStart,
@@ -155,6 +165,8 @@ export function captureErrorContext(
   };
 
   // Store in history (dev/test only)
+  // NOTE: errorHistory is intentionally mutable for performance reasons.
+  // This global array is used for debugging and doesn't need Zustand-style immutability.
   if (isDev || isTest) {
     errorHistory.push(context);
     if (errorHistory.length > MAX_ERROR_HISTORY) {
@@ -182,7 +194,7 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
           return '[Function]';
         }
 
-        // Handle circular references
+        // Handle circular references (only for objects, not primitives)
         if (typeof value === 'object' && value !== null) {
           if (seen.has(value)) {
             return '[Circular]';
@@ -395,17 +407,7 @@ export function formatErrorReport(context: ErrorContext): string {
  * Expose error utilities to window for testing and debugging
  */
 if (typeof window !== 'undefined' && (import.meta.env.DEV || import.meta.env.MODE === 'test')) {
-  interface ErrorUtilsWindow extends Window {
-    __ERROR_UTILS__?: {
-      getErrorHistory: typeof getErrorHistory;
-      clearErrorHistory: typeof clearErrorHistory;
-      addBreadcrumb: typeof addBreadcrumb;
-      exportErrorToClipboard: typeof exportErrorToClipboard;
-      formatErrorReport: typeof formatErrorReport;
-    };
-  }
-  
-  (window as ErrorUtilsWindow).__ERROR_UTILS__ = {
+  window.__ERROR_UTILS__ = {
     getErrorHistory,
     clearErrorHistory,
     addBreadcrumb,

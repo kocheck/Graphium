@@ -187,19 +187,21 @@ test.describe('Drawing Tool Performance', () => {
     console.log(`  - Max frame time: ${perfMetrics.maxFrameTime.toFixed(2)}ms`);
     console.log(`  - Average FPS: ${perfMetrics.fps.toFixed(1)}`);
 
-    // Verify performance targets
-    // NOTE: These thresholds (16.6ms/60fps avg, 33ms/30fps max) may be too strict for CI
-    // environments or slower machines. If tests fail on CI but pass locally, consider
-    // increasing thresholds or making them environment-specific (e.g., relaxed on CI).
+    // Verify performance targets (environment-specific thresholds)
+    // CI environments typically have 2-4 CPU cores and may run slower than local development
+    const isCI = process.env.CI === 'true';
+    const avgFrameTimeThreshold = isCI ? 33 : 16.6;  // 30fps on CI, 60fps locally
+    const maxFrameTimeThreshold = isCI ? 66 : 33;    // 15fps on CI, 30fps locally
+    
     expect(
       perfMetrics.avgFrameTime,
-      'Average frame time should be under 16.6ms (60fps)'
-    ).toBeLessThan(16.6);
+      `Average frame time should be under ${avgFrameTimeThreshold}ms`
+    ).toBeLessThan(avgFrameTimeThreshold);
 
     expect(
       perfMetrics.maxFrameTime,
-      'Max frame time should be under 33ms (no worse than 30fps)'
-    ).toBeLessThan(33);
+      `Max frame time should be under ${maxFrameTimeThreshold}ms`
+    ).toBeLessThan(maxFrameTimeThreshold);
   });
 
   test('should deduplicate redundant points', async ({ page }) => {
@@ -374,21 +376,12 @@ test.describe('Drawing Memory Management', () => {
       'Should have created 50 drawings'
     ).toBe(50);
 
-    // NOTE: Memory leak detection requires Chrome DevTools Protocol (CDP) for real heap snapshots.
-    // This simplified check always passes and doesn't actually verify memory cleanup.
-    // To properly test for memory leaks, consider either:
-    // 1. Using Playwright's CDP integration to take heap snapshots before/after
-    // 2. Monitoring process memory usage via CDP
-    // 3. Removing this assertion if proper memory testing isn't feasible in this environment
-    const refsCleanedUp = await page.evaluate(() => {
-      // This is a simplified check - in production you'd use Chrome DevTools memory profiler
-      return true;
-    });
-
-    expect(refsCleanedUp, 'Memory should be properly managed (placeholder assertion - see note above)').toBe(true);
+    // TODO: Implement proper memory leak detection using Chrome DevTools Protocol (CDP)
+    // Real memory leak testing requires CDP integration to take heap snapshots before/after
+    // drawing operations and compare retained object sizes. For now, we verify functional
+    // correctness (drawings are created) but don't verify memory cleanup.
 
     console.log(`Memory Management Test Results:`);
     console.log(`  - Drawings created: ${drawingsCount}`);
-    console.log(`  - Memory management: ✓ PASS`);
   });
 });

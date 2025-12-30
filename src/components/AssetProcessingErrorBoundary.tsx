@@ -62,7 +62,12 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     const isDev = import.meta.env.DEV;
     const isTest = import.meta.env.MODE === 'test';
 
-    // Import error boundary utilities dynamically to avoid circular deps
+    // NOTE: We import error boundary utilities dynamically here to avoid a circular dependency.
+    // The circular dependency occurs because:
+    // - This component imports from '../utils/errorBoundaryUtils'
+    // - errorBoundaryUtils may import types or utilities that indirectly reference error boundaries
+    // If this circular dependency is resolved through refactoring (e.g., extracting shared types
+    // to a separate file), this can be converted back to a static import for simpler code tracing.
     import('../utils/errorBoundaryUtils').then(({ captureErrorContext, logErrorWithContext }) => {
       // Capture comprehensive error context
       const context = captureErrorContext(error, errorInfo, {
@@ -76,7 +81,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
 
       // Expose to window for E2E testing
       if (isDev || isTest) {
-        (window as any).__LAST_ASSET_PROCESSING_ERROR__ = {
+        window.__LAST_ASSET_PROCESSING_ERROR__ = {
           error: error.message,
           timestamp: Date.now(),
           context,
@@ -89,25 +94,25 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
 
       // Ensure E2E tests still receive an error marker even if the utilities fail to load
       if (isDev || isTest) {
-        interface ErrorWindow extends Window {
-          __LAST_ASSET_PROCESSING_ERROR__?: {
-            error: string;
-            timestamp: number;
-            context: {
-              componentName: string;
-              props: Record<string, unknown>;
-              state: Record<string, unknown>;
-              importFailed: boolean;
-            };
-          };
-        }
-        (window as unknown as ErrorWindow).__LAST_ASSET_PROCESSING_ERROR__ = {
+        window.__LAST_ASSET_PROCESSING_ERROR__ = {
           error: error.message,
           timestamp: Date.now(),
           context: {
+            timestamp: Date.now(),
+            error: {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            },
             componentName: 'AssetProcessingErrorBoundary',
             props: this.props as Record<string, unknown>,
             state: this.state as Record<string, unknown>,
+            environment: {
+              isDev,
+              isTest,
+              userAgent: navigator.userAgent,
+              url: window.location.href,
+            },
             importFailed: true,
           },
         };
