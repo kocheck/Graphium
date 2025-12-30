@@ -59,6 +59,24 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     setIsMac(isMacOS);
   }, []);
 
+  // Keyboard shortcut: Press '?' to open About modal
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Check if '?' was pressed (shift + / on most keyboards)
+      if ((e.key === '?' || (e.shiftKey && e.key === '/')) && !isAboutOpen) {
+        e.preventDefault();
+        setIsAboutOpen(true);
+      }
+      // Also support Escape to close
+      if (e.key === 'Escape' && isAboutOpen) {
+        setIsAboutOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isAboutOpen]);
+
   /**
    * Create a new campaign and enter the editor
    */
@@ -259,6 +277,21 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       <VignetteOverlay />
 
       <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .home-screen {
+          animation: fadeIn 0.6s ease-out;
+        }
+
         .home-action-button {
           --border-color: var(--app-border-default);
         }
@@ -545,15 +578,86 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         )}
       </div>
 
-      {/* Footer */}
-      <div className="absolute bottom-8 text-center" style={{
-        color: 'var(--app-text-muted)',
+      {/* Footer with links */}
+      <div className="absolute bottom-4 left-0 right-0" style={{
         position: 'relative',
         zIndex: 10,
       }}>
-        <p className="text-sm">
-          Version {__APP_VERSION__} · {isElectron ? 'Desktop' : 'Web'} Edition
-        </p>
+        <div className="flex flex-col items-center gap-3">
+          {/* Links */}
+          <div className="flex items-center gap-4 text-sm">
+            <a
+              href="https://github.com/kocheck/Hyle"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: 'var(--app-text-muted)',
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-accent-text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
+            >
+              GitHub
+            </a>
+            <span style={{ color: 'var(--app-border-default)' }}>·</span>
+            <button
+              onClick={() => setIsAboutOpen(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: 'var(--app-text-muted)',
+                cursor: 'pointer',
+                fontSize: 'inherit',
+                fontFamily: 'inherit',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-accent-text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
+            >
+              About
+            </button>
+            <span style={{ color: 'var(--app-border-default)' }}>·</span>
+            <a
+              href="https://github.com/kocheck/Hyle/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: 'var(--app-text-muted)',
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-accent-text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
+            >
+              Report Bug
+            </a>
+            <span style={{ color: 'var(--app-border-default)' }}>·</span>
+            <button
+              onClick={() => setIsAboutOpen(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: 'var(--app-text-muted)',
+                cursor: 'pointer',
+                fontSize: 'inherit',
+                fontFamily: 'inherit',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-accent-text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
+              title="Press ? to open"
+            >
+              Help (?)
+            </button>
+          </div>
+          {/* Version */}
+          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
+            Version {__APP_VERSION__} · {isElectron ? 'Desktop' : 'Web'} Edition
+          </p>
+        </div>
       </div>
 
       {/* About Modal */}
