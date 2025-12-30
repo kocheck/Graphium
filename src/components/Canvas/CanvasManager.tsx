@@ -1539,6 +1539,40 @@ const CanvasManager = ({
         onDrop={handleDrop}
         onMouseDown={(e) => {
           console.log('[CanvasManager] DIV onMouseDown captured!', e.target, 'tool:', tool);
+
+          // CRITICAL FIX: Handle drawing tools at container level since Stage mousedown is blocked
+          if (tool !== 'select' && !isSpacePressed && stageRef.current) {
+            console.log('[CanvasManager] Handling drawing tool mousedown at DIV level');
+
+            // Convert browser coordinates to Konva stage coordinates
+            const stage = stageRef.current;
+            const container = stage.container();
+            const rect = container.getBoundingClientRect();
+
+            // Calculate stage-relative coordinates accounting for scale and position
+            const x = (e.clientX - rect.left - stage.x()) / stage.scaleX();
+            const y = (e.clientY - rect.top - stage.y()) / stage.scaleY();
+
+            // Create synthetic Konva event
+            const syntheticEvent = {
+              target: {
+                getStage: () => stage,
+                id: () => null,
+                constructor: { name: 'Stage' }
+              },
+              evt: e.nativeEvent
+            };
+
+            // Override getRelativePointerPosition to return our calculated coords
+            const originalGetRelativePointerPosition = stage.getRelativePointerPosition;
+            stage.getRelativePointerPosition = () => ({ x, y });
+
+            console.log('[CanvasManager] Calling handleMouseDown with synthetic event, coords:', { x, y });
+            handleMouseDown(syntheticEvent);
+
+            // Restore original method
+            stage.getRelativePointerPosition = originalGetRelativePointerPosition;
+          }
         }}
         onMouseMove={(e) => {
           if (tool === 'marker' || tool === 'wall') {
@@ -1561,15 +1595,8 @@ const CanvasManager = ({
         width={size.width}
         height={size.height}
         draggable={isSpacePressed}
-        onClick={(e) => {
-          // Use click for drawing tools since mousedown is being blocked
-          console.log('[CanvasManager] Stage onClick captured!', e.target.constructor.name, 'tool:', tool);
-          if (tool !== 'select') {
-            handleMouseDown(e);
-          }
-        }}
         onMouseDown={(e) => {
-          // Keep mousedown for select tool (selection rectangles, etc.)
+          // Only handle select tool here - drawing tools handled at DIV level
           console.log('[CanvasManager] Stage onMouseDown captured!', e.target.constructor.name);
           if (tool === 'select') {
             handleMouseDown(e);
