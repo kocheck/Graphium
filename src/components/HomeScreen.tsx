@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
 import { getRecentCampaigns, addRecentCampaignWithPlatform, removeRecentCampaign, type RecentCampaign } from '../utils/recentCampaigns';
@@ -33,6 +33,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     localStorage.getItem('hideMacBanner') === 'true'
   );
   const [tokenPositions, setTokenPositions] = useState<Record<string, { x: number; y: number; size: number }>>({});
+  const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
+
+  const logoClickTimeoutRef = useRef<number | null>(null);
 
   const loadCampaign = useGameStore((state) => state.loadCampaign);
   const showToast = useGameStore((state) => state.showToast);
@@ -58,6 +61,23 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         /mac/i.test(userAgent);
     }
     setIsMac(isMacOS);
+
+    // Initialize window dimensions
+    if (typeof window !== 'undefined') {
+      setWindowDimensions({ width: window.innerWidth, height: window.innerHeight });
+    }
+  }, []);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowDimensions({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, []);
 
   // Keyboard shortcut: Press '?' to open About modal
@@ -175,7 +195,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     }
 
     // Reset counter after 2 seconds of inactivity
-    setTimeout(() => {
+    // Clear previous timeout to prevent multiple timers
+    if (logoClickTimeoutRef.current !== null) {
+      clearTimeout(logoClickTimeoutRef.current);
+    }
+    logoClickTimeoutRef.current = window.setTimeout(() => {
       setLogoClickCount(0);
     }, 2000);
   };
@@ -202,8 +226,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     setHideMacBanner(true);
   };
 
-  // Generate random playground tokens with flavor text (memoized to prevent recreation on re-renders)
+  // Generate random playground tokens with flavor text (memoized with window dimensions dependency)
   const playgroundTokens = useMemo(() => {
+    // Don't generate tokens until window dimensions are available
+    if (windowDimensions.width === 0 || windowDimensions.height === 0) {
+      return [];
+    }
+
     const tokenSize = 40;
     const tokens = [
       {
@@ -249,8 +278,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       const distance = 200 + Math.random() * 150;
       return {
         ...token,
-        x: window.innerWidth / 2 + Math.cos(angle) * distance,
-        y: window.innerHeight / 2 + Math.sin(angle) * distance,
+        x: windowDimensions.width / 2 + Math.cos(angle) * distance,
+        y: windowDimensions.height / 2 + Math.sin(angle) * distance,
       };
     });
 
@@ -262,7 +291,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     setTokenPositions(positions);
 
     return positioned;
-  }, []);
+  }, [windowDimensions.width, windowDimensions.height]);
 
   /**
    * Handle token position change (for collision detection)
@@ -288,7 +317,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       color: 'var(--app-text-primary)',
     }}>
       {/* Background Layer - Paper texture and grid */}
-      <BackgroundCanvas width={window.innerWidth} height={window.innerHeight}>
+      <BackgroundCanvas width={windowDimensions.width} height={windowDimensions.height}>
         {/* Playground tokens - draggable demo elements with collision and trail effects */}
         {playgroundTokens.map((token, index) => (
           <PlaygroundToken
@@ -347,6 +376,74 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         .home-remove-btn:hover {
           --remove-bg: var(--app-bg-active);
         }
+        .logo-button {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 1rem;
+          border-radius: 12px;
+          transition: all 0.3s ease;
+          display: inline-block;
+        }
+        .logo-button:hover {
+          transform: scale(1.05);
+          background: rgba(59, 130, 246, 0.1);
+        }
+        .dismiss-banner-btn {
+          position: absolute;
+          top: 0.5rem;
+          right: 0.5rem;
+          background: transparent;
+          border: none;
+          font-size: 1.25rem;
+          cursor: pointer;
+          color: var(--app-accent-text);
+          width: 1.5rem;
+          height: 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          opacity: 0.6;
+          transition: all 0.2s;
+        }
+        .dismiss-banner-btn:hover {
+          opacity: 1;
+          background: rgba(0, 0, 0, 0.1);
+        }
+        .learn-basics-btn {
+          background: var(--app-bg-hover);
+          border-width: 1px;
+          border-style: solid;
+          border-color: var(--app-border-subtle);
+          color: var(--app-text-secondary);
+          transition: all 0.2s;
+        }
+        .learn-basics-btn:hover {
+          border-color: var(--app-accent-solid);
+          color: var(--app-accent-text);
+        }
+        .footer-link {
+          color: var(--app-text-muted);
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+        .footer-link:hover {
+          color: var(--app-accent-text);
+        }
+        .footer-button {
+          background: none;
+          border: none;
+          padding: 0;
+          color: var(--app-text-muted);
+          cursor: pointer;
+          font-size: inherit;
+          font-family: inherit;
+          transition: color 0.2s;
+        }
+        .footer-button:hover {
+          color: var(--app-accent-text);
+        }
       `}</style>
 
       {/* Main Content Container - Above background and vignette */}
@@ -357,32 +454,16 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         {/* Branding */}
         <div className="text-center mb-12">
           <button
-            onClick={(e) => {
+            onClick={() => {
+              const currentCount = logoClickCount;
               handleLogoClick();
-              // Open about modal on single click (after easter egg check)
-              if (logoClickCount < 4) {
+              // Open about modal on single click (not during easter egg sequence)
+              if (currentCount < 4) {
                 setTimeout(() => setIsAboutOpen(true), 100);
               }
             }}
             className="logo-button"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '1rem',
-              borderRadius: '12px',
-              transition: 'all 0.3s ease',
-              display: 'inline-block',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-              e.currentTarget.style.background = 'rgba(var(--app-accent-solid-rgb, 59, 130, 246), 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.background = 'transparent';
-            }}
-            aria-label="Open About Hyle dialog (or click 5 times rapidly for a surprise!)"
+            aria-label="Open About Hyle dialog"
           >
             <div style={{ marginBottom: '0.75rem' }}>
               <LogoIcon
@@ -415,32 +496,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             {/* Dismiss button */}
             <button
               onClick={handleDismissMacBanner}
-              style={{
-                position: 'absolute',
-                top: '0.5rem',
-                right: '0.5rem',
-                background: 'transparent',
-                border: 'none',
-                fontSize: '1.25rem',
-                cursor: 'pointer',
-                color: 'var(--app-accent-text)',
-                width: '1.5rem',
-                height: '1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '4px',
-                opacity: 0.6,
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '1';
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '0.6';
-                e.currentTarget.style.background = 'transparent';
-              }}
+              className="dismiss-banner-btn"
               title="Don't show again"
               aria-label="Dismiss Mac download banner permanently"
             >
@@ -526,22 +582,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           {/* Take a Tour button */}
           <button
             onClick={() => setIsAboutOpen(true)}
-            className="w-full p-4 rounded-lg text-center transition-all hover:scale-102"
-            style={{
-              background: 'var(--app-bg-hover)',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'var(--app-border-subtle)',
-              color: 'var(--app-text-secondary)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--app-accent-solid)';
-              e.currentTarget.style.color = 'var(--app-accent-text)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--app-border-subtle)';
-              e.currentTarget.style.color = 'var(--app-text-secondary)';
-            }}
+            className="learn-basics-btn w-full p-4 rounded-lg text-center transition-all hover:scale-102"
             aria-label="Learn about Hyle features"
           >
             <div className="flex items-center justify-center gap-2">
@@ -625,31 +666,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               href="https://github.com/kocheck/Hyle"
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                color: 'var(--app-text-muted)',
-                textDecoration: 'none',
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-accent-text)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
+              className="footer-link"
             >
               GitHub
             </a>
             <span style={{ color: 'var(--app-border-default)' }}>·</span>
             <button
               onClick={() => setIsAboutOpen(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                color: 'var(--app-text-muted)',
-                cursor: 'pointer',
-                fontSize: 'inherit',
-                fontFamily: 'inherit',
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-accent-text)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
+              className="footer-button"
             >
               About
             </button>
@@ -658,31 +682,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               href="https://github.com/kocheck/Hyle/issues"
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                color: 'var(--app-text-muted)',
-                textDecoration: 'none',
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-accent-text)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
+              className="footer-link"
             >
               Report Bug
             </a>
             <span style={{ color: 'var(--app-border-default)' }}>·</span>
             <button
               onClick={() => setIsAboutOpen(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                color: 'var(--app-text-muted)',
-                cursor: 'pointer',
-                fontSize: 'inherit',
-                fontFamily: 'inherit',
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-accent-text)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
+              className="footer-button"
               title="Press ? to open"
             >
               Help (?)

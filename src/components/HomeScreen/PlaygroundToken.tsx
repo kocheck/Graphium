@@ -45,15 +45,18 @@ export function PlaygroundToken({
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [idleOffset, setIdleOffset] = useState(0);
+  const [hintPulse, setHintPulse] = useState(0.4);
   const [trailPoints, setTrailPoints] = useState<number[]>([]);
   const groupRef = useRef<Konva.Group>(null);
   const lastPositionRef = useRef({ x: initialX, y: initialY });
+  const animationFrameRef = useRef<number | null>(null);
+  const hintAnimationFrameRef = useRef<number | null>(null);
 
   // Idle breathing animation
   useEffect(() => {
     const amplitude = 3; // pixels
     const frequency = 2000; // milliseconds
-    let startTime = Date.now();
+    const startTime = Date.now();
 
     const animate = () => {
       if (!isDragging) {
@@ -61,12 +64,36 @@ export function PlaygroundToken({
         const offset = Math.sin((elapsed / frequency) * Math.PI * 2) * amplitude;
         setIdleOffset(offset);
       }
-      requestAnimationFrame(animate);
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    const animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
+    animationFrameRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, [isDragging]);
+
+  // Hint pulse animation (only when showHint is true)
+  useEffect(() => {
+    if (!showHint) return;
+
+    const startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const pulse = 0.4 + Math.sin(elapsed / 500) * 0.2;
+      setHintPulse(pulse);
+      hintAnimationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    hintAnimationFrameRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (hintAnimationFrameRef.current !== null) {
+        cancelAnimationFrame(hintAnimationFrameRef.current);
+      }
+    };
+  }, [showHint]);
 
   // Easter egg celebration animation
   useEffect(() => {
@@ -122,7 +149,9 @@ export function PlaygroundToken({
     });
 
     // Collision detection with other tokens
-    if (allTokens.length > 0) {
+    // Note: Applied during drag for smooth, real-time physics feedback
+    // Konva's drag system naturally throttles these events, preventing performance issues
+    if (allTokens.length > 1) { // Optimize: skip if only self exists
       const radius = size / 2;
 
       allTokens.forEach(other => {
@@ -133,9 +162,9 @@ export function PlaygroundToken({
         const distance = Math.sqrt(dx * dx + dy * dy);
         const minDistance = radius + (other.size / 2);
 
-        // If colliding, push this token away
+        // If colliding, gently push this token away
         if (distance < minDistance && distance > 0) {
-          const pushDistance = minDistance - distance;
+          const pushDistance = (minDistance - distance) * 0.5; // Damping factor to reduce jitter
           const angle = Math.atan2(dy, dx);
           const pushX = Math.cos(angle) * pushDistance;
           const pushY = Math.sin(angle) * pushDistance;
@@ -203,7 +232,7 @@ export function PlaygroundToken({
             radius={size / 2 + 8}
             stroke={color}
             strokeWidth={3}
-            opacity={0.4 + Math.sin(Date.now() / 500) * 0.2}
+            opacity={hintPulse}
             listening={false}
           />
         )}

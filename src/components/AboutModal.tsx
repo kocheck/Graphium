@@ -1,9 +1,35 @@
+import { useEffect, useRef } from 'react';
 import { LogoIcon } from './LogoIcon';
 
 interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Add styles tag for modal-specific classes
+const modalStyles = `
+  .about-modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--app-text-secondary);
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .about-modal-close-btn:hover {
+    background: var(--app-bg-hover);
+    color: var(--app-text-primary);
+  }
+`;
 
 /**
  * AboutModal - The Tome of Knowledge
@@ -12,10 +38,54 @@ interface AboutModalProps {
  * written in the signature "Digital Dungeon Master" tone.
  */
 export function AboutModal({ isOpen, onClose }: AboutModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap implementation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    // Get all focusable elements
+    const focusableElements = modal.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    // Focus first element
+    firstElement?.focus();
+
+    // Handle tab key
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    modal.addEventListener('keydown', handleTabKey);
+    return () => modal.removeEventListener('keydown', handleTabKey);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div
+    <>
+      <style>{modalStyles}</style>
+      <div
       className="about-modal-backdrop"
       style={{
         position: 'fixed',
@@ -33,6 +103,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className="about-modal-content"
         style={{
           background: 'var(--app-bg-surface)',
@@ -52,31 +123,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
         {/* Close button */}
         <button
           onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            background: 'transparent',
-            border: 'none',
-            fontSize: '1.5rem',
-            cursor: 'pointer',
-            color: 'var(--app-text-secondary)',
-            width: '2rem',
-            height: '2rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '4px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--app-bg-hover)';
-            e.currentTarget.style.color = 'var(--app-text-primary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'var(--app-text-secondary)';
-          }}
+          className="about-modal-close-btn"
           aria-label="Close About dialog"
         >
           ×
@@ -217,5 +264,6 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }

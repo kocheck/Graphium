@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface LogoIconProps {
   size?: number;
@@ -21,6 +21,7 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete }: Lo
   const [isRolling, setIsRolling] = useState(false);
   const [displayNumber, setDisplayNumber] = useState(20);
   const [rotation, setRotation] = useState(0);
+  const spinIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (animate) {
@@ -28,14 +29,17 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete }: Lo
       setIsRolling(true);
 
       // Randomize displayed number during spin
-      const spinInterval = setInterval(() => {
+      spinIntervalRef.current = window.setInterval(() => {
         setDisplayNumber(Math.floor(Math.random() * 20) + 1);
         setRotation(prev => prev + 45);
       }, 50);
 
       // Stop after 800ms and show final roll
-      setTimeout(() => {
-        clearInterval(spinInterval);
+      const stopTimeout = window.setTimeout(() => {
+        if (spinIntervalRef.current !== null) {
+          clearInterval(spinIntervalRef.current);
+          spinIntervalRef.current = null;
+        }
 
         // Weighted roll: 15% chance for natural 20, otherwise random
         const finalRoll = Math.random() < 0.15 ? 20 : Math.floor(Math.random() * 20) + 1;
@@ -48,7 +52,12 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete }: Lo
         }
       }, 800);
 
-      return () => clearInterval(spinInterval);
+      return () => {
+        if (spinIntervalRef.current !== null) {
+          clearInterval(spinIntervalRef.current);
+        }
+        clearTimeout(stopTimeout);
+      };
     }
   }, [animate, onAnimationComplete]);
 
@@ -59,12 +68,20 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete }: Lo
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className={isRolling ? 'logo-icon-rolling' : 'logo-icon-idle'}
       style={{
         filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))',
         transform: `rotate(${rotation}deg) ${isRolling ? 'scale(1.1)' : 'scale(1)'}`,
-        transition: isRolling ? 'none' : 'transform 0.3s ease-out',
       }}
     >
+      <style>{`
+        .logo-icon-idle {
+          transition: transform 0.3s ease-out;
+        }
+        .logo-icon-rolling {
+          transition: none;
+        }
+      `}</style>
       {/* D20 Icosahedron - simplified geometric representation */}
 
       {/* Main body - pentagon shape suggesting 3D die */}
