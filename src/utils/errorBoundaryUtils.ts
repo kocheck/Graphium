@@ -321,6 +321,8 @@ export function getErrorHistory(): ErrorContext[] {
 
 /**
  * Clear error history
+ * Note: Uses .length = 0 pattern because errorHistory is declared as const.
+ * This is safe because getErrorHistory() returns a shallow copy, preventing external references.
  */
 export function clearErrorHistory(): void {
   errorHistory.length = 0;
