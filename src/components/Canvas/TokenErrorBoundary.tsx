@@ -120,15 +120,11 @@ class TokenErrorBoundary extends Component<Props, State> {
     const { tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
 
-    // Use functional setState for React best practices
-    let nextErrorCount = 0;
-    this.setState((prevState) => {
-      nextErrorCount = prevState.errorCount + 1;
-      return { errorCount: nextErrorCount };
-    });
+    // Calculate next error count from current state
+    // In componentDidCatch, this.state is synchronously accessible
+    const nextErrorCount = this.state.errorCount + 1;
 
     // Capture comprehensive error context with updated error count
-    // Note: We use the calculated nextErrorCount since setState is async
     const context = captureErrorContext(error, errorInfo, {
       componentName: 'TokenErrorBoundary',
       props: { tokenId, tokenData },
@@ -145,10 +141,11 @@ class TokenErrorBoundary extends Component<Props, State> {
       console.error('Token Data:', tokenData);
     }
 
-    // Store context in state for dev mode debugging
-    if (isDev) {
-      this.setState({ errorContext: context });
-    }
+    // Update state using functional form for React best practices
+    this.setState((prevState) => ({
+      errorCount: prevState.errorCount + 1,
+      errorContext: isDev ? context : prevState.errorContext,
+    }));
 
     // Expose to window for E2E testing
     if (isDev || import.meta.env.MODE === 'test') {

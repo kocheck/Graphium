@@ -138,7 +138,13 @@ export function captureErrorContext(
       // Use explicit null/undefined check for better readability and reliability
       const legacyPerformance = performance as Performance & { timing?: PerformanceTiming };
       const timing = legacyPerformance.timing;
-      if (timing != null && timing.navigationStart && timing.loadEventEnd && timing.domContentLoadedEventEnd) {
+      // Check for existence and valid timestamps (>= 0, as 0 is a valid timestamp)
+      if (
+        timing != null &&
+        typeof timing.navigationStart === 'number' && timing.navigationStart >= 0 &&
+        typeof timing.loadEventEnd === 'number' && timing.loadEventEnd >= 0 &&
+        typeof timing.domContentLoadedEventEnd === 'number' && timing.domContentLoadedEventEnd >= 0
+      ) {
         performanceMetrics.timing = {
           loadTime: timing.loadEventEnd - timing.navigationStart,
           domReady: timing.domContentLoadedEventEnd - timing.navigationStart,

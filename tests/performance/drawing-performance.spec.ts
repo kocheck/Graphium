@@ -252,6 +252,12 @@ test.describe('Drawing Tool Performance', () => {
 
     expect(drawingData, 'Drawing should exist').toBeTruthy();
 
+    // Validate data integrity: points array should have even length (x,y pairs)
+    expect(
+      drawingData.points.length % 2,
+      'Points array should have even length (x,y pairs)'
+    ).toBe(0);
+
     // Should have significantly fewer points than total mouse moves
     // With proper deduplication: start position + end position = 2 points (4 array values)
     // We allow up to 4 points (8 array values) to account for potential intermediate rendering
