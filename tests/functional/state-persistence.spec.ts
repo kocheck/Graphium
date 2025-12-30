@@ -424,9 +424,10 @@ test.describe('Drawing Tool Persistence', () => {
     });
 
     expect(drawingData, 'Drawing data should exist').toBeTruthy();
-    expect(drawingData.tool, 'Drawing tool should be marker').toBe('marker');
-    expect(drawingData.points.length, 'Drawing should have multiple points (accounting for potential deduplication)').toBeGreaterThan(1);
-    expect(drawingData.id, 'Drawing should have an ID').toBeTruthy();
+    expect(drawingData?.tool, 'Drawing tool should be marker').toBe('marker');
+    expect(drawingData?.points, 'Drawing should have points array').toBeDefined();
+    expect((drawingData?.points as unknown[])?.length ?? 0, 'Drawing should have multiple points (accounting for potential deduplication)').toBeGreaterThan(1);
+    expect(drawingData?.id, 'Drawing should have an ID').toBeTruthy();
 
     // Reload page to test persistence
     await page.reload();
@@ -450,15 +451,25 @@ test.describe('Drawing Tool Persistence', () => {
       'Drawing should persist after page reload'
     ).toBe(1);
 
-    expect(
-      drawingsAfterReload[0].id,
-      'Persisted drawing should have the same ID'
-    ).toBe(drawingData.id);
+    const firstDrawing = drawingsAfterReload[0] as {
+      id?: unknown;
+      points?: unknown[];
+    } | undefined;
 
     expect(
-      drawingsAfterReload[0].points.length,
+      firstDrawing,
+      'Persisted drawing should exist'
+    ).toBeDefined();
+
+    expect(
+      firstDrawing?.id,
+      'Persisted drawing should have the same ID'
+    ).toBe(drawingData?.id);
+
+    expect(
+      firstDrawing?.points?.length ?? 0,
       'Persisted drawing should have all points'
-    ).toBe(drawingData.points.length);
+    ).toBe((drawingData?.points as unknown[])?.length ?? 0);
   });
 
   test('should persist wall drawings after page reload', async ({ page }) => {
@@ -505,8 +516,8 @@ test.describe('Drawing Tool Persistence', () => {
     });
 
     expect(wallData, 'Wall drawing should exist').toBeTruthy();
-    expect(wallData.color, 'Wall should be red').toBe('#ff0000');
-    expect(wallData.size, 'Wall should have size 8').toBe(8);
+    expect(wallData?.color, 'Wall should be red').toBe('#ff0000');
+    expect(wallData?.size, 'Wall should have size 8').toBe(8);
 
     // Reload and verify
     await page.reload();
@@ -515,6 +526,7 @@ test.describe('Drawing Tool Persistence', () => {
     const wallAfterReload = await page.evaluate(() => {
       interface DrawingData {
         tool?: string;
+        id?: unknown;
       }
       interface GameStoreWindow extends Window {
         __GAME_STORE__?: {
@@ -533,9 +545,9 @@ test.describe('Drawing Tool Persistence', () => {
       'Wall drawing should persist after reload'
     ).toBeTruthy();
     expect(
-      wallAfterReload.id,
+      wallAfterReload?.id,
       'Wall should have same ID after reload'
-    ).toBe(wallData.id);
+    ).toBe(wallData?.id);
   });
 
   test('should persist eraser strokes after page reload', async ({ page }) => {

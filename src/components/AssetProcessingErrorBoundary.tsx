@@ -1,5 +1,6 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { rollForMessage } from '../utils/systemMessages';
+import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
 
 interface Props {
   children: ReactNode;
@@ -62,69 +63,24 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     const isDev = import.meta.env.DEV;
     const isTest = import.meta.env.MODE === 'test';
 
-    // Helper to create basic error context when utilities fail to load
-    const createFallbackContext = () => ({
-      timestamp: Date.now(),
-      error: {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      },
+    // Capture comprehensive error context
+    const context = captureErrorContext(error, errorInfo, {
       componentName: 'AssetProcessingErrorBoundary',
-      props: this.props as Record<string, unknown>,
-      state: this.state as Record<string, unknown>,
-      environment: {
-        isDev,
-        isTest,
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-      },
-      importFailed: true,
+      props: this.props,
+      state: this.state,
     });
 
-    // NOTE: We import error boundary utilities dynamically here to avoid a circular dependency.
-    // The circular dependency occurs because:
-    // - This component imports from '../utils/errorBoundaryUtils'
-    // - errorBoundaryUtils may import types or utilities that indirectly reference error boundaries
-    // If this circular dependency is resolved through refactoring (e.g., extracting shared types
-    // to a separate file), this can be converted back to a static import for simpler code tracing.
-    import('../utils/errorBoundaryUtils').then(({ captureErrorContext, logErrorWithContext }) => {
-      // Capture comprehensive error context
-      const context = captureErrorContext(error, errorInfo, {
-        componentName: 'AssetProcessingErrorBoundary',
-        props: this.props,
-        state: this.state,
-      });
+    // Log with full context
+    logErrorWithContext(context);
 
-      // Log with full context
-      logErrorWithContext(context);
-
-      // Expose to window for E2E testing
-      if (isDev || isTest) {
-        window.__LAST_ASSET_PROCESSING_ERROR__ = {
-          error: error.message,
-          timestamp: Date.now(),
-          context,
-          utilsLoadedSuccessfully: true, // Flag indicating enhanced error utilities loaded
-        };
-      }
-    }).catch((importError) => {
-      // Fallback to basic logging if utils fail to load
-      console.error('[AssetProcessingErrorBoundary] Failed to load error utilities:', importError);
-      console.error('[AssetProcessingErrorBoundary] Caught error:', error);
-      console.error('[AssetProcessingErrorBoundary] Error info:', errorInfo);
-
-      // Ensure E2E tests still receive an error marker even if the utilities fail to load
-      // Flag indicates degraded error handling state
-      if (isDev || isTest) {
-        window.__LAST_ASSET_PROCESSING_ERROR__ = {
-          error: error.message,
-          timestamp: Date.now(),
-          context: createFallbackContext(),
-          utilsLoadedSuccessfully: false, // Flag indicating error utilities failed to load
-        };
-      }
-    });
+    // Expose to window for E2E testing
+    if (isDev || isTest) {
+      window.__LAST_ASSET_PROCESSING_ERROR__ = {
+        error: error.message,
+        timestamp: Date.now(),
+        context,
+      };
+    }
 
     // Legacy logging for backward compatibility
     console.error('[AssetProcessingErrorBoundary] Caught error:', error);

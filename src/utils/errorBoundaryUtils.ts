@@ -195,6 +195,12 @@ export function captureErrorContext(
 
 /**
  * Sanitize data for logging (remove functions, circular refs, large objects)
+ * 
+ * Note: The circular reference detection using WeakSet may produce false positives.
+ * An object appearing in multiple branches of the tree (but not in a circular path)
+ * will be marked as [Circular] after its first occurrence. This is acceptable for
+ * debugging purposes as it prevents infinite recursion and keeps output readable.
+ * A path-based approach would be more accurate but significantly more complex.
  */
 function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined {
   if (!data) return undefined;
@@ -202,6 +208,9 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
 
   try {
     // Use JSON stringify with replacer to handle functions and circular refs
+    // Note: WeakSet persists across entire operation, so objects seen in different
+    // branches will be marked as circular. This is a known limitation but acceptable
+    // for error logging purposes where false positives are better than crashes.
     const seen = new WeakSet();
     const sanitized = JSON.parse(
       JSON.stringify(data, (_key, value) => {
@@ -321,6 +330,8 @@ export function getErrorHistory(): ErrorContext[] {
 
 /**
  * Clear error history
+ * Note: Uses .length = 0 pattern because errorHistory is declared as const.
+ * This is safe because getErrorHistory() returns a shallow copy, preventing external references.
  */
 export function clearErrorHistory(): void {
   errorHistory.length = 0;

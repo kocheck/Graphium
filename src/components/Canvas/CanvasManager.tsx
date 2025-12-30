@@ -1170,6 +1170,14 @@ const CanvasManager = ({
 
         // Performance optimization: Use push (in-place mutation) instead of concat (array copy)
         // This reduces GC pressure and is faster for large stroke collections
+        // 
+        // IMMUTABILITY EXCEPTION: This mutates currentLine.current.points directly, which
+        // violates the general immutability pattern established in the codebase. This is
+        // acceptable here because:
+        // 1. currentLine.current is a ref, not Zustand state
+        // 2. The points array is never shared with React state during drawing
+        // 3. The performance benefit is significant for smooth drawing (60fps target)
+        // 4. The mutation is isolated to the drawing operation
         cur.points.push(point.x, point.y);
 
         // Cancel previous animation frame

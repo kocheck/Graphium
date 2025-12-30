@@ -50,6 +50,8 @@
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { Group, Circle, Text } from 'react-konva';
 import { captureErrorContext, logErrorWithContext, exportErrorToClipboard, type ErrorContext } from '../../utils/errorBoundaryUtils';
 import { useGameStore } from '../../store/gameStore';
 
@@ -120,42 +122,43 @@ class TokenErrorBoundary extends Component<Props, State> {
     const { tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
 
-    // Calculate next error count from current state
-    // In componentDidCatch, this.state is synchronously accessible and stable
-    const nextErrorCount = this.state.errorCount + 1;
-
-    // Capture comprehensive error context with updated error count
-    const context = captureErrorContext(error, errorInfo, {
-      componentName: 'TokenErrorBoundary',
-      props: { tokenId, tokenData },
-      state: { ...this.state, errorCount: nextErrorCount },
-    });
-
-    // Log with full context
-    logErrorWithContext(context);
-
-    // Additional token-specific logging
-    console.error('Token rendering error:', error, errorInfo);
-    console.error('Token ID:', tokenId);
-    if (tokenData) {
-      console.error('Token Data:', tokenData);
-    }
-
     // Update state using functional form to handle rapid error occurrences safely
-    this.setState((prevState) => ({
-      errorCount: nextErrorCount,
-      errorContext: isDev ? context : prevState.errorContext,
-    }));
+    // This ensures we get the latest error count even if multiple errors occur rapidly
+    this.setState((prevState) => {
+      const nextErrorCount = prevState.errorCount + 1;
 
-    // Expose to window for E2E testing
-    if (isDev || import.meta.env.MODE === 'test') {
-      window.__LAST_TOKEN_ERROR__ = {
-        tokenId,
-        error: error.message,
-        timestamp: Date.now(),
-        context,
+      // Capture comprehensive error context with updated error count
+      const context = captureErrorContext(error, errorInfo, {
+        componentName: 'TokenErrorBoundary',
+        props: { tokenId, tokenData },
+        state: { ...prevState, errorCount: nextErrorCount },
+      });
+
+      // Log with full context
+      logErrorWithContext(context);
+
+      // Additional token-specific logging
+      console.error('Token rendering error:', error, errorInfo);
+      console.error('Token ID:', tokenId);
+      if (tokenData) {
+        console.error('Token Data:', tokenData);
+      }
+
+      // Expose to window for E2E testing
+      if (isDev || import.meta.env.MODE === 'test') {
+        window.__LAST_TOKEN_ERROR__ = {
+          tokenId,
+          error: error.message,
+          timestamp: Date.now(),
+          context,
+        };
+      }
+
+      return {
+        errorCount: nextErrorCount,
+        errorContext: isDev ? context : prevState.errorContext,
       };
-    }
+    });
   }
 
   /**
@@ -176,6 +179,10 @@ class TokenErrorBoundary extends Component<Props, State> {
       const success = await exportErrorToClipboard(errorContext);
       
       // Use callback if provided, otherwise fall back to direct store access
+      // Note: Direct store access via getState() is acceptable in class components
+      // where hooks cannot be used. While this creates coupling to the game store,
+      // it provides a fallback when the parent component doesn't provide the callback.
+      // Consider making onShowToast mandatory if this coupling becomes problematic.
       const showToast = onShowToast || useGameStore.getState().showToast;
       
       if (success) {
@@ -188,13 +195,13 @@ class TokenErrorBoundary extends Component<Props, State> {
 
   /**
    * Renders children if no error, null if error occurred (production)
-   * In dev mode, shows a debug error indicator that can be clicked
+   * In dev mode, shows a Konva-based debug error indicator with Portal-based overlay
    *
-   * @returns {ReactNode | null} Children, debug overlay, or null
+   * @returns {ReactNode | null} Children, debug indicator + overlay, or null
    */
   render() {
     const { hasError, errorContext, showDebugOverlay } = this.state;
-    const { children, tokenId } = this.props;
+    const { children, tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
 
     if (hasError) {
@@ -203,28 +210,41 @@ class TokenErrorBoundary extends Component<Props, State> {
         return null;
       }
 
-      // In dev mode: Show debug error indicator
-      // TODO: This implementation has known limitations:
-      // 1. DOM elements inside Konva canvas may not render correctly
-      // 2. Error indicator doesn't use token position (stacks at container origin)
-      // 3. Debug overlay is viewport-centered, not connected to error location
-      // 
-      // Proper solution would be to:
-      // - Use Konva components (Group, Circle, Text) for the error indicator
-      // - Pass token position (x, y) via tokenData prop
-      // - Use React Portal to render debug overlay in DOM with visual connection
+      // In dev mode: Show Konva-based error indicator with Portal overlay
+      // Get token position from tokenData, fallback to origin if not available
+      const tokenX = (tokenData as { x?: number })?.x ?? 0;
+      const tokenY = (tokenData as { y?: number })?.y ?? 0;
+
       return (
-        <div
-          data-testid={`token-error-${tokenId || 'unknown'}`}
-          className="absolute w-[50px] h-[50px] bg-red-600/70 border-2 border-red-500 rounded-full cursor-pointer flex items-center justify-center text-white font-bold text-2xl z-[9999]"
-          onClick={this.handleToggleDebug}
-          title={`Token Error: ${tokenId || 'unknown'}\nClick to view details`}
-        >
-          ⚠
-          {showDebugOverlay && errorContext && (
+        <>
+          {/* Konva error indicator on canvas */}
+          <Group
+            x={tokenX}
+            y={tokenY}
+            onClick={this.handleToggleDebug}
+          >
+            {/* Red circle with warning icon */}
+            <Circle
+              radius={25}
+              fill="rgba(220, 38, 38, 0.7)"
+              stroke="#ef4444"
+              strokeWidth={2}
+            />
+            <Text
+              text="⚠"
+              fontSize={28}
+              fill="white"
+              offsetX={9}
+              offsetY={14}
+            />
+          </Group>
+
+          {/* Portal for debug overlay in DOM */}
+          {showDebugOverlay && errorContext && createPortal(
             <div
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900 text-white p-5 rounded-lg border-2 border-red-500 max-w-[600px] max-h-[80vh] overflow-auto z-[10000] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
+              data-testid={`token-error-overlay-${tokenId || 'unknown'}`}
             >
               <h3 className="m-0 mb-4 text-red-500">
                 Token Error Debug Info
@@ -291,9 +311,10 @@ class TokenErrorBoundary extends Component<Props, State> {
                   Close
                 </button>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
-        </div>
+        </>
       );
     }
 
