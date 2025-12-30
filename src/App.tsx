@@ -20,7 +20,7 @@ import { getStorage } from './services/storage';
 import { useIsMobile } from './hooks/useMediaQuery';
 import MobileToolbar from './components/MobileToolbar';
 import { rollForMessage } from './utils/systemMessages';
-import { addRecentCampaign } from './utils/recentCampaigns';
+import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -270,11 +270,10 @@ function App() {
             const result = await storage.saveCampaign(campaignToSave);
             if (result) {
                 // Add to recent campaigns
-                addRecentCampaign({
-                    id: campaignToSave.id,
-                    name: campaignToSave.name,
-                    lastOpened: Date.now(),
-                });
+                addRecentCampaignWithPlatform(
+                    campaignToSave.id,
+                    campaignToSave.name
+                );
                 store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
             }
         } catch (e) {
@@ -290,11 +289,10 @@ function App() {
             if (campaign) {
                 useGameStore.getState().loadCampaign(campaign);
                 // Add to recent campaigns
-                addRecentCampaign({
-                    id: campaign.id,
-                    name: campaign.name,
-                    lastOpened: Date.now(),
-                });
+                addRecentCampaignWithPlatform(
+                    campaign.id,
+                    campaign.name
+                );
                 useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
             }
         } catch (e) {

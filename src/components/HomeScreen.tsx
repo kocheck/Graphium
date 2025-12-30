@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
-import { getRecentCampaigns, addRecentCampaign, removeRecentCampaign, type RecentCampaign } from '../utils/recentCampaigns';
+import { getRecentCampaigns, addRecentCampaignWithPlatform, removeRecentCampaign, type RecentCampaign } from '../utils/recentCampaigns';
 import { rollForMessage } from '../utils/systemMessages';
 
 interface HomeScreenProps {
@@ -33,8 +33,17 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     const platform = storage.getPlatform();
     setIsElectron(platform === 'electron');
 
-    // Detect macOS for download banner
-    const isMacOS = typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
+    // Detect macOS for download banner (avoid deprecated navigator.platform)
+    let isMacOS = false;
+    if (typeof navigator !== 'undefined') {
+      const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
+      const platformHint = uaData?.platform ?? '';
+      const userAgent = navigator.userAgent ?? '';
+
+      isMacOS =
+        platformHint.toLowerCase().includes('mac') ||
+        /mac/i.test(userAgent);
+    }
     setIsMac(isMacOS);
   }, []);
 
@@ -60,11 +69,10 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         loadCampaign(campaign);
 
         // Add to recent campaigns
-        addRecentCampaign({
-          id: campaign.id,
-          name: campaign.name,
-          lastOpened: Date.now(),
-        });
+        addRecentCampaignWithPlatform(
+          campaign.id,
+          campaign.name
+        );
 
         // Update recent list
         setRecentCampaigns(getRecentCampaigns());
@@ -81,14 +89,25 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   };
 
   /**
-   * Load a recent campaign by ID
-   * Note: We can't directly load by ID since campaigns are in files,
-   * so we just trigger the load dialog
+   * Handle click on a recent campaign entry.
+   *
+   * Current limitation:
+   * - We cannot reliably reload a specific campaign from this list,
+   *   because campaigns are stored as user-selected files and we do
+   *   not currently persist file handles/paths.
+   * - To avoid a confusing UX where clicking a recent item just opens
+   *   a generic file picker, we treat this list as a reference only
+   *   and show guidance to the user instead of re-opening the dialog.
+   *
+   * Future enhancement:
+   * - Persist file handles (File System Access API) or file paths
+   *   (Electron) so we can directly load the selected recent campaign.
    */
   const handleLoadRecent = async (_recent: RecentCampaign) => {
-    // For now, we'll just trigger the load dialog
-    // In the future, we could store file handles for quick access
-    await handleLoadCampaign();
+    showToast(
+      'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .hyle file.',
+      'info'
+    );
   };
 
   /**
@@ -167,6 +186,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             }}
             onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--app-accent-solid)'}
             onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--app-border-default)'}
+            aria-label="Create a new campaign and start the editor"
           >
             <div className="flex items-center gap-3 mb-2">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--app-accent-solid)' }}>
@@ -188,6 +208,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             }}
             onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--app-accent-solid)'}
             onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--app-border-default)'}
+            aria-label="Load an existing campaign from a .hyle file"
           >
             <div className="flex items-center gap-3 mb-2">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--app-accent-solid)' }}>
@@ -225,6 +246,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
                     e.currentTarget.style.background = 'var(--app-bg-surface)';
                     e.currentTarget.style.borderColor = 'var(--app-border-subtle)';
                   }}
+                  aria-label={`Recent campaign: ${recent.name}. Click for more information about loading this campaign.`}
                 >
                   <div className="flex items-center gap-3 flex-1 text-left">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--app-text-secondary)' }}>
@@ -271,7 +293,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       {/* Footer */}
       <div className="absolute bottom-8 text-center" style={{ color: 'var(--app-text-muted)' }}>
         <p className="text-sm">
-          Version 0.3.0 · {isElectron ? 'Desktop' : 'Web'} Edition
+          Version {__APP_VERSION__} · {isElectron ? 'Desktop' : 'Web'} Edition
         </p>
       </div>
     </div>

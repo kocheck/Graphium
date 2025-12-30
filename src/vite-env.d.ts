@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __APP_VERSION__: string;
+
 interface Window {
   // Electron IPC (only available in Electron, not in web)
   ipcRenderer?: {
