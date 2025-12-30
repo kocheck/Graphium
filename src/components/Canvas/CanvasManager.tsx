@@ -888,7 +888,6 @@ const CanvasManager = ({
       });
       setDraggingTokenIds(new Set());
       setItemsForDuplication([]);
-      setDragUpdateCounter(0); // Reset counter
     } else {
       // No drag occurred - treat as selection click
       e.evt.stopPropagation();
