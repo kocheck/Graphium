@@ -1,6 +1,6 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { rollForMessage } from '../utils/systemMessages';
-import { captureErrorContext, logErrorWithContext, type ErrorContext } from '../utils/errorBoundaryUtils';
+import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
 
 interface Props {
   children: ReactNode;
