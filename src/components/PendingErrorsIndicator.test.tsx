@@ -277,12 +277,12 @@ describe('PendingErrorsIndicator', () => {
   })
 
   describe('error reporting', () => {
-    it('should copy report and open email when Email button is clicked', async () => {
+    it('should open GitHub issues when Report on GitHub button is clicked', async () => {
       vi.mocked(globalErrorHandler.getStoredErrors).mockReturnValue([mockStoredError])
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
-      render(<PendingErrorsIndicator supportEmail="test@example.com" />)
-      
+      render(<PendingErrorsIndicator />)
+
       // Expand and select error
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
@@ -295,26 +295,25 @@ describe('PendingErrorsIndicator', () => {
       fireEvent.click(errorItem)
 
       await waitFor(() => {
-        expect(screen.getByText('Email')).toBeInTheDocument()
+        expect(screen.getByText('Report on GitHub')).toBeInTheDocument()
       })
 
-      const emailButton = screen.getByText('Email')
-      fireEvent.click(emailButton)
+      const githubButton = screen.getByText('Report on GitHub')
+      fireEvent.click(githubButton)
 
       await waitFor(() => {
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Full error report body')
         expect(mockErrorReporting.openExternal).toHaveBeenCalledWith(
-          expect.stringContaining('mailto:test@example.com')
+          expect.stringContaining('https://github.com/kocheck/Hyle/issues/new')
         )
       })
     })
 
-    it('should mark error as reported after successful email', async () => {
+    it('should mark error as reported after successful GitHub report', async () => {
       vi.mocked(globalErrorHandler.getStoredErrors).mockReturnValue([mockStoredError])
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -326,23 +325,23 @@ describe('PendingErrorsIndicator', () => {
       fireEvent.click(errorItem)
 
       await waitFor(() => {
-        expect(screen.getByText('Email')).toBeInTheDocument()
+        expect(screen.getByText('Report on GitHub')).toBeInTheDocument()
       })
 
-      const emailButton = screen.getByText('Email')
-      fireEvent.click(emailButton)
+      const githubButton = screen.getByText('Report on GitHub')
+      fireEvent.click(githubButton)
 
       await waitFor(() => {
         expect(globalErrorHandler.markErrorReported).toHaveBeenCalledWith('err_123')
       })
     })
 
-    it('should show copied status after successful email', async () => {
+    it('should show opened status after successful GitHub report', async () => {
       vi.mocked(globalErrorHandler.getStoredErrors).mockReturnValue([mockStoredError])
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -354,24 +353,24 @@ describe('PendingErrorsIndicator', () => {
       fireEvent.click(errorItem)
 
       await waitFor(() => {
-        expect(screen.getByText('Email')).toBeInTheDocument()
+        expect(screen.getByText('Report on GitHub')).toBeInTheDocument()
       })
 
-      const emailButton = screen.getByText('Email')
-      fireEvent.click(emailButton)
+      const githubButton = screen.getByText('Report on GitHub')
+      fireEvent.click(githubButton)
 
       await waitFor(() => {
-        expect(screen.getByText('Copied!')).toBeInTheDocument()
+        expect(screen.getByText('Opened!')).toBeInTheDocument()
       })
     })
 
-    it('should handle email reporting errors gracefully', async () => {
+    it('should handle GitHub reporting errors gracefully', async () => {
       vi.mocked(globalErrorHandler.getStoredErrors).mockReturnValue([mockStoredError])
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
-      vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('Clipboard failed'))
+      mockErrorReporting.openExternal.mockRejectedValueOnce(new Error('Failed to open browser'))
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -383,11 +382,11 @@ describe('PendingErrorsIndicator', () => {
       fireEvent.click(errorItem)
 
       await waitFor(() => {
-        expect(screen.getByText('Email')).toBeInTheDocument()
+        expect(screen.getByText('Report on GitHub')).toBeInTheDocument()
       })
 
-      const emailButton = screen.getByText('Email')
-      fireEvent.click(emailButton)
+      const githubButton = screen.getByText('Report on GitHub')
+      fireEvent.click(githubButton)
 
       await waitFor(() => {
         expect(console.error).toHaveBeenCalled()

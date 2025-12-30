@@ -101,9 +101,9 @@ async function initApp() {
 
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <PrivacyErrorBoundary supportEmail="support@hyle.app">
+      <PrivacyErrorBoundary>
         <App />
-        <PendingErrorsIndicator supportEmail="support@hyle.app" position="bottom-right" />
+        <PendingErrorsIndicator position="bottom-right" />
       </PrivacyErrorBoundary>
     </React.StrictMode>,
   )
