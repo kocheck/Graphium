@@ -233,11 +233,12 @@ const CanvasManager = ({
   const updateMapTransform = useGameStore(s => s.updateMapTransform);
   const updateDrawingTransform = useGameStore(s => s.updateDrawingTransform);
   const setActiveMeasurement = useGameStore(s => s.setActiveMeasurement);
+  const showToast = useGameStore(s => s.showToast);
 
   const isDrawing = useRef(false);
-  const currentLine = useRef<Drawing | null>(null); // Temp line points
-  const [tempLine, setTempLine] = useState<Drawing | null>(null);
-  const tempLineRef = useRef<Konva.Line | null>(null); // Direct ref to Konva Line for performance
+  const currentLine = useRef<Drawing | null>(null); // Current drawing data (source of truth)
+  const [tempLine, setTempLine] = useState<Drawing | null>(null); // React state for initial render
+  const tempLineRef = useRef<Konva.Line | null>(null); // Direct Konva ref for performance updates
   const drawingAnimationFrameRef = useRef<number | null>(null); // RAF handle for drawing
 
   // Door Tool State
@@ -1160,8 +1161,24 @@ const CanvasManager = ({
             }
         }
 
-        // Update points in ref: create a new points array and assign it to the ref object
-        cur.points = cur.points.concat([point.x, point.y]);
+        // Performance optimization: Skip consecutive duplicate points to reduce memory and render overhead
+        // Note: This only deduplicates consecutive points, not all duplicates in the array
+        const lastIdx = cur.points.length - 2;
+        if (lastIdx >= 0 && cur.points[lastIdx] === point.x && cur.points[lastIdx + 1] === point.y) {
+            return; // Skip consecutive duplicate point
+        }
+
+        // Performance optimization: Use push (in-place mutation) instead of concat (array copy)
+        // This reduces GC pressure and is faster for large stroke collections
+        // 
+        // IMMUTABILITY EXCEPTION: This mutates currentLine.current.points directly, which
+        // violates the general immutability pattern established in the codebase. This is
+        // acceptable here because:
+        // 1. currentLine.current is a ref, not Zustand state
+        // 2. The points array is never shared with React state during drawing
+        // 3. The performance benefit is significant for smooth drawing (60fps target)
+        // 4. The mutation is isolated to the drawing operation
+        cur.points.push(point.x, point.y);
 
         // Cancel previous animation frame
         if (drawingAnimationFrameRef.current) {
@@ -1325,8 +1342,8 @@ const CanvasManager = ({
              drawingAnimationFrameRef.current = null;
          }
 
-         if (tempLine) {
-             let processedLine: Drawing = { ...tempLine };
+         if (currentLine.current) {
+             let processedLine: Drawing = { ...currentLine.current };
 
              // Apply path smoothing for wall tool (if enabled)
              if (processedLine.tool === 'wall' && wallToolPrefs.enableSmoothing) {
@@ -1372,7 +1389,8 @@ const CanvasManager = ({
              }
 
              addDrawing(processedLine);
-             setTempLine(null);
+             currentLine.current = null;
+             setTempLine(null); // Clear visual line from canvas
          }
          return;
     }
@@ -1938,7 +1956,7 @@ const CanvasManager = ({
 
                 return (
                 <Group key={token.id}>
-                <TokenErrorBoundary tokenId={token.id}>
+                <TokenErrorBoundary tokenId={token.id} onShowToast={showToast}>
                 <URLImage
                     ref={(node) => {
                       if (node) {
