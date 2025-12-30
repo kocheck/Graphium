@@ -548,21 +548,17 @@ function App() {
            </div>
            {/* Color Picker (only visible when marker tool is active) */}
            {tool === 'marker' && (
-             <>
-               <div className="toolbar-divider w-px mx-1"></div>
-               <Tooltip content="Marker color (I)">
-                 <label className="flex items-center gap-2 cursor-pointer">
-                   <span className="text-sm font-medium">Color (I)</span>
-                   <input
-                     ref={colorInputRef}
-                     type="color"
-                     value={color}
-                     onChange={(e) => setColor(e.target.value)}
-                     className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
-                   />
-                 </label>
-               </Tooltip>
-             </>
+             <Tooltip content="Marker color (I)">
+               <label className="btn btn-tool cursor-pointer p-1 flex items-center justify-center">
+                 <input
+                   ref={colorInputRef}
+                   type="color"
+                   value={color}
+                   onChange={(e) => setColor(e.target.value)}
+                   className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
+                 />
+               </label>
+             </Tooltip>
            )}
         </div>
         )}
