@@ -80,7 +80,7 @@ interface Props {
  * @property isLoading - Whether error is being sanitized (async operation)
  * @property sanitizedError - PII-free error object, null until sanitization complete
  * @property reportBody - Formatted error report ready for email/file export
- * @property reportStatus - Status of GitHub issue reporting operation
+ * @property reportStatus - Report status for the GitHub issue reporting operation
  * @property saveStatus - Status of save-to-file operation
  * @property userContext - Optional user-provided context (what they were doing)
  * @property showContextInput - Whether context input textarea is visible
@@ -90,7 +90,7 @@ interface State {
   isLoading: boolean;
   sanitizedError: SanitizedError | null;
   reportBody: string;
-  reportStatus: 'idle' | 'copied' | 'error';
+  reportStatus: 'idle' | 'opened' | 'error';
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   userContext: string;
   showContextInput: boolean;
@@ -231,9 +231,21 @@ ${userContext.trim()}
         const allowedBodyLength = MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
         
         if (allowedBodyLength > 0) {
-          const encodedBody = encodeURIComponent(finalReport);
-          const truncatedBody = encodedBody.slice(0, allowedBodyLength);
-          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedBody}`;
+          // Truncate non-encoded string first, then encode to avoid breaking escape sequences
+          let currentLength = 0;
+          const encodedChunks: string[] = [];
+          
+          for (const char of finalReport) {
+            const encodedChar = encodeURIComponent(char);
+            if (currentLength + encodedChar.length > allowedBodyLength) {
+              break;
+            }
+            encodedChunks.push(encodedChar);
+            currentLength += encodedChar.length;
+          }
+          
+          const truncatedEncodedBody = encodedChunks.join('');
+          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedEncodedBody}`;
         } else {
           // In the unlikely event the base URL is already too long, drop the body entirely
           githubUrl = baseWithTitle;
@@ -244,10 +256,10 @@ ${userContext.trim()}
       const errorReporting = window.errorReporting;
       if (errorReporting) {
         await errorReporting.openExternal(githubUrl);
-        this.setState({ reportStatus: 'copied' });
+        this.setState({ reportStatus: 'opened' });
       }
 
-      // Reset copy status after 3 seconds
+      // Reset report status after 3 seconds
       setTimeout(() => {
         this.setState({ reportStatus: 'idle' });
       }, 3000);
@@ -470,14 +482,14 @@ ${userContext.trim()}
                     <button
                       onClick={this.handleReportOnGitHub}
                       className={`flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${
-                        reportStatus === 'copied'
+                        reportStatus === 'opened'
                           ? 'bg-green-600 hover:bg-green-500'
                           : reportStatus === 'error'
                           ? 'bg-red-600 hover:bg-red-500'
                           : 'bg-blue-600 hover:bg-blue-500'
                       }`}
                     >
-                      {reportStatus === 'copied' ? (
+                      {reportStatus === 'opened' ? (
                         <>
                           <svg
                             className="w-5 h-5"

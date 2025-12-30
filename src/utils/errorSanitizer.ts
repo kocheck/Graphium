@@ -296,6 +296,11 @@ export function generateReportBody(sanitizedError: SanitizedError): string {
 
   const timestamp = new Date().toISOString();
 
+  // Escape backticks in all error fields to avoid breaking markdown code blocks
+  const escapedName = sanitizedError.name.replace(/`/g, '\\`');
+  const escapedMessage = sanitizedError.message.replace(/`/g, '\\`');
+  const escapedStack = sanitizedError.stack.replace(/`/g, '\\`');
+
   const report = `## Description
 
 *Review and, if helpful, expand on the pre-filled context below about what you were doing when the error occurred.*
@@ -304,8 +309,8 @@ export function generateReportBody(sanitizedError: SanitizedError): string {
 
 ## Error Details
 
-**Error Type:** ${sanitizedError.name}
-**Message:** ${sanitizedError.message}
+**Error Type:** ${escapedName}
+**Message:** ${escapedMessage}
 
 ### System Information
 
@@ -317,7 +322,7 @@ export function generateReportBody(sanitizedError: SanitizedError): string {
 ### Stack Trace
 
 \`\`\`
-${sanitizedError.stack.replace(/`/g, '\\`')}
+${escapedStack}
 \`\`\`
 `.trim();
 

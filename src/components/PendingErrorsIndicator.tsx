@@ -28,7 +28,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [errors, setErrors] = useState<StoredError[]>([]);
   const [selectedError, setSelectedError] = useState<StoredError | null>(null);
-  const [reportStatus, setReportStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [reportStatus, setReportStatus] = useState<'idle' | 'opened' | 'error'>('idle');
 
   const refreshErrors = useCallback(() => {
     const stored = getStoredErrors();
@@ -78,8 +78,21 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
           // In the unlikely event the base URL is already too long, drop the body entirely
           githubUrl = baseWithTitle;
         } else {
-          const truncatedBody = encodedBody.slice(0, allowedBodyLength);
-          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedBody}`;
+          // Truncate non-encoded string first, then encode to avoid breaking escape sequences
+          let currentLength = 0;
+          const encodedChunks: string[] = [];
+          
+          for (const char of issueBody) {
+            const encodedChar = encodeURIComponent(char);
+            if (currentLength + encodedChar.length > allowedBodyLength) {
+              break;
+            }
+            encodedChunks.push(encodedChar);
+            currentLength += encodedChar.length;
+          }
+          
+          const truncatedEncodedBody = encodedChunks.join('');
+          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedEncodedBody}`;
         }
       }
 
@@ -87,14 +100,14 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
       const errorReporting = window.errorReporting;
       if (errorReporting) {
         await errorReporting.openExternal(githubUrl);
-        setReportStatus('copied');
+        setReportStatus('opened');
       }
 
       // Mark as reported
       markErrorReported(error.id);
       refreshErrors();
 
-      // Reset copy status
+      // Reset report status
       setTimeout(() => setReportStatus('idle'), 3000);
     } catch (err) {
       console.error('Failed to report error:', err);
@@ -298,14 +311,14 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                   <button
                     onClick={() => handleReportError(selectedError)}
                     className={`flex-1 px-3 py-2 rounded text-sm font-medium flex items-center justify-center gap-2 ${
-                      reportStatus === 'copied'
+                      reportStatus === 'opened'
                         ? 'bg-green-600 hover:bg-green-500'
                         : reportStatus === 'error'
                         ? 'bg-red-600 hover:bg-red-500'
                         : 'bg-blue-600 hover:bg-blue-500'
                     }`}
                   >
-                    {reportStatus === 'copied' ? (
+                    {reportStatus === 'opened' ? (
                       <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
