@@ -62,11 +62,9 @@ import { rollForMessage } from '../utils/systemMessages';
  * Props for PrivacyErrorBoundary
  *
  * @property children - React components to protect with error boundary
- * @property supportEmail - Email address for error reports (default: support@example.com)
  */
 interface Props {
   children: ReactNode;
-  supportEmail?: string;
 }
 
 /**
@@ -99,10 +97,6 @@ interface State {
  * and provides a user-friendly interface for reporting errors.
  */
 class PrivacyErrorBoundary extends Component<Props, State> {
-  static defaultProps = {
-    supportEmail: 'support@example.com',
-  };
-
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -191,20 +185,16 @@ class PrivacyErrorBoundary extends Component<Props, State> {
   }
 
   /**
-   * Copies error report to clipboard and opens email client
-   * Uses clipboard to avoid mailto URL length limits
+   * Opens GitHub issues page with pre-filled error report
    * Includes optional user context if provided
    */
-  handleCopyAndEmail = async (): Promise<void> => {
-    const { reportBody, userContext } = this.state;
-    const { supportEmail } = this.props;
+  handleReportOnGitHub = async (): Promise<void> => {
+    const { reportBody, userContext, sanitizedError } = this.state;
 
     try {
       // Build the final report with optional user context
       const userContextBlock = userContext.trim()
-        ? `--------------------------------------------------------------------------------
-                            USER CONTEXT (Optional)
---------------------------------------------------------------------------------
+        ? `
 
 ${userContext.trim()}
 
@@ -212,22 +202,15 @@ ${userContext.trim()}
         : '';
       const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
-      // Copy the full report to clipboard
-      await navigator.clipboard.writeText(finalReport);
-      this.setState({ copyStatus: 'copied' });
+      // Construct GitHub issue URL
+      const issueTitle = `Bug Report: ${sanitizedError?.name || 'Error'}`;
+      const githubUrl = `https://github.com/kocheck/Hyle/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(finalReport)}`;
 
-      // Create mailto link with instructions (not the actual report)
-      const subject = encodeURIComponent('Hyle Error Report');
-      const body = encodeURIComponent(
-        'Please paste the error report from your clipboard here.\n\n' +
-        '(The error report has been copied to your clipboard for privacy reasons.)'
-      );
-      const mailtoUrl = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
-
-      // Open the default email client
+      // Open GitHub in browser
       const errorReporting = window.errorReporting;
       if (errorReporting) {
-        await errorReporting.openExternal(mailtoUrl);
+        await errorReporting.openExternal(githubUrl);
+        this.setState({ copyStatus: 'copied' });
       }
 
       // Reset copy status after 3 seconds
@@ -236,9 +219,9 @@ ${userContext.trim()}
       }, 3000);
     } catch (err) {
       if (err instanceof Error) {
-        console.error('Failed to copy report or open email client:', `${err.name}: ${err.message}`);
+        console.error('Failed to open GitHub:', `${err.name}: ${err.message}`);
       } else {
-        console.error('Failed to copy report or open email client:', typeof err === 'string' ? err : '[Unknown error]');
+        console.error('Failed to open GitHub:', typeof err === 'string' ? err : '[Unknown error]');
       }
       this.setState({ copyStatus: 'error' });
 
@@ -451,7 +434,7 @@ ${userContext.trim()}
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-2">
                     <button
-                      onClick={this.handleCopyAndEmail}
+                      onClick={this.handleReportOnGitHub}
                       className={`flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${
                         copyStatus === 'copied'
                           ? 'bg-green-600 hover:bg-green-500'
@@ -475,7 +458,7 @@ ${userContext.trim()}
                               d="M5 13l4 4L19 7"
                             />
                           </svg>
-                          Copied! Opening Email...
+                          Opened GitHub!
                         </>
                       ) : copyStatus === 'error' ? (
                         <>
@@ -498,18 +481,12 @@ ${userContext.trim()}
                         <>
                           <svg
                             className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            viewBox="0 0 16 16"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                            />
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
                           </svg>
-                          Copy Report &amp; Email Support
+                          Report on GitHub
                         </>
                       )}
                     </button>

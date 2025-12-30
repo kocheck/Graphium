@@ -225,16 +225,15 @@ export function sanitizeStack(error: Error, username: string): SanitizedError {
 }
 
 /**
- * Generates a formatted error report body with system information
+ * Generates a formatted error report body for GitHub issues
  *
- * Creates a human-readable error report suitable for email or file export.
+ * Creates a markdown-formatted error report suitable for GitHub issue body.
  * Includes sanitized error details plus non-sensitive system context (app version,
  * platform, user agent) to help with debugging.
  *
  * **Report sections:**
- * 1. **Header**: Timestamp, app version, platform
- * 2. **Error Details**: Error type and sanitized message
- * 3. **Stack Trace**: Full sanitized stack trace
+ * 1. **User Description**: Prompt for user to explain what they were doing
+ * 2. **Technical Details**: Error type, message, stack trace, and system info
  *
  * **Privacy guarantee:**
  * Only accepts pre-sanitized errors. No PII is added to the report.
@@ -245,50 +244,39 @@ export function sanitizeStack(error: Error, username: string): SanitizedError {
  * 2. Error caught and sanitized
  * 3. User clicks "Report Error" button
  * 4. Generate report body
- * 5. User reviews report (can add context)
- * 6. User sends via email (consent-based)
+ * 5. Opens GitHub issues with pre-filled body
+ * 6. User can add context and submit
  *
  * @param sanitizedError - Pre-sanitized error from sanitizeStack()
- * @returns Formatted plain-text report ready for email/file export
+ * @returns Formatted markdown report ready for GitHub issue body
  *
  * @example
- * // Generate report for email
+ * // Generate report for GitHub issue
  * const sanitized = sanitizeStack(error, username);
  * const reportBody = generateReportBody(sanitized);
- * const mailtoLink = `mailto:support@hyle.app?subject=Error Report&body=${encodeURIComponent(reportBody)}`;
- * window.open(mailtoLink);
+ * const githubUrl = `https://github.com/kocheck/Hyle/issues/new?body=${encodeURIComponent(reportBody)}`;
+ * window.open(githubUrl);
  *
  * @example
- * // Save report to file
- * const sanitized = sanitizeStack(error, username);
- * const reportBody = generateReportBody(sanitized);
- * const result = await window.ipcRenderer.invoke('save-error-report', reportBody);
- * // User chooses where to save the .txt file
- *
- * @example
- * // Example report output:
- * // ================================================================================
- * //                            HYLE ERROR REPORT
- * // ================================================================================
+ * // Example report output (markdown format):
+ * // ## Description
+ * // *Please describe what you were doing when the error occurred...*
  * //
- * // Timestamp: 2025-01-15T10:30:45.123Z
- * // App Version: 1.0.0
- * // Platform: MacIntel
- * // User Agent: Mozilla/5.0 ...
+ * // ## Error Details
  * //
- * // --------------------------------------------------------------------------------
- * //                               ERROR DETAILS
- * // --------------------------------------------------------------------------------
+ * // **Error Type:** TypeError
+ * // **Message:** Cannot read property 'x' of undefined
  * //
- * // Error Type: TypeError
- * // Message: Cannot read property 'x' of undefined
+ * // ### System Information
+ * // - **App Version:** 1.0.0
+ * // - **Platform:** MacIntel
+ * // - **Timestamp:** 2025-01-15T10:30:45.123Z
  * //
- * // --------------------------------------------------------------------------------
- * //                               STACK TRACE
- * // --------------------------------------------------------------------------------
- * //
+ * // ### Stack Trace
+ * // ```
  * // at /Users/<USER>/hyle/src/components/Canvas/CanvasManager.tsx:142
  * // at handleDrop ...
+ * // ```
  */
 export function generateReportBody(sanitizedError: SanitizedError): string {
   // Get app version from package.json (exposed via Vite's define)
@@ -308,32 +296,29 @@ export function generateReportBody(sanitizedError: SanitizedError): string {
 
   const timestamp = new Date().toISOString();
 
-  const report = `
-================================================================================
-                           HYLE ERROR REPORT
-================================================================================
+  const report = `## Description
 
-Timestamp: ${timestamp}
-App Version: ${appVersion}
-Platform: ${platform}
-User Agent: ${userAgent}
+*Please describe what you were doing when the error occurred...*
 
---------------------------------------------------------------------------------
-                              ERROR DETAILS
---------------------------------------------------------------------------------
+{{USER_CONTEXT}}
 
-Error Type: ${sanitizedError.name}
-Message: ${sanitizedError.message}
+## Error Details
 
---------------------------------------------------------------------------------
-                              STACK TRACE
---------------------------------------------------------------------------------
+**Error Type:** ${sanitizedError.name}
+**Message:** ${sanitizedError.message}
 
+### System Information
+
+- **App Version:** ${appVersion}
+- **Platform:** ${platform}
+- **Timestamp:** ${timestamp}
+- **User Agent:** ${userAgent}
+
+### Stack Trace
+
+\`\`\`
 ${sanitizedError.stack}
-
-{{USER_CONTEXT}}================================================================================
-                            END OF REPORT
-================================================================================
+\`\`\`
 `.trim();
 
   return report;
