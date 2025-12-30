@@ -36,6 +36,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
 
   const logoClickTimeoutRef = useRef<number | null>(null);
+  const openModalTimeoutRef = useRef<number | null>(null);
 
   const loadCampaign = useGameStore((state) => state.loadCampaign);
   const showToast = useGameStore((state) => state.showToast);
@@ -97,6 +98,18 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isAboutOpen]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (logoClickTimeoutRef.current !== null) {
+        clearTimeout(logoClickTimeoutRef.current);
+      }
+      if (openModalTimeoutRef.current !== null) {
+        clearTimeout(openModalTimeoutRef.current);
+      }
+    };
+  }, []);
 
   /**
    * Create a new campaign and enter the editor
@@ -459,7 +472,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               handleLogoClick();
               // Open about modal on single click (not during easter egg sequence)
               if (currentCount < 4) {
-                setTimeout(() => setIsAboutOpen(true), 100);
+                // Clear previous timeout if exists
+                if (openModalTimeoutRef.current !== null) {
+                  clearTimeout(openModalTimeoutRef.current);
+                }
+                openModalTimeoutRef.current = window.setTimeout(() => setIsAboutOpen(true), 100);
               }
             }}
             className="logo-button"
