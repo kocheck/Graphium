@@ -104,7 +104,7 @@ body {
   font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
                'Helvetica Neue', Arial, sans-serif;
   /* font-feature-settings for enhanced typography */
-  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  font-feature-settings: 'liga' 1, 'calt' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

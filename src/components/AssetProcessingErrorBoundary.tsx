@@ -1,5 +1,6 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { rollForMessage } from '../utils/systemMessages';
+import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
 
 interface Props {
   children: ReactNode;
@@ -59,7 +60,29 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error details for debugging
+    const isDev = import.meta.env.DEV;
+    const isTest = import.meta.env.MODE === 'test';
+
+    // Capture comprehensive error context
+    const context = captureErrorContext(error, errorInfo, {
+      componentName: 'AssetProcessingErrorBoundary',
+      props: this.props,
+      state: this.state,
+    });
+
+    // Log with full context
+    logErrorWithContext(context);
+
+    // Expose to window for E2E testing
+    if (isDev || isTest) {
+      window.__LAST_ASSET_PROCESSING_ERROR__ = {
+        error: error.message,
+        timestamp: Date.now(),
+        context,
+      };
+    }
+
+    // Legacy logging for backward compatibility
     console.error('[AssetProcessingErrorBoundary] Caught error:', error);
     console.error('[AssetProcessingErrorBoundary] Error info:', errorInfo);
 

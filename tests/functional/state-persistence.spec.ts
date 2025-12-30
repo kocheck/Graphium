@@ -316,3 +316,308 @@ test.describe('Multi-Tab Synchronization', () => {
     await secondTab.close();
   });
 });
+
+test.describe('Drawing Tool Persistence', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearAllTestData(page);
+    await bypassLandingPageAndInjectState(page);
+  });
+
+  test('should persist marker drawings after page reload', async ({ page }) => {
+    // Create campaign
+    await createNewCampaign(page, 'Drawing Persistence Test');
+
+    // Get the drawing count before drawing
+    const drawingCountBefore = await page.evaluate(() => {
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      return store?.getState?.()?.drawings?.length || 0;
+    });
+
+    expect(drawingCountBefore, 'Should start with no drawings').toBe(0);
+
+    // Switch to marker tool
+    await page.click('[data-testid="tool-marker"]');
+
+    // Get canvas element
+    const canvas = page.locator('canvas').first();
+    const canvasBox = await canvas.boundingBox();
+
+    if (!canvasBox) {
+      throw new Error('Canvas not found');
+    }
+
+    // Draw a line on the canvas by simulating mouse drag
+    const startX = canvasBox.x + 100;
+    const startY = canvasBox.y + 100;
+    const endX = canvasBox.x + 300;
+    const endY = canvasBox.y + 200;
+
+    // Simulate drawing: mousedown -> multiple mousemove -> mouseup
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+
+    // Move mouse in steps to simulate drawing
+    for (let i = 0; i <= 10; i++) {
+      const x = startX + (endX - startX) * (i / 10);
+      const y = startY + (endY - startY) * (i / 10);
+      await page.mouse.move(x, y);
+      await page.waitForTimeout(10); // Small delay to ensure RAF updates
+    }
+
+    await page.mouse.up();
+
+    // Wait for drawing to be committed to store
+    await page.waitForFunction(() => {
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      const drawings = store?.getState?.()?.drawings;
+      return Array.isArray(drawings) && drawings.length > 0;
+    });
+
+    // Verify drawing was added to store
+    const drawingCountAfter = await page.evaluate(() => {
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      return store?.getState?.()?.drawings?.length || 0;
+    });
+
+    expect(
+      drawingCountAfter,
+      'Drawing should be added to store immediately after mouse up'
+    ).toBe(1);
+
+    // Verify the drawing has the expected properties
+    const drawingData = await page.evaluate(() => {
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: Array<{
+              tool?: string;
+              points?: unknown[];
+              id?: string;
+            }>;
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      const drawings = store?.getState?.()?.drawings || [];
+      return drawings[0];
+    });
+
+    expect(drawingData, 'Drawing data should exist').toBeTruthy();
+    expect(drawingData?.tool, 'Drawing tool should be marker').toBe('marker');
+    expect(drawingData?.points, 'Drawing should have points array').toBeDefined();
+    expect((drawingData?.points as unknown[])?.length ?? 0, 'Drawing should have multiple points (accounting for potential deduplication)').toBeGreaterThan(1);
+    expect(drawingData?.id, 'Drawing should have an ID').toBeTruthy();
+
+    // Reload page to test persistence
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    // Verify drawing persisted after reload
+    const drawingsAfterReload = await page.evaluate(() => {
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: unknown[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      return store?.getState?.()?.drawings || [];
+    });
+
+    expect(
+      drawingsAfterReload.length,
+      'Drawing should persist after page reload'
+    ).toBe(1);
+
+    const firstDrawing = drawingsAfterReload[0] as {
+      id?: unknown;
+      points?: unknown[];
+    } | undefined;
+
+    expect(
+      firstDrawing,
+      'Persisted drawing should exist'
+    ).toBeDefined();
+
+    expect(
+      firstDrawing?.id,
+      'Persisted drawing should have the same ID'
+    ).toBe(drawingData?.id);
+
+    expect(
+      firstDrawing?.points?.length ?? 0,
+      'Persisted drawing should have all points'
+    ).toBe((drawingData?.points as unknown[])?.length ?? 0);
+  });
+
+  test('should persist wall drawings after page reload', async ({ page }) => {
+    // Create campaign
+    await createNewCampaign(page, 'Wall Drawing Test');
+
+    // Switch to wall tool
+    await page.click('[data-testid="tool-wall"]');
+
+    // Get canvas element
+    const canvas = page.locator('canvas').first();
+    const canvasBox = await canvas.boundingBox();
+
+    if (!canvasBox) {
+      throw new Error('Canvas not found');
+    }
+
+    // Draw a wall
+    await page.mouse.move(canvasBox.x + 150, canvasBox.y + 150);
+    await page.mouse.down();
+    await page.mouse.move(canvasBox.x + 250, canvasBox.y + 250);
+    await page.mouse.up();
+
+    // Wait for drawing to be committed
+    await page.waitForTimeout(100);
+
+    // Verify wall was added
+    const wallData = await page.evaluate(() => {
+      interface DrawingData {
+        tool?: string;
+        color?: string;
+        size?: number;
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      const drawings = store?.getState?.()?.drawings || [];
+      return drawings.find((d) => d.tool === 'wall');
+    });
+
+    expect(wallData, 'Wall drawing should exist').toBeTruthy();
+    expect(wallData?.color, 'Wall should be red').toBe('#ff0000');
+    expect(wallData?.size, 'Wall should have size 8').toBe(8);
+
+    // Reload and verify
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    const wallAfterReload = await page.evaluate(() => {
+      interface DrawingData {
+        tool?: string;
+        id?: unknown;
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      const drawings = store?.getState?.()?.drawings || [];
+      return drawings.find((d) => d.tool === 'wall');
+    });
+
+    expect(
+      wallAfterReload,
+      'Wall drawing should persist after reload'
+    ).toBeTruthy();
+    expect(
+      wallAfterReload?.id,
+      'Wall should have same ID after reload'
+    ).toBe(wallData?.id);
+  });
+
+  test('should persist eraser strokes after page reload', async ({ page }) => {
+    // Create campaign
+    await createNewCampaign(page, 'Eraser Test');
+
+    // Switch to eraser tool
+    await page.click('[data-testid="tool-eraser"]');
+
+    // Get canvas element
+    const canvas = page.locator('canvas').first();
+    const canvasBox = await canvas.boundingBox();
+
+    if (!canvasBox) {
+      throw new Error('Canvas not found');
+    }
+
+    // Draw with eraser
+    await page.mouse.move(canvasBox.x + 200, canvasBox.y + 200);
+    await page.mouse.down();
+    await page.mouse.move(canvasBox.x + 300, canvasBox.y + 300);
+    await page.mouse.up();
+
+    // Wait for drawing to be committed
+    await page.waitForTimeout(100);
+
+    // Verify eraser stroke was added
+    const eraserData = await page.evaluate(() => {
+      interface DrawingData {
+        tool?: string;
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      const drawings = store?.getState?.()?.drawings || [];
+      return drawings.find((d) => d.tool === 'eraser');
+    });
+
+    expect(eraserData, 'Eraser stroke should exist').toBeTruthy();
+    expect(eraserData.color, 'Eraser should be black').toBe('#000000');
+    expect(eraserData.size, 'Eraser should have size 20').toBe(20);
+
+    // Reload and verify
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    const eraserAfterReload = await page.evaluate(() => {
+      interface DrawingData {
+        tool?: string;
+      }
+      interface GameStoreWindow extends Window {
+        __GAME_STORE__?: {
+          getState?: () => {
+            drawings?: DrawingData[];
+          };
+        };
+      }
+      const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
+      const drawings = store?.getState?.()?.drawings || [];
+      return drawings.find((d) => d.tool === 'eraser');
+    });
+
+    expect(
+      eraserAfterReload,
+      'Eraser stroke should persist after reload'
+    ).toBeTruthy();
+  });
+});
