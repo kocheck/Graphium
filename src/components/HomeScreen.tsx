@@ -85,7 +85,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
    * Note: We can't directly load by ID since campaigns are in files,
    * so we just trigger the load dialog
    */
-  const handleLoadRecent = async (recent: RecentCampaign) => {
+  const handleLoadRecent = async (_recent: RecentCampaign) => {
     // For now, we'll just trigger the load dialog
     // In the future, we could store file handles for quick access
     await handleLoadCampaign();
