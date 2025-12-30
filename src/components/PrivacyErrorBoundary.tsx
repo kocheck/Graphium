@@ -58,6 +58,10 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { sanitizeStack, generateReportBody, SanitizedError } from '../utils/errorSanitizer';
 import { rollForMessage } from '../utils/systemMessages';
 
+// Constants for GitHub issue URL construction
+const MAX_GITHUB_URL_LENGTH = 2000;
+const MAX_ISSUE_TITLE_LENGTH = 200;
+
 /**
  * Props for PrivacyErrorBoundary
  *
@@ -202,18 +206,37 @@ ${userContext.trim()}
         : '';
       const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
-      // Construct GitHub issue URL with title truncation
+      // Construct GitHub issue URL with title truncation and URL length validation
       const rawTitle = `Bug Report: ${sanitizedError?.name || 'Error'}`;
-      const maxTitleLength = 200;
       const issueTitle =
-        rawTitle.length > maxTitleLength
-          ? `${rawTitle.slice(0, maxTitleLength - 1)}…`
+        rawTitle.length > MAX_ISSUE_TITLE_LENGTH
+          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - 1)}…`
           : rawTitle;
+      
       const params = new URLSearchParams({
         body: finalReport,
         title: issueTitle,
       });
-      const githubUrl = `https://github.com/kocheck/Hyle/issues/new?${params.toString()}`;
+      let githubUrl = `https://github.com/kocheck/Hyle/issues/new?${params.toString()}`;
+      
+      // Enforce URL length limit to prevent browser issues
+      if (githubUrl.length > MAX_GITHUB_URL_LENGTH) {
+        const baseUrl = 'https://github.com/kocheck/Hyle/issues/new';
+        const titleParam = `?title=${encodeURIComponent(issueTitle)}`;
+        const bodyPrefix = '&body=';
+        const baseWithTitle = `${baseUrl}${titleParam}`;
+        
+        const allowedBodyLength = MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
+        
+        if (allowedBodyLength > 0) {
+          const encodedBody = encodeURIComponent(finalReport);
+          const truncatedBody = encodedBody.slice(0, allowedBodyLength);
+          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedBody}`;
+        } else {
+          // In the unlikely event the base URL is already too long, drop the body entirely
+          githubUrl = baseWithTitle;
+        }
+      }
 
       // Open GitHub in browser
       const errorReporting = window.errorReporting;

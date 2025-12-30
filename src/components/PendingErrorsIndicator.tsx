@@ -7,6 +7,9 @@ import {
   StoredError,
 } from '../utils/globalErrorHandler';
 
+// Constants for GitHub issue URL construction
+const MAX_GITHUB_URL_LENGTH = 2000;
+
 interface PendingErrorsIndicatorProps {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
@@ -48,7 +51,6 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
   const handleReportError = async (error: StoredError) => {
     try {
       // GitHub issue URLs can break if they get too long, so enforce a conservative limit
-      const MAX_GITHUB_URL_LENGTH = 2000;
       const issueTitle = `Bug Report: ${error.sanitizedError.name}`;
       const issueBody = error.reportBody;
 
