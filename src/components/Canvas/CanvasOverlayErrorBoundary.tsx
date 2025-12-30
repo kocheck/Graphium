@@ -125,8 +125,16 @@ class CanvasOverlayErrorBoundary extends Component<
         context,
       };
 
-      // Keep only last 10 errors using an immutable update
-      window.__OVERLAY_ERRORS__ = [...previousErrors, nextErrorEntry].slice(-10);
+      // Keep only last 10 errors (optimize to avoid intermediate array creation)
+      if (previousErrors.length < 10) {
+        // Under capacity: use immutable spread for clarity
+        window.__OVERLAY_ERRORS__ = [...previousErrors, nextErrorEntry];
+      } else {
+        // At capacity: reuse array with shift+push (more efficient than spread+slice)
+        previousErrors.shift();
+        previousErrors.push(nextErrorEntry);
+        window.__OVERLAY_ERRORS__ = previousErrors;
+      }
 
       // Update last error pointer
       window.__LAST_OVERLAY_ERROR__ = {

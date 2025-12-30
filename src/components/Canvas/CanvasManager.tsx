@@ -236,9 +236,9 @@ const CanvasManager = ({
   const showToast = useGameStore(s => s.showToast);
 
   const isDrawing = useRef(false);
-  const currentLine = useRef<Drawing | null>(null); // Temp line points
-  const [tempLine, setTempLine] = useState<Drawing | null>(null);
-  const tempLineRef = useRef<Konva.Line | null>(null); // Direct ref to Konva Line for performance
+  const currentLine = useRef<Drawing | null>(null); // Current drawing data (source of truth)
+  const [tempLine, setTempLine] = useState<Drawing | null>(null); // React state for initial render
+  const tempLineRef = useRef<Konva.Line | null>(null); // Direct Konva ref for performance updates
   const drawingAnimationFrameRef = useRef<number | null>(null); // RAF handle for drawing
 
   // Door Tool State
@@ -1382,7 +1382,7 @@ const CanvasManager = ({
 
              addDrawing(processedLine);
              currentLine.current = null;
-             setTempLine(null);
+             setTempLine(null); // Clear visual line from canvas
          }
          return;
     }
