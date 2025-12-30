@@ -49,6 +49,11 @@ export function BackgroundCanvas({ width, height, children }: BackgroundCanvasPr
     height: dimensions.height * 2,
   };
 
+  // Guard clause: Don't render if dimensions are invalid (prevents Konva InvalidStateError)
+  if (dimensions.width === 0 || dimensions.height === 0) {
+    return null;
+  }
+
   return (
     <div
       ref={containerRef}

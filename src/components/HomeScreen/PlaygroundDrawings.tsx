@@ -67,6 +67,7 @@ export function PlaygroundDrawings() {
         pointerWidth={15}
         opacity={0.6}
         listening={false}
+        perfectDrawEnabled={false}
       />
 
       {/* Strategy line - dashed line connecting two areas */}
