@@ -3,6 +3,14 @@ import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
 import { getRecentCampaigns, addRecentCampaignWithPlatform, removeRecentCampaign, type RecentCampaign } from '../utils/recentCampaigns';
 import { rollForMessage } from '../utils/systemMessages';
+import {
+  RiDownloadCloudLine,
+  RiAddLine,
+  RiFolderOpenLine,
+  RiFileTextLine,
+  RiCloseLine,
+  RiInformationLine,
+} from '@remixicon/react';
 import { BackgroundCanvas } from './HomeScreen/BackgroundCanvas';
 import { PlaygroundToken } from './HomeScreen/PlaygroundToken';
 import { VignetteOverlay } from './HomeScreen/VignetteOverlay';
@@ -521,9 +529,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             </button>
 
             <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--app-accent-text)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-              </svg>
+              <RiDownloadCloudLine className="w-6 h-6 flex-shrink-0" style={{ color: 'var(--app-accent-text)' }} />
               <div className="flex-1" style={{ paddingRight: '1rem' }}>
                 <h3 className="font-semibold mb-1" style={{ color: 'var(--app-accent-text-contrast)' }}>
                   Download the Mac App
@@ -563,9 +569,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               aria-label="Create a new campaign and start the editor"
             >
               <div className="flex items-center gap-3 mb-2">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--app-accent-solid)' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
+                <RiAddLine className="w-8 h-8" style={{ color: 'var(--app-accent-solid)' }} />
                 <h2 className="text-2xl font-bold">New Campaign</h2>
               </div>
               <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>
@@ -585,9 +589,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               aria-label="Load an existing campaign from a .hyle file"
             >
               <div className="flex items-center gap-3 mb-2">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--app-accent-solid)' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
-                </svg>
+                <RiFolderOpenLine className="w-8 h-8" style={{ color: 'var(--app-accent-solid)' }} />
                 <h2 className="text-2xl font-bold">Load Campaign</h2>
               </div>
               <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>
@@ -603,9 +605,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             aria-label="Learn about Hyle features"
           >
             <div className="flex items-center justify-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <RiInformationLine className="w-5 h-5" />
               <span className="font-medium">✨ New to Hyle? Learn the basics</span>
             </div>
           </button>
@@ -635,9 +635,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
                     style={{ background: 'transparent', border: 'none', padding: 0 }}
                     aria-label={`Recent campaign: ${recent.name}. Click for more information about loading this campaign.`}
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--app-text-secondary)' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                    <RiFileTextLine className="w-5 h-5" style={{ color: 'var(--app-text-secondary)' }} />
                     <div className="flex-1">
                       <div className="font-medium">{recent.name}</div>
                       <div className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
@@ -660,9 +658,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
                     title="Remove from recent"
                     aria-label={`Remove ${recent.name} from recent campaigns`}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--app-text-muted)' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <RiCloseLine className="w-4 h-4" style={{ color: 'var(--app-text-muted)' }} />
                   </button>
                 </div>
               ))}
