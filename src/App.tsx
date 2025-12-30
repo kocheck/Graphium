@@ -10,6 +10,7 @@ import ConfirmDialog from './components/ConfirmDialog'
 import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog'
 import TokenInspector from './components/TokenInspector'
 import ResourceMonitor from './components/ResourceMonitor'
+import { HomeScreen } from './components/HomeScreen'
 import { useGameStore } from './store/gameStore'
 import { useWindowType } from './utils/useWindowType'
 import AutoSaveManager from './components/AutoSaveManager'
@@ -19,6 +20,7 @@ import { getStorage } from './services/storage';
 import { useIsMobile } from './hooks/useMediaQuery';
 import MobileToolbar from './components/MobileToolbar';
 import { rollForMessage } from './utils/systemMessages';
+import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -89,6 +91,10 @@ import { rollForMessage } from './utils/systemMessages';
 function App() {
   // Detect window type for UI sanitization
   const { isArchitectView, isWorldView } = useWindowType();
+
+  // View state management: HOME (splash screen) or EDITOR (main app)
+  // World View always starts in EDITOR mode (bypasses home screen)
+  const [viewState, setViewState] = useState<'HOME' | 'EDITOR'>(isWorldView ? 'EDITOR' : 'HOME');
 
   // Mobile responsiveness
   const isMobile = useIsMobile();
@@ -262,7 +268,14 @@ function App() {
             const campaignToSave = useGameStore.getState().campaign;
             const storage = getStorage();
             const result = await storage.saveCampaign(campaignToSave);
-            if (result) store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
+            if (result) {
+                // Add to recent campaigns
+                addRecentCampaignWithPlatform(
+                    campaignToSave.id,
+                    campaignToSave.name
+                );
+                store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
+            }
         } catch (e) {
             console.error(e);
             useGameStore.getState().showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
@@ -275,6 +288,11 @@ function App() {
             const campaign = await storage.loadCampaign();
             if (campaign) {
                 useGameStore.getState().loadCampaign(campaign);
+                // Add to recent campaigns
+                addRecentCampaignWithPlatform(
+                    campaign.id,
+                    campaign.name
+                );
                 useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
             }
         } catch (e) {
@@ -298,6 +316,27 @@ function App() {
     };
   }, []); // Empty dependency array as handlers use getState()
 
+  // Handler to transition from HOME to EDITOR
+  const handleStartEditor = () => {
+    setViewState('EDITOR');
+  };
+
+  // If in Architect View and on HOME screen, show the HomeScreen component
+  if (isArchitectView && viewState === 'HOME') {
+    return (
+      <>
+        {/* Global components */}
+        <ThemeManager />
+        <Toast />
+        <ConfirmDialog />
+
+        {/* Home/Splash Screen */}
+        <HomeScreen onStartEditor={handleStartEditor} />
+      </>
+    );
+  }
+
+  // Otherwise, render the full editor (both Architect and World View)
   return (
     <div className="app-root w-full h-screen flex overflow-hidden">
       {/* Global components (rendered in both Architect and World View) */}
