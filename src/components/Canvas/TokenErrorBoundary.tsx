@@ -120,42 +120,43 @@ class TokenErrorBoundary extends Component<Props, State> {
     const { tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
 
-    // Calculate next error count from current state
-    // In componentDidCatch, this.state is synchronously accessible and stable
-    const nextErrorCount = this.state.errorCount + 1;
-
-    // Capture comprehensive error context with updated error count
-    const context = captureErrorContext(error, errorInfo, {
-      componentName: 'TokenErrorBoundary',
-      props: { tokenId, tokenData },
-      state: { ...this.state, errorCount: nextErrorCount },
-    });
-
-    // Log with full context
-    logErrorWithContext(context);
-
-    // Additional token-specific logging
-    console.error('Token rendering error:', error, errorInfo);
-    console.error('Token ID:', tokenId);
-    if (tokenData) {
-      console.error('Token Data:', tokenData);
-    }
-
     // Update state using functional form to handle rapid error occurrences safely
-    this.setState((prevState) => ({
-      errorCount: nextErrorCount,
-      errorContext: isDev ? context : prevState.errorContext,
-    }));
+    // This ensures we get the latest error count even if multiple errors occur rapidly
+    this.setState((prevState) => {
+      const nextErrorCount = prevState.errorCount + 1;
 
-    // Expose to window for E2E testing
-    if (isDev || import.meta.env.MODE === 'test') {
-      window.__LAST_TOKEN_ERROR__ = {
-        tokenId,
-        error: error.message,
-        timestamp: Date.now(),
-        context,
+      // Capture comprehensive error context with updated error count
+      const context = captureErrorContext(error, errorInfo, {
+        componentName: 'TokenErrorBoundary',
+        props: { tokenId, tokenData },
+        state: { ...prevState, errorCount: nextErrorCount },
+      });
+
+      // Log with full context
+      logErrorWithContext(context);
+
+      // Additional token-specific logging
+      console.error('Token rendering error:', error, errorInfo);
+      console.error('Token ID:', tokenId);
+      if (tokenData) {
+        console.error('Token Data:', tokenData);
+      }
+
+      // Expose to window for E2E testing
+      if (isDev || import.meta.env.MODE === 'test') {
+        window.__LAST_TOKEN_ERROR__ = {
+          tokenId,
+          error: error.message,
+          timestamp: Date.now(),
+          context,
+        };
+      }
+
+      return {
+        errorCount: nextErrorCount,
+        errorContext: isDev ? context : prevState.errorContext,
       };
-    }
+    });
   }
 
   /**
@@ -176,6 +177,10 @@ class TokenErrorBoundary extends Component<Props, State> {
       const success = await exportErrorToClipboard(errorContext);
       
       // Use callback if provided, otherwise fall back to direct store access
+      // Note: Direct store access via getState() is acceptable in class components
+      // where hooks cannot be used. While this creates coupling to the game store,
+      // it provides a fallback when the parent component doesn't provide the callback.
+      // Consider making onShowToast mandatory if this coupling becomes problematic.
       const showToast = onShowToast || useGameStore.getState().showToast;
       
       if (success) {
