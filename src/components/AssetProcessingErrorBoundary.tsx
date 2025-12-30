@@ -62,6 +62,26 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     const isDev = import.meta.env.DEV;
     const isTest = import.meta.env.MODE === 'test';
 
+    // Helper to create basic error context when utilities fail to load
+    const createFallbackContext = () => ({
+      timestamp: Date.now(),
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      },
+      componentName: 'AssetProcessingErrorBoundary',
+      props: this.props as Record<string, unknown>,
+      state: this.state as Record<string, unknown>,
+      environment: {
+        isDev,
+        isTest,
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+      },
+      importFailed: true,
+    });
+
     // NOTE: We import error boundary utilities dynamically here to avoid a circular dependency.
     // The circular dependency occurs because:
     // - This component imports from '../utils/errorBoundaryUtils'
@@ -97,24 +117,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
         window.__LAST_ASSET_PROCESSING_ERROR__ = {
           error: error.message,
           timestamp: Date.now(),
-          context: {
-            timestamp: Date.now(),
-            error: {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-            },
-            componentName: 'AssetProcessingErrorBoundary',
-            props: this.props as Record<string, unknown>,
-            state: this.state as Record<string, unknown>,
-            environment: {
-              isDev,
-              isTest,
-              userAgent: navigator.userAgent,
-              url: window.location.href,
-            },
-            importFailed: true,
-          },
+          context: createFallbackContext(),
         };
       }
     });
