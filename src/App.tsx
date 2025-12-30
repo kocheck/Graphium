@@ -105,7 +105,18 @@ function App() {
   // Only used in Architect View; World View always uses 'select' with restricted interactions
   const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure'>('select');
   const [color, setColor] = useState('#df4b26');
+  const [recentColors, setRecentColors] = useState<string[]>(['#df4b26', '#3b82f6', '#22c55e']);
   const colorInputRef = useRef<HTMLInputElement>(null);
+
+  // Update recent colors when color changes
+  const handleColorChange = (newColor: string) => {
+    setColor(newColor);
+    setRecentColors(prev => {
+      // Remove duplicates and add new color at the start
+      const filtered = prev.filter(c => c.toLowerCase() !== newColor.toLowerCase());
+      return [newColor, ...filtered].slice(0, 3);
+    });
+  };
 
   // Door tool state
   const [doorOrientation, setDoorOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
@@ -546,21 +557,44 @@ function App() {
                </div>
              )}
            </div>
-           {/* Color Picker (only visible when marker tool is active) */}
-           {tool === 'marker' && (
-             <Tooltip content="Marker color (I)">
-               <label className="btn btn-tool cursor-pointer p-1 flex items-center justify-center">
-                 <input
-                   ref={colorInputRef}
-                   type="color"
-                   value={color}
-                   onChange={(e) => setColor(e.target.value)}
-                   className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
-                 />
-               </label>
-             </Tooltip>
-           )}
+           {/* Hidden color picker input (triggered by clicking main color circle) */}
+           <input
+             ref={colorInputRef}
+             type="color"
+             value={color}
+             onChange={(e) => handleColorChange(e.target.value)}
+             className="hidden"
+           />
         </div>
+        )}
+
+        {/* Floating Color Palette (appears above marker tool when active) */}
+        {isArchitectView && !isMobile && tool === 'marker' && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2">
+            {/* Current color - Large circle */}
+            <Tooltip content="Change marker color (I)">
+              <button
+                onClick={() => colorInputRef.current?.click()}
+                className="w-12 h-12 rounded-full border-2 border-white shadow-lg hover:scale-110 transition-transform cursor-pointer"
+                style={{ backgroundColor: color }}
+                aria-label="Change marker color"
+              />
+            </Tooltip>
+
+            {/* Recent colors - Smaller circles */}
+            <div className="flex gap-1.5">
+              {recentColors.map((recentColor, index) => (
+                <Tooltip key={index} content={`Use color ${recentColor}`}>
+                  <button
+                    onClick={() => handleColorChange(recentColor)}
+                    className="w-8 h-8 rounded-full border-2 border-neutral-600 shadow-md hover:scale-110 transition-transform cursor-pointer"
+                    style={{ backgroundColor: recentColor }}
+                    aria-label={`Switch to color ${recentColor}`}
+                  />
+                </Tooltip>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Resource Monitor: Performance diagnostics overlay (Architect View only) */}
