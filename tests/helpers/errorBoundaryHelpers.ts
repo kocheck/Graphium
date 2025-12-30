@@ -5,6 +5,11 @@
  * These helpers make it easy to verify error boundaries catch errors correctly,
  * log appropriate information, and maintain application stability.
  *
+ * **Note on Type Duplication:**
+ * Interface definitions like ErrorWindow are duplicated within each page.evaluate()
+ * block because the code inside evaluate() runs in the browser context and cannot
+ * import types from Node.js modules. This duplication is intentional and necessary.
+ *
  * **Usage:**
  * ```typescript
  * import { checkForTokenErrors, clearAllErrors, getErrorHistory } from '../helpers/errorBoundaryHelpers';

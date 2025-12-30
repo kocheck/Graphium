@@ -165,6 +165,8 @@ class TokenErrorBoundary extends Component<Props, State> {
 
   /**
    * Copy error to clipboard
+   * Note: Uses useGameStore.getState() which is safe in class components
+   * (getState() is not a hook, it's a Zustand store method)
    */
   handleCopyError = async () => {
     const { errorContext } = this.state;

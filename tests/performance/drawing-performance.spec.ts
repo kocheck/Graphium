@@ -6,6 +6,11 @@
  *
  * Target: < 0.1ms input processing latency (excluding rendering)
  * Target: < 16.6ms frame time (60fps)
+ *
+ * **Note on Type Duplication:**
+ * Interface definitions are duplicated within each page.evaluate() block because
+ * the code inside evaluate() runs in the browser context and cannot import types
+ * from Node.js modules. This duplication is intentional and necessary.
  */
 
 import { test, expect } from '@playwright/test';
