@@ -805,6 +805,82 @@ gap-6        (24px)   - Large gaps
 <div className="block md:hidden">  // Visible on mobile, hidden on tablet+
 ```
 
+### Icons (Remix Icon)
+
+**Always use Remix Icon components** from `@remixicon/react`:
+
+```typescript
+// ✅ Correct - Import from @remixicon/react
+import { RiAddLine, RiCloseLine, RiSearchLine } from '@remixicon/react';
+
+// Component usage
+<button>
+  <RiAddLine className="w-5 h-5" />
+  Add Item
+</button>
+```
+
+**Rules:**
+1. **Use Line style variants** (`*Line`) for consistency (e.g., `RiAddLine`, not `RiAddFill`)
+2. **Exception**: Use Fill variants (`*Fill`) only for play/pause or when fill is semantically needed
+3. **Standard sizing**: `w-4 h-4` (small), `w-5 h-5` (default), `w-6 h-6` (large), `w-8 h-8` (extra large)
+4. **Never use inline SVG** or emoji for UI icons
+5. **Color inheritance**: Icons inherit color from parent via `currentColor`
+
+**Common icon mappings:**
+```typescript
+// Navigation
+RiArrowLeftSLine, RiArrowRightSLine, RiArrowUpSLine, RiArrowDownSLine
+
+// Actions
+RiAddLine, RiCloseLine, RiDeleteBinLine, RiEditLine, RiSaveLine, RiUploadLine
+
+// UI Controls
+RiSearchLine, RiSettings4Line, RiMenuLine, RiMoreLine
+
+// Content
+RiFileTextLine, RiFolderOpenLine, RiImageLine, RiMap2Line
+
+// Status
+RiCheckLine, RiErrorWarningLine, RiLockLine, RiLockUnlockLine
+
+// Tools
+RiCursorLine, RiPencilLine, RiEraserLine, RiRulerLine
+
+// Media
+RiPlayFill, RiPauseFill (use Fill for media controls)
+
+// Other
+RiBookLine, RiDoorOpenLine, RiGlobalLine, RiPushpinLine
+```
+
+**Styling icons:**
+```typescript
+// ✅ Good - Use Tailwind classes
+<RiSearchLine className="w-5 h-5 text-neutral-400" />
+
+// ✅ Good - Inherit color from parent
+<button className="text-blue-600 hover:text-blue-500">
+  <RiAddLine className="w-5 h-5" /> {/* Inherits blue */}
+  Add
+</button>
+
+// ❌ Bad - Inline styles
+<RiSearchLine style={{ width: 20, height: 20, color: '#999' }} />
+
+// ❌ Bad - Using emoji or raw SVG
+<button>➕ Add</button>
+<button>
+  <svg>...</svg>
+</button>
+```
+
+**Finding icons:**
+- Browse icons at: https://remixicon.com/
+- Search for functionality (e.g., "search", "close", "edit")
+- Always use the Line variant unless Fill is specifically needed
+- Import only the icons you use to keep bundle size small
+
 ---
 
 ## Error Handling

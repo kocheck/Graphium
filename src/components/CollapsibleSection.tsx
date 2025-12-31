@@ -8,6 +8,7 @@
  */
 
 import React, { useState } from 'react';
+import { RiArrowRightSLine } from '@remixicon/react';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -32,15 +33,10 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         <h3 className="text-sm uppercase font-bold tracking-wider" style={{ color: 'var(--app-text-secondary)' }}>
           {title}
         </h3>
-        <svg
+        <RiArrowRightSLine
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
           style={{ color: 'var(--app-text-secondary)' }}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        />
       </button>
 
       {isOpen && (

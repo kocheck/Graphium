@@ -129,6 +129,26 @@ export default Component;
 
 **No inline styles** - use Tailwind classes only.
 
+### Icons (Remix Icon)
+
+**Always use Remix Icon components** from `@remixicon/react`:
+
+```typescript
+// ✅ Correct
+import { RiAddLine, RiCloseLine, RiSearchLine } from '@remixicon/react';
+<button><RiAddLine className="w-5 h-5" /> Add</button>
+
+// ❌ Wrong - Don't use emoji or inline SVG
+<button>➕ Add</button>
+<button><svg>...</svg> Add</button>
+```
+
+**Rules:**
+- Use Line style variants (`*Line`) for consistency
+- Standard sizes: `w-4 h-4` (small), `w-5 h-5` (default), `w-6 h-6` (large)
+- Icons inherit color via `currentColor`
+- See CONVENTIONS.md for full icon list and mappings
+
 ### Import Organization
 
 ```typescript
@@ -192,28 +212,30 @@ npm run build
 
 ## Anti-Patterns (DON'T DO THIS)
 
-❌ Mutate Zustand state directly (`state.tokens.push(...)`)  
-❌ Send state from World View → Architect (one-way only)  
-❌ Use `file://` URLs in renderer (use `media://` protocol)  
-❌ Store sensitive data in error reports (always sanitize)  
-❌ Skip PII sanitization for user-facing errors  
-❌ Block main process with sync file operations (use async)  
-❌ Create overlapping error boundaries  
-❌ Use `any` without explicit TODO/justification  
+❌ Mutate Zustand state directly (`state.tokens.push(...)`)
+❌ Send state from World View → Architect (one-way only)
+❌ Use `file://` URLs in renderer (use `media://` protocol)
+❌ Store sensitive data in error reports (always sanitize)
+❌ Skip PII sanitization for user-facing errors
+❌ Block main process with sync file operations (use async)
+❌ Create overlapping error boundaries
+❌ Use `any` without explicit TODO/justification
 ❌ Add inline styles (use Tailwind only)
+❌ Use emoji or inline SVG for UI icons (use Remix Icon components)
 
 ## Best Practices (DO THIS)
 
-✅ Use Zustand actions for all state updates  
-✅ Keep World View as read-only consumer  
-✅ Convert `file://` → `media://` for renderer security  
-✅ Sanitize all errors before showing to user  
-✅ Use async/await for all file I/O  
-✅ Keep IPC handlers lightweight  
-✅ Batch state updates when possible  
-✅ Provide clear, actionable toast messages  
-✅ Add JSDoc for exported functions  
+✅ Use Zustand actions for all state updates
+✅ Keep World View as read-only consumer
+✅ Convert `file://` → `media://` for renderer security
+✅ Sanitize all errors before showing to user
+✅ Use async/await for all file I/O
+✅ Keep IPC handlers lightweight
+✅ Batch state updates when possible
+✅ Provide clear, actionable toast messages
+✅ Add JSDoc for exported functions
 ✅ Use explicit return types for exported functions
+✅ Use Remix Icon components (`@remixicon/react`) for all UI icons
 
 ## Common Tasks
 

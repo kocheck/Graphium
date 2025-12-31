@@ -62,6 +62,15 @@ import Tooltip from './Tooltip';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { rollForMessage } from '../utils/systemMessages';
 import { useCommandPalette } from '../hooks/useCommandPalette';
+import {
+  RiArrowLeftSLine,
+  RiPushpinLine,
+  RiMap2Line,
+  RiSettings4Line,
+  RiAddLine,
+  RiSearchLine,
+  RiBookLine,
+} from '@remixicon/react';
 
 /**
  * Sidebar component provides map upload, grid settings, and token library
@@ -214,9 +223,7 @@ const Sidebar = () => {
                                 className="p-2 hover:bg-[var(--app-bg-subtle)] rounded transition"
                                 aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                             >
-                                <svg className={`w-4 h-4 transition-transform ${isSidebarCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                                </svg>
+                                <RiArrowLeftSLine className={`w-4 h-4 transition-transform ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
                             </button>
                         </Tooltip>
                     )}
@@ -247,9 +254,11 @@ const Sidebar = () => {
                                             aria-current={isActive ? 'page' : undefined}
                                             className="flex-1 min-w-0 flex items-center gap-2 text-left hover:opacity-80 transition"
                                         >
-                                            <span className="text-lg leading-none">
-                                                {isActive ? '📍' : '🗺️'}
-                                            </span>
+                                            {isActive ? (
+                                                <RiPushpinLine className="w-5 h-5" />
+                                            ) : (
+                                                <RiMap2Line className="w-5 h-5" />
+                                            )}
                                             <span
                                                 className={`text-sm font-medium truncate ${isActive ? 'text-[var(--app-accent-text)]' : ''}`}
                                                 title={map.name}
@@ -269,7 +278,7 @@ const Sidebar = () => {
                                                 className="p-1 opacity-0 group-hover:opacity-100 hover:text-[var(--app-accent-text)] transition-opacity"
                                                 aria-label={`Edit ${map.name}`}
                                             >
-                                                ⚙️
+                                                <RiSettings4Line className="w-4 h-4" />
                                             </button>
                                         </Tooltip>
                                     </li>
@@ -285,7 +294,7 @@ const Sidebar = () => {
                             }}
                             className="btn btn-secondary w-full py-2 text-sm flex items-center justify-center gap-2 border-dashed border-2"
                         >
-                            <span>➕</span> New Map
+                            <RiAddLine className="w-5 h-5" /> New Map
                         </button>
                     </CollapsibleSection>
 
@@ -303,7 +312,7 @@ const Sidebar = () => {
                                     onClick={() => setPaletteOpen(true)}
                                     className="btn btn-secondary flex-1 py-2 text-sm flex items-center justify-center gap-2"
                                 >
-                                    🔍 Place
+                                    <RiSearchLine className="w-5 h-5" /> Place
                                 </button>
                             </Tooltip>
 
@@ -319,7 +328,7 @@ const Sidebar = () => {
                                     onClick={() => tokenInputRef.current?.click()}
                                     className="btn btn-secondary flex-1 py-2 text-sm flex items-center justify-center gap-2"
                                 >
-                                    ➕ Add
+                                    <RiAddLine className="w-5 h-5" /> Add
                                 </button>
                             </Tooltip>
 
@@ -329,7 +338,7 @@ const Sidebar = () => {
                                     className="btn btn-ghost px-3 py-2"
                                     aria-label="Manage library"
                                 >
-                                    📚
+                                    <RiBookLine className="w-5 h-5" />
                                 </button>
                             </Tooltip>
                         </div>

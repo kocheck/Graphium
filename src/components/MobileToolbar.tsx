@@ -26,6 +26,18 @@
  */
 
 import { useState, useRef } from 'react';
+import {
+  RiPlayFill,
+  RiPauseFill,
+  RiDoorOpenLine,
+  RiBuildingLine,
+  RiGlobalLine,
+  RiCursorLine,
+  RiPencilLine,
+  RiEraserLine,
+  RiLayoutMasonryLine,
+  RiMoreLine,
+} from '@remixicon/react';
 import { useGameStore } from '../store/gameStore';
 
 interface MobileToolbarProps {
@@ -107,13 +119,11 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
                 borderBottomColor: 'var(--app-border-subtle)',
               }}
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                {isGamePaused ? (
-                  <path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5z" />
-                ) : (
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                )}
-              </svg>
+              {isGamePaused ? (
+                <RiPlayFill className="w-5 h-5" />
+              ) : (
+                <RiPauseFill className="w-5 h-5" />
+              )}
               <span className="font-semibold">
                 {isGamePaused ? 'PAUSED - Click to Resume' : 'PLAYING - Click to Pause'}
               </span>
@@ -134,7 +144,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
                 borderBottomColor: 'var(--app-border-subtle)',
               }}
             >
-              <span className="text-xl">🚪</span>
+              <RiDoorOpenLine className="w-6 h-6" />
               <div className="flex-1">
                 <span>Place Door</span>
                 {tool === 'door' && (
@@ -199,7 +209,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
                 borderBottomColor: 'var(--app-border-subtle)',
               }}
             >
-              <span className="text-xl">🏰</span>
+              <RiBuildingLine className="w-6 h-6" />
               <span>Generate Random Dungeon</span>
             </button>
 
@@ -211,7 +221,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
                 color: 'var(--app-text-primary)',
               }}
             >
-              <span className="text-xl">🌍</span>
+              <RiGlobalLine className="w-6 h-6" />
               <span>Open World View (Player Display)</span>
             </button>
           </div>
@@ -238,9 +248,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
             backgroundColor: tool === 'select' ? 'var(--app-accent-bg)' : 'transparent',
           }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-          </svg>
+          <RiCursorLine className="w-6 h-6" />
           <span className="text-xs mt-1">Select</span>
         </button>
 
@@ -253,9 +261,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
             backgroundColor: tool === 'marker' ? 'var(--app-accent-bg)' : 'transparent',
           }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-          </svg>
+          <RiPencilLine className="w-6 h-6" />
           <span className="text-xs mt-1">Marker</span>
         </button>
 
@@ -268,9 +274,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
             backgroundColor: tool === 'eraser' ? 'var(--app-accent-bg)' : 'transparent',
           }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+          <RiEraserLine className="w-6 h-6" />
           <span className="text-xs mt-1">Eraser</span>
         </button>
 
@@ -283,9 +287,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
             backgroundColor: tool === 'wall' ? 'var(--app-accent-bg)' : 'transparent',
           }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v14a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" />
-          </svg>
+          <RiLayoutMasonryLine className="w-6 h-6" />
           <span className="text-xs mt-1">Wall</span>
         </button>
 
@@ -298,9 +300,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
             backgroundColor: showMoreMenu ? 'var(--app-accent-bg)' : 'transparent',
           }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-          </svg>
+          <RiMoreLine className="w-6 h-6" />
           <span className="text-xs mt-1">More</span>
         </button>
       </div>

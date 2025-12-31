@@ -31,8 +31,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useGameStore } from '../../store/gameStore';
+import { RiCloseLine } from '@remixicon/react';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import { useGameStore } from '../../store/gameStore';
 
 /**
  * Props for TokenMetadataEditor component
@@ -153,9 +154,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
               className="p-2 hover:bg-neutral-700 rounded text-white"
               aria-label="Close"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <RiCloseLine className="w-6 h-6" />
             </button>
           </div>
         </div>

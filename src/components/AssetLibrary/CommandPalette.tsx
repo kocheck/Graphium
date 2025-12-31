@@ -32,6 +32,7 @@ import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 import TokenMetadataEditor from './TokenMetadataEditor';
 import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
 import { createCommandRegistry, searchCommands, type Command } from '../../utils/commandRegistry';
+import { RiEditLine, RiArrowRightSLine } from '@remixicon/react';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -349,16 +350,12 @@ const CommandPalette = ({
                         className="p-2 hover:bg-neutral-600 rounded text-neutral-400 hover:text-white transition-colors"
                         aria-label={`Edit ${asset.name}`}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                        <RiEditLine className="w-5 h-5" />
                       </button>
 
                       {/* Select indicator */}
                       <div className="text-neutral-600">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                        <RiArrowRightSLine className="w-5 h-5" />
                       </div>
                     </div>
                   </div>
