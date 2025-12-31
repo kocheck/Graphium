@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { LogoLockup } from './LogoLockup';
+import { LogoIcon } from './LogoIcon';
 
 export type AboutModalTab = 'about' | 'tutorial' | 'shortcuts';
 
@@ -162,7 +162,7 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
             ×
           </button>
           <div className="flex items-center gap-4">
-             <LogoLockup width={150} />
+             <LogoIcon size={80} />
           </div>
 
           {/* Navigation Tabs */}

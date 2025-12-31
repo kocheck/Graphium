@@ -601,10 +601,15 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         {/* Branding */}
         <div className="text-center mb-16">
           <div className="flex flex-col items-center">
-            <LogoLockup width={400} className="mb-6 drop-shadow-xl" />
+            <LogoLockup
+              width={400}
+              className="mb-6"
+              style={{
+                filter: 'drop-shadow(0 0 30px var(--app-bg-base)) drop-shadow(0 0 30px var(--app-bg-base))'
+              }}
+            />
             <p className="text-xl font-medium" style={{
               color: 'var(--app-text-primary)', // HIGHER contrast (was secondary)
-              textShadow: '0 2px 4px rgba(0,0,0,0.5)', // improve legibility against map
             }}>
               Virtual Tabletop for {subtitle}
             </p>

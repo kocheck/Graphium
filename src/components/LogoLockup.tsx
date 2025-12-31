@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import logoDarkUrl from '../assets/branding/logo-dark.svg';
-import logoLightUrl from '../assets/branding/logo-light.svg';
+import logoDarkUrl from '../assets/branding/logo-dark.png';
+import logoLightUrl from '../assets/branding/logo-light.png';
 
 interface LogoLockupProps {
   /**
@@ -9,6 +9,7 @@ interface LogoLockupProps {
   theme?: 'light' | 'dark';
   className?: string;
   width?: number | string;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -17,7 +18,7 @@ interface LogoLockupProps {
  * Automatically switches between light and dark versions based on
  * the current application theme or provided prop.
  */
-export function LogoLockup({ theme, className = '', width = 'auto' }: LogoLockupProps) {
+export function LogoLockup({ theme, className = '', width = 'auto', style = {} }: LogoLockupProps) {
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(theme || 'light');
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export function LogoLockup({ theme, className = '', width = 'auto' }: LogoLockup
         width,
         height: 'auto',
         display: 'block',
+        ...style,
       }}
     />
   );

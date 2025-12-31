@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import iconUrl from '../assets/branding/icon.svg';
+import iconUrl from '../assets/branding/icon.png';
 
 interface LogoIconProps {
   size?: number;
