@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useGameStore, GridType } from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
 import { isEqual, detectChanges, SyncAction } from '../utils/syncUtils';
 
 // Basic throttle implementation to limit IPC frequency
@@ -194,7 +194,7 @@ const SyncManager = () => {
             break;
 
           case 'GRID_UPDATE':
-            useGameStore.setState(action.payload);
+            useGameStore.setState(action.payload as any);
             break;
 
           case 'MEASUREMENT_UPDATE':
@@ -235,9 +235,9 @@ const SyncManager = () => {
           const prevTokenMap = new Map(prevState.tokens.map((t: any) => [t.id, t]));
 
           currentState.tokens.forEach((token: any) => {
-              const prev = prevTokenMap.get(token.id);
+              const prev: any = prevTokenMap.get(token.id);
               if (prev) {
-                  const changes: any = {};
+                  const changes: Record<string, any> = {};
                   if (!isEqual(token.x, prev.x)) changes.x = token.x;
                   if (!isEqual(token.y, prev.y)) changes.y = token.y;
                   if (Object.keys(changes).length > 0) {
@@ -284,7 +284,7 @@ const SyncManager = () => {
       // ARCHITECT VIEW (PRODUCER)
       // ============================================================
 
-      const handleInitialStateRequest = (event: any) => {
+      const handleInitialStateRequest = (_event: any) => {
           const state = useGameStore.getState();
           const initialAction: SyncAction = {
               type: 'FULL_SYNC',
