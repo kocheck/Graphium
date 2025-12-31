@@ -1,5 +1,5 @@
 /**
- * Electron main process for Hyle
+ * Electron main process for Graphium
  *
  * This is the main process entry point for the Electron application. It handles:
  * - Window creation (Architect View and World View)
@@ -634,7 +634,7 @@ app.whenReady().then(() => {
    *   arrayBuffer,
    *   'goblin.webp'
    * );
-   * // Returns: "file:///Users/.../Hyle/temp_assets/1234567890-goblin.webp"
+   * // Returns: "file:///Users/.../Graphium/temp_assets/1234567890-goblin.webp"
    */
   ipcMain.handle(
     'SAVE_ASSET_TEMP',
@@ -815,7 +815,7 @@ app.whenReady().then(() => {
    */
   ipcMain.handle('LOAD_CAMPAIGN', async () => {
     const { filePaths } = await dialog.showOpenDialog({
-      filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }],
+      filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }],
     });
     if (filePaths.length === 0) return null;
 
@@ -837,7 +837,7 @@ app.whenReady().then(() => {
     const manifestStr = await zip
       .file('manifest.json')
       ?.async('string');
-    if (!manifestStr) throw new Error('Invalid Hyle file');
+    if (!manifestStr) throw new Error('Invalid Graphium file');
 
     type TokenWithSrc = {
       src: string;
