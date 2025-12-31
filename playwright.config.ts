@@ -69,10 +69,15 @@ export default defineConfig({
       use: {
         // Launch actual Electron executable
         // Note: Requires Electron build to exist (npm run build)
-        // @ts-ignore - _electron is a valid Playwright context
+        // @ts-expect-error - _electron is a valid Playwright context
         _electron: {
           executablePath: require('electron'),
-          args: ['./dist-electron/main.js'], // Entry point after build
+          args: [
+            './dist-electron/main.js', // Entry point after build
+            // Disable sandbox in CI to avoid SUID sandbox errors
+            // SECURITY NOTE: Only disabled in CI environment, not in local development
+            ...(process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
+          ],
         },
 
         // Disable web-specific features
