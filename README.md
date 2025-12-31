@@ -50,6 +50,19 @@ Most VTTs feel floaty and temporary. Graphium is built with **funicular friction
 
 ---
 
+## 🎞️ Artifacts in Motion
+
+*Observe the tool in action.*
+
+<div align="center">
+  <img src="https://via.placeholder.com/800x450?text=GIF:+Fog+of+War+Raycasting" alt="Fog of War Demo" width="48%">
+  <img src="https://via.placeholder.com/800x450?text=GIF:+Architect+vs+World+View" alt="Dual Window Demo" width="48%">
+</div>
+
+*(Placeholder: Real captures of the fog raycasting and window projection being forged.)*
+
+---
+
 ## 🚀 Quick Start Ritual
 
 **TL;DR**: A local-first, dual-window VTT. Launch it, drag a map, and start carving walls.
@@ -89,6 +102,18 @@ Graphium gives you a dedicated "Architect's View" full of arcane instruments, wh
 - **Dual-Window Architecture**: One brain, two faces. You control the chaos; they witness the glory.
 - **Fog of War**: A hardware-accelerated raycasting engine that creates true mystery.
 - **Asset Conjuration**: Drag and drop images directly onto the canvas. We optimize them automatically.
+
+---
+
+## ⚒️ The Smithy (Composition)
+
+Only the finest materials were used to forge Graphium.
+
+- **[Electron](https://www.electronjs.org/)**: The crucible that holds the application.
+- **[React](https://react.dev/)**: The logic that binds the interface.
+- **[Konva](https://konvajs.org/)**: The renderer for our high-performance 2D canvas.
+- **[Zustand](https://github.com/pmndrs/zustand)**: The enlightened state management.
+- **[Vite](https://vitejs.dev/)**: The lightning-fast bellows that fuel development.
 
 ---
 
