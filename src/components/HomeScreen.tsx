@@ -176,7 +176,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
    */
   const handleLoadRecent = async (_recent: RecentCampaign) => {
     showToast(
-      'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .hyle file.',
+      'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .graphium file.',
       'info'
     );
   };
@@ -692,14 +692,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
                 borderStyle: 'solid',
                 borderColor: 'var(--border-color)',
               }}
-              aria-label="Load an existing campaign from a .hyle file"
+              aria-label="Load an existing campaign from a .graphium file"
             >
               <div className="flex items-center gap-3 mb-2">
                 <RiFolderOpenLine className="w-6 h-6" style={{ color: 'var(--app-accent-solid)' }} />
                 <h2 className="text-xl font-bold">Load Campaign</h2>
               </div>
               <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>
-                Continue an existing campaign from a file
+                Continue an existing campaign from a .graphium file
               </p>
             </button>
           </div>

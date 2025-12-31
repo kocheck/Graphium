@@ -321,7 +321,7 @@ function onMainProcessError(_event: unknown, errorData: MainProcessError): void 
 
   // Notify any listeners about the new error
   window.dispatchEvent(
-    new CustomEvent('hyle-error', { detail: storedError })
+    new CustomEvent('graphium-error', { detail: storedError })
   );
 }
 

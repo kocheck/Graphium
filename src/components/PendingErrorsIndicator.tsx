@@ -73,7 +73,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
       const encodedTitle = encodeURIComponent(issueTitle);
       const encodedBody = encodeURIComponent(issueBody);
 
-      const baseUrl = `https://github.com/kocheck/Hyle/issues/new`;
+      const baseUrl = `https://github.com/kocheck/Graphium/issues/new`;
       const baseWithTitle = `${baseUrl}?title=${encodedTitle}`;
       const bodyPrefix = '&body=';
 
@@ -195,6 +195,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                 setSelectedError(null);
               }}
               className="text-neutral-400 hover:text-neutral-200"
+              aria-label="Close"
             >
               <RiCloseLine className="w-5 h-5" />
             </button>

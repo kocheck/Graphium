@@ -60,7 +60,7 @@ export function LogoLockup({ theme, className = '', width = 'auto', style = {} }
     <img
       src={src}
       className={className}
-      alt="Hyle"
+      alt="Graphium"
       style={{
         width,
         height: 'auto',

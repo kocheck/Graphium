@@ -199,7 +199,7 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
                   🎲 World Given Form
                 </h3>
                  <p style={{ color: 'var(--app-text-secondary)', marginBottom: '0.75rem' }}>
-                  Greetings, Master of Dungeons! <strong>Hyle</strong> (from ancient Greek <em>ὕλη</em>: "matter") is your arcane battlemat—a
+                  Greetings, Master of Dungeons! <strong>Graphium</strong> (Latin: <em>graphium</em>, "a writing stylus") is your arcane battlemat—a
                   local-first virtual tabletop designed to replace your physical grid with digital sorcery.
                 </p>
                 <p style={{ color: 'var(--app-text-secondary)' }}>

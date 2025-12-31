@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import PendingErrorsIndicator from './PendingErrorsIndicator'
 import { mockErrorReporting } from '../test/setup'
 import * as globalErrorHandler from '../utils/globalErrorHandler'
+import type { StoredError } from '../utils/globalErrorHandler'
 
 // Mock the globalErrorHandler module
 vi.mock('../utils/globalErrorHandler', () => ({
@@ -13,13 +14,13 @@ vi.mock('../utils/globalErrorHandler', () => ({
 }))
 
 describe('PendingErrorsIndicator', () => {
-  const mockStoredError = {
+  const mockStoredError: StoredError = {
     id: 'err_123',
     timestamp: '2025-01-01T12:00:00.000Z',
     lastOccurrence: '2025-01-01T12:00:00.000Z',
     occurrences: 1,
     reported: false,
-    source: 'component',
+    source: 'react',
     sanitizedError: {
       name: 'TestError',
       message: 'Test error message',
@@ -139,13 +140,8 @@ describe('PendingErrorsIndicator', () => {
       })
 
       // Close
-      const closeButtons = screen.getAllByRole('button')
-      const closeButton = closeButtons.find(btn =>
-        btn.querySelector('svg')?.querySelector('path')?.getAttribute('d')?.includes('M6 18L18 6M6 6l12 12')
-      )
-      if (closeButton) {
-        fireEvent.click(closeButton)
-      }
+      const closeButton = screen.getByRole('button', { name: /close/i })
+      fireEvent.click(closeButton)
 
       await waitFor(() => {
         expect(screen.queryByText('Stored Errors')).not.toBeInTheDocument()
@@ -225,7 +221,7 @@ describe('PendingErrorsIndicator', () => {
     })
 
     it('should show source and occurrence information in detail view', async () => {
-      const errorWithMultipleOccurrences = { ...mockStoredError, occurrences: 3, source: 'window' }
+      const errorWithMultipleOccurrences = { ...mockStoredError, occurrences: 3, source: 'global' as const }
       vi.mocked(globalErrorHandler.getStoredErrors).mockReturnValue([errorWithMultipleOccurrences])
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
@@ -242,7 +238,7 @@ describe('PendingErrorsIndicator', () => {
       fireEvent.click(errorItem)
 
       await waitFor(() => {
-        expect(screen.getByText(/Source: window/i)).toBeInTheDocument()
+        expect(screen.getByText(/Source: global/i)).toBeInTheDocument()
         expect(screen.getByText(/Occurred 3 times/i)).toBeInTheDocument()
       })
     })
@@ -582,7 +578,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(2)
 
       // Dispatch event
-      window.dispatchEvent(new Event('hyle-error'))
+      window.dispatchEvent(new Event('graphium-error'))
 
       // Should update to show 2 errors
       await waitFor(() => {

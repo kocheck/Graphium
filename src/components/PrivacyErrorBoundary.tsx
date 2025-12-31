@@ -41,7 +41,7 @@
  *
  * @example
  * // Wrap entire app
- * <PrivacyErrorBoundary supportEmail="support@hyle.app">
+ * <PrivacyErrorBoundary supportEmail="support@graphium.app">
  *   <App />
  * </PrivacyErrorBoundary>
  *
