@@ -62,7 +62,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         }),
     }),
     {
-      name: 'hyle-preferences',
+      name: 'graphium-preferences',
     }
   )
 );

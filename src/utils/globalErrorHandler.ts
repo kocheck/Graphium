@@ -33,7 +33,7 @@
  *
  * **Privacy guarantee:**
  * All errors sanitized before storage (PII removed).
- * Stored in localStorage (`hyle_pending_errors`).
+ * Stored in localStorage (`graphium_pending_errors`).
  * User must explicitly consent to send reports.
  *
  * See docs/ERROR_BOUNDARIES.md for complete architecture.
@@ -60,15 +60,15 @@
  *   const handleError = (e: CustomEvent) => {
  *     setErrorCount(prev => prev + 1);
  *   };
- *   window.addEventListener('hyle-error', handleError);
- *   return () => window.removeEventListener('hyle-error', handleError);
+ *   window.addEventListener('graphium-error', handleError);
+ *   return () => window.removeEventListener('graphium-error', handleError);
  * }, []);
  */
 
 import { sanitizeStack, generateReportBody, SanitizedError } from './errorSanitizer';
 
 /** localStorage key for persisting errors */
-const ERROR_STORAGE_KEY = 'hyle_pending_errors';
+const ERROR_STORAGE_KEY = 'graphium_pending_errors';
 
 /** Maximum errors to keep in localStorage (FIFO when exceeded) */
 const MAX_STORED_ERRORS = 10;
@@ -171,7 +171,7 @@ export function storeError(error: StoredError): void {
     localStorage.setItem(ERROR_STORAGE_KEY, JSON.stringify(trimmedErrors));
 
     // Dispatch event to notify listeners
-    window.dispatchEvent(new CustomEvent('hyle-error', { detail: error }));
+    window.dispatchEvent(new CustomEvent('graphium-error', { detail: error }));
   } catch (err) {
     console.warn('Failed to store error:', err);
   }
@@ -321,7 +321,7 @@ function onMainProcessError(_event: unknown, errorData: MainProcessError): void 
 
   // Notify any listeners about the new error
   window.dispatchEvent(
-    new CustomEvent('hyle-error', { detail: storedError })
+    new CustomEvent('graphium-error', { detail: storedError })
   );
 }
 

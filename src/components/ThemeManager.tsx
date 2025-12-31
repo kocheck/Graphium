@@ -102,7 +102,7 @@ export function ThemeManager() {
           let themeChannel: BroadcastChannel | null = null
 
           if (typeof BroadcastChannel !== 'undefined') {
-            themeChannel = new BroadcastChannel('hyle-theme-sync')
+            themeChannel = new BroadcastChannel('graphium-theme-sync')
             const handleCrossTabThemeChange = (event: MessageEvent) => {
               if (event.data?.type === 'THEME_CHANGED') {
                 const newMode = event.data.mode as 'light' | 'dark' | 'system'

@@ -1,7 +1,9 @@
 {
-  "name": "hyle",
+  "name": "graphium",
+  "productName": "Graphium",
+  "description": "The digital stylus for world builders. Inscribe the world on an infinite canvas.",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

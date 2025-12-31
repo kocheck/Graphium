@@ -12,7 +12,7 @@ const DB_VERSION = 1;
 /**
  * Database name
  */
-const DB_NAME = 'hyle-storage';
+const DB_NAME = 'graphium-storage';
 
 /**
  * Storage service for Web (browser) environment
@@ -35,12 +35,12 @@ const DB_NAME = 'hyle-storage';
  *
  * @example
  * const storage = new WebStorageService();
- * await storage.saveCampaign(campaign); // Downloads .hyle file
+ * await storage.saveCampaign(campaign); // Downloads .graphium file
  */
 export class WebStorageService implements IStorageService {
   private db: IDBPDatabase | null = null;
   private dbPromise: Promise<IDBPDatabase>;
-  
+
   // Track Object URLs for cleanup (prevents memory leaks)
   private tempAssetURLs: Set<string> = new Set();
   private libraryURLs: Map<string, { fullSize: string; thumbnail: string }> = new Map(); // assetId → URLs
@@ -111,7 +111,7 @@ export class WebStorageService implements IStorageService {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${campaign.name.replace(/[^a-z0-9]/gi, '_')}.hyle`;
+      a.download = `${campaign.name.replace(/[^a-z0-9]/gi, '_')}.graphium`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -149,7 +149,7 @@ export class WebStorageService implements IStorageService {
       // Create file input
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = '.hyle';
+      input.accept = '.graphium';
 
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
@@ -166,7 +166,7 @@ export class WebStorageService implements IStorageService {
           const manifestStr = await zip.file('manifest.json')?.async('string');
 
           if (!manifestStr) {
-            throw new Error('Invalid .hyle file: missing manifest.json');
+            throw new Error('Invalid .graphium file: missing manifest.json');
           }
 
           const campaign: Campaign = JSON.parse(manifestStr);
@@ -194,7 +194,7 @@ export class WebStorageService implements IStorageService {
       // OPFS requires more complex setup and isn't critical for MVP
       const blob = new Blob([buffer], { type: 'image/webp' });
       const url = URL.createObjectURL(blob);
-      
+
       // Track URL for cleanup when saved to campaign or discarded
       this.tempAssetURLs.add(url);
 
@@ -205,7 +205,7 @@ export class WebStorageService implements IStorageService {
       throw new Error(`Failed to save temp asset: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-  
+
   /**
    * Clean up temp asset URLs (should be called when assets are saved to campaign or discarded)
    */
@@ -286,7 +286,7 @@ export class WebStorageService implements IStorageService {
           URL.revokeObjectURL(oldURLs.fullSize);
           URL.revokeObjectURL(oldURLs.thumbnail);
         }
-        
+
         // Also revoke any blob URLs that exist on the item itself (from previous sessions)
         // Only revoke if they're blob URLs (start with 'blob:')
         if (item.src && item.src.startsWith('blob:')) {
@@ -388,7 +388,7 @@ export class WebStorageService implements IStorageService {
 
   async getThemeMode(): Promise<ThemeMode> {
     try {
-      const mode = localStorage.getItem('hyle-theme');
+      const mode = localStorage.getItem('graphium-theme');
       return (mode as ThemeMode) || 'system';
     } catch (error) {
       console.error('[WebStorageService] Get theme mode failed:', error);
@@ -398,13 +398,13 @@ export class WebStorageService implements IStorageService {
 
   async setThemeMode(mode: ThemeMode): Promise<void> {
     try {
-      localStorage.setItem('hyle-theme', mode);
+      localStorage.setItem('graphium-theme', mode);
       console.log(`[WebStorageService] Set theme mode: ${mode}`);
-      
+
       // Broadcast theme change to other tabs (if supported)
       if (typeof BroadcastChannel !== 'undefined') {
         try {
-          const themeChannel = new BroadcastChannel('hyle-theme-sync');
+          const themeChannel = new BroadcastChannel('graphium-theme-sync');
           themeChannel.postMessage({ type: 'THEME_CHANGED', mode });
           themeChannel.close();
         } catch (broadcastError) {

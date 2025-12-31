@@ -73,11 +73,11 @@ const SyncManager = () => {
 
     if (!isWorldView) {
       // @ts-ignore
-      window.hyleSync = sendSyncActionDirectly;
+      window.graphiumSync = sendSyncActionDirectly;
     }
 
     if (isWeb && typeof BroadcastChannel !== 'undefined') {
-      channel = new BroadcastChannel('hyle-sync');
+      channel = new BroadcastChannel('graphium-sync');
     }
 
     if (isWorldView) {
@@ -369,7 +369,7 @@ const SyncManager = () => {
             ipcRenderer.removeAllListeners('SYNC_FROM_WORLD_VIEW');
         }
         // @ts-ignore
-        delete window.hyleSync;
+        delete window.graphiumSync;
       };
     }
   }, []);

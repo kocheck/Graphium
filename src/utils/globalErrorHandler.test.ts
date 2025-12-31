@@ -38,7 +38,7 @@ describe('globalErrorHandler', () => {
         occurrences: 1,
         lastOccurrence: '2024-01-01T00:00:00.000Z',
       }
-      localStorage.setItem('hyle_pending_errors', JSON.stringify([mockError]))
+      localStorage.setItem('graphium_pending_errors', JSON.stringify([mockError]))
 
       const errors = getStoredErrors()
       expect(errors).toHaveLength(1)
@@ -46,7 +46,7 @@ describe('globalErrorHandler', () => {
     })
 
     it('should handle corrupted localStorage gracefully', () => {
-      localStorage.setItem('hyle_pending_errors', 'invalid json')
+      localStorage.setItem('graphium_pending_errors', 'invalid json')
       const errors = getStoredErrors()
       expect(errors).toEqual([])
     })

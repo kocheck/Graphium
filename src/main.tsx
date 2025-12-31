@@ -45,7 +45,7 @@ async function initApp() {
               Failed to Initialize Storage
             </h1>
             <p style="font-size: 1rem; margin-bottom: 2rem; color: #a3a3a3; line-height: 1.5;">
-              Hyle couldn't initialize its storage system. This may be due to:
+              Graphium couldn't initialize its storage system. This may be due to:
             </p>
             <ul style="text-align: left; margin-bottom: 2rem; color: #a3a3a3; line-height: 1.8;">
               <li>Insufficient browser permissions (IndexedDB blocked)</li>
@@ -70,7 +70,7 @@ async function initApp() {
               Retry
             </button>
             <button
-              onclick="localStorage.clear(); indexedDB.deleteDatabase('hyle-db'); window.location.reload()"
+              onclick="localStorage.clear(); indexedDB.deleteDatabase('graphium-storage'); window.location.reload()"
               style="
                 background-color: transparent;
                 color: #a3a3a3;

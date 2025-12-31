@@ -254,7 +254,7 @@ export function sanitizeStack(error: Error, username: string): SanitizedError {
  * // Generate report for GitHub issue
  * const sanitized = sanitizeStack(error, username);
  * const reportBody = generateReportBody(sanitized);
- * const githubUrl = `https://github.com/kocheck/Hyle/issues/new?body=${encodeURIComponent(reportBody)}`;
+ * const githubUrl = `https://github.com/kocheck/Graphium/issues/new?body=${encodeURIComponent(reportBody)}`;
  * window.open(githubUrl);
  *
  * @example

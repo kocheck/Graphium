@@ -63,8 +63,8 @@ describe('HomeScreen', () => {
     it('should render home screen with branding', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      expect(screen.getByText('Hyle')).toBeInTheDocument();
-      expect(screen.getByText('Virtual Tabletop for Dungeon Masters')).toBeInTheDocument();
+      expect(screen.getByAltText('Graphium')).toBeInTheDocument();
+      expect(screen.getByText(/Virtual Tabletop for/)).toBeInTheDocument();
     });
 
     it('should render primary action buttons', () => {
@@ -73,7 +73,7 @@ describe('HomeScreen', () => {
       expect(screen.getByText('New Campaign')).toBeInTheDocument();
       expect(screen.getByText('Load Campaign')).toBeInTheDocument();
       expect(screen.getByText('Start a fresh adventure with a blank canvas')).toBeInTheDocument();
-      expect(screen.getByText('Continue an existing campaign from a file')).toBeInTheDocument();
+      expect(screen.getByText('Continue an existing campaign from a .graphium file')).toBeInTheDocument();
     });
 
     it('should display version number from __APP_VERSION__', () => {
@@ -192,7 +192,7 @@ describe('HomeScreen', () => {
 
       await waitFor(() => {
         expect(mockShowToast).toHaveBeenCalledWith(
-          'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .hyle file.',
+          'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .graphium file.',
           'info'
         );
       });
@@ -321,7 +321,7 @@ describe('HomeScreen', () => {
         'Create a new campaign and start the editor'
       );
       const loadCampaignButton = screen.getByLabelText(
-        'Load an existing campaign from a .hyle file'
+        'Load an existing campaign from a .graphium file'
       );
 
       expect(newCampaignButton).toBeInTheDocument();

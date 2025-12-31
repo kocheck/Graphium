@@ -50,8 +50,8 @@ export interface IStorageService {
   /**
    * Save campaign to file
    *
-   * **Electron:** Shows native save dialog, writes .hyle ZIP to disk
-   * **Web:** Triggers browser download of .hyle ZIP
+   * **Electron:** Shows native save dialog, writes .graphium ZIP to disk
+   * **Web:** Triggers browser download of .graphium ZIP
    *
    * @param campaign - Campaign data to serialize
    * @returns Success status (false if user cancelled)

@@ -123,7 +123,7 @@ describe('PrivacyErrorBoundary', () => {
 
     await waitFor(() => {
       expect(mockErrorReporting.openExternal).toHaveBeenCalledWith(
-        expect.stringContaining('https://github.com/kocheck/Hyle/issues/new')
+        expect.stringContaining('https://github.com/kocheck/Graphium/issues/new')
       )
     })
   })
@@ -301,9 +301,9 @@ describe('PrivacyErrorBoundary', () => {
     })
 
     it('should show success status after successful save', async () => {
-      mockErrorReporting.saveToFile.mockResolvedValueOnce({ 
-        success: true, 
-        filePath: '/path/to/error-report.txt' 
+      mockErrorReporting.saveToFile.mockResolvedValueOnce({
+        success: true,
+        filePath: '/path/to/error-report.txt'
       })
 
       render(
@@ -325,9 +325,9 @@ describe('PrivacyErrorBoundary', () => {
     })
 
     it('should handle user cancellation gracefully', async () => {
-      mockErrorReporting.saveToFile.mockResolvedValueOnce({ 
-        success: false, 
-        reason: 'canceled' 
+      mockErrorReporting.saveToFile.mockResolvedValueOnce({
+        success: false,
+        reason: 'canceled'
       })
 
       render(
@@ -350,9 +350,9 @@ describe('PrivacyErrorBoundary', () => {
     })
 
     it('should show error status when save fails', async () => {
-      mockErrorReporting.saveToFile.mockResolvedValueOnce({ 
-        success: false, 
-        reason: 'error' 
+      mockErrorReporting.saveToFile.mockResolvedValueOnce({
+        success: false,
+        reason: 'error'
       })
 
       render(

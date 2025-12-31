@@ -176,7 +176,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
    */
   const handleLoadRecent = async (_recent: RecentCampaign) => {
     showToast(
-      'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .hyle file.',
+      'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .graphium file.',
       'info'
     );
   };
@@ -601,10 +601,15 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         {/* Branding */}
         <div className="text-center mb-16">
           <div className="flex flex-col items-center">
-            <LogoLockup width={400} className="mb-6 drop-shadow-xl" />
+            <LogoLockup
+              width={400}
+              className="mb-6"
+              style={{
+                filter: 'drop-shadow(0 0 30px var(--app-bg-base)) drop-shadow(0 0 30px var(--app-bg-base))'
+              }}
+            />
             <p className="text-xl font-medium" style={{
               color: 'var(--app-text-primary)', // HIGHER contrast (was secondary)
-              textShadow: '0 2px 4px rgba(0,0,0,0.5)', // improve legibility against map
             }}>
               Virtual Tabletop for {subtitle}
             </p>
@@ -640,7 +645,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
                 </p>
               </div>
               <a
-                href="https://github.com/kocheck/Hyle/releases"
+                href="https://github.com/kocheck/Graphium/releases"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary px-4 py-2 rounded font-medium whitespace-nowrap"
@@ -687,14 +692,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
                 borderStyle: 'solid',
                 borderColor: 'var(--border-color)',
               }}
-              aria-label="Load an existing campaign from a .hyle file"
+              aria-label="Load an existing campaign from a .graphium file"
             >
               <div className="flex items-center gap-3 mb-2">
                 <RiFolderOpenLine className="w-6 h-6" style={{ color: 'var(--app-accent-solid)' }} />
                 <h2 className="text-xl font-bold">Load Campaign</h2>
               </div>
               <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>
-                Continue an existing campaign from a file
+                Continue an existing campaign from a .graphium file
               </p>
             </button>
           </div>
@@ -706,11 +711,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               setIsAboutOpen(true);
             }}
             className="learn-basics-btn w-full p-4 rounded-lg text-center transition-all hover:scale-102"
-            aria-label="Learn about Hyle features"
+            aria-label="Learn about Graphium features"
           >
             <div className="flex items-center justify-center gap-2">
               <RiInformationLine className="w-5 h-5" />
-              <span className="font-medium">✨ New to Hyle? Learn the basics</span>
+              <span className="font-medium">✨ New to Graphium? Learn the basics</span>
             </div>
           </button>
         </div>
@@ -780,7 +785,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           {/* Links */}
           <div className="flex items-center gap-4 text-sm" style={{ pointerEvents: 'auto' }}>
             <a
-              href="https://github.com/kocheck/Hyle"
+              href="https://github.com/kocheck/Graphium"
               target="_blank"
               rel="noopener noreferrer"
               className="footer-link"
@@ -799,7 +804,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             </button>
             <span style={{ color: 'var(--app-border-default)' }}>·</span>
             <a
-              href="https://github.com/kocheck/Hyle/issues"
+              href="https://github.com/kocheck/Graphium/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="footer-link"

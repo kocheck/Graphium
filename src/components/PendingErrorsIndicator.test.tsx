@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import PendingErrorsIndicator from './PendingErrorsIndicator'
 import { mockErrorReporting } from '../test/setup'
 import * as globalErrorHandler from '../utils/globalErrorHandler'
+import type { StoredError } from '../utils/globalErrorHandler'
 
 // Mock the globalErrorHandler module
 vi.mock('../utils/globalErrorHandler', () => ({
@@ -13,13 +14,13 @@ vi.mock('../utils/globalErrorHandler', () => ({
 }))
 
 describe('PendingErrorsIndicator', () => {
-  const mockStoredError = {
+  const mockStoredError: StoredError = {
     id: 'err_123',
     timestamp: '2025-01-01T12:00:00.000Z',
     lastOccurrence: '2025-01-01T12:00:00.000Z',
     occurrences: 1,
     reported: false,
-    source: 'component',
+    source: 'react',
     sanitizedError: {
       name: 'TestError',
       message: 'Test error message',
@@ -100,7 +101,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -114,7 +115,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -129,7 +130,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       // Expand
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
@@ -139,13 +140,8 @@ describe('PendingErrorsIndicator', () => {
       })
 
       // Close
-      const closeButtons = screen.getAllByRole('button')
-      const closeButton = closeButtons.find(btn => 
-        btn.querySelector('svg')?.querySelector('path')?.getAttribute('d')?.includes('M6 18L18 6M6 6l12 12')
-      )
-      if (closeButton) {
-        fireEvent.click(closeButton)
-      }
+      const closeButton = screen.getByRole('button', { name: /close/i })
+      fireEvent.click(closeButton)
 
       await waitFor(() => {
         expect(screen.queryByText('Stored Errors')).not.toBeInTheDocument()
@@ -159,7 +155,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -174,7 +170,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -188,7 +184,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -206,7 +202,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -225,12 +221,12 @@ describe('PendingErrorsIndicator', () => {
     })
 
     it('should show source and occurrence information in detail view', async () => {
-      const errorWithMultipleOccurrences = { ...mockStoredError, occurrences: 3, source: 'window' }
+      const errorWithMultipleOccurrences = { ...mockStoredError, occurrences: 3, source: 'global' as const }
       vi.mocked(globalErrorHandler.getStoredErrors).mockReturnValue([errorWithMultipleOccurrences])
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -242,7 +238,7 @@ describe('PendingErrorsIndicator', () => {
       fireEvent.click(errorItem)
 
       await waitFor(() => {
-        expect(screen.getByText(/Source: window/i)).toBeInTheDocument()
+        expect(screen.getByText(/Source: global/i)).toBeInTheDocument()
         expect(screen.getByText(/Occurred 3 times/i)).toBeInTheDocument()
       })
     })
@@ -252,7 +248,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -303,7 +299,7 @@ describe('PendingErrorsIndicator', () => {
 
       await waitFor(() => {
         expect(mockErrorReporting.openExternal).toHaveBeenCalledWith(
-          expect.stringContaining('https://github.com/kocheck/Hyle/issues/new')
+          expect.stringContaining('https://github.com/kocheck/Graphium/issues/new')
         )
       })
     })
@@ -400,7 +396,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -429,7 +425,7 @@ describe('PendingErrorsIndicator', () => {
       mockErrorReporting.saveToFile.mockResolvedValueOnce({ success: true, filePath: '/path/to/file.txt' })
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -458,7 +454,7 @@ describe('PendingErrorsIndicator', () => {
       mockErrorReporting.saveToFile.mockResolvedValueOnce({ success: false, reason: 'canceled' })
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -489,7 +485,7 @@ describe('PendingErrorsIndicator', () => {
       mockErrorReporting.saveToFile.mockRejectedValueOnce(new Error('Save failed'))
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -520,7 +516,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(0)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -534,7 +530,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -551,7 +547,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(0)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('1 Error')
       fireEvent.click(badge)
 
@@ -582,7 +578,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(2)
 
       // Dispatch event
-      window.dispatchEvent(new Event('hyle-error'))
+      window.dispatchEvent(new Event('graphium-error'))
 
       // Should update to show 2 errors
       await waitFor(() => {
@@ -600,7 +596,7 @@ describe('PendingErrorsIndicator', () => {
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 
       render(<PendingErrorsIndicator />)
-      
+
       const badge = screen.getByText('2 Errors')
       fireEvent.click(badge)
 

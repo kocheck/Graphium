@@ -34,7 +34,7 @@ interface RecentCampaignElectron extends RecentCampaignBase {
  */
 export type RecentCampaign = RecentCampaignWeb | RecentCampaignElectron;
 
-const STORAGE_KEY = 'hyle-recent-campaigns';
+const STORAGE_KEY = 'graphium-recent-campaigns';
 const MAX_RECENT = 3;
 
 /**
@@ -87,7 +87,7 @@ export function addRecentCampaignWithPlatform(
   filePath?: string
 ): void {
   const isElectron = typeof window !== 'undefined' && window.ipcRenderer !== undefined;
-  
+
   if (isElectron && filePath) {
     addRecentCampaign({
       platform: 'electron',

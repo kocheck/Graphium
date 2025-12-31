@@ -1,7 +1,7 @@
 /**
  * Hook for detecting the current window type in the dual-window architecture
  *
- * Hyle uses a dual-window pattern where the same React application renders
+ * Graphium uses a dual-window pattern where the same React application renders
  * in two different modes:
  * - **Architect View** (Main Window): DM's control panel with full UI and editing tools
  * - **World View** (Player Window): Sanitized display for projection/screen sharing

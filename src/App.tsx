@@ -67,8 +67,8 @@ import { AboutModal } from './components/AboutModal';
  *
  * **Campaign management:**
  * Only available in Architect View:
- * - Save button: Serializes store state to .hyle ZIP file via IPC
- * - Load button: Deserializes .hyle file and updates store via IPC
+ * - Save button: Serializes store state to .graphium ZIP file via IPC
+ * - Load button: Deserializes .graphium file and updates store via IPC
  * - Both use Electron dialog API (handled by main process)
  *
  * **World View creation:**
@@ -628,8 +628,8 @@ function App() {
 
         {/* Token Inspector (only show in Architect View when tokens selected) */}
         {isArchitectView && selectedTokensOnly.length > 0 && (
-          <TokenInspector 
-            selectedTokenIds={selectedTokensOnly} 
+          <TokenInspector
+            selectedTokenIds={selectedTokensOnly}
             onClose={() => setSelectedTokenIds([])}
           />
         )}

@@ -244,7 +244,7 @@ const createDefaultCampaign = (firstMap?: MapData): Campaign => {
 };
 
 /**
- * GameState is the central state interface for Hyle
+ * GameState is the central state interface for Graphium
  *
  * It now implements a Hybrid pattern:
  * 1. Top-level properties (tokens, drawings, etc.) represent the ACTIVE MAP state.

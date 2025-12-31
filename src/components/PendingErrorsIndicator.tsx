@@ -54,9 +54,9 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
       refreshErrors();
     };
 
-    window.addEventListener('hyle-error', handleNewError);
+    window.addEventListener('graphium-error', handleNewError);
     return () => {
-      window.removeEventListener('hyle-error', handleNewError);
+      window.removeEventListener('graphium-error', handleNewError);
     };
   }, [refreshErrors]);
 
@@ -73,7 +73,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
       const encodedTitle = encodeURIComponent(issueTitle);
       const encodedBody = encodeURIComponent(issueBody);
 
-      const baseUrl = `https://github.com/kocheck/Hyle/issues/new`;
+      const baseUrl = `https://github.com/kocheck/Graphium/issues/new`;
       const baseWithTitle = `${baseUrl}?title=${encodedTitle}`;
       const bodyPrefix = '&body=';
 
@@ -90,7 +90,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
           // Truncate non-encoded string first, then encode to avoid breaking escape sequences
           let currentLength = 0;
           const encodedChunks: string[] = [];
-          
+
           for (const char of issueBody) {
             const encodedChar = encodeURIComponent(char);
             if (currentLength + encodedChar.length > allowedBodyLength) {
@@ -99,7 +99,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
             encodedChunks.push(encodedChar);
             currentLength += encodedChar.length;
           }
-          
+
           const truncatedEncodedBody = encodedChunks.join('');
           githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedEncodedBody}`;
         }
@@ -195,6 +195,7 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                 setSelectedError(null);
               }}
               className="text-neutral-400 hover:text-neutral-200"
+              aria-label="Close"
             >
               <RiCloseLine className="w-5 h-5" />
             </button>

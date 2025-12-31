@@ -41,7 +41,7 @@
  *
  * @example
  * // Wrap entire app
- * <PrivacyErrorBoundary supportEmail="support@hyle.app">
+ * <PrivacyErrorBoundary supportEmail="support@graphium.app">
  *   <App />
  * </PrivacyErrorBoundary>
  *
@@ -214,27 +214,27 @@ ${userContext.trim()}
         rawTitle.length > MAX_ISSUE_TITLE_LENGTH
           ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
           : rawTitle;
-      
+
       const params = new URLSearchParams({
         body: finalReport,
         title: issueTitle,
       });
-      let githubUrl = `https://github.com/kocheck/Hyle/issues/new?${params.toString()}`;
-      
+      let githubUrl = `https://github.com/kocheck/Graphium/issues/new?${params.toString()}`;
+
       // Enforce URL length limit to prevent browser issues
       if (githubUrl.length > MAX_GITHUB_URL_LENGTH) {
-        const baseUrl = 'https://github.com/kocheck/Hyle/issues/new';
+        const baseUrl = 'https://github.com/kocheck/Graphium/issues/new';
         const titleParam = `?title=${encodeURIComponent(issueTitle)}`;
         const bodyPrefix = '&body=';
         const baseWithTitle = `${baseUrl}${titleParam}`;
-        
+
         const allowedBodyLength = MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
-        
+
         if (allowedBodyLength > 0) {
           // Truncate non-encoded string first, then encode to avoid breaking escape sequences
           let currentLength = 0;
           const encodedChunks: string[] = [];
-          
+
           for (const char of finalReport) {
             const encodedChar = encodeURIComponent(char);
             if (currentLength + encodedChar.length > allowedBodyLength) {
@@ -243,7 +243,7 @@ ${userContext.trim()}
             encodedChunks.push(encodedChar);
             currentLength += encodedChar.length;
           }
-          
+
           const truncatedEncodedBody = encodedChunks.join('');
           githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedEncodedBody}`;
         } else {

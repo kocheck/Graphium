@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { LogoLockup } from './LogoLockup';
+import { LogoIcon } from './LogoIcon';
 
 export type AboutModalTab = 'about' | 'tutorial' | 'shortcuts';
 
@@ -54,7 +54,7 @@ const modalStyles = `
 /**
  * AboutModal - The Tome of Knowledge
  *
- * A modal explaining what Hyle is and how to use it,
+ * A modal explaining what Graphium is and how to use it,
  * written in the signature "Digital Dungeon Master" tone.
  */
 export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModalProps) {
@@ -162,7 +162,7 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
             ×
           </button>
           <div className="flex items-center gap-4">
-             <LogoLockup width={150} />
+             <LogoIcon size={80} />
           </div>
 
           {/* Navigation Tabs */}
@@ -199,7 +199,7 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
                   🎲 World Given Form
                 </h3>
                  <p style={{ color: 'var(--app-text-secondary)', marginBottom: '0.75rem' }}>
-                  Greetings, Master of Dungeons! <strong>Hyle</strong> (from ancient Greek <em>ὕλη</em>: "matter") is your arcane battlemat—a
+                  Greetings, Master of Dungeons! <strong>Graphium</strong> (Latin: <em>graphium</em>, "a writing stylus") is your arcane battlemat—a
                   local-first virtual tabletop designed to replace your physical grid with digital sorcery.
                 </p>
                 <p style={{ color: 'var(--app-text-secondary)' }}>
@@ -213,8 +213,8 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
                   🌟 The Sacred Philosophy
                 </h3>
                 <p style={{ color: 'var(--app-text-secondary)' }}>
-                  Hyle is a <strong>generic digital battlemat</strong>—no more, no less. It handles maps, tokens, and fog of war
-                  without demanding tribute to corporate overlords. Your campaigns are stored locally in sacred <code>.hyle</code> tomes
+                  Graphium is a <strong>digital stylus</strong> for the discerning World Builder. It handles maps, tokens, and fog of war
+                  without demanding tribute to corporate overlords. Your campaigns are stored locally in sacred <code>.graphium</code> tomes
                   that no cloud wizard can touch. Simple, powerful, and <em>yours</em>.
                 </p>
               </section>
@@ -230,7 +230,7 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
               >
                  <p style={{ color: 'var(--app-text-secondary)' }}>Version {__APP_VERSION__}</p>
                  <a
-                  href="https://github.com/kocheck/Hyle"
+                  href="https://github.com/kocheck/Graphium"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -265,7 +265,7 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
                     <strong>Drawing Tools:</strong> Markers, erasers, and vision-blocking walls (Shift to lock axes!)
                   </li>
                   <li style={{ marginBottom: '0.5rem' }}>
-                    <strong>Local-First:</strong> Your data stays <em>yours</em>—saved as <code>.hyle</code> files, no cloud required
+                    <strong>Local-First:</strong> Your data stays <em>yours</em>—saved as <code>.graphium</code> files, no cloud required
                   </li>
                   <li style={{ marginBottom: '0.5rem' }}>
                     <strong>Asset Conjuration:</strong> Drag &amp; drop images, auto-optimized to WebP for performance
