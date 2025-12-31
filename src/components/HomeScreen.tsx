@@ -604,7 +604,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <button
               onClick={handleNewCampaign}
-              className="home-action-button p-6 rounded-lg text-left transition-all hover:scale-105"
+              className="home-action-button p-4 rounded-lg text-left transition-all hover:scale-105"
               style={{
                 background: 'var(--app-bg-surface)',
                 borderWidth: '2px',
@@ -614,8 +614,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               aria-label="Create a new campaign and start the editor"
             >
               <div className="flex items-center gap-3 mb-2">
-                <RiAddLine className="w-8 h-8" style={{ color: 'var(--app-accent-solid)' }} />
-                <h2 className="text-2xl font-bold">New Campaign</h2>
+                <RiAddLine className="w-6 h-6" style={{ color: 'var(--app-accent-solid)' }} />
+                <h2 className="text-xl font-bold">New Campaign</h2>
               </div>
               <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>
                 Start a fresh adventure with a blank canvas
@@ -624,7 +624,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
             <button
               onClick={handleLoadCampaign}
-              className="home-action-button p-6 rounded-lg text-left transition-all hover:scale-105"
+              className="home-action-button p-4 rounded-lg text-left transition-all hover:scale-105"
               style={{
                 background: 'var(--app-bg-surface)',
                 borderWidth: '2px',
@@ -634,8 +634,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               aria-label="Load an existing campaign from a .hyle file"
             >
               <div className="flex items-center gap-3 mb-2">
-                <RiFolderOpenLine className="w-8 h-8" style={{ color: 'var(--app-accent-solid)' }} />
-                <h2 className="text-2xl font-bold">Load Campaign</h2>
+                <RiFolderOpenLine className="w-6 h-6" style={{ color: 'var(--app-accent-solid)' }} />
+                <h2 className="text-xl font-bold">Load Campaign</h2>
               </div>
               <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>
                 Continue an existing campaign from a file
@@ -659,8 +659,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           </button>
         </div>
 
-        {/* Recent Campaigns */}
-        {recentCampaigns.length > 0 && (
+      {recentCampaigns.length > 0 && (
           <div style={{ pointerEvents: 'auto' }}>
             <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--app-text-secondary)' }}>
               Recent Campaigns

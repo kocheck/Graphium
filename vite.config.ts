@@ -44,5 +44,27 @@ export default defineConfig(({ mode }) => {
         emptyOutDir: true,
       },
     }),
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/test/setup.ts',
+      coverage: {
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'coverage/**',
+          'dist/**',
+          '**/[.]**',
+          'packages/*/test?(s)/**',
+          '**/*.d.ts',
+          '**/virtual:*',
+          '**/__x00__*',
+          '**/*{.,-}{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+          '**/init.ts',
+          '**/vite.config.ts',
+          '**/tailwind.config.js',
+          '**/postcss.config.js',
+        ],
+      },
+    },
   }
 })

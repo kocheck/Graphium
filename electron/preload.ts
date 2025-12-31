@@ -15,6 +15,7 @@
  * ```typescript
  * window.ipcRenderer.on(channel, listener)     // Subscribe to IPC events
  * window.ipcRenderer.off(channel, listener)    // Unsubscribe from IPC events
+ * window.ipcRenderer.removeAllListeners(channel) // Remove all listeners for channel
  * window.ipcRenderer.send(channel, ...args)    // Send one-way IPC message
  * window.ipcRenderer.invoke(channel, ...args)  // Send IPC request, await response
  * ```
@@ -30,31 +31,16 @@
 
 import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron'
 
+// Map to store original listeners -> wrapper listeners
+// This is needed because we wrap listeners in on(), so we need the wrapper reference for off()
+const listenerMap = new WeakMap<Function, (event: IpcRendererEvent, ...args: unknown[]) => void>();
+
 /**
  * Expose IPC APIs to renderer process via Context Bridge
  *
  * Creates a global window.ipcRenderer object that React components can use
  * to communicate with the main process. This API surface is intentionally
  * limited to prevent security vulnerabilities.
- *
- * **Usage in renderer:**
- * ```typescript
- * // Send one-way message (fire-and-forget)
- * window.ipcRenderer.send('create-world-window')
- *
- * // Request-response pattern (async)
- * const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', data)
- *
- * // Subscribe to events from main process
- * window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
- *   console.log('Received state:', state)
- * })
- * ```
- *
- * **Type safety note:**
- * TypeScript doesn't know about window.ipcRenderer by default, so renderer
- * code uses @ts-ignore comments. Future improvement: Add type declarations
- * in src/types/electron.d.ts.
  */
 contextBridge.exposeInMainWorld('ipcRenderer', {
   /**
@@ -68,21 +54,44 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    */
   on(...args: Parameters<typeof ipcRenderer.on>) {
     const [channel, listener] = args
-    return ipcRenderer.on(channel, (event: IpcRendererEvent, ...args: unknown[]) => listener(event, ...args))
+
+    // Create a wrapper that we can look up later
+    const wrapper = (event: IpcRendererEvent, ...args: unknown[]) => listener(event, ...args)
+    listenerMap.set(listener, wrapper)
+
+    return ipcRenderer.on(channel, wrapper)
   },
 
   /**
    * Unsubscribe from IPC events
    *
-   * Removes event listener to prevent memory leaks. Currently not fully
-   * implemented in renderer (TODO: proper cleanup in SyncManager.tsx:93-95).
+   * Removes event listener to prevent memory leaks.
    *
    * @param channel - IPC channel name
    * @param listener - Listener to remove (must be same reference as passed to on())
    */
   off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
+    const [channel, listener] = args
+    const wrapper = listenerMap.get(listener)
+
+    if (wrapper) {
+      listenerMap.delete(listener)
+      return ipcRenderer.off(channel, wrapper)
+    }
+
+    // Fallback: try removing listener directly (unlikely to work if wrapped, but safe)
+    return ipcRenderer.off(channel, listener)
+  },
+
+  /**
+   * Remove all listeners for a channel
+   *
+   * Useful for cleanup when unmounting components.
+   *
+   * @param channel - IPC channel name
+   */
+  removeAllListeners(channel: string) {
+    return ipcRenderer.removeAllListeners(channel)
   },
 
   /**
@@ -92,14 +101,6 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    *
    * @param channel - IPC channel name (e.g., 'create-world-window', 'SYNC_WORLD_STATE')
    * @param args - Arguments to pass to main process handler
-   *
-   * @example
-   * // Create World View window (see App.tsx:119)
-   * window.ipcRenderer.send('create-world-window')
-   *
-   * @example
-   * // Broadcast state to World Window (see SyncManager.tsx:111)
-   * window.ipcRenderer.send('SYNC_WORLD_STATE', { tokens: [...], drawings: [...] })
    */
   send(...args: Parameters<typeof ipcRenderer.send>) {
     const [channel, ...omit] = args
@@ -114,26 +115,11 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @param channel - IPC channel name (e.g., 'SAVE_CAMPAIGN', 'LOAD_CAMPAIGN', 'SAVE_ASSET_TEMP')
    * @param args - Arguments to pass to main process handler
    * @returns Promise resolving to handler's return value
-   *
-   * @example
-   * // Save campaign (see App.tsx:89)
-   * const success = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', gameState)
-   *
-   * @example
-   * // Load campaign (see App.tsx:103)
-   * const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN')
-   *
-   * @example
-   * // Save asset to temp storage (see AssetProcessor.ts:112)
-   * const filePath = await window.ipcRenderer.invoke('SAVE_ASSET_TEMP', buffer, 'goblin.webp')
    */
   invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
     const [channel, ...omit] = args
     return ipcRenderer.invoke(channel, ...omit)
   },
-
-  // You can expose other APIs you need here.
-  // ...
 })
 
 // --------- Theme API ---------

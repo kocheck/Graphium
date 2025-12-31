@@ -151,34 +151,58 @@ export function createCommandRegistry(handlers: {
  * @returns Sorted array of commands by relevance score
  */
 export function searchCommands(commands: Command[], query: string): Command[] {
-  if (!query.trim()) return commands;
+  if (!query.trim()) return commands; // Return all if empty
 
-  const lowerQuery = query.toLowerCase();
+  const trimmedQuery = query.trim();
+  const lowerQuery = trimmedQuery.toLowerCase();
+
+  // Check if searching for section title
+  const isSectionSearch = 'actions'.startsWith(lowerQuery);
+  const sectionBoost = isSectionSearch ? 50 : 0;
 
   const scoredCommands = commands.map(cmd => {
     let score = 0;
 
-    // Label match (weight: 3x)
-    if (cmd.label.toLowerCase().includes(lowerQuery)) {
-      score += 3;
+    // Apply section boost if applicable
+    if (isSectionSearch) {
+        score += sectionBoost;
+        // If exact "actions" typed, show everything with high score
+        if (lowerQuery === 'actions') return { cmd, score: 100 };
     }
 
+    // Reuse a simpler scoring logic here since we don't import scoreMatch
+    // or we could extract scoreMatch to a shared utility?
+    // For now, let's inline a simplified subsequence check
+
+    // Helper to score text
+    const scoreText = (text: string) => {
+        const lowerText = text.toLowerCase();
+        if (lowerText === lowerQuery) return 100;
+        if (lowerText.startsWith(lowerQuery)) return 40;
+        if (lowerText.includes(lowerQuery)) return 20;
+
+        // Subsequence check
+        let qIdx = 0;
+        let tIdx = 0;
+        while (tIdx < lowerText.length && qIdx < lowerQuery.length) {
+            if (lowerText[tIdx] === lowerQuery[qIdx]) qIdx++;
+            tIdx++;
+        }
+        if (qIdx === lowerQuery.length) return 10;
+
+        return 0;
+    };
+
+    // Label match (weight: 3x)
+    score += scoreText(cmd.label) * 3;
+
     // Category match (weight: 1x)
-    if (cmd.category.toLowerCase().includes(lowerQuery)) {
-      score += 1;
-    }
+    score += scoreText(cmd.category);
 
     // Keywords match (weight: 2x each)
     cmd.keywords.forEach(keyword => {
-      if (keyword.toLowerCase().includes(lowerQuery)) {
-        score += 2;
-      }
+      score += scoreText(keyword) * 2;
     });
-
-    // Exact match bonus
-    if (cmd.label.toLowerCase() === lowerQuery) {
-      score += 10;
-    }
 
     return { cmd, score };
   });

@@ -39,18 +39,20 @@ describe('CanvasOverlayErrorBoundary', () => {
     expect(screen.getByText('Child content')).toBeInTheDocument();
   });
 
-  it('should return null when child throws error (silent failure)', () => {
-    const { container } = render(
+  it('should return null (or error marker) when child throws error', () => {
+    render(
       <CanvasOverlayErrorBoundary overlayName="TestOverlay">
         <ThrowError shouldThrow={true} />
       </CanvasOverlayErrorBoundary>
     );
 
-    // Should not display any error UI
+    // Should not display any error UI visible to user
     expect(screen.queryByTestId('overlay-content')).not.toBeInTheDocument();
 
-    // Container should be empty (null was returned)
-    expect(container.firstChild).toBeNull();
+    // In verification mode (test/dev), it renders a hidden marker
+    const marker = screen.getByTestId('overlay-error-testoverlay');
+    expect(marker).toBeInTheDocument();
+    expect(marker).not.toBeVisible();
   });
 
   it('should log error to console with overlay name', () => {
@@ -100,8 +102,8 @@ describe('CanvasOverlayErrorBoundary', () => {
     expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
 
-    // Container should be completely empty
-    expect(container.textContent).toBe('');
+    // Container should contain only the hidden marker
+    expect(container.firstChild).toHaveAttribute('data-testid', 'overlay-error-testoverlay');
   });
 
   it('should handle multiple children', () => {
@@ -119,7 +121,7 @@ describe('CanvasOverlayErrorBoundary', () => {
   });
 
   it('should handle error from one of multiple children', () => {
-    const { container } = render(
+    render(
       <CanvasOverlayErrorBoundary overlayName="MultiOverlay">
         <div data-testid="child-1">Child 1</div>
         <ThrowError shouldThrow={true} />
@@ -127,10 +129,12 @@ describe('CanvasOverlayErrorBoundary', () => {
       </CanvasOverlayErrorBoundary>
     );
 
-    // When any child throws, entire boundary returns null
+    // When any child throws, entire boundary catches it
     expect(screen.queryByTestId('child-1')).not.toBeInTheDocument();
     expect(screen.queryByTestId('child-3')).not.toBeInTheDocument();
-    expect(container.firstChild).toBeNull();
+
+    // Expect error marker
+    expect(screen.getByTestId('overlay-error-multioverlay')).toBeInTheDocument();
   });
 
   it('should handle errors in nested components', () => {
@@ -143,41 +147,36 @@ describe('CanvasOverlayErrorBoundary', () => {
       );
     }
 
-    const { container } = render(
+    render(
       <CanvasOverlayErrorBoundary overlayName="NestedOverlay">
         <NestedComponent />
       </CanvasOverlayErrorBoundary>
     );
 
-    expect(container.firstChild).toBeNull();
+    expect(screen.getByTestId('overlay-error-nestedoverlay')).toBeInTheDocument();
   });
 
   it('should not affect other error boundaries', () => {
-    // This tests that the error boundary is isolated
-    const { container: container1 } = render(
+    render(
       <div>
         <CanvasOverlayErrorBoundary overlayName="Overlay1">
           <ThrowError shouldThrow={true} />
         </CanvasOverlayErrorBoundary>
-      </div>
-    );
 
-    const { container: container2 } = render(
-      <div>
         <CanvasOverlayErrorBoundary overlayName="Overlay2">
           <div data-testid="working">Working overlay</div>
         </CanvasOverlayErrorBoundary>
       </div>
     );
 
-    // First boundary should fail silently
-    expect(container1.querySelector('[data-testid]')).toBeNull();
+    // First boundary should have error marker
+    expect(screen.getByTestId('overlay-error-overlay1')).toBeInTheDocument();
 
     // Second boundary should still work
     expect(screen.getByTestId('working')).toBeInTheDocument();
   });
 
-  it('should handle async errors in effects', async () => {
+  it('should handle async errors in effects', () => {
     function AsyncErrorComponent() {
       // Simulate error in useEffect
       React.useEffect(() => {
@@ -189,14 +188,14 @@ describe('CanvasOverlayErrorBoundary', () => {
 
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { container } = render(
+    render(
       <CanvasOverlayErrorBoundary overlayName="AsyncOverlay">
         <AsyncErrorComponent />
       </CanvasOverlayErrorBoundary>
     );
 
     // Error boundary should catch the effect error
-    expect(container.firstChild).toBeNull();
+    expect(screen.getByTestId('overlay-error-asyncoverlay')).toBeInTheDocument();
 
     consoleErrorSpy.mockRestore();
   });
@@ -228,17 +227,16 @@ describe('CanvasOverlayErrorBoundary', () => {
   it('should handle TypeError', () => {
     function TypeErrorComponent() {
       const obj: any = null;
-      // This will throw TypeError: Cannot read property 'foo' of null
       return <div>{obj.foo}</div>;
     }
 
-    const { container } = render(
+    render(
       <CanvasOverlayErrorBoundary overlayName="TypeError">
         <TypeErrorComponent />
       </CanvasOverlayErrorBoundary>
     );
 
-    expect(container.firstChild).toBeNull();
+    expect(screen.getByTestId('overlay-error-typeerror')).toBeInTheDocument();
   });
 
   it('should handle ReferenceError', () => {
@@ -247,12 +245,12 @@ describe('CanvasOverlayErrorBoundary', () => {
       return <div>{undefinedVariable}</div>;
     }
 
-    const { container } = render(
+    render(
       <CanvasOverlayErrorBoundary overlayName="ReferenceError">
         <ReferenceErrorComponent />
       </CanvasOverlayErrorBoundary>
     );
 
-    expect(container.firstChild).toBeNull();
+    expect(screen.getByTestId('overlay-error-referenceerror')).toBeInTheDocument();
   });
 });

@@ -53,6 +53,18 @@ import {
   setThemeMode,
   type ThemeMode,
 } from './themeManager.js';
+import Store from 'electron-store';
+
+interface StoreSchema {
+  windowBounds: {
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+  };
+}
+
+const store = new Store<StoreSchema>();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -281,12 +293,28 @@ function buildApplicationMenu() {
  * from built dist/index.html file.
  */
 function createMainWindow() {
+  const bounds = store.get('windowBounds');
+
   mainWindow = new BrowserWindow({
+    width: bounds?.width || 1200,
+    height: bounds?.height || 800,
+    x: bounds?.x,
+    y: bounds?.y,
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
   });
+
+  // Save window bounds on resize/move
+  const saveBounds = () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      store.set('windowBounds', mainWindow.getBounds());
+    }
+  };
+
+  mainWindow.on('resize', saveBounds);
+  mainWindow.on('move', saveBounds);
 
   // Test active push message to Renderer-process (legacy from template)
   mainWindow.webContents.on('did-finish-load', () => {
@@ -373,6 +401,49 @@ app.on('activate', () => {
   }
 });
 
+// Handle file association (macOS)
+app.on('open-file', (_event, path) => {
+  // If app is already ready, open the file
+  if (app.isReady()) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      // Focus window and send load command
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+      // We'll need to implement a way to send this file path to the renderer
+      // For now, let's store it and the renderer can poll or we send an event
+      // But typically we send an IPC message if the window is ready
+      mainWindow.webContents.send('OPEN_FILE_FROM_OS', path);
+    }
+  } else {
+    // If not ready, we need to handle it on startup (process.argv handling usually covers this on other OSs)
+    // But for macOS open-file event, we might need to cache it
+    // For simplicity, we'll let the standard startup flow handle it if it captures it,
+    // or just rely on the user re-opening if it was a cold start from file
+    // Actually, capturing it here for cold start:
+    (global as any).openedFile = path;
+  }
+});
+
+// Handle second instance (Windows/Linux)
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, commandLine) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+
+      // Extract file path from command line
+      const filePath = commandLine.find(arg => arg.endsWith('.hyle'));
+      if (filePath) {
+        mainWindow.webContents.send('OPEN_FILE_FROM_OS', filePath);
+      }
+    }
+  });
+}
+
 /**
  * App initialization: Set up protocol handlers and IPC listeners
  *
@@ -414,6 +485,21 @@ app.whenReady().then(() => {
   buildApplicationMenu();
 
   createMainWindow();
+
+  // Check for cold-start file open (macOS)
+  if ((global as any).openedFile && mainWindow) {
+      mainWindow.webContents.on('did-finish-load', () => {
+          mainWindow?.webContents.send('OPEN_FILE_FROM_OS', (global as any).openedFile);
+      });
+  }
+
+  // Check for cold-start file open (Windows/Linux)
+  const argvFile = process.argv.find(arg => arg.endsWith('.hyle'));
+  if (argvFile && mainWindow) {
+       mainWindow.webContents.on('did-finish-load', () => {
+          mainWindow?.webContents.send('OPEN_FILE_FROM_OS', argvFile);
+      });
+  }
 
   /**
    * IPC handler: create-world-window
@@ -489,9 +575,9 @@ app.whenReady().then(() => {
     (_event: IpcMainEvent, state: unknown) => {
       // Extract action type with proper type checking
       const actionType = (
-        state && 
-        typeof state === 'object' && 
-        'type' in state && 
+        state &&
+        typeof state === 'object' &&
+        'type' in state &&
         typeof state.type === 'string'
       ) ? state.type : 'unknown';
       if (process.env.NODE_ENV === 'development') {
