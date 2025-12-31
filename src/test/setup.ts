@@ -38,7 +38,7 @@ Object.defineProperty(navigator, 'clipboard', {
 
 // Basic Canvas Mock for Konva in jsdom
 if (typeof HTMLCanvasElement !== 'undefined') {
-  // @ts-ignore
+  // @ts-expect-error - Mocking Canvas context for tests
   HTMLCanvasElement.prototype.getContext = function(type: string) {
     if (type === '2d') {
       return {

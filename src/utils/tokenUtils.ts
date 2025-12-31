@@ -5,7 +5,7 @@
 export interface Token {
     id: string;
     src: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface LibraryItem {
@@ -13,7 +13,7 @@ export interface LibraryItem {
     src: string;
     thumbnailSrc: string;
     name: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 /**

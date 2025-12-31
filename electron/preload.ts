@@ -33,7 +33,10 @@ import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron'
 
 // Map to store original listeners -> wrapper listeners
 // This is needed because we wrap listeners in on(), so we need the wrapper reference for off()
-const listenerMap = new WeakMap<Function, (event: IpcRendererEvent, ...args: unknown[]) => void>();
+const listenerMap = new WeakMap<
+  (...args: unknown[]) => void,
+  (event: IpcRendererEvent, ...args: unknown[]) => void
+>();
 
 /**
  * Expose IPC APIs to renderer process via Context Bridge

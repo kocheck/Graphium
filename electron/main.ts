@@ -420,7 +420,7 @@ app.on('open-file', (_event, path) => {
     // For simplicity, we'll let the standard startup flow handle it if it captures it,
     // or just rely on the user re-opening if it was a cold start from file
     // Actually, capturing it here for cold start:
-    (global as any).openedFile = path;
+    (global as unknown as { openedFile?: string }).openedFile = path;
   }
 });
 
@@ -487,9 +487,11 @@ app.whenReady().then(() => {
   createMainWindow();
 
   // Check for cold-start file open (macOS)
-  if ((global as any).openedFile && mainWindow) {
+  const globalWithFile = global as unknown as { openedFile?: string };
+  if (globalWithFile.openedFile && mainWindow) {
+      const fileToOpen = globalWithFile.openedFile;
       mainWindow.webContents.on('did-finish-load', () => {
-          mainWindow?.webContents.send('OPEN_FILE_FROM_OS', (global as any).openedFile);
+          mainWindow?.webContents.send('OPEN_FILE_FROM_OS', fileToOpen);
       });
   }
 

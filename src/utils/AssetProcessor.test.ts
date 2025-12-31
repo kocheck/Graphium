@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { processImage, AssetType } from './AssetProcessor';
+import { processImage } from './AssetProcessor';
 import { getStorage } from '../services/storage';
 
 // Mock getStorage
@@ -8,7 +8,7 @@ vi.mock('../services/storage', () => ({
 }));
 
 describe('AssetProcessor', () => {
-  let mockSaveAssetTemp: any;
+  let mockSaveAssetTemp: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     // Mock global browser APIs
@@ -27,11 +27,11 @@ describe('AssetProcessor', () => {
       }),
       width,
       height,
-    })) as any;
+    })) as unknown as typeof OffscreenCanvas;
 
     // Mock storage service
     mockSaveAssetTemp = vi.fn().mockResolvedValue('file:///tmp/asset.webp');
-    (getStorage as any).mockReturnValue({
+    (getStorage as ReturnType<typeof vi.fn>).mockReturnValue({
       saveAssetTemp: mockSaveAssetTemp,
     });
 
@@ -41,17 +41,17 @@ describe('AssetProcessor', () => {
       onmessage: null,
       onerror: null,
       terminate: vi.fn(),
-    })) as any;
+    })) as unknown as typeof Worker;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-    delete (global as any).Worker;
+    delete (global as Record<string, unknown>).Worker;
   });
 
   it('processing handles map constraints correctly', async () => {
     // For this test, we force main thread fallback by removing Worker
-    delete (global as any).Worker;
+    delete (global as Record<string, unknown>).Worker;
 
     // Setup an oversized image
     global.createImageBitmap = vi.fn().mockResolvedValue({
@@ -70,7 +70,7 @@ describe('AssetProcessor', () => {
   });
 
   it('processing handles token constraints correctly', async () => {
-    delete (global as any).Worker;
+    delete (global as Record<string, unknown>).Worker;
 
     global.createImageBitmap = vi.fn().mockResolvedValue({
       width: 1000,
@@ -86,7 +86,7 @@ describe('AssetProcessor', () => {
   });
 
   it('converts extension to .webp', async () => {
-    delete (global as any).Worker;
+    delete (global as Record<string, unknown>).Worker;
 
     const file = new File([''], 'character.jpg', { type: 'image/jpeg' });
     const handle = processImage(file, 'TOKEN');
