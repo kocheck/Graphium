@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
 import { getRecentCampaigns, addRecentCampaignWithPlatform, removeRecentCampaign, type RecentCampaign } from '../utils/recentCampaigns';
@@ -54,9 +54,6 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     ];
     return titles[Math.floor(Math.random() * titles.length)];
   });
-
-  // const logoClickTimeoutRef = useRef<number | null>(null);
-  const openModalTimeoutRef = useRef<number | null>(null);
 
   const loadCampaign = useGameStore((state) => state.loadCampaign);
   const showToast = useGameStore((state) => state.showToast);
@@ -119,18 +116,6 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isAboutOpen]);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      // if (logoClickTimeoutRef.current !== null) {
-      //   clearTimeout(logoClickTimeoutRef.current);
-      // }
-      if (openModalTimeoutRef.current !== null) {
-        clearTimeout(openModalTimeoutRef.current);
-      }
-    };
-  }, []);
 
   /**
    * Create a new campaign and enter the editor
@@ -202,60 +187,6 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     removeRecentCampaign(campaignId);
     setRecentCampaigns(getRecentCampaigns());
   };
-
-  /**
-   * Handle logo clicks for easter egg detection
-   * Rapid clicks (5+ within 2 seconds) trigger easter egg
-   * NOTE: Currently disabled in UI to reduce clutter
-   */
-  /*
-  const handleLogoClick = () => {
-    const newCount = logoClickCount + 1;
-    setLogoClickCount(newCount);
-
-    if (newCount >= 5) {
-      // Trigger easter egg!
-      setTriggerEasterEgg(prev => prev + 1);
-      setLogoClickCount(0);
-
-      // Show fun message
-      const messages = [
-        "🎲 Natural 20! The dice gods smile upon you!",
-        "⚔️ Critical success! You've unlocked the secret handshake!",
-        "✨ *Reality warps around you...* Roll for Perception!",
-        "🌟 The cosmos aligns! You've discovered the hidden power!",
-        "💫 Easter egg found! May your rolls be ever in your favor!",
-      ];
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      showToast(randomMessage, 'success');
-    }
-
-    // Reset counter after 2 seconds of inactivity
-    // Clear previous timeout to prevent multiple timers
-    if (logoClickTimeoutRef.current !== null) {
-      clearTimeout(logoClickTimeoutRef.current);
-    }
-    logoClickTimeoutRef.current = window.setTimeout(() => {
-      setLogoClickCount(0);
-    }, 2000);
-  };
-  */
-
-  /**
-   * Handle dice roll animation completion
-   */
-  /*
-  const handleAnimationComplete = (roll: number) => {
-    // Could show different messages based on roll
-    if (roll === 20) {
-      // Natural 20 rolled on page load - lucky!
-      console.log('🎲 Natural 20! Auspicious beginning!');
-    } else if (roll === 1) {
-      // Natural 1 - critical failure
-      console.log('💀 Critical failure on the entrance roll. Proceed with caution!');
-    }
-  };
-  */
 
   /**
    * Dismiss Mac download banner permanently

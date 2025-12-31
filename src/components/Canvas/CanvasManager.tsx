@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import { Stage, Layer, Line, Rect, Transformer, Group, Text } from 'react-konva';
+import { Stage, Layer, Line, Rect, Transformer, Group } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
@@ -14,7 +14,6 @@ import ImageCropper from '../ImageCropper';
 import TokenErrorBoundary from './TokenErrorBoundary';
 import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import FogOfWarLayer from './FogOfWarLayer';
-import { useThemeColor } from '../../hooks/useThemeColor';
 import DoorLayer from './DoorLayer';
 import StairsLayer from './StairsLayer';
 import PaperNoiseOverlay from './PaperNoiseOverlay';
@@ -296,11 +295,6 @@ const CanvasManager = ({
   const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
-
-  // Theme-aware text color for contrast
-  const textColor = useThemeColor('--app-text-primary');
-
-  const [windowDimensions, setWindowDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   // Touch/Pinch State
   const lastPinchDistance = useRef<number | null>(null);
@@ -2007,23 +2001,6 @@ const CanvasManager = ({
                   />
                 )}
                 </TokenErrorBoundary>
-
-                {/* Token Nameplate - Rendered outside ErrorBoundary to prevent nesting issues */}
-                {token.name && (
-                  <Text
-                    text={token.name}
-                    fontSize={12}
-                    fontFamily="IBM Plex Sans, sans-serif"
-                    fill={textColor}
-                    fontStyle="bold"
-                    align="center"
-                    verticalAlign="middle"
-                    width={(gridSize * safeScale) * 2}
-                    x={displayX - (gridSize * safeScale) / 2}
-                    y={displayY + (gridSize * safeScale) + 8}
-                    listening={false}
-                  />
-                )}
                 </Group>
                 );
             })}

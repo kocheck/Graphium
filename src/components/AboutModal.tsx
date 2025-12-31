@@ -79,6 +79,10 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
     const focusableElements = modal.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
+    
+    // Guard: if no focusable elements exist, don't set up the trap
+    if (focusableElements.length === 0) return;
+    
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 

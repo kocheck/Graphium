@@ -73,6 +73,7 @@ export function PlaygroundToken({
     return () => {
       if (hintAnimationFrameRef.current !== null) {
         cancelAnimationFrame(hintAnimationFrameRef.current);
+        hintAnimationFrameRef.current = null;
       }
     };
   }, [showHint]);

@@ -22,6 +22,7 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete }: Lo
   const [displayNumber, setDisplayNumber] = useState(20);
   const [rotation, setRotation] = useState(0);
   const spinIntervalRef = useRef<number | null>(null);
+  const stopTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (animate) {
@@ -35,7 +36,7 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete }: Lo
       }, 50);
 
       // Stop after 800ms and show final roll
-      const stopTimeout = window.setTimeout(() => {
+      stopTimeoutRef.current = window.setTimeout(() => {
         if (spinIntervalRef.current !== null) {
           clearInterval(spinIntervalRef.current);
           spinIntervalRef.current = null;
@@ -56,7 +57,9 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete }: Lo
         if (spinIntervalRef.current !== null) {
           clearInterval(spinIntervalRef.current);
         }
-        clearTimeout(stopTimeout);
+        if (stopTimeoutRef.current !== null) {
+          clearTimeout(stopTimeoutRef.current);
+        }
       };
     }
   }, [animate, onAnimationComplete]);
