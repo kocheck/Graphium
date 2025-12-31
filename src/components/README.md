@@ -630,6 +630,392 @@ const handleDrop = (e: React.DragEvent) => {
 </div>
 ```
 
+## Landing Page Components
+
+### AboutModal.tsx
+**Application information and help dialog**
+
+**Responsibilities:**
+- Display comprehensive app information with "Digital Dungeon Master" tone
+- Show features, keyboard shortcuts, and philosophy
+- Accessible via keyboard shortcut (`?`) or UI buttons
+- Global component rendered in both HOME and EDITOR views
+
+**Props:**
+```typescript
+interface AboutModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+```
+
+**Usage:**
+```typescript
+// In App.tsx - rendered globally
+const [isAboutOpen, setIsAboutOpen] = useState(false);
+<AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+
+// Keyboard shortcut (added to App.tsx keydown handler)
+if (e.key === '?' && !isAboutOpen) {
+  setIsAboutOpen(true);
+}
+```
+
+**Key features:**
+- Modal backdrop with click-outside to close
+- Escape key support
+- LogoIcon integration
+- Themed styling using CSS variables
+- Content sections: What is Hyle, Core Powers, Quick Start, Sacred Philosophy
+
+**Error handling:**
+- Wrapped by top-level PrivacyErrorBoundary
+- Simple component with low error risk
+
+### LogoIcon.tsx
+**Animated D20 dice logo for branding**
+
+**Responsibilities:**
+- Render D20 SVG icon with optional animation
+- Dice roll animation on mount
+- Display random roll result (weighted 15% for natural 20)
+- Callback on animation completion
+
+**Props:**
+```typescript
+interface LogoIconProps {
+  size?: number;                        // Default: 80px
+  animate?: boolean;                    // Default: false
+  onAnimationComplete?: (roll: number) => void;
+}
+```
+
+**Usage:**
+```typescript
+// Static logo
+<LogoIcon size={100} />
+
+// Animated roll on mount
+<LogoIcon
+  size={80}
+  animate={true}
+  onAnimationComplete={(roll) => console.log('Rolled:', roll)}
+/>
+```
+
+**Key features:**
+- Pure SVG implementation (no external dependencies)
+- 800ms roll animation with interval-based number randomization
+- 3D rotation effect during animation
+- Weighted random: 15% for natural 20, uniform distribution otherwise
+- Placeholder design (can be replaced with final logo)
+
+**Technical details:**
+- Uses useState for rotation, displayNumber, isRolling
+- useEffect for animation lifecycle
+- setInterval for rapid number changes during spin
+- Cleanup via clearInterval in return function
+
+### HomeScreen.tsx
+**Landing page / splash screen for new users**
+
+**Responsibilities:**
+- First screen users see before entering editor
+- Display branding, recent campaigns, quick actions
+- Interactive playground demonstrating app capabilities
+- Mac download banner (dismissible with localStorage)
+
+**Props:**
+```typescript
+interface HomeScreenProps {
+  onStartEditor: () => void;
+}
+```
+
+**Usage:**
+```typescript
+// In App.tsx when viewState === 'HOME'
+<HomeScreen onStartEditor={handleStartEditor} />
+```
+
+**Key features:**
+- **Animated background** with paper texture and grid
+- **Interactive playground** with 5 draggable tokens (physics + trails)
+- **Animated logo** with dice roll on page load
+- **Easter egg**: 5 rapid logo clicks → all tokens bounce
+- **Recent campaigns** list with load functionality
+- **Quick actions**: New Campaign, Load Campaign, Take a Tour
+- **Footer** with GitHub, About, Report Bug, Help links
+- **Smooth fade-in** animation (0.6s ease-out)
+- **Keyboard shortcuts**: `?` for About modal
+
+**State management:**
+```typescript
+const [recentCampaigns, setRecentCampaigns] = useState<RecentCampaign[]>([]);
+const [isAboutOpen, setIsAboutOpen] = useState(false);
+const [logoClickCount, setLogoClickCount] = useState(0);
+const [triggerEasterEgg, setTriggerEasterEgg] = useState(0);
+const [tokenPositions, setTokenPositions] = useState<Record<string, { x, y, size }>({});
+```
+
+**Token collision system:**
+- Tracks all token positions in state
+- Updates on drag via handleTokenPositionChange callback
+- Passes allTokensArray to each PlaygroundToken
+- Tokens detect collisions and push each other apart
+
+**Performance optimizations:**
+- Memoized token positions (useMemo)
+- Position tracking only updated on drag end
+- Trail cleared when not dragging
+
+### HomeScreen/PlaygroundToken.tsx
+**Enhanced interactive token for landing page demonstration**
+
+**Responsibilities:**
+- Draggable token with advanced visual effects
+- Drag trail effect (motion blur)
+- Token collision physics
+- Idle breathing animation
+- Easter egg celebration bounce
+- Flavor text tooltips
+
+**Props:**
+```typescript
+interface PlaygroundTokenProps {
+  id: string;
+  x: number;
+  y: number;
+  color: string;
+  label: string;
+  size?: number;                       // Default: 40
+  flavorText?: string;
+  easterEggTrigger?: number;           // Incremented to trigger bounce
+  showHint?: boolean;                  // Pulsing glow for discoverability
+  onPositionChange?: (id: string, x: number, y: number) => void;
+  allTokens?: Array<{ id, x, y, size }>;
+}
+```
+
+**Key features:**
+1. **Drag Trail Effect**
+   - Konva Line with last 10 positions (20 values)
+   - Tension curve for smooth appearance
+   - Opacity 0.3 with "lighter" blend mode
+   - Automatically cleared when drag ends
+
+2. **Token Collision Physics**
+   - Circle-circle distance detection
+   - Pushes tokens apart when overlapping
+   - Calculates push vector using angle
+   - Only active during drag
+
+3. **Idle Breathing Animation**
+   - 3px vertical amplitude
+   - 2000ms frequency
+   - requestAnimationFrame for 60fps
+   - Paused during drag
+
+4. **Easter Egg Bounce**
+   - Triggered by easterEggTrigger prop change
+   - Konva.Tween with BounceEaseOut easing
+   - 40px jump height
+   - Chained tweens (up, then down with bounce)
+
+5. **Visual Feedback**
+   - Hover: 1.05x scale, 10px shadow blur
+   - Dragging: 1.15x scale, 20px shadow blur, 0.5 opacity
+   - Hint mode: Pulsing outer glow (animated with Math.sin)
+
+**Usage:**
+```typescript
+<PlaygroundToken
+  id="demo-hero"
+  x={400}
+  y={300}
+  color="#3b82f6"
+  label="Hero"
+  size={40}
+  flavorText="Definitely has protagonist energy."
+  easterEggTrigger={triggerCount}
+  showHint={true}
+  onPositionChange={handleTokenMove}
+  allTokens={allTokensArray}
+/>
+```
+
+**Performance considerations:**
+- Trail limited to 10 positions max (prevents memory leak)
+- Collision only checked during drag
+- Breathing animation uses single RAF loop
+- Visual props memoized based on state
+
+**Why landing page only:**
+- Collision physics would interfere with token stacking in main VTT
+- Trail effect is visual flair for demo, not needed in production
+- Main app prioritizes performance for 20+ tokens
+- Demonstrates tech capabilities without impacting gameplay
+
+### HomeScreen/BackgroundCanvas.tsx
+**Reusable canvas background for landing page**
+
+**Responsibilities:**
+- Render Konva Stage with background layers
+- Reuse PaperNoiseOverlay and GridOverlay from main app
+- Provide container for playground tokens
+
+**Props:**
+```typescript
+interface BackgroundCanvasProps {
+  width: number;
+  height: number;
+  children?: React.ReactNode;
+}
+```
+
+**Usage:**
+```typescript
+<BackgroundCanvas width={window.innerWidth} height={window.innerHeight}>
+  {tokens.map(token => <PlaygroundToken key={token.id} {...token} />)}
+</BackgroundCanvas>
+```
+
+**Layer structure:**
+```
+Stage
+  ├── Layer (background)
+  │   ├── Rect (base background color)
+  │   ├── PaperNoiseOverlay (texture)
+  │   └── GridOverlay (dots)
+  ├── Layer (drawings - PlaygroundDrawings)
+  └── Layer (tokens - children)
+```
+
+**Key features:**
+- Responsive to viewport size
+- Non-draggable (unlike main canvas)
+- Reuses existing Canvas components (DRY principle)
+- Clean separation of background, drawings, and tokens
+
+### HomeScreen/VignetteOverlay.tsx
+**CSS gradient overlay for "fade to infinity" effect**
+
+**Responsibilities:**
+- Render radial gradient overlay
+- Creates edge darkening effect
+- Pure CSS implementation
+
+**Props:** None (zero-config component)
+
+**Usage:**
+```typescript
+<VignetteOverlay />
+```
+
+**Implementation:**
+```typescript
+<div style={{
+  position: 'absolute',
+  inset: 0,
+  pointerEvents: 'none',
+  background: `radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.3) 70%,
+    rgba(0, 0, 0, 0.6) 100%
+  )`,
+}} />
+```
+
+**Key features:**
+- No JavaScript overhead (pure CSS)
+- Pointer events disabled (doesn't interfere with interaction)
+- Absolute positioning (overlays entire viewport)
+- Subtle gradient for professional look
+
+### HomeScreen/PlaygroundDrawings.tsx
+**Static tactical markers for landing page demo**
+
+**Responsibilities:**
+- Render example drawing elements (arrows, circles, lines)
+- Demonstrate marker/drawing tool capabilities
+- Non-interactive (static display)
+
+**Props:** None (self-contained)
+
+**Usage:**
+```typescript
+// Rendered inside BackgroundCanvas
+<PlaygroundDrawings />
+```
+
+**Elements rendered:**
+1. **Tactical movement path** - Curved Line with tension
+2. **Danger zone** - Red Circle with dashed stroke
+3. **Attack arrow** - Green Arrow with fill
+4. **Strategy line** - Purple dashed Line
+5. **Area marker** - Orange Circle
+6. **Text annotation** - Label Text (future feature hint)
+7. **Flanking indicator** - Blue Line
+
+**Technical details:**
+- Uses Konva primitives (Line, Circle, Arrow, Text)
+- Positioned relative to viewport center
+- Themed colors matching app palette
+- All elements set to `listening={false}` for performance
+
+**Implementation:**
+```typescript
+export function PlaygroundDrawings() {
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+
+  return (
+    <>
+      <Line points={[...]} stroke="#3b82f6" strokeWidth={4} tension={0.5} />
+      <Circle x={...} y={...} radius={60} stroke="#ef4444" dash={[5, 5]} />
+      <Arrow points={[...]} stroke="#10b981" fill="#10b981" />
+      {/* ... more elements */}
+    </>
+  );
+}
+```
+
+## Error Boundary Coverage
+
+All components are protected by the top-level **PrivacyErrorBoundary** in `main.tsx`:
+
+```typescript
+ReactDOM.createRoot(rootElement).render(
+  <React.StrictMode>
+    <PrivacyErrorBoundary>
+      <App />
+      <PendingErrorsIndicator position="bottom-right" />
+    </PrivacyErrorBoundary>
+  </React.StrictMode>
+);
+```
+
+**New components that are automatically protected:**
+- ✅ AboutModal (low risk - simple modal with text)
+- ✅ LogoIcon (low risk - SVG with animation state)
+- ✅ HomeScreen (medium risk - complex with many features)
+- ✅ PlaygroundToken (medium risk - physics and animations)
+- ✅ BackgroundCanvas (low risk - reuses existing Canvas components)
+- ✅ VignetteOverlay (zero risk - pure CSS)
+- ✅ PlaygroundDrawings (low risk - static Konva shapes)
+
+**Components with their own error boundaries:**
+- TokenErrorBoundary (wraps individual tokens in main canvas)
+- CanvasOverlayErrorBoundary (wraps canvas overlays)
+- MinimapErrorBoundary (wraps minimap)
+- LibraryModalErrorBoundary (wraps library modal)
+- AssetProcessingErrorBoundary (wraps asset processing)
+- DungeonGeneratorErrorBoundary (wraps dungeon generator)
+
+**See:** [docs/features/error-boundaries.md](../../docs/features/error-boundaries.md) for complete architecture
+
 ## Future Components
 
 ### Planned
@@ -638,18 +1024,17 @@ const handleDrop = (e: React.DragEvent) => {
 3. **ToolSettings** - Panel for tool-specific settings (marker color, stroke width)
 4. **AssetLibraryManager** - Full library UI with search, categories, upload
 5. **SettingsDialog** - Application settings (grid size, colors, shortcuts)
-6. **ErrorBoundary** - Catch component errors, show fallback UI
 
 ### Under Consideration
 1. **TokenAuras** - Circular radius indicators around tokens
 2. **RulerOverlay** - Measure distances between points
 3. **TextLabel** - Add text annotations to map
 4. **ShapeTools** - Rectangle, circle, line drawing tools
-5. **MiniMap** - Thumbnail overview for large maps
 
 ## Related Documentation
 
 - **[Canvas System](../../docs/components/canvas.md)** - Canvas-specific component docs
 - **[Architecture Overview](../../docs/architecture/ARCHITECTURE.md)** - Overall component architecture
 - **[Code Conventions](../../docs/guides/CONVENTIONS.md)** - Component structure standards
+- **[Error Boundaries](../../docs/features/error-boundaries.md)** - Error handling architecture
 - **[Renderer Process](../README.md)** - Renderer process overview

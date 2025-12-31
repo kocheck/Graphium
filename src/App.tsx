@@ -22,6 +22,7 @@ import MobileToolbar from './components/MobileToolbar';
 import { rollForMessage } from './utils/systemMessages';
 import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 import Tooltip from './components/Tooltip';
+import { AboutModal } from './components/AboutModal';
 
 /**
  * App is the root component for Hyle's dual-window architecture
@@ -133,6 +134,9 @@ function App() {
   // Command Palette state (Cmd+P)
   const [isPaletteOpen, setPaletteOpen] = useCommandPalette();
 
+  // About Modal state
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+
   // Resource Monitor state (from store)
   const showResourceMonitor = useGameStore((state) => state.showResourceMonitor);
 
@@ -213,6 +217,20 @@ function App() {
         return;
       }
 
+      // Global keyboard shortcuts (work in both views)
+      // '?' to open About modal (Shift+/)
+      if ((e.key === '?' || (e.shiftKey && e.key === '/')) && !isAboutOpen) {
+        e.preventDefault();
+        setIsAboutOpen(true);
+        return;
+      }
+
+      // Escape to close About modal
+      if (e.key === 'Escape' && isAboutOpen) {
+        setIsAboutOpen(false);
+        return;
+      }
+
       // Prevent tool switching in World View (player mode)
       if (!isArchitectView) return;
 
@@ -266,7 +284,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isArchitectView, tool]);
+  }, [isArchitectView, tool, isAboutOpen]);
 
   // Handle Menu Commands (Electron IPC)
   useEffect(() => {
@@ -334,11 +352,16 @@ function App() {
         );
     };
 
+    const handleShowAbout = () => {
+        setIsAboutOpen(true);
+    };
+
     ipcRenderer.on('MENU_SAVE_CAMPAIGN', handleSave);
     ipcRenderer.on('MENU_LOAD_CAMPAIGN', handleLoad);
     ipcRenderer.on('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
     ipcRenderer.on('MENU_GENERATE_DUNGEON', handleGenerateDungeon);
     ipcRenderer.on('MENU_NEW_CAMPAIGN', handleNewCampaign);
+    ipcRenderer.on('MENU_SHOW_ABOUT', handleShowAbout);
 
     return () => {
         ipcRenderer.off('MENU_SAVE_CAMPAIGN', handleSave);
@@ -346,6 +369,7 @@ function App() {
         ipcRenderer.off('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
         ipcRenderer.off('MENU_GENERATE_DUNGEON', handleGenerateDungeon);
         ipcRenderer.off('MENU_NEW_CAMPAIGN', handleNewCampaign);
+        ipcRenderer.off('MENU_SHOW_ABOUT', handleShowAbout);
     };
   }, []); // Empty dependency array as handlers use getState()
 
@@ -362,6 +386,7 @@ function App() {
         <ThemeManager />
         <Toast />
         <ConfirmDialog />
+        <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
 
         {/* Home/Splash Screen */}
         <HomeScreen onStartEditor={handleStartEditor} />
@@ -379,6 +404,7 @@ function App() {
       <Toast />
       <ConfirmDialog />
       <DungeonGeneratorDialog />
+      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
 
       {/* Loading Overlay: Only render in World View to block players' view */}
       {isWorldView && <LoadingOverlay />}

@@ -35,6 +35,14 @@ hyle/
 │   │   │   ├── GridOverlay.tsx        # Tactical grid (LINES/DOTS/HIDDEN)
 │   │   │   ├── FogOfWarLayer.tsx      # Fog of war overlay (World View only)
 │   │   │   └── TokenErrorBoundary.tsx # Per-token error isolation
+│   │   ├── HomeScreen/           # Landing page components
+│   │   │   ├── BackgroundCanvas.tsx   # Reusable canvas background
+│   │   │   ├── PlaygroundToken.tsx    # Interactive demo tokens (physics + trails)
+│   │   │   ├── PlaygroundDrawings.tsx # Static tactical markers
+│   │   │   └── VignetteOverlay.tsx    # Edge fade effect
+│   │   ├── AboutModal.tsx             # App info modal (global)
+│   │   ├── LogoIcon.tsx               # Animated D20 dice logo
+│   │   ├── HomeScreen.tsx             # Landing page / splash screen
 │   │   ├── ImageCropper.tsx           # Token cropping UI
 │   │   ├── Sidebar.tsx                # Map/grid controls + token library
 │   │   ├── SyncManager.tsx            # IPC state sync manager
@@ -98,6 +106,9 @@ hyle/
 - **Temp Assets**: Processed images stored in userData/temp_assets/ until campaign save
 - **IPC (Inter-Process Communication)**: Electron's system for main ↔ renderer communication
 - **Sync Manager**: Component that broadcasts Architect state changes to World View via IPC
+- **Home Screen**: Landing page shown before entering editor (new campaigns, recent campaigns, branding)
+- **About Modal**: Global information dialog accessible via `?` keyboard shortcut
+- **Playground Tokens**: Demo tokens on landing page with physics, trails, and collision (landing page only)
 - **Asset Processor**: Utility that resizes images and converts to WebP format
 - **Custom Protocol**: `media://` URL scheme for secure local file access in renderer
 - **Viewport**: Camera position and zoom level on the canvas

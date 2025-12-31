@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import { Stage, Layer, Line, Rect, Transformer, Group } from 'react-konva';
+import { Stage, Layer, Line, Rect, Transformer, Group, Text } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
@@ -14,6 +14,7 @@ import ImageCropper from '../ImageCropper';
 import TokenErrorBoundary from './TokenErrorBoundary';
 import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import FogOfWarLayer from './FogOfWarLayer';
+import { useThemeColor } from '../../hooks/useThemeColor';
 import DoorLayer from './DoorLayer';
 import StairsLayer from './StairsLayer';
 import PaperNoiseOverlay from './PaperNoiseOverlay';
@@ -289,11 +290,15 @@ const CanvasManager = ({
   // Empty handlers for disabled Konva drag events (defined once to prevent re-renders)
   const emptyDragHandler = useCallback(() => {}, []);
 
+
   // Navigation State
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  // Theme-aware text color for contrast
+  const textColor = useThemeColor('--app-text-primary');
 
   // Touch/Pinch State
   const lastPinchDistance = useRef<number | null>(null);
@@ -1170,7 +1175,7 @@ const CanvasManager = ({
 
         // Performance optimization: Use push (in-place mutation) instead of concat (array copy)
         // This reduces GC pressure and is faster for large stroke collections
-        // 
+        //
         // IMMUTABILITY EXCEPTION: This mutates currentLine.current.points directly, which
         // violates the general immutability pattern established in the codebase. This is
         // acceptable here because:
@@ -1953,6 +1958,7 @@ const CanvasManager = ({
                 };
 
                 const visualProps = getVisualProps();
+                const safeScale = token.scale || 1;
 
                 return (
                 <Group key={token.id}>
@@ -1970,8 +1976,8 @@ const CanvasManager = ({
                     src={token.src}
                     x={displayX}
                     y={displayY}
-                    width={gridSize * token.scale}
-                    height={gridSize * token.scale}
+                    width={gridSize * safeScale}
+                    height={gridSize * safeScale}
                     draggable={false}
                     // Visual props (scaleX, scaleY, opacity, shadow) are transformation properties
                     // that multiply with base dimensions to create hover/drag feedback effects
@@ -1988,8 +1994,8 @@ const CanvasManager = ({
                   <Rect
                     x={displayX}
                     y={displayY}
-                    width={gridSize * token.scale}
-                    height={gridSize * token.scale}
+                    width={gridSize * safeScale}
+                    height={gridSize * safeScale}
                     stroke="#2563eb"
                     strokeWidth={3}
                     shadowColor="#2563eb"
@@ -1999,6 +2005,23 @@ const CanvasManager = ({
                   />
                 )}
                 </TokenErrorBoundary>
+
+                {/* Token Nameplate - Rendered outside ErrorBoundary to prevent nesting issues */}
+                {token.name && (
+                  <Text
+                    text={token.name}
+                    fontSize={12}
+                    fontFamily="IBM Plex Sans, sans-serif"
+                    fill={textColor}
+                    fontStyle="bold"
+                    align="center"
+                    verticalAlign="middle"
+                    width={(gridSize * safeScale) * 2}
+                    x={displayX - (gridSize * safeScale) / 2}
+                    y={displayY + (gridSize * safeScale) + 8}
+                    listening={false}
+                  />
+                )}
                 </Group>
                 );
             })}
