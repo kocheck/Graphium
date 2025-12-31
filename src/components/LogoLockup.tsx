@@ -13,7 +13,7 @@ interface LogoLockupProps {
 }
 
 /**
- * LogoLockup - Hyle Wordmark + Icon
+ * LogoLockup - Graphium Wordmark + Icon
  *
  * Automatically switches between light and dark versions based on
  * the current application theme or provided prop.
