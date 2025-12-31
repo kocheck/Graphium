@@ -252,7 +252,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         label: getRandomName(heroNames),
         flavorText: 'Definitely has protagonist energy.',
         size: tokenSize,
-        imageSrc: '/tokens/hero.png',
+        imageSrc: './tokens/hero.png',
       },
       {
         id: 'demo-wizard',
@@ -260,7 +260,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         label: getRandomName(wizardNames),
         flavorText: 'Contemplating the nature of reality... or maybe just lunch.',
         size: tokenSize,
-        imageSrc: '/tokens/wizard.png',
+        imageSrc: './tokens/wizard.png',
       },
       {
         id: 'demo-ranger',
@@ -268,7 +268,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         label: getRandomName(rangerNames),
         flavorText: 'Survival check: 18. They know exactly where the nearest tavern is.',
         size: tokenSize,
-        imageSrc: '/tokens/ranger.png',
+        imageSrc: './tokens/ranger.png',
       },
       {
         id: 'demo-goblin',
@@ -276,7 +276,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         label: getRandomName(goblinNames),
         flavorText: 'Rolled a 3 on Stealth. You can smell them from here.',
         size: tokenSize,
-        imageSrc: '/tokens/goblin.png',
+        imageSrc: './tokens/goblin.png',
       },
       {
         id: 'demo-dragon',
@@ -284,7 +284,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         label: getRandomName(dragonNames),
         flavorText: "This ancient wyrm hasn't had breakfast yet. You look crunchy.",
         size: tokenSize * 4,
-        imageSrc: '/tokens/dragon.png',
+        imageSrc: './tokens/dragon.png',
       },
     ];
 
