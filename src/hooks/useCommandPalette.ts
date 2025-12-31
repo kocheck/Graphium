@@ -11,17 +11,19 @@
  * @returns Tuple with [isOpen, setIsOpen] state and setter
  */
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useGameStore } from '../store/gameStore';
 
 export function useCommandPalette(): [boolean, (isOpen: boolean) => void] {
-  const [isOpen, setIsOpen] = useState(false);
+  const isOpen = useGameStore(state => state.isCommandPaletteOpen);
+  const setIsOpen = useGameStore(state => state.setCommandPaletteOpen);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+P (Mac) or Ctrl+P (Windows/Linux)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
-        e.preventDefault(); // Prevent browser print dialog
-        setIsOpen(prev => !prev); // Toggle palette
+      // Cmd+P or Cmd+K (Mac) / Ctrl+P or Ctrl+K (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'p' || e.key === 'k')) {
+        e.preventDefault(); // Prevent browser print dialog or other default actions
+        setIsOpen(!isOpen); // Toggle palette
       }
     };
 
@@ -30,7 +32,7 @@ export function useCommandPalette(): [boolean, (isOpen: boolean) => void] {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [isOpen, setIsOpen]);
 
   return [isOpen, setIsOpen];
 }

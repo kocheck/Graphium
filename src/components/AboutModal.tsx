@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { LogoIcon } from './LogoIcon';
+import { LogoLockup } from './LogoLockup';
 
 export type AboutModalTab = 'about' | 'tutorial' | 'shortcuts';
 
@@ -79,10 +79,10 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
     const focusableElements = modal.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    
+
     // Guard: if no focusable elements exist, don't set up the trap
     if (focusableElements.length === 0) return;
-    
+
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -161,17 +161,8 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
           >
             ×
           </button>
-
           <div className="flex items-center gap-4">
-             <LogoIcon size={32} />
-             <h2 className="text-2xl font-bold" style={{
-               background: 'linear-gradient(135deg, var(--app-accent-solid), var(--app-accent-text))',
-               WebkitBackgroundClip: 'text',
-               WebkitTextFillColor: 'transparent',
-               backgroundClip: 'text',
-             }}>
-               HYLE
-             </h2>
+             <LogoLockup width={150} />
           </div>
 
           {/* Navigation Tabs */}

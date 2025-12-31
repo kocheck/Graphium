@@ -1,7 +1,7 @@
 {
   "name": "hyle",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -52,6 +52,7 @@
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^1.6.1",
     "autoprefixer": "^10.4.22",
     "axe-core": "^4.11.0",
     "electron": "^30.0.1",

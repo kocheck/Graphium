@@ -18,32 +18,78 @@ import type { TokenLibraryItem } from '../store/gameStore';
  * @param query - Search query
  * @returns Score (higher is better match), 0 if no match
  */
+/**
+ * Calculate fuzzy match score using subsequence matching
+ *
+ * @param text - Text to search in
+ * @param query - Search query
+ * @returns Score (higher is better match), 0 if no match
+ */
 function scoreMatch(text: string, query: string): number {
+  if (!query) return 0;
   const lowerText = text.toLowerCase();
   const lowerQuery = query.toLowerCase();
 
   // Exact match = highest score
   if (lowerText === lowerQuery) return 100;
 
-  // Starts with query = high score
-  if (lowerText.startsWith(lowerQuery)) return 90;
-
-  // Contains query = medium score
-  if (lowerText.includes(lowerQuery)) return 70;
-
-  // Check for substring matches of individual query words
-  const queryWords = lowerQuery.split(/\s+/).filter(w => w.length > 0);
-  const matchedWords = queryWords.filter(word => lowerText.includes(word));
-
-  if (matchedWords.length === queryWords.length) {
-    // All query words found
-    return 50;
-  } else if (matchedWords.length > 0) {
-    // Some query words found
-    return 30 * (matchedWords.length / queryWords.length);
+  // 1. Check if query is a subsequence
+  let qIdx = 0;
+  let tIdx = 0;
+  while (tIdx < lowerText.length && qIdx < lowerQuery.length) {
+    if (lowerText[tIdx] === lowerQuery[qIdx]) {
+      qIdx++;
+    }
+    tIdx++;
   }
 
-  return 0; // No match
+  // If not all query chars found in order, no match
+  if (qIdx < lowerQuery.length) return 0;
+
+  // 2. Calculate score based on quality of match
+  let score = 0;
+
+  // Baseline for matching
+  score += 10;
+
+  // Bonus: Starts with query
+  if (lowerText.startsWith(lowerQuery)) score += 40;
+
+  // Bonus: Contains exact query substring
+  if (lowerText.includes(lowerQuery)) score += 20;
+
+  // Re-scan for structural bonuses
+  let lastMatchIdx = -1;
+  let compactness = 0; // Penalty for distance between matches
+
+  qIdx = 0;
+  for (let i = 0; i < lowerQuery.length; i++) {
+    const char = lowerQuery[i];
+    // Find next occurrence
+    const idx = lowerText.indexOf(char, lastMatchIdx + 1);
+
+    // Bonus: Match is at start of word (or start of string)
+    if (idx === 0 || lowerText[idx - 1] === ' ' || lowerText[idx - 1] === '-' || lowerText[idx - 1] === '_') {
+      score += 15;
+    }
+
+    // Bonus: Consecutive match
+    if (idx === lastMatchIdx + 1) {
+      score += 10;
+    } else {
+        // Distance penalty
+        if (lastMatchIdx !== -1) {
+            compactness += (idx - lastMatchIdx);
+        }
+    }
+
+    lastMatchIdx = idx;
+  }
+
+  // Deduct penalty for spread out matches (shorter spread is better)
+  score -= Math.min(compactness, 20);
+
+  return Math.max(0, score);
 }
 
 /**
@@ -60,10 +106,22 @@ export function fuzzySearch(items: TokenLibraryItem[], query: string): TokenLibr
   }
 
   const trimmedQuery = query.trim();
+  const lowerQuery = trimmedQuery.toLowerCase();
+
+  // Check if searching for section title
+  const isSectionSearch = 'assets'.startsWith(lowerQuery);
+  const sectionBoost = isSectionSearch ? 50 : 0;
 
   // Score each item
   const scored = items.map(item => {
     let score = 0;
+
+    // Apply section boost if applicable
+    if (isSectionSearch) {
+        score += sectionBoost;
+        // If exact "assets" typed, show everything with high score
+        if (lowerQuery === 'assets') return { item, score: 100 };
+    }
 
     // Score name (weight: 3x)
     score += scoreMatch(item.name, trimmedQuery) * 3;

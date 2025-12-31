@@ -272,6 +272,7 @@ export interface GameState {
   dungeonDialog: boolean;
   isGamePaused: boolean;
   isMobileSidebarOpen: boolean;
+  isCommandPaletteOpen: boolean;
 
   // --- Vision State (Computed, not persisted) ---
   /** Active vision polygons for current PC tokens (used for token visibility) */
@@ -363,6 +364,7 @@ export interface GameState {
   clearDungeonDialog: () => void;
   setIsGamePaused: (isPaused: boolean) => void;
   setMobileSidebarOpen: (isOpen: boolean) => void;
+  setCommandPaletteOpen: (isOpen: boolean) => void;
 
   // Measurement Actions
   setActiveMeasurement: (measurement: Measurement | null) => void;
@@ -401,6 +403,7 @@ export const useGameStore = create<GameState>((set, get) => {
     activeMeasurement: null,
     broadcastMeasurement: false,
     dmMeasurement: null,
+    isCommandPaletteOpen: false,
 
     campaign: initialCampaign,
 
@@ -433,7 +436,7 @@ export const useGameStore = create<GameState>((set, get) => {
       // Create a fresh campaign with a single default map
       const newMap = createDefaultMap('Map 1');
       const newCampaign = createDefaultCampaign(newMap);
-      
+
       set({
         campaign: newCampaign,
         // Reset active map state
@@ -671,20 +674,13 @@ export const useGameStore = create<GameState>((set, get) => {
     toggleDoor: (id: string) => set((state) => {
       const door = state.doors.find(d => d.id === id);
       if (!door) return state; // Door not found, no change
-      
-      const newDoors = state.doors.map(d => 
+
+      const newDoors = state.doors.map(d =>
         d.id === id ? { ...d, isOpen: !d.isOpen } : d
       );
 
-      // DIRECT SYNC: Send DOOR_TOGGLE immediately (bypasses subscription/throttle)
-      // This ensures door toggles always sync, even if the subscription system has issues
-      if (typeof window !== 'undefined') {
-        // @ts-expect-error - window.hyleSync is injected by SyncManager
-        const hyleSync = window.hyleSync;
-        if (hyleSync && typeof hyleSync === 'function') {
-          hyleSync({ type: 'DOOR_TOGGLE', payload: { id } });
-        }
-      }
+      // DIRECT SYNC REMOVED: Rely on SyncManager delta detection (syncUtils)
+      // to avoid "double toggle" issues where both manual and auto sync fire.
 
       return { doors: newDoors };
     }),
@@ -744,6 +740,7 @@ export const useGameStore = create<GameState>((set, get) => {
     clearDungeonDialog: () => set({ dungeonDialog: false }),
     setIsGamePaused: (isPaused: boolean) => set({ isGamePaused: isPaused }),
     setMobileSidebarOpen: (isOpen: boolean) => set({ isMobileSidebarOpen: isOpen }),
+    setCommandPaletteOpen: (isOpen: boolean) => set({ isCommandPaletteOpen: isOpen }),
 
     // --- Measurement Actions ---
     setActiveMeasurement: (measurement: Measurement | null) => set({ activeMeasurement: measurement }),
@@ -757,6 +754,6 @@ if (typeof window !== 'undefined' && (import.meta.env.DEV || import.meta.env.MOD
   interface GameStoreWindow extends Window {
     __GAME_STORE__?: typeof useGameStore;
   }
-  
+
   (window as GameStoreWindow).__GAME_STORE__ = useGameStore;
 }
