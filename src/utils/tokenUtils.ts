@@ -4,16 +4,27 @@
 
 export interface Token {
     id: string;
+    x: number;
+    y: number;
     src: string;
-    [key: string]: unknown;
+    libraryItemId?: string;
+    scale?: number;
+    type?: 'PC' | 'NPC';
+    visionRadius?: number;
+    name?: string;
 }
 
 export interface LibraryItem {
     id: string;
+    name: string;
     src: string;
     thumbnailSrc: string;
-    name: string;
-    [key: string]: unknown;
+    category: string;
+    tags: string[];
+    dateAdded: number;
+    defaultScale?: number;
+    defaultVisionRadius?: number;
+    defaultType?: 'PC' | 'NPC';
 }
 
 /**

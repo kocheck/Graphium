@@ -33,8 +33,9 @@ import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron'
 
 // Map to store original listeners -> wrapper listeners
 // This is needed because we wrap listeners in on(), so we need the wrapper reference for off()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const listenerMap = new WeakMap<
-  (...args: unknown[]) => void,
+  (event: IpcRendererEvent, ...args: any[]) => void,
   (event: IpcRendererEvent, ...args: unknown[]) => void
 >();
 

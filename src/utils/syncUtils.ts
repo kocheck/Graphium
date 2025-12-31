@@ -1,4 +1,5 @@
-import { Token, Drawing, Door, MapConfig } from '../store/gameStore';
+import { Token, Drawing, Door, MapConfig, Stairs, GridType, ExploredRegion } from '../store/gameStore';
+import { Measurement } from '../types/measurement';
 
 /**
  * Deep equality check for simple objects with primitive values and arrays
@@ -74,22 +75,22 @@ export function isEqual(obj1: unknown, obj2: unknown): boolean {
 
   for (const key of keys1) {
     if (!keys2Set.has(key)) return false;
-    if (!isEqual(obj1[key], obj2[key])) return false;
+    if (!isEqual((obj1 as Record<string, unknown>)[key], (obj2 as Record<string, unknown>)[key])) return false;
   }
 
   return true;
 }
 
 // Define a type for the game state that gets synced
-interface SyncableGameState {
+export interface SyncableGameState {
   tokens: Token[];
   drawings: Drawing[];
   doors: Door[];
-  stairs: unknown[];
+  stairs: Stairs[];
   gridSize: number;
-  gridType: string;
+  gridType: GridType;
   map: MapConfig | null;
-  exploredRegions: unknown[];
+  exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
 }
 
@@ -109,8 +110,8 @@ export type SyncAction =
   | { type: 'DOOR_REMOVE'; payload: { id: string } }
   | { type: 'DOOR_TOGGLE'; payload: { id: string } }
   | { type: 'MAP_UPDATE'; payload: MapConfig | null }
-  | { type: 'GRID_UPDATE'; payload: { gridSize?: number; gridType?: string; isDaylightMode?: boolean } }
-  | { type: 'MEASUREMENT_UPDATE'; payload: unknown | null };
+  | { type: 'GRID_UPDATE'; payload: { gridSize?: number; gridType?: GridType; isDaylightMode?: boolean } }
+  | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null };
 
 /**
  * Detects changes between previous and current state, returns delta actions
@@ -233,7 +234,7 @@ export function detectChanges(prevState: Partial<SyncableGameState>, currentStat
   }
 
   if (!isEqual(prevState.map, currentState.map)) {
-    actions.push({ type: 'MAP_UPDATE', payload: currentState.map });
+    actions.push({ type: 'MAP_UPDATE', payload: currentState.map ?? null });
   }
 
   // --- DOORS ---

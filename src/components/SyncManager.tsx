@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { isEqual, detectChanges, SyncAction } from '../utils/syncUtils';
+import { isEqual, detectChanges, SyncAction, SyncableGameState } from '../utils/syncUtils';
 
 // Basic throttle implementation to limit IPC frequency
 // Ensures leading edge execution and trailing edge (so final state is always sent)
@@ -90,17 +90,17 @@ const SyncManager = () => {
 
         switch (action.type) {
           case 'FULL_SYNC':
-            useGameStore.setState(action.payload);
+            useGameStore.setState(action.payload as Partial<SyncableGameState>);
             // Initialize World View's previous state for bidirectional sync
             worldViewPrevStateRef.current = {
-              tokens: [...action.payload.tokens],
+              tokens: action.payload.tokens ? [...action.payload.tokens] : [],
               drawings: [...(action.payload.drawings || [])],
               doors: [...(action.payload.doors || [])],
               stairs: [...(action.payload.stairs || [])],
-              gridSize: action.payload.gridSize,
-              gridType: action.payload.gridType,
+              gridSize: action.payload.gridSize ?? 50,
+              gridType: action.payload.gridType ?? 'LINES',
               map: action.payload.map ? { ...action.payload.map } : null,
-              isDaylightMode: action.payload.isDaylightMode,
+              isDaylightMode: action.payload.isDaylightMode ?? false,
             };
             break;
 
