@@ -300,8 +300,6 @@ const CanvasManager = ({
   // Theme-aware text color for contrast
   const textColor = useThemeColor('--app-text-primary');
 
-  const [windowDimensions, setWindowDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
-
   // Touch/Pinch State
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
