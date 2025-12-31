@@ -12,6 +12,7 @@ import {
   RiInformationLine,
 } from '@remixicon/react';
 import { BackgroundCanvas } from './HomeScreen/BackgroundCanvas';
+import { LogoLockup } from './LogoLockup';
 import { PlaygroundToken } from './HomeScreen/PlaygroundToken';
 import { PlaygroundDrawings } from './HomeScreen/PlaygroundDrawings';
 import { VignetteOverlay } from './HomeScreen/VignetteOverlay';
@@ -378,6 +379,69 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     }));
   };
 
+  // AI Movement Effect: Randomly nudge tokens to encourage interaction
+  useEffect(() => {
+    // Wait for everything to settle
+    const timeout = setTimeout(() => {
+      const interval = setInterval(() => {
+        // 1. Pick a random token
+        const ids = Object.keys(tokenPositions);
+        if (ids.length === 0) return;
+
+        const randomId = ids[Math.floor(Math.random() * ids.length)];
+        const currentPos = tokenPositions[randomId];
+
+        if (!currentPos) return;
+
+        // 2. Calculate nudge
+        // Move towards center if too close to edge, otherwise random
+        const width = windowDimensions.width;
+        const height = windowDimensions.height;
+        const playAreaHeight = height * 0.55;
+
+        // Random move +/- 40px
+        const dx = (Math.random() - 0.5) * 80;
+        const dy = (Math.random() - 0.5) * 80;
+
+        let newX = currentPos.x + dx;
+        let newY = currentPos.y + dy;
+
+        // 3. Boundary checks
+        const padding = 60;
+
+        // Clamp to screen
+        newX = Math.max(padding, Math.min(newX, width - padding));
+        newY = Math.max(padding, Math.min(newY, playAreaHeight - padding));
+
+        // Check Logo Zone
+        const logoZoneWidth = 600;
+        const logoZoneHeight = 250;
+        const logoZoneY = height * 0.15;
+
+        const inLogoZone =
+          newX > (width / 2 - logoZoneWidth / 2) &&
+          newX < (width / 2 + logoZoneWidth / 2) &&
+          newY > logoZoneY &&
+          newY < (logoZoneY + logoZoneHeight);
+
+        if (inLogoZone) {
+          return; // Abort move if it hits logo
+        }
+
+        // Apply move
+        setTokenPositions(prev => ({
+          ...prev,
+          [randomId]: { ...prev[randomId], x: newX, y: newY }
+        }));
+
+      }, 3500); // Move one token every 3.5s
+
+      return () => clearInterval(interval);
+    }, 2000); // Startup delay
+
+    return () => clearTimeout(timeout);
+  }, [tokenPositions, windowDimensions]);
+
   // Convert tokenPositions to array for passing to tokens
   const allTokensArray = Object.entries(tokenPositions).map(([id, pos]) => ({
     id,
@@ -404,8 +468,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           <PlaygroundToken
             key={token.id}
             id={token.id}
-            x={token.x}
-            y={token.y}
+            x={tokenPositions[token.id]?.x ?? token.x}
+            y={tokenPositions[token.id]?.y ?? token.y}
             color={token.color}
             label={token.label}
             size={token.size}
@@ -536,16 +600,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       }}>
         {/* Branding */}
         <div className="text-center mb-16">
-          <div>
-            <h1 className="text-6xl font-bold mb-4" style={{
-              background: 'linear-gradient(135deg, var(--app-accent-solid), var(--app-accent-text))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))', // Add depth to make it pop
-            }}>
-              Hyle
-            </h1>
+          <div className="flex flex-col items-center">
+            <LogoLockup width={400} className="mb-6 drop-shadow-xl" />
             <p className="text-xl font-medium" style={{
               color: 'var(--app-text-primary)', // HIGHER contrast (was secondary)
               textShadow: '0 2px 4px rgba(0,0,0,0.5)', // improve legibility against map

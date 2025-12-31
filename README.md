@@ -1,9 +1,12 @@
 ```
-╦ ╦╦ ╦╦  ╔═╗
-╠═╣╚╦╝║  ║╣
-╩ ╩ ╩ ╩═╝╚═╝
-```
-# **HYLE: World Given Form**
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/branding/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="public/branding/logo-light.svg">
+    <img alt="Hyle Logo" src="public/branding/logo-light.svg" width="600">
+  </picture>
+</div>
+
 ### *An Arcane Battlemat for the Discerning Dungeon Master*
 
 ---

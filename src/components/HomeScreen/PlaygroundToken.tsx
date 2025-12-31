@@ -104,6 +104,29 @@ export function PlaygroundToken({
     }
   }, [easterEggTrigger, position.y]);
 
+  // Sync with prop updates (animation from parent)
+  useEffect(() => {
+    if (!isDragging && (initialX !== position.x || initialY !== position.y)) {
+      // If the prop changed and we're not dragging, animate to the new position
+      if (groupRef.current) {
+        const tween = new Konva.Tween({
+          node: groupRef.current,
+          duration: 0.6, // Smooth transition
+          x: initialX,
+          y: initialY,
+          easing: Konva.Easings.EaseInOut,
+          onFinish: () => {
+            setPosition({ x: initialX, y: initialY });
+          },
+        });
+        tween.play();
+      } else {
+        // Fallback if ref not ready
+        setPosition({ x: initialX, y: initialY });
+      }
+    }
+  }, [initialX, initialY]);
+
   // Clear trail when not dragging
   useEffect(() => {
     if (!isDragging) {
