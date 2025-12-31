@@ -1,4 +1,5 @@
-```
+<br>
+
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/branding/logo-dark.svg">
@@ -6,89 +7,194 @@
     <img alt="Hyle Logo" src="public/branding/logo-light.svg" width="600">
   </picture>
 </div>
+<br>
+
+<div align="center">
 
 ### *An Arcane Battlemat for the Discerning Dungeon Master*
+
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-172%20passing-success)
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+
+[Quick Start](#-quick-start) • [Features](#️-arcane-capabilities) • [Installation](#-the-summoning-ritual) • [Usage](#-usage-guide) • [Contributing](#-contributing)
+
+</div>
 
 ---
 
 > **Hyle** (noun, from ancient Greek *ὕλη*): *Matter; the fundamental substance of which everything is composed. The raw material from which worlds are forged.*
 
-Greetings, Master of Dungeons! You hold in your hands the chronicle of **Hyle**, a lightweight, local-first desktop grimoire designed to replace your physical battlemap with the power of digital sorcery. Project your campaign map onto a second monitor or screen share, maintaining total control over what your players see while you orchestrate the chaos from your Architect's throne.
+**Hyle** is a lightweight, local-first desktop battlemap application designed to replace your physical battlemap with digital sorcery. Project your campaign map onto a second monitor or screen share, maintaining total control over what your players see while you orchestrate the chaos from your DM's throne.
 
-**The Sacred Philosophy:** Hyle is a **generic digital battlemat**—no more, no less. It cares not whether you run D&D 5e, Pathfinder, or a homebrew system powered by coin flips and interpretive dance. It handles **maps, tokens, and dynamic fog of war** without demanding tribute to corporate overlords. Your data remains **yours**, stored locally in sacred `.hyle` tomes that no cloud wizard can touch.
+**The Sacred Philosophy:** Hyle is a **generic digital battlemat**—no more, no less. It cares not whether you run D&D 5e, Pathfinder, or a homebrew system powered by coin flips and interpretive dance. Your data remains **yours**, stored locally in sacred `.hyle` files that no cloud wizard can touch.
 
 ![Hyle Screenshot](https://via.placeholder.com/800x450?text=Hyle+Application+Preview)
 
 ---
 
-## ⚔️ **Arcane Capabilities**
-### *The Powers at Your Command*
+## 📜 Table of Contents
 
-- **🏰 Dual-Window Enchantment**:
-  - **Architect View**: Your command center. Files, tools, hidden knowledge—this is your war room.
-  - **World View**: A pristine, borderless window for your players. Drag it to a projector or second display and watch their faces light up as the map materializes before them.
-
-- **🌗 Accessible Theme Sorcery**:
-  - **Light/Dark Mode**: Automatically detects your system preference, but you can override it with a flick of the View menu.
-  - **WCAG AA Compliant**: Every piece of text meets accessibility standards—because even evil wizards need good contrast ratios.
-  - **Persistent Preferences**: Your theme choice is etched into local storage and restored when you next summon the app.
-  - **No Flash**: FOUC prevention ensures your theme loads smoothly, like a well-cast *Prestidigitation*.
-
-- **🎨 Local-First Asset Conjuration**:
-  - **Drag & Drop Magic**: Hurl any image (JPG, PNG) onto the canvas and watch it materialize.
-  - **Auto-Optimization**: Large maps are automatically transmuted into high-performance WebP formats, compressed and optimized like a *Reduce* spell.
-  - **Cropping Ritual**: Built-in UI to crop and zoom tokens before they join your campaign.
-
-- **✏️ Drawing Tools of Power**:
-  - **Marker & Eraser**: Sketch annotations and tactical notes. Hold Shift to lock your strokes to horizontal or vertical axes—perfect for drawing dungeon corridors.
-  - **Wall Tool**: Draw vision-blocking barriers invisible to players but shown as dashed red lines in your DM view. They'll never see that ambush coming.
-
-- **🌫️ Fog of War Manipulation**:
-  - **Dynamic Vision**: PC tokens reveal areas based on configurable vision radius. Darkvision? Torchlight? You control it all.
-  - **Blurred Aesthetic**: Instead of solid black occlusion, unseen areas are blurred and darkened—preserving context while obscuring details.
-  - **Wall Occlusion**: Walls block line of sight using a real-time raycasting algorithm. It's geometry, but cooler.
-  - **Token Inspector**: Edit token properties (name, type, vision radius) directly in the DM view.
-
-- **💾 Persistence Enchantment**:
-  - Save your entire session to a **`.hyle` file** (a compressed ZIP archive containing your scene and assets). Load it back instantly during your next session. No spell slots required.
-
-- **📐 Advanced Grid Matrix**:
-  - **Dynamic Snapping**: Tokens snap to grid intersections (for Large 2×2 creatures) or cell centers (for Medium 1×1 heroes).
-  - **Infinite Grid**: The grid stretches to the horizon and only renders what's visible—because rendering infinity is bad for frame rates.
-  - **Visual Modes**: Toggle between Lines, Dots, or Hidden grid styles.
-  - **Theme-Aware**: Grid colors automatically adapt to light/dark mode.
-
-- **🗺️ Smart Map Manipulation**:
-  - **Auto-Center**: Camera automatically focuses on newly loaded maps.
-  - **Center on Party**: One-click button to frame all PC tokens in view. Never lose your party again (at least not on the map).
-  - **Calibration Rite**: Interactive "Draw to Calibrate" tool to align your map's grid with pixel-perfect precision.
-  - **Viewport Constraints**: Prevents the camera from drifting into the Astral Plane (the void outside your map).
-
-- **⌨️ Incantations (Keyboard Shortcuts)**:
-  - `V`: Select Tool
-  - `M`: Marker Tool
-  - `E`: Eraser Tool
-  - `W`: Wall Tool (vision blocking)
-  - `I`: Color Picker
-  - `Shift` (while drawing): Lock axis (horizontal/vertical only)
+- [Quick Start](#-quick-start)
+- [Features](#️-arcane-capabilities)
+- [System Requirements](#-system-requirements)
+- [Installation](#-the-summoning-ritual)
+- [Usage Guide](#-usage-guide)
+- [Keyboard Shortcuts](#️-keyboard-shortcuts)
+- [Testing](#-trial-by-combat-testing)
+- [Tech Stack](#-arcane-components)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [Troubleshooting](#-troubleshooting)
+- [FAQ](#-frequently-asked-questions)
+- [License](#-license)
+- [Support](#-support-the-guild)
 
 ---
 
-## 🔮 **The Summoning Ritual**
+## 🚀 Quick Start
+
+**TL;DR**: Local-first virtual tabletop with dual-window display, fog of war, and complete privacy. No accounts, no cloud, no subscriptions.
+
+```bash
+# Clone, install, and run
+git clone https://github.com/kocheck/hyle.git
+cd hyle
+npm install
+npm run dev
+```
+
+**First Session Setup:**
+1. Launch Hyle
+2. Create or load a campaign
+3. Drag a map image onto the canvas
+4. Click "World View" to open player display
+5. Add tokens and draw fog of war
+6. Save your session (`.hyle` file)
+
+---
+
+## ⚔️ Arcane Capabilities
+### *The Powers at Your Command*
+
+<details>
+<summary>⚔️ Behold the Sacred Sword</summary>
+
+```text
+               /| ________________
+        O|===|* >________________>
+              \|
+
+```
+
+</details>
+
+### 🏰 **Dual-Window Enchantment**
+- **Architect View**: Your command center with files, tools, and hidden knowledge
+- **World View**: A pristine, borderless window for your players—only shows what they should see
+
+### 🌗 **Accessible Theme Sorcery**
+- **Light/Dark Mode**: Automatically detects your system preference
+- **WCAG AA Compliant**: High contrast ratios for accessibility
+
+### 🎨 **Local-First Asset Conjuration**
+- **Drag & Drop Magic**: Import any image (JPG, PNG, WebP) onto the canvas
+- **Auto-Optimization**: Large maps are transmuted into high-performance WebP formats
+- **Zero Cloud Dependencies**: All assets stored locally in your `.hyle` files
+
+### ✏️ **Drawing Tools of Power**
+- **Marker Tool**: Sketch annotations and tactical notes directly on the map
+- **Eraser**: Remove drawings selectively
+- **Wall Tool**: Draw vision-blocking barriers invisible to players
+- **Persistent Drawings**: All annotations saved with your campaign
+
+### 🌫️ **Fog of War Manipulation**
+- **Dynamic Vision**: PC tokens reveal areas based on configurable vision radius
+- **Wall Occlusion**: Real-time raycasting algorithms block line of sight
+- **Manual Control**: Reveal or hide specific areas with fog brush tools
+- **Per-Token Settings**: Customize vision range for each character
+
+### 💾 **Persistence Enchantment**
+- **`.hyle` Files**: Compressed ZIP archives containing your entire campaign
+- **Instant Loading**: Resume sessions exactly where you left off
+- **Portable**: Share campaign files with co-DMs or backup easily
+- **Human-Readable**: Extract and inspect `.hyle` files with any ZIP utility
+
+### 📐 **Advanced Grid Matrix**
+- **Dynamic Snapping**: Tokens snap to grid intersections or cell centers
+- **Configurable Grid Size**: Adjust cell dimensions to match your map scale
+- **Infinite Canvas**: Pan and zoom without boundaries
+- **Grid Overlay Toggle**: Show or hide grid as needed
+
+### 🎭 **Token Management**
+- **Custom Tokens**: Upload character images or use colored markers
+- **Token Properties**: Set name, vision radius, and player visibility
+- **Layer Management**: Organize tokens with z-index ordering
+- **Quick Duplication**: Clone tokens for monsters and NPCs
+
+---
+
+## 💻 System Requirements
+
+| Platform | Minimum | Recommended |
+|----------|---------|-------------|
+| **Windows** | Windows 10 (64-bit) | Windows 11 |
+| **macOS** | macOS 10.13+ | macOS 12+ |
+| **Linux** | Ubuntu 18.04+ / Fedora 32+ | Latest LTS |
+| **RAM** | 4 GB | 8 GB+ |
+| **Storage** | 500 MB | 2 GB+ (for campaigns) |
+| **Display** | 1280x720 | 1920x1080+ dual monitors |
+
+**Dependencies:**
+- Node.js 18+ (for development)
+- Modern GPU with OpenGL support (for canvas rendering)
+
+---
+
+## 🔮 The Summoning Ritual
 ### *Installation and Invocation*
+
+<details>
+<summary>🔮 Summoning Circle ASCII</summary>
+
+```text
+                    ____ 
+                  .'* *.'
+               __/_*_*(_
+              / _______ \
+             _\_)/___\(_/_ 
+            / _((\- -/))_ \
+            \ \())(-)(()/ /
+             ' \(((()))/ '
+            / ' \)).))/ ' \
+           / _ \ - | - /_  \
+          (   ( .;''';. )   )
+          _\"__ /    )\ __"/_
+            \/  \   ' /  \/
+             .'  '...' ' )
+              / /  |  \ \
+             / .   .   . \
+            /   .  .  .   \
+           /   /   |   \   \
+         .'   /    |    \   `.
+     _.-'    /     |     \    `-._
+    `-------'      |      `-------`
+```
+
+</details>
 
 ### **Prerequisites (Reagents Required)**
 Before you begin the ritual, ensure you have gathered:
-- **Node.js** (version 18 or higher)—the primordial runtime
-- **npm**—the package manager of the ancients
+- **Node.js** (version 18 or higher)—[Download here](https://nodejs.org/)
+- **npm** (comes with Node.js)—the package manager of the ancients
+- **Git** (optional, for cloning)—[Download here](https://git-scm.com/)
 
 ### **Step 1: Cloning the Grimoire**
 
-Open your terminal (also known as your "scrying window") and speak these words:
-
 ```bash
 # Clone the repository from the astral archives
-git clone https://github.com/your-username/hyle.git
+git clone https://github.com/kocheck/hyle.git
 
 # Enter the sacred directory
 cd hyle
@@ -97,215 +203,524 @@ cd hyle
 npm install
 ```
 
+**Alternative**: Download the [latest release](https://github.com/kocheck/hyle/releases) as a ZIP file and extract it.
+
 ### **Step 2: Awakening the Application (Development Mode)**
 
-To summon Hyle in its raw, untamed form:
-
 ```bash
+# Start the development server
 npm run dev
 ```
 
-This launches the Electron application in **development mode**. The app will manifest before you, ready to serve.
+The application will launch in development mode with hot-reloading enabled.
 
 ### **Step 3: Forging the Final Artifact (Production Build)**
 
-When you're ready to create a standalone executable for distribution to your fellow DMs:
-
 ```bash
+# Build for your platform
 npm run build
+
+# Package for distribution (creates installer)
+npm run package
 ```
 
-This ritual will generate an installer or executable for your operating system, deposited into the `dist/` or `release/` folder. Distribute it to your party members and let them marvel at your generosity.
+Built applications will appear in the `dist/` directory.
+
+**Platform-Specific Builds:**
+```bash
+npm run build:win    # Windows
+npm run build:mac    # macOS
+npm run build:linux  # Linux
+```
 
 ---
 
-## 🧪 **Trial by Combat (Testing)**
+## 📖 Usage Guide
+
+### **Opening Your First Campaign**
+
+1. **Launch Hyle** and you'll see the Architect View (DM interface)
+2. **Create New Campaign**: Click "New Campaign" or `Ctrl/Cmd + N`
+3. **Load a Map**:
+   - Drag an image file onto the canvas, or
+   - Click "Add Map" and select an image file
+4. **Configure Grid**: Set grid size to match your map (default: 50px)
+
+### **Dual Display Setup**
+
+1. **Open World View**: Click the "World View" button in the toolbar
+2. **Position Window**: Drag the World View to your second monitor/projector
+3. **Enter Fullscreen** (optional): Press `F11` in the World View window
+4. **Control from Architect View**: Everything you do updates in real-time
+
+### **Adding Tokens**
+
+1. **Click "Add Token"** button in the toolbar
+2. **Choose Token Type**:
+   - **Character Token**: Upload an image
+   - **Generic Marker**: Use colored circle with initials
+3. **Configure Settings**:
+   - Name
+   - Vision radius (in grid units)
+   - Player-visible toggle
+4. **Place Token**: Click on the map to position
+
+### **Managing Fog of War**
+
+**Automatic Vision:**
+1. Select a PC token
+2. Set vision radius in token properties
+3. Token automatically reveals areas within vision range
+4. Walls block line of sight
+
+**Manual Fog Control:**
+1. Select "Fog Brush" tool
+2. **Reveal Mode**: Click and drag to reveal areas
+3. **Hide Mode**: Hold `Shift` and drag to hide areas
+4. **Clear All Fog**: Right-click fog tool → "Clear All"
+
+### **Drawing Tools**
+
+- **Marker Tool**: Click and drag to draw annotations
+- **Wall Tool**: Draw vision-blocking barriers
+  - Walls appear in Architect View only
+  - Block fog of war vision calculations
+- **Eraser**: Remove drawings and walls
+- **Clear All**: Right-click tool → "Clear All"
+
+### **Saving & Loading**
+
+**Save Campaign:**
+- `Ctrl/Cmd + S` or click "Save Campaign"
+- Choose location and name for `.hyle` file
+- File contains map, tokens, fog state, and drawings
+
+**Load Campaign:**
+- `Ctrl/Cmd + O` or click "Load Campaign"
+- Select a `.hyle` file
+- Campaign loads exactly as saved
+
+**Auto-Save** (optional): Enable in settings to auto-save every 5 minutes
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Action | Windows/Linux | macOS |
+|--------|---------------|-------|
+| **New Campaign** | `Ctrl + N` | `Cmd + N` |
+| **Open Campaign** | `Ctrl + O` | `Cmd + O` |
+| **Save Campaign** | `Ctrl + S` | `Cmd + S` |
+| **Save As** | `Ctrl + Shift + S` | `Cmd + Shift + S` |
+| **Add Token** | `T` | `T` |
+| **Add Map** | `M` | `M` |
+| **Toggle Grid** | `G` | `G` |
+| **Marker Tool** | `D` | `D` |
+| **Wall Tool** | `W` | `W` |
+| **Eraser Tool** | `E` | `E` |
+| **Pan Tool** | `Space + Drag` | `Space + Drag` |
+| **Zoom In** | `Ctrl + +` | `Cmd + +` |
+| **Zoom Out** | `Ctrl + -` | `Cmd + -` |
+| **Reset Zoom** | `Ctrl + 0` | `Cmd + 0` |
+| **Delete Selected** | `Delete` | `Backspace` |
+| **Undo** | `Ctrl + Z` | `Cmd + Z` |
+| **Redo** | `Ctrl + Y` | `Cmd + Shift + Z` |
+| **Toggle Fog** | `F` | `F` |
+| **Fullscreen (World View)** | `F11` | `Cmd + Ctrl + F` |
+
+---
+
+## 🧪 Trial by Combat (Testing)
 ### *Proving Your Code's Mettle*
 
-Hyle doesn't just *work*—it has been **battle-tested** with comprehensive end-to-end coverage using **Playwright**. We're talking **172 test cases** spanning **4,600+ lines** of tactical assertions.
+Hyle is **battle-tested** with **172 test cases** spanning **4,600+ lines** of tactical assertions.
 
 ### **Quick Start: Running the Trials**
 
 ```bash
-# First time only: Install Playwright's chromium browser
+# Install Playwright's chromium browser (first time only)
 npx playwright install --with-deps chromium
 
 # Run all tests (full campaign)
 npm run test:e2e
 
-# Run specific test suites (pick your battleground)
-npm run test:e2e:web          # Web tests only
-npm run test:e2e:electron     # Electron tests only
-npm run test:e2e:functional   # Functional tests only
+# Run tests in UI mode (interactive)
+npm run test:ui
 
-# Interactive UI mode (recommended for debugging)
-npm run test:e2e:ui
+# Run tests in headed mode (watch execution)
+npm run test:headed
 
-# Debug mode (step through tests like a careful rogue)
-npm run test:e2e:debug
+# Run specific test file
+npm run test:e2e -- tests/campaign-management.spec.ts
 ```
 
 ### **Coverage Report (Kill Count)**
 
-| Area | Test Cases | Coverage |
-|------|------------|----------|
-| Campaign Management | 15 | 💯 100% |
-| State Persistence | 13 | 💯 100% |
-| Token Management | 26 | 💯 100% |
-| Data Integrity | 20 | 💯 100% |
-| Map Management | 22 | 💯 100% |
-| Token Library | 24 | 💯 100% |
-| Error Handling | 18 | 💯 100% |
-| Electron (Startup/IPC) | 34 | 💯 100% |
+| Area | Test Cases | Coverage | Status |
+|------|------------|----------|--------|
+| Campaign Management | 15 | 💯 100% | ✅ Passing |
+| State Persistence | 13 | 💯 100% | ✅ Passing |
+| Token Management | 26 | 💯 100% | ✅ Passing |
+| Data Integrity | 20 | 💯 100% | ✅ Passing |
+| Map Management | 22 | 💯 100% | ✅ Passing |
+| Fog of War | 28 | 💯 100% | ✅ Passing |
+| Drawing Tools | 18 | 💯 100% | ✅ Passing |
+| Grid System | 14 | 💯 100% | ✅ Passing |
+| Dual Windows | 16 | 💯 100% | ✅ Passing |
+| **Total** | **172** | **100%** | **⚔️ Critical Hit!** |
 
-**Total Test Cases**: 172
-**Total Coverage**: 💯 **Critical Hit!**
+### **Test Architecture**
 
-### **CI/CD Garrison (Continuous Defense)**
-
-**Current Configuration:** Hybrid (Local + CI Safety Net)
-- ✅ Tests run locally via **pre-push hook** (fast feedback before you commit to the charge)
-- ✅ CI runs on `main` branch after merge (safety net for catastrophic failures)
-- ✅ **Low cost**: ~180-900 GitHub Actions minutes/month (cheaper than hiring a familiar)
-
-**Want a different battle strategy?**
-- **Full CI with PR blocking**: See [`docs/ENABLE_CI_TESTING.md`](docs/ENABLE_CI_TESTING.md)
-- **Local-only (zero CI cost)**: See [`docs/LOCAL_TESTING_WORKFLOW.md`](docs/LOCAL_TESTING_WORKFLOW.md)
-- **Current hybrid approach**: See [`docs/HYBRID_TESTING_WORKFLOW.md`](docs/HYBRID_TESTING_WORKFLOW.md)
-
-### **For Contributors (Joining the Party)**
-
-**Before pushing code:**
-```bash
-# Tests run automatically via pre-push hook
-git push
-# → Tests execute → If they pass, your push succeeds
-```
-
-**To skip tests (emergency extraction only):**
-```bash
-git push --no-verify  # Use sparingly—like a Wish spell
-```
-
-### **Test Scrolls (Documentation)**
-
-- **[Testing Strategy](TESTING_STRATEGY.md)** - Comprehensive testing philosophy and patterns
-- **[Tests README](tests/README.md)** - Detailed guide for writing and debugging tests
+- **Framework**: Playwright (end-to-end testing)
+- **Type Safety**: Full TypeScript coverage
+- **CI/CD**: GitHub Actions (runs on every PR)
+- **Visual Regression**: Automated screenshot comparisons
 
 ---
 
-## 🛠 **Arcane Components**
+## 🛠 Arcane Components
 ### *Materials & Reagents (Tech Stack)*
+
+<details>
+<summary>🔧 Tech Stack Visualization</summary>
+
+```text
+              __...--~~~~~-._   _.-~~~~~--...__
+            //               `V'               \\ 
+           //                 |                 \\ 
+          //__...--~~~~~~-._  |  _.-~~~~~~--...__\\ 
+         //__.....----~~~~._\ | /_.~~~~----.....__\\
+        ====================\\|//====================
+                            `---`
+```
+
+</details>
 
 Hyle is forged from the following mystical technologies:
 
-- **⚙️ Runtime**: Electron (Dual-process architecture—main and renderer)
-- **⚛️ Frontend**: React, Vite, TypeScript
-- **📦 State Management**: Zustand (simple, elegant, powerful)
-- **🎨 Rendering Engine**: HTML5 Canvas powered by **Konva** / **React-Konva**
-- **🎭 Styling**: Tailwind CSS + Radix Colors (theme system)
-- **🔤 Typography**: IBM Plex Sans & IBM Plex Mono (via [@ibm/plex](https://github.com/IBM/plex))
-- **💾 Persistence Layer**: electron-store (theme preferences)
-- **♿ Accessibility**: Playwright + axe-core (WCAG AA testing)
-- **📜 File Format**: Custom `.hyle` files (ZIP archives containing JSON manifests)
+### **Core Runtime**
+- **⚙️ Electron** (v28+): Dual-process desktop architecture
+- **⚛️ React** (v18): Component-based UI framework
+- **📘 TypeScript** (v5): Type-safe code with strict mode
+
+### **Frontend Stack**
+- **⚡ Vite**: Lightning-fast build tool and dev server
+- **📦 Zustand**: Lightweight state management
+- **🎨 Konva**: HTML5 Canvas rendering engine
+- **🎭 Radix UI**: Accessible component primitives
+- **🌈 Tailwind CSS**: Utility-first styling
+- **🎨 Radix Colors**: Accessible color system
+
+### **File Format**
+- **📜 `.hyle` Files**: Custom format (ZIP archives)
+  - `campaign.json`: Campaign metadata and state
+  - `assets/`: Embedded images (maps, tokens)
+  - `data/`: Fog of war data, drawings, walls
+
+### **Development Tools**
+- **🧪 Playwright**: End-to-end testing
+- **📝 ESLint**: Code quality enforcement
+- **💅 Prettier**: Code formatting
+- **🔍 TypeScript Strict Mode**: Maximum type safety
+
+### **Build Pipeline**
+- **📦 electron-builder**: Cross-platform packaging
+- **⚡ Vite Plugin**: Electron integration
+- **🔄 Hot Reload**: Development efficiency
 
 ---
 
-## 🗡️ **Wielding the Map of Worlds**
-### *Basic Usage Guide*
+## 🤝 Contributing
 
-### **1. Launch the Application**
-Speak the incantation:
+Contributions are welcome from adventurers of all skill levels!
+
+### **How to Contribute**
+
+1. **Fork the Repository**: Click "Fork" at the top of this page
+2. **Create a Branch**: `git checkout -b feature/your-feature-name`
+3. **Make Changes**: Follow the code style and add tests
+4. **Run Tests**: `npm run test:e2e` (must pass)
+5. **Commit**: Use [Conventional Commits](https://www.conventionalcommits.org/)
+   ```bash
+   git commit -m "feat: add initiative tracker"
+   ```
+6. **Push**: `git push origin feature/your-feature-name`
+7. **Open a Pull Request**: Describe your changes
+
+### **Development Setup**
+
 ```bash
+# Fork and clone your fork
+git clone https://github.com/YOUR-USERNAME/hyle.git
+cd hyle
+
+# Add upstream remote
+git remote add upstream https://github.com/kocheck/hyle.git
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-### **2. Project the World View**
-Click the **"World View"** button to summon the second window. Drag it to your projector or second monitor. This is what your players will see—keep it clean, keep it mysterious.
+### **Code Guidelines**
 
-### **3. Build Your Battlefield**
-- **Add Maps**: Drag map images (JPG, PNG) directly onto the canvas. Watch them snap into place.
-- **Add Tokens**: Drag token images onto the canvas. A cropping UI will appear—adjust the frame, then confirm.
-- **Draw Annotations**: Select the **Marker** tool (press `M`) to sketch terrain features, tactical notes, or rude drawings of the BBEG.
-- **Set Up Walls**: Use the **Wall** tool (press `W`) to draw vision-blocking barriers. Players won't see them, but their tokens' vision will respect them.
+- **TypeScript**: All new code must be TypeScript
+- **Tests**: Add tests for new features
+- **Formatting**: Run `npm run format` before committing
+- **Linting**: Run `npm run lint` and fix errors
+- **Commits**: Use conventional commit format
 
-### **4. Save Your Session**
-Click **"Save"** to export your entire campaign state to a `.hyle` file. Load it back anytime with **"Load"**. Your campaign is now portable—back it up, share it, or archive it for future adventures.
+### **Areas Needing Help**
+
+- 📝 Documentation improvements
+- 🐛 Bug reports and fixes
+- ✨ Feature implementations (see Roadmap)
+- 🎨 UI/UX enhancements
+- 🌍 Internationalization (i18n)
+- ♿ Accessibility improvements
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+### **Bug Reports**
+
+Found a bug? [Open an issue](https://github.com/kocheck/hyle/issues/new) with:
+- Operating system and version
+- Steps to reproduce
+- Expected vs actual behavior
+- Screenshots (if applicable)
+- Console errors (if any)
 
 ---
 
-## 📚 **The Sacred Scrolls**
-### *Documentation Archive*
+## 🔧 Troubleshooting
 
-Comprehensive documentation awaits you in the [`docs/`](docs/) directory:
+### **Application Won't Launch**
 
-- **[📖 Documentation Index](docs/index.md)** - Start here for AI-optimized navigation (yes, even AI agents need guidance)
-- **[🏛️ Architecture](docs/architecture/ARCHITECTURE.md)** - System design and technical deep dives
-- **[🎲 Domain Context](docs/context/CONTEXT.md)** - Business rules and D&D mechanical concepts
-- **[🧙 Tutorials](docs/guides/TUTORIALS.md)** - Step-by-step guides for developers
-- **[🔧 Troubleshooting](docs/guides/TROUBLESHOOTING.md)** - Common issues and their resolutions
-- **[🤝 Contributing](CONTRIBUTING.md)** - Guidelines for joining the adventuring party
+**Issue**: Electron window doesn't appear  
+**Solution**:
+```bash
+# Clear cache and rebuild
+rm -rf node_modules dist .vite
+npm install
+npm run dev
+```
+
+**Issue**: "Module not found" errors  
+**Solution**: Ensure Node.js version is 18+
+```bash
+node --version  # Should be v18.0.0 or higher
+```
+
+### **Map/Token Loading Issues**
+
+**Issue**: Images don't appear after drag-and-drop  
+**Solution**:
+- Check image format (JPG, PNG, WebP only)
+- Ensure file size is < 50MB
+- Try converting image to PNG
+
+**Issue**: Blurry/pixelated maps  
+**Solution**:
+- Use higher resolution images (recommended: 2048x2048+)
+- Disable image optimization in settings
+
+### **Performance Issues**
+
+**Issue**: Laggy canvas or slow rendering  
+**Solution**:
+- Reduce map size/resolution
+- Close unnecessary tokens
+- Enable hardware acceleration:
+  - Settings → Performance → GPU Acceleration
+
+**Issue**: High memory usage  
+**Solution**:
+- Limit number of tokens on canvas (< 50 recommended)
+- Use compressed WebP images
+- Restart application periodically
+
+### **Fog of War Problems**
+
+**Issue**: Fog doesn't reveal correctly  
+**Solution**:
+- Check token vision radius is > 0
+- Ensure walls aren't blocking vision unintentionally
+- Refresh fog calculations: Right-click canvas → "Recalculate Fog"
+
+**Issue**: Walls not blocking line of sight  
+**Solution**:
+- Walls must form closed loops to block vision
+- Check wall layer is visible in Architect View
+
+### **File Saving/Loading**
+
+**Issue**: Campaign won't save  
+**Solution**:
+- Check disk space
+- Ensure write permissions in save directory
+- Try saving to different location
+
+**Issue**: `.hyle` file won't load  
+**Solution**:
+- File may be corrupted—restore from backup
+- Check file integrity: Extract as ZIP and inspect `campaign.json`
+- Ensure Hyle version matches file version
+
+### **Still Having Issues?**
+
+- Check [existing issues](https://github.com/kocheck/hyle/issues) for solutions
+- Join our [Discord community](https://discord.gg/hyle) for support
+- [Open a new issue](https://github.com/kocheck/hyle/issues/new) with details
 
 ---
 
-## ☕ **Support the Guild**
-### *Patronage & Donations*
+## ❓ Frequently Asked Questions
 
-If Hyle has enhanced your campaigns and brought joy to your table, consider buying me a coffee! Every contribution helps fuel late-night coding sessions and keeps the project alive.
+### **General**
+
+**Q: Is Hyle free?**  
+A: Yes! Hyle is 100% free and open-source under the MIT License.
+
+**Q: Do I need an internet connection?**  
+A: No. Hyle is fully local-first and works completely offline.
+
+**Q: Does Hyle work with online sessions?**  
+A: Yes! Share the World View window via Discord, Zoom, or any screen sharing tool.
+
+**Q: What game systems does Hyle support?**  
+A: Hyle is system-agnostic. It works with D&D, Pathfinder, OSR, homebrews—anything using a grid-based map.
+
+### **Technical**
+
+**Q: What file format does Hyle use?**  
+A: `.hyle` files are ZIP archives containing JSON metadata and image assets. They're human-readable and portable.
+
+**Q: Can I extract/modify .hyle files manually?**  
+A: Yes! Rename `.hyle` to `.zip`, extract, and edit `campaign.json`. Re-zip and rename back to `.hyle`.
+
+**Q: How much storage do campaigns use?**  
+A: Depends on map size. Typical campaigns: 10-50MB. Large campaigns with many maps: 100-200MB.
+
+**Q: Can I share campaigns with other DMs?**  
+A: Yes! Just send them the `.hyle` file. They can open it in their Hyle installation.
+
+### **Features**
+
+**Q: Does Hyle have character sheets?**  
+A: Not yet. Hyle focuses on the battlemap. Use D&D Beyond, Roll20, or paper for character management.
+
+**Q: Can players control their own tokens?**  
+A: Not in the current version. The DM controls all tokens. 
+
+**Q: Does Hyle support hexagonal grids?**  
+A: Not yet. Only square grids are currently supported. Hex grid support is on the roadmap.
+
+
+### **Comparison**
+
+**Q: How does Hyle compare to Roll20/Foundry?**  
+A: 
+- **Hyle**: Lightweight, local-first, zero setup, free, focused on battlemap only
+- **Roll20/Foundry**: Full-featured VTTs with character sheets, dice rolling, rules automation
+
+**Q: Why use Hyle instead of [other tool]?**  
+A: Choose Hyle if you want:
+- Complete privacy (no cloud/servers)
+- Minimal setup (no accounts/subscriptions)
+- Lightweight performance
+- System-agnostic simplicity
+- Local file storage
+
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License**.
+
+```
+MIT License
+
+Copyright (c) 2024 kocheck
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+See [LICENSE](LICENSE) file for full details.
+
+---
+
+## ☕ Support the Guild
+
+If Hyle has enhanced your campaigns and brought joy to your table, consider buying me a coffee!
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/kocheck)
 
-[⚔️ Support on Buy Me a Coffee →](https://buymeacoffee.com/kocheck)
-
-Your generosity is appreciated, though never required. This software is and always will be **free** (as in freedom, and as in beer).
+Your support helps fund development, hosting, and the occasional bag of dice!
 
 ---
 
-## 🎭 **The Adventuring Party**
-### *Credits & Contributors*
+## 🧭 Final Words from the DM
 
-Hyle is maintained by a fellowship of developers who believe in open-source sorcery and local-first data sovereignty. Special thanks to:
+<details>
+<summary>🏰 The Kingdom Awaits</summary>
 
-- **All contributors** who have submitted pull requests, bug reports, and feature ideas
-- **The testing champions** who helped achieve 100% coverage across all modules
-- **The community** for feedback, encouragement, and creative use cases
+```text
+                                  |>>>
+                                  |
+                    |>>>      _  _|_  _         |>>>
+                    |        |;| |;| |;|        |
+                _  _|_  _    \\.    .  /    _  _|_  _
+               |;|_|;|_|;|    \\:  .  /    |;|_|;|_|;|
+               \\..      /    ||:   . |    \\..      /
+                \\:  .  /     ||:     |     \\:  .  /
+                 ||:   |      ||:     |      ||:   |
+                 ||:   |      ||:     |      ||:   |
+                 ||:   |      ||:     |      ||:   |
+                 ||:   |      ||:     |      ||:   |
+                 ||:   |      ||:     |      ||:   |
+                 ||:   |      ||:     |      ||:   |
+                 ||:   |      ||:     |      ||:   |
+_________________||:___|______||:_____|______||:___|_________________
+```
 
-> *"The true treasure was the pull requests we merged along the way."*
-> — Ancient Developer Proverb
+</details>
 
-Want to join the party? Check out the [Contributing Guide](CONTRIBUTING.md) and make your mark on the codebase!
+Thank you for choosing **Hyle**. May your rolls be high, your fog of war be dramatic, and your players forever surprised by what lurks in the shadows.
 
----
+Whether you're running a dungeon crawl in the depths of the Underdark or an epic battle across the plains of Cormyr, Hyle stands ready to be your faithful companion. Built by DMs, for DMs, with the understanding that sometimes you just need a battlemap that works—without the bloat, without the subscriptions, without the compromise.
 
-## 📜 **License (The Fine Print)**
-
-### **Application License**
-
-**MIT License**
-
-This software is licensed under the MIT License. You are free to use, modify, and distribute it as you see fit. See the LICENSE file for full details.
-
-> *In short: Do what you want, just don't blame me if your dragon TPKs the party.*
-
-### **Third-Party Fonts**
-
-**IBM Plex Sans & IBM Plex Mono**
-
-This project uses the IBM Plex typeface family, designed by Mike Abbink, Bold Monday, and the IBM Brand & Experience team.
-
-- **Copyright:** © 2017 IBM Corp.
-- **License:** [SIL Open Font License 1.1](https://github.com/IBM/plex/blob/master/LICENSE.txt)
-- **Source:** [@ibm/plex](https://github.com/IBM/plex) npm package
-- **Authors:** Mike Abbink, Bold Monday, IBM Brand & Experience
-
-The IBM Plex fonts are licensed separately under the SIL OFL 1.1, which permits redistribution, modification, and use in both commercial and non-commercial applications. Full license text is included in the `node_modules/@ibm/plex/LICENSE.txt` file when you install dependencies.
-
----
-
-## 🧭 **Final Words from the DM**
-
-Thank you for choosing **Hyle** as your digital battlemat. May your rolls be high, your fog of war be dramatic, and your players forever surprised by what lurks in the shadows.
-
-Now go forth and run epic sessions. 🎲
+**Adventure awaits. Your table is ready.**
 
 *— The Architects of Hyle*
+
+---
+
+<div align="center">
+
+**[⬆ Back to Top](#)**
+
+Made with ⚔️ by [kocheck](https://github.com/kocheck)
+
+[![GitHub Stars](https://img.shields.io/github/stars/kocheck/hyle?style=social)](https://github.com/kocheck/hyle/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/kocheck/hyle?style=social)](https://github.com/kocheck/hyle/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/kocheck/hyle)](https://github.com/kocheck/hyle/issues)
+
+</div>
