@@ -39,7 +39,7 @@ We believe map-making should feel like *carving* the unknown into existence. No 
 
 ---
 
-## <a name="philosophy"></a>🏛 The Etched Philosophy
+<h2 id="philosophy">🏛 The Etched Philosophy</h2>
 
 ***"Whiteboards are for brainstorming. Graphium is for history."***
 
@@ -64,7 +64,7 @@ Most VTTs feel floaty and temporary. Graphium is built with **funicular friction
 
 ---
 
-## <a name="quick-start"></a>🚀 Quick Start Ritual
+<h2 id="quick-start">🚀 Quick Start Ritual</h2>
 
 **TL;DR**: A local-first, dual-window VTT. Launch it, drag a map, and start carving walls.
 
@@ -90,7 +90,7 @@ npm run dev
 
 ---
 
-## <a name="tools"></a>⚔️ The Tools of Creation
+<h2 id="tools">⚔️ The Tools of Creation</h2>
 
 Graphium gives you a dedicated "Architect's View" full of arcane instruments, while your players see only the "World View"—a pristine projection of your reality.
 
@@ -118,7 +118,7 @@ Only the finest materials were used to forge Graphium.
 
 ---
 
-## <a name="installation"></a>🔨 The Forge (Installation)
+<h2 id="installation">🔨 The Forge (Installation)</h2>
 
 ### **Prerequisites**
 - **Node.js** (v18+)
@@ -159,7 +159,7 @@ npm run build
 
 ---
 
-## <a name="contributing"></a>🤝 Join the Guild
+<h2 id="contributing">🤝 Join the Guild</h2>
 
 We welcome fellow smiths to the forge. If you wish to improve the tool:
 
