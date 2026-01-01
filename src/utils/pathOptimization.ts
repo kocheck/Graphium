@@ -212,7 +212,7 @@ export function snapPointToPaths(
     const path = existingPaths[i];
     for (let j = 0; j < path.length; j += 2) {
       const vx = path[j];
-      const vy = path[j+1];
+      const vy = path[j + 1];
       const dx = point.x - vx;
       const dy = point.y - vy;
       const dist = Math.sqrt(dx * dx + dy * dy);
