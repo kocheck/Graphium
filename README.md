@@ -19,7 +19,7 @@
 ![Tests](https://img.shields.io/badge/tests-172%20passing-success)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
-[Quick Start](#-quick-start-ritual) • [Philosophy](#--the-etched-philosophy) • [Tools](#-the-tools-of-creation) • [Installation](#-the-forge-installation) • [Contributing](#-join-the-guild)
+[Quick Start](#quick-start-ritual) • [Philosophy](#the-etched-philosophy) • [Tools](#the-tools-of-creation) • [Installation](#the-forge-installation) • [Contributing](#join-the-guild)
 
 </div>
 
