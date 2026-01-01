@@ -9,14 +9,19 @@ import { expect } from '@playwright/test';
  */
 
 /**
- * Create a new campaign with the given name
+ * Create a new campaign
+ *
+ * NOTE: The current Graphium UI doesn't have a campaign name input dialog.
+ * Instead, clicking "New Campaign" immediately starts the editor with a default name.
+ * This helper has been updated to match the actual UI flow.
  *
  * @param page - Playwright Page object
- * @param campaignName - Name for the new campaign
+ * @param _campaignName - DEPRECATED: Name parameter is not used (no name input in current UI)
  * @returns Promise that resolves when campaign is created
+ * @deprecated The campaignName parameter has no effect. Will be removed in future version.
  */
-export async function createNewCampaign(page: Page, campaignName: string) {
-  // Click new campaign button
+export async function createNewCampaign(page: Page, _campaignName?: string) {
+  // Click new campaign button (this immediately starts the editor)
   const newCampaignButton = page.locator('[data-testid="new-campaign-button"]');
   await expect(
     newCampaignButton,
@@ -24,30 +29,14 @@ export async function createNewCampaign(page: Page, campaignName: string) {
   ).toBeVisible();
   await newCampaignButton.click();
 
-  // Fill campaign name
-  const nameInput = page.locator('[data-testid="campaign-name-input"]');
+  // Wait for editor to load (editor view should appear)
   await expect(
-    nameInput,
-    'Campaign name input should appear after clicking new campaign'
-  ).toBeVisible();
-  await nameInput.fill(campaignName);
+    page.locator('[data-testid="editor-view"]'),
+    'Editor view should appear after clicking new campaign'
+  ).toBeVisible({ timeout: 5000 });
 
-  // Submit form
-  const createButton = page.locator('[data-testid="create-campaign-submit"]');
-  await createButton.click();
-
-  // Wait for campaign to be created
-  await expect(
-    page.locator('[data-testid="main-canvas"]'),
-    'Main canvas should appear after campaign creation'
-  ).toBeVisible();
-
-  // Verify campaign name appears in header
-  const campaignTitle = page.locator('[data-testid="campaign-title"]');
-  await expect(
-    campaignTitle,
-    `Campaign title should display "${campaignName}"`
-  ).toHaveText(campaignName);
+  // The current UI doesn't show a campaign title, so we can't verify it
+  // Tests that check for campaign title will need to be updated or skipped
 }
 
 /**

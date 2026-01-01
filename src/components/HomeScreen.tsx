@@ -673,6 +673,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
                 borderColor: 'var(--border-color)',
               }}
               aria-label="Create a new campaign and start the editor"
+              data-testid="new-campaign-button"
             >
               <div className="flex items-center gap-3 mb-2">
                 <RiAddLine className="w-6 h-6" style={{ color: 'var(--app-accent-solid)' }} />
