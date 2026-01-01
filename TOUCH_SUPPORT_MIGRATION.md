@@ -349,9 +349,164 @@ If issues arise, rollback is straightforward:
 - **NEW:** Natural stylus feel with variable stroke width
 - **NEW:** Intuitive two-finger navigation (pan + zoom)
 
+## Extended Manual Testing Checklist
+
+For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./DEVICE_COMPATIBILITY.md).
+
+### Physical Device Testing
+
+#### iPad Pro with Apple Pencil
+- [ ] Basic touch drawing (single finger)
+- [ ] Pressure-sensitive drawing (vary pressure)
+- [ ] Hover preview appears before touching
+- [ ] Palm rejection (rest hand while drawing, no marks)
+- [ ] Two-finger pan gesture (smooth panning)
+- [ ] Pinch-to-zoom gesture (smooth zooming)
+- [ ] Gesture distinction (pinch vs pan based on finger distance)
+- [ ] Token dragging with touch
+- [ ] Selection rectangle with touch
+- [ ] Tool switching with toolbar (touch)
+- [ ] Pressure settings affect stroke width
+- [ ] Different pressure curves work (light/normal/heavy)
+- [ ] Desktop-only mode disables touch
+- [ ] Palm rejection modes work (touchSize/stylusOnly/smartDelay)
+- [ ] No accidental marks from palm
+- [ ] Smooth 60fps drawing performance
+- [ ] Settings persist after reload
+
+#### Surface Pro with Surface Pen
+- [ ] Pen pressure works (light to heavy strokes)
+- [ ] Hover shows cursor preview
+- [ ] Palm rejection (rest hand, no marks)
+- [ ] Pen barrel button (future: tool switch)
+- [ ] Pen eraser end (future: eraser tool)
+- [ ] Tilt sensitivity (future: shading)
+- [ ] Two-finger touch pan
+- [ ] Pinch-to-zoom with fingers
+- [ ] Token dragging with pen
+- [ ] Touch interactions work alongside pen
+- [ ] No accidental touch when using pen
+- [ ] Smooth drawing performance
+- [ ] Settings work correctly
+
+#### Android Tablet with S Pen
+- [ ] S Pen pressure sensitivity
+- [ ] Hover detection works
+- [ ] Palm rejection prevents marks
+- [ ] S Pen button support (future)
+- [ ] Two-finger touch gestures
+- [ ] Drawing performance is smooth
+- [ ] Settings persist
+
+#### Touch-Enabled Windows Laptop
+- [ ] Finger touch works for drawing
+- [ ] Two-finger pan gesture
+- [ ] Pinch-to-zoom gesture
+- [ ] Desktop-only mode prevents accidental touch
+- [ ] Can switch between mouse and touch seamlessly
+- [ ] Palm rejection with stylus (if available)
+
+#### Wacom External Tablet
+- [ ] Pressure sensitivity works
+- [ ] Tilt sensitivity works (future)
+- [ ] Hover works
+- [ ] Barrel buttons work (future)
+- [ ] Eraser end works (future)
+- [ ] No cursor jitter
+- [ ] Smooth pen tracking
+- [ ] Works in browser (no driver conflicts)
+
+### Settings Verification
+
+#### Touch Settings UI
+- [ ] Settings dialog accessible (Preferences → Touch & Stylus)
+- [ ] Desktop-Only Mode toggle works
+- [ ] Pressure Sensitivity toggle works
+- [ ] Pressure Curve selector works (3 options)
+- [ ] Palm Rejection mode selector works (4 modes)
+- [ ] Palm rejection threshold slider works
+- [ ] Smart delay slider works
+- [ ] Two-finger pan toggle works
+- [ ] Advanced features checkboxes work
+- [ ] Visual feedback toggles work
+- [ ] Tutorial/hints toggles work
+- [ ] Reset to Defaults button works
+- [ ] Settings disabled when Desktop-Only enabled
+- [ ] Settings persist after browser close
+
+#### Pressure Settings
+- [ ] Disabling pressure gives uniform stroke width
+- [ ] Light curve creates dramatic width variation
+- [ ] Normal curve gives balanced variation
+- [ ] Heavy curve gives subtle variation
+- [ ] Pressure data not captured when disabled (performance)
+
+#### Palm Rejection Testing
+- [ ] Off mode accepts all touches
+- [ ] Touch Size mode rejects large contact areas
+- [ ] Stylus Only mode rejects touch when pen active
+- [ ] Smart Delay mode ignores touch after stylus lift
+- [ ] Threshold adjustments affect rejection sensitivity
+- [ ] Delay adjustments affect timing window
+
+#### Gesture Settings
+- [ ] Pinch distance threshold affects gesture detection
+- [ ] Two-finger pan can be disabled
+- [ ] Gestures respect settings in real-time
+
+### Cross-Browser Testing
+- [ ] Chrome: All features work
+- [ ] Edge: All features work
+- [ ] Firefox: Touch and pressure work
+- [ ] Safari (Mac): Touch works, pressure limited
+- [ ] Safari (iPad): All features work with Apple Pencil
+- [ ] Mobile Chrome (Android): Touch and S Pen work
+
+### Performance Testing
+- [ ] Drawing 50-point stroke stays at 60fps
+- [ ] Pressure capture doesn't slow drawing
+- [ ] Multi-token drag is smooth
+- [ ] Pinch-zoom is smooth (no jank)
+- [ ] Two-finger pan is smooth
+- [ ] RAF throttling maintains framerate
+- [ ] No memory leaks during extended use
+- [ ] Visual feedback doesn't impact performance (when implemented)
+
+### Regression Testing
+- [ ] Mouse clicking still works
+- [ ] Mouse dragging still works
+- [ ] Mouse drawing still works
+- [ ] Keyboard shortcuts still work
+- [ ] Space + drag panning still works
+- [ ] Shift + drag axis locking still works
+- [ ] Alt + drag duplication still works
+- [ ] Pinch-zoom still works (pre-existing)
+- [ ] DM/World View sync still works
+- [ ] IPC messages still sent correctly
+
+### Error Handling & Edge Cases
+- [ ] Invalid pressure values handled gracefully
+- [ ] Missing pressure array handled
+- [ ] Pressure array length mismatch handled
+- [ ] Multi-touch during drawing ignored
+- [ ] Palm touch during drawing rejected
+- [ ] Settings with invalid values reset to defaults
+- [ ] LocalStorage disabled doesn't crash
+- [ ] Rapid gesture switching doesn't break
+- [ ] Concurrent pen and touch handled
+
+### Accessibility
+- [ ] Settings labels are clear
+- [ ] Settings tooltips explain features
+- [ ] Visual indicators don't interfere with drawing
+- [ ] Color-blind users can distinguish pressure (size varies)
+- [ ] Touch targets are appropriately sized
+- [ ] Keyboard navigation works in settings dialog
+
 ## References
 
 - [MDN: Pointer Events](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events)
 - [Konva.js Documentation](https://konvajs.org/docs/)
 - [React-Konva Events](https://konvajs.org/docs/react/)
 - [CSS touch-action](https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action)
+- [Device Compatibility Guide](./DEVICE_COMPATIBILITY.md)

@@ -27,6 +27,7 @@ import { resolveTokenData } from '../../hooks/useTokenData';
 
 import URLImage from './URLImage';
 import PressureSensitiveLine from './PressureSensitiveLine';
+import TouchVisualFeedback from './TouchVisualFeedback';
 
 import { MeasurementMode, Measurement } from '../../types/measurement';
 import {
@@ -401,6 +402,19 @@ const CanvasManager = ({
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
   const lastPanCenter = useRef<{ x: number, y: number } | null>(null);
+
+  // Visual Feedback State (for TouchVisualFeedback component)
+  const [visualFeedback, setVisualFeedback] = useState<{
+    pressure: number | null;
+    pointerPosition: { x: number; y: number } | null;
+    touchPoints: Array<{ id: number; x: number; y: number }>;
+    gestureMode: 'pan' | 'pinch' | null;
+  }>({
+    pressure: null,
+    pointerPosition: null,
+    touchPoints: [],
+    gestureMode: null,
+  });
 
   // Use pinch distance threshold from settings (user-configurable)
   const PINCH_DISTANCE_THRESHOLD = touchSettings.pinchDistanceThreshold;
