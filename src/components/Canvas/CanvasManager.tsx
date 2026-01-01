@@ -7,6 +7,7 @@ import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
 import { useGameStore, Drawing } from '../../store/gameStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
+import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 import { simplifyPath, snapPointToPaths } from '../../utils/pathOptimization';
 import { isRectInAnyPolygon } from '../../types/geometry';
 import GridOverlay from './GridOverlay';
@@ -307,6 +308,11 @@ const CanvasManager = ({
 
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);
+  const touchSettings = useTouchSettingsStore();
+
+  // Touch/Stylus tracking for palm rejection
+  const stylusActiveRef = useRef(false); // Track if stylus is currently being used
+  const lastStylusLiftTimeRef = useRef(0); // Timestamp of last stylus lift (for smartDelay palm rejection)
 
   // Measurement state
   const activeMeasurement = useGameStore(s => s.activeMeasurement);
@@ -395,7 +401,84 @@ const CanvasManager = ({
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
   const lastPanCenter = useRef<{ x: number, y: number } | null>(null);
-  const PINCH_DISTANCE_THRESHOLD = 10; // pixels - minimum distance change to trigger pinch vs pan
+
+  // Use pinch distance threshold from settings (user-configurable)
+  const PINCH_DISTANCE_THRESHOLD = touchSettings.pinchDistanceThreshold;
+
+  /**
+   * Enhanced pointer pressure extractor with settings support
+   *
+   * Applies user-configured pressure curve and respects pressure sensitivity toggle.
+   * When pressure sensitivity is disabled, returns constant 0.5 for uniform stroke width.
+   *
+   * @param e - Konva event object
+   * @returns Adjusted pressure value (0.0 - 1.0)
+   */
+  const getPointerPressureWithSettings = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): number => {
+    // If pressure sensitivity is disabled, return constant pressure
+    if (!touchSettings.pressureSensitivityEnabled) {
+      return 0.5;
+    }
+
+    // Get raw pressure
+    const rawPressure = getPointerPressure(e);
+
+    // Track stylus usage for palm rejection
+    const evt = e.evt as PointerEvent;
+    if (evt.pointerType === 'pen') {
+      stylusActiveRef.current = true;
+    }
+
+    // Apply pressure curve multiplier
+    const { min, max } = touchSettings.getPressureRange();
+    const range = max - min;
+    return min + (rawPressure * range);
+  }, [touchSettings]);
+
+  /**
+   * Check if this pointer event should be rejected (palm rejection)
+   *
+   * Implements multiple palm rejection strategies based on user settings:
+   * - off: Accept all input
+   * - touchSize: Reject large contact areas (palms)
+   * - stylusOnly: Reject touch when stylus is active
+   * - smartDelay: Reject touch shortly after stylus lift
+   *
+   * @param e - Konva event object
+   * @returns true if event should be rejected, false if should be processed
+   */
+  const shouldRejectPointerEvent = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): boolean => {
+    const evt = e.evt as PointerEvent;
+
+    // Desktop-only mode: reject all touch input
+    if (touchSettings.desktopOnlyMode && evt.pointerType === 'touch') {
+      return true;
+    }
+
+    // Use the store's rejection logic
+    const shouldReject = touchSettings.shouldRejectTouch(evt, stylusActiveRef.current);
+
+    // Additional smart delay logic (time-based, not in store)
+    if (touchSettings.palmRejectionMode === 'smartDelay' && evt.pointerType === 'touch') {
+      const timeSinceStylusLift = Date.now() - lastStylusLiftTimeRef.current;
+      if (timeSinceStylusLift < touchSettings.palmRejectionDelay) {
+        return true;
+      }
+    }
+
+    return shouldReject;
+  }, [touchSettings]);
+
+  /**
+   * Track stylus lift for smart delay palm rejection
+   */
+  const handleStylusLift = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    const evt = e.evt as PointerEvent;
+    if (evt.pointerType === 'pen') {
+      stylusActiveRef.current = false;
+      lastStylusLiftTimeRef.current = Date.now();
+    }
+  }, []);
 
   /**
    * Determines the appropriate cursor style based on current interaction state.
@@ -847,6 +930,9 @@ const CanvasManager = ({
   // Token Pointer Handlers (Threshold-based Press-and-Hold)
   // Migrated to Pointer Events API for unified mouse/touch/pen support
   const handleTokenPointerDown = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string) => {
+    // Palm rejection - reject unwanted touch input
+    if (shouldRejectPointerEvent(e)) return;
+
     if (tool !== 'select') return;
 
     // Ignore multi-touch gestures (let gesture handlers handle those)
@@ -869,9 +955,12 @@ const CanvasManager = ({
       stagePos: { x: token.x, y: token.y }
     });
     setIsDraggingWithThreshold(false);
-  }, [tool, resolvedTokens]);
+  }, [tool, resolvedTokens, shouldRejectPointerEvent]);
 
   const handleTokenPointerMove = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // Palm rejection - reject unwanted touch input
+    if (shouldRejectPointerEvent(e)) return;
+
     if (!tokenMouseDownStart || tool !== 'select') return;
 
     // Ignore multi-touch gestures
@@ -1090,10 +1179,13 @@ const CanvasManager = ({
     // Reset drag state
     setTokenMouseDownStart(null);
     setIsDraggingWithThreshold(false);
-  }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, setSelectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast]);
+  }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, setSelectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast, shouldRejectPointerEvent]);
 
   // Drawing Handlers (Pointer Events - unified mouse/touch/pen support)
   const handlePointerDown = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // Palm rejection - reject unwanted touch input
+    if (shouldRejectPointerEvent(e)) return;
+
     if (isSpacePressed) return; // Allow panning
 
     // Ignore multi-touch gestures (zoom/pan)
@@ -1139,8 +1231,8 @@ const CanvasManager = ({
         const pos = getPointerPosition(e);
         if (!pos) return;
 
-        // Get initial pressure for pressure-sensitive drawing
-        const pressure = getPointerPressure(e);
+        // Get initial pressure for pressure-sensitive drawing (with user settings applied)
+        const pressure = getPointerPressureWithSettings(e);
 
         // Set color and size based on tool type
         let drawColor = color;
@@ -1160,7 +1252,8 @@ const CanvasManager = ({
             points: [pos.x, pos.y],
             color: drawColor,
             size: drawSize,
-            pressures: [pressure], // Capture initial pressure
+            // Only capture pressure if pressure sensitivity is enabled (performance optimization)
+            pressures: touchSettings.pressureSensitivityEnabled ? [pressure] : undefined,
         };
         return;
     }
@@ -1206,6 +1299,9 @@ const CanvasManager = ({
   };
 
   const handlePointerMove = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // Palm rejection - reject unwanted touch input
+    if (shouldRejectPointerEvent(e)) return;
+
     if (isSpacePressed) return;
 
     // Ignore multi-touch gestures
@@ -1327,8 +1423,8 @@ const CanvasManager = ({
             return; // Skip consecutive duplicate point
         }
 
-        // Get pressure for this point (for variable-width strokes with pen/stylus)
-        const pressure = getPointerPressure(e);
+        // Get pressure for this point (with user settings applied)
+        const pressure = getPointerPressureWithSettings(e);
 
         // Performance optimization: Use push (in-place mutation) instead of concat (array copy)
         // This reduces GC pressure and is faster for large stroke collections
@@ -1408,6 +1504,9 @@ const CanvasManager = ({
   };
 
   const handlePointerUp = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // Track stylus lift for smart delay palm rejection
+    handleStylusLift(e);
+
     // Ignore multi-touch gestures
     if (isMultiTouchGesture(e)) return;
 
