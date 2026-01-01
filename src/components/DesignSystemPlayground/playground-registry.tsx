@@ -14,7 +14,8 @@ import {
   RiSettings3Line,
   RiMap2Line,
   RiSwordLine,
-  RiGobletLine
+  RiGobletLine,
+  RiSearchLine
 } from '@remixicon/react';
 
 /**
@@ -171,25 +172,18 @@ export const componentExamples: ComponentExample[] = [
           placeholder="Search..."
           className="pl-10 pr-3 py-2 rounded bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] text-[var(--app-text-primary)] placeholder-[var(--app-text-muted)] focus:outline-none focus:border-[var(--app-accent-solid)] focus:ring-1 focus:ring-[var(--app-accent-solid)] transition-all w-64"
         />
-        <svg
-          className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-text-muted)]"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+        <RiSearchLine className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-text-muted)]" />
       </div>
     ),
-    code: `<div className="relative">
+    code: `import { RiSearchLine } from '@remixicon/react';
+
+<div className="relative">
   <input
     type="search"
     placeholder="Search..."
     className="pl-10 pr-3 py-2 rounded bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] text-[var(--app-text-primary)] placeholder-[var(--app-text-muted)] focus:outline-none focus:border-[var(--app-accent-solid)] focus:ring-1 focus:ring-[var(--app-accent-solid)] transition-all w-64"
   />
-  <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
+  <RiSearchLine className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-text-muted)]" />
 </div>`,
     tags: ['input', 'search', 'icon'],
   },

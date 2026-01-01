@@ -2,6 +2,8 @@
  * Type definitions for the Design System Playground
  */
 
+import React from 'react';
+
 export interface ComponentExample {
   id: string;
   name: string;

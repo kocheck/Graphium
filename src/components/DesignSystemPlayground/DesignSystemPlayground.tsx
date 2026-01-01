@@ -13,7 +13,7 @@
  * - Theme toggling and system status
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   RiSearchLine,
   RiFileCopyLine,
@@ -29,6 +29,7 @@ import { getStorage } from '../../services/storage';
 import { ThemeManager } from '../ThemeManager';
 import Toast from '../Toast';
 import ConfirmDialog from '../ConfirmDialog';
+import { useGameStore } from '../../store/gameStore';
 
 /**
  * Shell component to provide necessary context (Theme, Toasts, Dialogs)
@@ -57,6 +58,8 @@ function PlaygroundContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useGameStore();
 
   // Load initial theme
   useEffect(() => {
@@ -73,6 +76,20 @@ function PlaygroundContent() {
     loadTheme();
   }, []);
 
+  // Keyboard shortcut: "/" to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Focus search input when "/" is pressed
+      if (e.key === '/' && document.activeElement !== searchInputRef.current) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleToggleTheme = async () => {
     try {
       const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -80,6 +97,7 @@ function PlaygroundContent() {
       await getStorage().setThemeMode(newTheme);
     } catch (e) {
       console.error('Failed to toggle theme', e);
+      showToast('Failed to switch theme', 'error');
     }
   };
 
@@ -120,8 +138,10 @@ function PlaygroundContent() {
       await navigator.clipboard.writeText(example.code);
       setCopiedId(example.id);
       setTimeout(() => setCopiedId(null), 2000);
+      showToast('Code copied to clipboard', 'success');
     } catch (error) {
       console.error('Failed to copy code:', error);
+      showToast('Failed to copy code to clipboard', 'error');
     }
   };
 
@@ -156,6 +176,7 @@ function PlaygroundContent() {
                 onClick={handleToggleTheme}
                 className="p-2 rounded-lg bg-[var(--app-bg-surface)] hover:bg-[var(--app-bg-hover)] border border-[var(--app-border-subtle)] text-[var(--app-text-secondary)] transition-all"
                 title={`Switch to ${currentTheme === 'light' ? 'Dark' : 'Light'} Mode`}
+                aria-label={`Switch to ${currentTheme === 'light' ? 'Dark' : 'Light'} Mode`}
               >
                 {currentTheme === 'light' ? <RiMoonLine className="w-5 h-5" /> : <RiSunLine className="w-5 h-5" />}
               </button>
@@ -176,6 +197,7 @@ function PlaygroundContent() {
           <div className="relative group">
             <RiSearchLine className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-text-muted)] group-focus-within:text-[var(--app-accent-solid)] transition-colors" />
             <input
+              ref={searchInputRef}
               type="search"
               placeholder="Search components (e.g., Button, Input, Colors)..."
               value={searchQuery}
