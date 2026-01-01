@@ -11,12 +11,13 @@ import {
   RiCloseLine,
   RiInformationLine,
 } from '@remixicon/react';
-import { BackgroundCanvas } from './HomeScreen/BackgroundCanvas';
+import { DungeonBackgroundCanvas } from './HomeScreen/DungeonBackgroundCanvas';
 import { LogoLockup } from './LogoLockup';
 import { PlaygroundToken } from './HomeScreen/PlaygroundToken';
 import { PlaygroundDrawings } from './HomeScreen/PlaygroundDrawings';
 import { VignetteOverlay } from './HomeScreen/VignetteOverlay';
 import { AboutModal, type AboutModalTab } from './AboutModal';
+import { ResolvedTokenData } from '../hooks/useTokenData';
 
 interface HomeScreenProps {
   onStartEditor: () => void;
@@ -370,6 +371,29 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   }, [windowDimensions.width, windowDimensions.height]);
 
   /**
+   * Convert playground tokens to ResolvedTokenData format for FogOfWarLayer
+   * These tokens act as light/vision sources in the dungeon
+   */
+  const resolvedTokens = useMemo<ResolvedTokenData[]>(() => {
+    return playgroundTokens.map((token) => ({
+      id: token.id,
+      x: tokenPositions[token.id]?.x ?? token.x,
+      y: tokenPositions[token.id]?.y ?? token.y,
+      src: token.imageSrc,
+      scale: token.size / 60, // Normalize to base token size
+      type: 'PC' as const, // All demo tokens are PCs with vision
+      visionRadius: 60, // 60ft vision radius (12 grid cells at 5ft/cell)
+      name: token.label,
+      _isInherited: {
+        scale: false,
+        type: false,
+        visionRadius: false,
+        name: false,
+      },
+    }));
+  }, [playgroundTokens, tokenPositions]);
+
+  /**
    * Handle token position change (for collision detection)
    */
   const handleTokenPositionChange = (id: string, x: number, y: number) => {
@@ -459,7 +483,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       {/* Placed BEFORE tokens so they float on top */}
       <VignetteOverlay />
 
-      <BackgroundCanvas width={windowDimensions.width} height={windowDimensions.height}>
+      <DungeonBackgroundCanvas 
+        width={windowDimensions.width} 
+        height={windowDimensions.height}
+        tokens={resolvedTokens}
+      >
         {/* Decorative tactical drawings - CONNECTED to token positions */}
         <PlaygroundDrawings tokens={playgroundTokens} />
 
@@ -481,7 +509,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             allTokens={allTokensArray}
           />
         ))}
-      </BackgroundCanvas>
+      </DungeonBackgroundCanvas>
 
 
 
