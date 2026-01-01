@@ -19,7 +19,7 @@
 ![Tests](https://img.shields.io/badge/tests-172%20passing-success)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
-[Quick Start](#quick-start-ritual) • [Philosophy](#the-etched-philosophy) • [Tools](#the-tools-of-creation) • [Installation](#the-forge-installation) • [Contributing](#join-the-guild)
+[Quick Start](#quick-start) • [Philosophy](#philosophy) • [Tools](#tools) • [Installation](#installation) • [Contributing](#contributing)
 
 </div>
 
@@ -38,7 +38,7 @@ We believe map-making should feel like *carving* the unknown into existence. No 
 
 ---
 
-## 🏛 The Etched Philosophy
+## <a name="philosophy"></a>🏛 The Etched Philosophy
 
 ***"Whiteboards are for brainstorming. Graphium is for history."***
 
@@ -63,7 +63,7 @@ Most VTTs feel floaty and temporary. Graphium is built with **funicular friction
 
 ---
 
-## 🚀 Quick Start Ritual
+## <a name="quick-start"></a>🚀 Quick Start Ritual
 
 **TL;DR**: A local-first, dual-window VTT. Launch it, drag a map, and start carving walls.
 
@@ -89,7 +89,7 @@ npm run dev
 
 ---
 
-## ⚔️ The Tools of Creation
+## <a name="tools"></a>⚔️ The Tools of Creation
 
 Graphium gives you a dedicated "Architect's View" full of arcane instruments, while your players see only the "World View"—a pristine projection of your reality.
 
@@ -117,7 +117,7 @@ Only the finest materials were used to forge Graphium.
 
 ---
 
-## 🔨 The Forge (Installation)
+## <a name="installation"></a>🔨 The Forge (Installation)
 
 ### **Prerequisites**
 - **Node.js** (v18+)
@@ -158,7 +158,7 @@ npm run build
 
 ---
 
-## 🤝 Join the Guild
+## <a name="contributing"></a>🤝 Join the Guild
 
 We welcome fellow smiths to the forge. If you wish to improve the tool:
 
