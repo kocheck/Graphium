@@ -1,6 +1,6 @@
-# Contributing to Hyle
+# Contributing to Graphium
 
-Thank you for your interest in contributing to Hyle! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Graphium! This document provides guidelines and information for contributors.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ Before contributing, please:
 1. Read the [README](README.md) for project overview
 2. Review the [Architecture documentation](docs/architecture/ARCHITECTURE.md) to understand the system design
 3. Check the [Code Conventions](docs/guides/CONVENTIONS.md) for coding standards
-4. Browse existing [issues](https://github.com/your-username/hyle/issues) to see what's being worked on
+4. Browse existing [issues](https://github.com/kocheck/Graphium/issues) to see what's being worked on
 
 > **🤖 For AI Agents:** Please read [docs/context/AI_CONTEXT.md](docs/context/AI_CONTEXT.md) for specific context about this codebase.
 
@@ -39,8 +39,8 @@ Before contributing, please:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/hyle.git
-cd hyle
+git clone https://github.com/kocheck/Graphium.git
+cd Graphium
 
 # Install dependencies
 npm install
@@ -52,7 +52,7 @@ npm run dev
 ### Project Structure (Key Folders)
 
 ```
-hyle/
+graphium/
 ├── docs/               # Comprehensive documentation
 ├── electron/           # Main process code (Node.js) - Handles IPC & Windows
 ├── src/                # Renderer process code (React)
@@ -144,8 +144,8 @@ Update documentation when you:
 
 ## License
 
-By contributing to Hyle, you agree that your contributions will be licensed under the MIT License.
+By contributing to Graphium, you agree that your contributions will be licensed under the MIT License.
 
 ---
 
-Thank you for contributing to Hyle!
+Thank you for contributing to Graphium!

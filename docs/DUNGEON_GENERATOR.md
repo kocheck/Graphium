@@ -528,4 +528,4 @@ When helping developers extend this feature:
 **Initial Implementation**: Claude (AI Assistant)
 **Architecture**: Modular template-based organic growth
 **Error Handling**: React Error Boundary pattern
-**Grid System**: Based on existing Hyle grid (50px cells)
+**Grid System**: Based on existing Graphium grid (50px cells)

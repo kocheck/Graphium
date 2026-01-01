@@ -1,6 +1,6 @@
 # IPC API Reference
 
-This document provides a comprehensive reference for all Inter-Process Communication (IPC) channels in Hyle. IPC enables communication between the Electron main process and renderer processes (Architect Window and World Window).
+This document provides a comprehensive reference for all Inter-Process Communication (IPC) channels in Graphium. IPC enables communication between the Electron main process and renderer processes (Architect Window and World Window).
 
 ## Table of Contents
 
@@ -262,7 +262,7 @@ const filePath = await window.ipcRenderer.invoke(
   arrayBuffer,
   'goblin.webp'
 )
-// Returns: "file:///Users/.../Hyle/temp_assets/1234567890-goblin.webp"
+// Returns: "file:///Users/.../Graphium/temp_assets/1234567890-goblin.webp"
 ```
 
 **Main Process:** `electron/main.ts:259`
@@ -288,14 +288,14 @@ ipcMain.handle('SAVE_ASSET_TEMP', async (_event, buffer: ArrayBuffer, name: stri
 
 `string` - Absolute file:// URL pointing to saved asset
 
-**Example:** `file:///Users/alice/Library/Application Support/Hyle/temp_assets/1702834567890-goblin.webp`
+**Example:** `file:///Users/alice/Library/Application Support/Graphium/temp_assets/1702834567890-goblin.webp`
 
 #### Storage Details
 
 - **Location:** `app.getPath('userData')/temp_assets/`
 - **Filename format:** `{timestamp}-{originalName}.webp`
 - **Lifecycle:** Persists until app restart (temp directory)
-- **Migration:** Copied into .hyle ZIP on campaign save
+- **Migration:** Copied into .graphium ZIP on campaign save
 
 #### Error Cases
 
@@ -315,7 +315,7 @@ ipcMain.handle('SAVE_ASSET_TEMP', async (_event, buffer: ArrayBuffer, name: stri
 
 **Pattern:** Invoke/Handle (Request-Response)
 **Direction:** Renderer → Main Process
-**Purpose:** Serializes campaign state to a .hyle ZIP file
+**Purpose:** Serializes campaign state to a .graphium ZIP file
 
 #### Usage
 
@@ -339,7 +339,7 @@ if (success) {
 ```typescript
 ipcMain.handle('SAVE_CAMPAIGN', async (_event, gameState: any) => {
   const { filePath } = await dialog.showSaveDialog({
-    filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }]
+    filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }]
   })
   if (!filePath) return false
 
@@ -396,10 +396,10 @@ ipcMain.handle('SAVE_CAMPAIGN', async (_event, gameState: any) => {
 
 `boolean` - `true` if saved successfully, `false` if user cancelled save dialog
 
-#### .hyle File Structure
+#### .graphium File Structure
 
 ```
-campaign.hyle (ZIP archive)
+campaign.graphium (ZIP archive)
 ├── manifest.json          # Serialized game state
 └── assets/
     ├── 1234567890-goblin.webp
@@ -443,7 +443,7 @@ campaign.hyle (ZIP archive)
 
 **Before save (machine-specific):**
 ```
-token.src = "file:///Users/alice/Library/Application Support/Hyle/temp_assets/1234567890-goblin.webp"
+token.src = "file:///Users/alice/Library/Application Support/Graphium/temp_assets/1234567890-goblin.webp"
 ```
 
 **After save (portable):**
@@ -451,7 +451,7 @@ token.src = "file:///Users/alice/Library/Application Support/Hyle/temp_assets/12
 token.src = "assets/1234567890-goblin.webp"
 ```
 
-This makes .hyle files portable across machines and operating systems.
+This makes .graphium files portable across machines and operating systems.
 
 #### Error Cases
 
@@ -472,7 +472,7 @@ This makes .hyle files portable across machines and operating systems.
 
 **Pattern:** Invoke/Handle (Request-Response)
 **Direction:** Renderer → Main Process
-**Purpose:** Deserializes a .hyle ZIP file and restores campaign state
+**Purpose:** Deserializes a .graphium ZIP file and restores campaign state
 
 #### Usage
 
@@ -491,7 +491,7 @@ if (state) {
 ```typescript
 ipcMain.handle('LOAD_CAMPAIGN', async () => {
   const { filePaths } = await dialog.showOpenDialog({
-    filters: [{ name: 'Hyle Campaign', extensions: ['hyle'] }]
+    filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }]
   })
   if (filePaths.length === 0) return null
 
@@ -502,7 +502,7 @@ ipcMain.handle('LOAD_CAMPAIGN', async () => {
   await fs.mkdir(sessionDir, { recursive: true })
 
   const manifestStr = await zip.file("manifest.json")?.async("string")
-  if (!manifestStr) throw new Error("Invalid Hyle file")
+  if (!manifestStr) throw new Error("Invalid Graphium file")
 
   const state = JSON.parse(manifestStr)
 
@@ -547,7 +547,7 @@ None - Uses native file picker dialog
 
 #### Algorithm
 
-1. Show native open dialog (user selects .hyle file)
+1. Show native open dialog (user selects .graphium file)
 2. Return `null` if user cancels
 3. Read ZIP file from disk
 4. Load ZIP with JSZip
@@ -562,14 +562,14 @@ None - Uses native file picker dialog
 
 #### Path Rewriting
 
-**In .hyle file (relative):**
+**In .graphium file (relative):**
 ```
 token.src = "assets/goblin.webp"
 ```
 
 **After load (machine-specific):**
 ```
-token.src = "file:///Users/alice/Library/Application Support/Hyle/sessions/1702834567890/assets/goblin.webp"
+token.src = "file:///Users/alice/Library/Application Support/Graphium/sessions/1702834567890/assets/goblin.webp"
 ```
 
 #### Session Directories
@@ -581,13 +581,13 @@ token.src = "file:///Users/alice/Library/Application Support/Hyle/sessions/17028
 
 **Location:** `app.getPath('userData')/sessions/{timestamp}/assets/`
 
-**Example:** `/Users/alice/Library/Application Support/Hyle/sessions/1702834567890/assets/goblin.webp`
+**Example:** `/Users/alice/Library/Application Support/Graphium/sessions/1702834567890/assets/goblin.webp`
 
 #### Error Cases
 
 - **User cancels dialog:** Returns `null` (not an error)
-- **Invalid .hyle file:** Throws if not a valid ZIP
-- **Missing manifest.json:** Throws with "Invalid Hyle file" message
+- **Invalid .graphium file:** Throws if not a valid ZIP
+- **Missing manifest.json:** Throws with "Invalid Graphium file" message
 - **Corrupted ZIP:** Throws JSZip parsing error
 - **Write permission denied:** Throws if can't create session directory
 
@@ -712,8 +712,8 @@ Error: Invalid or unsupported zip format
 #### Custom Errors
 
 ```typescript
-// Invalid .hyle file (missing manifest.json)
-throw new Error("Invalid Hyle file")
+// Invalid .graphium file (missing manifest.json)
+throw new Error("Invalid Graphium file")
 ```
 
 ---
@@ -1016,7 +1016,7 @@ if (result.success) {
 ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'Save Error Report',
-    defaultPath: `hyle-error-report-${Date.now()}.txt`,
+    defaultPath: `graphium-error-report-${Date.now()}.txt`,
     filters: [
       { name: 'Text Files', extensions: ['txt'] },
       { name: 'All Files', extensions: ['*'] },

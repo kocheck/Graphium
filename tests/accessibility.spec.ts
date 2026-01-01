@@ -2,7 +2,7 @@
  * Accessibility Tests - WCAG AA Compliance
  *
  * This test suite uses Playwright + axe-core to automatically detect
- * accessibility violations in the Hyle application.
+ * accessibility violations in the Graphium application.
  *
  * TESTED CRITERIA:
  * - WCAG 2.1 Level AA contrast ratios (4.5:1 for normal text, 3:1 for large text)

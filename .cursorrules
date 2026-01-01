@@ -1,11 +1,11 @@
-# Hyle: AI Assistant Context
+# Graphium: AI Assistant Context
 
-**Project:** Hyle - Local-first D&D digital battlemap (Electron + React)
-**Purpose:** This file provides context for AI coding assistants working on Hyle
+**Project:** Graphium - Local-first D&D digital battlemap (Electron + React)
+**Purpose:** This file provides context for AI coding assistants working on Graphium
 
 ## Quick Reference
 
-**What is Hyle?** A dual-window Electron app for D&D Dungeon Masters. Projects a clean "World View" for players while the DM controls everything from an "Architect View."
+**What is Graphium?** A dual-window Electron app for D&D Dungeon Masters. Projects a clean "World View" for players while the DM controls everything from an "Architect View."
 
 **Tech Stack:**
 - **Framework:** Electron 33 + React 18 + TypeScript 5
@@ -18,13 +18,13 @@
 **Key Architecture:**
 - Dual-window (Architect View + World View)
 - IPC for state sync (Architect → World, one-way)
-- Local-first (no cloud, `.hyle` ZIP files for campaigns)
+- Local-first (no cloud, `.graphium` ZIP files for campaigns)
 - Privacy-focused error handling (PII sanitization)
 
 ## Project Structure
 
 ```
-hyle/
+graphium/
 ├── electron/           # Main process (Node.js)
 │   ├── main.ts        # Window creation, IPC handlers, file I/O
 │   └── preload.ts     # Context bridge (secure IPC API)
@@ -102,7 +102,7 @@ hyle/
 - **Grid Snapping**: Automatic alignment of tokens to grid (smart: cell centers for 1x1, intersections for 2x2)
 - **Fog of War**: Vision-based fog overlay (World View only) with three states: Unexplored (dark), Explored (dimmed), Current Vision (clear)
 - **Daylight Mode**: Toggle to enable/disable fog of war (when enabled, fog is hidden)
-- **Campaign File**: `.hyle` ZIP archive containing manifest.json + assets/ directory
+- **Campaign File**: `.graphium` ZIP archive containing manifest.json + assets/ directory
 - **Temp Assets**: Processed images stored in userData/temp_assets/ until campaign save
 - **IPC (Inter-Process Communication)**: Electron's system for main ↔ renderer communication
 - **Sync Manager**: Component that broadcasts Architect state changes to World View via IPC
@@ -213,7 +213,7 @@ ipcMain.handle('SAVE_CAMPAIGN', async (_event, state) => {
 ```
 
 **Error Persistence:**
-- Errors stored in localStorage (`hyle_errors`)
+- Errors stored in localStorage (`graphium_errors`)
 - User can review and optionally report via email
 - Consent-based reporting (privacy-first)
 
@@ -233,9 +233,9 @@ const tempUrl = await handle.promise
 // 3. Use in game (temp storage)
 addToken({ id: uuid(), x, y, src: tempUrl, scale: 1 })
 
-// 4. Save campaign (copy to .hyle ZIP)
+// 4. Save campaign (copy to .graphium ZIP)
 await window.ipcRenderer.invoke('SAVE_CAMPAIGN', gameState)
-// Assets copied from temp_assets/ → campaign.hyle/assets/
+// Assets copied from temp_assets/ → campaign.graphium/assets/
 ```
 
 ### 5. Grid Snapping Pattern

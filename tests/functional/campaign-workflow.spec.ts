@@ -90,7 +90,7 @@ test.describe('Campaign Workflow', () => {
     // Clear current state (simulate fresh session)
     await page.evaluate(() => {
       localStorage.clear();
-      return indexedDB.deleteDatabase('hyle-storage');
+      return indexedDB.deleteDatabase('graphium-storage');
     });
 
     // Reload page

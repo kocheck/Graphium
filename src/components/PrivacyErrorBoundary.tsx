@@ -41,7 +41,7 @@
  *
  * @example
  * // Wrap entire app
- * <PrivacyErrorBoundary supportEmail="support@graphium.app">
+ * <PrivacyErrorBoundary supportEmail="support@getgraphium.com">
  *   <App />
  * </PrivacyErrorBoundary>
  *

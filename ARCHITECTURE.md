@@ -1,6 +1,6 @@
-# Hyle Architecture - Quick Reference for AI Agents
+# Graphium Architecture - Quick Reference for AI Agents
 
-> **AI Agent Onboarding**: This file provides a high-level map of the Hyle codebase. Read this first before making changes to understand the system architecture, data flow, and key patterns.
+> **AI Agent Onboarding**: This file provides a high-level map of the Graphium codebase. Read this first before making changes to understand the system architecture, data flow, and key patterns.
 
 ## 📋 Table of Contents
 - [System Overview](#system-overview)
@@ -17,7 +17,7 @@
 
 ## System Overview
 
-**Hyle** is a dual-target (Electron + Web) React/TypeScript application serving as a digital battlemap for tabletop RPG Dungeon Masters.
+**Graphium** is a dual-target (Electron + Web) React/TypeScript application serving as a digital battlemap for tabletop RPG Dungeon Masters.
 
 ### Core Concept: Dual-Window Architecture
 ```
@@ -53,7 +53,7 @@
 - **Zustand 5.0** - Global state management (single store)
 - **IndexedDB** (idb) - Web storage
 - **Electron IPC** - Inter-process communication
-- **JSZip** - Campaign file (.hyle) compression
+- **JSZip** - Campaign file (.graphium) compression
 
 ### Canvas & Rendering
 - **Konva 10** / **React-Konva 18** - Canvas rendering engine
@@ -74,7 +74,7 @@
 ## Directory Structure
 
 ```
-/home/user/Hyle/
+/home/user/Graphium/
 │
 ├── src/                          # React application source
 │   ├── components/               # React UI components
@@ -159,7 +159,7 @@
 - Excellent TypeScript support
 - Built-in subscriptions (perfect for IPC sync)
 
-**Store Location**: `/home/user/Hyle/src/store/gameStore.ts`
+**Store Location**: `/home/user/Graphium/src/store/gameStore.ts`
 
 **Store Structure**:
 ```typescript
@@ -213,9 +213,9 @@ ElectronStorageService (Desktop)        WebStorageService (Browser)
     ↓                                       ↓
 IPC to main process                     IndexedDB write
     ↓                                       ↓
-electron/main.ts                        Download .hyle file
+electron/main.ts                        Download .graphium file
     ↓
-fs.writeFile() to .hyle ZIP
+fs.writeFile() to .graphium ZIP
 ```
 
 #### 2. IPC State Synchronization (Dual-Window Sync)
@@ -297,7 +297,7 @@ const storage = window.ipcRenderer
   : new WebStorageService();
 ```
 
-**Location**: `/home/user/Hyle/src/services/`
+**Location**: `/home/user/Graphium/src/services/`
 
 ### 2. Prototype/Instance Pattern (Token Library)
 
@@ -396,7 +396,7 @@ function snapToGrid(x: number, y: number, tokenScale: number, gridSize: number) 
 }
 ```
 
-**Location**: `/home/user/Hyle/src/utils/grid.ts`
+**Location**: `/home/user/Graphium/src/utils/grid.ts`
 
 ### 5. Fog of War Raycasting
 
@@ -414,7 +414,7 @@ For each PC token:
   5. Render blurred overlay for unseen areas
 ```
 
-**Location**: `/home/user/Hyle/src/components/Canvas/FogOfWarLayer.tsx`
+**Location**: `/home/user/Graphium/src/components/Canvas/FogOfWarLayer.tsx`
 
 ---
 
@@ -422,8 +422,8 @@ For each PC token:
 
 ### Campaign Workflow
 1. **New Campaign**: `HomeScreen` → Create campaign → Set name → Start Editor
-2. **Load Campaign**: `HomeScreen` → Load .hyle → Extract assets → Populate store → Start Editor
-3. **Save Campaign**: Toolbar → Save → Serialize store → Embed assets → Write .hyle ZIP
+2. **Load Campaign**: `HomeScreen` → Load .graphium → Extract assets → Populate store → Start Editor
+3. **Save Campaign**: Toolbar → Save → Serialize store → Embed assets → Write .graphium ZIP
 4. **Auto-Save**: `AutoSaveManager` polls store every 30s → IndexedDB write
 
 ### Token Workflow
@@ -460,7 +460,7 @@ For each PC token:
 **Run**: `npm run test` or `npm run test:coverage`
 
 ### E2E Tests (Playwright)
-**Location**: `/home/user/Hyle/tests/`
+**Location**: `/home/user/Graphium/tests/`
 
 **Coverage**: 13 spec files
 - **Functional**: `campaign-workflow.spec.ts`, `token-management.spec.ts`, `door-sync.spec.ts`, etc.
@@ -479,7 +479,7 @@ For each PC token:
 - **Privacy-aware**: All error tests verify PII sanitization
 - **Platform coverage**: Both Electron and Web tested
 
-**Further Reading**: `/home/user/Hyle/TESTING_STRATEGY.md`
+**Further Reading**: `/home/user/Graphium/TESTING_STRATEGY.md`
 
 ---
 
@@ -496,21 +496,21 @@ For each PC token:
 - **AssetProcessingErrorBoundary** (image cropping)
 - **DungeonGeneratorErrorBoundary** (dungeon generator)
 
-**Location**: `/home/user/Hyle/src/components/`
+**Location**: `/home/user/Graphium/src/components/`
 
 #### Layer 2: Global Error Handlers
 - `window.onerror` - Catches uncaught JS errors
 - `window.onunhandledrejection` - Catches unhandled promise rejections
 - Both sanitize errors and expose to `window.errorReporting` API
 
-**Location**: `/home/user/Hyle/src/utils/globalErrorHandler.ts`
+**Location**: `/home/user/Graphium/src/utils/globalErrorHandler.ts`
 
 #### Layer 3: Main Process Error Handling
 - Electron main process error handlers
 - IPC error handling
 - File I/O error handling
 
-**Location**: `/home/user/Hyle/electron/main.ts`
+**Location**: `/home/user/Graphium/electron/main.ts`
 
 ### Privacy Guarantees
 All errors are sanitized before reporting:
@@ -518,9 +518,9 @@ All errors are sanitized before reporting:
 - File paths → Relative paths
 - System info → Redacted
 
-**Implementation**: `/home/user/Hyle/src/utils/errorSanitizer.ts`
+**Implementation**: `/home/user/Graphium/src/utils/errorSanitizer.ts`
 
-**Further Reading**: `/home/user/Hyle/docs/features/error-boundaries.md`
+**Further Reading**: `/home/user/Graphium/docs/features/error-boundaries.md`
 
 ---
 

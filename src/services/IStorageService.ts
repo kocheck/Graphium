@@ -262,7 +262,7 @@ export interface IStorageService {
    * if (storage.isFeatureAvailable('native-dialogs')) {
    *   showToast('Use File > Open to load campaign', 'info');
    * } else {
-   *   showToast('Click to select .hyle file', 'info');
+   *   showToast('Click to select .graphium file', 'info');
    * }
    */
   isFeatureAvailable(feature: 'world-view' | 'auto-save' | 'native-dialogs'): boolean;

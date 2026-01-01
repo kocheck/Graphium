@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide helps diagnose and fix common issues in Hyle. Issues are organized by category with symptoms, causes, and solutions.
+This guide helps diagnose and fix common issues in Graphium. Issues are organized by category with symptoms, causes, and solutions.
 
 ## Table of Contents
 
@@ -62,7 +62,7 @@ Run through this checklist when diagnosing any issue:
 // Fix: Force window to front
 1. Click "World View" button again (focuses existing window)
 2. Check all displays/desktops (might be on different monitor)
-3. Check taskbar for second Hyle window
+3. Check taskbar for second Graphium window
 ```
 
 **Cause 2: IPC handler not registered**
@@ -129,7 +129,7 @@ console.log('Token src:', token.src)
 // Expected: file:///Users/.../temp_assets/123456-goblin.webp
 
 // Check file exists
-ls ~/Library/Application\ Support/Hyle/temp_assets/
+ls ~/Library/Application\ Support/Graphium/temp_assets/
 
 // Fix: Re-upload token
 ```
@@ -301,7 +301,7 @@ const MAX_SIZE = assetType === 'MAP' ? 4096 : 512
 # Solution: Check write permissions
 
 # macOS/Linux
-chmod 755 ~/Library/Application\ Support/Hyle
+chmod 755 ~/Library/Application\ Support/Graphium
 
 # Windows: Run as administrator or check folder permissions
 ```
@@ -317,18 +317,18 @@ df -h  # macOS/Linux
 # or use Disk Management on Windows
 
 # Clean up old session directories
-rm -rf ~/Library/Application\ Support/Hyle/sessions/*
+rm -rf ~/Library/Application\ Support/Graphium/sessions/*
 ```
 
 ---
 
 ## Campaign Save/Load Issues
 
-### Issue: "Invalid Hyle File" Error on Load
+### Issue: "Invalid Graphium File" Error on Load
 
 **Symptoms:**
-- Error when trying to load .hyle file
-- Console: "Invalid Hyle file"
+- Error when trying to load .graphium file
+- Console: "Invalid Graphium file"
 
 **Causes & Solutions:**
 
@@ -338,7 +338,7 @@ rm -rf ~/Library/Application\ Support/Hyle/sessions/*
 # Solution: Verify ZIP integrity
 
 # Try unzipping manually
-unzip campaign.hyle -d test_extract/
+unzip campaign.graphium -d test_extract/
 
 # If error: ZIP is corrupted, use backup
 # If success: Check manifest.json exists
@@ -368,7 +368,7 @@ zip.file("manifest.json", JSON.stringify(stateToSave))
 # Solution: Validate JSON syntax
 
 # Extract and validate
-unzip campaign.hyle manifest.json
+unzip campaign.graphium manifest.json
 cat manifest.json | jq .  # Requires jq tool
 
 # Fix: Remove trailing commas, fix brackets
@@ -395,7 +395,7 @@ if (!assets) {
 }
 
 // Check ZIP structure
-unzip -l campaign.hyle
+unzip -l campaign.graphium
 # Should show:
 #   manifest.json
 #   assets/123456-goblin.webp
@@ -681,7 +681,7 @@ if (!value) return;  // Guard clause
 
 ```bash
 # Allow unsigned app
-xattr -cr /Applications/Hyle.app
+xattr -cr /Applications/Graphium.app
 
 # Or: System Preferences > Security & Privacy > Open Anyway
 ```
@@ -711,7 +711,7 @@ xattr -cr /Applications/Hyle.app
 # Download from Microsoft:
 https://aka.ms/vs/17/release/vc_redist.x64.exe
 
-# Run installer, restart, then launch Hyle
+# Run installer, restart, then launch Graphium
 ```
 
 ---
@@ -739,7 +739,7 @@ return `file://${filePath.replace(/\\/g, '/')}`
 sudo apt-get install libx11-dev libxkbfile-dev libsecret-1-dev
 
 # AppImage sandbox issue
-./Hyle.AppImage --no-sandbox
+./Graphium.AppImage --no-sandbox
 ```
 
 ---
@@ -753,10 +753,10 @@ sudo apt-get install libx11-dev libxkbfile-dev libsecret-1-dev
 | `net::ERR_UNKNOWN_URL_SCHEME` | media:// protocol not registered | Check `protocol.registerSchemesAsPrivileged()` |
 | `window.ipcRenderer is undefined` | Preload script not loaded | Verify `webPreferences.preload` path |
 | `ENOENT: no such file or directory` | Asset file doesn't exist | Re-upload token or check path |
-| `Invalid Hyle file` | Missing manifest.json in ZIP | Check ZIP structure |
+| `Invalid Graphium file` | Missing manifest.json in ZIP | Check ZIP structure |
 | `EACCES: permission denied` | No write permissions | Check folder permissions |
 | `ENOSPC: no space left on device` | Disk full | Free up space |
-| `Can't find end of central directory` | Corrupted ZIP | Use backup .hyle file |
+| `Can't find end of central directory` | Corrupted ZIP | Use backup .graphium file |
 
 ---
 
@@ -770,9 +770,9 @@ app.commandLine.appendSwitch('enable-logging')
 app.commandLine.appendSwitch('v', '1')
 
 // Check logs:
-// macOS: ~/Library/Logs/Hyle/
-// Windows: %USERPROFILE%\AppData\Roaming\Hyle\logs\
-// Linux: ~/.config/Hyle/logs/
+// macOS: ~/Library/Logs/Graphium/
+// Windows: %USERPROFILE%\AppData\Roaming\Graphium\logs\
+// Linux: ~/.config/Graphium/logs/
 ```
 
 ### Inspect IPC Traffic
@@ -812,7 +812,7 @@ useEffect(() => {
 
 If you're still stuck after trying these solutions:
 
-1. **Check existing issues:** [GitHub Issues](https://github.com/username/Hyle/issues)
+1. **Check existing issues:** [GitHub Issues](https://github.com/username/Graphium/issues)
 2. **Open DevTools:** `Ctrl+Shift+I` (Windows/Linux) or `Cmd+Opt+I` (Mac)
 3. **Collect diagnostics:**
    - Electron version: Check `package.json`

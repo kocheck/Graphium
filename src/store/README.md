@@ -1,6 +1,6 @@
 # State Management (Zustand Store)
 
-This directory contains the Zustand state management implementation for Hyle. All global application state is managed through a single store.
+This directory contains the Zustand state management implementation for Graphium. All global application state is managed through a single store.
 
 ## Purpose
 
@@ -358,7 +358,7 @@ export const useGameStore = create<GameState>()(
       // ... store implementation
     }),
     {
-      name: 'hyle-game-state',  // LocalStorage key
+      name: 'graphium-game-state',  // LocalStorage key
       partialize: (state) => ({
         // Only persist specific fields
         gridSize: state.gridSize,

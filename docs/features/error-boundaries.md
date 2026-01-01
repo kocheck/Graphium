@@ -1,10 +1,10 @@
-# Error Boundaries in Hyle
+# Error Boundaries in Graphium
 
-This document explains how error boundaries are set up in the Hyle application and provides guidance for correct usage.
+This document explains how error boundaries are set up in the Graphium application and provides guidance for correct usage.
 
 ## Overview
 
-Hyle uses a **privacy-focused, local-first error boundary** system that:
+Graphium uses a **privacy-focused, local-first error boundary** system that:
 
 1. Catches JavaScript errors anywhere in the React component tree
 2. Catches global errors and unhandled promise rejections
@@ -73,7 +73,7 @@ The main error boundary component that wraps the application.
 ```tsx
 import PrivacyErrorBoundary from './components/PrivacyErrorBoundary';
 
-<PrivacyErrorBoundary supportEmail="support@hyle.app">
+<PrivacyErrorBoundary supportEmail="support@graphium.app">
   <App />
 </PrivacyErrorBoundary>
 ```
@@ -214,7 +214,7 @@ ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
   try {
     const { filePath, canceled } = await dialog.showSaveDialog({
       title: 'Save Error Report',
-      defaultPath: `hyle-error-report-${Date.now()}.txt`,
+      defaultPath: `graphium-error-report-${Date.now()}.txt`,
       filters: [
         { name: 'Text Files', extensions: ['txt'] },
         { name: 'All Files', extensions: ['*'] },
@@ -309,7 +309,7 @@ import PrivacyErrorBoundary from './components/PrivacyErrorBoundary';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <PrivacyErrorBoundary supportEmail="support@hyle.app">
+    <PrivacyErrorBoundary supportEmail="support@graphium.app">
       <App />
     </PrivacyErrorBoundary>
   </React.StrictMode>,
@@ -419,9 +419,9 @@ The error boundary is designed with privacy as a priority:
 For complex applications, you may want multiple error boundaries:
 
 ```tsx
-<PrivacyErrorBoundary supportEmail="support@hyle.app">
+<PrivacyErrorBoundary supportEmail="support@graphium.app">
   <Header />
-  <PrivacyErrorBoundary supportEmail="support@hyle.app">
+  <PrivacyErrorBoundary supportEmail="support@graphium.app">
     <MainContent />
   </PrivacyErrorBoundary>
   <Footer />

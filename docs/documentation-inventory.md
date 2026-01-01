@@ -1,6 +1,6 @@
-# Hyle Documentation Index
+# Graphium Documentation Index
 
-This document provides a complete overview of Hyle's documentation, organized by type and purpose. Use this as your starting point for navigating the codebase.
+This document provides a complete overview of Graphium's documentation, organized by type and purpose. Use this as your starting point for navigating the codebase.
 
 ## Documentation Inventory
 
@@ -109,7 +109,7 @@ This document provides a complete overview of Hyle's documentation, organized by
 
 ## Documentation Standards
 
-All Hyle documentation follows these standards:
+All Graphium documentation follows these standards:
 
 ### 1. JSDoc Format
 
@@ -333,7 +333,7 @@ Potential automation opportunities:
 
 ## Documentation Philosophy
 
-Hyle's documentation follows these principles:
+Graphium's documentation follows these principles:
 
 ### 1. AI-First Design
 
@@ -404,4 +404,4 @@ Keep documentation maintainable:
 **Coverage:** 100%
 **Status:** ✅ Complete
 
-This documentation was created as part of a comprehensive audit to optimize Hyle for AI-assisted development.
+This documentation was created as part of a comprehensive audit to optimize Graphium for AI-assisted development.

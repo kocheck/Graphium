@@ -1,6 +1,6 @@
 # Utilities
 
-Pure utility functions for Hyle. All functions in this directory are side-effect free and can be used anywhere in the application.
+Pure utility functions for Graphium. All functions in this directory are side-effect free and can be used anywhere in the application.
 
 ## Purpose
 
@@ -123,7 +123,7 @@ const handleCropConfirm = async (blob: Blob) => {
   // Process image (resize, convert, save) - Returns cancellable handle
   const handle = processImage(file, 'TOKEN');
   const src = await handle.promise;
-  // Returns: file:///Users/.../Hyle/temp_assets/1234567890-token.webp
+  // Returns: file:///Users/.../Graphium/temp_assets/1234567890-token.webp
 
   addToken({
     id: crypto.randomUUID(),

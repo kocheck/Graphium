@@ -1,6 +1,6 @@
-# Hyle Code Conventions
+# Graphium Code Conventions
 
-This document defines the coding standards, style guidelines, and best practices for the Hyle project. Following these conventions ensures consistency, maintainability, and effective AI-assisted development.
+This document defines the coding standards, style guidelines, and best practices for the Graphium project. Following these conventions ensures consistency, maintainability, and effective AI-assisted development.
 
 ## Table of Contents
 - [File Naming](#file-naming)

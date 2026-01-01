@@ -1,4 +1,4 @@
-# Hyle E2E Testing Strategy
+# Graphium E2E Testing Strategy
 **Playwright Testing Suite for Dual-Target Application (Web & Electron)**
 
 ---
@@ -16,7 +16,7 @@
 
 ## Overview
 
-This document outlines the comprehensive testing strategy for the Hyle application, which supports two deployment targets:
+This document outlines the comprehensive testing strategy for the Graphium application, which supports two deployment targets:
 - **Web (SPA)**: Browser-based application served via Vite
 - **Electron (Desktop)**: Native desktop application with IPC integration
 
@@ -245,7 +245,7 @@ test.describe('Campaign Management', () => {
     // ✅ Describes expected behavior
   });
 
-  test('should restore campaign from .hyle file upload', async ({ page }) => {
+  test('should restore campaign from .graphium file upload', async ({ page }) => {
     // ✅ User story format
   });
 });
@@ -338,7 +338,7 @@ export async function bypassLandingPageAndInjectState(page: Page) {
   // 2. Inject IndexedDB state to skip onboarding
   await page.addInitScript(() => {
     // Mock IndexedDB with pre-configured state
-    const request = indexedDB.open('hyle-storage', 1);
+    const request = indexedDB.open('graphium-storage', 1);
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -372,8 +372,8 @@ export async function bypassLandingPageAndInjectState(page: Page) {
 
   // 3. Set localStorage flags
   await page.addInitScript(() => {
-    localStorage.setItem('hyle-onboarding-completed', 'true');
-    localStorage.setItem('hyle-theme', 'light'); // Use light theme for tests
+    localStorage.setItem('graphium-onboarding-completed', 'true');
+    localStorage.setItem('graphium-theme', 'light'); // Use light theme for tests
   });
 
   // 4. Navigate to app (landing page logic will detect "returning user" and skip)
@@ -473,7 +473,7 @@ test('should preserve all campaign data through export/import cycle', async ({ p
     tokensPerMap: 3,
   });
 
-  // Export campaign (.hyle file download)
+  // Export campaign (.graphium file download)
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.click('[data-testid="export-campaign"]'),
@@ -484,7 +484,7 @@ test('should preserve all campaign data through export/import cycle', async ({ p
   // Clear state (simulate fresh session)
   await page.context().clearCookies();
   await page.evaluate(() => localStorage.clear());
-  await page.evaluate(() => indexedDB.deleteDatabase('hyle-storage'));
+  await page.evaluate(() => indexedDB.deleteDatabase('graphium-storage'));
 
   // Import campaign
   await page.setInputFiles('[data-testid="import-file"]', filePath);

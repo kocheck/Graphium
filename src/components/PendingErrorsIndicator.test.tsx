@@ -563,7 +563,7 @@ describe('PendingErrorsIndicator', () => {
   })
 
   describe('event listener', () => {
-    it('should refresh errors when hyle-error event is dispatched', async () => {
+    it('should refresh errors when graphium-error event is dispatched', async () => {
       vi.mocked(globalErrorHandler.getStoredErrors).mockReturnValue([mockStoredError])
       vi.mocked(globalErrorHandler.getUnreportedErrorCount).mockReturnValue(1)
 

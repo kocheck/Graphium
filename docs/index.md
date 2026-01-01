@@ -1,4 +1,4 @@
-# Hyle Documentation Index
+# Graphium Documentation Index
 
 > **For AI Agents**: This index provides structured navigation to all documentation.
 > Follow links based on your task context.

@@ -1,6 +1,6 @@
 # Architectural Decisions
 
-This document records significant architectural and technical decisions made during Hyle's development. Each decision includes context, alternatives considered, and rationale.
+This document records significant architectural and technical decisions made during Graphium's development. Each decision includes context, alternatives considered, and rationale.
 
 ## Table of Contents
 
@@ -70,7 +70,7 @@ DMs need a control panel with editing tools while players need a clean, read-onl
 
 ### Context
 
-Hyle targets in-person tabletop RPG sessions where DMs need reliable, offline-capable software.
+Graphium targets in-person tabletop RPG sessions where DMs need reliable, offline-capable software.
 
 ### Alternatives Considered
 
@@ -92,7 +92,7 @@ Hyle targets in-person tabletop RPG sessions where DMs need reliable, offline-ca
 - **Performance:** Instant load/save (no network latency)
 
 **Implementation:**
-- Campaign files: `.hyle` ZIP archives (portable, shareable)
+- Campaign files: `.graphium` ZIP archives (portable, shareable)
 - Asset storage: Electron `userData` directory
 - No analytics, no telemetry, no external requests
 
@@ -279,7 +279,7 @@ canvas.toBlob((blob) => {
 
 ## 6. ZIP-Based Campaign Files
 
-**Decision:** Use ZIP archives (.hyle) for campaign files instead of JSON or database.
+**Decision:** Use ZIP archives (.graphium) for campaign files instead of JSON or database.
 
 ### Context
 
@@ -299,7 +299,7 @@ Need to save campaign state (JSON) + asset files (images) in a portable, shareab
    - Pros: Maximum compression, fast parsing
    - Cons: Hard to debug, need custom tools
 
-### Decision: ZIP Archive (.hyle extension)
+### Decision: ZIP Archive (.graphium extension)
 
 **Rationale:**
 - **Single file:** Everything bundled together (portable)
@@ -310,7 +310,7 @@ Need to save campaign state (JSON) + asset files (images) in a portable, shareab
 
 **Structure:**
 ```
-campaign.hyle (ZIP)
+campaign.graphium (ZIP)
 ├── manifest.json      # Game state (readable)
 └── assets/
     ├── goblin.webp
@@ -325,7 +325,7 @@ const zip = new JSZip()
 zip.file("manifest.json", JSON.stringify(gameState))
 zip.folder("assets").file("goblin.webp", imageBuffer)
 const zipBuffer = await zip.generateAsync({ type: "nodebuffer" })
-await fs.writeFile("campaign.hyle", zipBuffer)
+await fs.writeFile("campaign.graphium", zipBuffer)
 
 // Load
 const zip = await JSZip.loadAsync(zipBuffer)
@@ -616,7 +616,7 @@ if (file) {
 
 ### Context
 
-When loading .hyle files, need to extract assets somewhere. Reusing same directory causes conflicts.
+When loading .graphium files, need to extract assets somewhere. Reusing same directory causes conflicts.
 
 ### Alternatives Considered
 
@@ -773,7 +773,7 @@ const handleDrop = (e: React.DragEvent) => {
 | Zustand | Redux | Minimal boilerplate, subscription API |
 | Konva | Raw Canvas | React integration, declarative API |
 | WebP | PNG | 30-50% smaller, transparency support |
-| ZIP (.hyle) | SQLite | Single-file portability, inspectable |
+| ZIP (.graphium) | SQLite | Single-file portability, inspectable |
 | IPC sync | WebSockets | Built-in, <1ms latency, zero config |
 | Round snapping | Magnetic snap | Simple, deterministic, fast |
 | media:// protocol | file:// URLs | Security, controlled access |
@@ -835,7 +835,7 @@ Decisions should be revisited when:
 
 1. Document why decision is being reconsidered
 2. Analyze impact on existing code
-3. Create migration plan for existing campaigns (.hyle files)
+3. Create migration plan for existing campaigns (.graphium files)
 4. Update this document with new decision and migration notes
 
 ---

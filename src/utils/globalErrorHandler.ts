@@ -1,5 +1,5 @@
 /**
- * Global Error Handler for Hyle
+ * Global Error Handler for Graphium
  *
  * Catches errors outside React's lifecycle and persists them for later reporting.
  * Part of the 3-layer error handling architecture:

@@ -60,7 +60,7 @@ export async function bypassLandingPageAndInjectState(
   // 2. Inject IndexedDB state to skip onboarding
   await page.addInitScript((initialCampaign) => {
     // Mock IndexedDB with pre-configured state
-    const request = indexedDB.open('hyle-storage', 1);
+    const request = indexedDB.open('graphium-storage', 1);
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -96,8 +96,8 @@ export async function bypassLandingPageAndInjectState(
 
   // 3. Set localStorage flags
   await page.addInitScript(() => {
-    localStorage.setItem('hyle-onboarding-completed', 'true');
-    localStorage.setItem('hyle-theme', 'light'); // Use light theme for tests
+    localStorage.setItem('graphium-onboarding-completed', 'true');
+    localStorage.setItem('graphium-theme', 'light'); // Use light theme for tests
   });
 
   // 4. Navigate to app (landing page logic will detect "returning user" and skip)
@@ -128,7 +128,7 @@ export async function bypassLandingPageAndInjectState(
 export async function injectCampaignState(page: Page, campaign: any) {
   await page.evaluate((campaignData) => {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('hyle-storage', 1);
+      const request = indexedDB.open('graphium-storage', 1);
 
       request.onsuccess = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
@@ -168,6 +168,6 @@ export async function injectCampaignState(page: Page, campaign: any) {
 export async function clearAllTestData(page: Page) {
   await page.evaluate(() => {
     localStorage.clear();
-    return indexedDB.deleteDatabase('hyle-storage');
+    return indexedDB.deleteDatabase('graphium-storage');
   });
 }

@@ -213,7 +213,7 @@ Uses `destination-out` blending mode:
 5. **Persistent Across Sessions**
    - Save/load explored regions with campaign
    - Already has `timestamp` for session tracking
-   - Include in campaign .hyle file
+   - Include in campaign .graphium file
 
 6. **DM Controls**
    - Button to clear all explored regions

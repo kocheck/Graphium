@@ -202,7 +202,7 @@ test.describe('Storage Error Handling', () => {
     // Corrupt the database
     await page.evaluate(() => {
       return new Promise((resolve) => {
-        const request = indexedDB.open('hyle-storage', 1);
+        const request = indexedDB.open('graphium-storage', 1);
 
         request.onsuccess = (event) => {
           const db = (event.target as IDBOpenDBRequest).result;
@@ -280,7 +280,7 @@ test.describe('File Operation Errors', () => {
 
     const importInput = page.locator('[data-testid="import-file"]');
     await importInput.setInputFiles({
-      name: 'corrupted.hyle',
+      name: 'corrupted.graphium',
       mimeType: 'application/json',
       buffer: corruptedFile,
     });

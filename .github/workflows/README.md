@@ -1,6 +1,6 @@
 # GitHub Workflows
 
-This directory contains automated workflows for Hyle repository maintenance.
+This directory contains automated workflows for Graphium repository maintenance.
 
 ## Documentation Check Workflow
 
@@ -296,7 +296,7 @@ A rule-based alternative that doesn't use AI:
 
 **File:** `build-release.yml`
 
-**Purpose:** Automatically builds Hyle for macOS, Windows, and Linux when you create a version tag, then creates a GitHub release with all the installers.
+**Purpose:** Automatically builds Graphium for macOS, Windows, and Linux when you create a version tag, then creates a GitHub release with all the installers.
 
 ### Features
 
@@ -336,7 +336,7 @@ git push
 **Step 3: Create and push a version tag**
 
 ```bash
-git tag -a v0.0.1 -m "v0.0.1 - Hyle: Protos"
+git tag -a v0.0.1 -m "v0.0.1 - Graphium: Protos"
 git push origin v0.0.1
 ```
 
@@ -360,9 +360,9 @@ Or edit directly on GitHub.
 
 The workflow creates these installers:
 
-- **macOS**: `Hyle-Mac-0.0.1-Installer.dmg` (~94 MB)
-- **Windows**: `Hyle-Windows-0.0.1-Setup.exe` (~85 MB)
-- **Linux**: `Hyle-Linux-0.0.1.AppImage` (~95 MB)
+- **macOS**: `Graphium-Mac-0.0.1-Installer.dmg` (~94 MB)
+- **Windows**: `Graphium-Windows-0.0.1-Setup.exe` (~85 MB)
+- **Linux**: `Graphium-Linux-0.0.1.AppImage` (~95 MB)
 
 Each includes a `.blockmap` file for delta updates.
 

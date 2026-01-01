@@ -1,9 +1,9 @@
-# Hyle Theme System Documentation
+# Graphium Theme System Documentation
 
 **Version:** 1.0.0
 **Last Updated:** 2025-12-15
 
-This document explains Hyle's accessible theme system for developers, future AI assistants, and contributors.
+This document explains Graphium's accessible theme system for developers, future AI assistants, and contributors.
 
 ---
 
@@ -39,7 +39,7 @@ This document explains Hyle's accessible theme system for developers, future AI 
 │  ├── nativeTheme API (OS theme detection)                   │
 │  └── IPC broadcast (→ all renderer windows)                 │
 │                                                             │
-│  Stored in: ~/Library/Application Support/hyle/             │
+│  Stored in: ~/Library/Application Support/graphium/             │
 │              theme-preferences.json                          │
 └────────────────────────┬────────────────────────────────────┘
                          │
@@ -71,7 +71,7 @@ This document explains Hyle's accessible theme system for developers, future AI 
 
 ### Radix Colors Foundation
 
-Hyle uses [Radix Colors](https://www.radix-ui.com/colors) as its color foundation. Radix provides:
+Graphium uses [Radix Colors](https://www.radix-ui.com/colors) as its color foundation. Radix provides:
 - **WCAG AA compliant** color scales out-of-the-box
 - **Automatic light/dark variants** (e.g., `slate` → `slate-dark`)
 - **Semantic scale steps** (1-12) for consistent contrast
@@ -189,9 +189,9 @@ initializeThemeManager()
 #### Storage Location
 
 Theme preference is stored in:
-- **macOS:** `~/Library/Application Support/hyle/theme-preferences.json`
-- **Windows:** `%APPDATA%/hyle/theme-preferences.json`
-- **Linux:** `~/.config/hyle/theme-preferences.json`
+- **macOS:** `~/Library/Application Support/graphium/theme-preferences.json`
+- **Windows:** `%APPDATA%/graphium/theme-preferences.json`
+- **Linux:** `~/.config/graphium/theme-preferences.json`
 
 Example contents:
 ```json
@@ -455,7 +455,7 @@ document.documentElement.getAttribute('data-theme')
 ## Support
 
 For issues or questions:
-- Open issue on GitHub: [Hyle Issues](https://github.com/your-username/hyle/issues)
+- Open issue on GitHub: [Graphium Issues](https://github.com/kocheck/Graphium/issues)
 - Check existing docs: `docs/WCAG_CONTRAST_AUDIT.md`
 - Review Radix Colors docs: https://www.radix-ui.com/colors
 

@@ -9,9 +9,9 @@ interface LogoIconProps {
 }
 
 /**
- * LogoIcon - Hyle Branding Icon
+ * LogoIcon - Graphium Branding Icon
  *
- * Displays the official Hyle D20 icon.
+ * Displays the official Graphium D20 icon.
  *
  * Features:
  * - Optional rotation animation on mount
@@ -67,7 +67,7 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete, clas
     >
       <img
         src={iconUrl}
-        alt="Hyle D20 Icon"
+        alt="Graphium D20 Icon"
         style={{
           width: '100%',
           height: '100%',

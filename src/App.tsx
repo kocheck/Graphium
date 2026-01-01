@@ -25,7 +25,7 @@ import Tooltip from './components/Tooltip';
 import { AboutModal } from './components/AboutModal';
 
 /**
- * App is the root component for Hyle's dual-window architecture
+ * App is the root component for Graphium's dual-window architecture
  *
  * This component renders differently based on window type:
  * - **Architect View** (Main Window): Full DM control panel with UI and editing tools

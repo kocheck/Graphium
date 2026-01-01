@@ -123,7 +123,7 @@ export async function addTokenToCanvas(
 }
 
 /**
- * Export the current campaign as a .hyle file
+ * Export the current campaign as a .graphium file
  *
  * @param page - Playwright Page object
  * @returns Promise that resolves with the download path
@@ -143,10 +143,10 @@ export async function exportCampaign(page: Page): Promise<string> {
 }
 
 /**
- * Import a campaign from a .hyle file
+ * Import a campaign from a .graphium file
  *
  * @param page - Playwright Page object
- * @param filePath - Path to the .hyle file to import
+ * @param filePath - Path to the .graphium file to import
  */
 export async function importCampaign(page: Page, filePath: string) {
   const fileInput = page.locator('[data-testid="import-file"]');

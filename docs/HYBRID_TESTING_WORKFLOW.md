@@ -159,14 +159,14 @@ Still well within limits!
 
 View recent runs:
 ```
-https://github.com/kocheck/Hyle/actions
+https://github.com/kocheck/Graphium/actions
 ```
 
 ### Check Minute Usage
 
 Go to:
 ```
-https://github.com/kocheck/Hyle/settings/billing
+https://github.com/kocheck/Graphium/settings/billing
 ```
 
 ---

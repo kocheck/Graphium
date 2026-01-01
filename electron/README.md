@@ -27,8 +27,8 @@ Key responsibilities:
 - `createMainWindow()` - Creates the Architect View (DM control panel)
 - `createWorldWindow()` - Creates the World View (player projector window)
 - IPC handlers:
-  - `'SAVE_CAMPAIGN'` - Saves game state to .hyle ZIP file
-  - `'LOAD_CAMPAIGN'` - Loads game state from .hyle ZIP file
+  - `'SAVE_CAMPAIGN'` - Saves game state to .graphium ZIP file
+  - `'LOAD_CAMPAIGN'` - Loads game state from .graphium ZIP file
   - `'SAVE_ASSET_TEMP'` - Saves uploaded asset to temp storage
   - `'SYNC_WORLD_STATE'` - Broadcasts state updates to World Window
 
@@ -99,7 +99,7 @@ Electron uses ES modules (`import` syntax) but needs Node.js types. This file pr
 
 ### External
 - `electron` - Desktop app framework (main, renderer, IPC)
-- `jszip` - ZIP file creation/parsing for .hyle campaign files
+- `jszip` - ZIP file creation/parsing for .graphium campaign files
 - `fs/promises` - Node.js file system (async API)
 - `path` - Node.js path utilities
 - `url` - Node.js URL utilities (fileURLToPath)
@@ -135,7 +135,7 @@ Main Process
 
 #### Campaign Save Algorithm
 ```
-1. Show save dialog (.hyle extension)
+1. Show save dialog (.graphium extension)
 2. Create JSZip instance
 3. Deep clone game state (avoid mutation)
 4. For each token:
@@ -150,12 +150,12 @@ Main Process
 
 **File transformations:**
 - In memory: `file:///Users/.../temp_assets/token.webp`
-- In .hyle: `assets/token.webp`
+- In .graphium: `assets/token.webp`
 
 #### Campaign Load Algorithm
 ```
-1. Show open dialog (.hyle extension)
-2. Read .hyle file as Buffer
+1. Show open dialog (.graphium extension)
+2. Read .graphium file as Buffer
 3. Parse ZIP with JSZip.loadAsync()
 4. Extract manifest.json → parse to GameState
 5. Create session directory: sessions/{timestamp}/
@@ -167,7 +167,7 @@ Main Process
 ```
 
 **File transformations:**
-- In .hyle: `assets/token.webp`
+- In .graphium: `assets/token.webp`
 - After load: `file:///Users/.../sessions/{timestamp}/assets/token.webp`
 
 #### Asset Upload
@@ -379,8 +379,8 @@ app.on('will-quit', async () => {
 - [ ] Closing Main Window quits app (Windows/Linux)
 
 **File operations:**
-- [ ] Save campaign creates .hyle file
-- [ ] .hyle file is valid ZIP (can open with unzip tool)
+- [ ] Save campaign creates .graphium file
+- [ ] .graphium file is valid ZIP (can open with unzip tool)
 - [ ] manifest.json is valid JSON
 - [ ] Assets copied to ZIP correctly
 - [ ] Load campaign extracts to sessions/ directory

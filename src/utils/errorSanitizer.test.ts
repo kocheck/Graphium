@@ -6,32 +6,32 @@ describe('errorSanitizer', () => {
     it('should sanitize Unix-style paths with username', () => {
       const error = new Error('Test error')
       error.stack = `Error: Test error
-    at Object.<anonymous> (/Users/johnsmith/projects/hyle/src/App.tsx:10:5)
-    at Module._compile (/Users/johnsmith/projects/hyle/node_modules/ts-node/src/index.ts:1056:36)`
+    at Object.<anonymous> (/Users/johnsmith/projects/graphium/src/App.tsx:10:5)
+    at Module._compile (/Users/johnsmith/projects/graphium/node_modules/ts-node/src/index.ts:1056:36)`
 
       const result = sanitizeStack(error, 'johnsmith')
 
-      expect(result.stack).toContain('/Users/<USER>/projects/hyle/src/App.tsx')
-      expect(result.stack).toContain('/Users/<USER>/projects/hyle/node_modules')
+      expect(result.stack).toContain('/Users/<USER>/projects/graphium/src/App.tsx')
+      expect(result.stack).toContain('/Users/<USER>/projects/graphium/node_modules')
       expect(result.stack).not.toContain('johnsmith')
     })
 
     it('should sanitize Linux home directory paths', () => {
       const error = new Error('Test error')
       error.stack = `Error: Test error
-    at Object.<anonymous> (/home/developer/code/hyle/src/main.ts:5:10)`
+    at Object.<anonymous> (/home/developer/code/graphium/src/main.ts:5:10)`
 
       const result = sanitizeStack(error, 'developer')
 
-      expect(result.stack).toContain('/home/<USER>/code/hyle/src/main.ts')
+      expect(result.stack).toContain('/home/<USER>/code/graphium/src/main.ts')
       expect(result.stack).not.toContain('developer')
     })
 
     it('should sanitize Windows-style paths with username', () => {
       const error = new Error('Test error')
       error.stack = `Error: Test error
-    at Object.<anonymous> (C:\\Users\\jdoe\\Documents\\hyle\\src\\App.tsx:10:5)
-    at Module._compile (C:/Users/jdoe/projects/hyle/index.ts:20:10)`
+    at Object.<anonymous> (C:\\Users\\jdoe\\Documents\\graphium\\src\\App.tsx:10:5)
+    at Module._compile (C:/Users/jdoe/projects/graphium/index.ts:20:10)`
 
       const result = sanitizeStack(error, 'jdoe')
 
@@ -267,7 +267,7 @@ describe('errorSanitizer', () => {
 
       const report = generateReportBody(sanitizedError)
 
-      expect(report).toContain('HYLE ERROR REPORT')
+      expect(report).toContain('GRAPHIUM ERROR REPORT')
       expect(report).toContain('END OF REPORT')
     })
   })

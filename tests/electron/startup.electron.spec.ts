@@ -37,7 +37,7 @@ test.describe('Electron App Startup', () => {
     expect(
       title,
       'Window should have correct title'
-    ).toBe('Hyle');
+    ).toBe('Graphium');
 
     await app.close();
   });
@@ -294,7 +294,7 @@ test.describe('Electron Protocol Handlers', () => {
     });
 
     const hasProtocol = await app.evaluate(async ({ protocol }) => {
-      return protocol.isProtocolHandled('hyle');
+      return protocol.isProtocolHandled('graphium');
     });
 
     // If you implement deep links, this should be true

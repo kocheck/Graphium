@@ -1,13 +1,13 @@
-# Hyle AI Context
+# Graphium AI Context
 
 > [!NOTE]
-> This document is designed to help AI agents understand the architecture, patterns, and conventions of the Hyle codebase.
+> This document is designed to help AI agents understand the architecture, patterns, and conventions of the Graphium codebase.
 
 ## Project Overview
-**Hyle** is a tabletop roleplaying game (TTRPG) virtual tabletop (VTT) application built with **Electron**, **React**, **TypeScript**, and **Konva**.
+**Graphium** is a tabletop roleplaying game (TTRPG) virtual tabletop (VTT) application built with **Electron**, **React**, **TypeScript**, and **Konva**.
 
 ### Core Architecture: Dual-Window Model
-Hyle uses a unique "Dual-Window" architecture to mimic a physical game table:
+Graphium uses a unique "Dual-Window" architecture to mimic a physical game table:
 1.  **Architect View (Main Window):** The Dungeon Master's control interface. Contains all UI, tools, file operations, and sensitive data.
 2.  **World View (Secondary Window):** The Player's view. A "dumb" projection that renders the map and tokens but has no UI or logic.
 

@@ -9,7 +9,7 @@
 
 ## Color System Architecture
 
-Hyle uses **Radix Colors**, a color system specifically designed to meet WCAG AA contrast requirements out-of-the-box.
+Graphium uses **Radix Colors**, a color system specifically designed to meet WCAG AA contrast requirements out-of-the-box.
 
 ### Radix Colors WCAG Guarantees
 

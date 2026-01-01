@@ -35,5 +35,5 @@ This issue occurs when the Electron builder tries to perform upload-related oper
 ---
 
 ### Metadata  
-* **Job Details:** [Failing Job](https://github.com/kocheck/Hyle/actions/runs/20612430919/job/59199399131)  
+* **Job Details:** [Failing Job](https://github.com/kocheck/Graphium/actions/runs/20612430919/job/59199399131)  
 * **Reported on:** 2025-12-31 12:01 UTC

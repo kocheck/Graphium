@@ -4,7 +4,7 @@ import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 
 /**
- * Playwright Configuration for Hyle E2E Tests
+ * Playwright Configuration for Graphium E2E Tests
  *
  * Dual-target testing strategy:
  * - Web-Chromium: Functional tests for browser-based app

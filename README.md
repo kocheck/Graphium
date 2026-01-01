@@ -44,7 +44,7 @@ We believe map-making should feel like *carving* the unknown into existence. No 
 
 Most VTTs feel floaty and temporary. Graphium is built with **funicular friction**—a satisfying "bite" to every interaction that makes your choices feel deliberate.
 
-- **From "Matter" to "Tool":** We evolved from *Hyle* (raw matter) to *Graphium* (the tool that shapes it).
+- **From "Matter" to "Tool":** *Graphium* (the tool that shapes raw matter) reflects our focus on precision and craftsmanship.
 - **The Wax Tablet:** Romans drafted on wax because it was durable yet correctable. We bring that same tactile decisiveness to your digital campaign.
 - **Local Sovereignty:** Your world lives on *your* drive in sacred `.graphium` tomes. No cloud wizard can gaze upon your maps or hold your campaign hostage.
 

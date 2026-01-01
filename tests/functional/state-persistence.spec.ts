@@ -245,7 +245,7 @@ test.describe('IndexedDB Data Integrity', () => {
     // Corrupt IndexedDB by injecting invalid data
     await page.evaluate(() => {
       return new Promise((resolve) => {
-        const request = indexedDB.open('hyle-storage', 1);
+        const request = indexedDB.open('graphium-storage', 1);
         request.onsuccess = (event) => {
           const db = (event.target as IDBOpenDBRequest).result;
           const tx = db.transaction('autosave', 'readwrite');

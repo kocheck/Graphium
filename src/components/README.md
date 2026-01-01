@@ -1,10 +1,10 @@
 # Components
 
-React UI components for Hyle. Components are organized by feature, with canvas-specific rendering logic in the `Canvas/` subdirectory.
+React UI components for Graphium. Components are organized by feature, with canvas-specific rendering logic in the `Canvas/` subdirectory.
 
 ## Purpose
 
-This directory contains all React components that make up the Hyle user interface:
+This directory contains all React components that make up the Graphium user interface:
 - **Layout components** - Application structure (Sidebar, Toolbar)
 - **Canvas components** - Rendering logic (CanvasManager, GridOverlay)
 - **Modal components** - Overlays and dialogs (ImageCropper)
@@ -666,7 +666,7 @@ if (e.key === '?' && !isAboutOpen) {
 - Escape key support
 - LogoIcon integration
 - Themed styling using CSS variables
-- Content sections: What is Hyle, Core Powers, Quick Start, Sacred Philosophy
+- Content sections: What is Graphium, Core Powers, Quick Start, Sacred Philosophy
 
 **Error handling:**
 - Wrapped by top-level PrivacyErrorBoundary

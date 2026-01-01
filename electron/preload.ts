@@ -1,5 +1,5 @@
 /**
- * Electron preload script for Hyle
+ * Electron preload script for Graphium
  *
  * This script runs in a privileged context BEFORE the renderer process loads.
  * It uses Electron's Context Bridge to safely expose IPC APIs to the renderer

@@ -1,8 +1,8 @@
-# Hyle E2E Test Suite
+# Graphium E2E Test Suite
 
 **Comprehensive End-to-End Testing with Playwright**
 
-This directory contains functional and integration tests for the Hyle application (Web & Electron builds).
+This directory contains functional and integration tests for the Graphium application (Web & Electron builds).
 
 ---
 
@@ -326,7 +326,7 @@ test('should launch Electron app', async ({ _electron }) => {
   });
 
   const window = await app.firstWindow();
-  await expect(window.title()).resolves.toBe('Hyle');
+  await expect(window.title()).resolves.toBe('Graphium');
 });
 ```
 

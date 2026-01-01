@@ -8,7 +8,7 @@
 
 ## Overview
 
-This implementation adds a comprehensive, accessible light/dark mode system to Hyle using Radix Colors, with WCAG AA compliance built-in.
+This implementation adds a comprehensive, accessible light/dark mode system to Graphium using Radix Colors, with WCAG AA compliance built-in.
 
 ## What Was Implemented
 
@@ -37,9 +37,9 @@ This implementation adds a comprehensive, accessible light/dark mode system to H
 - IPC broadcasting to renderer windows
 
 **Storage Location:**
-- macOS: `~/Library/Application Support/hyle/theme-preferences.json`
-- Windows: `%APPDATA%/hyle/theme-preferences.json`
-- Linux: `~/.config/hyle/theme-preferences.json`
+- macOS: `~/Library/Application Support/graphium/theme-preferences.json`
+- Windows: `%APPDATA%/graphium/theme-preferences.json`
+- Linux: `~/.config/graphium/theme-preferences.json`
 
 ### 3. IPC Communication
 
@@ -392,7 +392,7 @@ Implements persistent light/dark mode with WCAG AA compliance:
 - CI/CD workflow for WCAG AA enforcement
 - Comprehensive documentation (THEMING.md, WCAG_CONTRAST_AUDIT.md)
 
-Theme state persisted in ~/Library/Application Support/hyle/theme-preferences.json
+Theme state persisted in ~/Library/Application Support/graphium/theme-preferences.json
 
 Testing: npm run test:a11y
 

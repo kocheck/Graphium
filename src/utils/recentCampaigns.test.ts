@@ -29,7 +29,7 @@ describe('recentCampaigns', () => {
         lastOpened: Date.now(),
       };
 
-      localStorage.setItem('hyle-recent-campaigns', JSON.stringify([mockCampaign]));
+      localStorage.setItem('graphium-recent-campaigns', JSON.stringify([mockCampaign]));
 
       const campaigns = getRecentCampaigns();
       expect(campaigns).toHaveLength(1);
@@ -38,7 +38,7 @@ describe('recentCampaigns', () => {
     });
 
     it('should handle corrupted localStorage data', () => {
-      localStorage.setItem('hyle-recent-campaigns', 'invalid json');
+      localStorage.setItem('graphium-recent-campaigns', 'invalid json');
 
       const campaigns = getRecentCampaigns();
       expect(campaigns).toEqual([]);
@@ -59,7 +59,7 @@ describe('recentCampaigns', () => {
       };
 
       // Store in already sorted order (newest first)
-      localStorage.setItem('hyle-recent-campaigns', JSON.stringify([campaign2, campaign1]));
+      localStorage.setItem('graphium-recent-campaigns', JSON.stringify([campaign2, campaign1]));
 
       const campaigns = getRecentCampaigns();
       expect(campaigns[0].id).toBe('test-2'); // Newer campaign first
@@ -159,7 +159,7 @@ describe('recentCampaigns', () => {
         platform: 'electron',
         id: 'test-1',
         name: 'Test Campaign',
-        filePath: '/path/to/campaign.hyle',
+        filePath: '/path/to/campaign.graphium',
         lastOpened: Date.now(),
       };
 
@@ -169,7 +169,7 @@ describe('recentCampaigns', () => {
       expect(stored).toHaveLength(1);
       expect(stored[0].platform).toBe('electron');
       if (stored[0].platform === 'electron') {
-        expect(stored[0].filePath).toBe('/path/to/campaign.hyle');
+        expect(stored[0].filePath).toBe('/path/to/campaign.graphium');
       }
     });
   });
@@ -196,13 +196,13 @@ describe('recentCampaigns', () => {
       const originalWindow = global.window;
       global.window = { ipcRenderer: {} } as any;
 
-      addRecentCampaignWithPlatform('test-1', 'Test Campaign', '/path/to/campaign.hyle');
+      addRecentCampaignWithPlatform('test-1', 'Test Campaign', '/path/to/campaign.graphium');
 
       const stored = getRecentCampaigns();
       expect(stored).toHaveLength(1);
       expect(stored[0].platform).toBe('electron');
       if (stored[0].platform === 'electron') {
-        expect(stored[0].filePath).toBe('/path/to/campaign.hyle');
+        expect(stored[0].filePath).toBe('/path/to/campaign.graphium');
       }
 
       global.window = originalWindow;

@@ -3,7 +3,7 @@
 ## Step-by-Step Setup
 
 ### 1. Navigate to Repository Settings
-Go to: https://github.com/kocheck/Hyle/settings/branches
+Go to: https://github.com/kocheck/Graphium/settings/branches
 
 ### 2. Add Branch Protection Rule
 
@@ -55,7 +55,7 @@ Click **"Create"** or **"Save changes"**
 ## Cost Monitoring
 
 Monitor your Actions usage at:
-https://github.com/kocheck/Hyle/settings/billing
+https://github.com/kocheck/Graphium/settings/billing
 
 **Free tier limits:**
 - Public repos: Unlimited ✅

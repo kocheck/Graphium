@@ -1,5 +1,5 @@
 /**
- * Theme Manager for Hyle
+ * Theme Manager for Graphium
  *
  * Manages application theme state with three modes:
  * - 'light': Force light theme
@@ -19,7 +19,7 @@
  * 4. Renderer → Apply data-theme attribute
  *
  * PERSISTENCE:
- * Theme preference is stored in: ~/Library/Application Support/hyle/config.json
+ * Theme preference is stored in: ~/Library/Application Support/graphium/config.json
  * (on macOS, varies by platform)
  */
 

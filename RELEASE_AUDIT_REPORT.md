@@ -1,4 +1,4 @@
-# Hyle Release Audit Report
+# Graphium Release Audit Report
 **Date**: 2025-12-30
 **Version**: 0.3.0 Pre-Release Audit
 **Auditor**: AI Agent (Claude Sonnet 4.5)
@@ -17,7 +17,7 @@ This audit examined three critical pillars for production readiness:
 ### Overall Assessment
 **Status**: ⚠️ **READY WITH CRITICAL GAPS**
 
-The Hyle codebase demonstrates **excellent architectural maturity** with:
+The Graphium codebase demonstrates **excellent architectural maturity** with:
 - ✅ Comprehensive documentation (30+ markdown files)
 - ✅ Strong error boundary coverage (7 boundaries with privacy sanitization)
 - ✅ Solid E2E test suite (13 Playwright specs, 172 test cases)
@@ -311,7 +311,7 @@ The codebase implements a **3-layer error handling system** with privacy-aware s
 
 **✅ Exceptional Documentation Quality**
 
-Hyle has **30+ markdown files** totaling approximately **50,000 words** of comprehensive documentation.
+Graphium has **30+ markdown files** totaling approximately **50,000 words** of comprehensive documentation.
 
 #### Root-Level Documentation
 - ✅ **README.md** (4,600+ words) - Comprehensive, well-written, styled

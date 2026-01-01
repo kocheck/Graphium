@@ -1,8 +1,8 @@
-# Copilot Instructions for Hyle
+# Copilot Instructions for Graphium
 
 ## Project Overview
 
-**Hyle** is a local-first D&D digital battlemap application built with Electron, React, and TypeScript. It provides a dual-window system for Dungeon Masters: an "Architect View" for DM control and a "World View" for players.
+**Graphium** is a local-first D&D digital battlemap application built with Electron, React, and TypeScript. It provides a dual-window system for Dungeon Masters: an "Architect View" for DM control and a "World View" for players.
 
 ## Tech Stack
 
@@ -66,7 +66,7 @@ const tempUrl = await processImage(file, 'TOKEN')
 // Use temp URL (stored in userData/temp_assets/)
 addToken({ id: uuid(), x, y, src: tempUrl, scale: 1 })
 
-// Save campaign (assets copied to .hyle ZIP)
+// Save campaign (assets copied to .graphium ZIP)
 await window.ipcRenderer.invoke('SAVE_CAMPAIGN', gameState)
 ```
 
@@ -180,7 +180,7 @@ import type { Token } from '../types';
 - **Map**: Background image for battlemap
 - **Grid**: Tactical positioning overlay (LINES/DOTS/HIDDEN modes)
 - **Grid Snapping**: Auto-alignment (intersections for even-sized tokens, cell centers for odd-sized)
-- **Campaign File**: `.hyle` ZIP archive (manifest.json + assets/)
+- **Campaign File**: `.graphium` ZIP archive (manifest.json + assets/)
 - **IPC**: Inter-Process Communication (Electron main ↔ renderer)
 - **Sync Manager**: Broadcasts Architect state to World View
 - **Asset Processor**: Resizes/converts images to WebP

@@ -160,12 +160,12 @@ function sanitizePII(text: string): string {
  * @example
  * // Before sanitization
  * const error = new Error('File not found');
- * error.stack = `at /Users/johnsmith/hyle/src/App.tsx:42
+ * error.stack = `at /Users/johnsmith/graphium/src/App.tsx:42
  *   at user@example.com (192.168.1.1)`;
  *
  * const sanitized = sanitizeStack(error, 'johnsmith');
  * // After sanitization:
- * // stack: "at /Users/<USER>/hyle/src/App.tsx:42\n  at <EMAIL> (<IP>)"
+ * // stack: "at /Users/<USER>/graphium/src/App.tsx:42\n  at <EMAIL> (<IP>)"
  *
  * @example
  * // With no username (privacy fallback)
@@ -274,7 +274,7 @@ export function sanitizeStack(error: Error, username: string): SanitizedError {
  * //
  * // ### Stack Trace
  * // ```
- * // at /Users/<USER>/hyle/src/components/Canvas/CanvasManager.tsx:142
+ * // at /Users/<USER>/graphium/src/components/Canvas/CanvasManager.tsx:142
  * // at handleDrop ...
  * // ```
  */

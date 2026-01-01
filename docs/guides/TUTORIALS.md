@@ -1,6 +1,6 @@
-# Hyle Tutorial Guides
+# Graphium Tutorial Guides
 
-This document provides step-by-step tutorials for common development tasks in Hyle. Each tutorial includes complete code examples and explanations.
+This document provides step-by-step tutorials for common development tasks in Graphium. Each tutorial includes complete code examples and explanations.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ This document provides step-by-step tutorials for common development tasks in Hy
 
 ## Tutorial 1: Getting Started
 
-**Goal:** Set up development environment and run Hyle locally.
+**Goal:** Set up development environment and run Graphium locally.
 
 ### Prerequisites
 
@@ -32,8 +32,8 @@ This document provides step-by-step tutorials for common development tasks in Hy
 **1. Clone the repository:**
 
 ```bash
-git clone https://github.com/username/Hyle.git
-cd Hyle
+git clone https://github.com/username/Graphium.git
+cd Graphium
 ```
 
 **2. Install dependencies:**
@@ -1091,7 +1091,7 @@ const URLImage = ({ src, x, y, width, height }: any) => {
 3. Use in token: `{ src: 'assets://monsters/goblin.webp' }`
 4. Verify image loads and displays
 5. Restart app → Asset should still be accessible
-6. Check file exists: `~/Library/Application Support/Hyle/library/monsters/goblin.webp`
+6. Check file exists: `~/Library/Application Support/Graphium/library/monsters/goblin.webp`
 
 ### Use Cases
 

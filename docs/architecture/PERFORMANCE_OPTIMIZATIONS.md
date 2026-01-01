@@ -1,4 +1,4 @@
-# Hyle Performance Optimizations
+# Graphium Performance Optimizations
 
 ## Overview
 

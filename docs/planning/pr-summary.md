@@ -11,7 +11,7 @@ Electron to Web Migration: Dual-Target Support with BroadcastChannel Sync
 
 ## Summary
 
-This PR completes the Electron-to-Web migration, enabling Hyle to run as both a desktop Electron app and a browser-based web application from a unified codebase. All features are now supported on both platforms, including the previously Electron-only World View mode.
+This PR completes the Electron-to-Web migration, enabling Graphium to run as both a desktop Electron app and a browser-based web application from a unified codebase. All features are now supported on both platforms, including the previously Electron-only World View mode.
 
 ## Key Changes
 
@@ -81,7 +81,7 @@ This PR completes the Electron-to-Web migration, enabling Hyle to run as both a 
 | Feature | Electron | Web |
 |---------|----------|-----|
 | Token Library (IndexedDB) | ✅ | ✅ |
-| Campaign Save/Load (.hyle ZIP) | ✅ | ✅ |
+| Campaign Save/Load (.graphium ZIP) | ✅ | ✅ |
 | Auto-Save | ✅ | ✅ |
 | World View (Projector) | ✅ (IPC) | ✅ (BroadcastChannel) |
 | Real-time Sync | ✅ | ✅ |
@@ -106,7 +106,7 @@ const storage = getStorage(); // Returns appropriate implementation
 ### Privacy-First Architecture
 - No external APIs or databases
 - All data stored locally (electron-store or IndexedDB)
-- Campaign files remain `.hyle` ZIP format on both platforms
+- Campaign files remain `.graphium` ZIP format on both platforms
 
 ## Testing
 
@@ -131,7 +131,7 @@ npm run build
 - ✅ Zero code duplication
 - ✅ No breaking changes to Electron implementation
 - ✅ All existing IPC handlers unchanged
-- ✅ Backward compatible with existing `.hyle` campaign files
+- ✅ Backward compatible with existing `.graphium` campaign files
 
 ## Commits in this PR
 
@@ -177,5 +177,5 @@ gh pr create --title "Electron to Web Migration: Dual-Target Support with Broadc
 ### Option 3: Direct Link
 Navigate to:
 ```
-https://github.com/YOUR_USERNAME/Hyle/compare/main...claude/electron-to-web-migration-ja6rD
+https://github.com/YOUR_USERNAME/Graphium/compare/main...claude/electron-to-web-migration-ja6rD
 ```

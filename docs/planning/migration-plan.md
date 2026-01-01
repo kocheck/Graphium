@@ -1,4 +1,4 @@
-# Hyle: Electron-to-Web Migration Plan
+# Graphium: Electron-to-Web Migration Plan
 ## Local-First Web App on GitHub Pages
 
 **Version:** 1.0
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This document outlines the migration strategy to transform Hyle from an Electron-only desktop application into a **unified codebase** that runs as both:
+This document outlines the migration strategy to transform Graphium from an Electron-only desktop application into a **unified codebase** that runs as both:
 
 1. **Desktop App** (Electron) - Full-featured with native file system access
 2. **Web App** (GitHub Pages) - Privacy-first with browser storage APIs
@@ -62,9 +62,9 @@ This document outlines the migration strategy to transform Hyle from an Electron
 | **IPC Channel** | **Location** | **Purpose** | **Browser Replacement** |
 |-----------------|--------------|-------------|-------------------------|
 | `SAVE_ASSET_TEMP` | `main.ts:465`, `AssetProcessor.ts:186` | Save WebP to temp dir | File System Access API + OPFS |
-| `SAVE_CAMPAIGN` | `main.ts:554` | Save .hyle ZIP | File System Access API (user download) |
+| `SAVE_CAMPAIGN` | `main.ts:554` | Save .graphium ZIP | File System Access API (user download) |
 | `AUTO_SAVE` | `main.ts:583` | Background save | IndexedDB (auto-persist) |
-| `LOAD_CAMPAIGN` | `main.ts:613` | Load .hyle ZIP | File System Access API (user upload) |
+| `LOAD_CAMPAIGN` | `main.ts:613` | Load .graphium ZIP | File System Access API (user upload) |
 | `SAVE_ASSET_TO_LIBRARY` | `main.ts:849` | Persist to library | IndexedDB + OPFS |
 | `LOAD_LIBRARY_INDEX` | `main.ts:917` | Load library metadata | IndexedDB query |
 | `DELETE_LIBRARY_ASSET` | `main.ts:946` | Delete from library | IndexedDB delete + OPFS cleanup |
@@ -111,11 +111,11 @@ Local File System
    - Cleared on app restart
    - **Format:** `{timestamp}-{name}.webp`
 
-2. **Campaign Files** (`user-selected.hyle`)
+2. **Campaign Files** (`user-selected.graphium`)
    - ZIP archive with `manifest.json` + `assets/` folder
    - **Structure:**
      ```
-     campaign.hyle (ZIP)
+     campaign.graphium (ZIP)
      ├── manifest.json (Campaign state)
      └── assets/
          ├── map-background.webp
@@ -230,8 +230,8 @@ export interface IStorageService {
    * @param campaign - Campaign data to serialize
    * @returns Success status
    *
-   * Electron: Shows native save dialog, writes .hyle ZIP
-   * Web: Triggers browser download of .hyle ZIP
+   * Electron: Shows native save dialog, writes .graphium ZIP
+   * Web: Triggers browser download of .graphium ZIP
    */
   saveCampaign(campaign: Campaign): Promise<boolean>;
 
@@ -468,7 +468,7 @@ export class WebStorageService implements IStorageService {
   }
 
   private async initDB() {
-    this.db = await openDB('hyle-storage', 1, {
+    this.db = await openDB('graphium-storage', 1, {
       upgrade(db) {
         // Token library store
         if (!db.objectStoreNames.contains('library')) {
@@ -508,7 +508,7 @@ export class WebStorageService implements IStorageService {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${campaign.name}.hyle`;
+      a.download = `${campaign.name}.graphium`;
       a.click();
       URL.revokeObjectURL(url);
 
@@ -542,7 +542,7 @@ export class WebStorageService implements IStorageService {
       // Create file input
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = '.hyle';
+      input.accept = '.graphium';
 
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
@@ -555,7 +555,7 @@ export class WebStorageService implements IStorageService {
           // Parse ZIP
           const zip = await JSZip.loadAsync(file);
           const manifestStr = await zip.file('manifest.json')?.async('string');
-          if (!manifestStr) throw new Error('Invalid .hyle file');
+          if (!manifestStr) throw new Error('Invalid .graphium file');
 
           const campaign = JSON.parse(manifestStr);
 
@@ -664,11 +664,11 @@ export class WebStorageService implements IStorageService {
   // ===== THEME PREFERENCES =====
 
   async getThemeMode(): Promise<any> {
-    return localStorage.getItem('hyle-theme') || 'system';
+    return localStorage.getItem('graphium-theme') || 'system';
   }
 
   async setThemeMode(mode: any): Promise<void> {
-    localStorage.setItem('hyle-theme', mode);
+    localStorage.setItem('graphium-theme', mode);
   }
 
   // ===== UTILITY =====
@@ -998,14 +998,14 @@ dist/ (GitHub Pages root)
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hyle - World Given Form</title>
+  <title>Graphium - World Given Form</title>
   <link rel="stylesheet" href="/launch-assets/launch-page.css" />
 </head>
 <body>
   <div class="launch-container">
     <header>
-      <img src="/launch-assets/logo.svg" alt="Hyle Logo" class="logo" />
-      <h1>Hyle: World Given Form</h1>
+      <img src="/launch-assets/logo.svg" alt="Graphium Logo" class="logo" />
+      <h1>Graphium: World Given Form</h1>
       <p class="tagline">Local-first digital battlemap for tabletop RPGs</p>
     </header>
 
@@ -1044,7 +1044,7 @@ dist/ (GitHub Pages root)
 
     <footer>
       <p>Privacy Notice: All data stays on your device. No telemetry, no analytics.</p>
-      <a href="https://github.com/your-org/hyle">View Source Code</a>
+      <a href="https://github.com/kocheck/Graphium">View Source Code</a>
     </footer>
   </div>
 
@@ -1064,7 +1064,7 @@ dist/ (GitHub Pages root)
  * Fetches latest release from GitHub API and handles navigation.
  */
 (async function() {
-  const GITHUB_REPO = 'your-org/hyle'; // Update with actual repo
+  const GITHUB_REPO = 'kocheck/Graphium'; // Update with actual repo
   const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
   const downloadBtn = document.getElementById('download-desktop');
@@ -1146,7 +1146,7 @@ dist/ (GitHub Pages root)
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hyle - Web App</title>
+  <title>Graphium - Web App</title>
 </head>
 <body>
   <div id="root"></div>
@@ -1212,7 +1212,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          cname: hyle.yourdomain.com  # Optional: custom domain
+          cname: graphium.yourdomain.com  # Optional: custom domain
 ```
 
 ---
@@ -1418,7 +1418,7 @@ The BroadcastChannel API allows same-origin communication between browsing conte
 
 ```typescript
 // Create channel (same name = same channel across tabs)
-const channel = new BroadcastChannel('hyle-world-sync');
+const channel = new BroadcastChannel('graphium-world-sync');
 
 // Send message
 channel.postMessage({ type: 'SYNC', state: {...} });
@@ -1479,7 +1479,7 @@ export default function SyncManager() {
 
     // ===== WEB: BroadcastChannel Setup =====
     if (isWeb) {
-      const channel = new BroadcastChannel('hyle-world-sync');
+      const channel = new BroadcastChannel('graphium-world-sync');
 
       if (isArchitectView) {
         // PRODUCER: Subscribe to store changes and broadcast
@@ -1544,7 +1544,7 @@ const handleOpenWorldView = () => {
     // Web: Open new tab
     const worldWindow = window.open(
       '/app.html?type=world',
-      'hyle-world-view',
+      'graphium-world-view',
       'width=1920,height=1080'
     );
 

@@ -1,8 +1,8 @@
-# Hyle Architecture
+# Graphium Architecture
 
 ## System Overview
 
-Hyle is a local-first desktop application built with Electron that provides a dual-window digital battlemap system for tabletop RPG Dungeon Masters. The architecture prioritizes real-time synchronization, performance, and data ownership.
+Graphium is a local-first desktop application built with Electron that provides a dual-window digital battlemap system for tabletop RPG Dungeon Masters. The architecture prioritizes real-time synchronization, performance, and data ownership.
 
 ## High-Level Architecture Diagram
 
@@ -25,7 +25,7 @@ Hyle is a local-first desktop application built with Electron that provides a du
 │  │  │  │   └─ State broadcast                              │  │ │
 │  │  │  │                                                    │  │ │
 │  │  │  ├─ File System Operations                           │  │ │
-│  │  │  │   ├─ Campaign save/load (.hyle ZIP files)         │  │ │
+│  │  │  │   ├─ Campaign save/load (.graphium ZIP files)         │  │ │
 │  │  │  │   ├─ Temp asset storage                           │  │ │
 │  │  │  │   └─ Asset extraction/archival                    │  │ │
 │  │  │  │                                                    │  │ │
@@ -72,7 +72,7 @@ Hyle is a local-first desktop application built with Electron that provides a du
     │  - userData/     │              │  (DM Monitor)    │
     │  - temp_assets/  │              └──────────────────┘
     │  - sessions/     │
-    │  - *.hyle files  │              ┌──────────────────┐
+    │  - *.graphium files  │              ┌──────────────────┐
     └──────────────────┘              │  Display 2       │
                                       │  (Projector)     │
                                       └──────────────────┘
@@ -120,8 +120,8 @@ World Window:
 | `SYNC_WORLD_STATE` | Main→World | send | Broadcast state updates |
 | `SYNC_WORLD_STATE` | Main→Main | on | Receive state from Main Window |
 | `SAVE_ASSET_TEMP` | Renderer→Main | invoke | Save uploaded asset, return file path |
-| `SAVE_CAMPAIGN` | Renderer→Main | invoke | Save .hyle file, return success bool |
-| `LOAD_CAMPAIGN` | Renderer→Main | invoke | Load .hyle file, return GameState |
+| `SAVE_CAMPAIGN` | Renderer→Main | invoke | Save .graphium file, return success bool |
+| `LOAD_CAMPAIGN` | Renderer→Main | invoke | Load .graphium file, return GameState |
 | `get-theme-state` | Renderer→Main | invoke | Get current theme mode and effective theme |
 | `set-theme-mode` | Renderer→Main | invoke | Set theme mode (light/dark/system) |
 | `theme-changed` | Main→Renderer | send | Broadcast theme updates to all windows |
@@ -164,9 +164,9 @@ React re-renders World Window canvas
             └── {filename}.webp         # Loaded campaign assets
 ```
 
-**Campaign File Format (`.hyle`):**
+**Campaign File Format (`.graphium`):**
 ```
-campaign.hyle (ZIP archive)
+campaign.graphium (ZIP archive)
 ├── manifest.json          # Serialized GameState
 └── assets/
     ├── map-dungeon.webp
@@ -176,7 +176,7 @@ campaign.hyle (ZIP archive)
 
 **Save Algorithm:**
 ```typescript
-1. Show save dialog (filter: .hyle extension)
+1. Show save dialog (filter: .graphium extension)
 2. Create JSZip instance
 3. Deep clone gameState (avoid mutation)
 4. For each token:
@@ -191,7 +191,7 @@ campaign.hyle (ZIP archive)
 
 **Load Algorithm:**
 ```typescript
-1. Show open dialog (filter: .hyle extension)
+1. Show open dialog (filter: .graphium extension)
 2. Read zip file as Buffer
 3. Parse zip with JSZip.loadAsync()
 4. Extract manifest.json → parse as GameState
@@ -219,9 +219,9 @@ app.whenReady().then(() => {
 
 **Usage Flow:**
 ```
-gameStore stores: file:///Users/dm/Hyle/temp_assets/token.webp
+gameStore stores: file:///Users/dm/Graphium/temp_assets/token.webp
     ↓
-Renderer converts: media:///Users/dm/Hyle/temp_assets/token.webp
+Renderer converts: media:///Users/dm/Graphium/temp_assets/token.webp
     ↓
 Konva requests: media://...
     ↓
@@ -825,7 +825,7 @@ User drops file onto canvas
          ▼
 ┌─────────────────────────────────┐
 │ dialog.showSaveDialog()         │
-│ - Filter: .hyle extension       │
+│ - Filter: .graphium extension       │
 │ - Returns: { filePath }         │
 │ - User can cancel (filePath='') │
 └────────┬────────────────────────┘
@@ -881,7 +881,7 @@ User drops file onto canvas
 |-------|----------------|----------|
 | In-memory (gameStore) | `file:///Users/.../temp_assets/token.webp` | RAM |
 | Being saved (cloned state) | `assets/token.webp` | ZIP archive |
-| On disk (.hyle file) | `assets/token.webp` | Compressed file |
+| On disk (.graphium file) | `assets/token.webp` | Compressed file |
 
 ### Pattern 4: Load Campaign
 
@@ -907,14 +907,14 @@ User drops file onto canvas
          ▼
 ┌─────────────────────────────────┐
 │ dialog.showOpenDialog()         │
-│ - Filter: .hyle extension       │
+│ - Filter: .graphium extension       │
 │ - Returns: { filePaths: [...] } │
 │ - User can cancel (empty array) │
 └────────┬────────────────────────┘
          │
          ▼
 ┌─────────────────────────────────┐
-│ Read .hyle file                 │
+│ Read .graphium file                 │
 │ - fs.readFile(filePaths[0])     │
 │ - Returns Buffer                │
 └────────┬────────────────────────┘
@@ -980,7 +980,7 @@ User drops file onto canvas
 
 | Stage | Token.src Value | Location |
 |-------|----------------|----------|
-| On disk (.hyle file) | `assets/token.webp` | ZIP archive |
+| On disk (.graphium file) | `assets/token.webp` | ZIP archive |
 | Extracted (session dir) | `file:///.../sessions/{timestamp}/assets/token.webp` | Filesystem |
 | In-memory (gameStore) | `file:///.../sessions/{timestamp}/assets/token.webp` | RAM |
 | Rendered (Konva) | `media:///.../sessions/{timestamp}/assets/token.webp` | Canvas |
@@ -1036,9 +1036,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 **User Data Directory:**
 ```
-macOS:    ~/Library/Application Support/Hyle/
-Windows:  C:\Users\{user}\AppData\Roaming\Hyle\
-Linux:    ~/.config/Hyle/
+macOS:    ~/Library/Application Support/Graphium/
+Windows:  C:\Users\{user}\AppData\Roaming\Graphium\
+Linux:    ~/.config/Graphium/
 ```
 
 ### Data Validation
@@ -1273,7 +1273,7 @@ console.log('[IPC → WORLD]', channel, data)
 **Issue: Save/load fails**
 1. Check file dialog returned path (user may have cancelled)
 2. Verify userData directory exists (`app.getPath('userData')`)
-3. Inspect ZIP contents (unzip .hyle file manually)
+3. Inspect ZIP contents (unzip .graphium file manually)
 4. Check JSON.parse errors (malformed manifest.json)
 
 **Issue: Drawing performance lag**
@@ -1285,7 +1285,7 @@ console.log('[IPC → WORLD]', channel, data)
 ## File Organization
 
 ```
-Hyle/
+Graphium/
 ├── electron/                    # Main process code
 │   ├── main.ts                 # App lifecycle, windows, IPC handlers
 │   ├── preload.ts              # Context bridge (IPC whitelist)
@@ -1518,18 +1518,18 @@ npm run build
 4. electron-builder packages app (create installer/executable)
 
 **Output:**
-- macOS: `Hyle.dmg`, `Hyle.app`
-- Windows: `Hyle Setup.exe`, `Hyle.exe` (portable)
-- Linux: `Hyle.AppImage`, `Hyle.deb`, `Hyle.rpm`
+- macOS: `Graphium.dmg`, `Graphium.app`
+- Windows: `Graphium Setup.exe`, `Graphium.exe` (portable)
+- Linux: `Graphium.AppImage`, `Graphium.deb`, `Graphium.rpm`
 
 ### Distribution
 - Self-contained executables (no installer required for portable versions)
 - Includes Node.js runtime and Chromium
-- File associations: `.hyle` files open with Hyle (configurable in electron-builder.json5)
+- File associations: `.graphium` files open with Graphium (configurable in electron-builder.json5)
 
 ## Conclusion
 
-Hyle's architecture prioritizes:
+Graphium's architecture prioritizes:
 1. **Real-time synchronization** between DM and player views
 2. **Performance** through optimized rendering and asset processing
 3. **Data ownership** via local-first design

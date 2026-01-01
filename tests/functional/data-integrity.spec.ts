@@ -279,7 +279,7 @@ test.describe('IndexedDB Data Integrity', () => {
     // Simulate DB version upgrade by manipulating DB
     await page.evaluate(() => {
       return new Promise((resolve) => {
-        const request = indexedDB.open('hyle-storage', 2); // Increment version
+        const request = indexedDB.open('graphium-storage', 2); // Increment version
 
         request.onupgradeneeded = (event) => {
           const db = (event.target as IDBOpenDBRequest).result;
@@ -308,7 +308,7 @@ test.describe('IndexedDB Data Integrity', () => {
     // Corrupt the data
     await page.evaluate(() => {
       return new Promise((resolve) => {
-        const request = indexedDB.open('hyle-storage', 1);
+        const request = indexedDB.open('graphium-storage', 1);
 
         request.onsuccess = (event) => {
           const db = (event.target as IDBOpenDBRequest).result;
@@ -346,7 +346,7 @@ test.describe('IndexedDB Data Integrity', () => {
   test('should handle missing IndexedDB stores', async ({ page }) => {
     // Delete a required object store
     await page.evaluate(() => {
-      return indexedDB.deleteDatabase('hyle-storage');
+      return indexedDB.deleteDatabase('graphium-storage');
     });
 
     // Reload - should reinitialize DB
@@ -370,7 +370,7 @@ test.describe('Data Validation', () => {
   });
 
   test('should reject import of invalid file format', async ({ page }) => {
-    // Create a text file (not .hyle)
+    // Create a text file (not .graphium)
     const invalidFile = Buffer.from('invalid file content');
 
     // Try to import

@@ -1,6 +1,6 @@
-# Hyle Project Context
+# Graphium Project Context
 
-This document provides domain knowledge, business rules, and contextual information about the Hyle project to help AI assistants and developers understand the "why" behind design decisions and functionality.
+This document provides domain knowledge, business rules, and contextual information about the Graphium project to help AI assistants and developers understand the "why" behind design decisions and functionality.
 
 ## Table of Contents
 - [Project Background](#project-background)
@@ -16,9 +16,9 @@ This document provides domain knowledge, business rules, and contextual informat
 
 ## Project Background
 
-### What is Hyle?
+### What is Graphium?
 
-**Hyle** (from Greek ὕλη, meaning "matter" or "substance") is a local-first desktop application that provides a digital battlemap system for tabletop role-playing game Dungeon Masters (DMs).
+**Graphium** (from Greek ὕλη, meaning "matter" or "substance") is a local-first desktop application that provides a digital battlemap system for tabletop role-playing game Dungeon Masters (DMs).
 
 ### The Problem
 
@@ -33,7 +33,7 @@ Traditional tabletop RPGs use physical battlemaps (grid mats, tiles, or printed 
 
 ### The Solution
 
-Hyle replaces the physical battlemap with a **dual-window digital system**:
+Graphium replaces the physical battlemap with a **dual-window digital system**:
 
 - **Architect View** (DM Control Panel) - Full control interface on DM's screen/laptop
 - **World View** (Player Display) - Clean, borderless canvas projected for players to see
@@ -47,15 +47,15 @@ This allows DMs to:
 
 ### Why "Local-First"?
 
-Hyle is built on the **local-first** philosophy:
+Graphium is built on the **local-first** philosophy:
 
-1. **Data Ownership** - Users own their campaign files (`.hyle` archives)
+1. **Data Ownership** - Users own their campaign files (`.graphium` archives)
 2. **Privacy** - No cloud uploads, no analytics, no tracking
 3. **Offline-First** - Works without internet connection
 4. **Portability** - Campaign files are self-contained (all assets embedded)
-5. **No Vendor Lock-in** - `.hyle` files are ZIP archives with JSON manifest (open format)
+5. **No Vendor Lock-in** - `.graphium` files are ZIP archives with JSON manifest (open format)
 
-This is intentional. Many VTT (Virtual Tabletop) solutions require subscriptions, cloud accounts, or internet connections. Hyle respects user autonomy and data sovereignty.
+This is intentional. Many VTT (Virtual Tabletop) solutions require subscriptions, cloud accounts, or internet connections. Graphium respects user autonomy and data sovereignty.
 
 ---
 
@@ -76,7 +76,7 @@ This is intentional. Many VTT (Virtual Tabletop) solutions require subscriptions
 - Familiar with drag-and-drop interfaces
 - Expects "it just works" reliability
 
-**Pain points Hyle solves:**
+**Pain points Graphium solves:**
 - Physical map setup time
 - Limited miniature collections
 - Difficulty managing fog of war
@@ -85,7 +85,7 @@ This is intentional. Many VTT (Virtual Tabletop) solutions require subscriptions
 
 ### Secondary: AI Assistants
 
-Hyle's documentation is optimized for AI-assisted development:
+Graphium's documentation is optimized for AI-assisted development:
 - Comprehensive architecture docs
 - Detailed code conventions
 - Business logic explanations
@@ -98,7 +98,7 @@ This allows rapid feature development with AI pair programming.
 **Not designed for:**
 - Players (read-only World View only)
 - Highly technical users wanting API access (no plugin system planned)
-- Users wanting automated rule enforcement (Hyle is system-agnostic)
+- Users wanting automated rule enforcement (Graphium is system-agnostic)
 - Groups wanting built-in voice/video chat (use Discord/Zoom separately)
 
 ---
@@ -110,12 +110,12 @@ This allows rapid feature development with AI pair programming.
 **Dungeon Master (DM) / Game Master (GM)**
 - The person who runs the game, controls NPCs, describes the world
 - Has access to hidden information (monster stats, map layouts, etc.)
-- Hyle is built for the DM, not the players
+- Graphium is built for the DM, not the players
 
 **Player / Player Character (PC)**
 - Participants in the game who control characters
 - View the World Window during combat encounters
-- Do not interact with Hyle directly (DM controls everything)
+- Do not interact with Graphium directly (DM controls everything)
 
 **Non-Player Character (NPC)**
 - Characters controlled by the DM (monsters, allies, civilians)
@@ -133,7 +133,7 @@ This allows rapid feature development with AI pair programming.
 - An ongoing story spanning multiple sessions
 - May use recurring maps (e.g., a home base, dungeon levels)
 
-### Hyle-Specific Terms
+### Graphium-Specific Terms
 
 **Architect View**
 - The DM's control window
@@ -165,14 +165,14 @@ This allows rapid feature development with AI pair programming.
 - Visual guide only (no mechanical rules enforced)
 
 **Campaign File**
-- File extension: `.hyle`
+- File extension: `.graphium`
 - Format: ZIP archive containing:
   - `manifest.json` - Serialized game state (tokens, drawings, grid settings)
   - `assets/` folder - All token/map images (embedded WebP files)
 - Self-contained (can share with other DMs or archive for later use)
 
 **Asset**
-- Any image file used in Hyle (map backgrounds or token images)
+- Any image file used in Graphium (map backgrounds or token images)
 - Automatically optimized:
   - Maps: max 4096px (4K resolution support)
   - Tokens: max 512px (performance optimization)
@@ -298,7 +298,7 @@ This allows rapid feature development with AI pair programming.
 
 ### File Format Rules
 
-1. **Campaign files use `.hyle` extension**
+1. **Campaign files use `.graphium` extension**
    - File is a standard ZIP archive
    - Contains `manifest.json` + `assets/` folder
    - Can be opened with any ZIP tool (for inspection/recovery)
@@ -314,7 +314,7 @@ This allows rapid feature development with AI pair programming.
 
 3. **Asset paths are relative in saved files, absolute in memory**
    - In memory: `file:///Users/.../temp_assets/token.webp`
-   - In .hyle file: `assets/token.webp`
+   - In .graphium file: `assets/token.webp`
    - After load: `file:///Users/.../sessions/{timestamp}/assets/token.webp`
 
    **Rationale:** Portability. Relative paths work on any machine. Absolute paths needed for file system access.
@@ -347,7 +347,7 @@ This allows rapid feature development with AI pair programming.
 ### Workflow 1: Starting a New Session
 
 ```
-1. DM launches Hyle (npm run dev or double-click app)
+1. DM launches Graphium (npm run dev or double-click app)
 2. Architect View opens (blank canvas with grid)
 3. DM clicks "World View" button
 4. World View opens (DM drags to projector/second monitor)
@@ -430,9 +430,9 @@ This allows rapid feature development with AI pair programming.
 ```
 1. DM finishes setting up encounter (maps, tokens, drawings in place)
 2. DM clicks "Save" button
-3. File dialog appears (.hyle extension filter)
-4. DM chooses location and filename (e.g., "dragon-lair-encounter.hyle")
-5. Hyle creates ZIP archive:
+3. File dialog appears (.graphium extension filter)
+4. DM chooses location and filename (e.g., "dragon-lair-encounter.graphium")
+5. Graphium creates ZIP archive:
    - Copies all token/map images to assets/ folder
    - Writes manifest.json with state
 6. Success alert appears
@@ -450,9 +450,9 @@ This allows rapid feature development with AI pair programming.
 ```
 1. DM wants to resume previous encounter or use prepared setup
 2. DM clicks "Load" button
-3. File dialog appears (.hyle extension filter)
+3. File dialog appears (.graphium extension filter)
 4. DM selects campaign file
-5. Hyle extracts ZIP:
+5. Graphium extracts ZIP:
    - Reads manifest.json
    - Extracts assets to sessions/{timestamp}/ folder
    - Updates file paths to point to extracted files
@@ -467,7 +467,7 @@ This allows rapid feature development with AI pair programming.
 
 ```
 1. DM has loaded encounter (map + monster tokens placed)
-2. Players roll initiative (outside Hyle - using dice or D&D Beyond)
+2. Players roll initiative (outside Graphium - using dice or D&D Beyond)
 3. DM moves tokens on Architect View as combat progresses
 4. Players see updated positions on World View (projector)
 5. DM uses marker tool to indicate:
@@ -481,7 +481,7 @@ This allows rapid feature development with AI pair programming.
    - Close app
 ```
 
-**Note:** Hyle does NOT track HP, conditions, or rules. DMs use separate tools (pen & paper, D&D Beyond) for that.
+**Note:** Graphium does NOT track HP, conditions, or rules. DMs use separate tools (pen & paper, D&D Beyond) for that.
 
 ---
 
@@ -489,7 +489,7 @@ This allows rapid feature development with AI pair programming.
 
 ### Principle 1: Generic Tool, Not Game System
 
-Hyle is **system-agnostic**:
+Graphium is **system-agnostic**:
 - No built-in rules for D&D 5e, Pathfinder, etc.
 - No HP tracking, initiative order, or condition management
 - No dice rolling
@@ -499,14 +499,14 @@ Hyle is **system-agnostic**:
 - Different groups use different systems (D&D, Pathfinder, OSR, homebrew)
 - Rules change (D&D 5e → D&D 5.5e → D&D 6e)
 - DMs have preferred tools for rules (D&D Beyond, Roll20, pen & paper)
-- Hyle focuses on ONE thing: visual battlemap display
+- Graphium focuses on ONE thing: visual battlemap display
 
-**What Hyle IS:**
+**What Graphium IS:**
 - A digital whiteboard with grid and tokens
 - A projector display manager
 - A campaign file organizer
 
-**What Hyle IS NOT:**
+**What Graphium IS NOT:**
 - A full VTT (Virtual Tabletop) like Roll20 or Foundry
 - A rules engine
 - A character manager
@@ -518,13 +518,13 @@ No cloud. No tracking. No subscriptions.
 **Why:**
 - Users own their data (campaign files are theirs forever)
 - No internet required (run games in basements, cabins, anywhere)
-- No vendor lock-in (if Hyle development stops, files still work)
+- No vendor lock-in (if Graphium development stops, files still work)
 - No privacy concerns (no telemetry, no analytics)
 
 **Trade-offs:**
 - No built-in multiplayer (use separate screen sharing tools)
 - No cloud backup (users manage their own backups)
-- No cross-device sync (manually transfer .hyle files)
+- No cross-device sync (manually transfer .graphium files)
 
 **Future considerations:**
 - Optional peer-to-peer sync (via local network, no central server)
@@ -533,7 +533,7 @@ No cloud. No tracking. No subscriptions.
 
 ### Principle 3: Simplicity Over Features
 
-Hyle prioritizes:
+Graphium prioritizes:
 - Intuitive drag-and-drop interactions
 - Minimal UI clutter (especially in World View)
 - Fast setup time (< 5 minutes to prepare encounter)
@@ -553,7 +553,7 @@ Hyle prioritizes:
 
 ### Principle 4: Offline-First Performance
 
-Hyle must work smoothly even on older hardware:
+Graphium must work smoothly even on older hardware:
 - Optimize images aggressively (WebP, size limits)
 - Render efficiently (Konva layer system)
 - Minimize IPC overhead (batch updates, throttle sync)
@@ -585,7 +585,7 @@ Campaign files must be:
 3. Token upload, cropping, and placement
 4. Grid overlay with snapping
 5. Marker and eraser drawing tools
-6. Campaign save/load (.hyle files)
+6. Campaign save/load (.graphium files)
 7. Drag-and-drop asset upload
 8. Library tokens (hardcoded examples)
 9. Accessible theme system with light/dark mode (Radix Colors, WCAG AA compliant)
@@ -681,11 +681,11 @@ Campaign files must be:
 
 ### File System
 
-**Where Hyle stores data:**
+**Where Graphium stores data:**
 ```
-macOS:    ~/Library/Application Support/Hyle/
-Windows:  C:\Users\{user}\AppData\Roaming\Hyle\
-Linux:    ~/.config/Hyle/
+macOS:    ~/Library/Application Support/Graphium/
+Windows:  C:\Users\{user}\AppData\Roaming\Graphium\
+Linux:    ~/.config/Graphium/
 
 Subdirectories:
   temp_assets/           # Uploaded assets during session (should be cleared on quit)
@@ -696,17 +696,17 @@ Subdirectories:
 ```
 
 **External dependencies:**
-- User's Downloads folder (where .hyle files typically saved)
+- User's Downloads folder (where .graphium files typically saved)
 - User's Documents/Pictures (common token upload sources)
 
 ### Screen Sharing Tools (Recommended for Remote Play)
 
-Hyle is designed to work WITH screen sharing, not replace it:
+Graphium is designed to work WITH screen sharing, not replace it:
 
 - **Discord** - DMs can share World Window in a call
 - **Zoom** - Share specific window (World View)
 - **OBS** - Stream World View to Twitch/YouTube for asynchronous play
-- **Roll20/Foundry** - Some DMs use Hyle for maps, other tools for rules (via separate windows)
+- **Roll20/Foundry** - Some DMs use Graphium for maps, other tools for rules (via separate windows)
 
 **How it works:**
 1. DM opens World View on second monitor/virtual display
@@ -716,17 +716,17 @@ Hyle is designed to work WITH screen sharing, not replace it:
 
 ### Companion Tools (Common DM Stack)
 
-**Hyle does NOT replace:**
+**Graphium does NOT replace:**
 - **D&D Beyond** - Character sheets, rules reference, dice rolling
 - **Roll20** - Battlemaps, token art, marketplace content
-- **Foundry VTT** - Full-featured VTT (Hyle is simpler, local-first alternative)
+- **Foundry VTT** - Full-featured VTT (Graphium is simpler, local-first alternative)
 - **Discord/Slack** - Communication during sessions
 - **OneNote/Obsidian** - Campaign notes, worldbuilding
 
-**How Hyle fits:**
+**How Graphium fits:**
 - Handles ONLY the visual battlemap display
 - DMs use other tools for rules, communication, and notes
-- Hyle's strength: Local-first, simple, fast, no subscription
+- Graphium's strength: Local-first, simple, fast, no subscription
 
 ---
 
@@ -735,7 +735,7 @@ Hyle is designed to work WITH screen sharing, not replace it:
 ### Potential Features (Under Consideration)
 
 1. **Peer-to-Peer Sync** (Local Network)
-   - Players run Hyle on their devices
+   - Players run Graphium on their devices
    - DM broadcasts state to local network (no internet)
    - Players see synchronized view on tablets/laptops
    - Benefit: No screen sharing lag, players can zoom/pan independently
@@ -744,19 +744,19 @@ Hyle is designed to work WITH screen sharing, not replace it:
 2. **Web Export** (Static HTML)
    - Export campaign as self-contained HTML file
    - Open in browser for read-only viewing
-   - Benefit: Share campaigns without requiring Hyle app
+   - Benefit: Share campaigns without requiring Graphium app
    - Challenge: Konva in browser, file size of embedded assets
 
 3. **Community Asset Library**
    - Optional online repository of free tokens/maps
-   - Download packs directly in Hyle
+   - Download packs directly in Graphium
    - User-contributed (like Thingiverse for miniatures)
    - Benefit: Lowers barrier to entry for new DMs
    - Challenge: Moderation, hosting costs, copyright issues
 
 4. **Migration from Other VTTs**
    - Import campaigns from Roll20, Foundry, etc.
-   - Convert map/token data to .hyle format
+   - Convert map/token data to .graphium format
    - Benefit: Lower switching cost for DMs
    - Challenge: Different data models, API limitations
 
@@ -794,7 +794,7 @@ Hyle is designed to work WITH screen sharing, not replace it:
 
 ## Summary
 
-Hyle is a **focused, local-first tool** for DMs who want:
+Graphium is a **focused, local-first tool** for DMs who want:
 - Simple digital battlemap display
 - Dual-window support (DM screen + projector)
 - Data ownership (no cloud lock-in)
@@ -808,4 +808,4 @@ When developing features, always ask:
 - Does this respect local-first principles?
 - Will this work offline?
 
-If yes to all, it's a good fit for Hyle.
+If yes to all, it's a good fit for Graphium.
