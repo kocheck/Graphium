@@ -65,6 +65,27 @@ if (typeof HTMLCanvasElement !== 'undefined') {
         transform: vi.fn(),
         rect: vi.fn(),
         clip: vi.fn(),
+        fillText: vi.fn(),
+        strokeText: vi.fn(),
+        createLinearGradient: vi.fn(() => ({
+          addColorStop: vi.fn(),
+        })),
+        createRadialGradient: vi.fn(() => ({
+          addColorStop: vi.fn(),
+        })),
+        createPattern: vi.fn(),
+        bezierCurveTo: vi.fn(),
+        quadraticCurveTo: vi.fn(),
+        arcTo: vi.fn(),
+        ellipse: vi.fn(),
+        isPointInPath: vi.fn(),
+        isPointInStroke: vi.fn(),
+        getLineDash: vi.fn(() => []),
+        setLineDash: vi.fn(),
+        canvas: {
+          width: 800,
+          height: 600,
+        },
       };
     }
     return null;
