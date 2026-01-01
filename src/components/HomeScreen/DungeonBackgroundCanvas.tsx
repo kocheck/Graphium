@@ -5,12 +5,15 @@ import { Drawing, Door } from '../../store/gameStore';
 import PaperNoiseOverlay from '../Canvas/PaperNoiseOverlay';
 import FogOfWarLayer from '../Canvas/FogOfWarLayer';
 import { ResolvedTokenData } from '../../hooks/useTokenData';
+import { isNearDoor } from '../../utils/collisionDetection';
 
 interface DungeonBackgroundCanvasProps {
   width: number;
   height: number;
   tokens: ResolvedTokenData[];
   children?: React.ReactNode;
+  onDungeonGenerated?: (drawings: Drawing[], doors: Door[]) => void;
+  onDoorStatesChange?: (doors: Door[]) => void;
 }
 
 /**
@@ -29,7 +32,9 @@ export function DungeonBackgroundCanvas({
   width,
   height,
   tokens,
-  children
+  children,
+  onDungeonGenerated,
+  onDoorStatesChange
 }: DungeonBackgroundCanvasProps) {
   const [dimensions, setDimensions] = useState({ width, height });
   const [dungeonDrawings, setDungeonDrawings] = useState<Drawing[]>([]);
@@ -97,6 +102,9 @@ export function DungeonBackgroundCanvas({
         setDungeonDrawings(result.drawings);
         setDungeonDoors(result.doors);
         setGenerationFailed(false);
+
+        // Notify parent component
+        onDungeonGenerated?.(result.drawings, result.doors);
 
       } catch (error) {
         console.error('[DungeonBackgroundCanvas] Generation failed:', error);
@@ -173,7 +181,44 @@ export function DungeonBackgroundCanvas({
 
   // Use fallback if generation failed, otherwise use generated dungeon
   const activeDrawings = generationFailed ? fallbackDrawings : dungeonDrawings;
-  const activeDoors = generationFailed ? [] : dungeonDoors;
+  const [activeDoors, setActiveDoors] = useState<Door[]>([]);
+
+  // Update active doors when dungeon doors change
+  useEffect(() => {
+    setActiveDoors(generationFailed ? [] : dungeonDoors);
+  }, [generationFailed, dungeonDoors]);
+
+  // Door opening mechanic - open doors when tokens get near
+  useEffect(() => {
+    if (activeDoors.length === 0 || tokens.length === 0) return;
+
+    const interactionRange = gridSize * 1.5; // 1.5 grid cells
+    let doorsChanged = false;
+    const updatedDoors = activeDoors.map((door) => {
+      // Skip if already open
+      if (door.isOpen) return door;
+
+      // Check if any token is near this door
+      const nearbyToken = tokens.some((token) => {
+        const tokenCenterX = token.x + (gridSize * token.scale) / 2;
+        const tokenCenterY = token.y + (gridSize * token.scale) / 2;
+        return isNearDoor(tokenCenterX, tokenCenterY, door, interactionRange);
+      });
+
+      if (nearbyToken) {
+        console.log('[DungeonBackgroundCanvas] Opening door:', door.id);
+        doorsChanged = true;
+        return { ...door, isOpen: true };
+      }
+
+      return door;
+    });
+
+    if (doorsChanged) {
+      setActiveDoors(updatedDoors);
+      onDoorStatesChange?.(updatedDoors);
+    }
+  }, [tokens, activeDoors, gridSize, onDoorStatesChange]);
 
   // Calculate visible bounds for fog of war
   const visibleBounds = {

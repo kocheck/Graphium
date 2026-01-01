@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getStorage } from '../services/storage';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, Drawing, Door } from '../store/gameStore';
 import { getRecentCampaigns, addRecentCampaignWithPlatform, removeRecentCampaign, type RecentCampaign } from '../utils/recentCampaigns';
 import { rollForMessage } from '../utils/systemMessages';
 import {
@@ -18,6 +18,7 @@ import { PlaygroundDrawings } from './HomeScreen/PlaygroundDrawings';
 import { VignetteOverlay } from './HomeScreen/VignetteOverlay';
 import { AboutModal, type AboutModalTab } from './AboutModal';
 import { ResolvedTokenData } from '../hooks/useTokenData';
+import { checkWallCollision } from '../utils/collisionDetection';
 
 interface HomeScreenProps {
   onStartEditor: () => void;
@@ -43,6 +44,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   );
   const [tokenPositions, setTokenPositions] = useState<Record<string, { x: number; y: number; size: number }>>({});
   const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
+  const [dungeonDrawings, setDungeonDrawings] = useState<Drawing[]>([]);
+  const [dungeonDoors, setDungeonDoors] = useState<Door[]>([]);
 
   // Random inclusive subtitle (stable for session)
   const [subtitle] = useState(() => {
@@ -394,6 +397,21 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   }, [playgroundTokens, tokenPositions]);
 
   /**
+   * Handle dungeon state changes from DungeonBackgroundCanvas
+   */
+  const handleDungeonGenerated = useCallback((drawings: Drawing[], doors: Door[]) => {
+    setDungeonDrawings(drawings);
+    setDungeonDoors(doors);
+  }, []);
+
+  /**
+   * Handle door state changes (when tokens open doors)
+   */
+  const handleDoorStatesChange = useCallback((doors: Door[]) => {
+    setDungeonDoors(doors);
+  }, []);
+
+  /**
    * Handle token position change (for collision detection)
    */
   const handleTokenPositionChange = (id: string, x: number, y: number) => {
@@ -452,6 +470,17 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           return; // Abort move if it hits logo
         }
 
+        // 4. Wall collision check (if dungeon is generated)
+        if (dungeonDrawings.length > 0) {
+          const tokenSize = currentPos.size;
+          const tokenCenterX = newX + tokenSize / 2;
+          const tokenCenterY = newY + tokenSize / 2;
+
+          if (checkWallCollision(tokenCenterX, tokenCenterY, tokenSize, dungeonDrawings, dungeonDoors)) {
+            return; // Abort move if it collides with walls
+          }
+        }
+
         // Apply move
         setTokenPositions(prev => ({
           ...prev,
@@ -464,7 +493,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     }, 2000); // Startup delay
 
     return () => clearTimeout(timeout);
-  }, [tokenPositions, windowDimensions]);
+  }, [tokenPositions, windowDimensions, dungeonDrawings, dungeonDoors]);
 
   // Convert tokenPositions to array for passing to tokens
   const allTokensArray = Object.entries(tokenPositions).map(([id, pos]) => ({
@@ -487,6 +516,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         width={windowDimensions.width} 
         height={windowDimensions.height}
         tokens={resolvedTokens}
+        onDungeonGenerated={handleDungeonGenerated}
+        onDoorStatesChange={handleDoorStatesChange}
       >
         {/* Decorative tactical drawings - CONNECTED to token positions */}
         <PlaygroundDrawings tokens={playgroundTokens} />
@@ -627,7 +658,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         pointerEvents: 'none', // Allow clicks to pass through empty space to the canvas
       }}>
         {/* Branding */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-16" style={{
+          backdropFilter: 'blur(8px)',
+          background: 'rgba(0, 0, 0, 0.3)',
+          borderRadius: '12px',
+          padding: '2rem',
+        }}>
           <div className="flex flex-col items-center">
             <LogoLockup
               width={400}
