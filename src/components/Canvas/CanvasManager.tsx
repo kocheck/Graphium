@@ -65,11 +65,30 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number, y: num
  * These helpers provide a unified interface for extracting coordinates and pressure
  * from PointerEvent, MouseEvent, and TouchEvent, enabling a single code path
  * for mouse, touch, and stylus input.
+ *
+ * Benefits:
+ * - Single event handler logic for all input types
+ * - Automatic pressure detection for stylus/pen devices
+ * - Multi-touch gesture detection
+ * - Backward compatible with existing mouse code
  */
 
 /**
  * Get the pointer position from a Konva event
- * Works with PointerEvent, MouseEvent, and TouchEvent
+ *
+ * Extracts the canvas-relative pointer position from any pointer event type.
+ * Works with PointerEvent, MouseEvent, and TouchEvent.
+ *
+ * @param e - Konva event object wrapping pointer/mouse/touch event
+ * @returns {x, y} position relative to canvas, or null if stage not found
+ *
+ * @example
+ * const handlePointerDown = (e) => {
+ *   const pos = getPointerPosition(e);
+ *   if (pos) {
+ *     console.log(`Pointer at ${pos.x}, ${pos.y}`);
+ *   }
+ * };
  */
 const getPointerPosition = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
   const stage = e.target.getStage();
@@ -80,7 +99,21 @@ const getPointerPosition = (e: KonvaEventObject<PointerEvent | MouseEvent | Touc
 
 /**
  * Get pressure value from a pointer event (for pressure-sensitive drawing)
- * Returns 0.5 for mouse (no pressure sensitivity), actual pressure for pen/touch
+ *
+ * Extracts pointer pressure for stylus/pen input. Returns 0.5 for mouse
+ * (no pressure sensitivity), or actual pressure value for pen/touch devices.
+ *
+ * Pressure values range from 0.0 (no pressure) to 1.0 (maximum pressure).
+ * Mouse events default to 0.5 for consistent stroke width.
+ *
+ * @param e - Konva event object wrapping pointer/mouse/touch event
+ * @returns Pressure value (0.0 - 1.0)
+ *
+ * @example
+ * const handlePointerMove = (e) => {
+ *   const pressure = getPointerPressure(e);
+ *   const dynamicWidth = baseWidth * (0.5 + pressure * 0.5);
+ * };
  */
 const getPointerPressure = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): number => {
   const evt = e.evt as PointerEvent;
@@ -93,7 +126,23 @@ const getPointerPressure = (e: KonvaEventObject<PointerEvent | MouseEvent | Touc
 
 /**
  * Check if the event is a multi-touch gesture (2+ fingers)
- * Used to distinguish single-pointer interactions from gestures
+ *
+ * Detects multi-touch gestures (pinch-zoom, two-finger pan) to distinguish
+ * them from single-pointer interactions (drawing, dragging).
+ *
+ * Used to prevent single-touch handlers from interfering with multi-touch
+ * gestures like pinch-to-zoom.
+ *
+ * @param e - Konva event object wrapping pointer/mouse/touch event
+ * @returns true if 2+ fingers detected, false otherwise
+ *
+ * @example
+ * const handlePointerDown = (e) => {
+ *   if (isMultiTouchGesture(e)) {
+ *     return; // Let gesture handlers handle this
+ *   }
+ *   // Process single-pointer interaction
+ * };
  */
 const isMultiTouchGesture = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): boolean => {
   const evt = e.evt as TouchEvent;

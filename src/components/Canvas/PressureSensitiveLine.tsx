@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import { Shape } from 'react-konva';
 import Konva from 'konva';
 
@@ -20,18 +20,58 @@ interface PressureSensitiveLineProps {
 }
 
 /**
- * PressureSensitiveLine - Renders variable-width strokes based on pointer pressure
- *
- * This component renders a smooth, pressure-sensitive line by interpolating
- * stroke width between points based on pressure values. If no pressure data
- * is provided, it falls back to a constant-width line.
- *
- * Implementation:
- * - Uses Konva's Shape with custom sceneFunc for variable-width rendering
- * - Draws multiple quadratic curves with varying stroke widths
- * - Smoothly interpolates between pressure values for natural strokes
+ * Validate pressure data matches point count
+ * Returns null if invalid, otherwise returns validated pressures
  */
-const PressureSensitiveLine = ({
+function validatePressureData(points: number[], pressures?: number[]): number[] | null {
+  if (!pressures || pressures.length === 0) {
+    return null; // No pressure data - use regular line
+  }
+
+  const expectedLength = points.length / 2;
+
+  if (pressures.length !== expectedLength) {
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[PressureSensitiveLine] Pressure array length mismatch. ` +
+        `Expected ${expectedLength} pressure values for ${points.length / 2} points, ` +
+        `but got ${pressures.length}. Falling back to regular line.`
+      );
+    }
+    return null;
+  }
+
+  // Validate pressure values are in 0-1 range
+  const hasInvalidPressure = pressures.some(p => p < 0 || p > 1 || !Number.isFinite(p));
+  if (hasInvalidPressure) {
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[PressureSensitiveLine] Invalid pressure values detected. ` +
+        `All pressures must be between 0.0 and 1.0. Falling back to regular line.`
+      );
+    }
+    return null;
+  }
+
+  return pressures;
+}
+
+/**
+ * PressureSensitiveLine Component
+ *
+ * Renders a line with variable stroke width based on pointer pressure.
+ * Automatically falls back to regular line rendering if pressure data is
+ * invalid or not provided.
+ *
+ * Performance optimizations:
+ * - Memoized to prevent unnecessary re-renders
+ * - Validates pressure data once per render
+ * - Uses Konva's Shape sceneFunc for efficient custom rendering
+ *
+ * @param props - PressureSensitiveLineProps
+ * @returns Konva Shape component
+ */
+const PressureSensitiveLineComponent = ({
   id,
   name,
   points,
@@ -49,6 +89,9 @@ const PressureSensitiveLine = ({
 }: PressureSensitiveLineProps) => {
   const shapeRef = useRef<Konva.Shape>(null);
 
+  // Validate pressure data
+  const validatedPressures = validatePressureData(points, pressures);
+
   // Custom rendering function for variable-width strokes
   const sceneFunc = (context: Konva.Context, shape: Konva.Shape) => {
     if (points.length < 4) return; // Need at least 2 points
@@ -56,8 +99,8 @@ const PressureSensitiveLine = ({
     context.beginPath();
     context.moveTo(points[0], points[1]);
 
-    // If no pressure data, render as regular line
-    if (!pressures || pressures.length === 0) {
+    // If no valid pressure data, render as regular line
+    if (!validatedPressures) {
       for (let i = 2; i < points.length; i += 2) {
         context.lineTo(points[i], points[i + 1]);
       }
@@ -75,8 +118,8 @@ const PressureSensitiveLine = ({
       const x2 = points[i * 2];
       const y2 = points[i * 2 + 1];
 
-      const pressure1 = pressures[i - 1] || 0.5;
-      const pressure2 = pressures[i] || 0.5;
+      const pressure1 = validatedPressures[i - 1] || 0.5;
+      const pressure2 = validatedPressures[i] || 0.5;
 
       // Calculate average pressure for this segment
       const avgPressure = (pressure1 + pressure2) / 2;
@@ -113,5 +156,13 @@ const PressureSensitiveLine = ({
     />
   );
 };
+
+/**
+ * Memoized export to prevent unnecessary re-renders when parent components update.
+ * Only re-renders if props actually change (points, pressures, stroke, etc.)
+ */
+const PressureSensitiveLine = memo(PressureSensitiveLineComponent);
+
+PressureSensitiveLine.displayName = 'PressureSensitiveLine';
 
 export default PressureSensitiveLine;
