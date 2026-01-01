@@ -23,6 +23,7 @@ import { rollForMessage } from './utils/systemMessages';
 import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 import Tooltip from './components/Tooltip';
 import { AboutModal } from './components/AboutModal';
+import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
 
 /**
  * App is the root component for Graphium's dual-window architecture
@@ -93,6 +94,9 @@ import { AboutModal } from './components/AboutModal';
 function App() {
   // Detect window type for UI sanitization
   const { isArchitectView, isWorldView } = useWindowType();
+
+  // Detect Design System Playground route
+  const isDesignSystemPlayground = window.location.pathname === '/design-system';
 
   // View state management: HOME (splash screen) or EDITOR (main app)
   // World View always starts in EDITOR mode (bypasses home screen)
@@ -377,6 +381,11 @@ function App() {
   const handleStartEditor = () => {
     setViewState('EDITOR');
   };
+
+  // If accessing Design System Playground route, show it exclusively
+  if (isDesignSystemPlayground) {
+    return <DesignSystemPlayground />;
+  }
 
   // If in Architect View and on HOME screen, show the HomeScreen component
   if (isArchitectView && viewState === 'HOME') {

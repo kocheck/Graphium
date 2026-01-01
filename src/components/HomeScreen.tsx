@@ -887,6 +887,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             >
               Help (?)
             </button>
+            <span style={{ color: 'var(--app-border-default)' }}>·</span>
+            <a
+              href="/design-system"
+              className="footer-link"
+              title="Internal component library (Dev)"
+            >
+              Design System
+            </a>
           </div>
           {/* Version */}
           <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
