@@ -70,8 +70,9 @@ const QuickTokenSidebar: React.FC<QuickTokenSidebarProps> = ({
             if (div.parentNode === document.body) {
                 try {
                     document.body.removeChild(div);
-                } catch {
+                } catch (error) {
                     // Safe no-op: drag helper is already gone or cannot be removed
+                    console.debug('Drag helper cleanup failed:', error);
                 }
             }
         }, 100);
