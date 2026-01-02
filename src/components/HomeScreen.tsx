@@ -155,10 +155,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       <div className="content-container">
         {/* Hero Section */}
         <div className="hero-section">
-          <LogoLockup
-            width={420}
-            className="logo"
-          />
+          <div className="logo-container">
+            <LogoLockup
+              width={420}
+              className="logo"
+            />
+          </div>
           <h1 className="hero-title">
             Virtual Tabletop for <span className="highlight">{subtitle}</span>
           </h1>
@@ -492,8 +494,20 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           margin-bottom: 1rem;
         }
 
+        .logo-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 1.5rem;
+          width: 100%;
+          max-width: 420px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
         .logo {
-          margin: 0 auto 1.5rem;
+          width: 100%;
+          height: auto;
+          max-width: 420px;
           filter: drop-shadow(0 4px 20px rgba(139, 92, 246, 0.3));
           animation: logoFloat 3s ease-in-out infinite;
         }
@@ -929,34 +943,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         /* ======================
            Responsive
            ====================== */
-        @media (max-width: 768px) {
-          .content-container {
-            padding: 1.5rem;
-          }
-
-          .action-cards {
-            grid-template-columns: 1fr;
-          }
-
-          .hero-title {
-            font-size: 1.5rem;
-          }
-
-          .hero-subtitle {
-            font-size: 0.9375rem;
-          }
-
-          .banner-content {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .banner-button {
-            width: 100%;
-            text-align: center;
-          }
-        }
-
+        /* Tablet: 769px - 1024px */
         @media (min-width: 769px) and (max-width: 1024px) {
           .action-cards {
             grid-template-columns: repeat(2, 1fr);
@@ -969,11 +956,165 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           }
         }
 
+        /* Mobile: Up to 768px */
+        @media (max-width: 768px) {
+          .home-screen {
+            min-height: 100vh;
+            min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+          }
+
+          .content-container {
+            padding: 1rem 1.5rem 6rem; /* Extra bottom padding for fixed footer */
+            gap: 1.5rem;
+          }
+
+          .logo-container {
+            max-width: 280px;
+          }
+
+          .hero-title {
+            font-size: 1.375rem;
+            line-height: 1.4;
+          }
+
+          .hero-subtitle {
+            font-size: 0.875rem;
+          }
+
+          /* Action cards stack vertically on mobile */
+          .action-cards {
+            grid-template-columns: 1fr;
+            gap: 0.875rem;
+          }
+
+          .action-card {
+            padding: 1.5rem;
+          }
+
+          .card-title {
+            font-size: 1.125rem;
+          }
+
+          .card-description {
+            font-size: 0.8125rem;
+          }
+
+          /* Mac banner improvements */
+          .mac-banner {
+            padding: 1rem;
+          }
+
+          .banner-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.875rem;
+          }
+
+          .banner-text {
+            padding-right: 0;
+          }
+
+          .banner-button {
+            width: 100%;
+            text-align: center;
+            padding: 0.625rem 1.5rem;
+          }
+
+          .dismiss-btn {
+            top: 0.5rem;
+            right: 0.5rem;
+          }
+
+          /* Recent campaigns */
+          .recent-campaigns {
+            padding: 1rem;
+          }
+
+          .recent-item {
+            padding: 0.75rem;
+          }
+
+          /* Footer adjustments */
+          .footer {
+            position: relative;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--app-bg-base);
+          }
+
+          .footer-links {
+            font-size: 0.8125rem;
+            gap: 0.5rem;
+          }
+        }
+
+        /* Small mobile: Up to 480px */
         @media (max-width: 480px) {
+          .content-container {
+            padding: 0.75rem 1rem 6rem;
+          }
+
+          .logo-container {
+            max-width: 240px;
+          }
+
+          .hero-title {
+            font-size: 1.25rem;
+          }
+
+          .hero-subtitle {
+            font-size: 0.8125rem;
+            padding: 0 0.5rem;
+          }
+
+          .action-card {
+            padding: 1.25rem;
+          }
+
+          .quick-action-btn {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+          }
+
           .footer-links {
             flex-wrap: wrap;
             justify-content: center;
-            font-size: 0.8125rem;
+            line-height: 2;
+          }
+
+          .footer-separator {
+            display: none;
+          }
+
+          .footer-version {
+            font-size: 0.75rem;
+          }
+
+          /* Make touch targets larger on mobile */
+          .action-card,
+          .quick-action-btn,
+          .recent-button {
+            min-height: 44px; /* iOS recommended minimum touch target */
+          }
+        }
+
+        /* Very small mobile: Up to 360px */
+        @media (max-width: 360px) {
+          .logo-container {
+            max-width: 200px;
+          }
+
+          .hero-title {
+            font-size: 1.125rem;
+          }
+
+          .card-title {
+            font-size: 1rem;
+          }
+
+          .banner-icon {
+            width: 1.5rem;
+            height: 1.5rem;
           }
         }
       `}</style>
