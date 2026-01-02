@@ -104,6 +104,17 @@ Graphium gives you a dedicated "Architect's View" full of arcane instruments, wh
 - **Fog of War**: A hardware-accelerated raycasting engine that creates true mystery.
 - **Asset Conjuration**: Drag and drop images directly onto the canvas. We optimize them automatically.
 
+### **The Modern Stylus (Touch & Pen Support)**
+
+Graphium embraces the tactile nature of creation through comprehensive touch and pen support.
+
+- **Direct Touch**: Inscribe with your finger on tablets and touch-enabled devices
+- **Pressure Sensitivity**: Stylus pressure translates to stroke width—light for whispers, heavy for declarations
+- **Two-Finger Gestures**: Pan and pinch-zoom to navigate your world with natural gestures
+- **Unified Input**: Mouse, touch, and pen all flow through the same precise pathways
+
+*Your tool should never constrain your medium. Whether you prefer the precision of a mouse, the intimacy of a stylus, or the directness of touch—Graphium responds with equal weight.*
+
 ---
 
 ## ⚒️ The Smithy (Composition)

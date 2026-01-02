@@ -46,14 +46,20 @@ export interface Token {
 
 /**
  * Drawing represents a freehand stroke drawn with marker, eraser, or wall tool
- * ... (same documentation as before)
+ *
+ * Supports pressure-sensitive input for variable-width strokes:
+ * - pressures array has length = points.length / 2
+ * - Each pressure value corresponds to one (x, y) coordinate pair
+ * - Pressure ranges from 0.0 to 1.0 (0.5 for mouse/no pressure)
+ * - Used for rendering variable-width strokes with pens/styluses
  */
 export interface Drawing {
   id: string;
   tool: 'marker' | 'eraser' | 'wall';
-  points: number[];
+  points: number[]; // [x1, y1, x2, y2, ...] coordinate pairs
   color: string;
-  size: number;
+  size: number; // Base stroke size (multiplied by pressure for variable width)
+  pressures?: number[]; // Optional: [p1, p2, p3, ...] pressure values (0.0-1.0)
   scale?: number;
   x?: number;
   y?: number;

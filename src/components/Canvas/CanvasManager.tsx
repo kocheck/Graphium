@@ -7,6 +7,7 @@ import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
 import { useGameStore, Drawing } from '../../store/gameStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
+import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 import { simplifyPath, snapPointToPaths } from '../../utils/pathOptimization';
 import { isRectInAnyPolygon } from '../../types/geometry';
 import GridOverlay from './GridOverlay';
@@ -25,6 +26,7 @@ import MeasurementOverlay from './MeasurementOverlay';
 import { resolveTokenData } from '../../hooks/useTokenData';
 
 import URLImage from './URLImage';
+import PressureSensitiveLine from './PressureSensitiveLine';
 
 import { MeasurementMode, Measurement } from '../../types/measurement';
 import {
@@ -56,6 +58,97 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number, y: num
         x: (touch1.clientX + touch2.clientX) / 2,
         y: (touch1.clientY + touch2.clientY) / 2,
     };
+};
+
+/**
+ * Pointer Event Abstraction Utilities
+ *
+ * These helpers provide a unified interface for extracting coordinates and pressure
+ * from PointerEvent, MouseEvent, and TouchEvent, enabling a single code path
+ * for mouse, touch, and stylus input.
+ *
+ * Benefits:
+ * - Single event handler logic for all input types
+ * - Automatic pressure detection for stylus/pen devices
+ * - Multi-touch gesture detection
+ * - Backward compatible with existing mouse code
+ */
+
+/**
+ * Get the pointer position from a Konva event
+ *
+ * Extracts the canvas-relative pointer position from any pointer event type.
+ * Works with PointerEvent, MouseEvent, and TouchEvent.
+ *
+ * @param e - Konva event object wrapping pointer/mouse/touch event
+ * @returns {x, y} position relative to canvas, or null if stage not found
+ *
+ * @example
+ * const handlePointerDown = (e) => {
+ *   const pos = getPointerPosition(e);
+ *   if (pos) {
+ *     console.log(`Pointer at ${pos.x}, ${pos.y}`);
+ *   }
+ * };
+ */
+const getPointerPosition = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+  const stage = e.target.getStage();
+  if (!stage) return null;
+
+  return stage.getRelativePointerPosition();
+};
+
+/**
+ * Get pressure value from a pointer event (for pressure-sensitive drawing)
+ *
+ * Extracts pointer pressure for stylus/pen input. Returns 0.5 for mouse
+ * (no pressure sensitivity), or actual pressure value for pen/touch devices.
+ *
+ * Pressure values range from 0.0 (no pressure) to 1.0 (maximum pressure).
+ * Mouse events default to 0.5 for consistent stroke width.
+ *
+ * @param e - Konva event object wrapping pointer/mouse/touch event
+ * @returns Pressure value (0.0 - 1.0)
+ *
+ * @example
+ * const handlePointerMove = (e) => {
+ *   const pressure = getPointerPressure(e);
+ *   const dynamicWidth = baseWidth * (0.5 + pressure * 0.5);
+ * };
+ */
+const getPointerPressure = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): number => {
+  const evt = e.evt;
+  // Type guard: Check if this is a PointerEvent with pressure property
+  if ('pressure' in evt && typeof evt.pressure === 'number') {
+    return evt.pressure;
+  }
+  return 0.5; // Default pressure for mouse/touch without pressure info
+};
+
+/**
+ * Check if the event is a multi-touch gesture (2+ fingers)
+ *
+ * Detects multi-touch gestures (pinch-zoom, two-finger pan) to distinguish
+ * them from single-pointer interactions (drawing, dragging).
+ *
+ * Used to prevent single-touch handlers from interfering with multi-touch
+ * gestures like pinch-to-zoom.
+ *
+ * @param e - Konva event object wrapping pointer/mouse/touch event
+ * @returns true if 2+ fingers detected, false otherwise
+ *
+ * @example
+ * const handlePointerDown = (e) => {
+ *   if (isMultiTouchGesture(e)) {
+ *     return; // Let gesture handlers handle this
+ *   }
+ *   // Process single-pointer interaction
+ * };
+ */
+const isMultiTouchGesture = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): boolean => {
+  const evt = e.evt;
+  // Type guard: Check if this is a TouchEvent with touches array
+  return 'touches' in evt && Array.isArray(evt.touches) && evt.touches.length >= 2;
 };
 
 
@@ -216,6 +309,11 @@ const CanvasManager = ({
 
   // Preferences
   const wallToolPrefs = usePreferencesStore(s => s.wallTool);
+  const touchSettings = useTouchSettingsStore();
+
+  // Touch/Stylus tracking for palm rejection
+  const stylusActiveRef = useRef(false); // Track if stylus is currently being used
+  const lastStylusLiftTimeRef = useRef(0); // Timestamp of last stylus lift (for smartDelay palm rejection)
 
   // Measurement state
   const activeMeasurement = useGameStore(s => s.activeMeasurement);
@@ -303,6 +401,103 @@ const CanvasManager = ({
   // Touch/Pinch State
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
+  const lastPanCenter = useRef<{ x: number, y: number } | null>(null);
+
+  // Use pinch distance threshold from settings (user-configurable)
+  // Clamp to reasonable range (5-50 pixels) to prevent gesture detection issues
+  const PINCH_DISTANCE_THRESHOLD = Math.min(
+    Math.max(touchSettings.pinchDistanceThreshold, 5),
+    50
+  );
+
+  /**
+   * Track stylus usage for palm rejection
+   * 
+   * Updates internal refs when a pen/stylus input is detected.
+   * Should be called on pointer down events.
+   *
+   * @param e - Konva event object
+   */
+  const trackStylusUsage = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
+    const evt = e.evt;
+    if ('pointerType' in evt && evt.pointerType === 'pen') {
+      stylusActiveRef.current = true;
+    }
+  }, []);
+
+  /**
+   * Enhanced pointer pressure extractor with settings support
+   *
+   * Applies user-configured pressure curve and respects pressure sensitivity toggle.
+   * When pressure sensitivity is disabled, returns constant 0.5 for uniform stroke width.
+   *
+   * @param e - Konva event object
+   * @returns Adjusted pressure value (0.0 - 1.0)
+   */
+  const getPointerPressureWithSettings = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): number => {
+    // If pressure sensitivity is disabled, return constant pressure
+    if (!touchSettings.pressureSensitivityEnabled) {
+      return 0.5;
+    }
+
+    // Get raw pressure
+    const rawPressure = getPointerPressure(e);
+
+    // Apply pressure curve multiplier
+    const { min, max } = touchSettings.getPressureRange();
+    const range = max - min;
+    return min + (rawPressure * range);
+  }, [touchSettings]);
+
+  /**
+   * Check if this pointer event should be rejected (palm rejection)
+   *
+   * Implements multiple palm rejection strategies based on user settings:
+   * - off: Accept all input
+   * - touchSize: Reject large contact areas (palms)
+   * - stylusOnly: Reject touch when stylus is active
+   * - smartDelay: Reject touch shortly after stylus lift
+   *
+   * @param e - Konva event object
+   * @returns true if event should be rejected, false if should be processed
+   */
+  const shouldRejectPointerEvent = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): boolean => {
+    const evt = e.evt;
+
+    // Type guard: Only PointerEvent has pointerType property
+    if (!('pointerType' in evt)) {
+      return false; // MouseEvent/TouchEvent - don't reject
+    }
+
+    // Desktop-only mode: reject all touch input
+    if (touchSettings.desktopOnlyMode && evt.pointerType === 'touch') {
+      return true;
+    }
+
+    // Use the store's rejection logic (safe cast: pointerType exists, so this is a PointerEvent)
+    const shouldReject = touchSettings.shouldRejectTouch(evt as PointerEvent, stylusActiveRef.current);
+
+    // Additional smart delay logic (time-based, not in store)
+    if (touchSettings.palmRejectionMode === 'smartDelay' && evt.pointerType === 'touch') {
+      const timeSinceStylusLift = Date.now() - lastStylusLiftTimeRef.current;
+      if (timeSinceStylusLift < touchSettings.palmRejectionDelay) {
+        return true;
+      }
+    }
+
+    return shouldReject;
+  }, [touchSettings]);
+
+  /**
+   * Track stylus lift for smart delay palm rejection
+   */
+  const handleStylusLift = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    const evt = e.evt;
+    if ('pointerType' in evt && evt.pointerType === 'pen') {
+      stylusActiveRef.current = false;
+      lastStylusLiftTimeRef.current = Date.now();
+    }
+  }, []);
 
   /**
    * Determines the appropriate cursor style based on current interaction state.
@@ -530,9 +725,21 @@ const CanvasManager = ({
 
   // handleWheel moved to below to use clamp logic
 
-  // Touch event handlers for pinch-to-zoom
+  /**
+   * Multi-Touch Gesture Handlers
+   *
+   * These handlers ONLY process multi-touch gestures (2+ fingers).
+   * Single-touch interactions are handled by the unified pointer event handlers
+   * (handlePointerDown/Move/Up) which support mouse, touch, and pen input.
+   *
+   * This separation ensures:
+   * - Two-finger pinch-to-zoom works correctly
+   * - Single-finger drawing/dragging uses pointer events
+   * - No event conflicts between touch and pointer APIs
+   */
   const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
       const touches = e.evt.touches;
+      // ONLY handle 2+ finger gestures (pinch-to-zoom)
       if (touches.length === 2) {
           e.evt.preventDefault();
           const touch1 = touches[0];
@@ -540,10 +747,12 @@ const CanvasManager = ({
           lastPinchDistance.current = calculatePinchDistance(touch1, touch2);
           lastPinchCenter.current = calculatePinchCenter(touch1, touch2);
       }
+      // Single-touch events are handled by handlePointerDown
   };
 
   const handleTouchMove = (e: KonvaEventObject<TouchEvent>) => {
       const touches = e.evt.touches;
+      // ONLY handle 2-finger gestures (pinch-to-zoom or two-finger pan)
       if (touches.length === 2) {
           e.evt.preventDefault();
 
@@ -556,32 +765,62 @@ const CanvasManager = ({
               // Prevent division by zero
               if (lastPinchDistance.current < MIN_PINCH_DISTANCE) return;
 
-              // Convert viewport coordinates to canvas coordinates
-              const stageRect = containerRef.current?.getBoundingClientRect();
-              if (!stageRect) return;
+              // Calculate distance change to determine gesture type
+              const distanceChange = Math.abs(distance - lastPinchDistance.current);
+              const isPinchGesture = distanceChange > PINCH_DISTANCE_THRESHOLD;
 
-              const canvasX = center.x - stageRect.left;
-              const canvasY = center.y - stageRect.top;
+              if (isPinchGesture) {
+                  // PINCH-TO-ZOOM: Fingers moving together/apart
+                  const stageRect = containerRef.current?.getBoundingClientRect();
+                  if (!stageRect) return;
 
-              // Calculate scale change
-              const scaleChange = distance / lastPinchDistance.current;
-              const newScale = scale * scaleChange;
+                  const canvasX = center.x - stageRect.left;
+                  const canvasY = center.y - stageRect.top;
 
-              // Use the pinch center for zoom
-              performZoom(newScale, canvasX, canvasY, scale, position);
+                  // Calculate scale change
+                  const scaleChange = distance / lastPinchDistance.current;
+                  const newScale = scale * scaleChange;
 
-              lastPinchDistance.current = distance;
-              lastPinchCenter.current = center;
+                  // Use the pinch center for zoom
+                  performZoom(newScale, canvasX, canvasY, scale, position);
+
+                  lastPinchDistance.current = distance;
+                  lastPinchCenter.current = center;
+                  lastPanCenter.current = null; // Reset pan tracking
+              } else if (lastPanCenter.current) {
+                  // TWO-FINGER PAN: Fingers moving together without changing distance
+                  const dx = center.x - lastPanCenter.current.x;
+                  const dy = center.y - lastPanCenter.current.y;
+
+                  // Update canvas position (pan)
+                  const newPos = {
+                      x: position.x + dx,
+                      y: position.y + dy
+                  };
+
+                  // Clamp to valid bounds and update position
+                  const clampedPos = clampPosition(newPos, scale);
+                  setPosition(clampedPos);
+
+                  lastPanCenter.current = center;
+              } else {
+                  // Initialize pan tracking
+                  lastPanCenter.current = center;
+              }
           }
       }
+      // Single-touch events are handled by handlePointerMove
   };
 
   const handleTouchEnd = (e: KonvaEventObject<TouchEvent>) => {
       const touches = e.evt.touches;
+      // Reset gesture state when fewer than 2 fingers remain
       if (touches.length < 2) {
           lastPinchDistance.current = null;
           lastPinchCenter.current = null;
+          lastPanCenter.current = null;
       }
+      // Single-touch events are handled by handlePointerUp
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -707,15 +946,22 @@ const CanvasManager = ({
     }
   }, [isWorldView]);
 
-  // Token Mouse Handlers (Threshold-based Press-and-Hold)
-  const handleTokenMouseDown = useCallback((e: KonvaEventObject<MouseEvent | TouchEvent>, tokenId: string) => {
+  // Token Pointer Handlers (Threshold-based Press-and-Hold)
+  // Migrated to Pointer Events API for unified mouse/touch/pen support
+  const handleTokenPointerDown = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string) => {
+    // Track stylus usage for palm rejection (must happen before rejection check)
+    trackStylusUsage(e);
+
+    // Palm rejection - reject unwanted touch input
+    if (shouldRejectPointerEvent(e)) return;
+
     if (tool !== 'select') return;
 
-    // Record the initial pointer position and the token's starting stage position
-    const stage = e.target.getStage();
-    if (!stage) return;
+    // Ignore multi-touch gestures (let gesture handlers handle those)
+    if (isMultiTouchGesture(e)) return;
 
-    const pointerPos = stage.getRelativePointerPosition();
+    // Record the initial pointer position and the token's starting stage position
+    const pointerPos = getPointerPosition(e);
     if (!pointerPos) return;
 
     const token = resolvedTokens.find(t => t.id === tokenId);
@@ -723,7 +969,7 @@ const CanvasManager = ({
 
     e.evt.stopPropagation();
 
-    // Store the initial mouse position and token position
+    // Store the initial pointer position and token position
     setTokenMouseDownStart({
       x: pointerPos.x,
       y: pointerPos.y,
@@ -731,15 +977,18 @@ const CanvasManager = ({
       stagePos: { x: token.x, y: token.y }
     });
     setIsDraggingWithThreshold(false);
-  }, [tool, resolvedTokens]);
+  }, [tool, resolvedTokens, shouldRejectPointerEvent]);
 
-  const handleTokenMouseMove = useCallback((e: KonvaEventObject<MouseEvent>) => {
+  const handleTokenPointerMove = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // Palm rejection - reject unwanted touch input
+    if (shouldRejectPointerEvent(e)) return;
+
     if (!tokenMouseDownStart || tool !== 'select') return;
 
-    const stage = e.target.getStage();
-    if (!stage) return;
+    // Ignore multi-touch gestures
+    if (isMultiTouchGesture(e)) return;
 
-    const pointerPos = stage.getRelativePointerPosition();
+    const pointerPos = getPointerPosition(e);
     if (!pointerPos) return;
 
     // Calculate distance moved
@@ -857,7 +1106,7 @@ const CanvasManager = ({
     }
   }, [tokenMouseDownStart, isDraggingWithThreshold, tool, resolvedTokens, selectedIds, setSelectedIds, throttleDragBroadcast, isWorldView]);
 
-  const handleTokenMouseUp = useCallback((e: KonvaEventObject<MouseEvent>) => {
+  const handleTokenPointerUp = useCallback((e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
     if (!tokenMouseDownStart) return;
 
     const tokenId = tokenMouseDownStart.tokenId;
@@ -952,15 +1201,24 @@ const CanvasManager = ({
     // Reset drag state
     setTokenMouseDownStart(null);
     setIsDraggingWithThreshold(false);
-  }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, setSelectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast]);
+  }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, setSelectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast, shouldRejectPointerEvent]);
 
-  // Drawing Handlers
-  const handleMouseDown = (e: any) => {
+  // Drawing Handlers (Pointer Events - unified mouse/touch/pen support)
+  const handlePointerDown = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // Track stylus usage for palm rejection (must happen before rejection check)
+    trackStylusUsage(e);
+
+    // Palm rejection - reject unwanted touch input
+    if (shouldRejectPointerEvent(e)) return;
+
     if (isSpacePressed) return; // Allow panning
 
-    // DOOR TOOL - Do nothing on mouse down, wait for mouse up
+    // Ignore multi-touch gestures (zoom/pan)
+    if (isMultiTouchGesture(e)) return;
+
+    // DOOR TOOL - Do nothing on pointer down, wait for pointer up
     if (tool === 'door') {
-      console.log('[CanvasManager] Door tool active - ignoring mouseDown');
+      console.log('[CanvasManager] Door tool active - ignoring pointerDown');
       return;
     }
 
@@ -973,8 +1231,8 @@ const CanvasManager = ({
     // BLOCKED in World View (players cannot calibrate grid)
     if (isCalibrating) {
         if (isWorldView) return; // Block calibration in World View
-        const stage = e.target.getStage();
-        const pos = stage.getRelativePointerPosition();
+        const pos = getPointerPosition(e);
+        if (!pos) return;
         calibrationStart.current = { x: pos.x, y: pos.y };
         setCalibrationRect({ x: pos.x, y: pos.y, width: 0, height: 0 });
         return;
@@ -984,7 +1242,8 @@ const CanvasManager = ({
     if (tool === 'measure') {
         if (isWorldView) return; // Block measurement creation in World View
         isMeasuring.current = true;
-        const pos = e.target.getStage().getRelativePointerPosition();
+        const pos = getPointerPosition(e);
+        if (!pos) return;
         measurementStart.current = { x: pos.x, y: pos.y };
         return;
     }
@@ -994,7 +1253,11 @@ const CanvasManager = ({
     if (tool !== 'select') {
         if (isWorldView) return; // Block drawing tools in World View
         isDrawing.current = true;
-        const pos = e.target.getStage().getRelativePointerPosition();
+        const pos = getPointerPosition(e);
+        if (!pos) return;
+
+        // Get initial pressure for pressure-sensitive drawing (with user settings applied)
+        const pressure = getPointerPressureWithSettings(e);
 
         // Set color and size based on tool type
         let drawColor = color;
@@ -1014,6 +1277,8 @@ const CanvasManager = ({
             points: [pos.x, pos.y],
             color: drawColor,
             size: drawSize,
+            // Only capture pressure if pressure sensitivity is enabled (performance optimization)
+            pressures: touchSettings.pressureSensitivityEnabled ? [pressure] : undefined,
         };
         return;
     }
@@ -1024,7 +1289,9 @@ const CanvasManager = ({
 
     if (clickedOnStage || clickedOnMap) {
         // Start Selection Rect
-        const pos = e.target.getStage().getRelativePointerPosition();
+        const pos = getPointerPosition(e);
+        if (!pos) return;
+
         selectionStart.current = { x: pos.x, y: pos.y };
 
         // Use refs for performance - avoid React state updates during drag
@@ -1044,8 +1311,9 @@ const CanvasManager = ({
             isVisible: true
         });
 
-        // Clear selection if not modified? (e.g. shift click logic could be added)
-        if (!e.evt.shiftKey) {
+        // Clear selection if not modified (shift-click to add to selection)
+        const evt = e.evt;
+        if (!('shiftKey' in evt) || !evt.shiftKey) {
              setSelectedIds([]);
         }
     } else {
@@ -1055,13 +1323,19 @@ const CanvasManager = ({
     }
   };
 
-  const handleMouseMove = (e: any) => {
+  const handlePointerMove = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // Palm rejection - reject unwanted touch input
+    if (shouldRejectPointerEvent(e)) return;
+
     if (isSpacePressed) return;
+
+    // Ignore multi-touch gestures
+    if (isMultiTouchGesture(e)) return;
 
     // DOOR TOOL PREVIEW - Show preview while hovering
     if (tool === 'door' && !isWorldView) {
-      const stage = e.target.getStage();
-      const pos = stage.getRelativePointerPosition();
+      const pos = getPointerPosition(e);
+      if (!pos) return;
 
       // Snap to grid for preview
       const snapped = snapToGrid(pos.x, pos.y, gridSize);
@@ -1075,14 +1349,14 @@ const CanvasManager = ({
 
     // Handle token dragging with threshold
     if (tokenMouseDownStart) {
-      handleTokenMouseMove(e);
+      handleTokenPointerMove(e);
       return;
     }
 
     // Handle measurement tool
     if (tool === 'measure' && isMeasuring.current && measurementStart.current) {
-        const stage = e.target.getStage();
-        const pos = stage.getRelativePointerPosition();
+        const pos = getPointerPosition(e);
+        if (!pos) return;
         const origin = measurementStart.current;
 
         let measurement: Measurement;
@@ -1143,15 +1417,16 @@ const CanvasManager = ({
         // BLOCKED in World View (no drawing tools)
         if (isWorldView) return;
         if (!isDrawing.current) return;
-        const stage = e.target.getStage();
-        let point = stage.getRelativePointerPosition();
+        let point = getPointerPosition(e);
+        if (!point) return;
         const cur = currentLine.current;
 
         // Guard against null currentLine
         if (!cur) return;
 
         // Shift-key axis locking: Lock to horizontal or vertical
-        if (e.evt.shiftKey && cur.points.length >= 2) {
+        const evt = e.evt;
+        if ('shiftKey' in evt && evt.shiftKey && cur.points.length >= 2) {
             const startX = cur.points[0];
             const startY = cur.points[1];
             const dx = Math.abs(point.x - startX);
@@ -1173,17 +1448,23 @@ const CanvasManager = ({
             return; // Skip consecutive duplicate point
         }
 
+        // Get pressure for this point (with user settings applied)
+        const pressure = getPointerPressureWithSettings(e);
+
         // Performance optimization: Use push (in-place mutation) instead of concat (array copy)
         // This reduces GC pressure and is faster for large stroke collections
         //
-        // IMMUTABILITY EXCEPTION: This mutates currentLine.current.points directly, which
+        // IMMUTABILITY EXCEPTION: This mutates currentLine.current.points/pressures directly, which
         // violates the general immutability pattern established in the codebase. This is
         // acceptable here because:
         // 1. currentLine.current is a ref, not Zustand state
-        // 2. The points array is never shared with React state during drawing
+        // 2. The arrays are never shared with React state during drawing
         // 3. The performance benefit is significant for smooth drawing (60fps target)
         // 4. The mutation is isolated to the drawing operation
         cur.points.push(point.x, point.y);
+        if (cur.pressures) {
+            cur.pressures.push(pressure);
+        }
 
         // Cancel previous animation frame
         if (drawingAnimationFrameRef.current) {
@@ -1206,8 +1487,8 @@ const CanvasManager = ({
 
     // CALIBRATION LOGIC
     if (isCalibrating && calibrationStart.current) {
-        const stage = e.target.getStage();
-        const pos = stage.getRelativePointerPosition();
+        const pos = getPointerPosition(e);
+        if (!pos) return;
         const x = Math.min(pos.x, calibrationStart.current.x);
         const y = Math.min(pos.y, calibrationStart.current.y);
         const width = Math.abs(pos.x - calibrationStart.current.x);
@@ -1218,8 +1499,8 @@ const CanvasManager = ({
 
     // Selection Rect Update - Use refs + RAF for performance
     if (selectionStart.current) {
-        const stage = e.target.getStage();
-        const pos = stage.getRelativePointerPosition();
+        const pos = getPointerPosition(e);
+        if (!pos) return;
         const x = Math.min(pos.x, selectionStart.current.x);
         const y = Math.min(pos.y, selectionStart.current.y);
         const width = Math.abs(pos.x - selectionStart.current.x);
@@ -1247,7 +1528,13 @@ const CanvasManager = ({
     }
   };
 
-  const handleMouseUp = (e: any) => {
+  const handlePointerUp = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // Track stylus lift for smart delay palm rejection
+    handleStylusLift(e);
+
+    // Ignore multi-touch gestures
+    if (isMultiTouchGesture(e)) return;
+
     // DOOR TOOL LOGIC - Click to place
     // BLOCKED in World View (players cannot place doors)
     if (tool === 'door' && !isWorldView) {
@@ -1255,8 +1542,8 @@ const CanvasManager = ({
       const clickedOnMap = e.target.id() === 'map';
 
       if (clickedOnStage || clickedOnMap) {
-        const stage = e.target.getStage();
-        const pos = stage.getRelativePointerPosition();
+        const pos = getPointerPosition(e);
+        if (!pos) return;
 
         // Snap to grid
         const snapped = snapToGrid(pos.x, pos.y, gridSize);
@@ -1279,9 +1566,9 @@ const CanvasManager = ({
       return;
     }
 
-    // Handle token mouse up (drag end or selection)
+    // Handle token pointer up (drag end or selection)
     if (tokenMouseDownStart) {
-      handleTokenMouseUp(e);
+      handleTokenPointerUp(e);
       return;
     }
 
@@ -1410,6 +1697,8 @@ const CanvasManager = ({
 
         // Calculate Intersection
         const stage = e.target.getStage();
+        if (!stage) return; // Guard against null stage
+
         // Use the ref coords (most up-to-date) instead of state
         const box = selectionRectCoordsRef.current;
 
@@ -1605,11 +1894,13 @@ const CanvasManager = ({
         width={size.width}
         height={size.height}
         draggable={isSpacePressed}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        // Unified Pointer Events API - handles mouse, touch, and pen input
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
         onWheel={handleWheel}
+        // Multi-touch gestures (pinch-to-zoom) - 2+ fingers only
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -1644,7 +1935,10 @@ const CanvasManager = ({
                  // No action needed here; see comment above.
              }
         }}
-        style={{ cursor: getCursorStyle() }}
+        style={{
+          cursor: getCursorStyle(),
+          touchAction: 'none', // Prevent browser's default touch behaviors (scroll, zoom, text selection)
+        }}
       >
         {/* Layer 1: Background & Map (Listening False to let internal events pass to Stage for selection) */}
         <Layer listening={false}>
@@ -1718,27 +2012,29 @@ const CanvasManager = ({
                 />
             ))}
 
-            {drawings.map((line) => (
-                <Line
-                    key={line.id}
-                    id={line.id}
-                    name="drawing"
-                    points={line.points}
-                    x={line.x || 0}
-                    y={line.y || 0}
-                    scaleX={line.scale || 1}
-                    scaleY={line.scale || 1}
-                    stroke={line.color}
-                    strokeWidth={line.size}
-                    tension={0.5}
-                    lineCap="round"
-                    dash={line.tool === 'wall' ? [10, 5] : undefined}
-                    opacity={line.tool === 'wall' && isWorldView ? 0 : 1}
-                    globalCompositeOperation={
-                        line.tool === 'eraser' ? 'destination-out' : 'source-over'
-                    }
-                    draggable={tool === 'select' && line.tool !== 'wall'}
-                    onClick={(e) => {
+            {drawings.map((line) => {
+                // Common props shared by both component types
+                const commonProps = {
+                    key: line.id,
+                    id: line.id,
+                    name: 'drawing' as const,
+                    points: line.points,
+                    x: line.x || 0,
+                    y: line.y || 0,
+                    // Apply uniform scaling (line.scale is a single number applied to both axes)
+                    scaleX: line.scale || 1,
+                    scaleY: line.scale || 1,
+                    stroke: line.color,
+                    strokeWidth: line.size,
+                    lineCap: 'round' as const,
+                    opacity: line.tool === 'wall' && isWorldView ? 0 : 1,
+                    globalCompositeOperation: line.tool === 'eraser' ? 'destination-out' as const : 'source-over' as const,
+                    draggable: tool === 'select' && line.tool !== 'wall',
+                };
+
+                // Event handlers (shared by both component types)
+                const eventHandlers = {
+                    onClick: (e: KonvaEventObject<MouseEvent>) => {
                         if (tool === 'select' && line.tool !== 'wall') {
                             e.evt.stopPropagation();
                             if (e.evt.shiftKey) {
@@ -1751,54 +2047,78 @@ const CanvasManager = ({
                                 setSelectedIds([line.id]);
                             }
                         }
-                    }}
-                    onDragStart={() => {
-                         if (selectedIds.includes(line.id)) {
-                             setItemsForDuplication(selectedIds);
-                         } else {
-                             setItemsForDuplication([line.id]);
-                         }
-                     }}
-                     onDragEnd={(e) => {
-                         const node = e.target;
-                         const x = node.x();
-                         const y = node.y();
+                    },
+                    onDragStart: () => {
+                        if (selectedIds.includes(line.id)) {
+                            setItemsForDuplication(selectedIds);
+                        } else {
+                            setItemsForDuplication([line.id]);
+                        }
+                    },
+                    onDragEnd: (e: KonvaEventObject<MouseEvent>) => {
+                        const node = e.target;
+                        const x = node.x();
+                        const y = node.y();
 
-                         // Duplication Logic (Option/Alt + Drag)
-                         // BLOCKED in World View (players cannot duplicate drawings)
-                         // Use isAltPressed state for consistency instead of e.evt.altKey
-                         if (isAltPressed && !isWorldView) {
-                             const idsToDuplicate = selectedIds.includes(line.id) ? selectedIds : [line.id];
-                             idsToDuplicate.forEach(id => {
-                                 // Only duplicate drawings here; tokens are handled in their own handler.
-                                 const drawing = drawings.find(d => d.id === id);
-                                 if (drawing) {
-                                     // Calculate drag offset and apply to all points
-                                     // Points array format: [x1, y1, x2, y2, ...] (alternating x,y coordinates)
-                                     const points = drawing.points;
-                                     const dx = x - (drawing.x || 0);
-                                     const dy = y - (drawing.y || 0);
-                                     // Offset all points by (dx, dy)
-                                     const newPoints = points.map((val, idx) =>
-                                         idx % 2 === 0 ? val + dx : val + dy // Even indices are X, odd are Y
-                                     );
-                                     addDrawing({ ...drawing, id: crypto.randomUUID(), points: newPoints, x: 0, y: 0 });
-                                 }
-                             });
-                         }
+                        // Duplication Logic (Option/Alt + Drag)
+                        // BLOCKED in World View (players cannot duplicate drawings)
+                        // Use isAltPressed state for consistency instead of e.evt.altKey
+                        if (isAltPressed && !isWorldView) {
+                            const idsToDuplicate = selectedIds.includes(line.id) ? selectedIds : [line.id];
+                            idsToDuplicate.forEach(id => {
+                                // Only duplicate drawings here; tokens are handled in their own handler.
+                                const drawing = drawings.find(d => d.id === id);
+                                if (drawing) {
+                                    // Calculate drag offset and apply to all points
+                                    // Points array format: [x1, y1, x2, y2, ...] (alternating x,y coordinates)
+                                    const points = drawing.points;
+                                    const dx = x - (drawing.x || 0);
+                                    const dy = y - (drawing.y || 0);
+                                    // Offset all points by (dx, dy)
+                                    const newPoints = points.map((val, idx) =>
+                                        idx % 2 === 0 ? val + dx : val + dy // Even indices are X, odd are Y
+                                    );
+                                    addDrawing({ ...drawing, id: crypto.randomUUID(), points: newPoints, x: 0, y: 0 });
+                                }
+                            });
+                        }
 
-                         // Update Position (Transform)
-                         // Drawings utilize `points` but usually we just move the node (x,y).
-                         // However, for persistence we should probably update the `points` OR store x,y offset.
-                         // But `Line` points are absolute.
-                         // If we move the Node, Konva applies a transform (x,y).
-                         // We should use `updateDrawingTransform`.
-                         updateDrawingTransform(line.id, x, y, line.scale || 1);
+                        // Update Position (Transform)
+                        // Drawings utilize `points` but usually we just move the node (x,y).
+                        // However, for persistence we should probably update the `points` OR store x,y offset.
+                        // But `Line` points are absolute.
+                        // If we move the Node, Konva applies a transform (x,y).
+                        // We should use `updateDrawingTransform`.
+                        updateDrawingTransform(line.id, x, y, line.scale || 1);
 
-                         setItemsForDuplication([]);
-                     }}
-                />
-            ))}
+                        setItemsForDuplication([]);
+                    }
+                };
+
+                // Use pressure-sensitive rendering if pressure data is available
+                const hasPressureData = line.pressures && line.pressures.length > 0;
+
+                // Render pressure-sensitive line or regular line with type-safe props
+                if (hasPressureData) {
+                    return (
+                        <PressureSensitiveLine
+                            {...commonProps}
+                            {...eventHandlers}
+                            pressures={line.pressures}
+                            pressureRange={touchSettings.getPressureRange()}
+                        />
+                    );
+                } else {
+                    return (
+                        <Line
+                            {...commonProps}
+                            {...eventHandlers}
+                            tension={0.5}
+                            dash={line.tool === 'wall' ? [10, 5] : undefined}
+                        />
+                    );
+                }
+            })}
              {/* Temp Line */}
             {tempLine && (
                 <Line
@@ -1982,7 +2302,7 @@ const CanvasManager = ({
                     // Visual props (scaleX, scaleY, opacity, shadow) are transformation properties
                     // that multiply with base dimensions to create hover/drag feedback effects
                     {...visualProps}
-                    onSelect={(e) => handleTokenMouseDown(e, token.id)}
+                    onSelect={(e) => handleTokenPointerDown(e, token.id)}
                     onMouseEnter={() => tool === 'select' && setHoveredTokenId(token.id)}
                     onMouseLeave={() => tool === 'select' && setHoveredTokenId(null)}
                     onDragStart={emptyDragHandler}
