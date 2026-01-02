@@ -27,7 +27,6 @@ import { resolveTokenData } from '../../hooks/useTokenData';
 
 import URLImage from './URLImage';
 import PressureSensitiveLine from './PressureSensitiveLine';
-import TouchVisualFeedback from './TouchVisualFeedback';
 
 import { MeasurementMode, Measurement } from '../../types/measurement';
 import {
@@ -402,19 +401,6 @@ const CanvasManager = ({
   const lastPinchDistance = useRef<number | null>(null);
   const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
   const lastPanCenter = useRef<{ x: number, y: number } | null>(null);
-
-  // Visual Feedback State (for TouchVisualFeedback component)
-  const [visualFeedback, setVisualFeedback] = useState<{
-    pressure: number | null;
-    pointerPosition: { x: number; y: number } | null;
-    touchPoints: Array<{ id: number; x: number; y: number }>;
-    gestureMode: 'pan' | 'pinch' | null;
-  }>({
-    pressure: null,
-    pointerPosition: null,
-    touchPoints: [],
-    gestureMode: null,
-  });
 
   // Use pinch distance threshold from settings (user-configurable)
   const PINCH_DISTANCE_THRESHOLD = touchSettings.pinchDistanceThreshold;
@@ -1686,6 +1672,8 @@ const CanvasManager = ({
 
         // Calculate Intersection
         const stage = e.target.getStage();
+        if (!stage) return; // Guard against null stage
+
         // Use the ref coords (most up-to-date) instead of state
         const box = selectionRectCoordsRef.current;
 
@@ -2020,12 +2008,12 @@ const CanvasManager = ({
                     // @ts-ignore - dash prop incompatibility between Line and Shape
                     dash: line.tool === 'wall' ? [10, 5] : undefined,
                     opacity: line.tool === 'wall' && isWorldView ? 0 : 1,
-                    globalCompositeOperation: line.tool === 'eraser' ? 'destination-out' : 'source-over',
-                };
+                } as const;
 
                 return (
                     <LineComponent
                         {...lineProps}
+                        globalCompositeOperation={line.tool === 'eraser' ? 'destination-out' : 'source-over'}
                         draggable={tool === 'select' && line.tool !== 'wall'}
                         onClick={(e: any) => {
                             if (tool === 'select' && line.tool !== 'wall') {

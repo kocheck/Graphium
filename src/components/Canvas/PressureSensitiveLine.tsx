@@ -1,6 +1,9 @@
-import { useEffect, useRef, memo } from 'react';
+import { useRef, memo } from 'react';
 import { Shape } from 'react-konva';
 import Konva from 'konva';
+
+// Import the globalCompositeOperationType from Konva
+type GlobalCompositeOperationType = '' | 'source-over' | 'source-in' | 'source-out' | 'source-atop' | 'destination-over' | 'destination-in' | 'destination-out' | 'destination-atop' | 'lighter' | 'copy' | 'xor' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
 
 interface PressureSensitiveLineProps {
   id?: string;
@@ -11,7 +14,7 @@ interface PressureSensitiveLineProps {
   strokeWidth: number; // Base stroke width (multiplied by pressure)
   lineCap?: 'butt' | 'round' | 'square';
   lineJoin?: 'miter' | 'round' | 'bevel';
-  globalCompositeOperation?: string;
+  globalCompositeOperation?: GlobalCompositeOperationType;
   opacity?: number;
   listening?: boolean;
   scale?: { x: number; y: number };
