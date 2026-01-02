@@ -203,7 +203,12 @@ export const useTouchSettingsStore = create<TouchSettingsState>()(
           }
         }
 
-        // Smart delay mode handled by CanvasManager (time-based logic)
+        // Smart delay mode: time-based palm rejection is implemented in CanvasManager.
+        // We do not reject here to avoid duplicating timing logic; this branch makes the
+        // smartDelay mode handling explicit in the store.
+        if (settings.palmRejectionMode === 'smartDelay') {
+          return false;
+        }
 
         return false;
       },

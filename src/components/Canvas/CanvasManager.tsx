@@ -1916,9 +1916,9 @@ const CanvasManager = ({
                  // No action needed here; see comment above.
              }
         }}
-        className="touch-none" // Prevent browser's default touch behaviors (scroll, zoom, text selection)
         style={{
           cursor: getCursorStyle(),
+          touchAction: 'none', // Prevent browser's default touch behaviors (scroll, zoom, text selection)
         }}
       >
         {/* Layer 1: Background & Map (Listening False to let internal events pass to Stage for selection) */}
@@ -2025,7 +2025,7 @@ const CanvasManager = ({
                         {...lineProps}
                         globalCompositeOperation={line.tool === 'eraser' ? 'destination-out' : 'source-over'}
                         draggable={tool === 'select' && line.tool !== 'wall'}
-                        onClick={(e: any) => {
+                        onClick={(e: KonvaEventObject<MouseEvent>) => {
                             if (tool === 'select' && line.tool !== 'wall') {
                                 e.evt.stopPropagation();
                                 if (e.evt.shiftKey) {
@@ -2046,7 +2046,7 @@ const CanvasManager = ({
                                 setItemsForDuplication([line.id]);
                             }
                         }}
-                        onDragEnd={(e: any) => {
+                        onDragEnd={(e: KonvaEventObject<MouseEvent>) => {
                             const node = e.target;
                             const x = node.x();
                             const y = node.y();

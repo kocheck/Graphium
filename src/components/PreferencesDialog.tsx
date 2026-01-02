@@ -22,7 +22,7 @@
 
 import { useEffect } from 'react';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { useTouchSettingsStore } from '../store/touchSettingsStore';
+import { useTouchSettingsStore, PressureCurve, PalmRejectionMode } from '../store/touchSettingsStore';
 
 interface PreferencesDialogProps {
   isOpen: boolean;
@@ -287,7 +287,7 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                 <select
                   id="pressure-curve"
                   value={touchSettings.pressureCurve}
-                  onChange={(e) => touchSettings.updateSettings({ pressureCurve: e.target.value as 'light' | 'normal' | 'heavy' })}
+                  onChange={(e) => touchSettings.updateSettings({ pressureCurve: e.target.value as PressureCurve })}
                   className="w-full px-3 py-2 rounded bg-[var(--app-bg)] border border-[var(--app-border)] cursor-pointer"
                   style={{ color: 'var(--app-text)' }}
                 >
@@ -315,7 +315,7 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
               <select
                 id="palm-rejection"
                 value={touchSettings.palmRejectionMode}
-                onChange={(e) => touchSettings.updateSettings({ palmRejectionMode: e.target.value as any })}
+                onChange={(e) => touchSettings.updateSettings({ palmRejectionMode: e.target.value as PalmRejectionMode })}
                 className="px-3 py-1.5 rounded bg-[var(--app-bg)] border border-[var(--app-border)] cursor-pointer text-sm"
                 style={{ color: 'var(--app-text)' }}
                 disabled={touchSettings.desktopOnlyMode}
