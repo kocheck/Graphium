@@ -73,7 +73,7 @@ export function getPlayerTokens(
     limit: number = 5
 ): LibraryItem[] {
     return library
-        .filter(item => item.defaultType === 'PC')
+        .filter(item => item.defaultType === 'PC' || item.category === 'PC')
         .sort((a, b) => b.dateAdded - a.dateAdded) // Most recent first
         .slice(0, limit);
 }

@@ -198,6 +198,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
               onChange={(e) => setCategory(e.target.value)}
               className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
             >
+              <option value="PC">PC (Player Character)</option>
               <option value="Monsters">Monsters</option>
               <option value="NPCs">NPCs</option>
               <option value="Props">Props</option>
