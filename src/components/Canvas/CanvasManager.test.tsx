@@ -48,6 +48,11 @@ import { snapToGrid } from '../../utils/grid';
 // Test constants
 const GENERIC_TOKEN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#6b7280" rx="16"/><circle cx="64" cy="45" r="18" fill="#ffffff"/><path d="M64 70 C 40 70 28 82 28 92 L 28 108 L 100 108 L 100 92 C 100 82 88 70 64 70 Z" fill="#ffffff"/></svg>';
 
+// Helper to generate SVG data URL (mirrors CanvasManager implementation)
+const createGenericTokenDataUrl = (svg: string = GENERIC_TOKEN_SVG): string => {
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+};
+
 describe('CanvasManager Drop Handlers', () => {
   let mockAddToken: ReturnType<typeof vi.fn>;
 
@@ -140,7 +145,7 @@ describe('CanvasManager Drop Handlers', () => {
 
       if (data.type === 'GENERIC_TOKEN') {
         // Simulate the SVG generation
-        const genericTokenSvg = `data:image/svg+xml;base64,${btoa(GENERIC_TOKEN_SVG)}`;
+        const genericTokenSvg = createGenericTokenDataUrl();
 
         mockAddToken({
           id: 'test-id',
@@ -169,8 +174,8 @@ describe('CanvasManager Drop Handlers', () => {
     });
 
     it('should create SVG data URL with correct structure', () => {
-      // Simulate SVG generation using test constant
-      const genericTokenSvg = `data:image/svg+xml;base64,${btoa(GENERIC_TOKEN_SVG)}`;
+      // Simulate SVG generation using helper function
+      const genericTokenSvg = createGenericTokenDataUrl();
 
       // Verify data URL format
       expect(genericTokenSvg).toMatch(/^data:image\/svg\+xml;base64,/);
@@ -213,7 +218,7 @@ describe('CanvasManager Drop Handlers', () => {
         // In the real implementation, the position would be snapped first
         const { x, y } = snapToGrid(100, 150, 50);
         
-        const genericTokenSvg = `data:image/svg+xml;base64,${btoa(GENERIC_TOKEN_SVG)}`;
+        const genericTokenSvg = createGenericTokenDataUrl();
 
         mockAddToken({
           id: 'test-id',
