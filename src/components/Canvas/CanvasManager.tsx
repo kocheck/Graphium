@@ -870,8 +870,16 @@ const CanvasManager = ({
                 });
                 return;
             } else if (data.type === 'GENERIC_TOKEN') {
-                // Create a generic placeholder token with an SVG data URL
-                const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#6b7280" rx="16"/><circle cx="64" cy="45" r="18" fill="#ffffff"/><path d="M64 70 C 40 70 28 82 28 92 L 28 108 L 100 108 L 100 92 C 100 82 88 70 64 70 Z" fill="#ffffff"/></svg>';
+                // Create a generic placeholder token with an SVG data URL.
+                // Colors are derived from CSS variables so the token matches the current theme.
+                const rootElement = document.documentElement;
+                const computedStyles = getComputedStyle(rootElement);
+                const bgColor =
+                  (computedStyles.getPropertyValue('--app-bg-subtle') || '#6b7280').trim() || '#6b7280';
+                const fgColor =
+                  (computedStyles.getPropertyValue('--app-text-primary') || '#ffffff').trim() || '#ffffff';
+
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="${bgColor}" rx="16"/><circle cx="64" cy="45" r="18" fill="${fgColor}"/><path d="M64 70 C 40 70 28 82 28 92 L 28 108 L 100 108 L 100 92 C 100 82 88 70 64 70 Z" fill="${fgColor}"/></svg>`;
                 const genericTokenSvg = `data:image/svg+xml;base64,${btoa(svg)}`;
 
                 addToken({
