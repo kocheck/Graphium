@@ -514,13 +514,29 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
               <div className="screenshot-showcase">
                 <h2 className="showcase-title">See Graphium in Action</h2>
                 <div className="showcase-grid">
-                  <div className="showcase-item">
-                    <div className="screenshot-placeholder">
-                      <RiImageLine className="placeholder-icon" />
-                      <p className="placeholder-text">Screenshot / GIF</p>
-                      <p className="placeholder-caption">Dual-window architecture with fog of war</p>
+                  {[
+                    { src: '/screenshots/Graphium-show.gif', caption: 'Dual-window architecture with fog of war' },
+                    { src: '/screenshots/Graphium-1.png', caption: 'Dynamic lighting and shadows' },
+                    { src: '/screenshots/Graphium-2.png', caption: 'Asset library management' },
+                    { src: '/screenshots/Graphium-3.png', caption: 'Detailed map editing' },
+                    { src: '/screenshots/Graphium-4.png', caption: 'Token customization' },
+                  ].map((img, index) => (
+                    <div key={index} className="showcase-item">
+                       <img
+                        src={img.src}
+                        alt={img.caption}
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          display: 'block',
+                          borderBottom: '1px solid var(--app-border-subtle)'
+                        }}
+                      />
+                      <div style={{ padding: '1rem', background: 'var(--app-bg-base)' }}>
+                        <p className="placeholder-caption" style={{ margin: 0 }}>{img.caption}</p>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
                 <p className="showcase-note">
                   Add your screenshots, GIFs, or videos to <code>/public/screenshots/</code>
