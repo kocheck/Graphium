@@ -13,6 +13,12 @@ import {
   RiSwordLine,
   RiMapPinLine,
   RiDiceLine,
+  RiLayoutGridLine,
+  RiEyeOffLine,
+  RiWindowLine,
+  RiShieldLine,
+  RiImageLine,
+  RiPaletteLine,
 } from '@remixicon/react';
 import { LogoLockup } from './LogoLockup';
 import { AboutModal, type AboutModalTab } from './AboutModal';
@@ -52,6 +58,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
   const loadCampaign = useGameStore((state) => state.loadCampaign);
   const showToast = useGameStore((state) => state.showToast);
+  const showDungeonDialog = useGameStore((state) => state.showDungeonDialog);
 
   // Load recent campaigns and detect platform on mount
   useEffect(() => {
@@ -132,6 +139,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     setHideMacBanner(true);
   };
 
+  const handleGenerateDungeon = () => {
+    onStartEditor();
+    // Small delay to ensure editor is rendered before opening dialog
+    setTimeout(() => {
+      showDungeonDialog();
+    }, 100);
+  };
+
   return (
     <div className="home-screen">
       {/* CSS-only background with animated geometric shapes */}
@@ -156,7 +171,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             Virtual Tabletop for <span className="highlight">{subtitle}</span>
           </h1>
           <p className="hero-subtitle">
-            Roll initiative on your next adventure
+            Dual-window VTT with fog of war • Local-first, no subscriptions
           </p>
         </div>
 
@@ -225,6 +240,22 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             </p>
             <div className="card-hover-effect"></div>
           </button>
+
+          <button
+            onClick={handleGenerateDungeon}
+            className="action-card card-dungeon"
+            aria-label="Generate a procedural dungeon and start the editor"
+          >
+            <div className="card-icon-wrapper">
+              <RiLayoutGridLine className="card-icon" />
+              <RiDiceLine className="card-decoration" />
+            </div>
+            <h2 className="card-title">Generate Dungeon</h2>
+            <p className="card-description">
+              Create a procedural dungeon with rooms and corridors
+            </p>
+            <div className="card-hover-effect"></div>
+          </button>
         </div>
 
         {/* Quick Actions */}
@@ -240,6 +271,89 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             <RiInformationLine className="w-5 h-5" />
             <span>✨ New to Graphium? Learn the basics</span>
           </button>
+        </div>
+
+        {/* Screenshot Showcase */}
+        <div className="screenshot-showcase">
+          <h2 className="showcase-title">See Graphium in Action</h2>
+          <div className="showcase-grid">
+            <div className="showcase-item">
+              <div className="screenshot-placeholder">
+                <RiImageLine className="placeholder-icon" />
+                <p className="placeholder-text">Screenshot / GIF</p>
+                <p className="placeholder-caption">Dual-window architecture with fog of war</p>
+              </div>
+            </div>
+          </div>
+          <p className="showcase-note">
+            Add your screenshots, GIFs, or videos to <code>/public/screenshots/</code>
+          </p>
+        </div>
+
+        {/* Feature Highlights */}
+        <div className="feature-highlights">
+          <h2 className="features-title">Designed for Dungeon Masters</h2>
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <RiWindowLine className="feature-icon" />
+              </div>
+              <h3 className="feature-name">Dual Windows</h3>
+              <p className="feature-desc">
+                Architect view for you, clean world view for players
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <RiEyeOffLine className="feature-icon" />
+              </div>
+              <h3 className="feature-name">Fog of War</h3>
+              <p className="feature-desc">
+                Hardware-accelerated raycasting with dynamic vision
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <RiLayoutGridLine className="feature-icon" />
+              </div>
+              <h3 className="feature-name">Dungeon Generator</h3>
+              <p className="feature-desc">
+                Procedural dungeons with rooms, corridors, and doors
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <RiShieldLine className="feature-icon" />
+              </div>
+              <h3 className="feature-name">Local-First</h3>
+              <p className="feature-desc">
+                Your campaigns live on your drive, no cloud required
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <RiPaletteLine className="feature-icon" />
+              </div>
+              <h3 className="feature-name">Drawing Tools</h3>
+              <p className="feature-desc">
+                Markers, walls, doors, and tactical annotations
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <RiImageLine className="feature-icon" />
+              </div>
+              <h3 className="feature-name">Asset Library</h3>
+              <p className="feature-desc">
+                Drag-and-drop tokens with automatic optimization
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Recent Campaigns */}
@@ -674,7 +788,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
            ====================== */
         .action-cards {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 1rem;
         }
 
@@ -808,6 +922,164 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           border-color: var(--app-accent-solid);
           color: var(--app-accent-text);
           transform: translateY(-2px);
+        }
+
+        /* ======================
+           Screenshot Showcase
+           ====================== */
+        .screenshot-showcase {
+          background: var(--app-bg-surface);
+          border: 1px solid var(--app-border-subtle);
+          border-radius: 16px;
+          padding: 2rem;
+          text-align: center;
+        }
+
+        .showcase-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: var(--app-text-primary);
+          margin-bottom: 1.5rem;
+        }
+
+        .showcase-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+        }
+
+        .showcase-item {
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        .screenshot-placeholder {
+          background: var(--app-bg-base);
+          border: 2px dashed var(--app-border-default);
+          border-radius: 12px;
+          padding: 4rem 2rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 1rem;
+          min-height: 300px;
+          transition: all 0.3s;
+        }
+
+        .screenshot-placeholder:hover {
+          border-color: var(--app-accent-solid);
+          background: var(--app-bg-hover);
+        }
+
+        .placeholder-icon {
+          width: 4rem;
+          height: 4rem;
+          color: var(--app-text-muted);
+          opacity: 0.5;
+        }
+
+        .placeholder-text {
+          font-size: 1.125rem;
+          font-weight: 500;
+          color: var(--app-text-secondary);
+          margin: 0;
+        }
+
+        .placeholder-caption {
+          font-size: 0.875rem;
+          color: var(--app-text-muted);
+          margin: 0;
+        }
+
+        .showcase-note {
+          margin-top: 1rem;
+          font-size: 0.875rem;
+          color: var(--app-text-muted);
+          font-style: italic;
+        }
+
+        .showcase-note code {
+          background: var(--app-bg-base);
+          padding: 0.125rem 0.5rem;
+          border-radius: 4px;
+          font-family: 'Courier New', monospace;
+          color: var(--app-accent-text);
+        }
+
+        /* ======================
+           Feature Highlights
+           ====================== */
+        .feature-highlights {
+          background: var(--app-bg-surface);
+          border: 1px solid var(--app-border-subtle);
+          border-radius: 16px;
+          padding: 2rem;
+        }
+
+        .features-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: var(--app-text-primary);
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .features-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1.5rem;
+        }
+
+        .feature-card {
+          background: var(--app-bg-base);
+          border: 1px solid var(--app-border-subtle);
+          border-radius: 12px;
+          padding: 1.5rem;
+          text-align: center;
+          transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+          border-color: var(--app-accent-solid);
+          transform: translateY(-4px);
+          box-shadow: 0 8px 20px rgba(139, 92, 246, 0.15);
+        }
+
+        .feature-icon-wrapper {
+          width: 3.5rem;
+          height: 3.5rem;
+          margin: 0 auto 1rem;
+          background: var(--app-accent-bg);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.3s;
+        }
+
+        .feature-card:hover .feature-icon-wrapper {
+          transform: scale(1.1);
+        }
+
+        .feature-icon {
+          width: 2rem;
+          height: 2rem;
+          color: var(--app-accent-solid);
+        }
+
+        .feature-name {
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: var(--app-text-primary);
+          margin-bottom: 0.5rem;
+        }
+
+        .feature-desc {
+          font-size: 0.875rem;
+          color: var(--app-text-secondary);
+          line-height: 1.5;
+          margin: 0;
         }
 
         /* ======================
@@ -977,12 +1249,16 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             grid-template-columns: 1fr;
           }
 
+          .features-grid {
+            grid-template-columns: 1fr;
+          }
+
           .hero-title {
             font-size: 1.5rem;
           }
 
           .hero-subtitle {
-            font-size: 1rem;
+            font-size: 0.9375rem;
           }
 
           .banner-content {
@@ -993,6 +1269,32 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           .banner-button {
             width: 100%;
             text-align: center;
+          }
+
+          .screenshot-placeholder {
+            padding: 3rem 1.5rem;
+            min-height: 250px;
+          }
+
+          .features-title,
+          .showcase-title {
+            font-size: 1.25rem;
+          }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .action-cards {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .action-card:last-child {
+            grid-column: 1 / -1;
+            max-width: 50%;
+            margin: 0 auto;
           }
         }
 
