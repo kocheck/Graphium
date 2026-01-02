@@ -147,10 +147,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       {/* CSS-only background with animated geometric shapes */}
       <div className="bg-container">
         <div className="bg-gradient"></div>
-        <div className="floating-shape shape-1"></div>
-        <div className="floating-shape shape-2"></div>
-        <div className="floating-shape shape-3"></div>
-        <div className="floating-shape shape-4"></div>
+
         <div className="grid-overlay"></div>
       </div>
 
@@ -445,74 +442,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           }
         }
 
-        /* Floating geometric shapes */
-        .floating-shape {
-          position: absolute;
-          border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-          opacity: 0.4;
-          mix-blend-mode: multiply;
-          animation: float 20s ease-in-out infinite;
-        }
 
-        /* Dark mode blend fix */
-        @media (prefers-color-scheme: dark) {
-          .floating-shape {
-            mix-blend-mode: screen;
-            opacity: 0.15;
-          }
-        }
-
-        .shape-1 {
-          top: 10%;
-          left: 10%;
-          width: 300px;
-          height: 300px;
-          background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3));
-          animation-delay: 0s;
-          animation-duration: 25s;
-        }
-
-        .shape-2 {
-          top: 60%;
-          right: 15%;
-          width: 200px;
-          height: 200px;
-          background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(239, 68, 68, 0.3));
-          animation-delay: 5s;
-          animation-duration: 30s;
-        }
-
-        .shape-3 {
-          bottom: 10%;
-          left: 20%;
-          width: 250px;
-          height: 250px;
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(59, 130, 246, 0.3));
-          animation-delay: 10s;
-          animation-duration: 35s;
-        }
-
-        .shape-4 {
-          top: 30%;
-          right: 30%;
-          width: 180px;
-          height: 180px;
-          background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(236, 72, 153, 0.3));
-          animation-delay: 15s;
-          animation-duration: 28s;
-        }
-
-        @keyframes float {
-          0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
-          }
-          33% {
-            transform: translate(30px, -30px) rotate(120deg);
-          }
-          66% {
-            transform: translate(-20px, 20px) rotate(240deg);
-          }
-        }
 
         /* Subtle grid overlay */
         .grid-overlay {
@@ -678,7 +608,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
         .banner-description {
           font-size: 0.875rem;
-          color: var(--app-accent-text);
+          color: var(--app-accent-text-contrast);
         }
 
         .banner-button {
@@ -786,7 +716,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
         .card-description {
           font-size: 0.875rem;
-          color: var(--app-text-secondary);
+          color: var(--app-text-primary);
           line-height: 1.5;
         }
 
@@ -821,7 +751,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         .quick-action-btn {
           background: var(--app-bg-hover);
           border: 1px solid var(--app-border-subtle);
-          color: var(--app-text-secondary);
+          color: var(--app-text-primary);
           padding: 0.875rem 1.5rem;
           border-radius: 12px;
           display: flex;
