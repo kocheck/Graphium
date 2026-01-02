@@ -461,7 +461,7 @@ const CanvasManager = ({
       return true;
     }
 
-    // Use the store's rejection logic (only if it's a PointerEvent)
+    // Use the store's rejection logic (safe cast: pointerType exists, so this is a PointerEvent)
     const shouldReject = touchSettings.shouldRejectTouch(evt as PointerEvent, stylusActiveRef.current);
 
     // Additional smart delay logic (time-based, not in store)
@@ -2003,6 +2003,7 @@ const CanvasManager = ({
                     points: line.points,
                     x: line.x || 0,
                     y: line.y || 0,
+                    // Apply uniform scaling (line.scale is a single number applied to both axes)
                     scaleX: line.scale || 1,
                     scaleY: line.scale || 1,
                     stroke: line.color,
