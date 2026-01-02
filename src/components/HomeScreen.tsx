@@ -205,7 +205,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         <div className="action-cards">
           <button
             onClick={handleNewCampaign}
-            className="action-card card-new"
+            className="action-card"
             aria-label="Create a new campaign and start the editor"
             data-testid="new-campaign-button"
           >
@@ -222,7 +222,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
           <button
             onClick={handleLoadCampaign}
-            className="action-card card-load"
+            className="action-card"
             aria-label="Load an existing campaign from a .graphium file"
           >
             <div className="card-icon-wrapper">
@@ -238,7 +238,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
           <button
             onClick={handleGenerateDungeon}
-            className="action-card card-dungeon"
+            className="action-card"
             aria-label="Generate a procedural dungeon and start the editor"
           >
             <div className="card-icon-wrapper">
@@ -1007,10 +1007,6 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             grid-template-columns: 1fr;
           }
 
-          .features-grid {
-            grid-template-columns: 1fr;
-          }
-
           .hero-title {
             font-size: 1.5rem;
           }
@@ -1028,23 +1024,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             width: 100%;
             text-align: center;
           }
-
-          .screenshot-placeholder {
-            padding: 3rem 1.5rem;
-            min-height: 250px;
-          }
-
-          .features-title,
-          .showcase-title {
-            font-size: 1.25rem;
-          }
         }
 
         @media (min-width: 769px) and (max-width: 1024px) {
-          .features-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
           .action-cards {
             grid-template-columns: repeat(2, 1fr);
           }

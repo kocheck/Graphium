@@ -744,7 +744,8 @@ interface HomeScreenProps {
 - **Quirky micro-interactions**: Dice roll animation, shimmer effects, floating logo
 - **Hero section** with random subtitle from 23 inclusive TTRPG role titles
 - **Recent campaigns** list with hover effects
-- **Quick actions**: New Campaign, Load Campaign, Learn Basics
+- **Primary action cards**: New Campaign, Load Campaign, Generate Dungeon (3 main cards)
+- **Quick actions**: "Learn the basics" tutorial button (separate from action cards)
 - **Footer** with GitHub, About, Report Bug, Help links
 - **Smooth animations**: Fade-in, slide-in, logo float
 - **Keyboard shortcuts**: `?` for About modal, `Escape` to close
