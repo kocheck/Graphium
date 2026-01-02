@@ -1,4 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import {
+  RiPlayFill,
+  RiPauseFill,
+  RiCursorLine,
+  RiPencilLine,
+  RiEraserLine,
+  RiLayoutMasonryLine,
+  RiDoorOpenLine,
+  RiRulerLine
+} from '@remixicon/react'
 import CanvasManager from './components/Canvas/CanvasManager'
 import SyncManager from './components/SyncManager'
 import { ThemeManager } from './components/ThemeManager'
@@ -472,13 +482,9 @@ function App() {
                aria-label={isGamePaused ? 'Resume game' : 'Pause game'}
              >
                {isGamePaused ? (
-                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                 </svg>
+                 <RiPlayFill className="w-5 h-5" />
                ) : (
-                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                   <path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5z" />
-                 </svg>
+                 <RiPauseFill className="w-5 h-5" />
                )}
              </button>
            </Tooltip>
@@ -489,9 +495,7 @@ function App() {
                className={`btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}`}
                onClick={() => setTool('select')}
                aria-label="Select tool">
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-               </svg>
+               <RiCursorLine className="w-5 h-5" />
              </button>
            </Tooltip>
            {/* Marker Tool */}
@@ -500,9 +504,7 @@ function App() {
                className={`btn btn-tool p-2 ${tool === 'marker' ? 'active' : ''}`}
                onClick={() => setTool('marker')}
                aria-label="Marker tool">
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-               </svg>
+               <RiPencilLine className="w-5 h-5" />
              </button>
            </Tooltip>
            {/* Eraser Tool */}
@@ -511,9 +513,7 @@ function App() {
                className={`btn btn-tool p-2 ${tool === 'eraser' ? 'active' : ''}`}
                onClick={() => setTool('eraser')}
                aria-label="Eraser tool">
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-               </svg>
+               <RiEraserLine className="w-5 h-5" />
              </button>
            </Tooltip>
            {/* Wall Tool */}
@@ -522,9 +522,7 @@ function App() {
                className={`btn btn-tool p-2 ${tool === 'wall' ? 'active' : ''}`}
                onClick={() => setTool('wall')}
                aria-label="Wall tool">
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h7m10 0h-7m-7 5h7m10 0h-7m-7 5h7m10 0h-7m-7 5h7m10 0h-7" />
-               </svg>
+               <RiLayoutMasonryLine className="w-5 h-5" />
              </button>
            </Tooltip>
            {/* Door Tool */}
@@ -533,9 +531,7 @@ function App() {
                className={`btn btn-tool p-2 ${tool === 'door' ? 'active' : ''}`}
                onClick={() => setTool('door')}
                aria-label="Door tool">
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v10m8-10v10M5 7h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2z" />
-               </svg>
+               <RiDoorOpenLine className="w-5 h-5" />
              </button>
            </Tooltip>
            {/* Door Orientation Toggle (only visible when door tool active) */}
@@ -557,9 +553,7 @@ function App() {
                  className={`btn btn-tool p-2 ${tool === 'measure' ? 'active' : ''}`}
                  onClick={() => setTool('measure')}
                  aria-label="Measure tool">
-                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                 </svg>
+                 <RiRulerLine className="w-5 h-5" />
                </button>
              </Tooltip>
              {tool === 'measure' && (

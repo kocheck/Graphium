@@ -24,9 +24,16 @@ vi.mock('../../store/gameStore', () => ({
   useGameStore: vi.fn(),
 }));
 
-// Mock useMediaQuery hook
 vi.mock('../../hooks/useMediaQuery', () => ({
   useIsMobile: vi.fn(() => false),
+}));
+
+// Mock storage service
+const mockUpdateLibraryMetadata = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../services/storage', () => ({
+  getStorage: () => ({
+    updateLibraryMetadata: mockUpdateLibraryMetadata,
+  }),
 }));
 
 describe('TokenMetadataEditor', () => {
@@ -52,6 +59,7 @@ describe('TokenMetadataEditor', () => {
     mockUpdateLibraryToken = vi.fn();
     mockShowToast = vi.fn();
     mockOnClose = vi.fn();
+    mockUpdateLibraryMetadata.mockClear();
 
     // Mock the useGameStore implementation
     vi.mocked(useGameStore).mockImplementation((selector: any) => {
@@ -676,5 +684,29 @@ describe('TokenMetadataEditor', () => {
     expect(screen.getByText(/Used for search/)).toBeInTheDocument();
     expect(screen.getByText(/Size multiplier when placed on map/)).toBeInTheDocument();
     expect(screen.getByText(/PC tokens emit vision in Fog of War/)).toBeInTheDocument();
+  });
+
+  it('should call storage service to persist changes', async () => {
+    const user = userEvent.setup();
+    render(
+      <TokenMetadataEditor
+        isOpen={true}
+        libraryItemId="lib-1"
+        onClose={mockOnClose}
+      />
+    );
+
+    const nameInput = screen.getByDisplayValue('Ancient Dragon');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Persisted Dragon');
+
+    const saveButton = screen.getByText('Save Changes');
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(mockUpdateLibraryMetadata).toHaveBeenCalledWith('lib-1', expect.objectContaining({
+        name: 'Persisted Dragon',
+      }));
+    });
   });
 });

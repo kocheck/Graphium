@@ -32,7 +32,7 @@ interface AddToLibraryDialogProps {
   onConfirm: () => void;
 }
 
-const DEFAULT_CATEGORIES = ['Monsters', 'NPCs', 'Props', 'Items', 'Custom'];
+const DEFAULT_CATEGORIES = ['PC', 'Monsters', 'NPCs', 'Props', 'Items', 'Custom'];
 
 const AddToLibraryDialog = ({
   isOpen,

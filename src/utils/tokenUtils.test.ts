@@ -106,10 +106,27 @@ describe('tokenUtils', () => {
       }
     ];
 
-    it('returns only tokens with defaultType PC', () => {
+    it('returns tokens with defaultType PC OR category PC', () => {
       const result = getPlayerTokens(library);
       expect(result).toHaveLength(3);
-      expect(result.every(token => token.defaultType === 'PC')).toBe(true);
+      expect(result.every(token => token.defaultType === 'PC' || token.category === 'PC')).toBe(true);
+    });
+
+    it('includes tokens with category PC even if defaultType is undefined', () => {
+        const pcCategoryLibrary: LibraryItem[] = [
+            {
+                id: 'cat-pc',
+                src: 'cat-pc.png',
+                thumbnailSrc: 'thumb.png',
+                name: 'Category Player',
+                category: 'PC',
+                tags: [],
+                dateAdded: Date.now(),
+            }
+        ];
+        const result = getPlayerTokens(pcCategoryLibrary);
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe('cat-pc');
     });
 
     it('sorts by dateAdded (most recent first)', () => {

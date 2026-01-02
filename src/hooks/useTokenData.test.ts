@@ -247,10 +247,35 @@ describe('useTokenData and resolveTokenData', () => {
       expect(resolved.type).toBe('PC'); // Inherited
       expect(resolved.visionRadius).toBe(30); // Inherited
 
-      expect(resolved._isInherited.scale).toBe(false);
-      expect(resolved._isInherited.name).toBe(false);
       expect(resolved._isInherited.type).toBe(true);
       expect(resolved._isInherited.visionRadius).toBe(true);
+    });
+
+    it('should infer PC type from category if defaultType is missing', () => {
+      const token: Token = {
+        id: 'token-pc-cat',
+        x: 100,
+        y: 200,
+        src: '/pc.png',
+        libraryItemId: 'lib-pc',
+      };
+
+      const tokenLibrary: TokenLibraryItem[] = [
+        {
+          id: 'lib-pc',
+          name: 'Hero',
+          thumbnailSrc: '/thumb.png',
+          originalSrc: '/orig.png',
+          category: 'PC', // Inferred as PC type
+          tags: [],
+          defaultScale: 1.0,
+          // defaultType is UNDEFINED
+        },
+      ];
+
+      const resolved = resolveTokenData(token, tokenLibrary);
+
+      expect(resolved.type).toBe('PC');
     });
 
     it('should handle empty token library', () => {

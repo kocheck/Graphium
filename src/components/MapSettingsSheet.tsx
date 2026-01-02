@@ -49,7 +49,7 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
 
   // Local state for map name
   const [mapName, setMapName] = useState('');
-  
+
   // Local state for pending map data in CREATE mode
   const [pendingMapData, setPendingMapData] = useState<{
     src: string;
@@ -173,7 +173,7 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
       // After addMap() completes, the newly created map becomes the current active map.
       // We then call setMap() to apply the pending map image to this newly active map.
       addMap(trimmedName || 'Untitled Map');
-      
+
       // Apply pending grid settings
       setGridType(pendingGridType);
       setDaylightMode(pendingDaylightMode);
@@ -190,7 +190,7 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
         });
         setIsCalibrating(true);
       }
-      
+
       onClose();
     } else if (mode === 'EDIT' && mapId) {
       // Update existing map name
@@ -220,8 +220,10 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-40"
-        onClick={onClose}
+        className={`fixed inset-0 z-40 transition-colors duration-200 ${
+            isCalibrating ? 'bg-transparent pointer-events-none' : 'bg-black/50'
+        }`}
+        onClick={isCalibrating ? undefined : onClose}
       />
 
       {/* Drawer */}

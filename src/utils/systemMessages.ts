@@ -34,6 +34,7 @@ export type MessageIntent =
   | 'LIBRARY_NAME_REQUIRED'
   | 'LIBRARY_IMAGE_DATA_MISSING'
   | 'LIBRARY_SAVE_FAILED'
+  | 'LIBRARY_UPDATE_FAILED'
   | 'PAUSE_STATE_SYNC_FAILED'
 
   // Confirmation Dialogs
@@ -240,6 +241,14 @@ const messageSpellbook: Record<MessageIntent, string[]> = {
     "❌ Failed to inscribe asset into the Codex. Storage error.",
     "⚠️ Library save interrupted by arcane interference.",
     "🔥 The archival ritual collapsed. Asset not saved.",
+  ],
+
+  LIBRARY_UPDATE_FAILED: [
+    "📝 The scribes failed to update the record. Changes lost.",
+    "❌ Failed to modify the asset metadata. The library resists change.",
+    "⚠️ Update spell fizzled. The asset remains unchanged.",
+    "💀 Critical failure on revision. Metadata update failed.",
+    "🔮 The Codex rejects your amendments. Try again?",
   ],
 
   PAUSE_STATE_SYNC_FAILED: [

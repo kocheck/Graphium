@@ -34,6 +34,8 @@ import { useState, useEffect } from 'react';
 import { RiCloseLine } from '@remixicon/react';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { useGameStore } from '../../store/gameStore';
+import { getStorage } from '../../services/storage';
+import { rollForMessage } from '../../utils/systemMessages';
 
 /**
  * Props for TokenMetadataEditor component
@@ -114,14 +116,28 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
     }
 
     // Update library item
-    updateLibraryToken(libraryItemId, {
+    const updates = {
       name: name.trim(),
       category: category || 'Custom',
       tags: parsedTags,
       defaultScale: parsedScale,
       defaultVisionRadius: parsedVisionRadius,
       defaultType: defaultType || undefined,
-    });
+    };
+
+    // Optimistic update in store
+    updateLibraryToken(libraryItemId, updates);
+
+    // Persist to storage
+    try {
+        getStorage().updateLibraryMetadata(libraryItemId, updates)
+            .catch(err => {
+                console.error('[TokenMetadataEditor] Failed to persist updates:', err);
+                showToast(rollForMessage('LIBRARY_UPDATE_FAILED'), 'error');
+            });
+    } catch (err) {
+        console.error('[TokenMetadataEditor] Storage error:', err);
+    }
 
     showToast(`Updated metadata for "${name.trim()}"`, 'success');
     onClose();
@@ -198,6 +214,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
               onChange={(e) => setCategory(e.target.value)}
               className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
             >
+              <option value="PC">PC (Player Character)</option>
               <option value="Monsters">Monsters</option>
               <option value="NPCs">NPCs</option>
               <option value="Props">Props</option>
