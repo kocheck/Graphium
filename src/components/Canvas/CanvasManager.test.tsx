@@ -46,6 +46,10 @@ import { useGameStore } from '../../store/gameStore';
 import { snapToGrid } from '../../utils/grid';
 
 // Test constants
+// Note: Uses hard-coded fallback colors (#6b7280, #ffffff) which match the production fallback.
+// The actual implementation dynamically reads CSS variables (--app-bg-subtle, --app-text-primary)
+// when available, but falls back to these colors in testing environments where CSS variables
+// may not be available.
 const GENERIC_TOKEN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#6b7280" rx="16"/><circle cx="64" cy="45" r="18" fill="#ffffff"/><path d="M64 70 C 40 70 28 82 28 92 L 28 108 L 100 108 L 100 92 C 100 82 88 70 64 70 Z" fill="#ffffff"/></svg>';
 
 // Helper to generate SVG data URL (mirrors CanvasManager implementation)
