@@ -1152,6 +1152,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
           .action-card {
             padding: 0.875rem; /* Very compact cards */
+            min-height: 44px; /* Maintain minimum touch target height */
+          }
+
+          .quick-action-btn {
+            min-height: 44px; /* Preserve touch target size for quick action buttons */
           }
 
           .banner-icon {
