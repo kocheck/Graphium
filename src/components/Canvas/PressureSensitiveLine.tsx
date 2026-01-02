@@ -108,6 +108,11 @@ const PressureSensitiveLineComponent = ({
     context.beginPath();
     context.moveTo(points[0], points[1]);
 
+    // Explicitly apply styles since we are using custom drawing
+    context.strokeStyle = shape.stroke();
+    context.lineCap = shape.lineCap();
+    context.lineJoin = shape.lineJoin();
+
     // If no valid pressure data, render as regular line
     if (!validatedPressures) {
       for (let i = 2; i < points.length; i += 2) {
