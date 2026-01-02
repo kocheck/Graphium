@@ -385,11 +385,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         .home-screen {
           position: relative;
           width: 100%;
-          min-height: 100vh;
+          height: 100%; /* Changed from min-height: 100vh to constrain within global overflow:hidden */
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
+          justify-content: flex-start; /* Changed from center to allow scrolling from top */
           overflow-x: hidden;
           overflow-y: auto; /* Ensure vertical scrolling works */
           background: var(--app-bg-base);
@@ -471,6 +471,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           width: 100%;
           max-width: 800px;
           padding: 2rem;
+          margin: auto; /* Vertically center content if it fits, scroll if it doesn't */
           display: flex;
           flex-direction: column;
           gap: 2rem;

@@ -412,7 +412,7 @@ const CanvasManager = ({
 
   /**
    * Track stylus usage for palm rejection
-   * 
+   *
    * Updates internal refs when a pen/stylus input is detected.
    * Should be called on pointer down events.
    *
@@ -474,7 +474,16 @@ const CanvasManager = ({
       return true;
     }
 
-    // Use the store's rejection logic (safe cast: pointerType exists, so this is a PointerEvent)
+    // Use the store's rejection logic (safe guard: pointerType exists, so this is a PointerEvent)
+    // EXCEPTION: If using a drawing tool (marker/wall/eraser) and NO stylus is active,
+    // be lenient with palm rejection (assume finger drawing).
+    // This allows thumb/finger drawing on mobile to work even if the touch contact is large.
+    if (tool !== 'select' && !stylusActiveRef.current && evt.pointerType === 'touch') {
+        // Desktop-only mode is already handled above with an early return.
+        // Here we explicitly allow finger touches when drawing without an active stylus.
+        return false;
+    }
+
     const shouldReject = touchSettings.shouldRejectTouch(evt as PointerEvent, stylusActiveRef.current);
 
     // Additional smart delay logic (time-based, not in store)
@@ -1233,6 +1242,12 @@ const CanvasManager = ({
     // Palm rejection - reject unwanted touch input
     if (shouldRejectPointerEvent(e)) return;
 
+    // Enforce preventDefault for drawing tools to prevent scrolling/navigation
+    // This is critical for mobile touch drawing
+    if (tool !== 'select' && e.evt.cancelable) {
+        e.evt.preventDefault();
+    }
+
     if (isSpacePressed) return; // Allow panning
 
     // Ignore multi-touch gestures (zoom/pan)
@@ -1348,6 +1363,11 @@ const CanvasManager = ({
   const handlePointerMove = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
     // Palm rejection - reject unwanted touch input
     if (shouldRejectPointerEvent(e)) return;
+
+    // Enforce preventDefault for drawing tools
+    if (tool !== 'select' && e.evt.cancelable) {
+        e.evt.preventDefault();
+    }
 
     if (isSpacePressed) return;
 
