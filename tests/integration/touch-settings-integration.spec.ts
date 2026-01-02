@@ -9,7 +9,7 @@
  * - UI settings reflecting in canvas behavior
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useTouchSettingsStore } from '../../src/store/touchSettingsStore';
 
 describe('Touch Settings Integration', () => {
