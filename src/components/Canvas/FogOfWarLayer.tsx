@@ -143,11 +143,23 @@ const FogOfWarLayer = ({ tokens, drawings, doors, gridSize, visibleBounds, map }
       .filter((d) => d.tool === 'wall')
       .forEach((wall) => {
         // Convert points array [x1, y1, x2, y2, x3, y3, ...] to segments
+        // CRITICAL FIX: Apply drawing transform (x, y, scale) to points
+        // Otherwise visual wall (transformed) and logical wall (raw points) mismatch
         const points = wall.points;
+        const offsetX = wall.x || 0;
+        const offsetY = wall.y || 0;
+        const scale = wall.scale || 1;
+
         for (let i = 0; i < points.length - 2; i += 2) {
           wallSegments.push({
-            start: { x: points[i], y: points[i + 1] },
-            end: { x: points[i + 2], y: points[i + 3] },
+            start: {
+                x: points[i] * scale + offsetX,
+                y: points[i + 1] * scale + offsetY
+            },
+            end: {
+                x: points[i + 2] * scale + offsetX,
+                y: points[i + 3] * scale + offsetY
+            },
           });
         }
       });

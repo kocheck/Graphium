@@ -73,7 +73,12 @@ export function resolveTokenData(token: Token, tokenLibrary: TokenLibraryItem[])
   const DEFAULT_NAME = 'Token';
 
   const resolvedScale = token.scale ?? libraryItem?.defaultScale ?? DEFAULT_SCALE;
-  const resolvedType = token.type ?? libraryItem?.defaultType;
+
+  // Determine Type: Instance > Library Default > Library Category (PC)
+  let resolvedType = token.type ?? libraryItem?.defaultType;
+  if (!resolvedType && libraryItem?.category === 'PC') {
+      resolvedType = 'PC';
+  }
   const resolvedVisionRadius = token.visionRadius ?? libraryItem?.defaultVisionRadius;
   const resolvedName = token.name ?? libraryItem?.name ?? DEFAULT_NAME;
 

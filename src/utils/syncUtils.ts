@@ -1,4 +1,4 @@
-import { Token, Drawing, Door, MapConfig, Stairs, GridType, ExploredRegion } from '../store/gameStore';
+import { Token, Drawing, Door, MapConfig, Stairs, GridType, ExploredRegion, TokenLibraryItem } from '../store/gameStore';
 import { Measurement } from '../types/measurement';
 
 /**
@@ -84,6 +84,7 @@ export function isEqual(obj1: unknown, obj2: unknown): boolean {
 // Define a type for the game state that gets synced
 export interface SyncableGameState {
   tokens: Token[];
+  tokenLibrary: TokenLibraryItem[];
   drawings: Drawing[];
   doors: Door[];
   stairs: Stairs[];
@@ -98,6 +99,8 @@ export type SyncAction =
   | { type: 'FULL_SYNC'; payload: Partial<SyncableGameState> }
   | { type: 'TOKEN_ADD'; payload: Token }
   | { type: 'TOKEN_UPDATE'; payload: { id: string; changes: Partial<Token> } }
+  | { type: 'TOKEN_REMOVE'; payload: { id: string } }
+  | { type: 'LIBRARY_UPDATE'; payload: TokenLibraryItem[] }
   | { type: 'TOKEN_REMOVE'; payload: { id: string } }
   | { type: 'TOKEN_DRAG_START'; payload: { id: string; x: number; y: number } }
   | { type: 'TOKEN_DRAG_MOVE'; payload: { id: string; x: number; y: number } }
@@ -127,6 +130,7 @@ export function detectChanges(prevState: Partial<SyncableGameState>, currentStat
       type: 'FULL_SYNC',
       payload: {
           tokens: currentState.tokens,
+          tokenLibrary: currentState.tokenLibrary,
           drawings: currentState.drawings,
           doors: currentState.doors || [],
           stairs: currentState.stairs || [],
@@ -138,6 +142,12 @@ export function detectChanges(prevState: Partial<SyncableGameState>, currentStat
       }
     });
     return actions;
+  }
+
+  // --- TOKEN LIBRARY ---
+  // Simple equality check for the whole library for now (optimization: can be granular later if needed)
+  if (!isEqual(prevState.tokenLibrary, currentState.tokenLibrary)) {
+      actions.push({ type: 'LIBRARY_UPDATE', payload: currentState.tokenLibrary || [] });
   }
 
   // --- TOKENS ---

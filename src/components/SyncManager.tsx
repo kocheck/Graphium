@@ -90,10 +90,20 @@ const SyncManager = () => {
 
         switch (action.type) {
           case 'FULL_SYNC':
-            useGameStore.setState(action.payload as Partial<SyncableGameState>);
+            // Separate tokenLibrary from the rest because it lives in 'campaign'
+            const { tokenLibrary: fullLib, ...restState } = action.payload;
+            useGameStore.setState(restState as Partial<SyncableGameState>);
+
+            if (fullLib) {
+                useGameStore.setState(state => ({
+                    campaign: { ...state.campaign, tokenLibrary: fullLib }
+                }));
+            }
+
             // Initialize World View's previous state for bidirectional sync
             worldViewPrevStateRef.current = {
               tokens: action.payload.tokens ? [...action.payload.tokens] : [],
+              tokenLibrary: fullLib ? [...fullLib] : [], // Initialize library for diffing
               drawings: [...(action.payload.drawings || [])],
               doors: [...(action.payload.doors || [])],
               stairs: [...(action.payload.stairs || [])],
@@ -102,6 +112,16 @@ const SyncManager = () => {
               map: action.payload.map ? { ...action.payload.map } : null,
               isDaylightMode: action.payload.isDaylightMode ?? false,
             };
+            break;
+
+          case 'LIBRARY_UPDATE':
+            useGameStore.setState(state => ({
+                campaign: { ...state.campaign, tokenLibrary: action.payload }
+            }));
+            // Update ref
+            if (worldViewPrevStateRef.current) {
+                worldViewPrevStateRef.current.tokenLibrary = [...action.payload];
+            }
             break;
 
           case 'TOKEN_ADD':
@@ -255,16 +275,17 @@ const SyncManager = () => {
               else if (isElectron && ipcRenderer) ipcRenderer.send('SYNC_FROM_WORLD_VIEW', action);
           });
 
-          worldViewPrevStateRef.current = {
-               tokens: [...state.tokens],
-               drawings: [...state.drawings],
-               doors: [...(state.doors || [])],
-               stairs: [...(state.stairs || [])],
-               gridSize: state.gridSize,
-               gridType: state.gridType,
-               map: state.map ? { ...state.map } : null,
-               isDaylightMode: state.isDaylightMode,
-          };
+           worldViewPrevStateRef.current = {
+                tokens: [...state.tokens],
+                tokenLibrary: [...(state.campaign?.tokenLibrary || [])], // This usually won't change from WV, but good for completeness
+                drawings: [...state.drawings],
+                doors: [...(state.doors || [])],
+                stairs: [...(state.stairs || [])],
+                gridSize: state.gridSize,
+                gridType: state.gridType,
+                map: state.map ? { ...state.map } : null,
+                isDaylightMode: state.isDaylightMode,
+           };
       };
 
       const throttledWorldViewSync = throttle(handleWorldViewUpdate, 32);
@@ -290,6 +311,7 @@ const SyncManager = () => {
               type: 'FULL_SYNC',
               payload: {
                   tokens: state.tokens,
+                  tokenLibrary: state.campaign.tokenLibrary, // Pass library
                   drawings: state.drawings,
                   doors: state.doors || [],
                   stairs: state.stairs || [],
@@ -319,7 +341,13 @@ const SyncManager = () => {
       }
 
       const handleStoreUpdate = (state: any) => {
-        const actions = detectChanges(prevStateRef.current, state);
+        // Create a syncable state object including tokenLibrary from campaign
+        const syncableState: Partial<SyncableGameState> = {
+            ...state,
+            tokenLibrary: state.campaign.tokenLibrary
+        };
+
+        const actions = detectChanges(prevStateRef.current, syncableState);
         actions.forEach((action) => {
           if (isWeb && channel) {
             channel.postMessage(action);
@@ -330,6 +358,7 @@ const SyncManager = () => {
 
         prevStateRef.current = {
           tokens: [...state.tokens],
+          tokenLibrary: [...state.campaign.tokenLibrary],
           drawings: [...state.drawings],
           doors: [...(state.doors || [])],
           stairs: [...(state.stairs || [])],

@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, Token } from '../store/gameStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import MobileBottomSheet from './MobileBottomSheet';
+import { RiSaveLine } from '@remixicon/react';
+import { getStorage } from '../services/storage';
 
 interface TokenInspectorProps {
   selectedTokenIds: string[];
@@ -33,7 +35,10 @@ interface TokenInspectorProps {
  */
 const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
   const tokens = useGameStore((s) => s.tokens);
+  const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
+  const updateLibraryToken = useGameStore((s) => s.updateLibraryToken);
+  const showToast = useGameStore((s) => s.showToast);
 
   // Mobile responsiveness
   const isMobile = useIsMobile();
@@ -44,26 +49,74 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
     [tokens, selectedTokenIds]
   );
 
+  // Helper to resolve effective properties (instance > library > default)
+  const getEffectiveValues = (token: Token) => {
+    const libraryItem = token.libraryItemId
+      ? tokenLibrary.find(i => i.id === token.libraryItemId)
+      : undefined;
+
+    // Determine effective type:
+    // 1. Instance override
+    // 2. Library defaultType
+    // 3. Library category == 'PC' -> 'PC'
+    // 4. Default 'NPC'
+    let effectiveType: 'PC' | 'NPC' = 'NPC';
+    if (token.type) {
+        effectiveType = token.type;
+    } else if (libraryItem?.defaultType) {
+        effectiveType = libraryItem.defaultType;
+    } else if (libraryItem?.category === 'PC') {
+        effectiveType = 'PC';
+    }
+
+    // Determine effective name
+    const effectiveName = token.name || libraryItem?.name || '';
+
+    // Determine effective vision radius
+    const effectiveVisionRadius = token.visionRadius ?? libraryItem?.defaultVisionRadius ?? 0;
+
+    return {
+        name: effectiveName,
+        type: effectiveType,
+        visionRadius: effectiveVisionRadius,
+        libraryItem // Return the linked library item if it exists
+    };
+  };
+
   // Local state for editing
   const [name, setName] = useState('');
   const [type, setType] = useState<'PC' | 'NPC'>('NPC');
   const [visionRadius, setVisionRadius] = useState<number>(0);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Update local state when selection changes
+  // Track the previous selection IDs to detect actual selection changes
+  // This prevents the inspector from resetting/closing when we edit properties
+  // (which causes selectedTokens to update, but the IDs remain the same)
+  const selectedIdsString = selectedTokenIds.sort().join(',');
+
+  // Update local state and mode when SELECTION changes
   useEffect(() => {
-    setIsEditing(false); // Reset to summary view on new selection
+    setIsEditing(false); // Reset to summary view on NEW selection
+
     if (selectedTokens.length === 1) {
-      const token = selectedTokens[0];
-      setName(token.name || '');
-      setType(token.type || 'NPC');
-      setVisionRadius(token.visionRadius ?? 0);
+      const { name, type, visionRadius } = getEffectiveValues(selectedTokens[0]);
+      setName(name);
+      setType(type);
+      setVisionRadius(visionRadius);
     } else if (selectedTokens.length > 1) {
       setName('');
       setType('NPC');
       setVisionRadius(0);
     }
-  }, [selectedTokens]); // Only re-run when selected tokens actually change
+  }, [selectedIdsString]); // Depends on IDs, not the token objects themselves
+
+  // Update local input values if the underlying token data changes EXTERNALLY
+  // (e.g. undo/redo) but NOT while we are actively editing?
+  // Actually, we want the inputs to reflect the current state if we are just viewing.
+  // But if we are editing, we probably want to keep our local state until we blur/commit?
+  // For now, let's keep it simple: The inputs drive the store immediately, so they should stay in sync.
+  // If we rely on the store updates to feed back into the inputs, we might get cursor jumps.
+  // But our handle* functions update local state AND store.
 
   if (selectedTokens.length === 0) {
     return null;
@@ -90,6 +143,36 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
     });
   };
 
+  const handleSaveToLibrary = async () => {
+      if (selectedTokens.length !== 1) return;
+      const token = selectedTokens[0];
+      if (!token.libraryItemId) return;
+
+      const libraryItem = tokenLibrary.find(i => i.id === token.libraryItemId);
+      if (!libraryItem) return;
+
+      const updates = {
+          name: name || libraryItem.name, // Use library name if empty
+          category: libraryItem.category,
+          tags: libraryItem.tags,
+          defaultType: type,
+          defaultVisionRadius: visionRadius
+      };
+
+      try {
+          // 1. Update persistent storage (writes to index.json or IndexedDB)
+          await getStorage().updateLibraryMetadata(token.libraryItemId, updates);
+
+          // 2. Update in-memory store (updates UI immediately)
+          updateLibraryToken(token.libraryItemId, updates);
+
+          showToast(`Updated "${libraryItem.name}" in library`, 'success');
+      } catch (error) {
+          console.error('[TokenInspector] Failed to update library:', error);
+          showToast('Failed to save to library', 'error');
+      }
+  };
+
   // Inspector content (same for mobile and desktop)
   const inspectorContent = (
     <div className={isMobile ? 'w-full' : 'p-4'}>
@@ -99,7 +182,7 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
           style={{ color: 'var(--app-text-primary)' }}
         >
           {selectedTokens.length === 1
-            ? (selectedTokens[0].name || 'Unnamed Token')
+            ? (getEffectiveValues(selectedTokens[0]).name || 'Unnamed Token')
             : `${selectedTokens.length} Tokens Selected`}
         </h3>
         {isEditing && (
@@ -117,12 +200,15 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
       {!isEditing ? (
         /* Summary View */
         <div>
-            {selectedTokens.length === 1 && (
-                 <div className="text-sm mb-4" style={{ color: 'var(--app-text-secondary)' }}>
-                    <p>Type: {selectedTokens[0].type || 'NPC'}</p>
-                    <p>Vision: {selectedTokens[0].visionRadius || 0} ft</p>
-                 </div>
-            )}
+            {selectedTokens.length === 1 && (() => {
+                 const { type, visionRadius } = getEffectiveValues(selectedTokens[0]);
+                 return (
+                    <div className="text-sm mb-4" style={{ color: 'var(--app-text-secondary)' }}>
+                        <p>Type: {type}</p>
+                        <p>Vision: {visionRadius} ft</p>
+                    </div>
+                 );
+            })()}
             <button
                 onClick={() => setIsEditing(true)}
                 className="w-full py-3 rounded font-medium transition-colors min-h-[44px]"
@@ -251,6 +337,35 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
                 }}
                 />
             </div>
+
+            {/* Save to Library Button */}
+            {selectedTokens.length === 1 && selectedTokens[0].libraryItemId && (
+                <div className="pt-2">
+                    <button
+                        onClick={handleSaveToLibrary}
+                        className="w-full py-2 px-4 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors border"
+                        style={{
+                            borderColor: 'var(--app-border-default)',
+                            color: 'var(--app-text-secondary)',
+                            backgroundColor: 'transparent'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                            e.currentTarget.style.color = 'var(--app-text-primary)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'var(--app-text-secondary)';
+                        }}
+                    >
+                        <RiSaveLine className="w-4 h-4" />
+                        Save Defaults to Library
+                    </button>
+                    <p className="text-xs mt-1 text-center" style={{ color: 'var(--app-text-muted)' }}>
+                        Updates the library item and all other tokens that use its defaults.
+                    </p>
+                </div>
+            )}
 
             {/* Token Info Footer */}
             {selectedTokens.length === 1 && (
