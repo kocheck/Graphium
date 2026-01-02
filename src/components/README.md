@@ -717,12 +717,12 @@ interface LogoIconProps {
 - Cleanup via clearInterval in return function
 
 ### HomeScreen.tsx
-**Landing page / splash screen for new users**
+**Landing page / splash screen - Redesigned for high performance**
 
 **Responsibilities:**
 - First screen users see before entering editor
 - Display branding, recent campaigns, quick actions
-- Interactive playground demonstrating app capabilities
+- Lightweight launcher with CSS-only visual effects
 - Mac download banner (dismissible with localStorage)
 
 **Props:**
@@ -739,248 +739,57 @@ interface HomeScreenProps {
 ```
 
 **Key features:**
-- **Animated background** with paper texture and grid
-- **Interactive playground** with 5 draggable tokens (physics + trails)
-- **Animated logo** with dice roll on page load
-- **Easter egg**: 5 rapid logo clicks → all tokens bounce
-- **Recent campaigns** list with load functionality
-- **Quick actions**: New Campaign, Load Campaign, Take a Tour
+- **Pure CSS animated background** with floating geometric shapes
+- **Modern Fantasy UI aesthetic** - clean lines, high contrast
+- **Quirky micro-interactions**: Dice roll animation, shimmer effects, floating logo
+- **Hero section** with random subtitle from 23 inclusive TTRPG role titles
+- **Recent campaigns** list with hover effects
+- **Quick actions**: New Campaign, Load Campaign, Learn Basics
 - **Footer** with GitHub, About, Report Bug, Help links
-- **Smooth fade-in** animation (0.6s ease-out)
-- **Keyboard shortcuts**: `?` for About modal
+- **Smooth animations**: Fade-in, slide-in, logo float
+- **Keyboard shortcuts**: `?` for About modal, `Escape` to close
+- **Responsive design** for mobile/tablet
 
 **State management:**
 ```typescript
 const [recentCampaigns, setRecentCampaigns] = useState<RecentCampaign[]>([]);
+const [isElectron, setIsElectron] = useState(false);
+const [isMac, setIsMac] = useState(false);
 const [isAboutOpen, setIsAboutOpen] = useState(false);
-const [logoClickCount, setLogoClickCount] = useState(0);
-const [triggerEasterEgg, setTriggerEasterEgg] = useState(0);
-const [tokenPositions, setTokenPositions] = useState<Record<string, { x, y, size }>({});
+const [aboutInitialTab, setAboutInitialTab] = useState<AboutModalTab>('about');
+const [hideMacBanner, setHideMacBanner] = useState(() =>
+  localStorage.getItem('hideMacBanner') === 'true'
+);
+const [subtitle] = useState(() => {
+  // Random subtitle from 23 TTRPG role titles
+  const titles = ["Storytellers", "World Builders", ...];
+  return titles[Math.floor(Math.random() * titles.length)];
+});
 ```
-
-**Token collision system:**
-- Tracks all token positions in state
-- Updates on drag via handleTokenPositionChange callback
-- Passes allTokensArray to each PlaygroundToken
-- Tokens detect collisions and push each other apart
 
 **Performance optimizations:**
-- Memoized token positions (useMemo)
-- Position tracking only updated on drag end
-- Trail cleared when not dragging
+- ❌ Removed Konva canvas rendering (used in previous version)
+- ❌ Removed 6.9MB of token PNG assets
+- ❌ Removed interactive token playground with collision physics
+- ✅ Pure CSS animations (no JavaScript overhead)
+- ✅ Lightweight bundle size
+- ✅ Instant load time
+- ✅ No complex state management or memoization needed
 
-### HomeScreen/PlaygroundToken.tsx
-**Enhanced interactive token for landing page demonstration**
+**Visual effects (CSS-only):**
+1. **Floating Geometric Shapes** - 4 animated blobs with organic motion
+2. **Radial Gradients** - Subtle color washes (purple, blue, pink)
+3. **Grid Overlay** - Subtle 50px grid pattern
+4. **Dice Roll Animation** - Cards spin 360° on click
+5. **Shimmer Effect** - Light sweep across cards on hover
+6. **Logo Float** - Gentle 10px vertical oscillation
+7. **Slide-in Banner** - Mac download banner animates from left
+8. **Decorative Icons** - Sword and map pin slide in on card hover
 
-**Responsibilities:**
-- Draggable token with advanced visual effects
-- Drag trail effect (motion blur)
-- Token collision physics
-- Idle breathing animation
-- Easter egg celebration bounce
-- Flavor text tooltips
-
-**Props:**
-```typescript
-interface PlaygroundTokenProps {
-  id: string;
-  x: number;
-  y: number;
-  color: string;
-  label: string;
-  size?: number;                       // Default: 40
-  flavorText?: string;
-  easterEggTrigger?: number;           // Incremented to trigger bounce
-  showHint?: boolean;                  // Pulsing glow for discoverability
-  onPositionChange?: (id: string, x: number, y: number) => void;
-  allTokens?: Array<{ id, x, y, size }>;
-}
-```
-
-**Key features:**
-1. **Drag Trail Effect**
-   - Konva Line with last 10 positions (20 values)
-   - Tension curve for smooth appearance
-   - Opacity 0.3 with "lighter" blend mode
-   - Automatically cleared when drag ends
-
-2. **Token Collision Physics**
-   - Circle-circle distance detection
-   - Pushes tokens apart when overlapping
-   - Calculates push vector using angle
-   - Only active during drag
-
-3. **Idle Breathing Animation**
-   - 3px vertical amplitude
-   - 2000ms frequency
-   - requestAnimationFrame for 60fps
-   - Paused during drag
-
-4. **Easter Egg Bounce**
-   - Triggered by easterEggTrigger prop change
-   - Konva.Tween with BounceEaseOut easing
-   - 40px jump height
-   - Chained tweens (up, then down with bounce)
-
-5. **Visual Feedback**
-   - Hover: 1.05x scale, 10px shadow blur
-   - Dragging: 1.15x scale, 20px shadow blur, 0.5 opacity
-   - Hint mode: Pulsing outer glow (animated with Math.sin)
-
-**Usage:**
-```typescript
-<PlaygroundToken
-  id="demo-hero"
-  x={400}
-  y={300}
-  color="#3b82f6"
-  label="Hero"
-  size={40}
-  flavorText="Definitely has protagonist energy."
-  easterEggTrigger={triggerCount}
-  showHint={true}
-  onPositionChange={handleTokenMove}
-  allTokens={allTokensArray}
-/>
-```
-
-**Performance considerations:**
-- Trail limited to 10 positions max (prevents memory leak)
-- Collision only checked during drag
-- Breathing animation uses single RAF loop
-- Visual props memoized based on state
-
-**Why landing page only:**
-- Collision physics would interfere with token stacking in main VTT
-- Trail effect is visual flair for demo, not needed in production
-- Main app prioritizes performance for 20+ tokens
-- Demonstrates tech capabilities without impacting gameplay
-
-### HomeScreen/BackgroundCanvas.tsx
-**Reusable canvas background for landing page**
-
-**Responsibilities:**
-- Render Konva Stage with background layers
-- Reuse PaperNoiseOverlay and GridOverlay from main app
-- Provide container for playground tokens
-
-**Props:**
-```typescript
-interface BackgroundCanvasProps {
-  width: number;
-  height: number;
-  children?: React.ReactNode;
-}
-```
-
-**Usage:**
-```typescript
-<BackgroundCanvas width={window.innerWidth} height={window.innerHeight}>
-  {tokens.map(token => <PlaygroundToken key={token.id} {...token} />)}
-</BackgroundCanvas>
-```
-
-**Layer structure:**
-```
-Stage
-  ├── Layer (background)
-  │   ├── Rect (base background color)
-  │   ├── PaperNoiseOverlay (texture)
-  │   └── GridOverlay (dots)
-  ├── Layer (drawings - PlaygroundDrawings)
-  └── Layer (tokens - children)
-```
-
-**Key features:**
-- Responsive to viewport size
-- Non-draggable (unlike main canvas)
-- Reuses existing Canvas components (DRY principle)
-- Clean separation of background, drawings, and tokens
-
-### HomeScreen/VignetteOverlay.tsx
-**CSS gradient overlay for "fade to infinity" effect**
-
-**Responsibilities:**
-- Render radial gradient overlay
-- Creates edge darkening effect
-- Pure CSS implementation
-
-**Props:** None (zero-config component)
-
-**Usage:**
-```typescript
-<VignetteOverlay />
-```
-
-**Implementation:**
-```typescript
-<div style={{
-  position: 'absolute',
-  inset: 0,
-  pointerEvents: 'none',
-  background: `radial-gradient(
-    ellipse at center,
-    transparent 0%,
-    transparent 40%,
-    rgba(0, 0, 0, 0.3) 70%,
-    rgba(0, 0, 0, 0.6) 100%
-  )`,
-}} />
-```
-
-**Key features:**
-- No JavaScript overhead (pure CSS)
-- Pointer events disabled (doesn't interfere with interaction)
-- Absolute positioning (overlays entire viewport)
-- Subtle gradient for professional look
-
-### HomeScreen/PlaygroundDrawings.tsx
-**Static tactical markers for landing page demo**
-
-**Responsibilities:**
-- Render example drawing elements (arrows, circles, lines)
-- Demonstrate marker/drawing tool capabilities
-- Non-interactive (static display)
-
-**Props:** None (self-contained)
-
-**Usage:**
-```typescript
-// Rendered inside BackgroundCanvas
-<PlaygroundDrawings />
-```
-
-**Elements rendered:**
-1. **Tactical movement path** - Curved Line with tension
-2. **Danger zone** - Red Circle with dashed stroke
-3. **Attack arrow** - Green Arrow with fill
-4. **Strategy line** - Purple dashed Line
-5. **Area marker** - Orange Circle
-6. **Text annotation** - Label Text (future feature hint)
-7. **Flanking indicator** - Blue Line
-
-**Technical details:**
-- Uses Konva primitives (Line, Circle, Arrow, Text)
-- Positioned relative to viewport center
-- Themed colors matching app palette
-- All elements set to `listening={false}` for performance
-
-**Implementation:**
-```typescript
-export function PlaygroundDrawings() {
-  const centerX = window.innerWidth / 2;
-  const centerY = window.innerHeight / 2;
-
-  return (
-    <>
-      <Line points={[...]} stroke="#3b82f6" strokeWidth={4} tension={0.5} />
-      <Circle x={...} y={...} radius={60} stroke="#ef4444" dash={[5, 5]} />
-      <Arrow points={[...]} stroke="#10b981" fill="#10b981" />
-      {/* ... more elements */}
-    </>
-  );
-}
-```
+**Theme compatibility:**
+- Uses existing CSS custom properties (--app-bg-*, --app-text-*, --app-accent-*)
+- Dark mode support with blend mode adjustments (multiply → screen)
+- Responsive breakpoints: 768px (tablet), 480px (mobile)
 
 ## Error Boundary Coverage
 
@@ -1000,11 +809,7 @@ ReactDOM.createRoot(rootElement).render(
 **New components that are automatically protected:**
 - ✅ AboutModal (low risk - simple modal with text)
 - ✅ LogoIcon (low risk - SVG with animation state)
-- ✅ HomeScreen (medium risk - complex with many features)
-- ✅ PlaygroundToken (medium risk - physics and animations)
-- ✅ BackgroundCanvas (low risk - reuses existing Canvas components)
-- ✅ VignetteOverlay (zero risk - pure CSS)
-- ✅ PlaygroundDrawings (low risk - static Konva shapes)
+- ✅ HomeScreen (low risk - redesigned with CSS-only animations)
 
 **Components with their own error boundaries:**
 - TokenErrorBoundary (wraps individual tokens in main canvas)
