@@ -507,7 +507,6 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         .logo {
           width: 100%;
           height: auto;
-          max-width: 420px;
           filter: drop-shadow(0 4px 20px rgba(139, 92, 246, 0.3));
           animation: logoFloat 3s ease-in-out infinite;
         }
