@@ -32,6 +32,9 @@ test.describe('Accessibility Audit', () => {
       ? 'http://localhost:4173' // Vite preview server
       : 'http://localhost:5173' // Vite dev server
 
+    // Disable animations for stable accessibility testing
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+
     // Inject mock Electron APIs before the page loads
     await page.addInitScript(injectMockElectronAPIs)
 
@@ -52,6 +55,9 @@ test.describe('Accessibility Audit', () => {
     await page.waitForFunction(() => {
       return document.documentElement.getAttribute('data-theme') === 'light'
     })
+
+    // Wait for all CSS transitions to complete (theme change triggers 200ms transitions)
+    await page.waitForTimeout(500)
 
     // Run axe accessibility scan
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -83,6 +89,9 @@ test.describe('Accessibility Audit', () => {
     await page.waitForFunction(() => {
       return document.documentElement.getAttribute('data-theme') === 'dark'
     })
+
+    // Wait for all CSS transitions to complete
+    await page.waitForTimeout(500)
 
     // Run axe accessibility scan
     const accessibilityScanResults = await new AxeBuilder({ page })

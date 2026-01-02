@@ -138,6 +138,9 @@
    ============================================ */
 :root,
 [data-theme="light"] {
+  /* Color scheme hint for browser UI */
+  color-scheme: light;
+
   /* ===== Backgrounds ===== */
   --app-bg-base: var(--slate-1);           /* Main app background (lightest) */
   --app-bg-subtle: var(--slate-2);         /* Subtle background variation */
@@ -284,4 +287,12 @@ body {
 /* Disable transitions on page load to prevent animation on initial render */
 .theme-loading * {
   transition: none !important;
+}
+
+/* Disable transitions in testing/CI to ensure stable accessibility checks */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

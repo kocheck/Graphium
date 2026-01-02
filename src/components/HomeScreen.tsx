@@ -646,6 +646,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           cursor: pointer;
           overflow: hidden;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          color: var(--app-text-primary) !important; /* Override button default color */
         }
 
         .action-card:hover {
@@ -710,13 +711,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         .card-title {
           font-size: 1.25rem;
           font-weight: 700;
-          color: var(--app-text-primary);
+          color: var(--app-text-primary) !important;
           margin-bottom: 0.5rem;
         }
 
         .card-description {
           font-size: 0.875rem;
-          color: var(--app-text-primary);
+          color: var(--app-text-primary) !important;
           line-height: 1.5;
         }
 
@@ -751,7 +752,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         .quick-action-btn {
           background: var(--app-bg-hover);
           border: 1px solid var(--app-border-subtle);
-          color: var(--app-text-primary);
+          color: var(--app-text-primary) !important;
           padding: 0.875rem 1.5rem;
           border-radius: 12px;
           display: flex;
