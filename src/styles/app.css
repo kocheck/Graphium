@@ -156,4 +156,10 @@
 /* Canvas */
 .canvas-container {
   background: var(--app-bg-base);
+  touch-action: none; /* Prevent scrolling/navigation during touch drawing */
+}
+
+/* Konva canvas wrapper - additional touch handling protection */
+.konvajs-content {
+  touch-action: none; /* Prevent scrolling/navigation during touch drawing */
 }
