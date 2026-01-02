@@ -18,12 +18,67 @@ import { bypassLandingPageAndInjectState, clearAllTestData } from '../helpers/by
 import { createNewCampaign } from '../helpers/campaignHelpers';
 
 /**
- * Helper function to simulate a touch event
- * Playwright's touchscreen API requires a mobile viewport/device
+ * Type definitions for game store window interface
+ */
+interface DrawingData {
+  id: string;
+  tool: string;
+  points: number[];
+  pressures?: number[];
+  color?: string;
+  size?: number;
+  [key: string]: unknown;
+}
+
+interface TokenData {
+  id: string;
+  x: number;
+  y: number;
+  src: string;
+  scale: number;
+  type: string;
+  [key: string]: unknown;
+}
+
+interface MapData {
+  tokens?: TokenData[];
+  drawings?: DrawingData[];
+  [key: string]: unknown;
+}
+
+interface CampaignData {
+  activeMapId: string;
+  maps: Record<string, MapData>;
+  [key: string]: unknown;
+}
+
+interface GameStoreState {
+  campaign: CampaignData;
+  drawings?: DrawingData[];
+  tokens?: TokenData[];
+  tool?: string;
+  selectedIds?: string[];
+  [key: string]: unknown;
+}
+
+interface GameStoreWindow extends Window {
+  __GAME_STORE__?: {
+    getState: () => GameStoreState;
+    setState?: (partial: Partial<GameStoreState>) => void;
+  };
+}
+
+/**
+ * Helper function to simulate a touch interaction using mouse events.
+ *
+ * We intentionally avoid Playwright's touchscreen API (`page.touchscreen`)
+ * because it requires a mobile viewport/device configuration. Instead, we
+ * drive Pointer Events via mouse input, which works consistently across
+ * desktop and touch-emulation contexts.
  */
 async function touchTap(page: Page, x: number, y: number) {
-  // Playwright's touch API is device-specific, so we use pointer events
-  // which work across all contexts (desktop + touch emulation)
+  // Simulate a single-finger tap by issuing a mouse click, which still
+  // triggers the Pointer Events paths used for touch in the app.
   await page.mouse.click(x, y);
 }
 
@@ -66,17 +121,6 @@ test.describe('Touch Drawing Tools', () => {
 
     // Verify drawing was created
     const drawingData = await page.evaluate(() => {
-      interface DrawingData {
-        tool?: string;
-        points?: unknown[];
-      }
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState?: () => {
-            drawings?: DrawingData[];
-          };
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings[0];
@@ -114,16 +158,6 @@ test.describe('Touch Drawing Tools', () => {
 
     // Verify eraser stroke was created
     const drawingData = await page.evaluate(() => {
-      interface DrawingData {
-        tool?: string;
-      }
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState?: () => {
-            drawings?: DrawingData[];
-          };
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings[0];
@@ -373,16 +407,6 @@ test.describe('Touch Performance', () => {
 
     // Verify drawing was created with most points
     const drawingData = await page.evaluate(() => {
-      interface DrawingData {
-        points?: unknown[];
-      }
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState?: () => {
-            drawings?: DrawingData[];
-          };
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings[0];
@@ -432,18 +456,6 @@ test.describe('Pressure-Sensitive Drawing', () => {
 
     // Verify pressure data was captured
     const drawingData = await page.evaluate(() => {
-      interface DrawingData {
-        points?: unknown[];
-        pressures?: number[];
-        size?: number;
-      }
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState?: () => {
-            drawings?: DrawingData[];
-          };
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const drawings = store?.getState?.()?.drawings || [];
       return drawings[0];
@@ -530,13 +542,6 @@ test.describe('Two-Finger Pan Gesture', () => {
 
     // Verify the drawing exists (baseline)
     const drawingsCount = await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState?: () => {
-            drawings?: unknown[];
-          };
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       return store?.getState?.()?.drawings?.length || 0;
     });

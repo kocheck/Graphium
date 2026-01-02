@@ -17,101 +17,54 @@
  * - BroadcastChannel: Cross-tab communication (web fallback)
  */
 
-import { test, expect, BrowserContext, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { bypassLandingPageAndInjectState, clearAllTestData } from '../helpers/bypassLandingPage';
 import { createNewCampaign } from '../helpers/campaignHelpers';
 
 /**
- * Create a mock IPC renderer for testing
+ * Type definitions for game store window interface
  */
-function createMockIPC() {
-  const messages: Array<{ channel: string; data: any }> = [];
-
-  return {
-    send: (channel: string, data: any) => {
-      messages.push({ channel, data });
-    },
-    on: () => {},
-    off: () => {},
-    invoke: () => Promise.resolve({}),
-    getMessages: () => messages,
-    clear: () => { messages.length = 0; },
-  };
+interface TokenState {
+  id: string;
+  x: number;
+  y: number;
+  src: string;
+  scale: number;
+  type: string;
 }
 
-/**
- * Helper to create World View context with IPC sync listener
- */
-async function createWorldViewContext(
-  context: BrowserContext
-): Promise<{ page: Page; close: () => Promise<void>; getSyncMessages: () => Promise<any[]> }> {
-  const page = await context.newPage();
+interface MapState {
+  tokens?: TokenState[];
+  drawings?: DrawingState[];
+  [key: string]: unknown;
+}
 
-  // Set up sync message capture
-  const syncMessages: any[] = [];
+interface DrawingState {
+  id: string;
+  tool: string;
+  points: number[];
+  pressures?: number[];
+  [key: string]: unknown;
+}
 
-  // Mock Electron APIs with sync message tracking
-  await page.addInitScript(() => {
-    const syncMessages: any[] = [];
+interface CampaignState {
+  activeMapId: string;
+  maps: Record<string, MapState>;
+  [key: string]: unknown;
+}
 
-    // @ts-expect-error - Mocking IPC for tests
-    window.ipcRenderer = {
-      on: (channel: string, callback: (...args: any[]) => void) => {
-        if (channel === 'SYNC_WORLD_STATE') {
-          // @ts-expect-error - Test-specific property
-          window.__syncCallback = callback;
-        }
-      },
-      off: () => {},
-      send: (channel: string, data: any) => {
-        if (channel === 'SYNC_WORLD_STATE') {
-          syncMessages.push({ channel, data, timestamp: Date.now() });
-          // Trigger callback to simulate receiving the message
-          // @ts-expect-error - Test-specific property
-          if (window.__syncCallback) {
-            // @ts-expect-error - Test-specific property
-            window.__syncCallback(null, data);
-          }
-        }
-      },
-      invoke: () => Promise.resolve({}),
-    };
+interface GameStoreState {
+  campaign: CampaignState;
+  drawings?: DrawingState[];
+  [key: string]: unknown;
+}
 
-    // @ts-expect-error - Mocking theme API
-    window.themeAPI = {
-      getThemeState: () => Promise.resolve({ mode: 'light', effectiveTheme: 'light' }),
-      setThemeMode: () => Promise.resolve(),
-      onThemeChanged: () => () => {},
-    };
-
-    // @ts-expect-error - Mocking error reporting
-    window.errorReporting = {
-      getUsername: () => Promise.resolve('test-user'),
-      openExternal: () => Promise.resolve(true),
-      saveToFile: () => Promise.resolve({ success: true }),
-    };
-
-    // @ts-expect-error - Expose sync messages for tests
-    window.__getSyncMessages = () => syncMessages;
-  });
-
-  // Navigate to World View
-  await page.goto('/?type=world');
-  await page.waitForSelector('#root:visible', { timeout: 10000 });
-  await page.waitForLoadState('networkidle');
-
-  return {
-    page,
-    close: async () => {
-      await page.close();
-    },
-    getSyncMessages: async () => {
-      return await page.evaluate(() => {
-        // @ts-expect-error - Test-specific property
-        return window.__getSyncMessages?.() || [];
-      });
-    },
+interface GameStoreWindow extends Window {
+  __GAME_STORE__?: {
+    getState: () => GameStoreState;
+    setState: (partial: Partial<GameStoreState>) => void;
   };
+  __ipcMessages?: Array<{ channel: string; data: unknown }>;
 }
 
 /**
@@ -152,12 +105,6 @@ test.describe('Token Drag Synchronization', () => {
 
     // Add a token
     await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-          setState: (partial: any) => void;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       if (state && store) {
@@ -188,8 +135,8 @@ test.describe('Token Drag Synchronization', () => {
     await page.waitForTimeout(500);
 
     // Track IPC messages
-    const ipcMessages: any[] = [];
-    await page.exposeFunction('trackIPC', (channel: string, data: any) => {
+    const ipcMessages: Array<{ channel: string; data: unknown }> = [];
+    await page.exposeFunction('trackIPC', (channel: string, data: unknown) => {
       ipcMessages.push({ channel, data });
     });
 
@@ -204,21 +151,8 @@ test.describe('Token Drag Synchronization', () => {
 
     await dragToken(page, box.x + 200, box.y + 200, box.x + 300, box.y + 250);
 
-    // Verify IPC messages were sent
-    const syncMessages = await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __ipcMessages?: any[];
-      }
-      return (window as unknown as GameStoreWindow).__ipcMessages || [];
-    });
-
-    // For now, just verify the token moved (IPC tracking requires deeper integration)
+    // Verify the token moved (IPC tracking requires deeper integration)
     const tokenState = await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       const tokens = state?.campaign?.maps?.[state?.campaign?.activeMapId]?.tokens || [];
@@ -271,12 +205,6 @@ test.describe('Multi-Token Drag Synchronization', () => {
 
     // Add multiple tokens
     await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-          setState: (partial: any) => void;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       if (state && store) {
@@ -335,11 +263,6 @@ test.describe('Multi-Token Drag Synchronization', () => {
 
     // Verify both tokens moved
     const tokens = await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       return state?.campaign?.maps?.[state?.campaign?.activeMapId]?.tokens || [];
@@ -383,11 +306,6 @@ test.describe('Drawing Synchronization', () => {
 
     // Verify drawing was created
     const drawings = await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       return state?.campaign?.maps?.[state?.campaign?.activeMapId]?.drawings || [];
@@ -419,12 +337,6 @@ test.describe('IPC Sync Throttling', () => {
 
     // Add a token
     await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-          setState: (partial: any) => void;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       if (state && store) {
@@ -486,11 +398,6 @@ test.describe('IPC Sync Throttling', () => {
 
     // Token should have moved to final position
     const finalToken = await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       const tokens = state?.campaign?.maps?.[state?.campaign?.activeMapId]?.tokens || [];
@@ -516,12 +423,6 @@ test.describe('State Consistency Verification', () => {
     // Perform multiple operations
     // 1. Add token
     await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-          setState: (partial: any) => void;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       if (state && store) {
@@ -573,11 +474,6 @@ test.describe('State Consistency Verification', () => {
 
     // Verify final state consistency
     const finalState = await page.evaluate(() => {
-      interface GameStoreWindow extends Window {
-        __GAME_STORE__?: {
-          getState: () => any;
-        };
-      }
       const store = (window as unknown as GameStoreWindow).__GAME_STORE__;
       const state = store?.getState();
       const activeMap = state?.campaign?.maps?.[state?.campaign?.activeMapId];

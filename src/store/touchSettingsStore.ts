@@ -93,7 +93,13 @@ interface TouchSettingsState extends TouchSettings {
   /** Get pressure multiplier range based on current curve */
   getPressureRange: () => { min: number; max: number };
 
-  /** Check if palm rejection should reject this pointer event */
+  /**
+   * Check if palm rejection logic should reject this pointer event.
+   *
+   * Accepts any PointerEvent (mouse, pen, or touch), but is primarily used
+   * to filter out accidental palm or touch input based on the current
+   * palmRejectionMode and related settings.
+   */
   shouldRejectTouch: (event: PointerEvent, stylusActive: boolean) => boolean;
 }
 

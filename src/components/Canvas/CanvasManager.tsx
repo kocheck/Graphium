@@ -2002,7 +2002,7 @@ const CanvasManager = ({
             {drawings.map((line) => {
                 // Use pressure-sensitive rendering if pressure data is available
                 const LineComponent = line.pressures && line.pressures.length > 0 ? PressureSensitiveLine : Line;
-                const lineProps = {
+                const baseProps = {
                     key: line.id,
                     id: line.id,
                     name: 'drawing' as const,
@@ -2017,11 +2017,14 @@ const CanvasManager = ({
                     pressures: line.pressures, // Only used by PressureSensitiveLine
                     tension: !line.pressures ? 0.5 : undefined, // Only Line component uses tension
                     lineCap: 'round' as const,
-                    // @ts-ignore - dash prop incompatibility between Line and Shape
-                    dash: line.tool === 'wall' ? [10, 5] : undefined,
                     opacity: line.tool === 'wall' && isWorldView ? 0 : 1,
                     globalCompositeOperation: line.tool === 'eraser' ? 'destination-out' : 'source-over',
                 };
+                
+                // Add dash property only for Line component (not supported by Shape in PressureSensitiveLine)
+                const lineProps = line.pressures 
+                    ? baseProps 
+                    : { ...baseProps, dash: line.tool === 'wall' ? [10, 5] : undefined };
 
                 return (
                     <LineComponent
