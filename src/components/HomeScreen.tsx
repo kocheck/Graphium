@@ -961,10 +961,15 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         /* Mobile: Up to 768px */
         @media (max-width: 768px) {
           .home-screen {
-            min-height: 100vh;
-            min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            min-height: 100vh; /* Fallback for browsers without dvh support */
             justify-content: flex-start; /* Allow natural scrolling instead of centering */
             padding: 2rem 0; /* Add vertical padding for spacing */
+          }
+
+          @supports (height: 100dvh) {
+            .home-screen {
+              min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            }
           }
 
           .content-container {
