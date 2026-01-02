@@ -852,7 +852,7 @@ const CanvasManager = ({
     // Use WORLD coordinates for snapping.
     const { x, y } = snapToGrid(worldX, worldY, gridSize);
 
-    // Check for JSON (Library Item)
+    // Check for JSON (Library Item or Generic Token)
     const jsonData = e.dataTransfer.getData('application/json');
     if (jsonData) {
         try {
@@ -867,6 +867,28 @@ const CanvasManager = ({
                     src: data.src,
                     libraryItemId: data.libraryItemId, // Reference to prototype
                     // scale, type, visionRadius, name are NOT set - they inherit from library
+                });
+                return;
+            } else if (data.type === 'GENERIC_TOKEN') {
+                // Create a generic placeholder token with an SVG data URL.
+                // Colors are derived from CSS variables so the token matches the current theme.
+                const rootElement = document.documentElement;
+                const computedStyles = getComputedStyle(rootElement);
+                const bgColor = computedStyles.getPropertyValue('--app-bg-subtle')?.trim() || '#6b7280';
+                const fgColor = computedStyles.getPropertyValue('--app-text-primary')?.trim() || '#ffffff';
+
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="${bgColor}" rx="16"/><circle cx="64" cy="45" r="18" fill="${fgColor}"/><path d="M64 70 C 40 70 28 82 28 92 L 28 108 L 100 108 L 100 92 C 100 82 88 70 64 70 Z" fill="${fgColor}"/></svg>`;
+                const genericTokenSvg = `data:image/svg+xml;base64,${btoa(svg)}`;
+
+                addToken({
+                    id: crypto.randomUUID(),
+                    x,
+                    y,
+                    src: genericTokenSvg,
+                    name: 'Generic Token',
+                    type: 'NPC',
+                    scale: 1,
+                    // No libraryItemId - standalone token
                 });
                 return;
             }

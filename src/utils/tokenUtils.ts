@@ -59,3 +59,37 @@ export function getRecentTokens(
     }
     return recent;
 }
+
+/**
+ * Gets player/PC tokens from the library (tokens marked with type 'PC')
+ * sorted by date added (most recent first).
+ *
+ * @param library - The token library
+ * @param limit - Max number of player tokens to return (default 5)
+ * @returns Array of player tokens
+ */
+export function getPlayerTokens(
+    library: LibraryItem[],
+    limit: number = 5
+): LibraryItem[] {
+    return library
+        .filter(item => item.defaultType === 'PC')
+        .sort((a, b) => b.dateAdded - a.dateAdded) // Most recent first
+        .slice(0, limit);
+}
+
+/**
+ * Deduplicates player tokens by removing any that appear in the recent tokens list.
+ * This prevents the same token from showing up twice in the Quick Access sidebar.
+ *
+ * @param playerTokens - Array of player tokens from library
+ * @param recentTokens - Array of recently used tokens
+ * @returns Deduplicated player tokens
+ */
+export function deduplicatePlayerTokens(
+    playerTokens: LibraryItem[],
+    recentTokens: LibraryItem[]
+): LibraryItem[] {
+    const recentSrcs = new Set(recentTokens.map(token => token.src));
+    return playerTokens.filter(token => !recentSrcs.has(token.src));
+}

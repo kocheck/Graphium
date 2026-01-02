@@ -105,5 +105,20 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   }
 }
 
+// Mock DragEvent for jsdom (not natively supported)
+if (typeof DragEvent === 'undefined') {
+  class DragEventPolyfill extends Event {
+    dataTransfer: DataTransfer | null;
+
+    constructor(type: string, eventInitDict?: EventInit & { dataTransfer?: DataTransfer }) {
+      super(type, eventInitDict);
+      this.dataTransfer = eventInitDict?.dataTransfer || null;
+    }
+  }
+
+  // @ts-expect-error - Polyfilling DragEvent for jsdom
+  global.DragEvent = DragEventPolyfill;
+}
+
 // Export mocks for use in tests
 export { mockErrorReporting, mockIpcRenderer }

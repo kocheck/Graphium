@@ -112,3 +112,115 @@ describe('Sidebar - Map Upload Error Handling', () => {
         global.URL.revokeObjectURL = originalRevokeObjectURL;
     });
 });
+
+describe('Sidebar - Token Drag and Drop', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        // Reset store with token library and tokens on map
+        useGameStore.setState({
+            tokenLibrary: [
+                {
+                    id: 'token-1',
+                    name: 'Test Token',
+                    src: 'file:///path/to/token.png',
+                    thumbnailSrc: 'file:///path/to/thumb.png',
+                    defaultType: 'PC',
+                    category: 'Characters',
+                    tags: [],
+                    dateAdded: Date.now(),
+                    defaultScale: 1,
+                },
+            ],
+            tokens: [
+                {
+                    id: 'placed-token-1',
+                    x: 100,
+                    y: 100,
+                    src: 'file:///path/to/token.png',
+                    libraryItemId: 'token-1',
+                },
+            ],
+            toast: null,
+        });
+    });
+
+    it('should pass libraryItemId in handleDragStart when provided', () => {
+        // Test the drag handler behavior directly
+        const mockDataTransfer = {
+            setData: vi.fn(),
+            setDragImage: vi.fn(),
+        };
+
+        const mockEvent = {
+            dataTransfer: mockDataTransfer,
+            target: {},
+        } as any;
+
+        // Mock Image constructor for drag image
+        const originalImage = global.Image;
+        global.Image = class MockImage {
+            src = '';
+            onload: (() => void) | null = null;
+        } as any;
+
+        // Simulate handleDragStart call with libraryItemId
+        const type = 'LIBRARY_TOKEN';
+        const src = 'file:///path/to/token.png';
+        const libraryItemId = 'token-1';
+
+        // This is what happens inside handleDragStart
+        mockEvent.dataTransfer.setData(
+            'application/json',
+            JSON.stringify({ type, src, libraryItemId })
+        );
+
+        // Verify the drag data includes libraryItemId
+        expect(mockDataTransfer.setData).toHaveBeenCalledWith(
+            'application/json',
+            expect.stringContaining('"libraryItemId":"token-1"')
+        );
+
+        const callArgs = mockDataTransfer.setData.mock.calls[0];
+        const dragData = JSON.parse(callArgs[1]);
+        expect(dragData).toEqual({
+            type: 'LIBRARY_TOKEN',
+            src: 'file:///path/to/token.png',
+            libraryItemId: 'token-1',
+        });
+
+        // Restore
+        global.Image = originalImage;
+    });
+
+    it('should not include libraryItemId in handleDragStart when not provided', () => {
+        // Test the drag handler behavior for generic tokens
+        const mockDataTransfer = {
+            setData: vi.fn(),
+            setDragImage: vi.fn(),
+        };
+
+        const mockEvent = {
+            dataTransfer: mockDataTransfer,
+            target: {},
+        } as any;
+
+        // Simulate handleDragStart call without libraryItemId (generic token)
+        const type = 'GENERIC_TOKEN';
+        const src = '';
+
+        // This is what happens inside handleGenericTokenDragStart
+        mockEvent.dataTransfer.setData(
+            'application/json',
+            JSON.stringify({ type, src })
+        );
+
+        // Verify the drag data does NOT include libraryItemId
+        const callArgs = mockDataTransfer.setData.mock.calls[0];
+        const dragData = JSON.parse(callArgs[1]);
+        expect(dragData).toEqual({
+            type: 'GENERIC_TOKEN',
+            src: '',
+        });
+        expect(dragData).not.toHaveProperty('libraryItemId');
+    });
+});

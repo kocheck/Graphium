@@ -59,6 +59,8 @@ import DoorControls from './DoorControls';
 import CollapsibleSection from './CollapsibleSection';
 import MapSettingsSheet from './MapSettingsSheet';
 import Tooltip from './Tooltip';
+import QuickTokenSidebar from './QuickTokenSidebar';
+import { QuickTokenSidebarErrorBoundary } from './QuickTokenSidebarErrorBoundary';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { rollForMessage } from '../utils/systemMessages';
 import { useCommandPalette } from '../hooks/useCommandPalette';
@@ -71,7 +73,7 @@ import {
   RiSearchLine,
   RiBookLine,
 } from '@remixicon/react';
-import { getRecentTokens } from '../utils/tokenUtils';
+import { getRecentTokens, getPlayerTokens, deduplicatePlayerTokens } from '../utils/tokenUtils';
 
 /**
  * Sidebar component provides map upload, grid settings, and token library
@@ -89,6 +91,16 @@ const Sidebar = () => {
     const recentTokens = React.useMemo(() => {
         return getRecentTokens(tokens, tokenLibrary);
     }, [tokens, tokenLibrary]);
+
+    // Get player tokens from library (up to 5)
+    const playerTokens = React.useMemo(() => {
+        return getPlayerTokens(tokenLibrary, 5);
+    }, [tokenLibrary]);
+
+    // Deduplicate player tokens (remove any that appear in recent history)
+    const deduplicatedPlayerTokens = React.useMemo(() => {
+        return deduplicatePlayerTokens(playerTokens, recentTokens);
+    }, [playerTokens, recentTokens]);
 
     // Refs
     const tokenInputRef = useRef<HTMLInputElement>(null);
@@ -133,9 +145,10 @@ const Sidebar = () => {
      * @param e - Drag event
      * @param type - Token type (e.g., 'LIBRARY_TOKEN')
      * @param src - Image source URL
+     * @param libraryItemId - Optional library item ID for prototype linkage
      */
-    const handleDragStart = (e: React.DragEvent, type: string, src: string) => {
-        e.dataTransfer.setData('application/json', JSON.stringify({ type, src }));
+    const handleDragStart = (e: React.DragEvent, type: string, src: string, libraryItemId?: string) => {
+        e.dataTransfer.setData('application/json', JSON.stringify({ type, src, libraryItemId }));
 
         // Create custom drag image
         const img = new Image();
@@ -352,31 +365,14 @@ const Sidebar = () => {
                             </Tooltip>
                         </div>
 
-                        {/* Recently Used Tokens */}
-                        {recentTokens.length > 0 && (
-                            <div className="mb-4">
-                                <h4 className="text-xs uppercase font-semibold mb-2" style={{ color: 'var(--app-text-secondary)' }}>
-                                    Recently Used
-                                </h4>
-                                <div className="flex gap-2">
-                                    {recentTokens.map(token => (
-                                        <Tooltip key={token.id} content={token.name}>
-                                            <div
-                                                className="sidebar-token w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
-                                                draggable
-                                                onDragStart={(e) => handleDragStart(e, 'LIBRARY_TOKEN', token.src)}
-                                            >
-                                                <img
-                                                    src={token.thumbnailSrc.replace('file:', 'media:')}
-                                                    alt={token.name}
-                                                    className="w-full h-full object-contain pointer-events-none rounded"
-                                                />
-                                            </div>
-                                        </Tooltip>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Quick Token Access - Recent History + Party Tokens */}
+                        <QuickTokenSidebarErrorBoundary>
+                            <QuickTokenSidebar
+                                recentTokens={recentTokens}
+                                playerTokens={deduplicatedPlayerTokens}
+                                onDragStart={handleDragStart}
+                            />
+                        </QuickTokenSidebarErrorBoundary>
                     </CollapsibleSection>
                 </>
             )}
