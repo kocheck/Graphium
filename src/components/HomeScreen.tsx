@@ -210,7 +210,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               data-testid="new-campaign-button"
             >
               <RiAddLine className="card-icon" />
-              <span className="card-title">New Campaign</span>
+              <h2 className="card-title">New Campaign</h2>
               <div className="card-hover-effect"></div>
             </button>
           </Tooltip>
@@ -222,7 +222,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               aria-label="Load an existing campaign"
             >
               <RiFolderOpenLine className="card-icon" />
-              <span className="card-title">Load Campaign</span>
+              <h2 className="card-title">Load Campaign</h2>
               <div className="card-hover-effect"></div>
             </button>
           </Tooltip>
@@ -234,7 +234,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               aria-label="Generate a procedural dungeon"
             >
               <RiLayoutGridLine className="card-icon" />
-              <span className="card-title">Generate Dungeon</span>
+              <h2 className="card-title">Generate Dungeon</h2>
               <div className="card-hover-effect"></div>
             </button>
           </Tooltip>
@@ -621,9 +621,6 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        /* ======================
-           Action Cards
-           ====================== */
         /* ======================
            Action Cards
            ====================== */

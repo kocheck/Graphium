@@ -1997,7 +1997,6 @@ const CanvasManager = ({
         }}
         style={{
           cursor: getCursorStyle(),
-          touchAction: 'none', // Prevent browser's default touch behaviors (scroll, zoom, text selection)
         }}
       >
         {/* Layer 1: Background & Map (Listening False to let internal events pass to Stage for selection) */}
