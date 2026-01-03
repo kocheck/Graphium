@@ -72,8 +72,7 @@ describe('HomeScreen', () => {
 
       expect(screen.getByText('New Campaign')).toBeInTheDocument();
       expect(screen.getByText('Load Campaign')).toBeInTheDocument();
-      expect(screen.getByText('Start a fresh adventure with a blank canvas')).toBeInTheDocument();
-      expect(screen.getByText('Continue an existing campaign from a .graphium file')).toBeInTheDocument();
+      expect(screen.getByText('Generate Dungeon')).toBeInTheDocument();
     });
 
     it('should display version number from __APP_VERSION__', () => {
@@ -318,10 +317,10 @@ describe('HomeScreen', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
       const newCampaignButton = screen.getByLabelText(
-        'Create a new campaign and start the editor'
+        'Create a new campaign'
       );
       const loadCampaignButton = screen.getByLabelText(
-        'Load an existing campaign from a .graphium file'
+        'Load an existing campaign'
       );
 
       expect(newCampaignButton).toBeInTheDocument();
