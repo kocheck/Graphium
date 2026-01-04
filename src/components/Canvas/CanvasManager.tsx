@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import { Stage, Layer, Line, Rect, Transformer, Group, Text } from 'react-konva';
+import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
@@ -354,6 +354,7 @@ const CanvasManager = ({
   const tokenNodesRef = useRef<Map<string, any>>(new Map()); // Direct refs to Konva nodes for smooth drag without React re-renders
   const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null); // Track hovered token for interactive feedback
   const [hoveredCell, setHoveredCell] = useState<{ q: number; r: number } | null>(null); // Track hovered grid cell for highlight
+  const snapPreviewPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map()); // Snap preview positions for dragged tokens
 
   // Press-and-Hold Drag State (threshold-based drag detection)
   const DRAG_THRESHOLD = 5; // pixels - minimum movement to trigger drag
@@ -1077,6 +1078,15 @@ const CanvasManager = ({
       dragPositionsRef.current.set(tokenId, { x: newX, y: newY });
       throttleDragBroadcast(tokenId, newX, newY);
 
+      // Calculate snap preview position for primary token
+      const token = resolvedTokens.find(t => t.id === tokenId);
+      if (token) {
+        const width = gridSize * token.scale;
+        const height = gridSize * token.scale;
+        const snapped = snapToGrid(newX, newY, gridSize, gridType, width, height);
+        snapPreviewPositionsRef.current.set(tokenId, snapped);
+      }
+
       // Update multi-token positions
       const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
       if (tokenIds.length > 1) {
@@ -1088,6 +1098,15 @@ const CanvasManager = ({
               const offsetY = newY + offset.y;
               dragPositionsRef.current.set(id, { x: offsetX, y: offsetY });
               throttleDragBroadcast(id, offsetX, offsetY);
+
+              // Calculate snap preview position for this token
+              const otherToken = resolvedTokens.find(t => t.id === id);
+              if (otherToken) {
+                const width = gridSize * otherToken.scale;
+                const height = gridSize * otherToken.scale;
+                const snapped = snapToGrid(offsetX, offsetY, gridSize, gridType, width, height);
+                snapPreviewPositionsRef.current.set(id, snapped);
+              }
 
               // Directly update Konva node position (no React re-render needed)
               // This creates intentional desynchronization between Konva and React state for performance.
@@ -1215,6 +1234,7 @@ const CanvasManager = ({
     // Reset drag state
     setTokenMouseDownStart(null);
     setIsDraggingWithThreshold(false);
+    snapPreviewPositionsRef.current.clear(); // Clear snap preview positions
   }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, setSelectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast, shouldRejectPointerEvent]);
 
   // Drawing Handlers (Pointer Events - unified mouse/touch/pen support)
@@ -2216,6 +2236,37 @@ const CanvasManager = ({
                 listening={false}
               />
             )}
+
+            {/* Snap Preview - Show where tokens will snap when released */}
+            {isDraggingWithThreshold && Array.from(snapPreviewPositionsRef.current.entries()).map(([tokenId, snapPos]) => {
+              const token = resolvedTokens.find(t => t.id === tokenId);
+              if (!token) return null;
+
+              const size = gridSize * token.scale;
+
+              return (
+                <Group key={`snap-preview-${tokenId}`}>
+                  {/* Outer ring */}
+                  <Circle
+                    x={snapPos.x + size / 2}
+                    y={snapPos.y + size / 2}
+                    radius={size / 2 + 4}
+                    stroke="rgba(37, 99, 235, 0.6)" // Blue accent color
+                    strokeWidth={2}
+                    listening={false}
+                    dash={[8, 4]}
+                  />
+                  {/* Inner fill */}
+                  <Circle
+                    x={snapPos.x + size / 2}
+                    y={snapPos.y + size / 2}
+                    radius={size / 2}
+                    fill="rgba(37, 99, 235, 0.1)"
+                    listening={false}
+                  />
+                </Group>
+              );
+            })}
 
             {isAltPressed && resolvedTokens.filter(t => itemsForDuplication.includes(t.id)).map(ghostToken => (
                 <URLImage
