@@ -167,9 +167,14 @@ export const calculateConeVertices = (
  * Formats distance for display
  *
  * @param feet - Distance in feet
- * @returns Formatted string (e.g., "30ft")
+ * @param showCells - Whether to show grid cell count (default: true)
+ * @returns Formatted string (e.g., "30ft (6 cells)" or "30ft")
  */
-export const formatDistance = (feet: number): string => {
+export const formatDistance = (feet: number, showCells: boolean = true): string => {
+  if (showCells) {
+    const cells = Math.round(feet / 5);
+    return `${feet}ft (${cells} ${cells === 1 ? 'cell' : 'cells'})`;
+  }
   return `${feet}ft`;
 };
 
@@ -177,9 +182,14 @@ export const formatDistance = (feet: number): string => {
  * Formats area for display (for circular AoE)
  *
  * @param radiusFeet - Radius in feet
- * @returns Formatted string (e.g., "20ft radius")
+ * @param showCells - Whether to show grid cell count (default: true)
+ * @returns Formatted string (e.g., "20ft radius (4 cells)" or "20ft radius")
  */
-export const formatRadius = (radiusFeet: number): string => {
+export const formatRadius = (radiusFeet: number, showCells: boolean = true): string => {
+  if (showCells) {
+    const cells = Math.round(radiusFeet / 5);
+    return `${radiusFeet}ft radius (${cells} ${cells === 1 ? 'cell' : 'cells'})`;
+  }
   return `${radiusFeet}ft radius`;
 };
 
@@ -188,8 +198,13 @@ export const formatRadius = (radiusFeet: number): string => {
  *
  * @param lengthFeet - Length of the cone in feet
  * @param angleDegrees - Cone angle in degrees
- * @returns Formatted string (e.g., "30ft 53° cone")
+ * @param showCells - Whether to show grid cell count (default: true)
+ * @returns Formatted string (e.g., "30ft 53° cone (6 cells)" or "30ft 53° cone")
  */
-export const formatCone = (lengthFeet: number, angleDegrees: number = 53): string => {
+export const formatCone = (lengthFeet: number, angleDegrees: number = 53, showCells: boolean = true): string => {
+  if (showCells) {
+    const cells = Math.round(lengthFeet / 5);
+    return `${lengthFeet}ft ${angleDegrees}° cone (${cells} ${cells === 1 ? 'cell' : 'cells'})`;
+  }
   return `${lengthFeet}ft ${angleDegrees}° cone`;
 };
