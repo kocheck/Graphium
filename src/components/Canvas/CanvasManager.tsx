@@ -6,7 +6,13 @@ import { useShallow } from 'zustand/shallow';
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
 import { createGridGeometry } from '../../utils/gridGeometry';
-import { useGameStore, Drawing } from '../../store/gameStore';
+import {
+  Drawing,
+  Door,
+  Stairs,
+  useGameStore,
+  DEFAULT_GRID_COLOR
+} from '../../store/gameStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 import { simplifyPath, snapPointToPaths } from '../../utils/pathOptimization';
@@ -378,6 +384,10 @@ const CanvasManager = ({
 
   // Theme-aware text color for contrast
   const textColor = useThemeColor('--app-text-primary');
+
+  // Theme-aware grid color (Adaptive default)
+  const defaultGridColor = useThemeColor('--app-grid-color');
+  const resolvedGridColor = gridColor === DEFAULT_GRID_COLOR ? defaultGridColor : gridColor;
 
   // Touch/Pinch State
   const lastPinchDistance = useRef<number | null>(null);
@@ -2079,7 +2089,7 @@ const CanvasManager = ({
               />
             </CanvasOverlayErrorBoundary>
 
-            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} hoveredCell={hoveredCell} />
+            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={resolvedGridColor} hoveredCell={hoveredCell} />
 
             {/* Movement Range Overlay - Shows reachable cells for selected token (Hold M key) */}
             {isMKeyPressed && !isWorldView && selectedIds.length === 1 && (() => {

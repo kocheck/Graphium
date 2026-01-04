@@ -199,7 +199,11 @@
   --app-overlay: var(--slate-a11);         /* Modal overlay (alpha channel) */
   --app-shadow-sm: var(--slate-a3);        /* Small shadow */
   --app-shadow-md: var(--slate-a6);        /* Medium shadow */
+  --app-shadow-md: var(--slate-a6);        /* Medium shadow */
   --app-shadow-lg: var(--slate-a8);        /* Large shadow */
+
+  /* ===== Grid Colors ===== */
+  --app-grid-color: #222222;               /* Default grid color (Dark Gray) */
 }
 
 /* ============================================
@@ -265,7 +269,11 @@
   --app-overlay: var(--slate-a11);
   --app-shadow-sm: var(--slate-a3);
   --app-shadow-md: var(--slate-a6);
+  --app-shadow-md: var(--slate-a6);
   --app-shadow-lg: var(--slate-a8);
+
+  /* ===== Grid Colors ===== */
+  --app-grid-color: var(--slate-8);        /* Lighter gray for visibility on dark bg */
 }
 
 /* ============================================

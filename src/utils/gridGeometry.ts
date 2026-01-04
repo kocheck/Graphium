@@ -208,20 +208,34 @@ export class HexagonalGridGeometry implements GridGeometry {
     const cells: GridCell[] = [];
 
     // Calculate bounding box in hex coordinates
-    // Add padding to ensure we catch all visible hexes
+    // We must check ALL corners because r-axis is diagonal in hex grid
+    // Just simple top-left/bottom-right check isn't enough for hex
     const padding = 2;
 
-    const topLeft = this.pixelToGrid(bounds.x, bounds.y, gridSize);
-    const bottomRight = this.pixelToGrid(
-      bounds.x + bounds.width,
-      bounds.y + bounds.height,
-      gridSize
-    );
+    const corners = [
+      this.pixelToGrid(bounds.x, bounds.y, gridSize), // Top Left
+      this.pixelToGrid(bounds.x + bounds.width, bounds.y, gridSize), // Top Right
+      this.pixelToGrid(bounds.x + bounds.width, bounds.y + bounds.height, gridSize), // Bottom Right
+      this.pixelToGrid(bounds.x, bounds.y + bounds.height, gridSize), // Bottom Left
+    ];
 
-    const minQ = topLeft.q - padding;
-    const maxQ = bottomRight.q + padding;
-    const minR = topLeft.r - padding;
-    const maxR = bottomRight.r + padding;
+    let minQ = corners[0].q;
+    let maxQ = corners[0].q;
+    let minR = corners[0].r;
+    let maxR = corners[0].r;
+
+    for (const corner of corners) {
+      minQ = Math.min(minQ, corner.q);
+      maxQ = Math.max(maxQ, corner.q);
+      minR = Math.min(minR, corner.r);
+      maxR = Math.max(maxR, corner.r);
+    }
+
+    // Apply padding
+    minQ -= padding;
+    maxQ += padding;
+    minR -= padding;
+    maxR += padding;
 
     // Iterate over rectangular region in axial coordinates
     for (let q = minQ; q <= maxQ; q++) {

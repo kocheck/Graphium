@@ -225,6 +225,12 @@ export interface Stairs {
 const MAX_EXPLORED_REGIONS = 200;
 
 /**
+ * Default grid color (Dark Gray) for light mode.
+ * Adaptively mapped to lighter gray in dark mode via CanvasManager.
+ */
+export const DEFAULT_GRID_COLOR = '#222222';
+
+/**
  * Helper to create a default empty map
  */
 const createDefaultMap = (name: string = 'New Map'): MapData => ({
@@ -237,7 +243,7 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
   map: null,
   gridSize: 50,
   gridType: 'LINES',
-  gridColor: '#222222', // Default dark gray grid
+  gridColor: DEFAULT_GRID_COLOR, // Default dark gray grid
   exploredRegions: [],
   isDaylightMode: false,
 });
@@ -442,7 +448,7 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: activeMap.stairs || [],
         gridSize: activeMap.gridSize || 50,
         gridType: activeMap.gridType || 'LINES',
-        gridColor: activeMap.gridColor || '#222222',
+        gridColor: activeMap.gridColor || DEFAULT_GRID_COLOR,
         map: activeMap.map || null,
         exploredRegions: activeMap.exploredRegions || [],
         isDaylightMode: activeMap.isDaylightMode || false,

@@ -233,6 +233,28 @@ describe('HexagonalGridGeometry', () => {
       // Should include cells even at boundaries due to padding
       expect(cells.length).toBeGreaterThan(1);
     });
+
+    it('covers the entire viewport including top-right and bottom-left corners', () => {
+      // Regression test for "narrow band" bug
+      // With top-left (0,0) and bottom-right (1000, 1000) check ONLY:
+      // TopLeft: q~0, r~0
+      // BottomRight: q~13, r~0 (since 2/3*x dominates y-x/3 term roughly)
+      // We missed TopRight (q~13, r < 0) and BottomLeft (q~0, r > 0)
+
+      const bounds = { x: 0, y: 0, width: 1000, height: 1000 };
+      const cells = geometry.getVisibleCells(bounds, gridSize);
+
+      const rs = cells.map(c => c.r);
+      const minR = Math.min(...rs);
+      const maxR = Math.max(...rs);
+
+      // We expect significant spread in R values
+      // Top Right should give negative R (~ -7)
+      // Bottom Left should give positive R (~ 12)
+      // Bottom Right is only (~ 5)
+      expect(minR).toBeLessThan(-5); // Expect negative R
+      expect(maxR).toBeGreaterThan(10); // Expect larger positive R than BottomRight
+    });
   });
 });
 
