@@ -103,6 +103,9 @@ Graphium gives you a dedicated "Architect's View" full of arcane instruments, wh
 - **Dual-Window Architecture**: One brain, two faces. You control the chaos; they witness the glory.
 - **Fog of War**: A hardware-accelerated raycasting engine that creates true mystery.
 - **Asset Conjuration**: Drag and drop images directly onto the canvas. We optimize them automatically.
+- **Grid Geometry**: Choose your reality—Square (lines/dots), Hexagonal (flat-top), or Isometric (diamond). Each grid type features smart snapping, hover highlights, and tactical overlays.
+- **Movement Range**: Hold M to visualize reachable cells for selected tokens—perfect for tactical combat planning.
+- **Enhanced Measurements**: Ruler, blast, and cone tools show both distance in feet and grid cell counts.
 
 ### **The Modern Stylus (Touch & Pen Support)**
 
@@ -158,8 +161,9 @@ npm run build
 
 ## 📖 Keyboard Sigils (Shortcuts)
 
+### **Tools & Actions**
 - **V**: Select / Manipulate
-- **M**: Marker / Etch
+- **M**: Marker / Etch (also: Hold M to show Movement Range for selected token)
 - **E**: Eraser / Smooth Wax
 - **W**: Wall / Occlude
 - **D**: Door / Passage
@@ -167,6 +171,13 @@ npm run build
 - **Cmd + S**: Save the Tome (.graphium)
 - **Cmd + O**: Open a Tome
 - **Shift + Drag**: Lock Axis
+
+### **Grid Geometry (Architect View)**
+- **1**: Square Grid - Lines
+- **2**: Square Grid - Dots
+- **3**: Hexagonal Grid (flat-top)
+- **4**: Isometric Grid (diamond)
+- **5**: Hidden Grid
 
 ---
 

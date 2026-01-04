@@ -300,48 +300,72 @@ describe('measurement utilities', () => {
 
   describe('formatting functions', () => {
     describe('formatDistance', () => {
-      it('should format distance in feet', () => {
-        expect(formatDistance(30)).toBe('30ft');
+      it('should format distance with cell count by default', () => {
+        expect(formatDistance(30)).toBe('30ft (6 cells)');
       });
 
       it('should handle zero distance', () => {
-        expect(formatDistance(0)).toBe('0ft');
+        expect(formatDistance(0)).toBe('0ft (0 cells)');
       });
 
       it('should handle large distances', () => {
-        expect(formatDistance(500)).toBe('500ft');
+        expect(formatDistance(500)).toBe('500ft (100 cells)');
+      });
+
+      it('should handle singular cell', () => {
+        expect(formatDistance(5)).toBe('5ft (1 cell)');
+      });
+
+      it('should format without cells when showCells=false', () => {
+        expect(formatDistance(30, false)).toBe('30ft');
       });
     });
 
     describe('formatRadius', () => {
-      it('should format radius with "radius" label', () => {
-        expect(formatRadius(20)).toBe('20ft radius');
+      it('should format radius with cell count by default', () => {
+        expect(formatRadius(20)).toBe('20ft radius (4 cells)');
       });
 
       it('should handle zero radius', () => {
-        expect(formatRadius(0)).toBe('0ft radius');
+        expect(formatRadius(0)).toBe('0ft radius (0 cells)');
       });
 
       it('should handle large radius', () => {
-        expect(formatRadius(100)).toBe('100ft radius');
+        expect(formatRadius(100)).toBe('100ft radius (20 cells)');
+      });
+
+      it('should handle singular cell', () => {
+        expect(formatRadius(5)).toBe('5ft radius (1 cell)');
+      });
+
+      it('should format without cells when showCells=false', () => {
+        expect(formatRadius(20, false)).toBe('20ft radius');
       });
     });
 
     describe('formatCone', () => {
-      it('should format cone with length and angle', () => {
-        expect(formatCone(30, 53)).toBe('30ft 53° cone');
+      it('should format cone with cell count by default', () => {
+        expect(formatCone(30, 53)).toBe('30ft 53° cone (6 cells)');
       });
 
       it('should use default 53-degree angle', () => {
-        expect(formatCone(30)).toBe('30ft 53° cone');
+        expect(formatCone(30)).toBe('30ft 53° cone (6 cells)');
       });
 
       it('should handle zero length', () => {
-        expect(formatCone(0, 90)).toBe('0ft 90° cone');
+        expect(formatCone(0, 90)).toBe('0ft 90° cone (0 cells)');
       });
 
       it('should handle custom angles', () => {
-        expect(formatCone(15, 90)).toBe('15ft 90° cone');
+        expect(formatCone(15, 90)).toBe('15ft 90° cone (3 cells)');
+      });
+
+      it('should handle singular cell', () => {
+        expect(formatCone(5, 53)).toBe('5ft 53° cone (1 cell)');
+      });
+
+      it('should format without cells when showCells=false', () => {
+        expect(formatCone(30, 53, false)).toBe('30ft 53° cone');
       });
     });
   });

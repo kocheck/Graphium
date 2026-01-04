@@ -1,10 +1,11 @@
 import Konva from 'konva';
-import { Stage, Layer, Line, Rect, Transformer, Group, Text } from 'react-konva';
+import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
+import { createGridGeometry } from '../../utils/gridGeometry';
 import { useGameStore, Drawing } from '../../store/gameStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
@@ -23,6 +24,7 @@ import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
 import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import MeasurementOverlay from './MeasurementOverlay';
+import MovementRangeOverlay from './MovementRangeOverlay';
 import { resolveTokenData } from '../../hooks/useTokenData';
 
 import URLImage from './URLImage';
@@ -217,34 +219,6 @@ const CanvasManager = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
-  // Get grid color from CSS variable (theme-aware)
-  const [gridColor, setGridColor] = useState('#222');
-
-  useEffect(() => {
-    const updateGridColor = () => {
-      const computedColor = getComputedStyle(document.documentElement).getPropertyValue('--app-border-default').trim();
-      if (computedColor) {
-        setGridColor(computedColor);
-      }
-    };
-
-    // Initial color
-    updateGridColor();
-
-    // Listen for theme changes
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-theme') {
-          updateGridColor();
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-
-    return () => observer.disconnect();
-  }, []);
-
   // Atomic selectors to prevent infinite re-render loops and avoid useShallow crashes
   const map = useGameStore(s => s.map);
   const tokens = useGameStore(s => s.tokens);
@@ -254,6 +228,7 @@ const CanvasManager = ({
   const stairs = useGameStore(s => s.stairs);
   const gridSize = useGameStore(s => s.gridSize);
   const gridType = useGameStore(s => s.gridType);
+  const gridColor = useGameStore(s => s.gridColor);
   const isCalibrating = useGameStore(s => s.isCalibrating);
   const isDaylightMode = useGameStore(s => s.isDaylightMode);
   const activeVisionPolygons = useGameStore(s => s.activeVisionPolygons);
@@ -327,6 +302,7 @@ const CanvasManager = ({
   const updateTokenTransform = useGameStore(s => s.updateTokenTransform);
   const removeTokens = useGameStore(s => s.removeTokens);
   const removeDrawings = useGameStore(s => s.removeDrawings);
+  const setGridType = useGameStore(s => s.setGridType);
   const toggleDoor = useGameStore(s => s.toggleDoor);
   const setIsCalibrating = useGameStore(s => s.setIsCalibrating);
   const updateMapTransform = useGameStore(s => s.updateMapTransform);
@@ -379,6 +355,8 @@ const CanvasManager = ({
   const DRAG_BROADCAST_THROTTLE_MS = 16; // ~60fps
   const tokenNodesRef = useRef<Map<string, any>>(new Map()); // Direct refs to Konva nodes for smooth drag without React re-renders
   const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null); // Track hovered token for interactive feedback
+  const [hoveredCell, setHoveredCell] = useState<{ q: number; r: number } | null>(null); // Track hovered grid cell for highlight
+  const snapPreviewPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map()); // Snap preview positions for dragged tokens
 
   // Press-and-Hold Drag State (threshold-based drag detection)
   const DRAG_THRESHOLD = 5; // pixels - minimum movement to trigger drag
@@ -394,6 +372,9 @@ const CanvasManager = ({
   const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  // Movement Range State
+  const [isMKeyPressed, setIsMKeyPressed] = useState(false);
 
   // Theme-aware text color for contrast
   const textColor = useThemeColor('--app-text-primary');
@@ -684,6 +665,37 @@ const CanvasManager = ({
           e.preventDefault();
           handleKeyboardZoom(false);
       }
+
+      // M key - show movement range overlay
+      if ((e.key === 'm' || e.key === 'M') && !e.repeat) {
+          e.preventDefault();
+          setIsMKeyPressed(true);
+      }
+
+      // Grid type shortcuts (DM only) - 1-5 keys
+      if (!isWorldView && !e.repeat) {
+          if (e.key === '1') {
+              e.preventDefault();
+              setGridType('LINES');
+              showToast('Grid: Square - Lines', 'success');
+          } else if (e.key === '2') {
+              e.preventDefault();
+              setGridType('DOTS');
+              showToast('Grid: Square - Dots', 'success');
+          } else if (e.key === '3') {
+              e.preventDefault();
+              setGridType('HEXAGONAL');
+              showToast('Grid: Hexagonal', 'success');
+          } else if (e.key === '4') {
+              e.preventDefault();
+              setGridType('ISOMETRIC');
+              showToast('Grid: Isometric', 'success');
+          } else if (e.key === '5') {
+              e.preventDefault();
+              setGridType('HIDDEN');
+              showToast('Grid: Hidden', 'success');
+          }
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -696,11 +708,17 @@ const CanvasManager = ({
         if (!isEditableElement(e.target) && e.code === 'Space') {
             setIsSpacePressed(false);
         }
+
+        // M key release
+        if (!isEditableElement(e.target) && (e.key === 'm' || e.key === 'M')) {
+            setIsMKeyPressed(false);
+        }
     };
 
     const handleBlur = () => {
         setIsSpacePressed(false);
         setIsAltPressed(false);
+        setIsMKeyPressed(false);
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -867,7 +885,7 @@ const CanvasManager = ({
     // Initial snap for drop (assuming standard 1x1 if unknown, or center on mouse)
     // We don't know image size yet, so we snap top-left to grid line nearby.
     // Use WORLD coordinates for snapping.
-    const { x, y } = snapToGrid(worldX, worldY, gridSize);
+    const { x, y } = snapToGrid(worldX, worldY, gridSize, gridType);
 
     // Check for JSON (Library Item or Generic Token)
     const jsonData = e.dataTransfer.getData('application/json');
@@ -1102,6 +1120,15 @@ const CanvasManager = ({
       dragPositionsRef.current.set(tokenId, { x: newX, y: newY });
       throttleDragBroadcast(tokenId, newX, newY);
 
+      // Calculate snap preview position for primary token
+      const token = resolvedTokens.find(t => t.id === tokenId);
+      if (token) {
+        const width = gridSize * token.scale;
+        const height = gridSize * token.scale;
+        const snapped = snapToGrid(newX, newY, gridSize, gridType, width, height);
+        snapPreviewPositionsRef.current.set(tokenId, snapped);
+      }
+
       // Update multi-token positions
       const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
       if (tokenIds.length > 1) {
@@ -1113,6 +1140,15 @@ const CanvasManager = ({
               const offsetY = newY + offset.y;
               dragPositionsRef.current.set(id, { x: offsetX, y: offsetY });
               throttleDragBroadcast(id, offsetX, offsetY);
+
+              // Calculate snap preview position for this token
+              const otherToken = resolvedTokens.find(t => t.id === id);
+              if (otherToken) {
+                const width = gridSize * otherToken.scale;
+                const height = gridSize * otherToken.scale;
+                const snapped = snapToGrid(offsetX, offsetY, gridSize, gridType, width, height);
+                snapPreviewPositionsRef.current.set(id, snapped);
+              }
 
               // Directly update Konva node position (no React re-render needed)
               // This creates intentional desynchronization between Konva and React state for performance.
@@ -1166,7 +1202,7 @@ const CanvasManager = ({
       if (dragPos) {
         const width = gridSize * token.scale;
         const height = gridSize * token.scale;
-        const snapped = snapToGrid(dragPos.x, dragPos.y, gridSize, width, height);
+        const snapped = snapToGrid(dragPos.x, dragPos.y, gridSize, gridType, width, height);
 
         // Handle multi-token drag end
         if (tokenIds.length > 1) {
@@ -1179,7 +1215,7 @@ const CanvasManager = ({
               const dragPosForToken = dragPositionsRef.current.get(id) ?? { x: t.x, y: t.y };
               const newX = dragPosForToken.x + offsetX;
               const newY = dragPosForToken.y + offsetY;
-              const snappedPos = snapToGrid(newX, newY, gridSize, gridSize * t.scale, gridSize * t.scale);
+              const snappedPos = snapToGrid(newX, newY, gridSize, gridType, gridSize * t.scale, gridSize * t.scale);
               updateTokenPosition(id, snappedPos.x, snappedPos.y);
               committedPositions.set(id, { x: snappedPos.x, y: snappedPos.y });
             }
@@ -1240,6 +1276,7 @@ const CanvasManager = ({
     // Reset drag state
     setTokenMouseDownStart(null);
     setIsDraggingWithThreshold(false);
+    snapPreviewPositionsRef.current.clear(); // Clear snap preview positions
   }, [tokenMouseDownStart, isDraggingWithThreshold, resolvedTokens, tokens, selectedIds, setSelectedIds, gridSize, isAltPressed, isWorldView, updateTokenPosition, addToken, throttleDragBroadcast, shouldRejectPointerEvent]);
 
   // Drawing Handlers (Pointer Events - unified mouse/touch/pen support)
@@ -1386,13 +1423,23 @@ const CanvasManager = ({
     // Ignore multi-touch gestures
     if (isMultiTouchGesture(e)) return;
 
+    // Update hovered cell for grid highlight (only if grid is visible)
+    if (gridType !== 'HIDDEN' && gridType !== 'DOTS') {
+      const pos = getPointerPosition(e);
+      if (pos) {
+        const geometry = createGridGeometry(gridType);
+        const cell = geometry.pixelToGrid(pos.x, pos.y, gridSize);
+        setHoveredCell(cell);
+      }
+    }
+
     // DOOR TOOL PREVIEW - Show preview while hovering
     if (tool === 'door' && !isWorldView) {
       const pos = getPointerPosition(e);
       if (!pos) return;
 
       // Snap to grid for preview
-      const snapped = snapToGrid(pos.x, pos.y, gridSize);
+      const snapped = snapToGrid(pos.x, pos.y, gridSize, gridType);
 
       setDoorPreviewPos(snapped);
       return;
@@ -1600,7 +1647,7 @@ const CanvasManager = ({
         if (!pos) return;
 
         // Snap to grid
-        const snapped = snapToGrid(pos.x, pos.y, gridSize);
+        const snapped = snapToGrid(pos.x, pos.y, gridSize, gridType);
 
         // Create door at snapped position
         const newDoor = {
@@ -2032,7 +2079,32 @@ const CanvasManager = ({
               />
             </CanvasOverlayErrorBoundary>
 
-            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} />
+            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} hoveredCell={hoveredCell} />
+
+            {/* Movement Range Overlay - Shows reachable cells for selected token (Hold M key) */}
+            {isMKeyPressed && !isWorldView && selectedIds.length === 1 && (() => {
+              const selectedToken = resolvedTokens.find(t => t.id === selectedIds[0]);
+              if (!selectedToken) return null;
+
+              // Use drag position if token is being dragged
+              const dragPos = dragPositionsRef.current.get(selectedToken.id);
+              const tokenPos = dragPos || { x: selectedToken.x, y: selectedToken.y };
+
+              // Default movement speed: 30ft (standard for D&D Medium creatures)
+              // TODO: Make this configurable per token
+              const movementSpeed = 30;
+
+              return (
+                <CanvasOverlayErrorBoundary overlayName="MovementRangeOverlay">
+                  <MovementRangeOverlay
+                    tokenPosition={tokenPos}
+                    movementSpeed={movementSpeed}
+                    gridSize={gridSize}
+                    gridType={gridType}
+                  />
+                </CanvasOverlayErrorBoundary>
+              );
+            })()}
         </Layer>
 
         {/* Fog of War Layer (World View only) - Renders Overlay */}
@@ -2231,6 +2303,37 @@ const CanvasManager = ({
                 listening={false}
               />
             )}
+
+            {/* Snap Preview - Show where tokens will snap when released */}
+            {isDraggingWithThreshold && Array.from(snapPreviewPositionsRef.current.entries()).map(([tokenId, snapPos]) => {
+              const token = resolvedTokens.find(t => t.id === tokenId);
+              if (!token) return null;
+
+              const size = gridSize * token.scale;
+
+              return (
+                <Group key={`snap-preview-${tokenId}`}>
+                  {/* Outer ring */}
+                  <Circle
+                    x={snapPos.x + size / 2}
+                    y={snapPos.y + size / 2}
+                    radius={size / 2 + 4}
+                    stroke="rgba(37, 99, 235, 0.6)" // Blue accent color
+                    strokeWidth={2}
+                    listening={false}
+                    dash={[8, 4]}
+                  />
+                  {/* Inner fill */}
+                  <Circle
+                    x={snapPos.x + size / 2}
+                    y={snapPos.y + size / 2}
+                    radius={size / 2}
+                    fill="rgba(37, 99, 235, 0.1)"
+                    listening={false}
+                  />
+                </Group>
+              );
+            })}
 
             {isAltPressed && resolvedTokens.filter(t => itemsForDuplication.includes(t.id)).map(ghostToken => (
                 <URLImage
