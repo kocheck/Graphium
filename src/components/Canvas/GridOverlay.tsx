@@ -64,6 +64,7 @@ let hasWarnedAboutDensity = false;
  * @property stroke - Color of grid lines/dots (default: '#222')
  * @property opacity - Opacity of grid elements (default: 0.5)
  * @property type - Grid rendering type (default: 'LINES')
+ * @property hoveredCell - Grid cell currently under cursor (for hover highlight)
  */
 interface GridOverlayProps {
   visibleBounds: { x: number; y: number; width: number; height: number };
@@ -71,6 +72,7 @@ interface GridOverlayProps {
   stroke?: string;
   opacity?: number;
   type?: GridType;
+  hoveredCell?: { q: number; r: number } | null;
 }
 
 /**
@@ -93,7 +95,8 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
   gridSize,
   stroke = '#222',
   opacity = 0.5, // THEME ADJUSTMENT: Modify this value to change grid visibility (0.0 = invisible, 1.0 = fully opaque)
-  type = 'LINES'
+  type = 'LINES',
+  hoveredCell = null
 }) => {
   if (type === 'HIDDEN') return null;
 
@@ -233,11 +236,33 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
     });
   }, [type, x, y, width, height, gridSize, stroke, opacity]);
 
+  // Render hover highlight for hovered cell
+  const hoverHighlight = useMemo(() => {
+    if (!hoveredCell || type === 'HIDDEN' || type === 'DOTS') return null;
+
+    const geometry = createGridGeometry(type);
+    const vertices = geometry.getCellVertices(hoveredCell, gridSize);
+    const points = verticesToPoints(vertices);
+
+    return (
+      <Line
+        key="hover-highlight"
+        points={points}
+        fill="rgba(255, 255, 255, 0.1)"
+        stroke="rgba(255, 255, 255, 0.5)"
+        strokeWidth={2}
+        opacity={1}
+        closed={true}
+      />
+    );
+  }, [hoveredCell, type, gridSize]);
+
   return (
     <Group listening={false}>
       {squareLineElements}
       {dotElements}
       {geometryElements}
+      {hoverHighlight}
     </Group>
   );
 };

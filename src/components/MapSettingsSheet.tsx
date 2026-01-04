@@ -36,6 +36,8 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
   const setMap = useGameStore(state => state.setMap);
   const gridType = useGameStore(state => state.gridType);
   const setGridType = useGameStore(state => state.setGridType);
+  const gridColor = useGameStore(state => state.gridColor);
+  const setGridColor = useGameStore(state => state.setGridColor);
   const isDaylightMode = useGameStore(state => state.isDaylightMode);
   const setDaylightMode = useGameStore(state => state.setDaylightMode);
   const isCalibrating = useGameStore(state => state.isCalibrating);
@@ -59,6 +61,7 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
 
   // Local state for grid settings in CREATE mode
   const [pendingGridType, setPendingGridType] = useState<GridType>('LINES');
+  const [pendingGridColor, setPendingGridColor] = useState('#222222');
   const [pendingDaylightMode, setPendingDaylightMode] = useState(false);
 
   // Load current map data when in EDIT mode
@@ -82,9 +85,10 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
       setPendingMapData(null);
       // Initialize pending grid settings from current store state
       setPendingGridType(gridType);
+      setPendingGridColor(gridColor);
       setPendingDaylightMode(isDaylightMode);
     }
-  }, [mode, mapId, campaign.maps, isOpen, gridType, isDaylightMode]);
+  }, [mode, mapId, campaign.maps, isOpen, gridType, gridColor, isDaylightMode]);
 
   // Cleanup processing on unmount
   useEffect(() => {
@@ -342,6 +346,27 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({
               <option value="HIDDEN">Hidden</option>
             </select>
           </div>
+
+          {/* Grid Color */}
+          {gridType !== 'HIDDEN' && (
+            <div>
+              <label htmlFor="grid-color-input" className="block text-xs mb-2 uppercase font-semibold" style={{ color: 'var(--app-text-secondary)' }}>
+                Grid Color
+              </label>
+              <div className="flex gap-2 items-center">
+                <input
+                  id="grid-color-input"
+                  type="color"
+                  value={mode === 'CREATE' ? pendingGridColor : gridColor}
+                  onChange={(e) => mode === 'CREATE' ? setPendingGridColor(e.target.value) : setGridColor(e.target.value)}
+                  className="h-10 w-20 rounded cursor-pointer border border-[var(--app-border-default)]"
+                />
+                <span className="text-xs text-[var(--app-text-secondary)]">
+                  {mode === 'CREATE' ? pendingGridColor : gridColor}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Fog of War */}
           <div>

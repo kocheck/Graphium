@@ -5,6 +5,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
 import { snapToGrid } from '../../utils/grid';
+import { createGridGeometry } from '../../utils/gridGeometry';
 import { useGameStore, Drawing } from '../../store/gameStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
@@ -217,34 +218,6 @@ const CanvasManager = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
-  // Get grid color from CSS variable (theme-aware)
-  const [gridColor, setGridColor] = useState('#222');
-
-  useEffect(() => {
-    const updateGridColor = () => {
-      const computedColor = getComputedStyle(document.documentElement).getPropertyValue('--app-border-default').trim();
-      if (computedColor) {
-        setGridColor(computedColor);
-      }
-    };
-
-    // Initial color
-    updateGridColor();
-
-    // Listen for theme changes
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-theme') {
-          updateGridColor();
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-
-    return () => observer.disconnect();
-  }, []);
-
   // Atomic selectors to prevent infinite re-render loops and avoid useShallow crashes
   const map = useGameStore(s => s.map);
   const tokens = useGameStore(s => s.tokens);
@@ -254,6 +227,7 @@ const CanvasManager = ({
   const stairs = useGameStore(s => s.stairs);
   const gridSize = useGameStore(s => s.gridSize);
   const gridType = useGameStore(s => s.gridType);
+  const gridColor = useGameStore(s => s.gridColor);
   const isCalibrating = useGameStore(s => s.isCalibrating);
   const isDaylightMode = useGameStore(s => s.isDaylightMode);
   const activeVisionPolygons = useGameStore(s => s.activeVisionPolygons);
@@ -379,6 +353,7 @@ const CanvasManager = ({
   const DRAG_BROADCAST_THROTTLE_MS = 16; // ~60fps
   const tokenNodesRef = useRef<Map<string, any>>(new Map()); // Direct refs to Konva nodes for smooth drag without React re-renders
   const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null); // Track hovered token for interactive feedback
+  const [hoveredCell, setHoveredCell] = useState<{ q: number; r: number } | null>(null); // Track hovered grid cell for highlight
 
   // Press-and-Hold Drag State (threshold-based drag detection)
   const DRAG_THRESHOLD = 5; // pixels - minimum movement to trigger drag
@@ -1386,6 +1361,16 @@ const CanvasManager = ({
     // Ignore multi-touch gestures
     if (isMultiTouchGesture(e)) return;
 
+    // Update hovered cell for grid highlight (only if grid is visible)
+    if (gridType !== 'HIDDEN' && gridType !== 'DOTS') {
+      const pos = getPointerPosition(e);
+      if (pos) {
+        const geometry = createGridGeometry(gridType);
+        const cell = geometry.pixelToGrid(pos.x, pos.y, gridSize);
+        setHoveredCell(cell);
+      }
+    }
+
     // DOOR TOOL PREVIEW - Show preview while hovering
     if (tool === 'door' && !isWorldView) {
       const pos = getPointerPosition(e);
@@ -2032,7 +2017,7 @@ const CanvasManager = ({
               />
             </CanvasOverlayErrorBoundary>
 
-            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} />
+            <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={gridColor} hoveredCell={hoveredCell} />
         </Layer>
 
         {/* Fog of War Layer (World View only) - Renders Overlay */}

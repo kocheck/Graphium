@@ -101,6 +101,7 @@ export interface MapData {
   map: MapConfig | null;
   gridSize: number;
   gridType: GridType;
+  gridColor: string; // Hex color for grid lines (e.g., '#222')
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
 }
@@ -236,6 +237,7 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
   map: null,
   gridSize: 50,
   gridType: 'LINES',
+  gridColor: '#222222', // Default dark gray grid
   exploredRegions: [],
   isDaylightMode: false,
 });
@@ -271,6 +273,7 @@ export interface GameState {
   stairs: Stairs[];
   gridSize: number;
   gridType: GridType;
+  gridColor: string;
   map: MapConfig | null;
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
@@ -349,6 +352,7 @@ export interface GameState {
   // Map/Grid Attributes Actions
   setGridSize: (size: number) => void;
   setGridType: (type: GridType) => void;
+  setGridColor: (color: string) => void;
   setMap: (map: MapConfig | null) => void;
   updateMapPosition: (x: number, y: number) => void;
   updateMapScale: (scale: number) => void;
@@ -396,6 +400,7 @@ export const useGameStore = create<GameState>((set, get) => {
     stairs: initialMap.stairs,
     gridSize: initialMap.gridSize,
     gridType: initialMap.gridType,
+    gridColor: initialMap.gridColor,
     map: initialMap.map,
     exploredRegions: initialMap.exploredRegions,
     isDaylightMode: initialMap.isDaylightMode,
@@ -437,6 +442,7 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: activeMap.stairs || [],
         gridSize: activeMap.gridSize || 50,
         gridType: activeMap.gridType || 'LINES',
+        gridColor: activeMap.gridColor || '#222222',
         map: activeMap.map || null,
         exploredRegions: activeMap.exploredRegions || [],
         isDaylightMode: activeMap.isDaylightMode || false,
@@ -502,6 +508,7 @@ export const useGameStore = create<GameState>((set, get) => {
         map: state.map,
         gridSize: state.gridSize,
         gridType: state.gridType,
+        gridColor: state.gridColor,
         exploredRegions: state.exploredRegions,
         isDaylightMode: state.isDaylightMode,
       };
@@ -716,6 +723,7 @@ export const useGameStore = create<GameState>((set, get) => {
     // --- Grid/Map Actions ---
     setGridSize: (size: number) => set({ gridSize: size }),
     setGridType: (type: GridType) => set({ gridType: type }),
+    setGridColor: (color: string) => set({ gridColor: color }),
     setMap: (map: MapConfig | null) => set({ map }),
     updateMapPosition: (x: number, y: number) => set((state) => ({
       map: state.map ? { ...state.map, x, y } : null
