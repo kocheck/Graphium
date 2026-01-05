@@ -21,7 +21,9 @@ interface FogOfWarLayerProps {
 
 // ... logic ...
 
-import { BLUR_FILTERS } from './CanvasManager';
+import Konva from 'konva';
+
+const BLUR_FILTERS = [Konva.Filters.Blur]; // Use Konva.Filters.Blur instead of importing broken constant
 
 /**
  * FogOfWarLayer with Performance-Optimized Vision Calculation
