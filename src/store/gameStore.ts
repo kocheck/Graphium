@@ -12,6 +12,7 @@ export interface TokenMetadata {
   type?: 'PC' | 'NPC';
   visionRadius?: number;
   scale?: number;
+  movementSpeed?: number;
 }
 
 /**
@@ -42,6 +43,7 @@ export interface Token {
   type?: 'PC' | 'NPC'; // Override for library defaultType
   visionRadius?: number; // Override for library defaultVisionRadius
   name?: string; // Override for library name
+  movementSpeed?: number; // Movement speed in feet (default: 30ft)
 }
 
 /**
@@ -128,6 +130,7 @@ export interface TokenLibraryItem {
   defaultScale?: number; // Optional default scale when placed
   defaultVisionRadius?: number; // Optional default vision radius
   defaultType?: 'PC' | 'NPC'; // Optional default token type
+  defaultMovementSpeed?: number; // Optional default movement speed in feet
 }
 
 /**

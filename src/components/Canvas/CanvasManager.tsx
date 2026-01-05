@@ -1421,9 +1421,13 @@ const CanvasManager = ({
               const dragPos = dragPositionsRef.current.get(selectedToken.id);
               const tokenPos = dragPos || { x: selectedToken.x, y: selectedToken.y };
 
-              // Default movement speed: 30ft (standard for D&D Medium creatures)
-              // TODO: Make this configurable per token
-              const movementSpeed = 30;
+              // Movement speed (feet) - prefer per-token value when available, fallback to 30ft
+              const movementSpeed =
+                typeof selectedToken.movementSpeed === 'number' &&
+                isFinite(selectedToken.movementSpeed) &&
+                selectedToken.movementSpeed > 0
+                  ? selectedToken.movementSpeed
+                  : 30;
 
               return (
                 <CanvasOverlayErrorBoundary overlayName="MovementRangeOverlay">
@@ -1590,7 +1594,7 @@ const CanvasManager = ({
                     verticalAlign="middle"
                     width={gridSize * safeScale * 2}
                     x={displayX - (gridSize * safeScale) / 2}
-                    y={finalDisplayY + gridSize * safeScale + 8}
+                    y={displayY + gridSize * safeScale + 8}
                     listening={false}
                   />
                 )}
