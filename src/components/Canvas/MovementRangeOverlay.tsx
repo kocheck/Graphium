@@ -27,6 +27,13 @@ const verticesToPoints = (vertices: Array<{ x: number; y: number }>): number[] =
 /**
  * Get neighboring cells based on grid type
  * Uses grid-specific neighbor patterns
+ *
+ * **Note on Isometric Grids:**
+ * In isometric grids, movement appears diagonal in visual space but is actually
+ * orthogonal in grid coordinate space. The current BFS treats all neighbor
+ * transitions as equal cost (distance + 1), which is appropriate for the grid
+ * coordinate system. If D&D 5e diagonal movement rules should apply to isometric
+ * grids, this would need to be updated to use actual pixel distances.
  */
 function getNeighbors(
   cell: { q: number; r: number },

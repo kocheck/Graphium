@@ -166,6 +166,10 @@ export const calculateConeVertices = (
 /**
  * Formats distance for display
  *
+ * **Note:** Cell count calculation assumes square grid distances (1 cell = 5ft).
+ * For hexagonal and isometric grids, actual cell distances may vary based on
+ * movement direction and grid geometry.
+ *
  * @param feet - Distance in feet
  * @param showCells - Whether to show grid cell count (default: true)
  * @returns Formatted string (e.g., "30ft (6 cells)" or "30ft")
@@ -181,6 +185,9 @@ export const formatDistance = (feet: number, showCells: boolean = true): string 
 /**
  * Formats area for display (for circular AoE)
  *
+ * **Note:** Cell count calculation assumes square grid distances (1 cell = 5ft).
+ * For hexagonal and isometric grids, actual cell coverage may vary.
+ *
  * @param radiusFeet - Radius in feet
  * @param showCells - Whether to show grid cell count (default: true)
  * @returns Formatted string (e.g., "20ft radius (4 cells)" or "20ft radius")
@@ -195,6 +202,9 @@ export const formatRadius = (radiusFeet: number, showCells: boolean = true): str
 
 /**
  * Formats cone information for display
+ *
+ * **Note:** Cell count calculation assumes square grid distances (1 cell = 5ft).
+ * For hexagonal and isometric grids, actual cone coverage may vary.
  *
  * @param lengthFeet - Length of the cone in feet
  * @param angleDegrees - Cone angle in degrees

@@ -27,6 +27,7 @@ import MovementRangeOverlay from './MovementRangeOverlay';
 import { resolveTokenData } from '../../hooks/useTokenData';
 import URLImage from './URLImage';
 import PressureSensitiveLine from './PressureSensitiveLine';
+import { createGridGeometry } from '../../utils/gridGeometry';
 
 // Zoom constants
 const MIN_SCALE = 0.1;
@@ -1351,25 +1352,35 @@ const CanvasManager = ({
 
               const size = gridSize * token.scale;
 
+              // Get the grid cell that the token will snap to
+              const geometry = createGridGeometry(gridType);
+              const snapCell = geometry.pixelToGrid(
+                snapPos.x + size / 2,
+                snapPos.y + size / 2,
+                gridSize,
+              );
+
+              // Get the vertices of the grid cell for the snap preview
+              const cellVertices = geometry.getCellVertices(snapCell, gridSize);
+              const cellPoints = cellVertices.flatMap((v) => [v.x, v.y]);
+
               return (
                 <Group key={`snap-preview-${tokenId}`}>
-                  {/* Outer ring */}
-                  <Circle
-                    x={snapPos.x + size / 2}
-                    y={snapPos.y + size / 2}
-                    radius={size / 2 + 4}
+                  {/* Outer ring - actual grid cell shape */}
+                  <Line
+                    points={cellPoints}
                     stroke="rgba(37, 99, 235, 0.6)" // Blue accent color
                     strokeWidth={2}
                     listening={false}
                     dash={[8, 4]}
+                    closed={true}
                   />
-                  {/* Inner fill */}
-                  <Circle
-                    x={snapPos.x + size / 2}
-                    y={snapPos.y + size / 2}
-                    radius={size / 2}
+                  {/* Inner fill - actual grid cell shape */}
+                  <Line
+                    points={cellPoints}
                     fill="rgba(37, 99, 235, 0.1)"
                     listening={false}
+                    closed={true}
                   />
                 </Group>
               );
