@@ -1421,13 +1421,8 @@ const CanvasManager = ({
               const dragPos = dragPositionsRef.current.get(selectedToken.id);
               const tokenPos = dragPos || { x: selectedToken.x, y: selectedToken.y };
 
-              // Movement speed (feet) - prefer per-token value when available, fallback to 30ft
-              const movementSpeed =
-                typeof selectedToken.movementSpeed === 'number' &&
-                isFinite(selectedToken.movementSpeed) &&
-                selectedToken.movementSpeed > 0
-                  ? selectedToken.movementSpeed
-                  : 30;
+              // Movement speed is resolved from token data (defaults to 30ft if not set)
+              const movementSpeed = selectedToken.movementSpeed ?? 30;
 
               return (
                 <CanvasOverlayErrorBoundary overlayName="MovementRangeOverlay">

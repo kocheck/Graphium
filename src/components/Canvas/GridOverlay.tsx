@@ -237,7 +237,7 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
   const hoverHighlight = useMemo(() => {
     // DOTS mode deliberately skips hover highlight to avoid extra per-frame geometry work
     // on already dense dot grids (similar to why DOTS is restricted to square grids).
-    if (!hoveredCell || type === 'HIDDEN' || type === 'DOTS') return null;
+    if (!hoveredCell || type === 'DOTS') return null;
 
     const geometry = createGridGeometry(type);
     const vertices = geometry.getCellVertices(hoveredCell, gridSize);
