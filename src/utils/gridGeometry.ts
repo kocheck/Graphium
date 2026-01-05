@@ -24,6 +24,13 @@ const SQRT3_2 = SQRT3 / 2; // ~0.866
 const SQRT3_3 = SQRT3 / 3; // ~0.577
 
 /**
+ * Safety factor for hex bounds checking
+ * Multiplier applied to grid size when checking if a hex is within viewport bounds.
+ * A value > 1.0 ensures we don't miss hexes that are partially visible at viewport edges.
+ */
+const HEX_BOUNDS_SAFETY_FACTOR = 1.2;
+
+/**
  * Square Grid Geometry
  *
  * Traditional orthogonal grid (rows and columns).
@@ -230,7 +237,7 @@ export class HexagonalGridGeometry implements GridGeometry {
       for (let r = minR; r <= maxR; r++) {
         // Check if hex is actually visible (simple bounds check)
         const center = this.gridToPixel({ q, r }, gridSize);
-        const hexRadius = gridSize * 1.2; // Slightly larger for safety
+        const hexRadius = gridSize * HEX_BOUNDS_SAFETY_FACTOR;
 
         if (
           center.x + hexRadius >= bounds.x &&
@@ -257,7 +264,7 @@ export class HexagonalGridGeometry implements GridGeometry {
     // Round all three coordinates
     let rq = Math.round(q);
     let rr = Math.round(r);
-    let rs = Math.round(s);
+    const rs = Math.round(s);
 
     // Recalculate the coordinate with largest rounding error
     const qDiff = Math.abs(rq - q);
@@ -405,7 +412,9 @@ export function createGridGeometry(
     case 'ISOMETRIC':
       return new IsometricGridGeometry();
     default:
-      // Fallback to square grid for unknown types
-      return new SquareGridGeometry();
+      // Fail loudly for unknown types to avoid masking configuration bugs
+      throw new Error(
+        `createGridGeometry: Unknown grid type "${String(gridType)}"`,
+      );
   }
 }

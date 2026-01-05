@@ -572,7 +572,7 @@ const CanvasManager = ({
       }
 
       // Grid type shortcuts (DM only) - 1-5 keys
-      if (!isWorldView && !e.repeat) {
+      if (!isWorldView && !e.repeat && !isEditableElement(e.target)) {
         if (e.key === '1') {
           e.preventDefault();
           setGridType('LINES');

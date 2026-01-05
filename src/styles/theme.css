@@ -199,7 +199,6 @@
   --app-overlay: var(--slate-a11); /* Modal overlay (alpha channel) */
   --app-shadow-sm: var(--slate-a3); /* Small shadow */
   --app-shadow-md: var(--slate-a6); /* Medium shadow */
-  --app-shadow-md: var(--slate-a6); /* Medium shadow */
   --app-shadow-lg: var(--slate-a8); /* Large shadow */
 
   /* ===== Grid Colors ===== */
@@ -268,7 +267,6 @@
   /* ===== Overlays & Shadows ===== */
   --app-overlay: var(--slate-a11);
   --app-shadow-sm: var(--slate-a3);
-  --app-shadow-md: var(--slate-a6);
   --app-shadow-md: var(--slate-a6);
   --app-shadow-lg: var(--slate-a8);
 

@@ -14,6 +14,7 @@ import { useGameStore, GridType } from '../store/gameStore';
 import { processImage, ProcessingHandle } from '../utils/AssetProcessor';
 import ToggleSwitch from './ToggleSwitch';
 import { rollForMessage } from '../utils/systemMessages';
+import { RiRulerLine } from '@remixicon/react';
 
 interface MapSettingsSheetProps {
   isOpen: boolean;
@@ -330,7 +331,7 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
                     : 'Draw a box around one grid cell to calibrate map scale'
                 }
               >
-                <span>📐</span> Calibrate via Draw
+                <RiRulerLine className="w-4 h-4" /> Calibrate via Draw
                 {(gridType === 'HEXAGONAL' || gridType === 'ISOMETRIC') && (
                   <span className="text-xs opacity-50">(Square grids only)</span>
                 )}
