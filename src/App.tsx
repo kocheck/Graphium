@@ -35,6 +35,7 @@ import Tooltip from './components/Tooltip';
 import { AboutModal } from './components/AboutModal';
 import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
 import UpdateManager from './components/UpdateManager';
+import UpdateManagerErrorBoundary from './components/UpdateManagerErrorBoundary';
 
 /**
  * App is the root component for Graphium's dual-window architecture
@@ -423,7 +424,9 @@ function App() {
             setIsUpdateManagerOpen(true);
           }}
         />
-        <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+        <UpdateManagerErrorBoundary>
+          <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+        </UpdateManagerErrorBoundary>
 
         {/* Home/Splash Screen */}
         <HomeScreen onStartEditor={handleStartEditor} />
@@ -449,7 +452,9 @@ function App() {
           setIsUpdateManagerOpen(true);
         }}
       />
-      <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+      <UpdateManagerErrorBoundary>
+        <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+      </UpdateManagerErrorBoundary>
 
       {/* Loading Overlay: Only render in World View to block players' view */}
       {isWorldView && <LoadingOverlay />}

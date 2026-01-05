@@ -25,11 +25,20 @@ The auto-updater allows Graphium to automatically detect, download, and install 
    - Modal dialog for update workflow
    - Shows current version, available version, download progress
    - Handles user interactions (check, download, install)
+   - **Test Coverage:** `UpdateManager.test.tsx` (comprehensive unit tests)
 
-4. **Integration (`src/App.tsx`, `src/components/AboutModal.tsx`)**
+4. **Error Boundary (`src/components/UpdateManagerErrorBoundary.tsx`)**
+   - Wraps UpdateManager to catch rendering and update errors
+   - Prevents update failures from crashing the application
+   - Provides user-friendly error messages with retry option
+   - Logs detailed error information for debugging
+   - **Test Coverage:** `UpdateManagerErrorBoundary.test.tsx`
+
+5. **Integration (`src/App.tsx`, `src/components/AboutModal.tsx`)**
    - "Check for Updates" button in About modal
    - Opens UpdateManager modal when clicked
    - Keyboard shortcut support (Escape to close)
+   - Wrapped in error boundary for graceful error handling
 
 ## User Workflow
 
@@ -116,6 +125,32 @@ Without code signing:
 - Auto-update will fail with signature verification errors
 
 ## Testing
+
+### Unit Tests
+
+The auto-updater has comprehensive test coverage:
+
+**UpdateManager.test.tsx** - Tests for the UI component:
+- Rendering states (idle, checking, available, downloading, downloaded, error)
+- User interactions (check, download, install, close)
+- Event handling (update events, progress updates)
+- Electron environment detection
+- Keyboard shortcuts (Escape to close)
+- Download progress formatting
+- Error handling for all async operations
+
+**UpdateManagerErrorBoundary.test.tsx** - Tests for the error boundary:
+- Error catching and display
+- Error reset functionality
+- Console logging verification
+- Component recovery after error
+- Specific error type handling (network, IPC, signature)
+
+Run tests with:
+```bash
+npm test UpdateManager
+npm test UpdateManagerErrorBoundary
+```
 
 ### Testing in Development
 
@@ -213,10 +248,15 @@ autoUpdater.quitAndInstall() → App restarts
 - **Main Process:** `electron/autoUpdater.ts`
 - **Preload:** `electron/preload.ts` (line 180-247)
 - **UI Component:** `src/components/UpdateManager.tsx`
+- **Error Boundary:** `src/components/UpdateManagerErrorBoundary.tsx`
+- **Tests:**
+  - `src/components/UpdateManager.test.tsx` (UI component tests)
+  - `src/components/UpdateManagerErrorBoundary.test.tsx` (error boundary tests)
 - **Type Definitions:** `src/window.d.ts` (line 73-86)
 - **Integration:** `src/App.tsx`, `src/components/AboutModal.tsx`
 - **Configuration:** `electron-builder.json5` (line 17-21)
 - **Dependencies:** `package.json` (line 31-33)
+- **Design System:** `src/components/DesignSystemPlayground/playground-registry.tsx`
 
 ## Logs
 
