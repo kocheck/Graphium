@@ -277,8 +277,6 @@ const CanvasManager = ({
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
-
-
   // Theme-aware text color for contrast
   const textColor = useThemeColor('--app-text-primary');
 
@@ -567,7 +565,7 @@ const CanvasManager = ({
       }
 
       // M key - show movement range overlay
-      if ((e.key === 'm' || e.key === 'M') && !e.repeat) {
+      if ((e.key === 'm' || e.key === 'M') && !e.repeat && !isEditableElement(e.target)) {
         e.preventDefault();
         setIsMKeyPressed(true);
       }
@@ -1130,11 +1128,9 @@ const CanvasManager = ({
             stroke={resolvedGridColor}
             hoveredCell={null}
           />
-
-
         </Layer>
 
-          {/* Fog of War Layer moved below Drawings Layer to correct occlusion */}
+        {/* Fog of War Layer moved below Drawings Layer to correct occlusion */}
 
         {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
         <Layer>
@@ -1153,8 +1149,7 @@ const CanvasManager = ({
                   lineCap="round"
                   dash={ghostLine.tool === 'wall' ? [10, 5] : undefined}
                   opacity={
-                    ghostLine.tool === 'wall' &&
-                    isWorldView
+                    ghostLine.tool === 'wall' && isWorldView
                       ? 1 // Always visible
                       : 0.5
                   }
@@ -1174,8 +1169,7 @@ const CanvasManager = ({
               // Apply uniform scaling (line.scale is a single number applied to both axes)
               scaleX: line.scale || 1,
               scaleY: line.scale || 1,
-              stroke:
-                line.tool === 'wall' && isWorldView ? '#000000' : line.color,
+              stroke: line.tool === 'wall' && isWorldView ? '#000000' : line.color,
               strokeWidth:
                 line.tool === 'wall' && isWorldView
                   ? 6 // Fixed thickness for World View
@@ -1524,9 +1518,32 @@ const CanvasManager = ({
             const safeScale = token.scale || 1;
             const tokenHeight = gridSize * safeScale;
 
-            // Isometric "Standing" Offset
-            // In isometric view, tokens should "stand" on the tile rather than lie flat.
-            // We shift them up by half their height so their bottom edge aligns with the tile center.
+            /**
+             * Isometric "Standing" Offset
+             *
+             * Visual goal:
+             * - In ISOMETRIC view we want tokens to appear as if they are standing upright on
+             *   the diamond-shaped tile, with their "feet" anchored to the tile center, rather
+             *   than lying flat in the middle of the cell.
+             *
+             * Geometry:
+             * - Our token image is rendered centered on (displayX, displayY).
+             * - tokenHeight represents the rendered token height in pixels for this grid cell:
+             *       tokenHeight = gridSize * safeScale
+             *   so any change to token.scale or gridSize automatically affects this value.
+             * - By shifting the image up by half its rendered height (tokenHeight / 2), we move
+             *   the bottom edge of the token image down to where the center of the isometric
+             *   tile is drawn, creating the illusion that the token is standing on that point.
+             *
+             * Scaling behavior:
+             * - Because the offset is derived from tokenHeight (which already includes safeScale),
+             *   larger tokens are moved proportionally further up, keeping their feet aligned
+             *   with the same ground plane as smaller tokens.
+             *
+             * If the isometric anchoring convention changes (e.g., using a different vertical
+             * anchor point or a non-centered token sprite), this offset calculation should be
+             * updated accordingly.
+             */
             const displayYOffset = gridType === 'ISOMETRIC' ? -(tokenHeight / 2) : 0;
             const finalDisplayY = displayY + displayYOffset;
 
