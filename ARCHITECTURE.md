@@ -117,7 +117,8 @@
 ├── electron/                    # Electron main process
 │   ├── main.ts                  # Main process logic (38KB)
 │   ├── preload.ts               # IPC bridge (contextBridge)
-│   └── themeManager.ts          # Theme persistence
+│   ├── themeManager.ts          # Theme persistence
+│   └── autoUpdater.ts           # Auto-update with electron-updater
 │
 ├── tests/                       # E2E and integration tests
 │   ├── functional/              # Functional E2E tests (8 files)
@@ -443,6 +444,100 @@ For each PC token:
 2. **Set Vision**: Select PC token → TokenInspector → Set visionRadius
 3. **Reveal**: FogOfWarLayer calculates vision → Blurs unseen areas
 4. **Wall Occlusion**: Walls block vision automatically
+
+---
+
+## Auto-Update System
+
+**Technology**: `electron-updater` + GitHub Releases
+
+### Architecture
+
+```
+┌─────────────────────┐
+│   GitHub Releases   │ ← Publish new version
+│   - DMG/EXE files   │
+│   - latest.yml      │
+└──────────┬──────────┘
+           │ HTTPS
+           ↓
+┌─────────────────────┐
+│   electron-updater  │ (Main Process)
+│   - Check for update│
+│   - Download in BG  │
+│   - Verify signature│
+└──────────┬──────────┘
+           │ IPC
+           ↓
+┌─────────────────────┐
+│   UpdateManager     │ (Renderer)
+│   - User prompts    │
+│   - Progress UI     │
+│   - Install/Restart │
+└─────────────────────┘
+```
+
+### Components
+
+**Backend (`electron/autoUpdater.ts`)**:
+- Configures `autoUpdater` with GitHub provider
+- Event handlers for all update lifecycle events
+- IPC handlers for renderer communication
+- Production logging with `electron-log`
+- Disabled in development mode
+
+**IPC Bridge (`electron/preload.ts`)**:
+- Exposes `window.autoUpdater` API via contextBridge
+- Methods: `checkForUpdates()`, `downloadUpdate()`, `quitAndInstall()`
+- Event listeners for status updates and progress
+
+**UI Component (`src/components/UpdateManager.tsx`)**:
+- Modal dialog with update workflow
+- States: idle → checking → available → downloading → downloaded
+- Download progress with speed/percentage
+- Error boundary protected (graceful failure)
+
+### User Flow
+
+1. User presses `?` → About modal opens
+2. Click "Check for Updates" button
+3. UpdateManager checks GitHub Releases
+4. If available: Show version, download button
+5. Download with progress bar
+6. "Restart & Install" button appears
+7. App quits and installs update on restart
+
+### Configuration
+
+**electron-builder.json5**:
+```json
+"publish": {
+  "provider": "github",
+  "owner": "kocheck",
+  "repo": "Graphium"
+}
+```
+
+**Release Process**:
+1. `npm run build` → Creates installers
+2. Create GitHub Release with tag (e.g., `v0.5.4`)
+3. Upload installers + `latest.yml` files
+4. electron-updater automatically detects new version
+
+### Security
+
+- ✅ **Signature verification**: Requires code signing (macOS/Windows)
+- ✅ **HTTPS only**: All downloads from GitHub
+- ✅ **No auto-download**: User controls when to download
+- ✅ **Sandboxed renderer**: IPC only via contextBridge
+
+### Testing
+
+- **Unit tests**: `UpdateManager.test.tsx` (498 lines)
+- **Error boundary tests**: `UpdateManagerErrorBoundary.test.tsx` (281 lines)
+- **Coverage**: All states, events, error scenarios
+
+See `AUTO_UPDATER.md` for detailed documentation.
 
 ---
 

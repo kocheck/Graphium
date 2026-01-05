@@ -103,6 +103,7 @@ Graphium gives you a dedicated "Architect's View" full of arcane instruments, wh
 - **Dual-Window Architecture**: One brain, two faces. You control the chaos; they witness the glory.
 - **Fog of War**: A hardware-accelerated raycasting engine that creates true mystery.
 - **Asset Conjuration**: Drag and drop images directly onto the canvas. We optimize them automatically.
+- **Auto-Update**: Seamless updates delivered from GitHub Releases. Stay current without the ritual.
 
 ### **The Modern Stylus (Touch & Pen Support)**
 
@@ -164,6 +165,7 @@ npm run build
 - **W**: Wall / Occlude
 - **D**: Door / Passage
 - **I**: Color Picker
+- **?**: About & Updates (Check for new versions)
 - **Cmd + S**: Save the Tome (.graphium)
 - **Cmd + O**: Open a Tome
 - **Shift + Drag**: Lock Axis
