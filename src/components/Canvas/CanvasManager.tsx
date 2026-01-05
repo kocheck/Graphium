@@ -1398,6 +1398,34 @@ const CanvasManager = ({
                 />
               ))}
 
+          {/* Movement Range Overlay - Shows reachable cells for selected token (Hold M key) */}
+          {isMKeyPressed &&
+            !isWorldView &&
+            selectedIds.length === 1 &&
+            (() => {
+              const selectedToken = resolvedTokens.find((t) => t.id === selectedIds[0]);
+              if (!selectedToken) return null;
+
+              // Use drag position if token is being dragged
+              const dragPos = dragPositionsRef.current.get(selectedToken.id);
+              const tokenPos = dragPos || { x: selectedToken.x, y: selectedToken.y };
+
+              // Default movement speed: 30ft (standard for D&D Medium creatures)
+              // TODO: Make this configurable per token
+              const movementSpeed = 30;
+
+              return (
+                <CanvasOverlayErrorBoundary overlayName="MovementRangeOverlay">
+                  <MovementRangeOverlay
+                    tokenPosition={tokenPos}
+                    movementSpeed={movementSpeed}
+                    gridSize={gridSize}
+                    gridType={gridType}
+                  />
+                </CanvasOverlayErrorBoundary>
+              );
+            })()}
+
           {resolvedTokens.map((token) => {
             // Use drag position if available (for real-time visual feedback)
             const dragPos = dragPositionsRef.current.get(token.id);
@@ -1682,4 +1710,4 @@ const CanvasManager = ({
   );
 };
 
-export default CanvasManager;
+export default React.memo(CanvasManager);
