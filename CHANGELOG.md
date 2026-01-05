@@ -92,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Grid Type Definition**: Extended `GridType` from `'LINES' | 'DOTS' | 'HIDDEN'` to include `'HEXAGONAL' | 'ISOMETRIC'`
 - **snapToGrid() Function**: Added optional `gridType` parameter (defaults to 'LINES' for backward compatibility)
 - **GridOverlay Component**: Refactored to support hex/iso rendering using geometry abstraction
+- **Grid Color Default**: Maps created before this update that don't have the `gridColor` property will use the new default grid color (`#222222`, dark gray) when loaded. This is a visual-only change and does not affect map functionality.
 
 ### Fixed
 
