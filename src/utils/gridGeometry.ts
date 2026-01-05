@@ -413,8 +413,6 @@ export function createGridGeometry(
       return new IsometricGridGeometry();
     default:
       // Fail loudly for unknown types to avoid masking configuration bugs
-      throw new Error(
-        `createGridGeometry: Unknown grid type "${String(gridType)}"`,
-      );
+      throw new Error(`createGridGeometry: Unknown grid type "${String(gridType)}"`);
   }
 }
