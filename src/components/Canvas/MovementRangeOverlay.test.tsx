@@ -148,8 +148,8 @@ describe('MovementRangeOverlay', () => {
       const renderTime = endTime - startTime;
 
       // Should render in reasonable time even with large range
-      // In test environment, allow up to 500ms due to overhead
-      expect(renderTime).toBeLessThan(500);
+      // In test environment, allow up to 100ms to leave some overhead margin
+      expect(renderTime).toBeLessThan(100);
     });
 
     it('should not render duplicate cells', () => {

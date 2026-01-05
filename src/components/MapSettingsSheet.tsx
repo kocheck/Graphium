@@ -367,33 +367,37 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
           </div>
 
           {/* Grid Color */}
-          {gridType !== 'HIDDEN' && (
-            <div>
-              <label
-                htmlFor="grid-color-input"
-                className="block text-xs mb-2 uppercase font-semibold"
-                style={{ color: 'var(--app-text-secondary)' }}
-              >
-                Grid Color
-              </label>
-              <div className="flex gap-2 items-center">
-                <input
-                  id="grid-color-input"
-                  type="color"
-                  value={mode === 'CREATE' ? pendingGridColor : gridColor}
-                  onChange={(e) =>
-                    mode === 'CREATE'
-                      ? setPendingGridColor(e.target.value)
-                      : setGridColor(e.target.value)
-                  }
-                  className="h-10 w-20 rounded cursor-pointer border border-[var(--app-border-default)]"
-                />
-                <span className="text-xs text-[var(--app-text-secondary)]">
-                  {mode === 'CREATE' ? pendingGridColor : gridColor}
-                </span>
-              </div>
+          <div>
+            <label
+              htmlFor="grid-color-input"
+              className="block text-xs mb-1 uppercase font-semibold"
+              style={{ color: 'var(--app-text-secondary)' }}
+            >
+              Grid Color
+            </label>
+            {gridType === 'HIDDEN' && (
+              <p className="text-[10px] mb-2 text-[var(--app-text-secondary)]">
+                Grid is currently hidden. This color will be applied when you
+                switch to a visible grid type.
+              </p>
+            )}
+            <div className="flex gap-2 items-center">
+              <input
+                id="grid-color-input"
+                type="color"
+                value={mode === 'CREATE' ? pendingGridColor : gridColor}
+                onChange={(e) =>
+                  mode === 'CREATE'
+                    ? setPendingGridColor(e.target.value)
+                    : setGridColor(e.target.value)
+                }
+                className="h-10 w-20 rounded cursor-pointer border border-[var(--app-border-default)]"
+              />
+              <span className="text-xs text-[var(--app-text-secondary)]">
+                {mode === 'CREATE' ? pendingGridColor : gridColor}
+              </span>
             </div>
-          )}
+          </div>
 
           {/* Fog of War */}
           <div>
