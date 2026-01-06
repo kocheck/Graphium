@@ -11,7 +11,7 @@
 import { useMemo } from 'react';
 
 interface UpdateErrorFallbackUIProps {
-  error?: Error;
+  errorMessage?: string;
   onReset: () => void;
 }
 
@@ -80,14 +80,14 @@ export const rollForMessage = (
  * Update error fallback UI component
  * Displays user-friendly error message with retry and close options
  */
-export function UpdateErrorFallbackUI({ error, onReset }: UpdateErrorFallbackUIProps) {
+export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFallbackUIProps) {
   // Roll for random error messages (memoized per error instance to keep them stable)
-  const errorTitle = useMemo(() => rollForMessage(updateErrorMessages.title), [error]);
-  const errorDesc = useMemo(() => rollForMessage(updateErrorMessages.description), [error]);
+  const errorTitle = useMemo(() => rollForMessage(updateErrorMessages.title), [errorMessage]);
+  const errorDesc = useMemo(() => rollForMessage(updateErrorMessages.description), [errorMessage]);
 
   // Determine which hints to show based on error type
   const hints = useMemo(() => {
-    const errorMsg = error?.message?.toLowerCase() || '';
+    const errorMsg = errorMessage?.toLowerCase() || '';
     
     // Check for signature-related errors
     if (errorMsg.includes('signature') || errorMsg.includes('verify') || errorMsg.includes('cert')) {
@@ -102,7 +102,7 @@ export function UpdateErrorFallbackUI({ error, onReset }: UpdateErrorFallbackUIP
     
     // Default to general hints
     return updateErrorMessages.hints.general;
-  }, [error]);
+  }, [errorMessage]);
 
   return (
     <div
@@ -136,7 +136,7 @@ export function UpdateErrorFallbackUI({ error, onReset }: UpdateErrorFallbackUIP
                 <li key={index}>{hint}</li>
               ))}
             </ul>
-            {error && (
+            {errorMessage && (
               <details className="text-xs mb-3">
                 <summary className="cursor-pointer" style={{ color: 'var(--app-text-muted)' }}>
                   Technical details
@@ -145,7 +145,7 @@ export function UpdateErrorFallbackUI({ error, onReset }: UpdateErrorFallbackUIP
                   className="mt-2 p-2 rounded overflow-auto max-h-32"
                   style={{ backgroundColor: 'var(--app-bg-subtle)', color: 'var(--app-text-muted)' }}
                 >
-                  {error.message}
+                  {errorMessage}
                 </pre>
               </details>
             )}

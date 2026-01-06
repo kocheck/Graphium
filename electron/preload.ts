@@ -31,11 +31,11 @@
 
 import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron'
 
-// Map to store original listeners -> wrapper listeners
+// WeakMap to store original listeners -> wrapper listeners
 // This is needed because we wrap listeners in on(), so we need the wrapper reference for off()
-// Using Map instead of WeakMap since function references may be created inline
+// Using WeakMap allows garbage collection when listener references are no longer accessible
 type IpcRendererListener = Parameters<typeof ipcRenderer.on>[1];
-const listenerMap = new Map<
+const listenerMap = new WeakMap<
   IpcRendererListener,
   (event: IpcRendererEvent, ...args: unknown[]) => void
 >();

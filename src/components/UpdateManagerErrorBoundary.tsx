@@ -62,11 +62,13 @@ interface Props {
  * State for UpdateManagerErrorBoundary
  *
  * @property hasError - Whether an error has been caught
- * @property error - The error that was caught (for display)
+ * @property errorMessage - The error message (for display)
+ * @property errorStack - The error stack trace (for debugging)
  */
 interface State {
   hasError: boolean;
-  error?: Error;
+  errorMessage?: string;
+  errorStack?: string;
 }
 
 /**
@@ -78,18 +80,25 @@ interface State {
 class UpdateManagerErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: undefined };
+    this.state = { hasError: false, errorMessage: undefined, errorStack: undefined };
   }
 
   /**
    * React lifecycle method called when error is caught
    * Sets hasError to trigger error UI display
    *
+   * Stores only error.message and error.stack as strings to avoid
+   * storing non-serializable Error objects or circular references.
+   *
    * @param error - The error thrown during update operations
-   * @returns New state with error flag set
+   * @returns New state with error flag and serializable error data
    */
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return {
+      hasError: true,
+      errorMessage: error.message,
+      errorStack: error.stack,
+    };
   }
 
   /**
@@ -141,7 +150,7 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    * Clears the error state so UpdateManager can render normally.
    */
   resetError = () => {
-    this.setState({ hasError: false, error: undefined });
+    this.setState({ hasError: false, errorMessage: undefined, errorStack: undefined });
   };
 
   /**
@@ -151,7 +160,7 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    */
   render() {
     if (this.state.hasError) {
-      return <UpdateErrorFallbackUI error={this.state.error} onReset={this.resetError} />;
+      return <UpdateErrorFallbackUI errorMessage={this.state.errorMessage} onReset={this.resetError} />;
     }
 
     return this.props.children;

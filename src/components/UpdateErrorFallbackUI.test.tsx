@@ -79,7 +79,7 @@ describe('UpdateErrorFallbackUI', () => {
 
   describe('Basic Rendering', () => {
     it('should render error dialog with themed title', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       // Check that one of the themed titles is displayed
       const possibleTitles = [
@@ -95,7 +95,7 @@ describe('UpdateErrorFallbackUI', () => {
     });
 
     it('should render error description', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       // Check that one of the themed descriptions is displayed
       const possibleDescriptions = [
@@ -111,7 +111,7 @@ describe('UpdateErrorFallbackUI', () => {
     });
 
     it('should render all error hints', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       // Verify all hints are displayed
       expect(screen.getByText(/No internet connection or unstable network/i)).toBeInTheDocument();
@@ -124,8 +124,8 @@ describe('UpdateErrorFallbackUI', () => {
     });
 
     it('should render technical details in collapsed state by default', () => {
-      const testError = new Error('Network timeout');
-      render(<UpdateErrorFallbackUI error={testError} onReset={mockOnReset} />);
+      const testErrorMessage = 'Network timeout';
+      render(<UpdateErrorFallbackUI errorMessage={testErrorMessage} onReset={mockOnReset} />);
 
       const details = screen.getByText('Technical details');
       expect(details).toBeInTheDocument();
@@ -137,14 +137,14 @@ describe('UpdateErrorFallbackUI', () => {
     });
 
     it('should render Close button', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const closeButton = screen.getByRole('button', { name: /close/i });
       expect(closeButton).toBeInTheDocument();
     });
 
     it('should render Try Again button', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const tryAgainButton = screen.getByRole('button', { name: /try again/i });
       expect(tryAgainButton).toBeInTheDocument();
@@ -153,7 +153,7 @@ describe('UpdateErrorFallbackUI', () => {
 
   describe('User Interactions', () => {
     it('should call onReset when Close button is clicked', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const closeButton = screen.getByRole('button', { name: /close/i });
       fireEvent.click(closeButton);
@@ -162,7 +162,7 @@ describe('UpdateErrorFallbackUI', () => {
     });
 
     it('should call onReset when Try Again button is clicked', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const tryAgainButton = screen.getByRole('button', { name: /try again/i });
       fireEvent.click(tryAgainButton);
@@ -171,7 +171,7 @@ describe('UpdateErrorFallbackUI', () => {
     });
 
     it('should call onReset when clicking backdrop', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const backdrop = screen.getByRole('dialog').parentElement;
       if (backdrop) {
@@ -181,7 +181,7 @@ describe('UpdateErrorFallbackUI', () => {
     });
 
     it('should not call onReset when clicking dialog content', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const dialog = screen.getByRole('dialog');
       fireEvent.click(dialog);
@@ -191,7 +191,7 @@ describe('UpdateErrorFallbackUI', () => {
   });
 
   describe('Error Handling', () => {
-    it('should render without error object', () => {
+    it('should render without error message', () => {
       render(<UpdateErrorFallbackUI onReset={mockOnReset} />);
 
       // Should still render the dialog
@@ -199,9 +199,9 @@ describe('UpdateErrorFallbackUI', () => {
       expect(tryAgainButton).toBeInTheDocument();
     });
 
-    it('should display error message when error object is provided', () => {
-      const testError = new Error('Specific error message');
-      render(<UpdateErrorFallbackUI error={testError} onReset={mockOnReset} />);
+    it('should display error message when provided', () => {
+      const testErrorMessage = 'Specific error message';
+      render(<UpdateErrorFallbackUI errorMessage={testErrorMessage} onReset={mockOnReset} />);
 
       // Technical details should contain the error message
       expect(screen.getByText('Specific error message')).toBeInTheDocument();
@@ -210,31 +210,31 @@ describe('UpdateErrorFallbackUI', () => {
 
   describe('Message Randomization', () => {
     it('should use memoized messages that remain stable', () => {
-      const testError = new Error('Test error');
+      const testErrorMessage = 'Test error';
       const { rerender } = render(
-        <UpdateErrorFallbackUI error={testError} onReset={mockOnReset} />
+        <UpdateErrorFallbackUI errorMessage={testErrorMessage} onReset={mockOnReset} />
       );
 
       // Get the displayed title
       const initialTitle = screen.getByRole('heading', { level: 2 }).textContent;
 
       // Rerender with same error - title should remain the same due to memoization
-      rerender(<UpdateErrorFallbackUI error={testError} onReset={mockOnReset} />);
+      rerender(<UpdateErrorFallbackUI errorMessage={testErrorMessage} onReset={mockOnReset} />);
 
       const rerenderTitle = screen.getByRole('heading', { level: 2 }).textContent;
       expect(rerenderTitle).toBe(initialTitle);
     });
 
-    it('should generate new messages when error object changes', () => {
-      const error1 = new Error('Error 1');
-      const error2 = new Error('Error 2');
+    it('should generate new messages when error message changes', () => {
+      const errorMessage1 = 'Error 1';
+      const errorMessage2 = 'Error 2';
 
-      const { rerender } = render(<UpdateErrorFallbackUI error={error1} onReset={mockOnReset} />);
+      const { rerender } = render(<UpdateErrorFallbackUI errorMessage={errorMessage1} onReset={mockOnReset} />);
 
       const title1 = screen.getByRole('heading', { level: 2 }).textContent;
 
       // Rerender with different error - may get different title (though not guaranteed due to randomness)
-      rerender(<UpdateErrorFallbackUI error={error2} onReset={mockOnReset} />);
+      rerender(<UpdateErrorFallbackUI errorMessage={errorMessage2} onReset={mockOnReset} />);
 
       const title2 = screen.getByRole('heading', { level: 2 }).textContent;
 
@@ -247,7 +247,7 @@ describe('UpdateErrorFallbackUI', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA attributes for dialog', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const dialog = screen.getByRole('dialog');
       expect(dialog).toHaveAttribute('aria-modal', 'true');
@@ -255,14 +255,14 @@ describe('UpdateErrorFallbackUI', () => {
     });
 
     it('should have accessible heading', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const heading = screen.getByRole('heading', { level: 2 });
       expect(heading).toHaveAttribute('id', 'update-error-dialog-title');
     });
 
     it('should have keyboard accessible buttons', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       const closeButton = screen.getByRole('button', { name: /close/i });
       const tryAgainButton = screen.getByRole('button', { name: /try again/i });
@@ -274,14 +274,14 @@ describe('UpdateErrorFallbackUI', () => {
 
   describe('Visual Elements', () => {
     it('should render error icon', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       // Check for the exclamation mark icon
       expect(screen.getByText('!')).toBeInTheDocument();
     });
 
     it('should render hints as a list', () => {
-      render(<UpdateErrorFallbackUI error={new Error('Test error')} onReset={mockOnReset} />);
+      render(<UpdateErrorFallbackUI errorMessage="Test error" onReset={mockOnReset} />);
 
       // Find all list items
       const hints = screen.getAllByRole('listitem');

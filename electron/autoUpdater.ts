@@ -222,21 +222,3 @@ export function registerAutoUpdaterHandlers() {
 
   log.info('[AutoUpdater] IPC handlers registered');
 }
-
-/**
- * Unregister IPC handlers for auto-updater
- *
- * Useful during development or hot-reload to prevent duplicate handlers
- * and potential memory leaks. Call this during app shutdown or before re-registration.
- * 
- * Note: Currently exported for future hot-reload support. Not yet implemented in the
- * main application lifecycle, but available for development/testing scenarios.
- */
-export function unregisterAutoUpdaterHandlers() {
-  ipcMain.removeHandler('check-for-updates');
-  ipcMain.removeHandler('download-update');
-  ipcMain.removeHandler('quit-and-install');
-  ipcMain.removeHandler('get-current-version');
-
-  log.info('[AutoUpdater] IPC handlers unregistered');
-}
