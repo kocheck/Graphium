@@ -47,7 +47,7 @@
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { ErrorFallbackUI } from './ErrorFallbackUI';
+import { UpdateErrorFallbackUI } from './UpdateErrorFallbackUI';
 
 /**
  * Props for UpdateManagerErrorBoundary
@@ -124,7 +124,10 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
       console.error(
         '[UpdateManager] IPC communication error. Check main process autoUpdater handlers.'
       );
-    } else if (error.message.includes('signature') || error.message.includes('verify')) {
+    } else if (
+      error.message.toLowerCase().includes('signature') ||
+      error.message.toLowerCase().includes('verify')
+    ) {
       console.error(
         '[UpdateManager] Signature verification error. Ensure app is properly code-signed.'
       );
@@ -148,7 +151,7 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    */
   render() {
     if (this.state.hasError) {
-      return <ErrorFallbackUI error={this.state.error} onReset={this.resetError} />;
+      return <UpdateErrorFallbackUI error={this.state.error} onReset={this.resetError} />;
     }
 
     return this.props.children;

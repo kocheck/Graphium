@@ -326,13 +326,13 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="update-manager-title"
     >
       <div
         className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 max-w-md w-full mx-4"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="update-manager-title"
       >
         <div className="flex justify-between items-center mb-6">
           <h2

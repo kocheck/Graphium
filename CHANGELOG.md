@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - One-click "Restart & Install" when update is ready
   - Comprehensive error handling with user-friendly messages
   - Error boundary protection prevents update failures from crashing app
-  - Full test coverage (779 lines of tests)
+  - Full test coverage (708 lines of tests)
   - Production logging for debugging update issues
   - Disabled in development mode to prevent accidental updates
   - Requires code signing for macOS production builds

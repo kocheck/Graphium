@@ -9,7 +9,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import UpdateManagerErrorBoundary from './UpdateManagerErrorBoundary';
 
 // Component that throws an error when shouldThrow is true
@@ -86,30 +87,45 @@ describe('UpdateManagerErrorBoundary', () => {
       );
     });
 
-    it('should reset error state when reset is triggered', () => {
+    it('should reset error state when reset is triggered', async () => {
+      let shouldThrow = true;
+      const DynamicChild = () => {
+        if (shouldThrow) {
+          throw new Error('Test error in UpdateManager');
+        }
+        return <div>UpdateManager content</div>;
+      };
+
       const { rerender } = render(
         <UpdateManagerErrorBoundary>
-          <ThrowError shouldThrow={true} />
+          <DynamicChild />
         </UpdateManagerErrorBoundary>
       );
 
       // Error UI should be shown
       expect(screen.getByText(/error/i)).toBeInTheDocument();
 
-      // Find and click retry button (assuming ErrorFallbackUI has a retry button)
+      // Find and click retry button
       const retryButton = screen.queryByText(/try again/i);
       if (retryButton) {
-        fireEvent.click(retryButton);
+        // Change the child to not throw before clicking retry
+        shouldThrow = false;
 
-        // Re-render with non-throwing child
+        await act(async () => {
+          fireEvent.click(retryButton);
+        });
+
+        // Force a re-render to pick up the new shouldThrow value
         rerender(
           <UpdateManagerErrorBoundary>
-            <ThrowError shouldThrow={false} />
+            <DynamicChild />
           </UpdateManagerErrorBoundary>
         );
 
-        // Should show normal content again
-        expect(screen.getByText('UpdateManager content')).toBeInTheDocument();
+        // Should show normal content again after state update
+        await waitFor(() => {
+          expect(screen.getByText('UpdateManager content')).toBeInTheDocument();
+        });
       }
     });
   });

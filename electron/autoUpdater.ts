@@ -24,7 +24,7 @@
 
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import { app } from 'electron';
 
 // Configure logging for production debugging

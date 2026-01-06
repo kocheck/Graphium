@@ -91,9 +91,9 @@ describe('UpdateManager', () => {
     it('should show non-Electron message when autoUpdater is not available', () => {
       render(<UpdateManager isOpen={true} onClose={() => {}} />);
 
-      expect(
-        screen.getByText(/Auto-update is only available in the desktop application/)
-      ).toBeInTheDocument();
+      // The non-Electron message uses randomized themed copy (e.g. "Desktop Sanctum", "Desktop Realm").
+      // Assert on the stable "Desktop" keyword instead of an exact string.
+      expect(screen.getByText(/Desktop/i)).toBeInTheDocument();
     });
   });
 
@@ -136,7 +136,7 @@ describe('UpdateManager', () => {
     it('should call checkForUpdates when button is clicked', async () => {
       render(<UpdateManager isOpen={true} onClose={() => {}} />);
 
-      const checkButton = screen.getByText('Check for Updates');
+      const checkButton = screen.getByText(/Consult the Archives/i);
       await act(async () => {
         fireEvent.click(checkButton);
       });
@@ -173,7 +173,13 @@ describe('UpdateManager', () => {
         if (checkingCallback) checkingCallback();
       });
 
-      expect(screen.getByText('Checking for updates...')).toBeInTheDocument();
+      // The checking message uses randomized themed copy (e.g. "Divining the cosmic archives", "Consulting the Chronicle").
+      // Assert on common keywords that appear in all variations.
+      expect(
+        screen.getByText(
+          /Divining|Consulting|Communing|Rolling|Peering/i,
+        ),
+      ).toBeInTheDocument();
     });
 
     it('should show update available state', async () => {
@@ -192,8 +198,10 @@ describe('UpdateManager', () => {
         }
       });
 
-      expect(screen.getByText(/Update Available: v0.5.4/)).toBeInTheDocument();
-      expect(screen.getByText('Download Update')).toBeInTheDocument();
+      // Message prefix is randomized (e.g. "✨ New Power Forged: v0.5.4"),
+      // so only assert on the stable version substring.
+      expect(screen.getByText('v0.5.4', { exact: false })).toBeInTheDocument();
+      expect(screen.getByText(/Summon the Artifact/i)).toBeInTheDocument();
     });
 
     it('should show no update available state', async () => {
@@ -212,7 +220,11 @@ describe('UpdateManager', () => {
         }
       });
 
-      expect(screen.getByText("✓ You're up to date!")).toBeInTheDocument();
+      // The no-update message uses randomized themed copy (e.g. "Your forge burns", "You wield the cutting edge").
+      // Assert on the title pattern which appears above the subtitle.
+      expect(
+        screen.getByText(/forge burns|wield the cutting|Natural 20 on your version|arsenal is complete|chapter already graces/i),
+      ).toBeInTheDocument();
     });
 
     it('should show download progress', async () => {
@@ -242,7 +254,8 @@ describe('UpdateManager', () => {
         }
       });
 
-      expect(screen.getByText('Downloading Update...')).toBeInTheDocument();
+      // The downloading message uses randomized themed copy (e.g. "Channeling the update", "Summoning the artifact").
+      // Assert on the progress percentage which is always shown.
       expect(screen.getByText('45.5%')).toBeInTheDocument();
     });
 
@@ -262,8 +275,8 @@ describe('UpdateManager', () => {
         }
       });
 
-      expect(screen.getByText('✓ Update Downloaded')).toBeInTheDocument();
-      expect(screen.getByText('Restart & Install')).toBeInTheDocument();
+      // The downloaded message uses randomized themed copy, but button text is stable.
+      expect(screen.getByText(/Install & Reforge/i)).toBeInTheDocument();
     });
 
     it('should show error state', async () => {
@@ -282,7 +295,7 @@ describe('UpdateManager', () => {
         }
       });
 
-      expect(screen.getByText('Error')).toBeInTheDocument();
+      // Error state displays the actual error message
       expect(screen.getByText('Network error')).toBeInTheDocument();
     });
   });
@@ -308,7 +321,7 @@ describe('UpdateManager', () => {
         }
       });
 
-      const downloadButton = screen.getByText('Download Update');
+      const downloadButton = screen.getByRole('button', { name: /Summon the Artifact/i });
       await act(async () => {
         fireEvent.click(downloadButton);
       });
@@ -332,7 +345,7 @@ describe('UpdateManager', () => {
         }
       });
 
-      const installButton = screen.getByText('Restart & Install');
+      const installButton = screen.getByText(/Install & Reforge/i);
       await act(async () => {
         fireEvent.click(installButton);
       });
@@ -353,13 +366,13 @@ describe('UpdateManager', () => {
 
       render(<UpdateManager isOpen={true} onClose={() => {}} />);
 
-      const checkButton = screen.getByText('Check for Updates');
+      const checkButton = screen.getByText(/Consult the Archives/i);
       await act(async () => {
         fireEvent.click(checkButton);
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Error')).toBeInTheDocument();
+        expect(screen.getByText('Check failed')).toBeInTheDocument();
       });
     });
 
@@ -383,13 +396,13 @@ describe('UpdateManager', () => {
         }
       });
 
-      const downloadButton = screen.getByText('Download Update');
+      const downloadButton = screen.getByText('⚡ Summon the Artifact');
       await act(async () => {
         fireEvent.click(downloadButton);
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Error')).toBeInTheDocument();
+        expect(screen.getByText('Download failed')).toBeInTheDocument();
       });
     });
   });
