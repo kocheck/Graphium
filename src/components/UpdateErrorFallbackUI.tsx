@@ -61,6 +61,7 @@ export function UpdateErrorFallbackUI({ error, onReset }: UpdateErrorFallbackUIP
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
+      onClick={onReset}
     >
       <div
         className="bg-[var(--app-bg)] border border-red-500 rounded-lg shadow-2xl p-6 max-w-md mx-4"
