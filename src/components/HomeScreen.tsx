@@ -383,6 +383,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           background: var(--app-bg-base);
           color: var(--app-text-primary);
           -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+          scroll-behavior: smooth; /* Smooth scrolling for anchor links and focus jumps */
+          scroll-padding-bottom: 140px; /* Ensure scrolled-to elements aren't hidden behind footer */
         }
 
         /* ======================
@@ -457,6 +459,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           width: 100%;
           max-width: 800px;
           padding: 2rem;
+          padding-bottom: 140px; /* Prevent overlap with fixed footer (footer height + safe margin) */
           margin: auto; /* Vertically center content if it fits, scroll if it doesn't */
           display: flex;
           flex-direction: column;
@@ -887,6 +890,27 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         }
 
         /* ======================
+           Accessibility - Focus Indicators
+           ====================== */
+        /* Enhanced keyboard navigation focus indicators */
+        .action-card:focus-visible,
+        .quick-action-btn:focus-visible,
+        .footer-link:focus-visible,
+        .recent-button:focus-visible,
+        .recent-remove:focus-visible,
+        .banner-button:focus-visible,
+        .dismiss-btn:focus-visible {
+          outline: 2px solid var(--app-accent-solid);
+          outline-offset: 2px;
+          border-radius: 4px;
+        }
+
+        /* Ensure focus is visible even with existing borders */
+        .action-card:focus-visible {
+          outline-offset: 4px; /* Extra space to clear card border */
+        }
+
+        /* ======================
            Responsive
            ====================== */
         /* Tablet: 769px - 1024px */
@@ -917,9 +941,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           }
 
           .content-container {
-            padding: 0 1.5rem 2rem; /* Remove top/bottom, let parent handle it */
+            padding: 0 1.5rem 2rem; /* Mobile: Footer is relative, no extra bottom padding needed */
             gap: 1.5rem;
             margin-bottom: 0; /* Remove margin to let footer spacing handle it */
+          }
+
+          .home-screen {
+            scroll-padding-bottom: 0; /* Reset scroll padding on mobile */
           }
 
           .logo-container {
@@ -1009,8 +1037,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           }
 
           .content-container {
-            padding: 0 1rem 1.5rem; /* Tighter horizontal padding */
+            padding: 0 1rem 1.5rem; /* Tighter horizontal padding, natural bottom spacing */
             gap: 1.25rem; /* Reduce gap between sections */
+          }
+
+          .home-screen {
+            scroll-padding-bottom: 0; /* No scroll padding needed on small mobile */
           }
 
           .logo-container {
@@ -1073,8 +1105,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           }
 
           .content-container {
-            padding: 0 0.875rem 1rem; /* Very tight padding */
+            padding: 0 0.875rem 1rem; /* Very tight padding, natural bottom spacing */
             gap: 1rem; /* Minimal gap */
+          }
+
+          .home-screen {
+            scroll-padding-bottom: 0; /* No scroll padding needed on extra small */
           }
 
           .logo-container {
