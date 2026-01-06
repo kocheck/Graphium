@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-## [Unreleased]
-
-### Added
-
 #### Hexagonal and Isometric Grid Support
 
 - **New Grid Types**: Added support for Hexagonal (flat-top) and Isometric grids alongside existing Square grids

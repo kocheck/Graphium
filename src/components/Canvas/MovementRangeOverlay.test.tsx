@@ -44,7 +44,7 @@ describe('MovementRangeOverlay', () => {
       // For square grid with 4 neighbors, this should create a diamond shape
       // Expected cells: 1 (center) + 4 + 8 + 12 + 16 + 20 + 24 = 85 cells
       // (each ring adds 4 more cells than the previous)
-      const lines = container.querySelectorAll('line');
+      const lines = container.querySelectorAll('[data-testid="line"]');
       expect(lines.length).toBeGreaterThan(0);
       // Verify we have a reasonable number of cells for 6-cell radius
       expect(lines.length).toBeGreaterThanOrEqual(80);
@@ -125,12 +125,12 @@ describe('MovementRangeOverlay', () => {
 
     it('should recalculate when token position changes', () => {
       const { container, rerender } = render(<MovementRangeOverlay {...defaultProps} />);
-      const initialLines = container.querySelectorAll('line').length;
+      const initialLines = container.querySelectorAll('[data-testid="line"]').length;
 
       // Move token to different position (should change starting cell)
       // Move by more than gridSize to ensure we're in a different cell
       rerender(<MovementRangeOverlay {...defaultProps} tokenPosition={{ x: 300, y: 300 }} />);
-      const newLines = container.querySelectorAll('line').length;
+      const newLines = container.querySelectorAll('[data-testid="line"]').length;
 
       // Should still render same number of cells (same movement speed, different center)
       expect(newLines).toBe(initialLines);
@@ -143,11 +143,11 @@ describe('MovementRangeOverlay', () => {
       const { container, rerender } = render(
         <MovementRangeOverlay {...defaultProps} movementSpeed={10} />,
       );
-      const smallRangeLines = container.querySelectorAll('line').length;
+      const smallRangeLines = container.querySelectorAll('[data-testid="line"]').length;
 
       // Increase movement speed should increase reachable cells
       rerender(<MovementRangeOverlay {...defaultProps} movementSpeed={20} />);
-      const largeRangeLines = container.querySelectorAll('line').length;
+      const largeRangeLines = container.querySelectorAll('[data-testid="line"]').length;
 
       // More movement = more cells
       expect(largeRangeLines).toBeGreaterThan(smallRangeLines);
@@ -157,11 +157,11 @@ describe('MovementRangeOverlay', () => {
       const { container, rerender } = render(
         <MovementRangeOverlay {...defaultProps} gridType="LINES" movementSpeed={10} />,
       );
-      const squareLines = container.querySelectorAll('line').length;
+      const squareLines = container.querySelectorAll('[data-testid="line"]').length;
 
       // Change to hexagonal (6 neighbors instead of 4)
       rerender(<MovementRangeOverlay {...defaultProps} gridType="HEXAGONAL" movementSpeed={10} />);
-      const hexLines = container.querySelectorAll('line').length;
+      const hexLines = container.querySelectorAll('[data-testid="line"]').length;
 
       // Hexagonal should have more cells (6 neighbors vs 4)
       // 10ft / 5ft = 2 cells: square=13, hex=19
@@ -177,7 +177,7 @@ describe('MovementRangeOverlay', () => {
       );
       // 10ft / 5ft = 2 cells radius
       // For 4-neighbor square grid: 1 + 4 + 8 = 13 cells
-      const lines = container.querySelectorAll('line');
+      const lines = container.querySelectorAll('[data-testid="line"]');
       expect(lines.length).toBe(13);
     });
 
@@ -186,7 +186,7 @@ describe('MovementRangeOverlay', () => {
         <MovementRangeOverlay {...defaultProps} gridType="DOTS" movementSpeed={10} />,
       );
       // Same as LINES - 4 neighbors
-      const lines = container.querySelectorAll('line');
+      const lines = container.querySelectorAll('[data-testid="line"]');
       expect(lines.length).toBe(13);
     });
 
@@ -196,7 +196,7 @@ describe('MovementRangeOverlay', () => {
       );
       // 10ft / 5ft = 2 cells radius
       // For 6-neighbor hex grid: 1 + 6 + 12 = 19 cells
-      const lines = container.querySelectorAll('line');
+      const lines = container.querySelectorAll('[data-testid="line"]');
       expect(lines.length).toBe(19);
     });
 
@@ -205,7 +205,7 @@ describe('MovementRangeOverlay', () => {
         <MovementRangeOverlay {...defaultProps} gridType="ISOMETRIC" movementSpeed={10} />,
       );
       // Same as square - 4 neighbors
-      const lines = container.querySelectorAll('line');
+      const lines = container.querySelectorAll('[data-testid="line"]');
       expect(lines.length).toBe(13);
     });
   });
@@ -214,7 +214,7 @@ describe('MovementRangeOverlay', () => {
     it('should not render duplicate cells', () => {
       const { container } = render(<MovementRangeOverlay {...defaultProps} movementSpeed={20} />);
 
-      const lines = container.querySelectorAll('line');
+      const lines = container.querySelectorAll('[data-testid="line"]');
       const keys = new Set<string>();
 
       // Extract unique keys from rendered lines
