@@ -10,7 +10,65 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { UpdateErrorFallbackUI } from './UpdateErrorFallbackUI';
+import { UpdateErrorFallbackUI, rollForMessage } from './UpdateErrorFallbackUI';
+
+describe('rollForMessage', () => {
+  it('should return a message from the provided array', () => {
+    const messages = ['Message 1', 'Message 2', 'Message 3'];
+    const result = rollForMessage(messages);
+
+    expect(messages).toContain(result);
+  });
+
+  it('should use custom RNG function when provided', () => {
+    const messages = ['First', 'Second', 'Third'];
+    const mockRng = vi.fn(() => 0.5); // Always return middle value
+
+    const result = rollForMessage(messages, mockRng);
+
+    expect(mockRng).toHaveBeenCalled();
+    expect(result).toBe('Second'); // 0.5 * 3 = 1.5, floor = 1
+  });
+
+  it('should select first message when RNG returns 0', () => {
+    const messages = ['Alpha', 'Beta', 'Gamma'];
+    const mockRng = () => 0;
+
+    const result = rollForMessage(messages, mockRng);
+
+    expect(result).toBe('Alpha');
+  });
+
+  it('should select last message when RNG returns value close to 1', () => {
+    const messages = ['Alpha', 'Beta', 'Gamma'];
+    const mockRng = () => 0.99;
+
+    const result = rollForMessage(messages, mockRng);
+
+    expect(result).toBe('Gamma'); // 0.99 * 3 = 2.97, floor = 2
+  });
+
+  it('should handle single-item array', () => {
+    const messages = ['Only Message'];
+    const result = rollForMessage(messages);
+
+    expect(result).toBe('Only Message');
+  });
+
+  it('should use Math.random by default', () => {
+    const messages = ['A', 'B', 'C', 'D', 'E'];
+    const results = new Set<string>();
+
+    // Run multiple times to verify randomness
+    for (let i = 0; i < 50; i++) {
+      results.add(rollForMessage(messages));
+    }
+
+    // With 50 iterations and 5 options, we should see at least 2 different messages
+    // (This is probabilistic but extremely likely)
+    expect(results.size).toBeGreaterThan(1);
+  });
+});
 
 describe('UpdateErrorFallbackUI', () => {
   const mockOnReset = vi.fn();

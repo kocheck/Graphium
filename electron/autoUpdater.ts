@@ -228,6 +228,9 @@ export function registerAutoUpdaterHandlers() {
  *
  * Useful during development or hot-reload to prevent duplicate handlers
  * and potential memory leaks. Call this during app shutdown or before re-registration.
+ * 
+ * Note: Currently exported for future hot-reload support. Not yet implemented in the
+ * main application lifecycle, but available for development/testing scenarios.
  */
 export function unregisterAutoUpdaterHandlers() {
   ipcMain.removeHandler('check-for-updates');

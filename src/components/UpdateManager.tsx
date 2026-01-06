@@ -33,11 +33,18 @@ import { RiSearchLine, RiDownloadLine, RiRefreshLine } from '@remixicon/react';
 // ============================================================================
 
 const updateMessages = {
-  nonElectron: [
-    '🌐 The Auto-Forge only functions within the Desktop Sanctum.\nWeb browsers cannot channel these arcane energies.',
-    '⚠️ Update magic requires the Desktop Realm.\nThe web plane lacks the necessary conduits.',
-    '🔮 Alas! Auto-updates are bound to the Desktop Application.\nBrowsers cannot invoke this ritual.',
-  ],
+  nonElectron: {
+    title: [
+      '🌐 The Auto-Forge only functions within the Desktop Sanctum.',
+      '⚠️ Update magic requires the Desktop Realm.',
+      '🔮 Alas! Auto-updates are bound to the Desktop Application.',
+    ],
+    subtitle: [
+      'Web browsers cannot channel these arcane energies.',
+      'The web plane lacks the necessary conduits.',
+      'Browsers cannot invoke this ritual.',
+    ],
+  },
   idle: [
     '📜 Consult the Chronicle of Releases to see if new powers await.',
     '🔮 Seek wisdom from the Archive of Versions. New enchantments may have been forged.',
@@ -172,7 +179,8 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
   // Randomize messages once on component mount (stable across dialog opens/closes)
   // Using useRef instead of useMemo to avoid performance issues from recomputing on every dialog open
   const messages = useRef({
-    nonElectron: rollForMessage(updateMessages.nonElectron),
+    nonElectronTitle: rollForMessage(updateMessages.nonElectron.title),
+    nonElectronSubtitle: rollForMessage(updateMessages.nonElectron.subtitle),
     idle: rollForMessage(updateMessages.idle),
     checking: rollForMessage(updateMessages.checking),
     noUpdateTitle: rollForMessage(updateMessages.noUpdate.title),
@@ -201,8 +209,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
             setCurrentVersion(version);
           }
         } catch (error) {
-          // Avoid unhandled promise rejections and surface a friendly message
-          // Note: Using console.error in renderer process for debugging (not electron-log)
+          // Renderer process uses console for logging (not electron-log)
           // eslint-disable-next-line no-console
           console.error('Failed to get current app version', error);
           if (isMounted) {
@@ -389,8 +396,11 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
         <div className="mb-6">
           {!isElectron && (
             <div className="text-center py-4">
-              <p style={{ color: 'var(--app-text-muted)', whiteSpace: 'pre-line' }}>
-                {messages.nonElectron}
+              <p className="mb-2" style={{ color: 'var(--app-text)' }}>
+                {messages.nonElectronTitle}
+              </p>
+              <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
+                {messages.nonElectronSubtitle}
               </p>
             </div>
           )}
