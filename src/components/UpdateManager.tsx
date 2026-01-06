@@ -25,7 +25,7 @@
  * @returns {JSX.Element | null} Update dialog or null if not active
  */
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { RiSearchLine, RiDownloadLine, RiRefreshLine } from '@remixicon/react';
 
 // ============================================================================
@@ -169,24 +169,22 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isElectron, setIsElectron] = useState<boolean>(false);
 
-  // Randomize messages on mount (stable per dialog open)
-  const messages = useMemo(
-    () => ({
-      nonElectron: rollForMessage(updateMessages.nonElectron),
-      idle: rollForMessage(updateMessages.idle),
-      checking: rollForMessage(updateMessages.checking),
-      noUpdateTitle: rollForMessage(updateMessages.noUpdate.title),
-      noUpdateSubtitle: rollForMessage(updateMessages.noUpdate.subtitle),
-      updateAvailableTitle: rollForMessage(updateMessages.updateAvailable.title),
-      updateAvailableSubtitle: rollForMessage(updateMessages.updateAvailable.subtitle),
-      downloading: rollForMessage(updateMessages.downloading),
-      downloadedTitle: rollForMessage(updateMessages.downloaded.title),
-      downloadedSubtitle: rollForMessage(updateMessages.downloaded.subtitle),
-      downloadedInstruction: rollForMessage(updateMessages.downloaded.instruction),
-      error: rollForMessage(updateMessages.error),
-    }),
-    [isOpen] // Re-roll when dialog reopens
-  );
+  // Randomize messages once on component mount (stable across dialog opens/closes)
+  // Using useRef instead of useMemo to avoid performance issues from recomputing on every dialog open
+  const messages = useRef({
+    nonElectron: rollForMessage(updateMessages.nonElectron),
+    idle: rollForMessage(updateMessages.idle),
+    checking: rollForMessage(updateMessages.checking),
+    noUpdateTitle: rollForMessage(updateMessages.noUpdate.title),
+    noUpdateSubtitle: rollForMessage(updateMessages.noUpdate.subtitle),
+    updateAvailableTitle: rollForMessage(updateMessages.updateAvailable.title),
+    updateAvailableSubtitle: rollForMessage(updateMessages.updateAvailable.subtitle),
+    downloading: rollForMessage(updateMessages.downloading),
+    downloadedTitle: rollForMessage(updateMessages.downloaded.title),
+    downloadedSubtitle: rollForMessage(updateMessages.downloaded.subtitle),
+    downloadedInstruction: rollForMessage(updateMessages.downloaded.instruction),
+    error: rollForMessage(updateMessages.error),
+  }).current;
 
   // Check if running in Electron
   useEffect(() => {
@@ -203,7 +201,8 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
             setCurrentVersion(version);
           }
         } catch (error) {
-          // Avoid unhandled promise rejections
+          // Avoid unhandled promise rejections and surface a friendly message
+          // Note: Using console.error in renderer process for debugging (not electron-log)
           // eslint-disable-next-line no-console
           console.error('Failed to get current app version', error);
           if (isMounted) {
@@ -218,9 +217,9 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
     };
   }, []);
 
-  // Set up event listeners for auto-updater
+  // Set up event listeners for auto-updater (once on mount)
   useEffect(() => {
-    if (!window.autoUpdater || !isOpen) return;
+    if (!window.autoUpdater) return;
 
     const cleanupFunctions: (() => void)[] = [];
 
@@ -276,21 +275,22 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
     return () => {
       cleanupFunctions.forEach((cleanup) => cleanup());
     };
-  }, [isOpen]);
+  }, []);
 
   // Handle keyboard events
+  // Note: Using useCallback to stabilize onClose reference and prevent duplicate listeners
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleKeyDown]);
 
   if (!isOpen) return null;
 

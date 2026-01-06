@@ -56,6 +56,18 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
     return;
   }
 
+  /**
+   * Safely send IPC message to main window
+   * Checks if window exists and webContents is not destroyed before sending
+   */
+  const safeSend = (channel: string, ...args: unknown[]) => {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send(channel, ...args);
+    } else {
+      log.warn(`[AutoUpdater] Cannot send IPC event '${channel}': window is destroyed or unavailable`);
+    }
+  };
+
   // ============================================
   // Auto-updater event listeners
   // ============================================
@@ -66,7 +78,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    */
   autoUpdater.on('checking-for-update', () => {
     log.info('[AutoUpdater] Checking for updates...');
-    mainWindow?.webContents.send('auto-updater:checking-for-update');
+    safeSend('auto-updater:checking-for-update');
   });
 
   /**
@@ -75,7 +87,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    */
   autoUpdater.on('update-available', (info) => {
     log.info('[AutoUpdater] Update available:', info.version);
-    mainWindow?.webContents.send('auto-updater:update-available', {
+    safeSend('auto-updater:update-available', {
       version: info.version,
       releaseNotes: info.releaseNotes,
       releaseDate: info.releaseDate,
@@ -88,7 +100,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    */
   autoUpdater.on('update-not-available', (info) => {
     log.info('[AutoUpdater] No update available. Current version:', info.version);
-    mainWindow?.webContents.send('auto-updater:update-not-available', {
+    safeSend('auto-updater:update-not-available', {
       version: info.version,
     });
   });
@@ -101,7 +113,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
     log.info(
       `[AutoUpdater] Download progress: ${progress.percent.toFixed(2)}% (${progress.transferred}/${progress.total})`
     );
-    mainWindow?.webContents.send('auto-updater:download-progress', {
+    safeSend('auto-updater:download-progress', {
       percent: progress.percent,
       bytesPerSecond: progress.bytesPerSecond,
       transferred: progress.transferred,
@@ -115,7 +127,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    */
   autoUpdater.on('update-downloaded', (info) => {
     log.info('[AutoUpdater] Update downloaded:', info.version);
-    mainWindow?.webContents.send('auto-updater:update-downloaded', {
+    safeSend('auto-updater:update-downloaded', {
       version: info.version,
     });
   });
@@ -126,7 +138,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    */
   autoUpdater.on('error', (error) => {
     log.error('[AutoUpdater] Error:', error);
-    mainWindow?.webContents.send('auto-updater:error', {
+    safeSend('auto-updater:error', {
       message: error.message,
     });
   });
@@ -209,4 +221,19 @@ export function registerAutoUpdaterHandlers() {
   });
 
   log.info('[AutoUpdater] IPC handlers registered');
+}
+
+/**
+ * Unregister IPC handlers for auto-updater
+ *
+ * Useful during development or hot-reload to prevent duplicate handlers
+ * and potential memory leaks. Call this during app shutdown or before re-registration.
+ */
+export function unregisterAutoUpdaterHandlers() {
+  ipcMain.removeHandler('check-for-updates');
+  ipcMain.removeHandler('download-update');
+  ipcMain.removeHandler('quit-and-install');
+  ipcMain.removeHandler('get-current-version');
+
+  log.info('[AutoUpdater] IPC handlers unregistered');
 }

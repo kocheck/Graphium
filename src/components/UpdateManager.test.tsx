@@ -428,12 +428,13 @@ describe('UpdateManager', () => {
 
       const { rerender } = render(<UpdateManager isOpen={true} onClose={() => {}} />);
 
-      // Close the modal
+      // Close the modal - listeners should NOT be cleaned up (they persist across opens/closes)
       rerender(<UpdateManager isOpen={false} onClose={() => {}} />);
 
-      // Cleanup functions should be called
+      // Cleanup functions should NOT be called when just closing the modal
+      // They're only cleaned up on unmount to prevent duplicate handler registration
       cleanupFunctions.forEach((cleanup) => {
-        expect(cleanup).toHaveBeenCalled();
+        expect(cleanup).not.toHaveBeenCalled();
       });
     });
   });

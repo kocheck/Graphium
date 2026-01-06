@@ -409,7 +409,8 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUp
                  {onCheckForUpdates && (
                    <button
                      onClick={onCheckForUpdates}
-                     className="mt-4 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded-md font-medium cursor-pointer transition-colors"
+                     disabled={!onCheckForUpdates}
+                     className="mt-4 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded-md font-medium cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                    >
                      Consult the Archives
                    </button>
