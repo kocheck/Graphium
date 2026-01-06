@@ -120,3 +120,27 @@ if (typeof DragEvent === 'undefined') {
 
 // Export mocks for use in tests
 export { mockErrorReporting, mockIpcRenderer };
+
+// Mock react-konva to bypass ESM issues with Konva v10
+vi.mock('react-konva', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const React = require('react');
+  return {
+    Stage: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', { 'data-testid': 'stage' }, [
+        React.createElement('canvas', { key: 'canvas' }), // Validation checks for canvas
+        children,
+      ]),
+    Layer: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', { 'data-testid': 'layer' }, children),
+    Group: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', { 'data-testid': 'group' }, children),
+    Line: () => React.createElement('div', { 'data-testid': 'line' }),
+    Circle: () => React.createElement('div', { 'data-testid': 'circle' }),
+    Text: () => React.createElement('div', { 'data-testid': 'text' }),
+    Wedge: () => React.createElement('div', { 'data-testid': 'wedge' }),
+    Ring: () => React.createElement('div', { 'data-testid': 'ring' }),
+    Rect: () => React.createElement('div', { 'data-testid': 'rect' }),
+    Image: () => React.createElement('div', { 'data-testid': 'image' }),
+  };
+});
