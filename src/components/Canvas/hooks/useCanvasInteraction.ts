@@ -275,10 +275,29 @@ export const useCanvasInteraction = ({
     if (tool !== 'select') {
       if (isWorldView) return;
       if (!isDrawing.current) return;
-      const point = getPointerPosition(e);
+      let point = getPointerPosition(e);
       if (!point) return;
       const cur = currentLine.current;
       if (!cur) return;
+
+      // START OF CHANGE: Shift key straight line locking
+      // Checks if Shift is held down and snaps the current point to match the start point's X or Y
+      if (e.evt.shiftKey && cur.points.length >= 2) {
+        const startX = cur.points[0];
+        const startY = cur.points[1];
+        const dx = Math.abs(point.x - startX);
+        const dy = Math.abs(point.y - startY);
+
+        // Snap to whichever axis has the greater distance (or default to horizontal if equal)
+        if (dx > dy) {
+          // Horizontal line: Lock Y to startY
+          point = { x: point.x, y: startY };
+        } else {
+          // Vertical line: Lock X to startX
+          point = { x: startX, y: point.y };
+        }
+      }
+      // END OF CHANGE
 
       // Logic handled in CanvasManager mostly via refs?
       // This hook extracts the event handling.
