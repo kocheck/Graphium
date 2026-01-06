@@ -202,9 +202,10 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
 
     if (window.autoUpdater) {
       // Get current version on mount with error handling
+      const autoUpdater = window.autoUpdater;
       (async () => {
         try {
-          const version = await window.autoUpdater.getCurrentVersion();
+          const version = await autoUpdater.getCurrentVersion();
           if (isMounted) {
             setCurrentVersion(version);
           }
@@ -493,8 +494,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
           {isElectron && (status === 'idle' || status === 'no-update' || status === 'error') && (
             <button
               onClick={handleCheckForUpdates}
-              disabled={status === 'checking'}
-              className="flex-1 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-medium transition flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
               <RiSearchLine className="w-5 h-5" />
               Consult the Archives
