@@ -409,19 +409,7 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUp
                  {onCheckForUpdates && (
                    <button
                      onClick={onCheckForUpdates}
-                     style={{
-                       marginTop: '1rem',
-                       padding: '0.5rem 1rem',
-                       backgroundColor: 'var(--app-accent-solid)',
-                       color: 'white',
-                       border: 'none',
-                       borderRadius: '6px',
-                       fontWeight: '500',
-                       cursor: 'pointer',
-                       transition: 'opacity 0.2s',
-                     }}
-                     onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                     onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                     className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium cursor-pointer transition-colors"
                    >
                      Check for Updates
                    </button>

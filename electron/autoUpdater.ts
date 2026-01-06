@@ -24,8 +24,7 @@
 
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import { BrowserWindow, ipcMain } from 'electron';
-import { app } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 
 // Configure logging for production debugging
 // Logs are written to ~/Library/Logs/Graphium/main.log (macOS)

@@ -26,6 +26,7 @@
  */
 
 import { useEffect, useState, useMemo } from 'react';
+import { RiSearchLine, RiDownloadLine, RiRefreshLine } from '@remixicon/react';
 
 // ============================================================================
 // MESSAGE VARIATIONS - Randomized for delightful UX
@@ -464,27 +465,30 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
             <button
               onClick={handleCheckForUpdates}
               disabled={status === 'checking'}
-              className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-medium transition"
+              className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
-              🔮 Consult the Archives
+              <RiSearchLine className="w-5 h-5" />
+              Consult the Archives
             </button>
           )}
 
           {status === 'update-available' && (
             <button
               onClick={handleDownload}
-              className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium transition"
+              className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
-              ⚡ Summon the Artifact
+              <RiDownloadLine className="w-5 h-5" />
+              Summon the Artifact
             </button>
           )}
 
           {status === 'downloaded' && (
             <button
               onClick={handleInstall}
-              className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded font-medium transition"
+              className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
-              ⚔️ Install & Reforge
+              <RiRefreshLine className="w-5 h-5" />
+              Install & Reforge
             </button>
           )}
 
