@@ -33,20 +33,47 @@ const updateErrorMessages = {
     'Cannot reach the repository of versions. Potential reasons:',
     'Connection to the Archive of Releases was severed. Check for:',
   ],
-  hints: [
-    'No internet connection or unstable network',
-    'GitHub servers are temporarily unreachable',
-    'Firewall blocking update requests',
-    'Signature verification issues (requires code signing)',
-    'Corrupted update metadata from previous attempts',
-  ],
+  hints: {
+    network: [
+      'No internet connection or unstable network',
+      'GitHub servers are temporarily unreachable',
+      'Firewall blocking update requests',
+    ],
+    signature: [
+      'Signature verification failed (requires code signing)',
+      'Update file signature is invalid or missing',
+      'Certificate verification issues',
+    ],
+    general: [
+      'No internet connection or unstable network',
+      'GitHub servers are temporarily unreachable',
+      'Firewall blocking update requests',
+      'Signature verification issues (requires code signing)',
+      'Corrupted update metadata from previous attempts',
+    ],
+  },
 };
 
 /**
- * Randomly selects a message from an array
+ * Random number generator function type for testing
+ * Allows injecting deterministic RNG for tests
  */
-const rollForMessage = (messages: string[]): string => {
-  return messages[Math.floor(Math.random() * messages.length)];
+export type UpdateErrorRandomFn = () => number;
+
+/**
+ * Randomly selects a message from an array
+ * Accepts an optional random function to enable deterministic testing
+ * 
+ * @param messages - Array of messages to choose from
+ * @param rng - Random number generator function (defaults to Math.random)
+ * @returns Randomly selected message
+ */
+export const rollForMessage = (
+  messages: string[],
+  rng: UpdateErrorRandomFn = Math.random,
+): string => {
+  const index = Math.floor(rng() * messages.length);
+  return messages[index];
 };
 
 /**
@@ -57,6 +84,25 @@ export function UpdateErrorFallbackUI({ error, onReset }: UpdateErrorFallbackUIP
   // Roll for random error messages (memoized per error instance to keep them stable)
   const errorTitle = useMemo(() => rollForMessage(updateErrorMessages.title), [error]);
   const errorDesc = useMemo(() => rollForMessage(updateErrorMessages.description), [error]);
+
+  // Determine which hints to show based on error type
+  const hints = useMemo(() => {
+    const errorMsg = error?.message?.toLowerCase() || '';
+    
+    // Check for signature-related errors
+    if (errorMsg.includes('signature') || errorMsg.includes('verify') || errorMsg.includes('cert')) {
+      return updateErrorMessages.hints.signature;
+    }
+    
+    // Check for network-related errors
+    if (errorMsg.includes('network') || errorMsg.includes('timeout') || errorMsg.includes('fetch') || 
+        errorMsg.includes('enotfound') || errorMsg.includes('econnrefused')) {
+      return updateErrorMessages.hints.network;
+    }
+    
+    // Default to general hints
+    return updateErrorMessages.hints.general;
+  }, [error]);
 
   return (
     <div
@@ -86,7 +132,7 @@ export function UpdateErrorFallbackUI({ error, onReset }: UpdateErrorFallbackUIP
               {errorDesc}
             </p>
             <ul className="text-sm space-y-1 mb-3 ml-4 list-disc" style={{ color: 'var(--app-text-muted)' }}>
-              {updateErrorMessages.hints.map((hint, index) => (
+              {hints.map((hint, index) => (
                 <li key={index}>{hint}</li>
               ))}
             </ul>
