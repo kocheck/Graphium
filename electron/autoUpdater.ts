@@ -41,6 +41,9 @@ autoUpdater.autoInstallOnAppQuit = true;
 // Check if running in development mode
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
+// Track if event listeners are already registered to prevent duplicates
+let isInitialized = false;
+
 /**
  * Initialize auto-updater system
  *
@@ -55,6 +58,14 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
     log.info('[AutoUpdater] Running in development mode, updates disabled');
     return;
   }
+
+  // Prevent duplicate initialization
+  if (isInitialized) {
+    log.warn('[AutoUpdater] Already initialized, skipping duplicate initialization');
+    return;
+  }
+
+  isInitialized = true;
 
   /**
    * Safely send IPC message to main window

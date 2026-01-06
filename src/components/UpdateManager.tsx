@@ -259,6 +259,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
       window.autoUpdater.onDownloadProgress((progress) => {
         setStatus('downloading');
         setDownloadProgress(progress);
+        setErrorMessage(''); // Clear any previous error when download starts
       })
     );
 
