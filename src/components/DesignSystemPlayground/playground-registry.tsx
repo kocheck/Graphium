@@ -8,6 +8,8 @@
 import ToggleSwitch from '../ToggleSwitch';
 import { ComponentExample, ComponentCategory } from './types';
 import { useGameStore } from '../../store/gameStore';
+import { useState } from 'react';
+import UpdateManager from '../UpdateManager';
 import {
   RiHomeLine,
   RiUserLine,
@@ -316,6 +318,53 @@ showConfirmDialog(
   'Proceed'
 );`,
     tags: ['modal', 'dialog', 'confirm'],
+  },
+  {
+    id: 'modal-update-manager',
+    name: 'Update Manager',
+    category: 'modal',
+    description: 'Software update dialog for electron-updater integration',
+    component: (() => {
+      // Create a wrapper component with state
+      const UpdateManagerDemo = () => {
+        const [isOpen, setIsOpen] = useState(false);
+        return (
+          <>
+            <button
+              className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white shadow-sm"
+              onClick={() => setIsOpen(true)}
+            >
+              Check for Updates
+            </button>
+            <UpdateManager isOpen={isOpen} onClose={() => setIsOpen(false)} />
+          </>
+        );
+      };
+      return <UpdateManagerDemo />;
+    })(),
+    code: `import UpdateManager from './components/UpdateManager';
+import { useState } from 'react';
+
+const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
+
+// Trigger from button or About modal
+<button onClick={() => setIsUpdateManagerOpen(true)}>
+  Check for Updates
+</button>
+
+// Render modal
+<UpdateManager
+  isOpen={isUpdateManagerOpen}
+  onClose={() => setIsUpdateManagerOpen(false)}
+/>
+
+// Features:
+// - Checks GitHub Releases for new versions
+// - Shows download progress with speed indicator
+// - Install and restart when ready
+// - Handles errors gracefully
+// - Disabled in development mode`,
+    tags: ['modal', 'dialog', 'update', 'electron'],
   },
 
   // TOASTS

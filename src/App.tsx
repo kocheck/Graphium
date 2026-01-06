@@ -34,6 +34,8 @@ import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 import Tooltip from './components/Tooltip';
 import { AboutModal } from './components/AboutModal';
 import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
+import UpdateManager from './components/UpdateManager';
+import UpdateManagerErrorBoundary from './components/UpdateManagerErrorBoundary';
 
 /**
  * App is the root component for Graphium's dual-window architecture
@@ -151,6 +153,9 @@ function App() {
   // About Modal state
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
+  // Update Manager state
+  const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
+
   // Resource Monitor state (from store)
   const showResourceMonitor = useGameStore((state) => state.showResourceMonitor);
 
@@ -245,6 +250,12 @@ function App() {
         return;
       }
 
+      // Escape to close Update Manager
+      if (e.key === 'Escape' && isUpdateManagerOpen) {
+        setIsUpdateManagerOpen(false);
+        return;
+      }
+
       // Prevent tool switching in World View (player mode)
       if (!isArchitectView) return;
 
@@ -298,7 +309,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isArchitectView, tool, isAboutOpen]);
+  }, [isArchitectView, tool, isAboutOpen, isUpdateManagerOpen]);
 
   // Handle Menu Commands (Electron IPC)
   useEffect(() => {
@@ -405,7 +416,17 @@ function App() {
         <ThemeManager />
         <Toast />
         <ConfirmDialog />
-        <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+        <AboutModal
+          isOpen={isAboutOpen}
+          onClose={() => setIsAboutOpen(false)}
+          onCheckForUpdates={() => {
+            setIsAboutOpen(false);
+            setIsUpdateManagerOpen(true);
+          }}
+        />
+        <UpdateManagerErrorBoundary>
+          <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+        </UpdateManagerErrorBoundary>
 
         {/* Home/Splash Screen */}
         <HomeScreen onStartEditor={handleStartEditor} />
@@ -423,7 +444,17 @@ function App() {
       <Toast />
       <ConfirmDialog />
       <DungeonGeneratorDialog />
-      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+      <AboutModal
+        isOpen={isAboutOpen}
+        onClose={() => setIsAboutOpen(false)}
+        onCheckForUpdates={() => {
+          setIsAboutOpen(false);
+          setIsUpdateManagerOpen(true);
+        }}
+      />
+      <UpdateManagerErrorBoundary>
+        <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+      </UpdateManagerErrorBoundary>
 
       {/* Loading Overlay: Only render in World View to block players' view */}
       {isWorldView && <LoadingOverlay />}

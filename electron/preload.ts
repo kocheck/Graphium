@@ -31,11 +31,12 @@
 
 import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron'
 
-// Map to store original listeners -> wrapper listeners
+// WeakMap to store original listeners -> wrapper listeners
 // This is needed because we wrap listeners in on(), so we need the wrapper reference for off()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Using WeakMap allows garbage collection when listener references are no longer accessible
+type IpcRendererListener = Parameters<typeof ipcRenderer.on>[1];
 const listenerMap = new WeakMap<
-  (event: IpcRendererEvent, ...args: any[]) => void,
+  IpcRendererListener,
   (event: IpcRendererEvent, ...args: unknown[]) => void
 >();
 
@@ -175,4 +176,73 @@ contextBridge.exposeInMainWorld('errorReporting', {
    */
   saveToFile: (reportContent: string): Promise<{ success: boolean; filePath?: string; reason?: string }> =>
     ipcRenderer.invoke('save-error-report', reportContent),
+})
+
+// --------- Auto-updater API ---------
+contextBridge.exposeInMainWorld('autoUpdater', {
+  /**
+   * Check for available updates from GitHub Releases
+   * @returns {available: boolean, updateInfo?: object, reason?: string}
+   */
+  checkForUpdates: (): Promise<{ available: boolean; updateInfo?: unknown; reason?: string }> =>
+    ipcRenderer.invoke('check-for-updates'),
+
+  /**
+   * Start downloading the available update
+   * @returns true if download started successfully
+   */
+  downloadUpdate: (): Promise<boolean> => ipcRenderer.invoke('download-update'),
+
+  /**
+   * Quit the application and install the downloaded update
+   * @returns true if install process started
+   */
+  quitAndInstall: (): Promise<boolean> => ipcRenderer.invoke('quit-and-install'),
+
+  /**
+   * Get the current application version
+   * @returns Version string (e.g., "0.5.3")
+   */
+  getCurrentVersion: (): Promise<string> => ipcRenderer.invoke('get-current-version'),
+
+  /**
+   * Listen for update status events
+   * @param callback - Called when update status changes
+   * @returns Cleanup function
+   */
+  onCheckingForUpdate: (callback: () => void) => {
+    const listener = () => callback()
+    ipcRenderer.on('auto-updater:checking-for-update', listener)
+    return () => ipcRenderer.off('auto-updater:checking-for-update', listener)
+  },
+
+  onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: string; releaseDate?: string }) => void) => {
+    const listener = (_event: IpcRendererEvent, info: { version: string; releaseNotes?: string; releaseDate?: string }) => callback(info)
+    ipcRenderer.on('auto-updater:update-available', listener)
+    return () => ipcRenderer.off('auto-updater:update-available', listener)
+  },
+
+  onUpdateNotAvailable: (callback: (info: { version: string }) => void) => {
+    const listener = (_event: IpcRendererEvent, info: { version: string }) => callback(info)
+    ipcRenderer.on('auto-updater:update-not-available', listener)
+    return () => ipcRenderer.off('auto-updater:update-not-available', listener)
+  },
+
+  onDownloadProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => {
+    const listener = (_event: IpcRendererEvent, progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => callback(progress)
+    ipcRenderer.on('auto-updater:download-progress', listener)
+    return () => ipcRenderer.off('auto-updater:download-progress', listener)
+  },
+
+  onUpdateDownloaded: (callback: (info: { version: string }) => void) => {
+    const listener = (_event: IpcRendererEvent, info: { version: string }) => callback(info)
+    ipcRenderer.on('auto-updater:update-downloaded', listener)
+    return () => ipcRenderer.off('auto-updater:update-downloaded', listener)
+  },
+
+  onError: (callback: (error: { message: string }) => void) => {
+    const listener = (_event: IpcRendererEvent, error: { message: string }) => callback(error)
+    ipcRenderer.on('auto-updater:error', listener)
+    return () => ipcRenderer.off('auto-updater:error', listener)
+  },
 })

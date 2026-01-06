@@ -54,6 +54,10 @@ import {
   type ThemeMode,
 } from './themeManager.js';
 import Store from 'electron-store';
+import {
+  initializeAutoUpdater,
+  registerAutoUpdaterHandlers,
+} from './autoUpdater.js';
 
 interface StoreSchema {
   windowBounds: {
@@ -484,7 +488,13 @@ app.whenReady().then(() => {
   // Build application menu with theme options
   buildApplicationMenu();
 
+  // Register auto-updater IPC handlers
+  registerAutoUpdaterHandlers();
+
   createMainWindow();
+
+  // Initialize auto-updater after window is created
+  initializeAutoUpdater(mainWindow);
 
   // Check for cold-start file open (macOS)
   const globalWithFile = global as unknown as { openedFile?: string };

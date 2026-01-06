@@ -14,6 +14,11 @@
     "dist",
     "dist-electron"
   ],
+  "publish": {
+    "provider": "github",
+    "owner": "kocheck",
+    "repo": "Graphium"
+  },
   "mac": {
     "target": [
       "dmg"

@@ -15,6 +15,7 @@ interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: AboutModalTab;
+  onCheckForUpdates?: () => void;
 }
 
 // Add styles tag for modal-specific classes
@@ -231,7 +232,7 @@ const modalStyles = `
  * A modal explaining what Graphium is and how to use it,
  * written in the signature "Digital Dungeon Master" tone.
  */
-export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModalProps) {
+export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUpdates }: AboutModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<AboutModalTab>(initialTab);
 
@@ -403,6 +404,18 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about' }: AboutModal
                 }}
               >
                  <p style={{ color: 'var(--app-text-secondary)' }}>Version {__APP_VERSION__}</p>
+
+                 {/* Consult the Archives button (Electron only) */}
+                 {onCheckForUpdates && (
+                   <button
+                     onClick={onCheckForUpdates}
+                     disabled={!onCheckForUpdates}
+                     className="mt-4 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded-md font-medium cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                   >
+                     Consult the Archives
+                   </button>
+                 )}
+
                  <a
                   href="https://github.com/kocheck/Graphium"
                   target="_blank"
