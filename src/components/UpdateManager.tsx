@@ -176,8 +176,8 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isElectron, setIsElectron] = useState<boolean>(false);
 
-  // Randomize messages once on component mount (stable across dialog opens/closes)
-  // Using useRef instead of useMemo to avoid performance issues from recomputing on every dialog open
+  // Randomize messages on mount using useRef for stable references
+  // Messages persist for the lifetime of this component instance
   const messages = useRef({
     nonElectronTitle: rollForMessage(updateMessages.nonElectron.title),
     nonElectronSubtitle: rollForMessage(updateMessages.nonElectron.subtitle),
@@ -210,7 +210,6 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
           }
         } catch (error) {
           // Renderer process uses console for logging (not electron-log)
-          // eslint-disable-next-line no-console
           console.error('Failed to get current app version', error);
           if (isMounted) {
             setErrorMessage('Failed to get current app version');
