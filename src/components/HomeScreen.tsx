@@ -290,8 +290,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     setShowTemplates(false);
 
     // Set up new campaign with template settings
-    const newCampaign = useGameStore.getState().newCampaign;
-    newCampaign(template.grid.width, template.grid.height, template.grid.cellSize);
+    const store = useGameStore.getState();
+    store.resetToNewCampaign();
+    store.setGridSize(template.grid.cellSize);
 
     onStartEditor();
     showToast(`🎲 Created ${template.name} campaign!`, 'success');

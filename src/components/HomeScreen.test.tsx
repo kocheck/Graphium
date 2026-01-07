@@ -21,6 +21,8 @@ describe('HomeScreen', () => {
   const mockOnStartEditor = vi.fn();
   const mockShowToast = vi.fn();
   const mockLoadCampaign = vi.fn();
+  const mockResetToNewCampaign = vi.fn();
+  const mockSetGridSize = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -39,6 +41,8 @@ describe('HomeScreen', () => {
     // Mock store functions
     vi.spyOn(useGameStore.getState(), 'showToast').mockImplementation(mockShowToast);
     vi.spyOn(useGameStore.getState(), 'loadCampaign').mockImplementation(mockLoadCampaign);
+    vi.spyOn(useGameStore.getState(), 'resetToNewCampaign').mockImplementation(mockResetToNewCampaign);
+    vi.spyOn(useGameStore.getState(), 'setGridSize').mockImplementation(mockSetGridSize);
 
     // Mock recentCampaigns to return empty by default
     vi.mocked(recentCampaignsModule.getRecentCampaigns).mockReturnValue([]);
@@ -47,6 +51,8 @@ describe('HomeScreen', () => {
     vi.mocked(storageModule.getStorage).mockReturnValue({
       getPlatform: () => 'web',
       loadCampaign: vi.fn(),
+      getThemeMode: vi.fn().mockResolvedValue('system'),
+      setThemeMode: vi.fn().mockResolvedValue(undefined),
     } as any);
 
     // Mock navigator
@@ -88,6 +94,8 @@ describe('HomeScreen', () => {
       vi.mocked(storageModule.getStorage).mockReturnValue({
         getPlatform: () => 'electron',
         loadCampaign: vi.fn(),
+        getThemeMode: vi.fn().mockResolvedValue('system'),
+        setThemeMode: vi.fn().mockResolvedValue(undefined),
       } as any);
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
@@ -134,6 +142,8 @@ describe('HomeScreen', () => {
       vi.mocked(storageModule.getStorage).mockReturnValue({
         getPlatform: () => 'electron',
         loadCampaign: vi.fn(),
+        getThemeMode: vi.fn().mockResolvedValue('system'),
+        setThemeMode: vi.fn().mockResolvedValue(undefined),
       } as any);
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
@@ -254,6 +264,8 @@ describe('HomeScreen', () => {
       vi.mocked(storageModule.getStorage).mockReturnValue({
         getPlatform: () => 'web',
         loadCampaign: mockLoadCampaignFn,
+        getThemeMode: vi.fn().mockResolvedValue('system'),
+        setThemeMode: vi.fn().mockResolvedValue(undefined),
       } as any);
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
@@ -279,6 +291,8 @@ describe('HomeScreen', () => {
       vi.mocked(storageModule.getStorage).mockReturnValue({
         getPlatform: () => 'web',
         loadCampaign: mockLoadCampaignFn,
+        getThemeMode: vi.fn().mockResolvedValue('system'),
+        setThemeMode: vi.fn().mockResolvedValue(undefined),
       } as any);
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
@@ -298,6 +312,8 @@ describe('HomeScreen', () => {
       vi.mocked(storageModule.getStorage).mockReturnValue({
         getPlatform: () => 'web',
         loadCampaign: mockLoadCampaignFn,
+        getThemeMode: vi.fn().mockResolvedValue('system'),
+        setThemeMode: vi.fn().mockResolvedValue(undefined),
       } as any);
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
@@ -346,14 +362,16 @@ describe('HomeScreen', () => {
     it('should have ARIA labels on Templates button', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const templatesButton = screen.getByLabelText('Start from a template');
+      const templatesButton = screen.getByLabelText('Browse campaign templates');
       expect(templatesButton).toBeInTheDocument();
     });
 
     it('should have ARIA labels on theme switcher', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const themeSwitcher = screen.getByLabelText(/Switch theme/i);
+      const themeSwitcher = screen.getByLabelText(
+        /Current theme: .*\. Click to cycle themes\./i
+      );
       expect(themeSwitcher).toBeInTheDocument();
     });
   });
@@ -366,7 +384,7 @@ describe('HomeScreen', () => {
       fireEvent.keyDown(window, { key: 't', ctrlKey: true });
 
       await waitFor(() => {
-        expect(screen.getByText('Choose a Template')).toBeInTheDocument();
+        expect(screen.getByText('Campaign Templates')).toBeInTheDocument();
       });
     });
 
@@ -377,14 +395,14 @@ describe('HomeScreen', () => {
       fireEvent.keyDown(window, { key: 't', ctrlKey: true });
 
       await waitFor(() => {
-        expect(screen.getByText('Choose a Template')).toBeInTheDocument();
+        expect(screen.getByText('Campaign Templates')).toBeInTheDocument();
       });
 
       // Press Escape
       fireEvent.keyDown(window, { key: 'Escape' });
 
       await waitFor(() => {
-        expect(screen.queryByText('Choose a Template')).not.toBeInTheDocument();
+        expect(screen.queryByText('Campaign Templates')).not.toBeInTheDocument();
       });
     });
 
@@ -404,7 +422,9 @@ describe('HomeScreen', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
       expect(screen.getByText('Templates')).toBeInTheDocument();
-      expect(screen.getByText(/Start from pre-made scenarios/)).toBeInTheDocument();
+      // Tooltip content is only shown on hover, so we verify the button has the aria-label
+      const templatesButton = screen.getByLabelText('Browse campaign templates');
+      expect(templatesButton).toBeInTheDocument();
     });
 
     it('should open templates modal when Templates card is clicked', async () => {
@@ -414,11 +434,11 @@ describe('HomeScreen', () => {
       fireEvent.click(templatesButton!);
 
       await waitFor(() => {
-        expect(screen.getByText('Choose a Template')).toBeInTheDocument();
+        expect(screen.getByText('Campaign Templates')).toBeInTheDocument();
         expect(screen.getByText('Classic Dungeon')).toBeInTheDocument();
-        expect(screen.getByText('Wilderness Encounter')).toBeInTheDocument();
-        expect(screen.getByText('Tavern Brawl')).toBeInTheDocument();
-        expect(screen.getByText('Arena Battle')).toBeInTheDocument();
+        expect(screen.getByText('Wilderness Map')).toBeInTheDocument();
+        expect(screen.getByText('Starting Tavern')).toBeInTheDocument();
+        expect(screen.getByText('Combat Arena')).toBeInTheDocument();
       });
     });
 
@@ -429,14 +449,14 @@ describe('HomeScreen', () => {
       fireEvent.click(templatesButton!);
 
       await waitFor(() => {
-        expect(screen.getByText('Choose a Template')).toBeInTheDocument();
+        expect(screen.getByText('Campaign Templates')).toBeInTheDocument();
       });
 
       const closeButton = screen.getByLabelText('Close templates');
       fireEvent.click(closeButton);
 
       await waitFor(() => {
-        expect(screen.queryByText('Choose a Template')).not.toBeInTheDocument();
+        expect(screen.queryByText('Campaign Templates')).not.toBeInTheDocument();
       });
     });
 
@@ -457,7 +477,7 @@ describe('HomeScreen', () => {
 
       await waitFor(() => {
         expect(mockOnStartEditor).toHaveBeenCalledTimes(1);
-        expect(screen.queryByText('Choose a Template')).not.toBeInTheDocument();
+        expect(screen.queryByText('Campaign Templates')).not.toBeInTheDocument();
       });
     });
   });
@@ -475,7 +495,7 @@ describe('HomeScreen', () => {
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const searchInput = screen.getByPlaceholderText(/Search recent campaigns/i);
+      const searchInput = screen.getByPlaceholderText(/Search campaigns/i);
       expect(searchInput).toBeInTheDocument();
     });
 
@@ -491,7 +511,7 @@ describe('HomeScreen', () => {
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const searchInput = screen.queryByPlaceholderText(/Search recent campaigns/i);
+      const searchInput = screen.queryByPlaceholderText(/Search campaigns/i);
       expect(searchInput).not.toBeInTheDocument();
     });
 
@@ -509,7 +529,7 @@ describe('HomeScreen', () => {
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const searchInput = screen.getByPlaceholderText(/Search recent campaigns/i);
+      const searchInput = screen.getByPlaceholderText(/Search campaigns/i);
 
       // Filter for "Dragon"
       fireEvent.change(searchInput, { target: { value: 'dragon' } });
@@ -537,7 +557,9 @@ describe('HomeScreen', () => {
 
       expect(screen.getByText('Download the Windows App')).toBeInTheDocument();
       expect(
-        screen.getByText(/Greater portability, offline support, and privacy/)
+        screen.getByText(
+          /Get greater portability, offline support, and privacy with the native desktop application\./i
+        )
       ).toBeInTheDocument();
     });
 
@@ -552,7 +574,7 @@ describe('HomeScreen', () => {
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      expect(screen.getByText('Download the Linux App')).toBeInTheDocument();
+      expect(screen.getByText('Download for Linux')).toBeInTheDocument();
     });
 
     it('should show Mac download banner on Mac web platform', () => {
@@ -573,6 +595,8 @@ describe('HomeScreen', () => {
       vi.mocked(storageModule.getStorage).mockReturnValue({
         getPlatform: () => 'electron',
         loadCampaign: vi.fn(),
+        getThemeMode: vi.fn().mockResolvedValue('system'),
+        setThemeMode: vi.fn().mockResolvedValue(undefined),
       } as any);
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
@@ -601,7 +625,9 @@ describe('HomeScreen', () => {
     it('should render theme switcher in footer', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const themeSwitcher = screen.getByLabelText(/Switch theme/i);
+      const themeSwitcher = screen.getByLabelText(
+        /Current theme: .*\. Click to cycle themes\./i
+      );
       expect(themeSwitcher).toBeInTheDocument();
     });
 
@@ -616,7 +642,14 @@ describe('HomeScreen', () => {
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const themeSwitcher = screen.getByLabelText(/Switch theme/i);
+      // Wait for theme to load
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Current theme: Dark\. Click to cycle themes\./i)).toBeInTheDocument();
+      });
+
+      const themeSwitcher = screen.getByLabelText(
+        /Current theme: Dark\. Click to cycle themes\./i
+      );
 
       // Click to cycle from dark → system
       fireEvent.click(themeSwitcher);
@@ -636,31 +669,36 @@ describe('HomeScreen', () => {
     it('should render lite mode toggle in footer', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      expect(screen.getByText('Lite Mode')).toBeInTheDocument();
-      expect(screen.getByText(/Reduce visual effects/i)).toBeInTheDocument();
+      const liteToggle = screen.getByLabelText(
+        /Full Mode enabled\. Click to enable lite mode\./i
+      );
+      expect(liteToggle).toBeInTheDocument();
     });
 
     it('should toggle lite mode when clicked', async () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const liteToggle = screen.getByLabelText('Toggle Lite Mode');
+      const liteToggle = screen.getByLabelText(
+        /Full Mode enabled\. Click to enable lite mode\./i
+      );
 
-      // Initially OFF (not checked)
-      expect(liteToggle).not.toBeChecked();
-
-      // Click to enable
+      // Click to enable lite mode
       fireEvent.click(liteToggle);
 
       await waitFor(() => {
-        expect(liteToggle).toBeChecked();
         expect(localStorage.getItem('liteMode')).toBe('true');
       });
 
+      // Check aria-label updated
+      const liteToggleAfter = screen.getByLabelText(
+        /Lite Mode enabled\. Click to enable full mode\./i
+      );
+      expect(liteToggleAfter).toBeInTheDocument();
+
       // Click to disable
-      fireEvent.click(liteToggle);
+      fireEvent.click(liteToggleAfter);
 
       await waitFor(() => {
-        expect(liteToggle).not.toBeChecked();
         expect(localStorage.getItem('liteMode')).toBe('false');
       });
     });
@@ -670,14 +708,18 @@ describe('HomeScreen', () => {
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const liteToggle = screen.getByLabelText('Toggle Lite Mode');
-      expect(liteToggle).toBeChecked();
+      const liteToggle = screen.getByLabelText(
+        /Lite Mode enabled\. Click to enable full mode\./i
+      );
+      expect(liteToggle).toBeInTheDocument();
     });
 
     it('should set data-lite-mode attribute on root element', async () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const liteToggle = screen.getByLabelText('Toggle Lite Mode');
+      const liteToggle = screen.getByLabelText(
+        /Full Mode enabled\. Click to enable lite mode\./i
+      );
 
       // Enable lite mode
       fireEvent.click(liteToggle);
