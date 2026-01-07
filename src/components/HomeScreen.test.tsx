@@ -478,6 +478,9 @@ describe('HomeScreen', () => {
       await waitFor(() => {
         expect(mockOnStartEditor).toHaveBeenCalledTimes(1);
         expect(screen.queryByText('Campaign Templates')).not.toBeInTheDocument();
+        // Verify store methods were called with correct template values
+        expect(mockResetToNewCampaign).toHaveBeenCalledTimes(1);
+        expect(mockSetGridSize).toHaveBeenCalledWith(50); // Classic Dungeon has cellSize: 50
       });
     });
   });
@@ -657,6 +660,41 @@ describe('HomeScreen', () => {
       await waitFor(() => {
         expect(mockSetThemeMode).toHaveBeenCalledWith('system');
       });
+    });
+
+    it('should handle theme switcher errors gracefully', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const mockSetThemeMode = vi.fn().mockRejectedValue(new Error('Failed to set theme'));
+      vi.mocked(storageModule.getStorage).mockReturnValue({
+        getPlatform: () => 'web',
+        loadCampaign: vi.fn(),
+        getThemeMode: vi.fn().mockResolvedValue('light'),
+        setThemeMode: mockSetThemeMode,
+      } as any);
+
+      render(<HomeScreen onStartEditor={mockOnStartEditor} />);
+
+      // Wait for theme to load
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Current theme: Light\. Click to cycle themes\./i)).toBeInTheDocument();
+      });
+
+      const themeSwitcher = screen.getByLabelText(
+        /Current theme: Light\. Click to cycle themes\./i
+      );
+
+      // Click to cycle theme
+      fireEvent.click(themeSwitcher);
+
+      await waitFor(() => {
+        expect(mockSetThemeMode).toHaveBeenCalledWith('dark');
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          '[HomeScreen] Failed to set theme:',
+          expect.any(Error)
+        );
+      });
+
+      consoleErrorSpy.mockRestore();
     });
   });
 

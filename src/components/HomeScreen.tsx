@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Tooltip from './Tooltip';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
@@ -111,6 +111,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<ThemeMode>('system');
 
+  // Refs for focus management
+  const templatesModalRef = useRef<HTMLDivElement>(null);
+  const templatesCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   // Random inclusive subtitle (stable for session)
   const [subtitle] = useState(() => {
     const titles = [
@@ -127,6 +132,37 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   const loadCampaign = useGameStore((state) => state.loadCampaign);
   const showToast = useGameStore((state) => state.showToast);
   const showDungeonDialog = useGameStore((state) => state.showDungeonDialog);
+
+  // Handler functions (defined before effects that use them)
+  const handleNewCampaign = useCallback(() => {
+    onStartEditor();
+  }, [onStartEditor]);
+
+  const handleLoadCampaign = useCallback(async () => {
+    try {
+      const storage = getStorage();
+      const campaign = await storage.loadCampaign();
+
+      if (campaign) {
+        loadCampaign(campaign);
+        addRecentCampaignWithPlatform(campaign.id, campaign.name);
+        setRecentCampaigns(getRecentCampaigns());
+        onStartEditor();
+        showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
+      }
+    } catch (error) {
+      console.error('[HomeScreen] Failed to load campaign:', error);
+      showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(error) }), 'error');
+    }
+  }, [loadCampaign, onStartEditor, showToast]);
+
+  const handleGenerateDungeon = useCallback(() => {
+    onStartEditor();
+    // Small delay to ensure editor is rendered before opening dialog
+    setTimeout(() => {
+      showDungeonDialog();
+    }, 100);
+  }, [onStartEditor, showDungeonDialog]);
 
   // Load recent campaigns and detect platform on mount
   useEffect(() => {
@@ -155,6 +191,49 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       setIsLinux(isLinuxOS);
     }
   }, []);
+
+  // Focus management for templates modal
+  useEffect(() => {
+    if (showTemplates) {
+      // Store the element that had focus before opening
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      
+      // Focus the close button when modal opens
+      setTimeout(() => {
+        templatesCloseButtonRef.current?.focus();
+      }, 0);
+    } else if (previousFocusRef.current) {
+      // Restore focus when modal closes
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [showTemplates]);
+
+  // Focus trap for templates modal
+  useEffect(() => {
+    if (!showTemplates) return;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !templatesModalRef.current) return;
+
+      const focusableElements = templatesModalRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement?.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [showTemplates]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -195,29 +274,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isAboutOpen, showTemplates]);
-
-  const handleNewCampaign = () => {
-    onStartEditor();
-  };
-
-  const handleLoadCampaign = async () => {
-    try {
-      const storage = getStorage();
-      const campaign = await storage.loadCampaign();
-
-      if (campaign) {
-        loadCampaign(campaign);
-        addRecentCampaignWithPlatform(campaign.id, campaign.name);
-        setRecentCampaigns(getRecentCampaigns());
-        onStartEditor();
-        showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
-      }
-    } catch (error) {
-      console.error('[HomeScreen] Failed to load campaign:', error);
-      showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(error) }), 'error');
-    }
-  };
+  }, [isAboutOpen, showTemplates, handleNewCampaign, handleLoadCampaign, handleGenerateDungeon]);
 
   const handleLoadRecent = async (_recent: RecentCampaign) => {
     showToast(
@@ -239,14 +296,6 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   const handleDismissDownloadBanner = () => {
     localStorage.setItem('hideDownloadBanner', 'true');
     setHideDownloadBanner(true);
-  };
-
-  const handleGenerateDungeon = () => {
-    onStartEditor();
-    // Small delay to ensure editor is rendered before opening dialog
-    setTimeout(() => {
-      showDungeonDialog();
-    }, 100);
   };
 
   // NEW FEATURE HANDLERS
@@ -282,7 +331,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         if (typeof BroadcastChannel !== 'undefined') {
           const channel = new BroadcastChannel('graphium-theme-sync');
           channel.postMessage({ type: 'THEME_CHANGED', mode: nextTheme });
-          channel.close();
+          // Keep channel open briefly to ensure message delivery
+          setTimeout(() => channel.close(), 100);
         }
       }
     } catch (error) {
@@ -305,8 +355,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   };
 
   // Filter recent campaigns by search query
-  const filteredCampaigns = recentCampaigns.filter(campaign =>
-    campaign.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredCampaigns = useMemo(
+    () => recentCampaigns.filter(campaign =>
+      campaign.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [recentCampaigns, searchQuery]
   );
 
   const getThemeIcon = () => {
@@ -606,10 +659,15 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       {/* Templates Modal */}
       {showTemplates && (
         <div className="templates-overlay" onClick={() => setShowTemplates(false)}>
-          <div className="templates-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="templates-modal" 
+            onClick={(e) => e.stopPropagation()}
+            ref={templatesModalRef}
+          >
             <div className="templates-header">
               <h2 className="templates-title">Campaign Templates</h2>
               <button
+                ref={templatesCloseButtonRef}
                 onClick={() => setShowTemplates(false)}
                 className="templates-close"
                 aria-label="Close templates"
