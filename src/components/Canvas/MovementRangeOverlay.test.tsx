@@ -83,21 +83,39 @@ describe('MovementRangeOverlay', () => {
       spy.mockRestore();
     });
 
-    it('should work with HEXAGONAL grid', () => {
+    it('should work with HEX_H grid', () => {
       const spy = vi.spyOn(gridGeometry, 'createGridGeometry');
 
-      render(<MovementRangeOverlay {...defaultProps} gridType="HEXAGONAL" />);
+      render(<MovementRangeOverlay {...defaultProps} gridType="HEX_H" />);
 
-      expect(spy).toHaveBeenCalledWith('HEXAGONAL');
+      expect(spy).toHaveBeenCalledWith('HEX_H');
       spy.mockRestore();
     });
 
-    it('should work with ISOMETRIC grid', () => {
+    it('should work with HEX_V grid', () => {
       const spy = vi.spyOn(gridGeometry, 'createGridGeometry');
 
-      render(<MovementRangeOverlay {...defaultProps} gridType="ISOMETRIC" />);
+      render(<MovementRangeOverlay {...defaultProps} gridType="HEX_V" />);
 
-      expect(spy).toHaveBeenCalledWith('ISOMETRIC');
+      expect(spy).toHaveBeenCalledWith('HEX_V');
+      spy.mockRestore();
+    });
+
+    it('should work with ISO_H grid', () => {
+      const spy = vi.spyOn(gridGeometry, 'createGridGeometry');
+
+      render(<MovementRangeOverlay {...defaultProps} gridType="ISO_H" />);
+
+      expect(spy).toHaveBeenCalledWith('ISO_H');
+      spy.mockRestore();
+    });
+
+    it('should work with ISO_V grid', () => {
+      const spy = vi.spyOn(gridGeometry, 'createGridGeometry');
+
+      render(<MovementRangeOverlay {...defaultProps} gridType="ISO_V" />);
+
+      expect(spy).toHaveBeenCalledWith('ISO_V');
       spy.mockRestore();
     });
   });
