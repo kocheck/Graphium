@@ -25,6 +25,8 @@ import {
   RiSparklingLine,
   RiFileList3Line,
   RiDownloadCloudLine,
+  RiBuilding2Line,
+  RiTreeLine,
 } from '@remixicon/react';
 
 /**
@@ -993,7 +995,7 @@ useEffect(() => {
     id: 'landing-template-card',
     name: 'Template Card',
     category: 'landing-patterns',
-    description: 'Campaign template selection card with emoji icon',
+    description: 'Campaign template selection card with Remix icon',
     component: (
       <button style={{
         background: 'var(--app-bg-base)',
@@ -1005,7 +1007,7 @@ useEffect(() => {
         transition: 'all 0.2s',
         width: '240px'
       }}>
-        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '0.75rem' }}>🏰</span>
+        <RiBuilding2Line style={{ width: '3rem', height: '3rem', display: 'block', margin: '0 auto 0.75rem', color: 'var(--blue-11)' }} />
         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--app-text-primary)', marginBottom: '0.5rem' }}>
           Classic Dungeon
         </h3>
@@ -1017,10 +1019,12 @@ useEffect(() => {
         </div>
       </button>
     ),
-    code: `interface CampaignTemplate {
+    code: `import { RiBuilding2Line, RiTreeLine, RiGobletLine, RiSwordLine } from '@remixicon/react';
+
+interface CampaignTemplate {
   id: string;
   name: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   description: string;
   grid: { width: number; height: number; cellSize: number; };
 }
@@ -1029,7 +1033,7 @@ const TEMPLATES: CampaignTemplate[] = [
   {
     id: 'dungeon',
     name: 'Classic Dungeon',
-    icon: '🏰',
+    icon: RiBuilding2Line,
     description: '5-room dungeon with fog of war',
     grid: { width: 30, height: 30, cellSize: 50 }
   },
@@ -1038,22 +1042,34 @@ const TEMPLATES: CampaignTemplate[] = [
 
 // Render
 <div className="templates-grid">
-  {TEMPLATES.map((template) => (
-    <button
-      key={template.id}
-      onClick={() => handleSelectTemplate(template)}
-      className="template-card"
-    >
-      <span className="template-icon">{template.icon}</span>
-      <h3 className="template-name">{template.name}</h3>
-      <p className="template-description">{template.description}</p>
-      <div className="template-specs">
-        {template.grid.width}×{template.grid.height} • {template.grid.cellSize}px cells
-      </div>
-    </button>
-  ))}
-</div>`,
-    tags: ['landing', 'template', 'card', 'emoji'],
+  {TEMPLATES.map((template) => {
+    const IconComponent = template.icon;
+    return (
+      <button
+        key={template.id}
+        onClick={() => handleSelectTemplate(template)}
+        className="template-card"
+      >
+        <IconComponent className="template-icon" />
+        <h3 className="template-name">{template.name}</h3>
+        <p className="template-description">{template.description}</p>
+        <div className="template-specs">
+          {template.grid.width}×{template.grid.height} • {template.grid.cellSize}px cells
+        </div>
+      </button>
+    );
+  })}
+</div>
+
+// CSS
+.template-icon {
+  width: 3rem;
+  height: 3rem;
+  display: block;
+  margin: 0 auto 0.75rem;
+  color: var(--blue-11);
+}`,
+    tags: ['landing', 'template', 'card', 'icons'],
   },
 
   // PERFORMANCE PATTERNS

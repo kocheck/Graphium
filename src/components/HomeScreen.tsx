@@ -20,6 +20,10 @@ import {
   RiFlashlightLine,
   RiSparklingLine,
   RiFileList3Line,
+  RiBuilding2Line,
+  RiTreeLine,
+  RiGobletLine,
+  RiSwordLine,
 } from '@remixicon/react';
 import { LogoLockup } from './LogoLockup';
 import { AboutModal, type AboutModalTab } from './AboutModal';
@@ -35,7 +39,7 @@ interface HomeScreenProps {
 interface CampaignTemplate {
   id: string;
   name: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   description: string;
   grid: {
     width: number;
@@ -51,28 +55,28 @@ const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
   {
     id: 'dungeon',
     name: 'Classic Dungeon',
-    icon: '🏰',
+    icon: RiBuilding2Line,
     description: '5-room dungeon with fog of war',
     grid: { width: 30, height: 30, cellSize: 50 }
   },
   {
     id: 'wilderness',
     name: 'Wilderness Map',
-    icon: '🌲',
+    icon: RiTreeLine,
     description: 'Large outdoor exploration area',
     grid: { width: 40, height: 40, cellSize: 50 }
   },
   {
     id: 'tavern',
     name: 'Starting Tavern',
-    icon: '🍺',
+    icon: RiGobletLine,
     description: 'Small indoor social encounter',
     grid: { width: 20, height: 20, cellSize: 50 }
   },
   {
     id: 'arena',
     name: 'Combat Arena',
-    icon: '⚔️',
+    icon: RiSwordLine,
     description: 'Tactical battle grid',
     grid: { width: 25, height: 25, cellSize: 50 }
   },
@@ -290,8 +294,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     setShowTemplates(false);
 
     // Set up new campaign with template settings
-    const newCampaign = useGameStore.getState().newCampaign;
-    newCampaign(template.grid.width, template.grid.height, template.grid.cellSize);
+    const store = useGameStore.getState();
+    store.resetToNewCampaign();
+    // Note: Only cell size can be set via store. Grid width/height are reference
+    // values - actual canvas size is determined by the uploaded map image.
+    store.setGridSize(template.grid.cellSize);
 
     onStartEditor();
     showToast(`🎲 Created ${template.name} campaign!`, 'success');
@@ -614,21 +621,24 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               Start your adventure with a pre-configured campaign grid
             </p>
             <div className="templates-grid">
-              {CAMPAIGN_TEMPLATES.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => handleSelectTemplate(template)}
-                  className="template-card"
-                  aria-label={`Select ${template.name} template`}
-                >
-                  <span className="template-icon">{template.icon}</span>
-                  <h3 className="template-name">{template.name}</h3>
-                  <p className="template-description">{template.description}</p>
-                  <div className="template-specs">
-                    {template.grid.width}×{template.grid.height} • {template.grid.cellSize}px cells
-                  </div>
-                </button>
-              ))}
+              {CAMPAIGN_TEMPLATES.map((template) => {
+                const IconComponent = template.icon;
+                return (
+                  <button
+                    key={template.id}
+                    onClick={() => handleSelectTemplate(template)}
+                    className="template-card"
+                    aria-label={`Select ${template.name} template`}
+                  >
+                    <IconComponent className="template-icon" />
+                    <h3 className="template-name">{template.name}</h3>
+                    <p className="template-description">{template.description}</p>
+                    <div className="template-specs">
+                      {template.grid.width}×{template.grid.height} • {template.grid.cellSize}px cells
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1322,9 +1332,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         }
 
         .template-icon {
-          font-size: 3rem;
+          width: 3rem;
+          height: 3rem;
           display: block;
+          margin-left: auto;
+          margin-right: auto;
           margin-bottom: 0.75rem;
+          color: var(--blue-11); /* Theme-aware blue for icon color */
         }
 
         .template-name {
