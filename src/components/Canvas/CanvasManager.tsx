@@ -497,11 +497,12 @@ const CanvasManager = ({
             {isAltPressed && drawings.filter(d => itemsForDuplication.includes(d.id)).map(ghost => (
                 <Line key={`ghost-${ghost.id}`} points={ghost.points} stroke={ghost.color} strokeWidth={ghost.size} tension={0.5} lineCap="round" dash={ghost.tool === 'wall' ? [10, 5] : undefined} opacity={0.5} listening={false} />
             ))}
-            {drawings.map(line => (
-                line.pressures && line.pressures.length > 0 ?
-                <PressureSensitiveLine key={line.id} id={line.id} points={line.points} pressures={line.pressures} stroke={line.color} strokeWidth={line.size} draggable={tool === 'select' && line.tool !== 'wall'} onClick={(e: KonvaEventObject<MouseEvent>) => { if(tool === 'select') { e.evt.stopPropagation(); setSelectedIds([line.id]); } }} onDragEnd={(e: KonvaEventObject<DragEvent>) => updateDrawingTransform(line.id, e.target.x(), e.target.y(), 1)} /> :
-                <Line key={line.id} id={line.id} points={line.points} stroke={line.color} strokeWidth={line.size} tension={0.5} lineCap="round" dash={line.tool === 'wall' ? [10, 5] : undefined} draggable={tool === 'select' && line.tool !== 'wall'} onClick={(e: KonvaEventObject<MouseEvent>) => { if(tool === 'select') { e.evt.stopPropagation(); setSelectedIds([line.id]); } }} onDragEnd={(e) => updateDrawingTransform(line.id, e.target.x(), e.target.y(), 1)} />
-            ))}
+            {drawings.map(line => {
+                const strokeColor = isWorldView && line.tool === 'wall' ? '#000000' : line.color;
+                return line.pressures && line.pressures.length > 0 ?
+                <PressureSensitiveLine key={line.id} id={line.id} points={line.points} pressures={line.pressures} stroke={strokeColor} strokeWidth={line.size} draggable={tool === 'select' && line.tool !== 'wall'} onClick={(e: KonvaEventObject<MouseEvent>) => { if(tool === 'select') { e.evt.stopPropagation(); setSelectedIds([line.id]); } }} onDragEnd={(e: KonvaEventObject<DragEvent>) => updateDrawingTransform(line.id, e.target.x(), e.target.y(), 1)} /> :
+                <Line key={line.id} id={line.id} points={line.points} stroke={strokeColor} strokeWidth={line.size} tension={0.5} lineCap="round" dash={line.tool === 'wall' ? [10, 5] : undefined} draggable={tool === 'select' && line.tool !== 'wall'} onClick={(e: KonvaEventObject<MouseEvent>) => { if(tool === 'select') { e.evt.stopPropagation(); setSelectedIds([line.id]); } }} onDragEnd={(e) => updateDrawingTransform(line.id, e.target.x(), e.target.y(), 1)} />
+            })}
             {tempLine && <Line ref={tempLineRef} points={tempLine.points} stroke={tempLine.color} strokeWidth={tempLine.size} tension={0.5} lineCap="round" />}
             <StairsLayer stairs={stairs} isWorldView={isWorldView} />
         </Layer>
