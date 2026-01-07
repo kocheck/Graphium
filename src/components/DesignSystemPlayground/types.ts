@@ -17,7 +17,9 @@ export interface ComponentExample {
     | 'card'
     | 'toast'
     | 'badge'
-    | 'icon';
+    | 'icon'
+    | 'landing-patterns'
+    | 'performance';
   description: string;
   component: React.ReactNode;
   code: string;

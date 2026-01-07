@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Tooltip from './Tooltip';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
@@ -18,13 +18,74 @@ import {
   RiInformationLine,
   RiLayoutGridLine,
   RiDiceLine,
+  RiMoonLine,
+  RiSunLine,
+  RiComputerLine,
+  RiSearchLine,
+  RiFlashlightLine,
+  RiSparklingLine,
+  RiFileList3Line,
+  RiBuilding2Line,
+  RiTreeLine,
+  RiGobletLine,
+  RiSwordLine,
 } from '@remixicon/react';
 import { LogoLockup } from './LogoLockup';
 import { AboutModal, type AboutModalTab } from './AboutModal';
+import type { ThemeMode } from '../services/IStorageService';
 
 interface HomeScreenProps {
   onStartEditor: () => void;
 }
+
+/**
+ * Campaign template definition
+ */
+interface CampaignTemplate {
+  id: string;
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+  grid: {
+    width: number;
+    height: number;
+    cellSize: number;
+  };
+}
+
+/**
+ * Pre-made campaign templates for quick start
+ */
+const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
+  {
+    id: 'dungeon',
+    name: 'Classic Dungeon',
+    icon: RiBuilding2Line,
+    description: '5-room dungeon with fog of war',
+    grid: { width: 30, height: 30, cellSize: 50 },
+  },
+  {
+    id: 'wilderness',
+    name: 'Wilderness Map',
+    icon: RiTreeLine,
+    description: 'Large outdoor exploration area',
+    grid: { width: 40, height: 40, cellSize: 50 },
+  },
+  {
+    id: 'tavern',
+    name: 'Starting Tavern',
+    icon: RiGobletLine,
+    description: 'Small indoor social encounter',
+    grid: { width: 20, height: 20, cellSize: 50 },
+  },
+  {
+    id: 'arena',
+    name: 'Combat Arena',
+    icon: RiSwordLine,
+    description: 'Tactical battle grid',
+    grid: { width: 25, height: 25, cellSize: 50 },
+  },
+];
 
 /**
  * HomeScreen - Redesigned landing page for the application
@@ -36,11 +97,24 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   const [recentCampaigns, setRecentCampaigns] = useState<RecentCampaign[]>([]);
   const [isElectron, setIsElectron] = useState(false);
   const [isMac, setIsMac] = useState(false);
+  const [isWindows, setIsWindows] = useState(false);
+  const [isLinux, setIsLinux] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [aboutInitialTab, setAboutInitialTab] = useState<AboutModalTab>('about');
-  const [hideMacBanner, setHideMacBanner] = useState(
-    () => localStorage.getItem('hideMacBanner') === 'true',
+  const [hideDownloadBanner, setHideDownloadBanner] = useState(
+    () => localStorage.getItem('hideDownloadBanner') === 'true',
   );
+
+  // NEW FEATURES
+  const [liteMode, setLiteMode] = useState(() => localStorage.getItem('liteMode') === 'true');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>('system');
+
+  // Refs for focus management
+  const templatesModalRef = useRef<HTMLDivElement>(null);
+  const templatesCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Random inclusive subtitle (stable for session)
   const [subtitle] = useState(() => {
@@ -76,50 +150,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   const showToast = useGameStore((state) => state.showToast);
   const showDungeonDialog = useGameStore((state) => state.showDungeonDialog);
 
-  // Load recent campaigns and detect platform on mount
-  useEffect(() => {
-    setRecentCampaigns(getRecentCampaigns());
-
-    // Detect platform
-    const storage = getStorage();
-    const platform = storage.getPlatform();
-    setIsElectron(platform === 'electron');
-
-    // Detect macOS for download banner
-    let isMacOS = false;
-    if (typeof navigator !== 'undefined') {
-      const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } })
-        .userAgentData;
-      const platformHint = uaData?.platform ?? '';
-      const userAgent = navigator.userAgent ?? '';
-
-      isMacOS = platformHint.toLowerCase().includes('mac') || /mac/i.test(userAgent);
-    }
-    setIsMac(isMacOS);
-  }, []);
-
-  // Keyboard shortcut: Press '?' to open About modal
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if ((e.key === '?' || (e.shiftKey && e.key === '/')) && !isAboutOpen) {
-        e.preventDefault();
-        setAboutInitialTab('shortcuts');
-        setIsAboutOpen(true);
-      }
-      if (e.key === 'Escape' && isAboutOpen) {
-        setIsAboutOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isAboutOpen]);
-
-  const handleNewCampaign = () => {
+  // Handler functions (defined before effects that use them)
+  const handleNewCampaign = useCallback(() => {
     onStartEditor();
-  };
+  }, [onStartEditor]);
 
-  const handleLoadCampaign = async () => {
+  const handleLoadCampaign = useCallback(async () => {
     try {
       const storage = getStorage();
       const campaign = await storage.loadCampaign();
@@ -135,7 +171,131 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       console.error('[HomeScreen] Failed to load campaign:', error);
       showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(error) }), 'error');
     }
-  };
+  }, [loadCampaign, onStartEditor, showToast]);
+
+  const handleGenerateDungeon = useCallback(() => {
+    onStartEditor();
+    // Small delay to ensure editor is rendered before opening dialog
+    setTimeout(() => {
+      showDungeonDialog();
+    }, 100);
+  }, [onStartEditor, showDungeonDialog]);
+
+  // Load recent campaigns and detect platform on mount
+  useEffect(() => {
+    setRecentCampaigns(getRecentCampaigns());
+
+    // Detect platform
+    const storage = getStorage();
+    const platform = storage.getPlatform();
+    setIsElectron(platform === 'electron');
+
+    // Load current theme mode
+    storage
+      .getThemeMode()
+      .then((mode) => setCurrentTheme(mode))
+      .catch(() => {});
+
+    // Detect OS for download banners
+    if (typeof navigator !== 'undefined') {
+      const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } })
+        .userAgentData;
+      const platformHint = uaData?.platform ?? '';
+      const userAgent = navigator.userAgent ?? '';
+
+      const isMacOS = platformHint.toLowerCase().includes('mac') || /mac/i.test(userAgent);
+      const isWindowsOS = platformHint.toLowerCase().includes('win') || /win/i.test(userAgent);
+      const isLinuxOS = platformHint.toLowerCase().includes('linux') || /linux/i.test(userAgent);
+
+      setIsMac(isMacOS);
+      setIsWindows(isWindowsOS);
+      setIsLinux(isLinuxOS);
+    }
+  }, []);
+
+  // Focus management for templates modal
+  useEffect(() => {
+    if (showTemplates) {
+      // Store the element that had focus before opening
+      previousFocusRef.current = document.activeElement as HTMLElement;
+
+      // Focus the close button when modal opens
+      setTimeout(() => {
+        templatesCloseButtonRef.current?.focus();
+      }, 0);
+    } else if (previousFocusRef.current) {
+      // Restore focus when modal closes
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [showTemplates]);
+
+  // Focus trap for templates modal
+  useEffect(() => {
+    if (!showTemplates) return;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !templatesModalRef.current) return;
+
+      const focusableElements = templatesModalRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement?.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [showTemplates]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Global shortcuts (Ctrl/Cmd + key)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        if (e.key === 'n') {
+          e.preventDefault();
+          handleNewCampaign();
+        } else if (e.key === 'o') {
+          e.preventDefault();
+          handleLoadCampaign();
+        } else if (e.key === 'g') {
+          e.preventDefault();
+          handleGenerateDungeon();
+        } else if (e.key === 't') {
+          e.preventDefault();
+          setShowTemplates(true);
+        }
+      }
+
+      // Help shortcut: Press '?' to open About modal
+      if ((e.key === '?' || (e.shiftKey && e.key === '/')) && !isAboutOpen && !showTemplates) {
+        e.preventDefault();
+        setAboutInitialTab('shortcuts');
+        setIsAboutOpen(true);
+      }
+
+      // Escape to close modals
+      if (e.key === 'Escape') {
+        if (showTemplates) {
+          setShowTemplates(false);
+        } else if (isAboutOpen) {
+          setIsAboutOpen(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isAboutOpen, showTemplates, handleNewCampaign, handleLoadCampaign, handleGenerateDungeon]);
 
   const handleLoadRecent = async (_recent: RecentCampaign) => {
     showToast(
@@ -149,21 +309,95 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     setRecentCampaigns(getRecentCampaigns());
   };
 
-  const handleDismissMacBanner = () => {
-    localStorage.setItem('hideMacBanner', 'true');
-    setHideMacBanner(true);
+  const handleDismissDownloadBanner = () => {
+    localStorage.setItem('hideDownloadBanner', 'true');
+    setHideDownloadBanner(true);
   };
 
-  const handleGenerateDungeon = () => {
+  // NEW FEATURE HANDLERS
+
+  const handleToggleLiteMode = () => {
+    const newLiteMode = !liteMode;
+    setLiteMode(newLiteMode);
+    localStorage.setItem('liteMode', String(newLiteMode));
+    showToast(
+      newLiteMode
+        ? '⚡ Lite Mode enabled - animations disabled for better performance'
+        : '✨ Full Mode enabled - animations restored',
+      'success',
+    );
+  };
+
+  const handleToggleTheme = async () => {
+    const storage = getStorage();
+    const themes: ThemeMode[] = ['light', 'dark', 'system'];
+    const currentIndex = themes.indexOf(currentTheme);
+    const nextTheme = themes[(currentIndex + 1) % themes.length];
+
+    try {
+      await storage.setThemeMode(nextTheme);
+      setCurrentTheme(nextTheme);
+
+      // Apply theme immediately for web (Electron handles via IPC)
+      if (storage.getPlatform() === 'web') {
+        const effectiveTheme =
+          nextTheme === 'system'
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+            : nextTheme;
+        document.documentElement.setAttribute('data-theme', effectiveTheme);
+
+        // Broadcast to other tabs
+        if (typeof BroadcastChannel !== 'undefined') {
+          const channel = new BroadcastChannel('graphium-theme-sync');
+          channel.postMessage({ type: 'THEME_CHANGED', mode: nextTheme });
+          // Keep channel open briefly to ensure message delivery
+          setTimeout(() => channel.close(), 100);
+        }
+      }
+    } catch (error) {
+      console.error('[HomeScreen] Failed to set theme:', error);
+    }
+  };
+
+  const handleSelectTemplate = (template: CampaignTemplate) => {
+    setShowTemplates(false);
+
+    // Set up new campaign with template settings
+    const store = useGameStore.getState();
+    store.resetToNewCampaign();
+    // Note: Only cell size can be set via store. Grid width/height are reference
+    // values - actual canvas size is determined by the uploaded map image.
+    store.setGridSize(template.grid.cellSize);
+
     onStartEditor();
-    // Small delay to ensure editor is rendered before opening dialog
-    setTimeout(() => {
-      showDungeonDialog();
-    }, 100);
+    showToast(`🎲 Created ${template.name} campaign!`, 'success');
+  };
+
+  // Filter recent campaigns by search query
+  const filteredCampaigns = useMemo(
+    () =>
+      recentCampaigns.filter((campaign) =>
+        campaign.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [recentCampaigns, searchQuery],
+  );
+
+  const getThemeIcon = () => {
+    if (currentTheme === 'light') return <RiSunLine className="w-4 h-4" />;
+    if (currentTheme === 'dark') return <RiMoonLine className="w-4 h-4" />;
+    return <RiComputerLine className="w-4 h-4" />;
+  };
+
+  const getThemeLabel = () => {
+    if (currentTheme === 'light') return 'Light';
+    if (currentTheme === 'dark') return 'Dark';
+    return 'Auto';
   };
 
   return (
-    <div className="home-screen">
+    <div className="home-screen" data-lite-mode={liteMode}>
       {/* CSS-only background with animated geometric shapes */}
       <div className="bg-container">
         <div className="bg-gradient"></div>
@@ -187,23 +421,27 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           </p>
         </div>
 
-        {/* Mac App Download Banner */}
-        {!isElectron && isMac && !hideMacBanner && (
-          <div className="mac-banner">
+        {/* Platform-Specific Download Banners */}
+        {!isElectron && !hideDownloadBanner && (isMac || isWindows || isLinux) && (
+          <div className="download-banner">
             <button
-              onClick={handleDismissMacBanner}
+              onClick={handleDismissDownloadBanner}
               className="dismiss-btn"
               title="Don't show again"
-              aria-label="Dismiss Mac download banner permanently"
+              aria-label="Dismiss download banner permanently"
             >
               <RiCloseLine className="w-4 h-4" />
             </button>
             <div className="banner-content">
               <RiDownloadCloudLine className="banner-icon" />
               <div className="banner-text">
-                <h3 className="banner-title">Download the Mac App</h3>
+                <h3 className="banner-title">
+                  {isMac && 'Download the Mac App'}
+                  {isWindows && 'Download the Windows App'}
+                  {isLinux && 'Download for Linux'}
+                </h3>
                 <p className="banner-description">
-                  Get greater portability, offline support, and privacy with the native Mac
+                  Get greater portability, offline support, and privacy with the native desktop
                   application.
                 </p>
               </div>
@@ -257,6 +495,18 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               <div className="card-hover-effect"></div>
             </button>
           </Tooltip>
+
+          <Tooltip content="Start from a pre-made campaign template (Ctrl+T)" offset={20}>
+            <button
+              onClick={() => setShowTemplates(true)}
+              className="action-card"
+              aria-label="Browse campaign templates"
+            >
+              <RiFileList3Line className="card-icon" />
+              <h2 className="card-title">Templates</h2>
+              <div className="card-hover-effect"></div>
+            </button>
+          </Tooltip>
         </div>
 
         {/* Quick Actions */}
@@ -281,8 +531,29 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
               <RiDiceLine className="recent-icon" />
               <h3 className="recent-title">Recent Campaigns</h3>
             </div>
+
+            {/* Search Input - Show if 6+ campaigns */}
+            {recentCampaigns.length >= 6 && (
+              <div className="recent-search-container">
+                <RiSearchLine className="search-icon" />
+                <input
+                  type="search"
+                  placeholder="Search campaigns..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="recent-search"
+                  aria-label="Filter recent campaigns by name"
+                />
+              </div>
+            )}
+
             <div className="recent-list">
-              {recentCampaigns.map((recent) => (
+              {filteredCampaigns.length === 0 && searchQuery && (
+                <div className="recent-empty">
+                  <p>No campaigns match "{searchQuery}"</p>
+                </div>
+              )}
+              {filteredCampaigns.map((recent) => (
                 <div key={recent.id} className="recent-item">
                   <button
                     onClick={() => handleLoadRecent(recent)}
@@ -363,6 +634,36 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           <a href="/design-system" className="footer-link" title="Internal component library (Dev)">
             Design System
           </a>
+          <span className="footer-separator">·</span>
+          <button
+            onClick={handleToggleTheme}
+            className="footer-link footer-icon-link"
+            title={`Theme: ${getThemeLabel()} (click to cycle)`}
+            aria-label={`Current theme: ${getThemeLabel()}. Click to cycle themes.`}
+          >
+            {getThemeIcon()}
+            <span className="footer-link-label">{getThemeLabel()}</span>
+          </button>
+          <span className="footer-separator">·</span>
+          <button
+            onClick={handleToggleLiteMode}
+            className="footer-link footer-icon-link"
+            title={
+              liteMode ? 'Lite Mode: ON (better performance)' : 'Full Mode: ON (all animations)'
+            }
+            aria-label={
+              liteMode
+                ? 'Lite Mode enabled. Click to enable full mode.'
+                : 'Full Mode enabled. Click to enable lite mode.'
+            }
+          >
+            {liteMode ? (
+              <RiFlashlightLine className="w-4 h-4" />
+            ) : (
+              <RiSparklingLine className="w-4 h-4" />
+            )}
+            <span className="footer-link-label">{liteMode ? 'Lite' : 'Full'}</span>
+          </button>
         </div>
         <p className="footer-version">
           Version {__APP_VERSION__} · {isElectron ? 'Desktop' : 'Web'} Edition
@@ -375,6 +676,53 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         onClose={() => setIsAboutOpen(false)}
         initialTab={aboutInitialTab}
       />
+
+      {/* Templates Modal */}
+      {showTemplates && (
+        <div className="templates-overlay" onClick={() => setShowTemplates(false)}>
+          <div
+            className="templates-modal"
+            onClick={(e) => e.stopPropagation()}
+            ref={templatesModalRef}
+          >
+            <div className="templates-header">
+              <h2 className="templates-title">Campaign Templates</h2>
+              <button
+                ref={templatesCloseButtonRef}
+                onClick={() => setShowTemplates(false)}
+                className="templates-close"
+                aria-label="Close templates"
+              >
+                <RiCloseLine className="w-6 h-6" />
+              </button>
+            </div>
+            <p className="templates-description">
+              Start your adventure with a pre-configured campaign grid
+            </p>
+            <div className="templates-grid">
+              {CAMPAIGN_TEMPLATES.map((template) => {
+                const IconComponent = template.icon;
+                return (
+                  <button
+                    key={template.id}
+                    onClick={() => handleSelectTemplate(template)}
+                    className="template-card"
+                    aria-label={`Select ${template.name} template`}
+                  >
+                    <IconComponent className="template-icon" />
+                    <h3 className="template-name">{template.name}</h3>
+                    <p className="template-description">{template.description}</p>
+                    <div className="template-specs">
+                      {template.grid.width}×{template.grid.height} • {template.grid.cellSize}px
+                      cells
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         /* ======================
@@ -393,6 +741,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           background: var(--app-bg-base);
           color: var(--app-text-primary);
           -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+          scroll-behavior: smooth; /* Smooth scrolling for anchor links and focus jumps */
+          scroll-padding-bottom: 140px; /* Ensure scrolled-to elements aren't hidden behind footer */
         }
 
         /* ======================
@@ -467,6 +817,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           width: 100%;
           max-width: 800px;
           padding: 2rem;
+          padding-bottom: 140px; /* Prevent overlap with fixed footer (footer height + safe margin) */
           margin: auto; /* Vertically center content if it fits, scroll if it doesn't */
           display: flex;
           flex-direction: column;
@@ -512,7 +863,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         }
 
         .hero-title {
-          font-size: 1.75rem;
+          font-size: clamp(1.25rem, 2.5vw + 0.5rem, 1.75rem); /* Fluid typography: scales smoothly from 1.25rem to 1.75rem */
           font-weight: 600;
           margin-bottom: 0.75rem;
           color: var(--app-text-primary);
@@ -538,15 +889,15 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         }
 
         .hero-subtitle {
-          font-size: 1.125rem;
+          font-size: clamp(0.875rem, 1.5vw + 0.5rem, 1.125rem); /* Fluid typography */
           color: var(--app-text-secondary);
           font-style: italic;
         }
 
         /* ======================
-           Mac Banner
+           Download Banner (Multi-Platform)
            ====================== */
-        .mac-banner {
+        .download-banner {
           background: var(--app-accent-bg);
           border: 1px solid var(--app-accent-solid);
           border-radius: 12px;
@@ -684,7 +1035,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         }
 
         .card-title {
-          font-size: 1rem;
+          font-size: clamp(0.9375rem, 1.2vw + 0.6rem, 1rem); /* Fluid typography */
           font-weight: 600;
           color: var(--app-text-primary);
           z-index: 1; /* Ensure title is above shimmer */
@@ -892,8 +1243,258 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         }
 
         .footer-version {
+          font-size: clamp(0.75rem, 1vw + 0.4rem, 0.8125rem); /* Fluid typography */
+          color: var(--app-text-muted);
+        }
+
+        .footer-icon-link {
+          display: inline-flex !important;
+          align-items: center;
+          gap: 0.375rem;
+        }
+
+        .footer-link-label {
+          font-size: 0.875rem;
+        }
+
+        /* ======================
+           Recent Campaigns Search
+           ====================== */
+        .recent-search-container {
+          position: relative;
+          margin-bottom: 0.75rem;
+        }
+
+        .recent-search-container .search-icon {
+          position: absolute;
+          left: 0.875rem;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 1.125rem;
+          height: 1.125rem;
+          color: var(--app-text-muted);
+          pointer-events: none;
+        }
+
+        .recent-search {
+          width: 100%;
+          padding: 0.625rem 0.875rem 0.625rem 2.75rem;
+          background: var(--app-bg-base);
+          border: 1px solid var(--app-border-subtle);
+          border-radius: 8px;
+          color: var(--app-text-primary);
+          font-size: 0.875rem;
+          transition: border-color 0.2s;
+        }
+
+        .recent-search:focus {
+          outline: none;
+          border-color: var(--app-accent-solid);
+        }
+
+        .recent-search::placeholder {
+          color: var(--app-text-muted);
+        }
+
+        .recent-empty {
+          padding: 1.5rem;
+          text-align: center;
+          color: var(--app-text-muted);
+          font-size: 0.875rem;
+        }
+
+        /* ======================
+           Templates Modal
+           ====================== */
+        .templates-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .templates-modal {
+          background: var(--app-bg-surface);
+          border: 1px solid var(--app-border-default);
+          border-radius: 16px;
+          max-width: 600px;
+          width: 100%;
+          max-height: 90vh;
+          overflow-y: auto;
+          padding: 1.5rem;
+          animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .templates-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 0.75rem;
+        }
+
+        .templates-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: var(--app-text-primary);
+        }
+
+        .templates-close {
+          background: transparent;
+          border: none;
+          color: var(--app-text-muted);
+          cursor: pointer;
+          padding: 0.5rem;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+
+        .templates-close:hover {
+          background: var(--app-bg-hover);
+          color: var(--app-text-primary);
+        }
+
+        .templates-description {
+          font-size: 0.9375rem;
+          color: var(--app-text-secondary);
+          margin-bottom: 1.5rem;
+        }
+
+        .templates-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 1rem;
+        }
+
+        .template-card {
+          background: var(--app-bg-base);
+          border: 1px solid var(--app-border-subtle);
+          border-radius: 12px;
+          padding: 1.25rem;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .template-card:hover {
+          border-color: var(--app-accent-solid);
+          background: var(--app-bg-hover);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .template-icon {
+          width: 3rem;
+          height: 3rem;
+          display: block;
+          margin-left: auto;
+          margin-right: auto;
+          margin-bottom: 0.75rem;
+          color: var(--blue-11); /* Theme-aware blue for icon color */
+        }
+
+        .template-name {
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: var(--app-text-primary);
+          margin-bottom: 0.5rem;
+        }
+
+        .template-description {
+          font-size: 0.875rem;
+          color: var(--app-text-secondary);
+          margin-bottom: 0.75rem;
+          line-height: 1.4;
+        }
+
+        .template-specs {
           font-size: 0.8125rem;
           color: var(--app-text-muted);
+          font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+        }
+
+        /* ======================
+           Lite Mode Overrides
+           ====================== */
+        /* Disable performance-intensive features in Lite Mode */
+        [data-lite-mode="true"] .bg-gradient,
+        [data-lite-mode="true"] .grid-overlay,
+        [data-lite-mode="true"] .noise-overlay {
+          display: none;
+        }
+
+        [data-lite-mode="true"] .content-container {
+          animation: none; /* Disable fadeInUp */
+        }
+
+        [data-lite-mode="true"] .download-banner {
+          animation: none; /* Disable slideIn */
+        }
+
+        [data-lite-mode="true"] .card-hover-effect {
+          display: none; /* Disable shimmer */
+        }
+
+        [data-lite-mode="true"] .logo {
+          filter: none; /* Disable drop-shadow */
+        }
+
+        [data-lite-mode="true"] .action-card:hover,
+        [data-lite-mode="true"] .template-card:hover {
+          transform: none; /* Disable lift effect */
+        }
+
+        /* ======================
+           Accessibility - Focus Indicators
+           ====================== */
+        /* Enhanced keyboard navigation focus indicators */
+        .action-card:focus-visible,
+        .quick-action-btn:focus-visible,
+        .footer-link:focus-visible,
+        .recent-button:focus-visible,
+        .recent-remove:focus-visible,
+        .recent-search:focus-visible,
+        .banner-button:focus-visible,
+        .dismiss-btn:focus-visible,
+        .template-card:focus-visible,
+        .templates-close:focus-visible {
+          outline: 2px solid var(--app-accent-solid);
+          outline-offset: 2px;
+          border-radius: 4px;
+        }
+
+        /* Ensure focus is visible even with existing borders */
+        .action-card:focus-visible,
+        .template-card:focus-visible {
+          outline-offset: 4px; /* Extra space to clear card border */
         }
 
         /* ======================
@@ -927,9 +1528,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           }
 
           .content-container {
-            padding: 0 1.5rem 2rem; /* Remove top/bottom, let parent handle it */
+            padding: 0 1.5rem 2rem; /* Mobile: Footer is relative, no extra bottom padding needed */
             gap: 1.5rem;
             margin-bottom: 0; /* Remove margin to let footer spacing handle it */
+          }
+
+          .home-screen {
+            scroll-padding-bottom: 0; /* Reset scroll padding on mobile */
           }
 
           .logo-container {
@@ -963,8 +1568,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             font-size: 0.8125rem;
           }
 
-          /* Mac banner improvements */
-          .mac-banner {
+          /* Download banner improvements */
+          .download-banner {
             padding: 1rem;
           }
 
@@ -987,6 +1592,20 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           .dismiss-btn {
             top: 0.5rem;
             right: 0.5rem;
+          }
+
+          /* Templates modal mobile */
+          .templates-modal {
+            padding: 1rem;
+            max-height: 85vh;
+          }
+
+          .templates-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .footer-link-label {
+            display: none; /* Hide labels on mobile to save space */
           }
 
           /* Recent campaigns */
@@ -1019,8 +1638,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           }
 
           .content-container {
-            padding: 0 1rem 1.5rem; /* Tighter horizontal padding */
+            padding: 0 1rem 1.5rem; /* Tighter horizontal padding, natural bottom spacing */
             gap: 1.25rem; /* Reduce gap between sections */
+          }
+
+          .home-screen {
+            scroll-padding-bottom: 0; /* No scroll padding needed on small mobile */
           }
 
           .logo-container {
@@ -1083,8 +1706,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           }
 
           .content-container {
-            padding: 0 0.875rem 1rem; /* Very tight padding */
+            padding: 0 0.875rem 1rem; /* Very tight padding, natural bottom spacing */
             gap: 1rem; /* Minimal gap */
+          }
+
+          .home-screen {
+            scroll-padding-bottom: 0; /* No scroll padding needed on extra small */
           }
 
           .logo-container {
