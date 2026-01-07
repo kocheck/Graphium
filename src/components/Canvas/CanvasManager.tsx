@@ -826,14 +826,17 @@ const CanvasManager = ({
           {isMKeyPressed &&
             !isWorldView &&
             selectedIds.length === 1 &&
-            resolvedTokens.some((t) => t.id === selectedIds[0]) && (
-              <MovementRangeOverlay
-                tokenPosition={resolvedTokens.find((t) => t.id === selectedIds[0])!}
-                movementSpeed={DEFAULT_MOVEMENT_SPEED}
-                gridSize={gridSize}
-                gridType={gridType}
-              />
-            )}
+            (() => {
+              const selectedToken = resolvedTokens.find((t) => t.id === selectedIds[0]);
+              return selectedToken ? (
+                <MovementRangeOverlay
+                  tokenPosition={selectedToken}
+                  movementSpeed={DEFAULT_MOVEMENT_SPEED}
+                  gridSize={gridSize}
+                  gridType={gridType}
+                />
+              ) : null;
+            })()}
 
           {resolvedTokens.map((token) => {
             const dragPos = dragPositionsRef.current.get(token.id);

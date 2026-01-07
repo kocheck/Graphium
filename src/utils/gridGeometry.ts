@@ -260,9 +260,15 @@ export class HexagonalGridGeometry implements GridGeometry {
 /**
  * Isometric Grid Geometry
  * Currently implements horizontal isometric (diamond) grid.
- * TODO: Add support for vertical isometric orientation.
+ *
+ * @param orientation - Accepts 'HORIZONTAL' or 'VERTICAL' but vertical orientation
+ *                      is not yet implemented. The parameter is stored for future use.
+ *
+ * TODO: Implement vertical isometric orientation support.
+ *       For now, both orientations use the same horizontal logic.
  */
 export class IsometricGridGeometry implements GridGeometry {
+  // Stored for future vertical isometric implementation
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private orientation: 'HORIZONTAL' | 'VERTICAL';
 
