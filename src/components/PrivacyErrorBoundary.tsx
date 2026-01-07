@@ -156,7 +156,10 @@ class PrivacyErrorBoundary extends Component<Props, State> {
           username = '[BROWSER_USER]';
         }
       } catch (usernameError) {
-        console.warn('[PrivacyErrorBoundary] Failed to get username, using fallback', usernameError);
+        console.warn(
+          '[PrivacyErrorBoundary] Failed to get username, using fallback',
+          usernameError,
+        );
       }
 
       // Create a combined error with component stack
@@ -228,7 +231,8 @@ ${userContext.trim()}
         const bodyPrefix = '&body=';
         const baseWithTitle = `${baseUrl}${titleParam}`;
 
-        const allowedBodyLength = MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
+        const allowedBodyLength =
+          MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
 
         if (allowedBodyLength > 0) {
           // Truncate non-encoded string first, then encode to avoid breaking escape sequences
@@ -358,7 +362,15 @@ ${userContext.trim()}
   };
 
   render(): ReactNode {
-    const { hasError, isLoading, sanitizedError, reportStatus, saveStatus, userContext, showContextInput } = this.state;
+    const {
+      hasError,
+      isLoading,
+      sanitizedError,
+      reportStatus,
+      saveStatus,
+      userContext,
+      showContextInput,
+    } = this.state;
     const { children } = this.props;
 
     if (hasError) {
@@ -407,17 +419,13 @@ ${userContext.trim()}
                 </div>
               ) : (
                 <>
-                  <p className="text-neutral-300">
-                    {rollForMessage('ERROR_PRIVACY_DESC')}
-                  </p>
+                  <p className="text-neutral-300">{rollForMessage('ERROR_PRIVACY_DESC')}</p>
 
                   {/* Error Details */}
                   {sanitizedError && (
                     <div className="space-y-2">
                       <div className="text-sm text-neutral-400">
-                        <span className="font-semibold text-red-400">
-                          {sanitizedError.name}:
-                        </span>{' '}
+                        <span className="font-semibold text-red-400">{sanitizedError.name}:</span>{' '}
                         {sanitizedError.message}
                       </div>
 
@@ -435,8 +443,8 @@ ${userContext.trim()}
 
                   {/* Privacy Notice */}
                   <div className="bg-blue-900/30 border border-blue-700/50 rounded p-3 text-sm text-blue-200">
-                    <strong>Privacy Notice:</strong> Your username and personal file
-                    paths have been replaced with &lt;USER&gt; to protect your privacy.
+                    <strong>Privacy Notice:</strong> Your username and personal file paths have been
+                    replaced with &lt;USER&gt; to protect your privacy.
                   </div>
 
                   {/* Optional User Context */}
@@ -485,8 +493,8 @@ ${userContext.trim()}
                         reportStatus === 'opened'
                           ? 'bg-green-600 hover:bg-green-500'
                           : reportStatus === 'error'
-                          ? 'bg-red-600 hover:bg-red-500'
-                          : 'bg-blue-600 hover:bg-blue-500'
+                            ? 'bg-red-600 hover:bg-red-500'
+                            : 'bg-blue-600 hover:bg-blue-500'
                       }`}
                     >
                       {reportStatus === 'opened' ? (
@@ -525,12 +533,8 @@ ${userContext.trim()}
                         </>
                       ) : (
                         <>
-                          <svg
-                            className="w-5 h-5"
-                            fill="currentColor"
-                            viewBox="0 0 16 16"
-                          >
-                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
                           </svg>
                           Report on GitHub
                         </>
@@ -543,10 +547,10 @@ ${userContext.trim()}
                         saveStatus === 'saved'
                           ? 'bg-green-600 hover:bg-green-500'
                           : saveStatus === 'error'
-                          ? 'bg-red-600 hover:bg-red-500'
-                          : saveStatus === 'saving'
-                          ? 'bg-neutral-700 cursor-wait'
-                          : 'bg-neutral-600 hover:bg-neutral-500'
+                            ? 'bg-red-600 hover:bg-red-500'
+                            : saveStatus === 'saving'
+                              ? 'bg-neutral-700 cursor-wait'
+                              : 'bg-neutral-600 hover:bg-neutral-500'
                       }`}
                       disabled={saveStatus === 'saving'}
                     >

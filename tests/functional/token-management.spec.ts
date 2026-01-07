@@ -38,17 +38,11 @@ test.describe('Token Placement and Movement', () => {
 
     // Verify token was added
     const token = page.locator('[data-testid^="token-"]').first();
-    await expect(
-      token,
-      'Token should appear on canvas after clicking'
-    ).toBeVisible();
+    await expect(token, 'Token should appear on canvas after clicking').toBeVisible();
 
     // Verify position is approximately correct (allowing for grid snap)
     const boundingBox = await token.boundingBox();
-    expect(
-      boundingBox,
-      'Token should have a bounding box'
-    ).toBeTruthy();
+    expect(boundingBox, 'Token should have a bounding box').toBeTruthy();
   });
 
   test('should allow dragging token to new position', async ({ page }) => {
@@ -68,15 +62,13 @@ test.describe('Token Placement and Movement', () => {
 
     // Verify position changed
     const newBox = await token.boundingBox();
-    expect(
-      newBox!.x,
-      'Token X position should have increased after drag'
-    ).toBeGreaterThan(initialBox!.x + 100);
+    expect(newBox!.x, 'Token X position should have increased after drag').toBeGreaterThan(
+      initialBox!.x + 100,
+    );
 
-    expect(
-      newBox!.y,
-      'Token Y position should have increased after drag'
-    ).toBeGreaterThan(initialBox!.y + 100);
+    expect(newBox!.y, 'Token Y position should have increased after drag').toBeGreaterThan(
+      initialBox!.y + 100,
+    );
   });
 
   test('should persist token position after page reload', async ({ page }) => {
@@ -94,21 +86,18 @@ test.describe('Token Placement and Movement', () => {
 
     // Verify token restored at same position
     const restoredToken = page.locator(`[data-testid="${tokenId}"]`);
-    await expect(
-      restoredToken,
-      'Token should be restored after reload'
-    ).toBeVisible();
+    await expect(restoredToken, 'Token should be restored after reload').toBeVisible();
 
     const restoredBox = await restoredToken.boundingBox();
-    expect(
-      restoredBox!.x,
-      'Token X position should persist after reload'
-    ).toBeCloseTo(originalBox!.x, 5); // Allow 5px tolerance
+    expect(restoredBox!.x, 'Token X position should persist after reload').toBeCloseTo(
+      originalBox!.x,
+      5,
+    ); // Allow 5px tolerance
 
-    expect(
-      restoredBox!.y,
-      'Token Y position should persist after reload'
-    ).toBeCloseTo(originalBox!.y, 5);
+    expect(restoredBox!.y, 'Token Y position should persist after reload').toBeCloseTo(
+      originalBox!.y,
+      5,
+    );
   });
 
   test('should snap token to grid when enabled', async ({ page }) => {
@@ -131,15 +120,9 @@ test.describe('Token Placement and Movement', () => {
     const box = await token.boundingBox();
     const gridSize = 50;
 
-    expect(
-      box!.x % gridSize,
-      'Token X should snap to grid boundary'
-    ).toBe(0);
+    expect(box!.x % gridSize, 'Token X should snap to grid boundary').toBe(0);
 
-    expect(
-      box!.y % gridSize,
-      'Token Y should snap to grid boundary'
-    ).toBe(0);
+    expect(box!.y % gridSize, 'Token Y should snap to grid boundary').toBe(0);
   });
 });
 
@@ -160,7 +143,7 @@ test.describe('Token Selection and Interaction', () => {
     // Verify selection indicator appears
     await expect(
       page.locator('[data-testid="token-selection-indicator"]'),
-      'Selection indicator should appear when token is clicked'
+      'Selection indicator should appear when token is clicked',
     ).toBeVisible();
   });
 
@@ -176,7 +159,7 @@ test.describe('Token Selection and Interaction', () => {
     // Verify selection cleared
     await expect(
       page.locator('[data-testid="token-selection-indicator"]'),
-      'Selection indicator should disappear when clicking elsewhere'
+      'Selection indicator should disappear when clicking elsewhere',
     ).toHaveCount(0);
   });
 
@@ -197,10 +180,7 @@ test.describe('Token Selection and Interaction', () => {
 
     // Verify both selected
     const selectedTokens = page.locator('[data-testid="token-selection-indicator"]');
-    await expect(
-      selectedTokens,
-      'Both tokens should be selected with Ctrl+click'
-    ).toHaveCount(2);
+    await expect(selectedTokens, 'Both tokens should be selected with Ctrl+click').toHaveCount(2);
   });
 
   test('should show context menu on right-click', async ({ page }) => {
@@ -214,18 +194,18 @@ test.describe('Token Selection and Interaction', () => {
     // Verify context menu appears
     await expect(
       page.locator('[data-testid="token-context-menu"]'),
-      'Context menu should appear on right-click'
+      'Context menu should appear on right-click',
     ).toBeVisible();
 
     // Verify menu has expected options
     await expect(
       page.locator('[data-testid="context-menu-delete"]'),
-      'Delete option should be in context menu'
+      'Delete option should be in context menu',
     ).toBeVisible();
 
     await expect(
       page.locator('[data-testid="context-menu-duplicate"]'),
-      'Duplicate option should be in context menu'
+      'Duplicate option should be in context menu',
     ).toBeVisible();
   });
 });
@@ -250,10 +230,7 @@ test.describe('Token Properties', () => {
 
     // Find and drag resize handle
     const resizeHandle = page.locator('[data-testid="token-resize-handle"]');
-    await expect(
-      resizeHandle,
-      'Resize handle should appear when token is selected'
-    ).toBeVisible();
+    await expect(resizeHandle, 'Resize handle should appear when token is selected').toBeVisible();
 
     // Drag to resize
     await resizeHandle.hover();
@@ -263,10 +240,7 @@ test.describe('Token Properties', () => {
 
     // Verify size changed
     const newBox = await token.boundingBox();
-    expect(
-      newBox!.width,
-      'Token width should increase after resize'
-    ).toBeGreaterThan(initialWidth);
+    expect(newBox!.width, 'Token width should increase after resize').toBeGreaterThan(initialWidth);
   });
 
   test('should allow rotating token', async ({ page }) => {
@@ -286,14 +260,9 @@ test.describe('Token Properties', () => {
     await rotationInput.press('Enter');
 
     // Verify rotation applied (check transform style)
-    const transform = await token.evaluate((el) =>
-      window.getComputedStyle(el).transform
-    );
+    const transform = await token.evaluate((el) => window.getComputedStyle(el).transform);
 
-    expect(
-      transform,
-      'Token should have rotation transform applied'
-    ).toContain('matrix');
+    expect(transform, 'Token should have rotation transform applied').toContain('matrix');
   });
 
   test('should toggle token visibility', async ({ page }) => {
@@ -308,19 +277,16 @@ test.describe('Token Properties', () => {
     await page.click('[data-testid="toggle-token-visibility"]');
 
     // Verify token hidden (but still in DOM)
-    await expect(
-      token,
-      'Token should be hidden after toggling visibility'
-    ).toHaveCSS('opacity', '0');
+    await expect(token, 'Token should be hidden after toggling visibility').toHaveCSS(
+      'opacity',
+      '0',
+    );
 
     // Toggle back
     await page.click('[data-testid="toggle-token-visibility"]');
 
     // Verify visible again
-    await expect(
-      token,
-      'Token should be visible after toggling back'
-    ).toHaveCSS('opacity', '1');
+    await expect(token, 'Token should be visible after toggling back').toHaveCSS('opacity', '1');
   });
 
   test('should update token name/label', async ({ page }) => {
@@ -340,7 +306,7 @@ test.describe('Token Properties', () => {
     // Verify label updated
     await expect(
       page.locator('[data-testid="token-label"]'),
-      'Token label should display updated name'
+      'Token label should display updated name',
     ).toHaveText('Hero Character');
   });
 });
@@ -369,7 +335,7 @@ test.describe('Token Deletion', () => {
     // Verify token removed
     await expect(
       page.locator(`[data-testid="${tokenId}"]`),
-      'Token should be removed from canvas after deletion'
+      'Token should be removed from canvas after deletion',
     ).toHaveCount(0);
   });
 
@@ -387,7 +353,7 @@ test.describe('Token Deletion', () => {
     // Verify token removed
     await expect(
       page.locator('[data-testid^="token-"]'),
-      'Token should be deleted after pressing Delete key'
+      'Token should be deleted after pressing Delete key',
     ).toHaveCount(0);
   });
 
@@ -412,10 +378,7 @@ test.describe('Token Deletion', () => {
 
     // Verify all removed
     tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      'All tokens should be deleted after multi-select delete'
-    ).toHaveCount(0);
+    await expect(tokens, 'All tokens should be deleted after multi-select delete').toHaveCount(0);
   });
 
   test('should not delete token when canceling confirmation', async ({ page }) => {
@@ -431,10 +394,7 @@ test.describe('Token Deletion', () => {
     await page.click('[data-testid="cancel-delete-button"]');
 
     // Verify token still exists
-    await expect(
-      token,
-      'Token should remain on canvas when deletion is cancelled'
-    ).toBeVisible();
+    await expect(token, 'Token should remain on canvas when deletion is cancelled').toBeVisible();
   });
 });
 
@@ -457,10 +417,7 @@ test.describe('Token Duplication', () => {
 
     // Verify duplicate created
     tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      'Duplicate token should be created'
-    ).toHaveCount(2);
+    await expect(tokens, 'Duplicate token should be created').toHaveCount(2);
   });
 
   test('should duplicate token with Ctrl+D', async ({ page }) => {
@@ -474,10 +431,7 @@ test.describe('Token Duplication', () => {
 
     // Verify duplicate created
     const tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      'Duplicate should be created with Ctrl+D'
-    ).toHaveCount(2);
+    await expect(tokens, 'Duplicate should be created with Ctrl+D').toHaveCount(2);
   });
 
   test('should offset duplicate position slightly', async ({ page }) => {
@@ -495,14 +449,11 @@ test.describe('Token Duplication', () => {
     const duplicateBox = await duplicate.boundingBox();
 
     // Verify positions are different but close
-    expect(
-      duplicateBox!.x,
-      'Duplicate should be offset from original'
-    ).not.toBe(originalBox!.x);
+    expect(duplicateBox!.x, 'Duplicate should be offset from original').not.toBe(originalBox!.x);
 
     expect(
       Math.abs(duplicateBox!.x - originalBox!.x),
-      'Duplicate should be offset by small amount (e.g., 20px)'
+      'Duplicate should be offset by small amount (e.g., 20px)',
     ).toBeLessThan(50);
   });
 });
@@ -528,14 +479,11 @@ test.describe('Token Z-Index / Layering', () => {
     await page.click('[data-testid="bring-to-front-button"]');
 
     // Verify z-index changed
-    const zIndex = await firstToken.evaluate((el) =>
-      window.getComputedStyle(el).zIndex
-    );
+    const zIndex = await firstToken.evaluate((el) => window.getComputedStyle(el).zIndex);
 
-    expect(
-      parseInt(zIndex),
-      'Token z-index should increase when brought to front'
-    ).toBeGreaterThan(0);
+    expect(parseInt(zIndex), 'Token z-index should increase when brought to front').toBeGreaterThan(
+      0,
+    );
   });
 
   test('should send token to back', async ({ page }) => {
@@ -547,23 +495,18 @@ test.describe('Token Z-Index / Layering', () => {
     await page.click('[data-testid="canvas"]', { position: { x: 210, y: 210 } });
 
     const secondToken = page.locator('[data-testid^="token-"]').nth(1);
-    const initialZIndex = await secondToken.evaluate((el) =>
-      window.getComputedStyle(el).zIndex
-    );
+    const initialZIndex = await secondToken.evaluate((el) => window.getComputedStyle(el).zIndex);
 
     // Send second token to back
     await secondToken.click();
     await page.click('[data-testid="send-to-back-button"]');
 
     // Verify z-index decreased
-    const newZIndex = await secondToken.evaluate((el) =>
-      window.getComputedStyle(el).zIndex
-    );
+    const newZIndex = await secondToken.evaluate((el) => window.getComputedStyle(el).zIndex);
 
-    expect(
-      parseInt(newZIndex),
-      'Token z-index should decrease when sent to back'
-    ).toBeLessThan(parseInt(initialZIndex));
+    expect(parseInt(newZIndex), 'Token z-index should decrease when sent to back').toBeLessThan(
+      parseInt(initialZIndex),
+    );
   });
 });
 
@@ -584,10 +527,7 @@ test.describe('Token Performance', () => {
 
     // Verify all tokens rendered
     const tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      'All 50 tokens should be rendered'
-    ).toHaveCount(50);
+    await expect(tokens, 'All 50 tokens should be rendered').toHaveCount(50);
 
     // Test drag performance
     // Note: This measures total elapsed time including test execution overhead
@@ -605,9 +545,8 @@ test.describe('Token Performance', () => {
     const endTime = Date.now();
     const duration = endTime - startTime;
 
-    expect(
-      duration,
-      'Token drag should complete in under 1 second with 50 tokens'
-    ).toBeLessThan(1000);
+    expect(duration, 'Token drag should complete in under 1 second with 50 tokens').toBeLessThan(
+      1000,
+    );
   });
 });

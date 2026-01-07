@@ -3,6 +3,7 @@
 This document provides domain knowledge, business rules, and contextual information about the Graphium project to help AI assistants and developers understand the "why" behind design decisions and functionality.
 
 ## Table of Contents
+
 - [Project Background](#project-background)
 - [Target Users](#target-users)
 - [Domain Glossary](#domain-glossary)
@@ -39,6 +40,7 @@ Graphium replaces the physical battlemap with a **dual-window digital system**:
 - **World View** (Player Display) - Clean, borderless canvas projected for players to see
 
 This allows DMs to:
+
 - Prepare maps in advance or improvise on the fly
 - Use unlimited digital tokens (no physical storage needed)
 - Implement fog of war (planned feature)
@@ -64,6 +66,7 @@ This is intentional. Many VTT (Virtual Tabletop) solutions require subscriptions
 ### Primary: Dungeon Masters (Game Masters)
 
 **Characteristics:**
+
 - Runs tabletop RPG sessions (D&D 5e, Pathfinder, OSR games, etc.)
 - Needs to manage maps, tokens, and hidden information
 - Often uses second monitor or projector for player-facing display
@@ -71,12 +74,14 @@ This is intentional. Many VTT (Virtual Tabletop) solutions require subscriptions
 - Values simplicity over complex rule automation
 
 **Technical proficiency:**
+
 - Comfortable with desktop applications
 - May not be developers (but some are)
 - Familiar with drag-and-drop interfaces
 - Expects "it just works" reliability
 
 **Pain points Graphium solves:**
+
 - Physical map setup time
 - Limited miniature collections
 - Difficulty managing fog of war
@@ -86,6 +91,7 @@ This is intentional. Many VTT (Virtual Tabletop) solutions require subscriptions
 ### Secondary: AI Assistants
 
 Graphium's documentation is optimized for AI-assisted development:
+
 - Comprehensive architecture docs
 - Detailed code conventions
 - Business logic explanations
@@ -96,6 +102,7 @@ This allows rapid feature development with AI pair programming.
 ### Non-Target Users
 
 **Not designed for:**
+
 - Players (read-only World View only)
 - Highly technical users wanting API access (no plugin system planned)
 - Users wanting automated rule enforcement (Graphium is system-agnostic)
@@ -108,63 +115,75 @@ This allows rapid feature development with AI pair programming.
 ### General Tabletop RPG Terms
 
 **Dungeon Master (DM) / Game Master (GM)**
+
 - The person who runs the game, controls NPCs, describes the world
 - Has access to hidden information (monster stats, map layouts, etc.)
 - Graphium is built for the DM, not the players
 
 **Player / Player Character (PC)**
+
 - Participants in the game who control characters
 - View the World Window during combat encounters
 - Do not interact with Graphium directly (DM controls everything)
 
 **Non-Player Character (NPC)**
+
 - Characters controlled by the DM (monsters, allies, civilians)
 - Represented as tokens on the battlemap
 
 **Encounter**
+
 - A scene requiring tactical positioning (usually combat)
 - When the battlemap is actively used
 
 **Session**
+
 - A single game meeting (typically 2-4 hours)
 - May include multiple encounters
 
 **Campaign**
+
 - An ongoing story spanning multiple sessions
 - May use recurring maps (e.g., a home base, dungeon levels)
 
 ### Graphium-Specific Terms
 
 **Architect View**
+
 - The DM's control window
 - Contains toolbar, sidebar, Save/Load buttons, and "World View" button
 - **Token Inspector**: Selected tokens show summary card; click "Edit" to modify properties
 - Source of truth for state (Main Window in architecture docs)
 
 **World View**
+
 - The player-facing display window
 - Shows the canvas and minimal navigation controls (Center on Party)
 - Read-only (receives state updates from Architect View)
 - Typically dragged to second monitor/projector
 
 **Token**
+
 - A draggable image representing a character or creature
 - Snaps to grid on placement
 - Default scale: 1 (one grid cell), can be larger (e.g., scale=2 for Large creatures)
 - File format: WebP (optimized from uploaded image)
 
 **Drawing**
+
 - A freehand stroke drawn with marker or eraser tools
 - Stored as array of point coordinates `[x1, y1, x2, y2, ...]`
 - Used for temporary markings (zones, paths, effects)
 
 **Grid**
+
 - The square grid overlay on the canvas
 - Default size: 50px per cell
 - Used for token snapping and movement reference
 - Visual guide only (no mechanical rules enforced)
 
 **Campaign File**
+
 - File extension: `.graphium`
 - Format: ZIP archive containing:
   - `manifest.json` - Serialized game state (tokens, drawings, grid settings)
@@ -172,6 +191,7 @@ This allows rapid feature development with AI pair programming.
 - Self-contained (can share with other DMs or archive for later use)
 
 **Asset**
+
 - Any image file used in Graphium (map backgrounds or token images)
 - Automatically optimized:
   - Maps: max 4096px (4K resolution support)
@@ -179,11 +199,13 @@ This allows rapid feature development with AI pair programming.
   - All converted to WebP (85% quality, lossy compression)
 
 **Fog of War**
+
 - Blurred and darkened overlay obscuring unexplored areas (soft gradient edges)
 - DMs can "reveal" areas as players explore (via token vision)
 - World View always shows fog, Architect View can toggle visibility
 
 **Library** (Partially Implemented)
+
 - Collection of pre-imported tokens in sidebar
 - Currently: 2 hardcoded example tokens
 - Planned: Persistent library with categories, search, bulk import
@@ -191,31 +213,38 @@ This allows rapid feature development with AI pair programming.
 ### Technical Terms
 
 **IPC (Inter-Process Communication)**
+
 - Electron's message-passing system between Main Process and Renderer Process
 - Used to sync state from Architect View to World View
 - Channels: `SYNC_WORLD_STATE`, `SAVE_CAMPAIGN`, `LOAD_CAMPAIGN`, etc.
 
 **Main Process**
+
 - Electron's Node.js process (electron/main.ts)
 - Handles file I/O, window management, IPC routing
 
 **Renderer Process**
+
 - Chromium browser process running React app
 - Two instances: Architect View and World View
 
 **Preload Script**
+
 - Bridge between Main and Renderer processes (electron/preload.ts)
 - Exposes safe IPC methods via `contextBridge`
 
 **Zustand Store**
+
 - State management library
 - Single store: `gameStore.ts` (tokens, drawings, gridSize)
 
 **Konva**
+
 - HTML5 Canvas rendering library
 - Used for all canvas drawing (grid, tokens, strokes)
 
 **Grid Snapping**
+
 - Automatic alignment of tokens to grid intersections
 - Formula: `Math.round(x / gridSize) * gridSize`
 
@@ -356,6 +385,7 @@ This allows rapid feature development with AI pair programming.
 ```
 
 **Common variations:**
+
 - DM may prepare session in advance (skip step 3-5 until players arrive)
 - DM may use single monitor (skip step 3-5 entirely)
 
@@ -371,12 +401,14 @@ This allows rapid feature development with AI pair programming.
 ```
 
 **Notes:**
+
 - Maps are not snapped to grid (free positioning)
 - Multiple maps can be layered (e.g., base map + overlay effects)
 
 ### Workflow 3: Adding Tokens
 
 **Option A: Upload Custom Token**
+
 ```
 1. DM has token image file (e.g., goblin portrait)
 2. DM drags file onto canvas
@@ -389,6 +421,7 @@ This allows rapid feature development with AI pair programming.
 ```
 
 **Option B: Use Library Token**
+
 ```
 1. DM clicks and drags token from Sidebar library
 2. DM drops onto canvas
@@ -408,6 +441,7 @@ This allows rapid feature development with AI pair programming.
 ```
 
 **Use cases:**
+
 - Mark hazardous terrain (lava, pit traps)
 - Draw spell effect areas (fireball radius, wall of fire)
 - Indicate NPC patrol paths
@@ -440,6 +474,7 @@ This allows rapid feature development with AI pair programming.
 ```
 
 **Use cases:**
+
 - Save prepared encounters for future sessions
 - Archive completed sessions
 - Share encounters with other DMs
@@ -490,23 +525,27 @@ This allows rapid feature development with AI pair programming.
 ### Principle 1: Generic Tool, Not Game System
 
 Graphium is **system-agnostic**:
+
 - No built-in rules for D&D 5e, Pathfinder, etc.
 - No HP tracking, initiative order, or condition management
 - No dice rolling
 - No character sheets
 
 **Rationale:**
+
 - Different groups use different systems (D&D, Pathfinder, OSR, homebrew)
 - Rules change (D&D 5e → D&D 5.5e → D&D 6e)
 - DMs have preferred tools for rules (D&D Beyond, Roll20, pen & paper)
 - Graphium focuses on ONE thing: visual battlemap display
 
 **What Graphium IS:**
+
 - A digital whiteboard with grid and tokens
 - A projector display manager
 - A campaign file organizer
 
 **What Graphium IS NOT:**
+
 - A full VTT (Virtual Tabletop) like Roll20 or Foundry
 - A rules engine
 - A character manager
@@ -516,17 +555,20 @@ Graphium is **system-agnostic**:
 No cloud. No tracking. No subscriptions.
 
 **Why:**
+
 - Users own their data (campaign files are theirs forever)
 - No internet required (run games in basements, cabins, anywhere)
 - No vendor lock-in (if Graphium development stops, files still work)
 - No privacy concerns (no telemetry, no analytics)
 
 **Trade-offs:**
+
 - No built-in multiplayer (use separate screen sharing tools)
 - No cloud backup (users manage their own backups)
 - No cross-device sync (manually transfer .graphium files)
 
 **Future considerations:**
+
 - Optional peer-to-peer sync (via local network, no central server)
 - Optional cloud backup integration (user-controlled, via Dropbox/Google Drive APIs)
 - But NEVER required cloud services
@@ -534,12 +576,14 @@ No cloud. No tracking. No subscriptions.
 ### Principle 3: Simplicity Over Features
 
 Graphium prioritizes:
+
 - Intuitive drag-and-drop interactions
 - Minimal UI clutter (especially in World View)
 - Fast setup time (< 5 minutes to prepare encounter)
 - Reliable performance (60fps with 100+ tokens)
 
 **Features explicitly NOT planned:**
+
 - Scripting/automation (use macros in other tools if needed)
 - Plugin system (keeps codebase simple)
 - 3D rendering (2D grid only)
@@ -547,6 +591,7 @@ Graphium prioritizes:
 - Chat/voice (use Discord/Zoom separately)
 
 **When in doubt:**
+
 - Ask: "Does this help DMs display battlemaps?"
 - If no, it's out of scope
 - If yes but complex, look for simpler alternative
@@ -554,12 +599,14 @@ Graphium prioritizes:
 ### Principle 4: Offline-First Performance
 
 Graphium must work smoothly even on older hardware:
+
 - Optimize images aggressively (WebP, size limits)
 - Render efficiently (Konva layer system)
 - Minimize IPC overhead (batch updates, throttle sync)
 - Avoid memory leaks (clean up assets, dispose canvases)
 
 **Target performance:**
+
 - 60fps with 50 tokens on screen
 - < 3 second load time for campaign files
 - < 1 second response to user input (drag, draw)
@@ -567,6 +614,7 @@ Graphium must work smoothly even on older hardware:
 ### Principle 5: Data Portability
 
 Campaign files must be:
+
 - **Open format** - ZIP + JSON (no proprietary binary)
 - **Human-readable** - Unzip and inspect with any tool
 - **Forward-compatible** - Future versions can read old files (with migration)
@@ -682,6 +730,7 @@ Campaign files must be:
 ### File System
 
 **Where Graphium stores data:**
+
 ```
 macOS:    ~/Library/Application Support/Graphium/
 Windows:  C:\Users\{user}\AppData\Roaming\Graphium\
@@ -696,6 +745,7 @@ Subdirectories:
 ```
 
 **External dependencies:**
+
 - User's Downloads folder (where .graphium files typically saved)
 - User's Documents/Pictures (common token upload sources)
 
@@ -709,6 +759,7 @@ Graphium is designed to work WITH screen sharing, not replace it:
 - **Roll20/Foundry** - Some DMs use Graphium for maps, other tools for rules (via separate windows)
 
 **How it works:**
+
 1. DM opens World View on second monitor/virtual display
 2. DM shares that specific window in Discord/Zoom
 3. Remote players see World View (no controls, just canvas)
@@ -717,6 +768,7 @@ Graphium is designed to work WITH screen sharing, not replace it:
 ### Companion Tools (Common DM Stack)
 
 **Graphium does NOT replace:**
+
 - **D&D Beyond** - Character sheets, rules reference, dice rolling
 - **Roll20** - Battlemaps, token art, marketplace content
 - **Foundry VTT** - Full-featured VTT (Graphium is simpler, local-first alternative)
@@ -724,6 +776,7 @@ Graphium is designed to work WITH screen sharing, not replace it:
 - **OneNote/Obsidian** - Campaign notes, worldbuilding
 
 **How Graphium fits:**
+
 - Handles ONLY the visual battlemap display
 - DMs use other tools for rules, communication, and notes
 - Graphium's strength: Local-first, simple, fast, no subscription
@@ -764,7 +817,7 @@ Graphium is designed to work WITH screen sharing, not replace it:
 
 **Current limitations to address before scaling:**
 
-1. **Grid rendering** - O(n*m) Line components
+1. **Grid rendering** - O(n\*m) Line components
    - Solution: Use single Path or memoize grid
 
 2. **IPC frequency** - Every state change triggers sync
@@ -795,6 +848,7 @@ Graphium is designed to work WITH screen sharing, not replace it:
 ## Summary
 
 Graphium is a **focused, local-first tool** for DMs who want:
+
 - Simple digital battlemap display
 - Dual-window support (DM screen + projector)
 - Data ownership (no cloud lock-in)
@@ -803,6 +857,7 @@ Graphium is a **focused, local-first tool** for DMs who want:
 It is NOT a full VTT. It does not replace Discord, D&D Beyond, or physical dice. It does ONE thing well: display battlemaps.
 
 When developing features, always ask:
+
 - Does this help DMs display battlemaps?
 - Can this be implemented simply (without bloat)?
 - Does this respect local-first principles?

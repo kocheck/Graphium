@@ -7,7 +7,7 @@ describe('DungeonGenerator - Door and Corridor Alignment', () => {
   it('should generate a dungeon with doors', () => {
     const generator = new DungeonGenerator({
       numRooms: 5,
-      gridSize
+      gridSize,
     });
 
     const result = generator.generate();
@@ -20,12 +20,12 @@ describe('DungeonGenerator - Door and Corridor Alignment', () => {
   it('should create doors that align to grid', () => {
     const generator = new DungeonGenerator({
       numRooms: 5,
-      gridSize
+      gridSize,
     });
 
     const result = generator.generate();
 
-    const misalignedDoors = result.doors.filter(door => {
+    const misalignedDoors = result.doors.filter((door) => {
       const xAligned = door.x % gridSize === 0;
       const yAligned = door.y % gridSize === 0;
       return !xAligned || !yAligned;
@@ -38,7 +38,7 @@ describe('DungeonGenerator - Door and Corridor Alignment', () => {
   it('should verify door properties are valid', () => {
     const generator = new DungeonGenerator({
       numRooms: 5,
-      gridSize
+      gridSize,
     });
 
     const result = generator.generate();
@@ -56,5 +56,4 @@ describe('DungeonGenerator - Door and Corridor Alignment', () => {
       expect(door.swingDirection).toBeDefined();
     });
   });
-
 });

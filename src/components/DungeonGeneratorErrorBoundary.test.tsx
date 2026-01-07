@@ -45,7 +45,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <div data-testid="child">Child content</div>
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     expect(screen.getByTestId('child')).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -68,14 +68,18 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Something went wrong while generating the dungeon/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Something went wrong while generating the dungeon/),
+      ).toBeInTheDocument();
       expect(screen.getByText(/Room size constraints are too restrictive/)).toBeInTheDocument();
       expect(screen.getByText(/Requesting too many rooms/)).toBeInTheDocument();
-      expect(screen.getByText(/Collision detection prevented valid placements/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Collision detection prevented valid placements/),
+      ).toBeInTheDocument();
     });
   });
 
@@ -83,7 +87,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -95,7 +99,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -107,7 +111,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -119,7 +123,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -144,7 +148,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     const { rerender } = render(
       <DungeonGeneratorErrorBoundary>
         <ConditionalErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -164,7 +168,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     rerender(
       <DungeonGeneratorErrorBoundary>
         <div data-testid="success">Success</div>
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
@@ -175,7 +179,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -198,7 +202,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -210,7 +214,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -225,7 +229,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -237,7 +241,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     render(
       <DungeonGeneratorErrorBoundary>
         <ErrorTrigger />
-      </DungeonGeneratorErrorBoundary>
+      </DungeonGeneratorErrorBoundary>,
     );
 
     await waitFor(() => {

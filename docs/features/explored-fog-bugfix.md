@@ -3,6 +3,7 @@
 ## Summary
 
 Fixed two critical bugs:
+
 1. **Bidirectional sync not working**: Token movements in World View weren't syncing to Architect View
 2. **Explored fog inconsistent**: Explored regions only saving sometimes instead of consistently
 
@@ -68,6 +69,7 @@ case 'TOKEN_UPDATE':
 ```
 
 **Without this fix:**
+
 1. Architect View sends TOKEN_UPDATE to World View
 2. World View applies update, store changes
 3. World View subscription triggers, sees "new" position
@@ -76,6 +78,7 @@ case 'TOKEN_UPDATE':
 6. **Infinite loop!**
 
 **With this fix:**
+
 1. Architect View sends TOKEN_UPDATE to World View
 2. World View applies update AND updates prevState
 3. World View subscription triggers, compares with prevState
@@ -114,9 +117,9 @@ The `useEffect` depended on `pcTokens` and `visibilityCache`, which are **memoiz
 
 ```typescript
 // ❌ BEFORE
-const pcTokens = useMemo(() =>
-  tokens.filter(t => t.type === 'PC' && t.visionRadius > 0),
-  [tokens]
+const pcTokens = useMemo(
+  () => tokens.filter((t) => t.type === 'PC' && t.visionRadius > 0),
+  [tokens],
 );
 
 const visibilityCache = useMemo(() => {
@@ -129,12 +132,14 @@ useEffect(() => {
 ```
 
 **The Problem:**
+
 - `pcTokens` only changes reference when a PC is added/removed or vision radius changes
 - `pcTokens` does NOT change when token **positions** change
 - Token moves: `{id: '1', x: 100, y: 100}` → `{id: '1', x: 150, y: 100}`
 - Array reference stays same → `pcTokens` memo doesn't recompute → effect doesn't trigger!
 
 **Why it worked "sometimes":**
+
 - Worked when gridSize changed (triggers visibilityCache recalc)
 - Worked when walls changed (triggers visibilityCache recalc)
 - Worked when tokens were added/removed
@@ -163,7 +168,7 @@ useEffect(() => {
     if (polygon && polygon.length > 0) {
       addExploredRegion({
         points: polygon,
-        timestamp: now
+        timestamp: now,
       });
     }
   });
@@ -174,6 +179,7 @@ useEffect(() => {
 ```
 
 **How it works now:**
+
 1. Token moves: `tokens` array changes
 2. Effect triggers
 3. Checks throttle (1 second minimum between updates)
@@ -183,6 +189,7 @@ useEffect(() => {
 ### Performance Note
 
 Adding `tokens` to dependencies means the effect runs more frequently. However:
+
 - ✅ Still throttled to 1 second intervals (EXPLORE_UPDATE_INTERVAL)
 - ✅ Early returns if no time has passed
 - ✅ Minimal performance impact
@@ -204,6 +211,7 @@ Adding `tokens` to dependencies means the effect runs more frequently. However:
 ### Test 1: Bidirectional Sync
 
 **Steps:**
+
 1. Open Architect View and place tokens
 2. Open World View
 3. Drag token in World View
@@ -217,6 +225,7 @@ Adding `tokens` to dependencies means the effect runs more frequently. However:
 ### Test 2: Explored Fog Consistency
 
 **Steps:**
+
 1. Place PC token with vision radius
 2. Move token to explore new area
 3. Wait 1 second
@@ -231,6 +240,7 @@ Adding `tokens` to dependencies means the effect runs more frequently. However:
 ### Test 3: No Infinite Loops
 
 **Steps:**
+
 1. Open both windows
 2. Drag token rapidly in World View
 3. Monitor console for duplicate IPC messages
@@ -260,10 +270,12 @@ Adding `tokens` to dependencies means the effect runs more frequently. However:
 ## Performance Impact
 
 **Bidirectional Sync:**
+
 - Same performance as before (no additional overhead)
 - Just fixed the broken functionality
 
 **Explored Fog:**
+
 - Effect runs more frequently (on every token move)
 - But early-returns due to throttling (1s minimum)
 - Net impact: Negligible (~0.1ms per token move to check throttle)
@@ -271,6 +283,7 @@ Adding `tokens` to dependencies means the effect runs more frequently. However:
 ## Backwards Compatibility
 
 ✅ **Fully backwards compatible:**
+
 - No API changes
 - No breaking changes
 - Only fixes broken functionality
@@ -279,6 +292,7 @@ Adding `tokens` to dependencies means the effect runs more frequently. However:
 ## Conclusion
 
 Both critical bugs are now fixed:
+
 1. ✅ Bidirectional sync: World View token movements sync to DM
 2. ✅ Explored fog: Consistently tracks explored areas
 

@@ -115,7 +115,7 @@ function generateErrorHash(sanitizedError: SanitizedError): string {
   let hash = 0;
   for (let i = 0; i < hashInput.length; i++) {
     const char = hashInput.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
   return hash.toString(36);
@@ -148,7 +148,7 @@ export function storeError(error: StoredError): void {
 
     // Check if this error already exists
     const existingIndex = errors.findIndex(
-      (e) => generateErrorHash(e.sanitizedError) === errorHash
+      (e) => generateErrorHash(e.sanitizedError) === errorHash,
     );
 
     if (existingIndex !== -1) {
@@ -183,9 +183,7 @@ export function storeError(error: StoredError): void {
 export function markErrorReported(errorId: string): void {
   try {
     const errors = getStoredErrors();
-    const updated = errors.map((err) =>
-      err.id === errorId ? { ...err, reported: true } : err
-    );
+    const updated = errors.map((err) => (err.id === errorId ? { ...err, reported: true } : err));
     localStorage.setItem(ERROR_STORAGE_KEY, JSON.stringify(updated));
   } catch {
     console.warn('Failed to mark error as reported');
@@ -229,13 +227,11 @@ export function getUnreportedErrorCount(): number {
  */
 async function handleGlobalError(
   error: Error,
-  source: StoredError['source']
+  source: StoredError['source'],
 ): Promise<StoredError | null> {
   try {
     // Get username for sanitization (fallback if errorReporting not available)
-    const username = window.errorReporting
-      ? await window.errorReporting.getUsername()
-      : 'unknown';
+    const username = window.errorReporting ? await window.errorReporting.getUsername() : 'unknown';
 
     // Sanitize the error
     const sanitizedError = sanitizeStack(error, username);
@@ -278,10 +274,7 @@ function onGlobalError(event: ErrorEvent): void {
  * Unhandled promise rejection handler
  */
 function onUnhandledRejection(event: PromiseRejectionEvent): void {
-  const error =
-    event.reason instanceof Error
-      ? event.reason
-      : new Error(String(event.reason));
+  const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
   handleGlobalError(error, 'promise');
 }
 
@@ -320,9 +313,7 @@ function onMainProcessError(_event: unknown, errorData: MainProcessError): void 
   storeError(storedError);
 
   // Notify any listeners about the new error
-  window.dispatchEvent(
-    new CustomEvent('graphium-error', { detail: storedError })
-  );
+  window.dispatchEvent(new CustomEvent('graphium-error', { detail: storedError }));
 }
 
 /**
@@ -354,7 +345,7 @@ export function initGlobalErrorHandlers(): () => void {
  */
 export async function captureError(
   error: Error,
-  source: StoredError['source'] = 'global'
+  source: StoredError['source'] = 'global',
 ): Promise<StoredError | null> {
   return handleGlobalError(error, source);
 }

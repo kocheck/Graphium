@@ -69,9 +69,10 @@ const ToggleSwitch = ({
             relative inline-flex h-6 w-11 items-center rounded-full transition-colors
             focus:outline-none focus:ring-2 focus:ring-offset-2
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            ${checked
-              ? 'bg-[var(--app-accent-solid)] focus:ring-[var(--app-accent-solid)]'
-              : 'bg-[var(--app-border-default)] focus:ring-[var(--app-border-default)]'
+            ${
+              checked
+                ? 'bg-[var(--app-accent-solid)] focus:ring-[var(--app-accent-solid)]'
+                : 'bg-[var(--app-border-default)] focus:ring-[var(--app-border-default)]'
             }
           `}
           style={{
@@ -93,10 +94,7 @@ const ToggleSwitch = ({
       </div>
 
       {description && (
-        <p
-          className="text-xs mt-1"
-          style={{ color: 'var(--app-text-muted)' }}
-        >
+        <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
           {description}
         </p>
       )}
@@ -105,4 +103,3 @@ const ToggleSwitch = ({
 };
 
 export default ToggleSwitch;
-

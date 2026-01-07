@@ -5,6 +5,7 @@
 The Dungeon Generator is a procedural content generation tool that creates interactive dungeon layouts for tabletop RPG sessions. It uses a modular, template-based architecture designed for extensibility and performance.
 
 **Key Features:**
+
 - Organic growth algorithm for natural-looking layouts
 - Grid-aligned positioning for precision
 - Interactive wall objects (fully editable after generation)
@@ -85,6 +86,7 @@ interface DungeonPiece {
 ```
 
 **Wall Segments:**
+
 - Each direction can have 0, 2, or 4 points
 - 2 points = solid wall (no doorway)
 - 4 points = wall with doorway gap (left segment + right segment)
@@ -103,6 +105,7 @@ newRoom.bounds.x = Math.round(newRoom.bounds.x / gridSize) * gridSize;
 ```
 
 **Why Grid Alignment Matters:**
+
 - Prevents sub-pixel misalignment
 - Ensures doorways line up perfectly
 - Makes wall removal calculations exact
@@ -124,6 +127,7 @@ Result: [0, 25, 75, 100] (4-point array)
 ```
 
 **Minimum Segment Threshold:**
+
 - Segments < gridSize/4 (12.5px) are discarded
 - Prevents tiny wall fragments
 - If entire wall is doorway-sized, remove completely
@@ -145,6 +149,7 @@ Instead of placing all rooms randomly and connecting them, the dungeon grows org
 ```
 
 **Benefits:**
+
 - Natural-looking connected dungeons
 - No disconnected rooms
 - Efficient (no need to calculate paths between random rooms)
@@ -220,8 +225,8 @@ private createLShapedRoom(
 ```typescript
 // In constructor
 this.corridorTemplate = {
-  lengthInCells: 6,  // Longer corridors
-  widthInCells: 2,   // Wider corridors (2 cells)
+  lengthInCells: 6, // Longer corridors
+  widthInCells: 2, // Wider corridors (2 cells)
 };
 ```
 
@@ -272,7 +277,7 @@ const [theme, setTheme] = useState<'dungeon' | 'cavern' | 'fortress'>('dungeon')
   <option value="dungeon">Classic Dungeon</option>
   <option value="cavern">Natural Cavern</option>
   <option value="fortress">Fortress</option>
-</select>
+</select>;
 ```
 
 ---
@@ -329,6 +334,7 @@ public async generateAsync(): Promise<Drawing[]> {
 **Cause**: Doorway positioned in center of small wall, leaving segments < minSegmentSize
 
 **Solution**:
+
 ```typescript
 // Check if entire wall is doorway before splitting
 if (wallWidth <= doorwaySize + minSegmentSize) {
@@ -342,6 +348,7 @@ if (wallWidth <= doorwaySize + minSegmentSize) {
 **Cause**: Grid-snapping corridor position shifts it away from connection point
 
 **Solution**: Don't grid-snap corridors - they're already positioned correctly
+
 ```typescript
 // WRONG: Grid-snapping shifts corridor
 corridor.bounds.x = Math.round(corridor.bounds.x / gridSize) * gridSize;
@@ -355,9 +362,10 @@ const corridor = this.createCorridorPiece(connX, connY, direction);
 **Cause**: Collision detection excludes wrong piece (checking corridor against source room)
 
 **Solution**: Exclude source piece from collision checks
+
 ```typescript
 const piecesToCheck = excludeFromCollision
-  ? existingPieces.filter(p => p !== excludeFromCollision)
+  ? existingPieces.filter((p) => p !== excludeFromCollision)
   : existingPieces;
 ```
 
@@ -366,6 +374,7 @@ const piecesToCheck = excludeFromCollision
 **Cause**: Infinite retry loop when constraints are too restrictive
 
 **Solution**: Add retry limit with early exit
+
 ```typescript
 const maxRetries = this.options.numRooms * 10;
 let retries = 0;
@@ -414,7 +423,7 @@ describe('DungeonGenerator', () => {
     generator.generate();
     const rooms = generator.getRooms();
 
-    rooms.forEach(room => {
+    rooms.forEach((room) => {
       expect(room.x % gridSize).toBe(0);
       expect(room.y % gridSize).toBe(0);
     });
@@ -465,17 +474,20 @@ When helping developers extend this feature:
 ### Example Prompts
 
 "Add a circular room template to the dungeon generator"
+
 - Implement createCircularRoom() method
 - Use octagon approximation (8 wall segments)
 - Add to initializeRoomTemplates()
 - Test with various sizes
 
 "Make corridors sometimes be wider (2 cells)"
+
 - Modify corridorTemplate.widthInCells
 - Update createCorridorPiece() to handle variable widths
 - Adjust doorway positioning logic
 
 "Add a 'theme' parameter that changes wall colors"
+
 - Add theme to DungeonGeneratorOptions
 - Create theme color mappings
 - Update wallColor based on selected theme
@@ -503,18 +515,21 @@ When helping developers extend this feature:
 ## Future Enhancements
 
 ### Short-term
+
 - [ ] Add preset room templates (L-shaped, T-shaped, circular)
 - [ ] Theme system (dungeon, cavern, fortress)
 - [ ] Export/import dungeon layouts
 - [ ] Undo/redo for generation
 
 ### Medium-term
+
 - [ ] Multi-floor dungeons (stairs, elevators)
 - [ ] Special room types (boss, treasure, puzzle)
 - [ ] Door objects (not just wall gaps)
 - [ ] Furniture and decoration placement
 
 ### Long-term
+
 - [ ] Procedural texture generation
 - [ ] Lighting system integration
 - [ ] Trap placement algorithm

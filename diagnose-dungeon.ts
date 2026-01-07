@@ -3,7 +3,7 @@
 /**
  * Standalone diagnostic script for DungeonGenerator
  * Tests door generation and grid alignment without needing test framework
- * 
+ *
  * Usage: npx tsx diagnose-dungeon.ts
  * Requires: tsx package (npx will install it automatically)
  */
@@ -21,7 +21,7 @@ try {
   console.log('\n[1/6] Creating DungeonGenerator...');
   const generator = new DungeonGenerator({
     numRooms: 5,
-    gridSize
+    gridSize,
   });
   console.log('✅ Generator created with numRooms:', 5);
 
@@ -51,8 +51,8 @@ try {
 
   // Show detailed breakdown
   console.log('\n  Detailed breakdown:');
-  const wallDrawings = result.drawings.filter(d => d.tool === 'wall');
-  const otherDrawings = result.drawings.filter(d => d.tool !== 'wall');
+  const wallDrawings = result.drawings.filter((d) => d.tool === 'wall');
+  const otherDrawings = result.drawings.filter((d) => d.tool !== 'wall');
   console.log(`    - Wall drawings: ${wallDrawings.length}`);
   console.log(`    - Other drawings: ${otherDrawings.length}`);
 
@@ -75,7 +75,7 @@ try {
 
   // Check grid alignment
   console.log('\n[4/6] Checking grid alignment...');
-  const misalignedDoors = result.doors.filter(door => {
+  const misalignedDoors = result.doors.filter((door) => {
     const xAligned = door.x % gridSize === 0;
     const yAligned = door.y % gridSize === 0;
     return !xAligned || !yAligned;
@@ -127,10 +127,14 @@ try {
     console.log(`Door ${i + 1}:`);
     console.log(`  Position: (${door.x}, ${door.y})`);
     console.log(`  Orientation: ${door.orientation}`);
-    console.log(`  State: ${door.isOpen ? 'OPEN' : 'CLOSED'}, ${door.isLocked ? 'LOCKED' : 'UNLOCKED'}`);
+    console.log(
+      `  State: ${door.isOpen ? 'OPEN' : 'CLOSED'}, ${door.isLocked ? 'LOCKED' : 'UNLOCKED'}`,
+    );
     console.log(`  Size: ${door.size}px, Thickness: ${door.thickness}px`);
     console.log(`  Swing: ${door.swingDirection}`);
-    console.log(`  Grid aligned: X=${door.x % gridSize === 0 ? '✓' : '✗'}, Y=${door.y % gridSize === 0 ? '✓' : '✗'}`);
+    console.log(
+      `  Grid aligned: X=${door.x % gridSize === 0 ? '✓' : '✗'}, Y=${door.y % gridSize === 0 ? '✓' : '✗'}`,
+    );
     console.log('─'.repeat(60));
   });
 
@@ -154,7 +158,6 @@ try {
   }
 
   console.log('='.repeat(60));
-
 } catch (error) {
   console.error('\n❌ FATAL ERROR:');
   console.error(error);

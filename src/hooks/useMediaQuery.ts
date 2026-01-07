@@ -83,11 +83,7 @@ export function useIsTouchDevice(): boolean {
 
     const nav = navigator as Navigator & { msMaxTouchPoints?: number };
 
-    return (
-      'ontouchstart' in window ||
-      nav.maxTouchPoints > 0 ||
-      (nav.msMaxTouchPoints ?? 0) > 0
-    );
+    return 'ontouchstart' in window || nav.maxTouchPoints > 0 || (nav.msMaxTouchPoints ?? 0) > 0;
   });
 
   return isTouch;

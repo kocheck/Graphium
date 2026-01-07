@@ -1,1 +1,163 @@
-{"result":[{"scriptId":"1196","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"HTMLCanvasElement.getContext","ranges":[{"startOffset":1405,"endOffset":2722,"count":0}],"isBlockCoverage":false},{"functionName":"HTMLCanvasElement.toDataURL","ranges":[{"startOffset":2766,"endOffset":2819,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":2930,"endOffset":2964,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":3071,"endOffset":3102,"count":0}],"isBlockCoverage":false}]},{"scriptId":"1371","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/components/GlobalErrorBoundary.test.tsx","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":10798,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":10798,"count":1}],"isBlockCoverage":true},{"functionName":"ThrowError","ranges":[{"startOffset":813,"endOffset":1152,"count":13},{"startOffset":855,"endOffset":895,"count":12},{"startOffset":895,"endOffset":1151,"count":0}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1208,"endOffset":5432,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1295,"endOffset":1552,"count":4}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1533,"endOffset":1546,"count":12}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1589,"endOffset":1760,"count":4}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1833,"endOffset":2550,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2618,"endOffset":3457,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3542,"endOffset":4362,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4431,"endOffset":5428,"count":1}],"isBlockCoverage":true}]},{"scriptId":"1726","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/components/GlobalErrorBoundary.tsx","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":15399,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":15399,"count":1}],"isBlockCoverage":true},{"functionName":"<instance_members_initializer>","ranges":[{"startOffset":537,"endOffset":1115,"count":7}],"isBlockCoverage":true},{"functionName":"getDerivedStateFromError","ranges":[{"startOffset":619,"endOffset":711,"count":6}],"isBlockCoverage":true},{"functionName":"componentDidCatch","ranges":[{"startOffset":714,"endOffset":845,"count":3}],"isBlockCoverage":true},{"functionName":"handleReload","ranges":[{"startOffset":863,"endOffset":904,"count":1}],"isBlockCoverage":true},{"functionName":"handleCopyError","ranges":[{"startOffset":926,"endOffset":1115,"count":0}],"isBlockCoverage":false},{"functionName":"render","ranges":[{"startOffset":1119,"endOffset":7439,"count":16},{"startOffset":1159,"endOffset":7403,"count":9},{"startOffset":1192,"endOffset":1237,"count":3},{"startOffset":1237,"endOffset":4513,"count":6},{"startOffset":4863,"endOffset":4879,"count":2},{"startOffset":7403,"endOffset":7438,"count":7}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":7549,"endOffset":7584,"count":4}],"isBlockCoverage":true}]}]}
+{
+  "result": [
+    {
+      "scriptId": "1196",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "HTMLCanvasElement.getContext",
+          "ranges": [{ "startOffset": 1405, "endOffset": 2722, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "HTMLCanvasElement.toDataURL",
+          "ranges": [{ "startOffset": 2766, "endOffset": 2819, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2930, "endOffset": 2964, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3071, "endOffset": 3102, "count": 0 }],
+          "isBlockCoverage": false
+        }
+      ]
+    },
+    {
+      "scriptId": "1371",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/components/GlobalErrorBoundary.test.tsx",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 10798, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 10798, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "ThrowError",
+          "ranges": [
+            { "startOffset": 813, "endOffset": 1152, "count": 13 },
+            { "startOffset": 855, "endOffset": 895, "count": 12 },
+            { "startOffset": 895, "endOffset": 1151, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1208, "endOffset": 5432, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1295, "endOffset": 1552, "count": 4 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1533, "endOffset": 1546, "count": 12 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1589, "endOffset": 1760, "count": 4 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1833, "endOffset": 2550, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2618, "endOffset": 3457, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3542, "endOffset": 4362, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4431, "endOffset": 5428, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    },
+    {
+      "scriptId": "1726",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/components/GlobalErrorBoundary.tsx",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 15399, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 15399, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "<instance_members_initializer>",
+          "ranges": [{ "startOffset": 537, "endOffset": 1115, "count": 7 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "getDerivedStateFromError",
+          "ranges": [{ "startOffset": 619, "endOffset": 711, "count": 6 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "componentDidCatch",
+          "ranges": [{ "startOffset": 714, "endOffset": 845, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "handleReload",
+          "ranges": [{ "startOffset": 863, "endOffset": 904, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "handleCopyError",
+          "ranges": [{ "startOffset": 926, "endOffset": 1115, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "render",
+          "ranges": [
+            { "startOffset": 1119, "endOffset": 7439, "count": 16 },
+            { "startOffset": 1159, "endOffset": 7403, "count": 9 },
+            { "startOffset": 1192, "endOffset": 1237, "count": 3 },
+            { "startOffset": 1237, "endOffset": 4513, "count": 6 },
+            { "startOffset": 4863, "endOffset": 4879, "count": 2 },
+            { "startOffset": 7403, "endOffset": 7438, "count": 7 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 7549, "endOffset": 7584, "count": 4 }],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ]
+}

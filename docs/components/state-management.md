@@ -5,6 +5,7 @@ All global application state is managed through a single Zustand store.
 ## Purpose
 
 The store provides:
+
 - Centralized state management (tokens, drawings, grid configuration)
 - State mutations via actions (addToken, updateToken, addDrawing, etc.)
 - Subscription API for side effects (IPC sync)
@@ -15,6 +16,7 @@ The store provides:
 ### Why Zustand?
 
 Chosen over Redux/Context API for:
+
 - Minimal boilerplate (no actions, reducers, providers)
 - Built-in subscription API (needed for IPC sync)
 - No Context Provider wrapper (simpler setup)
@@ -43,6 +45,7 @@ export interface GameState {
 ## Access Patterns
 
 ### Component Rendering (Subscribe to Changes)
+
 ```typescript
 const Component = () => {
   // Subscribes to tokens array - re-renders when tokens change
@@ -52,6 +55,7 @@ const Component = () => {
 ```
 
 ### Event Handlers (No Subscription)
+
 ```typescript
 const Component = () => {
   const handleClick = () => {
@@ -63,6 +67,7 @@ const Component = () => {
 ```
 
 ### Bulk Updates (Load/Sync)
+
 ```typescript
 // Load campaign
 const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN');
@@ -70,12 +75,13 @@ if (state) {
   useGameStore.setState({
     tokens: state.tokens,
     drawings: state.drawings,
-    gridSize: state.gridSize
+    gridSize: state.gridSize,
   });
 }
 ```
 
 ### Subscriptions (Side Effects)
+
 ```typescript
 useEffect(() => {
   const unsubscribe = useGameStore.subscribe((state) => {
@@ -83,7 +89,7 @@ useEffect(() => {
     window.ipcRenderer.send('SYNC_WORLD_STATE', {
       tokens: state.tokens,
       drawings: state.drawings,
-      gridSize: state.gridSize
+      gridSize: state.gridSize,
     });
   });
   return unsubscribe;
@@ -93,18 +99,21 @@ useEffect(() => {
 ## Store Mutation Rules
 
 ### ❌ NEVER Mutate State Directly
+
 ```typescript
 const { tokens } = useGameStore.getState();
-tokens.push(newToken);  // BAD!
+tokens.push(newToken); // BAD!
 ```
 
 ### ✅ ALWAYS Use Actions or setState
+
 ```typescript
 const { addToken } = useGameStore.getState();
-addToken(newToken);  // GOOD!
+addToken(newToken); // GOOD!
 ```
 
 ## Related Documentation
+
 - [Architecture Overview](../architecture/ARCHITECTURE.md#state-management)
 - [Code Conventions](../guides/CONVENTIONS.md)
 - [IPC Sync](../architecture/IPC_API.md#sync_world_state)

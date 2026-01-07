@@ -3,6 +3,7 @@
 **Date:** 2025-12-15
 **Standard:** WCAG 2.1 Level AA
 **Minimum Contrast Ratios:**
+
 - Normal text (< 18pt): 4.5:1
 - Large text (≥ 18pt or 14pt bold): 3:1
 - UI components & graphical objects: 3:1
@@ -28,23 +29,23 @@ Our semantic CSS variables map to Radix scales as follows:
 
 #### Text on Background Combinations
 
-| Text Variable | Background Variable | Radix Mapping | Contrast Ratio | WCAG AA |
-|---------------|---------------------|---------------|----------------|---------|
-| `--app-text-primary` | `--app-bg-base` | `slate-12` on `slate-1` | **≥ 13:1** | ✅ AAA |
-| `--app-text-primary` | `--app-bg-surface` | `slate-12` on `slate-3` | **≥ 11:1** | ✅ AAA |
-| `--app-text-secondary` | `--app-bg-base` | `slate-11` on `slate-1` | **≥ 8:1** | ✅ AA |
-| `--app-text-secondary` | `--app-bg-surface` | `slate-11` on `slate-3` | **≥ 7:1** | ✅ AA |
-| `--app-text-muted` | `--app-bg-surface` | `slate-10` on `slate-3` | **≥ 4.5:1** | ✅ AA |
+| Text Variable          | Background Variable | Radix Mapping           | Contrast Ratio | WCAG AA |
+| ---------------------- | ------------------- | ----------------------- | -------------- | ------- |
+| `--app-text-primary`   | `--app-bg-base`     | `slate-12` on `slate-1` | **≥ 13:1**     | ✅ AAA  |
+| `--app-text-primary`   | `--app-bg-surface`  | `slate-12` on `slate-3` | **≥ 11:1**     | ✅ AAA  |
+| `--app-text-secondary` | `--app-bg-base`     | `slate-11` on `slate-1` | **≥ 8:1**      | ✅ AA   |
+| `--app-text-secondary` | `--app-bg-surface`  | `slate-11` on `slate-3` | **≥ 7:1**      | ✅ AA   |
+| `--app-text-muted`     | `--app-bg-surface`  | `slate-10` on `slate-3` | **≥ 4.5:1**    | ✅ AA   |
 
 **Note:** `--app-text-disabled` (slate-9) is **intentionally** below AA threshold (< 4.5:1) to indicate disabled state visually. This is semantically correct per WCAG guidelines for disabled controls.
 
 #### Interactive Elements
 
-| Element | Text | Background | Contrast | WCAG AA |
-|---------|------|------------|----------|---------|
-| Primary Button | White text | `--app-accent-solid` (blue-9) | **≥ 4.5:1** | ✅ |
-| Error Button | White text | `--app-error-solid` (red-9) | **≥ 4.5:1** | ✅ |
-| Link Text | `--app-accent-text` (blue-11) | `--app-bg-base` (slate-1) | **≥ 7:1** | ✅ |
+| Element        | Text                          | Background                    | Contrast    | WCAG AA |
+| -------------- | ----------------------------- | ----------------------------- | ----------- | ------- |
+| Primary Button | White text                    | `--app-accent-solid` (blue-9) | **≥ 4.5:1** | ✅      |
+| Error Button   | White text                    | `--app-error-solid` (red-9)   | **≥ 4.5:1** | ✅      |
+| Link Text      | `--app-accent-text` (blue-11) | `--app-bg-base` (slate-1)     | **≥ 7:1**   | ✅      |
 
 #### Borders & Dividers
 
@@ -53,6 +54,7 @@ Borders use steps 6-8, which provide **≥ 3:1 contrast** against backgrounds (s
 ## Light Mode vs Dark Mode
 
 Both themes use the **same Radix scale steps** for semantic mappings:
+
 - Light mode: Uses Radix light palette (e.g., `slate-1` → `#fcfcfc`)
 - Dark mode: Uses Radix dark palette (e.g., `slate-1` → `#111113`)
 
@@ -61,12 +63,14 @@ Both themes use the **same Radix scale steps** for semantic mappings:
 ## Exceptions & Intentional Non-Compliance
 
 ### 1. Disabled Text (`--app-text-disabled`)
+
 - **Mapping:** `slate-9`
 - **Contrast:** < 4.5:1 (fails AA)
 - **Justification:** WCAG 2.1 **exempts** disabled controls from contrast requirements ([SC 1.4.3 Exception #2](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html))
 - **Mitigation:** Disabled states also use reduced opacity and cursor changes
 
 ### 2. Canvas Drawing Layer
+
 - **Element:** Konva.js drawing canvas (tokens, markers, fog of war)
 - **Compliance:** Not evaluated (non-text graphical content)
 - **Justification:** Game maps and tokens are **essential graphical objects** that cannot be simplified without losing meaning. Users control color choices (e.g., marker color picker).
@@ -74,13 +78,17 @@ Both themes use the **same Radix scale steps** for semantic mappings:
 ## Verification Tools
 
 ### Manual Testing (Recommended)
+
 Use browser DevTools contrast checker:
+
 1. Inspect element with text
 2. Open "Accessibility" pane
 3. Verify contrast ratio ≥ 4.5:1 (normal text) or ≥ 3:1 (large text)
 
 ### Automated Testing
+
 Our CI/CD pipeline (`.github/workflows/accessibility.yml`) runs automated checks using:
+
 - **Tool:** `axe-core` (via Playwright)
 - **Scope:** All UI components (excludes canvas layer)
 - **Threshold:** Fails build on any WCAG AA violations

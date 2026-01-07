@@ -63,11 +63,7 @@ class LibraryModalErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error(
-      '[LibraryModalErrorBoundary] Modal component crashed:',
-      error,
-      errorInfo
-    );
+    console.error('[LibraryModalErrorBoundary] Modal component crashed:', error, errorInfo);
 
     // Optional: Send error to monitoring service
     // ErrorReportingService.captureException(error, {
@@ -111,20 +107,13 @@ class LibraryModalErrorBoundary extends Component<
             {/* Header */}
             <div className="p-4 border-b border-neutral-700 bg-neutral-800">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">
-                  Something went wrong
-                </h2>
+                <h2 className="text-xl font-bold text-white">Something went wrong</h2>
                 <button
                   onClick={this.handleClose}
                   className="p-2 hover:bg-neutral-700 rounded text-white"
                   aria-label="Close"
                 >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -139,8 +128,7 @@ class LibraryModalErrorBoundary extends Component<
             {/* Body */}
             <div className="p-6 space-y-4">
               <p className="text-neutral-300">
-                An error occurred while loading this modal. This has been logged
-                for investigation.
+                An error occurred while loading this modal. This has been logged for investigation.
               </p>
 
               {error && (

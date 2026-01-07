@@ -70,13 +70,7 @@ interface GameStoreWindow extends Window {
 /**
  * Helper to simulate token drag with IPC tracking
  */
-async function dragToken(
-  page: Page,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number
-) {
+async function dragToken(page: Page, fromX: number, fromY: number, toX: number, toY: number) {
   await page.mouse.move(fromX, fromY);
   await page.mouse.down();
   await page.waitForTimeout(100); // Allow drag threshold to be met
@@ -160,10 +154,7 @@ test.describe('Token Drag Synchronization', () => {
     });
 
     expect(tokenState, 'Token should exist after drag').toBeTruthy();
-    expect(
-      tokenState.x,
-      'Token X position should have changed after drag'
-    ).toBeGreaterThan(200);
+    expect(tokenState.x, 'Token X position should have changed after drag').toBeGreaterThan(200);
   });
 
   test('should preserve IPC sync calls in pointer event handlers', async ({ page }) => {
@@ -175,10 +166,7 @@ test.describe('Token Drag Synchronization', () => {
       return typeof window.ipcRenderer !== 'undefined';
     });
 
-    expect(
-      hasIPCSupport,
-      'IPC renderer should be available for sync'
-    ).toBeTruthy();
+    expect(hasIPCSupport, 'IPC renderer should be available for sync').toBeTruthy();
 
     // Verify the token drag handlers reference IPC
     const handlerSource = await page.evaluate(() => {
@@ -187,10 +175,7 @@ test.describe('Token Drag Synchronization', () => {
       return 'SYNC_WORLD_STATE';
     });
 
-    expect(
-      handlerSource,
-      'IPC sync channel constant should be defined'
-    ).toBe('SYNC_WORLD_STATE');
+    expect(handlerSource, 'IPC sync channel constant should be defined').toBe('SYNC_WORLD_STATE');
   });
 });
 
@@ -269,14 +254,8 @@ test.describe('Multi-Token Drag Synchronization', () => {
     });
 
     expect(tokens.length, 'Should have 2 tokens').toBe(2);
-    expect(
-      tokens[0].x,
-      'First token should have moved'
-    ).toBeGreaterThan(200);
-    expect(
-      tokens[1].x,
-      'Second token should have moved with first'
-    ).toBeGreaterThan(250);
+    expect(tokens[0].x, 'First token should have moved').toBeGreaterThan(200);
+    expect(tokens[1].x, 'Second token should have moved with first').toBeGreaterThan(250);
   });
 });
 
@@ -313,16 +292,10 @@ test.describe('Drawing Synchronization', () => {
 
     expect(drawings.length, 'Drawing should be created').toBe(1);
     expect(drawings[0].tool, 'Should be marker tool').toBe('marker');
-    expect(
-      drawings[0].points.length,
-      'Should have coordinate points'
-    ).toBeGreaterThan(2);
+    expect(drawings[0].points.length, 'Should have coordinate points').toBeGreaterThan(2);
 
     // Verify pressure data is included (for touch support)
-    expect(
-      drawings[0].pressures,
-      'Should capture pressure data for new drawings'
-    ).toBeDefined();
+    expect(drawings[0].pressures, 'Should capture pressure data for new drawings').toBeDefined();
   });
 });
 
@@ -391,10 +364,7 @@ test.describe('IPC Sync Throttling', () => {
     const duration = Date.now() - startTime;
 
     // Verify performance (should complete quickly despite throttling)
-    expect(
-      duration,
-      'Rapid drag should complete in reasonable time'
-    ).toBeLessThan(1000);
+    expect(duration, 'Rapid drag should complete in reasonable time').toBeLessThan(1000);
 
     // Token should have moved to final position
     const finalToken = await page.evaluate(() => {
@@ -406,7 +376,7 @@ test.describe('IPC Sync Throttling', () => {
 
     expect(
       finalToken.x,
-      'Token should be at final position despite throttled sync'
+      'Token should be at final position despite throttled sync',
     ).toBeGreaterThan(250);
   });
 });
@@ -490,7 +460,7 @@ test.describe('State Consistency Verification', () => {
     expect(finalState.drawingCount, 'Should have 1 drawing').toBe(1);
     expect(
       finalState.hasPressureData,
-      'Drawing should have pressure data from pointer events'
+      'Drawing should have pressure data from pointer events',
     ).toBe(true);
   });
 });

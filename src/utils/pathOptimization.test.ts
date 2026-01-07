@@ -61,7 +61,7 @@ describe('simplifyPath', () => {
       const points = [0, 0, 10, 2, 20, 1, 30, 3, 40, 0];
       const resultLow = simplifyPath(points, 1.0);
       const resultHigh = simplifyPath(points, 5.0);
-      
+
       // Higher epsilon should produce fewer points
       expect(resultHigh.length).toBeLessThanOrEqual(resultLow.length);
       // With high epsilon, might simplify to just endpoints
@@ -73,21 +73,11 @@ describe('simplifyPath', () => {
     it('should reduce jittery hand-drawn wall', () => {
       // Simulate a hand-drawn wall with minor jitter
       const jitteryWall = [
-        0, 0,
-        10, 1,
-        20, -1,
-        30, 2,
-        40, 0,
-        50, 1,
-        60, -1,
-        70, 1,
-        80, 0,
-        90, 2,
-        100, 0,
+        0, 0, 10, 1, 20, -1, 30, 2, 40, 0, 50, 1, 60, -1, 70, 1, 80, 0, 90, 2, 100, 0,
       ];
-      
+
       const smoothed = simplifyPath(jitteryWall, 3.0);
-      
+
       // Should significantly reduce point count
       expect(smoothed.length).toBeLessThan(jitteryWall.length);
       // Should still start and end at same points
@@ -101,7 +91,7 @@ describe('simplifyPath', () => {
       // L-shaped wall: horizontal then vertical
       const lWall = [0, 0, 50, 0, 100, 0, 100, 50, 100, 100];
       const result = simplifyPath(lWall, 1.0);
-      
+
       // Should keep the corner point at (100, 0)
       expect(result).toContain(100);
       expect(result).toContain(0);
@@ -126,7 +116,7 @@ describe('snapPointToPaths', () => {
     it('should return original point when no paths exist', () => {
       const point: Point = { x: 50, y: 50 };
       const result = snapPointToPaths(point, [], threshold);
-      
+
       expect(result.point).toEqual(point);
       expect(result.snapped).toBe(false);
       expect(result.pathIndex).toBe(-1);
@@ -138,7 +128,7 @@ describe('snapPointToPaths', () => {
         [10, 20], // Only 1 point (2 values)
       ];
       const result = snapPointToPaths(point, invalidPaths, threshold);
-      
+
       expect(result.point).toEqual(point);
       expect(result.snapped).toBe(false);
     });
@@ -151,7 +141,7 @@ describe('snapPointToPaths', () => {
         [0, 0, 100, 0], // Horizontal line at y=0
       ];
       const result = snapPointToPaths(point, paths, threshold);
-      
+
       expect(result.snapped).toBe(true);
       expect(result.pathIndex).toBe(0);
       expect(result.point.x).toBe(50); // Same x
@@ -164,7 +154,7 @@ describe('snapPointToPaths', () => {
         [0, 0, 0, 100], // Vertical line at x=0
       ];
       const result = snapPointToPaths(point, paths, threshold);
-      
+
       expect(result.snapped).toBe(true);
       expect(result.point.x).toBe(0); // Snapped to x=0
       expect(result.point.y).toBe(50); // Same y
@@ -176,7 +166,7 @@ describe('snapPointToPaths', () => {
         [0, 0, 100, 100], // 45° diagonal
       ];
       const result = snapPointToPaths(point, paths, threshold);
-      
+
       expect(result.snapped).toBe(true);
       // Should snap to closest point on the diagonal
       expect(result.point.x).toBeCloseTo(52, 0);
@@ -191,7 +181,7 @@ describe('snapPointToPaths', () => {
         [0, 0, 100, 0], // Horizontal line
       ];
       const result = snapPointToPaths(point, paths, 10); // threshold = 10px
-      
+
       expect(result.snapped).toBe(false);
       expect(result.point).toEqual(point); // Unchanged
     });
@@ -201,12 +191,12 @@ describe('snapPointToPaths', () => {
     it('should snap to closest path when multiple paths exist', () => {
       const point: Point = { x: 50, y: 25 };
       const paths = [
-        [0, 0, 100, 0],   // Path 0: y=0 (distance = 25px)
+        [0, 0, 100, 0], // Path 0: y=0 (distance = 25px)
         [0, 30, 100, 30], // Path 1: y=30 (distance = 5px) <- closest
         [0, 60, 100, 60], // Path 2: y=60 (distance = 35px)
       ];
       const result = snapPointToPaths(point, paths, threshold);
-      
+
       expect(result.snapped).toBe(true);
       expect(result.pathIndex).toBe(1); // Should snap to path 1
       expect(result.point.y).toBe(30);
@@ -219,7 +209,7 @@ describe('snapPointToPaths', () => {
         [48, 0, 48, 100], // Path 1: distance = 2px <- closest
       ];
       const result = snapPointToPaths(point, paths, threshold);
-      
+
       expect(result.snapped).toBe(true);
       expect(result.pathIndex).toBe(1);
       expect(result.point.x).toBe(48);
@@ -233,7 +223,7 @@ describe('snapPointToPaths', () => {
         [0, 0, 100, 0], // Start at (0,0)
       ];
       const result = snapPointToPaths(point, paths, threshold);
-      
+
       expect(result.snapped).toBe(true);
       expect(result.point).toEqual({ x: 0, y: 0 }); // Snapped to endpoint
     });
@@ -244,7 +234,7 @@ describe('snapPointToPaths', () => {
         [0, 0, 100, 0], // Horizontal line
       ];
       const result = snapPointToPaths(point, paths, threshold);
-      
+
       expect(result.snapped).toBe(true);
       expect(result.point.x).toBe(50); // Middle of segment
       expect(result.point.y).toBe(0);
@@ -256,7 +246,7 @@ describe('snapPointToPaths', () => {
         [0, 0, 100, 0, 200, 0], // Two segments: (0,0)-(100,0) and (100,0)-(200,0)
       ];
       const result = snapPointToPaths(point, paths, threshold);
-      
+
       expect(result.snapped).toBe(true);
       expect(result.point.x).toBe(150); // On second segment
       expect(result.point.y).toBe(0);
@@ -269,23 +259,21 @@ describe('snapPointToPaths', () => {
       const existingWalls = [
         [100, 100, 200, 100], // Horizontal wall
       ];
-      
+
       // User draws new wall starting near endpoint
       const newWallStart: Point = { x: 203, y: 97 };
       const result = snapPointToPaths(newWallStart, existingWalls, 10);
-      
+
       expect(result.snapped).toBe(true);
       expect(result.point).toEqual({ x: 200, y: 100 }); // Snapped to endpoint
     });
 
     it('should not snap when walls are far apart', () => {
-      const existingWalls = [
-        [0, 0, 100, 0],
-      ];
-      
+      const existingWalls = [[0, 0, 100, 0]];
+
       const newWallStart: Point = { x: 500, y: 500 };
       const result = snapPointToPaths(newWallStart, existingWalls, 10);
-      
+
       expect(result.snapped).toBe(false);
       expect(result.point).toEqual(newWallStart);
     });
@@ -294,14 +282,12 @@ describe('snapPointToPaths', () => {
   describe('configurable threshold', () => {
     it('should respect different threshold values', () => {
       const point: Point = { x: 50, y: 15 };
-      const paths = [
-        [0, 0, 100, 0],
-      ];
-      
+      const paths = [[0, 0, 100, 0]];
+
       // With strict threshold
       const strictResult = snapPointToPaths(point, paths, 10);
       expect(strictResult.snapped).toBe(false);
-      
+
       // With lenient threshold
       const lenientResult = snapPointToPaths(point, paths, 20);
       expect(lenientResult.snapped).toBe(true);

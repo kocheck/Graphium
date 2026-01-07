@@ -69,25 +69,24 @@ const Tooltip = ({ content, children, delay = 100, offset = 50 }: TooltipProps) 
         {children}
       </div>
 
-      {isVisible && createPortal(
-        <div
-          className="fixed z-[9999] pointer-events-none"
-          style={{
-            top: `${position.top}px`,
-            left: `${position.left}px`,
-            transform: 'translateX(-50%)',
-          }}
-        >
-          <div className="relative px-3 py-1.5 pb-3 rounded-md shadow-lg text-sm font-medium whitespace-nowrap bg-neutral-900 text-white border border-neutral-600">
-            {content}
-            {/* Tooltip arrow */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 w-2 h-2 rotate-45 bg-neutral-900 border-r border-b border-neutral-600"
-            />
-          </div>
-        </div>,
-        document.body
-      )}
+      {isVisible &&
+        createPortal(
+          <div
+            className="fixed z-[9999] pointer-events-none"
+            style={{
+              top: `${position.top}px`,
+              left: `${position.left}px`,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <div className="relative px-3 py-1.5 pb-3 rounded-md shadow-lg text-sm font-medium whitespace-nowrap bg-neutral-900 text-white border border-neutral-600">
+              {content}
+              {/* Tooltip arrow */}
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 w-2 h-2 rotate-45 bg-neutral-900 border-r border-b border-neutral-600" />
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 };

@@ -46,13 +46,13 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
   // Get selected tokens (memoized to avoid unnecessary recalculations)
   const selectedTokens = useMemo(
     () => tokens.filter((t) => selectedTokenIds.includes(t.id)),
-    [tokens, selectedTokenIds]
+    [tokens, selectedTokenIds],
   );
 
   // Helper to resolve effective properties (instance > library > default)
   const getEffectiveValues = (token: Token) => {
     const libraryItem = token.libraryItemId
-      ? tokenLibrary.find(i => i.id === token.libraryItemId)
+      ? tokenLibrary.find((i) => i.id === token.libraryItemId)
       : undefined;
 
     // Determine effective type:
@@ -62,11 +62,11 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
     // 4. Default 'NPC'
     let effectiveType: 'PC' | 'NPC' = 'NPC';
     if (token.type) {
-        effectiveType = token.type;
+      effectiveType = token.type;
     } else if (libraryItem?.defaultType) {
-        effectiveType = libraryItem.defaultType;
+      effectiveType = libraryItem.defaultType;
     } else if (libraryItem?.category === 'PC') {
-        effectiveType = 'PC';
+      effectiveType = 'PC';
     }
 
     // Determine effective name
@@ -76,10 +76,10 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
     const effectiveVisionRadius = token.visionRadius ?? libraryItem?.defaultVisionRadius ?? 0;
 
     return {
-        name: effectiveName,
-        type: effectiveType,
-        visionRadius: effectiveVisionRadius,
-        libraryItem // Return the linked library item if it exists
+      name: effectiveName,
+      type: effectiveType,
+      visionRadius: effectiveVisionRadius,
+      libraryItem, // Return the linked library item if it exists
     };
   };
 
@@ -144,248 +144,264 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
   };
 
   const handleSaveToLibrary = async () => {
-      if (selectedTokens.length !== 1) return;
-      const token = selectedTokens[0];
-      if (!token.libraryItemId) return;
+    if (selectedTokens.length !== 1) return;
+    const token = selectedTokens[0];
+    if (!token.libraryItemId) return;
 
-      const libraryItem = tokenLibrary.find(i => i.id === token.libraryItemId);
-      if (!libraryItem) return;
+    const libraryItem = tokenLibrary.find((i) => i.id === token.libraryItemId);
+    if (!libraryItem) return;
 
-      const updates = {
-          name: name || libraryItem.name, // Use library name if empty
-          category: libraryItem.category,
-          tags: libraryItem.tags,
-          defaultType: type,
-          defaultVisionRadius: visionRadius
-      };
+    const updates = {
+      name: name || libraryItem.name, // Use library name if empty
+      category: libraryItem.category,
+      tags: libraryItem.tags,
+      defaultType: type,
+      defaultVisionRadius: visionRadius,
+    };
 
-      try {
-          // 1. Update persistent storage (writes to index.json or IndexedDB)
-          await getStorage().updateLibraryMetadata(token.libraryItemId, updates);
+    try {
+      // 1. Update persistent storage (writes to index.json or IndexedDB)
+      await getStorage().updateLibraryMetadata(token.libraryItemId, updates);
 
-          // 2. Update in-memory store (updates UI immediately)
-          updateLibraryToken(token.libraryItemId, updates);
+      // 2. Update in-memory store (updates UI immediately)
+      updateLibraryToken(token.libraryItemId, updates);
 
-          showToast(`Updated "${libraryItem.name}" in library`, 'success');
-      } catch (error) {
-          console.error('[TokenInspector] Failed to update library:', error);
-          showToast('Failed to save to library', 'error');
-      }
+      showToast(`Updated "${libraryItem.name}" in library`, 'success');
+    } catch (error) {
+      console.error('[TokenInspector] Failed to update library:', error);
+      showToast('Failed to save to library', 'error');
+    }
   };
 
   // Inspector content (same for mobile and desktop)
   const inspectorContent = (
     <div className={isMobile ? 'w-full' : 'p-4'}>
       <div className="flex justify-between items-center mb-3">
-        <h3
-          className="text-lg font-semibold"
-          style={{ color: 'var(--app-text-primary)' }}
-        >
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--app-text-primary)' }}>
           {selectedTokens.length === 1
-            ? (getEffectiveValues(selectedTokens[0]).name || 'Unnamed Token')
+            ? getEffectiveValues(selectedTokens[0]).name || 'Unnamed Token'
             : `${selectedTokens.length} Tokens Selected`}
         </h3>
         {isEditing && (
-            <button
-                onClick={() => setIsEditing(false)}
-                style={{ color: 'var(--app-text-muted)' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--app-text-secondary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--app-text-muted)'}
-            >
-                ✕
-            </button>
+          <button
+            onClick={() => setIsEditing(false)}
+            style={{ color: 'var(--app-text-muted)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--app-text-secondary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--app-text-muted)')}
+          >
+            ✕
+          </button>
         )}
       </div>
 
       {!isEditing ? (
         /* Summary View */
         <div>
-            {selectedTokens.length === 1 && (() => {
-                 const { type, visionRadius } = getEffectiveValues(selectedTokens[0]);
-                 return (
-                    <div className="text-sm mb-4" style={{ color: 'var(--app-text-secondary)' }}>
-                        <p>Type: {type}</p>
-                        <p>Vision: {visionRadius} ft</p>
-                    </div>
-                 );
+          {selectedTokens.length === 1 &&
+            (() => {
+              const { type, visionRadius } = getEffectiveValues(selectedTokens[0]);
+              return (
+                <div className="text-sm mb-4" style={{ color: 'var(--app-text-secondary)' }}>
+                  <p>Type: {type}</p>
+                  <p>Vision: {visionRadius} ft</p>
+                </div>
+              );
             })()}
-            <button
-                onClick={() => setIsEditing(true)}
-                className="w-full py-3 rounded font-medium transition-colors min-h-[44px]"
-                style={{
-                  backgroundColor: 'var(--app-accent-solid)',
-                  color: 'var(--app-accent-solid-text)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--app-accent-solid-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--app-accent-solid)'}
-            >
-                Edit Properties
-            </button>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="w-full py-3 rounded font-medium transition-colors min-h-[44px]"
+            style={{
+              backgroundColor: 'var(--app-accent-solid)',
+              color: 'var(--app-accent-solid-text)',
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = 'var(--app-accent-solid-hover)')
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = 'var(--app-accent-solid)')
+            }
+          >
+            Edit Properties
+          </button>
         </div>
       ) : (
         /* Edit View (Form) */
         <div className="space-y-4">
-            {/* Token Name */}
-            <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-secondary)' }}>
-                Name
-                </label>
-                <input
-                type="text"
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder={
-                    selectedTokens.length > 1 ? 'Multiple tokens' : 'Token name'
-                }
-                className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+          {/* Token Name */}
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--app-text-secondary)' }}
+            >
+              Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder={selectedTokens.length > 1 ? 'Multiple tokens' : 'Token name'}
+              className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+              style={{
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: 'var(--app-border-default)',
+                backgroundColor: 'var(--app-bg-base)',
+                color: 'var(--app-text-primary)',
+                outlineColor: 'var(--app-accent-solid)',
+              }}
+            />
+          </div>
+
+          {/* Token Type */}
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--app-text-secondary)' }}
+            >
+              Type
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleTypeChange('PC')}
+                className="flex-1 px-3 py-3 rounded font-medium transition-colors min-h-[44px]"
                 style={{
-                  borderWidth: '1px',
-                  borderStyle: 'solid',
-                  borderColor: 'var(--app-border-default)',
-                  backgroundColor: 'var(--app-bg-base)',
-                  color: 'var(--app-text-primary)',
-                  outlineColor: 'var(--app-accent-solid)'
+                  backgroundColor:
+                    type === 'PC' ? 'var(--app-accent-solid)' : 'var(--app-bg-hover)',
+                  color: type === 'PC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)',
                 }}
-                />
-            </div>
-
-            {/* Token Type */}
-            <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-secondary)' }}>
-                Type
-                </label>
-                <div className="flex gap-2">
-                <button
-                    onClick={() => handleTypeChange('PC')}
-                    className="flex-1 px-3 py-3 rounded font-medium transition-colors min-h-[44px]"
-                    style={{
-                      backgroundColor: type === 'PC' ? 'var(--app-accent-solid)' : 'var(--app-bg-hover)',
-                      color: type === 'PC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (type !== 'PC') e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (type !== 'PC') e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
-                    }}
-                >
-                    PC
-                </button>
-                <button
-                    onClick={() => handleTypeChange('NPC')}
-                    className="flex-1 px-3 py-3 rounded font-medium transition-colors min-h-[44px]"
-                    style={{
-                      backgroundColor: type === 'NPC' ? 'var(--app-accent-solid)' : 'var(--app-bg-hover)',
-                      color: type === 'NPC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (type !== 'NPC') e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (type !== 'NPC') e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
-                    }}
-                >
-                    NPC
-                </button>
-                </div>
-                <p className="mt-1 text-xs" style={{ color: 'var(--app-text-muted)' }}>
-                Only PC tokens emit vision for Fog of War
-                </p>
-            </div>
-
-            {/* Vision Radius */}
-            <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-secondary)' }}>
-                Vision Radius (feet)
-                </label>
-                <div className="grid grid-cols-4 gap-2 mb-2">
-                {[0, 30, 60, 120].map((radius) => (
-                    <button
-                    key={radius}
-                    onClick={() => handleVisionRadiusChange(radius)}
-                    className="px-2 text-sm rounded font-medium transition-colors min-h-[44px]"
-                    style={{
-                      backgroundColor: visionRadius === radius ? 'var(--app-success-solid)' : 'var(--app-bg-hover)',
-                      color: visionRadius === radius ? 'white' : 'var(--app-text-primary)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (visionRadius !== radius) e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (visionRadius !== radius) e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
-                    }}
-                    >
-                    {radius}
-                    </button>
-                ))}
-                </div>
-                <input
-                type="number"
-                value={visionRadius}
-                onChange={(e) => handleVisionRadiusChange(Number(e.target.value))}
-                min="0"
-                max="300"
-                step="5"
-                className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+                onMouseEnter={(e) => {
+                  if (type !== 'PC') e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                }}
+                onMouseLeave={(e) => {
+                  if (type !== 'PC') e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                }}
+              >
+                PC
+              </button>
+              <button
+                onClick={() => handleTypeChange('NPC')}
+                className="flex-1 px-3 py-3 rounded font-medium transition-colors min-h-[44px]"
                 style={{
-                  borderWidth: '1px',
-                  borderStyle: 'solid',
-                  borderColor: 'var(--app-border-default)',
-                  backgroundColor: 'var(--app-bg-base)',
-                  color: 'var(--app-text-primary)',
-                  outlineColor: 'var(--app-success-solid)'
+                  backgroundColor:
+                    type === 'NPC' ? 'var(--app-accent-solid)' : 'var(--app-bg-hover)',
+                  color:
+                    type === 'NPC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)',
                 }}
-                />
+                onMouseEnter={(e) => {
+                  if (type !== 'NPC')
+                    e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                }}
+                onMouseLeave={(e) => {
+                  if (type !== 'NPC') e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                }}
+              >
+                NPC
+              </button>
             </div>
+            <p className="mt-1 text-xs" style={{ color: 'var(--app-text-muted)' }}>
+              Only PC tokens emit vision for Fog of War
+            </p>
+          </div>
 
-            {/* Save to Library Button */}
-            {selectedTokens.length === 1 && selectedTokens[0].libraryItemId && (
-                <div className="pt-2">
-                    <button
-                        onClick={handleSaveToLibrary}
-                        className="w-full py-2 px-4 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors border"
-                        style={{
-                            borderColor: 'var(--app-border-default)',
-                            color: 'var(--app-text-secondary)',
-                            backgroundColor: 'transparent'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
-                            e.currentTarget.style.color = 'var(--app-text-primary)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.color = 'var(--app-text-secondary)';
-                        }}
-                    >
-                        <RiSaveLine className="w-4 h-4" />
-                        Save Defaults to Library
-                    </button>
-                    <p className="text-xs mt-1 text-center" style={{ color: 'var(--app-text-muted)' }}>
-                        Updates the library item and all other tokens that use its defaults.
-                    </p>
-                </div>
-            )}
-
-            {/* Token Info Footer */}
-            {selectedTokens.length === 1 && (
-                <div
-                  className="pt-3"
+          {/* Vision Radius */}
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--app-text-secondary)' }}
+            >
+              Vision Radius (feet)
+            </label>
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              {[0, 30, 60, 120].map((radius) => (
+                <button
+                  key={radius}
+                  onClick={() => handleVisionRadiusChange(radius)}
+                  className="px-2 text-sm rounded font-medium transition-colors min-h-[44px]"
                   style={{
-                    borderTopWidth: '1px',
-                    borderTopStyle: 'solid',
-                    borderTopColor: 'var(--app-border-subtle)'
+                    backgroundColor:
+                      visionRadius === radius ? 'var(--app-success-solid)' : 'var(--app-bg-hover)',
+                    color: visionRadius === radius ? 'white' : 'var(--app-text-primary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (visionRadius !== radius)
+                      e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (visionRadius !== radius)
+                      e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
                   }}
                 >
-                <p className="text-xs" style={{ color: 'var(--app-text-muted)' }}>
-                    <strong>Scale:</strong> {selectedTokens[0].scale}x
-                </p>
-                <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
-                    <strong>Position:</strong> ({Math.round(selectedTokens[0].x)},{' '}
-                    {Math.round(selectedTokens[0].y)})
-                </p>
-                </div>
-            )}
+                  {radius}
+                </button>
+              ))}
+            </div>
+            <input
+              type="number"
+              value={visionRadius}
+              onChange={(e) => handleVisionRadiusChange(Number(e.target.value))}
+              min="0"
+              max="300"
+              step="5"
+              className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+              style={{
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: 'var(--app-border-default)',
+                backgroundColor: 'var(--app-bg-base)',
+                color: 'var(--app-text-primary)',
+                outlineColor: 'var(--app-success-solid)',
+              }}
+            />
+          </div>
+
+          {/* Save to Library Button */}
+          {selectedTokens.length === 1 && selectedTokens[0].libraryItemId && (
+            <div className="pt-2">
+              <button
+                onClick={handleSaveToLibrary}
+                className="w-full py-2 px-4 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors border"
+                style={{
+                  borderColor: 'var(--app-border-default)',
+                  color: 'var(--app-text-secondary)',
+                  backgroundColor: 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                  e.currentTarget.style.color = 'var(--app-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--app-text-secondary)';
+                }}
+              >
+                <RiSaveLine className="w-4 h-4" />
+                Save Defaults to Library
+              </button>
+              <p className="text-xs mt-1 text-center" style={{ color: 'var(--app-text-muted)' }}>
+                Updates the library item and all other tokens that use its defaults.
+              </p>
+            </div>
+          )}
+
+          {/* Token Info Footer */}
+          {selectedTokens.length === 1 && (
+            <div
+              className="pt-3"
+              style={{
+                borderTopWidth: '1px',
+                borderTopStyle: 'solid',
+                borderTopColor: 'var(--app-border-subtle)',
+              }}
+            >
+              <p className="text-xs" style={{ color: 'var(--app-text-muted)' }}>
+                <strong>Scale:</strong> {selectedTokens[0].scale}x
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
+                <strong>Position:</strong> ({Math.round(selectedTokens[0].x)},{' '}
+                {Math.round(selectedTokens[0].y)})
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -409,7 +425,7 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
         borderWidth: '1px',
         borderStyle: 'solid',
         borderColor: 'var(--app-border-default)',
-        boxShadow: '0 10px 15px -3px var(--app-shadow-lg), 0 4px 6px -2px var(--app-shadow-md)'
+        boxShadow: '0 10px 15px -3px var(--app-shadow-lg), 0 4px 6px -2px var(--app-shadow-md)',
       }}
     >
       {inspectorContent}

@@ -18,7 +18,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Get full history for diff
+          fetch-depth: 0 # Get full history for diff
 
       - name: Get PR diff
         id: diff

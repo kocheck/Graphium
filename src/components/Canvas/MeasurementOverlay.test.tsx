@@ -2,7 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { Stage, Layer } from 'react-konva';
 import { MeasurementOverlay } from './MeasurementOverlay';
-import { Measurement, RulerMeasurement, BlastMeasurement, ConeMeasurement } from '../../types/measurement';
+import {
+  Measurement,
+  RulerMeasurement,
+  BlastMeasurement,
+  ConeMeasurement,
+} from '../../types/measurement';
 
 /**
  * Test Suite for MeasurementOverlay Component
@@ -34,7 +39,7 @@ describe('MeasurementOverlay', () => {
         <Layer>
           <MeasurementOverlay measurement={null} gridSize={gridSize} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -55,7 +60,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={rulerMeasurement} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -67,7 +72,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={rulerMeasurement} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -83,7 +88,7 @@ describe('MeasurementOverlay', () => {
               strokeColor="rgba(255, 0, 0, 1)"
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -99,7 +104,7 @@ describe('MeasurementOverlay', () => {
               strokeWidth={5}
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -119,7 +124,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={horizontalRuler} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -139,7 +144,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={verticalRuler} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -159,7 +164,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={diagonalRuler} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -179,7 +184,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={zeroRuler} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -201,7 +206,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={blastMeasurement} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -213,7 +218,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={blastMeasurement} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -229,7 +234,7 @@ describe('MeasurementOverlay', () => {
               fillColor="rgba(255, 100, 0, 0.5)"
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -249,7 +254,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={smallBlast} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -269,7 +274,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={largeBlast} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -289,7 +294,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={zeroBlast} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -309,7 +314,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={edgeBlast} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -337,7 +342,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={coneMeasurement} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -354,7 +359,7 @@ describe('MeasurementOverlay', () => {
               strokeColor="rgba(0, 200, 0, 1)"
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -380,7 +385,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={narrowCone} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -406,7 +411,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={wideCone} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -416,8 +421,8 @@ describe('MeasurementOverlay', () => {
       const directions = [
         { x: 400, y: 200 }, // right
         { x: 200, y: 400 }, // down
-        { x: 0, y: 200 },   // left
-        { x: 200, y: 0 },   // up
+        { x: 0, y: 200 }, // left
+        { x: 200, y: 0 }, // up
       ];
 
       directions.forEach((target, index) => {
@@ -428,11 +433,7 @@ describe('MeasurementOverlay', () => {
           target,
           lengthFeet: 30,
           angleDegrees: 53,
-          vertices: [
-            { x: 200, y: 200 },
-            target,
-            { x: target.x + 50, y: target.y + 50 },
-          ],
+          vertices: [{ x: 200, y: 200 }, target, { x: target.x + 50, y: target.y + 50 }],
         };
 
         const { container } = render(
@@ -440,7 +441,7 @@ describe('MeasurementOverlay', () => {
             <Layer>
               <MeasurementOverlay measurement={directionalCone} gridSize={gridSize} />
             </Layer>
-          </Stage>
+          </Stage>,
         );
 
         expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -467,7 +468,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={zeroCone} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -487,13 +488,9 @@ describe('MeasurementOverlay', () => {
       const { container } = render(
         <Stage width={800} height={600}>
           <Layer>
-            <MeasurementOverlay
-              measurement={measurement}
-              gridSize={gridSize}
-              textColor="#ff0000"
-            />
+            <MeasurementOverlay measurement={measurement} gridSize={gridSize} textColor="#ff0000" />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -509,7 +506,7 @@ describe('MeasurementOverlay', () => {
               textBgColor="rgba(255, 255, 255, 0.9)"
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -529,7 +526,7 @@ describe('MeasurementOverlay', () => {
               textBgColor="rgba(0, 0, 0, 0.9)"
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -551,7 +548,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={negativeRuler} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -571,7 +568,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={largeRuler} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -591,7 +588,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={fractionalRuler} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -611,7 +608,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={ruler} gridSize={0} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -631,7 +628,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={ruler} gridSize={1} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -651,7 +648,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={ruler} gridSize={1000} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(container.querySelector('canvas')).toBeInTheDocument();
@@ -669,7 +666,7 @@ describe('MeasurementOverlay', () => {
           <Layer>
             <MeasurementOverlay measurement={invalidMeasurement} gridSize={gridSize} />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       // Should render without crashing, but return null for invalid type
@@ -693,7 +690,7 @@ describe('MeasurementOverlay', () => {
               gridSize={gridSize}
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       // Simulate rapid updates (e.g., during dragging)
@@ -712,7 +709,7 @@ describe('MeasurementOverlay', () => {
                 gridSize={gridSize}
               />
             </Layer>
-          </Stage>
+          </Stage>,
         );
       }
 
@@ -734,7 +731,7 @@ describe('MeasurementOverlay', () => {
               gridSize={gridSize}
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       rerender(
@@ -751,7 +748,7 @@ describe('MeasurementOverlay', () => {
               gridSize={gridSize}
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       rerender(
@@ -774,7 +771,7 @@ describe('MeasurementOverlay', () => {
               gridSize={gridSize}
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
 
       expect(document.querySelector('canvas')).toBeInTheDocument();

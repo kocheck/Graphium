@@ -57,14 +57,12 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
   const isMobile = useIsMobile();
 
   // Get library item and update function from store
-  const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
-  const updateLibraryToken = useGameStore(state => state.updateLibraryToken);
-  const showToast = useGameStore(state => state.showToast);
+  const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
+  const updateLibraryToken = useGameStore((state) => state.updateLibraryToken);
+  const showToast = useGameStore((state) => state.showToast);
 
   // Find the library item
-  const libraryItem = libraryItemId
-    ? tokenLibrary.find(item => item.id === libraryItemId)
-    : null;
+  const libraryItem = libraryItemId ? tokenLibrary.find((item) => item.id === libraryItemId) : null;
 
   // Form state
   const [name, setName] = useState('');
@@ -92,8 +90,8 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
     // Parse tags (comma-separated)
     const parsedTags = tags
       .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
 
     // Parse numeric values
     const parsedScale = defaultScale ? parseFloat(defaultScale) : undefined;
@@ -130,13 +128,14 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
     // Persist to storage
     try {
-        getStorage().updateLibraryMetadata(libraryItemId, updates)
-            .catch(err => {
-                console.error('[TokenMetadataEditor] Failed to persist updates:', err);
-                showToast(rollForMessage('LIBRARY_UPDATE_FAILED'), 'error');
-            });
+      getStorage()
+        .updateLibraryMetadata(libraryItemId, updates)
+        .catch((err) => {
+          console.error('[TokenMetadataEditor] Failed to persist updates:', err);
+          showToast(rollForMessage('LIBRARY_UPDATE_FAILED'), 'error');
+        });
     } catch (err) {
-        console.error('[TokenMetadataEditor] Storage error:', err);
+      console.error('[TokenMetadataEditor] Storage error:', err);
     }
 
     showToast(`Updated metadata for "${name.trim()}"`, 'success');
@@ -152,9 +151,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
     >
       <div
         className={`flex flex-col overflow-hidden shadow-2xl ${
-          isMobile
-            ? 'w-full h-full'
-            : 'max-w-2xl w-full rounded-lg'
+          isMobile ? 'w-full h-full' : 'max-w-2xl w-full rounded-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -192,9 +189,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Name */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Name *
-            </label>
+            <label className="block text-white text-sm font-medium mb-2">Name *</label>
             <input
               type="text"
               value={name}
@@ -206,9 +201,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Category */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Category
-            </label>
+            <label className="block text-white text-sm font-medium mb-2">Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -241,9 +234,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Default Scale */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Default Scale
-            </label>
+            <label className="block text-white text-sm font-medium mb-2">Default Scale</label>
             <input
               type="number"
               step="0.1"
@@ -260,9 +251,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Default Type */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Default Type
-            </label>
+            <label className="block text-white text-sm font-medium mb-2">Default Type</label>
             <select
               value={defaultType}
               onChange={(e) => setDefaultType(e.target.value as 'PC' | 'NPC' | '')}
@@ -272,9 +261,7 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
               <option value="PC">PC (Player Character)</option>
               <option value="NPC">NPC (Non-Player Character)</option>
             </select>
-            <p className="text-neutral-500 text-xs mt-1">
-              PC tokens emit vision in Fog of War
-            </p>
+            <p className="text-neutral-500 text-xs mt-1">PC tokens emit vision in Fog of War</p>
           </div>
 
           {/* Default Vision Radius */}

@@ -13,7 +13,7 @@ describe('Geometry Utilities', () => {
       const point: Point = { x: 0, y: 0 };
       const polygon: Point[] = [
         { x: 0, y: 0 },
-        { x: 10, y: 0 }
+        { x: 10, y: 0 },
       ];
       expect(isPointInPolygon(point, polygon)).toBe(false);
     });
@@ -24,7 +24,7 @@ describe('Geometry Utilities', () => {
         { x: 0, y: 0 },
         { x: 10, y: 0 },
         { x: 10, y: 10 },
-        { x: 0, y: 10 }
+        { x: 0, y: 10 },
       ];
       expect(isPointInPolygon(point, polygon)).toBe(true);
     });
@@ -35,7 +35,7 @@ describe('Geometry Utilities', () => {
         { x: 0, y: 0 },
         { x: 10, y: 0 },
         { x: 10, y: 10 },
-        { x: 0, y: 10 }
+        { x: 0, y: 10 },
       ];
       expect(isPointInPolygon(point, polygon)).toBe(false);
     });
@@ -45,7 +45,7 @@ describe('Geometry Utilities', () => {
       const polygon: Point[] = [
         { x: 0, y: 0 },
         { x: 10, y: 0 },
-        { x: 5, y: 10 }
+        { x: 5, y: 10 },
       ];
       expect(isPointInPolygon(point, polygon)).toBe(true);
     });
@@ -55,7 +55,7 @@ describe('Geometry Utilities', () => {
       const polygon: Point[] = [
         { x: 0, y: 0 },
         { x: 10, y: 0 },
-        { x: 5, y: 10 }
+        { x: 5, y: 10 },
       ];
       expect(isPointInPolygon(point, polygon)).toBe(false);
     });
@@ -66,7 +66,7 @@ describe('Geometry Utilities', () => {
         { x: 0, y: 0 },
         { x: 10, y: 0 },
         { x: 10, y: 10 },
-        { x: 0, y: 10 }
+        { x: 0, y: 10 },
       ];
       // Point on edge - behavior depends on implementation
       const result = isPointInPolygon(point, polygon);
@@ -88,14 +88,14 @@ describe('Geometry Utilities', () => {
           { x: 0, y: 0 },
           { x: 10, y: 0 },
           { x: 10, y: 10 },
-          { x: 0, y: 10 }
+          { x: 0, y: 10 },
         ],
         [
           { x: 20, y: 20 },
           { x: 30, y: 20 },
           { x: 30, y: 30 },
-          { x: 20, y: 30 }
-        ]
+          { x: 20, y: 30 },
+        ],
       ];
       expect(isPointInAnyPolygon(point, polygons)).toBe(true);
     });
@@ -107,14 +107,14 @@ describe('Geometry Utilities', () => {
           { x: 0, y: 0 },
           { x: 10, y: 0 },
           { x: 10, y: 10 },
-          { x: 0, y: 10 }
+          { x: 0, y: 10 },
         ],
         [
           { x: 20, y: 20 },
           { x: 30, y: 20 },
           { x: 30, y: 30 },
-          { x: 20, y: 30 }
-        ]
+          { x: 20, y: 30 },
+        ],
       ];
       expect(isPointInAnyPolygon(point, polygons)).toBe(false);
     });
@@ -132,8 +132,8 @@ describe('Geometry Utilities', () => {
           { x: 0, y: 0 },
           { x: 100, y: 0 },
           { x: 100, y: 100 },
-          { x: 0, y: 100 }
-        ]
+          { x: 0, y: 100 },
+        ],
       ];
       // Rect from (40, 40) to (50, 50), center at (45, 45)
       expect(isRectInAnyPolygon(40, 40, 10, 10, polygons)).toBe(true);
@@ -145,8 +145,8 @@ describe('Geometry Utilities', () => {
           { x: 0, y: 0 },
           { x: 10, y: 0 },
           { x: 10, y: 10 },
-          { x: 0, y: 10 }
-        ]
+          { x: 0, y: 10 },
+        ],
       ];
       // Rect from (5, 5) to (15, 15), top-left corner inside
       expect(isRectInAnyPolygon(5, 5, 10, 10, polygons)).toBe(true);
@@ -158,8 +158,8 @@ describe('Geometry Utilities', () => {
           { x: 0, y: 0 },
           { x: 10, y: 0 },
           { x: 10, y: 10 },
-          { x: 0, y: 10 }
-        ]
+          { x: 0, y: 10 },
+        ],
       ];
       // Rect from (20, 20) to (30, 30)
       expect(isRectInAnyPolygon(20, 20, 10, 10, polygons)).toBe(false);

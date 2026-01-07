@@ -1,4 +1,5 @@
 # Graphium: Electron-to-Web Migration Plan
+
 ## Local-First Web App on GitHub Pages
 
 **Version:** 1.0
@@ -35,23 +36,25 @@ This document outlines the migration strategy to transform Graphium from an Elec
 ### 1.1 Dependencies Audit
 
 **Production Dependencies:**
+
 ```json
 {
-  "@radix-ui/colors": "^3.0.0",       // ✅ Web-compatible (CSS theme system)
-  "electron-store": "^11.0.2",        // ❌ Electron-only (config persistence)
-  "fs-extra": "^11.3.2",              // ❌ Node.js only (file system)
-  "jszip": "^3.10.1",                 // ✅ Web-compatible (campaign ZIP)
-  "konva": "^10.0.12",                // ✅ Web-compatible (canvas rendering)
-  "react": "^18.2.0",                 // ✅ Web-compatible
-  "react-dom": "^18.2.0",             // ✅ Web-compatible
-  "react-easy-crop": "^5.5.6",        // ✅ Web-compatible
-  "react-konva": "^18.2.14",          // ✅ Web-compatible
-  "use-image": "^1.1.4",              // ✅ Web-compatible
-  "zustand": "^5.0.9"                 // ✅ Web-compatible
+  "@radix-ui/colors": "^3.0.0", // ✅ Web-compatible (CSS theme system)
+  "electron-store": "^11.0.2", // ❌ Electron-only (config persistence)
+  "fs-extra": "^11.3.2", // ❌ Node.js only (file system)
+  "jszip": "^3.10.1", // ✅ Web-compatible (campaign ZIP)
+  "konva": "^10.0.12", // ✅ Web-compatible (canvas rendering)
+  "react": "^18.2.0", // ✅ Web-compatible
+  "react-dom": "^18.2.0", // ✅ Web-compatible
+  "react-easy-crop": "^5.5.6", // ✅ Web-compatible
+  "react-konva": "^18.2.14", // ✅ Web-compatible
+  "use-image": "^1.1.4", // ✅ Web-compatible
+  "zustand": "^5.0.9" // ✅ Web-compatible
 }
 ```
 
 **Assessment:**
+
 - **90% of UI/business logic is web-ready** (React, Konva, Zustand)
 - **2 critical dependencies require replacement:**
   - `electron-store` → `localStorage` / `IndexedDB`
@@ -59,26 +62,27 @@ This document outlines the migration strategy to transform Graphium from an Elec
 
 ### 1.2 Electron API Usage Map
 
-| **IPC Channel** | **Location** | **Purpose** | **Browser Replacement** |
-|-----------------|--------------|-------------|-------------------------|
-| `SAVE_ASSET_TEMP` | `main.ts:465`, `AssetProcessor.ts:186` | Save WebP to temp dir | File System Access API + OPFS |
-| `SAVE_CAMPAIGN` | `main.ts:554` | Save .graphium ZIP | File System Access API (user download) |
-| `AUTO_SAVE` | `main.ts:583` | Background save | IndexedDB (auto-persist) |
-| `LOAD_CAMPAIGN` | `main.ts:613` | Load .graphium ZIP | File System Access API (user upload) |
-| `SAVE_ASSET_TO_LIBRARY` | `main.ts:849` | Persist to library | IndexedDB + OPFS |
-| `LOAD_LIBRARY_INDEX` | `main.ts:917` | Load library metadata | IndexedDB query |
-| `DELETE_LIBRARY_ASSET` | `main.ts:946` | Delete from library | IndexedDB delete + OPFS cleanup |
-| `UPDATE_LIBRARY_METADATA` | `main.ts:993` | Update library item | IndexedDB update |
-| `get-theme-state` | `main.ts:765`, `preload.ts:145` | Get theme preference | `localStorage` |
-| `set-theme-mode` | `main.ts:777`, `preload.ts:152` | Set theme preference | `localStorage` |
-| `TOGGLE_PAUSE` | `main.ts:789` | Pause World View | N/A (World View not on web) |
-| `create-world-window` | `main.ts:371` | Create projector window | N/A (Web has no multi-window) |
-| `SYNC_WORLD_STATE` | `main.ts:431` | Sync to World View | N/A (Web is single-window) |
-| `get-username` | `main.ts:1033` | For PII sanitization | Browser fingerprint or `[BROWSER]` |
-| `open-external` | `main.ts:1046` | Open mailto/docs | `window.open()` |
-| `save-error-report` | `main.ts:1064` | Save error to file | Blob download (`<a download>`) |
+| **IPC Channel**           | **Location**                           | **Purpose**             | **Browser Replacement**                |
+| ------------------------- | -------------------------------------- | ----------------------- | -------------------------------------- |
+| `SAVE_ASSET_TEMP`         | `main.ts:465`, `AssetProcessor.ts:186` | Save WebP to temp dir   | File System Access API + OPFS          |
+| `SAVE_CAMPAIGN`           | `main.ts:554`                          | Save .graphium ZIP      | File System Access API (user download) |
+| `AUTO_SAVE`               | `main.ts:583`                          | Background save         | IndexedDB (auto-persist)               |
+| `LOAD_CAMPAIGN`           | `main.ts:613`                          | Load .graphium ZIP      | File System Access API (user upload)   |
+| `SAVE_ASSET_TO_LIBRARY`   | `main.ts:849`                          | Persist to library      | IndexedDB + OPFS                       |
+| `LOAD_LIBRARY_INDEX`      | `main.ts:917`                          | Load library metadata   | IndexedDB query                        |
+| `DELETE_LIBRARY_ASSET`    | `main.ts:946`                          | Delete from library     | IndexedDB delete + OPFS cleanup        |
+| `UPDATE_LIBRARY_METADATA` | `main.ts:993`                          | Update library item     | IndexedDB update                       |
+| `get-theme-state`         | `main.ts:765`, `preload.ts:145`        | Get theme preference    | `localStorage`                         |
+| `set-theme-mode`          | `main.ts:777`, `preload.ts:152`        | Set theme preference    | `localStorage`                         |
+| `TOGGLE_PAUSE`            | `main.ts:789`                          | Pause World View        | N/A (World View not on web)            |
+| `create-world-window`     | `main.ts:371`                          | Create projector window | N/A (Web has no multi-window)          |
+| `SYNC_WORLD_STATE`        | `main.ts:431`                          | Sync to World View      | N/A (Web is single-window)             |
+| `get-username`            | `main.ts:1033`                         | For PII sanitization    | Browser fingerprint or `[BROWSER]`     |
+| `open-external`           | `main.ts:1046`                         | Open mailto/docs        | `window.open()`                        |
+| `save-error-report`       | `main.ts:1064`                         | Save error to file      | Blob download (`<a download>`)         |
 
 **Key Findings:**
+
 1. **Multi-Window Architecture** (`create-world-window`, `SYNC_WORLD_STATE`) is Electron-specific
    - **Web Impact:** Projector/World View feature cannot exist on web version
    - **Mitigation:** Document feature parity differences in `ARCHITECTURE.md`
@@ -106,6 +110,7 @@ Local File System
 ```
 
 **Storage Locations:**
+
 1. **Temp Assets** (`app.getPath('userData')/temp_assets/`)
    - Cropped tokens awaiting campaign save
    - Cleared on app restart
@@ -138,17 +143,18 @@ Local File System
 
 **Current Implementation:**
 
-| **Component** | **Location** | **Purpose** | **Web-Ready?** |
-|---------------|--------------|-------------|----------------|
-| `PrivacyErrorBoundary` | `src/components/PrivacyErrorBoundary.tsx` | Top-level error catcher with PII sanitization | ⚠️ Partial |
-| `AssetProcessingErrorBoundary` | `src/components/AssetProcessingErrorBoundary.tsx` | Wraps image upload/crop | ✅ Yes |
-| `DungeonGeneratorErrorBoundary` | `src/components/DungeonGeneratorErrorBoundary.tsx` | Wraps procedural generation | ✅ Yes |
-| `MinimapErrorBoundary` | `src/components/Canvas/MinimapErrorBoundary.tsx` | Wraps minimap rendering | ✅ Yes |
-| `TokenErrorBoundary` | `src/components/Canvas/TokenErrorBoundary.tsx` | Per-token isolation | ✅ Yes |
+| **Component**                   | **Location**                                       | **Purpose**                                   | **Web-Ready?** |
+| ------------------------------- | -------------------------------------------------- | --------------------------------------------- | -------------- |
+| `PrivacyErrorBoundary`          | `src/components/PrivacyErrorBoundary.tsx`          | Top-level error catcher with PII sanitization | ⚠️ Partial     |
+| `AssetProcessingErrorBoundary`  | `src/components/AssetProcessingErrorBoundary.tsx`  | Wraps image upload/crop                       | ✅ Yes         |
+| `DungeonGeneratorErrorBoundary` | `src/components/DungeonGeneratorErrorBoundary.tsx` | Wraps procedural generation                   | ✅ Yes         |
+| `MinimapErrorBoundary`          | `src/components/Canvas/MinimapErrorBoundary.tsx`   | Wraps minimap rendering                       | ✅ Yes         |
+| `TokenErrorBoundary`            | `src/components/Canvas/TokenErrorBoundary.tsx`     | Per-token isolation                           | ✅ Yes         |
 
 **Web Compatibility Issues:**
 
 `PrivacyErrorBoundary` relies on `window.errorReporting.getUsername()` (IPC call to `os.userInfo().username`):
+
 - **Location:** `src/components/PrivacyErrorBoundary.tsx:149`
 - **Fix Required:** Fallback to `'[BROWSER_USER]'` when IPC unavailable
 
@@ -158,18 +164,19 @@ Local File System
 
 ### 2.1 Red Flags: Features That Won't Work
 
-| **Feature** | **Electron Dependency** | **Browser Impact** | **Severity** |
-|-------------|-------------------------|-------------------|--------------|
-| **World View (Projector)** | `BrowserWindow`, `create-world-window` IPC | Cannot create separate projector window | 🔴 CRITICAL |
-| **Custom Protocol** (`media://`) | `protocol.registerSchemesAsPrivileged()` | Cannot use `media://` URLs | 🟡 MEDIUM |
-| **Auto-Save** | Background IPC + file write | No background saves to disk | 🟡 MEDIUM |
-| **Native Dialogs** | `dialog.showSaveDialog()`, `dialog.showOpenDialog()` | Must use `<input>` + File System Access API | 🟢 LOW |
-| **External Links** | `shell.openExternal()` | Use `window.open()` instead | 🟢 LOW |
-| **PII Username** | `os.userInfo().username` | Cannot access OS username | 🟢 LOW |
+| **Feature**                      | **Electron Dependency**                              | **Browser Impact**                          | **Severity** |
+| -------------------------------- | ---------------------------------------------------- | ------------------------------------------- | ------------ |
+| **World View (Projector)**       | `BrowserWindow`, `create-world-window` IPC           | Cannot create separate projector window     | 🔴 CRITICAL  |
+| **Custom Protocol** (`media://`) | `protocol.registerSchemesAsPrivileged()`             | Cannot use `media://` URLs                  | 🟡 MEDIUM    |
+| **Auto-Save**                    | Background IPC + file write                          | No background saves to disk                 | 🟡 MEDIUM    |
+| **Native Dialogs**               | `dialog.showSaveDialog()`, `dialog.showOpenDialog()` | Must use `<input>` + File System Access API | 🟢 LOW       |
+| **External Links**               | `shell.openExternal()`                               | Use `window.open()` instead                 | 🟢 LOW       |
+| **PII Username**                 | `os.userInfo().username`                             | Cannot access OS username                   | 🟢 LOW       |
 
 ### 2.2 Critical Feature: World View Unavailability
 
 **Electron-Only Architecture:**
+
 ```
 Main Process (electron/main.ts)
 ├── Architect Window (DM View)
@@ -181,26 +188,29 @@ Main Process (electron/main.ts)
 ```
 
 **Web Limitation:**
+
 - Browser security model prevents creating **separate windows with controlled content**
 - `window.open()` opens a new tab/window but cannot inject arbitrary React apps
 - **Workaround:** GitHub Pages can only serve single-page apps (SPA)
 
 **Decision:**
+
 - **Web version will NOT support World View**
 - Document this as an **Electron-exclusive feature** in user docs
 - Add warning in launch page: "For projector support, download desktop app"
 
 ### 2.3 Storage API Gaps
 
-| **Electron API** | **Browser Replacement** | **Limitation** |
-|------------------|-------------------------|----------------|
-| `fs.writeFile()` | File System Access API | Requires user permission per file |
-| `fs.readFile()` | File System Access API | User must select file via picker |
-| `app.getPath('userData')` | OPFS (Origin Private File System) | Cannot access arbitrary directories |
-| `electron-store` | `localStorage` / IndexedDB | 10MB limit (localStorage), slower (IndexedDB) |
-| Background auto-save | N/A | Browser tabs can be suspended/throttled |
+| **Electron API**          | **Browser Replacement**           | **Limitation**                                |
+| ------------------------- | --------------------------------- | --------------------------------------------- |
+| `fs.writeFile()`          | File System Access API            | Requires user permission per file             |
+| `fs.readFile()`           | File System Access API            | User must select file via picker              |
+| `app.getPath('userData')` | OPFS (Origin Private File System) | Cannot access arbitrary directories           |
+| `electron-store`          | `localStorage` / IndexedDB        | 10MB limit (localStorage), slower (IndexedDB) |
+| Background auto-save      | N/A                               | Browser tabs can be suspended/throttled       |
 
 **Recommendation:**
+
 - Use **IndexedDB** for library storage (structured data + blobs)
 - Use **File System Access API** for campaign save/load (user-initiated)
 - Use **localStorage** for theme preferences (small, synchronous)
@@ -282,7 +292,7 @@ export interface IStorageService {
   saveAssetToLibrary(
     fullSizeBuffer: ArrayBuffer,
     thumbnailBuffer: ArrayBuffer,
-    metadata: LibraryMetadata
+    metadata: LibraryMetadata,
   ): Promise<TokenLibraryItem>;
 
   /**
@@ -314,7 +324,7 @@ export interface IStorageService {
    */
   updateLibraryMetadata(
     assetId: string,
-    updates: Partial<LibraryMetadata>
+    updates: Partial<LibraryMetadata>,
   ): Promise<TokenLibraryItem>;
 
   // ===== THEME PREFERENCES =====
@@ -394,13 +404,13 @@ export class ElectronStorageService implements IStorageService {
   async saveAssetToLibrary(
     fullSizeBuffer: ArrayBuffer,
     thumbnailBuffer: ArrayBuffer,
-    metadata: any
+    metadata: any,
   ): Promise<TokenLibraryItem> {
     if (!window.ipcRenderer) throw new Error('IPC not available');
     return await window.ipcRenderer.invoke('SAVE_ASSET_TO_LIBRARY', {
       fullSizeBuffer,
       thumbnailBuffer,
-      metadata
+      metadata,
     });
   }
 
@@ -481,7 +491,7 @@ export class WebStorageService implements IStorageService {
         if (!db.objectStoreNames.contains('autosave')) {
           db.createObjectStore('autosave', { keyPath: 'id' });
         }
-      }
+      },
     });
   }
 
@@ -527,7 +537,7 @@ export class WebStorageService implements IStorageService {
       await this.db!.put('autosave', {
         id: 'latest',
         campaign,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return true;
@@ -596,7 +606,7 @@ export class WebStorageService implements IStorageService {
   async saveAssetToLibrary(
     fullSizeBuffer: ArrayBuffer,
     thumbnailBuffer: ArrayBuffer,
-    metadata: any
+    metadata: any,
   ): Promise<TokenLibraryItem> {
     if (!this.db) await this.initDB();
 
@@ -615,7 +625,7 @@ export class WebStorageService implements IStorageService {
       dateAdded: Date.now(),
       // Store blobs separately for persistence
       _fullSizeBlob: fullSizeBlob,
-      _thumbnailBlob: thumbnailBlob
+      _thumbnailBlob: thumbnailBlob,
     } as any;
 
     await this.db!.put('library', item);
@@ -632,7 +642,9 @@ export class WebStorageService implements IStorageService {
     return items.map((item: any) => ({
       ...item,
       src: item._fullSizeBlob ? URL.createObjectURL(item._fullSizeBlob) : item.src,
-      thumbnailSrc: item._thumbnailBlob ? URL.createObjectURL(item._thumbnailBlob) : item.thumbnailSrc
+      thumbnailSrc: item._thumbnailBlob
+        ? URL.createObjectURL(item._thumbnailBlob)
+        : item.thumbnailSrc,
     }));
   }
 
@@ -825,16 +837,17 @@ export default defineConfig(({ mode }) => {
   return {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
-      'import.meta.env.VITE_BUILD_TARGET': JSON.stringify(isWeb ? 'web' : 'electron')
+      'import.meta.env.VITE_BUILD_TARGET': JSON.stringify(isWeb ? 'web' : 'electron'),
     },
     plugins: [
       react(),
       // Only load Electron plugin for Electron builds
-      !isWeb && electron({
-        main: { entry: 'electron/main.ts' },
-        preload: { input: path.join(__dirname, 'electron/preload.ts') }
-      })
-    ].filter(Boolean)
+      !isWeb &&
+        electron({
+          main: { entry: 'electron/main.ts' },
+          preload: { input: path.join(__dirname, 'electron/preload.ts') },
+        }),
+    ].filter(Boolean),
   };
 });
 ```
@@ -932,11 +945,13 @@ export default StorageErrorBoundary;
 **File:** `src/components/PrivacyErrorBoundary.tsx` (line 149)
 
 **Current Code:**
+
 ```typescript
 const username = await window.errorReporting.getUsername();
 ```
 
 **Updated Code:**
+
 ```typescript
 // Handle both Electron and web environments
 let username = '[USER]'; // Default fallback
@@ -971,10 +986,12 @@ App (Root)
 ### 5.1 Gateway Page Architecture
 
 **Requirement:** The web app must NOT auto-launch. Users must explicitly choose between:
+
 1. **Download Desktop App** (from GitHub Releases API)
 2. **Launch Web App** (mounts React SPA)
 
 **File Structure:**
+
 ```
 dist/ (GitHub Pages root)
 ├── index.html (Launch Page - static HTML)
@@ -995,61 +1012,57 @@ dist/ (GitHub Pages root)
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Graphium - World Given Form</title>
-  <link rel="stylesheet" href="/launch-assets/launch-page.css" />
-</head>
-<body>
-  <div class="launch-container">
-    <header>
-      <img src="/launch-assets/logo.svg" alt="Graphium Logo" class="logo" />
-      <h1>Graphium: World Given Form</h1>
-      <p class="tagline">Local-first digital battlemap for tabletop RPGs</p>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Graphium - World Given Form</title>
+    <link rel="stylesheet" href="/launch-assets/launch-page.css" />
+  </head>
+  <body>
+    <div class="launch-container">
+      <header>
+        <img src="/launch-assets/logo.svg" alt="Graphium Logo" class="logo" />
+        <h1>Graphium: World Given Form</h1>
+        <p class="tagline">Local-first digital battlemap for tabletop RPGs</p>
+      </header>
 
-    <section class="action-panel">
-      <div class="option">
-        <h2>Desktop App</h2>
-        <p>Full-featured with projector support</p>
-        <ul>
-          <li>✅ World View (multi-window projector)</li>
-          <li>✅ Auto-save to disk</li>
-          <li>✅ Native file dialogs</li>
-          <li>✅ Offline-first</li>
-        </ul>
-        <button id="download-desktop" class="btn btn-primary">
-          Download Latest Release
-        </button>
-        <p class="download-status" id="download-status"></p>
-      </div>
+      <section class="action-panel">
+        <div class="option">
+          <h2>Desktop App</h2>
+          <p>Full-featured with projector support</p>
+          <ul>
+            <li>✅ World View (multi-window projector)</li>
+            <li>✅ Auto-save to disk</li>
+            <li>✅ Native file dialogs</li>
+            <li>✅ Offline-first</li>
+          </ul>
+          <button id="download-desktop" class="btn btn-primary">Download Latest Release</button>
+          <p class="download-status" id="download-status"></p>
+        </div>
 
-      <div class="divider"></div>
+        <div class="divider"></div>
 
-      <div class="option">
-        <h2>Web App</h2>
-        <p>Runs in your browser (Beta)</p>
-        <ul>
-          <li>⚠️ No projector support (single window)</li>
-          <li>✅ IndexedDB storage (private)</li>
-          <li>✅ Works on tablets</li>
-          <li>✅ No installation required</li>
-        </ul>
-        <button id="launch-web" class="btn btn-secondary">
-          Launch Web App
-        </button>
-      </div>
-    </section>
+        <div class="option">
+          <h2>Web App</h2>
+          <p>Runs in your browser (Beta)</p>
+          <ul>
+            <li>⚠️ No projector support (single window)</li>
+            <li>✅ IndexedDB storage (private)</li>
+            <li>✅ Works on tablets</li>
+            <li>✅ No installation required</li>
+          </ul>
+          <button id="launch-web" class="btn btn-secondary">Launch Web App</button>
+        </div>
+      </section>
 
-    <footer>
-      <p>Privacy Notice: All data stays on your device. No telemetry, no analytics.</p>
-      <a href="https://github.com/kocheck/Graphium">View Source Code</a>
-    </footer>
-  </div>
+      <footer>
+        <p>Privacy Notice: All data stays on your device. No telemetry, no analytics.</p>
+        <a href="https://github.com/kocheck/Graphium">View Source Code</a>
+      </footer>
+    </div>
 
-  <script src="/launch-assets/launch-page.js"></script>
-</body>
+    <script src="/launch-assets/launch-page.js"></script>
+  </body>
 </html>
 ```
 
@@ -1063,7 +1076,7 @@ dist/ (GitHub Pages root)
  *
  * Fetches latest release from GitHub API and handles navigation.
  */
-(async function() {
+(async function () {
   const GITHUB_REPO = 'kocheck/Graphium'; // Update with actual repo
   const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
@@ -1084,9 +1097,10 @@ dist/ (GitHub Pages root)
 
       // Find platform-specific asset
       const platform = detectPlatform();
-      const asset = release.assets.find(a =>
-        a.name.includes(platform) &&
-        (a.name.endsWith('.dmg') || a.name.endsWith('.exe') || a.name.endsWith('.AppImage'))
+      const asset = release.assets.find(
+        (a) =>
+          a.name.includes(platform) &&
+          (a.name.endsWith('.dmg') || a.name.endsWith('.exe') || a.name.endsWith('.AppImage')),
       );
 
       if (asset) {
@@ -1120,7 +1134,7 @@ dist/ (GitHub Pages root)
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   }
 
   // ===== LAUNCH WEB APP =====
@@ -1143,15 +1157,15 @@ dist/ (GitHub Pages root)
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Graphium - Web App</title>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Graphium - Web App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
 ```
 
@@ -1163,11 +1177,11 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),   // Launch page
-        app: resolve(__dirname, 'app.html')       // React SPA
-      }
-    }
-  }
+        main: resolve(__dirname, 'index.html'), // Launch page
+        app: resolve(__dirname, 'app.html'), // React SPA
+      },
+    },
+  },
 });
 ```
 
@@ -1181,7 +1195,7 @@ name: Deploy Web App to GitHub Pages
 on:
   push:
     branches:
-      - main  # Deploy on every push to main
+      - main # Deploy on every push to main
 
 jobs:
   deploy:
@@ -1212,7 +1226,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          cname: graphium.yourdomain.com  # Optional: custom domain
+          cname: graphium.yourdomain.com # Optional: custom domain
 ```
 
 ---
@@ -1222,11 +1236,13 @@ jobs:
 ### Phase 1: Foundation (Week 1-2)
 
 **Goals:**
+
 - Create adapter interfaces
 - Implement `ElectronStorageService` (thin wrapper)
 - Update build configuration
 
 **Tasks:**
+
 1. ✅ Create `src/services/IStorageService.ts`
 2. ✅ Create `src/services/ElectronStorageService.ts`
 3. ✅ Update `vite.config.ts` for multi-target builds
@@ -1236,10 +1252,12 @@ jobs:
 ### Phase 2: Web Storage Implementation (Week 3-4)
 
 **Goals:**
+
 - Implement `WebStorageService` with IndexedDB
 - Handle asset persistence in browser
 
 **Tasks:**
+
 1. ✅ Install `idb` dependency (`npm install idb`)
 2. ✅ Create `src/services/WebStorageService.ts`
 3. ✅ Implement IndexedDB schema (library + autosave stores)
@@ -1250,10 +1268,12 @@ jobs:
 ### Phase 3: Component Refactoring (Week 5-6)
 
 **Goals:**
+
 - Replace all `window.ipcRenderer` calls with `getStorage()`
 - Update error boundaries for web compatibility
 
 **Tasks:**
+
 1. ✅ Update `AssetProcessor.ts` to use `getStorage()`
 2. ✅ Update `App.tsx` save/load handlers to use `getStorage()`
 3. ✅ Update `LibraryManager.tsx` to use `getStorage()`
@@ -1264,10 +1284,12 @@ jobs:
 ### Phase 4: Launch Page & Deployment (Week 7)
 
 **Goals:**
+
 - Create launch page UI
 - Set up GitHub Pages deployment
 
 **Tasks:**
+
 1. ✅ Create `public/index.html` (launch page)
 2. ✅ Create `public/launch-assets/launch-page.js`
 3. ✅ Create `public/launch-assets/launch-page.css`
@@ -1278,10 +1300,12 @@ jobs:
 ### Phase 5: Testing & Documentation (Week 8)
 
 **Goals:**
+
 - Comprehensive cross-browser testing
 - Update user documentation
 
 **Tasks:**
+
 1. ✅ Test web version in Chrome, Firefox, Safari, Edge
 2. ✅ Test mobile/tablet browsers (iPad, Android)
 3. ✅ Test File System Access API permissions flow
@@ -1295,58 +1319,58 @@ jobs:
 
 ### 7.1 Technical Risks
 
-| **Risk** | **Severity** | **Mitigation** |
-|----------|--------------|----------------|
-| **File System Access API not supported** (iOS Safari, older browsers) | 🔴 HIGH | Fallback to `<input>` upload + download links. Show browser compatibility warning. |
-| **IndexedDB quota limits** (typically 50MB-100MB) | 🟡 MEDIUM | Implement quota monitoring. Show warning when 80% full. Suggest desktop app for large campaigns. |
-| **OPFS performance on mobile** | 🟡 MEDIUM | Test on real devices. Consider simpler blob URLs if OPFS too slow. |
-| **Object URL memory leaks** | 🟡 MEDIUM | Implement strict cleanup in `useEffect` hooks. Revoke URLs on component unmount. |
-| **Browser tab suspension** (auto-save may fail) | 🟢 LOW | Show warning when tab loses focus. Recommend keeping tab active. |
+| **Risk**                                                              | **Severity** | **Mitigation**                                                                                   |
+| --------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------ |
+| **File System Access API not supported** (iOS Safari, older browsers) | 🔴 HIGH      | Fallback to `<input>` upload + download links. Show browser compatibility warning.               |
+| **IndexedDB quota limits** (typically 50MB-100MB)                     | 🟡 MEDIUM    | Implement quota monitoring. Show warning when 80% full. Suggest desktop app for large campaigns. |
+| **OPFS performance on mobile**                                        | 🟡 MEDIUM    | Test on real devices. Consider simpler blob URLs if OPFS too slow.                               |
+| **Object URL memory leaks**                                           | 🟡 MEDIUM    | Implement strict cleanup in `useEffect` hooks. Revoke URLs on component unmount.                 |
+| **Browser tab suspension** (auto-save may fail)                       | 🟢 LOW       | Show warning when tab loses focus. Recommend keeping tab active.                                 |
 
 ### 7.2 User Experience Risks
 
-| **Risk** | **Severity** | **Mitigation** |
-|----------|--------------|----------------|
-| **Users expect World View on web** | 🔴 HIGH | Prominent warning on launch page. Direct users to desktop app for projector. |
-| **Users lose data due to browser storage clear** | 🟡 MEDIUM | Show periodic reminder to download campaign file. Auto-save to IndexedDB is NOT a backup. |
-| **Confusion between Electron vs Web features** | 🟡 MEDIUM | Create clear feature comparison table in docs. Use `isFeatureAvailable()` to hide unavailable features in web UI. |
+| **Risk**                                         | **Severity** | **Mitigation**                                                                                                    |
+| ------------------------------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **Users expect World View on web**               | 🔴 HIGH      | Prominent warning on launch page. Direct users to desktop app for projector.                                      |
+| **Users lose data due to browser storage clear** | 🟡 MEDIUM    | Show periodic reminder to download campaign file. Auto-save to IndexedDB is NOT a backup.                         |
+| **Confusion between Electron vs Web features**   | 🟡 MEDIUM    | Create clear feature comparison table in docs. Use `isFeatureAvailable()` to hide unavailable features in web UI. |
 
 ### 7.3 Compliance & Privacy Risks
 
-| **Risk** | **Severity** | **Mitigation** |
-|----------|--------------|----------------|
-| **User expects truly local-first** (no CDN, no external requests) | 🟢 LOW | GitHub Pages is static hosting. No analytics, no external APIs except GitHub Releases (user-initiated). |
-| **Browser fingerprinting concerns** | 🟢 LOW | Do NOT collect any fingerprints. Use `[BROWSER_USER]` placeholder in error reports. |
+| **Risk**                                                          | **Severity** | **Mitigation**                                                                                          |
+| ----------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------- |
+| **User expects truly local-first** (no CDN, no external requests) | 🟢 LOW       | GitHub Pages is static hosting. No analytics, no external APIs except GitHub Releases (user-initiated). |
+| **Browser fingerprinting concerns**                               | 🟢 LOW       | Do NOT collect any fingerprints. Use `[BROWSER_USER]` placeholder in error reports.                     |
 
 ---
 
 ## Appendix A: Feature Parity Matrix
 
-| **Feature** | **Electron Desktop** | **Web (GitHub Pages)** | **Notes** |
-|-------------|---------------------|------------------------|-----------|
-| **Core Battlemap** | ✅ Full support | ✅ Full support | Canvas rendering identical |
-| **Token Library** | ✅ Persistent (file system) | ✅ Persistent (IndexedDB) | Web has storage limits |
-| **Campaign Save/Load** | ✅ Native dialogs | ⚠️ File picker API | Web requires user permission |
-| **Auto-Save** | ✅ Background write | ⚠️ IndexedDB only | Web cannot auto-download files |
-| **World View (Projector)** | ✅ Multi-window | ❌ Not available | Browser security limitation |
-| **Drawing Tools** | ✅ All tools | ✅ All tools | Identical |
-| **Fog of War** | ✅ Full support | ✅ Full support | Identical |
-| **Theme System** | ✅ Native menu | ✅ UI dropdown | Web uses localStorage |
-| **Error Reporting** | ✅ File export + email | ✅ Blob download + email | Web uses Object URLs |
-| **Offline Mode** | ✅ Fully offline | ⚠️ After first load | Web requires initial network fetch |
+| **Feature**                | **Electron Desktop**        | **Web (GitHub Pages)**    | **Notes**                          |
+| -------------------------- | --------------------------- | ------------------------- | ---------------------------------- |
+| **Core Battlemap**         | ✅ Full support             | ✅ Full support           | Canvas rendering identical         |
+| **Token Library**          | ✅ Persistent (file system) | ✅ Persistent (IndexedDB) | Web has storage limits             |
+| **Campaign Save/Load**     | ✅ Native dialogs           | ⚠️ File picker API        | Web requires user permission       |
+| **Auto-Save**              | ✅ Background write         | ⚠️ IndexedDB only         | Web cannot auto-download files     |
+| **World View (Projector)** | ✅ Multi-window             | ❌ Not available          | Browser security limitation        |
+| **Drawing Tools**          | ✅ All tools                | ✅ All tools              | Identical                          |
+| **Fog of War**             | ✅ Full support             | ✅ Full support           | Identical                          |
+| **Theme System**           | ✅ Native menu              | ✅ UI dropdown            | Web uses localStorage              |
+| **Error Reporting**        | ✅ File export + email      | ✅ Blob download + email  | Web uses Object URLs               |
+| **Offline Mode**           | ✅ Fully offline            | ⚠️ After first load       | Web requires initial network fetch |
 
 ---
 
 ## Appendix B: File System Access API Browser Support
 
-| **Browser** | **Version** | **Support Status** | **Fallback Required?** |
-|-------------|-------------|-------------------|------------------------|
-| Chrome | 86+ | ✅ Full support | No |
-| Edge | 86+ | ✅ Full support | No |
-| Firefox | ❌ Not supported | ⚠️ Behind flag | Yes (use `<input>`) |
-| Safari | 15.2+ | ⚠️ Partial support | Yes (no directory access) |
-| iOS Safari | ❌ Not supported | ❌ No support | Yes (use `<input>`) |
-| Android Chrome | 86+ | ✅ Full support | No |
+| **Browser**    | **Version**      | **Support Status** | **Fallback Required?**    |
+| -------------- | ---------------- | ------------------ | ------------------------- |
+| Chrome         | 86+              | ✅ Full support    | No                        |
+| Edge           | 86+              | ✅ Full support    | No                        |
+| Firefox        | ❌ Not supported | ⚠️ Behind flag     | Yes (use `<input>`)       |
+| Safari         | 15.2+            | ⚠️ Partial support | Yes (no directory access) |
+| iOS Safari     | ❌ Not supported | ❌ No support      | Yes (use `<input>`)       |
+| Android Chrome | 86+              | ✅ Full support    | No                        |
 
 **Recommendation:** Detect support at runtime and show appropriate UI:
 
@@ -1369,15 +1393,16 @@ function supportsFileSystemAccess(): boolean {
 
 **Estimated Storage Needs:**
 
-| **Data Type** | **Size per Item** | **Max Items** | **Total Size** |
-|---------------|------------------|---------------|----------------|
-| Token (full-size) | 50 KB | 100 | 5 MB |
-| Token (thumbnail) | 5 KB | 100 | 0.5 MB |
-| Map background | 500 KB | 5 | 2.5 MB |
-| Campaign metadata | 50 KB | 1 | 0.05 MB |
-| **TOTAL** | - | - | **~8 MB** |
+| **Data Type**     | **Size per Item** | **Max Items** | **Total Size** |
+| ----------------- | ----------------- | ------------- | -------------- |
+| Token (full-size) | 50 KB             | 100           | 5 MB           |
+| Token (thumbnail) | 5 KB              | 100           | 0.5 MB         |
+| Map background    | 500 KB            | 5             | 2.5 MB         |
+| Campaign metadata | 50 KB             | 1             | 0.05 MB        |
+| **TOTAL**         | -                 | -             | **~8 MB**      |
 
 **Browser Limits:**
+
 - Chrome/Edge: ~60% of free disk space (dynamic)
 - Firefox: 50 MB (default), up to 2 GB with user permission
 - Safari: 1 GB (total for origin)
@@ -1430,6 +1455,7 @@ channel.onmessage = (event) => {
 ```
 
 **Advantages:**
+
 - ✅ Direct peer-to-peer (no server/broker needed)
 - ✅ Same-origin security (isolated per domain)
 - ✅ Works across tabs, windows, iframes
@@ -1438,6 +1464,7 @@ channel.onmessage = (event) => {
 #### Architecture Comparison
 
 **Electron (Current):**
+
 ```
 ┌─────────────────┐         ┌──────────────┐         ┌─────────────────┐
 │ Architect Window│ ──IPC──>│ Main Process │ ──IPC──>│  World Window   │
@@ -1446,6 +1473,7 @@ channel.onmessage = (event) => {
 ```
 
 **Web (New Approach):**
+
 ```
 ┌─────────────────┐                                  ┌─────────────────┐
 │  Architect Tab  │ ───BroadcastChannel────────────>│   World Tab     │
@@ -1545,7 +1573,7 @@ const handleOpenWorldView = () => {
     const worldWindow = window.open(
       '/app.html?type=world',
       'graphium-world-view',
-      'width=1920,height=1080'
+      'width=1920,height=1080',
     );
 
     if (!worldWindow) {
@@ -1559,13 +1587,13 @@ const handleOpenWorldView = () => {
 
 #### Browser Support & Fallback
 
-| Browser | BroadcastChannel | Fallback |
-|---------|------------------|----------|
-| Chrome 54+ | ✅ Native support | - |
-| Firefox 38+ | ✅ Native support | - |
-| Safari 15.4+ | ✅ Native support | - |
-| Edge 79+ | ✅ Native support | - |
-| Older browsers | ❌ Not supported | localStorage events |
+| Browser        | BroadcastChannel  | Fallback            |
+| -------------- | ----------------- | ------------------- |
+| Chrome 54+     | ✅ Native support | -                   |
+| Firefox 38+    | ✅ Native support | -                   |
+| Safari 15.4+   | ✅ Native support | -                   |
+| Edge 79+       | ✅ Native support | -                   |
+| Older browsers | ❌ Not supported  | localStorage events |
 
 **Fallback Implementation (if needed):**
 
@@ -1578,10 +1606,13 @@ class BroadcastChannelPolyfill {
   }
 
   postMessage(data) {
-    localStorage.setItem(this.name, JSON.stringify({
-      data,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      this.name,
+      JSON.stringify({
+        data,
+        timestamp: Date.now(),
+      }),
+    );
   }
 
   _handleStorage = (event) => {
@@ -1599,28 +1630,30 @@ class BroadcastChannelPolyfill {
 
 ### Updated Feature Parity Matrix
 
-| **Feature** | **Electron Desktop** | **Web (GitHub Pages)** | **Implementation** |
-|-------------|---------------------|------------------------|-------------------|
-| **World View (Projector)** | ✅ Native window | ✅ **New tab** | BroadcastChannel |
-| **State Sync** | ✅ IPC | ✅ **BroadcastChannel** | Real-time, <1ms latency |
-| **Multi-Monitor** | ✅ Drag window | ✅ **Drag tab** | Browser native |
-| **Fullscreen Mode** | ✅ Borderless | ⚠️ **F11 browser fullscreen** | User-initiated |
+| **Feature**                | **Electron Desktop** | **Web (GitHub Pages)**        | **Implementation**      |
+| -------------------------- | -------------------- | ----------------------------- | ----------------------- |
+| **World View (Projector)** | ✅ Native window     | ✅ **New tab**                | BroadcastChannel        |
+| **State Sync**             | ✅ IPC               | ✅ **BroadcastChannel**       | Real-time, <1ms latency |
+| **Multi-Monitor**          | ✅ Drag window       | ✅ **Drag tab**               | Browser native          |
+| **Fullscreen Mode**        | ✅ Borderless        | ⚠️ **F11 browser fullscreen** | User-initiated          |
 
 ### User Experience Improvements
 
 **Web World View Advantages:**
+
 1. ✅ **No installation required** - Works immediately on any device
 2. ✅ **Tablet support** - Split-screen or external display
 3. ✅ **Shareable URL** - Send link to remote players
 4. ✅ **Same performance** - No IPC overhead (direct channel)
 
 **Minor UX Differences:**
+
 1. ⚠️ **Browser UI visible** (address bar, tabs)
-   - *Mitigation:* Recommend F11 fullscreen in UI tooltip
+   - _Mitigation:_ Recommend F11 fullscreen in UI tooltip
 2. ⚠️ **Tab can be closed** (vs Electron's controlled window)
-   - *Mitigation:* Add `beforeunload` warning: "World View will close"
+   - _Mitigation:_ Add `beforeunload` warning: "World View will close"
 3. ⚠️ **Popup blockers** (first-time users)
-   - *Mitigation:* Show clear instructions if popup blocked
+   - _Mitigation:_ Show clear instructions if popup blocked
 
 ### Implementation Checklist
 
@@ -1636,12 +1669,14 @@ class BroadcastChannelPolyfill {
 ### Impact on Original Plan
 
 **Sections Updated:**
+
 - ✅ Section 2.1: Remove "World View unavailable" red flag
 - ✅ Section 2.2: Delete entire section (no longer applicable)
 - ✅ Appendix A: Update feature parity matrix
 - ✅ Launch Page: Remove "projector requires desktop" warning
 
 **No Changes Required:**
+
 - ✅ Storage adapter pattern (unchanged)
 - ✅ Error boundaries (unchanged)
 - ✅ Deployment strategy (unchanged)
@@ -1650,13 +1685,14 @@ class BroadcastChannelPolyfill {
 
 **New Risks:**
 
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| Popup blockers prevent World View | 🟡 MEDIUM | Show clear error + instructions to allow popups |
-| User accidentally closes World View tab | 🟢 LOW | Add `beforeunload` confirmation dialog |
-| BroadcastChannel not supported | 🟢 LOW | Polyfill with localStorage events (99.9% browser coverage) |
+| Risk                                    | Severity  | Mitigation                                                 |
+| --------------------------------------- | --------- | ---------------------------------------------------------- |
+| Popup blockers prevent World View       | 🟡 MEDIUM | Show clear error + instructions to allow popups            |
+| User accidentally closes World View tab | 🟢 LOW    | Add `beforeunload` confirmation dialog                     |
+| BroadcastChannel not supported          | 🟢 LOW    | Polyfill with localStorage events (99.9% browser coverage) |
 
 **Eliminated Risks:**
+
 - ❌ ~~User expectation mismatch (expecting World View)~~ - **Now supported!**
 
 ---
@@ -1666,11 +1702,13 @@ class BroadcastChannelPolyfill {
 ✅ **Phase 1 Complete:** This document outlines the full migration strategy.
 
 **APPROVED Architecture:**
+
 1. ✅ Adapter pattern architecture
 2. ✅ Launch page design
 3. ✅ **World View via BroadcastChannel** (new approach)
 
 **After Approval:**
+
 - Proceed to Phase 2: Implement `WebStorageService`
 - Implement BroadcastChannel sync
 - Create prototype and test in browsers

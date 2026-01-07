@@ -160,14 +160,14 @@ export function searchCommands(commands: Command[], query: string): Command[] {
   const isSectionSearch = 'actions'.startsWith(lowerQuery);
   const sectionBoost = isSectionSearch ? 50 : 0;
 
-  const scoredCommands = commands.map(cmd => {
+  const scoredCommands = commands.map((cmd) => {
     let score = 0;
 
     // Apply section boost if applicable
     if (isSectionSearch) {
-        score += sectionBoost;
-        // If exact "actions" typed, show everything with high score
-        if (lowerQuery === 'actions') return { cmd, score: 100 };
+      score += sectionBoost;
+      // If exact "actions" typed, show everything with high score
+      if (lowerQuery === 'actions') return { cmd, score: 100 };
     }
 
     // Reuse a simpler scoring logic here since we don't import scoreMatch
@@ -176,21 +176,21 @@ export function searchCommands(commands: Command[], query: string): Command[] {
 
     // Helper to score text
     const scoreText = (text: string) => {
-        const lowerText = text.toLowerCase();
-        if (lowerText === lowerQuery) return 100;
-        if (lowerText.startsWith(lowerQuery)) return 40;
-        if (lowerText.includes(lowerQuery)) return 20;
+      const lowerText = text.toLowerCase();
+      if (lowerText === lowerQuery) return 100;
+      if (lowerText.startsWith(lowerQuery)) return 40;
+      if (lowerText.includes(lowerQuery)) return 20;
 
-        // Subsequence check
-        let qIdx = 0;
-        let tIdx = 0;
-        while (tIdx < lowerText.length && qIdx < lowerQuery.length) {
-            if (lowerText[tIdx] === lowerQuery[qIdx]) qIdx++;
-            tIdx++;
-        }
-        if (qIdx === lowerQuery.length) return 10;
+      // Subsequence check
+      let qIdx = 0;
+      let tIdx = 0;
+      while (tIdx < lowerText.length && qIdx < lowerQuery.length) {
+        if (lowerText[tIdx] === lowerQuery[qIdx]) qIdx++;
+        tIdx++;
+      }
+      if (qIdx === lowerQuery.length) return 10;
 
-        return 0;
+      return 0;
     };
 
     // Label match (weight: 3x)
@@ -200,7 +200,7 @@ export function searchCommands(commands: Command[], query: string): Command[] {
     score += scoreText(cmd.category);
 
     // Keywords match (weight: 2x each)
-    cmd.keywords.forEach(keyword => {
+    cmd.keywords.forEach((keyword) => {
       score += scoreText(keyword) * 2;
     });
 

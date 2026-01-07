@@ -64,7 +64,7 @@ export function addRecentCampaign(campaign: RecentCampaign): void {
     const existing = getRecentCampaigns();
 
     // Remove existing entry if present (by id)
-    const filtered = existing.filter(c => c.id !== campaign.id);
+    const filtered = existing.filter((c) => c.id !== campaign.id);
 
     // Add new entry at the top
     const updated = [{ ...campaign, lastOpened: Date.now() }, ...filtered].slice(0, MAX_RECENT);
@@ -81,11 +81,7 @@ export function addRecentCampaign(campaign: RecentCampaign): void {
  * @param name Campaign name
  * @param filePath Optional file path (Electron only)
  */
-export function addRecentCampaignWithPlatform(
-  id: string,
-  name: string,
-  filePath?: string
-): void {
+export function addRecentCampaignWithPlatform(id: string, name: string, filePath?: string): void {
   const isElectron = typeof window !== 'undefined' && window.ipcRenderer !== undefined;
 
   if (isElectron && filePath) {
@@ -113,7 +109,7 @@ export function addRecentCampaignWithPlatform(
 export function removeRecentCampaign(campaignId: string): void {
   try {
     const existing = getRecentCampaigns();
-    const filtered = existing.filter(c => c.id !== campaignId);
+    const filtered = existing.filter((c) => c.id !== campaignId);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
   } catch (error) {
     console.error('[RecentCampaigns] Failed to remove recent campaign:', error);

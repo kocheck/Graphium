@@ -45,6 +45,7 @@ DMs need a control panel with editing tools while players need a clean, read-onl
 ### Decision: Dual Windows (Same App)
 
 **Rationale:**
+
 - **DM workflow:** Architect View on laptop, World View on projector/TV
 - **Simplicity:** Same React app, differentiated by `?type=world` query param
 - **State sync:** Direct IPC communication (no network required)
@@ -52,12 +53,14 @@ DMs need a control panel with editing tools while players need a clean, read-onl
 - **Performance:** Both windows share Electron main process resources
 
 **Implementation:**
+
 - `electron/main.ts` creates both windows
 - `src/components/SyncManager.tsx` detects window type via URL params
 - Architect View = PRODUCER (edits state)
 - World View = CONSUMER (displays state read-only)
 
 **Trade-offs:**
+
 - ✅ Perfect for in-person D&D sessions
 - ✅ No network/cloud dependency
 - ❌ Not suitable for remote/online play (future enhancement)
@@ -85,6 +88,7 @@ Graphium targets in-person tabletop RPG sessions where DMs need reliable, offlin
 ### Decision: Fully Local
 
 **Rationale:**
+
 - **Reliability:** Works without internet (critical for game sessions)
 - **Privacy:** No user data leaves the machine
 - **Cost:** No server/hosting costs
@@ -92,11 +96,13 @@ Graphium targets in-person tabletop RPG sessions where DMs need reliable, offlin
 - **Performance:** Instant load/save (no network latency)
 
 **Implementation:**
+
 - Campaign files: `.graphium` ZIP archives (portable, shareable)
 - Asset storage: Electron `userData` directory
 - No analytics, no telemetry, no external requests
 
 **Trade-offs:**
+
 - ✅ Zero infrastructure costs
 - ✅ Complete data ownership
 - ✅ Offline-first reliability
@@ -130,6 +136,7 @@ Need reactive state management with Architect → World synchronization.
 ### Decision: Zustand
 
 **Rationale:**
+
 - **Minimal boilerplate:** No providers, no actions/reducers pattern
 - **Direct API:** `useGameStore.getState().addToken()`
 - **Subscription API:** Easy to sync to IPC (`store.subscribe()`)
@@ -138,23 +145,26 @@ Need reactive state management with Architect → World synchronization.
 - **React 18 compatible:** No concurrent mode issues
 
 **Implementation:**
+
 ```typescript
 // src/store/gameStore.ts
 export const useGameStore = create<GameState>((set) => ({
   tokens: [],
   drawings: [],
-  addToken: (token) => set((state) => ({
-    tokens: [...state.tokens, token]
-  }))
-}))
+  addToken: (token) =>
+    set((state) => ({
+      tokens: [...state.tokens, token],
+    })),
+}));
 
 // src/components/SyncManager.tsx
 useGameStore.subscribe((state) => {
-  window.ipcRenderer.send('SYNC_WORLD_STATE', state)
-})
+  window.ipcRenderer.send('SYNC_WORLD_STATE', state);
+});
 ```
 
 **Trade-offs:**
+
 - ✅ Simple, readable code
 - ✅ Perfect for small-to-medium state trees
 - ❌ No time-travel debugging (vs Redux DevTools)
@@ -169,6 +179,7 @@ useGameStore.subscribe((state) => {
 ### Context
 
 Need to render:
+
 - Dynamic grid overlay
 - Draggable token images
 - Freehand drawing strokes (marker/eraser)
@@ -195,6 +206,7 @@ Need to render:
 ### Decision: Konva (React-Konva)
 
 **Rationale:**
+
 - **React integration:** Declarative `<Stage>`, `<Layer>`, `<Image>` components
 - **Performance:** Canvas-based rendering, handles 100+ tokens easily
 - **Draggable built-in:** `draggable` prop on any shape
@@ -202,14 +214,15 @@ Need to render:
 - **Maintained:** Active development, React 18 compatible
 
 **Implementation:**
+
 ```tsx
 <Stage width={800} height={600}>
   <Layer>
     <GridOverlay gridSize={50} />
-    {tokens.map(token => (
+    {tokens.map((token) => (
       <Image key={token.id} image={img} draggable />
     ))}
-    {drawings.map(drawing => (
+    {drawings.map((drawing) => (
       <Line points={drawing.points} />
     ))}
   </Layer>
@@ -217,6 +230,7 @@ Need to render:
 ```
 
 **Trade-offs:**
+
 - ✅ Declarative React patterns
 - ✅ Great performance for our use case
 - ✅ Easy drag-and-drop, event handling
@@ -250,6 +264,7 @@ DMs upload token images (PNG/JPEG) which can be large (2-10MB each). Need to opt
 ### Decision: WebP (quality=1)
 
 **Rationale:**
+
 - **File size:** 30-50% smaller than PNG, 25-35% smaller than JPEG
 - **Transparency:** Full alpha channel support (needed for tokens)
 - **Quality:** Quality=1 (lossless) preserves visual fidelity
@@ -257,14 +272,20 @@ DMs upload token images (PNG/JPEG) which can be large (2-10MB each). Need to opt
 - **Decode speed:** Faster than PNG for rendering
 
 **Implementation:**
+
 ```typescript
 // src/utils/AssetProcessor.ts
-canvas.toBlob((blob) => {
-  // Save as WebP
-}, 'image/webp', 1)  // quality=1 (lossless)
+canvas.toBlob(
+  (blob) => {
+    // Save as WebP
+  },
+  'image/webp',
+  1,
+); // quality=1 (lossless)
 ```
 
 **Trade-offs:**
+
 - ✅ Significantly smaller campaign files
 - ✅ Faster canvas rendering
 - ✅ Transparency support
@@ -272,6 +293,7 @@ canvas.toBlob((blob) => {
 - ❌ Proprietary format (though widely supported now)
 
 **Real-world impact:**
+
 - Before: 10 tokens = ~30MB campaign file
 - After: 10 tokens = ~10MB campaign file (70% reduction)
 
@@ -302,6 +324,7 @@ Need to save campaign state (JSON) + asset files (images) in a portable, shareab
 ### Decision: ZIP Archive (.graphium extension)
 
 **Rationale:**
+
 - **Single file:** Everything bundled together (portable)
 - **Standard format:** Any ZIP tool can inspect contents
 - **Compression:** Automatic compression for JSON + images
@@ -309,6 +332,7 @@ Need to save campaign state (JSON) + asset files (images) in a portable, shareab
 - **Shareable:** Easy to share campaigns (email, Dropbox, etc.)
 
 **Structure:**
+
 ```
 campaign.graphium (ZIP)
 ├── manifest.json      # Game state (readable)
@@ -319,21 +343,23 @@ campaign.graphium (ZIP)
 ```
 
 **Implementation:**
+
 ```typescript
 // Save
-const zip = new JSZip()
-zip.file("manifest.json", JSON.stringify(gameState))
-zip.folder("assets").file("goblin.webp", imageBuffer)
-const zipBuffer = await zip.generateAsync({ type: "nodebuffer" })
-await fs.writeFile("campaign.graphium", zipBuffer)
+const zip = new JSZip();
+zip.file('manifest.json', JSON.stringify(gameState));
+zip.folder('assets').file('goblin.webp', imageBuffer);
+const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+await fs.writeFile('campaign.graphium', zipBuffer);
 
 // Load
-const zip = await JSZip.loadAsync(zipBuffer)
-const manifest = await zip.file("manifest.json").async("string")
-const gameState = JSON.parse(manifest)
+const zip = await JSZip.loadAsync(zipBuffer);
+const manifest = await zip.file('manifest.json').async('string');
+const gameState = JSON.parse(manifest);
 ```
 
 **Trade-offs:**
+
 - ✅ Portable single-file format
 - ✅ Human-inspectable (unzip → read JSON)
 - ✅ Built-in compression
@@ -367,6 +393,7 @@ Architect Window edits state, World Window needs real-time updates.
 ### Decision: IPC (Publish-Subscribe Pattern)
 
 **Rationale:**
+
 - **Built-in:** Electron IPC is native, no extra dependencies
 - **Performance:** Near-instant updates (<1ms latency)
 - **Simplicity:** `send()` in one window, `on()` in other
@@ -374,24 +401,26 @@ Architect Window edits state, World Window needs real-time updates.
 - **Reliable:** No network issues, no port conflicts
 
 **Implementation:**
+
 ```typescript
 // Architect Window (Publisher)
 useGameStore.subscribe((state) => {
-  window.ipcRenderer.send('SYNC_WORLD_STATE', state)
-})
+  window.ipcRenderer.send('SYNC_WORLD_STATE', state);
+});
 
 // Main Process (Relay)
 ipcMain.on('SYNC_WORLD_STATE', (event, state) => {
-  worldWindow?.webContents.send('SYNC_WORLD_STATE', state)
-})
+  worldWindow?.webContents.send('SYNC_WORLD_STATE', state);
+});
 
 // World Window (Subscriber)
 window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
-  useGameStore.getState().setState(state)
-})
+  useGameStore.getState().setState(state);
+});
 ```
 
 **Trade-offs:**
+
 - ✅ Zero configuration, works immediately
 - ✅ Sub-millisecond latency
 - ✅ No network/port issues
@@ -399,6 +428,7 @@ window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
 - ❌ High-frequency updates (potential optimization target)
 
 **Future optimization:**
+
 - Differential sync (only send changes)
 - Throttle updates to 60 FPS max
 - Use MessagePack for binary serialization
@@ -430,22 +460,25 @@ Tokens must snap to grid intersections for tactical positioning (D&D 5-foot squa
 ### Decision: Round to Nearest Grid Intersection
 
 **Algorithm:**
+
 ```typescript
 export function snapToGrid(x: number, y: number, gridSize: number) {
   return {
     x: Math.round(x / gridSize) * gridSize,
     y: Math.round(y / gridSize) * gridSize,
-  }
+  };
 }
 ```
 
 **Rationale:**
+
 - **Simplicity:** 2 lines of code, easy to understand
 - **Deterministic:** Always snaps to nearest intersection
 - **Performance:** O(1) operation, no loops
 - **Testable:** Pure function, easy to unit test
 
 **Trade-offs:**
+
 - ✅ Dead simple, no bugs
 - ✅ Predictable behavior
 - ✅ Fast
@@ -478,24 +511,27 @@ Renderer process needs to load local images, but Electron security model blocks 
 ### Decision: Custom `media://` Protocol Handler
 
 **Rationale:**
+
 - **Security:** Renderer can't access arbitrary `file://` paths
 - **Controlled:** Main process validates and translates URLs
 - **Performance:** Direct file access, no base64 encoding
 - **Clean:** Simple URL replacement (`file://` → `media://`)
 
 **Implementation:**
+
 ```typescript
 // electron/main.ts (register protocol)
 protocol.handle('media', (request) => {
-  return net.fetch('file://' + request.url.slice('media://'.length))
-})
+  return net.fetch('file://' + request.url.slice('media://'.length));
+});
 
 // src/components/Canvas/CanvasManager.tsx (use in renderer)
-const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src
-const [img] = useImage(safeSrc)  // Loads successfully
+const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
+const [img] = useImage(safeSrc); // Loads successfully
 ```
 
 **Trade-offs:**
+
 - ✅ Secure (no arbitrary file access)
 - ✅ Fast (direct file reads)
 - ✅ Clean API
@@ -528,6 +564,7 @@ Drawing tools (marker/eraser) generate hundreds of mouse move events per stroke.
 ### Decision: Local Preview + Commit on MouseUp
 
 **Pattern:**
+
 ```typescript
 // MouseDown: Initialize local ref
 currentLine.current = { points: [x, y], ... }
@@ -542,12 +579,14 @@ setTempLine(null)
 ```
 
 **Rationale:**
+
 - **Performance:** 1 IPC message per stroke (vs 100+)
 - **Smooth preview:** Local React state updates feel instant
 - **Sync accuracy:** Final stroke is fully accurate
 - **Simple:** No timers, no throttling logic
 
 **Trade-offs:**
+
 - ✅ Excellent performance
 - ✅ Instant local feedback
 - ✅ Minimal IPC traffic
@@ -580,30 +619,34 @@ File uploads often have unwanted backgrounds or need aspect ratio adjustment. Li
 ### Decision: Dual-Path (Automatic Crop Detection)
 
 **Logic:**
+
 ```typescript
 // Path 1: Library token (JSON data transfer)
 if (jsonData) {
-  addToken(data)  // No crop, add immediately
+  addToken(data); // No crop, add immediately
 }
 
 // Path 2: File upload (File data transfer)
 if (file) {
-  setPendingCrop({ src: objectUrl })  // Show cropper modal
+  setPendingCrop({ src: objectUrl }); // Show cropper modal
 }
 ```
 
 **Rationale:**
+
 - **UX:** Fast path for library tokens (drag → done)
 - **Quality:** File uploads always get cropped (remove backgrounds)
 - **Deterministic:** Data transfer type determines behavior
 - **1:1 aspect:** Enforced by cropper (tokens fit grid cells)
 
 **Implementation:**
+
 - Cropper: `react-easy-crop` library
 - Aspect ratio: Fixed 1:1 (square)
 - Output: WebP blob (quality=1)
 
 **Trade-offs:**
+
 - ✅ Great UX for both workflows
 - ✅ High-quality token imports
 - ❌ Can't skip crop for file uploads (future: Add "Skip" button)
@@ -635,31 +678,36 @@ When loading .graphium files, need to extract assets somewhere. Reusing same dir
 ### Decision: Session Directories (Timestamped)
 
 **Pattern:**
+
 ```typescript
 const sessionDir = path.join(
   app.getPath('userData'),
   'sessions',
-  Date.now().toString()  // Unique per load
-)
+  Date.now().toString(), // Unique per load
+);
 ```
 
 **Example paths:**
+
 ```
 userData/sessions/1702834567890/assets/goblin.webp
 userData/sessions/1702834598123/assets/dragon.webp
 ```
 
 **Rationale:**
+
 - **No conflicts:** Each load gets fresh directory
 - **Multiple campaigns:** Can load multiple in succession
 - **Debugging:** Clear separation of session assets
 - **Simple:** No cleanup logic needed during session
 
 **Cleanup:**
+
 - Session directories persist until app restart
 - Future enhancement: Clean up on campaign close
 
 **Trade-offs:**
+
 - ✅ Zero conflicts
 - ✅ Simple implementation
 - ✅ Easy to debug (inspect session folders)
@@ -677,6 +725,7 @@ userData/sessions/1702834598123/assets/dragon.webp
 The World View was showing the full DM interface (sidebar, toolbar, editing tools) and allowing all interactions (drawing, deleting, file drops), defeating its purpose as a clean player-facing display.
 
 **Problems to solve:**
+
 1. **UI Leak:** World View displayed DM-only controls (save/load buttons, tool palette, asset library)
 2. **Interaction Leaks:** Players could accidentally draw, delete tokens, or modify the map
 3. **State Sync:** Ensure World View updates correctly while preventing it from broadcasting changes
@@ -702,6 +751,7 @@ The World View was showing the full DM interface (sidebar, toolbar, editing tool
 ### Decision: URL Parameter + Conditional Rendering + Interaction Blocking
 
 **Implementation:**
+
 - **Detection:** `?type=world` URL query parameter set by main process
 - **Hook:** `useWindowType()` utility hook for reusable window detection
 - **UI Sanitization:** Conditional rendering in App.tsx (hide Sidebar/Toolbar in World View)
@@ -733,10 +783,12 @@ const handleDrop = (e: React.DragEvent) => {
 ```
 
 **Restrictions in World View:**
+
 - ✅ **Allowed:** Pan, zoom, select/drag tokens (for DM demonstration)
 - ❌ **Blocked:** Drawing tools, file drops, deletion, calibration, transformation, duplication
 
 **Rationale:**
+
 - **Simple:** Works on first render, no async initialization
 - **Maintainable:** Single codebase, clear separation via props
 - **Performance:** Zero IPC overhead, pure client-side logic
@@ -744,12 +796,14 @@ const handleDrop = (e: React.DragEvent) => {
 - **UX:** Clean canvas-only view for players
 
 **Implementation Files:**
+
 - `src/utils/useWindowType.ts` (new)
 - `src/App.tsx` (updated with conditional rendering)
 - `src/components/Canvas/CanvasManager.tsx` (updated with interaction blocks)
 - `electron/main.ts` (unchanged, already sets ?type=world)
 
 **Trade-offs:**
+
 - ✅ Zero code duplication
 - ✅ Same bundle size (no separate app)
 - ✅ Easy to extend (add more restrictions)
@@ -758,6 +812,7 @@ const handleDrop = (e: React.DragEvent) => {
 - ❌ UI components still loaded in memory (negligible for desktop app)
 
 **Considered but rejected:**
+
 - Separate routing: Overkill for two modes of same component tree
 - IPC flag: Adds async complexity and IPC overhead
 - CSS-only: Doesn't prevent interactions
@@ -766,21 +821,21 @@ const handleDrop = (e: React.DragEvent) => {
 
 ## Summary Table
 
-| Decision | Alternative | Rationale |
-|----------|-------------|-----------|
-| Dual windows | Web-based projector | Better for in-person D&D, no network needed |
-| Local-first | Cloud-based | Reliability, privacy, zero infrastructure cost |
-| Zustand | Redux | Minimal boilerplate, subscription API |
-| Konva | Raw Canvas | React integration, declarative API |
-| WebP | PNG | 30-50% smaller, transparency support |
-| ZIP (.graphium) | SQLite | Single-file portability, inspectable |
-| IPC sync | WebSockets | Built-in, <1ms latency, zero config |
-| Round snapping | Magnetic snap | Simple, deterministic, fast |
-| media:// protocol | file:// URLs | Security, controlled access |
-| MouseUp commit | Real-time sync | 100x less IPC traffic |
-| Dual-path crop | Always crop | Fast library workflow, quality file uploads |
-| Session dirs | Temp reuse | No conflicts, simple |
-| URL param sanitization | Separate React app | Zero duplication, same bundle, testable |
+| Decision               | Alternative         | Rationale                                      |
+| ---------------------- | ------------------- | ---------------------------------------------- |
+| Dual windows           | Web-based projector | Better for in-person D&D, no network needed    |
+| Local-first            | Cloud-based         | Reliability, privacy, zero infrastructure cost |
+| Zustand                | Redux               | Minimal boilerplate, subscription API          |
+| Konva                  | Raw Canvas          | React integration, declarative API             |
+| WebP                   | PNG                 | 30-50% smaller, transparency support           |
+| ZIP (.graphium)        | SQLite              | Single-file portability, inspectable           |
+| IPC sync               | WebSockets          | Built-in, <1ms latency, zero config            |
+| Round snapping         | Magnetic snap       | Simple, deterministic, fast                    |
+| media:// protocol      | file:// URLs        | Security, controlled access                    |
+| MouseUp commit         | Real-time sync      | 100x less IPC traffic                          |
+| Dual-path crop         | Always crop         | Fast library workflow, quality file uploads    |
+| Session dirs           | Temp reuse          | No conflicts, simple                           |
+| URL param sanitization | Separate React app  | Zero duplication, same bundle, testable        |
 
 ---
 
@@ -791,6 +846,7 @@ const handleDrop = (e: React.DragEvent) => {
 **Question:** How to support remote/online play?
 
 **Options:**
+
 1. WebRTC peer-to-peer
 2. WebSocket server (self-hosted)
 3. Cloud service integration
@@ -802,6 +858,7 @@ const handleDrop = (e: React.DragEvent) => {
 **Question:** How to implement undo/redo for drawings and token moves?
 
 **Options:**
+
 1. Command pattern (Redux-style actions)
 2. State snapshots (copy-on-write)
 3. Operational transformation
@@ -813,6 +870,7 @@ const handleDrop = (e: React.DragEvent) => {
 **Question:** How to implement dynamic vision/fog system?
 
 **Options:**
+
 1. Canvas masking layer
 2. Per-token visibility arrays
 3. Raycast-based line-of-sight
@@ -826,6 +884,7 @@ const handleDrop = (e: React.DragEvent) => {
 ### When to Reconsider
 
 Decisions should be revisited when:
+
 - **User feedback** indicates major pain points
 - **Performance** issues emerge at scale (>500 tokens)
 - **Requirements change** (e.g., multiplayer support requested)

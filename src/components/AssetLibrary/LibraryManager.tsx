@@ -64,12 +64,12 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
 
   // Store selectors
-  const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
-  const removeTokenFromLibrary = useGameStore(state => state.removeTokenFromLibrary);
-  const showConfirmDialog = useGameStore(state => state.showConfirmDialog);
-  const showToast = useGameStore(state => state.showToast);
-  const addToken = useGameStore(state => state.addToken);
-  const map = useGameStore(state => state.map);
+  const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
+  const removeTokenFromLibrary = useGameStore((state) => state.removeTokenFromLibrary);
+  const showConfirmDialog = useGameStore((state) => state.showConfirmDialog);
+  const showToast = useGameStore((state) => state.showToast);
+  const addToken = useGameStore((state) => state.addToken);
+  const map = useGameStore((state) => state.map);
 
   // Get categories from library
   const categories = ['All', ...getCategories(tokenLibrary)];
@@ -153,7 +153,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
           showToast(rollForMessage('ASSET_DELETE_FAILED'), 'error');
         }
       },
-      'Delete'
+      'Delete',
     );
   };
 
@@ -171,7 +171,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
         libraryItemId: libraryToken.id, // Reference to prototype
         src: libraryToken.src,
         // Note: metadata (name, scale, type, visionRadius) will be inherited from library
-      })
+      }),
     );
   };
 
@@ -193,9 +193,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
       {/* Modal container: Full-screen on mobile, centered on desktop */}
       <div
         className={`w-full flex flex-col overflow-hidden shadow-2xl ${
-          isMobile
-            ? 'h-full'
-            : 'max-w-6xl h-[80vh] rounded-lg'
+          isMobile ? 'h-full' : 'max-w-6xl h-[80vh] rounded-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -263,7 +261,9 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
               {tokenLibrary.length === 0 ? (
                 <>
                   <p className="text-lg mb-2">Library is empty</p>
-                  <p className="text-sm">Add assets using the "Add to Library" button in the sidebar</p>
+                  <p className="text-sm">
+                    Add assets using the "Add to Library" button in the sidebar
+                  </p>
                 </>
               ) : (
                 <>
@@ -277,88 +277,95 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
               {filteredItems.map((item) => {
                 const isDragging = draggingItemId === item.id;
                 return (
-                <div
-                  key={item.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, item)}
-                  onDragEnd={handleDragEnd}
-                  className="group bg-neutral-800 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all cursor-grab active:cursor-grabbing"
-                  style={isDragging ? {
-                    opacity: 0.5,
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6)',
-                    zIndex: 1000,
-                  } : {}}
-                >
-                  {/* Thumbnail */}
-                  <div className="aspect-square bg-neutral-700 relative">
-                    <img
-                      src={item.thumbnailSrc.replace('file:', 'media:')}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Action buttons (show on hover) */}
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* Edit button */}
+                  <div
+                    key={item.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item)}
+                    onDragEnd={handleDragEnd}
+                    className="group bg-neutral-800 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all cursor-grab active:cursor-grabbing"
+                    style={
+                      isDragging
+                        ? {
+                            opacity: 0.5,
+                            transform: 'scale(1.05)',
+                            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6)',
+                            zIndex: 1000,
+                          }
+                        : {}
+                    }
+                  >
+                    {/* Thumbnail */}
+                    <div className="aspect-square bg-neutral-700 relative">
+                      <img
+                        src={item.thumbnailSrc.replace('file:', 'media:')}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Action buttons (show on hover) */}
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Edit button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingItemId(item.id);
+                            setIsMetadataEditorOpen(true);
+                          }}
+                          className="p-1.5 bg-blue-600 hover:bg-blue-500 rounded"
+                          aria-label={`Edit ${item.name}`}
+                        >
+                          <RiEditLine className="w-4 h-4 text-white" />
+                        </button>
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(item.id, item.name);
+                          }}
+                          className="p-1.5 bg-red-600 hover:bg-red-500 rounded"
+                          aria-label={`Delete ${item.name}`}
+                        >
+                          <RiDeleteBinLine className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="p-3">
+                      <h3 className="text-white font-medium text-sm truncate mb-1">{item.name}</h3>
+                      <p className="text-neutral-400 text-xs truncate">{item.category}</p>
+                      {item.tags.length > 0 && (
+                        <div className="flex gap-1 mt-2 flex-wrap">
+                          {item.tags.slice(0, 2).map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className="text-xs bg-neutral-700 text-neutral-300 px-2 py-0.5 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {item.tags.length > 2 && (
+                            <span className="text-xs text-neutral-500">
+                              +{item.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {/* Keyboard-accessible add button */}
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingItemId(item.id);
-                          setIsMetadataEditorOpen(true);
+                        onClick={() => {
+                          addLibraryTokenToMap(item, addToken, map);
+                          showToast(
+                            rollForMessage('ASSET_ADDED_TO_MAP_SUCCESS', { itemName: item.name }),
+                            'success',
+                          );
                         }}
-                        className="p-1.5 bg-blue-600 hover:bg-blue-500 rounded"
-                        aria-label={`Edit ${item.name}`}
+                        className="w-full mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs font-medium"
+                        aria-label={`Add ${item.name} to map`}
                       >
-                        <RiEditLine className="w-4 h-4 text-white" />
-                      </button>
-                      {/* Delete button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(item.id, item.name);
-                        }}
-                        className="p-1.5 bg-red-600 hover:bg-red-500 rounded"
-                        aria-label={`Delete ${item.name}`}
-                      >
-                        <RiDeleteBinLine className="w-4 h-4 text-white" />
+                        Add to Map
                       </button>
                     </div>
                   </div>
-
-                  {/* Metadata */}
-                  <div className="p-3">
-                    <h3 className="text-white font-medium text-sm truncate mb-1">{item.name}</h3>
-                    <p className="text-neutral-400 text-xs truncate">{item.category}</p>
-                    {item.tags.length > 0 && (
-                      <div className="flex gap-1 mt-2 flex-wrap">
-                        {item.tags.slice(0, 2).map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs bg-neutral-700 text-neutral-300 px-2 py-0.5 rounded"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {item.tags.length > 2 && (
-                          <span className="text-xs text-neutral-500">
-                            +{item.tags.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {/* Keyboard-accessible add button */}
-                    <button
-                      onClick={() => {
-                        addLibraryTokenToMap(item, addToken, map);
-                        showToast(rollForMessage('ASSET_ADDED_TO_MAP_SUCCESS', { itemName: item.name }), 'success');
-                      }}
-                      className="w-full mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs font-medium"
-                      aria-label={`Add ${item.name} to map`}
-                    >
-                      Add to Map
-                    </button>
-                  </div>
-                </div>
                 );
               })}
             </div>

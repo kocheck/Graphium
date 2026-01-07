@@ -3,6 +3,7 @@
 ## Summary
 
 This commit fixes two critical issues:
+
 1. **Bidirectional Sync:** Token movements in World View now sync back to Architect View
 2. **FogOfWar Performance:** Reduced blur radius from 60 to 20 for smoother rendering
 
@@ -13,6 +14,7 @@ This commit fixes two critical issues:
 Tokens could be dragged in World View (by design - for DM to demonstrate movement on projector), but those changes only updated World View's local state. The Architect View (DM window) never received the updates.
 
 **Why this happened:**
+
 - SyncManager was designed with unidirectional sync: Architect → World
 - World View was in CONSUMER mode (receive only, never send)
 - CanvasManager allows token dragging in World View (see line 75: "Select and drag tokens for DM to demonstrate movement")
@@ -66,6 +68,7 @@ World View receives update (no-op, position already matches)
 #### Code Changes
 
 **1. SyncManager.tsx (World View mode):**
+
 ```typescript
 // NEW: Track World View's own state changes
 const worldViewPrevStateRef = useRef<any>(null);
@@ -75,12 +78,12 @@ const detectWorldViewChanges = (prevState, currentState) => {
   // Skip other properties to avoid conflicts
   const actions = [];
 
-  currentState.tokens.forEach(token => {
+  currentState.tokens.forEach((token) => {
     const prevToken = prevTokenMap.get(token.id);
     if (prevToken && (token.x !== prevToken.x || token.y !== prevToken.y)) {
       actions.push({
         type: 'TOKEN_UPDATE',
-        payload: { id: token.id, changes: { x: token.x, y: token.y } }
+        payload: { id: token.id, changes: { x: token.x, y: token.y } },
       });
     }
   });
@@ -93,17 +96,19 @@ const unsubWorldView = useGameStore.subscribe(throttledWorldViewSync);
 ```
 
 **2. electron/main.ts:**
+
 ```typescript
 // NEW: Handle updates from World View
 ipcMain.on('SYNC_FROM_WORLD_VIEW', (_event, action) => {
   // Relay to Architect View
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('SYNC_WORLD_STATE', action)
+    mainWindow.webContents.send('SYNC_WORLD_STATE', action);
   }
-})
+});
 ```
 
 **3. IPC Flow:**
+
 - `SYNC_FROM_WORLD_VIEW`: World View → Architect View (token positions)
 - `SYNC_WORLD_STATE`: Architect View → World View (all state changes)
 - `REQUEST_INITIAL_STATE`: World View → Architect View (on mount)
@@ -115,6 +120,7 @@ ipcMain.on('SYNC_FROM_WORLD_VIEW', (_event, action) => {
 Fog of War rendering had noticeable lag, especially when panning/zooming or moving tokens. The blur filter was causing frame drops.
 
 **Performance bottleneck:**
+
 - Konva blur filter with `blurRadius={60}` is expensive
 - Blur is reapplied on every frame when canvas updates
 - Large blur radius requires more sampling passes
@@ -126,18 +132,20 @@ Reduced blur radius from 60 to 20 while maintaining visual effect.
 
 #### Performance Impact
 
-| Metric | Before (blur=60) | After (blur=20) | Improvement |
-|--------|------------------|-----------------|-------------|
-| Frame Time | ~33ms | ~16ms | 52% faster |
-| FPS (panning) | 30fps | 60fps | 100% increase |
-| Blur Quality | Very soft edge | Soft edge | Acceptable |
+| Metric        | Before (blur=60) | After (blur=20) | Improvement   |
+| ------------- | ---------------- | --------------- | ------------- |
+| Frame Time    | ~33ms            | ~16ms           | 52% faster    |
+| FPS (panning) | 30fps            | 60fps           | 100% increase |
+| Blur Quality  | Very soft edge   | Soft edge       | Acceptable    |
 
 **Visual Comparison:**
+
 - **blur=60**: Very soft, gradual fog falloff (beautiful but slow)
 - **blur=20**: Soft fog falloff, slightly crisper edge (good performance)
 - **blur=0**: Hard edge (no performance cost but looks bad)
 
 The blur=20 setting provides a good balance:
+
 - ✅ Performance suitable for real-time gameplay
 - ✅ Visual quality still looks professional
 - ✅ Fog edge is soft enough to feel atmospheric
@@ -145,6 +153,7 @@ The blur=20 setting provides a good balance:
 #### Code Changes
 
 **FogOfWarLayer.tsx:**
+
 ```typescript
 <URLImage
   // ... map props
@@ -159,6 +168,7 @@ The blur=20 setting provides a good balance:
 ### Bidirectional Sync Testing
 
 **Test 1: World View → Architect View**
+
 1. Open Architect View and place tokens
 2. Open World View
 3. Drag token in World View
@@ -166,16 +176,19 @@ The blur=20 setting provides a good balance:
 5. **Verified:** Architect View receives position updates
 
 **Test 2: Architect View → World View (existing)**
+
 1. Drag token in Architect View
 2. **Expected:** Token moves in World View ✅
 3. **Verified:** Unidirectional sync still works
 
 **Test 3: No infinite loops**
+
 1. Drag token rapidly in World View
 2. **Expected:** No message flooding, smooth movement ✅
 3. **Verified:** Throttling (32ms) prevents IPC spam
 
 **Test 4: Multi-property updates**
+
 1. Change token type/scale in Architect View
 2. Drag token in World View
 3. **Expected:** Only position syncs back, type/scale unchanged ✅
@@ -184,17 +197,20 @@ The blur=20 setting provides a good balance:
 ### Performance Testing
 
 **Test 1: FogOfWar rendering**
+
 1. Enable Fog of War with 5 PC tokens
 2. Pan canvas rapidly
 3. **Before:** Noticeable lag, ~30fps
 4. **After:** Smooth panning, 60fps ✅
 
 **Test 2: Token dragging with FogOfWar**
+
 1. Drag token with vision radius
 2. **Before:** Choppy movement, frame drops
 3. **After:** Smooth movement, no frame drops ✅
 
 **Test 3: Visual quality**
+
 1. Compare fog edge softness
 2. **Result:** blur=20 still looks good, acceptable trade-off ✅
 
@@ -219,12 +235,14 @@ The blur=20 setting provides a good balance:
 ## Edge Cases Handled
 
 ### Bidirectional Sync
+
 - ✅ Token deleted in Architect View while being dragged in World View: Update ignored (token doesn't exist)
 - ✅ World View closed during token drag: Subscription cleaned up properly
 - ✅ Multiple World Views (future): Each sends updates independently
 - ✅ Network latency (future IPC): Throttling prevents queue overflow
 
 ### Performance
+
 - ✅ Many PC tokens with vision: Still smooth (raycasting already optimized)
 - ✅ Large maps: Blur performance scales with visible area, not map size
 - ✅ Rapid panning: No frame drops with blur=20
@@ -232,6 +250,7 @@ The blur=20 setting provides a good balance:
 ## Backwards Compatibility
 
 ✅ Fully backwards compatible:
+
 - Architect View → World View sync unchanged
 - Only adds new World View → Architect View path
 - FogOfWar blur change is visual only (no API changes)
@@ -240,12 +259,14 @@ The blur=20 setting provides a good balance:
 ## Future Improvements
 
 ### Bidirectional Sync
+
 1. **Conflict resolution**: If both windows edit same token simultaneously
 2. **Full editing in World View**: Allow DM to add tokens from projector
 3. **Gesture sync**: Sync minimap clicks, center on party, etc.
 4. **Latency compensation**: Predictive positioning for smoother remote sync
 
 ### Performance
+
 1. **Adaptive blur**: Reduce blur during rapid movement, restore when static
 2. **LOD fog**: Lower quality fog when zoomed out
 3. **Cached blur**: Pre-render blurred map to texture, reuse
@@ -254,6 +275,7 @@ The blur=20 setting provides a good balance:
 ## Conclusion
 
 These fixes address two common user pain points:
+
 1. ✅ Token movements in World View now sync bidirectionally
 2. ✅ FogOfWar performance improved by 52% (blur radius reduction)
 

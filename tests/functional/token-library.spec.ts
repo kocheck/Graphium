@@ -22,14 +22,11 @@ test.describe('Token Library - Upload and Storage', () => {
   test('should open token library modal', async ({ page }) => {
     const library = await openTokenLibrary(page);
 
-    await expect(
-      library,
-      'Token library modal should be visible'
-    ).toBeVisible();
+    await expect(library, 'Token library modal should be visible').toBeVisible();
 
     await expect(
       page.locator('[data-testid="library-modal-title"]'),
-      'Library should have correct title'
+      'Library should have correct title',
     ).toHaveText('Token Library');
   });
 
@@ -79,7 +76,7 @@ test.describe('Token Library - Upload and Storage', () => {
     // Should show error
     await expect(
       page.locator('[data-testid="upload-error-message"]'),
-      'Should show error for invalid file type'
+      'Should show error for invalid file type',
     ).toBeVisible();
   });
 
@@ -105,17 +102,13 @@ test.describe('Token Library - Browsing and Search', () => {
 
     // Verify grid view
     const libraryGrid = page.locator('[data-testid="library-grid"]');
-    await expect(
-      libraryGrid,
-      'Library should display in grid layout'
-    ).toBeVisible();
+    await expect(libraryGrid, 'Library should display in grid layout').toBeVisible();
 
     // Verify tokens displayed
     const tokens = page.locator('[data-testid^="library-token-"]');
-    await expect(
-      tokens,
-      'Library tokens should be visible in grid'
-    ).toHaveCount(await tokens.count());
+    await expect(tokens, 'Library tokens should be visible in grid').toHaveCount(
+      await tokens.count(),
+    );
   });
 
   test('should search library by token name', async ({ page }) => {
@@ -158,7 +151,7 @@ test.describe('Token Library - Browsing and Search', () => {
     // Verify preview tooltip appears
     await expect(
       page.locator('[data-testid="library-token-preview"]'),
-      'Token preview should appear on hover'
+      'Token preview should appear on hover',
     ).toBeVisible();
   });
 });
@@ -217,10 +210,9 @@ test.describe('Token Library - Categorization', () => {
 
     // Verify appears in dropdown
     const categoryOptions = page.locator('[data-testid="library-category-select"] option');
-    await expect(
-      categoryOptions,
-      'Custom category should appear in dropdown'
-    ).toContainText(['Bosses']);
+    await expect(categoryOptions, 'Custom category should appear in dropdown').toContainText([
+      'Bosses',
+    ]);
   });
 });
 
@@ -245,10 +237,9 @@ test.describe('Token Library - Deletion', () => {
 
     // Verify count decreased
     tokens = page.locator('[data-testid^="library-token-"]');
-    await expect(
-      tokens,
-      'Library should have one fewer token after deletion'
-    ).toHaveCount(initialCount - 1);
+    await expect(tokens, 'Library should have one fewer token after deletion').toHaveCount(
+      initialCount - 1,
+    );
   });
 
   test('should not delete when canceling confirmation', async ({ page }) => {
@@ -267,7 +258,7 @@ test.describe('Token Library - Deletion', () => {
     tokens = page.locator('[data-testid^="library-token-"]');
     await expect(
       tokens,
-      'Token count should remain unchanged when deletion is cancelled'
+      'Token count should remain unchanged when deletion is cancelled',
     ).toHaveCount(initialCount);
   });
 
@@ -290,7 +281,7 @@ test.describe('Token Library - Deletion', () => {
     // Should show warning
     await expect(
       page.locator('[data-testid="delete-library-warning"]'),
-      'Should warn when deleting token used in campaign'
+      'Should warn when deleting token used in campaign',
     ).toContainText('used in');
   });
 });
@@ -313,10 +304,7 @@ test.describe('Token Library - Usage in Campaigns', () => {
 
     // Verify token added to canvas
     const canvasToken = page.locator('[data-testid^="token-"]').first();
-    await expect(
-      canvasToken,
-      'Token from library should be added to canvas'
-    ).toBeVisible();
+    await expect(canvasToken, 'Token from library should be added to canvas').toBeVisible();
   });
 
   test('should drag library token to canvas', async ({ page }) => {
@@ -332,7 +320,7 @@ test.describe('Token Library - Usage in Campaigns', () => {
     const canvasToken = page.locator('[data-testid^="token-"]').first();
     await expect(
       canvasToken,
-      'Token should be added to canvas after drag from library'
+      'Token should be added to canvas after drag from library',
     ).toBeVisible();
   });
 
@@ -356,7 +344,7 @@ test.describe('Token Library - Usage in Campaigns', () => {
     const canvasTokens = page.locator('[data-testid^="token-"]');
     await expect(
       canvasTokens,
-      'Should be able to use same library token multiple times'
+      'Should be able to use same library token multiple times',
     ).toHaveCount(3);
   });
 });
@@ -385,10 +373,7 @@ test.describe('Token Library - Persistence', () => {
 
     // Verify same count
     tokens = page.locator('[data-testid^="library-token-"]');
-    await expect(
-      tokens,
-      'Library should persist after page reload'
-    ).toHaveCount(count);
+    await expect(tokens, 'Library should persist after page reload').toHaveCount(count);
   });
 
   test('should preserve library across campaigns', async ({ page }) => {
@@ -408,10 +393,7 @@ test.describe('Token Library - Persistence', () => {
 
     // Verify same library
     tokens = page.locator('[data-testid^="library-token-"]');
-    await expect(
-      tokens,
-      'Library should be shared across all campaigns'
-    ).toHaveCount(firstCount);
+    await expect(tokens, 'Library should be shared across all campaigns').toHaveCount(firstCount);
   });
 });
 
@@ -437,7 +419,7 @@ test.describe('Token Library - Metadata', () => {
     // Verify name updated
     await expect(
       page.locator('[data-testid="library-token-0-name"]'),
-      'Token name should update in library'
+      'Token name should update in library',
     ).toHaveText('Renamed Token');
   });
 
@@ -457,9 +439,6 @@ test.describe('Token Library - Metadata', () => {
 
     // Should find tagged token
     const results = page.locator('[data-testid^="library-token-"]:visible');
-    await expect(
-      results,
-      'Should find token by tag in search'
-    ).toHaveCount(await results.count());
+    await expect(results, 'Should find token by tag in search').toHaveCount(await results.count());
   });
 });

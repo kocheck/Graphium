@@ -44,7 +44,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
@@ -55,7 +55,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
       error,
       errorInfo: null,
       errorTitle: undefined,
-      errorDesc: undefined
+      errorDesc: undefined,
     };
   }
 
@@ -95,7 +95,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
       error,
       errorInfo,
       errorTitle,
-      errorDesc
+      errorDesc,
     });
   }
 
@@ -108,27 +108,25 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
       error: null,
       errorInfo: null,
       errorTitle: undefined,
-      errorDesc: undefined
+      errorDesc: undefined,
     });
   };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          padding: '20px',
-          margin: '20px',
-          backgroundColor: '#fee',
-          border: '2px solid #c33',
-          borderRadius: '8px',
-          fontFamily: 'system-ui, sans-serif'
-        }}>
-          <h3 style={{ color: '#c33', margin: '0 0 10px 0' }}>
-            {this.state.errorTitle}
-          </h3>
-          <p style={{ margin: '10px 0' }}>
-            {this.state.errorDesc}
-          </p>
+        <div
+          style={{
+            padding: '20px',
+            margin: '20px',
+            backgroundColor: '#fee',
+            border: '2px solid #c33',
+            borderRadius: '8px',
+            fontFamily: 'system-ui, sans-serif',
+          }}
+        >
+          <h3 style={{ color: '#c33', margin: '0 0 10px 0' }}>{this.state.errorTitle}</h3>
+          <p style={{ margin: '10px 0' }}>{this.state.errorDesc}</p>
           <ul style={{ margin: '10px 0 10px 20px' }}>
             <li>The file is corrupt or unsupported</li>
             <li>The file is too large</li>
@@ -141,15 +139,17 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
               <summary style={{ fontWeight: 'bold', color: '#c33' }}>
                 Error Details (for debugging)
               </summary>
-              <pre style={{
-                marginTop: '10px',
-                padding: '10px',
-                backgroundColor: '#fff',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                overflow: 'auto',
-                fontSize: '12px'
-              }}>
+              <pre
+                style={{
+                  marginTop: '10px',
+                  padding: '10px',
+                  backgroundColor: '#fff',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  overflow: 'auto',
+                  fontSize: '12px',
+                }}
+              >
                 {this.state.error.toString()}
                 {this.state.errorInfo && '\n\n' + this.state.errorInfo.componentStack}
               </pre>
@@ -167,10 +167,10 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontSize: '14px',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
               }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#45a049'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4CAF50'}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#45a049')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4CAF50')}
             >
               Dismiss
             </button>

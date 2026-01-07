@@ -19,10 +19,7 @@
  */
 
 import { test } from '@playwright/test';
-import {
-  bypassLandingPageAndInjectState,
-  clearAllTestData,
-} from '../helpers/bypassLandingPage';
+import { bypassLandingPageAndInjectState, clearAllTestData } from '../helpers/bypassLandingPage';
 import { createNewCampaign } from '../helpers/campaignHelpers';
 
 test.describe.skip('Network Error Handling', () => {
@@ -41,7 +38,7 @@ test.describe.skip('Network Error Handling', () => {
 
     await expect(
       page.locator('[data-testid^="token-"]'),
-      'Should still be able to add tokens offline'
+      'Should still be able to add tokens offline',
     ).toHaveCount(1);
 
     // Try to perform online-only action (if any)
@@ -97,12 +94,12 @@ test.describe('Input Validation Errors', () => {
 
     await expect(
       page.locator('[data-testid="campaign-name-error"]'),
-      'Should show validation error for empty campaign name'
+      'Should show validation error for empty campaign name',
     ).toBeVisible();
 
     await expect(
       page.locator('[data-testid="campaign-name-error"]'),
-      'Error message should be descriptive'
+      'Error message should be descriptive',
     ).toContainText('required');
   });
 
@@ -118,7 +115,7 @@ test.describe('Input Validation Errors', () => {
 
     await expect(
       page.locator('[data-testid="map-dimensions-error"]'),
-      'Should show error for invalid map dimensions'
+      'Should show error for invalid map dimensions',
     ).toBeVisible();
   });
 
@@ -136,7 +133,7 @@ test.describe('Input Validation Errors', () => {
 
     await expect(
       page.locator('[data-testid="token-size-error"]'),
-      'Should show error for excessive token size'
+      'Should show error for excessive token size',
     ).toBeVisible();
   });
 
@@ -150,10 +147,7 @@ test.describe('Input Validation Errors', () => {
     // Verify script not executed
     const titleHTML = await page.locator('[data-testid="campaign-title"]').innerHTML();
 
-    expect(
-      titleHTML,
-      'Script tags should be escaped/sanitized'
-    ).not.toContain('<script>');
+    expect(titleHTML, 'Script tags should be escaped/sanitized').not.toContain('<script>');
   });
 });
 
@@ -233,7 +227,7 @@ test.describe('Storage Error Handling', () => {
 
     expect(
       hasError || canRecover,
-      'Should handle corrupted data with error or recovery option'
+      'Should handle corrupted data with error or recovery option',
     ).toBeTruthy();
   });
 });
@@ -258,7 +252,7 @@ test.describe('File Operation Errors', () => {
 
     await expect(
       page.locator('[data-testid="file-upload-error"]'),
-      'Should show error for invalid file type'
+      'Should show error for invalid file type',
     ).toBeVisible();
   });
 
@@ -287,7 +281,7 @@ test.describe('File Operation Errors', () => {
 
     await expect(
       page.locator('[data-testid="import-error-message"]'),
-      'Should show error for corrupted import file'
+      'Should show error for corrupted import file',
     ).toBeVisible();
   });
 });
@@ -325,19 +319,11 @@ test.describe('User Error Recovery', () => {
     await page.click('[data-testid="new-campaign-button"]');
     await page.click('[data-testid="create-campaign-submit"]');
 
-    const errorMessage = await page
-      .locator('[data-testid="campaign-name-error"]')
-      .textContent();
+    const errorMessage = await page.locator('[data-testid="campaign-name-error"]').textContent();
 
-    expect(
-      errorMessage,
-      'Error message should be user-friendly'
-    ).not.toContain('undefined');
+    expect(errorMessage, 'Error message should be user-friendly').not.toContain('undefined');
 
-    expect(
-      errorMessage,
-      'Error message should explain what to do'
-    ).toBeTruthy();
+    expect(errorMessage, 'Error message should explain what to do').toBeTruthy();
   });
 
   test('should preserve user data after recoverable error', async ({ page }) => {
@@ -355,7 +341,7 @@ test.describe('User Error Recovery', () => {
     // Campaign and token should still exist (from auto-save)
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Campaign should persist even after error'
+      'Campaign should persist even after error',
     ).toHaveText('Data Preservation Test');
   });
 });
@@ -379,10 +365,7 @@ test.describe('Error Logging and Reporting', () => {
       throw new Error('Test error');
     });
 
-    expect(
-      consoleLogs.length,
-      'Errors should be logged to console'
-    ).toBeGreaterThan(0);
+    expect(consoleLogs.length, 'Errors should be logged to console').toBeGreaterThan(0);
   });
 
   test('should catch and handle unhandled promise rejections', async ({ page }) => {
@@ -404,17 +387,19 @@ test.describe('Error Logging and Reporting', () => {
 
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'App should still function after unhandled error'
+      'App should still function after unhandled error',
     ).toHaveText('Error Recovery Test');
   });
 
   test('should show error report dialog for critical errors', async ({ page }) => {
     // Simulate critical error
     await page.evaluate(() => {
-      window.dispatchEvent(new ErrorEvent('error', {
-        message: 'Critical error occurred',
-        error: new Error('Critical error'),
-      }));
+      window.dispatchEvent(
+        new ErrorEvent('error', {
+          message: 'Critical error occurred',
+          error: new Error('Critical error'),
+        }),
+      );
     });
 
     // Should show error dialog (if implemented)
@@ -465,14 +450,9 @@ test.describe('Boundary Conditions', () => {
 
     if (!errorShown) {
       // If accepted, should be truncated
-      const titleText = await page
-        .locator('[data-testid="campaign-title"]')
-        .textContent();
+      const titleText = await page.locator('[data-testid="campaign-title"]').textContent();
 
-      expect(
-        titleText!.length,
-        'Very long input should be truncated'
-      ).toBeLessThan(500);
+      expect(titleText!.length, 'Very long input should be truncated').toBeLessThan(500);
     }
   });
 });

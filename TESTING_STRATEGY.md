@@ -1,9 +1,11 @@
 # Graphium E2E Testing Strategy
+
 **Playwright Testing Suite for Dual-Target Application (Web & Electron)**
 
 ---
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Configuration Strategy](#1-configuration-strategy-playwrightconfigts)
 3. [Descriptive Error Pattern](#2-descriptive-error-pattern)
@@ -17,6 +19,7 @@
 ## Overview
 
 This document outlines the comprehensive testing strategy for the Graphium application, which supports two deployment targets:
+
 - **Web (SPA)**: Browser-based application served via Vite
 - **Electron (Desktop)**: Native desktop application with IPC integration
 
@@ -25,8 +28,9 @@ This document outlines the comprehensive testing strategy for the Graphium appli
 **Note:** This strategy prioritizes **functional/integration testing** over visual regression testing. With an upcoming UI redesign, visual snapshots would require constant updates. Instead, we test **behavior and functionality** which remains stable across visual changes.
 
 ### Testing Goals
+
 - ✅ **Functional Coverage**: Test user workflows, state management, and data persistence
-- ✅ **Descriptive Failures**: Every test failure should tell you *exactly* what broke
+- ✅ **Descriptive Failures**: Every test failure should tell you _exactly_ what broke
 - ✅ **CI Enforcement**: Block broken PRs from merging via GitHub Actions
 - ✅ **Fast Feedback**: Parallel test execution with sharding
 - ✅ **Rich Debugging**: Automatic traces, videos, and HTML reports on failure
@@ -61,7 +65,7 @@ export default defineConfig({
   reporter: [
     ['html', { open: 'never' }], // HTML report (always generated)
     ['list'], // Console output during test run
-    ['json', { outputFile: 'test-results/results.json' }] // Machine-readable results
+    ['json', { outputFile: 'test-results/results.json' }], // Machine-readable results
   ],
 
   use: {
@@ -139,24 +143,26 @@ export default defineConfig({
 
 ### 1.2 Why Two Projects?
 
-| Project | Purpose | Test Types | Build Required |
-|---------|---------|------------|----------------|
+| Project          | Purpose                                        | Test Types                   | Build Required               |
+| ---------------- | ---------------------------------------------- | ---------------------------- | ---------------------------- |
 | **Web-Chromium** | User workflows, state management, DOM behavior | Functional/integration tests | ✅ Yes (`npm run build:web`) |
-| **Electron-App** | IPC, native features, startup, file system | Integration tests | ✅ Yes (`npm run build`) |
+| **Electron-App** | IPC, native features, startup, file system     | Integration tests            | ✅ Yes (`npm run build`)     |
 
 ### 1.3 Trace Configuration Deep Dive
 
 ```typescript
-trace: 'on-first-retry'
+trace: 'on-first-retry';
 ```
 
 **What this does:**
+
 - ✅ **Normal test run**: No trace overhead
 - ❌ **First failure**: Test retries automatically
 - 📹 **During retry**: Captures full trace (video, DOM snapshots, network, console)
 - 💾 **Result**: Rich debugging info **only if test actually fails**
 
 **Trace contents:**
+
 - Video recording of the retry attempt
 - DOM snapshots at each step
 - Network activity (XHR, fetch, WebSocket)
@@ -164,6 +170,7 @@ trace: 'on-first-retry'
 - Timeline of actions
 
 **Viewing traces:**
+
 ```bash
 npx playwright show-trace test-results/trace.zip
 ```
@@ -175,6 +182,7 @@ npx playwright show-trace test-results/trace.zip
 ### 2.1 The Problem with Generic Assertions
 
 ❌ **Bad - No context:**
+
 ```typescript
 await expect(settingsButton).toBeVisible();
 // Error: expect(locator).toBeVisible()
@@ -182,8 +190,12 @@ await expect(settingsButton).toBeVisible();
 ```
 
 ✅ **Good - Descriptive message:**
+
 ```typescript
-await expect(settingsButton, 'Settings gear icon should be visible in top-right header after app loads').toBeVisible();
+await expect(
+  settingsButton,
+  'Settings gear icon should be visible in top-right header after app loads',
+).toBeVisible();
 // Error: Settings gear icon should be visible in top-right header after app loads
 // ✅ Immediately understand what broke and why
 ```
@@ -198,20 +210,26 @@ test('Token library modal displays all required sections', async ({ page }) => {
   await page.click('[data-testid="token-library-button"]');
 
   // Soft assertions - all will be checked even if one fails
-  await expect.soft(
-    page.locator('[data-testid="library-search"]'),
-    'Library search input should appear at top of modal'
-  ).toBeVisible();
+  await expect
+    .soft(
+      page.locator('[data-testid="library-search"]'),
+      'Library search input should appear at top of modal',
+    )
+    .toBeVisible();
 
-  await expect.soft(
-    page.locator('[data-testid="library-grid"]'),
-    'Token grid should display below search bar'
-  ).toBeVisible();
+  await expect
+    .soft(
+      page.locator('[data-testid="library-grid"]'),
+      'Token grid should display below search bar',
+    )
+    .toBeVisible();
 
-  await expect.soft(
-    page.locator('[data-testid="library-upload-button"]'),
-    'Upload button should be present for adding new tokens'
-  ).toBeVisible();
+  await expect
+    .soft(
+      page.locator('[data-testid="library-upload-button"]'),
+      'Upload button should be present for adding new tokens',
+    )
+    .toBeVisible();
 
   // Hard assertion at end - test fails if any soft assertion failed
   // But we get ALL failures, not just the first one
@@ -224,13 +242,13 @@ test('Token library modal displays all required sections', async ({ page }) => {
 
 **Examples:**
 
-| Scenario | Message |
-|----------|---------|
-| Button visibility | `'Primary action button should appear in bottom-right after map loads'` |
-| Text content | `'Welcome message should display username after login completes'` |
-| Navigation | `'URL should change to /campaign after clicking "New Campaign" button'` |
+| Scenario          | Message                                                                      |
+| ----------------- | ---------------------------------------------------------------------------- |
+| Button visibility | `'Primary action button should appear in bottom-right after map loads'`      |
+| Text content      | `'Welcome message should display username after login completes'`            |
+| Navigation        | `'URL should change to /campaign after clicking "New Campaign" button'`      |
 | State persistence | `'Token position should persist after page reload (auto-save verification)'` |
-| Error handling | `'Error toast should appear with clear message when upload fails'` |
+| Error handling    | `'Error toast should appear with clear message when upload fails'`           |
 
 ### 2.4 Test Naming Convention
 
@@ -268,6 +286,7 @@ Functional tests verify **behavior and data integrity** rather than visual appea
 ### 3.2 Example: Functional vs Visual Test
 
 **❌ Visual Test (Avoid for now):**
+
 ```typescript
 test('Campaign should look correct', async ({ page }) => {
   await expect(page).toHaveScreenshot('campaign.png');
@@ -276,6 +295,7 @@ test('Campaign should look correct', async ({ page }) => {
 ```
 
 **✅ Functional Test (Preferred):**
+
 ```typescript
 test('Campaign should persist token positions after reload', async ({ page }) => {
   // Add token at specific position
@@ -305,11 +325,12 @@ The production web build includes a "Download Landing Page" that appears before 
 
 1. **Extra clicks**: Every test must navigate past the landing page
 2. **Flakiness**: Landing page animations can cause timing issues
-3. **Irrelevant to functionality**: We want to test the *app*, not the landing page
+3. **Irrelevant to functionality**: We want to test the _app_, not the landing page
 
 ### 3.4 Solution: `beforeEach` Hook with State Injection
 
 **Strategy:**
+
 - Bypass the landing page by **injecting mock state** directly into `IndexedDB` and `localStorage`
 - Simulate a "returning user" who has already dismissed the landing page
 - Mock the `WebStorageService` state to preload test data
@@ -403,7 +424,7 @@ test.describe('Campaign Workflow Tests', () => {
     // Verify campaign creation flow
     await expect(
       page.locator('[data-testid="campaign-form"]'),
-      'Campaign creation form should appear after clicking new campaign'
+      'Campaign creation form should appear after clicking new campaign',
     ).toBeVisible();
 
     // Fill campaign name
@@ -413,13 +434,13 @@ test.describe('Campaign Workflow Tests', () => {
     // Verify campaign was created
     await expect(
       page.locator('[data-testid="main-canvas"]'),
-      'Main canvas should be visible after campaign creation'
+      'Main canvas should be visible after campaign creation',
     ).toBeVisible();
 
     // Verify campaign name appears in header
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Campaign title should display "Epic Adventure" in header'
+      'Campaign title should display "Epic Adventure" in header',
     ).toHaveText('Epic Adventure');
   });
 });
@@ -449,13 +470,13 @@ test('should persist campaign state after page reload', async ({ page }) => {
   // Verify campaign restored
   await expect(
     page.locator('[data-testid="campaign-title"]'),
-    'Campaign name should persist after reload'
+    'Campaign name should persist after reload',
   ).toHaveText('Dungeon Campaign');
 
   // Verify token restored
   await expect(
     page.locator(`[data-testid="${tokenId}"]`),
-    'Token should persist after reload'
+    'Token should persist after reload',
   ).toBeVisible();
 });
 ```
@@ -493,7 +514,7 @@ test('should preserve all campaign data through export/import cycle', async ({ p
   // Verify all data restored
   await expect(
     page.locator('[data-testid="campaign-title"]'),
-    'Campaign name should survive export/import'
+    'Campaign name should survive export/import',
   ).toHaveText('Test Campaign');
 
   const tokenCount = await page.locator('[data-testid^="token-"]').count();
@@ -516,13 +537,13 @@ test('should show platform-appropriate features', async ({ page }) => {
     // Electron-specific features should be available
     await expect(
       page.locator('[data-testid="native-file-dialog"]'),
-      'Native file dialogs should be available in Electron'
+      'Native file dialogs should be available in Electron',
     ).toBeVisible();
   } else {
     // Web fallbacks should be shown
     await expect(
       page.locator('[data-testid="browser-file-input"]'),
-      'Browser file input should be used in web mode'
+      'Browser file input should be used in web mode',
     ).toBeVisible();
   }
 });
@@ -541,7 +562,7 @@ test('should complete full campaign creation workflow', async ({ page }) => {
 
   await expect(
     page.locator('[data-testid="main-canvas"]'),
-    'Canvas should appear after campaign creation'
+    'Canvas should appear after campaign creation',
   ).toBeVisible();
 
   // Step 2: Add map background
@@ -550,7 +571,7 @@ test('should complete full campaign creation workflow', async ({ page }) => {
 
   await expect(
     page.locator('[data-testid="map-layer"]'),
-    'Map background should be visible after upload'
+    'Map background should be visible after upload',
   ).toBeVisible();
 
   // Step 3: Add token from library
@@ -560,7 +581,7 @@ test('should complete full campaign creation workflow', async ({ page }) => {
 
   await expect(
     page.locator('[data-testid^="token-"]'),
-    'Token should appear on canvas after placement'
+    'Token should appear on canvas after placement',
   ).toBeVisible();
 
   // Step 4: Verify auto-save triggered
@@ -731,11 +752,13 @@ jobs:
 ### 4.2 Sharding Strategy
 
 **Why shard?**
+
 - 🚀 **Speed**: 3 shards run in parallel → 3x faster
 - 💰 **Cost**: GitHub Actions has limited free minutes
 - 🎯 **Focus**: Faster feedback on PRs
 
 **How it works:**
+
 ```bash
 # Shard 1 runs tests 1, 4, 7, 10, ...
 npx playwright test --shard=1/3
@@ -748,6 +771,7 @@ npx playwright test --shard=3/3
 ```
 
 **Adjusting shard count:**
+
 - 📈 More tests? Increase `shardTotal: [4]` or `[5]`
 - 📉 Fewer tests? Decrease to `[2]` or remove sharding
 
@@ -766,11 +790,13 @@ npx playwright test --shard=3/3
 ```
 
 **What gets uploaded:**
+
 - 📊 HTML report (`playwright-report/`)
 - 📹 Trace files (`test-results/`)
 - 📸 Screenshots (included in traces)
 
 **Viewing artifacts:**
+
 1. Go to failed workflow run
 2. Scroll to "Artifacts" section at bottom
 3. Download `playwright-report-web-shard-X.zip`
@@ -816,6 +842,7 @@ Navigate to: **Settings → Branches → Branch Protection Rules → `main`**
 **Test the protection:**
 
 1. Create a test PR with a failing test:
+
    ```typescript
    test('intentional failure', async ({ page }) => {
      expect(true).toBe(false); // This will fail
@@ -907,7 +934,7 @@ export class CampaignPage {
     await this.page.click('[data-testid="token-library-button"]');
     await expect(
       this.page.locator('[data-testid="library-modal"]'),
-      'Token library modal should open after clicking library button'
+      'Token library modal should open after clicking library button',
     ).toBeVisible();
   }
 }
@@ -940,15 +967,11 @@ export const TEST_CAMPAIGNS = {
       'map-1': {
         id: 'map-1',
         name: 'Test Map',
-        tokens: [
-          { id: 'token-1', src: '/test-assets/hero.webp', x: 100, y: 100 },
-        ],
+        tokens: [{ id: 'token-1', src: '/test-assets/hero.webp', x: 100, y: 100 }],
       },
     },
     currentMapId: 'map-1',
-    tokenLibrary: [
-      { id: 'lib-1', name: 'Hero Token', src: '/test-assets/hero.webp' },
-    ],
+    tokenLibrary: [{ id: 'lib-1', name: 'Hero Token', src: '/test-assets/hero.webp' }],
   },
 };
 
@@ -979,7 +1002,7 @@ test('Settings panel allows theme switching', async ({ page }) => {
   // Verify panel is functional (can interact with it)
   await expect(
     page.locator('[data-testid="theme-selector"]'),
-    'Theme selector should be accessible in settings panel'
+    'Theme selector should be accessible in settings panel',
   ).toBeVisible();
 
   // Test the behavior
@@ -992,6 +1015,7 @@ test('Settings panel allows theme switching', async ({ page }) => {
 ```
 
 **Key principles:**
+
 - ✅ Assert on **DOM structure** (`toBeVisible`, `toHaveText`, `toHaveAttribute`)
 - ✅ Assert on **user interactions** (`click`, `fill`, `selectOption`)
 - ✅ Assert on **data state** (element counts, attribute values, text content)
@@ -1002,13 +1026,13 @@ test('Settings panel allows theme switching', async ({ page }) => {
 
 **Common causes and solutions:**
 
-| Issue | Solution |
-|-------|----------|
-| Animation timing | Use `page.waitForLoadState('networkidle')` |
-| Font loading | Inject CSS to preload fonts |
-| Hover effects | Force element state: `page.locator('button').evaluate(el => el.classList.add('hover'))` |
-| Async state updates | Use `page.waitForFunction()` with specific condition |
-| Canvas rendering | Wait for specific canvas state, not just visibility |
+| Issue               | Solution                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| Animation timing    | Use `page.waitForLoadState('networkidle')`                                              |
+| Font loading        | Inject CSS to preload fonts                                                             |
+| Hover effects       | Force element state: `page.locator('button').evaluate(el => el.classList.add('hover'))` |
+| Async state updates | Use `page.waitForFunction()` with specific condition                                    |
+| Canvas rendering    | Wait for specific canvas state, not just visibility                                     |
 
 ---
 
@@ -1047,6 +1071,7 @@ Before going live with this strategy, ensure:
 ## When to Add Visual Regression Testing
 
 **After the redesign is complete**, consider adding visual regression tests for:
+
 - ✅ **Critical user journeys** (login flow, campaign creation wizard)
 - ✅ **Component library** (buttons, modals, forms in isolation)
 - ✅ **Cross-browser consistency** (ensure Firefox/Safari match Chrome)

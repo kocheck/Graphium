@@ -286,8 +286,8 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
                       reportStatus === 'opened'
                         ? 'bg-green-600 hover:bg-green-500'
                         : reportStatus === 'error'
-                        ? 'bg-red-600 hover:bg-red-500'
-                        : 'bg-blue-600 hover:bg-blue-500'
+                          ? 'bg-red-600 hover:bg-red-500'
+                          : 'bg-blue-600 hover:bg-blue-500'
                     }`}
                   >
                     {reportStatus === 'opened' ? (

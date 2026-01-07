@@ -9,6 +9,7 @@ IBM Plex fonts are automatically installed via the **`@ibm/plex` npm package** a
 ### No Manual Files Needed
 
 You don't need to place any font files in this directory. The fonts are:
+
 - Installed automatically via `npm install`
 - Loaded from `node_modules/@ibm/plex/`
 - Bundled automatically by Vite during build
@@ -16,6 +17,7 @@ You don't need to place any font files in this directory. The fonts are:
 ### Implementation
 
 Font declarations are in:
+
 - **File:** `src/styles/fonts.css`
 - **Paths:** Point to `@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/...`
 - **Import:** Loaded via `src/index.css`
@@ -31,5 +33,6 @@ If you need to add custom fonts (not from npm packages):
 ## License
 
 IBM Plex is licensed under the **SIL Open Font License 1.1**
+
 - Official package: https://www.npmjs.com/package/@ibm/plex
 - License: https://github.com/IBM/plex/blob/master/LICENSE.txt

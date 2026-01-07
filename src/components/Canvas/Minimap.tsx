@@ -58,10 +58,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Memoize PC tokens list to avoid filtering on every render
-  const pcTokens = useMemo(() =>
-    tokens.filter(t => t.type === 'PC'),
-    [tokens]
-  );
+  const pcTokens = useMemo(() => tokens.filter((t) => t.type === 'PC'), [tokens]);
 
   // Memoize world bounds calculation (used by both rendering and click handling)
   const worldBounds = useMemo<WorldBounds>(() => {
@@ -77,9 +74,12 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
 
     // No map: calculate bounds from PC tokens
     if (pcTokens.length > 0) {
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
 
-      pcTokens.forEach(t => {
+      pcTokens.forEach((t) => {
         minX = Math.min(minX, t.x);
         minY = Math.min(minY, t.y);
         maxX = Math.max(maxX, t.x + 100 * t.scale);
@@ -108,10 +108,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
     const worldWidth = worldBounds.maxX - worldBounds.minX;
     const worldHeight = worldBounds.maxY - worldBounds.minY;
 
-    return Math.min(
-      MINIMAP_SIZE / worldWidth,
-      MINIMAP_SIZE / worldHeight
-    );
+    return Math.min(MINIMAP_SIZE / worldWidth, MINIMAP_SIZE / worldHeight);
   }, [worldBounds]);
 
   // Canvas rendering effect - only runs when dependencies change
@@ -137,25 +134,15 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
       const bottomRight = worldToMinimap(worldBounds.maxX, worldBounds.maxY);
 
       ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
-      ctx.fillRect(
-        topLeft.x,
-        topLeft.y,
-        bottomRight.x - topLeft.x,
-        bottomRight.y - topLeft.y
-      );
+      ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
 
       ctx.strokeStyle = 'rgba(200, 200, 200, 0.6)';
       ctx.lineWidth = 2;
-      ctx.strokeRect(
-        topLeft.x,
-        topLeft.y,
-        bottomRight.x - topLeft.x,
-        bottomRight.y - topLeft.y
-      );
+      ctx.strokeRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
     }
 
     // Draw PC tokens (green dots)
-    pcTokens.forEach(token => {
+    pcTokens.forEach((token) => {
       const pos = worldToMinimap(token.x, token.y);
       ctx.fillStyle = '#22c55e'; // green-500
       ctx.beginPath();
@@ -172,7 +159,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
     const viewportTopLeft = worldToMinimap(viewportWorldX, viewportWorldY);
     const viewportBottomRight = worldToMinimap(
       viewportWorldX + viewportWorldWidth,
-      viewportWorldY + viewportWorldHeight
+      viewportWorldY + viewportWorldHeight,
     );
 
     ctx.strokeStyle = '#3b82f6'; // blue-500
@@ -181,7 +168,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
       viewportTopLeft.x,
       viewportTopLeft.y,
       viewportBottomRight.x - viewportTopLeft.x,
-      viewportBottomRight.y - viewportTopLeft.y
+      viewportBottomRight.y - viewportTopLeft.y,
     );
 
     ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'; // blue-500 with alpha
@@ -189,26 +176,28 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
       viewportTopLeft.x,
       viewportTopLeft.y,
       viewportBottomRight.x - viewportTopLeft.x,
-      viewportBottomRight.y - viewportTopLeft.y
+      viewportBottomRight.y - viewportTopLeft.y,
     );
-
   }, [position, scale, viewportSize, map, pcTokens, worldBounds, minimapScale]);
 
   // Memoized click handler to prevent function recreation on every render
-  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
 
-    // Convert minimap click to world coordinates using memoized values
-    const worldX = clickX / minimapScale + worldBounds.minX;
-    const worldY = clickY / minimapScale + worldBounds.minY;
+      // Convert minimap click to world coordinates using memoized values
+      const worldX = clickX / minimapScale + worldBounds.minX;
+      const worldY = clickY / minimapScale + worldBounds.minY;
 
-    onNavigate(worldX, worldY);
-  }, [worldBounds, minimapScale, onNavigate]);
+      onNavigate(worldX, worldY);
+    },
+    [worldBounds, minimapScale, onNavigate],
+  );
 
   return (
     <div

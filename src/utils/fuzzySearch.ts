@@ -69,7 +69,12 @@ function scoreMatch(text: string, query: string): number {
     const idx = lowerText.indexOf(char, lastMatchIdx + 1);
 
     // Bonus: Match is at start of word (or start of string)
-    if (idx === 0 || lowerText[idx - 1] === ' ' || lowerText[idx - 1] === '-' || lowerText[idx - 1] === '_') {
+    if (
+      idx === 0 ||
+      lowerText[idx - 1] === ' ' ||
+      lowerText[idx - 1] === '-' ||
+      lowerText[idx - 1] === '_'
+    ) {
       score += 15;
     }
 
@@ -77,10 +82,10 @@ function scoreMatch(text: string, query: string): number {
     if (idx === lastMatchIdx + 1) {
       score += 10;
     } else {
-        // Distance penalty
-        if (lastMatchIdx !== -1) {
-            compactness += (idx - lastMatchIdx);
-        }
+      // Distance penalty
+      if (lastMatchIdx !== -1) {
+        compactness += idx - lastMatchIdx;
+      }
     }
 
     lastMatchIdx = idx;
@@ -113,14 +118,14 @@ export function fuzzySearch(items: TokenLibraryItem[], query: string): TokenLibr
   const sectionBoost = isSectionSearch ? 50 : 0;
 
   // Score each item
-  const scored = items.map(item => {
+  const scored = items.map((item) => {
     let score = 0;
 
     // Apply section boost if applicable
     if (isSectionSearch) {
-        score += sectionBoost;
-        // If exact "assets" typed, show everything with high score
-        if (lowerQuery === 'assets') return { item, score: 100 };
+      score += sectionBoost;
+      // If exact "assets" typed, show everything with high score
+      if (lowerQuery === 'assets') return { item, score: 100 };
     }
 
     // Score name (weight: 3x)
@@ -156,9 +161,7 @@ export function filterByCategory(items: TokenLibraryItem[], category: string): T
     return items;
   }
 
-  return items.filter(item =>
-    item.category.toLowerCase() === category.toLowerCase()
-  );
+  return items.filter((item) => item.category.toLowerCase() === category.toLowerCase());
 }
 
 /**
@@ -168,6 +171,6 @@ export function filterByCategory(items: TokenLibraryItem[], category: string): T
  * @returns Sorted array of unique category names
  */
 export function getCategories(items: TokenLibraryItem[]): string[] {
-  const categories = new Set(items.map(item => item.category));
+  const categories = new Set(items.map((item) => item.category));
   return Array.from(categories).sort();
 }

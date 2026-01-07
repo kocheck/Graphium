@@ -92,7 +92,7 @@ export function captureErrorContext(
     componentName?: string;
     props?: Record<string, unknown>;
     state?: Record<string, unknown>;
-  } = {}
+  } = {},
 ): ErrorContext {
   const isDev = import.meta.env.DEV;
   const isTest = import.meta.env.MODE === 'test';
@@ -124,7 +124,9 @@ export function captureErrorContext(
     }
 
     // Page load timing - prefer Navigation Timing Level 2 API, fallback to deprecated API
-    const navigationEntries = performance.getEntriesByType?.('navigation') as PerformanceNavigationTiming[] | undefined;
+    const navigationEntries = performance.getEntriesByType?.('navigation') as
+      | PerformanceNavigationTiming[]
+      | undefined;
     const navigationEntry = navigationEntries?.[0];
 
     if (navigationEntry) {
@@ -137,7 +139,7 @@ export function captureErrorContext(
       // Legacy fallback for environments without Navigation Timing Level 2
       const legacyPerformance = performance as Performance & { timing?: PerformanceTiming };
       const timing = legacyPerformance.timing;
-      
+
       // Validate timing object exists, is an object, and has required numeric properties
       // Note: Values can legitimately be 0 if events haven't occurred yet
       if (
@@ -195,7 +197,7 @@ export function captureErrorContext(
 
 /**
  * Sanitize data for logging (remove functions, circular refs, large objects)
- * 
+ *
  * Note: The circular reference detection using WeakSet may produce false positives.
  * An object appearing in multiple branches of the tree (but not in a circular path)
  * will be marked as [Circular] after its first occurrence. This is acceptable for
@@ -238,7 +240,7 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
         }
 
         return value;
-      })
+      }),
     );
 
     return sanitized as Record<string, unknown>;
@@ -408,7 +410,9 @@ export function formatErrorReport(context: ErrorContext): string {
     lines.push('Performance Metrics:');
     if (context.performance.memory) {
       const { usedJSHeapSize, jsHeapSizeLimit } = context.performance.memory;
-      lines.push(`  Memory: ${(usedJSHeapSize / 1024 / 1024).toFixed(2)} MB / ${(jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`);
+      lines.push(
+        `  Memory: ${(usedJSHeapSize / 1024 / 1024).toFixed(2)} MB / ${(jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`,
+      );
     }
     if (context.performance.timing) {
       lines.push(`  Load Time: ${context.performance.timing.loadTime}ms`);

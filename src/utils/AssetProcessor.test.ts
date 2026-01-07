@@ -92,9 +92,6 @@ describe('AssetProcessor', () => {
     const handle = processImage(file, 'TOKEN');
     await handle.promise;
 
-    expect(mockSaveAssetTemp).toHaveBeenCalledWith(
-      expect.any(ArrayBuffer),
-      'character.webp'
-    );
+    expect(mockSaveAssetTemp).toHaveBeenCalledWith(expect.any(ArrayBuffer), 'character.webp');
   });
 });

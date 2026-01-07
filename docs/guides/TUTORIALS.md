@@ -49,6 +49,7 @@ npm run dev
 ```
 
 This starts:
+
 - Vite dev server (React app) on http://localhost:5173
 - Electron main process (launches desktop app)
 
@@ -68,6 +69,7 @@ This starts:
 ### Expected Result
 
 You should see:
+
 - Architect Window with Sidebar, Canvas, and Toolbar
 - Grid overlay on canvas
 - Ability to drag tokens and draw with marker
@@ -75,12 +77,14 @@ You should see:
 ### Troubleshooting
 
 **Issue: "Cannot find module"**
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install
 ```
 
 **Issue: Blank white screen**
+
 ```bash
 # Clear Vite cache
 rm -rf .vite dist dist-electron
@@ -113,12 +117,12 @@ DM wants to clear all marker/eraser strokes without clearing tokens.
 ipcMain.on('CLEAR_DRAWINGS', () => {
   // Broadcast to all windows
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('CLEAR_DRAWINGS_CONFIRMED')
+    mainWindow.webContents.send('CLEAR_DRAWINGS_CONFIRMED');
   }
   if (worldWindow && !worldWindow.isDestroyed()) {
-    worldWindow.webContents.send('CLEAR_DRAWINGS_CONFIRMED')
+    worldWindow.webContents.send('CLEAR_DRAWINGS_CONFIRMED');
   }
-})
+});
 ```
 
 **2. Add store action** (`src/store/gameStore.ts`):
@@ -126,13 +130,13 @@ ipcMain.on('CLEAR_DRAWINGS', () => {
 ```typescript
 interface GameState {
   // ... existing properties
-  clearDrawings: () => void  // Add this line
+  clearDrawings: () => void; // Add this line
 }
 
 export const useGameStore = create<GameState>((set) => ({
   // ... existing state
   clearDrawings: () => set({ drawings: [] }),
-}))
+}));
 ```
 
 **3. Add listener in renderer** (`src/components/SyncManager.tsx`):
@@ -141,13 +145,13 @@ export const useGameStore = create<GameState>((set) => ({
 useEffect(() => {
   // Listen for clear command from main process
   window.ipcRenderer.on('CLEAR_DRAWINGS_CONFIRMED', () => {
-    useGameStore.getState().clearDrawings()
-  })
+    useGameStore.getState().clearDrawings();
+  });
 
   return () => {
-    window.ipcRenderer.off('CLEAR_DRAWINGS_CONFIRMED', () => {})
-  }
-}, [])
+    window.ipcRenderer.off('CLEAR_DRAWINGS_CONFIRMED', () => {});
+  };
+}, []);
 ```
 
 **4. Add button in toolbar** (`src/App.tsx`):
@@ -275,15 +279,15 @@ function App() {
 
 ```typescript
 interface GameState {
-  tokens: Token[]
-  drawings: Drawing[]
-  gridSize: number
-  backgroundColor: string  // Add this
+  tokens: Token[];
+  drawings: Drawing[];
+  gridSize: number;
+  backgroundColor: string; // Add this
 
-  addToken: (token: Token) => void
-  addDrawing: (drawing: Drawing) => void
-  setState: (state: Partial<GameState>) => void
-  setBackgroundColor: (color: string) => void  // Add this
+  addToken: (token: Token) => void;
+  addDrawing: (drawing: Drawing) => void;
+  setState: (state: Partial<GameState>) => void;
+  setBackgroundColor: (color: string) => void; // Add this
 }
 ```
 
@@ -294,20 +298,22 @@ export const useGameStore = create<GameState>((set) => ({
   tokens: [],
   drawings: [],
   gridSize: 50,
-  backgroundColor: '#171717',  // Default: neutral-900
+  backgroundColor: '#171717', // Default: neutral-900
 
-  addToken: (token) => set((state) => ({
-    tokens: [...state.tokens, token]
-  })),
+  addToken: (token) =>
+    set((state) => ({
+      tokens: [...state.tokens, token],
+    })),
 
-  addDrawing: (drawing) => set((state) => ({
-    drawings: [...state.drawings, drawing]
-  })),
+  addDrawing: (drawing) =>
+    set((state) => ({
+      drawings: [...state.drawings, drawing],
+    })),
 
   setState: (newState) => set(newState),
 
   setBackgroundColor: (color) => set({ backgroundColor: color }),
-}))
+}));
 ```
 
 **3. Use in CanvasManager** (`src/components/Canvas/CanvasManager.tsx`):
@@ -350,8 +356,8 @@ const dataToSave = {
   tokens: state.tokens,
   drawings: state.drawings,
   gridSize: state.gridSize,
-  backgroundColor: state.backgroundColor,  // Add this
-}
+  backgroundColor: state.backgroundColor, // Add this
+};
 
 // LOAD_CAMPAIGN already handles it via setState()
 ```
@@ -390,66 +396,67 @@ const dataToSave = {
 
 ```typescript
 // Before:
-type Tool = 'select' | 'marker' | 'eraser'
+type Tool = 'select' | 'marker' | 'eraser';
 
 // After:
-type Tool = 'select' | 'marker' | 'eraser' | 'rectangle'
+type Tool = 'select' | 'marker' | 'eraser' | 'rectangle';
 ```
 
 **2. Update Drawing interface** (`src/store/gameStore.ts`):
 
 ```typescript
 interface Drawing {
-  id: string
-  tool: 'marker' | 'eraser' | 'rectangle'  // Add rectangle
-  points: number[]  // For rectangle: [x, y, width, height]
-  color: string
-  size: number
+  id: string;
+  tool: 'marker' | 'eraser' | 'rectangle'; // Add rectangle
+  points: number[]; // For rectangle: [x, y, width, height]
+  color: string;
+  size: number;
 }
 ```
 
 **3. Add rectangle drawing logic** (`src/components/Canvas/CanvasManager.tsx`):
 
 ```typescript
-import { Rect } from 'react-konva'  // Add import
+import { Rect } from 'react-konva'; // Add import
 
 // In handleMouseDown:
 const handleMouseDown = (e: any) => {
-  if (tool === 'select') return
+  if (tool === 'select') return;
 
-  isDrawing.current = true
-  const pos = e.target.getStage().getPointerPosition()
+  isDrawing.current = true;
+  const pos = e.target.getStage().getPointerPosition();
 
   currentLine.current = {
     id: crypto.randomUUID(),
     tool: tool,
-    points: tool === 'rectangle'
-      ? [pos.x, pos.y, 0, 0]  // [x, y, width, height]
-      : [pos.x, pos.y],       // For marker/eraser
+    points:
+      tool === 'rectangle'
+        ? [pos.x, pos.y, 0, 0] // [x, y, width, height]
+        : [pos.x, pos.y], // For marker/eraser
     color: tool === 'eraser' ? '#000000' : '#df4b26',
     size: tool === 'eraser' ? 20 : 5,
-  }
-}
+  };
+};
 
 // In handleMouseMove:
 const handleMouseMove = (e: any) => {
-  if (!isDrawing.current || tool === 'select') return
+  if (!isDrawing.current || tool === 'select') return;
 
-  const stage = e.target.getStage()
-  const point = stage.getPointerPosition()
-  const cur = currentLine.current
+  const stage = e.target.getStage();
+  const point = stage.getPointerPosition();
+  const cur = currentLine.current;
 
   if (tool === 'rectangle') {
     // Update width and height
-    const [startX, startY] = cur.points
-    cur.points = [startX, startY, point.x - startX, point.y - startY]
+    const [startX, startY] = cur.points;
+    cur.points = [startX, startY, point.x - startX, point.y - startY];
   } else {
     // Append point for marker/eraser
-    cur.points = cur.points.concat([point.x, point.y])
+    cur.points = cur.points.concat([point.x, point.y]);
   }
 
-  setTempLine({...cur})
-}
+  setTempLine({ ...cur });
+};
 ```
 
 **4. Render rectangles** (`src/components/Canvas/CanvasManager.tsx`):
@@ -532,13 +539,13 @@ const handleMouseMove = (e: any) => {
 ```typescript
 interface GameState {
   // ... existing
-  setGridSize: (size: number) => void
+  setGridSize: (size: number) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
   // ... existing
   setGridSize: (size) => set({ gridSize: size }),
-}))
+}));
 ```
 
 **2. Add button in toolbar** (`src/App.tsx`):
@@ -570,8 +577,9 @@ export const useGameStore = create<GameState>((set) => ({
 **3. Verify grid updates:**
 
 CanvasManager already uses `gridSize` from store:
+
 ```typescript
-const { gridSize } = useGameStore()
+const { gridSize } = useGameStore();
 // Used in: GridOverlay, snapToGrid, token scaling
 ```
 
@@ -631,10 +639,10 @@ Konva renders on canvas
 ```typescript
 // src/components/Canvas/CanvasManager.tsx:100
 const handleDrop = async (e: React.DragEvent) => {
-  const file = e.dataTransfer.files[0]
-  const objectUrl = URL.createObjectURL(file)  // Temp browser URL
-  setPendingCrop({ src: objectUrl, x, y })     // Show cropper
-}
+  const file = e.dataTransfer.files[0];
+  const objectUrl = URL.createObjectURL(file); // Temp browser URL
+  setPendingCrop({ src: objectUrl, x, y }); // Show cropper
+};
 ```
 
 **Step 2: User Crops Image**
@@ -642,10 +650,10 @@ const handleDrop = async (e: React.DragEvent) => {
 ```typescript
 // src/components/ImageCropper.tsx:99
 const handleSave = async () => {
-  const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels)
+  const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
   // croppedImage is WebP blob (quality=1)
-  onConfirm(croppedImage)  // → handleCropConfirm
-}
+  onConfirm(croppedImage); // → handleCropConfirm
+};
 ```
 
 **Step 3: Process and Resize**
@@ -654,26 +662,30 @@ const handleSave = async () => {
 // src/utils/AssetProcessor.ts:79
 export async function processImage(file: File, assetType: AssetType) {
   // 1. Load image to canvas
-  const img = new Image()
-  img.src = URL.createObjectURL(file)
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
 
   // 2. Resize to max dimensions
-  const MAX_SIZE = assetType === 'MAP' ? 4096 : 512
-  const scale = Math.min(1, MAX_SIZE / Math.max(img.width, img.height))
+  const MAX_SIZE = assetType === 'MAP' ? 4096 : 512;
+  const scale = Math.min(1, MAX_SIZE / Math.max(img.width, img.height));
 
   // 3. Draw to canvas and convert to WebP
-  canvas.toBlob(async (blob) => {
-    const arrayBuffer = await blob.arrayBuffer()
+  canvas.toBlob(
+    async (blob) => {
+      const arrayBuffer = await blob.arrayBuffer();
 
-    // 4. Save via IPC
-    const filePath = await window.ipcRenderer.invoke(
-      'SAVE_ASSET_TEMP',
-      arrayBuffer,
-      'token.webp'
-    )
+      // 4. Save via IPC
+      const filePath = await window.ipcRenderer.invoke(
+        'SAVE_ASSET_TEMP',
+        arrayBuffer,
+        'token.webp',
+      );
 
-    return filePath  // "file:///Users/.../temp_assets/123-token.webp"
-  }, 'image/webp', 1)
+      return filePath; // "file:///Users/.../temp_assets/123-token.webp"
+    },
+    'image/webp',
+    1,
+  );
 }
 ```
 
@@ -682,13 +694,13 @@ export async function processImage(file: File, assetType: AssetType) {
 ```typescript
 // electron/main.ts:184
 ipcMain.handle('SAVE_ASSET_TEMP', async (_event, buffer, name) => {
-  const tempDir = path.join(app.getPath('userData'), 'temp_assets')
-  await fs.mkdir(tempDir, { recursive: true })
-  const fileName = `${Date.now()}-${name}`
-  const filePath = path.join(tempDir, fileName)
-  await fs.writeFile(filePath, Buffer.from(buffer))
-  return `file://${filePath}`
-})
+  const tempDir = path.join(app.getPath('userData'), 'temp_assets');
+  await fs.mkdir(tempDir, { recursive: true });
+  const fileName = `${Date.now()}-${name}`;
+  const filePath = path.join(tempDir, fileName);
+  await fs.writeFile(filePath, Buffer.from(buffer));
+  return `file://${filePath}`;
+});
 ```
 
 **Step 5: Add Token to Store**
@@ -701,7 +713,7 @@ addToken({
   y: pendingCrop.y,
   src: 'file:///Users/.../temp_assets/123-token.webp',
   scale: 1,
-})
+});
 ```
 
 **Step 6: Render with Protocol Conversion**
@@ -725,8 +737,8 @@ const URLImage = ({ src }) => {
 ```typescript
 // electron/main.ts:122
 protocol.handle('media', (request) => {
-  return net.fetch('file://' + request.url.slice('media://'.length))
-})
+  return net.fetch('file://' + request.url.slice('media://'.length));
+});
 // Translates: media:///Users/.../token.webp → file:///Users/.../token.webp
 ```
 
@@ -742,12 +754,12 @@ protocol.handle('media', (request) => {
 
 ```typescript
 // Log each step:
-console.log('1. File dropped:', file.name, file.size)
-console.log('2. Crop completed:', blob.size)
-console.log('3. Processed, saved at:', filePath)
-console.log('4. Token added with src:', token.src)
-console.log('5. URLImage converting:', src, '→', safeSrc)
-console.log('6. Image loaded:', img)
+console.log('1. File dropped:', file.name, file.size);
+console.log('2. Crop completed:', blob.size);
+console.log('3. Processed, saved at:', filePath);
+console.log('4. Token added with src:', token.src);
+console.log('5. URLImage converting:', src, '→', safeSrc);
+console.log('6. Image loaded:', img);
 ```
 
 ---
@@ -770,70 +782,70 @@ console.log('6. Image loaded:', img)
 app.whenReady().then(() => {
   // Log all IPC events
   ipcMain.on('SYNC_WORLD_STATE', (event, state) => {
-    console.log('[Main] Received SYNC_WORLD_STATE')
-    console.log('[Main] Tokens:', state.tokens.length)
-    console.log('[Main] Drawings:', state.drawings.length)
+    console.log('[Main] Received SYNC_WORLD_STATE');
+    console.log('[Main] Tokens:', state.tokens.length);
+    console.log('[Main] Drawings:', state.drawings.length);
 
     if (worldWindow && !worldWindow.isDestroyed()) {
-      console.log('[Main] Broadcasting to World Window')
-      worldWindow.webContents.send('SYNC_WORLD_STATE', state)
+      console.log('[Main] Broadcasting to World Window');
+      worldWindow.webContents.send('SYNC_WORLD_STATE', state);
     } else {
-      console.log('[Main] World Window not available!')
+      console.log('[Main] World Window not available!');
     }
-  })
-})
+  });
+});
 ```
 
 **2. Enable Logging in Architect Window** (`src/components/SyncManager.tsx`):
 
 ```typescript
 useEffect(() => {
-  if (windowType === 'world') return
+  if (windowType === 'world') return;
 
   // Subscribe to store changes (PRODUCER mode)
   const unsubscribe = useGameStore.subscribe((state) => {
-    console.log('[Architect] State changed, syncing...')
-    console.log('[Architect] Tokens:', state.tokens.length)
-    console.log('[Architect] Drawings:', state.drawings.length)
+    console.log('[Architect] State changed, syncing...');
+    console.log('[Architect] Tokens:', state.tokens.length);
+    console.log('[Architect] Drawings:', state.drawings.length);
 
     // @ts-ignore
     window.ipcRenderer.send('SYNC_WORLD_STATE', {
       tokens: state.tokens,
       drawings: state.drawings,
       gridSize: state.gridSize,
-    })
+    });
 
-    console.log('[Architect] Sync sent via IPC')
-  })
+    console.log('[Architect] Sync sent via IPC');
+  });
 
-  return unsubscribe
-}, [windowType])
+  return unsubscribe;
+}, [windowType]);
 ```
 
 **3. Enable Logging in World Window** (`src/components/SyncManager.tsx`):
 
 ```typescript
 useEffect(() => {
-  if (windowType !== 'world') return
+  if (windowType !== 'world') return;
 
-  console.log('[World] Setting up IPC listener...')
+  console.log('[World] Setting up IPC listener...');
 
   // @ts-ignore
   window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
-    console.log('[World] Received state update via IPC')
-    console.log('[World] Tokens:', state.tokens.length)
-    console.log('[World] Drawings:', state.drawings.length)
+    console.log('[World] Received state update via IPC');
+    console.log('[World] Tokens:', state.tokens.length);
+    console.log('[World] Drawings:', state.drawings.length);
 
-    useGameStore.getState().setState(state)
-    console.log('[World] State applied to store')
-  })
+    useGameStore.getState().setState(state);
+    console.log('[World] State applied to store');
+  });
 
   return () => {
     // @ts-ignore
-    window.ipcRenderer.off('SYNC_WORLD_STATE', () => {})
-    console.log('[World] IPC listener removed')
-  }
-}, [windowType])
+    window.ipcRenderer.off('SYNC_WORLD_STATE', () => {});
+    console.log('[World] IPC listener removed');
+  };
+}, [windowType]);
 ```
 
 **4. Test Flow:**
@@ -861,19 +873,22 @@ useEffect(() => {
 **Scenario 1: World Window not receiving updates**
 
 Check console output:
+
 - If "[Main] World Window not available!" → Window was closed or destroyed
 - If no "[World] Received..." logs → Listener not set up correctly
 
 Fix:
+
 ```typescript
 // Verify World Window query param
-const params = new URLSearchParams(window.location.search)
-console.log('Window type:', params.get('type'))  // Should be 'world'
+const params = new URLSearchParams(window.location.search);
+console.log('Window type:', params.get('type')); // Should be 'world'
 ```
 
 **Scenario 2: High CPU usage during drawing**
 
 Check console:
+
 - If hundreds of "[Architect] State changed" per second → Too many syncs
 
 Fix: Throttle updates (see Tutorial 2 in this document)
@@ -881,13 +896,14 @@ Fix: Throttle updates (see Tutorial 2 in this document)
 **Scenario 3: State out of sync after load**
 
 Check if SYNC_WORLD_STATE sent after load:
+
 ```typescript
-const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN')
+const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN');
 if (state) {
-  useGameStore.getState().setState(state)
+  useGameStore.getState().setState(state);
 
   // Manually trigger sync after load
-  window.ipcRenderer.send('SYNC_WORLD_STATE', state)
+  window.ipcRenderer.send('SYNC_WORLD_STATE', state);
 }
 ```
 
@@ -941,7 +957,7 @@ Create `test-sync.js`:
 ```javascript
 // Run with: node test-sync.js
 
-const assert = require('assert')
+const assert = require('assert');
 
 // Mock store for testing
 const testStore = {
@@ -949,43 +965,43 @@ const testStore = {
   drawings: [],
 
   addToken(token) {
-    this.tokens.push(token)
-    this.notifyListeners()
+    this.tokens.push(token);
+    this.notifyListeners();
   },
 
   listeners: [],
   subscribe(fn) {
-    this.listeners.push(fn)
+    this.listeners.push(fn);
     return () => {
-      this.listeners = this.listeners.filter(l => l !== fn)
-    }
+      this.listeners = this.listeners.filter((l) => l !== fn);
+    };
   },
 
   notifyListeners() {
-    this.listeners.forEach(fn => fn(this))
-  }
-}
+    this.listeners.forEach((fn) => fn(this));
+  },
+};
 
 // Test subscription
-let syncCount = 0
+let syncCount = 0;
 const unsubscribe = testStore.subscribe((state) => {
-  syncCount++
-  console.log(`Sync #${syncCount}: ${state.tokens.length} tokens`)
-})
+  syncCount++;
+  console.log(`Sync #${syncCount}: ${state.tokens.length} tokens`);
+});
 
 // Add tokens
-testStore.addToken({ id: '1', x: 0, y: 0, src: 'test.png', scale: 1 })
-testStore.addToken({ id: '2', x: 50, y: 50, src: 'test2.png', scale: 1 })
+testStore.addToken({ id: '1', x: 0, y: 0, src: 'test.png', scale: 1 });
+testStore.addToken({ id: '2', x: 50, y: 50, src: 'test2.png', scale: 1 });
 
 // Verify
-assert.equal(syncCount, 2, 'Should trigger sync twice')
-assert.equal(testStore.tokens.length, 2, 'Should have 2 tokens')
+assert.equal(syncCount, 2, 'Should trigger sync twice');
+assert.equal(testStore.tokens.length, 2, 'Should have 2 tokens');
 
-unsubscribe()
-testStore.addToken({ id: '3', x: 100, y: 100, src: 'test3.png', scale: 1 })
-assert.equal(syncCount, 2, 'Should not trigger after unsubscribe')
+unsubscribe();
+testStore.addToken({ id: '3', x: 100, y: 100, src: 'test3.png', scale: 1 });
+assert.equal(syncCount, 2, 'Should not trigger after unsubscribe');
 
-console.log('✓ All tests passed')
+console.log('✓ All tests passed');
 ```
 
 Run: `node test-sync.js`
@@ -1008,8 +1024,8 @@ Separate library assets (permanent) from temp assets (session-only).
 // Before app.whenReady()
 protocol.registerSchemesAsPrivileged([
   { scheme: 'media', privileges: { secure: true, supportFetchAPI: true, bypassCSP: true } },
-  { scheme: 'assets', privileges: { secure: true, supportFetchAPI: true, bypassCSP: true } }  // Add
-])
+  { scheme: 'assets', privileges: { secure: true, supportFetchAPI: true, bypassCSP: true } }, // Add
+]);
 ```
 
 **2. Implement handler** (`electron/main.ts`):
@@ -1018,16 +1034,16 @@ protocol.registerSchemesAsPrivileged([
 app.whenReady().then(() => {
   // Existing media:// handler
   protocol.handle('media', (request) => {
-    return net.fetch('file://' + request.url.slice('media://'.length))
-  })
+    return net.fetch('file://' + request.url.slice('media://'.length));
+  });
 
   // New assets:// handler
   protocol.handle('assets', (request) => {
-    const assetPath = request.url.slice('assets://'.length)
-    const fullPath = path.join(app.getPath('userData'), 'library', assetPath)
-    return net.fetch('file://' + fullPath)
-  })
-})
+    const assetPath = request.url.slice('assets://'.length);
+    const fullPath = path.join(app.getPath('userData'), 'library', assetPath);
+    return net.fetch('file://' + fullPath);
+  });
+});
 ```
 
 **3. Add helper function** (`src/utils/AssetProcessor.ts`):
@@ -1039,18 +1055,13 @@ app.whenReady().then(() => {
  * Unlike SAVE_ASSET_TEMP, these persist across sessions
  */
 export async function saveLibraryAsset(file: File, category: string) {
-  const blob = await file.arrayBuffer()
-  const fileName = `${Date.now()}-${file.name}`
+  const blob = await file.arrayBuffer();
+  const fileName = `${Date.now()}-${file.name}`;
 
   // @ts-ignore
-  const assetPath = await window.ipcRenderer.invoke(
-    'SAVE_LIBRARY_ASSET',
-    blob,
-    category,
-    fileName
-  )
+  const assetPath = await window.ipcRenderer.invoke('SAVE_LIBRARY_ASSET', blob, category, fileName);
 
-  return assetPath  // Returns "assets://monsters/123-goblin.webp"
+  return assetPath; // Returns "assets://monsters/123-goblin.webp"
 }
 ```
 
@@ -1058,14 +1069,14 @@ export async function saveLibraryAsset(file: File, category: string) {
 
 ```typescript
 ipcMain.handle('SAVE_LIBRARY_ASSET', async (_event, buffer, category, fileName) => {
-  const libraryDir = path.join(app.getPath('userData'), 'library', category)
-  await fs.mkdir(libraryDir, { recursive: true })
+  const libraryDir = path.join(app.getPath('userData'), 'library', category);
+  await fs.mkdir(libraryDir, { recursive: true });
 
-  const filePath = path.join(libraryDir, fileName)
-  await fs.writeFile(filePath, Buffer.from(buffer))
+  const filePath = path.join(libraryDir, fileName);
+  await fs.writeFile(filePath, Buffer.from(buffer));
 
-  return `assets://${category}/${fileName}`
-})
+  return `assets://${category}/${fileName}`;
+});
 ```
 
 **5. Update URLImage** (`src/components/Canvas/CanvasManager.tsx`):

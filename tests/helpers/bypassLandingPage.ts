@@ -26,7 +26,7 @@ import type { Campaign } from '../../src/store/gameStore';
  */
 export async function bypassLandingPageAndInjectState(
   page: Page,
-  campaignData?: Partial<Campaign>
+  campaignData?: Partial<Campaign>,
 ) {
   // 1. Mock Electron APIs (for compatibility with web mode)
   await page.addInitScript(() => {
@@ -105,13 +105,15 @@ export async function bypassLandingPageAndInjectState(
 
   // 5. Wait for main app to render
   // Note: The app uses data-testid="editor-view" on the editor root div (when in EDITOR state)
-  await page.waitForSelector('[data-testid="editor-view"]', {
-    timeout: 10000,
-    state: 'visible',
-  }).catch(async () => {
-    // Fallback: If editor-view doesn't exist, wait for root to be visible
-    await page.waitForSelector('#root:visible', { timeout: 10000 });
-  });
+  await page
+    .waitForSelector('[data-testid="editor-view"]', {
+      timeout: 10000,
+      state: 'visible',
+    })
+    .catch(async () => {
+      // Fallback: If editor-view doesn't exist, wait for root to be visible
+      await page.waitForSelector('#root:visible', { timeout: 10000 });
+    });
 
   // Wait for any initial animations/loading to complete
   await page.waitForLoadState('networkidle');
@@ -134,7 +136,9 @@ export async function injectCampaignState(page: Page, campaign: any) {
         const db = (event.target as IDBOpenDBRequest).result;
 
         if (!db.objectStoreNames.contains('autosave')) {
-          reject(new Error('Database not initialized. Call bypassLandingPageAndInjectState first.'));
+          reject(
+            new Error('Database not initialized. Call bypassLandingPageAndInjectState first.'),
+          );
           return;
         }
 

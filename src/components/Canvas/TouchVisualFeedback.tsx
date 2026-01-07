@@ -35,7 +35,7 @@ const TouchVisualFeedback = ({
   pointerPosition,
   touchPoints,
   gestureMode,
-  containerBounds
+  containerBounds,
 }: TouchVisualFeedbackProps) => {
   const settings = useTouchSettingsStore();
 
@@ -44,7 +44,7 @@ const TouchVisualFeedback = ({
     if (!pressure) return 0;
     const minSize = 10;
     const maxSize = 40;
-    return minSize + (pressure * (maxSize - minSize));
+    return minSize + pressure * (maxSize - minSize);
   }, [pressure]);
 
   // Pressure indicator color changes with pressure (blue -> green -> red)
@@ -137,9 +137,7 @@ const TouchVisualFeedback = ({
               />
 
               {/* Touch point number */}
-              <div
-                className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm"
-              >
+              <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm">
                 {index + 1}
               </div>
             </div>
@@ -147,10 +145,7 @@ const TouchVisualFeedback = ({
 
           {/* Connection line between two touch points */}
           {touchPoints.length === 2 && (
-            <svg
-              className="absolute inset-0 w-full h-full"
-              style={{ pointerEvents: 'none' }}
-            >
+            <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
               <line
                 x1={touchPoints[0].x}
                 y1={touchPoints[0].y}

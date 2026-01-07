@@ -19,8 +19,8 @@
  * - 'theme-loading' class prevents transition animations on first paint
  */
 
-import { useEffect } from 'react'
-import { getStorage } from '../services/storage'
+import { useEffect } from 'react';
+import { getStorage } from '../services/storage';
 
 // Note: window.themeAPI types are defined in vite-env.d.ts
 
@@ -33,7 +33,7 @@ import { getStorage } from '../services/storage'
  * @param theme - 'light' or 'dark'
  */
 function applyTheme(theme: 'light' | 'dark') {
-  document.documentElement.setAttribute('data-theme', theme)
+  document.documentElement.setAttribute('data-theme', theme);
 }
 
 /**
@@ -43,7 +43,7 @@ function applyTheme(theme: 'light' | 'dark') {
  */
 export function ThemeManager() {
   useEffect(() => {
-    let cleanup: (() => void) | undefined
+    let cleanup: (() => void) | undefined;
 
     /**
      * Resolve effective theme based on mode
@@ -52,9 +52,9 @@ export function ThemeManager() {
      */
     function resolveEffectiveTheme(mode: 'light' | 'dark' | 'system'): 'light' | 'dark' {
       if (mode === 'system') {
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       }
-      return mode
+      return mode;
     }
 
     /**
@@ -67,86 +67,86 @@ export function ThemeManager() {
      */
     async function initializeTheme() {
       try {
-        const storage = getStorage()
-        const isElectron = storage.getPlatform() === 'electron'
+        const storage = getStorage();
+        const isElectron = storage.getPlatform() === 'electron';
 
         if (isElectron && window.themeAPI) {
           // Electron: Use themeAPI for full OS integration
-          const { effectiveTheme } = await window.themeAPI.getThemeState()
-          applyTheme(effectiveTheme as 'light' | 'dark')
+          const { effectiveTheme } = await window.themeAPI.getThemeState();
+          applyTheme(effectiveTheme as 'light' | 'dark');
 
           // Subscribe to theme changes from main process
           cleanup = window.themeAPI.onThemeChanged(({ effectiveTheme }) => {
-            applyTheme(effectiveTheme as 'light' | 'dark')
-          })
+            applyTheme(effectiveTheme as 'light' | 'dark');
+          });
         } else {
           // Web: Use storage service and matchMedia for system theme
-          const mode = await storage.getThemeMode()
-          const effectiveTheme = resolveEffectiveTheme(mode)
-          applyTheme(effectiveTheme)
+          const mode = await storage.getThemeMode();
+          const effectiveTheme = resolveEffectiveTheme(mode);
+          applyTheme(effectiveTheme);
 
           // Subscribe to system theme changes (for 'system' mode)
-          const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+          const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
           const handleSystemThemeChange = async () => {
-            const currentMode = await storage.getThemeMode()
+            const currentMode = await storage.getThemeMode();
             if (currentMode === 'system') {
-              const newTheme = resolveEffectiveTheme('system')
-              applyTheme(newTheme)
+              const newTheme = resolveEffectiveTheme('system');
+              applyTheme(newTheme);
             }
-          }
+          };
 
           // Always listen for system theme changes
-          mediaQuery.addEventListener('change', handleSystemThemeChange)
+          mediaQuery.addEventListener('change', handleSystemThemeChange);
 
           // Subscribe to cross-tab theme changes (for multi-window sync) when supported
-          let themeChannel: BroadcastChannel | null = null
+          let themeChannel: BroadcastChannel | null = null;
 
           if (typeof BroadcastChannel !== 'undefined') {
-            themeChannel = new BroadcastChannel('graphium-theme-sync')
+            themeChannel = new BroadcastChannel('graphium-theme-sync');
             const handleCrossTabThemeChange = (event: MessageEvent) => {
               if (event.data?.type === 'THEME_CHANGED') {
-                const newMode = event.data.mode as 'light' | 'dark' | 'system'
-                const newTheme = resolveEffectiveTheme(newMode)
-                applyTheme(newTheme)
+                const newMode = event.data.mode as 'light' | 'dark' | 'system';
+                const newTheme = resolveEffectiveTheme(newMode);
+                applyTheme(newTheme);
               }
-            }
+            };
 
-            themeChannel.addEventListener('message', handleCrossTabThemeChange)
+            themeChannel.addEventListener('message', handleCrossTabThemeChange);
 
             cleanup = () => {
-              mediaQuery.removeEventListener('change', handleSystemThemeChange)
-              themeChannel?.removeEventListener('message', handleCrossTabThemeChange)
-              themeChannel?.close()
-            }
+              mediaQuery.removeEventListener('change', handleSystemThemeChange);
+              themeChannel?.removeEventListener('message', handleCrossTabThemeChange);
+              themeChannel?.close();
+            };
           } else {
             // Fallback: only clean up system theme listener if BroadcastChannel is unavailable
             cleanup = () => {
-              mediaQuery.removeEventListener('change', handleSystemThemeChange)
-            }
+              mediaQuery.removeEventListener('change', handleSystemThemeChange);
+            };
           }
         }
 
         // Enable smooth transitions after initial theme is applied
         // (prevents animated flash on page load)
         requestAnimationFrame(() => {
-          document.body.classList.remove('theme-loading')
-        })
+          document.body.classList.remove('theme-loading');
+        });
       } catch (error) {
-        console.error('[ThemeManager] Failed to initialize theme:', error)
+        console.error('[ThemeManager] Failed to initialize theme:', error);
         // Fallback to light theme on error
-        applyTheme('light')
-        document.body.classList.remove('theme-loading')
+        applyTheme('light');
+        document.body.classList.remove('theme-loading');
       }
     }
 
-    initializeTheme()
+    initializeTheme();
 
     // Cleanup: unsubscribe from theme changes
     return () => {
-      cleanup?.()
-    }
-  }, []) // Run once on mount
+      cleanup?.();
+    };
+  }, []); // Run once on mount
 
   // This component has no UI
-  return null
+  return null;
 }

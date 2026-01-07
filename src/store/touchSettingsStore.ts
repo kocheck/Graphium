@@ -217,6 +217,6 @@ export const useTouchSettingsStore = create<TouchSettingsState>()(
     {
       name: 'graphium-touch-settings', // localStorage key
       version: 1,
-    }
-  )
+    },
+  ),
 );

@@ -1,1 +1,219 @@
-{"result":[{"scriptId":"1196","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"HTMLCanvasElement.getContext","ranges":[{"startOffset":1405,"endOffset":2722,"count":0}],"isBlockCoverage":false},{"functionName":"HTMLCanvasElement.toDataURL","ranges":[{"startOffset":2766,"endOffset":2819,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":2930,"endOffset":2964,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":3071,"endOffset":3102,"count":0}],"isBlockCoverage":false}]},{"scriptId":"1371","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/types/geometry.test.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":20894,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":20894,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":547,"endOffset":6416,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":608,"endOffset":3004,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":686,"endOffset":865,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":956,"endOffset":1190,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1268,"endOffset":1552,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1632,"endOffset":1919,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1999,"endOffset":2257,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2339,"endOffset":2600,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2673,"endOffset":2998,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3063,"endOffset":4420,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3148,"endOffset":3332,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3422,"endOffset":3871,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3962,"endOffset":4414,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4478,"endOffset":6412,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4563,"endOffset":4717,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4804,"endOffset":5097,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5188,"endOffset":5475,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5568,"endOffset":5858,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5933,"endOffset":6406,"count":1}],"isBlockCoverage":true}]},{"scriptId":"1372","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/types/geometry.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":6930,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":6930,"count":1}],"isBlockCoverage":true},{"functionName":"isPointInPolygon","ranges":[{"startOffset":185,"endOffset":657,"count":24},{"startOffset":255,"endOffset":268,"count":2},{"startOffset":268,"endOffset":362,"count":22},{"startOffset":362,"endOffset":638,"count":86},{"startOffset":529,"endOffset":585,"count":14},{"startOffset":603,"endOffset":634,"count":7},{"startOffset":638,"endOffset":656,"count":22}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":762,"endOffset":794,"count":7}],"isBlockCoverage":true},{"functionName":"isPointInAnyPolygon","ranges":[{"startOffset":798,"endOffset":918,"count":22}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":869,"endOffset":914,"count":17}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":1026,"endOffset":1061,"count":3}],"isBlockCoverage":true},{"functionName":"isRectInAnyPolygon","ranges":[{"startOffset":1065,"endOffset":1554,"count":6},{"startOffset":1258,"endOffset":1280,"count":2},{"startOffset":1280,"endOffset":1553,"count":4}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1501,"endOffset":1550,"count":13}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":1661,"endOffset":1695,"count":6}],"isBlockCoverage":true}]}]}
+{
+  "result": [
+    {
+      "scriptId": "1196",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "HTMLCanvasElement.getContext",
+          "ranges": [{ "startOffset": 1405, "endOffset": 2722, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "HTMLCanvasElement.toDataURL",
+          "ranges": [{ "startOffset": 2766, "endOffset": 2819, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2930, "endOffset": 2964, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3071, "endOffset": 3102, "count": 0 }],
+          "isBlockCoverage": false
+        }
+      ]
+    },
+    {
+      "scriptId": "1371",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/types/geometry.test.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 20894, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 20894, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 547, "endOffset": 6416, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 608, "endOffset": 3004, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 686, "endOffset": 865, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 956, "endOffset": 1190, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1268, "endOffset": 1552, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1632, "endOffset": 1919, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1999, "endOffset": 2257, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2339, "endOffset": 2600, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2673, "endOffset": 2998, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3063, "endOffset": 4420, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3148, "endOffset": 3332, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3422, "endOffset": 3871, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3962, "endOffset": 4414, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4478, "endOffset": 6412, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4563, "endOffset": 4717, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4804, "endOffset": 5097, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5188, "endOffset": 5475, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5568, "endOffset": 5858, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5933, "endOffset": 6406, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    },
+    {
+      "scriptId": "1372",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/types/geometry.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 6930, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 6930, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "isPointInPolygon",
+          "ranges": [
+            { "startOffset": 185, "endOffset": 657, "count": 24 },
+            { "startOffset": 255, "endOffset": 268, "count": 2 },
+            { "startOffset": 268, "endOffset": 362, "count": 22 },
+            { "startOffset": 362, "endOffset": 638, "count": 86 },
+            { "startOffset": 529, "endOffset": 585, "count": 14 },
+            { "startOffset": 603, "endOffset": 634, "count": 7 },
+            { "startOffset": 638, "endOffset": 656, "count": 22 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 762, "endOffset": 794, "count": 7 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "isPointInAnyPolygon",
+          "ranges": [{ "startOffset": 798, "endOffset": 918, "count": 22 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 869, "endOffset": 914, "count": 17 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 1026, "endOffset": 1061, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "isRectInAnyPolygon",
+          "ranges": [
+            { "startOffset": 1065, "endOffset": 1554, "count": 6 },
+            { "startOffset": 1258, "endOffset": 1280, "count": 2 },
+            { "startOffset": 1280, "endOffset": 1553, "count": 4 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1501, "endOffset": 1550, "count": 13 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 1661, "endOffset": 1695, "count": 6 }],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ]
+}

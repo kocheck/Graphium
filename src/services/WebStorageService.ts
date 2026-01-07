@@ -121,7 +121,9 @@ export class WebStorageService implements IStorageService {
       return true;
     } catch (error) {
       console.error('[WebStorageService] Save campaign failed:', error);
-      throw new Error(`Failed to save campaign: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to save campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -133,7 +135,7 @@ export class WebStorageService implements IStorageService {
       await db.put('autosave', {
         id: 'latest',
         campaign,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       console.log('[WebStorageService] Auto-save completed');
@@ -178,7 +180,9 @@ export class WebStorageService implements IStorageService {
           resolve(campaign);
         } catch (error) {
           console.error('[WebStorageService] Load campaign failed:', error);
-          throw new Error(`Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          throw new Error(
+            `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
         }
       };
 
@@ -198,11 +202,15 @@ export class WebStorageService implements IStorageService {
       // Track URL for cleanup when saved to campaign or discarded
       this.tempAssetURLs.add(url);
 
-      console.log(`[WebStorageService] Created temp asset: ${fileName} → ${url.substring(0, 50)}...`);
+      console.log(
+        `[WebStorageService] Created temp asset: ${fileName} → ${url.substring(0, 50)}...`,
+      );
       return url;
     } catch (error) {
       console.error('[WebStorageService] Save temp asset failed:', error);
-      throw new Error(`Failed to save temp asset: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to save temp asset: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -212,7 +220,7 @@ export class WebStorageService implements IStorageService {
   cleanupTempAssets(urls?: string[]): void {
     if (urls) {
       // Clean up specific URLs
-      urls.forEach(url => {
+      urls.forEach((url) => {
         if (this.tempAssetURLs.has(url)) {
           URL.revokeObjectURL(url);
           this.tempAssetURLs.delete(url);
@@ -221,7 +229,7 @@ export class WebStorageService implements IStorageService {
       });
     } else {
       // Clean up all temp assets
-      this.tempAssetURLs.forEach(url => {
+      this.tempAssetURLs.forEach((url) => {
         URL.revokeObjectURL(url);
         console.log(`[WebStorageService] Revoked temp asset URL: ${url.substring(0, 50)}...`);
       });
@@ -234,7 +242,7 @@ export class WebStorageService implements IStorageService {
   async saveAssetToLibrary(
     fullSizeBuffer: ArrayBuffer,
     thumbnailBuffer: ArrayBuffer,
-    metadata: LibraryMetadata
+    metadata: LibraryMetadata,
   ): Promise<TokenLibraryItem> {
     try {
       const db = await this.getDB();
@@ -254,7 +262,7 @@ export class WebStorageService implements IStorageService {
         dateAdded: Date.now(),
         // Store blobs for persistence (will recreate URLs on load)
         _fullSizeBlob: fullSizeBlob,
-        _thumbnailBlob: thumbnailBlob
+        _thumbnailBlob: thumbnailBlob,
       };
 
       await db.put('library', item);
@@ -263,7 +271,9 @@ export class WebStorageService implements IStorageService {
       return item;
     } catch (error) {
       console.error('[WebStorageService] Save to library failed:', error);
-      throw new Error(`Failed to save to library: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to save to library: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -309,7 +319,7 @@ export class WebStorageService implements IStorageService {
         // Track URLs for cleanup on next load or component unmount
         this.libraryURLs.set(item.id, {
           fullSize: fullSizeURL,
-          thumbnail: thumbnailURL
+          thumbnail: thumbnailURL,
         });
 
         return {
@@ -318,7 +328,7 @@ export class WebStorageService implements IStorageService {
           thumbnailSrc: thumbnailURL,
           // Remove internal blob properties from returned object
           _fullSizeBlob: undefined,
-          _thumbnailBlob: undefined
+          _thumbnailBlob: undefined,
         };
       });
 
@@ -357,13 +367,15 @@ export class WebStorageService implements IStorageService {
       console.log(`[WebStorageService] Deleted library asset: ${assetId}`);
     } catch (error) {
       console.error('[WebStorageService] Delete library asset failed:', error);
-      throw new Error(`Failed to delete library asset: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to delete library asset: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
   async updateLibraryMetadata(
     assetId: string,
-    updates: Partial<LibraryMetadata>
+    updates: Partial<LibraryMetadata>,
   ): Promise<TokenLibraryItem> {
     try {
       const db = await this.getDB();
@@ -380,7 +392,9 @@ export class WebStorageService implements IStorageService {
       return updated;
     } catch (error) {
       console.error('[WebStorageService] Update library metadata failed:', error);
-      throw new Error(`Failed to update library metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to update library metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -448,7 +462,13 @@ export class WebStorageService implements IStorageService {
     let assetCounter = 0; // Ensures uniqueness even within same millisecond
 
     const processAsset = async (src: string): Promise<string> => {
-      if (!src || (!src.startsWith('blob:') && !src.startsWith('http:') && !src.startsWith('https:') && !src.startsWith('file:'))) {
+      if (
+        !src ||
+        (!src.startsWith('blob:') &&
+          !src.startsWith('http:') &&
+          !src.startsWith('https:') &&
+          !src.startsWith('file:'))
+      ) {
         return src; // Already a relative path or invalid
       }
 

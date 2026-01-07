@@ -46,13 +46,13 @@ describe('syncUtils', () => {
     });
 
     it('detects library update', () => {
-        const prev = { tokenLibrary: [] };
-        const curr = { tokenLibrary: [{ id: 'l1', name: 'Goblin' }] };
-        const changes = detectChanges(prev, curr);
-        expect(changes).toContainEqual({
-            type: 'LIBRARY_UPDATE',
-            payload: [{ id: 'l1', name: 'Goblin' }]
-        });
+      const prev = { tokenLibrary: [] };
+      const curr = { tokenLibrary: [{ id: 'l1', name: 'Goblin' }] };
+      const changes = detectChanges(prev, curr);
+      expect(changes).toContainEqual({
+        type: 'LIBRARY_UPDATE',
+        payload: [{ id: 'l1', name: 'Goblin' }],
+      });
     });
   });
 });

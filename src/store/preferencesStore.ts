@@ -24,7 +24,7 @@ export interface PreferencesState {
   wallTool: WallToolPreferences;
   setWallToolPreference: <K extends keyof WallToolPreferences>(
     key: K,
-    value: WallToolPreferences[K]
+    value: WallToolPreferences[K],
   ) => void;
   resetWallToolPreferences: () => void;
 }
@@ -63,6 +63,6 @@ export const usePreferencesStore = create<PreferencesState>()(
     }),
     {
       name: 'graphium-preferences',
-    }
-  )
+    },
+  ),
 );

@@ -38,7 +38,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <div data-testid="child">Child content</div>
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     expect(screen.getByTestId('child')).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -61,13 +61,11 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/An error occurred while loading this modal/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/An error occurred while loading this modal/i)).toBeInTheDocument();
     });
   });
 
@@ -77,14 +75,14 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('[LibraryModalErrorBoundary] Modal component crashed:'),
         expect.any(Error),
-        expect.anything()
+        expect.anything(),
       );
     });
 
@@ -95,7 +93,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -108,7 +106,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -125,7 +123,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -143,7 +141,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -162,7 +160,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -178,7 +176,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -190,7 +188,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -207,7 +205,11 @@ describe('LibraryModalErrorBoundary', () => {
       const [hasError, setHasError] = React.useState(true);
       return (
         <LibraryModalErrorBoundary onClose={() => setHasError(false)}>
-          {hasError ? <ThrowError shouldThrow={true} /> : <div data-testid="valid-child">Valid Content</div>}
+          {hasError ? (
+            <ThrowError shouldThrow={true} />
+          ) : (
+            <div data-testid="valid-child">Valid Content</div>
+          )}
         </LibraryModalErrorBoundary>
       );
     }
@@ -233,7 +235,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -264,7 +266,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <DeepErrorComponent />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -281,7 +283,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <TypeErrorModal />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -293,7 +295,7 @@ describe('LibraryModalErrorBoundary', () => {
     const { rerender } = render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -308,7 +310,7 @@ describe('LibraryModalErrorBoundary', () => {
     rerender(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     // Should show error UI again
@@ -321,7 +323,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -334,13 +336,11 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <ThrowError shouldThrow={true} />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/This has been logged for investigation/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/This has been logged for investigation/i)).toBeInTheDocument();
     });
   });
 
@@ -356,7 +356,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <AsyncErrorModal />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {
@@ -372,7 +372,7 @@ describe('LibraryModalErrorBoundary', () => {
     render(
       <LibraryModalErrorBoundary onClose={mockOnClose}>
         <SpecialCharErrorModal />
-      </LibraryModalErrorBoundary>
+      </LibraryModalErrorBoundary>,
     );
 
     await waitFor(() => {

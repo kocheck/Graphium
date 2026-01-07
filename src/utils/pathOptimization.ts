@@ -91,7 +91,7 @@ function perpendicularDistance(point: Point, lineStart: Point, lineEnd: Point): 
 
   // Calculate perpendicular distance using cross product
   const numerator = Math.abs(
-    dy * point.x - dx * point.y + lineEnd.x * lineStart.y - lineEnd.y * lineStart.x
+    dy * point.x - dx * point.y + lineEnd.x * lineStart.y - lineEnd.y * lineStart.x,
   );
   const denominator = Math.sqrt(dx * dx + dy * dy);
 
@@ -116,7 +116,7 @@ function distance(p1: Point, p2: Point): number {
 function pointToSegmentDistanceWithPoint(
   point: Point,
   segStart: Point,
-  segEnd: Point
+  segEnd: Point,
 ): { distance: number; closestPoint: Point } {
   const dx = segEnd.x - segStart.x;
   const dy = segEnd.y - segStart.y;
@@ -157,7 +157,7 @@ function pointToSegmentDistanceWithPoint(
  */
 function findClosestPointOnPath(
   point: Point,
-  pathPoints: number[]
+  pathPoints: number[],
 ): { point: Point; segmentIndex: number; distance: number } | null {
   if (pathPoints.length < 4) {
     return null;
@@ -203,7 +203,7 @@ function findClosestPointOnPath(
 export function snapPointToPaths(
   point: Point,
   existingPaths: number[][],
-  threshold: number
+  threshold: number,
 ): { point: Point; snapped: boolean; pathIndex: number } {
   // 1. Check for vertex matches first (higher priority than edge snapping)
   let bestVertexMatch: { point: Point; distance: number; pathIndex: number } | null = null;
@@ -222,7 +222,7 @@ export function snapPointToPaths(
           bestVertexMatch = {
             point: { x: vx, y: vy },
             distance: dist,
-            pathIndex: i
+            pathIndex: i,
           };
         }
       }
@@ -233,7 +233,7 @@ export function snapPointToPaths(
     return {
       point: bestVertexMatch.point,
       snapped: true,
-      pathIndex: bestVertexMatch.pathIndex
+      pathIndex: bestVertexMatch.pathIndex,
     };
   }
 

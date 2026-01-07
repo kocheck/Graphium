@@ -130,7 +130,7 @@ describe('Touch Settings Integration', () => {
 
       // Simulate applying pressure curve
       const rawPressure = 0.5;
-      const adjustedPressure = range.min + (rawPressure * (range.max - range.min));
+      const adjustedPressure = range.min + rawPressure * (range.max - range.min);
 
       // With light curve: 0.2 + (0.5 * 1.8) = 0.2 + 0.9 = 1.1
       expect(adjustedPressure).toBeCloseTo(1.1, 1);
@@ -143,12 +143,12 @@ describe('Touch Settings Integration', () => {
       const range = getPressureRange();
 
       // Max pressure (1.0) with heavy curve
-      const maxAdjusted = range.min + (1.0 * (range.max - range.min));
+      const maxAdjusted = range.min + 1.0 * (range.max - range.min);
       expect(maxAdjusted).toBe(range.max); // Should equal max
       expect(maxAdjusted).toBe(1.2);
 
       // Min pressure (0.0) with heavy curve
-      const minAdjusted = range.min + (0.0 * (range.max - range.min));
+      const minAdjusted = range.min + 0.0 * (range.max - range.min);
       expect(minAdjusted).toBe(range.min); // Should equal min
       expect(minAdjusted).toBe(0.4);
     });

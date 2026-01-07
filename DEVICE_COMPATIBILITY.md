@@ -9,35 +9,39 @@ This document provides comprehensive information about device compatibility, bro
 ## ✅ Tested & Verified Devices
 
 ### iPadOS Devices
-| Device | Stylus | Pressure | Tilt | Hover | Status |
-|--------|--------|----------|------|-------|--------|
-| iPad Pro 12.9" (2018+) | Apple Pencil 2 | ✅ | ✅ | ✅ | Fully Supported |
-| iPad Pro 11" (2018+) | Apple Pencil 2 | ✅ | ✅ | ✅ | Fully Supported |
-| iPad Air (4th/5th Gen) | Apple Pencil 2 | ✅ | ✅ | ✅ | Fully Supported |
-| iPad (9th/10th Gen) | Apple Pencil 1 | ✅ | ❌ | ❌ | Pressure Only |
-| iPad mini (6th Gen) | Apple Pencil 2 | ✅ | ✅ | ✅ | Fully Supported |
+
+| Device                 | Stylus         | Pressure | Tilt | Hover | Status          |
+| ---------------------- | -------------- | -------- | ---- | ----- | --------------- |
+| iPad Pro 12.9" (2018+) | Apple Pencil 2 | ✅       | ✅   | ✅    | Fully Supported |
+| iPad Pro 11" (2018+)   | Apple Pencil 2 | ✅       | ✅   | ✅    | Fully Supported |
+| iPad Air (4th/5th Gen) | Apple Pencil 2 | ✅       | ✅   | ✅    | Fully Supported |
+| iPad (9th/10th Gen)    | Apple Pencil 1 | ✅       | ❌   | ❌    | Pressure Only   |
+| iPad mini (6th Gen)    | Apple Pencil 2 | ✅       | ✅   | ✅    | Fully Supported |
 
 **Notes:**
+
 - Apple Pencil 1: Supports pressure sensitivity only (no tilt or hover)
 - Apple Pencil 2: Full support for pressure, tilt, and hover
 - iPadOS 15+ recommended for best performance
 - Safari and Chrome both work well
 
 ### Windows Devices
-| Device | Stylus | Pressure | Tilt | Hover | Status |
-|--------|--------|----------|------|-------|--------|
-| Surface Pro 9 | Surface Pen | ✅ | ✅ | ✅ | Fully Supported |
-| Surface Pro 8 | Surface Pen | ✅ | ✅ | ✅ | Fully Supported |
-| Surface Pro 7+ | Surface Pen | ✅ | ✅ | ✅ | Fully Supported |
-| Surface Laptop Studio | Surface Pen | ✅ | ✅ | ✅ | Fully Supported |
-| Surface Go 3 | Surface Pen | ✅ | ✅ | ✅ | Fully Supported |
-| Wacom MobileStudio Pro | Wacom Pro Pen 2 | ✅ | ✅ | ✅ | Fully Supported |
-| Wacom Cintiq Pro | Wacom Pro Pen 2 | ✅ | ✅ | ✅ | Fully Supported |
-| Dell XPS 13 2-in-1 | Dell Active Pen | ✅ | ⚠️ | ⚠️ | Pressure Verified |
-| HP Spectre x360 | HP Pen | ✅ | ⚠️ | ⚠️ | Pressure Verified |
-| Lenovo Yoga 9i | Lenovo Pen | ✅ | ⚠️ | ⚠️ | Pressure Verified |
+
+| Device                 | Stylus          | Pressure | Tilt | Hover | Status            |
+| ---------------------- | --------------- | -------- | ---- | ----- | ----------------- |
+| Surface Pro 9          | Surface Pen     | ✅       | ✅   | ✅    | Fully Supported   |
+| Surface Pro 8          | Surface Pen     | ✅       | ✅   | ✅    | Fully Supported   |
+| Surface Pro 7+         | Surface Pen     | ✅       | ✅   | ✅    | Fully Supported   |
+| Surface Laptop Studio  | Surface Pen     | ✅       | ✅   | ✅    | Fully Supported   |
+| Surface Go 3           | Surface Pen     | ✅       | ✅   | ✅    | Fully Supported   |
+| Wacom MobileStudio Pro | Wacom Pro Pen 2 | ✅       | ✅   | ✅    | Fully Supported   |
+| Wacom Cintiq Pro       | Wacom Pro Pen 2 | ✅       | ✅   | ✅    | Fully Supported   |
+| Dell XPS 13 2-in-1     | Dell Active Pen | ✅       | ⚠️   | ⚠️    | Pressure Verified |
+| HP Spectre x360        | HP Pen          | ✅       | ⚠️   | ⚠️    | Pressure Verified |
+| Lenovo Yoga 9i         | Lenovo Pen      | ✅       | ⚠️   | ⚠️    | Pressure Verified |
 
 **Notes:**
+
 - ✅ = Confirmed working
 - ⚠️ = Should work but needs testing
 - Windows 10/11 with latest updates recommended
@@ -45,30 +49,34 @@ This document provides comprehensive information about device compatibility, bro
 - N-Trig pen technology (Surface) has excellent palm rejection
 
 ### Android Devices
-| Device | Stylus | Pressure | Tilt | Hover | Status |
-|--------|--------|----------|------|-------|--------|
-| Samsung Galaxy Tab S9+ | S Pen | ✅ | ✅ | ✅ | Fully Supported |
-| Samsung Galaxy Tab S8+ | S Pen | ✅ | ✅ | ✅ | Fully Supported |
-| Samsung Galaxy Tab S7+ | S Pen | ✅ | ✅ | ✅ | Fully Supported |
-| Lenovo Tab P11 Pro | Lenovo Precision Pen 3 | ⚠️ | ⚠️ | ❌ | Needs Testing |
-| Google Pixel Tablet | USI Pen | ⚠️ | ❌ | ❌ | Needs Testing |
+
+| Device                 | Stylus                 | Pressure | Tilt | Hover | Status          |
+| ---------------------- | ---------------------- | -------- | ---- | ----- | --------------- |
+| Samsung Galaxy Tab S9+ | S Pen                  | ✅       | ✅   | ✅    | Fully Supported |
+| Samsung Galaxy Tab S8+ | S Pen                  | ✅       | ✅   | ✅    | Fully Supported |
+| Samsung Galaxy Tab S7+ | S Pen                  | ✅       | ✅   | ✅    | Fully Supported |
+| Lenovo Tab P11 Pro     | Lenovo Precision Pen 3 | ⚠️       | ⚠️   | ❌    | Needs Testing   |
+| Google Pixel Tablet    | USI Pen                | ⚠️       | ❌   | ❌    | Needs Testing   |
 
 **Notes:**
+
 - Samsung S Pen: Best Android stylus support (Wacom EMR technology)
 - Chrome on Android required
 - Android 11+ recommended
 - USI (Universal Stylus Initiative) support varies by device
 
 ### External Drawing Tablets
-| Device | Pressure | Tilt | Hover | Barrel Button | Status |
-|--------|----------|------|-------|---------------|--------|
-| Wacom Intuos Pro (M/L) | ✅ | ✅ | ✅ | ✅ | Fully Supported |
-| Wacom Intuos (S/M) | ✅ | ✅ | ✅ | ✅ | Fully Supported |
-| Wacom One | ✅ | ❌ | ❌ | ❌ | Pressure Only |
-| Huion Kamvas Pro | ✅ | ✅ | ⚠️ | ⚠️ | Mostly Supported |
-| XP-Pen Artist Pro | ✅ | ✅ | ⚠️ | ⚠️ | Mostly Supported |
+
+| Device                 | Pressure | Tilt | Hover | Barrel Button | Status           |
+| ---------------------- | -------- | ---- | ----- | ------------- | ---------------- |
+| Wacom Intuos Pro (M/L) | ✅       | ✅   | ✅    | ✅            | Fully Supported  |
+| Wacom Intuos (S/M)     | ✅       | ✅   | ✅    | ✅            | Fully Supported  |
+| Wacom One              | ✅       | ❌   | ❌    | ❌            | Pressure Only    |
+| Huion Kamvas Pro       | ✅       | ✅   | ⚠️    | ⚠️            | Mostly Supported |
+| XP-Pen Artist Pro      | ✅       | ✅   | ⚠️    | ⚠️            | Mostly Supported |
 
 **Notes:**
+
 - Professional Wacom tablets have best browser API support
 - Huion/XP-Pen work but may have driver conflicts
 - Ensure tablet drivers are updated
@@ -79,30 +87,34 @@ This document provides comprehensive information about device compatibility, bro
 ## 🌐 Browser Compatibility
 
 ### Desktop Browsers
-| Browser | Pressure | Tilt | Hover | Multi-Touch | Palm Rejection | Grade |
-|---------|----------|------|-------|-------------|----------------|-------|
-| Chrome 90+ | ✅ | ✅ | ✅ | ✅ | ✅ | A+ |
-| Edge 90+ | ✅ | ✅ | ✅ | ✅ | ✅ | A+ |
-| Firefox 89+ | ✅ | ✅ | ✅ | ✅ | ⚠️ | A |
-| Safari 15+ | ✅ | ✅ | ✅ | ✅ | ✅ | A |
-| Opera 76+ | ✅ | ✅ | ✅ | ✅ | ✅ | A |
+
+| Browser     | Pressure | Tilt | Hover | Multi-Touch | Palm Rejection | Grade |
+| ----------- | -------- | ---- | ----- | ----------- | -------------- | ----- |
+| Chrome 90+  | ✅       | ✅   | ✅    | ✅          | ✅             | A+    |
+| Edge 90+    | ✅       | ✅   | ✅    | ✅          | ✅             | A+    |
+| Firefox 89+ | ✅       | ✅   | ✅    | ✅          | ⚠️             | A     |
+| Safari 15+  | ✅       | ✅   | ✅    | ✅          | ✅             | A     |
+| Opera 76+   | ✅       | ✅   | ✅    | ✅          | ✅             | A     |
 
 **Notes:**
+
 - Chrome/Edge: Best overall support (Chromium-based)
 - Firefox: Good support, palm rejection less reliable
 - Safari: Excellent on macOS/iPadOS with Apple Pencil
 - Opera: Based on Chromium, same support as Chrome
 
 ### Mobile Browsers
-| Browser | Platform | Pressure | Multi-Touch | Grade |
-|---------|----------|----------|-------------|-------|
-| Safari | iPadOS | ✅ | ✅ | A+ |
-| Chrome | iPadOS | ✅ | ✅ | A |
-| Chrome | Android | ✅ | ✅ | A |
-| Firefox | Android | ⚠️ | ✅ | B |
-| Samsung Internet | Android | ✅ | ✅ | A |
+
+| Browser          | Platform | Pressure | Multi-Touch | Grade |
+| ---------------- | -------- | -------- | ----------- | ----- |
+| Safari           | iPadOS   | ✅       | ✅          | A+    |
+| Chrome           | iPadOS   | ✅       | ✅          | A     |
+| Chrome           | Android  | ✅       | ✅          | A     |
+| Firefox          | Android  | ⚠️       | ✅          | B     |
+| Samsung Internet | Android  | ✅       | ✅          | A     |
 
 **Notes:**
+
 - Safari on iPadOS: Best experience with Apple Pencil
 - Chrome works across platforms
 - Samsung Internet optimized for S Pen
@@ -112,15 +124,15 @@ This document provides comprehensive information about device compatibility, bro
 
 ## 🎨 Feature Support Matrix
 
-| Feature | Requirement | Fallback Behavior |
-|---------|-------------|-------------------|
-| **Basic Touch** | Touch screen | Mouse emulation |
+| Feature                  | Requirement                                     | Fallback Behavior                     |
+| ------------------------ | ----------------------------------------------- | ------------------------------------- |
+| **Basic Touch**          | Touch screen                                    | Mouse emulation                       |
 | **Pressure Sensitivity** | Pressure-capable stylus + PointerEvent.pressure | Constant 0.5 pressure (uniform width) |
-| **Tilt Sensitivity** | Tilt-capable stylus + PointerEvent.tiltX/tiltY | Ignored, no shading effect |
-| **Hover Preview** | Hover-capable stylus + PointerEvent hover | No preview |
-| **Multi-Touch Gestures** | Multi-touch screen + TouchEvent | Single-touch only |
-| **Palm Rejection** | Contact size API or pen detection | Off or stylus-only mode |
-| **Barrel Button** | Stylus with button + PointerEvent.button | Ignored |
+| **Tilt Sensitivity**     | Tilt-capable stylus + PointerEvent.tiltX/tiltY  | Ignored, no shading effect            |
+| **Hover Preview**        | Hover-capable stylus + PointerEvent hover       | No preview                            |
+| **Multi-Touch Gestures** | Multi-touch screen + TouchEvent                 | Single-touch only                     |
+| **Palm Rejection**       | Contact size API or pen detection               | Off or stylus-only mode               |
+| **Barrel Button**        | Stylus with button + PointerEvent.button        | Ignored                               |
 
 ---
 
@@ -129,6 +141,7 @@ This document provides comprehensive information about device compatibility, bro
 ### Manual Testing (Physical Devices)
 
 #### iPad Pro with Apple Pencil
+
 - [ ] Single-finger touch drawing works
 - [ ] Pressure-sensitive drawing (light → thick)
 - [ ] Hover preview shows before touching
@@ -141,6 +154,7 @@ This document provides comprehensive information about device compatibility, bro
 - [ ] Smooth 60fps drawing
 
 #### Surface Pro with Surface Pen
+
 - [ ] Pen pressure works (light → thick)
 - [ ] Hover shows preview
 - [ ] Palm rejection (rest hand while drawing)
@@ -153,6 +167,7 @@ This document provides comprehensive information about device compatibility, bro
 - [ ] Smooth performance
 
 #### Android Tablet with S Pen
+
 - [ ] S Pen pressure works
 - [ ] Hover detection works
 - [ ] Palm rejection prevents marks
@@ -162,6 +177,7 @@ This document provides comprehensive information about device compatibility, bro
 - [ ] Smooth drawing performance
 
 #### Wacom External Tablet
+
 - [ ] Pressure sensitivity works
 - [ ] Tilt sensitivity works
 - [ ] Hover works
@@ -171,6 +187,7 @@ This document provides comprehensive information about device compatibility, bro
 - [ ] Smooth pen tracking
 
 #### Touch-Enabled Windows Laptop
+
 - [ ] Finger touch works
 - [ ] Two-finger pan works
 - [ ] Pinch-to-zoom works
@@ -178,6 +195,7 @@ This document provides comprehensive information about device compatibility, bro
 - [ ] No accidental touches
 
 ### Settings Testing
+
 - [ ] Enable/disable pressure sensitivity
 - [ ] Change pressure curve (light/normal/heavy)
 - [ ] Enable/disable palm rejection
@@ -190,6 +208,7 @@ This document provides comprehensive information about device compatibility, bro
 - [ ] Reset to defaults works
 
 ### Cross-Browser Testing
+
 - [ ] Chrome: All features work
 - [ ] Edge: All features work
 - [ ] Firefox: Pressure and touch work
@@ -197,6 +216,7 @@ This document provides comprehensive information about device compatibility, bro
 - [ ] Mobile Chrome: Touch and pressure work
 
 ### Performance Testing
+
 - [ ] Drawing 50+ point stroke is smooth
 - [ ] Multi-token drag is smooth
 - [ ] Pinch-zoom is smooth (no jank)
@@ -209,6 +229,7 @@ This document provides comprehensive information about device compatibility, bro
 ## ⚠️ Known Limitations
 
 ### Browser Limitations
+
 1. **Firefox Palm Rejection**: Firefox's Pointer Events implementation doesn't reliably expose touch contact size (PointerEvent.width/height), making touchSize palm rejection less effective.
    - **Workaround**: Use stylusOnly or smartDelay mode
 
@@ -219,6 +240,7 @@ This document provides comprehensive information about device compatibility, bro
    - **Expected**: Hover preview won't work
 
 ### Hardware Limitations
+
 1. **USI Pens**: Universal Stylus Initiative pens have inconsistent browser API support.
    - **Status**: Pressure works on some devices, tilt/hover unreliable
 
@@ -229,6 +251,7 @@ This document provides comprehensive information about device compatibility, bro
    - **Status**: May work as basic touch, no advanced features
 
 ### OS Limitations
+
 1. **Windows Ink**: Some drawing apps interfere with browser Pointer Events.
    - **Workaround**: Close other drawing apps
 
@@ -243,6 +266,7 @@ This document provides comprehensive information about device compatibility, bro
 ## 🐛 Troubleshooting
 
 ### "My stylus pressure isn't working"
+
 1. Check if pressure sensitivity is enabled in Settings → Touch & Stylus
 2. Verify your stylus supports pressure (test in native drawing app)
 3. Try a different browser (Chrome/Edge recommended)
@@ -250,23 +274,27 @@ This document provides comprehensive information about device compatibility, bro
 5. Check browser console for Pointer Events errors
 
 ### "Palm rejection isn't working"
+
 1. Switch palm rejection mode (touchSize → stylusOnly → smartDelay)
 2. Adjust palm rejection threshold (increase for stricter rejection)
 3. Ensure you're using a stylus that reports as `pointerType: 'pen'`
 4. Try "Desktop-Only Mode" if on a hybrid laptop
 
 ### "Two-finger gestures are flaky"
+
 1. Ensure two-finger pan is enabled in settings
 2. Adjust pinch distance threshold (try 15-20px)
 3. Disable browser gesture hijacking (check OS settings)
 4. Make sure fingers contact screen simultaneously
 
 ### "Visual indicators don't show"
+
 1. Check Settings → Touch & Stylus → Visual Feedback
 2. Ensure indicators are enabled
 3. Verify you're actively drawing/gesturing when checking
 
 ### "Settings don't persist"
+
 1. Check browser localStorage isn't disabled
 2. Verify not in incognito/private mode
 3. Try clearing browser cache and resetting settings

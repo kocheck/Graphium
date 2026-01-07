@@ -8,13 +8,15 @@ import { useGameStore } from '../store/gameStore';
 vi.mock('../utils/DungeonGenerator', () => ({
   DungeonGenerator: vi.fn().mockImplementation(() => ({
     generate: vi.fn().mockReturnValue({
-      drawings: [{
-        id: 'test-drawing-1',
-        tool: 'wall',
-        points: [0, 0, 100, 0],
-        color: '#ff0000',
-        size: 8,
-      }],
+      drawings: [
+        {
+          id: 'test-drawing-1',
+          tool: 'wall',
+          points: [0, 0, 100, 0],
+          color: '#ff0000',
+          size: 8,
+        },
+      ],
       doors: [],
     }),
   })),
@@ -204,7 +206,7 @@ describe('DungeonGeneratorDialog', () => {
 
     // Check that old drawings were cleared
     const state = useGameStore.getState();
-    expect(state.drawings.every(d => d.id !== 'existing-drawing')).toBe(true);
+    expect(state.drawings.every((d) => d.id !== 'existing-drawing')).toBe(true);
   });
 
   it('should use dynamic canvas dimensions', () => {

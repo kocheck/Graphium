@@ -1,5 +1,9 @@
 import React, { Component, ReactNode } from 'react';
-import { captureErrorContext, logErrorWithContext, type ErrorContext } from '../../utils/errorBoundaryUtils';
+import {
+  captureErrorContext,
+  logErrorWithContext,
+  type ErrorContext,
+} from '../../utils/errorBoundaryUtils';
 
 /**
  * Props for CanvasOverlayErrorBoundary
@@ -101,11 +105,7 @@ class CanvasOverlayErrorBoundary extends Component<
     logErrorWithContext(context);
 
     // Legacy logging for backward compatibility
-    console.error(
-      `[CanvasOverlayErrorBoundary] ${overlayName} crashed:`,
-      error,
-      errorInfo
-    );
+    console.error(`[CanvasOverlayErrorBoundary] ${overlayName} crashed:`, error, errorInfo);
 
     // Store context in state for dev mode
     if (isDev || isTest) {

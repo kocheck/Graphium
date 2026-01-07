@@ -43,7 +43,8 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-SemiBold.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-SemiBold.woff2')
+    format('woff2');
 }
 
 /* IBM Plex Sans - Bold (700) */
@@ -83,7 +84,8 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-SemiBold.woff2') format('woff2');
+  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-SemiBold.woff2')
+    format('woff2');
 }
 
 /* IBM Plex Mono - Bold (700) */
@@ -101,10 +103,18 @@
 
 /* Apply IBM Plex Sans globally with system font fallback stack */
 body {
-  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-               'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    'IBM Plex Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
   /* font-feature-settings for enhanced typography */
-  font-feature-settings: 'liga' 1, 'calt' 1;
+  font-feature-settings:
+    'liga' 1,
+    'calt' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -116,8 +126,9 @@ kbd,
 samp,
 pre,
 .font-mono {
-  font-family: 'IBM Plex Mono', 'SF Mono', Monaco, 'Cascadia Code',
-               'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-family:
+    'IBM Plex Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New',
+    monospace;
 }
 
 /* Data table styling with monospace for better number alignment */

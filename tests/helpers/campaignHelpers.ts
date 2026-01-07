@@ -23,16 +23,13 @@ import { expect } from '@playwright/test';
 export async function createNewCampaign(page: Page, _campaignName?: string) {
   // Click new campaign button (this immediately starts the editor)
   const newCampaignButton = page.locator('[data-testid="new-campaign-button"]');
-  await expect(
-    newCampaignButton,
-    'New campaign button should be visible'
-  ).toBeVisible();
+  await expect(newCampaignButton, 'New campaign button should be visible').toBeVisible();
   await newCampaignButton.click();
 
   // Wait for editor to load (editor view should appear)
   await expect(
     page.locator('[data-testid="editor-view"]'),
-    'Editor view should appear after clicking new campaign'
+    'Editor view should appear after clicking new campaign',
   ).toBeVisible({ timeout: 5000 });
 
   // The current UI doesn't show a campaign title, so we can't verify it
@@ -48,10 +45,7 @@ export async function createNewCampaign(page: Page, _campaignName?: string) {
 export async function addMapBackground(page: Page, imagePath: string) {
   // Click add map button
   const addMapButton = page.locator('[data-testid="add-map-button"]');
-  await expect(
-    addMapButton,
-    'Add map button should be visible'
-  ).toBeVisible();
+  await expect(addMapButton, 'Add map button should be visible').toBeVisible();
   await addMapButton.click();
 
   // Upload map image
@@ -61,7 +55,7 @@ export async function addMapBackground(page: Page, imagePath: string) {
   // Wait for map to load
   await expect(
     page.locator('[data-testid="map-layer"]'),
-    'Map layer should be visible after upload'
+    'Map layer should be visible after upload',
   ).toBeVisible();
 }
 
@@ -73,17 +67,11 @@ export async function addMapBackground(page: Page, imagePath: string) {
  */
 export async function openTokenLibrary(page: Page): Promise<Locator> {
   const libraryButton = page.locator('[data-testid="token-library-button"]');
-  await expect(
-    libraryButton,
-    'Token library button should be visible'
-  ).toBeVisible();
+  await expect(libraryButton, 'Token library button should be visible').toBeVisible();
   await libraryButton.click();
 
   const libraryModal = page.locator('[data-testid="library-modal"]');
-  await expect(
-    libraryModal,
-    'Token library modal should open after clicking button'
-  ).toBeVisible();
+  await expect(libraryModal, 'Token library modal should open after clicking button').toBeVisible();
 
   return libraryModal;
 }
@@ -98,17 +86,14 @@ export async function openTokenLibrary(page: Page): Promise<Locator> {
 export async function addTokenToCanvas(
   page: Page,
   tokenId: string,
-  position: { x: number; y: number }
+  position: { x: number; y: number },
 ) {
   // Open library
   await openTokenLibrary(page);
 
   // Click token in library
   const token = page.locator(`[data-testid="library-token-${tokenId}"]`);
-  await expect(
-    token,
-    `Token ${tokenId} should be visible in library`
-  ).toBeVisible();
+  await expect(token, `Token ${tokenId} should be visible in library`).toBeVisible();
   await token.click();
 
   // Click on canvas to place token
@@ -118,7 +103,7 @@ export async function addTokenToCanvas(
   // Verify token appears on canvas
   await expect(
     page.locator('[data-testid^="token-"]').first(),
-    'Token should appear on canvas after placement'
+    'Token should appear on canvas after placement',
   ).toBeVisible();
 }
 
@@ -155,7 +140,7 @@ export async function importCampaign(page: Page, filePath: string) {
   // Wait for campaign to load
   await expect(
     page.locator('[data-testid="main-canvas"]'),
-    'Main canvas should appear after importing campaign'
+    'Main canvas should appear after importing campaign',
   ).toBeVisible();
 
   await page.waitForLoadState('networkidle');
@@ -175,7 +160,7 @@ export async function createCampaignWithData(
     name: string;
     maps?: number;
     tokensPerMap?: number;
-  }
+  },
 ) {
   // Create campaign
   await createNewCampaign(page, config.name);
@@ -228,29 +213,25 @@ export async function verifyCampaignState(
     name?: string;
     tokenCount?: number;
     mapCount?: number;
-  }
+  },
 ) {
   if (expected.name) {
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      `Campaign name should be "${expected.name}"`
+      `Campaign name should be "${expected.name}"`,
     ).toHaveText(expected.name);
   }
 
   if (expected.tokenCount !== undefined) {
     const tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      `Should have ${expected.tokenCount} tokens`
-    ).toHaveCount(expected.tokenCount);
+    await expect(tokens, `Should have ${expected.tokenCount} tokens`).toHaveCount(
+      expected.tokenCount,
+    );
   }
 
   if (expected.mapCount !== undefined) {
     const maps = page.locator('[data-testid^="map-"]');
-    await expect(
-      maps,
-      `Should have ${expected.mapCount} maps`
-    ).toHaveCount(expected.mapCount);
+    await expect(maps, `Should have ${expected.mapCount} maps`).toHaveCount(expected.mapCount);
   }
 }
 
@@ -260,10 +241,7 @@ export async function verifyCampaignState(
  * @param page - Playwright Page object
  * @param mode - Theme mode ('light' | 'dark' | 'system')
  */
-export async function switchTheme(
-  page: Page,
-  mode: 'light' | 'dark' | 'system'
-) {
+export async function switchTheme(page: Page, mode: 'light' | 'dark' | 'system') {
   // Open settings
   await page.click('[data-testid="settings-button"]');
 
@@ -271,14 +249,15 @@ export async function switchTheme(
   await page.selectOption('[data-testid="theme-selector"]', mode);
 
   // Wait for theme to apply
-  const expectedTheme = mode === 'system'
-    ? await page.evaluate(() =>
-        window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      )
-    : mode;
+  const expectedTheme =
+    mode === 'system'
+      ? await page.evaluate(() =>
+          window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+        )
+      : mode;
 
   await page.waitForFunction(
     (theme) => document.documentElement.getAttribute('data-theme') === theme,
-    expectedTheme
+    expectedTheme,
   );
 }

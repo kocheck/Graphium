@@ -1,4 +1,5 @@
 # Graphium Release Audit Report
+
 **Date**: 2025-12-30
 **Version**: 0.3.0 Pre-Release Audit
 **Auditor**: AI Agent (Claude Sonnet 4.5)
@@ -9,21 +10,26 @@
 ## Executive Summary
 
 ### Audit Scope
+
 This audit examined three critical pillars for production readiness:
+
 1. **Test Coverage & Integrity** - Identifying critical paths lacking meaningful tests
 2. **React Resilience (Error Boundaries)** - Verifying granular error isolation
 3. **Documentation for Humans & AIs** - Ensuring future maintainability
 
 ### Overall Assessment
+
 **Status**: ⚠️ **READY WITH CRITICAL GAPS**
 
 The Graphium codebase demonstrates **excellent architectural maturity** with:
+
 - ✅ Comprehensive documentation (30+ markdown files)
 - ✅ Strong error boundary coverage (7 boundaries with privacy sanitization)
 - ✅ Solid E2E test suite (13 Playwright specs, 172 test cases)
 - ✅ Well-structured codebase with clear separation of concerns
 
 However, **critical gaps exist** in:
+
 - ❌ **Unit test coverage for core business logic** (gameStore, storage services, complex utils)
 - ❌ **Some test files contain placeholder tests** (not asserting meaningful outcomes)
 - ⚠️ **Missing root-level ARCHITECTURE.md** for AI agent onboarding (now fixed)
@@ -35,9 +41,11 @@ However, **critical gaps exist** in:
 ### Current Test Inventory
 
 #### Unit Tests (Vitest)
+
 **Total Files**: 22 test files
 
 **✅ Well-Tested Areas**:
+
 - ✅ Grid snapping logic (`src/utils/grid.test.ts`)
 - ✅ Measurement calculations (`src/utils/measurement.test.ts`)
 - ✅ Error sanitization (`src/utils/errorSanitizer.test.ts`)
@@ -50,6 +58,7 @@ However, **critical gaps exist** in:
 - ✅ Recent campaigns (`src/utils/recentCampaigns.test.ts`)
 
 **✅ Recently Implemented Tests** (addressed in commit 67a8ce9):
+
 1. **State Management** (`src/store/gameStore.test.ts`) - **✅ IMPLEMENTED (58 tests)**
    - ✅ Complete coverage of all Zustand actions
    - ✅ State immutability verification
@@ -68,6 +77,7 @@ However, **critical gaps exist** in:
    - ✅ Coverage: 0% → 100%
 
 **❌ Remaining Critical Gaps (Missing Tests)**:
+
 1. **Storage Services** (3 files, 0 comprehensive tests)
    - `src/services/ElectronStorageService.ts` - Not tested
    - `src/services/WebStorageService.ts` - Not tested
@@ -84,27 +94,30 @@ However, **critical gaps exist** in:
    - Random message selection untested
    - **Risk**: Low priority, but incomplete coverage
 
-7. **SyncManager** (`src/components/SyncManager.tsx`) - Not tested
+4. **SyncManager** (`src/components/SyncManager.tsx`) - Not tested
    - IPC synchronization logic untested
    - State broadcast untested
    - **Risk**: World View could desync from Architect View
 
-8. **FogOfWarLayer** (`src/components/Canvas/FogOfWarLayer.tsx`) - Not tested
+5. **FogOfWarLayer** (`src/components/Canvas/FogOfWarLayer.tsx`) - Not tested
    - Raycasting algorithm untested
    - Wall occlusion logic untested
    - Vision merging untested
    - **Risk**: Fog of war could reveal hidden areas
 
 **⚠️ Placeholder Tests (Tests Exist But Don't Assert Anything)**:
+
 1. **CanvasManager** (`src/components/Canvas/CanvasManager.test.tsx`)
    - Tests exist but contain `expect(true).toBe(true)` placeholders
    - No actual behavior assertions
    - **Risk**: False sense of security
 
 #### E2E Tests (Playwright)
+
 **Total Files**: 13 spec files
 
 **✅ Excellent E2E Coverage**:
+
 - ✅ Campaign workflow (create, save, load)
 - ✅ Token management (add, drag, delete)
 - ✅ State persistence (auto-save, reload)
@@ -118,6 +131,7 @@ However, **critical gaps exist** in:
 - ✅ Electron startup
 
 **✅ Test Quality**: High
+
 - Meaningful assertions
 - Realistic user workflows
 - Good test data helpers (`tests/helpers/`)
@@ -126,16 +140,16 @@ However, **critical gaps exist** in:
 
 ### Test Coverage Priority Matrix
 
-| Component | Criticality | Current Coverage | Priority |
-|-----------|-------------|------------------|----------|
-| **gameStore.ts** | 🔴 Critical | 0% (unit) | 🔥 **URGENT** |
-| **Storage Services** | 🔴 Critical | 0% (unit) | 🔥 **URGENT** |
-| **AssetProcessor.ts** | 🟡 High | 0% | ⚠️ **HIGH** |
-| **FogOfWarLayer** | 🟡 High | 0% | ⚠️ **HIGH** |
-| **SyncManager** | 🟡 High | 0% (unit) | ⚠️ **HIGH** |
-| **fuzzySearch.ts** | 🟢 Medium | 0% | 🟢 MEDIUM |
-| **tokenHelpers.ts** | 🟢 Medium | 0% | 🟢 MEDIUM |
-| **CanvasManager.test.tsx** | 🟡 High | Placeholders | ⚠️ **HIGH** |
+| Component                  | Criticality | Current Coverage | Priority      |
+| -------------------------- | ----------- | ---------------- | ------------- |
+| **gameStore.ts**           | 🔴 Critical | 0% (unit)        | 🔥 **URGENT** |
+| **Storage Services**       | 🔴 Critical | 0% (unit)        | 🔥 **URGENT** |
+| **AssetProcessor.ts**      | 🟡 High     | 0%               | ⚠️ **HIGH**   |
+| **FogOfWarLayer**          | 🟡 High     | 0%               | ⚠️ **HIGH**   |
+| **SyncManager**            | 🟡 High     | 0% (unit)        | ⚠️ **HIGH**   |
+| **fuzzySearch.ts**         | 🟢 Medium   | 0%               | 🟢 MEDIUM     |
+| **tokenHelpers.ts**        | 🟢 Medium   | 0%               | 🟢 MEDIUM     |
+| **CanvasManager.test.tsx** | 🟡 High     | Placeholders     | ⚠️ **HIGH**   |
 
 ---
 
@@ -200,12 +214,14 @@ The codebase implements a **3-layer error handling system** with privacy-aware s
    - **Status**: ✅ Dialog isolation
 
 #### Layer 2: Global Error Handlers
+
 - **window.onerror** - Catches uncaught JS errors
 - **window.onunhandledrejection** - Catches unhandled promises
 - **Implementation**: `src/utils/globalErrorHandler.ts`
 - **Status**: ✅ Correctly implemented
 
 #### Layer 3: Main Process Error Handling
+
 - **Electron main process** error handlers
 - **IPC error handling** with fallbacks
 - **Implementation**: `electron/main.ts`
@@ -214,6 +230,7 @@ The codebase implements a **3-layer error handling system** with privacy-aware s
 ### Error Boundary Analysis
 
 **✅ Strengths**:
+
 1. **Granular isolation** - Failures don't cascade
 2. **Privacy-first** - All errors sanitized before reporting
 3. **User-recoverable** - Most boundaries allow retry or continue
@@ -221,6 +238,7 @@ The codebase implements a **3-layer error handling system** with privacy-aware s
 5. **Dev tools** - Errors exposed to `window.__OVERLAY_ERRORS__` for E2E testing
 
 **⚠️ Potential Improvements**:
+
 1. **Missing boundaries**:
    - ❓ `Sidebar.tsx` - Not wrapped (but tested)
    - ❓ `CommandPalette.tsx` - Not wrapped
@@ -300,6 +318,7 @@ The codebase implements a **3-layer error handling system** with privacy-aware s
 - ✅ Comprehensive test coverage
 
 **Recommendation**: No critical changes needed. Optional improvements:
+
 - Add boundaries to `Sidebar`, `CommandPalette`, `PreferencesDialog` (low priority)
 - Consider boundary for `App.tsx` itself (between root and children)
 
@@ -314,6 +333,7 @@ The codebase implements a **3-layer error handling system** with privacy-aware s
 Graphium has **30+ markdown files** totaling approximately **50,000 words** of comprehensive documentation.
 
 #### Root-Level Documentation
+
 - ✅ **README.md** (4,600+ words) - Comprehensive, well-written, styled
 - ✅ **TESTING_STRATEGY.md** - Detailed testing philosophy
 - ⚠️ **ARCHITECTURE.md** - **MISSING** (now created)
@@ -321,6 +341,7 @@ Graphium has **30+ markdown files** totaling approximately **50,000 words** of c
 - ❌ **CHANGELOG.md** - Missing (not critical for v0.3.0)
 
 #### docs/ Directory Structure
+
 ```
 docs/
 ├── architecture/
@@ -355,6 +376,7 @@ docs/
 ### Documentation Quality Assessment
 
 **✅ Strengths**:
+
 1. **Comprehensive inline comments** - Most files have JSDoc headers
 2. **Architecture diagrams** - ASCII art diagrams in multiple files
 3. **Domain context** - `CONTEXT.md` explains business rules
@@ -364,6 +386,7 @@ docs/
 7. **Feature implementation notes** - Post-implementation documentation
 
 **⚠️ Gaps (Now Fixed)**:
+
 1. ✅ **Root-level ARCHITECTURE.md** - Created (8,000+ words)
    - Quick reference for AI agents
    - Points to deeper documentation
@@ -382,6 +405,7 @@ docs/
 ### Inline Comment Quality
 
 **Sample Analysis** (from exploration):
+
 - ✅ `src/store/gameStore.ts` - Excellent JSDoc for interfaces
 - ✅ `src/utils/AssetProcessor.ts` - Detailed function comments
 - ✅ `src/utils/fuzzySearch.ts` - Algorithm explanation
@@ -557,6 +581,7 @@ docs/
 ### ✅ Completed (Commit 67a8ce9)
 
 **gameStore.ts** - ✅ IMPLEMENTED (58 tests)
+
 - Implementation in `src/store/gameStore.test.ts` (1,076 lines)
 - Complete coverage of all Zustand actions
 - Token CRUD, campaign management, map configuration
@@ -564,6 +589,7 @@ docs/
 - Coverage: 0% → ~85%
 
 **fuzzySearch.ts** - ✅ IMPLEMENTED (27 tests)
+
 - Implementation in `src/utils/fuzzySearch.test.ts` (394 lines)
 - Search scoring algorithm (exact, starts-with, contains)
 - Category filtering and multi-word queries
@@ -571,6 +597,7 @@ docs/
 - Coverage: 0% → 100%
 
 **tokenHelpers.ts** - ✅ IMPLEMENTED (10 tests)
+
 - Implementation in `src/utils/tokenHelpers.test.ts` (263 lines)
 - `addLibraryTokenToMap()` function
 - Token centering and positioning logic
@@ -581,6 +608,7 @@ docs/
 ### Week 1: Critical Path Tests
 
 **Day 1-2: Storage Services**
+
 ```typescript
 // src/services/WebStorageService.test.ts
 describe('WebStorageService', () => {
@@ -612,6 +640,7 @@ describe('WebStorageService', () => {
 ```
 
 **Day 3: CanvasManager Placeholder Replacement**
+
 ```typescript
 // src/components/Canvas/CanvasManager.test.tsx
 describe('CanvasManager Drag Handlers', () => {
@@ -630,11 +659,17 @@ describe('CanvasManager Drag Handlers', () => {
 ### Week 2: High-Priority Tests
 
 **Day 1-2: AssetProcessor**
+
 ```typescript
 // src/utils/AssetProcessor.test.ts
 describe('AssetProcessor', () => {
   it('should resize large maps to 4096px max dimension', async () => {
-    const largeMap = new File([/* 8000x6000 PNG */], 'map.png');
+    const largeMap = new File(
+      [
+        /* 8000x6000 PNG */
+      ],
+      'map.png',
+    );
     const result = await processImage(largeMap, 'MAP');
     // Assert resized to 4096px
   });
@@ -646,6 +681,7 @@ describe('AssetProcessor', () => {
 ```
 
 **Day 3-5: FogOfWarLayer**
+
 ```typescript
 // src/components/Canvas/FogOfWarLayer.test.tsx
 describe('FogOfWarLayer', () => {
@@ -669,18 +705,18 @@ describe('FogOfWarLayer', () => {
 
 ## 7. Estimated Effort
 
-| Task | Estimated Hours | Priority | Status |
-|------|----------------|----------|---------|
-| ~~gameStore tests~~ | ~~6 hours~~ | ~~URGENT~~ | ✅ COMPLETE |
-| ~~Fuzzy search tests~~ | ~~2 hours~~ | ~~MEDIUM~~ | ✅ COMPLETE |
-| ~~tokenHelpers tests~~ | ~~1 hour~~ | ~~MEDIUM~~ | ✅ COMPLETE |
-| Storage services tests | 6 hours | URGENT | Pending |
-| CanvasManager tests | 4 hours | HIGH | Pending |
-| AssetProcessor tests | 4 hours | HIGH | Pending |
-| FogOfWar tests | 5 hours | HIGH | Pending |
-| SyncManager tests | 3 hours | MEDIUM | Pending |
-| **TOTAL (URGENT + HIGH)** | **19 hours** | **~2-3 days** | **9 hrs done** |
-| **TOTAL (ALL)** | **22 hours** | **~3 days** | **9 hrs done** |
+| Task                      | Estimated Hours | Priority      | Status         |
+| ------------------------- | --------------- | ------------- | -------------- |
+| ~~gameStore tests~~       | ~~6 hours~~     | ~~URGENT~~    | ✅ COMPLETE    |
+| ~~Fuzzy search tests~~    | ~~2 hours~~     | ~~MEDIUM~~    | ✅ COMPLETE    |
+| ~~tokenHelpers tests~~    | ~~1 hour~~      | ~~MEDIUM~~    | ✅ COMPLETE    |
+| Storage services tests    | 6 hours         | URGENT        | Pending        |
+| CanvasManager tests       | 4 hours         | HIGH          | Pending        |
+| AssetProcessor tests      | 4 hours         | HIGH          | Pending        |
+| FogOfWar tests            | 5 hours         | HIGH          | Pending        |
+| SyncManager tests         | 3 hours         | MEDIUM        | Pending        |
+| **TOTAL (URGENT + HIGH)** | **19 hours**    | **~2-3 days** | **9 hrs done** |
+| **TOTAL (ALL)**           | **22 hours**    | **~3 days**   | **9 hrs done** |
 
 **Progress Update**: 9 hours of testing work completed in commit 67a8ce9 (gameStore, fuzzySearch, tokenHelpers). Remaining effort reduced from 31 hours to 22 hours.
 
@@ -693,6 +729,7 @@ describe('FogOfWarLayer', () => {
 **Overall Status**: ⚠️ **READY WITH CRITICAL GAPS**
 
 **What's Good**:
+
 - ✅ Excellent architecture and code quality
 - ✅ Comprehensive documentation (now including root-level ARCHITECTURE.md)
 - ✅ Strong error boundary coverage with privacy sanitization
@@ -700,6 +737,7 @@ describe('FogOfWarLayer', () => {
 - ✅ Well-structured codebase
 
 **What Needs Attention**:
+
 - ❌ **Core business logic lacks unit tests** (gameStore, storage)
 - ❌ **Critical utilities untested** (AssetProcessor, FogOfWar)
 - ⚠️ **Placeholder tests provide false confidence**
@@ -707,16 +745,19 @@ describe('FogOfWarLayer', () => {
 ### Recommendation
 
 **Option 1: Fix Critical Gaps (Recommended)**
+
 - Implement URGENT + HIGH priority tests (25 hours / 3-4 days)
 - This brings the codebase to **production-ready** status
 - Acceptable risk level for v0.3.0 release
 
 **Option 2: Full Coverage**
+
 - Implement ALL tests (31 hours / 4-5 days)
 - Ideal state for long-term maintainability
 - Recommended if timeline permits
 
 **Option 3: Ship Now (Not Recommended)**
+
 - Release with current gaps
 - Accept higher risk of state corruption or data loss
 - Could damage user trust
@@ -727,6 +768,7 @@ describe('FogOfWarLayer', () => {
 ✅ **SHIP AFTER URGENT FIXES**
 
 With the addition of:
+
 1. gameStore unit tests
 2. Storage services unit tests
 3. CanvasManager real tests

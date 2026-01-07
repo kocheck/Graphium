@@ -24,7 +24,9 @@ import { bypassLandingPageAndInjectState } from '../helpers/bypassLandingPage';
 /**
  * Helper to create World View context
  */
-async function createWorldViewContext(context: BrowserContext): Promise<{ page: Page; close: () => Promise<void> }> {
+async function createWorldViewContext(
+  context: BrowserContext,
+): Promise<{ page: Page; close: () => Promise<void> }> {
   const page = await context.newPage();
 
   // Mock Electron APIs for web compatibility
@@ -68,7 +70,11 @@ async function createWorldViewContext(context: BrowserContext): Promise<{ page: 
 /**
  * Helper to place a door in DM View via UI
  */
-async function placeDoor(page: Page, position: { x: number; y: number }, orientation: 'horizontal' | 'vertical' = 'horizontal') {
+async function placeDoor(
+  page: Page,
+  position: { x: number; y: number },
+  orientation: 'horizontal' | 'vertical' = 'horizontal',
+) {
   // Select door tool (press 'D' key)
   await page.keyboard.press('D');
   await page.waitForTimeout(100);
@@ -174,7 +180,11 @@ test.describe('Door Synchronization', () => {
     const worldSyncMessages: string[] = [];
     worldPage.on('console', (msg) => {
       const text = msg.text();
-      if (text.includes('DOOR_TOGGLE') || text.includes('toggleDoor') || text.includes('received DOOR_TOGGLE')) {
+      if (
+        text.includes('DOOR_TOGGLE') ||
+        text.includes('toggleDoor') ||
+        text.includes('received DOOR_TOGGLE')
+      ) {
         worldSyncMessages.push(text);
       }
     });
@@ -201,4 +211,3 @@ test.describe('Door Synchronization', () => {
   // Note: More comprehensive tests require store access or UI element identification
   // These will be added once we have data-testid attributes on doors
 });
-

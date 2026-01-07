@@ -66,7 +66,7 @@ export async function initStorage(): Promise<void> {
 export function getStorage(): IStorageService {
   if (!storageInstance) {
     throw new Error(
-      'Storage not initialized. Call initStorage() in main.tsx before using storage.'
+      'Storage not initialized. Call initStorage() in main.tsx before using storage.',
     );
   }
   return storageInstance;

@@ -113,7 +113,7 @@ export interface BatchProcessingHandle {
 export const processImage = (
   file: File,
   type: AssetType,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
 ): ProcessingHandle => {
   // Try to use Web Worker for non-blocking processing
   if (typeof Worker !== 'undefined') {
@@ -134,7 +134,7 @@ function wrapPromiseAsHandle(promise: Promise<string>): ProcessingHandle {
     cancel: () => {
       // Main thread processing can't be cancelled, just ignore
       console.warn('[AssetProcessor] Main thread processing cannot be cancelled');
-    }
+    },
   };
 }
 
@@ -146,7 +146,7 @@ function wrapPromiseAsHandle(promise: Promise<string>): ProcessingHandle {
 function processImageWithWorker(
   file: File,
   type: AssetType,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
 ): ProcessingHandle {
   let worker: Worker | null = null;
   let isCancelled = false;
@@ -156,10 +156,9 @@ function processImageWithWorker(
     // Capture reject for cancel function
     rejectPromise = reject;
     // Create worker instance
-    worker = new Worker(
-      new URL('../workers/image-processor.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    worker = new Worker(new URL('../workers/image-processor.worker.ts', import.meta.url), {
+      type: 'module',
+    });
 
     // Handle worker messages
     worker.onmessage = async (event) => {
@@ -179,7 +178,7 @@ function processImageWithWorker(
         case 'COMPLETE':
           try {
             // Send buffer to storage service for temp asset storage
-            const webpFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+            const webpFileName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
             const storage = getStorage();
             const filePath = await storage.saveAssetTemp(message.buffer, webpFileName);
 
@@ -239,7 +238,7 @@ function processImageWithWorker(
       type: 'PROCESS_IMAGE',
       file,
       assetType: type,
-      fileName: file.name
+      fileName: file.name,
     });
   });
 
@@ -257,7 +256,7 @@ function processImageWithWorker(
         rejectPromise(new Error('Image processing cancelled'));
         rejectPromise = null; // Clear to prevent double-rejection
       }
-    }
+    },
   };
 }
 
@@ -270,7 +269,7 @@ function processImageWithWorker(
 async function processImageMainThread(
   file: File,
   type: AssetType,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
 ): Promise<string> {
   // Progress: 0%
   if (onProgress) onProgress(0);
@@ -326,7 +325,7 @@ async function processImageMainThread(
 
   // 5. Send to storage service for temp asset storage
   const buffer = await blob.arrayBuffer();
-  const webpFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+  const webpFileName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
   const storage = getStorage();
   const filePath = await storage.saveAssetTemp(buffer, webpFileName);
 
@@ -363,10 +362,10 @@ async function processImageMainThread(
 export const processBatch = (
   files: File[],
   type: AssetType,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
 ): BatchProcessingHandle => {
   const totalFiles = files.length;
-  
+
   // Handle empty array case
   if (totalFiles === 0) {
     if (onProgress) {
@@ -374,10 +373,10 @@ export const processBatch = (
     }
     return {
       promise: Promise.resolve([]),
-      cancel: () => {}
+      cancel: () => {},
     };
   }
-  
+
   const fileProgress = new Map<number, number>();
   const handles: ProcessingHandle[] = [];
   let isCancelled = false;
@@ -385,7 +384,7 @@ export const processBatch = (
   const updateOverallProgress = () => {
     // Don't update progress if batch processing has been cancelled
     if (isCancelled) return;
-    
+
     const total = Array.from(fileProgress.values()).reduce((sum, p) => sum + p, 0);
     const overall = Math.round(total / totalFiles);
     if (onProgress) {
@@ -398,7 +397,7 @@ export const processBatch = (
     const handle = processImage(file, type, (progress) => {
       // Don't update progress if batch processing has been cancelled
       if (isCancelled) return;
-      
+
       fileProgress.set(index, progress);
       updateOverallProgress();
     });
@@ -412,10 +411,10 @@ export const processBatch = (
       // Set cancellation flag to prevent further progress updates
       isCancelled = true;
       // Cancel all workers
-      handles.forEach(handle => handle.cancel());
+      handles.forEach((handle) => handle.cancel());
       // Clear progress tracking and handle references to avoid stale state
       fileProgress.clear();
       handles.splice(0, handles.length); // Clear array in place
-    }
+    },
   };
 };

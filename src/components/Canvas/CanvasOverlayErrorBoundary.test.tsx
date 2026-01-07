@@ -32,7 +32,7 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary overlayName="TestOverlay">
         <div data-testid="child">Child content</div>
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     expect(screen.getByTestId('child')).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary overlayName="TestOverlay">
         <ThrowError shouldThrow={true} />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     // Should not display any error UI visible to user
@@ -61,13 +61,13 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary overlayName="PaperNoiseOverlay">
         <ThrowError shouldThrow={true} />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('[CanvasOverlayErrorBoundary] PaperNoiseOverlay crashed:'),
       expect.any(Error),
-      expect.anything()
+      expect.anything(),
     );
 
     consoleErrorSpy.mockRestore();
@@ -79,13 +79,13 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('[CanvasOverlayErrorBoundary] CanvasOverlay crashed:'),
       expect.any(Error),
-      expect.anything()
+      expect.anything(),
     );
 
     consoleErrorSpy.mockRestore();
@@ -95,7 +95,7 @@ describe('CanvasOverlayErrorBoundary', () => {
     const { container } = render(
       <CanvasOverlayErrorBoundary overlayName="TestOverlay">
         <ThrowError shouldThrow={true} />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     // No error message should be visible
@@ -112,7 +112,7 @@ describe('CanvasOverlayErrorBoundary', () => {
         <div data-testid="child-1">Child 1</div>
         <div data-testid="child-2">Child 2</div>
         <div data-testid="child-3">Child 3</div>
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     expect(screen.getByTestId('child-1')).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('CanvasOverlayErrorBoundary', () => {
         <div data-testid="child-1">Child 1</div>
         <ThrowError shouldThrow={true} />
         <div data-testid="child-3">Child 3</div>
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     // When any child throws, entire boundary catches it
@@ -150,7 +150,7 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary overlayName="NestedOverlay">
         <NestedComponent />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     expect(screen.getByTestId('overlay-error-nestedoverlay')).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe('CanvasOverlayErrorBoundary', () => {
         <CanvasOverlayErrorBoundary overlayName="Overlay2">
           <div data-testid="working">Working overlay</div>
         </CanvasOverlayErrorBoundary>
-      </div>
+      </div>,
     );
 
     // First boundary should have error marker
@@ -191,7 +191,7 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary overlayName="AsyncOverlay">
         <AsyncErrorComponent />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     // Error boundary should catch the effect error
@@ -210,7 +210,7 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary overlayName="CustomError">
         <CustomErrorComponent />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -218,7 +218,7 @@ describe('CanvasOverlayErrorBoundary', () => {
       expect.objectContaining({
         message: 'Custom error message with special characters: @#$%',
       }),
-      expect.anything()
+      expect.anything(),
     );
 
     consoleErrorSpy.mockRestore();
@@ -233,7 +233,7 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary overlayName="TypeError">
         <TypeErrorComponent />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     expect(screen.getByTestId('overlay-error-typeerror')).toBeInTheDocument();
@@ -248,7 +248,7 @@ describe('CanvasOverlayErrorBoundary', () => {
     render(
       <CanvasOverlayErrorBoundary overlayName="ReferenceError">
         <ReferenceErrorComponent />
-      </CanvasOverlayErrorBoundary>
+      </CanvasOverlayErrorBoundary>,
     );
 
     expect(screen.getByTestId('overlay-error-referenceerror')).toBeInTheDocument();

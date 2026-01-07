@@ -19,7 +19,7 @@ interface CollapsibleSectionProps {
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
   children,
-  defaultOpen = true
+  defaultOpen = true,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -30,7 +30,10 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         className="w-full flex items-center justify-between mb-3 hover:opacity-80 transition"
         aria-expanded={isOpen}
       >
-        <h3 className="text-sm uppercase font-bold tracking-wider" style={{ color: 'var(--app-text-secondary)' }}>
+        <h3
+          className="text-sm uppercase font-bold tracking-wider"
+          style={{ color: 'var(--app-text-secondary)' }}
+        >
           {title}
         </h3>
         <RiArrowRightSLine
@@ -39,11 +42,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         />
       </button>
 
-      {isOpen && (
-        <div className="space-y-2">
-          {children}
-        </div>
-      )}
+      {isOpen && <div className="space-y-2">{children}</div>}
     </div>
   );
 };

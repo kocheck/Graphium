@@ -112,7 +112,13 @@ interface RoomTemplate {
   type: string;
   minSize: number;
   maxSize: number;
-  createPiece: (x: number, y: number, widthCells: number, heightCells: number, gridSize: number) => DungeonPiece;
+  createPiece: (
+    x: number,
+    y: number,
+    widthCells: number,
+    heightCells: number,
+    gridSize: number,
+  ) => DungeonPiece;
 }
 
 /**
@@ -238,7 +244,7 @@ export class DungeonGenerator {
     // Initialize corridor template (4 grid cells long for visible walls)
     this.corridorTemplate = {
       lengthInCells: 4,
-      widthInCells: 2,  // 2 cells wide allows both walls AND doors to align to grid
+      widthInCells: 2, // 2 cells wide allows both walls AND doors to align to grid
     };
   }
 
@@ -294,8 +300,8 @@ export class DungeonGenerator {
 
     // Start with the first room at canvas center
     const { canvasWidth, canvasHeight, gridSize } = this.options;
-    const startX = Math.round((canvasWidth / 2) / gridSize) * gridSize;
-    const startY = Math.round((canvasHeight / 2) / gridSize) * gridSize;
+    const startX = Math.round(canvasWidth / 2 / gridSize) * gridSize;
+    const startY = Math.round(canvasHeight / 2 / gridSize) * gridSize;
 
     const firstRoom = this.createRoom(startX, startY);
     pieces.push(firstRoom);
@@ -320,7 +326,7 @@ export class DungeonGenerator {
 
       // Try all available directions
       const availableDirs: Direction[] = ['north', 'south', 'east', 'west']
-        .filter(dir => !usedDirs.has(dir as Direction))
+        .filter((dir) => !usedDirs.has(dir as Direction))
         .sort(() => Math.random() - 0.5) as Direction[];
 
       let added = false;
@@ -377,8 +383,10 @@ export class DungeonGenerator {
     const template = this.roomTemplates[Math.floor(Math.random() * this.roomTemplates.length)];
 
     // Generate random size within template bounds
-    const widthCells = Math.floor(Math.random() * (template.maxSize - template.minSize + 1)) + template.minSize;
-    const heightCells = Math.floor(Math.random() * (template.maxSize - template.minSize + 1)) + template.minSize;
+    const widthCells =
+      Math.floor(Math.random() * (template.maxSize - template.minSize + 1)) + template.minSize;
+    const heightCells =
+      Math.floor(Math.random() * (template.maxSize - template.minSize + 1)) + template.minSize;
 
     // Use template's creation function
     return template.createPiece(x, y, widthCells, heightCells, this.options.gridSize);
@@ -392,7 +400,7 @@ export class DungeonGenerator {
     y: number,
     widthCells: number,
     heightCells: number,
-    gridSize: number
+    gridSize: number,
   ): DungeonPiece {
     const width = widthCells * gridSize;
     const height = heightCells * gridSize;
@@ -401,10 +409,22 @@ export class DungeonGenerator {
       type: 'room',
       bounds: { x, y, width, height },
       wallSegments: {
-        north: [{ x, y }, { x: x + width, y }],
-        east: [{ x: x + width, y }, { x: x + width, y: y + height }],
-        south: [{ x: x + width, y: y + height }, { x, y: y + height }],
-        west: [{ x, y: y + height }, { x, y }],
+        north: [
+          { x, y },
+          { x: x + width, y },
+        ],
+        east: [
+          { x: x + width, y },
+          { x: x + width, y: y + height },
+        ],
+        south: [
+          { x: x + width, y: y + height },
+          { x, y: y + height },
+        ],
+        west: [
+          { x, y: y + height },
+          { x, y },
+        ],
       },
     };
   }
@@ -412,11 +432,7 @@ export class DungeonGenerator {
   /**
    * Creates a corridor piece connecting in the specified direction
    */
-  private createCorridorPiece(
-    fromX: number,
-    fromY: number,
-    direction: Direction
-  ): DungeonPiece {
+  private createCorridorPiece(fromX: number, fromY: number, direction: Direction): DungeonPiece {
     const { gridSize } = this.options;
     const corridorWidth = this.corridorTemplate.widthInCells * gridSize;
     const corridorLength = this.corridorTemplate.lengthInCells * gridSize;
@@ -541,7 +557,7 @@ export class DungeonGenerator {
     sourcePiece: DungeonPiece,
     direction: Direction,
     existingPieces: DungeonPiece[],
-    excludeFromCollision?: DungeonPiece
+    excludeFromCollision?: DungeonPiece,
   ): { corridor: DungeonPiece; newRoom: DungeonPiece } | null {
     const { bounds } = sourcePiece;
     const { gridSize } = this.options;
@@ -642,7 +658,7 @@ export class DungeonGenerator {
 
     // Check for collisions (exclude source piece since corridor connects to it)
     const piecesToCheck = excludeFromCollision
-      ? existingPieces.filter(p => p !== excludeFromCollision)
+      ? existingPieces.filter((p) => p !== excludeFromCollision)
       : existingPieces;
 
     if (this.piecesOverlap(corridor, piecesToCheck) || this.piecesOverlap(newRoom, piecesToCheck)) {
@@ -710,10 +726,30 @@ export class DungeonGenerator {
     const { x, y, width, height } = piece.bounds;
 
     piece.wallSegments = {
-      north: piece.wallSegments.north ? [{ x, y }, { x: x + width, y }] : undefined,
-      east: piece.wallSegments.east ? [{ x: x + width, y }, { x: x + width, y: y + height }] : undefined,
-      south: piece.wallSegments.south ? [{ x: x + width, y: y + height }, { x, y: y + height }] : undefined,
-      west: piece.wallSegments.west ? [{ x, y: y + height }, { x, y }] : undefined,
+      north: piece.wallSegments.north
+        ? [
+            { x, y },
+            { x: x + width, y },
+          ]
+        : undefined,
+      east: piece.wallSegments.east
+        ? [
+            { x: x + width, y },
+            { x: x + width, y: y + height },
+          ]
+        : undefined,
+      south: piece.wallSegments.south
+        ? [
+            { x: x + width, y: y + height },
+            { x, y: y + height },
+          ]
+        : undefined,
+      west: piece.wallSegments.west
+        ? [
+            { x, y: y + height },
+            { x, y },
+          ]
+        : undefined,
     };
   }
 
@@ -728,7 +764,11 @@ export class DungeonGenerator {
    * @param direction - Which wall direction to place the door
    * @param doorwayPosition - Exact center position of the door
    */
-  private removeConnectingWalls(piece: DungeonPiece, direction: Direction, doorwayPosition?: Point): void {
+  private removeConnectingWalls(
+    piece: DungeonPiece,
+    direction: Direction,
+    doorwayPosition?: Point,
+  ): void {
     const { bounds, wallSegments } = piece;
     const { gridSize } = this.options;
     const doorwaySize = gridSize; // Door opening size (1 grid cell)
@@ -960,23 +1000,23 @@ export class DungeonGenerator {
     // Determine orientation based on direction
     // North/South walls have horizontal doors (door swings east-west)
     // East/West walls have vertical doors (door swings north-south)
-    const orientation = (direction === 'north' || direction === 'south') ? 'horizontal' : 'vertical';
+    const orientation = direction === 'north' || direction === 'south' ? 'horizontal' : 'vertical';
 
     // Determine swing direction (doors swing into rooms, away from corridors)
     // For now, default to standard directions
     let swingDirection: 'left' | 'right' | 'up' | 'down';
     switch (direction) {
       case 'north':
-        swingDirection = 'left';  // Door swings to the left (west)
+        swingDirection = 'left'; // Door swings to the left (west)
         break;
       case 'south':
         swingDirection = 'right'; // Door swings to the right (east)
         break;
       case 'east':
-        swingDirection = 'down';  // Door swings downward (south)
+        swingDirection = 'down'; // Door swings downward (south)
         break;
       case 'west':
-        swingDirection = 'up';    // Door swings upward (north)
+        swingDirection = 'up'; // Door swings upward (north)
         break;
     }
 
@@ -985,10 +1025,10 @@ export class DungeonGenerator {
       x: position.x,
       y: position.y,
       orientation,
-      isOpen: false,        // Doors start closed
-      isLocked: false,      // Doors start unlocked
-      size: gridSize,       // Door size matches grid
-      thickness: 12,        // Thicker for better visibility (especially in fog of war)
+      isOpen: false, // Doors start closed
+      isLocked: false, // Doors start unlocked
+      size: gridSize, // Door size matches grid
+      thickness: 12, // Thicker for better visibility (especially in fog of war)
       swingDirection,
     };
   }

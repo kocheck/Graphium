@@ -5,6 +5,7 @@ This directory contains the Zustand state management implementation for Graphium
 ## Purpose
 
 The store provides:
+
 - Centralized state management (tokens, drawings, grid configuration)
 - State mutations via actions (addToken, updateToken, addDrawing, etc.)
 - Subscription API for side effects (IPC sync)
@@ -13,6 +14,7 @@ The store provides:
 ## Contents
 
 ### `gameStore.ts` (44 lines)
+
 **Single global state store for game data**
 
 ## Store Architecture
@@ -20,6 +22,7 @@ The store provides:
 ### Why Zustand?
 
 **Chosen over Redux/Context API for:**
+
 - Minimal boilerplate (no actions, reducers, providers)
 - Built-in subscription API (needed for IPC sync)
 - No Context Provider wrapper (simpler setup)
@@ -38,7 +41,10 @@ export interface GameState {
   // Actions
   addToken: (token: Token) => void;
   updateTokenPosition: (id: string, x: number, y: number) => void;
-  updateTokenProperties: (id: string, properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>) => void;
+  updateTokenProperties: (
+    id: string,
+    properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>,
+  ) => void;
   addDrawing: (drawing: Drawing) => void;
   setGridSize: (size: number) => void;
   setState: (state: Partial<GameState>) => void;
@@ -46,22 +52,22 @@ export interface GameState {
 }
 
 export interface Token {
-  id: string;           // crypto.randomUUID()
-  x: number;            // Grid-snapped X coordinate (pixels)
-  y: number;            // Grid-snapped Y coordinate (pixels)
-  src: string;          // file:// URL or https:// URL
-  scale: number;        // Size multiplier (1 = 1x1 grid cell, 2 = 2x2, etc.)
-  type?: 'PC' | 'NPC';  // Token type (PC = player character with vision, NPC = no vision)
+  id: string; // crypto.randomUUID()
+  x: number; // Grid-snapped X coordinate (pixels)
+  y: number; // Grid-snapped Y coordinate (pixels)
+  src: string; // file:// URL or https:// URL
+  scale: number; // Size multiplier (1 = 1x1 grid cell, 2 = 2x2, etc.)
+  type?: 'PC' | 'NPC'; // Token type (PC = player character with vision, NPC = no vision)
   visionRadius?: number; // Vision range in feet (e.g., 60 for darkvision, 0 = blind)
-  name?: string;        // Display name (shown in Token Inspector)
+  name?: string; // Display name (shown in Token Inspector)
 }
 
 export interface Drawing {
-  id: string;                        // crypto.randomUUID()
+  id: string; // crypto.randomUUID()
   tool: 'marker' | 'eraser' | 'wall'; // Tool type (wall blocks vision for fog of war)
-  points: number[];                   // [x1, y1, x2, y2, x3, y3, ...]
-  color: string;                      // Hex color ('#df4b26' marker, '#000000' eraser, '#ff0000' wall)
-  size: number;                       // Stroke width (5 marker, 20 eraser, 8 wall)
+  points: number[]; // [x1, y1, x2, y2, x3, y3, ...]
+  color: string; // Hex color ('#df4b26' marker, '#000000' eraser, '#ff0000' wall)
+  size: number; // Stroke width (5 marker, 20 eraser, 8 wall)
 }
 ```
 
@@ -75,17 +81,20 @@ export const useGameStore = create<GameState>((set) => ({
   gridSize: 50,
 
   // Actions
-  addToken: (token) => set((state) => ({
-    tokens: [...state.tokens, token]
-  })),
+  addToken: (token) =>
+    set((state) => ({
+      tokens: [...state.tokens, token],
+    })),
 
-  updateTokenPosition: (id, x, y) => set((state) => ({
-    tokens: state.tokens.map((t) => t.id === id ? { ...t, x, y } : t)
-  })),
+  updateTokenPosition: (id, x, y) =>
+    set((state) => ({
+      tokens: state.tokens.map((t) => (t.id === id ? { ...t, x, y } : t)),
+    })),
 
-  addDrawing: (drawing) => set((state) => ({
-    drawings: [...state.drawings, drawing]
-  })),
+  addDrawing: (drawing) =>
+    set((state) => ({
+      drawings: [...state.drawings, drawing],
+    })),
 
   setGridSize: (size) => set({ gridSize: size }),
 
@@ -111,6 +120,7 @@ const Component = () => {
 ```
 
 **Optimization:** Selector function (only re-render when specific value changes)
+
 ```typescript
 // Only re-renders when token COUNT changes (not when tokens mutate)
 const tokenCount = useGameStore((state) => state.tokens.length);
@@ -167,7 +177,7 @@ const loadCampaign = async () => {
     useGameStore.setState({
       tokens: state.tokens,
       drawings: state.drawings,
-      gridSize: state.gridSize
+      gridSize: state.gridSize,
     });
   }
 };
@@ -194,11 +204,11 @@ useEffect(() => {
     window.ipcRenderer.send('SYNC_WORLD_STATE', {
       tokens: state.tokens,
       drawings: state.drawings,
-      gridSize: state.gridSize
+      gridSize: state.gridSize,
     });
   });
 
-  return unsubscribe;  // Cleanup on unmount
+  return unsubscribe; // Cleanup on unmount
 }, []);
 ```
 
@@ -211,11 +221,11 @@ useEffect(() => {
 ```typescript
 // WRONG - mutates array in place
 const { tokens } = useGameStore.getState();
-tokens.push(newToken);  // BAD!
+tokens.push(newToken); // BAD!
 
 // WRONG - mutates object in place
 const { tokens } = useGameStore.getState();
-tokens[0].x = 100;  // BAD!
+tokens[0].x = 100; // BAD!
 ```
 
 **Why:** Zustand won't detect the change, won't trigger re-renders or subscriptions
@@ -229,41 +239,45 @@ addToken(newToken);
 
 // CORRECT - use setState with new reference
 useGameStore.setState((state) => ({
-  tokens: [...state.tokens, newToken]
+  tokens: [...state.tokens, newToken],
 }));
 
 // CORRECT - update existing token
 useGameStore.setState((state) => ({
-  tokens: state.tokens.map(t => t.id === id ? { ...t, x: 100 } : t)
+  tokens: state.tokens.map((t) => (t.id === id ? { ...t, x: 100 } : t)),
 }));
 ```
 
 ### Immutable Update Patterns
 
 **Add to array:**
+
 ```typescript
-set((state) => ({ tokens: [...state.tokens, newToken] }))
+set((state) => ({ tokens: [...state.tokens, newToken] }));
 ```
 
 **Remove from array:**
+
 ```typescript
-set((state) => ({ tokens: state.tokens.filter(t => t.id !== id) }))
+set((state) => ({ tokens: state.tokens.filter((t) => t.id !== id) }));
 ```
 
 **Update item in array:**
+
 ```typescript
 set((state) => ({
-  tokens: state.tokens.map(t => t.id === id ? { ...t, x, y } : t)
-}))
+  tokens: state.tokens.map((t) => (t.id === id ? { ...t, x, y } : t)),
+}));
 ```
 
 **Update nested object:**
+
 ```typescript
 set((state) => ({
-  tokens: state.tokens.map(t =>
-    t.id === id ? { ...t, metadata: { ...t.metadata, name: 'New Name' } } : t
-  )
-}))
+  tokens: state.tokens.map((t) =>
+    t.id === id ? { ...t, metadata: { ...t.metadata, name: 'New Name' } } : t,
+  ),
+}));
 ```
 
 ## Common Store Tasks
@@ -298,8 +312,8 @@ const Component = () => {
 // 1. Add to interface
 export interface GameState {
   // ... existing
-  fogEnabled: boolean;  // NEW FIELD
-  setFogEnabled: (enabled: boolean) => void;  // NEW ACTION
+  fogEnabled: boolean; // NEW FIELD
+  setFogEnabled: (enabled: boolean) => void; // NEW ACTION
 }
 
 // 2. Add to initial state
@@ -307,7 +321,7 @@ export const useGameStore = create<GameState>((set) => ({
   tokens: [],
   drawings: [],
   gridSize: 50,
-  fogEnabled: false,  // NEW DEFAULT
+  fogEnabled: false, // NEW DEFAULT
 
   // ... existing actions
   setFogEnabled: (enabled) => set({ fogEnabled: enabled }),
@@ -318,7 +332,7 @@ const dataToSave = {
   tokens: state.tokens,
   drawings: state.drawings,
   gridSize: state.gridSize,
-  fogEnabled: state.fogEnabled,  // Include in save
+  fogEnabled: state.fogEnabled, // Include in save
 };
 ```
 
@@ -358,14 +372,14 @@ export const useGameStore = create<GameState>()(
       // ... store implementation
     }),
     {
-      name: 'graphium-game-state',  // LocalStorage key
+      name: 'graphium-game-state', // LocalStorage key
       partialize: (state) => ({
         // Only persist specific fields
         gridSize: state.gridSize,
         // Don't persist tokens/drawings (campaign files handle that)
       }),
-    }
-  )
+    },
+  ),
 );
 ```
 
@@ -383,6 +397,7 @@ useGameStore.subscribe((state) => {
 ```
 
 **Solution:** Filter in subscription callback
+
 ```typescript
 let prevTokens = useGameStore.getState().tokens;
 
@@ -405,6 +420,7 @@ const { tokens, drawings, gridSize } = useGameStore();
 ```
 
 **Solution:** Use specific selectors
+
 ```typescript
 // Only re-renders when tokens change
 const tokens = useGameStore((state) => state.tokens);
@@ -418,6 +434,7 @@ const tokenCount = useGameStore((state) => state.tokens.length);
 **Problem:** Re-rendering 1000+ tokens on every change
 
 **Solution 1:** Memoize rendering
+
 ```typescript
 const tokens = useGameStore((state) => state.tokens);
 
@@ -427,6 +444,7 @@ const renderedTokens = useMemo(() => {
 ```
 
 **Solution 2:** Virtualization
+
 ```typescript
 import { FixedSizeList } from 'react-window';
 
@@ -451,10 +469,12 @@ const getToken = (index: number) => useGameStore.getState().tokens[index];
 ### Manual Testing Checklist
 
 **Store initialization:**
+
 - [ ] Store creates with default values ([], [], 50)
 - [ ] No console errors on import
 
 **Actions:**
+
 - [ ] addToken adds token to array
 - [ ] updateTokenPosition updates correct token
 - [ ] addDrawing adds drawing to array
@@ -462,11 +482,13 @@ const getToken = (index: number) => useGameStore.getState().tokens[index];
 - [ ] setState replaces state correctly
 
 **Subscriptions:**
+
 - [ ] subscribe callback fires on state change
 - [ ] unsubscribe stops receiving updates
 - [ ] Multiple subscriptions work independently
 
 **IPC sync:**
+
 - [ ] Main Window subscription sends IPC
 - [ ] World Window IPC listener updates store
 - [ ] State syncs correctly between windows
@@ -483,7 +505,7 @@ describe('gameStore', () => {
     useGameStore.setState({
       tokens: [],
       drawings: [],
-      gridSize: 50
+      gridSize: 50,
     });
   });
 
@@ -493,7 +515,7 @@ describe('gameStore', () => {
       x: 100,
       y: 100,
       src: 'test.png',
-      scale: 1
+      scale: 1,
     };
 
     useGameStore.getState().addToken(token);
@@ -513,7 +535,7 @@ describe('gameStore', () => {
     const tokens = useGameStore.getState().tokens;
     expect(tokens[0].x).toBe(100);
     expect(tokens[0].y).toBe(100);
-    expect(tokens[1].x).toBe(50);  // Unchanged
+    expect(tokens[1].x).toBe(50); // Unchanged
   });
 
   test('subscription fires on state change', () => {
@@ -531,14 +553,17 @@ describe('gameStore', () => {
 ## Common Issues
 
 ### Issue: State not updating in component
+
 **Symptoms:** Store changes but component doesn't re-render
 
 **Diagnosis:**
+
 1. Using getState() instead of hook
 2. Subscribing to wrong part of state
 3. Mutating state directly (no new reference)
 
 **Solution:**
+
 ```typescript
 // ❌ WRONG - no subscription
 const Component = () => {
@@ -554,11 +579,13 @@ const Component = () => {
 ```
 
 ### Issue: Component re-renders too often
+
 **Symptoms:** Performance lag, console.log in component fires frequently
 
 **Diagnosis:** Subscribing to entire store or unrelated fields
 
 **Solution:**
+
 ```typescript
 // ❌ BAD - re-renders on ANY state change
 const { tokens, drawings, gridSize } = useGameStore();
@@ -571,14 +598,17 @@ const tokenCount = useGameStore((state) => state.tokens.length);
 ```
 
 ### Issue: Subscription not firing
+
 **Symptoms:** IPC sync not working, side effects not triggering
 
 **Diagnosis:**
+
 1. Subscription not set up (useEffect missing)
 2. State not actually changing (same reference)
 3. Subscription unsubscribed prematurely
 
 **Solution:**
+
 ```typescript
 // Ensure useEffect returns cleanup
 useEffect(() => {
@@ -586,21 +616,23 @@ useEffect(() => {
     console.log('[SUBSCRIBE] State changed:', state);
   });
 
-  return unsub;  // CRITICAL: cleanup on unmount
-}, []);  // Empty deps = runs once
+  return unsub; // CRITICAL: cleanup on unmount
+}, []); // Empty deps = runs once
 
 // Ensure state reference changes
 set((state) => ({
-  tokens: [...state.tokens, newToken]  // New array reference
+  tokens: [...state.tokens, newToken], // New array reference
 }));
 ```
 
 ### Issue: setState not merging correctly
+
 **Symptoms:** Some state fields disappear after setState
 
 **Diagnosis:** setState REPLACES entire state by default
 
 **Solution:**
+
 ```typescript
 // ❌ WRONG - loses other fields
 useGameStore.setState({ tokens: newTokens });
@@ -608,24 +640,26 @@ useGameStore.setState({ tokens: newTokens });
 
 // ✅ CORRECT - merge with existing state
 useGameStore.setState((state) => ({
-  ...state,  // Spread existing state
-  tokens: newTokens
+  ...state, // Spread existing state
+  tokens: newTokens,
 }));
 
 // ✅ ALSO CORRECT - Zustand auto-merges top-level
-useGameStore.setState({ tokens: newTokens });  // Actually works!
+useGameStore.setState({ tokens: newTokens }); // Actually works!
 // (Zustand's default is shallow merge for top-level fields)
 ```
 
 ## Future Enhancements
 
 ### Planned
+
 1. **Undo/Redo** - History middleware for state changes
 2. **State Validation** - Type guards for loaded data
 3. **Optimistic Updates** - Update UI before IPC confirmation
 4. **State Persistence** - LocalStorage for grid settings
 
 ### Under Consideration
+
 1. **Multiple Stores** - Separate UI state from game state
 2. **Derived State** - Computed selectors (visible tokens, selected items)
 3. **Middleware** - Logging, dev tools, state snapshots

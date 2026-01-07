@@ -1,12 +1,12 @@
-import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Mock window.errorReporting for tests
 const mockErrorReporting = {
   getUsername: vi.fn().mockResolvedValue('testuser'),
   openExternal: vi.fn().mockResolvedValue(true),
   saveToFile: vi.fn().mockResolvedValue({ success: true, filePath: '/path/to/file.txt' }),
-}
+};
 
 // Mock window.ipcRenderer for tests
 const mockIpcRenderer = {
@@ -14,25 +14,23 @@ const mockIpcRenderer = {
   off: vi.fn(),
   send: vi.fn(),
   invoke: vi.fn(),
-}
+};
 
 // Apply mocks to window
 Object.defineProperty(window, 'errorReporting', {
   value: mockErrorReporting,
   writable: true,
-})
+});
 
 Object.defineProperty(window, 'ipcRenderer', {
   value: mockIpcRenderer,
   writable: true,
-})
-
-
+});
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -42,12 +40,12 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
-})
+});
 
 // Basic Canvas Mock for Konva in jsdom
 if (typeof HTMLCanvasElement !== 'undefined') {
   // @ts-expect-error - Mocking Canvas context for tests
-  HTMLCanvasElement.prototype.getContext = function(type: string) {
+  HTMLCanvasElement.prototype.getContext = function (type: string) {
     if (type === '2d') {
       return {
         fillRect: vi.fn(),
@@ -100,9 +98,9 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   };
 
   // Mock toDataURL
-  HTMLCanvasElement.prototype.toDataURL = function() {
-      return "data:image/png;base64,";
-  }
+  HTMLCanvasElement.prototype.toDataURL = function () {
+    return 'data:image/png;base64,';
+  };
 }
 
 // Mock DragEvent for jsdom (not natively supported)
@@ -121,4 +119,28 @@ if (typeof DragEvent === 'undefined') {
 }
 
 // Export mocks for use in tests
-export { mockErrorReporting, mockIpcRenderer }
+export { mockErrorReporting, mockIpcRenderer };
+
+// Mock react-konva to bypass ESM issues with Konva v10
+vi.mock('react-konva', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const React = require('react');
+  return {
+    Stage: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', { 'data-testid': 'stage' }, [
+        React.createElement('canvas', { key: 'canvas' }), // Validation checks for canvas
+        children,
+      ]),
+    Layer: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', { 'data-testid': 'layer' }, children),
+    Group: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', { 'data-testid': 'group' }, children),
+    Line: () => React.createElement('div', { 'data-testid': 'line' }),
+    Circle: () => React.createElement('div', { 'data-testid': 'circle' }),
+    Text: () => React.createElement('div', { 'data-testid': 'text' }),
+    Wedge: () => React.createElement('div', { 'data-testid': 'wedge' }),
+    Ring: () => React.createElement('div', { 'data-testid': 'ring' }),
+    Rect: () => React.createElement('div', { 'data-testid': 'rect' }),
+    Image: () => React.createElement('div', { 'data-testid': 'image' }),
+  };
+});

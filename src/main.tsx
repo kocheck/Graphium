@@ -1,15 +1,15 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import PrivacyErrorBoundary from './components/PrivacyErrorBoundary.tsx'
-import PendingErrorsIndicator from './components/PendingErrorsIndicator.tsx'
-import { initGlobalErrorHandlers } from './utils/globalErrorHandler.ts'
-import { initStorage } from './services/storage.ts'
-import './index.css'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.tsx';
+import PrivacyErrorBoundary from './components/PrivacyErrorBoundary.tsx';
+import PendingErrorsIndicator from './components/PendingErrorsIndicator.tsx';
+import { initGlobalErrorHandlers } from './utils/globalErrorHandler.ts';
+import { initStorage } from './services/storage.ts';
+import './index.css';
 
 // Initialize global error handlers for non-React errors
 // This catches window.onerror and unhandled promise rejections
-initGlobalErrorHandlers()
+initGlobalErrorHandlers();
 
 /**
  * Initialize app with async dependencies
@@ -20,12 +20,12 @@ initGlobalErrorHandlers()
 async function initApp() {
   try {
     // Initialize storage service (detects Electron vs Web)
-    await initStorage()
+    await initStorage();
   } catch (error) {
-    console.error('[main] Failed to initialize storage:', error)
+    console.error('[main] Failed to initialize storage:', error);
 
     // Show user-friendly error screen instead of rendering broken app
-    const root = document.getElementById('root')
+    const root = document.getElementById('root');
     if (root) {
       root.innerHTML = `
         <div style="
@@ -87,16 +87,16 @@ async function initApp() {
             </button>
           </div>
         </div>
-      `
+      `;
     }
-    return // Don't render React app if storage failed
+    return; // Don't render React app if storage failed
   }
 
   // Render React app
-  const rootElement = document.getElementById('root')
+  const rootElement = document.getElementById('root');
   if (!rootElement) {
-    console.error('[main] Root element not found!')
-    return
+    console.error('[main] Root element not found!');
+    return;
   }
 
   ReactDOM.createRoot(rootElement).render(
@@ -106,14 +106,14 @@ async function initApp() {
         <PendingErrorsIndicator position="bottom-right" />
       </PrivacyErrorBoundary>
     </React.StrictMode>,
-  )
+  );
 }
 
 // Start app initialization
 initApp().catch((error) => {
-  console.error('[main] Fatal error during app initialization:', error)
+  console.error('[main] Fatal error during app initialization:', error);
   // Show error on screen
-  const root = document.getElementById('root')
+  const root = document.getElementById('root');
   if (root) {
     root.innerHTML = `
       <div style="
@@ -151,13 +151,13 @@ initApp().catch((error) => {
           Reload
         </button>
       </div>
-    `
+    `;
   }
-})
+});
 
 // Use contextBridge (if available - not present in browser testing)
 if (window.ipcRenderer) {
   window.ipcRenderer.on('main-process-message', (_event, message) => {
-    console.log(message)
-  })
+    console.log(message);
+  });
 }

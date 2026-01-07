@@ -15,18 +15,22 @@ The `@ibm/plex` package is listed in `package.json` as a dev dependency, and Vit
 ## 📦 What's Included
 
 ### IBM Plex Sans (Primary UI Font)
+
 Used for all user interface elements: buttons, headings, paragraphs, labels, etc.
 
 **Font Weights:**
+
 - Regular (400)
 - Medium (500)
 - SemiBold (600)
 - Bold (700)
 
 ### IBM Plex Mono (Code & Data Font)
+
 Used for code blocks, data tables, and numeric data.
 
 **Font Weights:**
+
 - Regular (400)
 - Medium (500)
 - SemiBold (600)
@@ -37,12 +41,14 @@ Used for code blocks, data tables, and numeric data.
 The application uses the following font stacks with system font fallbacks:
 
 **Primary (Sans-serif):**
+
 ```css
 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
 'Helvetica Neue', Arial, sans-serif
 ```
 
 **Monospace (Code):**
+
 ```css
 'IBM Plex Mono', 'SF Mono', Monaco, 'Cascadia Code',
 'Roboto Mono', Consolas, 'Courier New', monospace
@@ -54,10 +60,17 @@ The fonts are automatically applied globally via `src/styles/fonts.css`:
 
 ```css
 body {
-  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, ...;
+  font-family:
+    'IBM Plex Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    ...;
 }
 
-code, pre, kbd, samp {
+code,
+pre,
+kbd,
+samp {
   font-family: 'IBM Plex Mono', 'SF Mono', Monaco, ...;
 }
 ```
@@ -90,12 +103,14 @@ No additional configuration needed!
 ## 🔧 Troubleshooting
 
 **Fonts not loading?**
+
 1. Ensure `npm install` completed successfully
 2. Check that `@ibm/plex` appears in `node_modules/`
 3. Clear browser cache (Cmd+Shift+R / Ctrl+Shift+F5)
 4. Check browser DevTools Network tab for font file 404s
 
 **Want to add italic styles?**
+
 1. Add additional `@font-face` declarations in `src/styles/fonts.css`
 2. Point to italic font files from `@ibm/plex` package
 3. Example: `url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Italic.woff2')`

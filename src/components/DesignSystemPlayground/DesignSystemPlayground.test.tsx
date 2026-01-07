@@ -27,9 +27,9 @@ vi.mock('../../store/gameStore', () => ({
 }));
 
 describe('DesignSystemPlayground', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('should render the playground with header and version', () => {
     render(<DesignSystemPlayground />);
@@ -56,9 +56,9 @@ describe('DesignSystemPlayground', () => {
 
     // Should show filtered results
     await waitFor(() => {
-        expect(screen.getByText('Toggle Switch')).toBeInTheDocument();
-        // Primary Button should NOT be visible when searching for Toggle
-        expect(screen.queryByText('Primary Button')).not.toBeInTheDocument();
+      expect(screen.getByText('Toggle Switch')).toBeInTheDocument();
+      // Primary Button should NOT be visible when searching for Toggle
+      expect(screen.queryByText('Primary Button')).not.toBeInTheDocument();
     });
   });
 
@@ -114,8 +114,8 @@ describe('DesignSystemPlayground', () => {
     render(<DesignSystemPlayground />);
     // Wait for the async load
     await waitFor(() => {
-        const toggleBtn = screen.getByTitle(/Switch to/i);
-        expect(toggleBtn).toBeInTheDocument();
+      const toggleBtn = screen.getByTitle(/Switch to/i);
+      expect(toggleBtn).toBeInTheDocument();
     });
   });
 
@@ -216,7 +216,7 @@ describe('DesignSystemPlayground', () => {
     render(<DesignSystemPlayground />);
 
     const searchInput = screen.getByPlaceholderText(/Search components/i);
-    
+
     // Blur the input first
     searchInput.blur();
     expect(document.activeElement).not.toBe(searchInput);

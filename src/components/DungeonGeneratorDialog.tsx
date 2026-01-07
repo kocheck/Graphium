@@ -65,13 +65,13 @@ export const DungeonGeneratorDialog: React.FC = () => {
 
     // Clear existing drawings and doors if requested
     if (clearCanvas) {
-      removeDrawings(existingDrawings.map(d => d.id));
-      removeDoors(existingDoors.map(d => d.id));
+      removeDrawings(existingDrawings.map((d) => d.id));
+      removeDoors(existingDoors.map((d) => d.id));
     }
 
     // Add all generated wall drawings and doors to the store
-    drawings.forEach(drawing => addDrawing(drawing));
-    doors.forEach(door => addDoor(door));
+    drawings.forEach((drawing) => addDrawing(drawing));
+    doors.forEach((door) => addDoor(door));
 
     // Close the dialog
     clearDungeonDialog();
@@ -100,9 +100,7 @@ export const DungeonGeneratorDialog: React.FC = () => {
         <div className="space-y-4">
           {/* Number of Rooms */}
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Number of Rooms: {numRooms}
-            </label>
+            <label className="block text-sm font-medium mb-1">Number of Rooms: {numRooms}</label>
             <input
               type="range"
               min="3"
@@ -111,7 +109,10 @@ export const DungeonGeneratorDialog: React.FC = () => {
               onChange={(e) => setNumRooms(parseInt(e.target.value))}
               className="w-full"
             />
-            <div className="flex justify-between text-xs" style={{ color: 'var(--app-text-muted)' }}>
+            <div
+              className="flex justify-between text-xs"
+              style={{ color: 'var(--app-text-muted)' }}
+            >
               <span>3</span>
               <span>15</span>
             </div>
@@ -130,7 +131,10 @@ export const DungeonGeneratorDialog: React.FC = () => {
               onChange={(e) => setMinRoomSize(parseInt(e.target.value))}
               className="w-full"
             />
-            <div className="flex justify-between text-xs" style={{ color: 'var(--app-text-muted)' }}>
+            <div
+              className="flex justify-between text-xs"
+              style={{ color: 'var(--app-text-muted)' }}
+            >
               <span>2</span>
               <span>6</span>
             </div>
@@ -149,7 +153,10 @@ export const DungeonGeneratorDialog: React.FC = () => {
               onChange={(e) => setMaxRoomSize(parseInt(e.target.value))}
               className="w-full"
             />
-            <div className="flex justify-between text-xs" style={{ color: 'var(--app-text-muted)' }}>
+            <div
+              className="flex justify-between text-xs"
+              style={{ color: 'var(--app-text-muted)' }}
+            >
               <span>4</span>
               <span>12</span>
             </div>
@@ -170,11 +177,13 @@ export const DungeonGeneratorDialog: React.FC = () => {
           </div>
 
           {/* Info Text */}
-          <div className="text-xs p-3 rounded" style={{ color: 'var(--app-text-muted)', backgroundColor: 'var(--app-bg-subtle)' }}>
+          <div
+            className="text-xs p-3 rounded"
+            style={{ color: 'var(--app-text-muted)', backgroundColor: 'var(--app-bg-subtle)' }}
+          >
             <p>
-              <strong>Note:</strong> The dungeon will be drawn using the Wall tool
-              and will be fully interactive. You can modify the generated walls
-              manually after creation.
+              <strong>Note:</strong> The dungeon will be drawn using the Wall tool and will be fully
+              interactive. You can modify the generated walls manually after creation.
             </p>
           </div>
         </div>

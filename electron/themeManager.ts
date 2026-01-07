@@ -23,14 +23,14 @@
  * (on macOS, varies by platform)
  */
 
-import { nativeTheme, BrowserWindow } from 'electron'
-import Store from 'electron-store'
+import { nativeTheme, BrowserWindow } from 'electron';
+import Store from 'electron-store';
 
-export type ThemeMode = 'light' | 'dark' | 'system'
-export type EffectiveTheme = 'light' | 'dark'
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type EffectiveTheme = 'light' | 'dark';
 
 interface ThemeStoreSchema {
-  theme: ThemeMode
+  theme: ThemeMode;
 }
 
 /**
@@ -44,7 +44,7 @@ const store = new Store<ThemeStoreSchema>({
     theme: 'system', // Default to following OS preference
   },
   name: 'theme-preferences', // Creates theme-preferences.json
-})
+});
 
 /**
  * Get the current theme mode preference
@@ -52,7 +52,7 @@ const store = new Store<ThemeStoreSchema>({
  * @returns The user's theme preference ('light', 'dark', or 'system')
  */
 export function getThemeMode(): ThemeMode {
-  return store.get('theme')
+  return store.get('theme');
 }
 
 /**
@@ -62,19 +62,19 @@ export function getThemeMode(): ThemeMode {
  * @emits 'theme-changed' to all renderer windows with effective theme
  */
 export function setThemeMode(mode: ThemeMode): void {
-  store.set('theme', mode)
+  store.set('theme', mode);
 
   // Force nativeTheme to match preference (if not 'system')
   if (mode === 'light') {
-    nativeTheme.themeSource = 'light'
+    nativeTheme.themeSource = 'light';
   } else if (mode === 'dark') {
-    nativeTheme.themeSource = 'dark'
+    nativeTheme.themeSource = 'dark';
   } else {
-    nativeTheme.themeSource = 'system' // Follow OS preference
+    nativeTheme.themeSource = 'system'; // Follow OS preference
   }
 
   // Broadcast effective theme to all renderer windows
-  broadcastThemeToRenderers()
+  broadcastThemeToRenderers();
 }
 
 /**
@@ -83,14 +83,14 @@ export function setThemeMode(mode: ThemeMode): void {
  * @returns 'light' or 'dark' based on current mode and OS preference
  */
 export function getEffectiveTheme(): EffectiveTheme {
-  const mode = getThemeMode()
+  const mode = getThemeMode();
 
   if (mode === 'system') {
     // Use OS preference when in system mode
-    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
   }
 
-  return mode // 'light' or 'dark' (explicit override)
+  return mode; // 'light' or 'dark' (explicit override)
 }
 
 /**
@@ -103,15 +103,15 @@ export function getEffectiveTheme(): EffectiveTheme {
  * - New window is created (initial theme sync)
  */
 export function broadcastThemeToRenderers(): void {
-  const effectiveTheme = getEffectiveTheme()
-  const mode = getThemeMode()
+  const effectiveTheme = getEffectiveTheme();
+  const mode = getThemeMode();
 
   BrowserWindow.getAllWindows().forEach((window: BrowserWindow) => {
     window.webContents.send('theme-changed', {
       mode,
       effectiveTheme,
-    })
-  })
+    });
+  });
 }
 
 /**
@@ -122,8 +122,8 @@ export function broadcastThemeToRenderers(): void {
  */
 export function initializeThemeManager(): void {
   // Apply stored theme preference
-  const mode = getThemeMode()
-  setThemeMode(mode) // This will broadcast to renderers
+  const mode = getThemeMode();
+  setThemeMode(mode); // This will broadcast to renderers
 
   /**
    * Monitor OS theme changes
@@ -133,13 +133,13 @@ export function initializeThemeManager(): void {
    * broadcast to renderers (but only if in 'system' mode).
    */
   nativeTheme.on('updated', () => {
-    const currentMode = getThemeMode()
+    const currentMode = getThemeMode();
 
     // Only broadcast if we're in system mode (user wants to follow OS)
     if (currentMode === 'system') {
-      broadcastThemeToRenderers()
+      broadcastThemeToRenderers();
     }
-  })
+  });
 }
 
 /**
@@ -153,5 +153,5 @@ export function getThemeState(): { mode: ThemeMode; effectiveTheme: EffectiveThe
   return {
     mode: getThemeMode(),
     effectiveTheme: getEffectiveTheme(),
-  }
+  };
 }

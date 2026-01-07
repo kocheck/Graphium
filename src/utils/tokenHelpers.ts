@@ -21,7 +21,7 @@ import type { Token, TokenLibraryItem, MapConfig } from '../store/gameStore';
 export function addLibraryTokenToMap(
   libraryItem: TokenLibraryItem,
   addToken: (token: Token) => void,
-  map: MapConfig | null
+  map: MapConfig | null,
 ): Token {
   // Calculate center of current viewport or map
   // Default to (500, 500) if no map loaded

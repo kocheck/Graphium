@@ -14,7 +14,7 @@
       ThemeManager component will sync with stored preference later.
     -->
     <script>
-      (function() {
+      (function () {
         // Detect system theme preference
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const theme = systemPrefersDark ? 'dark' : 'light';
@@ -27,7 +27,7 @@
         if (document.body) {
           document.body.classList.add('theme-loading');
         } else {
-          document.addEventListener('DOMContentLoaded', function() {
+          document.addEventListener('DOMContentLoaded', function () {
             document.body.classList.add('theme-loading');
           });
         }

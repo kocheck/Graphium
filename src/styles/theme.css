@@ -34,20 +34,20 @@
  *          ❌ background: #f8f9fa
  */
 
-@import "@radix-ui/colors/slate.css";
-@import "@radix-ui/colors/slate-dark.css";
-@import "@radix-ui/colors/blue.css";
-@import "@radix-ui/colors/blue-dark.css";
-@import "@radix-ui/colors/blue-alpha.css";
-@import "@radix-ui/colors/blue-dark-alpha.css";
-@import "@radix-ui/colors/red.css";
-@import "@radix-ui/colors/red-dark.css";
-@import "@radix-ui/colors/amber.css";
-@import "@radix-ui/colors/amber-dark.css";
-@import "@radix-ui/colors/green.css";
-@import "@radix-ui/colors/green-dark.css";
-@import "@radix-ui/colors/slate-alpha.css";
-@import "@radix-ui/colors/slate-dark-alpha.css";
+@import '@radix-ui/colors/slate.css';
+@import '@radix-ui/colors/slate-dark.css';
+@import '@radix-ui/colors/blue.css';
+@import '@radix-ui/colors/blue-dark.css';
+@import '@radix-ui/colors/blue-alpha.css';
+@import '@radix-ui/colors/blue-dark-alpha.css';
+@import '@radix-ui/colors/red.css';
+@import '@radix-ui/colors/red-dark.css';
+@import '@radix-ui/colors/amber.css';
+@import '@radix-ui/colors/amber-dark.css';
+@import '@radix-ui/colors/green.css';
+@import '@radix-ui/colors/green-dark.css';
+@import '@radix-ui/colors/slate-alpha.css';
+@import '@radix-ui/colors/slate-dark-alpha.css';
 
 /* ============================================
    RADIX DARK MODE OVERRIDE
@@ -55,7 +55,7 @@
    Radix uses .dark class, but we use [data-theme="dark"]
    This copies the dark mode variables to our attribute selector
    ============================================ */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --slate-1: #111113;
   --slate-2: #18191b;
   --slate-3: #212225;
@@ -139,82 +139,85 @@
    LIGHT THEME (Default)
    ============================================ */
 :root,
-[data-theme="light"] {
+[data-theme='light'] {
   /* Color scheme hint for browser UI */
   color-scheme: light;
 
   /* ===== Backgrounds ===== */
-  --app-bg-base: var(--slate-1);           /* Main app background (lightest) */
-  --app-bg-subtle: var(--slate-2);         /* Subtle background variation */
-  --app-bg-surface: var(--slate-3);        /* UI element backgrounds (panels, cards) */
-  --app-bg-hover: var(--slate-4);          /* Hover state background */
-  --app-bg-active: var(--slate-5);         /* Active/pressed state background */
+  --app-bg-base: var(--slate-1); /* Main app background (lightest) */
+  --app-bg-subtle: var(--slate-2); /* Subtle background variation */
+  --app-bg-surface: var(--slate-3); /* UI element backgrounds (panels, cards) */
+  --app-bg-hover: var(--slate-4); /* Hover state background */
+  --app-bg-active: var(--slate-5); /* Active/pressed state background */
 
   /* ===== Borders ===== */
-  --app-border-subtle: var(--slate-6);     /* Subtle borders, dividers */
-  --app-border-default: var(--slate-7);    /* Default border color */
-  --app-border-hover: var(--slate-8);      /* Border on hover */
+  --app-border-subtle: var(--slate-6); /* Subtle borders, dividers */
+  --app-border-default: var(--slate-7); /* Default border color */
+  --app-border-hover: var(--slate-8); /* Border on hover */
 
   /* ===== Text ===== */
-  --app-text-primary: var(--slate-12);     /* Primary text (high contrast, AA compliant) */
-  --app-text-secondary: var(--slate-11);   /* Secondary text, labels */
-  --app-text-muted: var(--slate-11);       /* Muted text, placeholders (AA compliant) */
-  --app-text-disabled: var(--slate-9);     /* Disabled text (below AA threshold - intentional) */
+  --app-text-primary: var(--slate-12); /* Primary text (high contrast, AA compliant) */
+  --app-text-secondary: var(--slate-11); /* Secondary text, labels */
+  --app-text-muted: var(--slate-11); /* Muted text, placeholders (AA compliant) */
+  --app-text-disabled: var(--slate-9); /* Disabled text (below AA threshold - intentional) */
 
   /* ===== Interactive (Blue) ===== */
-  --app-accent-bg: var(--blue-3);          /* Accent background (buttons, tags) */
-  --app-accent-bg-hover: var(--blue-4);    /* Accent hover state */
-  --app-accent-bg-active: var(--blue-5);   /* Accent active state */
-  --app-accent-solid: #0070C1;             /* Solid accent - WCAG AA compliant with white (4.51:1) */
-  --app-accent-solid-hover: #005A9C;       /* Solid accent hover - darker for 6:1 contrast */
-  --app-accent-solid-text: white;          /* Text color for solid buttons */
-  --app-accent-text: var(--blue-12);       /* Accent text (links) - blue-12 for AA compliance */
+  --app-accent-bg: var(--blue-3); /* Accent background (buttons, tags) */
+  --app-accent-bg-hover: var(--blue-4); /* Accent hover state */
+  --app-accent-bg-active: var(--blue-5); /* Accent active state */
+  --app-accent-solid: #0070c1; /* Solid accent - WCAG AA compliant with white (4.51:1) */
+  --app-accent-solid-hover: #005a9c; /* Solid accent hover - darker for 6:1 contrast */
+  --app-accent-solid-text: white; /* Text color for solid buttons */
+  --app-accent-text: var(--blue-12); /* Accent text (links) - blue-12 for AA compliance */
   --app-accent-text-contrast: var(--blue-12); /* High contrast accent text */
 
   /* ===== Status: Error (Red) ===== */
-  --app-error-bg: var(--red-3);            /* Error background */
-  --app-error-bg-hover: var(--red-4);      /* Error hover state */
-  --app-error-border: var(--red-7);        /* Error border */
-  --app-error-solid: var(--red-9);         /* Solid error (destructive buttons) */
-  --app-error-solid-hover: var(--red-10);  /* Solid error hover */
-  --app-error-text: var(--red-11);         /* Error text */
+  --app-error-bg: var(--red-3); /* Error background */
+  --app-error-bg-hover: var(--red-4); /* Error hover state */
+  --app-error-border: var(--red-7); /* Error border */
+  --app-error-solid: var(--red-9); /* Solid error (destructive buttons) */
+  --app-error-solid-hover: var(--red-10); /* Solid error hover */
+  --app-error-text: var(--red-11); /* Error text */
 
   /* ===== Status: Warning (Amber) ===== */
-  --app-warning-bg: var(--amber-3);        /* Warning background */
-  --app-warning-bg-hover: var(--amber-4);  /* Warning hover state */
-  --app-warning-border: var(--amber-7);    /* Warning border */
-  --app-warning-solid: var(--amber-9);     /* Solid warning */
+  --app-warning-bg: var(--amber-3); /* Warning background */
+  --app-warning-bg-hover: var(--amber-4); /* Warning hover state */
+  --app-warning-border: var(--amber-7); /* Warning border */
+  --app-warning-solid: var(--amber-9); /* Solid warning */
   --app-warning-solid-hover: var(--amber-10); /* Solid warning hover */
-  --app-warning-text: var(--amber-11);     /* Warning text */
+  --app-warning-text: var(--amber-11); /* Warning text */
 
   /* ===== Status: Success (Green) ===== */
-  --app-success-bg: var(--green-3);        /* Success background */
-  --app-success-bg-hover: var(--green-4);  /* Success hover state */
-  --app-success-border: var(--green-7);    /* Success border */
-  --app-success-solid: var(--green-9);     /* Solid success */
+  --app-success-bg: var(--green-3); /* Success background */
+  --app-success-bg-hover: var(--green-4); /* Success hover state */
+  --app-success-border: var(--green-7); /* Success border */
+  --app-success-solid: var(--green-9); /* Solid success */
   --app-success-solid-hover: var(--green-10); /* Solid success hover */
-  --app-success-text: var(--green-11);     /* Success text */
+  --app-success-text: var(--green-11); /* Success text */
 
   /* ===== Overlays & Shadows ===== */
-  --app-overlay: var(--slate-a11);         /* Modal overlay (alpha channel) */
-  --app-shadow-sm: var(--slate-a3);        /* Small shadow */
-  --app-shadow-md: var(--slate-a6);        /* Medium shadow */
-  --app-shadow-lg: var(--slate-a8);        /* Large shadow */
+  --app-overlay: var(--slate-a11); /* Modal overlay (alpha channel) */
+  --app-shadow-sm: var(--slate-a3); /* Small shadow */
+  --app-shadow-md: var(--slate-a6); /* Medium shadow */
+  --app-shadow-lg: var(--slate-a8); /* Large shadow */
+
+  /* ===== Grid Colors ===== */
+  --app-grid-color: #222222; /* Default grid color (Dark Gray) */
 }
 
 /* ============================================
    DARK THEME
    ============================================ */
-[data-theme="dark"] {
+[data-theme='dark'] {
   /* Color scheme hint for browser UI */
   color-scheme: dark;
 
   /* ===== Backgrounds ===== */
-  --app-bg-base: #111113;                  /* slate-1 */
-  --app-bg-subtle: #18191b;                /* slate-2 */
-  --app-bg-surface: #212225;               /* slate-3 */
-  --app-bg-hover: #272a2d;                 /* slate-4 */
-  --app-bg-active: #2e3135;                /* slate-5 */
+  --app-bg-base: #111113; /* slate-1 */
+  --app-bg-subtle: #18191b; /* slate-2 */
+  --app-bg-surface: #212225; /* slate-3 */
+  --app-bg-hover: #272a2d; /* slate-4 */
+  --app-bg-active: #2e3135; /* slate-5 */
 
   /* ===== Borders ===== */
   --app-border-subtle: var(--slate-6);
@@ -231,9 +234,9 @@
   --app-accent-bg: var(--blue-3);
   --app-accent-bg-hover: var(--blue-4);
   --app-accent-bg-active: var(--blue-5);
-  --app-accent-solid: #0070C1;             /* Solid accent - WCAG AA compliant with white */
-  --app-accent-solid-hover: #005A9C;       /* Solid accent hover */
-  --app-accent-solid-text: white;          /* Text color for solid buttons */
+  --app-accent-solid: #0070c1; /* Solid accent - WCAG AA compliant with white */
+  --app-accent-solid-hover: #005a9c; /* Solid accent hover */
+  --app-accent-solid-text: white; /* Text color for solid buttons */
   --app-accent-text: var(--blue-11);
   --app-accent-text-contrast: var(--blue-12);
 
@@ -266,6 +269,9 @@
   --app-shadow-sm: var(--slate-a3);
   --app-shadow-md: var(--slate-a6);
   --app-shadow-lg: var(--slate-a8);
+
+  /* ===== Grid Colors ===== */
+  --app-grid-color: var(--slate-8); /* Lighter gray for visibility on dark bg */
 }
 
 /* ============================================
@@ -276,7 +282,9 @@ body {
   color: var(--app-text-primary);
 
   /* Prevent flash of wrong theme on load */
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* Ensure smooth theme transitions across all themed elements */

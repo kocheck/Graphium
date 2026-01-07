@@ -3,6 +3,7 @@
 ## Overview
 
 **Best of both worlds:**
+
 - 🏃 Fast local testing during development
 - 🛡️ CI safety net on `main` branch
 - 💰 Minimal CI cost (~2-5 runs/month)
@@ -20,13 +21,14 @@ name: E2E Tests (Playwright)
 
 on:
   push:
-    branches: [main]  # ← Only run on main branch
+    branches: [main] # ← Only run on main branch
   # Remove pull_request trigger entirely
 
 # ... rest of file stays the same
 ```
 
 **Commit and push:**
+
 ```bash
 git add .github/workflows/e2e.yml
 git commit -m "Configure CI for main branch only"
@@ -36,6 +38,7 @@ git push
 ### 2. Install Pre-Push Hook (Local Testing)
 
 **`.git/hooks/pre-push`**:
+
 ```bash
 #!/bin/bash
 
@@ -54,6 +57,7 @@ exit 0
 ```
 
 **Make executable:**
+
 ```bash
 chmod +x .git/hooks/pre-push
 ```
@@ -125,11 +129,13 @@ git push origin feature/my-feature
 ### For Reviewers
 
 **PR Review Checklist:**
+
 - ✅ Ask: "Did you run tests locally?"
 - ✅ Check: Code quality
 - ✅ Approve and merge
 
 **After merge:**
+
 - ✅ Monitor CI run on main
 - ✅ If CI fails: Quick fix or revert
 
@@ -140,12 +146,14 @@ git push origin feature/my-feature
 ### GitHub Actions Usage
 
 **Typical month:**
+
 - 10 merges to main = 10 CI runs
 - 10 runs × 18 min = **180 minutes**
 - Free tier: 2,000 minutes
 - **Usage: 9% of free tier** ✅
 
 **Heavy month (50 merges):**
+
 - 50 runs × 18 min = **900 minutes**
 - **Usage: 45% of free tier** ✅
 
@@ -158,6 +166,7 @@ Still well within limits!
 ### Check CI Status
 
 View recent runs:
+
 ```
 https://github.com/kocheck/Graphium/actions
 ```
@@ -165,6 +174,7 @@ https://github.com/kocheck/Graphium/actions
 ### Check Minute Usage
 
 Go to:
+
 ```
 https://github.com/kocheck/Graphium/settings/billing
 ```
@@ -190,10 +200,11 @@ This bypasses the pre-push hook.
 If you want to add PR checks later:
 
 **Re-enable PR trigger:**
+
 ```yaml
 on:
   pull_request:
-    branches: [main]  # ← Add this back
+    branches: [main] # ← Add this back
   push:
     branches: [main]
 ```

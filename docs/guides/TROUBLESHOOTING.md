@@ -31,11 +31,13 @@ Run through this checklist when diagnosing any issue:
 ### Log Files
 
 **Electron main process logs:**
+
 ```bash
 # View console output where you ran `npm run dev`
 ```
 
 **Renderer process logs:**
+
 ```bash
 # Open DevTools: Ctrl+Shift+I (Windows/Linux) or Cmd+Opt+I (Mac)
 # Check Console tab
@@ -48,6 +50,7 @@ Run through this checklist when diagnosing any issue:
 ### Issue: World Window Not Appearing
 
 **Symptoms:**
+
 - Click "World View" button, nothing happens
 - No second window opens
 
@@ -98,6 +101,7 @@ npm run build
 ### Issue: Images Not Loading in Canvas
 
 **Symptoms:**
+
 - Tokens appear as blank squares
 - Console error: "Failed to load image"
 - Network tab shows 404 or protocol error
@@ -141,11 +145,11 @@ ls ~/Library/Application\ Support/Graphium/temp_assets/
 // Solution: Check URLImage conversion logic
 
 // src/components/Canvas/CanvasManager.tsx:48-49
-const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src
+const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
 
 // Debug: Log URLs
-console.log('Original:', src)
-console.log('Converted:', safeSrc)
+console.log('Original:', src);
+console.log('Converted:', safeSrc);
 
 // Fix: Ensure file:// → media:// conversion happens
 ```
@@ -157,6 +161,7 @@ console.log('Converted:', safeSrc)
 ### Issue: World Window Not Updating
 
 **Symptoms:**
+
 - Add token in Architect View, doesn't appear in World View
 - World Window shows outdated state
 - No errors in console
@@ -171,9 +176,9 @@ console.log('Converted:', safeSrc)
 
 // Debug: Add logging in src/components/SyncManager.tsx:85
 window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
-  console.log('World Window received state:', state)  // Add this
-  useGameStore.getState().setState(state)
-})
+  console.log('World Window received state:', state); // Add this
+  useGameStore.getState().setState(state);
+});
 
 // Fix: Ensure SyncManager component is rendered in World Window
 ```
@@ -200,13 +205,13 @@ useGameStore.subscribe((state) => { ... })
 
 // electron/main.ts:225-229
 ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
-  console.log('Main received, relaying to World')  // Add this
+  console.log('Main received, relaying to World'); // Add this
   if (worldWindow && !worldWindow.isDestroyed()) {
-    worldWindow.webContents.send('SYNC_WORLD_STATE', state)
+    worldWindow.webContents.send('SYNC_WORLD_STATE', state);
   } else {
-    console.log('World window not available')  // Add this
+    console.log('World window not available'); // Add this
   }
-})
+});
 ```
 
 ---
@@ -214,6 +219,7 @@ ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
 ### Issue: State Syncing Too Slowly
 
 **Symptoms:**
+
 - Drawing strokes appear 1-2 seconds late in World Window
 - Token movements lag
 - High CPU usage
@@ -243,6 +249,7 @@ useGameStore.subscribe(syncState)
 ### Issue: Images Appear Stretched or Distorted
 
 **Symptoms:**
+
 - Tokens don't look square
 - Aspect ratio is wrong
 
@@ -265,6 +272,7 @@ useGameStore.subscribe(syncState)
 ### Issue: Uploaded Images Are Huge (File Size)
 
 **Symptoms:**
+
 - Campaign files are 50MB+ with only a few tokens
 - Slow save/load times
 
@@ -274,12 +282,16 @@ useGameStore.subscribe(syncState)
 // Solution: Verify WebP conversion and resizing
 
 // Check src/utils/AssetProcessor.ts:112
-canvas.toBlob(async (blob) => {
-  // Should be 'image/webp' with quality 1
-}, 'image/webp', 1)
+canvas.toBlob(
+  async (blob) => {
+    // Should be 'image/webp' with quality 1
+  },
+  'image/webp',
+  1,
+);
 
 // Check resize constraints
-const MAX_SIZE = assetType === 'MAP' ? 4096 : 512
+const MAX_SIZE = assetType === 'MAP' ? 4096 : 512;
 
 // Fix: Ensure processImage() is called for all uploads
 ```
@@ -289,6 +301,7 @@ const MAX_SIZE = assetType === 'MAP' ? 4096 : 512
 ### Issue: "Failed to Save Asset" Error
 
 **Symptoms:**
+
 - Error message when dropping image on canvas
 - Console error: "EACCES" or "ENOSPC"
 
@@ -327,6 +340,7 @@ rm -rf ~/Library/Application\ Support/Graphium/sessions/*
 ### Issue: "Invalid Graphium File" Error on Load
 
 **Symptoms:**
+
 - Error when trying to load .graphium file
 - Console: "Invalid Graphium file"
 
@@ -379,6 +393,7 @@ cat manifest.json | jq .  # Requires jq tool
 ### Issue: Loaded Campaign Missing Assets
 
 **Symptoms:**
+
 - Campaign loads but tokens show as broken images
 - Console: 404 errors for media:// URLs
 
@@ -409,6 +424,7 @@ unzip -l campaign.graphium
 ### Issue: Can't Save Campaign (Dialog Doesn't Appear)
 
 **Symptoms:**
+
 - Click "Save" button, nothing happens
 - No file dialog appears
 
@@ -437,6 +453,7 @@ npm run dev
 ### Issue: Canvas Rendering Feels Laggy
 
 **Symptoms:**
+
 - Dragging tokens stutters
 - Drawing strokes are choppy
 - Low FPS (<30)
@@ -450,7 +467,7 @@ npm run dev
 // Solution: Limit grid rendering or use single Path
 
 // Option 1: Reduce canvas size
-const MAX_CANVAS_SIZE = 2048  // Instead of 4096
+const MAX_CANVAS_SIZE = 2048; // Instead of 4096
 
 // Option 2: Optimize GridOverlay (future enhancement)
 // Use single Konva.Path instead of many Line components
@@ -463,7 +480,7 @@ const MAX_CANVAS_SIZE = 2048  // Instead of 4096
 // Solution: Ensure processImage() resizes properly
 
 // Check src/utils/AssetProcessor.ts:51-58
-const MAX_SIZE = assetType === 'MAP' ? 4096 : 512
+const MAX_SIZE = assetType === 'MAP' ? 4096 : 512;
 // Tokens should be max 512px
 
 // Fix: Delete temp_assets/ and re-upload tokens
@@ -481,6 +498,7 @@ const MAX_SIZE = assetType === 'MAP' ? 4096 : 512
 ### Issue: High Memory Usage (>1GB)
 
 **Symptoms:**
+
 - Electron uses excessive RAM
 - App becomes slow over time
 
@@ -493,9 +511,9 @@ const MAX_SIZE = assetType === 'MAP' ? 4096 : 512
 useEffect(() => {
   return () => {
     // Cleanup on unmount
-    URL.revokeObjectURL(objectUrl)  // If using Object URLs
-  }
-}, [])
+    URL.revokeObjectURL(objectUrl); // If using Object URLs
+  };
+}, []);
 
 // Alternative: Restart app periodically during long sessions
 ```
@@ -507,6 +525,7 @@ useEffect(() => {
 ### Issue: "Cannot find module" Errors
 
 **Symptoms:**
+
 - TypeScript errors: "Cannot find module 'X'"
 - Build fails
 
@@ -529,6 +548,7 @@ npm run dev
 ### Issue: Hot Reload Not Working
 
 **Symptoms:**
+
 - Change code, browser doesn't update
 - Need to manually refresh
 
@@ -549,6 +569,7 @@ npm run dev
 ### Issue: TypeScript Errors for window.ipcRenderer
 
 **Symptoms:**
+
 - `Property 'ipcRenderer' does not exist on type 'Window'`
 
 **Solution:**
@@ -556,17 +577,17 @@ npm run dev
 ```typescript
 // Option 1: Use @ts-ignore (current approach)
 // @ts-ignore
-window.ipcRenderer.send('channel', data)
+window.ipcRenderer.send('channel', data);
 
 // Option 2: Add type declarations (better)
 // Create src/types/electron.d.ts:
 interface Window {
   ipcRenderer: {
-    send: (channel: string, ...args: any[]) => void
-    invoke: (channel: string, ...args: any[]) => Promise<any>
-    on: (channel: string, listener: Function) => void
-    off: (channel: string, listener: Function) => void
-  }
+    send: (channel: string, ...args: any[]) => void;
+    invoke: (channel: string, ...args: any[]) => Promise<any>;
+    on: (channel: string, listener: Function) => void;
+    off: (channel: string, listener: Function) => void;
+  };
 }
 ```
 
@@ -575,6 +596,7 @@ interface Window {
 ### Issue: TypeScript Build Fails with "Cannot find type definition file for 'node'"
 
 **Symptoms:**
+
 - `npm run build:web` fails with error: `error TS2688: Cannot find type definition file for 'node'`
 - Build works locally but fails in CI (GitHub Actions)
 - Error message mentions `compilerOptions` in `tsconfig.json`
@@ -582,6 +604,7 @@ interface Window {
 **Cause:**
 
 TypeScript compilation fails because it cannot find the `@types/node` package. This happens when:
+
 1. Dependencies aren't installed (`node_modules/@types/node` is missing)
 2. The `tsconfig.json` references `"types": ["node"]` but the type definitions are unavailable
 
@@ -617,6 +640,7 @@ In GitHub Actions workflows, ensure the workflow includes dependency installatio
 **Root Cause Prevention:**
 
 This issue occurs when:
+
 - `npm ci` is skipped or fails silently
 - Cache is corrupted
 - `package.json` has `@types/node` in devDependencies but it's not installed
@@ -628,6 +652,7 @@ Always ensure `npm ci` completes successfully before running TypeScript compilat
 ### Issue: TypeScript Null Safety Errors in Canvas Components
 
 **Symptoms:**
+
 - Build fails with "is possibly 'null'" errors
 - Error in `CanvasManager.tsx` accessing properties on refs
 - Error: `'cur' is possibly 'null'`
@@ -649,7 +674,7 @@ if (e.evt.shiftKey && cur.points.length >= 2) {
 
 // ✅ CORRECT: Add guard clause
 const cur = currentLine.current;
-if (!cur) return;  // Guard against null
+if (!cur) return; // Guard against null
 
 if (e.evt.shiftKey && cur.points.length >= 2) {
   // Safe: cur is guaranteed non-null
@@ -665,7 +690,7 @@ const myRef = useRef<MyType | null>(null);
 
 // In event handlers:
 const value = myRef.current;
-if (!value) return;  // Guard clause
+if (!value) return; // Guard clause
 // Now safe to use value
 ```
 
@@ -722,7 +747,7 @@ https://aka.ms/vs/17/release/vc_redist.x64.exe
 
 ```javascript
 // Check Windows path format in electron/main.ts:265
-return `file://${filePath.replace(/\\/g, '/')}`
+return `file://${filePath.replace(/\\/g, '/')}`;
 // Ensure forward slashes in file:// URLs
 ```
 
@@ -748,15 +773,15 @@ sudo apt-get install libx11-dev libxkbfile-dev libsecret-1-dev
 
 ### Common Error Messages
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `net::ERR_UNKNOWN_URL_SCHEME` | media:// protocol not registered | Check `protocol.registerSchemesAsPrivileged()` |
-| `window.ipcRenderer is undefined` | Preload script not loaded | Verify `webPreferences.preload` path |
-| `ENOENT: no such file or directory` | Asset file doesn't exist | Re-upload token or check path |
-| `Invalid Graphium file` | Missing manifest.json in ZIP | Check ZIP structure |
-| `EACCES: permission denied` | No write permissions | Check folder permissions |
-| `ENOSPC: no space left on device` | Disk full | Free up space |
-| `Can't find end of central directory` | Corrupted ZIP | Use backup .graphium file |
+| Error                                 | Cause                            | Solution                                       |
+| ------------------------------------- | -------------------------------- | ---------------------------------------------- |
+| `net::ERR_UNKNOWN_URL_SCHEME`         | media:// protocol not registered | Check `protocol.registerSchemesAsPrivileged()` |
+| `window.ipcRenderer is undefined`     | Preload script not loaded        | Verify `webPreferences.preload` path           |
+| `ENOENT: no such file or directory`   | Asset file doesn't exist         | Re-upload token or check path                  |
+| `Invalid Graphium file`               | Missing manifest.json in ZIP     | Check ZIP structure                            |
+| `EACCES: permission denied`           | No write permissions             | Check folder permissions                       |
+| `ENOSPC: no space left on device`     | Disk full                        | Free up space                                  |
+| `Can't find end of central directory` | Corrupted ZIP                    | Use backup .graphium file                      |
 
 ---
 
@@ -766,8 +791,8 @@ sudo apt-get install libx11-dev libxkbfile-dev libsecret-1-dev
 
 ```typescript
 // electron/main.ts (add at top)
-app.commandLine.appendSwitch('enable-logging')
-app.commandLine.appendSwitch('v', '1')
+app.commandLine.appendSwitch('enable-logging');
+app.commandLine.appendSwitch('v', '1');
 
 // Check logs:
 // macOS: ~/Library/Logs/Graphium/
@@ -780,15 +805,15 @@ app.commandLine.appendSwitch('v', '1')
 ```typescript
 // Log all IPC events (main process)
 ipcMain.on('*', (event, ...args) => {
-  console.log('[IPC]', event.sender.getURL(), ...args)
-})
+  console.log('[IPC]', event.sender.getURL(), ...args);
+});
 
 // Log all IPC sends (renderer)
-const originalSend = window.ipcRenderer.send
-window.ipcRenderer.send = function(channel, ...args) {
-  console.log('[IPC Send]', channel, args)
-  return originalSend.call(this, channel, ...args)
-}
+const originalSend = window.ipcRenderer.send;
+window.ipcRenderer.send = function (channel, ...args) {
+  console.log('[IPC Send]', channel, args);
+  return originalSend.call(this, channel, ...args);
+};
 ```
 
 ### Monitor Performance
@@ -797,13 +822,13 @@ window.ipcRenderer.send = function(channel, ...args) {
 // src/App.tsx (add to component)
 useEffect(() => {
   const logPerf = setInterval(() => {
-    console.log('Memory:', performance.memory.usedJSHeapSize / 1024 / 1024, 'MB')
-    console.log('Tokens:', useGameStore.getState().tokens.length)
-    console.log('Drawings:', useGameStore.getState().drawings.length)
-  }, 5000)
+    console.log('Memory:', performance.memory.usedJSHeapSize / 1024 / 1024, 'MB');
+    console.log('Tokens:', useGameStore.getState().tokens.length);
+    console.log('Drawings:', useGameStore.getState().drawings.length);
+  }, 5000);
 
-  return () => clearInterval(logPerf)
-}, [])
+  return () => clearInterval(logPerf);
+}, []);
 ```
 
 ---

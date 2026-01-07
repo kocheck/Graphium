@@ -5,6 +5,7 @@ Canvas-specific React components that handle rendering and interaction with the 
 ## Purpose
 
 This subdirectory contains components responsible for:
+
 - Main canvas logic (drag-drop, drawing, token rendering)
 - Grid overlay rendering
 - Fog of War rendering with raycasting
@@ -13,6 +14,7 @@ This subdirectory contains components responsible for:
 ## Contents
 
 ### CanvasManager.tsx (245 lines)
+
 **Primary canvas component - handles all canvas interactions and rendering**
 
 #### Responsibilities
@@ -63,7 +65,7 @@ interface CanvasManagerProps {
 const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
 // Cropping
-const [pendingCrop, setPendingCrop] = useState<{ src: string, x: number, y: number } | null>(null);
+const [pendingCrop, setPendingCrop] = useState<{ src: string; x: number; y: number } | null>(null);
 
 // Drawing preview
 const [tempLine, setTempLine] = useState<Drawing | null>(null);
@@ -94,9 +96,10 @@ CanvasManager
 #### Event Handlers
 
 **Drag-and-Drop:**
+
 ```typescript
 const handleDragOver = (e: React.DragEvent) => {
-  e.preventDefault();  // Required for drop to work
+  e.preventDefault(); // Required for drop to work
 };
 
 const handleDrop = async (e: React.DragEvent) => {
@@ -115,7 +118,8 @@ const handleDrop = async (e: React.DragEvent) => {
     if (data.type === 'LIBRARY_TOKEN') {
       addToken({
         id: crypto.randomUUID(),
-        x, y,
+        x,
+        y,
         src: data.src,
         scale: 1,
       });
@@ -127,15 +131,16 @@ const handleDrop = async (e: React.DragEvent) => {
   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
     const file = e.dataTransfer.files[0];
     const objectUrl = URL.createObjectURL(file);
-    setPendingCrop({ src: objectUrl, x, y });  // Trigger cropping UI
+    setPendingCrop({ src: objectUrl, x, y }); // Trigger cropping UI
   }
 };
 ```
 
 **Drawing Tools:**
+
 ```typescript
 const handleMouseDown = (e: any) => {
-  if (tool === 'select') return;  // No-op
+  if (tool === 'select') return; // No-op
 
   isDrawing.current = true;
   const pos = e.target.getStage().getPointerPosition();
@@ -167,19 +172,20 @@ const handleMouseUp = () => {
 
   isDrawing.current = false;
   if (tempLine) {
-    addDrawing(tempLine);  // Commit to store (triggers IPC sync)
+    addDrawing(tempLine); // Commit to store (triggers IPC sync)
     setTempLine(null);
   }
 };
 ```
 
 **Cropping Confirmation:**
+
 ```typescript
 const handleCropConfirm = async (blob: Blob) => {
   if (!pendingCrop) return;
 
   try {
-    const file = new File([blob], "token.webp", { type: 'image/webp' });
+    const file = new File([blob], 'token.webp', { type: 'image/webp' });
 
     // Process image (resize, convert to WebP, save to temp) - Returns cancellable handle
     const handle = processImage(file, 'TOKEN');
@@ -189,13 +195,13 @@ const handleCropConfirm = async (blob: Blob) => {
       id: crypto.randomUUID(),
       x: pendingCrop.x,
       y: pendingCrop.y,
-      src,  // file:// URL
+      src, // file:// URL
       scale: 1,
     });
   } catch (err) {
-    console.error("Crop save failed", err);
+    console.error('Crop save failed', err);
   } finally {
-    setPendingCrop(null);  // Close modal
+    setPendingCrop(null); // Close modal
   }
 };
 ```
@@ -203,6 +209,7 @@ const handleCropConfirm = async (blob: Blob) => {
 #### Critical Patterns
 
 **Pattern 1: Temp Line for Drawing Preview**
+
 ```typescript
 // WHY: Avoid store updates during drag (60 updates/sec would spam IPC)
 
@@ -221,11 +228,12 @@ currentLine.current.points.push(x, y);
 setTempLine({ ...currentLine.current });
 
 // On mouseup: Commit to store
-addDrawing(tempLine);  // Store update → IPC sync
-setTempLine(null);  // Clear preview
+addDrawing(tempLine); // Store update → IPC sync
+setTempLine(null); // Clear preview
 ```
 
 **Pattern 2: Grid Snapping**
+
 ```typescript
 // ALWAYS snap token positions to grid
 const { x, y } = snapToGrid(rawX, rawY, gridSize);
@@ -236,6 +244,7 @@ addToken({ id: crypto.randomUUID(), x, y, src, scale: 1 });
 ```
 
 **Pattern 3: Two Drag-Drop Modes**
+
 ```typescript
 // Check JSON first (library tokens)
 const jsonData = e.dataTransfer.getData('application/json');
@@ -243,7 +252,7 @@ if (jsonData) {
   // Handle library token (no cropping)
   const data = JSON.parse(jsonData);
   addToken({ ...token, src: data.src });
-  return;  // Early return
+  return; // Early return
 }
 
 // Then check files (uploads)
@@ -255,6 +264,7 @@ if (e.dataTransfer.files.length > 0) {
 ```
 
 **Pattern 4: Real-Time Token Dragging (Performance & Multi-User Sync)**
+
 ```typescript
 // WHY: Avoid store updates during drag (60 updates/sec would spam IPC and cause lag)
 // WHY: Enable real-time sync so World View sees token movement during drag
@@ -329,6 +339,7 @@ const isDragging = draggingTokenIds.has(token.id);
 ```
 
 **Key Benefits:**
+
 - **Performance:** No store updates during drag (refs only) = no React re-renders
 - **Real-time Sync:** World View sees token movement during drag (not just on drop)
 - **Visual Feedback:** Dragging tokens show reduced opacity (0.7) to indicate "held" state
@@ -380,6 +391,7 @@ const URLImage = ({ src, x, y, width, height, onDragMove, ...props }: URLImagePr
 ```
 
 **New Features:**
+
 - `onDragMove` prop enables real-time drag position tracking
 - Used for performance optimization (ref-based updates) and multi-user sync
 
@@ -442,9 +454,11 @@ return (
 ---
 
 ### GridOverlay.tsx (51 lines)
+
 **Renders grid lines on canvas**
 
 #### Responsibilities
+
 - Generate vertical and horizontal grid lines
 - Render as Konva Line components
 - Non-interactive (listening={false})
@@ -453,11 +467,11 @@ return (
 
 ```typescript
 interface GridOverlayProps {
-  width: number;      // Canvas width in pixels
-  height: number;     // Canvas height in pixels
-  gridSize: number;   // Grid cell size in pixels (default: 50)
-  stroke?: string;    // Line color (default: '#222')
-  opacity?: number;   // Line opacity (default: 0.5)
+  width: number; // Canvas width in pixels
+  height: number; // Canvas height in pixels
+  gridSize: number; // Grid cell size in pixels (default: 50)
+  stroke?: string; // Line color (default: '#222')
+  opacity?: number; // Line opacity (default: 0.5)
 }
 ```
 
@@ -505,13 +519,15 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
 
 #### Performance Optimization
 
-**Current implementation:** O(n*m) Line components
+**Current implementation:** O(n\*m) Line components
+
 - 4096×4096px canvas at 50px grid = 81×81 = **6561 lines**
 - May cause performance issues on large canvases
 
 **Optimization opportunities:**
 
 1. **Use single Path instead:**
+
 ```typescript
 const GridOverlay = ({ width, height, gridSize, stroke = '#222', opacity = 0.5 }) => {
   const pathData = useMemo(() => {
@@ -540,6 +556,7 @@ const GridOverlay = ({ width, height, gridSize, stroke = '#222', opacity = 0.5 }
 ```
 
 2. **Memoize component:**
+
 ```typescript
 export default React.memo(GridOverlay, (prev, next) => {
   return (
@@ -553,9 +570,10 @@ export default React.memo(GridOverlay, (prev, next) => {
 ```
 
 3. **Viewport culling (future):**
+
 ```typescript
 // Only render grid lines in visible viewport
-const visibleLines = lines.filter(line => {
+const visibleLines = lines.filter((line) => {
   return isInViewport(line, viewport);
 });
 ```
@@ -576,9 +594,11 @@ const visibleLines = lines.filter(line => {
 ---
 
 ### FogOfWarLayer.tsx (254 lines)
+
 **Renders dynamic fog of war with raycasting-based visibility calculation**
 
 #### Responsibilities
+
 - Calculate visibility polygons for PC tokens based on visionRadius
 - Implement 360-degree raycasting with wall occlusion
 - Render opaque fog layer with cut-out visible areas
@@ -588,10 +608,11 @@ const visibleLines = lines.filter(line => {
 
 ```typescript
 interface FogOfWarLayerProps {
-  tokens: Token[];              // All tokens (filters to PC tokens internally)
-  drawings: Drawing[];          // All drawings (filters to walls internally)
-  gridSize: number;             // For feet-to-pixels conversion
-  visibleBounds: {              // Canvas viewport for fog rendering
+  tokens: Token[]; // All tokens (filters to PC tokens internally)
+  drawings: Drawing[]; // All drawings (filters to walls internally)
+  gridSize: number; // For feet-to-pixels conversion
+  visibleBounds: {
+    // Canvas viewport for fog rendering
     x: number;
     y: number;
     width: number;
@@ -603,13 +624,13 @@ interface FogOfWarLayerProps {
 #### Algorithm: 360-Degree Raycasting
 
 **Step 1: Filter PC Tokens**
+
 ```typescript
-const pcTokens = tokens.filter(
-  (t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0
-);
+const pcTokens = tokens.filter((t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0);
 ```
 
 **Step 2: Extract Wall Segments**
+
 ```typescript
 const walls: WallSegment[] = [];
 drawings
@@ -626,6 +647,7 @@ drawings
 ```
 
 **Step 3: Cast Rays for Each PC**
+
 ```typescript
 for (let i = 0; i < 360; i++) {
   const angle = (i * Math.PI * 2) / 360;
@@ -635,14 +657,19 @@ for (let i = 0; i < 360; i++) {
 ```
 
 **Step 4: Line Segment Intersection**
+
 ```typescript
 // For each ray, test against all walls
 for (const wall of walls) {
   const intersection = lineSegmentIntersection(
-    rayOriginX, rayOriginY,
-    rayEndX, rayEndY,
-    wall.start.x, wall.start.y,
-    wall.end.x, wall.end.y
+    rayOriginX,
+    rayOriginY,
+    rayEndX,
+    rayEndY,
+    wall.start.x,
+    wall.start.y,
+    wall.end.x,
+    wall.end.y,
   );
 
   if (intersection && distanceToIntersection < closestDistance) {
@@ -687,15 +714,18 @@ for (const wall of walls) {
 #### Performance Characteristics
 
 **Complexity:** O(rayCount × walls.length × pcTokens.length)
+
 - **rayCount:** 360 (fixed)
 - **walls.length:** Typically 10-50
 - **pcTokens.length:** Typically 3-6
 
 **Typical Performance:**
+
 - 3 PC tokens, 10 walls: ~5ms per frame
 - 6 PC tokens, 50 walls: ~15ms per frame
 
 **Optimizations:**
+
 - Only renders in World View (invisible in DM view)
 - Uses viewport bounds to cull fog rendering
 - Line segment intersection with early-out checks
@@ -727,6 +757,7 @@ const visionRadiusPx = (visionRadius / 5) * gridSize;
 ---
 
 ### TokenLayer.tsx (11 lines)
+
 **Placeholder component - currently unused**
 
 #### Current Implementation
@@ -769,6 +800,7 @@ Tokens currently rendered directly in CanvasManager's Layer component:
 #### Status
 
 **Can be deleted** or repurposed for future features:
+
 - Token z-order management (bring to front/send to back)
 - Token grouping (select multiple tokens)
 - Token layer visibility toggle
@@ -815,8 +847,8 @@ const TokenLayer = ({ tokens, gridSize, onTokenMove }: {
 // Konva events use 'any' type (no official types available)
 const handleKonvaEvent = (e: any) => {
   const stage = e.target.getStage();
-  const pos = stage.getPointerPosition();  // { x, y }
-  const node = e.target;  // Clicked Konva node
+  const pos = stage.getPointerPosition(); // { x, y }
+  const node = e.target; // Clicked Konva node
 };
 ```
 
@@ -843,6 +875,7 @@ const handleKonvaEvent = (e: any) => {
 ### Pattern 3: Coordinate Systems
 
 **Konva uses top-left origin:**
+
 ```
 (0,0) ────────── (width, 0)
   │                    │
@@ -852,12 +885,14 @@ const handleKonvaEvent = (e: any) => {
 ```
 
 **Grid snapping formula:**
+
 ```typescript
 const snappedX = Math.round(x / gridSize) * gridSize;
 const snappedY = Math.round(y / gridSize) * gridSize;
 ```
 
 **Example:**
+
 - Raw mouse position: (127, 83)
 - Grid size: 50
 - Snapped position: (150, 100)
@@ -875,14 +910,17 @@ const snappedY = Math.round(y / gridSize) * gridSize;
 ## Common Issues
 
 ### Issue: Tokens not rendering
+
 **Symptoms:** Tokens in store but not visible on canvas
 
 **Diagnosis:**
+
 1. Check token.src paths (should be file:// or https://)
 2. Verify media:// conversion in URLImage
 3. Check useImage hook status (may return undefined while loading)
 
 **Solution:**
+
 ```typescript
 const URLImage = ({ src, ...props }: any) => {
   const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
@@ -901,11 +939,13 @@ const URLImage = ({ src, ...props }: any) => {
 ```
 
 ### Issue: Drawing lag
+
 **Symptoms:** Canvas stutters during marker/eraser drag
 
 **Diagnosis:** Updating store on mousemove (wrong pattern)
 
 **Check:**
+
 ```typescript
 // ❌ WRONG - updates store 60 times/sec
 const handleMouseMove = (e: any) => {
@@ -920,11 +960,13 @@ const handleMouseMove = (e: any) => {
 ```
 
 ### Issue: Grid not resizing
+
 **Symptoms:** Grid size doesn't match canvas size after window resize
 
 **Diagnosis:** GridOverlay not receiving updated width/height
 
 **Solution:**
+
 ```typescript
 // Ensure CanvasManager updates size state
 const [size, setSize] = useState({ width: 0, height: 0 });
@@ -950,11 +992,13 @@ useEffect(() => {
 ```
 
 ### Issue: Drag-and-drop not working
+
 **Symptoms:** Dropped tokens don't appear
 
 **Diagnosis:** Missing preventDefault on dragover
 
 **Solution:**
+
 ```typescript
 // CRITICAL: Must prevent default on dragover
 const handleDragOver = (e: React.DragEvent) => {
@@ -967,6 +1011,7 @@ const handleDragOver = (e: React.DragEvent) => {
 ## Future Canvas Features
 
 ### Planned
+
 1. **Explored Fog** - Gray areas for previously-seen but not currently visible zones
 2. **Token Z-Order** - Bring to front / send to back
 3. **Shape Drawing Tools** - Rectangle, circle, line
@@ -976,6 +1021,7 @@ const handleDragOver = (e: React.DragEvent) => {
 7. **Light Sources** - Token-emitted light (torches, spells) with color support
 
 ### Performance Improvements
+
 1. **Grid optimization** - Use single Path instead of 6000+ Lines
 2. **Viewport culling** - Only render visible tokens/drawings
 3. **Layer separation** - Background, tokens, UI (selective re-rendering)

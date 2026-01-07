@@ -1,1 +1,174 @@
-{"result":[{"scriptId":"1196","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"HTMLCanvasElement.getContext","ranges":[{"startOffset":1405,"endOffset":2722,"count":0}],"isBlockCoverage":false},{"functionName":"HTMLCanvasElement.toDataURL","ranges":[{"startOffset":2766,"endOffset":2819,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":2930,"endOffset":2964,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":3071,"endOffset":3102,"count":0}],"isBlockCoverage":false}]},{"scriptId":"1371","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/AssetProcessor.test.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":9541,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":9541,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":348,"endOffset":381,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":590,"endOffset":2911,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":636,"endOffset":1427,"count":3}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":825,"endOffset":1086,"count":3}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1309,"endOffset":1421,"count":0}],"isBlockCoverage":false},{"functionName":"","ranges":[{"startOffset":1442,"endOffset":1503,"count":3}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1559,"endOffset":2096,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2154,"endOffset":2548,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2587,"endOffset":2907,"count":1}],"isBlockCoverage":true}]},{"scriptId":"1372","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/AssetProcessor.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":28377,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":28377,"count":1}],"isBlockCoverage":true},{"functionName":"processImage","ranges":[{"startOffset":391,"endOffset":698,"count":3},{"startOffset":458,"endOffset":522,"count":0}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":800,"endOffset":828,"count":3}],"isBlockCoverage":true},{"functionName":"wrapPromiseAsHandle","ranges":[{"startOffset":832,"endOffset":1011,"count":3}],"isBlockCoverage":true},{"functionName":"cancel","ranges":[{"startOffset":908,"endOffset":1004,"count":0}],"isBlockCoverage":false},{"functionName":"processImageWithWorker","ranges":[{"startOffset":1012,"endOffset":3323,"count":0}],"isBlockCoverage":false},{"functionName":"processImageMainThread","ranges":[{"startOffset":3324,"endOffset":4621,"count":3},{"startOffset":3406,"endOffset":3420,"count":0},{"startOffset":3487,"endOffset":3502,"count":0},{"startOffset":3535,"endOffset":3554,"count":1},{"startOffset":3555,"endOffset":3576,"count":2},{"startOffset":3657,"endOffset":3675,"count":0},{"startOffset":3737,"endOffset":3809,"count":1},{"startOffset":3809,"endOffset":3887,"count":2},{"startOffset":3910,"endOffset":3925,"count":0},{"startOffset":4030,"endOffset":4105,"count":0},{"startOffset":4188,"endOffset":4203,"count":0},{"startOffset":4314,"endOffset":4329,"count":0},{"startOffset":4584,"endOffset":4600,"count":0}],"isBlockCoverage":true},{"functionName":"processBatch","ranges":[{"startOffset":4643,"endOffset":5744,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":5846,"endOffset":5874,"count":0}],"isBlockCoverage":false}]}]}
+{
+  "result": [
+    {
+      "scriptId": "1196",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "HTMLCanvasElement.getContext",
+          "ranges": [{ "startOffset": 1405, "endOffset": 2722, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "HTMLCanvasElement.toDataURL",
+          "ranges": [{ "startOffset": 2766, "endOffset": 2819, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2930, "endOffset": 2964, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3071, "endOffset": 3102, "count": 0 }],
+          "isBlockCoverage": false
+        }
+      ]
+    },
+    {
+      "scriptId": "1371",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/AssetProcessor.test.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 9541, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 9541, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 348, "endOffset": 381, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 590, "endOffset": 2911, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 636, "endOffset": 1427, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 825, "endOffset": 1086, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1309, "endOffset": 1421, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1442, "endOffset": 1503, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1559, "endOffset": 2096, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2154, "endOffset": 2548, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2587, "endOffset": 2907, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    },
+    {
+      "scriptId": "1372",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/AssetProcessor.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 28377, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 28377, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "processImage",
+          "ranges": [
+            { "startOffset": 391, "endOffset": 698, "count": 3 },
+            { "startOffset": 458, "endOffset": 522, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 800, "endOffset": 828, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "wrapPromiseAsHandle",
+          "ranges": [{ "startOffset": 832, "endOffset": 1011, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "cancel",
+          "ranges": [{ "startOffset": 908, "endOffset": 1004, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "processImageWithWorker",
+          "ranges": [{ "startOffset": 1012, "endOffset": 3323, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "processImageMainThread",
+          "ranges": [
+            { "startOffset": 3324, "endOffset": 4621, "count": 3 },
+            { "startOffset": 3406, "endOffset": 3420, "count": 0 },
+            { "startOffset": 3487, "endOffset": 3502, "count": 0 },
+            { "startOffset": 3535, "endOffset": 3554, "count": 1 },
+            { "startOffset": 3555, "endOffset": 3576, "count": 2 },
+            { "startOffset": 3657, "endOffset": 3675, "count": 0 },
+            { "startOffset": 3737, "endOffset": 3809, "count": 1 },
+            { "startOffset": 3809, "endOffset": 3887, "count": 2 },
+            { "startOffset": 3910, "endOffset": 3925, "count": 0 },
+            { "startOffset": 4030, "endOffset": 4105, "count": 0 },
+            { "startOffset": 4188, "endOffset": 4203, "count": 0 },
+            { "startOffset": 4314, "endOffset": 4329, "count": 0 },
+            { "startOffset": 4584, "endOffset": 4600, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "processBatch",
+          "ranges": [{ "startOffset": 4643, "endOffset": 5744, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 5846, "endOffset": 5874, "count": 0 }],
+          "isBlockCoverage": false
+        }
+      ]
+    }
+  ]
+}

@@ -184,22 +184,16 @@ export function sanitizeStack(error: Error, username: string): SanitizedError {
     const escapedUsername = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     // Pattern for Unix-style paths: /Users/username/ or /home/username/
-    const unixPathPattern = new RegExp(
-      `(/(?:Users|home)/)${escapedUsername}(/|$)`,
-      'gi'
-    );
+    const unixPathPattern = new RegExp(`(/(?:Users|home)/)${escapedUsername}(/|$)`, 'gi');
 
     // Pattern for Windows-style paths: C:\Users\username\ or C:/Users/username/
     const windowsPathPattern = new RegExp(
       `([A-Za-z]:[/\\\\](?:Users|Documents and Settings)[/\\\\])${escapedUsername}([/\\\\]|$)`,
-      'gi'
+      'gi',
     );
 
     // Generic pattern: catch any remaining instances of the username in paths
-    const genericPattern = new RegExp(
-      `([\\\\/])${escapedUsername}([\\\\/])`,
-      'gi'
-    );
+    const genericPattern = new RegExp(`([\\\\/])${escapedUsername}([\\\\/])`, 'gi');
 
     // Apply username sanitization
     errorStack = errorStack
@@ -280,19 +274,13 @@ export function sanitizeStack(error: Error, username: string): SanitizedError {
  */
 export function generateReportBody(sanitizedError: SanitizedError): string {
   // Get app version from package.json (exposed via Vite's define)
-  const appVersion = typeof __APP_VERSION__ !== 'undefined'
-    ? __APP_VERSION__
-    : 'Unknown';
+  const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'Unknown';
 
   // Get OS platform from navigator
-  const platform = typeof navigator !== 'undefined'
-    ? navigator.platform
-    : 'Unknown';
+  const platform = typeof navigator !== 'undefined' ? navigator.platform : 'Unknown';
 
   // Get user agent for additional context
-  const userAgent = typeof navigator !== 'undefined'
-    ? navigator.userAgent
-    : 'Unknown';
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown';
 
   const timestamp = new Date().toISOString();
 

@@ -3,7 +3,34 @@ import { Shape } from 'react-konva';
 import Konva from 'konva';
 
 // Import the globalCompositeOperationType from Konva
-type GlobalCompositeOperationType = '' | 'source-over' | 'source-in' | 'source-out' | 'source-atop' | 'destination-over' | 'destination-in' | 'destination-out' | 'destination-atop' | 'lighter' | 'copy' | 'xor' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
+type GlobalCompositeOperationType =
+  | ''
+  | 'source-over'
+  | 'source-in'
+  | 'source-out'
+  | 'source-atop'
+  | 'destination-over'
+  | 'destination-in'
+  | 'destination-out'
+  | 'destination-atop'
+  | 'lighter'
+  | 'copy'
+  | 'xor'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'darken'
+  | 'lighten'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'hard-light'
+  | 'soft-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity';
 
 interface PressureSensitiveLineProps {
   id?: string;
@@ -40,20 +67,20 @@ function validatePressureData(points: number[], pressures?: number[]): number[] 
     if (import.meta.env.DEV) {
       console.warn(
         `[PressureSensitiveLine] Pressure array length mismatch. ` +
-        `Expected ${expectedLength} pressure values for ${points.length / 2} points, ` +
-        `but got ${pressures.length}. Falling back to regular line.`
+          `Expected ${expectedLength} pressure values for ${points.length / 2} points, ` +
+          `but got ${pressures.length}. Falling back to regular line.`,
       );
     }
     return null;
   }
 
   // Validate pressure values are in 0-1 range
-  const hasInvalidPressure = pressures.some(p => p < 0 || p > 1 || !Number.isFinite(p));
+  const hasInvalidPressure = pressures.some((p) => p < 0 || p > 1 || !Number.isFinite(p));
   if (hasInvalidPressure) {
     if (import.meta.env.DEV) {
       console.warn(
         `[PressureSensitiveLine] Invalid pressure values detected. ` +
-        `All pressures must be between 0.0 and 1.0. Falling back to regular line.`
+          `All pressures must be between 0.0 and 1.0. Falling back to regular line.`,
       );
     }
     return null;
@@ -140,7 +167,8 @@ const PressureSensitiveLineComponent = ({
 
       // Vary stroke width based on pressure using configured range
       // Map pressure (0.0-1.0) to multiplier (min-max)
-      const pressureMultiplier = pressureRange.min + avgPressure * (pressureRange.max - pressureRange.min);
+      const pressureMultiplier =
+        pressureRange.min + avgPressure * (pressureRange.max - pressureRange.min);
       const segmentWidth = strokeWidth * pressureMultiplier;
 
       // Draw line segment with calculated width

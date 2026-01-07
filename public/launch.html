@@ -1,222 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Graphium - Privacy-First Virtual Tabletop</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Graphium - Privacy-First Virtual Tabletop</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
 
-    .container {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 600px;
-      width: 100%;
-      padding: 48px;
-      text-align: center;
-    }
-
-    .logo {
-      font-size: 48px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 16px;
-    }
-
-    .subtitle {
-      color: #666;
-      font-size: 18px;
-      margin-bottom: 32px;
-    }
-
-    .features {
-      text-align: left;
-      margin: 32px 0;
-      padding: 24px;
-      background: #f8f9fa;
-      border-radius: 8px;
-    }
-
-    .features h3 {
-      color: #333;
-      margin-bottom: 16px;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .features ul {
-      list-style: none;
-      color: #666;
-    }
-
-    .features li {
-      padding: 8px 0;
-      padding-left: 24px;
-      position: relative;
-    }
-
-    .features li:before {
-      content: '✓';
-      position: absolute;
-      left: 0;
-      color: #667eea;
-      font-weight: bold;
-    }
-
-    .buttons {
-      display: flex;
-      gap: 16px;
-      margin-top: 32px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      flex: 1;
-      min-width: 200px;
-      padding: 16px 32px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-    }
-
-    .btn-secondary {
-      background: white;
-      color: #667eea;
-      border: 2px solid #667eea;
-    }
-
-    .btn-secondary:hover {
-      background: #f8f9fa;
-      transform: translateY(-2px);
-    }
-
-    .note {
-      margin-top: 24px;
-      color: #999;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    @media (max-width: 600px) {
       .container {
-        padding: 32px 24px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+        width: 100%;
+        padding: 48px;
+        text-align: center;
+      }
+
+      .logo {
+        font-size: 48px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 16px;
+      }
+
+      .subtitle {
+        color: #666;
+        font-size: 18px;
+        margin-bottom: 32px;
+      }
+
+      .features {
+        text-align: left;
+        margin: 32px 0;
+        padding: 24px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .features h3 {
+        color: #333;
+        margin-bottom: 16px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .features ul {
+        list-style: none;
+        color: #666;
+      }
+
+      .features li {
+        padding: 8px 0;
+        padding-left: 24px;
+        position: relative;
+      }
+
+      .features li:before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: #667eea;
+        font-weight: bold;
       }
 
       .buttons {
-        flex-direction: column;
+        display: flex;
+        gap: 16px;
+        margin-top: 32px;
+        flex-wrap: wrap;
       }
 
       .btn {
-        width: 100%;
+        flex: 1;
+        min-width: 200px;
+        padding: 16px 32px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
       }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="logo">Graphium</div>
-    <div class="subtitle">Privacy-First Virtual Tabletop for D&D</div>
 
-    <div class="features">
-      <h3>Key Features</h3>
-      <ul>
-        <li>100% Privacy-First - All data stays on your device</li>
-        <li>World View Mode - Open projector display in new tab/window</li>
-        <li>Real-time Sync - Architect and World View stay synchronized</li>
-        <li>Fog of War - Hide unexplored areas from players</li>
-        <li>Token Library - Manage your character tokens and maps</li>
-        <li>No Account Required - Start playing immediately</li>
-      </ul>
-    </div>
-
-    <div class="buttons">
-      <a href="./index.html" class="btn btn-primary" id="launch-web">
-        Launch Web App
-      </a>
-      <a href="#" class="btn btn-secondary" id="download-desktop">
-        Download Desktop App
-      </a>
-    </div>
-
-    <div class="note">
-      <strong>Web App:</strong> Works in any modern browser. Data stored locally using IndexedDB.<br>
-      <strong>Desktop App:</strong> Native application with additional features and better performance.
-    </div>
-  </div>
-
-  <script>
-    // Fetch latest release from GitHub API and update download link
-    (async function() {
-      const downloadBtn = document.getElementById('download-desktop');
-      // TODO: Update with actual GitHub repository owner/name
-      const GITHUB_REPO = 'kocheck/Graphium';
-
-      try {
-        const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch releases');
-        }
-
-        const release = await response.json();
-
-        // Detect user's platform
-        const platform = navigator.platform.toLowerCase();
-        let asset = null;
-
-        if (platform.includes('win')) {
-          asset = release.assets.find(a => a.name.endsWith('.exe'));
-        } else if (platform.includes('mac')) {
-          asset = release.assets.find(a => a.name.endsWith('.dmg'));
-        } else if (platform.includes('linux')) {
-          asset = release.assets.find(a => a.name.endsWith('.AppImage'));
-        }
-
-        if (asset) {
-          downloadBtn.href = asset.browser_download_url;
-        } else {
-          // Fallback to releases page
-          downloadBtn.href = release.html_url;
-        }
-      } catch (error) {
-        console.warn('Could not fetch GitHub releases:', error);
-        // Fallback: link to GitHub releases page
-        downloadBtn.href = `https://github.com/${GITHUB_REPO}/releases`;
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
       }
-    })();
-  </script>
-</body>
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-secondary {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+      }
+
+      .btn-secondary:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+      }
+
+      .note {
+        margin-top: 24px;
+        color: #999;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          padding: 32px 24px;
+        }
+
+        .buttons {
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">Graphium</div>
+      <div class="subtitle">Privacy-First Virtual Tabletop for D&D</div>
+
+      <div class="features">
+        <h3>Key Features</h3>
+        <ul>
+          <li>100% Privacy-First - All data stays on your device</li>
+          <li>World View Mode - Open projector display in new tab/window</li>
+          <li>Real-time Sync - Architect and World View stay synchronized</li>
+          <li>Fog of War - Hide unexplored areas from players</li>
+          <li>Token Library - Manage your character tokens and maps</li>
+          <li>No Account Required - Start playing immediately</li>
+        </ul>
+      </div>
+
+      <div class="buttons">
+        <a href="./index.html" class="btn btn-primary" id="launch-web"> Launch Web App </a>
+        <a href="#" class="btn btn-secondary" id="download-desktop"> Download Desktop App </a>
+      </div>
+
+      <div class="note">
+        <strong>Web App:</strong> Works in any modern browser. Data stored locally using
+        IndexedDB.<br />
+        <strong>Desktop App:</strong> Native application with additional features and better
+        performance.
+      </div>
+    </div>
+
+    <script>
+      // Fetch latest release from GitHub API and update download link
+      (async function () {
+        const downloadBtn = document.getElementById('download-desktop');
+        // TODO: Update with actual GitHub repository owner/name
+        const GITHUB_REPO = 'kocheck/Graphium';
+
+        try {
+          const response = await fetch(
+            `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+          );
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch releases');
+          }
+
+          const release = await response.json();
+
+          // Detect user's platform
+          const platform = navigator.platform.toLowerCase();
+          let asset = null;
+
+          if (platform.includes('win')) {
+            asset = release.assets.find((a) => a.name.endsWith('.exe'));
+          } else if (platform.includes('mac')) {
+            asset = release.assets.find((a) => a.name.endsWith('.dmg'));
+          } else if (platform.includes('linux')) {
+            asset = release.assets.find((a) => a.name.endsWith('.AppImage'));
+          }
+
+          if (asset) {
+            downloadBtn.href = asset.browser_download_url;
+          } else {
+            // Fallback to releases page
+            downloadBtn.href = release.html_url;
+          }
+        } catch (error) {
+          console.warn('Could not fetch GitHub releases:', error);
+          // Fallback: link to GitHub releases page
+          downloadBtn.href = `https://github.com/${GITHUB_REPO}/releases`;
+        }
+      })();
+    </script>
+  </body>
 </html>

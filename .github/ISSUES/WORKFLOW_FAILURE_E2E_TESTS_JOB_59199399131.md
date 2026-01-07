@@ -1,5 +1,7 @@
 ### Description:
+
 The job 'Electron Tests' is failing due to the following error:
+
 ```plaintext
 ⨯ GitHub Personal Access Token is not set, neither programmatically, nor using env "GH_TOKEN"
 ```
@@ -7,6 +9,7 @@ The job 'Electron Tests' is failing due to the following error:
 This issue occurs when the Electron builder tries to perform upload-related operations that require a GitHub token.
 
 ### Solution Options:
+
 1. Use the default `GITHUB_TOKEN` provided by GitHub Actions.
    - Add the following configuration to `.github/workflows/e2e.yml`
      ```yaml
@@ -34,6 +37,7 @@ This issue occurs when the Electron builder tries to perform upload-related oper
 
 ---
 
-### Metadata  
-* **Job Details:** [Failing Job](https://github.com/kocheck/Graphium/actions/runs/20612430919/job/59199399131)  
-* **Reported on:** 2025-12-31 12:01 UTC
+### Metadata
+
+- **Job Details:** [Failing Job](https://github.com/kocheck/Graphium/actions/runs/20612430919/job/59199399131)
+- **Reported on:** 2025-12-31 12:01 UTC

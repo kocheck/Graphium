@@ -75,49 +75,25 @@ describe('TokenMetadataEditor', () => {
   });
 
   it('should not render when isOpen is false', () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={false}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={false} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     expect(screen.queryByText('Edit Token Metadata')).not.toBeInTheDocument();
   });
 
   it('should not render when libraryItemId is null', () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId={null}
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId={null} onClose={mockOnClose} />);
 
     expect(screen.queryByText('Edit Token Metadata')).not.toBeInTheDocument();
   });
 
   it('should render when isOpen is true and libraryItemId is valid', () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     expect(screen.getByText('Edit Token Metadata')).toBeInTheDocument();
   });
 
   it('should initialize form with library item data', () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     expect(screen.getByDisplayValue('Ancient Dragon')).toBeInTheDocument();
     expect(screen.getByDisplayValue('dragon, ancient, red')).toBeInTheDocument();
@@ -127,13 +103,7 @@ describe('TokenMetadataEditor', () => {
   });
 
   it('should display preview image with correct src transformation', () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const img = screen.getByAltText('Ancient Dragon');
     // thumbnailSrc should have 'file:' replaced with 'media:'
@@ -141,13 +111,7 @@ describe('TokenMetadataEditor', () => {
   });
 
   it('should close modal when clicking backdrop', async () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const backdrop = screen.getByText('Edit Token Metadata').closest('.fixed');
     if (backdrop) {
@@ -157,13 +121,7 @@ describe('TokenMetadataEditor', () => {
   });
 
   it('should not close modal when clicking inside modal content', async () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const modalContent = screen.getByText('Edit Token Metadata').closest('div');
     if (modalContent && modalContent.parentElement) {
@@ -173,13 +131,7 @@ describe('TokenMetadataEditor', () => {
   });
 
   it('should close modal when clicking close button', async () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const closeButton = screen.getByLabelText('Close');
     fireEvent.click(closeButton);
@@ -187,13 +139,7 @@ describe('TokenMetadataEditor', () => {
   });
 
   it('should close modal when clicking Cancel button', async () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const cancelButton = screen.getByText('Cancel');
     fireEvent.click(cancelButton);
@@ -202,13 +148,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should update name field on user input', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const nameInput = screen.getByDisplayValue('Ancient Dragon');
     await user.clear(nameInput);
@@ -218,13 +158,7 @@ describe('TokenMetadataEditor', () => {
   });
 
   it('should update category field on selection', async () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const categorySelect = screen.getByDisplayValue('Monsters');
     fireEvent.change(categorySelect, { target: { value: 'NPCs' } });
@@ -234,13 +168,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should update tags field on user input', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const tagsInput = screen.getByDisplayValue('dragon, ancient, red');
     await user.clear(tagsInput);
@@ -251,14 +179,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should update default scale field on user input', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
-
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const scaleInput = screen.getByDisplayValue('2.5');
     fireEvent.change(scaleInput, { target: { value: '3.0' } });
@@ -268,13 +189,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should show validation error when name is empty', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const nameInput = screen.getByDisplayValue('Ancient Dragon');
     await user.clear(nameInput);
@@ -289,13 +204,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should show validation error for invalid scale (negative)', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const scaleInput = screen.getByDisplayValue('2.5');
     await user.clear(scaleInput);
@@ -310,13 +219,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should show validation error for invalid scale (zero)', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const scaleInput = screen.getByDisplayValue('2.5');
     await user.clear(scaleInput);
@@ -330,13 +233,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should show validation error for invalid vision radius (negative)', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     // Change to PC first to show vision radius
     const selects = screen.getAllByRole('combobox');
@@ -350,18 +247,15 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockShowToast).toHaveBeenCalledWith('Vision radius must be a non-negative number', 'error');
+    expect(mockShowToast).toHaveBeenCalledWith(
+      'Vision radius must be a non-negative number',
+      'error',
+    );
   });
 
   it('should allow zero vision radius (blind token)', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     // Switch to PC
     const selects = screen.getAllByRole('combobox');
@@ -375,20 +269,17 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      defaultVisionRadius: 0,
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        defaultVisionRadius: 0,
+      }),
+    );
   });
 
   it('should save valid data and close modal', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const nameInput = screen.getByDisplayValue('Ancient Dragon');
     await user.clear(nameInput);
@@ -414,13 +305,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should parse tags correctly (comma-separated, trimmed)', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const tagsInput = screen.getByDisplayValue('dragon, ancient, red');
     await user.clear(tagsInput);
@@ -429,20 +314,17 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      tags: ['beast', 'flying', 'large'],
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        tags: ['beast', 'flying', 'large'],
+      }),
+    );
   });
 
   it('should filter out empty tags', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const tagsInput = screen.getByDisplayValue('dragon, ancient, red');
     await user.clear(tagsInput);
@@ -451,20 +333,17 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      tags: ['valid', 'empty', 'another'],
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        tags: ['valid', 'empty', 'another'],
+      }),
+    );
   });
 
   it('should handle empty tags field', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const tagsInput = screen.getByDisplayValue('dragon, ancient, red');
     await user.clear(tagsInput);
@@ -472,20 +351,17 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      tags: [],
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        tags: [],
+      }),
+    );
   });
 
   it('should default category to Custom if empty', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const categorySelect = screen.getByDisplayValue('Monsters');
     fireEvent.change(categorySelect, { target: { value: '' } });
@@ -493,20 +369,17 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      category: 'Custom',
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        category: 'Custom',
+      }),
+    );
   });
 
   it('should handle undefined optional fields', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     // Clear optional fields
     const scaleInput = screen.getByDisplayValue('2.5');
@@ -526,21 +399,18 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      defaultScale: undefined,
-      defaultVisionRadius: undefined,
-      defaultType: undefined,
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        defaultScale: undefined,
+        defaultVisionRadius: undefined,
+        defaultType: undefined,
+      }),
+    );
   });
 
   it('should only show vision radius field when type is PC', async () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     // Initially NPC, vision radius should NOT be visible
     expect(screen.queryByDisplayValue('120')).not.toBeInTheDocument();
@@ -567,11 +437,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should handle non-existent library item gracefully', () => {
     render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="non-existent-id"
-        onClose={mockOnClose}
-      />
+      <TokenMetadataEditor isOpen={true} libraryItemId="non-existent-id" onClose={mockOnClose} />,
     );
 
     // Should not render when library item not found
@@ -580,13 +446,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should handle decimal scale values', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const scaleInput = screen.getByDisplayValue('2.5');
     await user.clear(scaleInput);
@@ -595,20 +455,17 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      defaultScale: 1.75,
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        defaultScale: 1.75,
+      }),
+    );
   });
 
   it('should trim whitespace from name before saving', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const nameInput = screen.getByDisplayValue('Ancient Dragon');
     await user.clear(nameInput);
@@ -617,22 +474,19 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      name: 'Trimmed Name',
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        name: 'Trimmed Name',
+      }),
+    );
 
     expect(mockShowToast).toHaveBeenCalledWith('Updated metadata for "Trimmed Name"', 'success');
   });
 
   it('should reject whitespace-only name', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const nameInput = screen.getByDisplayValue('Ancient Dragon');
     await user.clear(nameInput);
@@ -647,13 +501,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should handle very large vision radius values', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     // Change to PC first to show vision radius
     const typeSelect = screen.getByDisplayValue('NPC (Non-Player Character)');
@@ -667,19 +515,16 @@ describe('TokenMetadataEditor', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
 
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-      defaultVisionRadius: 9999,
-    }));
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
+        defaultVisionRadius: 9999,
+      }),
+    );
   });
 
   it('should show correct help text for each field', () => {
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     expect(screen.getByText(/Used for search/)).toBeInTheDocument();
     expect(screen.getByText(/Size multiplier when placed on map/)).toBeInTheDocument();
@@ -688,13 +533,7 @@ describe('TokenMetadataEditor', () => {
 
   it('should call storage service to persist changes', async () => {
     const user = userEvent.setup();
-    render(
-      <TokenMetadataEditor
-        isOpen={true}
-        libraryItemId="lib-1"
-        onClose={mockOnClose}
-      />
-    );
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
     const nameInput = screen.getByDisplayValue('Ancient Dragon');
     await user.clear(nameInput);
@@ -704,9 +543,12 @@ describe('TokenMetadataEditor', () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(mockUpdateLibraryMetadata).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-        name: 'Persisted Dragon',
-      }));
+      expect(mockUpdateLibraryMetadata).toHaveBeenCalledWith(
+        'lib-1',
+        expect.objectContaining({
+          name: 'Persisted Dragon',
+        }),
+      );
     });
   });
 });

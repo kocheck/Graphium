@@ -11,6 +11,7 @@ Migrated all application icons from emoji and inline SVG to the Remix Icon libra
 ## Motivation
 
 **Problems with previous approach:**
+
 - **Inconsistent visuals**: Mix of emoji (📍🗺️➕) and inline SVG icons
 - **Maintainability**: Scattered SVG code across components (139 lines of inline SVG)
 - **Scalability**: Emoji rendering varies by OS/browser
@@ -18,6 +19,7 @@ Migrated all application icons from emoji and inline SVG to the Remix Icon libra
 - **Accessibility**: Inline SVGs harder to make accessible
 
 **Benefits of Remix Icon:**
+
 - **Consistency**: All icons use the same Line style variant
 - **Scalability**: SVG icons scale perfectly at any resolution
 - **Maintainability**: Centralized icon library from npm package
@@ -39,39 +41,39 @@ npm install @remixicon/react
 
 All icons were replaced using Line style variants (`*Line`) for consistency:
 
-| Original | Remix Icon | Usage |
-|----------|------------|-------|
-| 🔍 | `RiSearchLine` | Search, place tool |
-| ✏️ | `RiPencilLine` | Marker/draw tool |
-| 🧹 | `RiEraserLine` | Eraser tool |
-| 🚪 | `RiDoorOpenLine` | Door tool, door controls |
-| 📚 | `RiBookLine` | Library button |
-| ⚙️ | `RiSettings4Line` | Settings/edit map |
-| 📍 | `RiPushpinLine` | Active/pinned map |
-| 🗺️ | `RiMap2Line` | Inactive map |
-| ➕ | `RiAddLine` | Add/new actions |
-| 🏰 | `RiBuildingLine` | Dungeon generator |
-| 🌍 | `RiGlobalLine` | World view |
-| 🔒 | `RiLockLine` | Locked door |
-| 🔓 | `RiLockUnlockLine` | Unlock door |
-| Inline SVG chevron | `RiArrowRightSLine` | Collapsible sections |
-| Inline SVG close/X | `RiCloseLine` | Close buttons |
-| Inline SVG edit | `RiEditLine` | Edit actions |
-| Inline SVG delete | `RiDeleteBinLine` | Delete actions |
-| Inline SVG upload | `RiUploadLine` | Upload button |
-| Inline SVG play | `RiPlayFill` | Play/resume |
-| Inline SVG pause | `RiPauseFill` | Pause |
-| Inline SVG warning | `RiErrorWarningLine` | Error indicator |
-| Inline SVG check | `RiCheckLine` | Success/confirm |
-| Inline SVG GitHub | `RiGithubFill` | GitHub report |
-| Inline SVG save | `RiSaveLine` | Save action |
-| Inline SVG download | `RiDownloadCloudLine` | Download app |
-| Inline SVG folder | `RiFolderOpenLine` | Load campaign |
-| Inline SVG file | `RiFileTextLine` | Recent campaign |
-| Inline SVG cursor | `RiCursorLine` | Select tool |
-| Inline SVG wall | `RiLayoutMasonryLine` | Wall tool |
-| Inline SVG more | `RiMoreLine` | More menu |
-| Inline SVG arrow left | `RiArrowLeftSLine` | Sidebar collapse |
+| Original              | Remix Icon            | Usage                    |
+| --------------------- | --------------------- | ------------------------ |
+| 🔍                    | `RiSearchLine`        | Search, place tool       |
+| ✏️                    | `RiPencilLine`        | Marker/draw tool         |
+| 🧹                    | `RiEraserLine`        | Eraser tool              |
+| 🚪                    | `RiDoorOpenLine`      | Door tool, door controls |
+| 📚                    | `RiBookLine`          | Library button           |
+| ⚙️                    | `RiSettings4Line`     | Settings/edit map        |
+| 📍                    | `RiPushpinLine`       | Active/pinned map        |
+| 🗺️                    | `RiMap2Line`          | Inactive map             |
+| ➕                    | `RiAddLine`           | Add/new actions          |
+| 🏰                    | `RiBuildingLine`      | Dungeon generator        |
+| 🌍                    | `RiGlobalLine`        | World view               |
+| 🔒                    | `RiLockLine`          | Locked door              |
+| 🔓                    | `RiLockUnlockLine`    | Unlock door              |
+| Inline SVG chevron    | `RiArrowRightSLine`   | Collapsible sections     |
+| Inline SVG close/X    | `RiCloseLine`         | Close buttons            |
+| Inline SVG edit       | `RiEditLine`          | Edit actions             |
+| Inline SVG delete     | `RiDeleteBinLine`     | Delete actions           |
+| Inline SVG upload     | `RiUploadLine`        | Upload button            |
+| Inline SVG play       | `RiPlayFill`          | Play/resume              |
+| Inline SVG pause      | `RiPauseFill`         | Pause                    |
+| Inline SVG warning    | `RiErrorWarningLine`  | Error indicator          |
+| Inline SVG check      | `RiCheckLine`         | Success/confirm          |
+| Inline SVG GitHub     | `RiGithubFill`        | GitHub report            |
+| Inline SVG save       | `RiSaveLine`          | Save action              |
+| Inline SVG download   | `RiDownloadCloudLine` | Download app             |
+| Inline SVG folder     | `RiFolderOpenLine`    | Load campaign            |
+| Inline SVG file       | `RiFileTextLine`      | Recent campaign          |
+| Inline SVG cursor     | `RiCursorLine`        | Select tool              |
+| Inline SVG wall       | `RiLayoutMasonryLine` | Wall tool                |
+| Inline SVG more       | `RiMoreLine`          | More menu                |
+| Inline SVG arrow left | `RiArrowLeftSLine`    | Sidebar collapse         |
 
 ### Components Updated
 
@@ -137,6 +139,7 @@ import {
 ### 1. CONVENTIONS.md
 
 Added comprehensive "Icons (Remix Icon)" section with:
+
 - Import pattern and usage examples
 - Rules for Line vs Fill variants
 - Standard sizing guidelines
@@ -147,6 +150,7 @@ Added comprehensive "Icons (Remix Icon)" section with:
 ### 2. copilot-instructions.md
 
 Added:
+
 - Icons section in Styling guidelines
 - Anti-pattern: Using emoji/inline SVG
 - Best practice: Using Remix Icon components
@@ -154,16 +158,19 @@ Added:
 ## Results
 
 **Code reduction:**
+
 - **Before:** 139 lines of inline SVG code
 - **After:** Clean icon imports
 - **Net change:** +110 insertions / -139 deletions
 
 **Bundle impact:**
+
 - Tree-shakeable imports (only used icons bundled)
 - Single shared icon library vs scattered SVGs
 - Reduced overall bundle size
 
 **Visual consistency:**
+
 - All icons now use same Line style
 - Consistent stroke width and optical sizing
 - Professional, modern appearance
@@ -189,24 +196,23 @@ For future icon additions:
 ### Sidebar Map Icon (Emoji → Remix)
 
 **Before:**
+
 ```tsx
-<span className="text-lg leading-none">
-  {isActive ? '📍' : '🗺️'}
-</span>
+<span className="text-lg leading-none">{isActive ? '📍' : '🗺️'}</span>
 ```
 
 **After:**
+
 ```tsx
-{isActive ? (
-  <RiPushpinLine className="w-5 h-5" />
-) : (
-  <RiMap2Line className="w-5 h-5" />
-)}
+{
+  isActive ? <RiPushpinLine className="w-5 h-5" /> : <RiMap2Line className="w-5 h-5" />;
+}
 ```
 
 ### Close Button (Inline SVG → Remix)
 
 **Before:**
+
 ```tsx
 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -214,6 +220,7 @@ For future icon additions:
 ```
 
 **After:**
+
 ```tsx
 <RiCloseLine className="w-6 h-6" />
 ```
@@ -236,6 +243,7 @@ For future icon additions:
 ## Testing
 
 Manual testing confirmed:
+
 - All icons render correctly
 - Sizing is consistent across components
 - Colors inherit properly from parent elements

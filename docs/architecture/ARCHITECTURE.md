@@ -83,17 +83,21 @@ Graphium is a local-first desktop application built with Electron that provides 
 ### Main Process Components
 
 #### Window Manager (`electron/main.ts`)
+
 **Responsibilities:**
+
 - Create and manage BrowserWindow instances
 - Handle window lifecycle (close, focus, minimize)
 - Route between Architect View and World View
 
 **Key Functions:**
+
 - `createMainWindow()` - Initialize DM control window
 - `createWorldWindow()` - Initialize player projector window (singleton pattern)
 - Window state management (prevent duplicate World Windows)
 
 **Window Configuration:**
+
 ```typescript
 Main Window:
 - Preload: electron/preload.mjs
@@ -107,26 +111,29 @@ World Window:
 ```
 
 #### IPC Message Router (`electron/main.ts`)
+
 **Responsibilities:**
+
 - Route messages between renderer processes
 - Handle file I/O requests
 - Broadcast state updates
 
 **Channel Definitions:**
 
-| Channel | Direction | Type | Purpose |
-|---------|-----------|------|---------|
-| `create-world-window` | Renderer→Main | send | Open World Window |
-| `SYNC_WORLD_STATE` | Main→World | send | Broadcast state updates |
-| `SYNC_WORLD_STATE` | Main→Main | on | Receive state from Main Window |
-| `SAVE_ASSET_TEMP` | Renderer→Main | invoke | Save uploaded asset, return file path |
-| `SAVE_CAMPAIGN` | Renderer→Main | invoke | Save .graphium file, return success bool |
-| `LOAD_CAMPAIGN` | Renderer→Main | invoke | Load .graphium file, return GameState |
-| `get-theme-state` | Renderer→Main | invoke | Get current theme mode and effective theme |
-| `set-theme-mode` | Renderer→Main | invoke | Set theme mode (light/dark/system) |
-| `theme-changed` | Main→Renderer | send | Broadcast theme updates to all windows |
+| Channel               | Direction     | Type   | Purpose                                    |
+| --------------------- | ------------- | ------ | ------------------------------------------ |
+| `create-world-window` | Renderer→Main | send   | Open World Window                          |
+| `SYNC_WORLD_STATE`    | Main→World    | send   | Broadcast state updates                    |
+| `SYNC_WORLD_STATE`    | Main→Main     | on     | Receive state from Main Window             |
+| `SAVE_ASSET_TEMP`     | Renderer→Main | invoke | Save uploaded asset, return file path      |
+| `SAVE_CAMPAIGN`       | Renderer→Main | invoke | Save .graphium file, return success bool   |
+| `LOAD_CAMPAIGN`       | Renderer→Main | invoke | Load .graphium file, return GameState      |
+| `get-theme-state`     | Renderer→Main | invoke | Get current theme mode and effective theme |
+| `set-theme-mode`      | Renderer→Main | invoke | Set theme mode (light/dark/system)         |
+| `theme-changed`       | Main→Renderer | send   | Broadcast theme updates to all windows     |
 
 **State Broadcast Flow:**
+
 ```
 Main Window updates store
     ↓
@@ -148,12 +155,15 @@ React re-renders World Window canvas
 ```
 
 #### File System Manager (`electron/main.ts`)
+
 **Responsibilities:**
+
 - Save/load campaign files
 - Manage temporary asset storage
 - Extract and archive assets
 
 **Directory Structure:**
+
 ```
 {app.getPath('userData')}/
 ├── temp_assets/
@@ -165,6 +175,7 @@ React re-renders World Window canvas
 ```
 
 **Campaign File Format (`.graphium`):**
+
 ```
 campaign.graphium (ZIP archive)
 ├── manifest.json          # Serialized GameState
@@ -175,6 +186,7 @@ campaign.graphium (ZIP archive)
 ```
 
 **Save Algorithm:**
+
 ```typescript
 1. Show save dialog (filter: .graphium extension)
 2. Create JSZip instance
@@ -190,6 +202,7 @@ campaign.graphium (ZIP archive)
 ```
 
 **Load Algorithm:**
+
 ```typescript
 1. Show open dialog (filter: .graphium extension)
 2. Read zip file as Buffer
@@ -205,19 +218,22 @@ campaign.graphium (ZIP archive)
 ```
 
 #### Custom Protocol Handler (`electron/main.ts`)
+
 **Purpose:** Enable Konva to load local files without CORS/security errors
 
 **Implementation:**
+
 ```typescript
 app.whenReady().then(() => {
   protocol.handle('media', (request) => {
     // Convert media://path → file://path
-    return net.fetch('file://' + request.url.slice('media://'.length))
-  })
-})
+    return net.fetch('file://' + request.url.slice('media://'.length));
+  });
+});
 ```
 
 **Usage Flow:**
+
 ```
 gameStore stores: file:///Users/dm/Graphium/temp_assets/token.webp
     ↓
@@ -233,12 +249,15 @@ Returns image data
 ```
 
 #### Theme Manager (`electron/themeManager.ts`)
+
 **Responsibilities:**
+
 - Persist user theme preference (light/dark/system)
 - Synchronize with OS theme changes
 - Broadcast theme updates to all renderer windows
 
 **Storage:**
+
 ```typescript
 Location: {app.getPath('userData')}/theme-preferences.json
 Schema: { theme: 'light' | 'dark' | 'system' }
@@ -246,6 +265,7 @@ Default: 'system'
 ```
 
 **Key Functions:**
+
 ```typescript
 getThemeMode(): ThemeMode
   - Returns stored theme preference
@@ -265,6 +285,7 @@ initializeThemeManager(): void
 ```
 
 **Theme Broadcast Flow:**
+
 ```
 User selects theme (menu or IPC)
     ↓
@@ -290,6 +311,7 @@ UI re-renders with new colors
 ```
 
 **Application Menu Integration:**
+
 ```typescript
 View → Theme
   ├─ ● Light
@@ -404,20 +426,21 @@ return (
 CanvasManager receives `isWorldView` prop and restricts editing capabilities while preserving
 navigation features:
 
-| Feature | Architect View | World View | Implementation |
-|---------|---------------|------------|----------------|
-| **Pan canvas** | ✅ Enabled | ✅ Enabled | No restrictions (space+drag, wheel scroll) |
-| **Zoom** | ✅ Enabled | ✅ Enabled | No restrictions (ctrl+wheel, pinch, +/-) |
-| **Select tokens** | ✅ Enabled | ✅ Enabled | No restrictions (click to select) |
-| **Drag tokens** | ✅ Enabled | ✅ Enabled | No restrictions (drag to move) |
-| **Drawing tools** | ✅ Enabled | ❌ Blocked | `if (isWorldView) return` in handleMouseDown/Move/Up |
-| **File drops** | ✅ Enabled | ❌ Blocked | `if (isWorldView) return` in handleDrop/DragOver |
-| **Delete tokens** | ✅ Enabled | ❌ Blocked | `if (isWorldView) return` in Delete/Backspace handler |
-| **Calibration** | ✅ Enabled | ❌ Blocked | `if (isWorldView) return` in calibration handlers |
-| **Transform** | ✅ Enabled | ❌ Blocked | `{!isWorldView && <Transformer />}` conditional render |
-| **Duplication** | ✅ Enabled | ❌ Blocked | `if (isAltPressed && !isWorldView)` in drag handlers |
+| Feature           | Architect View | World View | Implementation                                         |
+| ----------------- | -------------- | ---------- | ------------------------------------------------------ |
+| **Pan canvas**    | ✅ Enabled     | ✅ Enabled | No restrictions (space+drag, wheel scroll)             |
+| **Zoom**          | ✅ Enabled     | ✅ Enabled | No restrictions (ctrl+wheel, pinch, +/-)               |
+| **Select tokens** | ✅ Enabled     | ✅ Enabled | No restrictions (click to select)                      |
+| **Drag tokens**   | ✅ Enabled     | ✅ Enabled | No restrictions (drag to move)                         |
+| **Drawing tools** | ✅ Enabled     | ❌ Blocked | `if (isWorldView) return` in handleMouseDown/Move/Up   |
+| **File drops**    | ✅ Enabled     | ❌ Blocked | `if (isWorldView) return` in handleDrop/DragOver       |
+| **Delete tokens** | ✅ Enabled     | ❌ Blocked | `if (isWorldView) return` in Delete/Backspace handler  |
+| **Calibration**   | ✅ Enabled     | ❌ Blocked | `if (isWorldView) return` in calibration handlers      |
+| **Transform**     | ✅ Enabled     | ❌ Blocked | `{!isWorldView && <Transformer />}` conditional render |
+| **Duplication**   | ✅ Enabled     | ❌ Blocked | `if (isAltPressed && !isWorldView)` in drag handlers   |
 
 **Restriction Pattern:**
+
 ```typescript
 // Early return pattern for blocking interactions
 const handleDrop = (e: React.DragEvent) => {
@@ -430,12 +453,14 @@ const handleDrop = (e: React.DragEvent) => {
 ```
 
 **State Synchronization:**
+
 - **Architect View**: PRODUCER mode - all state changes broadcast via IPC
 - **World View**: CONSUMER mode - receives state updates via IPC, never modifies state
 - Token dragging in World View updates position locally but does NOT broadcast changes
   (only Architect View broadcasts)
 
 **Benefits:**
+
 1. **Security**: Players cannot accidentally modify game state
 2. **Immersion**: Clean canvas view without DM controls improves player experience
 3. **Simplicity**: Same React app, no code duplication, single source of truth
@@ -443,12 +468,14 @@ const handleDrop = (e: React.DragEvent) => {
 5. **Maintainability**: Clear separation via single `isWorldView` prop
 
 **Design Decision Rationale:**
+
 - Chose URL parameter over IPC flag: Simpler, no async initialization, works on first render
 - Chose component-level restrictions over separate routes: Reduces code duplication
 - Kept token dragging enabled: Allows DM to demonstrate movement on projector
 - Blocked transformation: Prevents accidental resizing during projection
 
 **See also:**
+
 - Implementation: src/utils/useWindowType.ts, src/App.tsx:77-78, src/components/Canvas/CanvasManager.tsx:91
 - Window creation: electron/main.ts:243-263
 - State sync: src/components/SyncManager.tsx:80-122
@@ -458,36 +485,37 @@ const handleDrop = (e: React.DragEvent) => {
 **Store:** `src/store/gameStore.ts` (Zustand)
 
 **State Shape:**
+
 ```typescript
 interface GameState {
   // Data
-  tokens: Token[]       // Draggable character/creature markers
-  drawings: Drawing[]   // Freehand marker/eraser strokes
-  gridSize: number      // Pixels per grid cell (default: 50)
+  tokens: Token[]; // Draggable character/creature markers
+  drawings: Drawing[]; // Freehand marker/eraser strokes
+  gridSize: number; // Pixels per grid cell (default: 50)
 
   // Actions
-  addToken: (token: Token) => void
-  updateTokenPosition: (id: string, x: number, y: number) => void
-  addDrawing: (drawing: Drawing) => void
-  setGridSize: (size: number) => void
-  setState: (partial: Partial<GameState>) => void  // Bulk updates
-  setTokens: (tokens: Token[]) => void
+  addToken: (token: Token) => void;
+  updateTokenPosition: (id: string, x: number, y: number) => void;
+  addDrawing: (drawing: Drawing) => void;
+  setGridSize: (size: number) => void;
+  setState: (partial: Partial<GameState>) => void; // Bulk updates
+  setTokens: (tokens: Token[]) => void;
 }
 
 interface Token {
-  id: string        // crypto.randomUUID()
-  x: number         // Grid-snapped X coordinate
-  y: number         // Grid-snapped Y coordinate
-  src: string       // file:// URL or https:// URL
-  scale: number     // Multiplier for grid size (1 = 1x1, 2 = 2x2)
+  id: string; // crypto.randomUUID()
+  x: number; // Grid-snapped X coordinate
+  y: number; // Grid-snapped Y coordinate
+  src: string; // file:// URL or https:// URL
+  scale: number; // Multiplier for grid size (1 = 1x1, 2 = 2x2)
 }
 
 interface Drawing {
-  id: string              // crypto.randomUUID()
-  tool: 'marker' | 'eraser'
-  points: number[]        // [x1, y1, x2, y2, x3, y3, ...]
-  color: string           // Hex color (#df4b26 for marker, #000000 for eraser)
-  size: number            // Stroke width (5 for marker, 20 for eraser)
+  id: string; // crypto.randomUUID()
+  tool: 'marker' | 'eraser';
+  points: number[]; // [x1, y1, x2, y2, x3, y3, ...]
+  color: string; // Hex color (#df4b26 for marker, #000000 for eraser)
+  size: number; // Stroke width (5 for marker, 20 for eraser)
 }
 ```
 
@@ -524,6 +552,7 @@ useEffect(() => {
 ```
 
 **Store Mutation Rules:**
+
 1. NEVER mutate state directly: `state.tokens.push()` ❌
 2. ALWAYS use actions: `addToken(token)` ✅
 3. Actions use `set()` with new references: `set({ tokens: [...prev, new] })` ✅
@@ -534,6 +563,7 @@ useEffect(() => {
 **Technology:** Konva.js (HTML5 Canvas wrapper)
 
 **Why Konva?**
+
 - Declarative React API (react-konva)
 - High performance (60fps with 100+ tokens)
 - Built-in drag-and-drop, transformations
@@ -556,6 +586,7 @@ Display on screen (60fps)
 ```
 
 **Layer Order (bottom to top):**
+
 1. **GridOverlay** - Background grid lines (non-interactive)
 2. **FogOfWarLayer** - (World View only) Overlay containing Blurred Map + Vision Cutouts
 3. **Background Map** - Base image (Sharp in Architect View, Sharp in World View visible through cutouts)
@@ -563,6 +594,7 @@ Display on screen (60fps)
 5. **Tokens** - Draggable images (top layer, interactive)
 
 **Performance Optimization:**
+
 - GridOverlay has `listening={false}` (no event handlers, saves CPU)
 - Temp line uses local state (avoids store updates during drag)
 - Images pre-optimized to WebP (smaller file size = faster load)
@@ -641,14 +673,14 @@ User drops file onto canvas
 
 **Optimization Details:**
 
-| Aspect | Approach | Rationale |
-|--------|----------|-----------|
-| **Format** | WebP (quality 0.85) | 30-50% smaller than PNG/JPG, wide browser support |
-| **Resize** | Max dimensions (512px/4096px) | Prevents memory issues, maintains 60fps |
-| **Aspect Ratio** | Preserved during resize | Avoids distortion |
-| **Cropping** | Before resize | User removes unwanted areas first |
-| **Canvas** | OffscreenCanvas | Faster than DOM canvas (no reflow/repaint) |
-| **Storage** | Temp files, not in-memory | Avoid RAM bloat with many assets |
+| Aspect           | Approach                      | Rationale                                         |
+| ---------------- | ----------------------------- | ------------------------------------------------- |
+| **Format**       | WebP (quality 0.85)           | 30-50% smaller than PNG/JPG, wide browser support |
+| **Resize**       | Max dimensions (512px/4096px) | Prevents memory issues, maintains 60fps           |
+| **Aspect Ratio** | Preserved during resize       | Avoids distortion                                 |
+| **Cropping**     | Before resize                 | User removes unwanted areas first                 |
+| **Canvas**       | OffscreenCanvas               | Faster than DOM canvas (no reflow/repaint)        |
+| **Storage**      | Temp files, not in-memory     | Avoid RAM bloat with many assets                  |
 
 ## Data Flow Patterns
 
@@ -787,6 +819,7 @@ User drops file onto canvas
 ```
 
 **Why temp line pattern?**
+
 - **Performance:** Avoid IPC spam (60 updates/sec would overwhelm World Window)
 - **Consistency:** Drawing appears smooth in Main Window during drag
 - **Sync:** World Window receives final drawing in one update (on mouse up)
@@ -877,11 +910,11 @@ User drops file onto canvas
 
 **Key Transformations:**
 
-| Stage | Token.src Value | Location |
-|-------|----------------|----------|
-| In-memory (gameStore) | `file:///Users/.../temp_assets/token.webp` | RAM |
-| Being saved (cloned state) | `assets/token.webp` | ZIP archive |
-| On disk (.graphium file) | `assets/token.webp` | Compressed file |
+| Stage                      | Token.src Value                            | Location        |
+| -------------------------- | ------------------------------------------ | --------------- |
+| In-memory (gameStore)      | `file:///Users/.../temp_assets/token.webp` | RAM             |
+| Being saved (cloned state) | `assets/token.webp`                        | ZIP archive     |
+| On disk (.graphium file)   | `assets/token.webp`                        | Compressed file |
 
 ### Pattern 4: Load Campaign
 
@@ -978,23 +1011,25 @@ User drops file onto canvas
 
 **Key Transformations:**
 
-| Stage | Token.src Value | Location |
-|-------|----------------|----------|
-| On disk (.graphium file) | `assets/token.webp` | ZIP archive |
-| Extracted (session dir) | `file:///.../sessions/{timestamp}/assets/token.webp` | Filesystem |
-| In-memory (gameStore) | `file:///.../sessions/{timestamp}/assets/token.webp` | RAM |
-| Rendered (Konva) | `media:///.../sessions/{timestamp}/assets/token.webp` | Canvas |
+| Stage                    | Token.src Value                                       | Location    |
+| ------------------------ | ----------------------------------------------------- | ----------- |
+| On disk (.graphium file) | `assets/token.webp`                                   | ZIP archive |
+| Extracted (session dir)  | `file:///.../sessions/{timestamp}/assets/token.webp`  | Filesystem  |
+| In-memory (gameStore)    | `file:///.../sessions/{timestamp}/assets/token.webp`  | RAM         |
+| Rendered (Konva)         | `media:///.../sessions/{timestamp}/assets/token.webp` | Canvas      |
 
 ## Security Architecture
 
 ### Electron Security Model
 
 **Context Isolation:** Enabled via `contextBridge`
+
 - Renderer process does NOT have direct Node.js access
 - All main process communication goes through whitelisted IPC channels
 - Prevents arbitrary code execution from renderer
 
 **Preload Script Pattern:**
+
 ```typescript
 // electron/preload.ts
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -1003,15 +1038,17 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   invoke: (...args) => ipcRenderer.invoke(...args),
   on: (...args) => ipcRenderer.on(...args),
   off: (...args) => ipcRenderer.off(...args),
-})
+});
 ```
 
 **⚠️ Current Security Issue:**
+
 - Preload exposes ALL IPC channels (no channel whitelist)
 - Renderer can invoke arbitrary channel names
 - **Recommendation:** Restrict to specific channels only
 
 **Recommended Fix:**
+
 ```typescript
 // Better: Whitelist specific channels
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -1020,21 +1057,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveAsset: (buffer, name) => ipcRenderer.invoke('SAVE_ASSET_TEMP', buffer, name),
   openWorldWindow: () => ipcRenderer.send('create-world-window'),
   onStateSync: (callback) => {
-    const subscription = (_event, state) => callback(state)
-    ipcRenderer.on('SYNC_WORLD_STATE', subscription)
-    return () => ipcRenderer.off('SYNC_WORLD_STATE', subscription)
+    const subscription = (_event, state) => callback(state);
+    ipcRenderer.on('SYNC_WORLD_STATE', subscription);
+    return () => ipcRenderer.off('SYNC_WORLD_STATE', subscription);
   },
-})
+});
 ```
 
 ### File System Sandboxing
 
 **Restricted Paths:**
+
 - Main process only accesses `app.getPath('userData')` directory
 - No arbitrary file system writes (except user-selected save paths)
 - Temp files scoped to app data directory
 
 **User Data Directory:**
+
 ```
 macOS:    ~/Library/Application Support/Graphium/
 Windows:  C:\Users\{user}\AppData\Roaming\Graphium\
@@ -1044,23 +1083,25 @@ Linux:    ~/.config/Graphium/
 ### Data Validation
 
 **Current State:** Minimal validation
+
 - Campaign loads trust manifest.json structure
 - No schema validation on loaded data
 - Missing type guards for IPC payloads
 
 **Recommended Validation:**
+
 ```typescript
 // Validate loaded campaign data
 function isValidGameState(data: unknown): data is GameState {
-  if (typeof data !== 'object' || data === null) return false
-  const state = data as any
+  if (typeof data !== 'object' || data === null) return false;
+  const state = data as any;
   return (
     Array.isArray(state.tokens) &&
     Array.isArray(state.drawings) &&
     typeof state.gridSize === 'number' &&
     state.tokens.every(isValidToken) &&
     state.drawings.every(isValidDrawing)
-  )
+  );
 }
 ```
 
@@ -1069,6 +1110,7 @@ function isValidGameState(data: unknown): data is GameState {
 ### Current Limitations
 
 **Performance Bottlenecks:**
+
 1. **Grid Overlay:** Creates `O(n*m)` Line components
    - 4096×4096px canvas at 50px grid = 81×81 = 6561 lines
    - Could optimize with single Path or memoization
@@ -1082,6 +1124,7 @@ function isValidGameState(data: unknown): data is GameState {
    - Large canvases (100+ tokens) may see load delays
 
 **Storage Limitations:**
+
 1. **Temp Assets:** Never cleaned up (accumulate in userData)
    - Potential fix: Clear on app quit or implement LRU cache
 
@@ -1092,18 +1135,21 @@ function isValidGameState(data: unknown): data is GameState {
 ### Scalability Recommendations
 
 **For Large Campaigns (100+ tokens):**
+
 1. Implement viewport culling (only render visible tokens)
 2. Use Konva.Group for batch transformations
 3. Lazy-load images (load only when in viewport)
 4. Implement token paging (load/unload in chunks)
 
 **For Multiplayer (Future Feature):**
+
 1. Replace IPC with WebSocket server
 2. Implement operational transform for conflict resolution
 3. Add state versioning (detect out-of-sync clients)
 4. Throttle state broadcasts (e.g., 10 updates/sec max)
 
 **For Fog of War (Planned Feature):**
+
 1. Use separate Layer for fog (avoid re-rendering tokens)
 2. Store fog as vector shapes (not raster bitmap)
 3. Use `globalCompositeOperation: 'destination-out'` for reveals
@@ -1112,28 +1158,36 @@ function isValidGameState(data: unknown): data is GameState {
 ## Technology Choices and Rationale
 
 ### Electron
+
 **Chosen for:**
+
 - Native desktop app (no browser chrome)
 - Access to file system (save/load campaigns)
 - Multi-window support (Architect + World View)
 - Cross-platform (macOS, Windows, Linux)
 
 ### React + Vite
+
 **Chosen for:**
+
 - Fast development with HMR (hot module replacement)
 - Component-based UI (reusable patterns)
 - Large ecosystem (react-konva, react-easy-crop, etc.)
 - TypeScript support out-of-box
 
 ### Zustand
+
 **Chosen for:**
+
 - Minimal boilerplate (vs Redux)
 - Built-in subscription API (needed for IPC sync)
 - No Context Provider wrapper (simpler setup)
 - TypeScript-first design
 
 ### Konva
+
 **Chosen for:**
+
 - Declarative canvas API (vs imperative Canvas API)
 - React integration (react-konva)
 - Built-in drag/drop, transformations
@@ -1141,14 +1195,18 @@ function isValidGameState(data: unknown): data is GameState {
 - Shape primitives (Line, Rect, Circle for future tools)
 
 ### WebP
+
 **Chosen for:**
+
 - Best compression ratio (vs PNG/JPG)
 - Supports transparency (needed for tokens)
 - Lossy + lossless modes (0.85 quality balances both)
 - Browser support mature (Chrome, Firefox, Safari)
 
 ### Local-First Architecture
+
 **Chosen for:**
+
 - Data ownership (users control campaign files)
 - Privacy (no cloud uploads)
 - Offline-first (no internet required)
@@ -1157,9 +1215,11 @@ function isValidGameState(data: unknown): data is GameState {
 ## Future Architecture Considerations
 
 ### Implemented: Fog of War System
+
 **Status:** ✅ Implemented
 
 **Implementation:**
+
 1. `exploredRegions: ExploredRegion[]` in gameStore tracks previously seen areas
 2. `FogOfWarLayer` renders fog overlay (World View only)
 3. Uses `globalCompositeOperation: 'destination-out'` for vision cutouts
@@ -1168,60 +1228,72 @@ function isValidGameState(data: unknown): data is GameState {
 6. Works with or without map (hand-drawn maps supported)
 
 **Features:**
+
 - Raycasting-based vision calculation (360-degree raycasting with wall occlusion)
 - Explored fog of war (previously seen areas remain dimly visible)
 - Performance optimized with visibility polygon caching
 - Syncs between Architect and World View via IPC
 
 **Files:**
+
 - Component: `src/components/Canvas/FogOfWarLayer.tsx`
 - State: `src/store/gameStore.ts` (exploredRegions, isDaylightMode)
 - UI: `src/components/Sidebar.tsx` (ToggleSwitch for Daylight Mode)
 - Rendering: `src/components/Canvas/CanvasManager.tsx` (conditional fog layer)
 
 ### Planned: Additional Drawing Tools
+
 **Shapes:**
+
 - Rectangle, Circle, Line (for marking zones)
 - Text labels (Konva.Text)
 - Ruler (measure grid distances, non-persistent overlay)
 
 **Implementation:**
+
 - Extend `Drawing` interface with `shape?: 'line' | 'rect' | 'circle' | 'text'`
 - Add shape-specific properties (e.g., `radius`, `text`, `fontSize`)
 - Render with appropriate Konva components
 
 ### Potential: Undo/Redo System
+
 **Approach:**
+
 1. Implement state history (stack of GameState snapshots)
 2. Add actions: `undo()`, `redo()`
 3. Keyboard shortcuts: Cmd+Z, Cmd+Shift+Z
 4. Limit history depth (e.g., 50 actions)
 
 **Challenges:**
+
 - Large state size (deep cloning on every action)
 - File paths in state (can't undo file writes)
 - Sync undo/redo to World Window (broadcast history index)
 
 ### Potential: Asset Library Management
+
 **Features:**
+
 - Persistent library (separate from campaigns)
 - Categories (monsters, heroes, items, terrain)
 - Search/filter tokens
 - Bulk import (drag folder)
 
 **Data Model:**
+
 ```typescript
 interface LibraryAsset {
-  id: string
-  name: string
-  category: string
-  src: string  // Stored in userData/library/
-  tags: string[]
-  dateAdded: number
+  id: string;
+  name: string;
+  category: string;
+  src: string; // Stored in userData/library/
+  tags: string[];
+  dateAdded: number;
 }
 ```
 
 **Storage:**
+
 - Library metadata: `userData/library.json`
 - Asset files: `userData/library/{id}.webp`
 - Separate from campaign assets (reusable across campaigns)
@@ -1231,52 +1303,59 @@ interface LibraryAsset {
 ### Development Tools
 
 **React DevTools:**
+
 - Install browser extension
 - Inspect component tree, props, state
 - Profile component re-renders
 
 **Electron DevTools:**
+
 - Open in Main Window: Cmd+Option+I (macOS) or F12 (Windows/Linux)
 - Network tab: Inspect IPC messages (not directly shown, use logging)
 - Console: View renderer process logs
 
 **Logging Strategy:**
+
 ```typescript
 // Main Process
-console.log('[MAIN]', message)
+console.log('[MAIN]', message);
 
 // Renderer (Main Window)
-console.log('[ARCHITECT]', message)
+console.log('[ARCHITECT]', message);
 
 // Renderer (World Window)
-console.log('[WORLD]', message)
+console.log('[WORLD]', message);
 
 // IPC
-console.log('[IPC → MAIN]', channel, data)
-console.log('[IPC → WORLD]', channel, data)
+console.log('[IPC → MAIN]', channel, data);
+console.log('[IPC → WORLD]', channel, data);
 ```
 
 ### Common Issues and Diagnosis
 
 **Issue: World Window not syncing**
+
 1. Check window is open: `worldWindow && !worldWindow.isDestroyed()`
 2. Verify SyncManager subscription is active (Main Window)
 3. Add logging to IPC send/receive
 4. Confirm World Window detected correctly (`?type=world` in URL)
 
 **Issue: Tokens not rendering**
+
 1. Check src path format (`file://` vs `media://`)
 2. Verify protocol handler registered (`app.whenReady()`)
 3. Inspect Network tab for failed loads
 4. Confirm file exists at path (console.log full path)
 
 **Issue: Save/load fails**
+
 1. Check file dialog returned path (user may have cancelled)
 2. Verify userData directory exists (`app.getPath('userData')`)
 3. Inspect ZIP contents (unzip .graphium file manually)
 4. Check JSON.parse errors (malformed manifest.json)
 
 **Issue: Drawing performance lag**
+
 1. Check number of points in drawings (too many = slow render)
 2. Verify tempLine pattern used (not updating store on mousemove)
 3. Profile with React DevTools (identify unnecessary re-renders)
@@ -1327,6 +1406,7 @@ Graphium/
 ## Theme System Architecture
 
 ### Overview
+
 The theme system provides accessible light/dark mode with WCAG AA compliance. It uses a two-layer architecture: Radix Colors for raw color scales and semantic CSS variables for component styling.
 
 ### Component: ThemeManager (`src/components/ThemeManager.tsx`)
@@ -1334,41 +1414,44 @@ The theme system provides accessible light/dark mode with WCAG AA compliance. It
 **Purpose:** Renderer-side component that applies theme to the DOM.
 
 **Responsibilities:**
+
 - Fetch initial theme state from main process on mount
 - Apply `data-theme` attribute to `<html>` element
 - Subscribe to theme change broadcasts
 - Prevent theme flash on load (FOUC)
 
 **Implementation:**
+
 ```typescript
 export function ThemeManager() {
   useEffect(() => {
     async function initializeTheme() {
       // 1. Get theme from main process
-      const { effectiveTheme } = await window.themeAPI.getThemeState()
+      const { effectiveTheme } = await window.themeAPI.getThemeState();
 
       // 2. Apply data-theme attribute
-      document.documentElement.setAttribute('data-theme', effectiveTheme)
+      document.documentElement.setAttribute('data-theme', effectiveTheme);
 
       // 3. Subscribe to theme changes
       const cleanup = window.themeAPI.onThemeChanged(({ effectiveTheme }) => {
-        document.documentElement.setAttribute('data-theme', effectiveTheme)
-      })
+        document.documentElement.setAttribute('data-theme', effectiveTheme);
+      });
 
       // 4. Remove loading class to enable transitions
-      document.body.classList.remove('theme-loading')
+      document.body.classList.remove('theme-loading');
 
-      return cleanup
+      return cleanup;
     }
 
-    initializeTheme()
-  }, [])
+    initializeTheme();
+  }, []);
 
-  return null // No visual output
+  return null; // No visual output
 }
 ```
 
 **FOUC Prevention Flow:**
+
 ```
 index.html synchronous script (before CSS loads)
     ↓
@@ -1394,6 +1477,7 @@ Enable CSS transitions
 ### CSS Architecture
 
 **File Structure:**
+
 ```
 src/styles/
 ├── theme.css       # Radix overrides + semantic variables
@@ -1401,26 +1485,29 @@ src/styles/
 ```
 
 **theme.css** - Two-layer system:
+
 ```css
 /* Layer 1: Radix Colors (raw scales) */
-[data-theme="dark"] {
-  --slate-1: #111113;   /* Darkest background */
-  --slate-12: #eeeef0;  /* Lightest text */
-  --blue-9: #0090ff;    /* Accent solid */
+[data-theme='dark'] {
+  --slate-1: #111113; /* Darkest background */
+  --slate-12: #eeeef0; /* Lightest text */
+  --blue-9: #0090ff; /* Accent solid */
   /* ... 12 steps per color */
 }
 
 /* Layer 2: Semantic Variables (abstraction) */
-:root, [data-theme="light"] {
-  --app-bg-base: var(--slate-1);        /* Page background */
-  --app-bg-surface: var(--slate-3);     /* Elevated surfaces */
-  --app-text-primary: var(--slate-12);  /* Main text */
-  --app-accent-solid: var(--blue-9);    /* Primary buttons */
+:root,
+[data-theme='light'] {
+  --app-bg-base: var(--slate-1); /* Page background */
+  --app-bg-surface: var(--slate-3); /* Elevated surfaces */
+  --app-text-primary: var(--slate-12); /* Main text */
+  --app-accent-solid: var(--blue-9); /* Primary buttons */
   /* ... 30+ semantic variables */
 }
 ```
 
 **app.css** - Component classes using semantic variables:
+
 ```css
 .app-root {
   background: var(--app-bg-base);
@@ -1481,11 +1568,13 @@ useEffect(() => {
 **WCAG 2.1 Level AA Status:** ✅ Compliant
 
 All text and UI components meet minimum contrast requirements:
+
 - Normal text: ≥ 4.5:1 contrast ratio
 - Large text: ≥ 3:1 contrast ratio
 - UI components: ≥ 3:1 contrast ratio
 
 **Radix Guarantees:**
+
 - Steps 1-3: Background surfaces (safe for backgrounds)
 - Steps 9-12: High contrast (safe for text on Step 1-3)
 - Step 11-12 on Step 1-2: Always ≥ 4.5:1 (WCAG AA pass)
@@ -1493,6 +1582,7 @@ All text and UI components meet minimum contrast requirements:
 **Testing:** Automated with Playwright + axe-core (see `tests/accessibility.spec.ts`)
 
 ### Documentation
+
 - **THEMING.md** - Developer guide for using the theme system
 - **WCAG_CONTRAST_AUDIT.md** - Detailed accessibility compliance audit
 - **THEME_IMPLEMENTATION_SUMMARY.md** - Implementation review summary
@@ -1500,29 +1590,35 @@ All text and UI components meet minimum contrast requirements:
 ## Build and Deployment
 
 ### Development Build
+
 ```bash
 npm run dev
 ```
+
 - Vite dev server on http://localhost:5173
 - Electron launches with HMR enabled
 - Hot reload on file changes (React components)
 - Electron restart on main process changes
 
 ### Production Build
+
 ```bash
 npm run build
 ```
+
 1. TypeScript compilation (`tsc`)
 2. Vite build (bundle React app to `dist/`)
 3. Electron build (compile main/preload to `dist-electron/`)
 4. electron-builder packages app (create installer/executable)
 
 **Output:**
+
 - macOS: `Graphium.dmg`, `Graphium.app`
 - Windows: `Graphium Setup.exe`, `Graphium.exe` (portable)
 - Linux: `Graphium.AppImage`, `Graphium.deb`, `Graphium.rpm`
 
 ### Distribution
+
 - Self-contained executables (no installer required for portable versions)
 - Includes Node.js runtime and Chromium
 - File associations: `.graphium` files open with Graphium (configurable in electron-builder.json5)
@@ -1530,6 +1626,7 @@ npm run build
 ## Conclusion
 
 Graphium's architecture prioritizes:
+
 1. **Real-time synchronization** between DM and player views
 2. **Performance** through optimized rendering and asset processing
 3. **Data ownership** via local-first design

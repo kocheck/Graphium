@@ -41,6 +41,7 @@ This directory contains automated workflows for Graphium repository maintenance.
 ### Usage
 
 The workflow runs automatically when:
+
 - A pull request is opened to `main` branch
 - A pull request to `main` is updated (new commits)
 - A pull request to `main` is reopened
@@ -52,6 +53,7 @@ The workflow runs automatically when:
 The workflow analyzes code changes against:
 
 **Core Documentation:**
+
 - `.cursorrules` - AI assistant reference (root)
 - `docs/documentation-inventory.md` - Documentation catalog
 - `docs/architecture/ARCHITECTURE.md` - System architecture
@@ -66,6 +68,7 @@ The workflow analyzes code changes against:
 - `docs/planning/*` - Project planning docs
 
 **Directory READMEs (6 files):**
+
 - `electron/README.md`
 - `src/README.md`
 - `src/components/README.md`
@@ -74,6 +77,7 @@ The workflow analyzes code changes against:
 - `src/utils/README.md`
 
 **Inline Documentation:**
+
 - JSDoc in modified files
 
 ### Example Output
@@ -88,11 +92,13 @@ GitHub Copilot has analyzed this PR for documentation impact.
 **Documentation Impact:** High
 
 **Files Needing Updates:**
+
 - `IPC_API.md` - Add documentation for new `CLEAR_DRAWINGS` IPC channel
 - `src/App.tsx` - Add JSDoc to new `clearDrawings` handler function
 - `.cursorrules` - Update with new clear drawings pattern
 
 **Required Changes:**
+
 1. **docs/architecture/IPC_API.md**: Add new section documenting CLEAR_DRAWINGS channel with usage, parameters, examples
 2. **App.tsx JSDoc**: Document new button handler with rationale and cross-reference to IPC handler
 3. **.cursorrules**: Add clear drawings to common tasks section
@@ -101,6 +107,7 @@ GitHub Copilot has analyzed this PR for documentation impact.
 None required
 
 ---
+
 [View Documentation Index](../../docs/documentation-inventory.md)
 ```
 
@@ -115,7 +122,7 @@ on:
   pull_request:
     branches:
       - main
-      - develop  # Add more branches
+      - develop # Add more branches
 ```
 
 **Change impact threshold for labeling:**
@@ -144,6 +151,7 @@ Edit the model in the workflow:
 ```
 
 Available models:
+
 - `gpt-4o` - Most capable (default)
 - `gpt-4o-mini` - Faster and more cost-effective
 - `gpt-4-turbo` - Alternative high-quality model
@@ -186,10 +194,12 @@ Available models:
   - Enterprise: Custom pricing
 
 **Typical usage:**
+
 - Per PR analysis: Minimal token usage (~3-5K tokens)
 - 100 PRs/month: Well within free tier or included limits
 
 **Cost comparison:**
+
 - GitHub Copilot approach: **$0/month** (if you already have Copilot)
 - Claude API approach: **~$1/month** for 100 PRs
 
@@ -206,6 +216,7 @@ The repository also includes `documentation-check-simple.yml` which uses pattern
 - ❌ Fixed rules only
 
 To use the simple workflow instead:
+
 1. Disable `documentation-check.yml`
 2. Enable `documentation-check-simple.yml`
 
@@ -242,16 +253,19 @@ GitHub Models may release new models. Check available models and update:
 **What is GitHub Models?**
 
 GitHub Models provides access to AI models through Azure OpenAI Service:
+
 - GPT-4o and other OpenAI models
 - Claude models (via Azure)
 - Other AI models as they become available
 
 **Data Processing:**
+
 - Requests are processed through Azure OpenAI
 - Subject to GitHub's data processing agreement
 - Not used to train AI models (per GitHub's policy)
 
 **Access:**
+
 - Public repositories: Generally available
 - Private repositories: Requires GitHub Copilot subscription
 - Rate limits apply per repository
@@ -273,6 +287,7 @@ GitHub Models provides access to AI models through Azure OpenAI Service:
 A rule-based alternative that doesn't use AI:
 
 **Features:**
+
 - ✅ Pattern matching for file changes
 - ✅ No AI or API required
 - ✅ Zero setup or configuration
@@ -280,11 +295,13 @@ A rule-based alternative that doesn't use AI:
 - ✅ Predictable suggestions
 
 **How it works:**
+
 - Detects which directories/files were modified
 - Suggests relevant documentation based on patterns
 - Posts recommendations as PR comment
 
 **When to use:**
+
 - You don't have GitHub Copilot subscription
 - You prefer deterministic rule-based checks
 - Your repository has simple documentation update patterns
@@ -376,7 +393,7 @@ Add `prerelease: true` to the release job:
 - name: Create Release
   uses: softprops/action-gh-release@v1
   with:
-    prerelease: true  # Add this line
+    prerelease: true # Add this line
 ```
 
 **Add release notes automatically:**
@@ -385,7 +402,7 @@ Add `prerelease: true` to the release job:
 - name: Create Release
   uses: softprops/action-gh-release@v1
   with:
-    generate_release_notes: true  # Change to true
+    generate_release_notes: true # Change to true
 ```
 
 **Draft release instead of publishing:**
@@ -394,7 +411,7 @@ Add `prerelease: true` to the release job:
 - name: Create Release
   uses: softprops/action-gh-release@v1
   with:
-    draft: true  # Change to true
+    draft: true # Change to true
 ```
 
 ### Troubleshooting
@@ -426,7 +443,7 @@ Add `prerelease: true` to the release job:
 **Issue: Artifacts not uploaded**
 
 - Check file paths in upload-artifact steps
-- Verify files were actually created in release/*/
+- Verify files were actually created in release/\*/
 - Review artifact upload logs
 
 ### Cost
@@ -449,6 +466,7 @@ Add `prerelease: true` to the release job:
 - ⚠️ Installers are NOT code-signed (users will see security warnings)
 
 To add code signing, you'll need to:
+
 1. Get a developer certificate (Apple Developer, Windows Code Signing)
 2. Add certificates as repository secrets
 3. Update workflow to use signing keys

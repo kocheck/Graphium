@@ -51,7 +51,16 @@ interface MobileToolbarProps {
   onPauseToggle: () => void;
 }
 
-const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'horizontal', setDoorOrientation, isGamePaused, onPauseToggle }: MobileToolbarProps) => {
+const MobileToolbar = ({
+  tool,
+  setTool,
+  color,
+  setColor,
+  doorOrientation = 'horizontal',
+  setDoorOrientation,
+  isGamePaused,
+  onPauseToggle,
+}: MobileToolbarProps) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -89,10 +98,7 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
       {showMoreMenu && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowMoreMenu(false)}
-          />
+          <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setShowMoreMenu(false)} />
 
           {/* Menu */}
           <div
@@ -112,7 +118,9 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
               }}
               className="w-full px-4 py-4 text-left flex items-center gap-3 min-h-[56px]"
               style={{
-                backgroundColor: isGamePaused ? 'var(--app-error-solid)' : 'var(--app-success-solid)',
+                backgroundColor: isGamePaused
+                  ? 'var(--app-error-solid)'
+                  : 'var(--app-success-solid)',
                 color: 'white',
                 borderBottomWidth: '1px',
                 borderBottomStyle: 'solid',
@@ -157,7 +165,9 @@ const MobileToolbar = ({ tool, setTool, color, setColor, doorOrientation = 'hori
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setDoorOrientation(doorOrientation === 'horizontal' ? 'vertical' : 'horizontal');
+                    setDoorOrientation(
+                      doorOrientation === 'horizontal' ? 'vertical' : 'horizontal',
+                    );
                   }}
                   className="px-3 py-1 rounded text-sm"
                   style={{

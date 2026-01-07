@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   RiPlayFill,
   RiPauseFill,
@@ -7,25 +7,25 @@ import {
   RiEraserLine,
   RiLayoutMasonryLine,
   RiDoorOpenLine,
-  RiRulerLine
-} from '@remixicon/react'
-import CanvasManager from './components/Canvas/CanvasManager'
-import SyncManager from './components/SyncManager'
-import { ThemeManager } from './components/ThemeManager'
-import { PauseManager } from './components/PauseManager'
-import { LoadingOverlay } from './components/LoadingOverlay'
-import Sidebar from './components/Sidebar'
-import Toast from './components/Toast'
-import ConfirmDialog from './components/ConfirmDialog'
-import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog'
-import TokenInspector from './components/TokenInspector'
-import ResourceMonitor from './components/ResourceMonitor'
-import { HomeScreen } from './components/HomeScreen'
-import { useGameStore } from './store/gameStore'
-import { useWindowType } from './utils/useWindowType'
-import AutoSaveManager from './components/AutoSaveManager'
-import CommandPalette from './components/AssetLibrary/CommandPalette'
-import { useCommandPalette } from './hooks/useCommandPalette'
+  RiRulerLine,
+} from '@remixicon/react';
+import CanvasManager from './components/Canvas/CanvasManager';
+import SyncManager from './components/SyncManager';
+import { ThemeManager } from './components/ThemeManager';
+import { PauseManager } from './components/PauseManager';
+import { LoadingOverlay } from './components/LoadingOverlay';
+import Sidebar from './components/Sidebar';
+import Toast from './components/Toast';
+import ConfirmDialog from './components/ConfirmDialog';
+import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog';
+import TokenInspector from './components/TokenInspector';
+import ResourceMonitor from './components/ResourceMonitor';
+import { HomeScreen } from './components/HomeScreen';
+import { useGameStore } from './store/gameStore';
+import { useWindowType } from './utils/useWindowType';
+import AutoSaveManager from './components/AutoSaveManager';
+import CommandPalette from './components/AssetLibrary/CommandPalette';
+import { useCommandPalette } from './hooks/useCommandPalette';
 import { getStorage } from './services/storage';
 import { useIsMobile } from './hooks/useMediaQuery';
 import MobileToolbar from './components/MobileToolbar';
@@ -120,7 +120,9 @@ function App() {
 
   // Active tool state (controls CanvasManager behavior)
   // Only used in Architect View; World View always uses 'select' with restricted interactions
-  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure'>('select');
+  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure'>(
+    'select',
+  );
   const [color, setColor] = useState('#df4b26');
   const [recentColors, setRecentColors] = useState<string[]>(['#df4b26', '#3b82f6', '#22c55e']);
   const colorInputRef = useRef<HTMLInputElement>(null);
@@ -128,9 +130,9 @@ function App() {
   // Update recent colors when color changes
   const handleColorChange = (newColor: string) => {
     setColor(newColor);
-    setRecentColors(prev => {
+    setRecentColors((prev) => {
       // Remove duplicates and add new color at the start
-      const filtered = prev.filter(c => c.toLowerCase() !== newColor.toLowerCase());
+      const filtered = prev.filter((c) => c.toLowerCase() !== newColor.toLowerCase());
       return [newColor, ...filtered].slice(0, 3);
     });
   };
@@ -175,14 +177,11 @@ function App() {
     }
   };
 
-
   // Filter selected IDs to only include tokens (not drawings)
   const tokens = useGameStore((s) => s.tokens);
-  const selectedTokensOnly = useMemo(() =>
-    selectedTokenIds.filter((id) =>
-      tokens.some((t) => t.id === id)
-    ),
-    [selectedTokenIds, tokens]
+  const selectedTokensOnly = useMemo(
+    () => selectedTokenIds.filter((id) => tokens.some((t) => t.id === id)),
+    [selectedTokenIds, tokens],
   );
 
   // Load library index on startup (Architect View only)
@@ -263,9 +262,14 @@ function App() {
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
         if (tool === 'door') {
           e.preventDefault(); // Prevent page scrolling
-          setDoorOrientation(prev => {
+          setDoorOrientation((prev) => {
             const newOrientation = prev === 'horizontal' ? 'vertical' : 'horizontal';
-            console.log('[App] Arrow key pressed - door orientation changed from', prev, 'to', newOrientation);
+            console.log(
+              '[App] Arrow key pressed - door orientation changed from',
+              prev,
+              'to',
+              newOrientation,
+            );
             return newOrientation;
           });
         }
@@ -292,9 +296,14 @@ function App() {
           // If door tool is active, rotate door orientation
           // Otherwise, switch to measure tool
           if (tool === 'door') {
-            setDoorOrientation(prev => {
+            setDoorOrientation((prev) => {
               const newOrientation = prev === 'horizontal' ? 'vertical' : 'horizontal';
-              console.log('[App] R key pressed - door orientation changed from', prev, 'to', newOrientation);
+              console.log(
+                '[App] R key pressed - door orientation changed from',
+                prev,
+                'to',
+                newOrientation,
+              );
               return newOrientation;
             });
           } else {
@@ -317,68 +326,66 @@ function App() {
     if (!ipcRenderer) return;
 
     const handleSave = async () => {
-        try {
-            const store = useGameStore.getState();
-            store.syncActiveMapToCampaign();
-            const campaignToSave = useGameStore.getState().campaign;
-            const storage = getStorage();
-            const result = await storage.saveCampaign(campaignToSave);
-            if (result) {
-                // Add to recent campaigns
-                addRecentCampaignWithPlatform(
-                    campaignToSave.id,
-                    campaignToSave.name
-                );
-                store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
-            }
-        } catch (e) {
-            console.error(e);
-            useGameStore.getState().showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
+      try {
+        const store = useGameStore.getState();
+        store.syncActiveMapToCampaign();
+        const campaignToSave = useGameStore.getState().campaign;
+        const storage = getStorage();
+        const result = await storage.saveCampaign(campaignToSave);
+        if (result) {
+          // Add to recent campaigns
+          addRecentCampaignWithPlatform(campaignToSave.id, campaignToSave.name);
+          store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
         }
+      } catch (e) {
+        console.error(e);
+        useGameStore
+          .getState()
+          .showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
+      }
     };
 
     const handleLoad = async () => {
-        try {
-            const storage = getStorage();
-            const campaign = await storage.loadCampaign();
-            if (campaign) {
-                useGameStore.getState().loadCampaign(campaign);
-                // Add to recent campaigns
-                addRecentCampaignWithPlatform(
-                    campaign.id,
-                    campaign.name
-                );
-                useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
-            }
-        } catch (e) {
-            console.error(e);
-            useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
+      try {
+        const storage = getStorage();
+        const campaign = await storage.loadCampaign();
+        if (campaign) {
+          useGameStore.getState().loadCampaign(campaign);
+          // Add to recent campaigns
+          addRecentCampaignWithPlatform(campaign.id, campaign.name);
+          useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
         }
+      } catch (e) {
+        console.error(e);
+        useGameStore
+          .getState()
+          .showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
+      }
     };
 
     const handleToggleMonitor = () => {
-        useGameStore.getState().setShowResourceMonitor(!useGameStore.getState().showResourceMonitor);
+      useGameStore.getState().setShowResourceMonitor(!useGameStore.getState().showResourceMonitor);
     };
 
     const handleGenerateDungeon = () => {
-        useGameStore.getState().showDungeonDialog();
+      useGameStore.getState().showDungeonDialog();
     };
 
     const handleNewCampaign = () => {
-        // Show confirmation dialog before creating new campaign
-        useGameStore.getState().showConfirmDialog(
-            'Create a new campaign? Any unsaved changes will be lost.',
-            () => {
-                // Reset to default campaign
-                const { resetToNewCampaign } = useGameStore.getState();
-                resetToNewCampaign();
-            },
-            'Create New Campaign'
-        );
+      // Show confirmation dialog before creating new campaign
+      useGameStore.getState().showConfirmDialog(
+        'Create a new campaign? Any unsaved changes will be lost.',
+        () => {
+          // Reset to default campaign
+          const { resetToNewCampaign } = useGameStore.getState();
+          resetToNewCampaign();
+        },
+        'Create New Campaign',
+      );
     };
 
     const handleShowAbout = () => {
-        setIsAboutOpen(true);
+      setIsAboutOpen(true);
     };
 
     ipcRenderer.on('MENU_SAVE_CAMPAIGN', handleSave);
@@ -389,12 +396,12 @@ function App() {
     ipcRenderer.on('MENU_SHOW_ABOUT', handleShowAbout);
 
     return () => {
-        ipcRenderer.off('MENU_SAVE_CAMPAIGN', handleSave);
-        ipcRenderer.off('MENU_LOAD_CAMPAIGN', handleLoad);
-        ipcRenderer.off('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
-        ipcRenderer.off('MENU_GENERATE_DUNGEON', handleGenerateDungeon);
-        ipcRenderer.off('MENU_NEW_CAMPAIGN', handleNewCampaign);
-        ipcRenderer.off('MENU_SHOW_ABOUT', handleShowAbout);
+      ipcRenderer.off('MENU_SAVE_CAMPAIGN', handleSave);
+      ipcRenderer.off('MENU_LOAD_CAMPAIGN', handleLoad);
+      ipcRenderer.off('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
+      ipcRenderer.off('MENU_GENERATE_DUNGEON', handleGenerateDungeon);
+      ipcRenderer.off('MENU_NEW_CAMPAIGN', handleNewCampaign);
+      ipcRenderer.off('MENU_SHOW_ABOUT', handleShowAbout);
     };
   }, []); // Empty dependency array as handlers use getState()
 
@@ -465,7 +472,6 @@ function App() {
       {/* Sidebar: Only render in Architect View (DM's token library) */}
       {isArchitectView && <Sidebar />}
 
-
       <div className="flex-1 relative h-full transition-all duration-300">
         {/* Mobile Hamburger Menu Button (top-left, Architect View only) */}
         {isArchitectView && isMobile && (
@@ -483,7 +489,12 @@ function App() {
             aria-label="Open menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
           </button>
         )}
@@ -500,132 +511,151 @@ function App() {
 
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
         {isArchitectView && !isMobile && (
-        <div className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50 bg-black border-2 border-neutral-600">
-           {/* Play/Pause Button */}
-           <Tooltip content={isGamePaused ? 'Resume - Players will see the map' : 'Pause - Hide map from players'}>
-             <button
-               className={`btn btn-tool flex items-center justify-center font-semibold ${
-                 isGamePaused
-                   ? 'bg-red-500 hover:bg-red-600 text-white'
-                   : 'bg-green-500 hover:bg-green-600 text-white'
-               }`}
-               onClick={handlePauseToggle}
-               aria-label={isGamePaused ? 'Resume game' : 'Pause game'}
-             >
-               {isGamePaused ? (
-                 <RiPlayFill className="w-5 h-5" />
-               ) : (
-                 <RiPauseFill className="w-5 h-5" />
-               )}
-             </button>
-           </Tooltip>
-           <div className="toolbar-divider w-px mx-1"></div>
-           {/* Select Tool */}
-           <Tooltip content="Select (V)">
-             <button
-               className={`btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}`}
-               onClick={() => setTool('select')}
-               aria-label="Select tool">
-               <RiCursorLine className="w-5 h-5" />
-             </button>
-           </Tooltip>
-           {/* Marker Tool */}
-           <Tooltip content="Marker (M)">
-             <button
-               className={`btn btn-tool p-2 ${tool === 'marker' ? 'active' : ''}`}
-               onClick={() => setTool('marker')}
-               aria-label="Marker tool">
-               <RiPencilLine className="w-5 h-5" />
-             </button>
-           </Tooltip>
-           {/* Eraser Tool */}
-           <Tooltip content="Eraser (E)">
-             <button
-               className={`btn btn-tool p-2 ${tool === 'eraser' ? 'active' : ''}`}
-               onClick={() => setTool('eraser')}
-               aria-label="Eraser tool">
-               <RiEraserLine className="w-5 h-5" />
-             </button>
-           </Tooltip>
-           {/* Wall Tool */}
-           <Tooltip content="Wall (W)">
-             <button
-               className={`btn btn-tool p-2 ${tool === 'wall' ? 'active' : ''}`}
-               onClick={() => setTool('wall')}
-               aria-label="Wall tool">
-               <RiLayoutMasonryLine className="w-5 h-5" />
-             </button>
-           </Tooltip>
-           {/* Door Tool */}
-           <Tooltip content="Door (D) - Arrow keys or R to rotate">
-             <button
-               className={`btn btn-tool p-2 ${tool === 'door' ? 'active' : ''}`}
-               onClick={() => setTool('door')}
-               aria-label="Door tool">
-               <RiDoorOpenLine className="w-5 h-5" />
-             </button>
-           </Tooltip>
-           {/* Door Orientation Toggle (only visible when door tool active) */}
-           {tool === 'door' && (
-             <Tooltip content="Toggle orientation (R)">
-               <button
-                 className="btn btn-tool text-lg px-2"
-                 onClick={() => setDoorOrientation(prev => prev === 'horizontal' ? 'vertical' : 'horizontal')}
-                 aria-label="Toggle door orientation">
-                 {doorOrientation === 'horizontal' ? '↔' : '↕'}
-               </button>
-             </Tooltip>
-           )}
-           <div className="toolbar-divider w-px mx-1"></div>
-           {/* Measurement Tool with Mode Selector */}
-           <div className="flex gap-1 items-center">
-             <Tooltip content="Measure (R) - Distance, Blast, Cone">
-               <button
-                 className={`btn btn-tool p-2 ${tool === 'measure' ? 'active' : ''}`}
-                 onClick={() => setTool('measure')}
-                 aria-label="Measure tool">
-                 <RiRulerLine className="w-5 h-5" />
-               </button>
-             </Tooltip>
-             {tool === 'measure' && (
-               <div className="flex gap-1 ml-1 items-center">
-                 <button
-                   className={`btn btn-mode ${measurementMode === 'ruler' ? 'active' : ''}`}
-                   onClick={() => setMeasurementMode('ruler')}
-                   title="Ruler: Measure distance between two points">
-                   Ruler
-                 </button>
-                 <button
-                   className={`btn btn-mode ${measurementMode === 'blast' ? 'active' : ''}`}
-                   onClick={() => setMeasurementMode('blast')}
-                   title="Blast: Circular AoE (e.g., Fireball)">
-                   Blast
-                 </button>
-                 <button
-                   className={`btn btn-mode ${measurementMode === 'cone' ? 'active' : ''}`}
-                   onClick={() => setMeasurementMode('cone')}
-                   title="Cone: 53° cone AoE (e.g., Burning Hands)">
-                   Cone
-                 </button>
-                 <div className="toolbar-divider w-px mx-1 h-6"></div>
-                 <button
-                   className={`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}`}
-                   onClick={() => setBroadcastMeasurement(!broadcastMeasurement)}
-                   title="Broadcast measurements to players in World View">
-                   {broadcastMeasurement ? '📡 Broadcasting' : '📡 Local Only'}
-                 </button>
-               </div>
-             )}
-           </div>
-           {/* Hidden color picker input (triggered by clicking main color circle) */}
-           <input
-             ref={colorInputRef}
-             type="color"
-             value={color}
-             onChange={(e) => handleColorChange(e.target.value)}
-             className="hidden"
-           />
-        </div>
+          <div className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50 bg-black border-2 border-neutral-600">
+            {/* Play/Pause Button */}
+            <Tooltip
+              content={
+                isGamePaused ? 'Resume - Players will see the map' : 'Pause - Hide map from players'
+              }
+            >
+              <button
+                className={`btn btn-tool flex items-center justify-center font-semibold ${
+                  isGamePaused
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+                onClick={handlePauseToggle}
+                aria-label={isGamePaused ? 'Resume game' : 'Pause game'}
+              >
+                {isGamePaused ? (
+                  <RiPlayFill className="w-5 h-5" />
+                ) : (
+                  <RiPauseFill className="w-5 h-5" />
+                )}
+              </button>
+            </Tooltip>
+            <div className="toolbar-divider w-px mx-1"></div>
+            {/* Select Tool */}
+            <Tooltip content="Select (V)">
+              <button
+                className={`btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}`}
+                onClick={() => setTool('select')}
+                aria-label="Select tool"
+              >
+                <RiCursorLine className="w-5 h-5" />
+              </button>
+            </Tooltip>
+            {/* Marker Tool */}
+            <Tooltip content="Marker (M)">
+              <button
+                className={`btn btn-tool p-2 ${tool === 'marker' ? 'active' : ''}`}
+                onClick={() => setTool('marker')}
+                aria-label="Marker tool"
+              >
+                <RiPencilLine className="w-5 h-5" />
+              </button>
+            </Tooltip>
+            {/* Eraser Tool */}
+            <Tooltip content="Eraser (E)">
+              <button
+                className={`btn btn-tool p-2 ${tool === 'eraser' ? 'active' : ''}`}
+                onClick={() => setTool('eraser')}
+                aria-label="Eraser tool"
+              >
+                <RiEraserLine className="w-5 h-5" />
+              </button>
+            </Tooltip>
+            {/* Wall Tool */}
+            <Tooltip content="Wall (W)">
+              <button
+                className={`btn btn-tool p-2 ${tool === 'wall' ? 'active' : ''}`}
+                onClick={() => setTool('wall')}
+                aria-label="Wall tool"
+              >
+                <RiLayoutMasonryLine className="w-5 h-5" />
+              </button>
+            </Tooltip>
+            {/* Door Tool */}
+            <Tooltip content="Door (D) - Arrow keys or R to rotate">
+              <button
+                className={`btn btn-tool p-2 ${tool === 'door' ? 'active' : ''}`}
+                onClick={() => setTool('door')}
+                aria-label="Door tool"
+              >
+                <RiDoorOpenLine className="w-5 h-5" />
+              </button>
+            </Tooltip>
+            {/* Door Orientation Toggle (only visible when door tool active) */}
+            {tool === 'door' && (
+              <Tooltip content="Toggle orientation (R)">
+                <button
+                  className="btn btn-tool text-lg px-2"
+                  onClick={() =>
+                    setDoorOrientation((prev) =>
+                      prev === 'horizontal' ? 'vertical' : 'horizontal',
+                    )
+                  }
+                  aria-label="Toggle door orientation"
+                >
+                  {doorOrientation === 'horizontal' ? '↔' : '↕'}
+                </button>
+              </Tooltip>
+            )}
+            <div className="toolbar-divider w-px mx-1"></div>
+            {/* Measurement Tool with Mode Selector */}
+            <div className="flex gap-1 items-center">
+              <Tooltip content="Measure (R) - Distance, Blast, Cone">
+                <button
+                  className={`btn btn-tool p-2 ${tool === 'measure' ? 'active' : ''}`}
+                  onClick={() => setTool('measure')}
+                  aria-label="Measure tool"
+                >
+                  <RiRulerLine className="w-5 h-5" />
+                </button>
+              </Tooltip>
+              {tool === 'measure' && (
+                <div className="flex gap-1 ml-1 items-center">
+                  <button
+                    className={`btn btn-mode ${measurementMode === 'ruler' ? 'active' : ''}`}
+                    onClick={() => setMeasurementMode('ruler')}
+                    title="Ruler: Measure distance between two points"
+                  >
+                    Ruler
+                  </button>
+                  <button
+                    className={`btn btn-mode ${measurementMode === 'blast' ? 'active' : ''}`}
+                    onClick={() => setMeasurementMode('blast')}
+                    title="Blast: Circular AoE (e.g., Fireball)"
+                  >
+                    Blast
+                  </button>
+                  <button
+                    className={`btn btn-mode ${measurementMode === 'cone' ? 'active' : ''}`}
+                    onClick={() => setMeasurementMode('cone')}
+                    title="Cone: 53° cone AoE (e.g., Burning Hands)"
+                  >
+                    Cone
+                  </button>
+                  <div className="toolbar-divider w-px mx-1 h-6"></div>
+                  <button
+                    className={`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}`}
+                    onClick={() => setBroadcastMeasurement(!broadcastMeasurement)}
+                    title="Broadcast measurements to players in World View"
+                  >
+                    {broadcastMeasurement ? '📡 Broadcasting' : '📡 Local Only'}
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Hidden color picker input (triggered by clicking main color circle) */}
+            <input
+              ref={colorInputRef}
+              type="color"
+              value={color}
+              onChange={(e) => handleColorChange(e.target.value)}
+              className="hidden"
+            />
+          </div>
         )}
 
         {/* Floating Color Palette (appears above marker tool when active) */}
@@ -704,7 +734,7 @@ function App() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

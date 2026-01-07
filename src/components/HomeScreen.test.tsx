@@ -119,7 +119,7 @@ describe('HomeScreen', () => {
 
       expect(screen.getByText('Download the Mac App')).toBeInTheDocument();
       expect(
-        screen.getByText(/Get greater portability, offline support, and privacy/)
+        screen.getByText(/Get greater portability, offline support, and privacy/),
       ).toBeInTheDocument();
     });
 
@@ -202,7 +202,7 @@ describe('HomeScreen', () => {
       await waitFor(() => {
         expect(mockShowToast).toHaveBeenCalledWith(
           'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .graphium file.',
-          'info'
+          'info',
         );
       });
     });
@@ -278,7 +278,7 @@ describe('HomeScreen', () => {
         expect(mockLoadCampaign).toHaveBeenCalledWith(mockCampaign);
         expect(recentCampaignsModule.addRecentCampaignWithPlatform).toHaveBeenCalledWith(
           'loaded-campaign',
-          'Loaded Campaign'
+          'Loaded Campaign',
         );
         expect(mockOnStartEditor).toHaveBeenCalledTimes(1);
         expect(mockShowToast).toHaveBeenCalledWith(expect.any(String), 'success');
@@ -332,12 +332,8 @@ describe('HomeScreen', () => {
     it('should have ARIA labels on action buttons', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const newCampaignButton = screen.getByLabelText(
-        'Create a new campaign'
-      );
-      const loadCampaignButton = screen.getByLabelText(
-        'Load an existing campaign'
-      );
+      const newCampaignButton = screen.getByLabelText('Create a new campaign');
+      const loadCampaignButton = screen.getByLabelText('Load an existing campaign');
 
       expect(newCampaignButton).toBeInTheDocument();
       expect(loadCampaignButton).toBeInTheDocument();

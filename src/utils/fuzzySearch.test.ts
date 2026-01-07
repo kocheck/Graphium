@@ -96,9 +96,9 @@ describe('fuzzySearch', () => {
 
       // Should match "Red Dragon", "Blue Dragon", and "Dragon Statue"
       expect(results).toHaveLength(3);
-      expect(results.map(r => r.name)).toContain('Red Dragon');
-      expect(results.map(r => r.name)).toContain('Blue Dragon');
-      expect(results.map(r => r.name)).toContain('Dragon Statue');
+      expect(results.map((r) => r.name)).toContain('Red Dragon');
+      expect(results.map((r) => r.name)).toContain('Blue Dragon');
+      expect(results.map((r) => r.name)).toContain('Dragon Statue');
     });
 
     it('should match tags', () => {
@@ -120,7 +120,7 @@ describe('fuzzySearch', () => {
 
       // Should match "Dragon" variants as "drg" is a subsequence of "Dragon"
       expect(results.length).toBeGreaterThan(0);
-      expect(results.some(r => r.name.includes('Dragon'))).toBe(true);
+      expect(results.some((r) => r.name.includes('Dragon'))).toBe(true);
     });
 
     it('should match multi-word queries', () => {
@@ -271,7 +271,7 @@ describe('fuzzySearch', () => {
       const results = filterByCategory(mockLibrary, 'Monsters');
 
       expect(results).toHaveLength(3);
-      expect(results.every(item => item.category === 'Monsters')).toBe(true);
+      expect(results.every((item) => item.category === 'Monsters')).toBe(true);
     });
 
     it('should filter case-insensitively', () => {

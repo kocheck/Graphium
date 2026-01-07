@@ -146,7 +146,7 @@ export interface IStorageService {
   saveAssetToLibrary(
     fullSizeBuffer: ArrayBuffer,
     thumbnailBuffer: ArrayBuffer,
-    metadata: LibraryMetadata
+    metadata: LibraryMetadata,
   ): Promise<TokenLibraryItem>;
 
   /**
@@ -199,7 +199,7 @@ export interface IStorageService {
    */
   updateLibraryMetadata(
     assetId: string,
-    updates: Partial<LibraryMetadata>
+    updates: Partial<LibraryMetadata>,
   ): Promise<TokenLibraryItem>;
 
   // ===== THEME PREFERENCES =====

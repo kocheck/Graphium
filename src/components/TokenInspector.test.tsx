@@ -19,8 +19,8 @@ vi.mock('./MobileBottomSheet', () => ({
 // Mock getStorage
 vi.mock('../services/storage', () => ({
   getStorage: () => ({
-    updateLibraryMetadata: mockUpdateLibraryMetadata
-  })
+    updateLibraryMetadata: mockUpdateLibraryMetadata,
+  }),
 }));
 
 const mockUpdateLibraryMetadata = vi.fn().mockResolvedValue({});
@@ -80,24 +80,24 @@ describe('TokenInspector', () => {
 
   it('uses instance overrides when present', () => {
     const overrideToken = {
-        ...mockToken,
-        name: 'Boss Goblin',
-        type: 'PC' as const,
-        visionRadius: 60
+      ...mockToken,
+      name: 'Boss Goblin',
+      type: 'PC' as const,
+      visionRadius: 60,
     };
 
     (useGameStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector: any) => {
-        const state = {
-          tokens: [overrideToken],
-          campaign: {
-            tokenLibrary: [mockLibraryItem],
-          },
-          updateTokenProperties: mockUpdateTokenProperties,
-          updateLibraryToken: mockUpdateLibraryToken,
-          showToast: mockShowToast,
-        };
-        return selector(state);
-      });
+      const state = {
+        tokens: [overrideToken],
+        campaign: {
+          tokenLibrary: [mockLibraryItem],
+        },
+        updateTokenProperties: mockUpdateTokenProperties,
+        updateLibraryToken: mockUpdateLibraryToken,
+        showToast: mockShowToast,
+      };
+      return selector(state);
+    });
 
     render(<TokenInspector selectedTokenIds={['token-1']} />);
 
@@ -125,15 +125,15 @@ describe('TokenInspector', () => {
     // 4. Simulate store update (reaction to the action)
     const updatedToken = { ...mockToken, name: 'Goblin Updated' };
     (useGameStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector: any) => {
-        const state = {
-          tokens: [updatedToken],
-          campaign: { tokenLibrary: [mockLibraryItem] },
-          updateTokenProperties: mockUpdateTokenProperties,
-          updateLibraryToken: mockUpdateLibraryToken,
-          showToast: mockShowToast,
-        };
-        return selector(state);
-      });
+      const state = {
+        tokens: [updatedToken],
+        campaign: { tokenLibrary: [mockLibraryItem] },
+        updateTokenProperties: mockUpdateTokenProperties,
+        updateLibraryToken: mockUpdateLibraryToken,
+        showToast: mockShowToast,
+      };
+      return selector(state);
+    });
 
     // Rerender with new store data
     rerender(<TokenInspector selectedTokenIds={['token-1']} />);
@@ -151,7 +151,9 @@ describe('TokenInspector', () => {
     fireEvent.click(screen.getByText('Edit Properties'));
 
     // Change some values
-    fireEvent.change(screen.getByDisplayValue('Goblin Warrior'), { target: { value: 'Goblin Elite' } });
+    fireEvent.change(screen.getByDisplayValue('Goblin Warrior'), {
+      target: { value: 'Goblin Elite' },
+    });
 
     // Click "Save Defaults to Library"
     const saveButton = screen.getByText('Save Defaults to Library');
@@ -159,19 +161,25 @@ describe('TokenInspector', () => {
 
     // Verify storage update called (persistence)
     await waitFor(() => {
-        expect(mockUpdateLibraryMetadata).toHaveBeenCalledWith('lib-1', expect.objectContaining({
-            name: 'Goblin Elite',
-            defaultType: 'NPC',
-            defaultVisionRadius: 0
-        }));
+      expect(mockUpdateLibraryMetadata).toHaveBeenCalledWith(
+        'lib-1',
+        expect.objectContaining({
+          name: 'Goblin Elite',
+          defaultType: 'NPC',
+          defaultVisionRadius: 0,
+        }),
+      );
     });
 
     // Verify store update called (UI sync)
-    expect(mockUpdateLibraryToken).toHaveBeenCalledWith('lib-1', expect.objectContaining({
+    expect(mockUpdateLibraryToken).toHaveBeenCalledWith(
+      'lib-1',
+      expect.objectContaining({
         name: 'Goblin Elite',
         defaultType: 'NPC',
-        defaultVisionRadius: 0
-    }));
+        defaultVisionRadius: 0,
+      }),
+    );
 
     // Verify toast
     expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('Updated'), 'success');

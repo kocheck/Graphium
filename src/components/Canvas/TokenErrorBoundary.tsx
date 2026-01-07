@@ -52,7 +52,12 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Group, Circle, Text } from 'react-konva';
-import { captureErrorContext, logErrorWithContext, exportErrorToClipboard, type ErrorContext } from '../../utils/errorBoundaryUtils';
+import {
+  captureErrorContext,
+  logErrorWithContext,
+  exportErrorToClipboard,
+  type ErrorContext,
+} from '../../utils/errorBoundaryUtils';
 import { useGameStore } from '../../store/gameStore';
 
 /**
@@ -174,17 +179,17 @@ class TokenErrorBoundary extends Component<Props, State> {
   handleCopyError = async () => {
     const { errorContext } = this.state;
     const { onShowToast } = this.props;
-    
+
     if (errorContext) {
       const success = await exportErrorToClipboard(errorContext);
-      
+
       // Use callback if provided, otherwise fall back to direct store access
       // Note: Direct store access via getState() is acceptable in class components
       // where hooks cannot be used. While this creates coupling to the game store,
       // it provides a fallback when the parent component doesn't provide the callback.
       // Consider making onShowToast mandatory if this coupling becomes problematic.
       const showToast = onShowToast || useGameStore.getState().showToast;
-      
+
       if (success) {
         showToast('Error details copied to clipboard!', 'success');
       } else {
@@ -218,102 +223,81 @@ class TokenErrorBoundary extends Component<Props, State> {
       return (
         <>
           {/* Konva error indicator on canvas */}
-          <Group
-            x={tokenX}
-            y={tokenY}
-            onClick={this.handleToggleDebug}
-          >
+          <Group x={tokenX} y={tokenY} onClick={this.handleToggleDebug}>
             {/* Red circle with warning icon */}
-            <Circle
-              radius={25}
-              fill="rgba(220, 38, 38, 0.7)"
-              stroke="#ef4444"
-              strokeWidth={2}
-            />
-            <Text
-              text="⚠"
-              fontSize={28}
-              fill="white"
-              offsetX={9}
-              offsetY={14}
-            />
+            <Circle radius={25} fill="rgba(220, 38, 38, 0.7)" stroke="#ef4444" strokeWidth={2} />
+            <Text text="⚠" fontSize={28} fill="white" offsetX={9} offsetY={14} />
           </Group>
 
           {/* Portal for debug overlay in DOM */}
-          {showDebugOverlay && errorContext && createPortal(
-            <div
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900 text-white p-5 rounded-lg border-2 border-red-500 max-w-[600px] max-h-[80vh] overflow-auto z-[10000] shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-              data-testid={`token-error-overlay-${tokenId || 'unknown'}`}
-            >
-              <h3 className="m-0 mb-4 text-red-500">
-                Token Error Debug Info
-              </h3>
+          {showDebugOverlay &&
+            errorContext &&
+            createPortal(
+              <div
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900 text-white p-5 rounded-lg border-2 border-red-500 max-w-[600px] max-h-[80vh] overflow-auto z-[10000] shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+                data-testid={`token-error-overlay-${tokenId || 'unknown'}`}
+              >
+                <h3 className="m-0 mb-4 text-red-500">Token Error Debug Info</h3>
 
-              <div className="mb-4">
-                <strong>Token ID:</strong> {tokenId || 'N/A'}
-              </div>
+                <div className="mb-4">
+                  <strong>Token ID:</strong> {tokenId || 'N/A'}
+                </div>
 
-              <div className="mb-4">
-                <strong>Error:</strong> {errorContext.error.name}
-                <br />
-                <strong>Message:</strong> {errorContext.error.message}
-              </div>
+                <div className="mb-4">
+                  <strong>Error:</strong> {errorContext.error.name}
+                  <br />
+                  <strong>Message:</strong> {errorContext.error.message}
+                </div>
 
-              <div className="mb-4">
-                <strong>Timestamp:</strong> {new Date(errorContext.timestamp).toLocaleString()}
-              </div>
+                <div className="mb-4">
+                  <strong>Timestamp:</strong> {new Date(errorContext.timestamp).toLocaleString()}
+                </div>
 
-              {errorContext.error.stack && (
-                <details className="mb-4">
-                  <summary className="cursor-pointer font-bold">
-                    Stack Trace
-                  </summary>
-                  <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
-                    {errorContext.error.stack}
-                  </pre>
-                </details>
-              )}
+                {errorContext.error.stack && (
+                  <details className="mb-4">
+                    <summary className="cursor-pointer font-bold">Stack Trace</summary>
+                    <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
+                      {errorContext.error.stack}
+                    </pre>
+                  </details>
+                )}
 
-              {errorContext.componentStack && (
-                <details className="mb-4">
-                  <summary className="cursor-pointer font-bold">
-                    Component Stack
-                  </summary>
-                  <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
-                    {errorContext.componentStack}
-                  </pre>
-                </details>
-              )}
+                {errorContext.componentStack && (
+                  <details className="mb-4">
+                    <summary className="cursor-pointer font-bold">Component Stack</summary>
+                    <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
+                      {errorContext.componentStack}
+                    </pre>
+                  </details>
+                )}
 
-              {errorContext.props && (
-                <details className="mb-4">
-                  <summary className="cursor-pointer font-bold">
-                    Component Props
-                  </summary>
-                  <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
-                    {JSON.stringify(errorContext.props, null, 2)}
-                  </pre>
-                </details>
-              )}
+                {errorContext.props && (
+                  <details className="mb-4">
+                    <summary className="cursor-pointer font-bold">Component Props</summary>
+                    <pre className="bg-black p-2.5 rounded text-[11px] overflow-auto max-h-[200px]">
+                      {JSON.stringify(errorContext.props, null, 2)}
+                    </pre>
+                  </details>
+                )}
 
-              <div className="flex gap-2.5 mt-4">
-                <button
-                  onClick={this.handleCopyError}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white border-none rounded cursor-pointer text-sm"
-                >
-                  Copy Error
-                </button>
-                <button
-                  onClick={this.handleToggleDebug}
-                  className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white border-none rounded cursor-pointer text-sm"
-                >
-                  Close
-                </button>
-              </div>
-            </div>,
-            document.body
-          )}
+                <div className="flex gap-2.5 mt-4">
+                  <button
+                    onClick={this.handleCopyError}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white border-none rounded cursor-pointer text-sm"
+                  >
+                    Copy Error
+                  </button>
+                  <button
+                    onClick={this.handleToggleDebug}
+                    className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white border-none rounded cursor-pointer text-sm"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>,
+              document.body,
+            )}
         </>
       );
     }

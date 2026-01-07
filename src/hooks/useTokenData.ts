@@ -18,6 +18,7 @@ export interface ResolvedTokenData {
   type: 'PC' | 'NPC' | undefined;
   visionRadius: number | undefined;
   name: string;
+  movementSpeed: number | undefined;
   libraryItemId?: string;
   // Metadata for tracking if values are inherited vs overridden (useful for UI)
   _isInherited: {
@@ -25,6 +26,7 @@ export interface ResolvedTokenData {
     type: boolean;
     visionRadius: boolean;
     name: boolean;
+    movementSpeed: boolean;
   };
 }
 
@@ -50,11 +52,15 @@ export interface ResolvedTokenData {
 export function useTokenData(token: Token): ResolvedTokenData {
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
 
-  return useMemo(
-    () => resolveTokenData(token, tokenLibrary),
-    [token, tokenLibrary],
-  );
+  return useMemo(() => resolveTokenData(token, tokenLibrary), [token, tokenLibrary]);
 }
+
+/**
+ * Default values for token properties
+ */
+export const DEFAULT_SCALE = 1;
+export const DEFAULT_NAME = 'Token';
+export const DEFAULT_MOVEMENT_SPEED = 30; // Standard D&D 5e movement speed
 
 /**
  * Utility function (non-hook version) for resolving token data
@@ -64,23 +70,25 @@ export function useTokenData(token: Token): ResolvedTokenData {
  * @param tokenLibrary - The array of library items
  * @returns Fully resolved token data
  */
-export function resolveTokenData(token: Token, tokenLibrary: TokenLibraryItem[]): ResolvedTokenData {
+export function resolveTokenData(
+  token: Token,
+  tokenLibrary: TokenLibraryItem[],
+): ResolvedTokenData {
   const libraryItem = token.libraryItemId
     ? tokenLibrary.find((item) => item.id === token.libraryItemId)
     : undefined;
-
-  const DEFAULT_SCALE = 1;
-  const DEFAULT_NAME = 'Token';
 
   const resolvedScale = token.scale ?? libraryItem?.defaultScale ?? DEFAULT_SCALE;
 
   // Determine Type: Instance > Library Default > Library Category (PC)
   let resolvedType = token.type ?? libraryItem?.defaultType;
   if (!resolvedType && libraryItem?.category === 'PC') {
-      resolvedType = 'PC';
+    resolvedType = 'PC';
   }
   const resolvedVisionRadius = token.visionRadius ?? libraryItem?.defaultVisionRadius;
   const resolvedName = token.name ?? libraryItem?.name ?? DEFAULT_NAME;
+  const resolvedMovementSpeed =
+    token.movementSpeed ?? libraryItem?.defaultMovementSpeed ?? DEFAULT_MOVEMENT_SPEED;
 
   return {
     id: token.id,
@@ -91,12 +99,16 @@ export function resolveTokenData(token: Token, tokenLibrary: TokenLibraryItem[])
     type: resolvedType,
     visionRadius: resolvedVisionRadius,
     name: resolvedName,
+    movementSpeed: resolvedMovementSpeed,
     libraryItemId: token.libraryItemId,
     _isInherited: {
       scale: token.scale === undefined && libraryItem?.defaultScale !== undefined,
       type: token.type === undefined && libraryItem?.defaultType !== undefined,
-      visionRadius: token.visionRadius === undefined && libraryItem?.defaultVisionRadius !== undefined,
+      visionRadius:
+        token.visionRadius === undefined && libraryItem?.defaultVisionRadius !== undefined,
       name: token.name === undefined && libraryItem?.name !== undefined,
+      movementSpeed:
+        token.movementSpeed === undefined && libraryItem?.defaultMovementSpeed !== undefined,
     },
   };
 }

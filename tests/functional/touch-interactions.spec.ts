@@ -128,10 +128,7 @@ test.describe('Touch Drawing Tools', () => {
 
     expect(drawingData, 'Drawing should exist after touch stroke').toBeTruthy();
     expect(drawingData?.tool, 'Drawing should be marker type').toBe('marker');
-    expect(
-      (drawingData?.points?.length ?? 0) > 0,
-      'Drawing should have points'
-    ).toBe(true);
+    expect((drawingData?.points?.length ?? 0) > 0, 'Drawing should have points').toBe(true);
   });
 
   test('should draw with eraser tool using touch', async ({ page }) => {
@@ -151,7 +148,7 @@ test.describe('Touch Drawing Tools', () => {
       canvasBox.x + 100,
       canvasBox.y + 100,
       canvasBox.x + 150,
-      canvasBox.y + 150
+      canvasBox.y + 150,
     );
 
     await page.waitForTimeout(100);
@@ -183,7 +180,7 @@ test.describe('Touch Drawing Tools', () => {
       canvasBox.x + 100,
       canvasBox.y + 100,
       canvasBox.x + 300,
-      canvasBox.y + 100
+      canvasBox.y + 100,
     );
 
     await page.waitForTimeout(100);
@@ -236,22 +233,20 @@ test.describe('Touch Token Interactions', () => {
       initialBox!.x + 25,
       initialBox!.y + 25,
       initialBox!.x + 200,
-      initialBox!.y + 150
+      initialBox!.y + 150,
     );
 
     await page.waitForTimeout(100);
 
     // Verify position changed
     const newBox = await token.boundingBox();
-    expect(
-      newBox!.x,
-      'Token X position should have increased after touch drag'
-    ).toBeGreaterThan(initialBox!.x + 100);
+    expect(newBox!.x, 'Token X position should have increased after touch drag').toBeGreaterThan(
+      initialBox!.x + 100,
+    );
 
-    expect(
-      newBox!.y,
-      'Token Y position should have increased after touch drag'
-    ).toBeGreaterThan(initialBox!.y + 100);
+    expect(newBox!.y, 'Token Y position should have increased after touch drag').toBeGreaterThan(
+      initialBox!.y + 100,
+    );
   });
 
   test('should select token with touch tap', async ({ page }) => {
@@ -271,7 +266,7 @@ test.describe('Touch Token Interactions', () => {
     // Verify selection indicator appears
     await expect(
       page.locator('[data-testid="token-selection-indicator"]'),
-      'Selection indicator should appear after touch tap'
+      'Selection indicator should appear after touch tap',
     ).toBeVisible();
   });
 
@@ -297,13 +292,7 @@ test.describe('Touch Token Interactions', () => {
 
     // Drag one of them
     const firstBox = await firstToken.boundingBox();
-    await touchDrag(
-      page,
-      firstBox!.x + 25,
-      firstBox!.y + 25,
-      firstBox!.x + 150,
-      firstBox!.y + 150
-    );
+    await touchDrag(page, firstBox!.x + 25, firstBox!.y + 25, firstBox!.x + 150, firstBox!.y + 150);
 
     await page.waitForTimeout(100);
 
@@ -311,15 +300,9 @@ test.describe('Touch Token Interactions', () => {
     const newFirstBox = await firstToken.boundingBox();
     const newSecondBox = await secondToken.boundingBox();
 
-    expect(
-      newFirstBox!.x,
-      'First token should have moved'
-    ).toBeGreaterThan(firstBox!.x + 100);
+    expect(newFirstBox!.x, 'First token should have moved').toBeGreaterThan(firstBox!.x + 100);
 
-    expect(
-      newSecondBox!.x,
-      'Second token should have moved (multi-drag)'
-    ).toBeGreaterThan(300);
+    expect(newSecondBox!.x, 'Second token should have moved (multi-drag)').toBeGreaterThan(300);
   });
 });
 
@@ -351,7 +334,7 @@ test.describe('Touch Selection Rectangle', () => {
       canvasBox!.x + 150,
       canvasBox!.y + 150,
       canvasBox!.x + 300,
-      canvasBox!.y + 300
+      canvasBox!.y + 300,
     );
 
     await page.waitForTimeout(100);
@@ -360,7 +343,7 @@ test.describe('Touch Selection Rectangle', () => {
     const selectedTokens = page.locator('[data-testid="token-selection-indicator"]');
     await expect(
       selectedTokens,
-      'Both tokens should be selected via touch selection rectangle'
+      'Both tokens should be selected via touch selection rectangle',
     ).toHaveCount(2);
   });
 });
@@ -414,14 +397,11 @@ test.describe('Touch Performance', () => {
 
     expect(
       (drawingData?.points?.length ?? 0) / 2,
-      'Should capture most touch points (allowing for deduplication)'
+      'Should capture most touch points (allowing for deduplication)',
     ).toBeGreaterThan(25);
 
     // Performance should be reasonable
-    expect(
-      totalTime,
-      'Touch drawing should complete in reasonable time'
-    ).toBeLessThan(1000);
+    expect(totalTime, 'Touch drawing should complete in reasonable time').toBeLessThan(1000);
   });
 });
 
@@ -449,7 +429,7 @@ test.describe('Pressure-Sensitive Drawing', () => {
       canvasBox.x + 100,
       canvasBox.y + 100,
       canvasBox.x + 200,
-      canvasBox.y + 150
+      canvasBox.y + 150,
     );
 
     await page.waitForTimeout(100);
@@ -463,10 +443,9 @@ test.describe('Pressure-Sensitive Drawing', () => {
 
     expect(drawingData, 'Drawing should exist').toBeTruthy();
     expect(drawingData?.pressures, 'Pressure data should be captured').toBeDefined();
-    expect(
-      drawingData?.pressures?.length,
-      'Pressure array length should match point count'
-    ).toBe((drawingData?.points?.length ?? 0) / 2);
+    expect(drawingData?.pressures?.length, 'Pressure array length should match point count').toBe(
+      (drawingData?.points?.length ?? 0) / 2,
+    );
 
     // All pressure values should be between 0 and 1
     if (drawingData?.pressures) {
@@ -494,7 +473,7 @@ test.describe('Pressure-Sensitive Drawing', () => {
       canvasBox.x + 100,
       canvasBox.y + 100,
       canvasBox.x + 200,
-      canvasBox.y + 100
+      canvasBox.y + 100,
     );
 
     await page.waitForTimeout(100);
@@ -502,10 +481,7 @@ test.describe('Pressure-Sensitive Drawing', () => {
     // Verify the drawing renders without errors
     // The PressureSensitiveLine component should handle the rendering
     const drawingElement = page.locator('[name="drawing"]').first();
-    await expect(
-      drawingElement,
-      'Pressure-sensitive drawing should render'
-    ).toBeVisible();
+    await expect(drawingElement, 'Pressure-sensitive drawing should render').toBeVisible();
   });
 });
 
@@ -535,7 +511,7 @@ test.describe('Two-Finger Pan Gesture', () => {
       canvasBox.x + 200,
       canvasBox.y + 200,
       canvasBox.x + 250,
-      canvasBox.y + 250
+      canvasBox.y + 250,
     );
 
     await page.waitForTimeout(100);
@@ -546,10 +522,7 @@ test.describe('Two-Finger Pan Gesture', () => {
       return store?.getState?.()?.drawings?.length || 0;
     });
 
-    expect(
-      drawingsCount,
-      'Drawing should be created for baseline'
-    ).toBe(1);
+    expect(drawingsCount, 'Drawing should be created for baseline').toBe(1);
 
     // Multi-touch pan gesture verification would go here
     // In practice, this requires actual device testing with two fingers

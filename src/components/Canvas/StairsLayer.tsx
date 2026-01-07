@@ -28,11 +28,7 @@ const StairsLayer = ({ stairs, isWorldView }: StairsLayerProps) => {
   return (
     <>
       {stairs.map((stair) => (
-        <StairsShape
-          key={stair.id}
-          stairs={stair}
-          isWorldView={isWorldView}
-        />
+        <StairsShape key={stair.id} stairs={stair} isWorldView={isWorldView} />
       ))}
     </>
   );

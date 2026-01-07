@@ -29,22 +29,28 @@ interface DoorLayerProps {
 const DoorLayer = ({ doors, isWorldView, onToggleDoor }: DoorLayerProps) => {
   if (import.meta.env.DEV) {
     console.log('[DoorLayer] Rendering', doors.length, 'doors. isWorldView:', isWorldView);
-    console.log('[DoorLayer] Doors state:', doors.map(d => ({id: d.id, isOpen: d.isOpen})));
+    console.log(
+      '[DoorLayer] Doors state:',
+      doors.map((d) => ({ id: d.id, isOpen: d.isOpen })),
+    );
   }
 
   return (
     <>
       {doors.map((door) => {
         if (import.meta.env.DEV) {
-          console.log('[DoorLayer] Rendering door:', door.id, 'isOpen:', door.isOpen, 'at', door.x, door.y);
+          console.log(
+            '[DoorLayer] Rendering door:',
+            door.id,
+            'isOpen:',
+            door.isOpen,
+            'at',
+            door.x,
+            door.y,
+          );
         }
         return (
-          <DoorShape
-            key={door.id}
-            door={door}
-            isWorldView={isWorldView}
-            onToggle={onToggleDoor}
-          />
+          <DoorShape key={door.id} door={door} isWorldView={isWorldView} onToggle={onToggleDoor} />
         );
       })}
     </>

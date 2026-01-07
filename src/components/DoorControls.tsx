@@ -17,14 +17,14 @@ import { RiLockLine, RiDoorOpenLine, RiLockUnlockLine } from '@remixicon/react';
  * @component
  */
 const DoorControls = () => {
-  const doors = useGameStore(state => state.doors);
-  const updateAllDoorStates = useGameStore(state => state.updateAllDoorStates);
-  const updateAllDoorLocks = useGameStore(state => state.updateAllDoorLocks);
+  const doors = useGameStore((state) => state.doors);
+  const updateAllDoorStates = useGameStore((state) => state.updateAllDoorStates);
+  const updateAllDoorLocks = useGameStore((state) => state.updateAllDoorLocks);
 
   const doorCount = doors.length;
-  const openDoorCount = doors.filter(d => d.isOpen).length;
+  const openDoorCount = doors.filter((d) => d.isOpen).length;
   const closedDoorCount = doorCount - openDoorCount;
-  const lockedDoorCount = doors.filter(d => d.isLocked).length;
+  const lockedDoorCount = doors.filter((d) => d.isLocked).length;
 
   const handleOpenAll = () => {
     updateAllDoorStates(true);
@@ -46,7 +46,10 @@ const DoorControls = () => {
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm uppercase font-bold tracking-wider" style={{ color: 'var(--app-text-secondary)' }}>
+        <h3
+          className="text-sm uppercase font-bold tracking-wider"
+          style={{ color: 'var(--app-text-secondary)' }}
+        >
           Door Controls
         </h3>
         <span className="text-xs" style={{ color: 'var(--app-text-muted)' }}>
@@ -78,12 +81,13 @@ const DoorControls = () => {
       <div className="space-y-2">
         <button
           onClick={handleOpenAll}
-          disabled={closedDoorCount === 0 || (closedDoorCount === lockedDoorCount)}
+          disabled={closedDoorCount === 0 || closedDoorCount === lockedDoorCount}
           className="btn btn-default w-full text-xs py-2 px-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
           title="Open all unlocked doors"
         >
           <span className="flex items-center justify-center gap-1">
-            <RiDoorOpenLine className="w-4 h-4" /> Open All ({Math.max(0, closedDoorCount - lockedDoorCount)})
+            <RiDoorOpenLine className="w-4 h-4" /> Open All (
+            {Math.max(0, closedDoorCount - lockedDoorCount)})
           </span>
         </button>
 
@@ -111,11 +115,15 @@ const DoorControls = () => {
         )}
       </div>
 
-      <div className="mt-3 text-[10px] italic p-2 rounded" style={{
-        color: 'var(--app-text-muted)',
-        backgroundColor: 'var(--app-bg-subtle)'
-      }}>
-        <strong>Tip:</strong> Click individual doors on the map to toggle them. Locked doors must be unlocked first.
+      <div
+        className="mt-3 text-[10px] italic p-2 rounded"
+        style={{
+          color: 'var(--app-text-muted)',
+          backgroundColor: 'var(--app-bg-subtle)',
+        }}
+      >
+        <strong>Tip:</strong> Click individual doors on the map to toggle them. Locked doors must be
+        unlocked first.
       </div>
     </div>
   );

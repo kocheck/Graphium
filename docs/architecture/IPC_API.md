@@ -29,18 +29,21 @@ Main Process (Node.js)
 ### IPC Flow Patterns
 
 **Pattern 1: State Synchronization (Publish-Subscribe)**
+
 ```
 Architect Window → Main Process → World Window
    (send)              (relay)         (receive)
 ```
 
 **Pattern 2: Request-Response (Invoke-Handle)**
+
 ```
 Renderer ←→ Main Process
  (invoke)    (handle + return)
 ```
 
 **Pattern 3: One-Way Commands (Send-On)**
+
 ```
 Renderer → Main Process
   (send)      (on + execute)
@@ -55,15 +58,17 @@ Renderer → Main Process
 **Use case:** Triggering actions without needing a response
 
 **Renderer side:**
+
 ```typescript
-window.ipcRenderer.send('channel-name', arg1, arg2)
+window.ipcRenderer.send('channel-name', arg1, arg2);
 ```
 
 **Main process side:**
+
 ```typescript
 ipcMain.on('channel-name', (event, arg1, arg2) => {
   // Handle event
-})
+});
 ```
 
 ### Pattern 2: Invoke/Handle (Request-Response)
@@ -71,16 +76,18 @@ ipcMain.on('channel-name', (event, arg1, arg2) => {
 **Use case:** Performing operations that return data or results
 
 **Renderer side:**
+
 ```typescript
-const result = await window.ipcRenderer.invoke('channel-name', arg1, arg2)
+const result = await window.ipcRenderer.invoke('channel-name', arg1, arg2);
 ```
 
 **Main process side:**
+
 ```typescript
 ipcMain.handle('channel-name', async (event, arg1, arg2) => {
   // Perform async operation
-  return result
-})
+  return result;
+});
 ```
 
 ### Pattern 3: Broadcast (Main to Renderer)
@@ -88,17 +95,19 @@ ipcMain.handle('channel-name', async (event, arg1, arg2) => {
 **Use case:** Main process pushing updates to specific renderer
 
 **Main process side:**
+
 ```typescript
 if (targetWindow && !targetWindow.isDestroyed()) {
-  targetWindow.webContents.send('channel-name', data)
+  targetWindow.webContents.send('channel-name', data);
 }
 ```
 
 **Renderer side:**
+
 ```typescript
 window.ipcRenderer.on('channel-name', (event, data) => {
   // Handle received data
-})
+});
 ```
 
 ---
@@ -116,14 +125,16 @@ window.ipcRenderer.on('channel-name', (event, data) => {
 **Caller:** `src/App.tsx:119`
 
 **Renderer (Architect):**
+
 ```typescript
 // User clicks "World View" button
-window.ipcRenderer.send('create-world-window')
+window.ipcRenderer.send('create-world-window');
 ```
 
 **Main Process:** `electron/main.ts:209`
+
 ```typescript
-ipcMain.on('create-world-window', createWorldWindow)
+ipcMain.on('create-world-window', createWorldWindow);
 ```
 
 #### Behavior
@@ -151,6 +162,7 @@ ipcMain.on('create-world-window', createWorldWindow)
 **Caller:** `src/components/SyncManager.tsx:111`
 
 **Renderer (Architect - Publisher):**
+
 ```typescript
 // Triggered on every Zustand store update
 window.ipcRenderer.send('SYNC_WORLD_STATE', {
@@ -161,19 +173,21 @@ window.ipcRenderer.send('SYNC_WORLD_STATE', {
 ```
 
 **Main Process (Relay):** `electron/main.ts:225`
+
 ```typescript
 ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
   if (worldWindow && !worldWindow.isDestroyed()) {
-    worldWindow.webContents.send('SYNC_WORLD_STATE', state)
+    worldWindow.webContents.send('SYNC_WORLD_STATE', state);
   }
-})
+});
 ```
 
 **Renderer (World Window - Subscriber):** `src/components/SyncManager.tsx:85`
+
 ```typescript
 window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
-  useGameStore.getState().setState(state)
-})
+  useGameStore.getState().setState(state);
+});
 ```
 
 #### Payload
@@ -217,6 +231,7 @@ window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
 **New in v2.0:** Token dragging now broadcasts position updates during drag (not just on drop), enabling real-time multi-user sync.
 
 **Drag Event Flow:**
+
 ```
 User starts dragging token
   ↓
@@ -230,6 +245,7 @@ TOKEN_DRAG_END → World View (commits final snapped position)
 ```
 
 **Performance:**
+
 - Architect View drag position updates use refs (no Architect store updates during `dragMove`) = minimal React re-renders in Architect View
 - World View store is updated for `TOKEN_DRAG_START`, `TOKEN_DRAG_MOVE`, and `TOKEN_DRAG_END` events to reflect real-time token positions
 - IPC broadcasts throttled to 16ms intervals (~60fps) to prevent IPC spam
@@ -255,34 +271,32 @@ TOKEN_DRAG_END → World View (commits final snapped position)
 **Caller:** `src/utils/AssetProcessor.ts:112`
 
 **Renderer:**
+
 ```typescript
-const arrayBuffer = await blob.arrayBuffer()
-const filePath = await window.ipcRenderer.invoke(
-  'SAVE_ASSET_TEMP',
-  arrayBuffer,
-  'goblin.webp'
-)
+const arrayBuffer = await blob.arrayBuffer();
+const filePath = await window.ipcRenderer.invoke('SAVE_ASSET_TEMP', arrayBuffer, 'goblin.webp');
 // Returns: "file:///Users/.../Graphium/temp_assets/1234567890-goblin.webp"
 ```
 
 **Main Process:** `electron/main.ts:259`
+
 ```typescript
 ipcMain.handle('SAVE_ASSET_TEMP', async (_event, buffer: ArrayBuffer, name: string) => {
-  const tempDir = path.join(app.getPath('userData'), 'temp_assets')
-  await fs.mkdir(tempDir, { recursive: true })
-  const fileName = `${Date.now()}-${name}`
-  const filePath = path.join(tempDir, fileName)
-  await fs.writeFile(filePath, Buffer.from(buffer))
-  return `file://${filePath}`
-})
+  const tempDir = path.join(app.getPath('userData'), 'temp_assets');
+  await fs.mkdir(tempDir, { recursive: true });
+  const fileName = `${Date.now()}-${name}`;
+  const filePath = path.join(tempDir, fileName);
+  await fs.writeFile(filePath, Buffer.from(buffer));
+  return `file://${filePath}`;
+});
 ```
 
 #### Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `buffer` | `ArrayBuffer` | WebP image data (already resized and optimized) |
-| `name` | `string` | Original filename with .webp extension |
+| Parameter | Type          | Description                                     |
+| --------- | ------------- | ----------------------------------------------- |
+| `buffer`  | `ArrayBuffer` | WebP image data (already resized and optimized) |
+| `name`    | `string`      | Original filename with .webp extension          |
 
 #### Returns
 
@@ -322,73 +336,76 @@ ipcMain.handle('SAVE_ASSET_TEMP', async (_event, buffer: ArrayBuffer, name: stri
 **Caller:** `src/App.tsx:89`
 
 **Renderer:**
+
 ```typescript
 const gameState = {
   tokens: useGameStore.getState().tokens,
   drawings: useGameStore.getState().drawings,
-  gridSize: useGameStore.getState().gridSize
-}
+  gridSize: useGameStore.getState().gridSize,
+};
 
-const success = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', gameState)
+const success = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', gameState);
 if (success) {
-  alert('Campaign Saved Successfully!')
+  alert('Campaign Saved Successfully!');
 }
 ```
 
 **Main Process:** `electron/main.ts:309`
+
 ```typescript
 ipcMain.handle('SAVE_CAMPAIGN', async (_event, gameState: any) => {
   const { filePath } = await dialog.showSaveDialog({
-    filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }]
-  })
-  if (!filePath) return false
+    filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }],
+  });
+  if (!filePath) return false;
 
-  const zip = new JSZip()
-  const assetsFolder = zip.folder("assets")
-  const stateToSave = JSON.parse(JSON.stringify(gameState))
+  const zip = new JSZip();
+  const assetsFolder = zip.folder('assets');
+  const stateToSave = JSON.parse(JSON.stringify(gameState));
 
   // Copy token assets into ZIP and rewrite paths
   for (const token of stateToSave.tokens) {
     if (token.src.startsWith('file://')) {
-      const absolutePath = fileURLToPath(token.src)
-      const basename = path.basename(absolutePath)
-      const content = await fs.readFile(absolutePath)
-      assetsFolder?.file(basename, content)
-      token.src = `assets/${basename}`
+      const absolutePath = fileURLToPath(token.src);
+      const basename = path.basename(absolutePath);
+      const content = await fs.readFile(absolutePath);
+      assetsFolder?.file(basename, content);
+      token.src = `assets/${basename}`;
     }
   }
 
-  zip.file("manifest.json", JSON.stringify(stateToSave))
-  const content = await zip.generateAsync({ type: "nodebuffer" })
-  await fs.writeFile(filePath, content)
-  return true
-})
+  zip.file('manifest.json', JSON.stringify(stateToSave));
+  const content = await zip.generateAsync({ type: 'nodebuffer' });
+  await fs.writeFile(filePath, content);
+  return true;
+});
 ```
 
 #### Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter   | Type                   | Description                                |
+| ----------- | ---------------------- | ------------------------------------------ |
 | `gameState` | `GameStateSavePayload` | Campaign data (tokens, drawings, gridSize) |
 
 **GameStateSavePayload:**
+
 ```typescript
 {
   tokens: Array<{
-    id: string
-    x: number
-    y: number
-    src: string  // file:// URL
-    scale: number
-  }>
+    id: string;
+    x: number;
+    y: number;
+    src: string; // file:// URL
+    scale: number;
+  }>;
   drawings: Array<{
-    id: string
-    tool: 'marker' | 'eraser'
-    points: number[]  // [x1, y1, x2, y2, ...]
-    color: string
-    size: number
-  }>
-  gridSize: number
+    id: string;
+    tool: 'marker' | 'eraser';
+    points: number[]; // [x1, y1, x2, y2, ...]
+    color: string;
+    size: number;
+  }>;
+  gridSize: number;
 }
 ```
 
@@ -408,6 +425,7 @@ campaign.graphium (ZIP archive)
 ```
 
 **manifest.json format:**
+
 ```json
 {
   "tokens": [
@@ -442,11 +460,13 @@ campaign.graphium (ZIP archive)
 #### Path Rewriting
 
 **Before save (machine-specific):**
+
 ```
 token.src = "file:///Users/alice/Library/Application Support/Graphium/temp_assets/1234567890-goblin.webp"
 ```
 
 **After save (portable):**
+
 ```
 token.src = "assets/1234567890-goblin.webp"
 ```
@@ -479,53 +499,55 @@ This makes .graphium files portable across machines and operating systems.
 **Caller:** `src/App.tsx:103`
 
 **Renderer:**
+
 ```typescript
-const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN')
+const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN');
 if (state) {
-  useGameStore.getState().setState(state)
-  alert('Campaign Loaded!')
+  useGameStore.getState().setState(state);
+  alert('Campaign Loaded!');
 }
 ```
 
 **Main Process:** `electron/main.ts:378`
+
 ```typescript
 ipcMain.handle('LOAD_CAMPAIGN', async () => {
   const { filePaths } = await dialog.showOpenDialog({
-    filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }]
-  })
-  if (filePaths.length === 0) return null
+    filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }],
+  });
+  if (filePaths.length === 0) return null;
 
-  const zipContent = await fs.readFile(filePaths[0])
-  const zip = await JSZip.loadAsync(zipContent)
+  const zipContent = await fs.readFile(filePaths[0]);
+  const zip = await JSZip.loadAsync(zipContent);
 
-  const sessionDir = path.join(app.getPath('userData'), 'sessions', Date.now().toString())
-  await fs.mkdir(sessionDir, { recursive: true })
+  const sessionDir = path.join(app.getPath('userData'), 'sessions', Date.now().toString());
+  await fs.mkdir(sessionDir, { recursive: true });
 
-  const manifestStr = await zip.file("manifest.json")?.async("string")
-  if (!manifestStr) throw new Error("Invalid Graphium file")
+  const manifestStr = await zip.file('manifest.json')?.async('string');
+  if (!manifestStr) throw new Error('Invalid Graphium file');
 
-  const state = JSON.parse(manifestStr)
+  const state = JSON.parse(manifestStr);
 
-  const assets = zip.folder("assets")
+  const assets = zip.folder('assets');
   if (assets) {
-    const assetsDir = path.join(sessionDir, 'assets')
-    await fs.mkdir(assetsDir, { recursive: true })
+    const assetsDir = path.join(sessionDir, 'assets');
+    await fs.mkdir(assetsDir, { recursive: true });
 
     for (const token of state.tokens) {
       if (token.src.startsWith('assets/')) {
-        const fileName = path.basename(token.src)
-        const fileData = await assets.file(fileName)?.async("nodebuffer")
+        const fileName = path.basename(token.src);
+        const fileData = await assets.file(fileName)?.async('nodebuffer');
         if (fileData) {
-          const destPath = path.join(assetsDir, fileName)
-          await fs.writeFile(destPath, fileData)
-          token.src = `file://${destPath}`
+          const destPath = path.join(assetsDir, fileName);
+          await fs.writeFile(destPath, fileData);
+          token.src = `file://${destPath}`;
         }
       }
     }
   }
 
-  return state
-})
+  return state;
+});
 ```
 
 #### Parameters
@@ -537,6 +559,7 @@ None - Uses native file picker dialog
 `GameState | null` - Campaign state with file:// URLs, or `null` if user cancelled
 
 **GameState:**
+
 ```typescript
 {
   tokens: Token[]
@@ -563,11 +586,13 @@ None - Uses native file picker dialog
 #### Path Rewriting
 
 **In .graphium file (relative):**
+
 ```
 token.src = "assets/goblin.webp"
 ```
 
 **After load (machine-specific):**
+
 ```
 token.src = "file:///Users/alice/Library/Application Support/Graphium/sessions/1702834567890/assets/goblin.webp"
 ```
@@ -575,6 +600,7 @@ token.src = "file:///Users/alice/Library/Application Support/Graphium/sessions/1
 #### Session Directories
 
 **Why unique session directories:**
+
 - Avoid conflicts when loading multiple campaigns in succession
 - No cleanup needed between loads
 - Clean separation between temp uploads and loaded campaigns
@@ -605,11 +631,11 @@ token.src = "file:///Users/alice/Library/Application Support/Graphium/sessions/1
 
 ```typescript
 interface Token {
-  id: string           // UUID generated with crypto.randomUUID()
-  x: number            // Grid-snapped X position in pixels
-  y: number            // Grid-snapped Y position in pixels
-  src: string          // Image URL (file:// or https://)
-  scale: number        // Size multiplier (1 = 1x1 cell, 2 = 2x2 cells)
+  id: string; // UUID generated with crypto.randomUUID()
+  x: number; // Grid-snapped X position in pixels
+  y: number; // Grid-snapped Y position in pixels
+  src: string; // Image URL (file:// or https://)
+  scale: number; // Size multiplier (1 = 1x1 cell, 2 = 2x2 cells)
 }
 ```
 
@@ -617,11 +643,11 @@ interface Token {
 
 ```typescript
 interface Drawing {
-  id: string                    // UUID
-  tool: 'marker' | 'eraser'     // Drawing tool used
-  points: number[]              // Flat array [x1, y1, x2, y2, ...]
-  color: string                 // Stroke color (hex)
-  size: number                  // Stroke width in pixels
+  id: string; // UUID
+  tool: 'marker' | 'eraser'; // Drawing tool used
+  points: number[]; // Flat array [x1, y1, x2, y2, ...]
+  color: string; // Stroke color (hex)
+  size: number; // Stroke width in pixels
 }
 ```
 
@@ -629,9 +655,9 @@ interface Drawing {
 
 ```typescript
 interface GameState {
-  tokens: Token[]
-  drawings: Drawing[]
-  gridSize: number      // Grid cell size in pixels (typically 50)
+  tokens: Token[];
+  drawings: Drawing[];
+  gridSize: number; // Grid cell size in pixels (typically 50)
 }
 ```
 
@@ -640,7 +666,7 @@ interface GameState {
 Same as `GameState` - sent via SYNC_WORLD_STATE channel
 
 ```typescript
-type GameStateSyncPayload = GameState
+type GameStateSyncPayload = GameState;
 ```
 
 ### GameStateSavePayload
@@ -648,7 +674,7 @@ type GameStateSyncPayload = GameState
 Same as `GameState` - passed to SAVE_CAMPAIGN handler
 
 ```typescript
-type GameStateSavePayload = GameState
+type GameStateSavePayload = GameState;
 ```
 
 ---
@@ -658,27 +684,29 @@ type GameStateSavePayload = GameState
 ### General Pattern
 
 **Renderer side:**
+
 ```typescript
 try {
-  const result = await window.ipcRenderer.invoke('CHANNEL_NAME', args)
+  const result = await window.ipcRenderer.invoke('CHANNEL_NAME', args);
   // Handle success
 } catch (error) {
-  console.error('IPC error:', error)
-  alert('Operation failed: ' + error.message)
+  console.error('IPC error:', error);
+  alert('Operation failed: ' + error.message);
 }
 ```
 
 **Main process side:**
+
 ```typescript
 ipcMain.handle('CHANNEL_NAME', async (event, args) => {
   try {
     // Perform operation
-    return result
+    return result;
   } catch (error) {
-    console.error('Handler error:', error)
-    throw error  // Propagates to renderer
+    console.error('Handler error:', error);
+    throw error; // Propagates to renderer
   }
-})
+});
 ```
 
 ### Error Types
@@ -713,7 +741,7 @@ Error: Invalid or unsupported zip format
 
 ```typescript
 // Invalid .graphium file (missing manifest.json)
-throw new Error("Invalid Graphium file")
+throw new Error('Invalid Graphium file');
 ```
 
 ---
@@ -729,26 +757,28 @@ throw new Error("Invalid Graphium file")
 **Caller:** `src/App.tsx:107` (handlePauseToggle function)
 
 **Renderer (Architect):**
+
 ```typescript
 // DM clicks pause/play button in toolbar
-const newState = await window.ipcRenderer.invoke('TOGGLE_PAUSE')
+const newState = await window.ipcRenderer.invoke('TOGGLE_PAUSE');
 ```
 
 **Main Process:** `electron/main.ts:780`
+
 ```typescript
 ipcMain.handle('TOGGLE_PAUSE', () => {
-  isGamePaused = !isGamePaused
+  isGamePaused = !isGamePaused;
 
   // Broadcast to both windows
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+    mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused);
   }
   if (worldWindow && !worldWindow.isDestroyed()) {
-    worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+    worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused);
   }
 
-  return isGamePaused
-})
+  return isGamePaused;
+});
 ```
 
 #### Returns
@@ -785,17 +815,19 @@ New pause state (`true` = paused, `false` = playing)
 **Caller:** `src/components/PauseManager.tsx:69`
 
 **Renderer (Both Windows):**
+
 ```typescript
 // PauseManager fetches initial state on mount
-const isPaused = await window.ipcRenderer.invoke('GET_PAUSE_STATE')
-setIsGamePaused(isPaused)
+const isPaused = await window.ipcRenderer.invoke('GET_PAUSE_STATE');
+setIsGamePaused(isPaused);
 ```
 
 **Main Process:** `electron/main.ts:801`
+
 ```typescript
 ipcMain.handle('GET_PAUSE_STATE', () => {
-  return isGamePaused
-})
+  return isGamePaused;
+});
 ```
 
 #### Returns
@@ -820,11 +852,10 @@ Current pause state (`true` = paused, `false` = playing)
 #### Error Handling
 
 ```typescript
-window.ipcRenderer.invoke('GET_PAUSE_STATE')
-  .catch((error) => {
-    console.error('[PauseManager] Failed to fetch pause state:', error)
-    showToast('Failed to sync pause state', 'error')
-  })
+window.ipcRenderer.invoke('GET_PAUSE_STATE').catch((error) => {
+  console.error('[PauseManager] Failed to fetch pause state:', error);
+  showToast('Failed to sync pause state', 'error');
+});
 ```
 
 ---
@@ -840,21 +871,23 @@ window.ipcRenderer.invoke('GET_PAUSE_STATE')
 **Sender:** `electron/main.ts:784-789` (TOGGLE_PAUSE handler)
 
 **Main Process (Broadcaster):**
+
 ```typescript
 // After toggling pause state
 if (mainWindow && !mainWindow.isDestroyed()) {
-  mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+  mainWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused);
 }
 if (worldWindow && !worldWindow.isDestroyed()) {
-  worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused)
+  worldWindow.webContents.send('PAUSE_STATE_CHANGED', isGamePaused);
 }
 ```
 
 **Renderer (Subscriber):** `src/components/PauseManager.tsx:85`
+
 ```typescript
 window.ipcRenderer.on('PAUSE_STATE_CHANGED', (_event, isPaused: boolean) => {
-  setIsGamePaused(isPaused)
-})
+  setIsGamePaused(isPaused);
+});
 ```
 
 #### Payload
@@ -891,13 +924,13 @@ DM clicks button → App.tsx invokes TOGGLE_PAUSE
 
 ```typescript
 useEffect(() => {
-  const handler = (_event, isPaused) => setIsGamePaused(isPaused)
-  window.ipcRenderer.on('PAUSE_STATE_CHANGED', handler)
+  const handler = (_event, isPaused) => setIsGamePaused(isPaused);
+  window.ipcRenderer.on('PAUSE_STATE_CHANGED', handler);
 
   return () => {
-    window.ipcRenderer.off('PAUSE_STATE_CHANGED', handler)
-  }
-}, [])
+    window.ipcRenderer.off('PAUSE_STATE_CHANGED', handler);
+  };
+}, []);
 ```
 
 ---
@@ -913,16 +946,18 @@ useEffect(() => {
 **Caller:** `src/utils/errorSanitizer.ts`, `src/components/PrivacyErrorBoundary.tsx`
 
 **Renderer:**
+
 ```typescript
-const username = await window.errorReporting.getUsername()
+const username = await window.errorReporting.getUsername();
 // Returns: "johnsmith" (or current system username)
 ```
 
 **Main Process:** `electron/main.ts`
+
 ```typescript
 ipcMain.handle('get-username', () => {
-  return os.userInfo().username
-})
+  return os.userInfo().username;
+});
 ```
 
 #### Returns
@@ -932,6 +967,7 @@ ipcMain.handle('get-username', () => {
 #### Purpose
 
 Used by error reporting system to sanitize file paths in stack traces:
+
 - `/Users/johnsmith/project/file.ts` → `/Users/<USER>/project/file.ts`
 
 #### Related Files
@@ -953,27 +989,29 @@ Used by error reporting system to sanitize file paths in stack traces:
 **Caller:** `src/components/PrivacyErrorBoundary.tsx`
 
 **Renderer:**
+
 ```typescript
-const success = await window.errorReporting.openExternal('mailto:support@example.com')
+const success = await window.errorReporting.openExternal('mailto:support@example.com');
 // Opens email client with mailto link
 ```
 
 **Main Process:** `electron/main.ts`
+
 ```typescript
 ipcMain.handle('open-external', async (_event, url: string) => {
   if (url.startsWith('mailto:') || url.startsWith('https:')) {
-    await shell.openExternal(url)
-    return true
+    await shell.openExternal(url);
+    return true;
   }
-  return false
-})
+  return false;
+});
 ```
 
 #### Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `url` | `string` | URL to open (must start with `mailto:` or `https:`) |
+| Parameter | Type     | Description                                         |
+| --------- | -------- | --------------------------------------------------- |
+| `url`     | `string` | URL to open (must start with `mailto:` or `https:`) |
 
 #### Returns
 
@@ -1002,16 +1040,18 @@ Only allows `mailto:` and `https:` URLs to prevent security issues. Other protoc
 **Caller:** `src/components/PrivacyErrorBoundary.tsx`
 
 **Renderer:**
+
 ```typescript
-const result = await window.errorReporting.saveToFile(reportContent)
+const result = await window.errorReporting.saveToFile(reportContent);
 if (result.success) {
-  console.log('Saved to:', result.filePath)
+  console.log('Saved to:', result.filePath);
 } else {
-  console.error('Failed:', result.reason)
+  console.error('Failed:', result.reason);
 }
 ```
 
 **Main Process:** `electron/main.ts`
+
 ```typescript
 ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
   const { filePath, canceled } = await dialog.showSaveDialog({
@@ -1021,21 +1061,21 @@ ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
       { name: 'Text Files', extensions: ['txt'] },
       { name: 'All Files', extensions: ['*'] },
     ],
-  })
+  });
 
   if (canceled || !filePath) {
-    return { success: false, reason: 'User canceled' }
+    return { success: false, reason: 'User canceled' };
   }
 
-  await fs.writeFile(filePath, reportContent, 'utf-8')
-  return { success: true, filePath }
-})
+  await fs.writeFile(filePath, reportContent, 'utf-8');
+  return { success: true, filePath };
+});
 ```
 
 #### Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter       | Type     | Description                                  |
+| --------------- | -------- | -------------------------------------------- |
 | `reportContent` | `string` | The error report content to save (sanitized) |
 
 #### Returns
@@ -1063,18 +1103,18 @@ ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
 ```typescript
 // Define payload interface
 interface SaveCampaignPayload {
-  tokens: Token[]
-  drawings: Drawing[]
-  gridSize: number
+  tokens: Token[];
+  drawings: Drawing[];
+  gridSize: number;
 }
 
 // Type the invoke call
 const payload: SaveCampaignPayload = {
   tokens: store.tokens,
   drawings: store.drawings,
-  gridSize: store.gridSize
-}
-const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', payload)
+  gridSize: store.gridSize,
+};
+const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', payload);
 ```
 
 ### 2. Error Handling
@@ -1083,13 +1123,13 @@ const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', payload)
 
 ```typescript
 try {
-  const result = await window.ipcRenderer.invoke('CHANNEL', data)
+  const result = await window.ipcRenderer.invoke('CHANNEL', data);
   // Success path
 } catch (error) {
   // Error path - always handle gracefully
-  console.error('IPC failed:', error)
+  console.error('IPC failed:', error);
   // Show user-friendly error message
-  alert('Operation failed. Please try again.')
+  alert('Operation failed. Please try again.');
 }
 ```
 
@@ -1108,11 +1148,12 @@ const throttleDragBroadcast = (tokenId: string, x: number, y: number) => {
   const now = Date.now();
   const lastBroadcast = dragBroadcastThrottleRef.current.get(tokenId) || 0;
 
-  if (now - lastBroadcast >= 16) { // ~60fps
+  if (now - lastBroadcast >= 16) {
+    // ~60fps
     dragBroadcastThrottleRef.current.set(tokenId, now);
     window.ipcRenderer.send('SYNC_WORLD_STATE', {
       type: 'TOKEN_DRAG_MOVE',
-      payload: { id: tokenId, x, y }
+      payload: { id: tokenId, x, y },
     });
   }
 };
@@ -1126,14 +1167,14 @@ const throttleDragBroadcast = (tokenId: string, x: number, y: number) => {
 useEffect(() => {
   const handler = (event, data) => {
     // Handle data
-  }
+  };
 
-  window.ipcRenderer.on('CHANNEL', handler)
+  window.ipcRenderer.on('CHANNEL', handler);
 
   return () => {
-    window.ipcRenderer.off('CHANNEL', handler)
-  }
-}, [])
+    window.ipcRenderer.off('CHANNEL', handler);
+  };
+}, []);
 ```
 
 ### 5. Security
@@ -1142,12 +1183,12 @@ useEffect(() => {
 
 ```typescript
 // ❌ BAD - Exposes entire fs module
-contextBridge.exposeInMainWorld('fs', fs)
+contextBridge.exposeInMainWorld('fs', fs);
 
 // ✅ GOOD - Exposes controlled API
 contextBridge.exposeInMainWorld('ipcRenderer', {
-  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args)
-})
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+});
 ```
 
 **Validate IPC inputs in main process:**
@@ -1156,11 +1197,11 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 ipcMain.handle('SAVE_CAMPAIGN', async (event, gameState) => {
   // Validate input
   if (!gameState.tokens || !Array.isArray(gameState.tokens)) {
-    throw new Error('Invalid gameState: tokens must be an array')
+    throw new Error('Invalid gameState: tokens must be an array');
   }
 
   // Continue with validated data
-})
+});
 ```
 
 ### 6. Documentation
@@ -1171,7 +1212,7 @@ ipcMain.handle('SAVE_CAMPAIGN', async (event, gameState) => {
 // IPC invoke to main process (shows save dialog, creates ZIP)
 // See electron/main.ts:309 for handler implementation
 // Returns: boolean (true if saved, false if cancelled)
-const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', dataToSave)
+const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', dataToSave);
 ```
 
 ---
@@ -1181,33 +1222,38 @@ const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', dataToSave)
 ### Enable IPC Logging
 
 **Main process:**
+
 ```typescript
 ipcMain.on('*', (event, ...args) => {
-  console.log('IPC event:', event.sender.getURL(), ...args)
-})
+  console.log('IPC event:', event.sender.getURL(), ...args);
+});
 ```
 
 **Renderer process:**
+
 ```typescript
 // Log all IPC sends
-const originalSend = window.ipcRenderer.send
-window.ipcRenderer.send = function(channel, ...args) {
-  console.log('IPC send:', channel, args)
-  return originalSend.call(this, channel, ...args)
-}
+const originalSend = window.ipcRenderer.send;
+window.ipcRenderer.send = function (channel, ...args) {
+  console.log('IPC send:', channel, args);
+  return originalSend.call(this, channel, ...args);
+};
 ```
 
 ### Common Issues
 
 **Issue: "window.ipcRenderer is undefined"**
+
 - **Cause:** Preload script not loaded or context bridge not set up
 - **Fix:** Check `webPreferences.preload` path in BrowserWindow config
 
 **Issue: IPC call hangs forever**
+
 - **Cause:** Handler not registered in main process
 - **Fix:** Verify `ipcMain.handle()` or `ipcMain.on()` is called before window loads
 
 **Issue: State not syncing to World Window**
+
 - **Cause:** World Window not created or destroyed
 - **Fix:** Check `worldWindow && !worldWindow.isDestroyed()` before sending
 

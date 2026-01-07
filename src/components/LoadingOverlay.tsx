@@ -82,10 +82,7 @@ export function LoadingOverlay() {
   const isGamePaused = useGameStore((state) => state.isGamePaused);
 
   // Roll for a random loading message; stable during a pause, re-rolls when pause state changes
-  const loadingMessage = useMemo(
-    () => rollForMessage('LOADING_PAUSE_OVERLAY'),
-    [isGamePaused],
-  );
+  const loadingMessage = useMemo(() => rollForMessage('LOADING_PAUSE_OVERLAY'), [isGamePaused]);
 
   // Don't render overlay when game is not paused
   if (!isGamePaused) {

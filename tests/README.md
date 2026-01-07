@@ -80,6 +80,7 @@ Our tests focus on **behavior and functionality**, not visual appearance. This m
 ### Test Philosophy
 
 **Good Test (Behavior):**
+
 ```typescript
 test('should persist campaign name after reload', async ({ page }) => {
   await createNewCampaign(page, 'My Campaign');
@@ -87,12 +88,13 @@ test('should persist campaign name after reload', async ({ page }) => {
 
   await expect(
     page.locator('[data-testid="campaign-title"]'),
-    'Campaign name should persist after reload'
+    'Campaign name should persist after reload',
   ).toHaveText('My Campaign');
 });
 ```
 
 **Bad Test (Appearance):**
+
 ```typescript
 test('should have correct styles', async ({ page }) => {
   await expect(page.locator('.title')).toHaveCSS('color', 'rgb(0, 0, 0)');
@@ -136,10 +138,7 @@ Always include custom error messages:
 await expect(button).toBeVisible();
 
 // ✅ Good - clear context
-await expect(
-  button,
-  'Save button should appear after making changes'
-).toBeVisible();
+await expect(button, 'Save button should appear after making changes').toBeVisible();
 ```
 
 ### Step 4: Focus on Behavior
@@ -248,6 +247,7 @@ npx playwright show-trace trace.zip
 ```
 
 Includes:
+
 - Video recording
 - DOM snapshots
 - Network activity
@@ -262,6 +262,7 @@ Tests run automatically on **every PR** via GitHub Actions.
 ### Workflow: `.github/workflows/e2e.yml`
 
 **Jobs:**
+
 1. **test-web** - Web tests (sharded 3 ways for speed)
 2. **test-electron** - Electron tests
 3. **merge-reports** - Combine results into single report
@@ -286,13 +287,13 @@ PRs **cannot merge** until all tests pass:
 
 ## 📊 Test Coverage Goals
 
-| Area | Target | Current |
-|------|--------|---------|
-| Campaign workflows | 80% | 🔨 In progress |
-| State persistence | 90% | 🔨 In progress |
-| Token management | 70% | ⏳ Planned |
-| Electron features | 60% | ⏳ Planned |
-| Accessibility | 100% | ✅ Complete |
+| Area               | Target | Current        |
+| ------------------ | ------ | -------------- |
+| Campaign workflows | 80%    | 🔨 In progress |
+| State persistence  | 90%    | 🔨 In progress |
+| Token management   | 70%    | ⏳ Planned     |
+| Electron features  | 60%    | ⏳ Planned     |
+| Accessibility      | 100%   | ✅ Complete    |
 
 ---
 
@@ -353,16 +354,19 @@ test('should communicate via IPC', async ({ page }) => {
 If a test is flaky:
 
 1. **Add explicit waits**:
+
    ```typescript
    await page.waitForLoadState('networkidle');
    ```
 
 2. **Use `waitFor` assertions**:
+
    ```typescript
    await expect(locator).toBeVisible({ timeout: 10000 });
    ```
 
 3. **Avoid timers** - use `waitForFunction` instead:
+
    ```typescript
    // ❌ Bad
    await page.waitForTimeout(1000);
@@ -402,6 +406,7 @@ test.describe('Feature Name', () => {
 ```
 
 **Examples:**
+
 - ✅ `should create campaign when user provides valid name`
 - ✅ `should persist token positions after page reload`
 - ❌ `test 1` (not descriptive)
@@ -425,6 +430,7 @@ A: Likely a timing issue. Add explicit waits or increase timeouts.
 
 **Q: How do I skip a test temporarily?**
 A: Use `test.skip()` or `test.fixme()` with a reason:
+
 ```typescript
 test.skip('should do X', async ({ page }) => {
   // TODO: Fix after redesign

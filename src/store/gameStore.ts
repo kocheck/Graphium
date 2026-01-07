@@ -12,6 +12,7 @@ export interface TokenMetadata {
   type?: 'PC' | 'NPC';
   visionRadius?: number;
   scale?: number;
+  movementSpeed?: number;
 }
 
 /**
@@ -42,6 +43,7 @@ export interface Token {
   type?: 'PC' | 'NPC'; // Override for library defaultType
   visionRadius?: number; // Override for library defaultVisionRadius
   name?: string; // Override for library name
+  movementSpeed?: number; // Movement speed in feet (default: 30ft)
 }
 
 /**
@@ -80,8 +82,13 @@ export interface MapConfig {
 
 /**
  * GridType determines how the tactical grid is displayed
+ *
+ * Visual modes for each geometry:
+ * - LINES/DOTS/HIDDEN: Square grid (orthogonal)
+ * - HEXAGONAL: Hexagonal grid (flat-top orientation)
+ * - ISOMETRIC: Diamond/isometric grid (45° rotation)
  */
-export type GridType = 'LINES' | 'DOTS' | 'HIDDEN';
+export type GridType = 'LINES' | 'DOTS' | 'HIDDEN' | 'HEXAGONAL' | 'ISOMETRIC';
 
 /**
  * MapData represents the persistent state of a single map within a campaign
@@ -96,6 +103,7 @@ export interface MapData {
   map: MapConfig | null;
   gridSize: number;
   gridType: GridType;
+  gridColor: string; // Hex color for grid lines (e.g., '#222')
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
 }
@@ -122,6 +130,7 @@ export interface TokenLibraryItem {
   defaultScale?: number; // Optional default scale when placed
   defaultVisionRadius?: number; // Optional default vision radius
   defaultType?: 'PC' | 'NPC'; // Optional default token type
+  defaultMovementSpeed?: number; // Optional default movement speed in feet
 }
 
 /**
@@ -216,7 +225,13 @@ export interface Stairs {
 /**
  * Maximum number of explored regions to store in memory.
  */
-const MAX_EXPLORED_REGIONS = 200;
+const MAX_EXPLORED_REGIONS = 2000;
+
+/**
+ * Default grid color (Dark Gray) for light mode.
+ * Adaptively mapped to lighter gray in dark mode via CanvasManager.
+ */
+export const DEFAULT_GRID_COLOR = '#222222';
 
 /**
  * Helper to create a default empty map
@@ -231,6 +246,7 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
   map: null,
   gridSize: 50,
   gridType: 'LINES',
+  gridColor: DEFAULT_GRID_COLOR, // Default dark gray grid
   exploredRegions: [],
   isDaylightMode: false,
 });
@@ -266,6 +282,7 @@ export interface GameState {
   stairs: Stairs[];
   gridSize: number;
   gridType: GridType;
+  gridColor: string;
   map: MapConfig | null;
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
@@ -316,7 +333,10 @@ export interface GameState {
   removeTokens: (ids: string[]) => void;
   updateTokenPosition: (id: string, x: number, y: number) => void;
   updateTokenTransform: (id: string, x: number, y: number, scale: number) => void;
-  updateTokenProperties: (id: string, properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>) => void;
+  updateTokenProperties: (
+    id: string,
+    properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>,
+  ) => void;
 
   // Drawing Actions
   addDrawing: (drawing: Drawing) => void;
@@ -344,6 +364,7 @@ export interface GameState {
   // Map/Grid Attributes Actions
   setGridSize: (size: number) => void;
   setGridType: (type: GridType) => void;
+  setGridColor: (color: string) => void;
   setMap: (map: MapConfig | null) => void;
   updateMapPosition: (x: number, y: number) => void;
   updateMapScale: (scale: number) => void;
@@ -391,6 +412,7 @@ export const useGameStore = create<GameState>((set, get) => {
     stairs: initialMap.stairs,
     gridSize: initialMap.gridSize,
     gridType: initialMap.gridType,
+    gridColor: initialMap.gridColor,
     map: initialMap.map,
     exploredRegions: initialMap.exploredRegions,
     isDaylightMode: initialMap.isDaylightMode,
@@ -432,6 +454,7 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: activeMap.stairs || [],
         gridSize: activeMap.gridSize || 50,
         gridType: activeMap.gridType || 'LINES',
+        gridColor: activeMap.gridColor || DEFAULT_GRID_COLOR,
         map: activeMap.map || null,
         exploredRegions: activeMap.exploredRegions || [],
         isDaylightMode: activeMap.isDaylightMode || false,
@@ -460,28 +483,31 @@ export const useGameStore = create<GameState>((set, get) => {
       });
     },
 
-    addTokenToLibrary: (item: TokenLibraryItem) => set((state) => ({
-      campaign: {
-        ...state.campaign,
-        tokenLibrary: [...(state.campaign.tokenLibrary || []), item]
-      }
-    })),
+    addTokenToLibrary: (item: TokenLibraryItem) =>
+      set((state) => ({
+        campaign: {
+          ...state.campaign,
+          tokenLibrary: [...(state.campaign.tokenLibrary || []), item],
+        },
+      })),
 
-    removeTokenFromLibrary: (id: string) => set((state) => ({
-      campaign: {
-        ...state.campaign,
-        tokenLibrary: (state.campaign.tokenLibrary || []).filter(item => item.id !== id)
-      }
-    })),
+    removeTokenFromLibrary: (id: string) =>
+      set((state) => ({
+        campaign: {
+          ...state.campaign,
+          tokenLibrary: (state.campaign.tokenLibrary || []).filter((item) => item.id !== id),
+        },
+      })),
 
-    updateLibraryToken: (id: string, updates: Partial<TokenLibraryItem>) => set((state) => ({
-      campaign: {
-        ...state.campaign,
-        tokenLibrary: (state.campaign.tokenLibrary || []).map(item =>
-          item.id === id ? { ...item, ...updates } : item
-        )
-      }
-    })),
+    updateLibraryToken: (id: string, updates: Partial<TokenLibraryItem>) =>
+      set((state) => ({
+        campaign: {
+          ...state.campaign,
+          tokenLibrary: (state.campaign.tokenLibrary || []).map((item) =>
+            item.id === id ? { ...item, ...updates } : item,
+          ),
+        },
+      })),
 
     syncActiveMapToCampaign: () => {
       const state = get();
@@ -497,6 +523,7 @@ export const useGameStore = create<GameState>((set, get) => {
         map: state.map,
         gridSize: state.gridSize,
         gridType: state.gridType,
+        gridColor: state.gridColor,
         exploredRegions: state.exploredRegions,
         isDaylightMode: state.isDaylightMode,
       };
@@ -508,7 +535,7 @@ export const useGameStore = create<GameState>((set, get) => {
             ...state.campaign.maps,
             [activeId]: updatedMap,
           },
-        }
+        },
       }));
     },
 
@@ -523,9 +550,9 @@ export const useGameStore = create<GameState>((set, get) => {
           ...state.campaign,
           maps: {
             ...state.campaign.maps,
-            [newMap.id]: newMap
+            [newMap.id]: newMap,
           },
-          activeMapId: newMap.id
+          activeMapId: newMap.id,
         },
         // Switch to new map immediately
         tokens: newMap.tokens,
@@ -587,13 +614,13 @@ export const useGameStore = create<GameState>((set, get) => {
       // Now delete from store (need to fetch fresh state after potential switch)
       set((currentState) => {
         const remainingMaps = Object.fromEntries(
-          Object.entries(currentState.campaign.maps).filter(([id]) => id !== mapId)
+          Object.entries(currentState.campaign.maps).filter(([id]) => id !== mapId),
         );
         return {
           campaign: {
             ...currentState.campaign,
             maps: remainingMaps,
-          }
+          },
         };
       });
     },
@@ -637,106 +664,131 @@ export const useGameStore = create<GameState>((set, get) => {
             ...state.campaign.maps,
             [mapId]: {
               ...state.campaign.maps[mapId],
-              name: newName
-            }
-          }
-        }
+              name: newName,
+            },
+          },
+        },
       }));
     },
 
     // --- Token Actions (Modifies Active State) ---
     addToken: (token: Token) => set((state) => ({ tokens: [...state.tokens, token] })),
-    removeToken: (id: string) => set((state) => ({ tokens: state.tokens.filter(t => t.id !== id) })),
-    removeTokens: (ids: string[]) => set((state) => ({ tokens: state.tokens.filter(t => !ids.includes(t.id)) })),
-    updateTokenPosition: (id: string, x: number, y: number) => set((state) => ({
-      tokens: state.tokens.map(t => t.id === id ? { ...t, x, y } : t)
-    })),
-    updateTokenTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
-      tokens: state.tokens.map(t => t.id === id ? { ...t, x, y, scale } : t)
-    })),
-    updateTokenProperties: (id: string, properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>) => set((state) => ({
-      tokens: state.tokens.map(t => t.id === id ? { ...t, ...properties } : t)
-    })),
+    removeToken: (id: string) =>
+      set((state) => ({ tokens: state.tokens.filter((t) => t.id !== id) })),
+    removeTokens: (ids: string[]) =>
+      set((state) => ({ tokens: state.tokens.filter((t) => !ids.includes(t.id)) })),
+    updateTokenPosition: (id: string, x: number, y: number) =>
+      set((state) => ({
+        tokens: state.tokens.map((t) => (t.id === id ? { ...t, x, y } : t)),
+      })),
+    updateTokenTransform: (id: string, x: number, y: number, scale: number) =>
+      set((state) => ({
+        tokens: state.tokens.map((t) => (t.id === id ? { ...t, x, y, scale } : t)),
+      })),
+    updateTokenProperties: (
+      id: string,
+      properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>,
+    ) =>
+      set((state) => ({
+        tokens: state.tokens.map((t) => (t.id === id ? { ...t, ...properties } : t)),
+      })),
 
     // --- Drawing Actions ---
     addDrawing: (drawing: Drawing) => set((state) => ({ drawings: [...state.drawings, drawing] })),
-    removeDrawing: (id: string) => set((state) => ({ drawings: state.drawings.filter(d => d.id !== id) })),
-    removeDrawings: (ids: string[]) => set((state) => ({ drawings: state.drawings.filter(d => !ids.includes(d.id)) })),
-    updateDrawingTransform: (id: string, x: number, y: number, scale: number) => set((state) => ({
-      drawings: state.drawings.map(d => d.id === id ? { ...d, x, y, scale } : d)
-    })),
+    removeDrawing: (id: string) =>
+      set((state) => ({ drawings: state.drawings.filter((d) => d.id !== id) })),
+    removeDrawings: (ids: string[]) =>
+      set((state) => ({ drawings: state.drawings.filter((d) => !ids.includes(d.id)) })),
+    updateDrawingTransform: (id: string, x: number, y: number, scale: number) =>
+      set((state) => ({
+        drawings: state.drawings.map((d) => (d.id === id ? { ...d, x, y, scale } : d)),
+      })),
 
     // --- Door Actions ---
-    addDoor: (door: Door) => set((state) => {
-      // Prevent duplicates - only add if door doesn't already exist
-      const exists = state.doors.some(d => d.id === door.id);
-      if (exists) {
-        return state; // Silent deduplication
-      }
-      return { doors: [...state.doors, door] };
-    }),
-    removeDoor: (id: string) => set((state) => ({ doors: state.doors.filter(d => d.id !== id) })),
-    removeDoors: (ids: string[]) => set((state) => ({ doors: state.doors.filter(d => !ids.includes(d.id)) })),
-    toggleDoor: (id: string) => set((state) => {
-      const door = state.doors.find(d => d.id === id);
-      if (!door) return state; // Door not found, no change
+    addDoor: (door: Door) =>
+      set((state) => {
+        // Prevent duplicates - only add if door doesn't already exist
+        const exists = state.doors.some((d) => d.id === door.id);
+        if (exists) {
+          return state; // Silent deduplication
+        }
+        return { doors: [...state.doors, door] };
+      }),
+    removeDoor: (id: string) => set((state) => ({ doors: state.doors.filter((d) => d.id !== id) })),
+    removeDoors: (ids: string[]) =>
+      set((state) => ({ doors: state.doors.filter((d) => !ids.includes(d.id)) })),
+    toggleDoor: (id: string) =>
+      set((state) => {
+        const door = state.doors.find((d) => d.id === id);
+        if (!door) return state; // Door not found, no change
 
-      const newDoors = state.doors.map(d =>
-        d.id === id ? { ...d, isOpen: !d.isOpen } : d
-      );
+        const newDoors = state.doors.map((d) => (d.id === id ? { ...d, isOpen: !d.isOpen } : d));
 
-      // DIRECT SYNC REMOVED: Rely on SyncManager delta detection (syncUtils)
-      // to avoid "double toggle" issues where both manual and auto sync fire.
+        // DIRECT SYNC REMOVED: Rely on SyncManager delta detection (syncUtils)
+        // to avoid "double toggle" issues where both manual and auto sync fire.
 
-      return { doors: newDoors };
-    }),
-    updateDoorState: (id: string, isOpen: boolean) => set((state) => ({
-      doors: state.doors.map(d => d.id === id ? { ...d, isOpen } : d)
-    })),
-    updateDoorLock: (id: string, isLocked: boolean) => set((state) => ({
-      doors: state.doors.map(d => d.id === id ? { ...d, isLocked } : d)
-    })),
-    updateAllDoorStates: (isOpen: boolean) => set((state) => ({
-      doors: state.doors.map(d => d.isLocked ? d : { ...d, isOpen })
-    })),
-    updateAllDoorLocks: (isLocked: boolean) => set((state) => ({
-      doors: state.doors.map(d => ({ ...d, isLocked }))
-    })),
+        return { doors: newDoors };
+      }),
+    updateDoorState: (id: string, isOpen: boolean) =>
+      set((state) => ({
+        doors: state.doors.map((d) => (d.id === id ? { ...d, isOpen } : d)),
+      })),
+    updateDoorLock: (id: string, isLocked: boolean) =>
+      set((state) => ({
+        doors: state.doors.map((d) => (d.id === id ? { ...d, isLocked } : d)),
+      })),
+    updateAllDoorStates: (isOpen: boolean) =>
+      set((state) => ({
+        doors: state.doors.map((d) => (d.isLocked ? d : { ...d, isOpen })),
+      })),
+    updateAllDoorLocks: (isLocked: boolean) =>
+      set((state) => ({
+        doors: state.doors.map((d) => ({ ...d, isLocked })),
+      })),
 
     // --- Stairs Actions ---
     addStairs: (stairs: Stairs) => set((state) => ({ stairs: [...state.stairs, stairs] })),
-    removeStairs: (id: string) => set((state) => ({ stairs: state.stairs.filter(s => s.id !== id) })),
-    removeMultipleStairs: (ids: string[]) => set((state) => ({ stairs: state.stairs.filter(s => !ids.includes(s.id)) })),
+    removeStairs: (id: string) =>
+      set((state) => ({ stairs: state.stairs.filter((s) => s.id !== id) })),
+    removeMultipleStairs: (ids: string[]) =>
+      set((state) => ({ stairs: state.stairs.filter((s) => !ids.includes(s.id)) })),
 
     // --- Grid/Map Actions ---
     setGridSize: (size: number) => set({ gridSize: size }),
     setGridType: (type: GridType) => set({ gridType: type }),
+    setGridColor: (color: string) => set({ gridColor: color }),
     setMap: (map: MapConfig | null) => set({ map }),
-    updateMapPosition: (x: number, y: number) => set((state) => ({
-      map: state.map ? { ...state.map, x, y } : null
-    })),
-    updateMapScale: (scale: number) => set((state) => ({
-      map: state.map ? { ...state.map, scale } : null
-    })),
-    updateMapTransform: (scale: number, x: number, y: number) => set((state) => ({
-      map: state.map ? { ...state.map, scale, x, y } : null
-    })),
+    updateMapPosition: (x: number, y: number) =>
+      set((state) => ({
+        map: state.map ? { ...state.map, x, y } : null,
+      })),
+    updateMapScale: (scale: number) =>
+      set((state) => ({
+        map: state.map ? { ...state.map, scale } : null,
+      })),
+    updateMapTransform: (scale: number, x: number, y: number) =>
+      set((state) => ({
+        map: state.map ? { ...state.map, scale, x, y } : null,
+      })),
 
     // --- Utility Actions ---
     setIsCalibrating: (isCalibrating: boolean) => set({ isCalibrating }),
-    addExploredRegion: (region: ExploredRegion) => set((state) => {
-      const newRegions = [...state.exploredRegions, region];
-      if (newRegions.length > MAX_EXPLORED_REGIONS) {
-        return { exploredRegions: newRegions.slice(-MAX_EXPLORED_REGIONS) };
-      }
-      return { exploredRegions: newRegions };
-    }),
+    addExploredRegion: (region: ExploredRegion) =>
+      set((state) => {
+        const newRegions = [...state.exploredRegions, region];
+        if (newRegions.length > MAX_EXPLORED_REGIONS) {
+          return { exploredRegions: newRegions.slice(-MAX_EXPLORED_REGIONS) };
+        }
+        return { exploredRegions: newRegions };
+      }),
     clearExploredRegions: () => set({ exploredRegions: [] }),
-    setActiveVisionPolygons: (polygons: Array<Array<{ x: number; y: number }>>) => set({ activeVisionPolygons: polygons }),
+    setActiveVisionPolygons: (polygons: Array<Array<{ x: number; y: number }>>) =>
+      set({ activeVisionPolygons: polygons }),
     setDaylightMode: (enabled: boolean) => set({ isDaylightMode: enabled }),
     setTokens: (tokens: Token[]) => set({ tokens }),
     setState: (state: Partial<GameState>) => set(state),
-    showToast: (message: string, type: 'error' | 'success' | 'info') => set({ toast: { message, type } }),
+    showToast: (message: string, type: 'error' | 'success' | 'info') =>
+      set({ toast: { message, type } }),
     clearToast: () => set({ toast: null }),
     showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) =>
       set({ confirmDialog: { message, onConfirm, confirmText } }),
@@ -749,7 +801,8 @@ export const useGameStore = create<GameState>((set, get) => {
     setCommandPaletteOpen: (isOpen: boolean) => set({ isCommandPaletteOpen: isOpen }),
 
     // --- Measurement Actions ---
-    setActiveMeasurement: (measurement: Measurement | null) => set({ activeMeasurement: measurement }),
+    setActiveMeasurement: (measurement: Measurement | null) =>
+      set({ activeMeasurement: measurement }),
     setBroadcastMeasurement: (broadcast: boolean) => set({ broadcastMeasurement: broadcast }),
     setDmMeasurement: (measurement: Measurement | null) => set({ dmMeasurement: measurement }),
   };

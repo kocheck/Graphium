@@ -21,7 +21,7 @@ import {
   RiCloseLine,
   RiSunLine,
   RiMoonLine,
-  RiPulseLine
+  RiPulseLine,
 } from '@remixicon/react';
 import { componentExamples, categories } from './playground-registry';
 import { ComponentExample } from './types';
@@ -168,7 +168,9 @@ function PlaygroundContent() {
               {/* System Status Widget (Quirky) */}
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--app-bg-surface)] border border-[var(--app-border-subtle)] mr-2">
                 <RiPulseLine className="w-4 h-4 text-green-500 animate-pulse" />
-                <span className="text-xs font-medium text-[var(--app-text-secondary)]">System Stable</span>
+                <span className="text-xs font-medium text-[var(--app-text-secondary)]">
+                  System Stable
+                </span>
               </div>
 
               {/* Theme Toggle */}
@@ -178,7 +180,11 @@ function PlaygroundContent() {
                 title={`Switch to ${currentTheme === 'light' ? 'Dark' : 'Light'} Mode`}
                 aria-label={`Switch to ${currentTheme === 'light' ? 'Dark' : 'Light'} Mode`}
               >
-                {currentTheme === 'light' ? <RiMoonLine className="w-5 h-5" /> : <RiSunLine className="w-5 h-5" />}
+                {currentTheme === 'light' ? (
+                  <RiMoonLine className="w-5 h-5" />
+                ) : (
+                  <RiSunLine className="w-5 h-5" />
+                )}
               </button>
 
               <div className="w-px h-8 bg-[var(--app-border-subtle)] mx-1"></div>
@@ -222,7 +228,11 @@ function PlaygroundContent() {
           <span>
             {searchQuery ? (
               <>
-                Found <span className="text-[var(--app-text-primary)] font-semibold">{filteredExamples.length}</span> component
+                Found{' '}
+                <span className="text-[var(--app-text-primary)] font-semibold">
+                  {filteredExamples.length}
+                </span>{' '}
+                component
                 {filteredExamples.length !== 1 ? 's' : ''} matching "{searchQuery}"
               </>
             ) : (
@@ -230,7 +240,8 @@ function PlaygroundContent() {
             )}
           </span>
           <span className="text-[var(--app-text-muted)] text-xs">
-            Use <code className="bg-[var(--app-bg-surface)] px-1 rounded">Cmd+F</code> to search page text
+            Use <code className="bg-[var(--app-bg-surface)] px-1 rounded">Cmd+F</code> to search
+            page text
           </span>
         </div>
 
@@ -239,10 +250,12 @@ function PlaygroundContent() {
           <div className="text-center py-24 bg-[var(--app-bg-surface)] rounded-2xl border border-[var(--app-border-subtle)] border-dashed">
             <div className="text-6xl mb-4 opacity-50">🔍</div>
             <h3 className="text-xl font-semibold mb-2">No components found</h3>
-            <p className="text-[var(--app-text-secondary)]">Try adjusting your search query or check the registry.</p>
+            <p className="text-[var(--app-text-secondary)]">
+              Try adjusting your search query or check the registry.
+            </p>
             <button
-               onClick={() => setSearchQuery('')}
-               className="mt-6 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded-md transition-colors"
+              onClick={() => setSearchQuery('')}
+              className="mt-6 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded-md transition-colors"
             >
               Clear Search
             </button>
@@ -258,7 +271,7 @@ function PlaygroundContent() {
                 <div className="mb-6 pb-2 border-b border-[var(--app-border-subtle)] flex items-end justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-[var(--app-text-primary)] mb-1 flex items-center gap-2">
-                       {/* You could add category icons here later */}
+                      {/* You could add category icons here later */}
                       {category.name}
                     </h2>
                     <p className="text-[var(--app-text-secondary)]">{category.description}</p>
@@ -313,9 +326,10 @@ function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps) {
         <button
           onClick={() => setShowCode(!showCode)}
           className={`text-xs px-3 py-1.5 rounded-md border transition-colors whitespace-nowrap ml-4 font-medium
-            ${showCode
-              ? 'bg-[var(--app-bg-active)] border-[var(--app-border-default)] text-[var(--app-text-primary)]'
-              : 'bg-[var(--app-bg-surface)] border-[var(--app-border-subtle)] text-[var(--app-text-secondary)] hover:bg-[var(--app-bg-hover)]'
+            ${
+              showCode
+                ? 'bg-[var(--app-bg-active)] border-[var(--app-border-default)] text-[var(--app-text-primary)]'
+                : 'bg-[var(--app-bg-surface)] border-[var(--app-border-subtle)] text-[var(--app-text-secondary)] hover:bg-[var(--app-bg-hover)]'
             }`}
         >
           {showCode ? 'Hide Code' : 'View Code'}
@@ -325,9 +339,7 @@ function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps) {
       {/* Component Preview */}
       <div className="px-6 py-8 bg-[var(--app-bg-canvas)] flex items-center justify-center min-h-[160px] relative pattern-grid">
         {/* Isolated stacking context for preview */}
-        <div className="relative z-0 max-w-full">
-            {example.component}
-        </div>
+        <div className="relative z-0 max-w-full">{example.component}</div>
       </div>
 
       {/* Code Snippet (Collapsible) */}

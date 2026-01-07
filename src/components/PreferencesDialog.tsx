@@ -22,7 +22,11 @@
 
 import { useEffect } from 'react';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { useTouchSettingsStore, PressureCurve, PalmRejectionMode } from '../store/touchSettingsStore';
+import {
+  useTouchSettingsStore,
+  PressureCurve,
+  PalmRejectionMode,
+} from '../store/touchSettingsStore';
 
 interface PreferencesDialogProps {
   isOpen: boolean;
@@ -140,10 +144,15 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                   max="10"
                   step="0.5"
                   value={wallTool.smoothingEpsilon}
-                  onChange={(e) => setWallToolPreference('smoothingEpsilon', parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    setWallToolPreference('smoothingEpsilon', parseFloat(e.target.value))
+                  }
                   className="w-full cursor-pointer"
                 />
-                <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
+                <div
+                  className="flex justify-between text-xs mt-1"
+                  style={{ color: 'var(--app-text-muted)' }}
+                >
                   <span>Subtle (0.5)</span>
                   <span>Aggressive (10)</span>
                 </div>
@@ -170,8 +179,8 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
               />
             </div>
             <p className="text-sm mb-3" style={{ color: 'var(--app-text-muted)' }}>
-              Automatically snaps new wall endpoints to existing walls when drawn nearby,
-              creating clean, connected wall networks.
+              Automatically snaps new wall endpoints to existing walls when drawn nearby, creating
+              clean, connected wall networks.
             </p>
 
             {wallTool.enableSnapping && (
@@ -201,7 +210,10 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                   onChange={(e) => setWallToolPreference('snapThreshold', parseInt(e.target.value))}
                   className="w-full cursor-pointer"
                 />
-                <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
+                <div
+                  className="flex justify-between text-xs mt-1"
+                  style={{ color: 'var(--app-text-muted)' }}
+                >
                   <span>Precise (5px)</span>
                   <span>Loose (30px)</span>
                 </div>
@@ -233,7 +245,9 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                 id="desktop-only-mode"
                 type="checkbox"
                 checked={touchSettings.desktopOnlyMode}
-                onChange={(e) => touchSettings.updateSettings({ desktopOnlyMode: e.target.checked })}
+                onChange={(e) =>
+                  touchSettings.updateSettings({ desktopOnlyMode: e.target.checked })
+                }
                 className="w-5 h-5 cursor-pointer"
               />
             </div>
@@ -257,7 +271,9 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                 id="pressure-sensitivity"
                 type="checkbox"
                 checked={touchSettings.pressureSensitivityEnabled}
-                onChange={(e) => touchSettings.updateSettings({ pressureSensitivityEnabled: e.target.checked })}
+                onChange={(e) =>
+                  touchSettings.updateSettings({ pressureSensitivityEnabled: e.target.checked })
+                }
                 className="w-5 h-5 cursor-pointer"
                 disabled={touchSettings.desktopOnlyMode}
               />
@@ -287,7 +303,9 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                 <select
                   id="pressure-curve"
                   value={touchSettings.pressureCurve}
-                  onChange={(e) => touchSettings.updateSettings({ pressureCurve: e.target.value as PressureCurve })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ pressureCurve: e.target.value as PressureCurve })
+                  }
                   className="w-full px-3 py-2 rounded bg-[var(--app-bg)] border border-[var(--app-border)] cursor-pointer"
                   style={{ color: 'var(--app-text)' }}
                 >
@@ -315,7 +333,11 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
               <select
                 id="palm-rejection"
                 value={touchSettings.palmRejectionMode}
-                onChange={(e) => touchSettings.updateSettings({ palmRejectionMode: e.target.value as PalmRejectionMode })}
+                onChange={(e) =>
+                  touchSettings.updateSettings({
+                    palmRejectionMode: e.target.value as PalmRejectionMode,
+                  })
+                }
                 className="px-3 py-1.5 rounded bg-[var(--app-bg)] border border-[var(--app-border)] cursor-pointer text-sm"
                 style={{ color: 'var(--app-text)' }}
                 disabled={touchSettings.desktopOnlyMode}
@@ -354,10 +376,17 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                   max="80"
                   step="5"
                   value={touchSettings.palmRejectionThreshold}
-                  onChange={(e) => touchSettings.updateSettings({ palmRejectionThreshold: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({
+                      palmRejectionThreshold: parseInt(e.target.value),
+                    })
+                  }
                   className="w-full cursor-pointer"
                 />
-                <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
+                <div
+                  className="flex justify-between text-xs mt-1"
+                  style={{ color: 'var(--app-text-muted)' }}
+                >
                   <span>Lenient (20px)</span>
                   <span>Strict (80px)</span>
                 </div>
@@ -388,10 +417,15 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                   max="1000"
                   step="50"
                   value={touchSettings.palmRejectionDelay}
-                  onChange={(e) => touchSettings.updateSettings({ palmRejectionDelay: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ palmRejectionDelay: parseInt(e.target.value) })
+                  }
                   className="w-full cursor-pointer"
                 />
-                <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
+                <div
+                  className="flex justify-between text-xs mt-1"
+                  style={{ color: 'var(--app-text-muted)' }}
+                >
                   <span>Quick (100ms)</span>
                   <span>Conservative (1000ms)</span>
                 </div>
@@ -413,7 +447,9 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
                 id="two-finger-pan"
                 type="checkbox"
                 checked={touchSettings.twoFingerPanEnabled}
-                onChange={(e) => touchSettings.updateSettings({ twoFingerPanEnabled: e.target.checked })}
+                onChange={(e) =>
+                  touchSettings.updateSettings({ twoFingerPanEnabled: e.target.checked })
+                }
                 className="w-5 h-5 cursor-pointer"
                 disabled={touchSettings.desktopOnlyMode}
               />
@@ -431,42 +467,60 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="tilt-sensitivity" className="text-sm" style={{ color: 'var(--app-text)' }}>
+                <label
+                  htmlFor="tilt-sensitivity"
+                  className="text-sm"
+                  style={{ color: 'var(--app-text)' }}
+                >
                   Tilt Sensitivity (shading effects)
                 </label>
                 <input
                   id="tilt-sensitivity"
                   type="checkbox"
                   checked={touchSettings.tiltSensitivityEnabled}
-                  onChange={(e) => touchSettings.updateSettings({ tiltSensitivityEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ tiltSensitivityEnabled: e.target.checked })
+                  }
                   className="w-4 h-4 cursor-pointer"
                   disabled={touchSettings.desktopOnlyMode}
                 />
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="hover-preview" className="text-sm" style={{ color: 'var(--app-text)' }}>
+                <label
+                  htmlFor="hover-preview"
+                  className="text-sm"
+                  style={{ color: 'var(--app-text)' }}
+                >
                   Hover Preview (cursor before touching)
                 </label>
                 <input
                   id="hover-preview"
                   type="checkbox"
                   checked={touchSettings.hoverPreviewEnabled}
-                  onChange={(e) => touchSettings.updateSettings({ hoverPreviewEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ hoverPreviewEnabled: e.target.checked })
+                  }
                   className="w-4 h-4 cursor-pointer"
                   disabled={touchSettings.desktopOnlyMode}
                 />
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="barrel-button" className="text-sm" style={{ color: 'var(--app-text)' }}>
+                <label
+                  htmlFor="barrel-button"
+                  className="text-sm"
+                  style={{ color: 'var(--app-text)' }}
+                >
                   Barrel Button Support (quick tool switch)
                 </label>
                 <input
                   id="barrel-button"
                   type="checkbox"
                   checked={touchSettings.barrelButtonEnabled}
-                  onChange={(e) => touchSettings.updateSettings({ barrelButtonEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ barrelButtonEnabled: e.target.checked })
+                  }
                   className="w-4 h-4 cursor-pointer"
                   disabled={touchSettings.desktopOnlyMode}
                 />
@@ -482,42 +536,60 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="pressure-indicator" className="text-sm" style={{ color: 'var(--app-text)' }}>
+                <label
+                  htmlFor="pressure-indicator"
+                  className="text-sm"
+                  style={{ color: 'var(--app-text)' }}
+                >
                   Show Pressure Indicator
                 </label>
                 <input
                   id="pressure-indicator"
                   type="checkbox"
                   checked={touchSettings.showPressureIndicator}
-                  onChange={(e) => touchSettings.updateSettings({ showPressureIndicator: e.target.checked })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ showPressureIndicator: e.target.checked })
+                  }
                   className="w-4 h-4 cursor-pointer"
                   disabled={touchSettings.desktopOnlyMode}
                 />
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="touch-indicators" className="text-sm" style={{ color: 'var(--app-text)' }}>
+                <label
+                  htmlFor="touch-indicators"
+                  className="text-sm"
+                  style={{ color: 'var(--app-text)' }}
+                >
                   Show Touch Point Indicators
                 </label>
                 <input
                   id="touch-indicators"
                   type="checkbox"
                   checked={touchSettings.showTouchPointIndicators}
-                  onChange={(e) => touchSettings.updateSettings({ showTouchPointIndicators: e.target.checked })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ showTouchPointIndicators: e.target.checked })
+                  }
                   className="w-4 h-4 cursor-pointer"
                   disabled={touchSettings.desktopOnlyMode}
                 />
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="gesture-feedback" className="text-sm" style={{ color: 'var(--app-text)' }}>
+                <label
+                  htmlFor="gesture-feedback"
+                  className="text-sm"
+                  style={{ color: 'var(--app-text)' }}
+                >
                   Show Gesture Mode Feedback
                 </label>
                 <input
                   id="gesture-feedback"
                   type="checkbox"
                   checked={touchSettings.showGestureFeedback}
-                  onChange={(e) => touchSettings.updateSettings({ showGestureFeedback: e.target.checked })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ showGestureFeedback: e.target.checked })
+                  }
                   className="w-4 h-4 cursor-pointer"
                   disabled={touchSettings.desktopOnlyMode}
                 />
@@ -533,28 +605,40 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="gesture-tutorial" className="text-sm" style={{ color: 'var(--app-text)' }}>
+                <label
+                  htmlFor="gesture-tutorial"
+                  className="text-sm"
+                  style={{ color: 'var(--app-text)' }}
+                >
                   Show Gesture Tutorial
                 </label>
                 <input
                   id="gesture-tutorial"
                   type="checkbox"
                   checked={touchSettings.showGestureTutorial}
-                  onChange={(e) => touchSettings.updateSettings({ showGestureTutorial: e.target.checked })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ showGestureTutorial: e.target.checked })
+                  }
                   className="w-4 h-4 cursor-pointer"
                   disabled={touchSettings.desktopOnlyMode}
                 />
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="gesture-hints" className="text-sm" style={{ color: 'var(--app-text)' }}>
+                <label
+                  htmlFor="gesture-hints"
+                  className="text-sm"
+                  style={{ color: 'var(--app-text)' }}
+                >
                   Show Tooltip Hints
                 </label>
                 <input
                   id="gesture-hints"
                   type="checkbox"
                   checked={touchSettings.showGestureHints}
-                  onChange={(e) => touchSettings.updateSettings({ showGestureHints: e.target.checked })}
+                  onChange={(e) =>
+                    touchSettings.updateSettings({ showGestureHints: e.target.checked })
+                  }
                   className="w-4 h-4 cursor-pointer"
                   disabled={touchSettings.desktopOnlyMode}
                 />

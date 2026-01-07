@@ -13,11 +13,13 @@ We migrated from separate mouse/touch event handlers to the **Pointer Events API
 ### 1. Pointer Event Abstraction Utilities (CanvasManager.tsx:69-100)
 
 Added helper functions for unified event handling:
+
 - `getPointerPosition(e)` - Extracts coordinates from any pointer event type
 - `getPointerPressure(e)` - Returns pressure value (0.5 for mouse, actual for pen/touch)
 - `isMultiTouchGesture(e)` - Detects 2+ finger gestures
 
 **Benefits:**
+
 - Single code path for all input types
 - Future-ready for pressure-sensitive drawing
 - Easier to maintain and test
@@ -25,6 +27,7 @@ Added helper functions for unified event handling:
 ### 2. Token Interaction Handlers (CanvasManager.tsx:751-997)
 
 **Before:**
+
 ```typescript
 handleTokenMouseDown(e: KonvaEventObject<MouseEvent | TouchEvent>, tokenId: string)
 handleTokenMouseMove(e: KonvaEventObject<MouseEvent>)
@@ -32,6 +35,7 @@ handleTokenMouseUp(e: KonvaEventObject<MouseEvent>)
 ```
 
 **After:**
+
 ```typescript
 handleTokenPointerDown(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string)
 handleTokenPointerMove(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>)
@@ -39,6 +43,7 @@ handleTokenPointerUp(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>
 ```
 
 **Changes:**
+
 - Added multi-touch gesture detection to ignore pinch-zoom
 - Use `getPointerPosition(e)` for coordinate extraction
 - Maintain all existing performance optimizations (RAF throttling, direct Konva node updates)
@@ -46,6 +51,7 @@ handleTokenPointerUp(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>
 ### 3. Drawing Tool Handlers (CanvasManager.tsx:999-1500)
 
 **Before:**
+
 ```typescript
 handleMouseDown(e: any)
 handleMouseMove(e: any)
@@ -53,6 +59,7 @@ handleMouseUp(e: any)
 ```
 
 **After:**
+
 ```typescript
 handlePointerDown(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>)
 handlePointerMove(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>)
@@ -60,6 +67,7 @@ handlePointerUp(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>)
 ```
 
 **Updated tools:**
+
 - ✅ Marker (drawing)
 - ✅ Eraser
 - ✅ Wall
@@ -69,6 +77,7 @@ handlePointerUp(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>)
 - ✅ Door placement
 
 **Changes:**
+
 - Multi-touch gesture filtering
 - Unified pointer coordinate extraction
 - All existing features preserved (shift-key axis locking, RAF throttling, etc.)
@@ -76,6 +85,7 @@ handlePointerUp(e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>)
 ### 4. URLImage Component (URLImage.tsx:17, 71)
 
 **Before:**
+
 ```typescript
 onSelect?: (e: KonvaEventObject<MouseEvent | TouchEvent>) => void
 // ...
@@ -84,6 +94,7 @@ onTouchStart={onSelect}
 ```
 
 **After:**
+
 ```typescript
 onSelect?: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void
 // ...
@@ -91,6 +102,7 @@ onPointerDown={onSelect}
 ```
 
 **Benefits:**
+
 - Single event handler instead of two
 - Consistent with Stage event listeners
 - Automatic touch support
@@ -107,16 +119,17 @@ onPointerDown={onSelect}
  * Single-touch interactions are handled by the unified pointer event handlers
  */
 const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
-    const touches = e.evt.touches;
-    // ONLY handle 2+ finger gestures (pinch-to-zoom)
-    if (touches.length === 2) {
-        // ... existing pinch-zoom logic
-    }
-    // Single-touch events are handled by handlePointerDown
+  const touches = e.evt.touches;
+  // ONLY handle 2+ finger gestures (pinch-to-zoom)
+  if (touches.length === 2) {
+    // ... existing pinch-zoom logic
+  }
+  // Single-touch events are handled by handlePointerDown
 };
 ```
 
 **Benefits:**
+
 - Clear separation of concerns
 - No event conflicts between touch and pointer APIs
 - Pinch-to-zoom preserved, single-finger uses pointer events
@@ -124,6 +137,7 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 ### 6. Stage Component Updates (CanvasManager.tsx:1678-1726)
 
 **Before:**
+
 ```typescript
 <Stage
   onMouseDown={handleMouseDown}
@@ -138,6 +152,7 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 ```
 
 **After:**
+
 ```typescript
 <Stage
   // Unified Pointer Events API - handles mouse, touch, and pen input
@@ -157,12 +172,14 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 ```
 
 **Critical CSS Addition:**
+
 - `touchAction: 'none'` prevents browser from hijacking gestures (scroll, zoom, text selection)
 - Essential for smooth drawing/dragging without triggering page scrolls
 
 ### 7. Touch-Specific E2E Tests (tests/functional/touch-interactions.spec.ts)
 
 **New test file covering:**
+
 - Touch drawing (marker, eraser, wall)
 - Touch token dragging
 - Touch selection rectangle
@@ -170,12 +187,14 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 - Touch performance (50-point stroke test)
 
 **Test structure mirrors existing mouse tests:**
+
 - `drawing-performance.spec.ts` → `touch-interactions.spec.ts` (drawing)
 - `token-management.spec.ts` → `touch-interactions.spec.ts` (tokens)
 
 ## Performance Considerations
 
 **Preserved Optimizations:**
+
 - ✅ RAF (requestAnimationFrame) throttling for drawing updates
 - ✅ Direct Konva node manipulation (bypass React re-renders during drag)
 - ✅ Point deduplication for drawing strokes
@@ -183,6 +202,7 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 - ✅ Ref-based state for high-frequency updates
 
 **No Regressions:**
+
 - Desktop mouse experience unchanged
 - All existing performance targets maintained
 - Single event handler reduces overhead vs. separate mouse/touch handlers
@@ -190,6 +210,7 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 ## Browser Compatibility
 
 **Pointer Events Support:**
+
 - Chrome 55+ ✅
 - Firefox 59+ ✅
 - Safari 13+ ✅
@@ -200,14 +221,17 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 ## Testing Strategy
 
 ### Unit Tests (existing)
+
 - `CanvasManager.test.tsx` - Placeholder tests (ready for implementation)
 
 ### E2E Tests (existing + new)
+
 - `drawing-performance.spec.ts` - Mouse drawing performance ✅
 - `token-management.spec.ts` - Mouse token interactions ✅
 - `touch-interactions.spec.ts` - **NEW:** Touch-specific interactions ✅
 
 ### Manual Testing Checklist
+
 - [ ] Desktop mouse drawing (marker, eraser, wall)
 - [ ] Desktop mouse token drag
 - [ ] Desktop mouse selection rectangle
@@ -220,23 +244,23 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 
 ## Files Modified
 
-| File | Lines Changed | Description |
-|------|--------------|-------------|
-| `src/components/Canvas/CanvasManager.tsx` | ~400 | Event handler migration, pointer utilities, pressure capture, two-finger pan, pressure-sensitive rendering |
-| `src/components/Canvas/URLImage.tsx` | 2 | Event handler prop change (pointer events) |
-| `src/components/Canvas/PressureSensitiveLine.tsx` | 120 (new) | Custom variable-width stroke renderer |
-| `src/store/gameStore.ts` | 10 | Drawing interface updated with pressures array |
-| `tests/functional/touch-interactions.spec.ts` | 553 (new) | Touch E2E tests including pressure and pan gestures |
-| `TOUCH_SUPPORT_MIGRATION.md` | Updated | Enhanced documentation with advanced features |
+| File                                              | Lines Changed | Description                                                                                                |
+| ------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
+| `src/components/Canvas/CanvasManager.tsx`         | ~400          | Event handler migration, pointer utilities, pressure capture, two-finger pan, pressure-sensitive rendering |
+| `src/components/Canvas/URLImage.tsx`              | 2             | Event handler prop change (pointer events)                                                                 |
+| `src/components/Canvas/PressureSensitiveLine.tsx` | 120 (new)     | Custom variable-width stroke renderer                                                                      |
+| `src/store/gameStore.ts`                          | 10            | Drawing interface updated with pressures array                                                             |
+| `tests/functional/touch-interactions.spec.ts`     | 553 (new)     | Touch E2E tests including pressure and pan gestures                                                        |
+| `TOUCH_SUPPORT_MIGRATION.md`                      | Updated       | Enhanced documentation with advanced features                                                              |
 
 ## Risk Assessment
 
-| Change | Risk | Mitigation |
-|--------|------|------------|
-| Pointer event handlers | Medium | Extensive testing, gradual rollout |
-| Touch-action CSS | Low | Standard CSS property, broad support |
-| Multi-touch refactor | Low | Existing logic preserved, only comments added |
-| URLImage component | Low | Simple prop change, backward compatible |
+| Change                 | Risk   | Mitigation                                    |
+| ---------------------- | ------ | --------------------------------------------- |
+| Pointer event handlers | Medium | Extensive testing, gradual rollout            |
+| Touch-action CSS       | Low    | Standard CSS property, broad support          |
+| Multi-touch refactor   | Low    | Existing logic preserved, only comments added |
+| URLImage component     | Low    | Simple prop change, backward compatible       |
 
 ## Known Limitations
 
@@ -247,17 +271,20 @@ const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
 ## Advanced Features Implemented ✅
 
 ### 1. Pressure-Sensitive Drawing
+
 **Status:** ✅ Fully Implemented
 
 Drawings now capture and render pressure data from stylus/pen input for variable-width strokes.
 
 **Implementation:**
+
 - `Drawing` interface updated with optional `pressures` array
 - Pressure captured in `handlePointerDown` and `handlePointerMove`
 - Custom `PressureSensitiveLine` component for variable-width rendering
 - Automatic fallback to standard `Line` for drawings without pressure data
 
 **Data Structure:**
+
 ```typescript
 export interface Drawing {
   id: string;
@@ -271,22 +298,26 @@ export interface Drawing {
 ```
 
 **Rendering:**
+
 - Stroke width varies from 0.3x to 1.5x base width based on pressure
 - Smooth interpolation between pressure values
 - Maintains backward compatibility (no pressure = constant width)
 
 ### 2. Two-Finger Pan Gesture
+
 **Status:** ✅ Fully Implemented
 
 Two-finger touch gestures now intelligently distinguish between pinch-zoom and pan.
 
 **Implementation:**
+
 - `PINCH_DISTANCE_THRESHOLD` = 10px to distinguish gestures
 - If finger distance changes > threshold → **Pinch-Zoom**
 - If finger distance stable → **Two-Finger Pan**
 - Smooth canvas position updates with clamping
 
 **User Experience:**
+
 - Natural panning with two fingers (like maps apps)
 - Pinch-to-zoom still works perfectly
 - No accidental panning during zoom
@@ -295,11 +326,13 @@ Two-finger touch gestures now intelligently distinguish between pinch-zoom and p
 **Code Location:** `CanvasManager.tsx:601-661` (handleTouchMove)
 
 ### 3. Variable-Width Stroke Rendering
+
 **Status:** ✅ Fully Implemented
 
 Custom `PressureSensitiveLine` component renders strokes with varying widths.
 
 **Features:**
+
 - Konva `Shape` component with custom `sceneFunc`
 - Segments drawn with interpolated stroke widths
 - Pressure multiplier: `0.3 + pressure * 1.2`
@@ -309,6 +342,7 @@ Custom `PressureSensitiveLine` component renders strokes with varying widths.
 **File:** `src/components/Canvas/PressureSensitiveLine.tsx`
 
 **Benefits:**
+
 - Natural stylus/pen feel
 - Enhanced artistic expression for DMs
 - No performance impact when not using pressure
@@ -317,6 +351,7 @@ Custom `PressureSensitiveLine` component renders strokes with varying widths.
 ## Rollback Plan
 
 If issues arise, rollback is straightforward:
+
 1. Revert `Stage` event listeners to `onMouseDown/Move/Up` + `onTouchStart/Move/End`
 2. Revert handler names: `handlePointerDown` → `handleMouseDown`
 3. Revert URLImage: `onPointerDown` → `onMouseDown` + `onTouchStart`
@@ -327,6 +362,7 @@ If issues arise, rollback is straightforward:
 ## Success Criteria
 
 ✅ **Functional:**
+
 - Touch drawing works on tablets/hybrids
 - Touch token dragging is smooth
 - Selection rectangle works with touch
@@ -336,6 +372,7 @@ If issues arise, rollback is straightforward:
 - **NEW:** Variable-width strokes based on pressure
 
 ✅ **Performance:**
+
 - Drawing maintains 60fps target
 - No additional event handler overhead
 - Existing RAF throttling preserved
@@ -343,6 +380,7 @@ If issues arise, rollback is straightforward:
 - **NEW:** Two-finger gestures smoothly transition between pan and zoom
 
 ✅ **User Experience:**
+
 - No accidental scrolling during drawing
 - Pinch-to-zoom still works
 - Seamless switching between mouse and touch
@@ -356,6 +394,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 ### Physical Device Testing
 
 #### iPad Pro with Apple Pencil
+
 - [ ] Basic touch drawing (single finger)
 - [ ] Pressure-sensitive drawing (vary pressure)
 - [ ] Hover preview appears before touching
@@ -375,6 +414,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Settings persist after reload
 
 #### Surface Pro with Surface Pen
+
 - [ ] Pen pressure works (light to heavy strokes)
 - [ ] Hover shows cursor preview
 - [ ] Palm rejection (rest hand, no marks)
@@ -390,6 +430,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Settings work correctly
 
 #### Android Tablet with S Pen
+
 - [ ] S Pen pressure sensitivity
 - [ ] Hover detection works
 - [ ] Palm rejection prevents marks
@@ -399,6 +440,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Settings persist
 
 #### Touch-Enabled Windows Laptop
+
 - [ ] Finger touch works for drawing
 - [ ] Two-finger pan gesture
 - [ ] Pinch-to-zoom gesture
@@ -407,6 +449,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Palm rejection with stylus (if available)
 
 #### Wacom External Tablet
+
 - [ ] Pressure sensitivity works
 - [ ] Tilt sensitivity works (future)
 - [ ] Hover works
@@ -419,6 +462,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 ### Settings Verification
 
 #### Touch Settings UI
+
 - [ ] Settings dialog accessible (Preferences → Touch & Stylus)
 - [ ] Desktop-Only Mode toggle works
 - [ ] Pressure Sensitivity toggle works
@@ -435,6 +479,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Settings persist after browser close
 
 #### Pressure Settings
+
 - [ ] Disabling pressure gives uniform stroke width
 - [ ] Light curve creates dramatic width variation
 - [ ] Normal curve gives balanced variation
@@ -442,6 +487,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Pressure data not captured when disabled (performance)
 
 #### Palm Rejection Testing
+
 - [ ] Off mode accepts all touches
 - [ ] Touch Size mode rejects large contact areas
 - [ ] Stylus Only mode rejects touch when pen active
@@ -450,11 +496,13 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Delay adjustments affect timing window
 
 #### Gesture Settings
+
 - [ ] Pinch distance threshold affects gesture detection
 - [ ] Two-finger pan can be disabled
 - [ ] Gestures respect settings in real-time
 
 ### Cross-Browser Testing
+
 - [ ] Chrome: All features work
 - [ ] Edge: All features work
 - [ ] Firefox: Touch and pressure work
@@ -463,6 +511,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Mobile Chrome (Android): Touch and S Pen work
 
 ### Performance Testing
+
 - [ ] Drawing 50-point stroke stays at 60fps
 - [ ] Pressure capture doesn't slow drawing
 - [ ] Multi-token drag is smooth
@@ -473,6 +522,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Visual feedback doesn't impact performance (when implemented)
 
 ### Regression Testing
+
 - [ ] Mouse clicking still works
 - [ ] Mouse dragging still works
 - [ ] Mouse drawing still works
@@ -485,6 +535,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] IPC messages still sent correctly
 
 ### Error Handling & Edge Cases
+
 - [ ] Invalid pressure values handled gracefully
 - [ ] Missing pressure array handled
 - [ ] Pressure array length mismatch handled
@@ -496,6 +547,7 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [ ] Concurrent pen and touch handled
 
 ### Accessibility
+
 - [ ] Settings labels are clear
 - [ ] Settings tooltips explain features
 - [ ] Visual indicators don't interfere with drawing

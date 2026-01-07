@@ -16,11 +16,7 @@ import {
   clearAllTestData,
   injectCampaignState,
 } from '../helpers/bypassLandingPage';
-import {
-  createNewCampaign,
-  exportCampaign,
-  importCampaign,
-} from '../helpers/campaignHelpers';
+import { createNewCampaign, exportCampaign, importCampaign } from '../helpers/campaignHelpers';
 
 test.describe('Export/Import Data Integrity', () => {
   test.beforeEach(async ({ page }) => {
@@ -48,7 +44,7 @@ test.describe('Export/Import Data Integrity', () => {
     // Verify name preserved
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Campaign name should be preserved through export/import cycle'
+      'Campaign name should be preserved through export/import cycle',
     ).toHaveText(campaignName);
   });
 
@@ -79,30 +75,18 @@ test.describe('Export/Import Data Integrity', () => {
 
     // Verify token restored
     const restoredToken = page.locator('[data-testid^="token-"]').first();
-    await expect(
-      restoredToken,
-      'Token should be restored after import'
-    ).toBeVisible();
+    await expect(restoredToken, 'Token should be restored after import').toBeVisible();
 
     // Verify token name
     await restoredToken.click();
     const tokenName = await page.locator('[data-testid="token-label"]').textContent();
-    expect(
-      tokenName,
-      'Token name should be preserved'
-    ).toBe('Hero Token');
+    expect(tokenName, 'Token name should be preserved').toBe('Hero Token');
 
     // Verify position (within tolerance)
     const restoredBox = await restoredToken.boundingBox();
-    expect(
-      restoredBox!.x,
-      'Token X position should be preserved'
-    ).toBeCloseTo(originalBox!.x, 10);
+    expect(restoredBox!.x, 'Token X position should be preserved').toBeCloseTo(originalBox!.x, 10);
 
-    expect(
-      restoredBox!.y,
-      'Token Y position should be preserved'
-    ).toBeCloseTo(originalBox!.y, 10);
+    expect(restoredBox!.y, 'Token Y position should be preserved').toBeCloseTo(originalBox!.y, 10);
   });
 
   test('should preserve map backgrounds through export/import', async ({ page }) => {
@@ -164,7 +148,7 @@ test.describe('Export/Import Data Integrity', () => {
 
     await expect(
       restoredItems,
-      'Token library items should be preserved through export/import'
+      'Token library items should be preserved through export/import',
     ).toHaveCount(initialCount);
   });
 
@@ -189,10 +173,9 @@ test.describe('Export/Import Data Integrity', () => {
     const filePath = await exportCampaign(page);
     const exportDuration = Date.now() - startTime;
 
-    expect(
-      exportDuration,
-      'Export of 100 tokens should complete in under 10 seconds'
-    ).toBeLessThan(10000);
+    expect(exportDuration, 'Export of 100 tokens should complete in under 10 seconds').toBeLessThan(
+      10000,
+    );
 
     // Clear and import
     await clearAllTestData(page);
@@ -203,17 +186,13 @@ test.describe('Export/Import Data Integrity', () => {
     await importCampaign(page, filePath);
     const importDuration = Date.now() - importStartTime;
 
-    expect(
-      importDuration,
-      'Import of 100 tokens should complete in under 10 seconds'
-    ).toBeLessThan(10000);
+    expect(importDuration, 'Import of 100 tokens should complete in under 10 seconds').toBeLessThan(
+      10000,
+    );
 
     // Verify all tokens restored
     tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      'All 100 tokens should be restored after import'
-    ).toHaveCount(100);
+    await expect(tokens, 'All 100 tokens should be restored after import').toHaveCount(100);
   });
 });
 
@@ -239,10 +218,7 @@ test.describe('Auto-Save Data Integrity', () => {
 
     // Verify token was auto-saved
     const token = page.locator('[data-testid^="token-"]');
-    await expect(
-      token,
-      'Token should be restored after auto-save and reload'
-    ).toBeVisible();
+    await expect(token, 'Token should be restored after auto-save and reload').toBeVisible();
   });
 
   test('should not lose data if auto-save interrupted', async ({ page }) => {
@@ -260,7 +236,7 @@ test.describe('Auto-Save Data Integrity', () => {
     // Verify previous save is intact (even if latest change lost)
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Campaign should still exist even if auto-save was interrupted'
+      'Campaign should still exist even if auto-save was interrupted',
     ).toHaveText('Interrupted Save Test');
   });
 });
@@ -297,7 +273,7 @@ test.describe('IndexedDB Data Integrity', () => {
 
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Campaign should survive DB version upgrade'
+      'Campaign should survive DB version upgrade',
     ).toHaveText('Version Upgrade Test');
   });
 
@@ -337,10 +313,7 @@ test.describe('IndexedDB Data Integrity', () => {
     const hasError = await errorMessage.isVisible().catch(() => false);
     const canCreateNew = await newCampaignBtn.isVisible().catch(() => true);
 
-    expect(
-      hasError || canCreateNew,
-      'App should handle corrupted data gracefully'
-    ).toBeTruthy();
+    expect(hasError || canCreateNew, 'App should handle corrupted data gracefully').toBeTruthy();
   });
 
   test('should handle missing IndexedDB stores', async ({ page }) => {
@@ -358,7 +331,7 @@ test.describe('IndexedDB Data Integrity', () => {
 
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Should be able to create campaign after DB reinitialization'
+      'Should be able to create campaign after DB reinitialization',
     ).toHaveText('Reinitialized DB Test');
   });
 });
@@ -384,7 +357,7 @@ test.describe('Data Validation', () => {
     // Should show error
     await expect(
       page.locator('[data-testid="import-error-message"]'),
-      'Should show error when importing invalid file format'
+      'Should show error when importing invalid file format',
     ).toBeVisible();
   });
 
@@ -396,7 +369,7 @@ test.describe('Data Validation', () => {
     // Should show validation error
     await expect(
       page.locator('[data-testid="campaign-name-error"]'),
-      'Should show error for empty campaign name'
+      'Should show error for empty campaign name',
     ).toBeVisible();
 
     // Try extremely long name
@@ -405,19 +378,12 @@ test.describe('Data Validation', () => {
     await page.click('[data-testid="create-campaign-submit"]');
 
     // Should either truncate or show error
-    const hasError = await page
-      .locator('[data-testid="campaign-name-error"]')
-      .isVisible();
+    const hasError = await page.locator('[data-testid="campaign-name-error"]').isVisible();
 
     if (!hasError) {
       // If accepted, verify truncation
-      const titleText = await page
-        .locator('[data-testid="campaign-title"]')
-        .textContent();
-      expect(
-        titleText!.length,
-        'Campaign name should be truncated if too long'
-      ).toBeLessThan(300);
+      const titleText = await page.locator('[data-testid="campaign-title"]').textContent();
+      expect(titleText!.length, 'Campaign name should be truncated if too long').toBeLessThan(300);
     }
   });
 
@@ -439,16 +405,10 @@ test.describe('Data Validation', () => {
     const titleHTML = await titleElement.innerHTML();
 
     // Should not execute script
-    expect(
-      titleHTML,
-      'Script tags should be escaped/sanitized'
-    ).not.toContain('<script>');
+    expect(titleHTML, 'Script tags should be escaped/sanitized').not.toContain('<script>');
 
     // Should preserve quotes (escaped)
-    expect(
-      titleHTML,
-      'Special characters should be preserved in escaped form'
-    ).toBeTruthy();
+    expect(titleHTML, 'Special characters should be preserved in escaped form').toBeTruthy();
   });
 });
 
@@ -471,20 +431,16 @@ test.describe('Concurrent Data Operations', () => {
 
     // Verify all tokens added
     const tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      'All 20 tokens should be added without data loss'
-    ).toHaveCount(20);
+    await expect(tokens, 'All 20 tokens should be added without data loss').toHaveCount(20);
 
     // Reload and verify persistence
     await page.reload();
     await page.waitForLoadState('networkidle');
 
     const restoredTokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      restoredTokens,
-      'All 20 tokens should persist after rapid additions'
-    ).toHaveCount(20);
+    await expect(restoredTokens, 'All 20 tokens should persist after rapid additions').toHaveCount(
+      20,
+    );
   });
 
   test('should handle simultaneous save and export', async ({ page }) => {

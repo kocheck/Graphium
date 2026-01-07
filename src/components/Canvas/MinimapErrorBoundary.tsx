@@ -43,7 +43,9 @@ class MinimapErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[MinimapErrorBoundary] Minimap rendering error:', error);
     console.error('[MinimapErrorBoundary] Error info:', errorInfo);
-    console.warn('[MinimapErrorBoundary] Minimap has been hidden due to error. World View continues working.');
+    console.warn(
+      '[MinimapErrorBoundary] Minimap has been hidden due to error. World View continues working.',
+    );
   }
 
   render() {

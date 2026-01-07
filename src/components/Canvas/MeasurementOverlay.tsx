@@ -78,12 +78,7 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
     return (
       <Group>
         {/* Line */}
-        <Line
-          points={points}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          lineCap="round"
-        />
+        <Line points={points} stroke={strokeColor} strokeWidth={strokeWidth} lineCap="round" />
 
         {/* Distance label */}
         <Text
@@ -126,12 +121,7 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
         />
 
         {/* Center point */}
-        <Circle
-          x={blast.origin.x}
-          y={blast.origin.y}
-          radius={4}
-          fill={strokeColor}
-        />
+        <Circle x={blast.origin.x} y={blast.origin.y} radius={4} fill={strokeColor} />
 
         {/* Radius label */}
         <Text
@@ -160,11 +150,7 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
     const [origin, left, right] = cone.vertices;
 
     // Convert vertices to flat points array for Konva Line
-    const points = [
-      origin.x, origin.y,
-      left.x, left.y,
-      right.x, right.y,
-    ];
+    const points = [origin.x, origin.y, left.x, left.y, right.x, right.y];
 
     const text = formatCone(cone.lengthFeet, cone.angleDegrees);
     const textX = (left.x + right.x) / 2;
@@ -183,12 +169,7 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
         />
 
         {/* Origin point */}
-        <Circle
-          x={origin.x}
-          y={origin.y}
-          radius={4}
-          fill={strokeColor}
-        />
+        <Circle x={origin.x} y={origin.y} radius={4} fill={strokeColor} />
 
         {/* Cone label */}
         <Text

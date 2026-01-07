@@ -62,10 +62,7 @@ test.describe('Error Boundary System', () => {
 
     // Verify error history is empty
     const errorHistory = await getErrorHistory(page);
-    expect(
-      errorHistory.length,
-      'Error history should be empty during normal operation'
-    ).toBe(0);
+    expect(errorHistory.length, 'Error history should be empty during normal operation').toBe(0);
   });
 
   test('should track error context in dev mode', async ({ page }) => {
@@ -80,10 +77,7 @@ test.describe('Error Boundary System', () => {
       return !!(window as unknown as ErrorUtilsWindow).__ERROR_UTILS__;
     });
 
-    expect(
-      hasErrorUtils,
-      'Error utilities should be available in dev/test mode'
-    ).toBe(true);
+    expect(hasErrorUtils, 'Error utilities should be available in dev/test mode').toBe(true);
 
     // Verify breadcrumb system works by adding breadcrumbs and checking the history
     await addBreadcrumb(page, 'Test breadcrumb 1');
@@ -102,12 +96,12 @@ test.describe('Error Boundary System', () => {
         };
       }
       const utils = (window as unknown as ErrorUtilsWindow).__ERROR_UTILS__;
-      
+
       // Verify function exists and is callable
       if (typeof utils?.addBreadcrumb !== 'function') {
         return false;
       }
-      
+
       // Try calling it to ensure it doesn't throw
       try {
         utils.addBreadcrumb('Breadcrumb verification test');
@@ -133,10 +127,7 @@ test.describe('Error Boundary System', () => {
       return !!(window as unknown as GameStoreWindow).__GAME_STORE__;
     });
 
-    expect(
-      storeExists,
-      'Game store should be exposed in dev/test mode'
-    ).toBe(true);
+    expect(storeExists, 'Game store should be exposed in dev/test mode').toBe(true);
 
     // Verify we can access store state
     const storeState = await page.evaluate(() => {
@@ -180,10 +171,7 @@ test.describe('Error Boundary System', () => {
 
     // Check all overlay errors (should be empty)
     const allOverlayErrors = await getAllOverlayErrors(page);
-    expect(
-      allOverlayErrors.length,
-      'Overlay error history should be empty'
-    ).toBe(0);
+    expect(allOverlayErrors.length, 'Overlay error history should be empty').toBe(0);
   });
 
   test('should clear error history correctly', async ({ page }) => {
@@ -275,10 +263,7 @@ test.describe('Error Boundary Integration', () => {
       return store?.getState?.()?.drawings?.length || 0;
     });
 
-    expect(
-      drawingCount,
-      'All drawings should be created without errors'
-    ).toBe(10);
+    expect(drawingCount, 'All drawings should be created without errors').toBe(10);
   });
 });
 
@@ -306,9 +291,6 @@ test.describe('Performance Metrics During Errors', () => {
       );
     });
 
-    expect(
-      hasPerformanceTracking,
-      'Performance tracking utilities should be available'
-    ).toBe(true);
+    expect(hasPerformanceTracking, 'Performance tracking utilities should be available').toBe(true);
   });
 });

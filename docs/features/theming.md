@@ -59,10 +59,10 @@ This document explains Graphium's accessible theme system for developers, future
 
 ### Theme Modes
 
-| Mode | Behavior |
-|------|----------|
-| **Light** | Force light theme, ignores OS preference |
-| **Dark** | Force dark theme, ignores OS preference |
+| Mode                 | Behavior                                   |
+| -------------------- | ------------------------------------------ |
+| **Light**            | Force light theme, ignores OS preference   |
+| **Dark**             | Force dark theme, ignores OS preference    |
 | **System** (default) | Follows OS preference, updates dynamically |
 
 ---
@@ -72,11 +72,13 @@ This document explains Graphium's accessible theme system for developers, future
 ### Radix Colors Foundation
 
 Graphium uses [Radix Colors](https://www.radix-ui.com/colors) as its color foundation. Radix provides:
+
 - **WCAG AA compliant** color scales out-of-the-box
 - **Automatic light/dark variants** (e.g., `slate` → `slate-dark`)
 - **Semantic scale steps** (1-12) for consistent contrast
 
 **Scale Semantics:**
+
 - **Steps 1-2:** App backgrounds (lightest)
 - **Steps 3-6:** Component backgrounds, borders, hover states
 - **Steps 9-10:** Solid colors (buttons, badges)
@@ -104,13 +106,13 @@ border: 1px solid var(--slate-7);
 
 See `src/styles/theme.css` for the complete list. Key categories:
 
-| Category | Variables | Usage |
-|----------|-----------|-------|
-| **Backgrounds** | `--app-bg-base`, `--app-bg-surface`, `--app-bg-hover` | Page backgrounds, panels, cards |
-| **Text** | `--app-text-primary`, `--app-text-secondary`, `--app-text-muted` | Body text, labels, placeholders |
-| **Borders** | `--app-border-subtle`, `--app-border-default` | Dividers, outlines |
-| **Accent** | `--app-accent-solid`, `--app-accent-text` | Primary buttons, links |
-| **Status** | `--app-error-*`, `--app-warning-*`, `--app-success-*` | Alerts, notifications |
+| Category        | Variables                                                        | Usage                           |
+| --------------- | ---------------------------------------------------------------- | ------------------------------- |
+| **Backgrounds** | `--app-bg-base`, `--app-bg-surface`, `--app-bg-hover`            | Page backgrounds, panels, cards |
+| **Text**        | `--app-text-primary`, `--app-text-secondary`, `--app-text-muted` | Body text, labels, placeholders |
+| **Borders**     | `--app-border-subtle`, `--app-border-default`                    | Dividers, outlines              |
+| **Accent**      | `--app-accent-solid`, `--app-accent-text`                        | Primary buttons, links          |
+| **Status**      | `--app-error-*`, `--app-warning-*`, `--app-success-*`            | Alerts, notifications           |
 
 ---
 
@@ -156,10 +158,10 @@ module.exports = {
         'bg-surface': 'var(--app-bg-surface)',
         'text-primary': 'var(--app-text-primary)',
         // ... add all semantic variables
-      }
-    }
-  }
-}
+      },
+    },
+  },
+};
 ```
 
 ---
@@ -173,27 +175,29 @@ This module manages theme state in the Electron main process.
 #### Key Functions
 
 ```typescript
-import { getThemeState, setThemeMode, initializeThemeManager } from './themeManager.js'
+import { getThemeState, setThemeMode, initializeThemeManager } from './themeManager.js';
 
 // Get current theme state
-const state = getThemeState()
+const state = getThemeState();
 // Returns: { mode: 'system', effectiveTheme: 'dark' }
 
 // Set theme mode
-setThemeMode('dark') // Options: 'light' | 'dark' | 'system'
+setThemeMode('dark'); // Options: 'light' | 'dark' | 'system'
 
 // Initialize (called in app.whenReady())
-initializeThemeManager()
+initializeThemeManager();
 ```
 
 #### Storage Location
 
 Theme preference is stored in:
+
 - **macOS:** `~/Library/Application Support/graphium/theme-preferences.json`
 - **Windows:** `%APPDATA%/graphium/theme-preferences.json`
 - **Linux:** `~/.config/graphium/theme-preferences.json`
 
 Example contents:
+
 ```json
 {
   "theme": "system"
@@ -207,9 +211,9 @@ When in `'system'` mode, the app monitors OS theme changes using Electron's `nat
 ```typescript
 nativeTheme.on('updated', () => {
   if (getThemeMode() === 'system') {
-    broadcastThemeToRenderers() // Auto-sync with OS
+    broadcastThemeToRenderers(); // Auto-sync with OS
   }
-})
+});
 ```
 
 ---
@@ -232,7 +236,7 @@ This React component applies the theme by setting the `data-theme` attribute on 
 Mount once in `App.tsx`:
 
 ```tsx
-import { ThemeManager } from './components/ThemeManager'
+import { ThemeManager } from './components/ThemeManager';
 
 function App() {
   return (
@@ -240,7 +244,7 @@ function App() {
       <ThemeManager /> {/* No props, no UI */}
       {/* Rest of app */}
     </>
-  )
+  );
 }
 ```
 
@@ -249,6 +253,7 @@ function App() {
 To prevent a white flash on app load:
 
 1. **index.html** runs a synchronous script to detect system theme:
+
    ```html
    <script>
      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -258,10 +263,11 @@ To prevent a white flash on app load:
    ```
 
 2. **ThemeManager** syncs with stored preference and removes `theme-loading` class:
+
    ```typescript
    requestAnimationFrame(() => {
-     document.body.classList.remove('theme-loading')
-   })
+     document.body.classList.remove('theme-loading');
+   });
    ```
 
 3. **theme.css** disables transitions while loading:
@@ -289,11 +295,11 @@ User clicks menu → Main process (setThemeMode)
 
 ### IPC Channels
 
-| Channel | Direction | Payload | Purpose |
-|---------|-----------|---------|---------|
-| `get-theme-state` | Renderer → Main | None | Fetch initial theme on mount |
-| `set-theme-mode` | Renderer → Main | `'light'` \| `'dark'` \| `'system'` | Update theme preference |
-| `theme-changed` | Main → Renderer | `{ mode, effectiveTheme }` | Notify of theme change |
+| Channel           | Direction       | Payload                             | Purpose                      |
+| ----------------- | --------------- | ----------------------------------- | ---------------------------- |
+| `get-theme-state` | Renderer → Main | None                                | Fetch initial theme on mount |
+| `set-theme-mode`  | Renderer → Main | `'light'` \| `'dark'` \| `'system'` | Update theme preference      |
+| `theme-changed`   | Main → Renderer | `{ mode, effectiveTheme }`          | Notify of theme change       |
 
 ---
 
@@ -306,6 +312,7 @@ npm run test:a11y
 ```
 
 This runs Playwright + axe-core tests to verify:
+
 - WCAG AA contrast ratios (≥ 4.5:1 for text)
 - Both light and dark themes
 - System theme synchronization
@@ -313,6 +320,7 @@ This runs Playwright + axe-core tests to verify:
 ### CI/CD Integration
 
 Pull requests to `NEXT` branch automatically run accessibility audits:
+
 - File: `.github/workflows/accessibility.yml`
 - Fails build if WCAG AA violations detected
 - Posts comment with violation details
@@ -320,6 +328,7 @@ Pull requests to `NEXT` branch automatically run accessibility audits:
 ### Manual Contrast Checking
 
 Use browser DevTools:
+
 1. Inspect element with text
 2. Open "Accessibility" pane in DevTools
 3. Verify contrast ratio ≥ 4.5:1
@@ -335,6 +344,7 @@ Reference: `docs/WCAG_CONTRAST_AUDIT.md`
 **Problem:** Theme resets to system after app restart.
 
 **Solution:**
+
 - Check `electron-store` permissions (write access to config folder)
 - Verify `electron/themeManager.ts` imports correctly
 - Check for errors in console: `Failed to initialize theme`
@@ -344,6 +354,7 @@ Reference: `docs/WCAG_CONTRAST_AUDIT.md`
 **Problem:** App shows light theme briefly before switching to dark.
 
 **Solution:**
+
 - Ensure `index.html` FOUC prevention script runs before `<body>`
 - Verify `theme-loading` class is added to `<body>`
 - Check `ThemeManager.tsx` removes class after sync
@@ -353,6 +364,7 @@ Reference: `docs/WCAG_CONTRAST_AUDIT.md`
 **Problem:** Theme menu shows wrong selection after change.
 
 **Solution:**
+
 - `buildApplicationMenu()` is called only once on app start
 - After setting theme, call `buildApplicationMenu()` again to rebuild menu
 - Add this to `themeManager.ts:setThemeMode()`:
@@ -367,6 +379,7 @@ Reference: `docs/WCAG_CONTRAST_AUDIT.md`
 **Problem:** OS theme changes but app doesn't update.
 
 **Solution:**
+
 - Verify theme mode is set to `'system'` (not `'light'` or `'dark'`)
 - Check `nativeTheme.on('updated')` listener is registered
 - macOS: Go to System Preferences → General → Appearance and toggle
@@ -378,8 +391,9 @@ Reference: `docs/WCAG_CONTRAST_AUDIT.md`
 ### 1. High Contrast Mode
 
 Add a third theme for accessibility:
+
 ```css
-[data-theme="high-contrast"] {
+[data-theme='high-contrast'] {
   --app-text-primary: #000; /* Pure black on white */
   --app-bg-base: #fff;
 }
@@ -388,24 +402,27 @@ Add a third theme for accessibility:
 ### 2. Custom Color Schemes
 
 Allow users to customize accent colors:
+
 ```typescript
-setThemeMode('dark', { accentColor: '#ff6b6b' })
+setThemeMode('dark', { accentColor: '#ff6b6b' });
 ```
 
 Validate contrast before applying:
+
 ```typescript
 function validateContrast(color: string, background: string): boolean {
-  const ratio = calculateContrastRatio(color, background)
-  return ratio >= 4.5 // WCAG AA
+  const ratio = calculateContrastRatio(color, background);
+  return ratio >= 4.5; // WCAG AA
 }
 ```
 
 ### 3. Per-Window Themes
 
 Support different themes for Architect vs World View:
+
 ```typescript
-setWindowTheme(worldWindow, 'dark')
-setWindowTheme(architectWindow, 'light')
+setWindowTheme(worldWindow, 'dark');
+setWindowTheme(architectWindow, 'light');
 ```
 
 ---
@@ -420,7 +437,7 @@ setWindowTheme(architectWindow, 'light')
    :root {
      --app-new-element-bg: var(--blue-4);
    }
-   [data-theme="dark"] {
+   [data-theme='dark'] {
      --app-new-element-bg: var(--blue-4); /* Same step for dark */
    }
    ```
@@ -431,22 +448,22 @@ setWindowTheme(architectWindow, 'light')
 
 ```typescript
 // From renderer (React component)
-window.themeAPI.setThemeMode('dark')
+window.themeAPI.setThemeMode('dark');
 
 // From main process
-import { setThemeMode } from './electron/themeManager.js'
-setThemeMode('dark')
+import { setThemeMode } from './electron/themeManager.js';
+setThemeMode('dark');
 ```
 
 ### Debugging Theme State
 
 ```typescript
 // In renderer console
-await window.themeAPI.getThemeState()
+await window.themeAPI.getThemeState();
 // Returns: { mode: 'system', effectiveTheme: 'dark' }
 
 // Check applied theme
-document.documentElement.getAttribute('data-theme')
+document.documentElement.getAttribute('data-theme');
 // Returns: 'dark'
 ```
 
@@ -455,6 +472,7 @@ document.documentElement.getAttribute('data-theme')
 ## Support
 
 For issues or questions:
+
 - Open issue on GitHub: [Graphium Issues](https://github.com/kocheck/Graphium/issues)
 - Check existing docs: `docs/WCAG_CONTRAST_AUDIT.md`
 - Review Radix Colors docs: https://www.radix-ui.com/colors

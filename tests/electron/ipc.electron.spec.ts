@@ -27,15 +27,11 @@ test.describe('Theme IPC Communication', () => {
       return window.themeAPI?.getThemeState();
     });
 
-    expect(
-      themeState,
-      'Theme state should be returned from IPC call'
-    ).toBeTruthy();
+    expect(themeState, 'Theme state should be returned from IPC call').toBeTruthy();
 
-    expect(
-      themeState.mode,
-      'Theme mode should be one of: light, dark, system'
-    ).toMatch(/^(light|dark|system)$/);
+    expect(themeState.mode, 'Theme mode should be one of: light, dark, system').toMatch(
+      /^(light|dark|system)$/,
+    );
 
     await app.close();
   });
@@ -54,20 +50,14 @@ test.describe('Theme IPC Communication', () => {
 
     // Verify theme changed
     const theme = await window.getAttribute('html', 'data-theme');
-    expect(
-      theme,
-      'Theme attribute should be updated to dark'
-    ).toBe('dark');
+    expect(theme, 'Theme attribute should be updated to dark').toBe('dark');
 
     // Verify persisted (get theme state)
     const themeState = await window.evaluate(() => {
       return window.themeAPI?.getThemeState();
     });
 
-    expect(
-      themeState.mode,
-      'Theme mode should be persisted'
-    ).toBe('dark');
+    expect(themeState.mode, 'Theme mode should be persisted').toBe('dark');
 
     await app.close();
   });
@@ -92,10 +82,7 @@ test.describe('Theme IPC Communication', () => {
       });
     });
 
-    expect(
-      themeChanged,
-      'Theme change event should be received'
-    ).toBe('light');
+    expect(themeChanged, 'Theme change event should be received').toBe('light');
 
     await app.close();
   });
@@ -121,10 +108,7 @@ test.describe('Theme IPC Communication', () => {
     });
 
     const theme = await window.getAttribute('html', 'data-theme');
-    expect(
-      theme,
-      'Should sync to dark theme based on OS preference'
-    ).toBe('dark');
+    expect(theme, 'Should sync to dark theme based on OS preference').toBe('dark');
 
     await app.close();
   });
@@ -275,15 +259,9 @@ test.describe('Error Reporting IPC', () => {
       return window.errorReporting?.getUsername();
     });
 
-    expect(
-      username,
-      'Should get username from main process'
-    ).toBeTruthy();
+    expect(username, 'Should get username from main process').toBeTruthy();
 
-    expect(
-      typeof username,
-      'Username should be a string'
-    ).toBe('string');
+    expect(typeof username, 'Username should be a string').toBe('string');
 
     await app.close();
   });
@@ -300,10 +278,7 @@ test.describe('Error Reporting IPC', () => {
       return window.errorReporting?.openExternal('https://example.com');
     });
 
-    expect(
-      result,
-      'External link should be opened via IPC'
-    ).toBeTruthy();
+    expect(result, 'External link should be opened via IPC').toBeTruthy();
 
     await app.close();
   });
@@ -325,10 +300,7 @@ test.describe('Error Reporting IPC', () => {
       return window.errorReporting?.saveToFile(data);
     }, errorData);
 
-    expect(
-      result?.success,
-      'Error report should be saved to file via IPC'
-    ).toBeTruthy();
+    expect(result?.success, 'Error report should be saved to file via IPC').toBeTruthy();
 
     await app.close();
   });
@@ -352,7 +324,7 @@ test.describe('IPC Security', () => {
 
     expect(
       hasDirectNodeAccess.hasRequire,
-      'require should not be directly accessible (security)'
+      'require should not be directly accessible (security)',
     ).toBeFalsy();
 
     // process may be available for platform detection
@@ -378,15 +350,9 @@ test.describe('IPC Security', () => {
       };
     });
 
-    expect(
-      exposedAPIs.hasThemeAPI,
-      'Theme API should be exposed'
-    ).toBeTruthy();
+    expect(exposedAPIs.hasThemeAPI, 'Theme API should be exposed').toBeTruthy();
 
-    expect(
-      exposedAPIs.hasErrorReporting,
-      'Error reporting API should be exposed'
-    ).toBeTruthy();
+    expect(exposedAPIs.hasErrorReporting, 'Error reporting API should be exposed').toBeTruthy();
 
     await app.close();
   });
@@ -413,10 +379,7 @@ test.describe('IPC Performance', () => {
 
     const duration = Date.now() - startTime;
 
-    expect(
-      duration,
-      '100 IPC calls should complete in under 1 second'
-    ).toBeLessThan(1000);
+    expect(duration, '100 IPC calls should complete in under 1 second').toBeLessThan(1000);
 
     await app.close();
   });
@@ -432,11 +395,13 @@ test.describe('IPC Performance', () => {
     const largeCampaign = {
       name: 'Large Campaign',
       maps: {},
-      tokenLibrary: Array(200).fill({}).map((_, i) => ({
-        id: `token-${i}`,
-        name: `Token ${i}`,
-        src: 'blob:data',
-      })),
+      tokenLibrary: Array(200)
+        .fill({})
+        .map((_, i) => ({
+          id: `token-${i}`,
+          name: `Token ${i}`,
+          src: 'blob:data',
+        })),
     };
 
     const startTime = Date.now();
@@ -449,10 +414,9 @@ test.describe('IPC Performance', () => {
 
     const duration = Date.now() - startTime;
 
-    expect(
-      duration,
-      'Large data transfer via IPC should complete in reasonable time'
-    ).toBeLessThan(5000);
+    expect(duration, 'Large data transfer via IPC should complete in reasonable time').toBeLessThan(
+      5000,
+    );
 
     await app.close();
   });

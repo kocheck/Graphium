@@ -7,10 +7,12 @@ Implemented "explored fog of war" where areas previously seen by PC tokens remai
 ## Feature Overview
 
 Traditional fog of war has two states:
+
 - **Visible**: Areas currently in PC vision (clear)
 - **Hidden**: Everything else (completely dark)
 
 Explored fog of war adds a third state:
+
 - **Visible**: Areas currently in PC vision (clear)
 - **Explored**: Areas previously seen but not currently visible (dimmed)
 - **Unexplored**: Areas never seen (completely dark)
@@ -20,16 +22,19 @@ This provides a better gameplay experience where players can see the rooms they'
 ## Visual States
 
 ### 1. Unexplored (Never Seen)
+
 - **Appearance**: Full fog - heavily blurred and very dark
 - **Effect**: `blur=20, brightness=-0.94`
 - **Purpose**: Complete mystery, players have no information
 
 ### 2. Explored (Previously Seen)
+
 - **Appearance**: Dimmed map - partially visible through fog
 - **Effect**: 50% fog opacity (semi-transparent erase)
 - **Purpose**: Players can see layout but not details/tokens
 
 ### 3. Current Vision (Currently Visible)
+
 - **Appearance**: Clear map - fully visible
 - **Effect**: 100% fog erase (fully transparent)
 - **Purpose**: Full visibility of current location
@@ -39,24 +44,28 @@ This provides a better gameplay experience where players can see the rooms they'
 ### 1. Game Store (`src/store/gameStore.ts`)
 
 **New Interface: ExploredRegion**
+
 ```typescript
 export interface ExploredRegion {
-  points: Array<{ x: number; y: number }>;  // Polygon of explored area
-  timestamp: number;                         // When it was explored
+  points: Array<{ x: number; y: number }>; // Polygon of explored area
+  timestamp: number; // When it was explored
 }
 ```
 
 **New State:**
+
 - `exploredRegions: ExploredRegion[]` - Array of all explored vision polygons
 - Starts empty, grows as tokens explore
 
 **New Actions:**
+
 - `addExploredRegion(region: ExploredRegion)` - Adds new explored area
 - `clearExploredRegions()` - Resets exploration (new map/session)
 
 ### 2. FogOfWarLayer (`src/components/Canvas/FogOfWarLayer.tsx`)
 
 **Vision Tracking:**
+
 ```typescript
 // Save current vision to explored regions every 1 second
 useEffect(() => {
@@ -70,7 +79,7 @@ useEffect(() => {
     if (polygon && polygon.length > 0) {
       addExploredRegion({
         points: polygon,
-        timestamp: now
+        timestamp: now,
       });
     }
   });
@@ -80,6 +89,7 @@ useEffect(() => {
 ```
 
 **Three-Layer Rendering:**
+
 ```typescript
 <Group>
   {/* Layer 1: Full Fog (Unexplored) */}
@@ -117,12 +127,14 @@ useEffect(() => {
 ### 3. SyncManager (`src/components/SyncManager.tsx`)
 
 **Synchronization:**
+
 - Added `exploredRegions` to FULL_SYNC payload
 - Architect View tracks exploration
 - World View receives and renders explored regions
 - Both windows show same explored areas
 
 **Sync Payload:**
+
 ```typescript
 {
   type: 'FULL_SYNC',
@@ -152,6 +164,7 @@ useEffect(() => {
 ### Composite Operation
 
 Uses `destination-out` blending mode:
+
 - `destination`: The fog layer underneath
 - `out`: "Erase" operation
 - `rgba(0,0,0,0.5)`: Semi-transparent black = 50% erase
@@ -160,16 +173,19 @@ Uses `destination-out` blending mode:
 ### Performance
 
 **Exploration Tracking:**
+
 - Updates throttled to 1 second intervals
 - Only adds new polygons when tokens move
 - No redundant storage (each vision snapshot saved once)
 
 **Rendering:**
+
 - Uses cached visibility polygons (no recalculation)
 - Destination-out is GPU-accelerated
 - Minimal performance impact (~2-5ms per frame)
 
 **Memory:**
+
 - Each explored polygon: ~1KB (typical)
 - 1 hour session: ~100 polygons = 100KB
 - Acceptable memory footprint
@@ -177,11 +193,13 @@ Uses `destination-out` blending mode:
 ## User Experience
 
 ### DM Benefits
+
 1. **Visual feedback**: See which areas players have explored
 2. **Reset option**: `clearExploredRegions()` for new sessions
 3. **Automatic**: No manual tracking needed
 
 ### Player Benefits
+
 1. **Navigation**: Can see explored rooms to backtrack
 2. **Memory aid**: Remember dungeon layout
 3. **Tactical**: Plan routes through explored areas
@@ -265,6 +283,7 @@ Uses `destination-out` blending mode:
 ### Coordinate Systems
 
 All coordinates in world space (pixels):
+
 - Token position: `{x: 100, y: 200}`
 - Vision polygon: `[{x: 100, y: 100}, {x: 200, y: 100}, ...]`
 - No transformation needed for rendering
@@ -314,6 +333,7 @@ All coordinates in world space (pixels):
 ## Backwards Compatibility
 
 ✅ **Fully backwards compatible:**
+
 - `exploredRegions` defaults to empty array
 - Existing campaigns load with no explored regions
 - Feature is additive, doesn't break existing functionality
@@ -322,6 +342,7 @@ All coordinates in world space (pixels):
 ## Conclusion
 
 Explored fog of war significantly improves gameplay by:
+
 - ✅ Providing visual memory of explored areas
 - ✅ Helping players navigate complex dungeons
 - ✅ Maintaining mystery for unexplored regions

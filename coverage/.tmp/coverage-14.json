@@ -1,1 +1,178 @@
-{"result":[{"scriptId":"1196","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"HTMLCanvasElement.getContext","ranges":[{"startOffset":1405,"endOffset":2722,"count":0}],"isBlockCoverage":false},{"functionName":"HTMLCanvasElement.toDataURL","ranges":[{"startOffset":2766,"endOffset":2819,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":2930,"endOffset":2964,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":3071,"endOffset":3102,"count":0}],"isBlockCoverage":false}]},{"scriptId":"1371","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/components/Canvas/DoorBlocking.test.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":31228,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":31228,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":381,"endOffset":8978,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":457,"endOffset":4084,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":551,"endOffset":1308,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1395,"endOffset":2149,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2229,"endOffset":2756,"count":1},{"startOffset":2490,"endOffset":2684,"count":0}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2838,"endOffset":4078,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3531,"endOffset":3553,"count":3}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3563,"endOffset":4004,"count":2},{"startOffset":3662,"endOffset":3996,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4159,"endOffset":7532,"count":1}],"isBlockCoverage":true},{"functionName":"lineSegmentIntersection","ranges":[{"startOffset":4171,"endOffset":4675,"count":4},{"startOffset":4340,"endOffset":4352,"count":1},{"startOffset":4352,"endOffset":4526,"count":3},{"startOffset":4527,"endOffset":4536,"count":2},{"startOffset":4537,"endOffset":4546,"count":2},{"startOffset":4548,"endOffset":4650,"count":2},{"startOffset":4650,"endOffset":4674,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4760,"endOffset":5344,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5429,"endOffset":6013,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":6100,"endOffset":6498,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":6573,"endOffset":7526,"count":1},{"startOffset":7134,"endOffset":7520,"count":0}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7594,"endOffset":8974,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7672,"endOffset":8249,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7955,"endOffset":7977,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7983,"endOffset":8175,"count":0}],"isBlockCoverage":false},{"functionName":"","ranges":[{"startOffset":8331,"endOffset":8968,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":8674,"endOffset":8696,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":8702,"endOffset":8894,"count":1}],"isBlockCoverage":true}]}]}
+{
+  "result": [
+    {
+      "scriptId": "1196",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "HTMLCanvasElement.getContext",
+          "ranges": [{ "startOffset": 1405, "endOffset": 2722, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "HTMLCanvasElement.toDataURL",
+          "ranges": [{ "startOffset": 2766, "endOffset": 2819, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2930, "endOffset": 2964, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3071, "endOffset": 3102, "count": 0 }],
+          "isBlockCoverage": false
+        }
+      ]
+    },
+    {
+      "scriptId": "1371",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/components/Canvas/DoorBlocking.test.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 31228, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 31228, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 381, "endOffset": 8978, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 457, "endOffset": 4084, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 551, "endOffset": 1308, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1395, "endOffset": 2149, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [
+            { "startOffset": 2229, "endOffset": 2756, "count": 1 },
+            { "startOffset": 2490, "endOffset": 2684, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2838, "endOffset": 4078, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3531, "endOffset": 3553, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [
+            { "startOffset": 3563, "endOffset": 4004, "count": 2 },
+            { "startOffset": 3662, "endOffset": 3996, "count": 1 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4159, "endOffset": 7532, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "lineSegmentIntersection",
+          "ranges": [
+            { "startOffset": 4171, "endOffset": 4675, "count": 4 },
+            { "startOffset": 4340, "endOffset": 4352, "count": 1 },
+            { "startOffset": 4352, "endOffset": 4526, "count": 3 },
+            { "startOffset": 4527, "endOffset": 4536, "count": 2 },
+            { "startOffset": 4537, "endOffset": 4546, "count": 2 },
+            { "startOffset": 4548, "endOffset": 4650, "count": 2 },
+            { "startOffset": 4650, "endOffset": 4674, "count": 1 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4760, "endOffset": 5344, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5429, "endOffset": 6013, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 6100, "endOffset": 6498, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [
+            { "startOffset": 6573, "endOffset": 7526, "count": 1 },
+            { "startOffset": 7134, "endOffset": 7520, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7594, "endOffset": 8974, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7672, "endOffset": 8249, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7955, "endOffset": 7977, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7983, "endOffset": 8175, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 8331, "endOffset": 8968, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 8674, "endOffset": 8696, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 8702, "endOffset": 8894, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ]
+}

@@ -50,8 +50,8 @@ const AddToLibraryDialog = ({
   // Mobile responsiveness
   const isMobile = useIsMobile();
 
-  const addTokenToLibrary = useGameStore(state => state.addTokenToLibrary);
-  const showToast = useGameStore(state => state.showToast);
+  const addTokenToLibrary = useGameStore((state) => state.addTokenToLibrary);
+  const showToast = useGameStore((state) => state.showToast);
 
   // Update name when suggestedName changes
   useEffect(() => {
@@ -94,7 +94,7 @@ const AddToLibraryDialog = ({
             }
           },
           'image/webp',
-          0.85
+          0.85,
         );
       };
 
@@ -131,8 +131,8 @@ const AddToLibraryDialog = ({
       // Parse tags (comma or space separated)
       const tags = tagsInput
         .split(/[,\s]+/)
-        .map(t => t.trim())
-        .filter(t => t.length > 0);
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
 
       // Convert blobs to ArrayBuffers
       const fullSizeBuffer = await imageBlob.arrayBuffer();
@@ -143,16 +143,12 @@ const AddToLibraryDialog = ({
 
       // Save to library via storage service
       const storage = getStorage();
-      const savedItem = await storage.saveAssetToLibrary(
-        fullSizeBuffer,
-        thumbnailBuffer,
-        {
-          id,
-          name: name.trim(),
-          category,
-          tags,
-        }
-      );
+      const savedItem = await storage.saveAssetToLibrary(fullSizeBuffer, thumbnailBuffer, {
+        id,
+        name: name.trim(),
+        category,
+        tags,
+      });
 
       // Add to store
       addTokenToLibrary(savedItem);
@@ -187,11 +183,7 @@ const AddToLibraryDialog = ({
       onClick={handleClose}
     >
       <div
-        className={`w-full overflow-hidden ${
-          isMobile
-            ? 'h-full'
-            : 'max-w-md rounded-lg'
-        }`}
+        className={`w-full overflow-hidden ${isMobile ? 'h-full' : 'max-w-md rounded-lg'}`}
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: 'var(--app-bg-surface)',
@@ -233,7 +225,10 @@ const AddToLibraryDialog = ({
 
           {/* Category */}
           <div>
-            <label htmlFor="asset-category" className="block text-sm font-medium text-neutral-300 mb-1">
+            <label
+              htmlFor="asset-category"
+              className="block text-sm font-medium text-neutral-300 mb-1"
+            >
               Category
             </label>
             <select

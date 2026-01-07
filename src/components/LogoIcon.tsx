@@ -16,7 +16,12 @@ interface LogoIconProps {
  * Features:
  * - Optional rotation animation on mount
  */
-export function LogoIcon({ size = 80, animate = false, onAnimationComplete, className = '' }: LogoIconProps) {
+export function LogoIcon({
+  size = 80,
+  animate = false,
+  onAnimationComplete,
+  className = '',
+}: LogoIconProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rotation, setRotation] = useState(0);
 
@@ -27,7 +32,7 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete, clas
 
       // Spin for a bit
       const spinInterval = window.setInterval(() => {
-        setRotation(prev => prev + 45);
+        setRotation((prev) => prev + 45);
       }, 50);
 
       // Stop after 800ms
@@ -71,7 +76,7 @@ export function LogoIcon({ size = 80, animate = false, onAnimationComplete, clas
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'contain'
+          objectFit: 'contain',
         }}
       />
     </div>

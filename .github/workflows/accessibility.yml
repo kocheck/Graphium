@@ -38,7 +38,7 @@ jobs:
 
       - name: Run accessibility tests
         run: npm run test:a11y
-        continue-on-error: false  # Fail the build on accessibility violations
+        continue-on-error: false # Fail the build on accessibility violations
         env:
           CI: true
 

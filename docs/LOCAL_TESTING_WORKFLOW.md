@@ -5,6 +5,7 @@
 ### 1. Disable CI Workflow
 
 **Option A: Delete the workflow file**
+
 ```bash
 rm .github/workflows/e2e.yml
 git commit -m "Disable CI testing (local-only)"
@@ -12,6 +13,7 @@ git push
 ```
 
 **Option B: Rename to disable**
+
 ```bash
 mv .github/workflows/e2e.yml .github/workflows/e2e.yml.disabled
 git commit -m "Disable CI testing (local-only)"
@@ -54,6 +56,7 @@ git push
 Add a git hook to run tests automatically:
 
 **`.git/hooks/pre-push`** (create this file):
+
 ```bash
 #!/bin/bash
 
@@ -72,6 +75,7 @@ exit 0
 ```
 
 **Make it executable:**
+
 ```bash
 chmod +x .git/hooks/pre-push
 ```
@@ -83,12 +87,14 @@ Now tests run automatically before every push!
 ## Best Practices
 
 ### ✅ DO
+
 - Run tests before every commit
 - Run full suite before pushing
 - Fix failing tests immediately
 - Update tests when changing functionality
 
 ### ❌ DON'T
+
 - Skip tests with `--no-verify` (except emergencies)
 - Push broken code
 - Assume "it works on my machine"
@@ -126,6 +132,7 @@ Now tests run automatically before every push!
 **Cause:** Environment differences
 
 **Solution:**
+
 ```bash
 # Clear all state
 npm run test:e2e -- --update-snapshots
@@ -136,6 +143,7 @@ git commit -m "Update test snapshots"
 ### Tests are slow
 
 **Options:**
+
 ```bash
 # Run in parallel (faster)
 npm run test:e2e -- --workers=4

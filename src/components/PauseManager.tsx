@@ -67,7 +67,8 @@ export function PauseManager() {
      * This ensures windows opened after pause was toggled start in correct state
      */
     // @ts-ignore - Window IPC types not available in renderer
-    window.ipcRenderer.invoke('GET_PAUSE_STATE')
+    window.ipcRenderer
+      .invoke('GET_PAUSE_STATE')
       .then((isPaused: boolean) => {
         setIsGamePaused(isPaused);
       })

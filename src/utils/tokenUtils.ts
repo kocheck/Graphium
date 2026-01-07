@@ -3,28 +3,28 @@
  */
 
 export interface Token {
-    id: string;
-    x: number;
-    y: number;
-    src: string;
-    libraryItemId?: string;
-    scale?: number;
-    type?: 'PC' | 'NPC';
-    visionRadius?: number;
-    name?: string;
+  id: string;
+  x: number;
+  y: number;
+  src: string;
+  libraryItemId?: string;
+  scale?: number;
+  type?: 'PC' | 'NPC';
+  visionRadius?: number;
+  name?: string;
 }
 
 export interface LibraryItem {
-    id: string;
-    name: string;
-    src: string;
-    thumbnailSrc: string;
-    category: string;
-    tags: string[];
-    dateAdded: number;
-    defaultScale?: number;
-    defaultVisionRadius?: number;
-    defaultType?: 'PC' | 'NPC';
+  id: string;
+  name: string;
+  src: string;
+  thumbnailSrc: string;
+  category: string;
+  tags: string[];
+  dateAdded: number;
+  defaultScale?: number;
+  defaultVisionRadius?: number;
+  defaultType?: 'PC' | 'NPC';
 }
 
 /**
@@ -36,28 +36,28 @@ export interface LibraryItem {
  * @param limit - Max number of recent tokens to return (default 3)
  */
 export function getRecentTokens(
-    tokens: Token[],
-    library: LibraryItem[],
-    limit: number = 3
+  tokens: Token[],
+  library: LibraryItem[],
+  limit: number = 3,
 ): LibraryItem[] {
-    const uniqueSrcs = new Set<string>();
-    const recent: LibraryItem[] = [];
+  const uniqueSrcs = new Set<string>();
+  const recent: LibraryItem[] = [];
 
-    // Iterate tokens in reverse (most recent first)
-    // Assuming the tokens array order roughly correlates to addition order
-    // or at least presence.
-    for (let i = tokens.length - 1; i >= 0 && recent.length < limit; i--) {
-        const token = tokens[i];
-        if (!uniqueSrcs.has(token.src)) {
-            uniqueSrcs.add(token.src);
-            // Find corresponding library item
-            const libraryItem = library.find(item => item.src === token.src);
-            if (libraryItem) {
-                recent.push(libraryItem);
-            }
-        }
+  // Iterate tokens in reverse (most recent first)
+  // Assuming the tokens array order roughly correlates to addition order
+  // or at least presence.
+  for (let i = tokens.length - 1; i >= 0 && recent.length < limit; i--) {
+    const token = tokens[i];
+    if (!uniqueSrcs.has(token.src)) {
+      uniqueSrcs.add(token.src);
+      // Find corresponding library item
+      const libraryItem = library.find((item) => item.src === token.src);
+      if (libraryItem) {
+        recent.push(libraryItem);
+      }
     }
-    return recent;
+  }
+  return recent;
 }
 
 /**
@@ -68,14 +68,11 @@ export function getRecentTokens(
  * @param limit - Max number of player tokens to return (default 5)
  * @returns Array of player tokens
  */
-export function getPlayerTokens(
-    library: LibraryItem[],
-    limit: number = 5
-): LibraryItem[] {
-    return library
-        .filter(item => item.defaultType === 'PC' || item.category === 'PC')
-        .sort((a, b) => b.dateAdded - a.dateAdded) // Most recent first
-        .slice(0, limit);
+export function getPlayerTokens(library: LibraryItem[], limit: number = 5): LibraryItem[] {
+  return library
+    .filter((item) => item.defaultType === 'PC' || item.category === 'PC')
+    .sort((a, b) => b.dateAdded - a.dateAdded) // Most recent first
+    .slice(0, limit);
 }
 
 /**
@@ -87,9 +84,9 @@ export function getPlayerTokens(
  * @returns Deduplicated player tokens
  */
 export function deduplicatePlayerTokens(
-    playerTokens: LibraryItem[],
-    recentTokens: LibraryItem[]
+  playerTokens: LibraryItem[],
+  recentTokens: LibraryItem[],
 ): LibraryItem[] {
-    const recentSrcs = new Set(recentTokens.map(token => token.src));
-    return playerTokens.filter(token => !recentSrcs.has(token.src));
+  const recentSrcs = new Set(recentTokens.map((token) => token.src));
+  return playerTokens.filter((token) => !recentSrcs.has(token.src));
 }

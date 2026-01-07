@@ -88,6 +88,7 @@ graphium/
 ### When to Update Documentation
 
 Update documentation when you:
+
 - Add new features or components
 - Change existing APIs (especially Sync logic)
 - Fix bugs that affect documented behavior
@@ -103,6 +104,7 @@ Update documentation when you:
 ### Before Submitting
 
 1. **Test your changes**
+
    ```bash
    npm run dev      # Manual testing (Architect & World View)
    npm run test     # Unit tests
@@ -110,6 +112,7 @@ Update documentation when you:
    ```
 
 2. **Check code quality**
+
    ```bash
    npm run lint     # Linting
    ```

@@ -15,7 +15,7 @@ describe('QuickTokenSidebar', () => {
       category: 'Monster',
       tags: ['monster', 'fire'],
       dateAdded: Date.now() - 1000,
-      defaultType: 'NPC'
+      defaultType: 'NPC',
     },
     {
       id: 'recent2',
@@ -25,8 +25,8 @@ describe('QuickTokenSidebar', () => {
       category: 'Monster',
       tags: ['monster'],
       dateAdded: Date.now() - 2000,
-      defaultType: 'NPC'
-    }
+      defaultType: 'NPC',
+    },
   ];
 
   const playerTokens: TokenLibraryItem[] = [
@@ -38,7 +38,7 @@ describe('QuickTokenSidebar', () => {
       category: 'Player',
       tags: ['player', 'melee'],
       dateAdded: Date.now() - 500,
-      defaultType: 'PC'
+      defaultType: 'PC',
     },
     {
       id: 'pc2',
@@ -48,8 +48,8 @@ describe('QuickTokenSidebar', () => {
       category: 'Player',
       tags: ['player', 'magic'],
       dateAdded: Date.now() - 300,
-      defaultType: 'PC'
-    }
+      defaultType: 'PC',
+    },
   ];
 
   beforeEach(() => {
@@ -63,7 +63,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(screen.getByText('Recent History')).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={[]}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(screen.queryByText('Recent History')).not.toBeInTheDocument();
@@ -87,7 +87,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(screen.getByAltText('Dragon')).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const dragonToken = screen.getByAltText('Dragon').closest('div');
@@ -113,7 +113,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const dragonToken = screen.getByAltText('Dragon').closest('div');
@@ -127,7 +127,7 @@ describe('QuickTokenSidebar', () => {
         expect.any(Object),
         'LIBRARY_TOKEN',
         'file://dragon.png',
-        'recent1'
+        'recent1',
       );
     });
 
@@ -137,7 +137,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const dragonImage = screen.getByAltText('Dragon') as HTMLImageElement;
@@ -152,7 +152,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(screen.getByText('Party')).toBeInTheDocument();
@@ -160,11 +160,7 @@ describe('QuickTokenSidebar', () => {
 
     it('should render Party section even with empty tokens', () => {
       render(
-        <QuickTokenSidebar
-          recentTokens={[]}
-          playerTokens={[]}
-          onDragStart={mockOnDragStart}
-        />
+        <QuickTokenSidebar recentTokens={[]} playerTokens={[]} onDragStart={mockOnDragStart} />,
       );
 
       expect(screen.getByText('Party')).toBeInTheDocument();
@@ -176,7 +172,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       // Look for tooltip with "Generic Token" text
@@ -190,7 +186,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       // Find the generic token (has dashed border and is in Party section)
@@ -204,7 +200,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(screen.getByAltText('Warrior')).toBeInTheDocument();
@@ -217,7 +213,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const warriorToken = screen.getByAltText('Warrior').closest('div');
@@ -230,7 +226,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const warriorToken = screen.getByAltText('Warrior').closest('div');
@@ -244,7 +240,7 @@ describe('QuickTokenSidebar', () => {
         expect.any(Object),
         'LIBRARY_TOKEN',
         'file://warrior.png',
-        'pc1'
+        'pc1',
       );
     });
 
@@ -257,7 +253,7 @@ describe('QuickTokenSidebar', () => {
         category: 'Player',
         tags: [],
         dateAdded: Date.now() - i * 100,
-        defaultType: 'PC' as const
+        defaultType: 'PC' as const,
       }));
 
       render(
@@ -265,7 +261,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={manyPlayers}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       // Should render all 5 player tokens plus generic token (6 total in Party section)
@@ -282,18 +278,18 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const genericToken = container.querySelector('.border-dashed');
       const mockDataTransfer = {
         setData: vi.fn(),
-        setDragImage: vi.fn()
+        setDragImage: vi.fn(),
       };
 
       const dragEvent = new DragEvent('dragstart', {
         bubbles: true,
-        dataTransfer: mockDataTransfer as any
+        dataTransfer: mockDataTransfer as any,
       });
 
       if (genericToken) {
@@ -302,7 +298,7 @@ describe('QuickTokenSidebar', () => {
 
       expect(mockDataTransfer.setData).toHaveBeenCalledWith(
         'application/json',
-        expect.stringContaining('GENERIC_TOKEN')
+        expect.stringContaining('GENERIC_TOKEN'),
       );
     });
 
@@ -312,7 +308,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const genericToken = container.querySelector('.border-dashed');
@@ -325,7 +321,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const genericToken = container.querySelector('.border-dashed');
@@ -338,11 +334,7 @@ describe('QuickTokenSidebar', () => {
   describe('Edge Cases', () => {
     it('should handle empty recent and player tokens', () => {
       render(
-        <QuickTokenSidebar
-          recentTokens={[]}
-          playerTokens={[]}
-          onDragStart={mockOnDragStart}
-        />
+        <QuickTokenSidebar recentTokens={[]} playerTokens={[]} onDragStart={mockOnDragStart} />,
       );
 
       // Should still render Party section with Generic Token
@@ -356,7 +348,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={[recentTokens[0]]}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(screen.getByText('Recent History')).toBeInTheDocument();
@@ -370,7 +362,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={[playerTokens[0]]}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(screen.getByAltText('Warrior')).toBeInTheDocument();
@@ -387,8 +379,8 @@ describe('QuickTokenSidebar', () => {
           category: 'Monster',
           tags: [],
           dateAdded: Date.now(),
-          defaultType: 'NPC'
-        }
+          defaultType: 'NPC',
+        },
       ];
 
       render(
@@ -396,7 +388,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={specialTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(screen.getByAltText("Zarkon's Minion")).toBeInTheDocument();
@@ -412,8 +404,8 @@ describe('QuickTokenSidebar', () => {
           category: 'Monster',
           tags: [],
           dateAdded: Date.now(),
-          defaultType: 'NPC'
-        }
+          defaultType: 'NPC',
+        },
       ];
 
       render(
@@ -421,11 +413,11 @@ describe('QuickTokenSidebar', () => {
           recentTokens={longNameTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       expect(
-        screen.getByAltText('A Very Long Token Name That Exceeds Normal Length Expectations')
+        screen.getByAltText('A Very Long Token Name That Exceeds Normal Length Expectations'),
       ).toBeInTheDocument();
     });
   });
@@ -437,7 +429,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const headings = screen.getAllByRole('heading', { level: 4 });
@@ -450,7 +442,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const images = screen.getAllByRole('img');
@@ -466,7 +458,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const dragonToken = screen.getByAltText('Dragon').closest('div');
@@ -481,7 +473,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const wrapper = container.firstChild;
@@ -494,7 +486,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const recentHistorySection = screen.getByText('Recent History').nextElementSibling;
@@ -507,7 +499,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const dragonToken = screen.getByAltText('Dragon').closest('div');
@@ -520,7 +512,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const dragonToken = screen.getByAltText('Dragon').closest('div');
@@ -535,7 +527,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const dragonToken = screen.getByAltText('Dragon').closest('div');
@@ -553,7 +545,7 @@ describe('QuickTokenSidebar', () => {
           recentTokens={recentTokens}
           playerTokens={playerTokens}
           onDragStart={mockOnDragStart}
-        />
+        />,
       );
 
       const dragonImage = screen.getByAltText('Dragon');

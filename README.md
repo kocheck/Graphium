@@ -12,12 +12,14 @@
 <div align="center">
 
 # GRAPHIUM
-### *The Weight of Creation*
+
+### _The Weight of Creation_
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Build Status](https://github.com/kocheck/Graphium/actions/workflows/build-release.yml/badge.svg)
 ![Tests](https://github.com/kocheck/Graphium/actions/workflows/test.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+
 <!-- Coverage badge intentionally omitted from external services: coverage is tracked via Vitest (`npm run test:coverage`), but we avoid external coverage services to keep Graphium fully local-first. -->
 
 [Quick Start](#quick-start) • [Philosophy](#philosophy) • [Tools](#tools) • [Installation](#installation) • [Contributing](#contributing)
@@ -30,7 +32,7 @@
 > A tool for **Tactile Cartography** that treats your world not as a slippery whiteboard, but as a permanent etching.
 
 **Graphium** is a Virtual Tabletop designed for the **Dungeon Master who prefers weight over fluff.**
-We believe map-making should feel like *carving* the unknown into existence. No cloud accounts. No subscriptions. No "slippery" controls. Just you, the stylus, and the infinite canvas.
+We believe map-making should feel like _carving_ the unknown into existence. No cloud accounts. No subscriptions. No "slippery" controls. Just you, the stylus, and the infinite canvas.
 
 **Pronunciation**: GRAF-ee-um
 **Tagline**: "Inscribe the World."
@@ -41,26 +43,26 @@ We believe map-making should feel like *carving* the unknown into existence. No 
 
 <h2 id="philosophy">🏛 The Etched Philosophy</h2>
 
-***"Whiteboards are for brainstorming. Graphium is for history."***
+**_"Whiteboards are for brainstorming. Graphium is for history."_**
 
 Most VTTs feel floaty and temporary. Graphium is built with **funicular friction**—a satisfying "bite" to every interaction that makes your choices feel deliberate.
 
-- **From "Matter" to "Tool":** *Graphium* (the tool that shapes raw matter) reflects our focus on precision and craftsmanship.
+- **From "Matter" to "Tool":** _Graphium_ (the tool that shapes raw matter) reflects our focus on precision and craftsmanship.
 - **The Wax Tablet:** Romans drafted on wax because it was durable yet correctable. We bring that same tactile decisiveness to your digital campaign.
-- **Local Sovereignty:** Your world lives on *your* drive in sacred `.graphium` tomes. No cloud wizard can gaze upon your maps or hold your campaign hostage.
+- **Local Sovereignty:** Your world lives on _your_ drive in sacred `.graphium` tomes. No cloud wizard can gaze upon your maps or hold your campaign hostage.
 
 ---
 
 ## 🎞️ Artifacts in Motion
 
-*Observe the tool in action.*
+_Observe the tool in action._
 
 <div align="center">
   <img src="https://via.placeholder.com/800x450?text=GIF:+Fog+of+War+Raycasting" alt="Fog of War Demo" width="48%">
   <img src="https://via.placeholder.com/800x450?text=GIF:+Architect+vs+World+View" alt="Dual Window Demo" width="48%">
 </div>
 
-*(Placeholder: Real captures of the fog raycasting and window projection being forged.)*
+_(Placeholder: Real captures of the fog raycasting and window projection being forged.)_
 
 ---
 
@@ -81,6 +83,7 @@ npm run dev
 ```
 
 **Your First Incantation:**
+
 1. **Launch Graphium**.
 2. **New Campaign** (`Cmd+N`).
 3. **Drag & Drop** any map image onto the Iron Grid.
@@ -95,15 +98,19 @@ npm run dev
 Graphium gives you a dedicated "Architect's View" full of arcane instruments, while your players see only the "World View"—a pristine projection of your reality.
 
 ### **The Stylus (Marker Tools)**
+
 - **Etch (Draw)**: Annotate the map. Marks feel physical and permanent.
 - **Inscribe (Tokens)**: Place characters and monsters.
 - **Occlude (Walls)**: Draw dynamic light-blocking barriers.
 
 ### **The Tablet (System)**
+
 - **Dual-Window Architecture**: One brain, two faces. You control the chaos; they witness the glory.
 - **Fog of War**: A hardware-accelerated raycasting engine that creates true mystery.
 - **Asset Conjuration**: Drag and drop images directly onto the canvas. We optimize them automatically.
-- **Auto-Update**: Seamless updates delivered from GitHub Releases. Stay current without the ritual.
+- **Grid Geometry**: Choose your reality—Square (lines/dots), Hexagonal (flat-top), or Isometric (diamond). Each grid type features smart snapping, hover highlights, and tactical overlays.
+- **Movement Range**: Hold M to visualize reachable cells for selected tokens—perfect for tactical combat planning.
+- **Enhanced Measurements**: Ruler, blast, and cone tools show both distance in feet and grid cell counts.
 
 ### **The Modern Stylus (Touch & Pen Support)**
 
@@ -114,7 +121,7 @@ Graphium embraces the tactile nature of creation through comprehensive touch and
 - **Two-Finger Gestures**: Pan and pinch-zoom to navigate your world with natural gestures
 - **Unified Input**: Mouse, touch, and pen all flow through the same precise pathways
 
-*Your tool should never constrain your medium. Whether you prefer the precision of a mouse, the intimacy of a stylus, or the directness of touch—Graphium responds with equal weight.*
+_Your tool should never constrain your medium. Whether you prefer the precision of a mouse, the intimacy of a stylus, or the directness of touch—Graphium responds with equal weight._
 
 ---
 
@@ -133,6 +140,7 @@ Only the finest materials were used to forge Graphium.
 <h2 id="installation">🔨 The Forge (Installation)</h2>
 
 ### **Prerequisites**
+
 - **Node.js** (v18+)
 - **npm** (The package summoner)
 
@@ -159,16 +167,25 @@ npm run build
 
 ## 📖 Keyboard Sigils (Shortcuts)
 
+### **Tools & Actions**
+
 - **V**: Select / Manipulate
-- **M**: Marker / Etch
+- **M**: Marker / Etch (also: Hold M to show Movement Range for selected token)
 - **E**: Eraser / Smooth Wax
 - **W**: Wall / Occlude
 - **D**: Door / Passage
 - **I**: Color Picker
-- **?**: About & Updates (Check for new versions)
 - **Cmd + S**: Save the Tome (.graphium)
 - **Cmd + O**: Open a Tome
 - **Shift + Drag**: Lock Axis
+
+### **Grid Geometry (Architect View)**
+
+- **1**: Square Grid - Lines
+- **2**: Square Grid - Dots
+- **3**: Hexagonal Grid (flat-top)
+- **4**: Isometric Grid (diamond)
+- **5**: Hidden Grid
 
 ---
 

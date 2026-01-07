@@ -23,7 +23,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <div data-testid="child">Child content</div>
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       expect(screen.getByTestId('child')).toBeInTheDocument();
@@ -34,7 +34,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={false} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       expect(screen.getByTestId('sidebar-content')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -59,13 +59,11 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/Unable to load token shortcuts/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/Unable to load token shortcuts/i)).toBeInTheDocument();
       });
     });
 
@@ -73,13 +71,11 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/The rest of your sidebar still works/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/The rest of your sidebar still works/i)).toBeInTheDocument();
       });
     });
 
@@ -89,14 +85,14 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           expect.stringContaining('[QuickTokenSidebarErrorBoundary] Token sidebar crashed:'),
           expect.any(Error),
-          expect.anything()
+          expect.anything(),
         );
       });
 
@@ -109,7 +105,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -121,10 +117,10 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       // Create a wrapper component with state to control error throwing
       function TestWrapper() {
         const [errorKey, setErrorKey] = React.useState(0);
-        
+
         return (
           <div>
-            <button onClick={() => setErrorKey(k => k + 1)} data-testid="reset-trigger">
+            <button onClick={() => setErrorKey((k) => k + 1)} data-testid="reset-trigger">
               Reset
             </button>
             <QuickTokenSidebarErrorBoundary key={errorKey}>
@@ -162,7 +158,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       const { container } = render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -175,7 +171,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -188,7 +184,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       const { container } = render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -209,7 +205,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <TypeErrorComponent />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -226,7 +222,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ReferenceErrorComponent />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -242,7 +238,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <SpecialCharErrorComponent />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -262,7 +258,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <AsyncErrorComponent />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -276,7 +272,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       const { rerender } = render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -291,7 +287,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       rerender(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       // Should show error UI again
@@ -306,7 +302,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -319,7 +315,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {
@@ -332,7 +328,7 @@ describe('QuickTokenSidebarErrorBoundary', () => {
       const { container } = render(
         <QuickTokenSidebarErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </QuickTokenSidebarErrorBoundary>
+        </QuickTokenSidebarErrorBoundary>,
       );
 
       await waitFor(() => {

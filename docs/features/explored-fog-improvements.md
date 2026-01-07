@@ -9,11 +9,13 @@
 **Cause:** Using `rgba(0, 0, 0, 0.5)` (50% opacity) for explored areas meant only 50% of the fog was being erased, leaving 50% of the heavy fog still covering the map.
 
 **Fix:** Increased alpha from `0.5` to `0.8` (80% opacity)
+
 - Erases 80% of the fog instead of 50%
 - Leaves only 20% of the fog for dimming effect
 - Much more visible while still clearly distinct from current vision
 
 **Visual Effect:**
+
 - Before: 50% fog remaining = very dark, hard to see
 - After: 20% fog remaining = nicely dimmed, can see room layout
 
@@ -24,22 +26,26 @@
 This will help identify if regions are being added consistently or if there's a timing issue.
 
 **Log Format:**
+
 ```
 [FogOfWar] Added 1 explored region(s). Total: 15
 ```
 
 This shows:
+
 - How many regions were added this update (usually 1 per PC token)
 - Total number of regions accumulated
 
 ### How It Works
 
 **Fog Opacity Levels:**
+
 1. **Unexplored** (never seen): 100% fog (blur + very dark)
 2. **Explored** (previously seen): 20% fog (dimmed but visible)
 3. **Current Vision**: 0% fog (completely clear)
 
 **Update Timing:**
+
 - Effect triggers when tokens array changes (includes position changes)
 - Throttled to 1-second intervals to prevent performance issues
 - Logs confirm when regions are being added
@@ -68,6 +74,7 @@ This shows:
 If performance becomes an issue with many accumulated regions:
 
 1. **Limit region count:**
+
    ```typescript
    // Keep only last 200 regions
    if (exploredRegions.length > 200) {
@@ -102,6 +109,7 @@ If performance becomes an issue with many accumulated regions:
 ## Testing Notes
 
 Run the game and:
+
 1. Check if explored areas are now more visible ✅
 2. Check console for region addition logs ✅
 3. Verify regions continue to be added as tokens move ✅

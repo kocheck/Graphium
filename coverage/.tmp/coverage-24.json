@@ -1,1 +1,124 @@
-{"result":[{"scriptId":"1196","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"HTMLCanvasElement.getContext","ranges":[{"startOffset":1405,"endOffset":2722,"count":0}],"isBlockCoverage":false},{"functionName":"HTMLCanvasElement.toDataURL","ranges":[{"startOffset":2766,"endOffset":2819,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":2930,"endOffset":2964,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":3071,"endOffset":3102,"count":0}],"isBlockCoverage":false}]},{"scriptId":"1371","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/tokenUtils.test.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":7004,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":7004,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":497,"endOffset":2430,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":557,"endOffset":2426,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":908,"endOffset":1021,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1102,"endOffset":1549,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1603,"endOffset":2030,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2095,"endOffset":2420,"count":1}],"isBlockCoverage":true}]},{"scriptId":"1372","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/tokenUtils.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":3470,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":3470,"count":1}],"isBlockCoverage":true},{"functionName":"getRecentTokens","ranges":[{"startOffset":185,"endOffset":652,"count":4},{"startOffset":350,"endOffset":374,"count":8},{"startOffset":381,"endOffset":633,"count":7},{"startOffset":448,"endOffset":629,"count":6},{"startOffset":580,"endOffset":623,"count":5},{"startOffset":633,"endOffset":651,"count":7}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":522,"endOffset":554,"count":12}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":756,"endOffset":787,"count":4}],"isBlockCoverage":true}]}]}
+{
+  "result": [
+    {
+      "scriptId": "1196",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "HTMLCanvasElement.getContext",
+          "ranges": [{ "startOffset": 1405, "endOffset": 2722, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "HTMLCanvasElement.toDataURL",
+          "ranges": [{ "startOffset": 2766, "endOffset": 2819, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2930, "endOffset": 2964, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3071, "endOffset": 3102, "count": 0 }],
+          "isBlockCoverage": false
+        }
+      ]
+    },
+    {
+      "scriptId": "1371",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/tokenUtils.test.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 7004, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 7004, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 497, "endOffset": 2430, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 557, "endOffset": 2426, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 908, "endOffset": 1021, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1102, "endOffset": 1549, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1603, "endOffset": 2030, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2095, "endOffset": 2420, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    },
+    {
+      "scriptId": "1372",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/tokenUtils.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 3470, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 3470, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "getRecentTokens",
+          "ranges": [
+            { "startOffset": 185, "endOffset": 652, "count": 4 },
+            { "startOffset": 350, "endOffset": 374, "count": 8 },
+            { "startOffset": 381, "endOffset": 633, "count": 7 },
+            { "startOffset": 448, "endOffset": 629, "count": 6 },
+            { "startOffset": 580, "endOffset": 623, "count": 5 },
+            { "startOffset": 633, "endOffset": 651, "count": 7 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 522, "endOffset": 554, "count": 12 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 756, "endOffset": 787, "count": 4 }],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ]
+}

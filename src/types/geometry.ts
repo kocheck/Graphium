@@ -35,8 +35,8 @@ export function isPointInPolygon(point: Point, polygon: Point[]): boolean {
     const yj = polygon[j].y;
 
     // Check if point is on horizontal edge
-    const onEdge = ((yi > point.y) !== (yj > point.y)) &&
-      (point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi);
+    const onEdge =
+      yi > point.y !== yj > point.y && point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
 
     if (onEdge) {
       inside = !inside;
@@ -54,7 +54,7 @@ export function isPointInPolygon(point: Point, polygon: Point[]): boolean {
  * @returns true if point is inside at least one polygon
  */
 export function isPointInAnyPolygon(point: Point, polygons: Point[][]): boolean {
-  return polygons.some(polygon => isPointInPolygon(point, polygon));
+  return polygons.some((polygon) => isPointInPolygon(point, polygon));
 }
 
 /**
@@ -75,7 +75,7 @@ export function isRectInAnyPolygon(
   y: number,
   width: number,
   height: number,
-  polygons: Point[][]
+  polygons: Point[][],
 ): boolean {
   // Test center point (most important for token visibility)
   const centerX = x + width / 2;
@@ -92,5 +92,5 @@ export function isRectInAnyPolygon(
     { x: x + width, y: y + height }, // Bottom-right
   ];
 
-  return corners.some(corner => isPointInAnyPolygon(corner, polygons));
+  return corners.some((corner) => isPointInAnyPolygon(corner, polygons));
 }

@@ -40,8 +40,8 @@ describe('Door Blocking Logic', () => {
 
       expect(wallSegments).toHaveLength(1);
       expect(wallSegments[0]).toEqual({
-        start: { x: 75, y: 200 },  // 100 - 25
-        end: { x: 125, y: 200 },   // 100 + 25
+        start: { x: 75, y: 200 }, // 100 - 25
+        end: { x: 125, y: 200 }, // 100 + 25
       });
     });
 
@@ -70,8 +70,8 @@ describe('Door Blocking Logic', () => {
 
       expect(wallSegments).toHaveLength(1);
       expect(wallSegments[0]).toEqual({
-        start: { x: 100, y: 175 },  // 200 - 25
-        end: { x: 100, y: 225 },    // 200 + 25
+        start: { x: 100, y: 175 }, // 200 - 25
+        end: { x: 100, y: 225 }, // 200 + 25
       });
     });
 
@@ -81,7 +81,7 @@ describe('Door Blocking Logic', () => {
         x: 100,
         y: 200,
         orientation: 'horizontal',
-        isOpen: true,  // OPEN
+        isOpen: true, // OPEN
         isLocked: false,
         size: 50,
       };
@@ -124,7 +124,7 @@ describe('Door Blocking Logic', () => {
           x: 300,
           y: 300,
           orientation: 'horizontal',
-          isOpen: true,  // OPEN - should not be converted
+          isOpen: true, // OPEN - should not be converted
           isLocked: false,
           size: 50,
         },
@@ -133,8 +133,8 @@ describe('Door Blocking Logic', () => {
       const wallSegments: WallSegment[] = [];
 
       doors
-        .filter(door => !door.isOpen)
-        .forEach(door => {
+        .filter((door) => !door.isOpen)
+        .forEach((door) => {
           const halfSize = door.size / 2;
           if (door.orientation === 'horizontal') {
             wallSegments.push({
@@ -149,15 +149,21 @@ describe('Door Blocking Logic', () => {
           }
         });
 
-      expect(wallSegments).toHaveLength(2);  // Only 2 closed doors
+      expect(wallSegments).toHaveLength(2); // Only 2 closed doors
     });
   });
 
   describe('Ray Intersection with Door Segments', () => {
     // Helper function to test line segment intersection
     function lineSegmentIntersection(
-      x1: number, y1: number, x2: number, y2: number,
-      x3: number, y3: number, x4: number, y4: number
+      x1: number,
+      y1: number,
+      x2: number,
+      y2: number,
+      x3: number,
+      y3: number,
+      x4: number,
+      y4: number,
     ): Point | null {
       const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
@@ -185,10 +191,14 @@ describe('Door Blocking Logic', () => {
 
       // Ray from (100, 50) pointing down to (100, 150)
       const intersection = lineSegmentIntersection(
-        100, 50,   // Ray start
-        100, 150,  // Ray end
-        doorSegment.start.x, doorSegment.start.y,
-        doorSegment.end.x, doorSegment.end.y
+        100,
+        50, // Ray start
+        100,
+        150, // Ray end
+        doorSegment.start.x,
+        doorSegment.start.y,
+        doorSegment.end.x,
+        doorSegment.end.y,
       );
 
       expect(intersection).not.toBeNull();
@@ -205,10 +215,14 @@ describe('Door Blocking Logic', () => {
 
       // Ray from (50, 100) pointing right to (150, 100)
       const intersection = lineSegmentIntersection(
-        50, 100,   // Ray start
-        150, 100,  // Ray end
-        doorSegment.start.x, doorSegment.start.y,
-        doorSegment.end.x, doorSegment.end.y
+        50,
+        100, // Ray start
+        150,
+        100, // Ray end
+        doorSegment.start.x,
+        doorSegment.start.y,
+        doorSegment.end.x,
+        doorSegment.end.y,
       );
 
       expect(intersection).not.toBeNull();
@@ -225,10 +239,14 @@ describe('Door Blocking Logic', () => {
 
       // Ray from (50, 50) to (75, 75) - misses door
       const intersection = lineSegmentIntersection(
-        50, 50,
-        75, 75,
-        doorSegment.start.x, doorSegment.start.y,
-        doorSegment.end.x, doorSegment.end.y
+        50,
+        50,
+        75,
+        75,
+        doorSegment.start.x,
+        doorSegment.start.y,
+        doorSegment.end.x,
+        doorSegment.end.y,
       );
 
       expect(intersection).toBeNull();
@@ -249,10 +267,14 @@ describe('Door Blocking Logic', () => {
 
       // Check if ray from PC to target intersects door
       const intersection = lineSegmentIntersection(
-        pcPosition.x, pcPosition.y,
-        targetPosition.x, targetPosition.y,
-        doorSegment.start.x, doorSegment.start.y,
-        doorSegment.end.x, doorSegment.end.y
+        pcPosition.x,
+        pcPosition.y,
+        targetPosition.x,
+        targetPosition.y,
+        doorSegment.start.x,
+        doorSegment.start.y,
+        doorSegment.end.x,
+        doorSegment.end.y,
       );
 
       expect(intersection).not.toBeNull();
@@ -261,11 +283,11 @@ describe('Door Blocking Logic', () => {
       if (intersection) {
         const distanceToIntersection = Math.hypot(
           intersection.x - pcPosition.x,
-          intersection.y - pcPosition.y
+          intersection.y - pcPosition.y,
         );
         const distanceToTarget = Math.hypot(
           targetPosition.x - pcPosition.x,
-          targetPosition.y - pcPosition.y
+          targetPosition.y - pcPosition.y,
         );
 
         expect(distanceToIntersection).toBeLessThan(distanceToTarget);
@@ -281,7 +303,7 @@ describe('Door Blocking Logic', () => {
           x: 100,
           y: 100,
           orientation: 'horizontal',
-          isOpen: true,  // OPEN
+          isOpen: true, // OPEN
           isLocked: false,
           size: 50,
         },
@@ -289,8 +311,8 @@ describe('Door Blocking Logic', () => {
 
       // Convert only CLOSED doors
       const wallSegments = doors
-        .filter(door => !door.isOpen)
-        .map(door => {
+        .filter((door) => !door.isOpen)
+        .map((door) => {
           const halfSize = door.size / 2;
           return {
             start: { x: door.x - halfSize, y: door.y },
@@ -298,7 +320,7 @@ describe('Door Blocking Logic', () => {
           };
         });
 
-      expect(wallSegments).toHaveLength(0);  // Open door = no wall segment
+      expect(wallSegments).toHaveLength(0); // Open door = no wall segment
     });
 
     it('should block vision through closed locked door', () => {
@@ -308,15 +330,15 @@ describe('Door Blocking Logic', () => {
           x: 100,
           y: 100,
           orientation: 'horizontal',
-          isOpen: false,  // CLOSED
-          isLocked: true,  // LOCKED (but still blocks vision when closed)
+          isOpen: false, // CLOSED
+          isLocked: true, // LOCKED (but still blocks vision when closed)
           size: 50,
         },
       ];
 
       const wallSegments = doors
-        .filter(door => !door.isOpen)
-        .map(door => {
+        .filter((door) => !door.isOpen)
+        .map((door) => {
           const halfSize = door.size / 2;
           return {
             start: { x: door.x - halfSize, y: door.y },
@@ -324,7 +346,7 @@ describe('Door Blocking Logic', () => {
           };
         });
 
-      expect(wallSegments).toHaveLength(1);  // Locked but closed = still blocks
+      expect(wallSegments).toHaveLength(1); // Locked but closed = still blocks
     });
   });
 });

@@ -92,9 +92,7 @@ const MobileBottomSheet = ({ isOpen, onClose, children }: MobileBottomSheetProps
         </div>
 
         {/* Content */}
-        <div className="px-4 pb-4">
-          {children}
-        </div>
+        <div className="px-4 pb-4">{children}</div>
       </div>
     </>
   );

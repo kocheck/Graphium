@@ -1,7 +1,7 @@
-import { defineConfig, devices } from '@playwright/test'
-import { createRequire } from 'module'
+import { defineConfig, devices } from '@playwright/test';
+import { createRequire } from 'module';
 
-const require = createRequire(import.meta.url)
+const require = createRequire(import.meta.url);
 
 /**
  * Playwright Configuration for Graphium E2E Tests
@@ -108,4 +108,4 @@ export default defineConfig({
         reuseExistingServer: true, // Reuse if already running
         timeout: 120000,
       },
-})
+});

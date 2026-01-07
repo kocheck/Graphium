@@ -50,16 +50,9 @@ describe('PaperNoiseOverlay', () => {
     const { container } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Component should render but Rect should not be present
@@ -70,16 +63,9 @@ describe('PaperNoiseOverlay', () => {
     render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Verify Image was created
@@ -94,16 +80,9 @@ describe('PaperNoiseOverlay', () => {
     const { rerender } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate successful image load
@@ -115,16 +94,9 @@ describe('PaperNoiseOverlay', () => {
     rerender(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Component should still be in document
@@ -135,16 +107,9 @@ describe('PaperNoiseOverlay', () => {
     const { rerender } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={100}
-            y={200}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={100} y={200} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate image load
@@ -155,16 +120,9 @@ describe('PaperNoiseOverlay', () => {
     rerender(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={100}
-            y={200}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={100} y={200} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Verify canvas is rendered
@@ -175,16 +133,9 @@ describe('PaperNoiseOverlay', () => {
     const { rerender } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={2.5}
-            scaleY={1.5}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={2.5} scaleY={1.5} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate image load
@@ -195,16 +146,9 @@ describe('PaperNoiseOverlay', () => {
     rerender(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={2.5}
-            scaleY={1.5}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={2.5} scaleY={1.5} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     expect(document.querySelector('canvas')).toBeInTheDocument();
@@ -224,7 +168,7 @@ describe('PaperNoiseOverlay', () => {
             opacity={0.5}
           />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate image load
@@ -245,7 +189,7 @@ describe('PaperNoiseOverlay', () => {
             opacity={0.5}
           />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     expect(document.querySelector('canvas')).toBeInTheDocument();
@@ -255,16 +199,9 @@ describe('PaperNoiseOverlay', () => {
     const { rerender } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate image load
@@ -275,16 +212,9 @@ describe('PaperNoiseOverlay', () => {
     rerender(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     expect(document.querySelector('canvas')).toBeInTheDocument();
@@ -296,16 +226,9 @@ describe('PaperNoiseOverlay', () => {
     render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate image load error
@@ -316,7 +239,7 @@ describe('PaperNoiseOverlay', () => {
     // Should log error
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('[PaperNoiseOverlay] Failed to load pattern image:'),
-      expect.any(Event)
+      expect.any(Event),
     );
 
     consoleErrorSpy.mockRestore();
@@ -326,16 +249,9 @@ describe('PaperNoiseOverlay', () => {
     const { unmount } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Verify handlers are set
@@ -354,16 +270,9 @@ describe('PaperNoiseOverlay', () => {
     const { rerender, unmount } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate rapid position changes (e.g., during panning)
@@ -380,7 +289,7 @@ describe('PaperNoiseOverlay', () => {
               scaleY={1 + i * 0.1}
             />
           </Layer>
-        </Stage>
+        </Stage>,
       );
     }
 
@@ -394,16 +303,9 @@ describe('PaperNoiseOverlay', () => {
     render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Verify SVG contains expected turbulence parameters
@@ -419,16 +321,9 @@ describe('PaperNoiseOverlay', () => {
     const { rerender } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={0}
-            height={0}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={0} height={0} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate image load
@@ -439,16 +334,9 @@ describe('PaperNoiseOverlay', () => {
     rerender(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={0}
-            height={0}
-            scaleX={1}
-            scaleY={1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={0} height={0} scaleX={1} scaleY={1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Should still render without errors
@@ -459,16 +347,9 @@ describe('PaperNoiseOverlay', () => {
     const { rerender } = render(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={-1}
-            scaleY={-1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={-1} scaleY={-1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Simulate image load
@@ -479,16 +360,9 @@ describe('PaperNoiseOverlay', () => {
     rerender(
       <Stage width={800} height={600}>
         <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={-1}
-            scaleY={-1}
-          />
+          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={-1} scaleY={-1} />
         </Layer>
-      </Stage>
+      </Stage>,
     );
 
     // Should handle negative scales (for flipping)

@@ -9,7 +9,7 @@
  * Interface definitions like ErrorWindow and TestErrorInfo are duplicated within
  * each page.evaluate() block because the code inside evaluate() runs in the browser
  * context (isolated from Node.js) and cannot import types from Node.js modules.
- * 
+ *
  * This duplication is intentional, necessary, and follows standard Playwright patterns.
  * The canonical types are defined in src/window.d.ts and should be kept in sync manually
  * when changes are made to the error boundary interfaces.
@@ -31,7 +31,7 @@ import type { Page } from '@playwright/test';
 
 /**
  * Test helper type matching ErrorInfo from src/window.d.ts
- * 
+ *
  * @see src/window.d.ts for canonical definition
  */
 export type TestErrorContext = Record<string, unknown>;
@@ -183,7 +183,7 @@ export async function addBreadcrumb(page: Page, action: string): Promise<void> {
  */
 export async function exportErrorToClipboard(
   page: Page,
-  errorType: 'token' | 'overlay' | 'asset'
+  errorType: 'token' | 'overlay' | 'asset',
 ): Promise<boolean> {
   return await page.evaluate(async (type) => {
     // NOTE: Interface is redefined here because page.evaluate() runs in browser context
@@ -196,7 +196,7 @@ export async function exportErrorToClipboard(
         exportErrorToClipboard: (context: TestErrorContext) => Promise<boolean>;
       };
     }
-    
+
     const win = window as unknown as ErrorWindow;
     const utils = win.__ERROR_UTILS__;
     if (!utils) return false;
@@ -238,7 +238,7 @@ export async function assertNoErrors(
     checkTokens: true,
     checkOverlays: true,
     checkAssetProcessing: true,
-  }
+  },
 ): Promise<void> {
   const errors: string[] = [];
 
@@ -246,7 +246,7 @@ export async function assertNoErrors(
     const tokenError = await checkForTokenErrors(page);
     if (tokenError) {
       errors.push(
-        `Token Error: ${tokenError.error} (Token ID: ${tokenError.tokenId || 'unknown'}, Time: ${new Date(tokenError.timestamp).toISOString()})`
+        `Token Error: ${tokenError.error} (Token ID: ${tokenError.tokenId || 'unknown'}, Time: ${new Date(tokenError.timestamp).toISOString()})`,
       );
     }
   }
@@ -255,7 +255,7 @@ export async function assertNoErrors(
     const overlayError = await checkForOverlayErrors(page);
     if (overlayError) {
       errors.push(
-        `Overlay Error: ${overlayError.error} (Overlay: ${overlayError.overlayName || 'unknown'}, Time: ${new Date(overlayError.timestamp).toISOString()})`
+        `Overlay Error: ${overlayError.error} (Overlay: ${overlayError.overlayName || 'unknown'}, Time: ${new Date(overlayError.timestamp).toISOString()})`,
       );
     }
   }
@@ -264,7 +264,7 @@ export async function assertNoErrors(
     const assetError = await checkForAssetProcessingErrors(page);
     if (assetError) {
       errors.push(
-        `Asset Processing Error: ${assetError.error} (Time: ${new Date(assetError.timestamp).toISOString()})`
+        `Asset Processing Error: ${assetError.error} (Time: ${new Date(assetError.timestamp).toISOString()})`,
       );
     }
   }
@@ -285,7 +285,7 @@ export async function assertNoErrors(
 export async function waitForError(
   page: Page,
   errorType: 'token' | 'overlay' | 'asset',
-  timeout: number = 5000
+  timeout: number = 5000,
 ): Promise<TestErrorInfo | null> {
   const startTime = Date.now();
 
@@ -326,7 +326,7 @@ export async function waitForError(
 export async function triggerTestError(
   page: Page,
   componentType: 'token' | 'overlay' | 'asset',
-  message: string = 'Test error'
+  message: string = 'Test error',
 ): Promise<void> {
   await page.evaluate(
     ({ type, msg }) => {
@@ -344,7 +344,7 @@ export async function triggerTestError(
         triggered: false,
       };
     },
-    { type: componentType, msg: message }
+    { type: componentType, msg: message },
   );
 }
 
@@ -357,7 +357,7 @@ export async function triggerTestError(
  */
 export async function getErrorPerformanceMetrics(
   page: Page,
-  errorType: 'token' | 'overlay' | 'asset'
+  errorType: 'token' | 'overlay' | 'asset',
 ): Promise<{
   memory?: { used: number; total: number; limit: number };
   timing?: { loadTime: number; domReady: number };
@@ -368,7 +368,7 @@ export async function getErrorPerformanceMetrics(
       __LAST_OVERLAY_ERROR__?: TestErrorInfo;
       __LAST_ASSET_PROCESSING_ERROR__?: TestErrorInfo;
     }
-    
+
     const win = window as unknown as ErrorWindow;
     let error: TestErrorInfo | undefined;
     switch (type) {
@@ -387,10 +387,12 @@ export async function getErrorPerformanceMetrics(
       return null;
     }
 
-    const performance = (error.context as Record<string, unknown>).performance as {
-      memory?: { used: number; total: number; limit: number };
-      timing?: { loadTime: number; domReady: number };
-    } | undefined;
+    const performance = (error.context as Record<string, unknown>).performance as
+      | {
+          memory?: { used: number; total: number; limit: number };
+          timing?: { loadTime: number; domReady: number };
+        }
+      | undefined;
 
     return performance || null;
   }, errorType);

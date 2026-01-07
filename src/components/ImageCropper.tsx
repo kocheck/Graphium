@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import Cropper from 'react-easy-crop'
+import { useState, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
 
 /**
  * Props for ImageCropper component
@@ -66,9 +66,9 @@ interface ImageCropperProps {
  * )}
  */
 const ImageCropper = ({ imageSrc, onConfirm, onCancel }: ImageCropperProps) => {
-  const [crop, setCrop] = useState({ x: 0, y: 0 })  // Crop area position
-  const [zoom, setZoom] = useState(1)  // Zoom level (1x-3x)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)  // Pixel coordinates for extraction
+  const [crop, setCrop] = useState({ x: 0, y: 0 }); // Crop area position
+  const [zoom, setZoom] = useState(1); // Zoom level (1x-3x)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null); // Pixel coordinates for extraction
 
   /**
    * Callback fired when crop area changes
@@ -81,8 +81,8 @@ const ImageCropper = ({ imageSrc, onConfirm, onCancel }: ImageCropperProps) => {
    * @param croppedAreaPixels - Pixel coordinates { x, y, width, height }
    */
   const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels)
-  }, [])
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
   /**
    * Processes the crop and calls onConfirm with resulting blob
@@ -99,20 +99,20 @@ const ImageCropper = ({ imageSrc, onConfirm, onCancel }: ImageCropperProps) => {
   const handleSave = async () => {
     try {
       if (!croppedAreaPixels) return;
-      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels)
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
       if (croppedImage) {
-          onConfirm(croppedImage)
+        onConfirm(croppedImage);
       }
     } catch (e) {
-      console.error(e)
+      console.error(e);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
       <div className="relative w-[90vw] h-[80vh] bg-neutral-800 rounded-lg overflow-hidden flex flex-col">
         <div className="relative flex-1 bg-black">
-            <Cropper
+          <Cropper
             image={imageSrc}
             crop={crop}
             zoom={zoom}
@@ -127,32 +127,42 @@ const ImageCropper = ({ imageSrc, onConfirm, onCancel }: ImageCropperProps) => {
             onCropChange={setCrop}
             onCropComplete={onCropComplete}
             onZoomChange={setZoom}
-            />
+          />
         </div>
 
         <div className="p-4 flex justify-between items-center bg-neutral-900 border-t border-neutral-700">
-             <div className="flex gap-4">
-                 <span className="text-white text-sm">Zoom</span>
-                 <input
-                  type="range"
-                  value={zoom}
-                  min={1}
-                  max={3}
-                  step={0.1}
-                  aria-labelledby="Zoom"
-                  onChange={(e) => setZoom(Number(e.target.value))}
-                  className="w-32"
-                />
-             </div>
-             <div className="flex gap-2">
-                 <button onClick={onCancel} className="px-4 py-2 hover:bg-neutral-700 rounded text-white font-medium">Cancel</button>
-                 <button onClick={handleSave} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold">Crop & Import</button>
-             </div>
+          <div className="flex gap-4">
+            <span className="text-white text-sm">Zoom</span>
+            <input
+              type="range"
+              value={zoom}
+              min={1}
+              max={3}
+              step={0.1}
+              aria-labelledby="Zoom"
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-32"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 hover:bg-neutral-700 rounded text-white font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold"
+            >
+              Crop & Import
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 /**
  * Extracts the cropped region from an image and returns it as a WebP blob
@@ -189,40 +199,44 @@ const ImageCropper = ({ imageSrc, onConfirm, onCancel }: ImageCropperProps) => {
  */
 async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | null> {
   // Load source image (waits for async load)
-  const image = await createImage(imageSrc)
+  const image = await createImage(imageSrc);
 
   // Create canvas sized to crop area
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
 
   if (!ctx) {
-    return null
+    return null;
   }
 
-  canvas.width = pixelCrop.width
-  canvas.height = pixelCrop.height
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
 
   // Extract cropped region from source image
   // drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh)
   // s = source (crop region from original), d = destination (canvas)
   ctx.drawImage(
     image,
-    pixelCrop.x,         // Source x
-    pixelCrop.y,         // Source y
-    pixelCrop.width,     // Source width
-    pixelCrop.height,    // Source height
-    0,                   // Destination x (top-left of canvas)
-    0,                   // Destination y (top-left of canvas)
-    pixelCrop.width,     // Destination width (no scaling)
-    pixelCrop.height     // Destination height (no scaling)
-  )
+    pixelCrop.x, // Source x
+    pixelCrop.y, // Source y
+    pixelCrop.width, // Source width
+    pixelCrop.height, // Source height
+    0, // Destination x (top-left of canvas)
+    0, // Destination y (top-left of canvas)
+    pixelCrop.width, // Destination width (no scaling)
+    pixelCrop.height, // Destination height (no scaling)
+  );
 
   // Convert canvas to WebP blob (quality=1 for maximum fidelity)
   return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(blob)
-    }, 'image/webp', 1)
-  })
+    canvas.toBlob(
+      (blob) => {
+        resolve(blob);
+      },
+      'image/webp',
+      1,
+    );
+  });
 }
 
 /**
@@ -241,10 +255,10 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | n
  */
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
-    const image = new Image()
-    image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', (error) => reject(error))
-    image.src = url
-  })
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.src = url;
+  });
 
-export default ImageCropper
+export default ImageCropper;

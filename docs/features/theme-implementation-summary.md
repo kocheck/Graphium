@@ -22,6 +22,7 @@ This implementation adds a comprehensive, accessible light/dark mode system to G
 - Smooth theme transitions
 
 **Key Variables:**
+
 - Backgrounds: `--app-bg-base`, `--app-bg-surface`, `--app-bg-hover`
 - Text: `--app-text-primary`, `--app-text-secondary`, `--app-text-muted`
 - Interactive: `--app-accent-solid`, `--app-accent-text`
@@ -37,6 +38,7 @@ This implementation adds a comprehensive, accessible light/dark mode system to G
 - IPC broadcasting to renderer windows
 
 **Storage Location:**
+
 - macOS: `~/Library/Application Support/graphium/theme-preferences.json`
 - Windows: `%APPDATA%/graphium/theme-preferences.json`
 - Linux: `~/.config/graphium/theme-preferences.json`
@@ -46,6 +48,7 @@ This implementation adds a comprehensive, accessible light/dark mode system to G
 **File:** `electron/main.ts` (updated)
 
 Added IPC handlers:
+
 - `get-theme-state`: Returns current theme state
 - `set-theme-mode`: Updates theme preference
 - `theme-changed`: Broadcasts theme changes to renderers
@@ -53,6 +56,7 @@ Added IPC handlers:
 **File:** `electron/preload.ts` (updated)
 
 Exposed `window.themeAPI`:
+
 - `getThemeState()`: Fetch current theme
 - `setThemeMode(mode)`: Change theme
 - `onThemeChanged(callback)`: Subscribe to changes
@@ -62,6 +66,7 @@ Exposed `window.themeAPI`:
 **File:** `electron/main.ts` (updated)
 
 Added `buildApplicationMenu()` function with:
+
 - View → Theme submenu
 - Radio buttons for Light/Dark/System
 - Native menu integration (macOS/Windows/Linux)
@@ -71,6 +76,7 @@ Added `buildApplicationMenu()` function with:
 **File:** `src/components/ThemeManager.tsx`
 
 React component that:
+
 - Fetches initial theme from main process
 - Applies `data-theme` attribute to `<html>`
 - Subscribes to theme changes via IPC
@@ -85,6 +91,7 @@ Integrated `<ThemeManager />` component at root level.
 **File:** `index.html` (updated)
 
 Added synchronous script to:
+
 - Detect system theme before CSS loads
 - Apply initial `data-theme` attribute
 - Add `theme-loading` class to prevent transitions on first paint
@@ -94,6 +101,7 @@ Added synchronous script to:
 **File:** `tests/accessibility.spec.ts`
 
 Playwright + axe-core tests for:
+
 - WCAG AA contrast ratios in both themes
 - System theme synchronization
 - Semantic CSS variable definitions
@@ -105,6 +113,7 @@ Playwright configuration for CI/CD integration.
 **File:** `.github/workflows/accessibility.yml`
 
 GitHub Actions workflow that:
+
 - Runs on pull requests to `NEXT` branch
 - Fails build on WCAG AA violations
 - Posts PR comments with violation details
@@ -114,6 +123,7 @@ GitHub Actions workflow that:
 **File:** `docs/THEMING.md`
 
 Comprehensive guide covering:
+
 - Architecture overview
 - How to use semantic variables
 - Main/Renderer process communication
@@ -123,6 +133,7 @@ Comprehensive guide covering:
 **File:** `docs/WCAG_CONTRAST_AUDIT.md`
 
 Detailed accessibility audit:
+
 - Contrast ratio tables
 - Radix Colors guarantees
 - Intentional exceptions (disabled states)
@@ -135,6 +146,7 @@ Implementation summary for review.
 ### 9. Dependencies
 
 **Added:**
+
 - `@radix-ui/colors`: Color system foundation
 - `electron-store`: Theme preference persistence
 - `@playwright/test`: Accessibility testing
@@ -142,6 +154,7 @@ Implementation summary for review.
 - `axe-core`: Core accessibility engine
 
 **Updated:**
+
 - `package.json`: Added `test:a11y` script
 
 ---
@@ -246,6 +259,7 @@ npm run build
 **Status:** Current UI uses hardcoded Tailwind classes like `bg-neutral-900`.
 
 **Next Steps:** Migrate existing components to use semantic CSS variables:
+
 ```tsx
 // Before
 <div className="bg-neutral-900 text-white">
@@ -264,13 +278,14 @@ npm run build
 
 ✅ **Compliant** for all text and UI components (excluding canvas)
 
-| Criterion | Status | Notes |
-|-----------|--------|-------|
-| **SC 1.4.3 Contrast (Minimum)** | ✅ Pass | All text ≥ 4.5:1 contrast |
+| Criterion                       | Status  | Notes                        |
+| ------------------------------- | ------- | ---------------------------- |
+| **SC 1.4.3 Contrast (Minimum)** | ✅ Pass | All text ≥ 4.5:1 contrast    |
 | **SC 1.4.11 Non-text Contrast** | ✅ Pass | UI components ≥ 3:1 contrast |
-| **SC 1.4.13 Content on Hover** | ✅ Pass | No hover-only content |
+| **SC 1.4.13 Content on Hover**  | ✅ Pass | No hover-only content        |
 
 **Exceptions:**
+
 - Disabled text (`--app-text-disabled`) - Exempt per WCAG 2.1
 - Canvas graphics - Non-text content, user-controlled colors
 
@@ -281,8 +296,9 @@ npm run build
 ### 1. High Contrast Mode
 
 Add third theme option:
+
 ```css
-[data-theme="high-contrast"] {
+[data-theme='high-contrast'] {
   --app-text-primary: #000; /* Pure black on white */
   --app-bg-base: #fff;
 }
@@ -293,8 +309,9 @@ Add third theme option:
 ### 2. Custom Accent Colors
 
 Allow user-selected accent colors:
+
 ```typescript
-setThemeMode('dark', { accentColor: '#ff6b6b' })
+setThemeMode('dark', { accentColor: '#ff6b6b' });
 ```
 
 **Requirement:** Validate contrast before applying.
@@ -302,9 +319,10 @@ setThemeMode('dark', { accentColor: '#ff6b6b' })
 ### 3. Per-Window Themes
 
 Support different themes for Architect vs World View:
+
 ```typescript
-setWindowTheme(worldWindow, 'dark')
-setWindowTheme(architectWindow, 'light')
+setWindowTheme(worldWindow, 'dark');
+setWindowTheme(architectWindow, 'light');
 ```
 
 **Use Case:** DM prefers light mode, players prefer dark mode projector.
@@ -316,11 +334,13 @@ setWindowTheme(architectWindow, 'light')
 ### Converting Components to Use Theme
 
 1. **Identify hardcoded colors:**
+
    ```tsx
    // Find: bg-neutral-900, text-white, border-gray-600
    ```
 
 2. **Replace with semantic variables:**
+
    ```tsx
    // Replace with: var(--app-bg-base), var(--app-text-primary), var(--app-border-default)
    ```
@@ -333,27 +353,29 @@ setWindowTheme(architectWindow, 'light')
 ### Example Migration
 
 **Before:**
+
 ```tsx
-<button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2">
-  Save
-</button>
+<button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2">Save</button>
 ```
 
 **After:**
+
 ```tsx
-<button style={{
-  background: 'var(--app-accent-solid)',
-  color: 'white',
-  padding: '0.5rem 1rem'
-}}
-onMouseOver={(e) => e.currentTarget.style.background = 'var(--app-accent-solid-hover)'}
-onMouseOut={(e) => e.currentTarget.style.background = 'var(--app-accent-solid)'}
+<button
+  style={{
+    background: 'var(--app-accent-solid)',
+    color: 'white',
+    padding: '0.5rem 1rem',
+  }}
+  onMouseOver={(e) => (e.currentTarget.style.background = 'var(--app-accent-solid-hover)')}
+  onMouseOut={(e) => (e.currentTarget.style.background = 'var(--app-accent-solid)')}
 >
   Save
 </button>
 ```
 
 **Or (Recommended):** Create reusable button component:
+
 ```tsx
 // src/components/Button.tsx
 export function Button({ children, variant = 'primary' }) {

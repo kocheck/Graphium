@@ -18,12 +18,14 @@ The error boundary system has been significantly enhanced with debugging capabil
 In development mode, error boundaries show visual indicators instead of silently hiding errors:
 
 **TokenErrorBoundary:**
+
 - Shows a red warning circle (⚠) where the broken token would be
 - Click the circle to view full error details
 - View stack traces, component props, and error context
 - Copy error to clipboard for bug reports
 
 **CanvasOverlayErrorBoundary:**
+
 - Adds invisible test markers (visible in DOM inspector)
 - Exposes error details to `window.__LAST_OVERLAY_ERROR__`
 
@@ -126,6 +128,7 @@ test('should not have errors during normal use', async ({ page }) => {
 5. **Copy error:** Click "Copy Error" to get formatted report
 
 6. **Example error output:**
+
 ```
 ================================================================================
 ERROR REPORT: TokenErrorBoundary
@@ -237,6 +240,7 @@ function handleTokenPlace(x: number, y: number) {
 ```
 
 **When error occurs, console shows:**
+
 ```
 User Actions (Breadcrumbs):
   [2025-12-30T12:00:00.000Z] User uploaded map: dungeon.webp
@@ -273,9 +277,7 @@ test('should track error history', async ({ page }) => {
   console.log('Error history:', history);
 
   // Verify specific error occurred
-  expect(history.some(e =>
-    e.error.message.includes('specific error')
-  )).toBe(true);
+  expect(history.some((e) => e.error.message.includes('specific error'))).toBe(true);
 });
 ```
 
@@ -283,14 +285,14 @@ test('should track error history', async ({ page }) => {
 
 These variables are exposed on `window` for debugging:
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `__GAME_STORE__` | Zustand Store | Access game state |
-| `__ERROR_UTILS__` | Object | Error utility functions |
-| `__LAST_TOKEN_ERROR__` | ErrorInfo | Most recent token error |
-| `__LAST_OVERLAY_ERROR__` | ErrorInfo | Most recent overlay error |
-| `__LAST_ASSET_PROCESSING_ERROR__` | ErrorInfo | Most recent asset error |
-| `__OVERLAY_ERRORS__` | ErrorInfo[] | Last 10 overlay errors |
+| Variable                          | Type          | Description               |
+| --------------------------------- | ------------- | ------------------------- |
+| `__GAME_STORE__`                  | Zustand Store | Access game state         |
+| `__ERROR_UTILS__`                 | Object        | Error utility functions   |
+| `__LAST_TOKEN_ERROR__`            | ErrorInfo     | Most recent token error   |
+| `__LAST_OVERLAY_ERROR__`          | ErrorInfo     | Most recent overlay error |
+| `__LAST_ASSET_PROCESSING_ERROR__` | ErrorInfo     | Most recent asset error   |
+| `__OVERLAY_ERRORS__`              | ErrorInfo[]   | Last 10 overlay errors    |
 
 ## Error Utility Functions
 
@@ -337,6 +339,7 @@ if (memory) {
 ### 1. Add Breadcrumbs Strategically
 
 ✅ **DO:**
+
 ```typescript
 addBreadcrumb('User clicked save button');
 addBreadcrumb('Uploading 5 token images');
@@ -344,6 +347,7 @@ addBreadcrumb('Processing map image: 2048x2048px');
 ```
 
 ❌ **DON'T:**
+
 ```typescript
 addBreadcrumb('Mouse moved'); // Too frequent
 addBreadcrumb('Render'); // Too verbose
@@ -378,10 +382,7 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }) => {
   // Fail test if unexpected errors occurred
   const hasErrors = await page.evaluate(() => {
-    return !!(
-      (window as any).__LAST_TOKEN_ERROR__ ||
-      (window as any).__LAST_OVERLAY_ERROR__
-    );
+    return !!((window as any).__LAST_TOKEN_ERROR__ || (window as any).__LAST_OVERLAY_ERROR__);
   });
 
   if (hasErrors) {
@@ -397,6 +398,7 @@ test.afterEach(async ({ page }) => {
 ### Error indicators not showing in dev mode
 
 **Check:**
+
 1. Are you in dev mode? (`npm run dev`)
 2. Is `import.meta.env.DEV` true?
 3. Check browser console for any errors loading error boundary utils
@@ -404,6 +406,7 @@ test.afterEach(async ({ page }) => {
 ### Window variables not available
 
 **Check:**
+
 1. In dev/test mode? Production mode doesn't expose these
 2. Page fully loaded? Variables are set after imports
 3. Check console for import errors
@@ -411,6 +414,7 @@ test.afterEach(async ({ page }) => {
 ### Breadcrumbs not appearing
 
 **Check:**
+
 1. Importing from correct path: `'../utils/errorBoundaryUtils'`
 2. Called before error occurs
 3. Error boundary actually caught an error
@@ -418,6 +422,7 @@ test.afterEach(async ({ page }) => {
 ### E2E test helpers not working
 
 **Check:**
+
 1. Imported correct helpers: `'../helpers/errorBoundaryHelpers'`
 2. Page is on the application (not landing page)
 3. Test mode enabled: `import.meta.env.MODE === 'test'`
@@ -427,6 +432,7 @@ test.afterEach(async ({ page }) => {
 ### Updating Existing Error Boundaries
 
 **Before:**
+
 ```typescript
 componentDidCatch(error: Error, errorInfo: ErrorInfo) {
   console.error('Error:', error);
@@ -434,6 +440,7 @@ componentDidCatch(error: Error, errorInfo: ErrorInfo) {
 ```
 
 **After:**
+
 ```typescript
 import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
 
@@ -484,6 +491,7 @@ The enhanced error boundary system provides:
 ✅ **Production safety** with sanitized logging
 
 Use these tools to:
+
 - Debug errors faster
 - Write better tests
 - Create detailed bug reports

@@ -3,6 +3,7 @@
 This document defines the coding standards, style guidelines, and best practices for the Graphium project. Following these conventions ensures consistency, maintainability, and effective AI-assisted development.
 
 ## Table of Contents
+
 - [File Naming](#file-naming)
 - [Directory Structure](#directory-structure)
 - [TypeScript Standards](#typescript-standards)
@@ -21,7 +22,9 @@ This document defines the coding standards, style guidelines, and best practices
 ## File Naming
 
 ### Components (React)
+
 **Format:** PascalCase
+
 ```
 CanvasManager.tsx
 ImageCropper.tsx
@@ -30,24 +33,29 @@ TokenLibrary.tsx
 ```
 
 **Rules:**
+
 - Must end with `.tsx` (if contains JSX)
 - Must end with `.ts` (if pure TypeScript, no JSX)
 - Component name MUST match filename
 
 ✅ **Correct:**
+
 ```typescript
 // File: CanvasManager.tsx
-export default CanvasManager
+export default CanvasManager;
 ```
 
 ❌ **Incorrect:**
+
 ```typescript
 // File: canvas-manager.tsx
-export default CanvasManager  // Mismatch in casing
+export default CanvasManager; // Mismatch in casing
 ```
 
 ### Utilities and Stores
+
 **Format:** camelCase
+
 ```
 grid.ts
 gameStore.ts
@@ -56,12 +64,15 @@ imageUtils.ts
 ```
 
 **Rules:**
+
 - Must end with `.ts`
 - Descriptive, single-responsibility names
 - Avoid generic names (e.g., `utils.ts` is too vague)
 
 ### Configuration Files
+
 **Format:** kebab-case
+
 ```
 vite.config.ts
 electron-builder.json5
@@ -70,11 +81,14 @@ tailwind.config.js
 ```
 
 **Rules:**
+
 - Follow tool-specific conventions
 - Use lowercase with hyphens
 
 ### Type Definition Files
+
 **Format:** kebab-case + `.d.ts`
+
 ```
 electron-env.d.ts
 vite-env.d.ts
@@ -88,6 +102,7 @@ global.d.ts
 ### Organizing Components
 
 **By Feature (Preferred):**
+
 ```
 src/components/
 ├── Canvas/
@@ -106,11 +121,13 @@ src/components/
 ```
 
 **Rules:**
+
 - Group related components in subdirectories
 - Keep maximum 10 files per directory
 - Use `index.tsx` for barrel exports if needed (but prefer explicit imports)
 
 ### Utilities
+
 ```
 src/utils/
 ├── grid.ts           # Grid snapping, coordinate math
@@ -120,11 +137,13 @@ src/utils/
 ```
 
 **Rules:**
+
 - One concern per file
 - Export pure functions only (no side effects)
 - Provide comprehensive JSDoc
 
 ### Stores
+
 ```
 src/store/
 ├── gameStore.ts      # Main game state (tokens, drawings, grid)
@@ -133,6 +152,7 @@ src/store/
 ```
 
 **Rules:**
+
 - One Zustand store per file
 - Export store hook (e.g., `useGameStore`)
 - Export types (e.g., `export interface GameState`)
@@ -142,7 +162,9 @@ src/store/
 ## TypeScript Standards
 
 ### Strict Mode
+
 **Always enabled** (tsconfig.json):
+
 ```json
 {
   "compilerOptions": {
@@ -157,6 +179,7 @@ src/store/
 ### Type Annotations
 
 **Interfaces over Types** (for object shapes):
+
 ```typescript
 // ✅ Correct
 interface Token {
@@ -172,15 +195,17 @@ type Token = {
   id: string;
   x: number;
   // ...
-}
+};
 ```
 
 **Use `type` for:**
+
 - Union types: `type Tool = 'select' | 'marker' | 'eraser'`
 - Primitive aliases: `type UUID = string`
 - Function signatures: `type Handler = (e: Event) => void`
 
 **Explicit Return Types** (exported functions):
+
 ```typescript
 // ✅ Correct
 export const snapToGrid = (x: number, y: number, gridSize: number): { x: number; y: number } => {
@@ -220,12 +245,14 @@ const handleDrag = (e: any) => {
 ### `@ts-ignore` Usage
 
 **Only use with comment explaining why:**
+
 ```typescript
 // @ts-ignore - ipcRenderer types not available, will be fixed with proper type declarations
 window.ipcRenderer.invoke('SAVE_CAMPAIGN', data);
 ```
 
 **Preferred alternative:**
+
 ```typescript
 // Create type declaration file (src/global.d.ts)
 interface Window {
@@ -233,7 +260,7 @@ interface Window {
     invoke: (channel: string, ...args: any[]) => Promise<any>;
     send: (channel: string, ...args: any[]) => void;
     on: (channel: string, listener: (event: any, ...args: any[]) => void) => void;
-  }
+  };
 }
 ```
 
@@ -410,6 +437,7 @@ import './ComponentName.css';
 ```
 
 **Then import as:**
+
 ```typescript
 import { snapToGrid } from '@utils/grid';
 import { useGameStore } from '@store/gameStore';
@@ -423,6 +451,7 @@ import GridOverlay from '@components/Canvas/GridOverlay';
 ### Zustand Store Pattern
 
 **Store Definition:**
+
 ```typescript
 // src/store/gameStore.ts
 import { create } from 'zustand';
@@ -468,23 +497,25 @@ export const useGameStore = create<GameState>((set) => ({
   gridSize: 50,
 
   // Actions
-  addToken: (token) => set((state) => ({
-    tokens: [...state.tokens, token]
-  })),
+  addToken: (token) =>
+    set((state) => ({
+      tokens: [...state.tokens, token],
+    })),
 
-  removeToken: (id) => set((state) => ({
-    tokens: state.tokens.filter(t => t.id !== id)
-  })),
+  removeToken: (id) =>
+    set((state) => ({
+      tokens: state.tokens.filter((t) => t.id !== id),
+    })),
 
-  updateToken: (id, updates) => set((state) => ({
-    tokens: state.tokens.map(t =>
-      t.id === id ? { ...t, ...updates } : t
-    )
-  })),
+  updateToken: (id, updates) =>
+    set((state) => ({
+      tokens: state.tokens.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+    })),
 
-  addDrawing: (drawing) => set((state) => ({
-    drawings: [...state.drawings, drawing]
-  })),
+  addDrawing: (drawing) =>
+    set((state) => ({
+      drawings: [...state.drawings, drawing],
+    })),
 
   setGridSize: (size) => set({ gridSize: size }),
 
@@ -495,6 +526,7 @@ export const useGameStore = create<GameState>((set) => ({
 ### Store Access Patterns
 
 **Pattern 1: Component Rendering (Subscribe to changes)**
+
 ```typescript
 const Component = () => {
   // Only re-renders when tokens change
@@ -505,6 +537,7 @@ const Component = () => {
 ```
 
 **Pattern 2: Multiple Values**
+
 ```typescript
 const Component = () => {
   // Re-renders when ANY of these change
@@ -515,6 +548,7 @@ const Component = () => {
 ```
 
 **Pattern 3: Event Handlers (No subscription)**
+
 ```typescript
 const Component = () => {
   const handleClick = () => {
@@ -528,6 +562,7 @@ const Component = () => {
 ```
 
 **Pattern 4: Computed Selectors**
+
 ```typescript
 const Component = () => {
   // Only re-renders when token count changes (not when tokens mutate)
@@ -538,6 +573,7 @@ const Component = () => {
 ```
 
 **Pattern 5: Subscriptions (Side effects)**
+
 ```typescript
 useEffect(() => {
   // Subscribe to ALL state changes
@@ -553,21 +589,24 @@ useEffect(() => {
 ### Store Mutation Rules
 
 ❌ **NEVER mutate state directly:**
+
 ```typescript
 const { tokens } = useGameStore.getState();
 tokens.push(newToken); // WRONG - mutates array
 ```
 
 ✅ **ALWAYS create new references:**
+
 ```typescript
 const { addToken } = useGameStore.getState();
 addToken(newToken); // CORRECT - uses action
 ```
 
 ✅ **Or use setState with new array:**
+
 ```typescript
 useGameStore.setState((state) => ({
-  tokens: [...state.tokens, newToken]
+  tokens: [...state.tokens, newToken],
 }));
 ```
 
@@ -578,6 +617,7 @@ useGameStore.setState((state) => ({
 ### Naming Convention
 
 **Always prefix with `handle`:**
+
 ```typescript
 const handleClick = () => { ... };
 const handleDrop = (e: React.DragEvent) => { ... };
@@ -588,6 +628,7 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => { ... };
 ### Event Type Annotations
 
 **Always type event parameters:**
+
 ```typescript
 // ✅ Correct
 const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -595,21 +636,24 @@ const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
 };
 
 // ❌ Wrong
-const handleClick = (e) => { // No type
+const handleClick = (e) => {
+  // No type
   e.preventDefault();
 };
 ```
 
 **Common event types:**
+
 ```typescript
-React.MouseEvent<HTMLButtonElement>
-React.DragEvent<HTMLDivElement>
-React.ChangeEvent<HTMLInputElement>
-React.FormEvent<HTMLFormElement>
-React.KeyboardEvent<HTMLInputElement>
+React.MouseEvent<HTMLButtonElement>;
+React.DragEvent<HTMLDivElement>;
+React.ChangeEvent<HTMLInputElement>;
+React.FormEvent<HTMLFormElement>;
+React.KeyboardEvent<HTMLInputElement>;
 ```
 
 **Konva events (use `any` temporarily):**
+
 ```typescript
 // TODO: Import proper Konva types
 const handleDragEnd = (e: any) => {
@@ -621,6 +665,7 @@ const handleDragEnd = (e: any) => {
 ### Inline vs Named Handlers
 
 **Inline for simple logic:**
+
 ```typescript
 <button onClick={() => setTool('marker')}>
   Marker
@@ -632,6 +677,7 @@ const handleDragEnd = (e: any) => {
 ```
 
 **Named for complex logic:**
+
 ```typescript
 const handleDrop = async (e: React.DragEvent) => {
   e.preventDefault();
@@ -647,6 +693,7 @@ const handleDrop = async (e: React.DragEvent) => {
 ### Callback Dependencies
 
 **Use `useCallback` for callbacks passed as props:**
+
 ```typescript
 const Component = () => {
   // Without useCallback, handleClick recreates on every render
@@ -660,6 +707,7 @@ const Component = () => {
 ```
 
 **Don't use `useCallback` for handlers not passed as props:**
+
 ```typescript
 const Component = () => {
   // Not passed to child, no need for useCallback
@@ -715,6 +763,7 @@ Success:
 ### Spacing
 
 **Standard spacing scale:**
+
 ```
 px-1 py-1    (4px)    - Very tight, icon buttons
 px-2 py-1    (8x 4px) - Compact buttons
@@ -733,31 +782,37 @@ gap-6        (24px)   - Large gaps
 ### Layout Patterns
 
 **Full-screen container:**
+
 ```typescript
 <div className="w-full h-screen bg-neutral-900 overflow-hidden">
 ```
 
 **Flex row with gap:**
+
 ```typescript
 <div className="flex gap-2 items-center">
 ```
 
 **Flex column:**
+
 ```typescript
 <div className="flex flex-col gap-4">
 ```
 
 **Sidebar:**
+
 ```typescript
 <div className="w-64 shrink-0 bg-neutral-800 border-r border-neutral-700 p-4">
 ```
 
 **Fixed overlay (toolbar, modal):**
+
 ```typescript
 <div className="fixed top-4 right-4 bg-neutral-800 p-2 rounded shadow z-50">
 ```
 
 **Grid layout:**
+
 ```typescript
 <div className="grid grid-cols-2 gap-2">
 <div className="grid grid-cols-3 gap-4">
@@ -766,6 +821,7 @@ gap-6        (24px)   - Large gaps
 ### Button Styles
 
 **Standard button pattern:**
+
 ```typescript
 <button
   className={`
@@ -782,6 +838,7 @@ gap-6        (24px)   - Large gaps
 ```
 
 **Danger button:**
+
 ```typescript
 <button className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-sm font-medium text-white">
   Delete
@@ -791,6 +848,7 @@ gap-6        (24px)   - Large gaps
 ### Responsive Design
 
 **Mobile-first approach:**
+
 ```typescript
 <div className="
   w-full          // Mobile: full width
@@ -800,6 +858,7 @@ gap-6        (24px)   - Large gaps
 ```
 
 **Hide/show based on screen size:**
+
 ```typescript
 <div className="hidden md:block">  // Hidden on mobile, visible on tablet+
 <div className="block md:hidden">  // Visible on mobile, hidden on tablet+
@@ -821,6 +880,7 @@ import { RiAddLine, RiCloseLine, RiSearchLine } from '@remixicon/react';
 ```
 
 **Rules:**
+
 1. **Use Line style variants** (`*Line`) for consistency (e.g., `RiAddLine`, not `RiAddFill`)
 2. **Exception**: Use Fill variants (`*Fill`) only for play/pause or when fill is semantically needed
 3. **Standard sizing**: `w-4 h-4` (small), `w-5 h-5` (default), `w-6 h-6` (large), `w-8 h-8` (extra large)
@@ -828,6 +888,7 @@ import { RiAddLine, RiCloseLine, RiSearchLine } from '@remixicon/react';
 5. **Color inheritance**: Icons inherit color from parent via `currentColor`
 
 **Common icon mappings:**
+
 ```typescript
 // Navigation
 RiArrowLeftSLine, RiArrowRightSLine, RiArrowUpSLine, RiArrowDownSLine
@@ -855,6 +916,7 @@ RiBookLine, RiDoorOpenLine, RiGlobalLine, RiPushpinLine
 ```
 
 **Styling icons:**
+
 ```typescript
 // ✅ Good - Use Tailwind classes
 <RiSearchLine className="w-5 h-5 text-neutral-400" />
@@ -876,6 +938,7 @@ RiBookLine, RiDoorOpenLine, RiGlobalLine, RiPushpinLine
 ```
 
 **Finding icons:**
+
 - Browse icons at: https://remixicon.com/
 - Search for functionality (e.g., "search", "close", "edit")
 - Always use the Line variant unless Fill is specifically needed
@@ -898,9 +961,7 @@ try {
   alert('Campaign saved successfully!');
 } catch (error) {
   console.error('Save error:', error);
-  const message = error instanceof Error
-    ? error.message
-    : 'Unknown error occurred';
+  const message = error instanceof Error ? error.message : 'Unknown error occurred';
   alert(`Failed to save campaign: ${message}`);
 }
 ```
@@ -963,15 +1024,20 @@ const loadCampaign = async () => {
 ### Error Logging
 
 **Always log errors with context:**
+
 ```typescript
 // ✅ Good
-console.error('[CanvasManager] Failed to process image:', error, { file: file.name, size: file.size });
+console.error('[CanvasManager] Failed to process image:', error, {
+  file: file.name,
+  size: file.size,
+});
 
 // ❌ Bad
 console.error(error); // No context
 ```
 
 **Use prefixes for different areas:**
+
 ```
 [MAIN] - Main process (Electron)
 [ARCHITECT] - Main window (DM view)
@@ -988,6 +1054,7 @@ console.error(error); // No context
 ### JSDoc for Exported Functions
 
 **Always document exported functions:**
+
 ```typescript
 /**
  * Snaps coordinates to the nearest grid intersection
@@ -1001,11 +1068,7 @@ console.error(error); // No context
  * const { x, y } = snapToGrid(127, 83, 50);
  * // Returns: { x: 150, y: 100 }
  */
-export const snapToGrid = (
-  x: number,
-  y: number,
-  gridSize: number
-): { x: number; y: number } => {
+export const snapToGrid = (x: number, y: number, gridSize: number): { x: number; y: number } => {
   const snappedX = Math.round(x / gridSize) * gridSize;
   const snappedY = Math.round(y / gridSize) * gridSize;
   return { x: snappedX, y: snappedY };
@@ -1015,6 +1078,7 @@ export const snapToGrid = (
 ### Inline Comments
 
 **Explain WHY, not WHAT:**
+
 ```typescript
 // ❌ Bad - states the obvious
 // Loop through tokens
@@ -1027,6 +1091,7 @@ const sortedTokens = tokens.sort((a, b) => a.y - b.y);
 ```
 
 **Document non-obvious patterns:**
+
 ```typescript
 // Use ref instead of state to avoid re-renders during drag
 // State update would trigger IPC sync 60 times/second
@@ -1034,6 +1099,7 @@ const isDrawing = useRef(false);
 ```
 
 **Explain business logic:**
+
 ```typescript
 // DMs can always see through fog, but players cannot
 // This is controlled by the isWorldView flag
@@ -1043,6 +1109,7 @@ const showFog = isWorldView && fogEnabled;
 ### TODOs and FIXMEs
 
 **Format:**
+
 ```typescript
 // TODO: Add undo/redo support for drawings
 // FIXME: Memory leak when loading large campaigns (tokens not cleaned up)
@@ -1053,6 +1120,7 @@ const showFog = isWorldView && fogEnabled;
 ### Component Documentation
 
 **Document complex components:**
+
 ```typescript
 /**
  * CanvasManager
@@ -1081,6 +1149,7 @@ const CanvasManager = ({ tool }: CanvasManagerProps) => {
 ### Branch Naming
 
 **Format:** `feature/description` or `fix/description`
+
 ```
 feature/fog-of-war
 feature/token-library
@@ -1093,6 +1162,7 @@ docs/api-documentation
 ### Commit Messages
 
 **Format:** Conventional Commits
+
 ```
 type(scope): brief description
 
@@ -1103,6 +1173,7 @@ Fixes #123
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `refactor`: Code restructuring (no functionality change)
@@ -1112,6 +1183,7 @@ Fixes #123
 - `chore`: Build process, dependencies, tooling
 
 **Examples:**
+
 ```
 feat(canvas): add fog of war layer
 
@@ -1144,27 +1216,34 @@ docs(architecture): add IPC communication flow diagram
 ### Pull Request Standards
 
 **Title:** Same format as commit messages
+
 ```
 feat(sidebar): add token search and filtering
 ```
 
 **Description template:**
+
 ```markdown
 ## What does this PR do?
+
 Brief summary of changes
 
 ## Why is this needed?
+
 Problem being solved or feature being added
 
 ## How to test?
+
 1. Step by step testing instructions
 2. Expected behavior
 3. Edge cases to check
 
 ## Screenshots (if UI changes)
+
 [Attach images]
 
 ## Checklist
+
 - [ ] Code follows conventions
 - [ ] JSDoc added for new functions
 - [ ] No console.logs left in code
@@ -1179,6 +1258,7 @@ Problem being solved or feature being added
 ### Manual Testing Checklist
 
 **Before every commit:**
+
 - [ ] No TypeScript errors (`npm run lint`)
 - [ ] App launches without errors (`npm run dev`)
 - [ ] Main Window renders correctly
@@ -1188,12 +1268,14 @@ Problem being solved or feature being added
 - [ ] No console errors in DevTools
 
 **For UI changes:**
+
 - [ ] Tested in both Main and World windows
 - [ ] Responsive design works (resize window)
 - [ ] Hover states function correctly
 - [ ] Keyboard shortcuts work (if applicable)
 
 **For state changes:**
+
 - [ ] State syncs to World Window
 - [ ] Save/load preserves new state fields
 - [ ] No performance degradation (check FPS during drag)
@@ -1228,6 +1310,7 @@ describe('snapToGrid', () => {
 ### For Reviewers
 
 **Check for:**
+
 - [ ] Follows file naming conventions
 - [ ] Component structure matches template
 - [ ] Imports organized correctly
@@ -1239,6 +1322,7 @@ describe('snapToGrid', () => {
 - [ ] Commit messages follow convention
 
 **Ask questions:**
+
 - Does this need to sync to World Window?
 - Should this be saved in campaign files?
 - Will this work with fog of war (planned feature)?
@@ -1247,6 +1331,7 @@ describe('snapToGrid', () => {
 ### For Authors
 
 **Before requesting review:**
+
 - [ ] Self-review code for obvious issues
 - [ ] Test manually in both windows
 - [ ] Check for console.log statements (remove or justify)
@@ -1258,6 +1343,7 @@ describe('snapToGrid', () => {
 ## Summary
 
 Following these conventions ensures:
+
 - **Consistency** across the codebase
 - **Maintainability** for future changes
 - **AI-friendly** code that assistants can understand and extend

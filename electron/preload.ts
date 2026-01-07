@@ -29,7 +29,7 @@
  * See electron/main.ts for IPC handler implementations.
  */
 
-import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron'
+import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron';
 
 // WeakMap to store original listeners -> wrapper listeners
 // This is needed because we wrap listeners in on(), so we need the wrapper reference for off()
@@ -58,13 +58,13 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @returns IPC listener reference (for cleanup via off())
    */
   on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
+    const [channel, listener] = args;
 
     // Create a wrapper that we can look up later
-    const wrapper = (event: IpcRendererEvent, ...args: unknown[]) => listener(event, ...args)
-    listenerMap.set(listener, wrapper)
+    const wrapper = (event: IpcRendererEvent, ...args: unknown[]) => listener(event, ...args);
+    listenerMap.set(listener, wrapper);
 
-    return ipcRenderer.on(channel, wrapper)
+    return ipcRenderer.on(channel, wrapper);
   },
 
   /**
@@ -76,16 +76,16 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @param listener - Listener to remove (must be same reference as passed to on())
    */
   off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, listener] = args
-    const wrapper = listenerMap.get(listener)
+    const [channel, listener] = args;
+    const wrapper = listenerMap.get(listener);
 
     if (wrapper) {
-      listenerMap.delete(listener)
-      return ipcRenderer.off(channel, wrapper)
+      listenerMap.delete(listener);
+      return ipcRenderer.off(channel, wrapper);
     }
 
     // Fallback: try removing listener directly (unlikely to work if wrapped, but safe)
-    return ipcRenderer.off(channel, listener)
+    return ipcRenderer.off(channel, listener);
   },
 
   /**
@@ -96,7 +96,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @param channel - IPC channel name
    */
   removeAllListeners(channel: string) {
-    return ipcRenderer.removeAllListeners(channel)
+    return ipcRenderer.removeAllListeners(channel);
   },
 
   /**
@@ -108,8 +108,8 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @param args - Arguments to pass to main process handler
    */
   send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
+    const [channel, ...omit] = args;
+    return ipcRenderer.send(channel, ...omit);
   },
 
   /**
@@ -122,10 +122,10 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @returns Promise resolving to handler's return value
    */
   invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
+    const [channel, ...omit] = args;
+    return ipcRenderer.invoke(channel, ...omit);
   },
-})
+});
 
 // --------- Theme API ---------
 contextBridge.exposeInMainWorld('themeAPI', {
@@ -140,8 +140,7 @@ contextBridge.exposeInMainWorld('themeAPI', {
    * Set theme mode
    * @param mode - 'light', 'dark', or 'system'
    */
-  setThemeMode: (mode: string): Promise<void> =>
-    ipcRenderer.invoke('set-theme-mode', mode),
+  setThemeMode: (mode: string): Promise<void> => ipcRenderer.invoke('set-theme-mode', mode),
 
   /**
    * Listen for theme changes from main process
@@ -149,15 +148,16 @@ contextBridge.exposeInMainWorld('themeAPI', {
    * @returns Cleanup function
    */
   onThemeChanged: (callback: (data: { mode: string; effectiveTheme: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, data: { mode: string; effectiveTheme: string }) => callback(data)
-    ipcRenderer.on('theme-changed', listener)
+    const listener = (_event: IpcRendererEvent, data: { mode: string; effectiveTheme: string }) =>
+      callback(data);
+    ipcRenderer.on('theme-changed', listener);
 
     // Return cleanup function
     return () => {
-      ipcRenderer.off('theme-changed', listener)
-    }
+      ipcRenderer.off('theme-changed', listener);
+    };
   },
-})
+});
 
 // --------- Error Reporting API ---------
 contextBridge.exposeInMainWorld('errorReporting', {
@@ -174,9 +174,11 @@ contextBridge.exposeInMainWorld('errorReporting', {
   /**
    * Save error report to a file using native save dialog
    */
-  saveToFile: (reportContent: string): Promise<{ success: boolean; filePath?: string; reason?: string }> =>
+  saveToFile: (
+    reportContent: string,
+  ): Promise<{ success: boolean; filePath?: string; reason?: string }> =>
     ipcRenderer.invoke('save-error-report', reportContent),
-})
+});
 
 // --------- Auto-updater API ---------
 contextBridge.exposeInMainWorld('autoUpdater', {
@@ -211,38 +213,58 @@ contextBridge.exposeInMainWorld('autoUpdater', {
    * @returns Cleanup function
    */
   onCheckingForUpdate: (callback: () => void) => {
-    const listener = () => callback()
-    ipcRenderer.on('auto-updater:checking-for-update', listener)
-    return () => ipcRenderer.off('auto-updater:checking-for-update', listener)
+    const listener = () => callback();
+    ipcRenderer.on('auto-updater:checking-for-update', listener);
+    return () => ipcRenderer.off('auto-updater:checking-for-update', listener);
   },
 
-  onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: string; releaseDate?: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, info: { version: string; releaseNotes?: string; releaseDate?: string }) => callback(info)
-    ipcRenderer.on('auto-updater:update-available', listener)
-    return () => ipcRenderer.off('auto-updater:update-available', listener)
+  onUpdateAvailable: (
+    callback: (info: { version: string; releaseNotes?: string; releaseDate?: string }) => void,
+  ) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      info: { version: string; releaseNotes?: string; releaseDate?: string },
+    ) => callback(info);
+    ipcRenderer.on('auto-updater:update-available', listener);
+    return () => ipcRenderer.off('auto-updater:update-available', listener);
   },
 
   onUpdateNotAvailable: (callback: (info: { version: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, info: { version: string }) => callback(info)
-    ipcRenderer.on('auto-updater:update-not-available', listener)
-    return () => ipcRenderer.off('auto-updater:update-not-available', listener)
+    const listener = (_event: IpcRendererEvent, info: { version: string }) => callback(info);
+    ipcRenderer.on('auto-updater:update-not-available', listener);
+    return () => ipcRenderer.off('auto-updater:update-not-available', listener);
   },
 
-  onDownloadProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => {
-    const listener = (_event: IpcRendererEvent, progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => callback(progress)
-    ipcRenderer.on('auto-updater:download-progress', listener)
-    return () => ipcRenderer.off('auto-updater:download-progress', listener)
+  onDownloadProgress: (
+    callback: (progress: {
+      percent: number;
+      bytesPerSecond: number;
+      transferred: number;
+      total: number;
+    }) => void,
+  ) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      progress: {
+        percent: number;
+        bytesPerSecond: number;
+        transferred: number;
+        total: number;
+      },
+    ) => callback(progress);
+    ipcRenderer.on('auto-updater:download-progress', listener);
+    return () => ipcRenderer.off('auto-updater:download-progress', listener);
   },
 
   onUpdateDownloaded: (callback: (info: { version: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, info: { version: string }) => callback(info)
-    ipcRenderer.on('auto-updater:update-downloaded', listener)
-    return () => ipcRenderer.off('auto-updater:update-downloaded', listener)
+    const listener = (_event: IpcRendererEvent, info: { version: string }) => callback(info);
+    ipcRenderer.on('auto-updater:update-downloaded', listener);
+    return () => ipcRenderer.off('auto-updater:update-downloaded', listener);
   },
 
   onError: (callback: (error: { message: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, error: { message: string }) => callback(error)
-    ipcRenderer.on('auto-updater:error', listener)
-    return () => ipcRenderer.off('auto-updater:error', listener)
+    const listener = (_event: IpcRendererEvent, error: { message: string }) => callback(error);
+    ipcRenderer.on('auto-updater:error', listener);
+    return () => ipcRenderer.off('auto-updater:error', listener);
   },
-})
+});

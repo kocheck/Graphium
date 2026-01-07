@@ -1,10 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useGameStore } from './gameStore';
-import type { Campaign, Token, Drawing, Door, Stairs, MapConfig, TokenLibraryItem } from './gameStore';
+import type {
+  Campaign,
+  Token,
+  Drawing,
+  Door,
+  Stairs,
+  MapConfig,
+  TokenLibraryItem,
+} from './gameStore';
 
 // Mock system messages to avoid dependency on random message selection
 vi.mock('../utils/systemMessages', () => ({
-  rollForMessage: (key: string) => `Mock message for ${key}`
+  rollForMessage: (key: string) => `Mock message for ${key}`,
 }));
 
 describe('gameStore', () => {
@@ -99,7 +107,7 @@ describe('gameStore', () => {
         { id: 'token-3', x: 300, y: 300, src: 'test3.png' },
       ];
 
-      tokens.forEach(token => store.addToken(token));
+      tokens.forEach((token) => store.addToken(token));
       expect(useGameStore.getState().tokens).toHaveLength(3);
 
       store.removeTokens(['token-1', 'token-3']);
@@ -245,11 +253,17 @@ describe('gameStore', () => {
       const store = useGameStore.getState();
       const drawings: Drawing[] = [
         { id: 'drawing-1', tool: 'marker', points: [0, 0, 50, 50], color: '#ff0000', size: 5 },
-        { id: 'drawing-2', tool: 'eraser', points: [100, 100, 150, 150], color: '#000000', size: 10 },
+        {
+          id: 'drawing-2',
+          tool: 'eraser',
+          points: [100, 100, 150, 150],
+          color: '#000000',
+          size: 10,
+        },
         { id: 'drawing-3', tool: 'wall', points: [200, 200, 250, 250], color: '#0000ff', size: 3 },
       ];
 
-      drawings.forEach(drawing => store.addDrawing(drawing));
+      drawings.forEach((drawing) => store.addDrawing(drawing));
       expect(useGameStore.getState().drawings).toHaveLength(3);
 
       store.removeDrawings(['drawing-1', 'drawing-3']);
@@ -419,12 +433,36 @@ describe('gameStore', () => {
     it('should update all unlocked doors at once', () => {
       const store = useGameStore.getState();
       const doors: Door[] = [
-        { id: 'door-1', x: 100, y: 100, orientation: 'horizontal', isOpen: false, isLocked: false, size: 50 },
-        { id: 'door-2', x: 200, y: 200, orientation: 'vertical', isOpen: false, isLocked: true, size: 50 },
-        { id: 'door-3', x: 300, y: 300, orientation: 'horizontal', isOpen: false, isLocked: false, size: 50 },
+        {
+          id: 'door-1',
+          x: 100,
+          y: 100,
+          orientation: 'horizontal',
+          isOpen: false,
+          isLocked: false,
+          size: 50,
+        },
+        {
+          id: 'door-2',
+          x: 200,
+          y: 200,
+          orientation: 'vertical',
+          isOpen: false,
+          isLocked: true,
+          size: 50,
+        },
+        {
+          id: 'door-3',
+          x: 300,
+          y: 300,
+          orientation: 'horizontal',
+          isOpen: false,
+          isLocked: false,
+          size: 50,
+        },
       ];
 
-      doors.forEach(door => store.addDoor(door));
+      doors.forEach((door) => store.addDoor(door));
       store.updateAllDoorStates(true);
 
       const state = useGameStore.getState();
@@ -436,11 +474,27 @@ describe('gameStore', () => {
     it('should update all door locks at once', () => {
       const store = useGameStore.getState();
       const doors: Door[] = [
-        { id: 'door-1', x: 100, y: 100, orientation: 'horizontal', isOpen: false, isLocked: false, size: 50 },
-        { id: 'door-2', x: 200, y: 200, orientation: 'vertical', isOpen: false, isLocked: true, size: 50 },
+        {
+          id: 'door-1',
+          x: 100,
+          y: 100,
+          orientation: 'horizontal',
+          isOpen: false,
+          isLocked: false,
+          size: 50,
+        },
+        {
+          id: 'door-2',
+          x: 200,
+          y: 200,
+          orientation: 'vertical',
+          isOpen: false,
+          isLocked: true,
+          size: 50,
+        },
       ];
 
-      doors.forEach(door => store.addDoor(door));
+      doors.forEach((door) => store.addDoor(door));
       store.updateAllDoorLocks(true);
 
       const state = useGameStore.getState();
@@ -451,12 +505,36 @@ describe('gameStore', () => {
     it('should remove multiple doors', () => {
       const store = useGameStore.getState();
       const doors: Door[] = [
-        { id: 'door-1', x: 100, y: 100, orientation: 'horizontal', isOpen: false, isLocked: false, size: 50 },
-        { id: 'door-2', x: 200, y: 200, orientation: 'vertical', isOpen: false, isLocked: false, size: 50 },
-        { id: 'door-3', x: 300, y: 300, orientation: 'horizontal', isOpen: false, isLocked: false, size: 50 },
+        {
+          id: 'door-1',
+          x: 100,
+          y: 100,
+          orientation: 'horizontal',
+          isOpen: false,
+          isLocked: false,
+          size: 50,
+        },
+        {
+          id: 'door-2',
+          x: 200,
+          y: 200,
+          orientation: 'vertical',
+          isOpen: false,
+          isLocked: false,
+          size: 50,
+        },
+        {
+          id: 'door-3',
+          x: 300,
+          y: 300,
+          orientation: 'horizontal',
+          isOpen: false,
+          isLocked: false,
+          size: 50,
+        },
       ];
 
-      doors.forEach(door => store.addDoor(door));
+      doors.forEach((door) => store.addDoor(door));
       expect(useGameStore.getState().doors).toHaveLength(3);
 
       store.removeDoors(['door-1', 'door-3']);
@@ -509,11 +587,19 @@ describe('gameStore', () => {
       const store = useGameStore.getState();
       const stairsList: Stairs[] = [
         { id: 'stairs-1', x: 100, y: 100, direction: 'north', type: 'up', width: 100, height: 100 },
-        { id: 'stairs-2', x: 200, y: 200, direction: 'south', type: 'down', width: 100, height: 100 },
+        {
+          id: 'stairs-2',
+          x: 200,
+          y: 200,
+          direction: 'south',
+          type: 'down',
+          width: 100,
+          height: 100,
+        },
         { id: 'stairs-3', x: 300, y: 300, direction: 'east', type: 'up', width: 100, height: 100 },
       ];
 
-      stairsList.forEach(stairs => store.addStairs(stairs));
+      stairsList.forEach((stairs) => store.addStairs(stairs));
       expect(useGameStore.getState().stairs).toHaveLength(3);
 
       store.removeMultipleStairs(['stairs-1', 'stairs-3']);
@@ -775,7 +861,9 @@ describe('gameStore', () => {
       const map2Id = useGameStore.getState().campaign.activeMapId;
 
       // Go back to first map
-      const map1Id = Object.keys(useGameStore.getState().campaign.maps).find(id => id !== map2Id)!;
+      const map1Id = Object.keys(useGameStore.getState().campaign.maps).find(
+        (id) => id !== map2Id,
+      )!;
       store.switchMap(map1Id);
 
       expect(useGameStore.getState().campaign.activeMapId).toBe(map1Id);
@@ -883,7 +971,12 @@ describe('gameStore', () => {
     it('should add an explored region', () => {
       const store = useGameStore.getState();
       const region = {
-        points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }],
+        points: [
+          { x: 0, y: 0 },
+          { x: 100, y: 0 },
+          { x: 100, y: 100 },
+          { x: 0, y: 100 },
+        ],
         timestamp: Date.now(),
       };
 
@@ -897,7 +990,11 @@ describe('gameStore', () => {
     it('should clear all explored regions', () => {
       const store = useGameStore.getState();
       const region = {
-        points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }],
+        points: [
+          { x: 0, y: 0 },
+          { x: 100, y: 0 },
+          { x: 100, y: 100 },
+        ],
         timestamp: Date.now(),
       };
 
@@ -999,8 +1096,16 @@ describe('gameStore', () => {
     it('should set active vision polygons', () => {
       const store = useGameStore.getState();
       const polygons = [
-        [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }],
-        [{ x: 200, y: 200 }, { x: 300, y: 200 }, { x: 300, y: 300 }],
+        [
+          { x: 0, y: 0 },
+          { x: 100, y: 0 },
+          { x: 100, y: 100 },
+        ],
+        [
+          { x: 200, y: 200 },
+          { x: 300, y: 200 },
+          { x: 300, y: 300 },
+        ],
       ];
 
       store.setActiveVisionPolygons(polygons);

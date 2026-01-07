@@ -1,1 +1,311 @@
-{"result":[{"scriptId":"1196","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"HTMLCanvasElement.getContext","ranges":[{"startOffset":1405,"endOffset":2722,"count":0}],"isBlockCoverage":false},{"functionName":"HTMLCanvasElement.toDataURL","ranges":[{"startOffset":2766,"endOffset":2819,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":2930,"endOffset":2964,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":3071,"endOffset":3102,"count":0}],"isBlockCoverage":false}]},{"scriptId":"1371","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/recentCampaigns.test.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":35189,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":35189,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":626,"endOffset":12291,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":669,"endOffset":752,"count":19}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":810,"endOffset":2581,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":905,"endOffset":1045,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1111,"endOffset":1632,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1709,"endOffset":1918,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1997,"endOffset":2575,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2638,"endOffset":6271,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2718,"endOffset":3121,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3197,"endOffset":3789,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3866,"endOffset":4724,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4800,"endOffset":5577,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5186,"endOffset":5249,"count":4}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5661,"endOffset":6265,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":6340,"endOffset":8201,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":6428,"endOffset":6988,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7087,"endOffset":7679,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7778,"endOffset":8195,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":8261,"endOffset":9790,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":8330,"endOffset":8977,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":9057,"endOffset":9516,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":9590,"endOffset":9784,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":9850,"endOffset":10756,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":9917,"endOffset":10487,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":10564,"endOffset":10750,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":10810,"endOffset":12287,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":10917,"endOffset":11512,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":11023,"endOffset":11038,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":11160,"endOffset":11217,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":11613,"endOffset":12281,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":11719,"endOffset":11734,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":11856,"endOffset":11913,"count":1}],"isBlockCoverage":true}]},{"scriptId":"1372","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/recentCampaigns.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":9709,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":9709,"count":1}],"isBlockCoverage":true},{"functionName":"getRecentCampaigns","ranges":[{"startOffset":252,"endOffset":558,"count":41},{"startOffset":363,"endOffset":373,"count":16},{"startOffset":373,"endOffset":442,"count":24},{"startOffset":442,"endOffset":556,"count":2}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":665,"endOffset":699,"count":18}],"isBlockCoverage":true},{"functionName":"addRecentCampaign","ranges":[{"startOffset":703,"endOffset":1125,"count":20},{"startOffset":1025,"endOffset":1123,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":830,"endOffset":857,"count":12}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":1231,"endOffset":1264,"count":17}],"isBlockCoverage":true},{"functionName":"addRecentCampaignWithPlatform","ranges":[{"startOffset":1268,"endOffset":1695,"count":3},{"startOffset":1431,"endOffset":1442,"count":2},{"startOffset":1444,"endOffset":1576,"count":1},{"startOffset":1576,"endOffset":1693,"count":2}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":1813,"endOffset":1858,"count":3}],"isBlockCoverage":true},{"functionName":"removeRecentCampaign","ranges":[{"startOffset":1862,"endOffset":2194,"count":3},{"startOffset":2092,"endOffset":2192,"count":0}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1994,"endOffset":2020,"count":3}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":2303,"endOffset":2339,"count":3}],"isBlockCoverage":true},{"functionName":"clearRecentCampaigns","ranges":[{"startOffset":2343,"endOffset":2533,"count":2},{"startOffset":2431,"endOffset":2531,"count":0}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":2642,"endOffset":2678,"count":2}],"isBlockCoverage":true}]}]}
+{
+  "result": [
+    {
+      "scriptId": "1196",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "HTMLCanvasElement.getContext",
+          "ranges": [{ "startOffset": 1405, "endOffset": 2722, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "HTMLCanvasElement.toDataURL",
+          "ranges": [{ "startOffset": 2766, "endOffset": 2819, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2930, "endOffset": 2964, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3071, "endOffset": 3102, "count": 0 }],
+          "isBlockCoverage": false
+        }
+      ]
+    },
+    {
+      "scriptId": "1371",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/recentCampaigns.test.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 35189, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 35189, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 626, "endOffset": 12291, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 669, "endOffset": 752, "count": 19 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 810, "endOffset": 2581, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 905, "endOffset": 1045, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1111, "endOffset": 1632, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1709, "endOffset": 1918, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1997, "endOffset": 2575, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2638, "endOffset": 6271, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2718, "endOffset": 3121, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3197, "endOffset": 3789, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3866, "endOffset": 4724, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4800, "endOffset": 5577, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5186, "endOffset": 5249, "count": 4 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5661, "endOffset": 6265, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 6340, "endOffset": 8201, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 6428, "endOffset": 6988, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7087, "endOffset": 7679, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7778, "endOffset": 8195, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 8261, "endOffset": 9790, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 8330, "endOffset": 8977, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 9057, "endOffset": 9516, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 9590, "endOffset": 9784, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 9850, "endOffset": 10756, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 9917, "endOffset": 10487, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 10564, "endOffset": 10750, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 10810, "endOffset": 12287, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 10917, "endOffset": 11512, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 11023, "endOffset": 11038, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 11160, "endOffset": 11217, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 11613, "endOffset": 12281, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 11719, "endOffset": 11734, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 11856, "endOffset": 11913, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    },
+    {
+      "scriptId": "1372",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/recentCampaigns.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 9709, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 9709, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "getRecentCampaigns",
+          "ranges": [
+            { "startOffset": 252, "endOffset": 558, "count": 41 },
+            { "startOffset": 363, "endOffset": 373, "count": 16 },
+            { "startOffset": 373, "endOffset": 442, "count": 24 },
+            { "startOffset": 442, "endOffset": 556, "count": 2 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 665, "endOffset": 699, "count": 18 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "addRecentCampaign",
+          "ranges": [
+            { "startOffset": 703, "endOffset": 1125, "count": 20 },
+            { "startOffset": 1025, "endOffset": 1123, "count": 1 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 830, "endOffset": 857, "count": 12 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 1231, "endOffset": 1264, "count": 17 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "addRecentCampaignWithPlatform",
+          "ranges": [
+            { "startOffset": 1268, "endOffset": 1695, "count": 3 },
+            { "startOffset": 1431, "endOffset": 1442, "count": 2 },
+            { "startOffset": 1444, "endOffset": 1576, "count": 1 },
+            { "startOffset": 1576, "endOffset": 1693, "count": 2 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 1813, "endOffset": 1858, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "removeRecentCampaign",
+          "ranges": [
+            { "startOffset": 1862, "endOffset": 2194, "count": 3 },
+            { "startOffset": 2092, "endOffset": 2192, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1994, "endOffset": 2020, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2303, "endOffset": 2339, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "clearRecentCampaigns",
+          "ranges": [
+            { "startOffset": 2343, "endOffset": 2533, "count": 2 },
+            { "startOffset": 2431, "endOffset": 2531, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2642, "endOffset": 2678, "count": 2 }],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ]
+}

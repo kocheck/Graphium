@@ -57,7 +57,7 @@ const CommandPalette = ({
   onTogglePause,
   onLaunchWorldView,
   onOpenDungeonGenerator,
-  isGamePaused
+  isGamePaused,
 }: CommandPaletteProps) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -68,33 +68,34 @@ const CommandPalette = ({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   // Store selectors
-  const tokenLibrary = useGameStore(state => state.campaign.tokenLibrary);
-  const addToken = useGameStore(state => state.addToken);
+  const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
+  const addToken = useGameStore((state) => state.addToken);
 
   // Create command registry
-  const commandRegistry = useMemo(() => createCommandRegistry({
-    setToolSelect: () => onSetTool('select'),
-    setToolMarker: () => onSetTool('marker'),
-    setToolEraser: () => onSetTool('eraser'),
-    setToolWall: () => onSetTool('wall'),
-    setToolDoor: () => onSetTool('door'),
-    setToolMeasure: () => onSetTool('measure'),
-    togglePause: onTogglePause,
-    launchWorldView: onLaunchWorldView,
-    openDungeonGenerator: onOpenDungeonGenerator,
-    isGamePaused,
-  }), [onSetTool, onTogglePause, onLaunchWorldView, onOpenDungeonGenerator, isGamePaused]);
+  const commandRegistry = useMemo(
+    () =>
+      createCommandRegistry({
+        setToolSelect: () => onSetTool('select'),
+        setToolMarker: () => onSetTool('marker'),
+        setToolEraser: () => onSetTool('eraser'),
+        setToolWall: () => onSetTool('wall'),
+        setToolDoor: () => onSetTool('door'),
+        setToolMeasure: () => onSetTool('measure'),
+        togglePause: onTogglePause,
+        launchWorldView: onLaunchWorldView,
+        openDungeonGenerator: onOpenDungeonGenerator,
+        isGamePaused,
+      }),
+    [onSetTool, onTogglePause, onLaunchWorldView, onOpenDungeonGenerator, isGamePaused],
+  );
 
   // Search both commands and assets
   const commandResults = useMemo(
     () => searchCommands(commandRegistry, query),
-    [commandRegistry, query]
+    [commandRegistry, query],
   );
 
-  const assetResults = useMemo(
-    () => fuzzySearch(tokenLibrary, query),
-    [tokenLibrary, query]
-  );
+  const assetResults = useMemo(() => fuzzySearch(tokenLibrary, query), [tokenLibrary, query]);
 
   // Combine results with section headers
   const results = useMemo(() => {
@@ -103,7 +104,7 @@ const CommandPalette = ({
     // Add commands section
     if (commandResults.length > 0) {
       combined.push({ type: 'section', label: 'Actions' });
-      commandResults.forEach(cmd => {
+      commandResults.forEach((cmd) => {
         combined.push({ type: 'command', data: cmd });
       });
     }
@@ -111,7 +112,7 @@ const CommandPalette = ({
     // Add assets section
     if (assetResults.length > 0) {
       combined.push({ type: 'section', label: 'Assets' });
-      assetResults.forEach(asset => {
+      assetResults.forEach((asset) => {
         combined.push({ type: 'asset', data: asset });
       });
     }
@@ -122,7 +123,7 @@ const CommandPalette = ({
   // Reset selected index when results change, skip section headers
   useEffect(() => {
     // Find first non-section item
-    const firstSelectableIndex = results.findIndex(item => item.type !== 'section');
+    const firstSelectableIndex = results.findIndex((item) => item.type !== 'section');
     setSelectedIndex(firstSelectableIndex >= 0 ? firstSelectableIndex : 0);
   }, [results]);
 
@@ -131,29 +132,32 @@ const CommandPalette = ({
    * Executes command or adds token to map
    * Uses useCallback to prevent stale closure issues
    */
-  const handleSelectItem = useCallback((index: number) => {
-    const item = results[index];
-    if (!item) return;
+  const handleSelectItem = useCallback(
+    (index: number) => {
+      const item = results[index];
+      if (!item) return;
 
-    if (item.type === 'section') {
-      // Section headers are not selectable
-      return;
-    }
+      if (item.type === 'section') {
+        // Section headers are not selectable
+        return;
+      }
 
-    if (item.type === 'command') {
-      // Execute command
-      item.data.execute();
-      onClose();
-      setQuery('');
-    } else if (item.type === 'asset') {
-      // Add asset to map
-      const state = useGameStore.getState();
-      const currentMap = state.map;
-      addLibraryTokenToMap(item.data, addToken, currentMap);
-      onClose();
-      setQuery('');
-    }
-  }, [results, addToken, onClose]);
+      if (item.type === 'command') {
+        // Execute command
+        item.data.execute();
+        onClose();
+        setQuery('');
+      } else if (item.type === 'asset') {
+        // Add asset to map
+        const state = useGameStore.getState();
+        const currentMap = state.map;
+        addLibraryTokenToMap(item.data, addToken, currentMap);
+        onClose();
+        setQuery('');
+      }
+    },
+    [results, addToken, onClose],
+  );
 
   // Auto-focus search input when modal opens
   useEffect(() => {
@@ -180,7 +184,7 @@ const CommandPalette = ({
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         // Check if there are any selectable items at all
-        const hasSelectableItems = results.some(item => item.type !== 'section');
+        const hasSelectableItems = results.some((item) => item.type !== 'section');
         if (!hasSelectableItems) return;
 
         // Skip section headers
@@ -194,7 +198,7 @@ const CommandPalette = ({
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         // Check if there are any selectable items at all
-        const hasSelectableItems = results.some(item => item.type !== 'section');
+        const hasSelectableItems = results.some((item) => item.type !== 'section');
         if (!hasSelectableItems) return;
 
         // Skip section headers
@@ -215,12 +219,12 @@ const CommandPalette = ({
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-32 bg-black/50"
       onClick={onClose}
     >
       {/* Modal content */}
-      <div 
+      <div
         className="w-full max-w-2xl bg-neutral-900 rounded-lg shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
@@ -250,8 +254,13 @@ const CommandPalette = ({
                 // Section header
                 if (item.type === 'section') {
                   return (
-                    <div key={`section-${item.label}`} className="px-4 py-2 bg-neutral-800 border-b border-neutral-700">
-                      <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">{item.label}</h3>
+                    <div
+                      key={`section-${item.label}`}
+                      className="px-4 py-2 bg-neutral-800 border-b border-neutral-700"
+                    >
+                      <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">
+                        {item.label}
+                      </h3>
                     </div>
                   );
                 }
@@ -266,9 +275,7 @@ const CommandPalette = ({
                       aria-selected={index === selectedIndex}
                       onClick={() => handleSelectItem(index)}
                       className={`flex items-center gap-4 p-4 cursor-pointer transition-colors border-b border-neutral-800 ${
-                        index === selectedIndex
-                          ? 'bg-neutral-700'
-                          : 'hover:bg-neutral-800'
+                        index === selectedIndex ? 'bg-neutral-700' : 'hover:bg-neutral-800'
                       }`}
                     >
                       {/* Icon */}
@@ -303,9 +310,7 @@ const CommandPalette = ({
                     aria-selected={index === selectedIndex}
                     onClick={() => handleSelectItem(index)}
                     className={`flex items-center gap-4 p-4 cursor-pointer transition-colors border-b border-neutral-800 ${
-                      index === selectedIndex
-                        ? 'bg-neutral-700'
-                        : 'hover:bg-neutral-800'
+                      index === selectedIndex ? 'bg-neutral-700' : 'hover:bg-neutral-800'
                     }`}
                   >
                     {/* Thumbnail */}
@@ -367,8 +372,13 @@ const CommandPalette = ({
 
         {/* Footer */}
         <div className="p-3 bg-neutral-800 border-t border-neutral-700 flex justify-between text-xs text-neutral-400">
-          <span>Press <kbd className="px-2 py-1 bg-neutral-700 rounded">↑↓</kbd> to navigate | <kbd className="px-2 py-1 bg-neutral-700 rounded">↵</kbd> to select</span>
-          <span>Press <kbd className="px-2 py-1 bg-neutral-700 rounded">Esc</kbd> to close</span>
+          <span>
+            Press <kbd className="px-2 py-1 bg-neutral-700 rounded">↑↓</kbd> to navigate |{' '}
+            <kbd className="px-2 py-1 bg-neutral-700 rounded">↵</kbd> to select
+          </span>
+          <span>
+            Press <kbd className="px-2 py-1 bg-neutral-700 rounded">Esc</kbd> to close
+          </span>
         </div>
       </div>
 

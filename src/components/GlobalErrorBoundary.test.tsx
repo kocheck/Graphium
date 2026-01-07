@@ -36,7 +36,7 @@ describe('GlobalErrorBoundary', () => {
     render(
       <GlobalErrorBoundary>
         <div>Safe Content</div>
-      </GlobalErrorBoundary>
+      </GlobalErrorBoundary>,
     );
     expect(screen.getByText('Safe Content')).toBeInTheDocument();
   });
@@ -45,7 +45,7 @@ describe('GlobalErrorBoundary', () => {
     render(
       <GlobalErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </GlobalErrorBoundary>
+      </GlobalErrorBoundary>,
     );
 
     expect(screen.getByText('Critical System Error')).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('GlobalErrorBoundary', () => {
     render(
       <GlobalErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </GlobalErrorBoundary>
+      </GlobalErrorBoundary>,
     );
 
     const reloadBtn = screen.getByText('Reload Application');
@@ -69,7 +69,7 @@ describe('GlobalErrorBoundary', () => {
     render(
       <GlobalErrorBoundary fallback={<div>Custom Fallback</div>}>
         <ThrowError shouldThrow={true} />
-      </GlobalErrorBoundary>
+      </GlobalErrorBoundary>,
     );
 
     expect(screen.getByText('Custom Fallback')).toBeInTheDocument();

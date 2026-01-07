@@ -9,11 +9,13 @@ This document details the performance optimizations implemented in the NEXT bran
 **Problem:** The application was sluggish with dual windows active, especially with large campaigns (500+ tokens).
 
 **Root Causes Identified:**
+
 1. Full state broadcast on every change (98% redundant data)
 2. Fog of War raycasting recalculated on every render (90,000+ calculations/frame)
 3. Image processing blocking main thread (500ms UI freezes)
 
 **Solutions Implemented:**
+
 1. Delta-based IPC updates (98% reduction in IPC traffic)
 2. Cached visibility polygons with dirty checking (90% faster rendering)
 3. Web Worker image processing (non-blocking, parallel)
@@ -31,15 +33,16 @@ Every single state change (token drag, drawing stroke) broadcast the ENTIRE game
 ```typescript
 // Before: Sent entire state (500 tokens × ~0.5KB = 250KB per update)
 const syncState = {
-  tokens: state.tokens,      // ALL tokens
-  drawings: state.drawings,  // ALL drawings
+  tokens: state.tokens, // ALL tokens
+  drawings: state.drawings, // ALL drawings
   gridSize: state.gridSize,
   gridType: state.gridType,
-  map: state.map
+  map: state.map,
 };
 ```
 
 **Impact:**
+
 - Large campaigns: 250KB per sync × 30 updates/sec = **7.8 MB/s IPC traffic**
 - Main thread blocked during JSON serialization
 - World Window blocked during deserialization
@@ -48,6 +51,7 @@ const syncState = {
 ### The Solution: Delta-Based IPC
 
 **Files Modified:**
+
 - `src/components/SyncManager.tsx` (complete rewrite)
 
 **Approach:**
@@ -62,6 +66,7 @@ Only send what changed:
 ```
 
 **Action Types Implemented:**
+
 - `FULL_SYNC` - Initial load or campaign load
 - `TOKEN_ADD` - New token added
 - `TOKEN_UPDATE` - Token properties changed (position, scale, etc.)
@@ -72,6 +77,7 @@ Only send what changed:
 - `GRID_UPDATE` - Grid settings changed
 
 **Change Detection Algorithm:**
+
 1. Track previous state in `useRef`
 2. On store update, diff current vs previous
 3. Generate action array containing only changes
@@ -102,13 +108,14 @@ const visibilityPolygon = calculateVisibilityPolygon(
   tokenCenterX,
   tokenCenterY,
   visionRadiusPx,
-  walls  // O(360 × wall_count) per token
+  walls, // O(360 × wall_count) per token
 );
 ```
 
 **Complexity:** O(PC_tokens × 360 × wall_count) per frame
 
 **Example Scenario:**
+
 - 5 PC tokens × 360 rays × 50 walls = **90,000 calculations per frame**
 - At 60fps: **5.4 million calculations per second**
 - Frame time: ~45ms (below 30fps threshold)
@@ -116,6 +123,7 @@ const visibilityPolygon = calculateVisibilityPolygon(
 ### The Solution: Memoized Visibility Cache
 
 **Files Modified:**
+
 - `src/components/Canvas/FogOfWarLayer.tsx` (optimized with useMemo)
 
 **Approach:**
@@ -139,6 +147,7 @@ const visibilityCache = useMemo(() => {
 ```
 
 **Dependency Tracking:**
+
 - Token position (x, y)
 - Token vision radius
 - Token scale
@@ -146,6 +155,7 @@ const visibilityCache = useMemo(() => {
 - Grid size
 
 **Cache Behavior:**
+
 - **Static scene:** 90,000 calcs/frame → **0 calcs/frame** (cache hit)
 - **1 token moves:** Recalculate only that token (1,800 calcs)
 - **Wall added:** Recalculate all PC tokens
@@ -187,9 +197,11 @@ const blob = await canvas.convertToBlob({...}); // Blocks (encoding)
 ### The Solution: Web Worker Processing
 
 **Files Added:**
+
 - `src/workers/image-processor.worker.ts` (new)
 
 **Files Modified:**
+
 - `src/utils/AssetProcessor.ts` (worker integration + fallback)
 
 **Approach:**
@@ -197,10 +209,9 @@ Offload processing to Web Worker with progress reporting:
 
 ```typescript
 // After: Non-blocking Web Worker
-const worker = new Worker(
-  new URL('../workers/image-processor.worker.ts', import.meta.url),
-  { type: 'module' }
-);
+const worker = new Worker(new URL('../workers/image-processor.worker.ts', import.meta.url), {
+  type: 'module',
+});
 
 worker.postMessage({ type: 'PROCESS_IMAGE', file, assetType });
 
@@ -214,6 +225,7 @@ worker.onmessage = (event) => {
 ```
 
 **Processing Pipeline:**
+
 1. **Main Thread:** Send File to worker
 2. **Worker:** Create ImageBitmap (20% progress)
 3. **Worker:** Resize image (40% progress)
@@ -222,6 +234,7 @@ worker.onmessage = (event) => {
 6. **Main Thread:** Save via IPC (100% progress)
 
 **Parallel Batch Processing:**
+
 ```typescript
 // Process 5 tokens simultaneously (5 workers)
 const urls = await processBatch(files, 'TOKEN', (progress) => {
@@ -247,53 +260,57 @@ If Web Workers unavailable (old browsers, testing), falls back to main thread pr
 
 ### IPC & State Synchronization
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Token drag (small campaign)** | 5KB | 0.1KB | 98% ⬇️ |
-| **Token drag (large campaign)** | 250KB | 0.1KB | 99.96% ⬇️ |
-| **IPC bandwidth** | 7.8 MB/s | 0.15 MB/s | 98% ⬇️ |
-| **Latency (Architect → World)** | 32ms | <5ms | 85% ⬆️ |
+| Metric                          | Before   | After     | Improvement |
+| ------------------------------- | -------- | --------- | ----------- |
+| **Token drag (small campaign)** | 5KB      | 0.1KB     | 98% ⬇️      |
+| **Token drag (large campaign)** | 250KB    | 0.1KB     | 99.96% ⬇️   |
+| **IPC bandwidth**               | 7.8 MB/s | 0.15 MB/s | 98% ⬇️      |
+| **Latency (Architect → World)** | 32ms     | <5ms      | 85% ⬆️      |
 
 ### Rendering Performance
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **FOW frame time (5 PCs, 50 walls)** | 45ms | 5ms | 90% ⬆️ |
-| **Frame rate (complex maps)** | 22 fps | 60 fps | 173% ⬆️ |
-| **CPU usage (static scene)** | ~80% | ~15% | 81% ⬇️ |
-| **Raycasting calculations (static)** | 90,000/frame | 0/frame | 100% ⬇️ |
+| Metric                               | Before       | After   | Improvement |
+| ------------------------------------ | ------------ | ------- | ----------- |
+| **FOW frame time (5 PCs, 50 walls)** | 45ms         | 5ms     | 90% ⬆️      |
+| **Frame rate (complex maps)**        | 22 fps       | 60 fps  | 173% ⬆️     |
+| **CPU usage (static scene)**         | ~80%         | ~15%    | 81% ⬇️      |
+| **Raycasting calculations (static)** | 90,000/frame | 0/frame | 100% ⬇️     |
 
 ### Asset Processing
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **UI freeze (8K image)** | 500ms | 0ms | ✅ Eliminated |
-| **Batch import (5 tokens)** | 2.5s | 0.5s | 80% ⬆️ |
-| **Progress feedback** | None | Real-time | ✅ Added |
-| **Parallel processing** | No | Yes | ✅ Added |
+| Metric                      | Before | After     | Improvement   |
+| --------------------------- | ------ | --------- | ------------- |
+| **UI freeze (8K image)**    | 500ms  | 0ms       | ✅ Eliminated |
+| **Batch import (5 tokens)** | 2.5s   | 0.5s      | 80% ⬆️        |
+| **Progress feedback**       | None   | Real-time | ✅ Added      |
+| **Parallel processing**     | No     | Yes       | ✅ Added      |
 
 ---
 
 ## Testing Recommendations
 
 ### Test Scenario 1: Large Campaign Stress Test
+
 1. Create campaign with 500+ tokens
 2. Open both DM Window and World Window
 3. Drag tokens rapidly
 4. **Expected:** No lag in World Window, smooth 60fps
 
 ### Test Scenario 2: Complex Fog of War
+
 1. Add 10 PC tokens with 60ft darkvision
 2. Draw 100+ wall segments
 3. Move tokens around map
 4. **Expected:** Smooth rendering, no stuttering
 
 ### Test Scenario 3: Batch Asset Import
+
 1. Drop 10 high-resolution token images (5MB each)
 2. Observe UI responsiveness
 3. **Expected:** Progress indicators, no freezing
 
 ### Test Scenario 4: Low-End Hardware
+
 1. Test on minimum spec hardware
 2. Run both windows simultaneously
 3. Perform all interactions (drag, draw, import)
@@ -304,6 +321,7 @@ If Web Workers unavailable (old browsers, testing), falls back to main thread pr
 ## Future Optimization Opportunities
 
 ### 1. Adaptive FOW Resolution
+
 **Idea:** Reduce raycast resolution (360 → 180 → 90) based on distance from token.
 
 **Benefit:** Further reduce calculations for large vision radii.
@@ -311,6 +329,7 @@ If Web Workers unavailable (old browsers, testing), falls back to main thread pr
 **Complexity:** Medium
 
 ### 2. Spatial Partitioning for Walls
+
 **Idea:** Use quadtree or grid partitioning for wall intersection tests.
 
 **Benefit:** O(wall_count) → O(log wall_count) for raycasting.
@@ -318,6 +337,7 @@ If Web Workers unavailable (old browsers, testing), falls back to main thread pr
 **Complexity:** High
 
 ### 3. Canvas Layer Caching
+
 **Idea:** Cache grid/map layers to offscreen canvas, only re-render when changed.
 
 **Benefit:** Reduce draw calls for static elements.
@@ -325,6 +345,7 @@ If Web Workers unavailable (old browsers, testing), falls back to main thread pr
 **Complexity:** Low
 
 ### 4. Incremental Drawing Updates
+
 **Idea:** Only update drawing layer where new strokes were added (viewport culling).
 
 **Benefit:** Reduce redraw area for marker/eraser tools.
@@ -332,6 +353,7 @@ If Web Workers unavailable (old browsers, testing), falls back to main thread pr
 **Complexity:** Medium
 
 ### 5. Token Virtualization
+
 **Idea:** Only render tokens within visible viewport bounds.
 
 **Benefit:** Handle 10,000+ tokens efficiently.
@@ -343,18 +365,23 @@ If Web Workers unavailable (old browsers, testing), falls back to main thread pr
 ## Architecture Patterns Used
 
 ### 1. **Differential State Synchronization**
+
 Only transmit changes, not full state copies.
 
 ### 2. **Memoization with Dependency Tracking**
+
 Cache expensive calculations, invalidate only when dependencies change.
 
 ### 3. **Web Worker Parallelism**
+
 Offload CPU-intensive tasks to background threads.
 
 ### 4. **Progressive Enhancement**
+
 Provide fallbacks for older browsers (worker → main thread).
 
 ### 5. **Progress Reporting**
+
 Keep user informed during long operations.
 
 ---
@@ -362,6 +389,7 @@ Keep user informed during long operations.
 ## Code Quality & Maintainability
 
 All optimized code includes:
+
 - ✅ Detailed JSDoc comments explaining the optimization
 - ✅ Performance impact measurements in comments
 - ✅ Complexity analysis (Big-O notation where relevant)
@@ -400,6 +428,7 @@ To validate these optimizations and diagnose future performance issues, we've ad
 ### Validation Scenarios:
 
 **Verify Delta IPC:**
+
 ```
 1. Open Resource Monitor
 2. Drag token rapidly
@@ -410,6 +439,7 @@ Broken: > 100 KB/s (full state broadcasts)
 ```
 
 **Verify FOW Caching:**
+
 ```
 1. Add 10 PC tokens + 100 walls
 2. Pan/zoom without moving tokens
@@ -420,6 +450,7 @@ Broken: < 30 FPS (recalculating every frame)
 ```
 
 **Verify Worker Cleanup:**
+
 ```
 1. Upload 5 images, cancel all
 2. Wait 5 seconds
@@ -449,6 +480,7 @@ Broken: > 0 workers (leak detected)
 ## Questions & Support
 
 For questions about these optimizations:
+
 1. Check inline code comments in modified files
 2. Review this document for architecture patterns
 3. Use the Resource Monitor (⚡ Performance button) for live diagnostics

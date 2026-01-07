@@ -27,17 +27,11 @@ test.describe('Electron App Startup', () => {
     // Get first window
     const window = await app.firstWindow();
 
-    await expect(
-      window,
-      'Electron window should be created'
-    ).toBeTruthy();
+    await expect(window, 'Electron window should be created').toBeTruthy();
 
     // Verify window title
     const title = await window.title();
-    expect(
-      title,
-      'Window should have correct title'
-    ).toBe('Graphium');
+    expect(title, 'Window should have correct title').toBe('Graphium');
 
     await app.close();
   });
@@ -55,15 +49,9 @@ test.describe('Electron App Startup', () => {
       height: window.outerHeight,
     }));
 
-    expect(
-      size.width,
-      'Window width should be at least 800px'
-    ).toBeGreaterThanOrEqual(800);
+    expect(size.width, 'Window width should be at least 800px').toBeGreaterThanOrEqual(800);
 
-    expect(
-      size.height,
-      'Window height should be at least 600px'
-    ).toBeGreaterThanOrEqual(600);
+    expect(size.height, 'Window height should be at least 600px').toBeGreaterThanOrEqual(600);
 
     await app.close();
   });
@@ -84,15 +72,9 @@ test.describe('Electron App Startup', () => {
     }));
 
     // Should be constrained to minimum
-    expect(
-      size.width,
-      'Window should enforce minimum width'
-    ).toBeGreaterThanOrEqual(600);
+    expect(size.width, 'Window should enforce minimum width').toBeGreaterThanOrEqual(600);
 
-    expect(
-      size.height,
-      'Window should enforce minimum height'
-    ).toBeGreaterThanOrEqual(400);
+    expect(size.height, 'Window should enforce minimum height').toBeGreaterThanOrEqual(400);
 
     await app.close();
   });
@@ -121,15 +103,15 @@ test.describe('Electron App Startup', () => {
       height: window.outerHeight,
     }));
 
-    expect(
-      size.width,
-      'Window width should be restored from previous session'
-    ).toBeCloseTo(1200, WINDOW_SIZE_TOLERANCE); // Allow some tolerance
+    expect(size.width, 'Window width should be restored from previous session').toBeCloseTo(
+      1200,
+      WINDOW_SIZE_TOLERANCE,
+    ); // Allow some tolerance
 
-    expect(
-      size.height,
-      'Window height should be restored from previous session'
-    ).toBeCloseTo(800, WINDOW_SIZE_TOLERANCE);
+    expect(size.height, 'Window height should be restored from previous session').toBeCloseTo(
+      800,
+      WINDOW_SIZE_TOLERANCE,
+    );
 
     await app.close();
   });
@@ -152,20 +134,11 @@ test.describe('Electron App Environment', () => {
       };
     });
 
-    expect(
-      hasElectronAPIs.hasIpcRenderer,
-      'IPC renderer should be available'
-    ).toBeTruthy();
+    expect(hasElectronAPIs.hasIpcRenderer, 'IPC renderer should be available').toBeTruthy();
 
-    expect(
-      hasElectronAPIs.hasThemeAPI,
-      'Theme API should be exposed'
-    ).toBeTruthy();
+    expect(hasElectronAPIs.hasThemeAPI, 'Theme API should be exposed').toBeTruthy();
 
-    expect(
-      hasElectronAPIs.hasErrorReporting,
-      'Error reporting API should be exposed'
-    ).toBeTruthy();
+    expect(hasElectronAPIs.hasErrorReporting, 'Error reporting API should be exposed').toBeTruthy();
 
     await app.close();
   });
@@ -182,10 +155,7 @@ test.describe('Electron App Environment', () => {
       return window.navigator.userAgent.includes('Electron');
     });
 
-    expect(
-      platform,
-      'Should detect running in Electron'
-    ).toBeTruthy();
+    expect(platform, 'Should detect running in Electron').toBeTruthy();
 
     await app.close();
   });
@@ -203,10 +173,7 @@ test.describe('Electron Menu Bar', () => {
       return appMenu !== null;
     });
 
-    expect(
-      hasMenu,
-      'Application menu should be initialized'
-    ).toBeTruthy();
+    expect(hasMenu, 'Application menu should be initialized').toBeTruthy();
 
     await app.close();
   });
@@ -226,20 +193,11 @@ test.describe('Electron Menu Bar', () => {
       return fileMenu.submenu.items.map((item) => item.label);
     });
 
-    expect(
-      menuItems,
-      'File menu should include New Campaign'
-    ).toContain('New Campaign');
+    expect(menuItems, 'File menu should include New Campaign').toContain('New Campaign');
 
-    expect(
-      menuItems,
-      'File menu should include Open Campaign'
-    ).toContain('Open Campaign');
+    expect(menuItems, 'File menu should include Open Campaign').toContain('Open Campaign');
 
-    expect(
-      menuItems,
-      'File menu should include Save Campaign'
-    ).toContain('Save Campaign');
+    expect(menuItems, 'File menu should include Save Campaign').toContain('Save Campaign');
 
     await app.close();
   });
@@ -358,7 +316,7 @@ test.describe('Electron App Lifecycle', () => {
     // Campaign should be restored
     await expect(
       newWindow.locator('[data-testid="campaign-title"]'),
-      'Campaign should be restored after app restart'
+      'Campaign should be restored after app restart',
     ).toHaveText('Quit Test');
 
     await newApp.close();
@@ -380,10 +338,7 @@ test.describe('Electron Performance', () => {
 
     const launchTime = Date.now() - startTime;
 
-    expect(
-      launchTime,
-      'App should launch in under 5 seconds'
-    ).toBeLessThan(5000);
+    expect(launchTime, 'App should launch in under 5 seconds').toBeLessThan(5000);
 
     await app.close();
   });

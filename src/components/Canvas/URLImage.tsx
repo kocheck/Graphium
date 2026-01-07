@@ -33,60 +33,92 @@ export interface URLImageProps {
   shadowForStrokeEnabled?: boolean;
 }
 
-const URLImage = forwardRef<Konva.Image, URLImageProps>(({ src, x, y, width, height, scaleX = 1, scaleY = 1, id, onSelect, onDragEnd, onDragStart, onDragMove, onMouseEnter, onMouseLeave, draggable, name, opacity, listening, filters, blurRadius, brightness, shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY, shadowForStrokeEnabled }, ref) => {
-  const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
-  const [img] = useImage(safeSrc);
-  const imageRef = useRef<Konva.Image>(null);
+const URLImage = forwardRef<Konva.Image, URLImageProps>(
+  (
+    {
+      src,
+      x,
+      y,
+      width,
+      height,
+      scaleX = 1,
+      scaleY = 1,
+      id,
+      onSelect,
+      onDragEnd,
+      onDragStart,
+      onDragMove,
+      onMouseEnter,
+      onMouseLeave,
+      draggable,
+      name,
+      opacity,
+      listening,
+      filters,
+      blurRadius,
+      brightness,
+      shadowColor,
+      shadowBlur,
+      shadowOffsetX,
+      shadowOffsetY,
+      shadowForStrokeEnabled,
+    },
+    ref,
+  ) => {
+    const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
+    const [img] = useImage(safeSrc);
+    const imageRef = useRef<Konva.Image>(null);
 
-  // Expose the Konva node to parent via ref
-  useImperativeHandle(ref, () => imageRef.current as Konva.Image, []);
+    // Expose the Konva node to parent via ref
+    useImperativeHandle(ref, () => imageRef.current as Konva.Image, []);
 
-  useEffect(() => {
-    // Apply cache when filters are present
-    if (imageRef.current && filters && img) {
+    useEffect(() => {
+      // Apply cache when filters are present
+      if (imageRef.current && filters && img) {
         imageRef.current.cache();
-    }
-
-    // Cleanup: clear cache on unmount or before re-caching
-    return () => {
-      if (imageRef.current) {
-        imageRef.current.clearCache();
       }
-    };
-  }, [img, filters, width, height, blurRadius, brightness]);
 
-  return (
-    <KonvaImage
-      ref={imageRef}
-      name={name}
-      id={id}
-      image={img}
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      scaleX={scaleX}
-      scaleY={scaleY}
-      draggable={draggable}
-      onPointerDown={onSelect}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onDragEnd={onDragEnd}
-      onDragStart={onDragStart}
-      onDragMove={onDragMove}
-      opacity={opacity}
-      listening={listening}
-      filters={filters}
-      blurRadius={blurRadius}
-      brightness={brightness}
-      shadowColor={shadowColor}
-      shadowBlur={shadowBlur}
-      shadowOffsetX={shadowOffsetX}
-      shadowOffsetY={shadowOffsetY}
-      shadowForStrokeEnabled={shadowForStrokeEnabled}
-    />
-  );
-});
+      // Cleanup: clear cache on unmount or before re-caching
+      return () => {
+        if (imageRef.current) {
+          imageRef.current.clearCache();
+        }
+      };
+    }, [img, filters, width, height, blurRadius, brightness]);
+
+    return (
+      <KonvaImage
+        ref={imageRef}
+        name={name}
+        id={id}
+        image={img}
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        scaleX={scaleX}
+        scaleY={scaleY}
+        draggable={draggable}
+        onPointerDown={onSelect}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onDragEnd={onDragEnd}
+        onDragStart={onDragStart}
+        onDragMove={onDragMove}
+        opacity={opacity}
+        listening={listening}
+        filters={filters}
+        blurRadius={blurRadius}
+        brightness={brightness}
+        shadowColor={shadowColor}
+        shadowBlur={shadowBlur}
+        shadowOffsetX={shadowOffsetX}
+        shadowOffsetY={shadowOffsetY}
+        shadowForStrokeEnabled={shadowForStrokeEnabled}
+      />
+    );
+  },
+);
 
 URLImage.displayName = 'URLImage';
 

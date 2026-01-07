@@ -41,7 +41,7 @@ export class ElectronStorageService implements IStorageService {
     if (!window.ipcRenderer) {
       throw new Error(
         'ElectronStorageService requires Electron IPC. ' +
-        'Are you running in Electron? Use WebStorageService for browser.'
+          'Are you running in Electron? Use WebStorageService for browser.',
       );
     }
   }
@@ -80,14 +80,14 @@ export class ElectronStorageService implements IStorageService {
   async saveAssetToLibrary(
     fullSizeBuffer: ArrayBuffer,
     thumbnailBuffer: ArrayBuffer,
-    metadata: LibraryMetadata
+    metadata: LibraryMetadata,
   ): Promise<TokenLibraryItem> {
     this.ensureIPC();
     // @ts-expect-error - IPC types not available in renderer
     return await window.ipcRenderer.invoke('SAVE_ASSET_TO_LIBRARY', {
       fullSizeBuffer,
       thumbnailBuffer,
-      metadata
+      metadata,
     });
   }
 
@@ -106,7 +106,7 @@ export class ElectronStorageService implements IStorageService {
 
   async updateLibraryMetadata(
     assetId: string,
-    updates: Partial<LibraryMetadata>
+    updates: Partial<LibraryMetadata>,
   ): Promise<TokenLibraryItem> {
     this.ensureIPC();
     // @ts-expect-error - IPC types not available in renderer

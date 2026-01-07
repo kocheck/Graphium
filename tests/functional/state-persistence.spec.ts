@@ -31,7 +31,7 @@ test.describe('Campaign State Persistence', () => {
     // Verify campaign name persisted
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Campaign name should persist after page reload (auto-save)'
+      'Campaign name should persist after page reload (auto-save)',
     ).toHaveText('Persistent Campaign');
   });
 
@@ -49,7 +49,7 @@ test.describe('Campaign State Persistence', () => {
     // Verify campaign restored from IndexedDB
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Campaign should restore from IndexedDB even after clearing cookies'
+      'Campaign should restore from IndexedDB even after clearing cookies',
     ).toHaveText('Cookie Test Campaign');
   });
 
@@ -76,15 +76,15 @@ test.describe('Campaign State Persistence', () => {
     const positionAfter = await tokenAfter.boundingBox();
 
     // Verify position persisted (allowing small rounding differences)
-    expect(
-      positionAfter?.x,
-      'Token X position should persist after reload'
-    ).toBeCloseTo(positionBefore!.x, 0);
+    expect(positionAfter?.x, 'Token X position should persist after reload').toBeCloseTo(
+      positionBefore!.x,
+      0,
+    );
 
-    expect(
-      positionAfter?.y,
-      'Token Y position should persist after reload'
-    ).toBeCloseTo(positionBefore!.y, 0);
+    expect(positionAfter?.y, 'Token Y position should persist after reload').toBeCloseTo(
+      positionBefore!.y,
+      0,
+    );
   });
 
   test('should trigger auto-save after 30 seconds of inactivity', async ({ page }) => {
@@ -92,7 +92,7 @@ test.describe('Campaign State Persistence', () => {
     // which makes it slow and potentially flaky. Consider adding a mechanism to mock or
     // speed up the auto-save timer for tests, or add a data-testid attribute to manually
     // trigger auto-save for testing purposes.
-    
+
     // Create campaign
     await createNewCampaign(page, 'Auto-Save Test');
 
@@ -113,7 +113,7 @@ test.describe('Campaign State Persistence', () => {
     // Verify auto-save worked
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Campaign name should be auto-saved after 30s interval'
+      'Campaign name should be auto-saved after 30s interval',
     ).toHaveText('Auto-Saved Name');
   });
 
@@ -141,7 +141,7 @@ test.describe('Campaign State Persistence', () => {
     // Verify changes persisted (IndexedDB works offline)
     await expect(
       page.locator('[data-testid="campaign-title"]'),
-      'Changes made offline should persist via IndexedDB'
+      'Changes made offline should persist via IndexedDB',
     ).toHaveText('Offline Changes');
   });
 });
@@ -275,7 +275,7 @@ test.describe('IndexedDB Data Integrity', () => {
 
     expect(
       hasError || hasNewButton,
-      'App should handle corrupted data by showing error or allowing new campaign'
+      'App should handle corrupted data by showing error or allowing new campaign',
     ).toBeTruthy();
   });
 });
@@ -293,7 +293,7 @@ test.describe('Multi-Tab Synchronization', () => {
     // Verify second tab sees the same campaign
     await expect(
       secondTab.locator('[data-testid="campaign-title"]'),
-      'Second tab should see the same campaign from IndexedDB'
+      'Second tab should see the same campaign from IndexedDB',
     ).toHaveText('Multi-Tab Test');
 
     // Make change in first tab
@@ -310,7 +310,7 @@ test.describe('Multi-Tab Synchronization', () => {
     // Verify second tab sees the update
     await expect(
       secondTab.locator('[data-testid="campaign-title"]'),
-      'Second tab should see updates made in first tab after reload'
+      'Second tab should see updates made in first tab after reload',
     ).toHaveText('Updated in Tab 1');
 
     await secondTab.close();
@@ -400,10 +400,9 @@ test.describe('Drawing Tool Persistence', () => {
       return store?.getState?.()?.drawings?.length || 0;
     });
 
-    expect(
-      drawingCountAfter,
-      'Drawing should be added to store immediately after mouse up'
-    ).toBe(1);
+    expect(drawingCountAfter, 'Drawing should be added to store immediately after mouse up').toBe(
+      1,
+    );
 
     // Verify the drawing has the expected properties
     const drawingData = await page.evaluate(() => {
@@ -426,7 +425,10 @@ test.describe('Drawing Tool Persistence', () => {
     expect(drawingData, 'Drawing data should exist').toBeTruthy();
     expect(drawingData?.tool, 'Drawing tool should be marker').toBe('marker');
     expect(drawingData?.points, 'Drawing should have points array').toBeDefined();
-    expect((drawingData?.points as unknown[])?.length ?? 0, 'Drawing should have multiple points (accounting for potential deduplication)').toBeGreaterThan(1);
+    expect(
+      (drawingData?.points as unknown[])?.length ?? 0,
+      'Drawing should have multiple points (accounting for potential deduplication)',
+    ).toBeGreaterThan(1);
     expect(drawingData?.id, 'Drawing should have an ID').toBeTruthy();
 
     // Reload page to test persistence
@@ -446,30 +448,22 @@ test.describe('Drawing Tool Persistence', () => {
       return store?.getState?.()?.drawings || [];
     });
 
-    expect(
-      drawingsAfterReload.length,
-      'Drawing should persist after page reload'
-    ).toBe(1);
+    expect(drawingsAfterReload.length, 'Drawing should persist after page reload').toBe(1);
 
-    const firstDrawing = drawingsAfterReload[0] as {
-      id?: unknown;
-      points?: unknown[];
-    } | undefined;
+    const firstDrawing = drawingsAfterReload[0] as
+      | {
+          id?: unknown;
+          points?: unknown[];
+        }
+      | undefined;
 
-    expect(
-      firstDrawing,
-      'Persisted drawing should exist'
-    ).toBeDefined();
+    expect(firstDrawing, 'Persisted drawing should exist').toBeDefined();
 
-    expect(
-      firstDrawing?.id,
-      'Persisted drawing should have the same ID'
-    ).toBe(drawingData?.id);
+    expect(firstDrawing?.id, 'Persisted drawing should have the same ID').toBe(drawingData?.id);
 
-    expect(
-      firstDrawing?.points?.length ?? 0,
-      'Persisted drawing should have all points'
-    ).toBe((drawingData?.points as unknown[])?.length ?? 0);
+    expect(firstDrawing?.points?.length ?? 0, 'Persisted drawing should have all points').toBe(
+      (drawingData?.points as unknown[])?.length ?? 0,
+    );
   });
 
   test('should persist wall drawings after page reload', async ({ page }) => {
@@ -540,14 +534,8 @@ test.describe('Drawing Tool Persistence', () => {
       return drawings.find((d) => d.tool === 'wall');
     });
 
-    expect(
-      wallAfterReload,
-      'Wall drawing should persist after reload'
-    ).toBeTruthy();
-    expect(
-      wallAfterReload?.id,
-      'Wall should have same ID after reload'
-    ).toBe(wallData?.id);
+    expect(wallAfterReload, 'Wall drawing should persist after reload').toBeTruthy();
+    expect(wallAfterReload?.id, 'Wall should have same ID after reload').toBe(wallData?.id);
   });
 
   test('should persist eraser strokes after page reload', async ({ page }) => {
@@ -615,9 +603,6 @@ test.describe('Drawing Tool Persistence', () => {
       return drawings.find((d) => d.tool === 'eraser');
     });
 
-    expect(
-      eraserAfterReload,
-      'Eraser stroke should persist after reload'
-    ).toBeTruthy();
+    expect(eraserAfterReload, 'Eraser stroke should persist after reload').toBeTruthy();
   });
 });

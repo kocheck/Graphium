@@ -62,7 +62,10 @@ export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps) {
             <p className="text-sm mb-3" style={{ color: 'var(--app-text-muted)' }}>
               {errorDesc}
             </p>
-            <ul className="text-sm space-y-1 mb-3 ml-4 list-disc" style={{ color: 'var(--app-text-muted)' }}>
+            <ul
+              className="text-sm space-y-1 mb-3 ml-4 list-disc"
+              style={{ color: 'var(--app-text-muted)' }}
+            >
               <li>Room size constraints are too restrictive</li>
               <li>Requesting too many rooms for the available space</li>
               <li>Collision detection prevented valid placements</li>
@@ -74,7 +77,10 @@ export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps) {
                 </summary>
                 <pre
                   className="mt-2 p-2 rounded overflow-auto max-h-32"
-                  style={{ backgroundColor: 'var(--app-bg-subtle)', color: 'var(--app-text-muted)' }}
+                  style={{
+                    backgroundColor: 'var(--app-bg-subtle)',
+                    color: 'var(--app-text-muted)',
+                  }}
                 >
                   {error.message}
                 </pre>

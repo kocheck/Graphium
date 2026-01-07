@@ -5,6 +5,7 @@ Pure utility functions for Graphium. All functions in this directory are side-ef
 ## Purpose
 
 This directory contains:
+
 - **Image processing** - Resize, convert, optimize uploaded assets
 - **Grid math** - Coordinate snapping calculations
 - **File operations** - Path manipulation, format conversion (future)
@@ -13,11 +14,13 @@ This directory contains:
 ## Contents
 
 ### `AssetProcessor.ts` (48 lines)
+
 **Image optimization pipeline for uploaded assets**
 
 #### Purpose
 
 Optimizes user-uploaded images for performance and file size:
+
 - Resize to maximum dimensions (prevent memory issues)
 - Convert to WebP format (30-50% smaller than PNG/JPG)
 - Save to Electron temp storage via IPC
@@ -37,8 +40,8 @@ export const processImage = async (
 #### Implementation
 
 ```typescript
-const MAX_MAP_DIMENSION = 4096;   // 4K display support
-const MAX_TOKEN_DIMENSION = 512;  // Performance optimization
+const MAX_MAP_DIMENSION = 4096; // 4K display support
+const MAX_TOKEN_DIMENSION = 512; // Performance optimization
 
 export const processImage = async (file: File, type: AssetType): Promise<string> => {
   // 1. Create image bitmap from file
@@ -84,32 +87,36 @@ export const processImage = async (file: File, type: AssetType): Promise<string>
   const filePath = await window.ipcRenderer.invoke(
     'SAVE_ASSET_TEMP',
     buffer,
-    file.name.replace(/\.[^/.]+$/, "") + ".webp"
+    file.name.replace(/\.[^/.]+$/, '') + '.webp',
   );
 
-  return filePath as string;  // file:// URL
+  return filePath as string; // file:// URL
 };
 ```
 
 #### Key Details
 
 **Why OffscreenCanvas?**
+
 - Faster than DOM canvas (no reflow/repaint)
 - Works in workers (future: offload processing)
 - Modern API (supported in Electron)
 
 **Why WebP?**
+
 - 30-50% smaller than PNG/JPG
 - Supports transparency (needed for tokens)
 - Lossy + lossless modes (85% quality balances both)
 - Wide browser support in Electron (Chromium)
 
 **Why resize?**
+
 - Large images cause memory issues (8K map = 32MB+ RAM)
 - Slow rendering (60fps requires fast texture uploads)
 - Bloated campaign files (10MB+ per map)
 
 **Dimension limits:**
+
 - Maps: 4096px (4K display full screen)
 - Tokens: 512px (plenty for grid cells, even at 200px/cell)
 
@@ -118,7 +125,7 @@ export const processImage = async (file: File, type: AssetType): Promise<string>
 ```typescript
 // In CanvasManager.tsx (after cropping)
 const handleCropConfirm = async (blob: Blob) => {
-  const file = new File([blob], "token.webp", { type: 'image/webp' });
+  const file = new File([blob], 'token.webp', { type: 'image/webp' });
 
   // Process image (resize, convert, save) - Returns cancellable handle
   const handle = processImage(file, 'TOKEN');
@@ -129,7 +136,7 @@ const handleCropConfirm = async (blob: Blob) => {
     id: crypto.randomUUID(),
     x: pendingCrop.x,
     y: pendingCrop.y,
-    src,  // file:// URL
+    src, // file:// URL
     scale: 1,
   });
 };
@@ -149,6 +156,7 @@ try {
 ```
 
 **Possible errors:**
+
 - File not a valid image (createImageBitmap fails)
 - Canvas context unavailable (rare, browser issue)
 - IPC invoke fails (Electron main process error)
@@ -157,11 +165,13 @@ try {
 #### Performance
 
 **Benchmarks (rough estimates):**
+
 - 1920×1080 PNG (2MB) → 512×288 WebP (50KB) in ~100ms
 - 4096×4096 PNG (8MB) → 4096×4096 WebP (500KB) in ~300ms
 - 8192×8192 PNG (32MB) → 4096×4096 WebP (500KB) in ~800ms
 
 **Optimization opportunities:**
+
 1. Use Web Worker (offload processing from main thread)
 2. Show progress indicator (for large files)
 3. Batch processing (multiple files at once)
@@ -169,6 +179,7 @@ try {
 ---
 
 ### `grid.ts` (6 lines)
+
 **Grid snapping math utilities**
 
 #### Purpose
@@ -188,7 +199,7 @@ export const snapToGrid = (
 #### Implementation
 
 ```typescript
-export const snapToGrid = (x: number, y: number, gridSize: number): { x: number, y: number } => {
+export const snapToGrid = (x: number, y: number, gridSize: number): { x: number; y: number } => {
   const snappedX = Math.round(x / gridSize) * gridSize;
   const snappedY = Math.round(y / gridSize) * gridSize;
   return { x: snappedX, y: snappedY };
@@ -200,6 +211,7 @@ export const snapToGrid = (x: number, y: number, gridSize: number): { x: number,
 **Formula:** `snapped = Math.round(raw / gridSize) * gridSize`
 
 **Example (gridSize = 50):**
+
 ```
 Raw: 127 → 127 / 50 = 2.54 → round(2.54) = 3 → 3 * 50 = 150
 Raw: 124 → 124 / 50 = 2.48 → round(2.48) = 2 → 2 * 50 = 100
@@ -207,6 +219,7 @@ Raw: 125 → 125 / 50 = 2.50 → round(2.50) = 3 → 3 * 50 = 150 (rounds up on 
 ```
 
 **Visual:**
+
 ```
 Grid cells (50px):
     0   50  100  150  200
@@ -231,8 +244,8 @@ const handleDrop = (e: React.DragEvent) => {
 
   addToken({
     id: crypto.randomUUID(),
-    x,  // Grid-aligned coordinate
-    y,  // Grid-aligned coordinate
+    x, // Grid-aligned coordinate
+    y, // Grid-aligned coordinate
     src: tokenUrl,
     scale: 1,
   });
@@ -242,20 +255,23 @@ const handleDrop = (e: React.DragEvent) => {
 #### Edge Cases
 
 **Zero coordinates:**
+
 ```typescript
-snapToGrid(0, 0, 50)  // { x: 0, y: 0 }
+snapToGrid(0, 0, 50); // { x: 0, y: 0 }
 ```
 
 **Negative coordinates (future: scrollable canvas):**
+
 ```typescript
-snapToGrid(-75, -75, 50)  // { x: -100, y: -100 }
-snapToGrid(-24, -24, 50)  // { x: 0, y: 0 }
+snapToGrid(-75, -75, 50); // { x: -100, y: -100 }
+snapToGrid(-24, -24, 50); // { x: 0, y: 0 }
 ```
 
 **Non-standard grid sizes:**
+
 ```typescript
-snapToGrid(127, 83, 25)   // { x: 125, y: 75 }
-snapToGrid(127, 83, 100)  // { x: 100, y: 100 }
+snapToGrid(127, 83, 25); // { x: 125, y: 75 }
+snapToGrid(127, 83, 100); // { x: 100, y: 100 }
 ```
 
 #### Testing
@@ -344,10 +360,7 @@ describe('snapToGrid', () => {
  * const result = utilityFunction(param1, param2);
  * // Returns: expected value
  */
-export const utilityFunction = (
-  paramName: Type,
-  anotherParam: Type
-): ReturnType => {
+export const utilityFunction = (paramName: Type, anotherParam: Type): ReturnType => {
   // Input validation
   if (invalidInput) {
     throw new Error('Descriptive error message');
@@ -365,6 +378,7 @@ export const utilityFunction = (
 ### Planned
 
 1. **File utilities (fileUtils.ts)**
+
 ```typescript
 // Extract filename from path
 export const getFilename = (path: string): string => {
@@ -383,6 +397,7 @@ export const toMediaProtocol = (filePath: string): string => {
 ```
 
 2. **Validation utilities (validation.ts)**
+
 ```typescript
 // Type guard for Token
 export const isValidToken = (data: unknown): data is Token => {
@@ -412,60 +427,50 @@ export const isValidGameState = (data: unknown): data is GameState => {
 ```
 
 3. **Color utilities (colorUtils.ts)**
+
 ```typescript
 // Hex to RGB
 export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : { r: 0, g: 0, b: 0 };
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : { r: 0, g: 0, b: 0 };
 };
 
 // RGB to Hex
 export const rgbToHex = (r: number, g: number, b: number): string => {
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 };
 ```
 
 4. **Coordinate utilities (coordinateUtils.ts)**
+
 ```typescript
 // Distance between two points
-export const distance = (
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number
-): number => {
+export const distance = (x1: number, y1: number, x2: number, y2: number): number => {
   return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 };
 
 // Convert pixels to grid cells
-export const pixelsToGrid = (
-  pixels: number,
-  gridSize: number
-): number => {
+export const pixelsToGrid = (pixels: number, gridSize: number): number => {
   return Math.floor(pixels / gridSize);
 };
 
 // Convert grid cells to pixels
-export const gridToPixels = (
-  cells: number,
-  gridSize: number
-): number => {
+export const gridToPixels = (cells: number, gridSize: number): number => {
   return cells * gridSize;
 };
 ```
 
 5. **Array utilities (arrayUtils.ts)**
+
 ```typescript
 // Move item in array
-export const moveItem = <T>(
-  array: T[],
-  fromIndex: number,
-  toIndex: number
-): T[] => {
+export const moveItem = <T>(array: T[], fromIndex: number, toIndex: number): T[] => {
   const result = [...array];
   const [removed] = result.splice(fromIndex, 1);
   result.splice(toIndex, 0, removed);
@@ -473,11 +478,7 @@ export const moveItem = <T>(
 };
 
 // Swap items in array
-export const swapItems = <T>(
-  array: T[],
-  index1: number,
-  index2: number
-): T[] => {
+export const swapItems = <T>(array: T[], index1: number, index2: number): T[] => {
   const result = [...array];
   [result[index1], result[index2]] = [result[index2], result[index1]];
   return result;
@@ -557,7 +558,7 @@ export const createGridSnapper = (gridSize: number) => {
 
 // Usage
 const snapTo50 = createGridSnapper(50);
-const pos1 = snapTo50(127, 83);  // { x: 150, y: 100 }
+const pos1 = snapTo50(127, 83); // { x: 150, y: 100 }
 const pos2 = snapTo50(234, 156); // { x: 250, y: 150 }
 ```
 
@@ -611,26 +612,30 @@ describe('snapToGrid', () => {
 ## Common Issues
 
 ### Issue: Utility modifying input parameters
+
 **Symptoms:** Array/object passed to utility is mutated
 
 **Solution:**
+
 ```typescript
 // ❌ WRONG - mutates input
 export const addToArray = <T>(array: T[], item: T): T[] => {
-  array.push(item);  // Mutates input!
+  array.push(item); // Mutates input!
   return array;
 };
 
 // ✅ CORRECT - creates new array
 export const addToArray = <T>(array: T[], item: T): T[] => {
-  return [...array, item];  // New array
+  return [...array, item]; // New array
 };
 ```
 
 ### Issue: Utility returning inconsistent types
+
 **Symptoms:** Sometimes returns null, sometimes returns value
 
 **Solution:**
+
 ```typescript
 // ❌ WRONG - inconsistent return type
 export const getFilename = (path: string | null): string | null => {
@@ -640,7 +645,7 @@ export const getFilename = (path: string | null): string | null => {
 
 // ✅ CORRECT - consistent return type
 export const getFilename = (path: string): string => {
-  return path.split('/').pop() || '';  // Always returns string
+  return path.split('/').pop() || ''; // Always returns string
 };
 
 // Or throw on invalid input
@@ -657,9 +662,11 @@ export const getFilename = (path: string | null): string => {
 ```
 
 ### Issue: Utility doing too much
+
 **Symptoms:** Function has many responsibilities, hard to test
 
 **Solution:**
+
 ```typescript
 // ❌ WRONG - too many responsibilities
 export const processAndSaveImage = async (

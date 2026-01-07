@@ -1,71 +1,44 @@
 /**
  * Grid Overlay Component with Viewport Culling
  *
- * Renders a grid overlay on the canvas with three modes: LINES, DOTS, or HIDDEN.
+ * Renders a grid overlay on the canvas with support for multiple grid geometries:
+ * - Square (LINES/DOTS/HIDDEN modes)
+ * - Hexagonal (flat-top orientation)
+ * - Isometric (diamond-shaped)
+ *
  * Implements viewport culling to only render grid elements within visible bounds.
  *
- * **Three grid types:**
- * 1. **LINES** - Traditional grid with vertical and horizontal lines
- * 2. **DOTS** - Minimalist grid with dots at intersections (performance optimized)
+ * **Grid types:**
+ * 1. **LINES** - Traditional square grid with vertical and horizontal lines
+ * 2. **DOTS** - Minimalist square grid with dots at intersections (performance optimized)
  * 3. **HIDDEN** - No grid rendered
+ * 4. **HEXAGONAL** - Hexagonal grid (flat-top orientation)
+ * 5. **ISOMETRIC** - Isometric/diamond grid (45° rotated)
  *
  * **Viewport culling (performance optimization):**
  * Only renders grid elements within visibleBounds, dramatically improving
  * performance for large maps. Without culling, a 10,000x10,000px map with
  * 50px gridSize would render 40,000 lines (200 vertical × 200 horizontal).
- * With culling, only ~20 lines rendered at typical zoom levels.
+ * With culling, only ~20-40 cells rendered at typical zoom levels.
  *
  * **DOT mode performance optimization:**
- * DOTS mode uses individual Circle components at grid intersections.
- * Performance degrades with many dots (e.g., zoomed out on large map).
- * When dot count exceeds MAX_DOTS_THRESHOLD (10,000), automatically
- * renders a subset by increasing step size, maintaining visual grid
- * while preventing performance issues.
+ * DOTS mode is only supported for square grids. When dot count exceeds
+ * MAX_DOTS_THRESHOLD (10,000), automatically renders a subset by increasing
+ * step size, maintaining visual grid while preventing performance issues.
  *
  * **Performance calculations:**
- * - LINES: O(visibleWidth/gridSize + visibleHeight/gridSize)
- * - DOTS normal: O((visibleWidth/gridSize) × (visibleHeight/gridSize))
- * - DOTS subset: Capped at ~MAX_DOTS_THRESHOLD via adaptive step size
- *
- * **Algorithm for subset rendering:**
- * 1. Calculate totalDots = (width/gridSize) × (height/gridSize)
- * 2. If totalDots > MAX_DOTS_THRESHOLD:
- *    - stepMultiplier = ceil(sqrt(totalDots / MAX_DOTS_THRESHOLD))
- *    - newStep = stepMultiplier × gridSize
- *    - Render with newStep instead of gridSize
- * 3. Example: 20,000 dots → multiplier ~1.4 → render every ~1.4 grids
- *
- * @example
- * // Basic usage in Canvas
- * <GridOverlay
- *   visibleBounds={getVisibleBounds()}
- *   gridSize={50}
- *   type="LINES"
- * />
- *
- * @example
- * // DOT mode with custom styling
- * <GridOverlay
- *   visibleBounds={viewport}
- *   gridSize={25}
- *   stroke="#333"
- *   opacity={0.3}
- *   type="DOTS"
- * />
- *
- * @example
- * // Hidden grid (user preference)
- * <GridOverlay
- *   visibleBounds={viewport}
- *   gridSize={50}
- *   type="HIDDEN"
- * />
+ * - LINES (square): O(visibleWidth/gridSize + visibleHeight/gridSize)
+ * - DOTS (square): O((visibleWidth/gridSize) × (visibleHeight/gridSize))
+ * - HEXAGONAL: O(visible hexes) ~= O(visible area / hex area)
+ * - ISOMETRIC: O(visible diamonds) ~= O(visible area / diamond area)
  *
  * @component
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Group, Line, Circle } from 'react-konva';
+import { createGridGeometry } from '../../utils/gridGeometry';
+import type { GridType } from '../../store/gameStore';
 
 /**
  * Maximum dots to render before using subset rendering
@@ -90,15 +63,28 @@ let hasWarnedAboutDensity = false;
  * @property gridSize - Size of each grid cell in pixels
  * @property stroke - Color of grid lines/dots (default: '#222')
  * @property opacity - Opacity of grid elements (default: 0.5)
- * @property type - Grid rendering type: LINES, DOTS, or HIDDEN (default: 'LINES')
+ * @property type - Grid rendering type (default: 'LINES')
+ * @property hoveredCell - Grid cell currently under cursor (for hover highlight)
  */
 interface GridOverlayProps {
   visibleBounds: { x: number; y: number; width: number; height: number };
   gridSize: number;
   stroke?: string;
   opacity?: number;
-  type?: 'LINES' | 'DOTS' | 'HIDDEN';
+  type?: GridType;
+  hoveredCell?: { q: number; r: number } | null;
 }
+
+/**
+ * Helper to convert vertex points array to flat coordinate array for Konva Line
+ */
+const verticesToPoints = (vertices: Array<{ x: number; y: number }>): number[] => {
+  const points: number[] = [];
+  for (const v of vertices) {
+    points.push(v.x, v.y);
+  }
+  return points;
+};
 
 /**
  * GridOverlay renders a grid on the canvas with viewport culling
@@ -109,55 +95,29 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
   gridSize,
   stroke = '#222',
   opacity = 0.5, // THEME ADJUSTMENT: Modify this value to change grid visibility (0.0 = invisible, 1.0 = fully opaque)
-  type = 'LINES'
+  type = 'LINES',
+  hoveredCell = null,
 }) => {
   if (type === 'HIDDEN') return null;
 
-  const elements = [];
   const { x, y, width, height } = visibleBounds || { x: 0, y: 0, width: 0, height: 0 };
 
-  // Calculate start and end grid numbers based on visible bounds
-  // We want to draw lines covering the visible area.
-  // Start X = first multiple of gridSize <= x
-  const startX = Math.floor(x / gridSize) * gridSize;
-  const endX = Math.ceil((x + width) / gridSize) * gridSize;
+  // Render DOTS mode (square grid only)
+  const dotElements = useMemo(() => {
+    if (type !== 'DOTS') return null;
 
-  const startY = Math.floor(y / gridSize) * gridSize;
-  const endY = Math.ceil((y + height) / gridSize) * gridSize;
+    const elements = [];
 
-  if (type === 'LINES') {
-    // Vertical lines
-    for (let ix = startX; ix <= endX; ix += gridSize) {
-      elements.push(
-        <Line
-          key={`v-${ix}`}
-          points={[ix, y, ix, y + height]} // Draw from top of view to bottom
-          stroke={stroke}
-          strokeWidth={1}
-          opacity={opacity}
-        />
-      );
-    }
+    // Calculate start and end grid numbers based on visible bounds
+    const startX = Math.floor(x / gridSize) * gridSize;
+    const endX = Math.ceil((x + width) / gridSize) * gridSize;
+    const startY = Math.floor(y / gridSize) * gridSize;
+    const endY = Math.ceil((y + height) / gridSize) * gridSize;
 
-    // Horizontal lines
-    for (let iy = startY; iy <= endY; iy += gridSize) {
-      elements.push(
-        <Line
-          key={`h-${iy}`}
-          points={[x, iy, x + width, iy]}
-          stroke={stroke}
-          strokeWidth={1}
-          opacity={opacity}
-        />
-      );
-    }
-  } else if (type === 'DOTS') {
-    // Render dots at intersections using a single Shape for better performance
-    // Limit rendering if there are too many dots to avoid performance issues
     const dotsX = Math.ceil((endX - startX) / gridSize) + 1;
     const dotsY = Math.ceil((endY - startY) / gridSize) + 1;
     const totalDots = dotsX * dotsY;
-    
+
     // If there would be too many dots, fall back to a simpler grid or skip
     if (totalDots > MAX_DOTS_THRESHOLD) {
       // Use a power-of-2 step multiplier to maintain grid alignment and predictable iteration
@@ -166,7 +126,9 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
       const powerOf2Multiplier = Math.pow(2, Math.ceil(Math.log2(minMultiplier)));
       const step = gridSize * powerOf2Multiplier;
       if (!hasWarnedAboutDensity) {
-        console.warn(`Grid too dense for DOTS mode (${totalDots} dots > ${MAX_DOTS_THRESHOLD}), rendering subset with step size ${step}px (multiplier: ${powerOf2Multiplier})`);
+        console.warn(
+          `Grid too dense for DOTS mode (${totalDots} dots > ${MAX_DOTS_THRESHOLD}), rendering subset with step size ${step}px (multiplier: ${powerOf2Multiplier})`,
+        );
         hasWarnedAboutDensity = true;
       }
       // Render a subset by increasing step size
@@ -180,7 +142,7 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
               radius={2}
               fill={stroke}
               opacity={opacity}
-            />
+            />,
           );
         }
       }
@@ -197,14 +159,111 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
               radius={2}
               fill={stroke}
               opacity={opacity}
-            />
+            />,
           );
         }
       }
     }
-  }
 
-  return <Group listening={false}>{elements}</Group>;
+    return elements;
+  }, [type, x, y, width, height, gridSize, stroke, opacity]);
+
+  // Render LINES mode (square grid only - legacy performance optimization)
+  const squareLineElements = useMemo(() => {
+    if (type !== 'LINES') return null;
+
+    const elements = [];
+
+    // Calculate start and end grid numbers based on visible bounds
+    const startX = Math.floor(x / gridSize) * gridSize;
+    const endX = Math.ceil((x + width) / gridSize) * gridSize;
+    const startY = Math.floor(y / gridSize) * gridSize;
+    const endY = Math.ceil((y + height) / gridSize) * gridSize;
+
+    // Vertical lines
+    for (let ix = startX; ix <= endX; ix += gridSize) {
+      elements.push(
+        <Line
+          key={`v-${ix}`}
+          points={[ix, y, ix, y + height]} // Draw from top of view to bottom
+          stroke={stroke}
+          strokeWidth={1}
+          opacity={opacity}
+        />,
+      );
+    }
+
+    // Horizontal lines
+    for (let iy = startY; iy <= endY; iy += gridSize) {
+      elements.push(
+        <Line
+          key={`h-${iy}`}
+          points={[x, iy, x + width, iy]}
+          stroke={stroke}
+          strokeWidth={1}
+          opacity={opacity}
+        />,
+      );
+    }
+
+    return elements;
+  }, [type, x, y, width, height, gridSize, stroke, opacity]);
+
+  // Render HEXAGONAL or ISOMETRIC grids using geometry abstraction
+  const geometryElements = useMemo(() => {
+    if (type !== 'HEXAGONAL' && type !== 'ISOMETRIC') return null;
+
+    const geometry = createGridGeometry(type);
+    const visibleCells = geometry.getVisibleCells({ x, y, width, height }, gridSize);
+
+    return visibleCells.map((cell) => {
+      const vertices = geometry.getCellVertices(cell, gridSize);
+      const points = verticesToPoints(vertices);
+
+      return (
+        <Line
+          key={`cell-${cell.q}-${cell.r}`}
+          points={points}
+          stroke={stroke}
+          strokeWidth={1}
+          opacity={opacity}
+          closed={true}
+        />
+      );
+    });
+  }, [type, x, y, width, height, gridSize, stroke, opacity]);
+
+  // Render hover highlight for hovered cell
+  const hoverHighlight = useMemo(() => {
+    // DOTS mode deliberately skips hover highlight to avoid extra per-frame geometry work
+    // on already dense dot grids (similar to why DOTS is restricted to square grids).
+    if (!hoveredCell || type === 'DOTS') return null;
+
+    const geometry = createGridGeometry(type);
+    const vertices = geometry.getCellVertices(hoveredCell, gridSize);
+    const points = verticesToPoints(vertices);
+
+    return (
+      <Line
+        key="hover-highlight"
+        points={points}
+        fill="rgba(255, 255, 255, 0.1)"
+        stroke="rgba(255, 255, 255, 0.5)"
+        strokeWidth={2}
+        opacity={1}
+        closed={true}
+      />
+    );
+  }, [hoveredCell, type, gridSize]);
+
+  return (
+    <Group listening={false}>
+      {squareLineElements}
+      {dotElements}
+      {geometryElements}
+      {hoverHighlight}
+    </Group>
+  );
 };
 
 export default GridOverlay;

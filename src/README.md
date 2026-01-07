@@ -5,6 +5,7 @@ This directory contains the React application that runs in Electron's renderer p
 ## Purpose
 
 The renderer process provides:
+
 - **Architect View** - DM control interface (toolbar, sidebar, canvas, save/load)
 - **World View** - Player-facing display (canvas only, no controls)
 - Real-time canvas rendering (maps, tokens, drawings)
@@ -93,15 +94,18 @@ Zustand Store Update
 ## Contents
 
 ### `App.tsx` (70 lines)
+
 **Root component and layout**
 
 **Responsibilities:**
+
 - Application layout (Sidebar + Canvas)
 - Toolbar rendering (Select, Marker, Eraser tools)
 - Save/Load button handlers
 - Tool selection state management
 
 **Window detection:**
+
 ```typescript
 const params = new URLSearchParams(window.location.search);
 const isWorldView = params.get('type') === 'world';
@@ -111,15 +115,18 @@ const isWorldView = params.get('type') === 'world';
 ```
 
 **Key patterns:**
+
 - Tool state managed locally (useState)
 - Store accessed via `useGameStore.getState()` in handlers
 - IPC invoke for save/load operations
 - Alert-based user feedback (TODO: replace with toast notifications)
 
 ### `main.tsx` (16 lines)
+
 **React entry point**
 
 **Responsibilities:**
+
 - React root creation
 - App component mounting
 - Initial IPC listener setup (example message)
@@ -127,9 +134,11 @@ const isWorldView = params.get('type') === 'world';
 **Standard Vite + React pattern:** `ReactDOM.createRoot(...).render(<App />)`
 
 ### `index.css` (minimal)
+
 **Global Tailwind styles**
 
 Contains:
+
 - Tailwind directives (`@tailwind base`, `@tailwind components`, `@tailwind utilities`)
 - CSS reset
 - Base styles
@@ -137,13 +146,16 @@ Contains:
 **Note:** All component styling uses Tailwind utility classes (no custom CSS)
 
 ### `vite-env.d.ts`
+
 **Type declarations**
 
 Contains:
+
 - Vite client type references
 - Custom window.ipcRenderer types (TODO: move to separate file)
 
 **Current structure:**
+
 ```typescript
 /// <reference types="vite/client" />
 
@@ -153,18 +165,20 @@ interface Window {
     send: (channel: string, ...args: any[]) => void;
     invoke: (channel: string, ...args: any[]) => Promise<any>;
     on: (channel: string, listener: (...args: any[]) => void) => void;
-  }
+  };
 }
 ```
 
 ## Subdirectories
 
 ### `components/`
+
 React UI components organized by feature.
 
 **See:** [components/README.md](./components/README.md)
 
 **Key components:**
+
 - `CanvasManager.tsx` - Main canvas logic (245 lines)
 - `SyncManager.tsx` - IPC state sync (49 lines)
 - `Sidebar.tsx` - Asset library (37 lines)
@@ -173,19 +187,23 @@ React UI components organized by feature.
 - `Canvas/TokenLayer.tsx` - Placeholder (11 lines, unused)
 
 ### `store/`
+
 Zustand state management.
 
 **See:** [store/README.md](./store/README.md)
 
 **Key file:**
+
 - `gameStore.ts` - Single global store (tokens, drawings, gridSize)
 
 ### `utils/`
+
 Pure utility functions (no side effects).
 
 **See:** [utils/README.md](./utils/README.md)
 
 **Key files:**
+
 - `AssetProcessor.ts` - Image optimization pipeline
 - `grid.ts` - Grid snapping math
 
@@ -196,6 +214,7 @@ Pure utility functions (no side effects).
 **Single store:** `gameStore.ts`
 
 **State shape:**
+
 ```typescript
 interface GameState {
   // Data
@@ -216,6 +235,7 @@ interface GameState {
 **Access patterns:**
 
 1. **Component rendering (subscribe):**
+
 ```typescript
 const Component = () => {
   const { tokens } = useGameStore();  // Re-renders when tokens change
@@ -224,30 +244,33 @@ const Component = () => {
 ```
 
 2. **Event handlers (no subscription):**
+
 ```typescript
 const handleClick = () => {
-  const { addToken } = useGameStore.getState();  // No re-render
+  const { addToken } = useGameStore.getState(); // No re-render
   addToken(newToken);
 };
 ```
 
 3. **Bulk updates (load/sync):**
+
 ```typescript
 useGameStore.setState({
   tokens: loadedTokens,
   drawings: loadedDrawings,
-  gridSize: 50
+  gridSize: 50,
 });
 ```
 
 4. **Side effects (subscriptions):**
+
 ```typescript
 useEffect(() => {
   const unsub = useGameStore.subscribe((state) => {
     // Called on every state change
     window.ipcRenderer.send('SYNC_WORLD_STATE', state);
   });
-  return unsub;  // Cleanup
+  return unsub; // Cleanup
 }, []);
 ```
 
@@ -280,13 +303,17 @@ return (
 ### Pattern 2: Drag-and-Drop Data Transfer
 
 **Library items (JSON data):**
+
 ```typescript
 // Sidebar.tsx - drag start
 const handleDragStart = (e: React.DragEvent) => {
-  e.dataTransfer.setData('application/json', JSON.stringify({
-    type: 'LIBRARY_TOKEN',
-    src: 'https://example.com/token.png'
-  }));
+  e.dataTransfer.setData(
+    'application/json',
+    JSON.stringify({
+      type: 'LIBRARY_TOKEN',
+      src: 'https://example.com/token.png',
+    }),
+  );
 };
 
 // CanvasManager.tsx - drop
@@ -302,6 +329,7 @@ const handleDrop = (e: React.DragEvent) => {
 ```
 
 **File uploads:**
+
 ```typescript
 const handleDrop = (e: React.DragEvent) => {
   if (e.dataTransfer.files.length > 0) {
@@ -356,9 +384,9 @@ const handleDrop = async (e: React.DragEvent) => {
 // 2. User crops
 const handleCropConfirm = async (blob: Blob) => {
   // 3. Process image (resize, convert to WebP) - Returns cancellable handle
-  const file = new File([blob], "token.webp", { type: 'image/webp' });
+  const file = new File([blob], 'token.webp', { type: 'image/webp' });
   const handle = processImage(file, 'TOKEN');
-  const src = await handle.promise;  // Get file:// URL from promise
+  const src = await handle.promise; // Get file:// URL from promise
 
   // 4. Add to store
   addToken({ id: crypto.randomUUID(), x, y, src, scale: 1 });
@@ -479,7 +507,7 @@ const handleSave = async () => {
     const dataToSave = {
       tokens: state.tokens,
       drawings: state.drawings,
-      gridSize: state.gridSize
+      gridSize: state.gridSize,
     };
 
     const result = await window.ipcRenderer.invoke('SAVE_CAMPAIGN', dataToSave);
@@ -552,7 +580,7 @@ const handleMouseDown = (e: any) => {
 ### Critical Performance Patterns
 
 1. **Grid rendering optimization**
-   - Current: O(n*m) Line components (can be slow for large canvases)
+   - Current: O(n\*m) Line components (can be slow for large canvases)
    - TODO: Use single Path or memoize grid
 
 2. **Drawing preview with local state**
@@ -587,6 +615,7 @@ useEffect(() => {
 ### Manual Testing Checklist
 
 **Rendering:**
+
 - [ ] Architect View shows toolbar + sidebar + canvas
 - [ ] World View shows canvas only
 - [ ] Grid renders correctly (50px cells)
@@ -594,6 +623,7 @@ useEffect(() => {
 - [ ] Drawings render correctly (marker/eraser)
 
 **Interactions:**
+
 - [ ] Drag-and-drop file uploads work
 - [ ] Cropping UI appears and functions
 - [ ] Drawing tools create strokes
@@ -602,11 +632,13 @@ useEffect(() => {
 - [ ] Load button loads campaign
 
 **State sync:**
+
 - [ ] Changes in Architect View appear in World View
 - [ ] No lag (< 100ms latency)
 - [ ] World View updates smoothly (60fps)
 
 **Error handling:**
+
 - [ ] Invalid file upload shows error
 - [ ] Save/load failures show user-friendly message
 - [ ] No unhandled promise rejections in console
@@ -614,14 +646,17 @@ useEffect(() => {
 ## Common Issues
 
 ### Issue: World View not updating
+
 **Diagnosis:** SyncManager subscription not active
 
 **Check:**
+
 1. Is World View window open?
 2. Is SyncManager component rendered?
 3. Are there console errors in World View DevTools?
 
 **Solution:**
+
 ```typescript
 // Add logging to SyncManager.tsx
 useEffect(() => {
@@ -639,19 +674,25 @@ useEffect(() => {
 ```
 
 ### Issue: Tokens not rendering after load
+
 **Diagnosis:** File paths incorrect
 
 **Check:** Console log token.src values (should be file:// or media://)
 
 **Solution:**
+
 ```typescript
 // After load, verify paths
 const state = await window.ipcRenderer.invoke('LOAD_CAMPAIGN');
-console.log('[LOAD] Token paths:', state.tokens.map(t => t.src));
+console.log(
+  '[LOAD] Token paths:',
+  state.tokens.map((t) => t.src),
+);
 // Should be: file:///Users/.../sessions/{timestamp}/assets/token.webp
 ```
 
 ### Issue: Drawing lag
+
 **Diagnosis:** Updating store on mousemove (wrong pattern)
 
 **Check:** Is setTempLine or addDrawing called in handleMouseMove?
@@ -659,14 +700,17 @@ console.log('[LOAD] Token paths:', state.tokens.map(t => t.src));
 **Solution:** Use local state pattern (see Pattern 3 above)
 
 ### Issue: Save/Load buttons not working
+
 **Diagnosis:** IPC types missing or handler error
 
 **Check:**
+
 1. Does window.ipcRenderer exist? (log it)
 2. Are there errors in main process console?
 3. Is electron/main.ts handler registered?
 
 **Solution:**
+
 ```typescript
 // Add error logging
 try {

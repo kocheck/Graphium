@@ -60,7 +60,7 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
     postMessage({
       type: 'PROGRESS',
       progress: 0,
-      fileName
+      fileName,
     } as ProgressMessage);
 
     // Step 1: Create bitmap from file (efficient image decode)
@@ -68,7 +68,7 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
     postMessage({
       type: 'PROGRESS',
       progress: 20,
-      fileName
+      fileName,
     } as ProgressMessage);
 
     const maxDim = assetType === 'MAP' ? MAX_MAP_DIMENSION : MAX_TOKEN_DIMENSION;
@@ -93,7 +93,7 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
     postMessage({
       type: 'PROGRESS',
       progress: 40,
-      fileName
+      fileName,
     } as ProgressMessage);
 
     // Step 3: Draw to OffscreenCanvas (faster than DOM canvas)
@@ -113,7 +113,7 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
     postMessage({
       type: 'PROGRESS',
       progress: 60,
-      fileName
+      fileName,
     } as ProgressMessage);
 
     // Step 4: Convert to WebP blob (85% quality = good balance)
@@ -125,7 +125,7 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
     postMessage({
       type: 'PROGRESS',
       progress: 80,
-      fileName
+      fileName,
     } as ProgressMessage);
 
     // Step 5: Convert blob to ArrayBuffer for transfer
@@ -134,23 +134,25 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
     postMessage({
       type: 'PROGRESS',
       progress: 90,
-      fileName
+      fileName,
     } as ProgressMessage);
 
     // Step 6: Send result back to main thread with transferable ArrayBuffer
-    postMessage({
-      type: 'COMPLETE',
-      buffer,
-      fileName,
-      originalName: file.name
-    } as CompleteMessage, { transfer: [buffer] });
-
+    postMessage(
+      {
+        type: 'COMPLETE',
+        buffer,
+        fileName,
+        originalName: file.name,
+      } as CompleteMessage,
+      { transfer: [buffer] },
+    );
   } catch (error) {
     // Send error back to main thread
     postMessage({
       type: 'ERROR',
       error: error instanceof Error ? error.message : 'Unknown error',
-      fileName
+      fileName,
     } as ErrorMessage);
   }
 };

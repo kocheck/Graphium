@@ -63,7 +63,7 @@ const ResourceMonitor = () => {
     ipcBandwidth: 0,
     activeWorkers: 0,
     renderTime: 0,
-    lastUpdate: Date.now()
+    lastUpdate: Date.now(),
   });
 
   const [isExpanded, setIsExpanded] = useState(true);
@@ -129,7 +129,7 @@ const ResourceMonitor = () => {
         memory = {
           used: mem.usedJSHeapSize,
           total: mem.totalJSHeapSize,
-          limit: mem.jsHeapSizeLimit
+          limit: mem.jsHeapSizeLimit,
         };
       }
 
@@ -156,7 +156,7 @@ const ResourceMonitor = () => {
         ipcMessageCount: ipcMessageCountRef.current,
         ipcBandwidth: bandwidth,
         activeWorkers,
-        lastUpdate: now
+        lastUpdate: now,
       }));
 
       // Reset IPC counters every update
@@ -179,7 +179,7 @@ const ResourceMonitor = () => {
    * - IPC methods don't exist or are malformed
    * - JSON.stringify fails on circular references
    * - Method interception fails in strict mode
-   * 
+   *
    * **Cleanup Strategy:** When this component unmounts, wrapped listeners remain
    * in place for existing listeners, but tracking is disabled via the isTracking flag.
    * This prevents memory leaks while ensuring IPC continues to function normally.
@@ -188,8 +188,10 @@ const ResourceMonitor = () => {
     if (!window.ipcRenderer) return;
 
     // Guard: Check if IPC methods exist and are functions
-    if (typeof window.ipcRenderer.send !== 'function' ||
-        typeof window.ipcRenderer.on !== 'function') {
+    if (
+      typeof window.ipcRenderer.send !== 'function' ||
+      typeof window.ipcRenderer.on !== 'function'
+    ) {
       console.warn('[ResourceMonitor] IPC methods not available, skipping interception');
       return;
     }
@@ -203,7 +205,7 @@ const ResourceMonitor = () => {
       originalOn = window.ipcRenderer.on;
 
       // Intercept send (outgoing messages)
-      window.ipcRenderer.send = function(channel: string, ...args: any[]) {
+      window.ipcRenderer.send = function (channel: string, ...args: any[]) {
         if (isTracking) {
           try {
             ipcMessageCountRef.current++;
@@ -227,11 +229,11 @@ const ResourceMonitor = () => {
       // monitoring will break or continue tracking metrics.
       //
       // This makes the current implementation UNSUITABLE FOR PRODUCTION USE in its current form.
-      // 
+      //
       // To fix this, implement a WeakMap to maintain original-to-wrapped listener mappings:
       // const listenerMap = new WeakMap<Function, Function>();
       // Then store the mapping and use it for proper cleanup in the `off()` interceptor.
-      window.ipcRenderer.on = function(channel: string, listener: any) {
+      window.ipcRenderer.on = function (channel: string, listener: any) {
         const wrappedListener = (...args: any[]) => {
           if (isTracking) {
             try {
@@ -256,7 +258,7 @@ const ResourceMonitor = () => {
     return () => {
       // Disable tracking before restoring to prevent metrics updates during cleanup
       isTracking = false;
-      
+
       // Restore original methods (cleanup)
       try {
         if (originalSend && window.ipcRenderer) {
@@ -314,7 +316,7 @@ const ResourceMonitor = () => {
         zIndex: 9999,
         minWidth: isExpanded ? '280px' : '120px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-        border: '1px solid rgba(255,255,255,0.1)'
+        border: '1px solid rgba(255,255,255,0.1)',
       }}
     >
       {/* Header */}
@@ -325,7 +327,7 @@ const ResourceMonitor = () => {
           alignItems: 'center',
           marginBottom: isExpanded ? '10px' : '0',
           borderBottom: isExpanded ? '1px solid rgba(255,255,255,0.2)' : 'none',
-          paddingBottom: isExpanded ? '8px' : '0'
+          paddingBottom: isExpanded ? '8px' : '0',
         }}
       >
         <strong style={{ fontSize: '14px' }}>⚡ Performance</strong>
@@ -337,7 +339,7 @@ const ResourceMonitor = () => {
             color: '#fff',
             cursor: 'pointer',
             fontSize: '16px',
-            padding: '0 4px'
+            padding: '0 4px',
           }}
           title={isExpanded ? 'Collapse' : 'Expand'}
         >
@@ -349,13 +351,9 @@ const ResourceMonitor = () => {
         <>
           {/* FPS */}
           <div style={{ marginBottom: '8px' }}>
-            <strong style={{ color: getFPSColor(metrics.fps) }}>
-              FPS: {metrics.fps}
-            </strong>
+            <strong style={{ color: getFPSColor(metrics.fps) }}>FPS: {metrics.fps}</strong>
             {metrics.fps < 55 && (
-              <span style={{ color: '#FFC107', marginLeft: '8px', fontSize: '11px' }}>
-                ⚠️ Low
-              </span>
+              <span style={{ color: '#FFC107', marginLeft: '8px', fontSize: '11px' }}>⚠️ Low</span>
             )}
           </div>
 
@@ -373,7 +371,7 @@ const ResourceMonitor = () => {
                   backgroundColor: 'rgba(255,255,255,0.2)',
                   borderRadius: '2px',
                   marginTop: '4px',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
                 }}
               >
                 <div
@@ -381,7 +379,7 @@ const ResourceMonitor = () => {
                     width: `${getMemoryPercent()}%`,
                     height: '100%',
                     backgroundColor: getMemoryPercent() > 80 ? '#f44336' : '#4CAF50',
-                    transition: 'width 0.3s'
+                    transition: 'width 0.3s',
                   }}
                 />
               </div>
@@ -400,7 +398,7 @@ const ResourceMonitor = () => {
               marginBottom: '8px',
               fontSize: '11px',
               borderTop: '1px solid rgba(255,255,255,0.1)',
-              paddingTop: '8px'
+              paddingTop: '8px',
             }}
           >
             <div>IPC Messages: {metrics.ipcMessageCount}/sec</div>
@@ -431,7 +429,7 @@ const ResourceMonitor = () => {
                 backgroundColor: 'rgba(255, 193, 7, 0.2)',
                 borderRadius: '4px',
                 fontSize: '10px',
-                borderLeft: '2px solid #FFC107'
+                borderLeft: '2px solid #FFC107',
               }}
             >
               <strong>⚠️ Performance Issues Detected:</strong>
@@ -449,7 +447,7 @@ const ResourceMonitor = () => {
               marginTop: '8px',
               fontSize: '10px',
               color: '#666',
-              textAlign: 'right'
+              textAlign: 'right',
             }}
           >
             Updated: {new Date(metrics.lastUpdate).toLocaleTimeString()}

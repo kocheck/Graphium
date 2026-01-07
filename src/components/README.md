@@ -5,6 +5,7 @@ React UI components for Graphium. Components are organized by feature, with canv
 ## Purpose
 
 This directory contains all React components that make up the Graphium user interface:
+
 - **Layout components** - Application structure (Sidebar, Toolbar)
 - **Canvas components** - Rendering logic (CanvasManager, GridOverlay)
 - **Modal components** - Overlays and dialogs (ImageCropper)
@@ -26,9 +27,11 @@ components/
 ## Component Overview
 
 ### CanvasManager.tsx (Canvas/)
+
 **Primary canvas rendering and interaction logic**
 
 **Responsibilities:**
+
 - Konva Stage/Layer setup and sizing
 - Drag-and-drop handling (file uploads, library tokens)
 - Drawing tool implementation (marker, eraser)
@@ -37,6 +40,7 @@ components/
 - Real-time drawing preview (temp line pattern)
 
 **Props:**
+
 ```typescript
 interface CanvasManagerProps {
   tool?: 'select' | 'marker' | 'eraser';
@@ -44,6 +48,7 @@ interface CanvasManagerProps {
 ```
 
 **Key features:**
+
 - Auto-resize canvas on window resize
 - Two drag-and-drop modes: JSON (library) vs Files (uploads)
 - Local state for drawing preview (performance optimization)
@@ -52,9 +57,11 @@ interface CanvasManagerProps {
 **See:** [Canvas/README.md](./Canvas/README.md) for detailed documentation
 
 ### SyncManager.tsx
+
 **IPC state synchronization (no visual output)**
 
 **Responsibilities:**
+
 - Detect window type (Architect vs World View)
 - Subscribe to store changes in Architect View → send IPC
 - Listen to IPC in World View → update store
@@ -62,12 +69,14 @@ interface CanvasManagerProps {
 **Props:** None (zero-config component)
 
 **Usage:**
+
 ```typescript
 // In App.tsx
 <SyncManager />  // Just render it, handles everything internally
 ```
 
 **Critical pattern:**
+
 ```typescript
 useEffect(() => {
   const isWorldView = new URLSearchParams(window.location.search).get('type') === 'world';
@@ -83,7 +92,7 @@ useEffect(() => {
       window.ipcRenderer.send('SYNC_WORLD_STATE', {
         tokens: state.tokens,
         drawings: state.drawings,
-        gridSize: state.gridSize
+        gridSize: state.gridSize,
       });
     });
     return unsub;
@@ -92,15 +101,18 @@ useEffect(() => {
 ```
 
 **Important notes:**
+
 - Must be rendered in both windows
 - NO UI rendering (returns null)
 - Runs entirely in useEffect
 - Cleanup handled via unsubscribe
 
 ### Sidebar.tsx
+
 **Asset library with draggable tokens**
 
 **Responsibilities:**
+
 - Display library tokens (currently 2 hardcoded examples)
 - Drag-and-drop initiation with JSON data transfer
 - Future: Token search, categories, bulk import
@@ -110,6 +122,7 @@ useEffect(() => {
 **Current state:** Minimal implementation (proof of concept)
 
 **Drag-and-drop pattern:**
+
 ```typescript
 const handleDragStart = (e: React.DragEvent, type: string, src: string) => {
   e.dataTransfer.setData('application/json', JSON.stringify({
@@ -124,6 +137,7 @@ const handleDragStart = (e: React.DragEvent, type: string, src: string) => {
 ```
 
 **Layout:**
+
 ```
 ┌─────────────┐
 │  Library    │
@@ -136,6 +150,7 @@ const handleDragStart = (e: React.DragEvent, type: string, src: string) => {
 ```
 
 **Future enhancements:**
+
 - Persistent library (saved separately from campaigns)
 - Search/filter by name or tags
 - Categories (Monsters, Heroes, Terrain)
@@ -143,24 +158,28 @@ const handleDragStart = (e: React.DragEvent, type: string, src: string) => {
 - Drag folder for bulk import
 
 ### ImageCropper.tsx
+
 **Modal overlay for cropping uploaded tokens**
 
 **Responsibilities:**
+
 - Display cropping UI (react-easy-crop)
 - Zoom control (1x to 3x)
 - Crop area selection (enforced 1:1 aspect ratio)
 - Return cropped image as Blob
 
 **Props:**
+
 ```typescript
 interface ImageCropperProps {
-  imageSrc: string;      // Object URL (blob://)
+  imageSrc: string; // Object URL (blob://)
   onConfirm: (blob: Blob) => void;
   onCancel: () => void;
 }
 ```
 
 **Usage flow:**
+
 ```typescript
 // 1. User drops file → create Object URL
 const objectUrl = URL.createObjectURL(file);
@@ -186,12 +205,14 @@ const handleCropConfirm = async (blob: Blob) => {
 ```
 
 **Key features:**
+
 - 1:1 aspect ratio (square tokens for grid alignment)
 - Zoom slider (1x to 3x)
 - Full-screen modal overlay (blocks interaction with canvas)
 - Converts to WebP on confirm (via canvas.toBlob)
 
 **Helper functions:**
+
 ```typescript
 // getCroppedImg() - Crops image to selected area, returns Blob
 async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | null>
@@ -201,17 +222,20 @@ const createImage = (url: string): Promise<HTMLImageElement>
 ```
 
 ### GridOverlay.tsx (Canvas/)
+
 **Renders grid lines on canvas**
 
 **See:** [Canvas/README.md](./Canvas/README.md) for detailed documentation
 
 **Summary:**
+
 - Renders vertical and horizontal lines
 - Grid size configurable (default 50px)
 - Non-interactive (`listening={false}`)
 - Memoization opportunity for large grids
 
 ### TokenLayer.tsx (Canvas/)
+
 **Placeholder component (unused)**
 
 **Current status:** Empty Group component (11 lines)
@@ -433,9 +457,7 @@ const DrawingLayer = ({ drawings, tempLine }: {
 // Memoize grid overlay (only re-render when size/gridSize changes)
 const MemoizedGridOverlay = React.memo(GridOverlay, (prev, next) => {
   return (
-    prev.width === next.width &&
-    prev.height === next.height &&
-    prev.gridSize === next.gridSize
+    prev.width === next.width && prev.height === next.height && prev.gridSize === next.gridSize
   );
 });
 ```
@@ -482,6 +504,7 @@ const ImageCropper = React.lazy(() => import('./ImageCropper'));
 ### Component Testing Checklist
 
 **SyncManager:**
+
 - [ ] Detects window type correctly
 - [ ] Architect View: subscription active
 - [ ] World View: IPC listener active
@@ -489,11 +512,13 @@ const ImageCropper = React.lazy(() => import('./ImageCropper'));
 - [ ] IPC receives update store
 
 **Sidebar:**
+
 - [ ] Library tokens render
 - [ ] Drag-and-drop initiates correctly
 - [ ] JSON data transferred
 
 **CanvasManager:**
+
 - [ ] Canvas resizes on window resize
 - [ ] File drop triggers cropping UI
 - [ ] Library drop adds token directly
@@ -502,6 +527,7 @@ const ImageCropper = React.lazy(() => import('./ImageCropper'));
 - [ ] Token dragging works
 
 **ImageCropper:**
+
 - [ ] Cropping UI renders
 - [ ] Zoom control works (1x to 3x)
 - [ ] Crop area adjustable
@@ -509,6 +535,7 @@ const ImageCropper = React.lazy(() => import('./ImageCropper'));
 - [ ] Cancel closes modal
 
 **GridOverlay:**
+
 - [ ] Grid lines render
 - [ ] Grid size respected
 - [ ] Non-interactive (can't click grid)
@@ -516,9 +543,11 @@ const ImageCropper = React.lazy(() => import('./ImageCropper'));
 ## Common Issues
 
 ### Issue: SyncManager not syncing
+
 **Symptoms:** Changes in Architect View don't appear in World View
 
 **Diagnosis:**
+
 1. Check window type detection (log `isWorldView`)
 2. Verify subscription active (log in subscribe callback)
 3. Check IPC send (log before send)
@@ -526,6 +555,7 @@ const ImageCropper = React.lazy(() => import('./ImageCropper'));
 5. Check World View listener (log on receive)
 
 **Solution:** Add comprehensive logging:
+
 ```typescript
 useEffect(() => {
   const isWorldView = new URLSearchParams(window.location.search).get('type') === 'world';
@@ -549,28 +579,32 @@ useEffect(() => {
 ```
 
 ### Issue: ImageCropper not closing
+
 **Symptoms:** Cropper modal stuck on screen
 
 **Diagnosis:** `pendingCrop` state not being cleared
 
 **Solution:**
+
 ```typescript
 // Ensure onConfirm and onCancel both clear state
 const handleCropConfirm = async (blob: Blob) => {
   try {
     // Process blob...
   } finally {
-    setPendingCrop(null);  // Always clear, even on error
+    setPendingCrop(null); // Always clear, even on error
   }
 };
 ```
 
 ### Issue: Canvas not resizing
+
 **Symptoms:** Canvas stays at initial size when window resized
 
 **Diagnosis:** Resize listener not set up or containerRef not assigned
 
 **Solution:**
+
 ```typescript
 const containerRef = useRef<HTMLDivElement>(null);
 
@@ -594,14 +628,17 @@ return <div ref={containerRef}>{/* Canvas */}</div>;
 ```
 
 ### Issue: Drag-and-drop not working
+
 **Symptoms:** Dropped files/tokens don't appear
 
 **Diagnosis:**
+
 1. Missing `onDragOver={e => e.preventDefault()}`
 2. Wrong data key in dataTransfer
 3. File not being processed
 
 **Solution:**
+
 ```typescript
 // MUST prevent default on dragover
 const handleDragOver = (e: React.DragEvent) => {
@@ -633,15 +670,18 @@ const handleDrop = (e: React.DragEvent) => {
 ## Landing Page Components
 
 ### AboutModal.tsx
+
 **Application information and help dialog**
 
 **Responsibilities:**
+
 - Display comprehensive app information with "Digital Dungeon Master" tone
 - Show features, keyboard shortcuts, and philosophy
 - Accessible via keyboard shortcut (`?`) or UI buttons
 - Global component rendered in both HOME and EDITOR views
 
 **Props:**
+
 ```typescript
 interface AboutModalProps {
   isOpen: boolean;
@@ -650,6 +690,7 @@ interface AboutModalProps {
 ```
 
 **Usage:**
+
 ```typescript
 // In App.tsx - rendered globally
 const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -662,6 +703,7 @@ if (e.key === '?' && !isAboutOpen) {
 ```
 
 **Key features:**
+
 - Modal backdrop with click-outside to close
 - Escape key support
 - LogoIcon integration
@@ -669,28 +711,33 @@ if (e.key === '?' && !isAboutOpen) {
 - Content sections: What is Graphium, Core Powers, Quick Start, Sacred Philosophy
 
 **Error handling:**
+
 - Wrapped by top-level PrivacyErrorBoundary
 - Simple component with low error risk
 
 ### LogoIcon.tsx
+
 **Animated D20 dice logo for branding**
 
 **Responsibilities:**
+
 - Render D20 SVG icon with optional animation
 - Dice roll animation on mount
 - Display random roll result (weighted 15% for natural 20)
 - Callback on animation completion
 
 **Props:**
+
 ```typescript
 interface LogoIconProps {
-  size?: number;                        // Default: 80px
-  animate?: boolean;                    // Default: false
+  size?: number; // Default: 80px
+  animate?: boolean; // Default: false
   onAnimationComplete?: (roll: number) => void;
 }
 ```
 
 **Usage:**
+
 ```typescript
 // Static logo
 <LogoIcon size={100} />
@@ -704,6 +751,7 @@ interface LogoIconProps {
 ```
 
 **Key features:**
+
 - Pure SVG implementation (no external dependencies)
 - 800ms roll animation with interval-based number randomization
 - 3D rotation effect during animation
@@ -711,21 +759,25 @@ interface LogoIconProps {
 - Placeholder design (can be replaced with final logo)
 
 **Technical details:**
+
 - Uses useState for rotation, displayNumber, isRolling
 - useEffect for animation lifecycle
 - setInterval for rapid number changes during spin
 - Cleanup via clearInterval in return function
 
 ### HomeScreen.tsx
+
 **Landing page / splash screen - Redesigned for high performance**
 
 **Responsibilities:**
+
 - First screen users see before entering editor
 - Display branding, recent campaigns, quick actions
 - Lightweight launcher with CSS-only visual effects
 - Mac download banner (dismissible with localStorage)
 
 **Props:**
+
 ```typescript
 interface HomeScreenProps {
   onStartEditor: () => void;
@@ -733,12 +785,14 @@ interface HomeScreenProps {
 ```
 
 **Usage:**
+
 ```typescript
 // In App.tsx when viewState === 'HOME'
 <HomeScreen onStartEditor={handleStartEditor} />
 ```
 
 **Key features:**
+
 - **Pure CSS animated background** with floating geometric shapes
 - **Modern Fantasy UI aesthetic** - clean lines, high contrast
 - **Quirky micro-interactions**: Dice roll animation, shimmer effects, floating logo
@@ -752,6 +806,7 @@ interface HomeScreenProps {
 - **Responsive design** for mobile/tablet
 
 **State management:**
+
 ```typescript
 const [recentCampaigns, setRecentCampaigns] = useState<RecentCampaign[]>([]);
 const [isElectron, setIsElectron] = useState(false);
@@ -769,6 +824,7 @@ const [subtitle] = useState(() => {
 ```
 
 **Performance optimizations:**
+
 - ❌ Removed Konva canvas rendering (used in previous version)
 - ❌ Removed 6.9MB of token PNG assets
 - ❌ Removed interactive token playground with collision physics
@@ -778,6 +834,7 @@ const [subtitle] = useState(() => {
 - ✅ No complex state management or memoization needed
 
 **Visual effects (CSS-only):**
+
 1. **Floating Geometric Shapes** - 3 radial gradient overlays (purple, blue, pink) with gradientShift animation
 2. **Radial Gradients** - Subtle color washes (purple, blue, pink)
 3. **Grid Overlay** - Subtle 50px grid pattern
@@ -788,7 +845,8 @@ const [subtitle] = useState(() => {
 8. **Decorative Icons** - Sword and map pin slide in on card hover
 
 **Theme compatibility:**
-- Uses existing CSS custom properties (--app-bg-*, --app-text-*, --app-accent-*)
+
+- Uses existing CSS custom properties (--app-bg-_, --app-text-_, --app-accent-\*)
 - Dark mode support with blend mode adjustments (multiply → screen)
 - Responsive breakpoints: 768px (tablet), 480px (mobile)
 
@@ -808,11 +866,13 @@ ReactDOM.createRoot(rootElement).render(
 ```
 
 **New components that are automatically protected:**
+
 - ✅ AboutModal (low risk - simple modal with text)
 - ✅ LogoIcon (low risk - SVG with animation state)
 - ✅ HomeScreen (low risk - redesigned with CSS-only animations)
 
 **Components with their own error boundaries:**
+
 - TokenErrorBoundary (wraps individual tokens in main canvas)
 - CanvasOverlayErrorBoundary (wraps canvas overlays)
 - MinimapErrorBoundary (wraps minimap)
@@ -825,6 +885,7 @@ ReactDOM.createRoot(rootElement).render(
 ## Future Components
 
 ### Planned
+
 1. **TokenContextMenu** - Right-click menu for tokens (delete, rotate, scale)
 2. **FogOfWarLayer** - Render fog overlay with reveal areas
 3. **ToolSettings** - Panel for tool-specific settings (marker color, stroke width)
@@ -832,6 +893,7 @@ ReactDOM.createRoot(rootElement).render(
 5. **SettingsDialog** - Application settings (grid size, colors, shortcuts)
 
 ### Under Consideration
+
 1. **TokenAuras** - Circular radius indicators around tokens
 2. **RulerOverlay** - Measure distances between points
 3. **TextLabel** - Add text annotations to map

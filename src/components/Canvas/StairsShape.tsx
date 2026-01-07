@@ -35,7 +35,7 @@ const StairsShape = ({ stairs }: StairsShapeProps) => {
     <Group
       x={stairs.x}
       y={stairs.y}
-      listening={false}  // Stairs are non-interactive
+      listening={false} // Stairs are non-interactive
       opacity={1}
     >
       {/* Background rectangle */}
@@ -69,7 +69,12 @@ const StairsShape = ({ stairs }: StairsShapeProps) => {
  * @param halfWidth - Half width for centering
  * @param halfHeight - Half height for centering
  */
-function renderStairTreads(stairs: Stairs, strokeColor: string, halfWidth: number, halfHeight: number) {
+function renderStairTreads(
+  stairs: Stairs,
+  strokeColor: string,
+  halfWidth: number,
+  halfHeight: number,
+) {
   const numSteps = 5; // Number of visible step lines
   const lines = [];
 
@@ -85,7 +90,7 @@ function renderStairTreads(stairs: Stairs, strokeColor: string, halfWidth: numbe
           stroke={strokeColor}
           strokeWidth={1}
           opacity={0.6}
-        />
+        />,
       );
     }
   } else {
@@ -100,7 +105,7 @@ function renderStairTreads(stairs: Stairs, strokeColor: string, halfWidth: numbe
           stroke={strokeColor}
           strokeWidth={1}
           opacity={0.6}
-        />
+        />,
       );
     }
   }
@@ -140,15 +145,7 @@ function renderDirectionalArrow(stairs: Stairs, arrowColor: string) {
       break;
   }
 
-  return (
-    <Path
-      data={arrowPath}
-      fill={arrowColor}
-      stroke="#000000"
-      strokeWidth={1}
-      opacity={0.8}
-    />
-  );
+  return <Path data={arrowPath} fill={arrowColor} stroke="#000000" strokeWidth={1} opacity={0.8} />;
 }
 
 /**

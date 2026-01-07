@@ -84,7 +84,7 @@ test.describe('Drawing Tool Performance', () => {
     expect(drawingData?.points, 'Drawing should have points array').toBeDefined();
     expect(
       drawingData?.points?.length ?? 0,
-      'Should capture most mouse movements (allowing for deduplication)'
+      'Should capture most mouse movements (allowing for deduplication)',
     ).toBeGreaterThan(50); // Allow for some deduplication
   });
 
@@ -119,7 +119,7 @@ test.describe('Drawing Tool Performance', () => {
       const originalRAF = window.requestAnimationFrame;
       let lastTimestamp = performance.now();
 
-      window.requestAnimationFrame = function(callback) {
+      window.requestAnimationFrame = function (callback) {
         return originalRAF((timestamp) => {
           const frameTime = timestamp - lastTimestamp;
           lastTimestamp = timestamp;
@@ -138,7 +138,7 @@ test.describe('Drawing Tool Performance', () => {
             win.__DRAWING_PERF__.totalFrameTime += frameTime;
             win.__DRAWING_PERF__.maxFrameTime = Math.max(
               win.__DRAWING_PERF__.maxFrameTime,
-              frameTime
+              frameTime,
             );
           }
 
@@ -191,17 +191,17 @@ test.describe('Drawing Tool Performance', () => {
     // Verify performance targets (environment-specific thresholds)
     // CI environments typically have 2-4 CPU cores and may run slower than local development
     const isCI = process.env.CI === 'true';
-    const avgFrameTimeThreshold = isCI ? 33 : 16.6;  // 30fps on CI, 60fps locally
-    const maxFrameTimeThreshold = isCI ? 66 : 33;    // 15fps on CI, 30fps locally
-    
+    const avgFrameTimeThreshold = isCI ? 33 : 16.6; // 30fps on CI, 60fps locally
+    const maxFrameTimeThreshold = isCI ? 66 : 33; // 15fps on CI, 30fps locally
+
     expect(
       perfMetrics.avgFrameTime,
-      `Average frame time should be under ${avgFrameTimeThreshold}ms`
+      `Average frame time should be under ${avgFrameTimeThreshold}ms`,
     ).toBeLessThan(avgFrameTimeThreshold);
 
     expect(
       perfMetrics.maxFrameTime,
-      `Max frame time should be under ${maxFrameTimeThreshold}ms`
+      `Max frame time should be under ${maxFrameTimeThreshold}ms`,
     ).toBeLessThan(maxFrameTimeThreshold);
   });
 
@@ -257,7 +257,7 @@ test.describe('Drawing Tool Performance', () => {
     expect(drawingData?.points, 'Drawing should have points array').toBeDefined();
     expect(
       (drawingData?.points?.length ?? 0) % 2,
-      'Points array should have even length (x,y pairs)'
+      'Points array should have even length (x,y pairs)',
     ).toBe(0);
 
     // Should have significantly fewer points than total mouse moves
@@ -266,7 +266,7 @@ test.describe('Drawing Tool Performance', () => {
     const pointCount = (drawingData?.points?.length ?? 0) / 2;
     expect(
       pointCount,
-      'Should deduplicate repeated points (expecting ≤ 4 point pairs)'
+      'Should deduplicate repeated points (expecting ≤ 4 point pairs)',
     ).toBeLessThanOrEqual(4);
 
     console.log(`Deduplication Test Results:`);
@@ -328,10 +328,7 @@ test.describe('Drawing Tool Performance', () => {
       return drawings.length;
     });
 
-    expect(
-      drawingsCount,
-      'Should have created 3 drawings (one per tool)'
-    ).toBe(3);
+    expect(drawingsCount, 'Should have created 3 drawings (one per tool)').toBe(3);
   });
 });
 
@@ -382,10 +379,7 @@ test.describe('Drawing Memory Management', () => {
       return drawings.length;
     });
 
-    expect(
-      drawingsCount,
-      'Should have created 50 drawings'
-    ).toBe(50);
+    expect(drawingsCount, 'Should have created 50 drawings').toBe(50);
 
     // TODO: Implement proper memory leak detection using Chrome DevTools Protocol (CDP)
     // Real memory leak testing requires CDP integration to take heap snapshots before/after

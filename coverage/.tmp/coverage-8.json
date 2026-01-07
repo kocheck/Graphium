@@ -1,1 +1,348 @@
-{"result":[{"scriptId":"1196","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":8557,"count":1}],"isBlockCoverage":true},{"functionName":"HTMLCanvasElement.getContext","ranges":[{"startOffset":1405,"endOffset":2722,"count":0}],"isBlockCoverage":false},{"functionName":"HTMLCanvasElement.toDataURL","ranges":[{"startOffset":2766,"endOffset":2819,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":2930,"endOffset":2964,"count":0}],"isBlockCoverage":false},{"functionName":"get","ranges":[{"startOffset":3071,"endOffset":3102,"count":0}],"isBlockCoverage":false}]},{"scriptId":"1371","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/pathOptimization.test.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":36989,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":36989,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":521,"endOffset":4693,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":576,"endOffset":1291,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":658,"endOffset":791,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":863,"endOffset":1035,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1105,"endOffset":1285,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1359,"endOffset":1948,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1450,"endOffset":1655,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":1732,"endOffset":1942,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2015,"endOffset":3040,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2102,"endOffset":2302,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2383,"endOffset":2576,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":2657,"endOffset":3034,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3100,"endOffset":4336,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3178,"endOffset":3909,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":3995,"endOffset":4330,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4402,"endOffset":4689,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4502,"endOffset":4683,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4747,"endOffset":12247,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4838,"endOffset":5711,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":4927,"endOffset":5253,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5342,"endOffset":5705,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5776,"endOffset":7330,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":5864,"endOffset":6334,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":6415,"endOffset":6821,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":6902,"endOffset":7324,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7398,"endOffset":7832,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7486,"endOffset":7826,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7886,"endOffset":9127,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":7980,"endOffset":8544,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":8637,"endOffset":9121,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":9196,"endOffset":10624,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":9266,"endOffset":9618,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":9686,"endOffset":10087,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":10175,"endOffset":10618,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":10697,"endOffset":11610,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":10787,"endOffset":11176,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":11252,"endOffset":11604,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":11672,"endOffset":12243,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":11754,"endOffset":12237,"count":1}],"isBlockCoverage":true}]},{"scriptId":"1372","url":"file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/pathOptimization.ts","functions":[{"functionName":"","ranges":[{"startOffset":0,"endOffset":17483,"count":1}],"isBlockCoverage":true},{"functionName":"","ranges":[{"startOffset":13,"endOffset":17483,"count":1}],"isBlockCoverage":true},{"functionName":"simplifyPath","ranges":[{"startOffset":185,"endOffset":586,"count":12},{"startOffset":252,"endOffset":276,"count":4},{"startOffset":276,"endOffset":349,"count":8},{"startOffset":349,"endOffset":413,"count":42},{"startOffset":413,"endOffset":527,"count":8},{"startOffset":527,"endOffset":567,"count":19},{"startOffset":567,"endOffset":585,"count":8}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":687,"endOffset":715,"count":12}],"isBlockCoverage":true},{"functionName":"rdpRecursive","ranges":[{"startOffset":719,"endOffset":1414,"count":14},{"startOffset":786,"endOffset":810,"count":3},{"startOffset":810,"endOffset":968,"count":11},{"startOffset":968,"endOffset":1133,"count":30},{"startOffset":1071,"endOffset":1129,"count":11},{"startOffset":1133,"endOffset":1163,"count":11},{"startOffset":1163,"endOffset":1376,"count":3},{"startOffset":1376,"endOffset":1412,"count":8}],"isBlockCoverage":true},{"functionName":"perpendicularDistance","ranges":[{"startOffset":1415,"endOffset":1830,"count":30},{"startOffset":1566,"endOffset":1577,"count":1},{"startOffset":1579,"endOffset":1623,"count":0}],"isBlockCoverage":true},{"functionName":"distance","ranges":[{"startOffset":1831,"endOffset":1951,"count":17}],"isBlockCoverage":true},{"functionName":"pointToSegmentDistanceWithPoint","ranges":[{"startOffset":1952,"endOffset":2546,"count":17},{"startOffset":2162,"endOffset":2259,"count":0}],"isBlockCoverage":true},{"functionName":"findClosestPointOnPath","ranges":[{"startOffset":2547,"endOffset":3329,"count":17},{"startOffset":2629,"endOffset":2651,"count":1},{"startOffset":2651,"endOffset":2794,"count":16},{"startOffset":3169,"endOffset":3199,"count":16},{"startOffset":3199,"endOffset":3221,"count":0},{"startOffset":3221,"endOffset":3328,"count":16}],"isBlockCoverage":true},{"functionName":"snapPointToPaths","ranges":[{"startOffset":3330,"endOffset":3871,"count":15},{"startOffset":3545,"endOffset":3814,"count":17},{"startOffset":3653,"endOffset":3685,"count":16},{"startOffset":3687,"endOffset":3810,"count":11}],"isBlockCoverage":true},{"functionName":"get","ranges":[{"startOffset":3976,"endOffset":4008,"count":15}],"isBlockCoverage":true}]}]}
+{
+  "result": [
+    {
+      "scriptId": "1196",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/test/setup.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 8557, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "HTMLCanvasElement.getContext",
+          "ranges": [{ "startOffset": 1405, "endOffset": 2722, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "HTMLCanvasElement.toDataURL",
+          "ranges": [{ "startOffset": 2766, "endOffset": 2819, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2930, "endOffset": 2964, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3071, "endOffset": 3102, "count": 0 }],
+          "isBlockCoverage": false
+        }
+      ]
+    },
+    {
+      "scriptId": "1371",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/pathOptimization.test.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 36989, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 36989, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 521, "endOffset": 4693, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 576, "endOffset": 1291, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 658, "endOffset": 791, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 863, "endOffset": 1035, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1105, "endOffset": 1285, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1359, "endOffset": 1948, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1450, "endOffset": 1655, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1732, "endOffset": 1942, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2015, "endOffset": 3040, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2102, "endOffset": 2302, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2383, "endOffset": 2576, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2657, "endOffset": 3034, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3100, "endOffset": 4336, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3178, "endOffset": 3909, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3995, "endOffset": 4330, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4402, "endOffset": 4689, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4502, "endOffset": 4683, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4747, "endOffset": 12247, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4838, "endOffset": 5711, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4927, "endOffset": 5253, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5342, "endOffset": 5705, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5776, "endOffset": 7330, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5864, "endOffset": 6334, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 6415, "endOffset": 6821, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 6902, "endOffset": 7324, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7398, "endOffset": 7832, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7486, "endOffset": 7826, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7886, "endOffset": 9127, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7980, "endOffset": 8544, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 8637, "endOffset": 9121, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 9196, "endOffset": 10624, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 9266, "endOffset": 9618, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 9686, "endOffset": 10087, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 10175, "endOffset": 10618, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 10697, "endOffset": 11610, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 10787, "endOffset": 11176, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 11252, "endOffset": 11604, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 11672, "endOffset": 12243, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 11754, "endOffset": 12237, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    },
+    {
+      "scriptId": "1372",
+      "url": "file:///Users/kocheck/Documents/GitHub/Hyle/src/utils/pathOptimization.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 17483, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 17483, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "simplifyPath",
+          "ranges": [
+            { "startOffset": 185, "endOffset": 586, "count": 12 },
+            { "startOffset": 252, "endOffset": 276, "count": 4 },
+            { "startOffset": 276, "endOffset": 349, "count": 8 },
+            { "startOffset": 349, "endOffset": 413, "count": 42 },
+            { "startOffset": 413, "endOffset": 527, "count": 8 },
+            { "startOffset": 527, "endOffset": 567, "count": 19 },
+            { "startOffset": 567, "endOffset": 585, "count": 8 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 687, "endOffset": 715, "count": 12 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "rdpRecursive",
+          "ranges": [
+            { "startOffset": 719, "endOffset": 1414, "count": 14 },
+            { "startOffset": 786, "endOffset": 810, "count": 3 },
+            { "startOffset": 810, "endOffset": 968, "count": 11 },
+            { "startOffset": 968, "endOffset": 1133, "count": 30 },
+            { "startOffset": 1071, "endOffset": 1129, "count": 11 },
+            { "startOffset": 1133, "endOffset": 1163, "count": 11 },
+            { "startOffset": 1163, "endOffset": 1376, "count": 3 },
+            { "startOffset": 1376, "endOffset": 1412, "count": 8 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "perpendicularDistance",
+          "ranges": [
+            { "startOffset": 1415, "endOffset": 1830, "count": 30 },
+            { "startOffset": 1566, "endOffset": 1577, "count": 1 },
+            { "startOffset": 1579, "endOffset": 1623, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "distance",
+          "ranges": [{ "startOffset": 1831, "endOffset": 1951, "count": 17 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "pointToSegmentDistanceWithPoint",
+          "ranges": [
+            { "startOffset": 1952, "endOffset": 2546, "count": 17 },
+            { "startOffset": 2162, "endOffset": 2259, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "findClosestPointOnPath",
+          "ranges": [
+            { "startOffset": 2547, "endOffset": 3329, "count": 17 },
+            { "startOffset": 2629, "endOffset": 2651, "count": 1 },
+            { "startOffset": 2651, "endOffset": 2794, "count": 16 },
+            { "startOffset": 3169, "endOffset": 3199, "count": 16 },
+            { "startOffset": 3199, "endOffset": 3221, "count": 0 },
+            { "startOffset": 3221, "endOffset": 3328, "count": 16 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "snapPointToPaths",
+          "ranges": [
+            { "startOffset": 3330, "endOffset": 3871, "count": 15 },
+            { "startOffset": 3545, "endOffset": 3814, "count": 17 },
+            { "startOffset": 3653, "endOffset": 3685, "count": 16 },
+            { "startOffset": 3687, "endOffset": 3810, "count": 11 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3976, "endOffset": 4008, "count": 15 }],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ]
+}

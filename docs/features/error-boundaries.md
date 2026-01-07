@@ -63,10 +63,10 @@ The main error boundary component that wraps the application.
 
 **Props:**
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `children` | `ReactNode` | required | Child components to wrap |
-| `supportEmail` | `string` | `"support@example.com"` | Email address for error reports |
+| Prop           | Type        | Default                 | Description                     |
+| -------------- | ----------- | ----------------------- | ------------------------------- |
+| `children`     | `ReactNode` | required                | Child components to wrap        |
+| `supportEmail` | `string`    | `"support@example.com"` | Email address for error reports |
 
 **Example Usage:**
 
@@ -75,12 +75,13 @@ import PrivacyErrorBoundary from './components/PrivacyErrorBoundary';
 
 <PrivacyErrorBoundary supportEmail="support@graphium.app">
   <App />
-</PrivacyErrorBoundary>
+</PrivacyErrorBoundary>;
 ```
 
 **Protected Components:**
 
 All components in the app are protected by PrivacyErrorBoundary, including:
+
 - `SyncManager` - Multi-window state synchronization
 - `CanvasManager` - Battlemap canvas rendering
 - `Sidebar` - Token library and controls
@@ -97,6 +98,7 @@ Utility functions for sanitizing error data.
 #### `sanitizeStack(error: Error, username: string): SanitizedError`
 
 Removes PII from error stack traces. Sanitizes:
+
 - Usernames in file paths → `<USER>`
 - Email addresses → `<EMAIL>`
 - IPv4/IPv6 addresses → `<IP>`
@@ -348,15 +350,16 @@ npm run test:coverage
 
 ### Test Files
 
-| File | Description |
-|------|-------------|
-| `src/utils/errorSanitizer.test.ts` | Unit tests for sanitization functions |
-| `src/components/PrivacyErrorBoundary.test.tsx` | Component tests for error boundary |
-| `src/test/setup.ts` | Test setup with mocks for Electron APIs |
+| File                                           | Description                             |
+| ---------------------------------------------- | --------------------------------------- |
+| `src/utils/errorSanitizer.test.ts`             | Unit tests for sanitization functions   |
+| `src/components/PrivacyErrorBoundary.test.tsx` | Component tests for error boundary      |
+| `src/test/setup.ts`                            | Test setup with mocks for Electron APIs |
 
 ### What's Tested
 
 **errorSanitizer.test.ts:**
+
 - Unix-style path sanitization (`/Users/username/...`)
 - Linux home directory sanitization (`/home/username/...`)
 - Windows-style path sanitization (`C:\Users\username\...`)
@@ -365,6 +368,7 @@ npm run test:coverage
 - Report body generation
 
 **PrivacyErrorBoundary.test.tsx:**
+
 - Normal rendering when no error occurs
 - Error UI display when child throws
 - Privacy notice display
@@ -384,17 +388,14 @@ function TestComponent() {
     throw new Error('Test error for error boundary');
   }
 
-  return (
-    <button onClick={() => setShouldError(true)}>
-      Trigger Error
-    </button>
-  );
+  return <button onClick={() => setShouldError(true)}>Trigger Error</button>;
 }
 ```
 
 ### Verify Sanitization
 
 Check that the error UI shows:
+
 - `<USER>` instead of your actual username in file paths
 - A formatted, scrollable stack trace
 - "Copy Report & Email Support" button that works correctly
@@ -448,17 +449,20 @@ For these cases, use traditional try/catch blocks and consider logging to consol
 The Resource Monitor is a performance diagnostics overlay that tracks FPS, memory usage, IPC metrics, and Web Worker activity. It includes extensive error handling to prevent crashes:
 
 **Error-Prone Operations:**
+
 - IPC method interception (modifies `window.ipcRenderer.send` and `.on`)
 - Performance API access (`performance.memory`, Chrome/Edge only)
 - JSON.stringify on IPC messages (may contain circular references)
 
 **Error Handling Strategy:**
+
 1. **Global Coverage**: Already wrapped in `PrivacyErrorBoundary` via `main.tsx`
 2. **Method Guards**: Checks if IPC methods exist before interception
 3. **Try-Catch Blocks**: Wraps all IPC operations to prevent breaking message passing
 4. **Graceful Degradation**: If APIs unavailable, shows warning instead of crashing
 
 **Example Safeguards:**
+
 ```typescript
 // Check if IPC methods exist
 if (typeof window.ipcRenderer.send !== 'function') {
@@ -477,6 +481,7 @@ try {
 ```
 
 **Why This Matters:**
+
 - IPC interception could break core app functionality if not handled carefully
 - Performance APIs may not exist in all browsers (Firefox doesn't support `performance.memory`)
 - Circular references in IPC data would crash JSON.stringify
@@ -484,6 +489,7 @@ try {
 ### AssetProcessingErrorBoundary (`src/components/AssetProcessingErrorBoundary.tsx`)
 
 Wraps file upload and image processing operations to catch:
+
 - Web Worker errors (async failures)
 - Corrupt or unsupported file formats
 - IPC storage failures

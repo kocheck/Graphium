@@ -28,7 +28,7 @@ test.describe('Map Creation and Addition', () => {
     // Verify map creation form appears
     await expect(
       page.locator('[data-testid="map-creation-form"]'),
-      'Map creation form should appear'
+      'Map creation form should appear',
     ).toBeVisible();
 
     // Fill map name
@@ -38,12 +38,12 @@ test.describe('Map Creation and Addition', () => {
     // Verify map created
     await expect(
       page.locator('[data-testid="map-tab-0"]'),
-      'First map tab should appear'
+      'First map tab should appear',
     ).toBeVisible();
 
     await expect(
       page.locator('[data-testid="map-tab-0"]'),
-      'Map tab should display correct name'
+      'Map tab should display correct name',
     ).toHaveText('Dungeon Level 1');
   });
 
@@ -59,16 +59,13 @@ test.describe('Map Creation and Addition', () => {
 
     // Verify all map tabs present
     const mapTabs = page.locator('[data-testid^="map-tab-"]');
-    await expect(
-      mapTabs,
-      'Should have 3 map tabs'
-    ).toHaveCount(3);
+    await expect(mapTabs, 'Should have 3 map tabs').toHaveCount(3);
 
     // Verify names
     for (let i = 0; i < mapNames.length; i++) {
       await expect(
         page.locator(`[data-testid="map-tab-${i}"]`),
-        `Map ${i} should have correct name`
+        `Map ${i} should have correct name`,
       ).toHaveText(mapNames[i]);
     }
   });
@@ -112,20 +109,20 @@ test.describe('Map Creation and Addition', () => {
 
     expect(
       boundingBox!.width,
-      'Canvas width should match specified dimension within tolerance'
+      'Canvas width should match specified dimension within tolerance',
     ).toBeGreaterThanOrEqual(expectedWidth - tolerance);
     expect(
       boundingBox!.width,
-      'Canvas width should match specified dimension within tolerance'
+      'Canvas width should match specified dimension within tolerance',
     ).toBeLessThanOrEqual(expectedWidth + tolerance);
 
     expect(
       boundingBox!.height,
-      'Canvas height should match specified dimension within tolerance'
+      'Canvas height should match specified dimension within tolerance',
     ).toBeGreaterThanOrEqual(expectedHeight - tolerance);
     expect(
       boundingBox!.height,
-      'Canvas height should match specified dimension within tolerance'
+      'Canvas height should match specified dimension within tolerance',
     ).toBeLessThanOrEqual(expectedHeight + tolerance);
   });
 });
@@ -150,13 +147,13 @@ test.describe('Map Navigation', () => {
     // Verify active map changed
     await expect(
       page.locator('[data-testid="map-tab-1"]'),
-      'Second map tab should be active'
+      'Second map tab should be active',
     ).toHaveAttribute('aria-selected', 'true');
 
     // Verify first map not active
     await expect(
       page.locator('[data-testid="map-tab-0"]'),
-      'First map tab should not be active'
+      'First map tab should not be active',
     ).toHaveAttribute('aria-selected', 'false');
   });
 
@@ -171,7 +168,7 @@ test.describe('Map Navigation', () => {
     // Verify third map still active
     await expect(
       page.locator('[data-testid="map-tab-2"]'),
-      'Active map should persist after reload'
+      'Active map should persist after reload',
     ).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -185,7 +182,7 @@ test.describe('Map Navigation', () => {
     // Verify moved to second map
     await expect(
       page.locator('[data-testid="map-tab-1"]'),
-      'Should navigate to next map with Ctrl+Right'
+      'Should navigate to next map with Ctrl+Right',
     ).toHaveAttribute('aria-selected', 'true');
 
     // Press Ctrl+Left to previous map
@@ -194,7 +191,7 @@ test.describe('Map Navigation', () => {
     // Verify back to first map
     await expect(
       page.locator('[data-testid="map-tab-0"]'),
-      'Should navigate to previous map with Ctrl+Left'
+      'Should navigate to previous map with Ctrl+Left',
     ).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -212,20 +209,14 @@ test.describe('Map Navigation', () => {
 
     // Verify no tokens on second map
     tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      'Second map should not show tokens from first map'
-    ).toHaveCount(0);
+    await expect(tokens, 'Second map should not show tokens from first map').toHaveCount(0);
 
     // Switch back to first map
     await page.click('[data-testid="map-tab-0"]');
 
     // Verify token reappears
     tokens = page.locator('[data-testid^="token-"]');
-    await expect(
-      tokens,
-      'First map tokens should reappear when switching back'
-    ).toHaveCount(1);
+    await expect(tokens, 'First map tokens should reappear when switching back').toHaveCount(1);
   });
 });
 
@@ -256,7 +247,7 @@ test.describe('Map Renaming', () => {
     // Verify name updated
     await expect(
       page.locator('[data-testid="map-tab-0"]'),
-      'Map name should be updated'
+      'Map name should be updated',
     ).toHaveText('New Map Name');
   });
 
@@ -266,10 +257,7 @@ test.describe('Map Renaming', () => {
 
     // Name input should become editable
     const nameInput = page.locator('[data-testid="map-name-input"]');
-    await expect(
-      nameInput,
-      'Name input should appear for inline editing'
-    ).toBeVisible();
+    await expect(nameInput, 'Name input should appear for inline editing').toBeVisible();
 
     // Edit name
     await nameInput.clear();
@@ -279,7 +267,7 @@ test.describe('Map Renaming', () => {
     // Verify name updated
     await expect(
       page.locator('[data-testid="map-tab-0"]'),
-      'Map name should update after inline edit'
+      'Map name should update after inline edit',
     ).toHaveText('Quick Rename');
   });
 
@@ -297,7 +285,7 @@ test.describe('Map Renaming', () => {
     // Verify name persisted
     await expect(
       page.locator('[data-testid="map-tab-0"]'),
-      'Map name should persist after reload'
+      'Map name should persist after reload',
     ).toHaveText('Persistent Name');
   });
 });
@@ -327,10 +315,7 @@ test.describe('Map Deletion', () => {
 
     // Verify only 2 maps remain
     mapTabs = page.locator('[data-testid^="map-tab-"]');
-    await expect(
-      mapTabs,
-      'Should have 2 maps after deletion'
-    ).toHaveCount(2);
+    await expect(mapTabs, 'Should have 2 maps after deletion').toHaveCount(2);
   });
 
   test('should switch to adjacent map after deleting active map', async ({ page }) => {
@@ -344,10 +329,7 @@ test.describe('Map Deletion', () => {
 
     // Should switch to first map (or third if that was deleted)
     const activeMap = page.locator('[data-testid^="map-tab-"][aria-selected="true"]');
-    await expect(
-      activeMap,
-      'Should switch to adjacent map after deletion'
-    ).toBeVisible();
+    await expect(activeMap, 'Should switch to adjacent map after deletion').toBeVisible();
   });
 
   test('should not delete map when canceling confirmation', async ({ page }) => {
@@ -358,10 +340,7 @@ test.describe('Map Deletion', () => {
 
     // Verify still 3 maps
     const mapTabs = page.locator('[data-testid^="map-tab-"]');
-    await expect(
-      mapTabs,
-      'Map should remain when deletion is cancelled'
-    ).toHaveCount(3);
+    await expect(mapTabs, 'Map should remain when deletion is cancelled').toHaveCount(3);
   });
 
   test('should warn when deleting map with tokens', async ({ page }) => {
@@ -376,7 +355,7 @@ test.describe('Map Deletion', () => {
     // Should show warning
     await expect(
       page.locator('[data-testid="delete-map-warning"]'),
-      'Should warn when deleting map with tokens'
+      'Should warn when deleting map with tokens',
     ).toContainText('This map contains tokens');
   });
 });
@@ -410,10 +389,7 @@ test.describe('Map Reordering', () => {
     // Verify order changed
     // (Map 2 should now be first)
     const newFirstTab = page.locator('[data-testid="map-tab-0"]');
-    await expect(
-      newFirstTab,
-      'Map order should change after drag'
-    ).toHaveText('Map 2');
+    await expect(newFirstTab, 'Map order should change after drag').toHaveText('Map 2');
   });
 
   test('should persist map order after reload', async ({ page }) => {
@@ -433,10 +409,7 @@ test.describe('Map Reordering', () => {
 
     // Verify order persisted
     const newFirstTab = page.locator('[data-testid="map-tab-0"]');
-    await expect(
-      newFirstTab,
-      'Map order should persist after reload'
-    ).toHaveText('Map 2');
+    await expect(newFirstTab, 'Map order should persist after reload').toHaveText('Map 2');
   });
 });
 
@@ -458,18 +431,15 @@ test.describe('Grid Settings', () => {
 
     // Verify grid hidden
     const gridLayer = page.locator('[data-testid="grid-layer"]');
-    await expect(
-      gridLayer,
-      'Grid should be hidden when toggled off'
-    ).toHaveCSS('opacity', '0');
+    await expect(gridLayer, 'Grid should be hidden when toggled off').toHaveCSS('opacity', '0');
 
     // Toggle back on
     await page.click('[data-testid="toggle-grid-visibility"]');
 
-    await expect(
-      gridLayer,
-      'Grid should be visible when toggled back on'
-    ).toHaveCSS('opacity', '1');
+    await expect(gridLayer, 'Grid should be visible when toggled back on').toHaveCSS(
+      'opacity',
+      '1',
+    );
   });
 
   test('should change grid size', async ({ page }) => {
@@ -494,9 +464,7 @@ test.describe('Grid Settings', () => {
 
     // Verify grid color changed
     const gridLayer = page.locator('[data-testid="grid-layer"]');
-    const color = await gridLayer.evaluate((el) =>
-      window.getComputedStyle(el).color
-    );
+    const color = await gridLayer.evaluate((el) => window.getComputedStyle(el).color);
 
     expect(color, 'Grid color should update').toContain('rgb(255, 0, 0)');
   });
@@ -523,9 +491,7 @@ test.describe('Map Background Settings', () => {
 
     // Verify background color
     const canvas = page.locator('[data-testid="main-canvas"]');
-    const bgColor = await canvas.evaluate((el) =>
-      window.getComputedStyle(el).backgroundColor
-    );
+    const bgColor = await canvas.evaluate((el) => window.getComputedStyle(el).backgroundColor);
 
     expect(bgColor, 'Background color should be applied').toContain('rgb(51, 102, 153)');
   });
@@ -535,11 +501,9 @@ test.describe('Map Background Settings', () => {
     // await page.click('[data-testid="add-map-button"]');
     // await page.fill('[data-testid="map-name-input"]', 'Remove BG Test');
     // await page.setInputFiles('[data-testid="map-background-upload"]', './test-assets/dungeon.webp');
-
     // Remove background
     // await page.click('[data-testid="map-settings-button"]');
     // await page.click('[data-testid="remove-background-button"]');
-
     // Verify background removed
     // const mapLayer = page.locator('[data-testid="map-layer"]');
     // await expect(mapLayer).toHaveCount(0);
