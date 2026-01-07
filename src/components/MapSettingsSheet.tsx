@@ -1,4 +1,3 @@
-
 /**
  * MapSettingsSheet Component - Map Configuration Drawer
  *
@@ -83,15 +82,7 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
       setPendingGridColor(gridColor);
       setPendingDaylightMode(isDaylightMode);
     }
-  }, [
-    mode,
-    mapId,
-    campaign.maps,
-    isOpen,
-    gridType,
-    gridColor,
-    isDaylightMode,
-  ]);
+  }, [mode, mapId, campaign.maps, isOpen, gridType, gridColor, isDaylightMode]);
 
   // Cleanup processing on unmount
   useEffect(() => {
@@ -380,8 +371,8 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
             </label>
             {gridType === 'HIDDEN' && (
               <p className="text-[10px] mb-2 text-[var(--app-text-secondary)]">
-                Grid is currently hidden. This color will be applied when you
-                switch to a visible grid type.
+                Grid is currently hidden. This color will be applied when you switch to a visible
+                grid type.
               </p>
             )}
             <div className="flex gap-2 items-center">
@@ -452,4 +443,3 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
 };
 
 export default MapSettingsSheet;
-

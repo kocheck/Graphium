@@ -51,7 +51,7 @@ interface PressureSensitiveLineProps {
   x?: number;
   y?: number;
   pressureRange?: { min: number; max: number }; // Pressure multiplier range from settings
-  style?: any;
+  style?: React.CSSProperties;
   draggable?: boolean;
   onClick?: (e: KonvaEventObject<MouseEvent>) => void;
   onDragEnd?: (e: KonvaEventObject<DragEvent>) => void;

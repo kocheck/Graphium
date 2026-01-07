@@ -17,18 +17,6 @@
  */
 
 import { GridType } from '../store/gameStore';
-
-// Define types locally if they are missing from imports in this context
-// In a real merge, we would check types/grid.ts. Assuming they exist in origin/main's structure.
-// If types/grid doesn't exist in my HEAD, I might need to define them or rely on them being there from the merge.
-// Since origin/main introduced this file, it likely introduced ../types/grid too.
-// I'll assume ../types/grid exists or I will define interfaces here to be safe and remove imports.
-// Actually, I can't check other files easily in this one step.
-// Safe bet: Copy the interfaces from origin/main's version of this file if they were inline?
-// No, origin/main imported them: import type { GridGeometry, GridCell, Point, Bounds } from '../types/grid';
-// If that file doesn't exist in HEAD, the merge would have brought it in unless there was a conflict THERE too.
-// git status didn't show types/grid.ts conflict. So it should be there.
-
 import type { GridGeometry, GridCell, Point, Bounds } from '../types/grid';
 
 // Pre-computed constants for performance
@@ -102,18 +90,18 @@ export class SquareGridGeometry implements GridGeometry {
   }
 
   getVisibleCells(bounds: Bounds, gridSize: number): GridCell[] {
-      const cells: GridCell[] = [];
-      const startQ = Math.floor(bounds.x / gridSize);
-      const endQ = Math.ceil((bounds.x + bounds.width) / gridSize);
-      const startR = Math.floor(bounds.y / gridSize);
-      const endR = Math.ceil((bounds.y + bounds.height) / gridSize);
+    const cells: GridCell[] = [];
+    const startQ = Math.floor(bounds.x / gridSize);
+    const endQ = Math.ceil((bounds.x + bounds.width) / gridSize);
+    const startR = Math.floor(bounds.y / gridSize);
+    const endR = Math.ceil((bounds.y + bounds.height) / gridSize);
 
-      for (let q = startQ; q <= endQ; q++) {
-        for (let r = startR; r <= endR; r++) {
-          cells.push({ q, r });
-        }
+    for (let q = startQ; q <= endQ; q++) {
+      for (let r = startR; r <= endR; r++) {
+        cells.push({ q, r });
       }
-      return cells;
+    }
+    return cells;
   }
 }
 
@@ -129,35 +117,20 @@ export class HexagonalGridGeometry implements GridGeometry {
   }
 
   pixelToGrid(x: number, y: number, gridSize: number): GridCell {
-    // gridSize is approx "radius" (center to corner) or derived from cell width/height semantics.
-    // origin/main used: q = 2/3 * x / size. This implies size is OUTER RADIUS.
-    // For Pointy: x = size * sqrt(3) * (q + r/2)
-    // For Flat: x = size * 3/2 * q
+    // Interpret gridSize as the visual cell size; derive the hex radius used in math.
+    // This must stay in sync with gridToPixel, which also uses size = gridSize / SQRT3.
+    const size = gridSize / SQRT3;
 
     let q: number, r: number;
 
     if (this.orientation === 'POINTY') {
-        const size = gridSize / SQRT3; // derived size so width matches gridSize? No let's match origin/main semantics.
-        // Actually, let's stick to standard hex math where gridSize = size (radius)
-        // But in UI "gridSize" is usually the cell width/height spacing.
-        // origin/main: q = ((2 / 3) * x) / gridSize; <- Flat Top
-
-        // Let's use standard conversions assuming gridSize = circumradius (outer radius) for now
-        // or apply the scaling factor used in my previous edit (gridSize/sqrt(3)).
-
-        // Re-using origin/main logic for FLAT, adding POINTY.
-        // And fixing size interpretation if needed.
-        // In my previous edit: radius = gridSize / Math.sqrt(3).
-
-        // const size = gridSize / SQRT3; // Use the same scaling I established in the fix
-
-        q = ((SQRT3_3 * x - (1 / 3) * y) / size);
-        r = ((2 / 3) * y) / size;
+      // Pointy-top axial conversion (inverse of gridToPixel for POINTY)
+      q = (SQRT3_3 * x - (1 / 3) * y) / size;
+      r = ((2 / 3) * y) / size;
     } else {
-        // FLAT
-        const size = gridSize / SQRT3;
-        q = ((2 / 3) * x) / size;
-        r = ((-1 / 3) * x + SQRT3_3 * y) / size;
+      // Flat-top axial conversion (inverse of gridToPixel for FLAT)
+      q = ((2 / 3) * x) / size;
+      r = ((-1 / 3) * x + SQRT3_3 * y) / size;
     }
 
     return this.hexRound(q, r);
@@ -168,12 +141,12 @@ export class HexagonalGridGeometry implements GridGeometry {
     let x: number, y: number;
 
     if (this.orientation === 'POINTY') {
-        x = size * (SQRT3 * cell.q + SQRT3_2 * cell.r);
-        y = size * (1.5 * cell.r);
+      x = size * (SQRT3 * cell.q + SQRT3_2 * cell.r);
+      y = size * (1.5 * cell.r);
     } else {
-        // FLAT
-        x = size * (1.5 * cell.q);
-        y = size * (SQRT3_2 * cell.q + SQRT3 * cell.r);
+      // FLAT
+      x = size * (1.5 * cell.q);
+      y = size * (SQRT3_2 * cell.q + SQRT3 * cell.r);
     }
     return { x, y };
   }
@@ -227,15 +200,21 @@ export class HexagonalGridGeometry implements GridGeometry {
       this.pixelToGrid(bounds.x, bounds.y + bounds.height, gridSize),
     ];
 
-    let minQ = corners[0].q, maxQ = corners[0].q;
-    let minR = corners[0].r, maxR = corners[0].r;
+    let minQ = corners[0].q,
+      maxQ = corners[0].q;
+    let minR = corners[0].r,
+      maxR = corners[0].r;
 
     for (const c of corners) {
-        minQ = Math.min(minQ, c.q); maxQ = Math.max(maxQ, c.q);
-        minR = Math.min(minR, c.r); maxR = Math.max(maxR, c.r);
+      minQ = Math.min(minQ, c.q);
+      maxQ = Math.max(maxQ, c.q);
+      minR = Math.min(minR, c.r);
+      maxR = Math.max(maxR, c.r);
     }
-    minQ -= padding; maxQ += padding;
-    minR -= padding; maxR += padding;
+    minQ -= padding;
+    maxQ += padding;
+    minR -= padding;
+    maxR += padding;
 
     const cells: GridCell[] = [];
     const size = gridSize / SQRT3;
@@ -243,18 +222,18 @@ export class HexagonalGridGeometry implements GridGeometry {
 
     // Rectangular iteration in axial coords (works for both, slightly wasteful)
     for (let q = minQ; q <= maxQ; q++) {
-        for (let r = minR; r <= maxR; r++) {
-            const center = this.gridToPixel({q, r}, gridSize);
-            // Simple circle check against bounds
-             if (
-              center.x + hexRadius >= bounds.x &&
-              center.x - hexRadius <= bounds.x + bounds.width &&
-              center.y + hexRadius >= bounds.y &&
-              center.y - hexRadius <= bounds.y + bounds.height
-            ) {
-              cells.push({ q, r });
-            }
+      for (let r = minR; r <= maxR; r++) {
+        const center = this.gridToPixel({ q, r }, gridSize);
+        // Simple circle check against bounds
+        if (
+          center.x + hexRadius >= bounds.x &&
+          center.x - hexRadius <= bounds.x + bounds.width &&
+          center.y + hexRadius >= bounds.y &&
+          center.y - hexRadius <= bounds.y + bounds.height
+        ) {
+          cells.push({ q, r });
         }
+      }
     }
     return cells;
   }
@@ -280,24 +259,19 @@ export class HexagonalGridGeometry implements GridGeometry {
 
 /**
  * Isometric Grid Geometry
+ * Currently implements horizontal isometric (diamond) grid.
+ * TODO: Add support for vertical isometric orientation.
  */
 export class IsometricGridGeometry implements GridGeometry {
-  constructor(_orientation: 'HORIZONTAL' | 'VERTICAL' = 'HORIZONTAL') {
-      // this.orientation = orientation;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private orientation: 'HORIZONTAL' | 'VERTICAL';
+
+  constructor(orientation: 'HORIZONTAL' | 'VERTICAL' = 'HORIZONTAL') {
+    this.orientation = orientation;
   }
 
   pixelToGrid(x: number, y: number, gridSize: number): GridCell {
-    // Iso transform: x' = (col - row) * size, y' = (col + row) * size/2
-
-    // Inconsistent defs between my HEAD (tileWidth = 2*size) and origin/main.
-    // origin/main:
-    // col = (x / gridSize + (2 * y) / gridSize) / 2;
-    // row = ((2 * y) / gridSize - x / gridSize) / 2;
-
-    // Let's stick to origin/main math for consistency if it works,
-    // but origin/main didn't handle ISO_V.
-    // For now, map both ISO_H and ISO_V to this standard logic.
-
+    // Isometric transform: x' = (col - row) * gridSize, y' = (col + row) * gridSize/2
     const col = (x / gridSize + (2 * y) / gridSize) / 2;
     const row = ((2 * y) / gridSize - x / gridSize) / 2;
 
@@ -314,7 +288,7 @@ export class IsometricGridGeometry implements GridGeometry {
   }
 
   getSnapPoint(x: number, y: number, gridSize: number, width?: number, height?: number): Point {
-     if (width === undefined || height === undefined) {
+    if (width === undefined || height === undefined) {
       const cell = this.pixelToGrid(x, y, gridSize);
       return this.gridToPixel(cell, gridSize);
     }
@@ -343,20 +317,26 @@ export class IsometricGridGeometry implements GridGeometry {
     const padding = 2;
     // Simple brute iteration over projected bounds... same as origin/main
     const corners = [
-        this.pixelToGrid(bounds.x, bounds.y, gridSize),
-        this.pixelToGrid(bounds.x + bounds.width, bounds.y, gridSize),
-        this.pixelToGrid(bounds.x + bounds.width, bounds.y + bounds.height, gridSize),
-        this.pixelToGrid(bounds.x, bounds.y + bounds.height, gridSize)
+      this.pixelToGrid(bounds.x, bounds.y, gridSize),
+      this.pixelToGrid(bounds.x + bounds.width, bounds.y, gridSize),
+      this.pixelToGrid(bounds.x + bounds.width, bounds.y + bounds.height, gridSize),
+      this.pixelToGrid(bounds.x, bounds.y + bounds.height, gridSize),
     ];
-     let minQ = corners[0].q, maxQ = corners[0].q;
-     let minR = corners[0].r, maxR = corners[0].r;
+    let minQ = corners[0].q,
+      maxQ = corners[0].q;
+    let minR = corners[0].r,
+      maxR = corners[0].r;
 
     for (const c of corners) {
-        minQ = Math.min(minQ, c.q); maxQ = Math.max(maxQ, c.q);
-        minR = Math.min(minR, c.r); maxR = Math.max(maxR, c.r);
+      minQ = Math.min(minQ, c.q);
+      maxQ = Math.max(maxQ, c.q);
+      minR = Math.min(minR, c.r);
+      maxR = Math.max(maxR, c.r);
     }
-    minQ -= padding; maxQ += padding;
-    minR -= padding; maxR += padding;
+    minQ -= padding;
+    maxQ += padding;
+    minR -= padding;
+    maxR += padding;
 
     for (let q = minQ; q <= maxQ; q++) {
       for (let r = minR; r <= maxR; r++) {
@@ -383,9 +363,11 @@ export function createGridGeometry(gridType: GridType): GridGeometry {
     case 'ISO_H':
       return new IsometricGridGeometry('HORIZONTAL');
     case 'ISO_V':
-       return new IsometricGridGeometry('VERTICAL');
-    default:
-      // Fallback for generic types if they leak in
-       return new SquareGridGeometry();
+      return new IsometricGridGeometry('VERTICAL');
+    default: {
+      // Exhaustive check - this should never be reached
+      const _exhaustiveCheck: never = gridType;
+      throw new Error(`Unknown grid type: ${_exhaustiveCheck}`);
+    }
   }
 }
