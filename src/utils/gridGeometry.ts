@@ -214,9 +214,9 @@ export class HexagonalGridGeometry implements GridGeometry {
     // gridSize represents the circumradius (distance from center to vertex)
     const vertices: Point[] = [];
 
-    // Flat-top hex has 6 vertices, starting from top-right, going clockwise
-    // Pointy-top hex starts at 30° (top vertex), going clockwise
-    // Flat-top starts at 0° (right vertex), going clockwise
+    // Hexagon vertices are generated clockwise starting from:
+    // - Pointy-top: starts at 30° (top vertex)
+    // - Flat-top: starts at 0° (rightmost vertex)
     const offsetDeg = this.orientation === 'POINTY' ? 30 : 0;
 
     for (let i = 0; i < 6; i++) {
