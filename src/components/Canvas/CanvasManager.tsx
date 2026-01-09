@@ -530,7 +530,21 @@ const CanvasManager = ({
           {isAltPressed && resolvedTokens.filter(t => itemsForDuplication.includes(t.id)).map(g => (
              <URLImage key={`ghost-${g.id}`} id={`ghost-${g.id}`} src={g.src} x={g.x} y={g.y} width={gridSize * g.scale} height={gridSize * g.scale} opacity={0.5} draggable={false} />
           ))}
-          {isMKeyPressed && !isWorldView && selectedIds.length === 1 && <MovementRangeOverlay tokenPosition={resolvedTokens.find(t=>t.id===selectedIds[0]) || {x:0, y:0}} movementSpeed={DEFAULT_MOVEMENT_SPEED} gridSize={gridSize} gridType={gridType} />}
+          {isMKeyPressed && !isWorldView && selectedIds.length === 1 && (() => {
+            const selectedToken = resolvedTokens.find(t => t.id === selectedIds[0]);
+            if (!selectedToken) {
+              return null;
+            }
+            const movementSpeed = selectedToken.movementSpeed ?? DEFAULT_MOVEMENT_SPEED;
+            return (
+              <MovementRangeOverlay
+                tokenPosition={selectedToken}
+                movementSpeed={movementSpeed}
+                gridSize={gridSize}
+                gridType={gridType}
+              />
+            );
+          })()}
 
           {resolvedTokens.map(token => {
               const dragPos = dragPositionsRef.current.get(token.id);
@@ -639,4 +653,4 @@ const CanvasManager = ({
     </div>
   );
 };
-export default CanvasManager;
+export default React.memo(CanvasManager);

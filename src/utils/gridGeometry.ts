@@ -38,6 +38,8 @@ const SQRT3_3 = SQRT3 / 3; // ~0.577
 
 /**
  * Safety factor for hex bounds checking
+ * Multiplier applied to grid size when checking if a hex is within viewport bounds.
+ * A value > 1.0 ensures we don't miss hexes that are partially visible at viewport edges.
  */
 const HEX_BOUNDS_SAFETY_FACTOR = 1.2;
 
@@ -341,7 +343,8 @@ export class IsometricGridGeometry implements GridGeometry {
   getVisibleCells(bounds: Bounds, gridSize: number): GridCell[] {
     const cells: GridCell[] = [];
     const padding = 2;
-    // Simple brute iteration over projected bounds... same as origin/main
+    // Project viewport corners into grid space, compute a padded min/max range,
+    // and iterate over that range to collect all potentially visible cells.
     const corners = [
         this.pixelToGrid(bounds.x, bounds.y, gridSize),
         this.pixelToGrid(bounds.x + bounds.width, bounds.y, gridSize),
