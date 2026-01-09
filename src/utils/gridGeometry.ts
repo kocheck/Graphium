@@ -45,6 +45,18 @@ const HEX_BOUNDS_SAFETY_FACTOR = 1.2;
 
 /**
  * Square Grid Geometry
+ *
+ * Coordinate system:
+ * - {@link GridCell.q} = column index (x-axis, increasing to the right)
+ * - {@link GridCell.r} = row index (y-axis, increasing downward)
+ *
+ * Pixel mapping:
+ * - Cell (0, 0) has its **top-left corner** at pixel (0, 0)
+ * - Each cell is a `gridSize × gridSize` square in pixel space
+ * - {@link SquareGridGeometry.pixelToGrid} maps a pixel position to the
+ *   containing cell (q, r) by flooring `x / gridSize` and `y / gridSize`
+ * - {@link SquareGridGeometry.gridToPixel} returns the **center** of a cell
+ *   in pixel space, i.e. `((q + 0.5) * gridSize, (r + 0.5) * gridSize)`
  */
 export class SquareGridGeometry implements GridGeometry {
   pixelToGrid(x: number, y: number, gridSize: number): GridCell {
@@ -202,9 +214,9 @@ export class HexagonalGridGeometry implements GridGeometry {
     // gridSize represents the circumradius (distance from center to vertex)
     const vertices: Point[] = [];
 
-    // Pointy: starts at 30 deg (if 0 is right). Flat: starts at 0 deg.
-    // origin/main Flat logic: 0, 60, ...
-
+    // Flat-top hex has 6 vertices, starting from top-right, going clockwise
+    // Pointy-top hex starts at 30° (top vertex), going clockwise
+    // Flat-top starts at 0° (right vertex), going clockwise
     const offsetDeg = this.orientation === 'POINTY' ? 30 : 0;
 
     for (let i = 0; i < 6; i++) {

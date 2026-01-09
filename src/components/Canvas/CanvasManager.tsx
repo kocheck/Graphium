@@ -494,16 +494,84 @@ const CanvasManager = ({
           <GridOverlay visibleBounds={visibleBounds} gridSize={gridSize} type={gridType} stroke={resolvedGridColor} hoveredCell={null} />
         </Layer>
         <Layer>
-            {isAltPressed && drawings.filter(d => itemsForDuplication.includes(d.id)).map(ghost => (
-                <Line key={`ghost-${ghost.id}`} points={ghost.points} stroke={ghost.color} strokeWidth={ghost.size} tension={0.5} lineCap="round" dash={ghost.tool === 'wall' ? [10, 5] : undefined} opacity={0.5} listening={false} />
-            ))}
+            {/* Ghost Drawings (Alt+drag preview) */}
+            {isAltPressed && drawings
+              .filter(d => itemsForDuplication.includes(d.id))
+              .map(ghost => (
+                <Line
+                  key={`ghost-${ghost.id}`}
+                  points={ghost.points}
+                  stroke={ghost.color}
+                  strokeWidth={ghost.size}
+                  tension={0.5}
+                  lineCap="round"
+                  dash={ghost.tool === 'wall' ? [10, 5] : undefined}
+                  opacity={0.5}
+                  listening={false}
+                />
+              ))
+            }
+
+            {/* Drawings */}
             {drawings.map(line => {
-                const strokeColor = isWorldView && line.tool === 'wall' ? '#000000' : line.color;
-                return line.pressures && line.pressures.length > 0 ?
-                <PressureSensitiveLine key={line.id} id={line.id} points={line.points} pressures={line.pressures} stroke={strokeColor} strokeWidth={line.size} draggable={tool === 'select' && line.tool !== 'wall'} onClick={(e: KonvaEventObject<MouseEvent>) => { if(tool === 'select') { e.evt.stopPropagation(); setSelectedIds([line.id]); } }} onDragEnd={(e: KonvaEventObject<DragEvent>) => updateDrawingTransform(line.id, e.target.x(), e.target.y(), 1)} /> :
-                <Line key={line.id} id={line.id} points={line.points} stroke={strokeColor} strokeWidth={line.size} tension={0.5} lineCap="round" dash={line.tool === 'wall' ? [10, 5] : undefined} draggable={tool === 'select' && line.tool !== 'wall'} onClick={(e: KonvaEventObject<MouseEvent>) => { if(tool === 'select') { e.evt.stopPropagation(); setSelectedIds([line.id]); } }} onDragEnd={(e) => updateDrawingTransform(line.id, e.target.x(), e.target.y(), 1)} />
+              const strokeColor = isWorldView && line.tool === 'wall' ? '#000000' : line.color;
+              const hasPressureData = line.pressures && line.pressures.length > 0;
+              const isDraggable = tool === 'select' && line.tool !== 'wall';
+
+              const handleClick = (e: KonvaEventObject<MouseEvent>) => {
+                if (tool === 'select') {
+                  e.evt.stopPropagation();
+                  setSelectedIds([line.id]);
+                }
+              };
+
+              const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+                updateDrawingTransform(line.id, e.target.x(), e.target.y(), 1);
+              };
+
+              if (hasPressureData) {
+                return (
+                  <PressureSensitiveLine
+                    key={line.id}
+                    id={line.id}
+                    points={line.points}
+                    pressures={line.pressures}
+                    stroke={strokeColor}
+                    strokeWidth={line.size}
+                    draggable={isDraggable}
+                    onClick={handleClick}
+                    onDragEnd={handleDragEnd}
+                  />
+                );
+              } else {
+                return (
+                  <Line
+                    key={line.id}
+                    id={line.id}
+                    points={line.points}
+                    stroke={strokeColor}
+                    strokeWidth={line.size}
+                    tension={0.5}
+                    lineCap="round"
+                    dash={line.tool === 'wall' ? [10, 5] : undefined}
+                    draggable={isDraggable}
+                    onClick={handleClick}
+                    onDragEnd={handleDragEnd}
+                  />
+                );
+              }
             })}
-            {tempLine && <Line ref={tempLineRef} points={tempLine.points} stroke={tempLine.color} strokeWidth={tempLine.size} tension={0.5} lineCap="round" />}
+
+            {tempLine && (
+              <Line
+                ref={tempLineRef}
+                points={tempLine.points}
+                stroke={tempLine.color}
+                strokeWidth={tempLine.size}
+                tension={0.5}
+                lineCap="round"
+              />
+            )}
             <StairsLayer stairs={stairs} isWorldView={isWorldView} />
         </Layer>
         {isWorldView && !isDaylightMode && <Layer listening={false}><FogOfWarLayer tokens={resolvedTokens} drawings={drawings} doors={doors} gridSize={gridSize} visibleBounds={visibleBounds} map={map} /></Layer>}
