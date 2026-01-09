@@ -47,6 +47,45 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number; y: num
   };
 };
 
+/**
+ * Creates a clipping function for token rendering based on grid type
+ * This clips tokens to the appropriate shape (hex, diamond, or square)
+ */
+const createTokenClipFunc = (
+  gridType: GridType,
+  displayX: number,
+  displayY: number,
+  gridSize: number,
+  scale: number
+) => {
+  return (ctx: CanvasRenderingContext2D) => {
+    if (gridType.startsWith('HEX')) {
+      const s = gridSize * scale;
+      const r = s / Math.sqrt(3);
+      const cx = displayX + s / 2;
+      const cy = displayY + s / 2;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = ((gridType === 'HEX_V' ? 0 : 30) * Math.PI) / 180 + (i * 60 * Math.PI) / 180;
+        if (i === 0) ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+        else ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+      }
+      ctx.closePath();
+    } else if (gridType.startsWith('ISO')) {
+      const s = gridSize * scale;
+      const cx = displayX + s / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, displayY);
+      ctx.lineTo(displayX + s, displayY + s / 2);
+      ctx.lineTo(cx, displayY + s);
+      ctx.lineTo(displayX, displayY + s / 2);
+      ctx.closePath();
+    } else {
+      ctx.rect(displayX, displayY, gridSize * scale, gridSize * scale);
+    }
+  };
+};
+
 interface CanvasManagerProps {
   tool?: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
   color?: string;
@@ -326,7 +365,7 @@ const CanvasManager = ({
           if (e.key === '4') { e.preventDefault(); setGridType('HEX_V'); showToast('Grid: Hex (V)', 'success'); }
           if (e.key === '5') { e.preventDefault(); setGridType('ISO_H'); showToast('Grid: Iso (H)', 'success'); }
           if (e.key === '6') { e.preventDefault(); setGridType('ISO_V'); showToast('Grid: Iso (V)', 'success'); }
-          if (e.key === '0') { e.preventDefault(); setGridType('HIDDEN'); showToast('Grid: Hidden', 'success'); }
+          if (e.key === '7') { e.preventDefault(); setGridType('HIDDEN'); showToast('Grid: Hidden', 'success'); }
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -633,31 +672,7 @@ const CanvasManager = ({
               return (
                   <Group key={token.id}>
                     <TokenErrorBoundary tokenId={token.id} onShowToast={showToast}>
-                    <Group clipFunc={(ctx) => {
-                         if (gridType.startsWith('HEX')) {
-                             const s = gridSize * safeScale;
-                             const r = s / Math.sqrt(3);
-                             const cx = displayX + s/2, cy = finalDisplayY + s/2;
-                             ctx.beginPath();
-                             for(let i=0; i<6; i++) {
-                                 const a = (gridType === 'HEX_V' ? 0 : 30) * Math.PI/180 + i * 60 * Math.PI/180;
-                                 if (i===0) ctx.moveTo(cx + r*Math.cos(a), cy + r*Math.sin(a));
-                                 else ctx.lineTo(cx + r*Math.cos(a), cy + r*Math.sin(a));
-                             }
-                             ctx.closePath();
-                         } else if (gridType.startsWith('ISO')) {
-                             const s = gridSize * safeScale;
-                             const cx = displayX + s/2;
-                             ctx.beginPath();
-                             ctx.moveTo(cx, finalDisplayY);
-                             ctx.lineTo(displayX + s, finalDisplayY + s/2);
-                             ctx.lineTo(cx, finalDisplayY + s);
-                             ctx.lineTo(displayX, finalDisplayY + s/2);
-                             ctx.closePath();
-                         } else {
-                             ctx.rect(displayX, finalDisplayY, gridSize * safeScale, gridSize * safeScale);
-                         }
-                    }}>
+                    <Group clipFunc={createTokenClipFunc(gridType, displayX, finalDisplayY, gridSize, safeScale)}>
                         <URLImage
                             ref={(node) => { if(node) tokenNodesRef.current.set(token.id, node); else tokenNodesRef.current.delete(token.id); }}
                             id={token.id} src={token.src} x={renderX} y={renderY} width={renderWidth} height={renderWidth}
