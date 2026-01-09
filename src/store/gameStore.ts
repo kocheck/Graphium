@@ -85,8 +85,10 @@ export interface MapConfig {
  *
  * Visual modes for each geometry:
  * - LINES/DOTS/HIDDEN: Square grid (orthogonal)
- * - HEXAGONAL: Hexagonal grid (flat-top orientation)
- * - ISOMETRIC: Diamond/isometric grid (45° rotation)
+ * - HEX_H: Horizontal hex grid (flat-top orientation)
+ * - HEX_V: Vertical hex grid (pointy-top orientation)
+ * - ISO_H: Isometric grid (wide/horizontal-dominant diamonds)
+ * - ISO_V: Isometric grid (tall/vertical-dominant diamonds)
  */
 export type GridType = 'LINES' | 'DOTS' | 'HIDDEN' | 'HEX_H' | 'HEX_V' | 'ISO_H' | 'ISO_V';
 

@@ -50,7 +50,7 @@ export const snapToGrid = (
   gridSize: number,
   gridType: GridType = 'LINES',
   width?: number,
-  height?: number
+  height?: number,
 ): { x: number; y: number } => {
   const geometry = createGridGeometry(gridType);
   return geometry.getSnapPoint(x, y, gridSize, width, height);
