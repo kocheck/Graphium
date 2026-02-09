@@ -42,7 +42,7 @@ describe('UpdateManagerErrorBoundary', () => {
       render(
         <UpdateManagerErrorBoundary>
           <ThrowError shouldThrow={false} />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       expect(screen.getByText('UpdateManager content')).toBeInTheDocument();
@@ -52,7 +52,7 @@ describe('UpdateManagerErrorBoundary', () => {
       render(
         <UpdateManagerErrorBoundary>
           <div>Normal content</div>
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
@@ -64,7 +64,7 @@ describe('UpdateManagerErrorBoundary', () => {
       render(
         <UpdateManagerErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       // Should show error fallback UI
@@ -76,15 +76,12 @@ describe('UpdateManagerErrorBoundary', () => {
       render(
         <UpdateManagerErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       // Verify console.error was called with error details
       expect(consoleErrorSpy).toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Update manager error:',
-        expect.any(Error)
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Update manager error:', expect.any(Error));
     });
 
     it('should reset error state when reset is triggered', async () => {
@@ -99,7 +96,7 @@ describe('UpdateManagerErrorBoundary', () => {
       const { rerender } = render(
         <UpdateManagerErrorBoundary>
           <DynamicChild />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       // Error UI should be shown
@@ -119,7 +116,7 @@ describe('UpdateManagerErrorBoundary', () => {
         rerender(
           <UpdateManagerErrorBoundary>
             <DynamicChild />
-          </UpdateManagerErrorBoundary>
+          </UpdateManagerErrorBoundary>,
         );
 
         // Should show normal content again after state update
@@ -139,11 +136,11 @@ describe('UpdateManagerErrorBoundary', () => {
       render(
         <UpdateManagerErrorBoundary>
           <NetworkError />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Network error detected')
+        expect.stringContaining('Network error detected'),
       );
     });
 
@@ -155,11 +152,11 @@ describe('UpdateManagerErrorBoundary', () => {
       render(
         <UpdateManagerErrorBoundary>
           <IPCError />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('IPC communication error')
+        expect.stringContaining('IPC communication error'),
       );
     });
 
@@ -171,11 +168,11 @@ describe('UpdateManagerErrorBoundary', () => {
       render(
         <UpdateManagerErrorBoundary>
           <SignatureError />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Signature verification error')
+        expect.stringContaining('Signature verification error'),
       );
     });
   });
@@ -185,7 +182,7 @@ describe('UpdateManagerErrorBoundary', () => {
       const { rerender } = render(
         <UpdateManagerErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       // Verify error state
@@ -195,7 +192,7 @@ describe('UpdateManagerErrorBoundary', () => {
       rerender(
         <UpdateManagerErrorBoundary>
           <div>Recovered content</div>
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       // Note: Error boundary maintains error state until reset
@@ -209,14 +206,11 @@ describe('UpdateManagerErrorBoundary', () => {
       render(
         <UpdateManagerErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       // Verify component stack is logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Component stack:',
-        expect.any(String)
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Component stack:', expect.any(String));
     });
   });
 
@@ -225,7 +219,7 @@ describe('UpdateManagerErrorBoundary', () => {
       const { rerender } = render(
         <UpdateManagerErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       // First error
@@ -238,7 +232,7 @@ describe('UpdateManagerErrorBoundary', () => {
       rerender(
         <UpdateManagerErrorBoundary>
           <ThrowError shouldThrow={true} />
-        </UpdateManagerErrorBoundary>
+        </UpdateManagerErrorBoundary>,
       );
 
       // Should still show error UI

@@ -64,9 +64,7 @@ describe('UpdateManager', () => {
 
   describe('Rendering', () => {
     it('should not render when closed', () => {
-      const { container } = render(
-        <UpdateManager isOpen={false} onClose={() => {}} />
-      );
+      const { container } = render(<UpdateManager isOpen={false} onClose={() => {}} />);
       expect(container.firstChild).toBeNull();
     });
 
@@ -176,9 +174,7 @@ describe('UpdateManager', () => {
       // The checking message uses randomized themed copy (e.g. "Divining the cosmic archives", "Consulting the Chronicle").
       // Assert on common keywords that appear in all variations.
       expect(
-        screen.getByText(
-          /Divining|Consulting|Communing|Rolling|Peering/i,
-        ),
+        screen.getByText(/Divining|Consulting|Communing|Rolling|Peering/i),
       ).toBeInTheDocument();
     });
 
@@ -223,17 +219,21 @@ describe('UpdateManager', () => {
       // The no-update message uses randomized themed copy (e.g. "Your forge burns", "You wield the cutting edge").
       // Assert on the title pattern which appears above the subtitle.
       expect(
-        screen.getByText(/forge burns|wield the cutting|Natural 20 on your version|arsenal is complete|chapter already graces/i),
+        screen.getByText(
+          /forge burns|wield the cutting|Natural 20 on your version|arsenal is complete|chapter already graces/i,
+        ),
       ).toBeInTheDocument();
     });
 
     it('should show download progress', async () => {
-      let progressCallback: ((progress: {
-        percent: number;
-        bytesPerSecond: number;
-        transferred: number;
-        total: number;
-      }) => void) | undefined;
+      let progressCallback:
+        | ((progress: {
+            percent: number;
+            bytesPerSecond: number;
+            transferred: number;
+            total: number;
+          }) => void)
+        | undefined;
 
       mockAutoUpdater.onDownloadProgress.mockImplementation((cb) => {
         progressCallback = cb;
@@ -360,9 +360,7 @@ describe('UpdateManager', () => {
     });
 
     it('should handle checkForUpdates error', async () => {
-      mockAutoUpdater.checkForUpdates.mockRejectedValue(
-        new Error('Check failed')
-      );
+      mockAutoUpdater.checkForUpdates.mockRejectedValue(new Error('Check failed'));
 
       render(<UpdateManager isOpen={true} onClose={() => {}} />);
 
@@ -377,9 +375,7 @@ describe('UpdateManager', () => {
     });
 
     it('should handle downloadUpdate error', async () => {
-      mockAutoUpdater.downloadUpdate.mockRejectedValue(
-        new Error('Download failed')
-      );
+      mockAutoUpdater.downloadUpdate.mockRejectedValue(new Error('Download failed'));
 
       let updateAvailableCallback: ((info: { version: string }) => void) | undefined;
       mockAutoUpdater.onUpdateAvailable.mockImplementation((cb) => {
@@ -445,12 +441,14 @@ describe('UpdateManager', () => {
     });
 
     it('should format bytes correctly in progress display', async () => {
-      let progressCallback: ((progress: {
-        percent: number;
-        bytesPerSecond: number;
-        transferred: number;
-        total: number;
-      }) => void) | undefined;
+      let progressCallback:
+        | ((progress: {
+            percent: number;
+            bytesPerSecond: number;
+            transferred: number;
+            total: number;
+          }) => void)
+        | undefined;
 
       mockAutoUpdater.onDownloadProgress.mockImplementation((cb) => {
         progressCallback = cb;

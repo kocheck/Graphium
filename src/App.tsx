@@ -10,6 +10,7 @@ import {
   RiDoorOpenLine,
   RiRulerLine,
 } from '@remixicon/react';
+import { Agentation } from 'agentation';
 
 import { AboutModal } from './components/AboutModal';
 import CommandPalette from './components/AssetLibrary/CommandPalette';
@@ -423,7 +424,12 @@ function App() {
 
   // If accessing Design System Playground route, show it exclusively
   if (isDesignSystemPlayground) {
-    return <DesignSystemPlayground />;
+    return (
+      <>
+        <DesignSystemPlayground />
+        {import.meta.env.DEV && <Agentation />}
+      </>
+    );
   }
 
   // If in Architect View and on HOME screen, show the HomeScreen component
@@ -451,6 +457,7 @@ function App() {
 
         {/* Home/Splash Screen */}
         <HomeScreen onStartEditor={handleStartEditor} />
+        {import.meta.env.DEV && <Agentation />}
       </>
     );
   }
@@ -747,6 +754,7 @@ function App() {
           />
         )}
       </div>
+      {import.meta.env.DEV && <Agentation />}
     </div>
   );
 }

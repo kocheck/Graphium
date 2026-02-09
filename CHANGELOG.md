@@ -145,6 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Requires code signing for macOS production builds
 
 ### Technical Details
+
 - Added `electron-updater` ^6.3.9 for update management
 - Added `electron-log` ^5.2.4 for production logging
 - New components:
@@ -159,6 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation in `AUTO_UPDATER.md`
 
 ### Security
+
 - Signature verification (when app is code-signed)
 - HTTPS-only downloads from GitHub
 - No auto-download - user controls update installation
