@@ -1118,10 +1118,10 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 4: UI Primitives — Core
 
-- [ ] Create Button primitive (5 variants, 3 sizes)
-- [ ] Create Input primitive (label, error, helper)
-- [ ] Create Card primitive (3 variants)
-- [ ] Move ToggleSwitch to primitives/
+- [x] Create Button primitive (5 variants, 3 sizes)
+- [x] Create Input primitive (label, error, helper)
+- [x] Create Card primitive (3 variants)
+- [x] Move ToggleSwitch to primitives/
 
 ### Session 5: UI Primitives — Dialog + HomeScreen
 
@@ -1307,6 +1307,45 @@ stay hardcoded), LogoIcon.tsx (color in CSS filter shorthand), LibraryManager.ts
 
 **Build output:** Main chunk 910KB (gzip 261KB) — marginal increase from new CSS tokens.
 **Verification:** TypeScript 0 errors, build succeeds, lint 0 errors, all 792 tests pass.
+**No regressions.**
+
+### Session 4 — UI Primitives: Core (2026-02-09)
+
+**Completed:**
+
+- **Task 4.1 — Create Button primitive:** Created `src/components/primitives/Button.tsx`
+  with 5 variants (primary, secondary, ghost, destructive, tool), 3 sizes (sm, md, lg),
+  and support for isActive, isLoading, leftIcon, rightIcon, disabled states. Focus ring
+  uses `--app-accent-solid` with 2px offset. `type="button"` default prevents accidental
+  form submission. Migrated 7 buttons across 3 files as proof-of-concept:
+  - ConfirmDialog: Cancel (ghost) + Confirm (destructive)
+  - DoorControls: Open All, Close All, Unlock All (secondary with icons + disabled)
+  - MapSettingsSheet: Cancel (ghost) + Save/Create (primary)
+
+- **Task 4.2 — Create Input, Card, ToggleSwitch primitives:**
+  - `Input.tsx`: Text input with optional label, error state (with `role="alert"`),
+    helper text. Uses `aria-invalid`, `aria-describedby` for accessibility. Auto-generated
+    IDs via `useId()`.
+  - `Card.tsx`: Surface panel with 3 variants (surface, elevated, outlined) and
+    configurable padding (none, sm, md, lg).
+  - Moved `ToggleSwitch.tsx` to `primitives/`, added re-export at old path for backward
+    compatibility (ADR-005). Existing imports still work.
+  - Created barrel `index.ts` exporting all primitives.
+
+- **CSS:** Created `src/styles/primitives.css` with all primitive component styles
+  (button variants, focus rings, spinner animation, input states, card variants).
+  Imported in index.css between brand.css and app.css.
+
+- **Playground:** Updated `playground-registry.tsx` to use new primitives for button,
+  input, and card examples. Added new examples: tool variant, sizes, icons, loading,
+  disabled, input with error/helper, and all 3 card variants.
+
+**Files created:** Button.tsx, Input.tsx, Card.tsx, primitives/ToggleSwitch.tsx,
+primitives/index.ts, primitives.css
+**Files modified:** ConfirmDialog.tsx, DoorControls.tsx, MapSettingsSheet.tsx,
+playground-registry.tsx, ToggleSwitch.tsx (re-export), index.css
+**Build output:** Main chunk 912KB (gzip 262KB) — +2KB from new primitives.
+**Verification:** TypeScript 0 errors, build succeeds, all 792 tests pass.
 **No regressions.**
 
 ---

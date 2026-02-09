@@ -1,6 +1,7 @@
 import { RiLockLine, RiDoorOpenLine, RiLockUnlockLine } from '@remixicon/react';
 
 import { useGameStore } from '../store/gameStore';
+import Button from './primitives/Button';
 
 /**
  * DoorControls provides bulk operations for managing all doors in the dungeon
@@ -80,39 +81,41 @@ function DoorControls() {
 
       {/* Bulk action buttons */}
       <div className="space-y-2">
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={handleOpenAll}
           disabled={closedDoorCount === 0 || closedDoorCount === lockedDoorCount}
-          className="btn btn-default w-full text-xs py-2 px-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full"
           title="Open all unlocked doors"
+          leftIcon={<RiDoorOpenLine className="w-4 h-4" />}
         >
-          <span className="flex items-center justify-center gap-1">
-            <RiDoorOpenLine className="w-4 h-4" /> Open All (
-            {Math.max(0, closedDoorCount - lockedDoorCount)})
-          </span>
-        </button>
+          Open All ({Math.max(0, closedDoorCount - lockedDoorCount)})
+        </Button>
 
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={handleCloseAll}
           disabled={openDoorCount === 0}
-          className="btn btn-default w-full text-xs py-2 px-3 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full"
           title="Close all open doors"
+          leftIcon={<RiDoorOpenLine className="w-4 h-4" />}
         >
-          <span className="flex items-center justify-center gap-1">
-            <RiDoorOpenLine className="w-4 h-4" /> Close All ({openDoorCount})
-          </span>
-        </button>
+          Close All ({openDoorCount})
+        </Button>
 
         {lockedDoorCount > 0 && (
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleUnlockAll}
-            className="btn btn-default w-full text-xs py-2 px-3 rounded transition bg-orange-600/20 hover:bg-orange-600/30"
+            className="w-full"
             title="Unlock all locked doors"
+            leftIcon={<RiLockUnlockLine className="w-4 h-4" />}
           >
-            <span className="flex items-center justify-center gap-1">
-              <RiLockUnlockLine className="w-4 h-4" /> Unlock All ({lockedDoorCount})
-            </span>
-          </button>
+            Unlock All ({lockedDoorCount})
+          </Button>
         )}
       </div>
 

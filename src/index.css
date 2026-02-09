@@ -2,6 +2,7 @@
 @import './styles/fonts.css';
 @import './styles/theme.css';
 @import './styles/brand.css';
+@import './styles/primitives.css';
 @import './styles/app.css';
 
 /* Ensure html, body, and root fill viewport */

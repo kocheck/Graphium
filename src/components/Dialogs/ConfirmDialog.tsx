@@ -31,6 +31,7 @@
 import { useEffect } from 'react';
 
 import { useGameStore } from '../../store/gameStore';
+import Button from '../primitives/Button';
 
 function ConfirmDialog() {
   const { confirmDialog, clearConfirmDialog } = useGameStore();
@@ -91,20 +92,12 @@ function ConfirmDialog() {
           {confirmDialog.message}
         </p>
         <div className="flex justify-end gap-3">
-          <button
-            onClick={handleCancel}
-            className="px-4 py-2 rounded bg-[var(--app-bg-subtle)] hover:bg-[var(--app-bg-hover)] transition"
-            style={{ color: 'var(--app-text)' }}
-          >
+          <Button variant="ghost" onClick={handleCancel}>
             Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white transition"
-            autoFocus
-          >
+          </Button>
+          <Button variant="destructive" onClick={handleConfirm} autoFocus>
             {confirmDialog.confirmText || 'Confirm'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

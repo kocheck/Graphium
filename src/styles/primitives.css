@@ -1,0 +1,243 @@
+/**
+ * Primitive Component Styles
+ *
+ * Styles for UI primitive components (Button, Input, Card, ToggleSwitch).
+ * All colors use CSS custom properties from theme.css.
+ * Layout uses Tailwind utility classes in the component JSX.
+ */
+
+/* ============================================================
+   Button Primitive
+   ============================================================ */
+
+.btn-primitive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+  line-height: 1.4;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Focus ring — visible on keyboard focus only */
+.btn-primitive:focus-visible {
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: 2px;
+}
+
+/* Disabled state */
+.btn-primitive--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* --- Variant: Primary --- */
+.btn-primitive--primary {
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+  border-color: var(--app-accent-solid);
+}
+
+.btn-primitive--primary:hover:not(:disabled) {
+  background: var(--app-accent-solid-hover);
+  border-color: var(--app-accent-solid-hover);
+}
+
+.btn-primitive--primary:active:not(:disabled) {
+  background: var(--app-accent-solid-hover);
+  filter: brightness(0.92);
+}
+
+/* --- Variant: Secondary --- */
+.btn-primitive--secondary {
+  background: var(--app-bg-active);
+  color: var(--app-text-primary);
+  border-color: var(--app-border-default);
+}
+
+.btn-primitive--secondary:hover:not(:disabled) {
+  background: var(--app-bg-hover);
+  border-color: var(--app-border-hover);
+}
+
+.btn-primitive--secondary:active:not(:disabled) {
+  background: var(--app-bg-active);
+}
+
+/* --- Variant: Ghost --- */
+.btn-primitive--ghost {
+  background: transparent;
+  color: var(--app-text-primary);
+  border-color: transparent;
+}
+
+.btn-primitive--ghost:hover:not(:disabled) {
+  background: var(--app-bg-hover);
+}
+
+.btn-primitive--ghost:active:not(:disabled) {
+  background: var(--app-bg-active);
+}
+
+/* --- Variant: Destructive --- */
+.btn-primitive--destructive {
+  background: var(--app-error-solid);
+  color: white;
+  border-color: var(--app-error-solid);
+}
+
+.btn-primitive--destructive:hover:not(:disabled) {
+  background: var(--app-error-solid-hover, var(--app-error-solid));
+  border-color: var(--app-error-solid-hover, var(--app-error-solid));
+  filter: brightness(1.1);
+}
+
+.btn-primitive--destructive:active:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+/* --- Variant: Tool --- */
+.btn-primitive--tool {
+  background: var(--app-toolbar-button-bg);
+  color: var(--app-toolbar-button-text);
+  border-color: var(--app-toolbar-button-border);
+}
+
+.btn-primitive--tool:hover:not(:disabled) {
+  background: var(--app-toolbar-button-hover);
+  border-color: var(--app-toolbar-button-border-hover, var(--app-toolbar-button-border));
+}
+
+.btn-primitive--tool.active {
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+  border-color: var(--app-accent-solid);
+}
+
+.btn-primitive--tool.active:hover:not(:disabled) {
+  background: var(--app-accent-solid-hover);
+  border-color: var(--app-accent-solid-hover);
+}
+
+/* --- Loading Spinner --- */
+.btn-primitive__spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Icon Containers --- */
+.btn-primitive__icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Input Primitive
+   ============================================================ */
+
+.input-primitive {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--app-text-primary);
+  background: var(--app-bg-active);
+  border: 1px solid var(--app-border-default);
+  border-radius: 0.375rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.input-primitive::placeholder {
+  color: var(--app-text-muted);
+}
+
+.input-primitive:focus {
+  outline: none;
+  border-color: var(--app-accent-solid);
+  box-shadow: 0 0 0 2px var(--app-accent-bg);
+}
+
+.input-primitive:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.input-primitive--error {
+  border-color: var(--app-error-solid);
+}
+
+.input-primitive--error:focus {
+  border-color: var(--app-error-solid);
+  box-shadow: 0 0 0 2px var(--app-error-bg, rgba(229, 72, 77, 0.15));
+}
+
+.input-primitive__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--app-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.input-primitive__helper {
+  font-size: 0.75rem;
+  color: var(--app-text-muted);
+  margin-top: 0.25rem;
+}
+
+.input-primitive__error-text {
+  font-size: 0.75rem;
+  color: var(--app-error-solid);
+  margin-top: 0.25rem;
+}
+
+/* ============================================================
+   Card Primitive
+   ============================================================ */
+
+.card-primitive {
+  border-radius: 0.5rem;
+  color: var(--app-text-primary);
+}
+
+.card-primitive--surface {
+  background: var(--app-bg-surface);
+}
+
+.card-primitive--elevated {
+  background: var(--app-bg-surface);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.card-primitive--outlined {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border-default);
+}

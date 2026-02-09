@@ -14,6 +14,7 @@ import { useRef, useState, useEffect } from 'react';
 
 import { RiRulerLine } from '@remixicon/react';
 
+import Button from './primitives/Button';
 import ToggleSwitch from './ToggleSwitch';
 import { useGameStore } from '../store/gameStore';
 import { processImage } from '../utils/AssetProcessor';
@@ -443,12 +444,12 @@ function MapSettingsSheet({
 
         {/* Footer */}
         <div className="sticky bottom-0 bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)] p-4 flex gap-2">
-          <button onClick={onClose} className="btn btn-ghost flex-1 py-2 rounded">
+          <Button variant="ghost" onClick={onClose} className="flex-1">
             Cancel
-          </button>
-          <button onClick={handleSave} className="btn btn-primary flex-1 py-2 rounded">
+          </Button>
+          <Button variant="primary" onClick={handleSave} className="flex-1">
             {mode === 'CREATE' ? 'Create Map' : 'Save Changes'}
-          </button>
+          </Button>
         </div>
       </div>
     </>
