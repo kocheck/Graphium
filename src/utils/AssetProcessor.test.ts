@@ -18,16 +18,18 @@ describe('AssetProcessor', () => {
       close: vi.fn(),
     });
 
-    global.OffscreenCanvas = vi.fn().mockImplementation((width, height) => ({
-      getContext: vi.fn().mockReturnValue({
-        drawImage: vi.fn(),
-      }),
-      convertToBlob: vi.fn().mockResolvedValue({
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      }),
-      width,
-      height,
-    })) as unknown as typeof OffscreenCanvas;
+    global.OffscreenCanvas = vi.fn().mockImplementation(function (width, height) {
+      return {
+        getContext: vi.fn().mockReturnValue({
+          drawImage: vi.fn(),
+        }),
+        convertToBlob: vi.fn().mockResolvedValue({
+          arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+        }),
+        width,
+        height,
+      };
+    }) as unknown as typeof OffscreenCanvas;
 
     // Mock storage service
     mockSaveAssetTemp = vi.fn().mockResolvedValue('file:///tmp/asset.webp');
@@ -36,12 +38,14 @@ describe('AssetProcessor', () => {
     });
 
     // Mock Worker
-    global.Worker = vi.fn().mockImplementation(() => ({
-      postMessage: vi.fn(),
-      onmessage: null,
-      onerror: null,
-      terminate: vi.fn(),
-    })) as unknown as typeof Worker;
+    global.Worker = vi.fn().mockImplementation(function () {
+      return {
+        postMessage: vi.fn(),
+        onmessage: null,
+        onerror: null,
+        terminate: vi.fn(),
+      };
+    }) as unknown as typeof Worker;
   });
 
   afterEach(() => {
