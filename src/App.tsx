@@ -36,6 +36,7 @@ import { useCommandPalette } from './hooks/useCommandPalette';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { getStorage } from './services/storage';
 import { useGameStore } from './store/gameStore';
+import { useUiStore } from './store/uiStore';
 import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 import { rollForMessage } from './utils/systemMessages';
 import { useWindowType } from './utils/useWindowType';
@@ -119,7 +120,7 @@ function App() {
 
   // Mobile responsiveness
   const isMobile = useIsMobile();
-  const setMobileSidebarOpen = useGameStore((state) => state.setMobileSidebarOpen);
+  const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen);
 
   // Active tool state (controls CanvasManager behavior)
   // Only used in Architect View; World View always uses 'select' with restricted interactions
@@ -163,11 +164,11 @@ function App() {
   const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
 
   // Resource Monitor state (from store)
-  const showResourceMonitor = useGameStore((state) => state.showResourceMonitor);
+  const showResourceMonitor = useUiStore((state) => state.showResourceMonitor);
 
   // Pause state (from store)
-  const isGamePaused = useGameStore((state) => state.isGamePaused);
-  const showToast = useGameStore((state) => state.showToast);
+  const isGamePaused = useUiStore((state) => state.isGamePaused);
+  const showToast = useUiStore((state) => state.showToast);
 
   // Handle pause toggle
   const handlePauseToggle = (): void => {
@@ -351,11 +352,11 @@ function App() {
           if (result) {
             // Add to recent campaigns
             addRecentCampaignWithPlatform(campaignToSave.id, campaignToSave.name);
-            store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
+            useUiStore.getState().showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
           }
         } catch (e) {
           console.error(e);
-          useGameStore
+          useUiStore
             .getState()
             .showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
         }
@@ -371,11 +372,11 @@ function App() {
             useGameStore.getState().loadCampaign(campaign);
             // Add to recent campaigns
             addRecentCampaignWithPlatform(campaign.id, campaign.name);
-            useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
+            useUiStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
           }
         } catch (e) {
           console.error(e);
-          useGameStore
+          useUiStore
             .getState()
             .showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
         }
@@ -383,16 +384,16 @@ function App() {
     };
 
     const handleToggleMonitor = () => {
-      useGameStore.getState().setShowResourceMonitor(!useGameStore.getState().showResourceMonitor);
+      useUiStore.getState().setShowResourceMonitor(!useUiStore.getState().showResourceMonitor);
     };
 
     const handleGenerateDungeon = () => {
-      useGameStore.getState().showDungeonDialog();
+      useUiStore.getState().showDungeonDialog();
     };
 
     const handleNewCampaign = () => {
       // Show confirmation dialog before creating new campaign
-      useGameStore.getState().showConfirmDialog(
+      useUiStore.getState().showConfirmDialog(
         'Create a new campaign? Any unsaved changes will be lost.',
         () => {
           // Reset to default campaign
@@ -742,7 +743,7 @@ function App() {
                 window.open(`${baseUrl}?type=world`, '_blank');
               }
             }}
-            onOpenDungeonGenerator={() => useGameStore.getState().showDungeonDialog()}
+            onOpenDungeonGenerator={() => useUiStore.getState().showDungeonDialog()}
             isGamePaused={isGamePaused}
           />
         )}

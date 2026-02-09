@@ -47,17 +47,17 @@
  * @see {@link electron/main.ts} Main process IPC handlers (TOGGLE_PAUSE, GET_PAUSE_STATE)
  * @see {@link LoadingOverlay} Component that displays when paused (World View only)
  * @see {@link App.tsx} Contains pause toggle button (Architect View only)
- * @see {@link gameStore.ts} Contains isGamePaused state
+ * @see {@link uiStore.ts} Contains isGamePaused state
  */
 
 import { useEffect } from 'react';
 
-import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { rollForMessage } from '../../utils/systemMessages';
 
 export function PauseManager() {
-  const setIsGamePaused = useGameStore((state) => state.setIsGamePaused);
-  const showToast = useGameStore((state) => state.showToast);
+  const setIsGamePaused = useUiStore((state) => state.setIsGamePaused);
+  const showToast = useUiStore((state) => state.showToast);
 
   useEffect(() => {
     // Early return if IPC is not available (e.g., running in browser mode for tests)

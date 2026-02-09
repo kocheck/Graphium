@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import DungeonGeneratorErrorBoundary from './DungeonGeneratorErrorBoundary';
-import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { rollForMessage } from '../../utils/systemMessages';
 
 // Mock system messages
@@ -38,7 +38,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     // Suppress console.error for cleaner test output
     vi.spyOn(console, 'error').mockImplementation(() => {});
     // Reset store
-    useGameStore.setState({ dungeonDialog: true });
+    useUiStore.setState({ dungeonDialog: true });
   });
 
   it('should render children when there is no error', () => {
@@ -193,7 +193,7 @@ describe('DungeonGeneratorErrorBoundary', () => {
     });
 
     // Verify that dungeonDialog was cleared
-    expect(useGameStore.getState().dungeonDialog).toBe(false);
+    expect(useUiStore.getState().dungeonDialog).toBe(false);
   });
 
   it('should log error to console', async () => {

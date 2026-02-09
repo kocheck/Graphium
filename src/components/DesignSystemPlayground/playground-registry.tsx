@@ -25,7 +25,7 @@ import {
   RiTreeLine, // Used in code example strings
 } from '@remixicon/react';
 
-import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import UpdateManager from '../Managers/UpdateManager';
 import { Button, Input, Card, ToggleSwitch } from '../primitives';
 
@@ -408,11 +408,11 @@ export const componentExamples: ComponentExample[] = [
       <button
         className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-bg-surface)] hover:bg-[var(--app-bg-hover)] border border-[var(--app-border-default)] text-[var(--app-text-primary)]"
         onClick={() => {
-          useGameStore
+          useUiStore
             .getState()
             .showConfirmDialog(
               'Are you sure you want to proceed with this potentially destructive action?',
-              () => useGameStore.getState().showToast('Confirmed!', 'success'),
+              () => useUiStore.getState().showToast('Confirmed!', 'success'),
               'Proceed',
             );
         }}
@@ -420,7 +420,7 @@ export const componentExamples: ComponentExample[] = [
         Open Dialog
       </button>
     ),
-    code: `const { showConfirmDialog, showToast } = useGameStore();
+    code: `const { showConfirmDialog, showToast } = useUiStore();
 
 showConfirmDialog(
   'Are you sure you want to proceed?',
@@ -487,13 +487,13 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
       <button
         className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-success-bg)] text-[var(--app-success-text)] border border-[var(--app-success-border)] hover:brightness-110"
         onClick={() =>
-          useGameStore.getState().showToast('Operation completed successfully', 'success')
+          useUiStore.getState().showToast('Operation completed successfully', 'success')
         }
       >
         Show Success
       </button>
     ),
-    code: `useGameStore.getState().showToast('Operation completed successfully', 'success');`,
+    code: `useUiStore.getState().showToast('Operation completed successfully', 'success');`,
     tags: ['toast', 'notification', 'success'],
   },
   {
@@ -504,12 +504,12 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     component: (
       <button
         className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-error-bg)] text-[var(--app-error-text)] border border-[var(--app-error-border)] hover:brightness-110"
-        onClick={() => useGameStore.getState().showToast('Something went wrong', 'error')}
+        onClick={() => useUiStore.getState().showToast('Something went wrong', 'error')}
       >
         Show Error
       </button>
     ),
-    code: `useGameStore.getState().showToast('Something went wrong', 'error');`,
+    code: `useUiStore.getState().showToast('Something went wrong', 'error');`,
     tags: ['toast', 'notification', 'error'],
   },
   {
@@ -520,12 +520,12 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     component: (
       <button
         className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-bg)] text-[var(--app-accent-text)] border border-[var(--app-accent-solid)] hover:brightness-110"
-        onClick={() => useGameStore.getState().showToast('Here is some useful information', 'info')}
+        onClick={() => useUiStore.getState().showToast('Here is some useful information', 'info')}
       >
         Show Info
       </button>
     ),
-    code: `useGameStore.getState().showToast('Here is some useful information', 'info');`,
+    code: `useUiStore.getState().showToast('Here is some useful information', 'info');`,
     tags: ['toast', 'notification', 'info'],
   },
 

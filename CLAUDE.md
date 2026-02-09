@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/refactor-modular-architecture-GUfVC`
 > **Created:** 2026-02-09
-> **Status:** In Progress — Session 0 (Planning Complete)
+> **Status:** In Progress — Session 7 (Store Separation Complete)
 
 ## Project Vision
 
@@ -1137,9 +1137,9 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 7: Store Separation
 
-- [ ] Create uiStore.ts with UI state
-- [ ] Migrate all consumers from gameStore UI state → uiStore
-- [ ] Remove UI state from gameStore
+- [x] Create uiStore.ts with UI state
+- [x] Migrate all consumers from gameStore UI state → uiStore
+- [x] Remove UI state from gameStore
 
 ### Session 8: Logic Extraction I
 
@@ -1420,6 +1420,55 @@ playground-registry.tsx, ToggleSwitch.tsx (re-export), index.css
 **Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 792 tests pass.
 **No regressions.**
 
+### Session 7 — Store Separation (2026-02-09)
+
+**Completed:**
+
+- **Task 7.1 — Create uiStore and migrate UI state:** Created `src/store/uiStore.ts` (79
+  lines) with all 7 UI state properties and their actions extracted from gameStore:
+  - `toast` + `showToast()` + `clearToast()`
+  - `confirmDialog` + `showConfirmDialog()` + `clearConfirmDialog()`
+  - `showResourceMonitor` + `setShowResourceMonitor()`
+  - `dungeonDialog` + `showDungeonDialog()` + `clearDungeonDialog()`
+  - `isGamePaused` + `setIsGamePaused()`
+  - `isMobileSidebarOpen` + `setMobileSidebarOpen()`
+  - `isCommandPaletteOpen` + `setCommandPaletteOpen()`
+
+  gameStore.ts reduced from 836 → 607 lines (27% reduction). Zero UI state properties
+  remain in gameStore — it is now domain-pure.
+
+  **Cross-store dependency:** `gameStore.deleteMap()` calls `useUiStore.getState().showToast()`
+  for the "cannot delete last map" error message. This is the only cross-store call.
+
+  **Consumer migration (23 source files + 9 test files):**
+  - Files where `useGameStore` was fully replaced by `useUiStore` (no remaining gameStore
+    usage): Toast.tsx, ConfirmDialog.tsx, LoadingOverlay.tsx, useCommandPalette.ts,
+    PauseManager.tsx, MobileToolbar.tsx, TokenErrorBoundary.tsx, ErrorFallbackUI.tsx,
+    DesignSystemPlayground.tsx, playground-registry.tsx
+  - Files where `useUiStore` was added alongside existing `useGameStore` (mixed domain +
+    UI usage): App.tsx, Sidebar.tsx, HomeScreen.tsx, MapSettingsSheet.tsx, MapNavigator.tsx,
+    TokenInspector.tsx, TokenMetadataEditor.tsx, LibraryManager.tsx, AddToLibraryDialog.tsx,
+    CanvasManager.tsx, DungeonGeneratorDialog.tsx
+  - Files unchanged: ResourceMonitor.tsx (visibility controlled by parent), CommandPalette.tsx
+    (isGamePaused comes as prop)
+
+  **Test migration (9 test files):** Updated all test files that set/assert UI state via
+  gameStore to use uiStore instead. Split combined setState calls where needed (e.g.,
+  `{ dungeonDialog: true, gridSize: 50 }` → separate uiStore + gameStore calls).
+
+  **SyncManager impact:** SyncManager already only synced domain state (tokens, drawings,
+  doors, stairs, grid, map, exploredRegions, isDaylightMode). However, it subscribed to the
+  full gameStore via `useGameStore.subscribe()`, meaning every UI state change (toast, dialog
+  toggle) triggered the subscription callback which ran `detectChanges` — finding no changes
+  but still doing work. After this split, UI state changes no longer trigger the subscription
+  callback at all, reducing unnecessary CPU work during UI interactions.
+
+**Files created:** uiStore.ts (79 lines)
+**Files modified:** gameStore.ts (836 → 607 lines), 23 source files, 9 test files
+**Build output:** Main chunk 888KB (gzip 258KB) — unchanged.
+**Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 792 tests pass.
+**No regressions.**
+
 ---
 
 ## Quick Reference
@@ -1430,7 +1479,8 @@ playground-registry.tsx, ToggleSwitch.tsx (re-export), index.css
 | ----------------------------------------- | ----- | ---------------- | --------------------------- |
 | `src/components/Canvas/CanvasManager.tsx` | 1,867 | Canvas monolith  | Needs decomposition (S10)   |
 | `src/components/HomeScreen.tsx`           | 745   | Landing page     | CSS extracted (S5 complete) |
-| `src/store/gameStore.ts`                  | 836   | Central state    | Needs UI split (S7)         |
+| `src/store/gameStore.ts`                  | 607   | Domain state     | UI split complete (S7)      |
+| `src/store/uiStore.ts`                    | 79    | UI state         | New (S7)                    |
 | `src/App.tsx`                             | 763   | Root coordinator | Needs hook extraction (S9)  |
 | `src/styles/theme.css`                    | 521   | Theme tokens     | Hardened (S3 complete)      |
 | `electron/main.ts`                        | 1,283 | Electron main    | No changes planned          |

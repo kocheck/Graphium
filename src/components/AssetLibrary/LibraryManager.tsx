@@ -30,6 +30,7 @@ import TokenMetadataEditor from './TokenMetadataEditor';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { processImage } from '../../utils/AssetProcessor';
 import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzySearch';
 import { rollForMessage } from '../../utils/systemMessages';
@@ -70,10 +71,10 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
   // Store selectors
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
   const removeTokenFromLibrary = useGameStore((state) => state.removeTokenFromLibrary);
-  const showConfirmDialog = useGameStore((state) => state.showConfirmDialog);
-  const showToast = useGameStore((state) => state.showToast);
   const addToken = useGameStore((state) => state.addToken);
   const map = useGameStore((state) => state.map);
+  const showConfirmDialog = useUiStore((state) => state.showConfirmDialog);
+  const showToast = useUiStore((state) => state.showToast);
 
   // Get categories from library
   const categories = ['All', ...getCategories(tokenLibrary)];

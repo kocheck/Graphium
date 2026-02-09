@@ -27,6 +27,7 @@ import { LogoLockup } from './LogoLockup';
 import Tooltip from './Tooltip';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import {
   getRecentCampaigns,
   addRecentCampaignWithPlatform,
@@ -150,8 +151,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   });
 
   const loadCampaign = useGameStore((state) => state.loadCampaign);
-  const showToast = useGameStore((state) => state.showToast);
-  const showDungeonDialog = useGameStore((state) => state.showDungeonDialog);
+  const showToast = useUiStore((state) => state.showToast);
+  const showDungeonDialog = useUiStore((state) => state.showDungeonDialog);
 
   // Handler functions (defined before effects that use them)
   const handleNewCampaign = useCallback(() => {

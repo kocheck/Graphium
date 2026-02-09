@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { useUiStore } from './uiStore';
 import { MAX_EXPLORED_REGIONS, DEFAULT_GRID_COLOR } from '../types/domain';
 import { rollForMessage } from '../utils/systemMessages';
 
@@ -96,15 +97,8 @@ export interface GameState {
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
 
-  // --- UI/System State (Not persisted in MapData) ---
+  // --- System State (Not persisted in MapData) ---
   isCalibrating: boolean;
-  toast: ToastMessage | null;
-  confirmDialog: ConfirmDialog | null;
-  showResourceMonitor: boolean;
-  dungeonDialog: boolean;
-  isGamePaused: boolean;
-  isMobileSidebarOpen: boolean;
-  isCommandPaletteOpen: boolean;
 
   // --- Vision State (Computed, not persisted) ---
   /** Active vision polygons for current PC tokens (used for token visibility) */
@@ -191,16 +185,6 @@ export interface GameState {
   setDaylightMode: (enabled: boolean) => void;
   setState: (state: Partial<GameState>) => void; // Legacy support
   setTokens: (tokens: Token[]) => void;
-  showToast: (message: string, type: 'error' | 'success' | 'info') => void;
-  clearToast: () => void;
-  showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) => void;
-  clearConfirmDialog: () => void;
-  setShowResourceMonitor: (show: boolean) => void;
-  showDungeonDialog: () => void;
-  clearDungeonDialog: () => void;
-  setIsGamePaused: (isPaused: boolean) => void;
-  setMobileSidebarOpen: (isOpen: boolean) => void;
-  setCommandPaletteOpen: (isOpen: boolean) => void;
 
   // Measurement Actions
   setActiveMeasurement: (measurement: Measurement | null) => void;
@@ -228,19 +212,12 @@ export const useGameStore = create<GameState>((set, get) => {
 
     // --- Initial State (System) ---
     isCalibrating: false,
-    toast: null,
-    confirmDialog: null,
-    showResourceMonitor: false,
-    dungeonDialog: false,
-    isGamePaused: false,
-    isMobileSidebarOpen: false,
     activeVisionPolygons: [],
 
     // --- Initial State (Measurement) ---
     activeMeasurement: null,
     broadcastMeasurement: false,
     dmMeasurement: null,
-    isCommandPaletteOpen: false,
 
     campaign: initialCampaign,
 
@@ -384,7 +361,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
       // Prevent deleting the last map
       if (Object.keys(maps).length <= 1) {
-        get().showToast(rollForMessage('CANNOT_DELETE_ONLY_MAP'), 'error');
+        useUiStore.getState().showToast(rollForMessage('CANNOT_DELETE_ONLY_MAP'), 'error');
         return;
       }
 
@@ -611,18 +588,6 @@ export const useGameStore = create<GameState>((set, get) => {
     setDaylightMode: (enabled: boolean) => set({ isDaylightMode: enabled }),
     setTokens: (tokens: Token[]) => set({ tokens }),
     setState: (state: Partial<GameState>) => set(state),
-    showToast: (message: string, type: 'error' | 'success' | 'info') =>
-      set({ toast: { message, type } }),
-    clearToast: () => set({ toast: null }),
-    showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) =>
-      set({ confirmDialog: { message, onConfirm, confirmText } }),
-    clearConfirmDialog: () => set({ confirmDialog: null }),
-    setShowResourceMonitor: (show: boolean) => set({ showResourceMonitor: show }),
-    showDungeonDialog: () => set({ dungeonDialog: true }),
-    clearDungeonDialog: () => set({ dungeonDialog: false }),
-    setIsGamePaused: (isPaused: boolean) => set({ isGamePaused: isPaused }),
-    setMobileSidebarOpen: (isOpen: boolean) => set({ isMobileSidebarOpen: isOpen }),
-    setCommandPaletteOpen: (isOpen: boolean) => set({ isCommandPaletteOpen: isOpen }),
 
     // --- Measurement Actions ---
     setActiveMeasurement: (measurement: Measurement | null) =>

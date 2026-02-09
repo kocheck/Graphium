@@ -6,6 +6,7 @@ import MobileBottomSheet from './Mobile/MobileBottomSheet';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 
 import type { Token } from '../store/gameStore';
 
@@ -42,7 +43,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
   const updateLibraryToken = useGameStore((s) => s.updateLibraryToken);
-  const showToast = useGameStore((s) => s.showToast);
+  const showToast = useUiStore((s) => s.showToast);
 
   // Mobile responsiveness
   const isMobile = useIsMobile();

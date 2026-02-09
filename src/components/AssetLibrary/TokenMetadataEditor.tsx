@@ -37,6 +37,7 @@ import { RiCloseLine } from '@remixicon/react';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { rollForMessage } from '../../utils/systemMessages';
 
 /**
@@ -61,7 +62,7 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
   // Get library item and update function from store
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
   const updateLibraryToken = useGameStore((state) => state.updateLibraryToken);
-  const showToast = useGameStore((state) => state.showToast);
+  const showToast = useUiStore((state) => state.showToast);
 
   // Find the library item
   const libraryItem = libraryItemId ? tokenLibrary.find((item) => item.id === libraryItemId) : null;

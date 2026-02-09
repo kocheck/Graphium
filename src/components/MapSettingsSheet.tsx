@@ -17,6 +17,7 @@ import { RiRulerLine } from '@remixicon/react';
 import Button from './primitives/Button';
 import ToggleSwitch from './ToggleSwitch';
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import { processImage } from '../utils/AssetProcessor';
 import { rollForMessage } from '../utils/systemMessages';
 
@@ -52,9 +53,9 @@ function MapSettingsSheet({
   const setIsCalibrating = useGameStore((state) => state.setIsCalibrating);
   const updateMapPosition = useGameStore((state) => state.updateMapPosition);
   const updateMapScale = useGameStore((state) => state.updateMapScale);
-  const showToast = useGameStore((state) => state.showToast);
-  const showConfirmDialog = useGameStore((state) => state.showConfirmDialog);
   const addMap = useGameStore((state) => state.addMap);
+  const showToast = useUiStore((state) => state.showToast);
+  const showConfirmDialog = useUiStore((state) => state.showConfirmDialog);
   const renameMap = useGameStore((state) => state.renameMap);
 
   // Local state for map name

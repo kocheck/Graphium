@@ -40,7 +40,7 @@ import {
   RiMoreLine,
 } from '@remixicon/react';
 
-import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 
 interface MobileToolbarProps {
   tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
@@ -72,7 +72,7 @@ function MobileToolbar({
   };
 
   const handleDungeonGen = () => {
-    useGameStore.getState().showDungeonDialog();
+    useUiStore.getState().showDungeonDialog();
     setShowMoreMenu(false);
   };
 

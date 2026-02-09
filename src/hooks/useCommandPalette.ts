@@ -13,11 +13,11 @@
 
 import { useEffect } from 'react';
 
-import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 
 export function useCommandPalette(): [boolean, (isOpen: boolean) => void] {
-  const isOpen = useGameStore((state) => state.isCommandPaletteOpen);
-  const setIsOpen = useGameStore((state) => state.setCommandPaletteOpen);
+  const isOpen = useUiStore((state) => state.isCommandPaletteOpen);
+  const setIsOpen = useUiStore((state) => state.setCommandPaletteOpen);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

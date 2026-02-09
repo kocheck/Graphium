@@ -2,7 +2,7 @@
  * Confirmation Dialog Component
  *
  * Displays a modal dialog for user confirmations (e.g., deleting maps or tokens).
- * Integrated with gameStore for centralized dialog management.
+ * Integrated with uiStore for centralized dialog management.
  * Uses the Dialog primitive for overlay, focus trap, and ARIA attributes.
  *
  * **Features:**
@@ -11,13 +11,13 @@
  * - Keyboard support (Enter to confirm, Escape to cancel via Dialog)
  * - Accessible with ARIA attributes (via Dialog)
  *
- * **Integration with gameStore:**
- * Dialogs are triggered via gameStore method:
+ * **Integration with uiStore:**
+ * Dialogs are triggered via uiStore method:
  * - `showConfirmDialog(message, onConfirm, confirmText?)` - Show confirmation dialog
  *
  * @example
  * // Show delete confirmation
- * const { showConfirmDialog } = useGameStore();
+ * const { showConfirmDialog } = useUiStore();
  * showConfirmDialog(
  *   'Are you sure you want to delete this map?',
  *   () => deleteMap(mapId),
@@ -30,12 +30,12 @@
 
 import { useEffect, useCallback } from 'react';
 
-import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import Button from '../primitives/Button';
 import Dialog from '../primitives/Dialog';
 
 function ConfirmDialog() {
-  const { confirmDialog, clearConfirmDialog } = useGameStore();
+  const { confirmDialog, clearConfirmDialog } = useUiStore();
 
   const handleConfirm = useCallback(() => {
     if (confirmDialog) {

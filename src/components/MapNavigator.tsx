@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState } from 'react';
 
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import { rollForMessage } from '../utils/systemMessages';
 
 /**
@@ -17,7 +18,7 @@ function MapNavigator(): React.ReactElement | null {
   const switchMap = useGameStore((state) => state.switchMap);
   const deleteMap = useGameStore((state) => state.deleteMap);
   const renameMap = useGameStore((state) => state.renameMap);
-  const showConfirmDialog = useGameStore((state) => state.showConfirmDialog);
+  const showConfirmDialog = useUiStore((state) => state.showConfirmDialog);
 
   const [editingMapId, setEditingMapId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');

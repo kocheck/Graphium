@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useGameStore } from './gameStore';
+import { useUiStore } from './uiStore';
 import type {
   Campaign,
   Token,
@@ -51,12 +52,6 @@ describe('gameStore', () => {
       exploredRegions: [],
       isDaylightMode: false,
       isCalibrating: false,
-      toast: null,
-      confirmDialog: null,
-      showResourceMonitor: false,
-      dungeonDialog: false,
-      isGamePaused: false,
-      isMobileSidebarOpen: false,
       activeVisionPolygons: [],
       activeMeasurement: null,
       broadcastMeasurement: false,
@@ -841,7 +836,8 @@ describe('gameStore', () => {
 
     it('should not delete the last remaining map', () => {
       const store = useGameStore.getState();
-      const showToastSpy = vi.spyOn(store, 'showToast');
+      const uiState = useUiStore.getState();
+      const showToastSpy = vi.spyOn(uiState, 'showToast');
 
       const onlyMapId = useGameStore.getState().campaign.activeMapId;
 
@@ -849,7 +845,7 @@ describe('gameStore', () => {
 
       // Map should still exist
       expect(useGameStore.getState().campaign.maps[onlyMapId]).toBeDefined();
-      // Should show error toast
+      // Should show error toast (via uiStore)
       expect(showToastSpy).toHaveBeenCalledWith(expect.any(String), 'error');
     });
 
@@ -1008,26 +1004,26 @@ describe('gameStore', () => {
 
   describe('System State Operations', () => {
     it('should show and clear toast messages', () => {
-      const store = useGameStore.getState();
+      const store = useUiStore.getState();
 
       store.showToast('Test message', 'success');
 
-      let state = useGameStore.getState();
+      let state = useUiStore.getState();
       expect(state.toast).toEqual({ message: 'Test message', type: 'success' });
 
       store.clearToast();
 
-      state = useGameStore.getState();
+      state = useUiStore.getState();
       expect(state.toast).toBeNull();
     });
 
     it('should show and clear confirm dialog', () => {
-      const store = useGameStore.getState();
+      const store = useUiStore.getState();
       const onConfirm = vi.fn();
 
       store.showConfirmDialog('Are you sure?', onConfirm, 'Yes');
 
-      let state = useGameStore.getState();
+      let state = useUiStore.getState();
       expect(state.confirmDialog).toEqual({
         message: 'Are you sure?',
         onConfirm,
@@ -1036,7 +1032,7 @@ describe('gameStore', () => {
 
       store.clearConfirmDialog();
 
-      state = useGameStore.getState();
+      state = useUiStore.getState();
       expect(state.confirmDialog).toBeNull();
     });
 
@@ -1053,42 +1049,42 @@ describe('gameStore', () => {
     });
 
     it('should toggle resource monitor', () => {
-      const store = useGameStore.getState();
+      const store = useUiStore.getState();
 
-      expect(useGameStore.getState().showResourceMonitor).toBe(false);
+      expect(useUiStore.getState().showResourceMonitor).toBe(false);
 
       store.setShowResourceMonitor(true);
-      expect(useGameStore.getState().showResourceMonitor).toBe(true);
+      expect(useUiStore.getState().showResourceMonitor).toBe(true);
     });
 
     it('should show and clear dungeon dialog', () => {
-      const store = useGameStore.getState();
+      const store = useUiStore.getState();
 
-      expect(useGameStore.getState().dungeonDialog).toBe(false);
+      expect(useUiStore.getState().dungeonDialog).toBe(false);
 
       store.showDungeonDialog();
-      expect(useGameStore.getState().dungeonDialog).toBe(true);
+      expect(useUiStore.getState().dungeonDialog).toBe(true);
 
       store.clearDungeonDialog();
-      expect(useGameStore.getState().dungeonDialog).toBe(false);
+      expect(useUiStore.getState().dungeonDialog).toBe(false);
     });
 
     it('should set game paused state', () => {
-      const store = useGameStore.getState();
+      const store = useUiStore.getState();
 
-      expect(useGameStore.getState().isGamePaused).toBe(false);
+      expect(useUiStore.getState().isGamePaused).toBe(false);
 
       store.setIsGamePaused(true);
-      expect(useGameStore.getState().isGamePaused).toBe(true);
+      expect(useUiStore.getState().isGamePaused).toBe(true);
     });
 
     it('should set mobile sidebar open state', () => {
-      const store = useGameStore.getState();
+      const store = useUiStore.getState();
 
-      expect(useGameStore.getState().isMobileSidebarOpen).toBe(false);
+      expect(useUiStore.getState().isMobileSidebarOpen).toBe(false);
 
       store.setMobileSidebarOpen(true);
-      expect(useGameStore.getState().isMobileSidebarOpen).toBe(true);
+      expect(useUiStore.getState().isMobileSidebarOpen).toBe(true);
     });
   });
 

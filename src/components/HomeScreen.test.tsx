@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { HomeScreen } from './HomeScreen';
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import * as recentCampaignsModule from '../utils/recentCampaigns';
 import * as storageModule from '../services/storage';
 
@@ -29,7 +30,6 @@ describe('HomeScreen', () => {
 
     // Reset Zustand store
     useGameStore.setState({
-      toast: null,
       campaign: {
         id: 'default',
         name: 'Untitled Campaign',
@@ -39,7 +39,7 @@ describe('HomeScreen', () => {
     });
 
     // Mock store functions
-    vi.spyOn(useGameStore.getState(), 'showToast').mockImplementation(mockShowToast);
+    vi.spyOn(useUiStore.getState(), 'showToast').mockImplementation(mockShowToast);
     vi.spyOn(useGameStore.getState(), 'loadCampaign').mockImplementation(mockLoadCampaign);
     vi.spyOn(useGameStore.getState(), 'resetToNewCampaign').mockImplementation(
       mockResetToNewCampaign,

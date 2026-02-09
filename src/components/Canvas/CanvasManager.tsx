@@ -22,6 +22,7 @@ import { useThemeColor } from '../../hooks/useThemeColor';
 import { resolveTokenData, DEFAULT_MOVEMENT_SPEED } from '../../hooks/useTokenData';
 import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
+import { useUiStore } from '../../store/uiStore';
 import { isRectInAnyPolygon } from '../../types/geometry';
 import { snapToGrid } from '../../utils/grid';
 import { createGridGeometry } from '../../utils/gridGeometry';
@@ -238,7 +239,7 @@ function CanvasManager({
 
   const updateDrawingTransform = useGameStore((s) => s.updateDrawingTransform);
   const setActiveMeasurement = useGameStore((s) => s.setActiveMeasurement);
-  const showToast = useGameStore((s) => s.showToast);
+  const showToast = useUiStore((s) => s.showToast);
 
   // Tools State
   const isDrawing = useRef(false);

@@ -55,7 +55,7 @@ import { Component } from 'react';
 import { createPortal } from 'react-dom';
 import { Group, Circle, Text } from 'react-konva';
 
-import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import {
   captureErrorContext,
   logErrorWithContext,
@@ -203,7 +203,7 @@ class TokenErrorBoundary extends Component<Props, State> {
       // where hooks cannot be used. While this creates coupling to the game store,
       // it provides a fallback when the parent component doesn't provide the callback.
       // Consider making onShowToast mandatory if this coupling becomes problematic.
-      const showToast = onShowToast || useGameStore.getState().showToast;
+      const showToast = onShowToast || useUiStore.getState().showToast;
 
       if (success) {
         showToast('Error details copied to clipboard!', 'success');

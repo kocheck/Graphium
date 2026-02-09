@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { DungeonGenerator } from '../../utils/DungeonGenerator';
 
 /**
@@ -16,8 +17,8 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
   const existingDrawings = useGameStore((state) => state.drawings);
   const existingDoors = useGameStore((state) => state.doors);
   const gridSize = useGameStore((state) => state.gridSize);
-  const clearDungeonDialog = useGameStore((state) => state.clearDungeonDialog);
-  const dungeonDialog = useGameStore((state) => state.dungeonDialog);
+  const clearDungeonDialog = useUiStore((state) => state.clearDungeonDialog);
+  const dungeonDialog = useUiStore((state) => state.dungeonDialog);
   const [numRooms, setNumRooms] = useState(5);
   const [minRoomSize, setMinRoomSize] = useState(3);
   const [maxRoomSize, setMaxRoomSize] = useState(8);

@@ -27,7 +27,7 @@ import {
 
 import { componentExamples, categories } from './playground-registry';
 import { getStorage } from '../../services/storage';
-import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import ConfirmDialog from '../Dialogs/ConfirmDialog';
 import { ThemeManager } from '../Managers/ThemeManager';
 import Toast from '../Toast';
@@ -62,7 +62,7 @@ function PlaygroundContent() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { showToast } = useGameStore();
+  const { showToast } = useUiStore();
 
   // Load initial theme
   useEffect(() => {

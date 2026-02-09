@@ -62,6 +62,7 @@ import {
 } from '@remixicon/react';
 
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import { processImage } from '../utils/AssetProcessor';
 import AddToLibraryDialog from './AssetLibrary/AddToLibraryDialog';
 import LibraryManager from './AssetLibrary/LibraryManager';
@@ -88,8 +89,8 @@ function Sidebar() {
   const activeMapId = useGameStore((state) => state.campaign.activeMapId);
   const switchMap = useGameStore((state) => state.switchMap);
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
-  const showToast = useGameStore((state) => state.showToast);
   const tokens = useGameStore((state) => state.tokens);
+  const showToast = useUiStore((state) => state.showToast);
 
   // Get recent tokens (last 3 unique tokens placed on the map)
   const recentTokens = React.useMemo(() => {
@@ -132,8 +133,8 @@ function Sidebar() {
 
   // Mobile drawer state
   const isMobile = useIsMobile();
-  const isMobileDrawerOpen = useGameStore((state) => state.isMobileSidebarOpen);
-  const setMobileDrawerOpen = useGameStore((state) => state.setMobileSidebarOpen);
+  const isMobileDrawerOpen = useUiStore((state) => state.isMobileSidebarOpen);
+  const setMobileDrawerOpen = useUiStore((state) => state.setMobileSidebarOpen);
 
   // Reset sidebar collapse state when switching to mobile
   useEffect(() => {

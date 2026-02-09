@@ -22,6 +22,7 @@ import { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { rollForMessage } from '../../utils/systemMessages';
 
 interface AddToLibraryDialogProps {
@@ -52,7 +53,7 @@ function AddToLibraryDialog({
   const isMobile = useIsMobile();
 
   const addTokenToLibrary = useGameStore((state) => state.addTokenToLibrary);
-  const showToast = useGameStore((state) => state.showToast);
+  const showToast = useUiStore((state) => state.showToast);
 
   // Update name when suggestedName changes
   useEffect(() => {

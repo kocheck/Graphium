@@ -29,7 +29,7 @@
  * - Smooth fade-in animation (via Tailwind animate-fade-in)
  *
  * **State Management:**
- * - Reads `isGamePaused` from Zustand gameStore
+ * - Reads `isGamePaused` from Zustand uiStore
  * - PauseManager keeps this state synchronized with main process
  * - Re-renders automatically when pause state changes
  *
@@ -69,18 +69,18 @@
  *
  * @see {@link PauseManager} Synchronizes pause state via IPC
  * @see {@link App.tsx} Contains pause toggle button and conditional rendering
- * @see {@link gameStore.ts} Contains isGamePaused state
+ * @see {@link uiStore.ts} Contains isGamePaused state
  * @see {@link electron/main.ts} Main process IPC handlers for pause state
  */
 
 import { useMemo } from 'react';
 
-import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import { rollForMessage } from '../utils/systemMessages';
 
 export function LoadingOverlay() {
-  // Subscribe to pause state from Zustand store
-  const isGamePaused = useGameStore((state) => state.isGamePaused);
+  // Subscribe to pause state from Zustand uiStore
+  const isGamePaused = useUiStore((state) => state.isGamePaused);
 
   // Roll for a random loading message; stable during a pause, re-rolls when pause state changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
