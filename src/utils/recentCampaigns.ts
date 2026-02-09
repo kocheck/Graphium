@@ -44,7 +44,9 @@ const MAX_RECENT = 3;
 export function getRecentCampaigns(): RecentCampaign[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
+    if (!stored) {
+      return [];
+    }
 
     const campaigns = JSON.parse(stored) as RecentCampaign[];
     // Data is already sorted and limited in addRecentCampaign

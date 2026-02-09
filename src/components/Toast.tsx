@@ -39,12 +39,13 @@
  */
 
 import { useEffect } from 'react';
+
 import { useGameStore } from '../store/gameStore';
 
 /**
  * Toast component displays notification messages
  */
-const Toast = () => {
+function Toast() {
   const { toast, clearToast } = useGameStore();
 
   useEffect(() => {
@@ -55,9 +56,12 @@ const Toast = () => {
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [toast, clearToast]);
 
-  if (!toast) return null;
+  if (!toast) {
+    return null;
+  }
 
   const bgColor =
     toast.type === 'error'
@@ -85,6 +89,6 @@ const Toast = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Toast;

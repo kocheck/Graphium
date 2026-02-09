@@ -1,6 +1,8 @@
-import { Component, ReactNode, ErrorInfo } from 'react';
-import { rollForMessage } from '../utils/systemMessages';
+import type { ReactNode, ErrorInfo } from 'react';
+import { Component } from 'react';
+
 import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
+import { rollForMessage } from '../utils/systemMessages';
 
 interface Props {
   children: ReactNode;
@@ -59,7 +61,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const isDev = import.meta.env.DEV;
     const isTest = import.meta.env.MODE === 'test';
 
@@ -112,7 +114,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div

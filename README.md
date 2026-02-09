@@ -189,6 +189,53 @@ npm run build
 
 ---
 
+## 🔍 Code Quality & Linting
+
+Graphium maintains strict code quality standards through comprehensive linting and type checking.
+
+### Quick Commands
+
+```bash
+# Check for linting errors
+npm run lint
+
+# Auto-fix linting issues
+npm run lint:fix
+
+# Type check
+npm run type-check
+
+# Format code
+npm run format
+```
+
+### Why Strict Linting?
+
+- **Prevent Bugs Early** - Catch errors before production
+- **Enforce Consistency** - Uniform code style across the codebase
+- **AI-Assisted Development** - Prevent common AI agent errors
+- **Type Safety** - Comprehensive TypeScript strict mode
+
+### Pre-commit Hooks
+
+Linting runs automatically before commits via Husky. All checks must pass before code can be committed.
+
+### Documentation
+
+- **[LINTING.md](LINTING.md)** - Complete linting guide with examples and troubleshooting
+- **[.ai-rules.md](.ai-rules.md)** - AI agent code generation rules and requirements
+
+### Editor Setup
+
+For VS Code users, the repository includes recommended settings and extensions. Install the recommended extensions for:
+
+- Automatic formatting on save
+- Inline error display
+- Quick fixes
+- Import organization
+
+---
+
 <h2 id="contributing">🤝 Join the Guild</h2>
 
 We welcome fellow smiths to the forge. If you wish to improve the tool:

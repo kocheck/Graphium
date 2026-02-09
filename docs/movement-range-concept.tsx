@@ -13,13 +13,13 @@ interface MovementRangeProps {
   visibleBounds: Bounds;
 }
 
-export const MovementRangeOverlay: React.FC<MovementRangeProps> = ({
+export function MovementRangeOverlay({
   tokenPosition,
   movementSpeed,
   gridSize,
   gridType,
   visibleBounds,
-}) => {
+}: MovementRangeProps): React.ReactElement {
   const geometry = createGridGeometry(gridType);
 
   // Calculate reachable cells using BFS/flood-fill
@@ -37,7 +37,9 @@ export const MovementRangeOverlay: React.FC<MovementRangeProps> = ({
       const { cell, distance } = queue.shift()!;
       const key = `${cell.q},${cell.r}`;
 
-      if (visited.has(key) || distance > maxCells) continue;
+      if (visited.has(key) || distance > maxCells) {
+        continue;
+      }
       visited.add(key);
       cells.push(cell);
 
@@ -62,13 +64,13 @@ export const MovementRangeOverlay: React.FC<MovementRangeProps> = ({
             fill="rgba(0, 150, 255, 0.15)"
             stroke="rgba(0, 150, 255, 0.4)"
             strokeWidth={1}
-            closed={true}
+            closed
           />
         );
       })}
     </Group>
   );
-};
+}
 
 // Helper: Get neighboring cells based on grid type
 function getNeighbors(cell: GridCell, gridType: GridType): GridCell[] {

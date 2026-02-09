@@ -18,9 +18,10 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useGameStore } from '../../store/gameStore';
-import { getStorage } from '../../services/storage';
+
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import { getStorage } from '../../services/storage';
+import { useGameStore } from '../../store/gameStore';
 import { rollForMessage } from '../../utils/systemMessages';
 
 interface AddToLibraryDialogProps {
@@ -34,14 +35,14 @@ interface AddToLibraryDialogProps {
 
 const DEFAULT_CATEGORIES = ['PC', 'Monsters', 'NPCs', 'Props', 'Items', 'Custom'];
 
-const AddToLibraryDialog = ({
+function AddToLibraryDialog({
   isOpen,
   imageSrc,
   imageBlob,
   suggestedName,
   onClose,
   onConfirm,
-}: AddToLibraryDialogProps) => {
+}: AddToLibraryDialogProps) {
   const [name, setName] = useState(suggestedName || '');
   const [category, setCategory] = useState('Monsters');
   const [tagsInput, setTagsInput] = useState('');
@@ -175,7 +176,9 @@ const AddToLibraryDialog = ({
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
@@ -284,6 +287,6 @@ const AddToLibraryDialog = ({
       </div>
     </div>
   );
-};
+}
 
 export default AddToLibraryDialog;

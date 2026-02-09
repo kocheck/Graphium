@@ -22,9 +22,16 @@
  * - Use dev-app-update.yml for local testing if needed
  */
 
-import { autoUpdater } from 'electron-updater';
+import { app, ipcMain } from 'electron';
 import log from 'electron-log';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import {
+  autoUpdater,
+  type UpdateInfo,
+  type ProgressInfo,
+  type UpdateDownloadedEvent,
+} from 'electron-updater';
+
+import type { BrowserWindow } from 'electron';
 
 // Configure logging for production debugging
 // Logs are written to ~/Library/Logs/Graphium/main.log (macOS)
@@ -39,7 +46,7 @@ autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
 // Check if running in development mode
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+const isDev = process.env['NODE_ENV'] === 'development' || !app.isPackaged;
 
 // Track if event listeners are already registered to prevent duplicates
 let isInitialized = false;
@@ -72,10 +79,17 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    * Checks if window exists and webContents is not destroyed before sending
    */
   const safeSend = (channel: string, ...args: unknown[]) => {
-    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+    if (
+      mainWindow &&
+      !mainWindow.isDestroyed() &&
+      mainWindow.webContents &&
+      !mainWindow.webContents.isDestroyed()
+    ) {
       mainWindow.webContents.send(channel, ...args);
     } else {
-      log.warn(`[AutoUpdater] Cannot send IPC event '${channel}': window is destroyed or unavailable`);
+      log.warn(
+        `[AutoUpdater] Cannot send IPC event '${channel}': window is destroyed or unavailable`,
+      );
     }
   };
 
@@ -96,7 +110,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    * Event: update-available
    * Fired when a new version is available
    */
-  autoUpdater.on('update-available', (info) => {
+  autoUpdater.on('update-available', (info: UpdateInfo) => {
     log.info('[AutoUpdater] Update available:', info.version);
     safeSend('auto-updater:update-available', {
       version: info.version,
@@ -109,7 +123,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    * Event: update-not-available
    * Fired when no new version is available
    */
-  autoUpdater.on('update-not-available', (info) => {
+  autoUpdater.on('update-not-available', (info: UpdateInfo) => {
     log.info('[AutoUpdater] No update available. Current version:', info.version);
     safeSend('auto-updater:update-not-available', {
       version: info.version,
@@ -120,9 +134,9 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    * Event: download-progress
    * Fired during download with progress information
    */
-  autoUpdater.on('download-progress', (progress) => {
+  autoUpdater.on('download-progress', (progress: ProgressInfo) => {
     log.info(
-      `[AutoUpdater] Download progress: ${progress.percent.toFixed(2)}% (${progress.transferred}/${progress.total})`
+      `[AutoUpdater] Download progress: ${progress.percent.toFixed(2)}% (${progress.transferred}/${progress.total})`,
     );
     safeSend('auto-updater:download-progress', {
       percent: progress.percent,
@@ -136,7 +150,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    * Event: update-downloaded
    * Fired when update is fully downloaded and ready to install
    */
-  autoUpdater.on('update-downloaded', (info) => {
+  autoUpdater.on('update-downloaded', (info: UpdateDownloadedEvent) => {
     log.info('[AutoUpdater] Update downloaded:', info.version);
     safeSend('auto-updater:update-downloaded', {
       version: info.version,
@@ -147,7 +161,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    * Event: error
    * Fired when an error occurs during update process
    */
-  autoUpdater.on('error', (error) => {
+  autoUpdater.on('error', (error: Error) => {
     log.error('[AutoUpdater] Error:', error);
     safeSend('auto-updater:error', {
       message: error.message,
@@ -180,7 +194,7 @@ export function registerAutoUpdaterHandlers() {
     try {
       const result = await autoUpdater.checkForUpdates();
       return {
-        available: result?.updateInfo ? true : false,
+        available: !!result?.updateInfo,
         updateInfo: result?.updateInfo,
       };
     } catch (error) {

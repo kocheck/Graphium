@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import logoDarkUrl from '../assets/branding/logo-dark.svg';
 import logoLightUrl from '../assets/branding/logo-light.svg';
 

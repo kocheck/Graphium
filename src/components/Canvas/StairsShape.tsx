@@ -1,4 +1,5 @@
 import { Group, Rect, Line, Path } from 'react-konva';
+
 import type { Stairs } from '../../store/gameStore';
 
 interface StairsShapeProps {
@@ -21,7 +22,7 @@ interface StairsShapeProps {
  *
  * @param stairs - Stairs object from gameStore
  */
-const StairsShape = ({ stairs }: StairsShapeProps) => {
+function StairsShape({ stairs }: StairsShapeProps) {
   // Color scheme based on type
   const fillColor = stairs.type === 'up' ? '#c0c0c0' : '#808080'; // Light gray for up, dark gray for down
   const strokeColor = '#000000';
@@ -59,7 +60,7 @@ const StairsShape = ({ stairs }: StairsShapeProps) => {
       {renderTypeIndicator()}
     </Group>
   );
-};
+}
 
 /**
  * Renders stair treads (horizontal lines showing individual steps)
@@ -142,6 +143,8 @@ function renderDirectionalArrow(stairs: Stairs, arrowColor: string) {
     case 'west':
       // Arrow pointing left
       arrowPath = `M ${centerX - arrowSize} ${centerY} L ${centerX} ${centerY - arrowSize / 2} L ${centerX} ${centerY + arrowSize / 2} Z`;
+      break;
+    default:
       break;
   }
 

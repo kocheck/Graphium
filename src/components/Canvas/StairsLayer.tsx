@@ -1,4 +1,5 @@
 import StairsShape from './StairsShape';
+
 import type { Stairs } from '../../store/gameStore';
 
 interface StairsLayerProps {
@@ -24,7 +25,7 @@ interface StairsLayerProps {
  * @param stairs - Array of stairs from gameStore
  * @param isWorldView - If true, player view (currently no behavioral difference)
  */
-const StairsLayer = ({ stairs, isWorldView }: StairsLayerProps) => {
+function StairsLayer({ stairs, isWorldView }: StairsLayerProps) {
   return (
     <>
       {stairs.map((stair) => (
@@ -32,6 +33,6 @@ const StairsLayer = ({ stairs, isWorldView }: StairsLayerProps) => {
       ))}
     </>
   );
-};
+}
 
 export default StairsLayer;

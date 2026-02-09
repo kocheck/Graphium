@@ -21,25 +21,26 @@
  */
 
 import { useEffect } from 'react';
+
 import { usePreferencesStore } from '../store/preferencesStore';
-import {
-  useTouchSettingsStore,
-  PressureCurve,
-  PalmRejectionMode,
-} from '../store/touchSettingsStore';
+import { useTouchSettingsStore } from '../store/touchSettingsStore';
+
+import type { PressureCurve, PalmRejectionMode } from '../store/touchSettingsStore';
 
 interface PreferencesDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
+function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps) {
   const { wallTool, setWallToolPreference, resetWallToolPreferences } = usePreferencesStore();
   const touchSettings = useTouchSettingsStore();
 
   // Handle keyboard events
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -51,7 +52,9 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleReset = () => {
     resetWallToolPreferences();
@@ -667,6 +670,6 @@ const PreferencesDialog = ({ isOpen, onClose }: PreferencesDialogProps) => {
       </div>
     </div>
   );
-};
+}
 
 export default PreferencesDialog;

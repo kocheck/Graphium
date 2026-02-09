@@ -1,11 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  getStoredErrors,
-  getUnreportedErrorCount,
-  markErrorReported,
-  clearReportedErrors,
-  StoredError,
-} from '../utils/globalErrorHandler';
+import type React from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
 import {
   RiErrorWarningLine,
   RiCloseLine,
@@ -15,6 +10,15 @@ import {
   RiGithubFill,
   RiSaveLine,
 } from '@remixicon/react';
+
+import {
+  getStoredErrors,
+  getUnreportedErrorCount,
+  markErrorReported,
+  clearReportedErrors,
+} from '../utils/globalErrorHandler';
+
+import type { StoredError } from '../utils/globalErrorHandler';
 
 // Constants for GitHub issue URL construction
 const MAX_GITHUB_URL_LENGTH = 2000;
@@ -30,9 +34,9 @@ interface PendingErrorsIndicatorProps {
  * Floating indicator that shows when there are pending unreported errors.
  * Allows users to review, report, or dismiss stored errors.
  */
-const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
+function PendingErrorsIndicator({
   position = 'bottom-right',
-}) => {
+}: PendingErrorsIndicatorProps): React.ReactElement | null {
   const [unreportedCount, setUnreportedCount] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [errors, setErrors] = useState<StoredError[]>([]);
@@ -332,6 +336,6 @@ const PendingErrorsIndicator: React.FC<PendingErrorsIndicatorProps> = ({
       )}
     </div>
   );
-};
+}
 
 export default PendingErrorsIndicator;

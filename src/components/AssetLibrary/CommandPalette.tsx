@@ -26,13 +26,15 @@
  */
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+
+import { RiEditLine, RiArrowRightSLine } from '@remixicon/react';
+
+import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
+import TokenMetadataEditor from './TokenMetadataEditor';
 import { useGameStore } from '../../store/gameStore';
+import { createCommandRegistry, searchCommands, type Command } from '../../utils/commandRegistry';
 import { fuzzySearch } from '../../utils/fuzzySearch';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
-import TokenMetadataEditor from './TokenMetadataEditor';
-import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
-import { createCommandRegistry, searchCommands, type Command } from '../../utils/commandRegistry';
-import { RiEditLine, RiArrowRightSLine } from '@remixicon/react';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -50,7 +52,7 @@ type ResultItem =
   | { type: 'asset'; data: ReturnType<typeof fuzzySearch>[number] }
   | { type: 'section'; label: string };
 
-const CommandPalette = ({
+function CommandPalette({
   isOpen,
   onClose,
   onSetTool,
@@ -58,7 +60,7 @@ const CommandPalette = ({
   onLaunchWorldView,
   onOpenDungeonGenerator,
   isGamePaused,
-}: CommandPaletteProps) => {
+}: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -135,7 +137,9 @@ const CommandPalette = ({
   const handleSelectItem = useCallback(
     (index: number) => {
       const item = results[index];
-      if (!item) return;
+      if (!item) {
+        return;
+      }
 
       if (item.type === 'section') {
         // Section headers are not selectable
@@ -168,7 +172,9 @@ const CommandPalette = ({
 
   // Handle Escape key to close and arrow keys for navigation
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -185,11 +191,13 @@ const CommandPalette = ({
         e.preventDefault();
         // Check if there are any selectable items at all
         const hasSelectableItems = results.some((item) => item.type !== 'section');
-        if (!hasSelectableItems) return;
+        if (!hasSelectableItems) {
+          return;
+        }
 
         // Skip section headers
         let nextIndex = selectedIndex + 1;
-        while (nextIndex < results.length && results[nextIndex].type === 'section') {
+        while (nextIndex < results.length && results[nextIndex]?.type === 'section') {
           nextIndex++;
         }
         if (nextIndex < results.length) {
@@ -199,11 +207,13 @@ const CommandPalette = ({
         e.preventDefault();
         // Check if there are any selectable items at all
         const hasSelectableItems = results.some((item) => item.type !== 'section');
-        if (!hasSelectableItems) return;
+        if (!hasSelectableItems) {
+          return;
+        }
 
         // Skip section headers
         let prevIndex = selectedIndex - 1;
-        while (prevIndex >= 0 && results[prevIndex].type === 'section') {
+        while (prevIndex >= 0 && results[prevIndex]?.type === 'section') {
           prevIndex--;
         }
         if (prevIndex >= 0) {
@@ -216,7 +226,9 @@ const CommandPalette = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, results, onClose, handleSelectItem, selectedIndex]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
@@ -400,6 +412,6 @@ const CommandPalette = ({
       </LibraryModalErrorBoundary>
     </div>
   );
-};
+}
 
 export default CommandPalette;

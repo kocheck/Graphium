@@ -34,7 +34,9 @@ describe('PaperNoiseOverlay', () => {
     };
 
     // Mock Image constructor
-    global.Image = vi.fn(() => mockImage) as any;
+    global.Image = vi.fn(function () {
+      return mockImage;
+    }) as any;
 
     // Suppress console.error for cleaner test output
     vi.spyOn(console, 'error').mockImplementation(() => {});

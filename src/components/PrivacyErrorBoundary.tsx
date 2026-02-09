@@ -54,9 +54,14 @@
  * @component
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { sanitizeStack, generateReportBody, SanitizedError } from '../utils/errorSanitizer';
+import type { ErrorInfo, ReactNode } from 'react';
+import type React from 'react';
+import { Component } from 'react';
+
+import { sanitizeStack, generateReportBody } from '../utils/errorSanitizer';
 import { rollForMessage } from '../utils/systemMessages';
+
+import type { SanitizedError } from '../utils/errorSanitizer';
 
 // Constants for GitHub issue URL construction
 const MAX_GITHUB_URL_LENGTH = 2000;
@@ -132,9 +137,9 @@ class PrivacyErrorBoundary extends Component<Props, State> {
    * @param error - The error that was thrown
    * @param errorInfo - React error info including component stack
    */
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Delegate to async method to keep componentDidCatch synchronous per React lifecycle requirements
-    this.sanitizeAndSetError(error, errorInfo);
+    void this.sanitizeAndSetError(error, errorInfo);
   }
 
   /**
@@ -361,7 +366,7 @@ ${userContext.trim()}
     window.location.reload();
   };
 
-  render(): ReactNode {
+  override render(): ReactNode {
     const {
       hasError,
       isLoading,

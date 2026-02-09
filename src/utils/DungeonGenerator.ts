@@ -319,9 +319,11 @@ export class DungeonGenerator {
       // Pick a random existing room piece to grow from
       // Filter to only room pieces (rooms are at even indices after the first room)
       const roomPieces = pieces.filter((_, idx) => idx === 0 || idx % 2 === 0);
-      if (roomPieces.length === 0) break;
+      if (roomPieces.length === 0) {
+        break;
+      }
 
-      const sourcePiece = roomPieces[Math.floor(Math.random() * roomPieces.length)];
+      const sourcePiece = roomPieces[Math.floor(Math.random() * roomPieces.length)]!;
       const usedDirs = usedDirections.get(sourcePiece) || new Set();
 
       // Try all available directions
@@ -380,7 +382,7 @@ export class DungeonGenerator {
    */
   private createRoom(x: number, y: number): DungeonPiece {
     // Randomly select a room template
-    const template = this.roomTemplates[Math.floor(Math.random() * this.roomTemplates.length)];
+    const template = this.roomTemplates[Math.floor(Math.random() * this.roomTemplates.length)]!;
 
     // Generate random size within template bounds
     const widthCells =
@@ -437,11 +439,11 @@ export class DungeonGenerator {
     const corridorWidth = this.corridorTemplate.widthInCells * gridSize;
     const corridorLength = this.corridorTemplate.lengthInCells * gridSize;
 
-    let bounds: Room;
-    let wallSegments: DungeonPiece['wallSegments'];
+    let bounds!: Room;
+    let wallSegments!: DungeonPiece['wallSegments'];
 
     switch (direction) {
-      case 'north':
+      case 'north': {
         // Grid-snap corridor CENTER (works because width=2 cells, so center is grid-aligned)
         const northCenterX = Math.round(fromX / gridSize) * gridSize;
         bounds = {
@@ -463,8 +465,9 @@ export class DungeonGenerator {
           ],
         };
         break;
+      }
 
-      case 'south':
+      case 'south': {
         // Grid-snap corridor CENTER (works because width=2 cells, so center is grid-aligned)
         const southCenterX = Math.round(fromX / gridSize) * gridSize;
         bounds = {
@@ -486,8 +489,9 @@ export class DungeonGenerator {
           ],
         };
         break;
+      }
 
-      case 'east':
+      case 'east': {
         // Grid-snap corridor CENTER (works because width=2 cells, so center is grid-aligned)
         const eastCenterY = Math.round(fromY / gridSize) * gridSize;
         bounds = {
@@ -509,8 +513,9 @@ export class DungeonGenerator {
           west: undefined,
         };
         break;
+      }
 
-      case 'west':
+      case 'west': {
         // Grid-snap corridor CENTER (works because width=2 cells, so center is grid-aligned)
         const westCenterY = Math.round(fromY / gridSize) * gridSize;
         bounds = {
@@ -531,6 +536,10 @@ export class DungeonGenerator {
           east: undefined,
           west: undefined,
         };
+        break;
+      }
+
+      default:
         break;
     }
 
@@ -563,7 +572,7 @@ export class DungeonGenerator {
     const { gridSize } = this.options;
 
     // Calculate connection point on source piece and snap to grid
-    let connX: number, connY: number;
+    let connX!: number, connY!: number;
 
     switch (direction) {
       case 'north':
@@ -581,6 +590,8 @@ export class DungeonGenerator {
       case 'west':
         connX = bounds.x;
         connY = Math.round((bounds.y + bounds.height / 2) / gridSize) * gridSize;
+        break;
+      default:
         break;
     }
 
@@ -614,6 +625,8 @@ export class DungeonGenerator {
         newRoom.bounds.x = corrBounds.x - newRoom.bounds.width;
         newRoom.bounds.y = connY - newRoom.bounds.height / 2;
         break;
+      default:
+        break;
     }
 
     // Grid-snap room position
@@ -632,27 +645,33 @@ export class DungeonGenerator {
 
     // Adjust corridor endpoint to match snapped room edge
     switch (direction) {
-      case 'north':
+      case 'north': {
         // Corridor connects source room (south end) to new room (north end)
         // Adjust corridor X to align with new room center
         const northOffsetX = Math.round(snappedRoomCenter.x / gridSize) * gridSize - connX;
         corridor.bounds.x += northOffsetX;
         this.updateWallSegments(corridor);
         break;
-      case 'south':
+      }
+      case 'south': {
         const southOffsetX = Math.round(snappedRoomCenter.x / gridSize) * gridSize - connX;
         corridor.bounds.x += southOffsetX;
         this.updateWallSegments(corridor);
         break;
-      case 'east':
+      }
+      case 'east': {
         const eastOffsetY = Math.round(snappedRoomCenter.y / gridSize) * gridSize - connY;
         corridor.bounds.y += eastOffsetY;
         this.updateWallSegments(corridor);
         break;
-      case 'west':
+      }
+      case 'west': {
         const westOffsetY = Math.round(snappedRoomCenter.y / gridSize) * gridSize - connY;
         corridor.bounds.y += westOffsetY;
         this.updateWallSegments(corridor);
+        break;
+      }
+      default:
         break;
     }
 
@@ -667,14 +686,14 @@ export class DungeonGenerator {
 
     // Calculate exact doorway positions AFTER grid snapping AND corridor adjustment
     // Doorways must align with the corridor's actual connection points
-    let sourceRoomDoorwayX: number, sourceRoomDoorwayY: number;
-    let newRoomDoorwayX: number, newRoomDoorwayY: number;
+    let sourceRoomDoorwayX!: number, sourceRoomDoorwayY!: number;
+    let newRoomDoorwayX!: number, newRoomDoorwayY!: number;
 
     // Use corridor's adjusted bounds to determine exact door positions
     const adjustedCorridor = corridor.bounds;
 
     switch (direction) {
-      case 'north':
+      case 'north': {
         // Source room door at bottom, new room door at top
         // Use corridor's X position (center) for alignment
         const northCorrCenterX = adjustedCorridor.x + adjustedCorridor.width / 2;
@@ -683,7 +702,8 @@ export class DungeonGenerator {
         newRoomDoorwayX = Math.round(northCorrCenterX / gridSize) * gridSize;
         newRoomDoorwayY = newRoom.bounds.y + newRoom.bounds.height; // New room's bottom edge
         break;
-      case 'south':
+      }
+      case 'south': {
         // Source room door at bottom, new room door at top
         const southCorrCenterX = adjustedCorridor.x + adjustedCorridor.width / 2;
         sourceRoomDoorwayX = Math.round(southCorrCenterX / gridSize) * gridSize;
@@ -691,7 +711,8 @@ export class DungeonGenerator {
         newRoomDoorwayX = Math.round(southCorrCenterX / gridSize) * gridSize;
         newRoomDoorwayY = newRoom.bounds.y; // New room's top edge
         break;
-      case 'east':
+      }
+      case 'east': {
         // Use corridor's Y position (center) for alignment
         const eastCorrCenterY = adjustedCorridor.y + adjustedCorridor.height / 2;
         sourceRoomDoorwayX = bounds.x + bounds.width; // Source room's right edge
@@ -699,13 +720,17 @@ export class DungeonGenerator {
         newRoomDoorwayX = newRoom.bounds.x; // New room's left edge
         newRoomDoorwayY = Math.round(eastCorrCenterY / gridSize) * gridSize;
         break;
-      case 'west':
+      }
+      case 'west': {
         // Use corridor's Y position (center) for alignment
         const westCorrCenterY = adjustedCorridor.y + adjustedCorridor.height / 2;
         sourceRoomDoorwayX = bounds.x; // Source room's left edge
         sourceRoomDoorwayY = Math.round(westCorrCenterY / gridSize) * gridSize;
         newRoomDoorwayX = newRoom.bounds.x + newRoom.bounds.width; // New room's right edge
         newRoomDoorwayY = Math.round(westCorrCenterY / gridSize) * gridSize;
+        break;
+      }
+      default:
         break;
     }
 
@@ -775,7 +800,7 @@ export class DungeonGenerator {
     const minSegmentSize = gridSize * DungeonGenerator.MIN_WALL_SEGMENT_FRACTION;
 
     // Calculate doorway position if not provided
-    let centerX: number, centerY: number;
+    let centerX!: number, centerY!: number;
 
     if (doorwayPosition) {
       centerX = doorwayPosition.x;
@@ -793,6 +818,8 @@ export class DungeonGenerator {
           centerX = direction === 'east' ? bounds.x + bounds.width : bounds.x;
           centerY = Math.round((bounds.y + bounds.height / 2) / gridSize) * gridSize;
           break;
+        default:
+          break;
       }
     }
 
@@ -806,10 +833,12 @@ export class DungeonGenerator {
 
     // Split the wall to create a gap for the door
     const segment = wallSegments[direction];
-    if (!segment || segment.length < 2) return;
+    if (!segment || segment.length < 2) {
+      return;
+    }
 
-    const start = segment[0];
-    const end = segment[1];
+    const start = segment[0]!;
+    const end = segment[1]!;
 
     if (direction === 'north' || direction === 'south') {
       // Horizontal wall - split left and right of doorway
@@ -957,7 +986,7 @@ export class DungeonGenerator {
           drawings.push({
             id: crypto.randomUUID(),
             tool: 'wall',
-            points: [segment[0].x, segment[0].y, segment[1].x, segment[1].y],
+            points: [segment[0]!.x, segment[0]!.y, segment[1]!.x, segment[1]!.y],
             color: wallColor,
             size: wallSize,
           });
@@ -967,7 +996,7 @@ export class DungeonGenerator {
           drawings.push({
             id: crypto.randomUUID(),
             tool: 'wall',
-            points: [segment[0].x, segment[0].y, segment[1].x, segment[1].y],
+            points: [segment[0]!.x, segment[0]!.y, segment[1]!.x, segment[1]!.y],
             color: wallColor,
             size: wallSize,
           });
@@ -976,7 +1005,7 @@ export class DungeonGenerator {
           drawings.push({
             id: crypto.randomUUID(),
             tool: 'wall',
-            points: [segment[2].x, segment[2].y, segment[3].x, segment[3].y],
+            points: [segment[2]!.x, segment[2]!.y, segment[3]!.x, segment[3]!.y],
             color: wallColor,
             size: wallSize,
           });
@@ -1004,7 +1033,7 @@ export class DungeonGenerator {
 
     // Determine swing direction (doors swing into rooms, away from corridors)
     // For now, default to standard directions
-    let swingDirection: 'left' | 'right' | 'up' | 'down';
+    let swingDirection!: 'left' | 'right' | 'up' | 'down';
     switch (direction) {
       case 'north':
         swingDirection = 'left'; // Door swings to the left (west)
@@ -1017,6 +1046,8 @@ export class DungeonGenerator {
         break;
       case 'west':
         swingDirection = 'up'; // Door swings upward (north)
+        break;
+      default:
         break;
     }
 

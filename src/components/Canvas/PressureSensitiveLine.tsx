@@ -1,6 +1,8 @@
 import { useRef, memo } from 'react';
+
 import { Shape } from 'react-konva';
-import Konva from 'konva';
+
+import type Konva from 'konva';
 
 // Import the globalCompositeOperationType from Konva
 type GlobalCompositeOperationType =
@@ -104,7 +106,7 @@ function validatePressureData(points: number[], pressures?: number[]): number[] 
  * @param props - PressureSensitiveLineProps
  * @returns Konva Shape component
  */
-const PressureSensitiveLineComponent = ({
+function PressureSensitiveLineComponent({
   id,
   name,
   points,
@@ -122,7 +124,7 @@ const PressureSensitiveLineComponent = ({
   x,
   y,
   pressureRange = { min: 0.3, max: 1.5 }, // Default to 'normal' curve
-}: PressureSensitiveLineProps) => {
+}: PressureSensitiveLineProps) {
   const shapeRef = useRef<Konva.Shape>(null);
 
   // Validate pressure data
@@ -130,10 +132,12 @@ const PressureSensitiveLineComponent = ({
 
   // Custom rendering function for variable-width strokes
   const sceneFunc = (context: Konva.Context, shape: Konva.Shape) => {
-    if (points.length < 4) return; // Need at least 2 points
+    if (points.length < 4) {
+      return;
+    } // Need at least 2 points
 
     context.beginPath();
-    context.moveTo(points[0], points[1]);
+    context.moveTo(points[0]!, points[1]!);
 
     // Explicitly apply styles since we are using custom drawing
     context.strokeStyle = shape.stroke();
@@ -143,7 +147,7 @@ const PressureSensitiveLineComponent = ({
     // If no valid pressure data, render as regular line
     if (!validatedPressures) {
       for (let i = 2; i < points.length; i += 2) {
-        context.lineTo(points[i], points[i + 1]);
+        context.lineTo(points[i]!, points[i + 1]!);
       }
       context.strokeShape(shape);
       return;
@@ -173,8 +177,8 @@ const PressureSensitiveLineComponent = ({
 
       // Draw line segment with calculated width
       context.beginPath();
-      context.moveTo(x1, y1);
-      context.lineTo(x2, y2);
+      context.moveTo(x1!, y1!);
+      context.lineTo(x2!, y2!);
       context.lineWidth = segmentWidth;
       context.stroke();
     }
@@ -200,7 +204,7 @@ const PressureSensitiveLineComponent = ({
       y={y}
     />
   );
-};
+}
 
 /**
  * Memoized export to prevent unnecessary re-renders when parent components update.

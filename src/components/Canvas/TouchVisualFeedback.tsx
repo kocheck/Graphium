@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react';
+
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 
 export interface TouchVisualFeedbackProps {
@@ -30,18 +31,20 @@ export interface TouchVisualFeedbackProps {
   containerBounds: { width: number; height: number };
 }
 
-const TouchVisualFeedback = ({
+function TouchVisualFeedback({
   pressure,
   pointerPosition,
   touchPoints,
   gestureMode,
   containerBounds,
-}: TouchVisualFeedbackProps) => {
+}: TouchVisualFeedbackProps) {
   const settings = useTouchSettingsStore();
 
   // Calculate pressure indicator size (10-40px based on pressure)
   const pressureIndicatorSize = useMemo(() => {
-    if (!pressure) return 0;
+    if (!pressure) {
+      return 0;
+    }
     const minSize = 10;
     const maxSize = 40;
     return minSize + pressure * (maxSize - minSize);
@@ -49,7 +52,9 @@ const TouchVisualFeedback = ({
 
   // Pressure indicator color changes with pressure (blue -> green -> red)
   const pressureIndicatorColor = useMemo(() => {
-    if (!pressure) return '#3b82f6';
+    if (!pressure) {
+      return '#3b82f6';
+    }
 
     if (pressure < 0.33) {
       // Low pressure: blue
@@ -65,7 +70,9 @@ const TouchVisualFeedback = ({
 
   // Gesture mode label and color
   const gestureModeInfo = useMemo(() => {
-    if (!gestureMode) return null;
+    if (!gestureMode) {
+      return null;
+    }
 
     if (gestureMode === 'pan') {
       return { label: 'Pan Mode', color: '#3b82f6' };
@@ -147,10 +154,10 @@ const TouchVisualFeedback = ({
           {touchPoints.length === 2 && (
             <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
               <line
-                x1={touchPoints[0].x}
-                y1={touchPoints[0].y}
-                x2={touchPoints[1].x}
-                y2={touchPoints[1].y}
+                x1={touchPoints[0]!.x}
+                y1={touchPoints[0]!.y}
+                x2={touchPoints[1]!.x}
+                y2={touchPoints[1]!.y}
                 stroke="#6366f1"
                 strokeWidth="2"
                 strokeDasharray="5,5"
@@ -175,6 +182,6 @@ const TouchVisualFeedback = ({
       )}
     </div>
   );
-};
+}
 
 export default TouchVisualFeedback;

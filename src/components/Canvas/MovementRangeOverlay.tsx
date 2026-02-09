@@ -8,9 +8,13 @@
  * @component
  */
 
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
+
 import { Group, Line } from 'react-konva';
+
 import { createGridGeometry } from '../../utils/gridGeometry';
+
 import type { GridType } from '../../store/gameStore';
 
 /**
@@ -86,16 +90,18 @@ interface MovementRangeOverlayProps {
 /**
  * MovementRangeOverlay renders a visual overlay showing reachable grid cells
  */
-const MovementRangeOverlay: React.FC<MovementRangeOverlayProps> = ({
+function MovementRangeOverlay({
   tokenPosition,
   movementSpeed,
   gridSize,
   gridType,
   fillColor = 'rgba(0, 150, 255, 0.15)',
   strokeColor = 'rgba(0, 150, 255, 0.4)',
-}) => {
+}: MovementRangeOverlayProps): React.ReactElement | null {
   const reachableCells = useMemo(() => {
-    if (gridType === 'HIDDEN') return [];
+    if (gridType === 'HIDDEN') {
+      return [];
+    }
 
     const geometry = createGridGeometry(gridType);
     const cells: Array<{ q: number; r: number }> = [];
@@ -116,7 +122,9 @@ const MovementRangeOverlay: React.FC<MovementRangeOverlayProps> = ({
       const { cell, distance } = queue.shift()!;
       const key = `${cell.q},${cell.r}`;
 
-      if (visited.has(key) || distance > maxCells) continue;
+      if (visited.has(key) || distance > maxCells) {
+        continue;
+      }
       visited.add(key);
       cells.push(cell);
 
@@ -152,13 +160,13 @@ const MovementRangeOverlay: React.FC<MovementRangeOverlayProps> = ({
             fill={fillColor}
             stroke={strokeColor}
             strokeWidth={1}
-            closed={true}
+            closed
             listening={false}
           />
         );
       })}
     </Group>
   );
-};
+}
 
 export default MovementRangeOverlay;

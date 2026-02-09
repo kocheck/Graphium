@@ -1,4 +1,5 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -19,7 +20,7 @@ interface State {
  * and provides options for the user to reload the app.
  */
 export class GlobalErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false,
     error: null,
     errorInfo: null,
@@ -30,7 +31,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, errorInfo: null };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     this.setState({ errorInfo });
   }
@@ -42,10 +43,10 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   private handleCopyError = () => {
     const { error, errorInfo } = this.state;
     const errorText = `Error: ${error?.message}\n\nStack:\n${errorInfo?.componentStack}`;
-    navigator.clipboard.writeText(errorText);
+    void navigator.clipboard.writeText(errorText);
   };
 
-  public render() {
+  public override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

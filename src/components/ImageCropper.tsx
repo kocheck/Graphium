@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+
 import Cropper from 'react-easy-crop';
 
 /**
@@ -65,7 +66,7 @@ interface ImageCropperProps {
  *   />
  * )}
  */
-const ImageCropper = ({ imageSrc, onConfirm, onCancel }: ImageCropperProps) => {
+function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 }); // Crop area position
   const [zoom, setZoom] = useState(1); // Zoom level (1x-3x)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null); // Pixel coordinates for extraction
@@ -98,7 +99,9 @@ const ImageCropper = ({ imageSrc, onConfirm, onCancel }: ImageCropperProps) => {
    */
   const handleSave = async () => {
     try {
-      if (!croppedAreaPixels) return;
+      if (!croppedAreaPixels) {
+        return;
+      }
       const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
       if (croppedImage) {
         onConfirm(croppedImage);
@@ -162,7 +165,7 @@ const ImageCropper = ({ imageSrc, onConfirm, onCancel }: ImageCropperProps) => {
       </div>
     </div>
   );
-};
+}
 
 /**
  * Extracts the cropped region from an image and returns it as a WebP blob

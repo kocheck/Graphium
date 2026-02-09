@@ -2,7 +2,7 @@
  * Type definitions for the Design System Playground
  */
 
-import React from 'react';
+import type React from 'react';
 
 export interface ComponentExample {
   id: string;

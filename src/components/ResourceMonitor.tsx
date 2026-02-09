@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+
 import { useGameStore } from '../store/gameStore';
 
 interface PerformanceMetrics {
@@ -53,7 +54,7 @@ interface PerformanceMetrics {
  *   Toggle Resource Monitor
  * </button>
  */
-const ResourceMonitor = () => {
+function ResourceMonitor() {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fps: 0,
     memory: null,
@@ -185,7 +186,9 @@ const ResourceMonitor = () => {
    * This prevents memory leaks while ensuring IPC continues to function normally.
    */
   useEffect(() => {
-    if (!window.ipcRenderer) return;
+    if (!window.ipcRenderer) {
+      return;
+    }
 
     // Guard: Check if IPC methods exist and are functions
     if (
@@ -201,7 +204,9 @@ const ResourceMonitor = () => {
     let isTracking = true;
 
     try {
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       originalSend = window.ipcRenderer.send;
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       originalOn = window.ipcRenderer.on;
 
       // Intercept send (outgoing messages)
@@ -277,7 +282,9 @@ const ResourceMonitor = () => {
    * Format bytes to human-readable string
    */
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {
+      return '0 B';
+    }
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -288,8 +295,12 @@ const ResourceMonitor = () => {
    * Get FPS color (green = good, yellow = ok, red = bad)
    */
   const getFPSColor = (fps: number): string => {
-    if (fps >= 55) return '#4CAF50'; // Green
-    if (fps >= 30) return '#FFC107'; // Yellow
+    if (fps >= 55) {
+      return '#4CAF50';
+    } // Green
+    if (fps >= 30) {
+      return '#FFC107';
+    } // Yellow
     return '#f44336'; // Red
   };
 
@@ -297,7 +308,9 @@ const ResourceMonitor = () => {
    * Get memory usage percentage
    */
   const getMemoryPercent = (): number => {
-    if (!metrics.memory) return 0;
+    if (!metrics.memory) {
+      return 0;
+    }
     return Math.round((metrics.memory.used / metrics.memory.limit) * 100);
   };
 
@@ -456,6 +469,6 @@ const ResourceMonitor = () => {
       )}
     </div>
   );
-};
+}
 
 export default ResourceMonitor;

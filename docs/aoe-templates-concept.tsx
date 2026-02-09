@@ -14,14 +14,14 @@ interface AoETemplateProps {
   gridType: GridType;
 }
 
-export const AoETemplate: React.FC<AoETemplateProps> = ({
+export function AoETemplate({
   origin,
   templateType,
   radius,
   direction = 0,
   gridSize,
   gridType,
-}) => {
+}: AoETemplateProps): React.ReactElement {
   const geometry = createGridGeometry(gridType);
 
   const affectedCells = useMemo(() => {
@@ -79,7 +79,7 @@ export const AoETemplate: React.FC<AoETemplateProps> = ({
             fill="rgba(255, 100, 0, 0.25)"
             stroke="rgba(255, 100, 0, 0.6)"
             strokeWidth={2}
-            closed={true}
+            closed
           />
         );
       })}
@@ -94,4 +94,4 @@ export const AoETemplate: React.FC<AoETemplateProps> = ({
       />
     </Group>
   );
-};
+}

@@ -7,7 +7,7 @@
  * - Cone AoE (Burning Hands, etc.)
  */
 
-import { Point } from '../types/geometry';
+import type { Point } from '../types/geometry';
 
 /**
  * D&D 5e distance calculation modes

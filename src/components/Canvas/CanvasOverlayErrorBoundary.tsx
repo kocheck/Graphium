@@ -1,4 +1,7 @@
-import React, { Component, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type React from 'react';
+import { Component } from 'react';
+
 import {
   captureErrorContext,
   logErrorWithContext,
@@ -89,7 +92,7 @@ class CanvasOverlayErrorBoundary extends Component<
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     const { overlayName = 'CanvasOverlay' } = this.props;
     const isDev = import.meta.env.DEV;
     const isTest = import.meta.env.MODE === 'test';
@@ -144,7 +147,7 @@ class CanvasOverlayErrorBoundary extends Component<
     }
   }
 
-  render() {
+  override render() {
     const { hasError } = this.state;
     const { children, overlayName } = this.props;
 

@@ -205,8 +205,12 @@ export function captureErrorContext(
  * A path-based approach would be more accurate but significantly more complex.
  */
 function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined {
-  if (!data) return undefined;
-  if (typeof data !== 'object') return undefined;
+  if (!data) {
+    return undefined;
+  }
+  if (typeof data !== 'object') {
+    return undefined;
+  }
 
   try {
     // Use JSON stringify with replacer to handle functions and circular refs

@@ -29,7 +29,9 @@
  * See electron/main.ts for IPC handler implementations.
  */
 
-import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron';
+import { ipcRenderer, contextBridge } from 'electron';
+
+import type { IpcRendererEvent } from 'electron';
 
 // WeakMap to store original listeners -> wrapper listeners
 // This is needed because we wrap listeners in on(), so we need the wrapper reference for off()

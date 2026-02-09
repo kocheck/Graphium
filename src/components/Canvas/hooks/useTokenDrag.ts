@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from 'react';
-import Konva from 'konva';
-import { KonvaEventObject } from 'konva/lib/Node';
+
 import { useGameStore } from '../../../store/gameStore';
 import { snapToGrid } from '../../../utils/grid';
-import { Token } from '../../../store/gameStore';
 import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
+
+import type { Token } from '../../../store/gameStore';
+import type Konva from 'konva';
+import type { KonvaEventObject } from 'konva/lib/Node';
 
 interface UseTokenDragProps {
   tool: string;
@@ -85,15 +87,25 @@ export const useTokenDrag = ({
   const handleTokenPointerDown = useCallback(
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string) => {
       trackStylusUsage(e);
-      if (shouldRejectPointerEvent(e)) return;
-      if (tool !== 'select') return;
-      if (isMultiTouchGesture(e)) return;
+      if (shouldRejectPointerEvent(e)) {
+        return;
+      }
+      if (tool !== 'select') {
+        return;
+      }
+      if (isMultiTouchGesture(e)) {
+        return;
+      }
 
       const pointerPos = getPointerPosition(e);
-      if (!pointerPos) return;
+      if (!pointerPos) {
+        return;
+      }
 
       const token = resolvedTokens.find((t) => t.id === tokenId);
-      if (!token) return;
+      if (!token) {
+        return;
+      }
 
       e.evt.stopPropagation();
 
@@ -110,12 +122,20 @@ export const useTokenDrag = ({
 
   const handleTokenPointerMove = useCallback(
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
-      if (shouldRejectPointerEvent(e)) return;
-      if (!tokenMouseDownStart || tool !== 'select') return;
-      if (isMultiTouchGesture(e)) return;
+      if (shouldRejectPointerEvent(e)) {
+        return;
+      }
+      if (!tokenMouseDownStart || tool !== 'select') {
+        return;
+      }
+      if (isMultiTouchGesture(e)) {
+        return;
+      }
 
       const pointerPos = getPointerPosition(e);
-      if (!pointerPos) return;
+      if (!pointerPos) {
+        return;
+      }
 
       const dx = pointerPos.x - tokenMouseDownStart.x;
       const dy = pointerPos.y - tokenMouseDownStart.y;
@@ -134,7 +154,9 @@ export const useTokenDrag = ({
         }
 
         const primaryToken = resolvedTokens.find((t) => t.id === tokenId);
-        if (!primaryToken) return;
+        if (!primaryToken) {
+          return;
+        }
 
         setDraggingTokenIds(new Set(tokenIds));
         setItemsForDuplication(tokenIds);
@@ -251,7 +273,9 @@ export const useTokenDrag = ({
 
   const handleTokenPointerUp = useCallback(
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
-      if (!tokenMouseDownStart) return;
+      if (!tokenMouseDownStart) {
+        return;
+      }
 
       const tokenId = tokenMouseDownStart.tokenId;
       const token = resolvedTokens.find((t) => t.id === tokenId);

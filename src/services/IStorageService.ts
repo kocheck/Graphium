@@ -44,6 +44,7 @@ export type ThemeMode = 'light' | 'dark' | 'system';
  *   await storage.autoSaveCampaign(campaign);
  * }
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export interface IStorageService {
   // ===== CAMPAIGN PERSISTENCE =====
 

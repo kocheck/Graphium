@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { LogoIcon } from './LogoIcon';
+
 import {
   RiLayoutGridLine,
   RiEyeOffLine,
@@ -8,6 +8,8 @@ import {
   RiImageLine,
   RiPaletteLine,
 } from '@remixicon/react';
+
+import { LogoIcon } from './LogoIcon';
 
 export type AboutModalTab = 'about' | 'tutorial' | 'shortcuts';
 
@@ -232,7 +234,12 @@ const modalStyles = `
  * A modal explaining what Graphium is and how to use it,
  * written in the signature "Digital Dungeon Master" tone.
  */
-export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUpdates }: AboutModalProps) {
+export function AboutModal({
+  isOpen,
+  onClose,
+  initialTab = 'about',
+  onCheckForUpdates,
+}: AboutModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<AboutModalTab>(initialTab);
 
@@ -245,10 +252,14 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUp
 
   // Focus trap implementation
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const modal = modalRef.current;
-    if (!modal) return;
+    if (!modal) {
+      return;
+    }
 
     // Get all focusable elements
     const focusableElements = modal.querySelectorAll<HTMLElement>(
@@ -256,7 +267,9 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUp
     );
 
     // Guard: if no focusable elements exist, don't set up the trap
-    if (focusableElements.length === 0) return;
+    if (focusableElements.length === 0) {
+      return;
+    }
 
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
@@ -266,7 +279,9 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUp
 
     // Handle tab key
     const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
+      if (e.key !== 'Tab') {
+        return;
+      }
 
       if (e.shiftKey) {
         // Shift + Tab
@@ -287,7 +302,9 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUp
     return () => modal.removeEventListener('keydown', handleTabKey);
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
@@ -381,13 +398,14 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUp
                   </h3>
                   <p style={{ color: 'var(--app-text-secondary)', marginBottom: '0.75rem' }}>
                     Greetings, Master of Dungeons! <strong>Graphium</strong> (Latin:{' '}
-                    <em>graphium</em>, "a writing stylus") is your arcane battlemat—a local-first
-                    virtual tabletop designed to replace your physical grid with digital sorcery.
+                    <em>graphium</em>, &quot;a writing stylus&quot;) is your arcane battlemat—a
+                    local-first virtual tabletop designed to replace your physical grid with digital
+                    sorcery.
                   </p>
                   <p style={{ color: 'var(--app-text-secondary)' }}>
                     Project your campaign map onto a second monitor or share your screen,
                     maintaining <strong>total control</strong> over what your players see while you
-                    orchestrate the chaos from your Architect's throne.
+                    orchestrate the chaos from your Architect&apos;s throne.
                   </p>
                 </section>
 
@@ -650,145 +668,187 @@ export function AboutModal({ isOpen, onClose, initialTab = 'about', onCheckForUp
                   </div>
                 </section>
 
-               {/* Feature Highlights */}
-              <div className="feature-highlights">
-                <h2 className="features-title">Designed for Dungeon Masters</h2>
-                <div className="features-grid">
-                  <div className="feature-card">
-                    <div className="feature-icon-wrapper">
-                      <RiWindowLine className="feature-icon" />
-                    </div>
-                    <h3 className="feature-name">Dual Windows</h3>
-                    <p className="feature-desc">
-                      Architect view for you, clean world view for players
-                    </p>
-                  </div>
-
-                  <div className="feature-card">
-                    <div className="feature-icon-wrapper">
-                      <RiEyeOffLine className="feature-icon" />
-                    </div>
-                    <h3 className="feature-name">Fog of War</h3>
-                    <p className="feature-desc">
-                      Hardware-accelerated raycasting with dynamic vision
-                    </p>
-                  </div>
-
-                  <div className="feature-card">
-                    <div className="feature-icon-wrapper">
-                      <RiLayoutGridLine className="feature-icon" />
-                    </div>
-                    <h3 className="feature-name">Dungeon Generator</h3>
-                    <p className="feature-desc">
-                      Procedural dungeons with rooms, corridors, and doors
-                    </p>
-                  </div>
-
-                  <div className="feature-card">
-                    <div className="feature-icon-wrapper">
-                      <RiShieldLine className="feature-icon" />
-                    </div>
-                    <h3 className="feature-name">Local-First</h3>
-                    <p className="feature-desc">
-                      Your campaigns live on your drive, no cloud required
-                    </p>
-                  </div>
-
-                  <div className="feature-card">
-                    <div className="feature-icon-wrapper">
-                      <RiPaletteLine className="feature-icon" />
-                    </div>
-                    <h3 className="feature-name">Drawing Tools</h3>
-                    <p className="feature-desc">
-                      Markers, walls, doors, and tactical annotations
-                    </p>
-                  </div>
-
-                  <div className="feature-card">
-                    <div className="feature-icon-wrapper">
-                      <RiImageLine className="feature-icon" />
-                    </div>
-                    <h3 className="feature-name">Asset Library</h3>
-                    <p className="feature-desc">
-                      Drag-and-drop tokens with automatic optimization
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Screenshot Showcase */}
-              <div className="screenshot-showcase">
-                <h2 className="showcase-title">See Graphium in Action</h2>
-                <div className="showcase-grid">
-                  {[
-                    { src: '/screenshots/Graphium-show.gif', caption: 'Dual-window architecture with fog of war' },
-                    { src: '/screenshots/Graphium-1.png', caption: 'Dynamic lighting and shadows' },
-                    { src: '/screenshots/Graphium-2.png', caption: 'Asset library management' },
-                    { src: '/screenshots/Graphium-3.png', caption: 'Detailed map editing' },
-                    { src: '/screenshots/Graphium-4.png', caption: 'Token customization' },
-                  ].map((img, index) => (
-                    <div key={index} className="showcase-item">
-                       <img
-                        src={img.src}
-                        alt={img.caption}
-                        style={{
-                          width: '100%',
-                          height: 'auto',
-                          display: 'block',
-                          borderBottom: '1px solid var(--app-border-subtle)'
-                        }}
-                      />
-                      <div style={{ padding: '1rem', background: 'var(--app-bg-base)' }}>
-                        <p className="placeholder-caption" style={{ margin: 0 }}>{img.caption}</p>
+                {/* Feature Highlights */}
+                <div className="feature-highlights">
+                  <h2 className="features-title">Designed for Dungeon Masters</h2>
+                  <div className="features-grid">
+                    <div className="feature-card">
+                      <div className="feature-icon-wrapper">
+                        <RiWindowLine className="feature-icon" />
                       </div>
+                      <h3 className="feature-name">Dual Windows</h3>
+                      <p className="feature-desc">
+                        Architect view for you, clean world view for players
+                      </p>
                     </div>
-                  ))}
+
+                    <div className="feature-card">
+                      <div className="feature-icon-wrapper">
+                        <RiEyeOffLine className="feature-icon" />
+                      </div>
+                      <h3 className="feature-name">Fog of War</h3>
+                      <p className="feature-desc">
+                        Hardware-accelerated raycasting with dynamic vision
+                      </p>
+                    </div>
+
+                    <div className="feature-card">
+                      <div className="feature-icon-wrapper">
+                        <RiLayoutGridLine className="feature-icon" />
+                      </div>
+                      <h3 className="feature-name">Dungeon Generator</h3>
+                      <p className="feature-desc">
+                        Procedural dungeons with rooms, corridors, and doors
+                      </p>
+                    </div>
+
+                    <div className="feature-card">
+                      <div className="feature-icon-wrapper">
+                        <RiShieldLine className="feature-icon" />
+                      </div>
+                      <h3 className="feature-name">Local-First</h3>
+                      <p className="feature-desc">
+                        Your campaigns live on your drive, no cloud required
+                      </p>
+                    </div>
+
+                    <div className="feature-card">
+                      <div className="feature-icon-wrapper">
+                        <RiPaletteLine className="feature-icon" />
+                      </div>
+                      <h3 className="feature-name">Drawing Tools</h3>
+                      <p className="feature-desc">
+                        Markers, walls, doors, and tactical annotations
+                      </p>
+                    </div>
+
+                    <div className="feature-card">
+                      <div className="feature-icon-wrapper">
+                        <RiImageLine className="feature-icon" />
+                      </div>
+                      <h3 className="feature-name">Asset Library</h3>
+                      <p className="feature-desc">
+                        Drag-and-drop tokens with automatic optimization
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <p className="showcase-note">
-                  Add your screenshots, GIFs, or videos to <code>/public/screenshots/</code>
-                </p>
+
+                {/* Screenshot Showcase */}
+                <div className="screenshot-showcase">
+                  <h2 className="showcase-title">See Graphium in Action</h2>
+                  <div className="showcase-grid">
+                    {[
+                      {
+                        src: '/screenshots/Graphium-show.gif',
+                        caption: 'Dual-window architecture with fog of war',
+                      },
+                      {
+                        src: '/screenshots/Graphium-1.png',
+                        caption: 'Dynamic lighting and shadows',
+                      },
+                      { src: '/screenshots/Graphium-2.png', caption: 'Asset library management' },
+                      { src: '/screenshots/Graphium-3.png', caption: 'Detailed map editing' },
+                      { src: '/screenshots/Graphium-4.png', caption: 'Token customization' },
+                    ].map((img, index) => (
+                      <div key={index} className="showcase-item">
+                        <img
+                          src={img.src}
+                          alt={img.caption}
+                          style={{
+                            width: '100%',
+                            height: 'auto',
+                            display: 'block',
+                            borderBottom: '1px solid var(--app-border-subtle)',
+                          }}
+                        />
+                        <div style={{ padding: '1rem', background: 'var(--app-bg-base)' }}>
+                          <p className="placeholder-caption" style={{ margin: 0 }}>
+                            {img.caption}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="showcase-note">
+                    Add your screenshots, GIFs, or videos to <code>/public/screenshots/</code>
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* SHORTCUTS TAB */}
-          {activeTab === 'shortcuts' && (
-            <div style={{ lineHeight: '1.7' }}>
-              <section style={{ marginBottom: '1.5rem' }}>
-                 <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--app-accent-text)' }}>
-                  📜 Quick Start Incantations
-                </h3>
-                <div style={{ background: 'var(--app-bg-base)', padding: '1rem', borderRadius: '6px', fontSize: '0.95rem' }}>
-                  <ul style={{ color: 'var(--app-text-muted)', paddingLeft: '1.5rem', margin: 0, fontFamily: 'monospace' }}>
-                    <li><code>V</code> – Select Tool</li>
-                    <li><code>M</code> – Marker Tool</li>
-                    <li><code>E</code> – Eraser Tool</li>
-                    <li><code>W</code> – Wall Tool (vision blocking)</li>
-                    <li><code>I</code> – Color Picker</li>
-                    <li><code>Shift</code> (while drawing) – Lock to axis</li>
-                    <li><code>?</code> – Open this help modal</li>
-                  </ul>
-                </div>
-              </section>
-            </div>
-          )}
+            {/* SHORTCUTS TAB */}
+            {activeTab === 'shortcuts' && (
+              <div style={{ lineHeight: '1.7' }}>
+                <section style={{ marginBottom: '1.5rem' }}>
+                  <h3
+                    style={{
+                      fontSize: '1.3rem',
+                      fontWeight: 'bold',
+                      marginBottom: '0.75rem',
+                      color: 'var(--app-accent-text)',
+                    }}
+                  >
+                    📜 Quick Start Incantations
+                  </h3>
+                  <div
+                    style={{
+                      background: 'var(--app-bg-base)',
+                      padding: '1rem',
+                      borderRadius: '6px',
+                      fontSize: '0.95rem',
+                    }}
+                  >
+                    <ul
+                      style={{
+                        color: 'var(--app-text-muted)',
+                        paddingLeft: '1.5rem',
+                        margin: 0,
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      <li>
+                        <code>V</code> – Select Tool
+                      </li>
+                      <li>
+                        <code>M</code> – Marker Tool
+                      </li>
+                      <li>
+                        <code>E</code> – Eraser Tool
+                      </li>
+                      <li>
+                        <code>W</code> – Wall Tool (vision blocking)
+                      </li>
+                      <li>
+                        <code>I</code> – Color Picker
+                      </li>
+                      <li>
+                        <code>Shift</code> (while drawing) – Lock to axis
+                      </li>
+                      <li>
+                        <code>?</code> – Open this help modal
+                      </li>
+                    </ul>
+                  </div>
+                </section>
+              </div>
+            )}
+          </div>
 
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            padding: '1rem',
-            borderTop: '1px solid var(--app-border-subtle)',
-            textAlign: 'center',
-            color: 'var(--app-text-muted)',
-            fontSize: '0.85rem',
-          }}
-        >
-          <p>May your rolls be ever in your favor, Dungeon Master. ⚔️🎲</p>
+          {/* Footer */}
+          <div
+            style={{
+              padding: '1rem',
+              borderTop: '1px solid var(--app-border-subtle)',
+              textAlign: 'center',
+              color: 'var(--app-text-muted)',
+              fontSize: '0.85rem',
+            }}
+          >
+            <p>May your rolls be ever in your favor, Dungeon Master. ⚔️🎲</p>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

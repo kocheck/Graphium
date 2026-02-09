@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+
 import iconUrl from '../assets/branding/icon.png';
 
 interface LogoIconProps {
@@ -54,6 +55,7 @@ export function LogoIcon({
         clearTimeout(timeout);
       };
     }
+    return undefined;
   }, [animate, onAnimationComplete]);
 
   return (

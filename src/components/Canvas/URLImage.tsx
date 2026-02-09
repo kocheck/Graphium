@@ -1,8 +1,10 @@
 import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+
 import { Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
-import Konva from 'konva';
-import { KonvaEventObject, Filter } from 'konva/lib/Node';
+
+import type Konva from 'konva';
+import type { KonvaEventObject, Filter } from 'konva/lib/Node';
 
 export interface URLImageProps {
   name?: string;
@@ -79,9 +81,11 @@ const URLImage = forwardRef<Konva.Image, URLImageProps>(
       }
 
       // Cleanup: clear cache on unmount or before re-caching
+      // Copy ref value for cleanup function stability
+      const currentImageRef = imageRef.current;
       return () => {
-        if (imageRef.current) {
-          imageRef.current.clearCache();
+        if (currentImageRef) {
+          currentImageRef.clearCache();
         }
       };
     }, [img, filters, width, height, blurRadius, brightness]);

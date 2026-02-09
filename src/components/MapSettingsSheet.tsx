@@ -9,12 +9,18 @@
  * @component
  */
 
-import React, { useRef, useState, useEffect } from 'react';
-import { useGameStore, GridType } from '../store/gameStore';
-import { processImage, ProcessingHandle } from '../utils/AssetProcessor';
-import ToggleSwitch from './ToggleSwitch';
-import { rollForMessage } from '../utils/systemMessages';
+import type React from 'react';
+import { useRef, useState, useEffect } from 'react';
+
 import { RiRulerLine } from '@remixicon/react';
+
+import ToggleSwitch from './ToggleSwitch';
+import { useGameStore } from '../store/gameStore';
+import { processImage } from '../utils/AssetProcessor';
+import { rollForMessage } from '../utils/systemMessages';
+
+import type { GridType } from '../store/gameStore';
+import type { ProcessingHandle } from '../utils/AssetProcessor';
 
 interface MapSettingsSheetProps {
   isOpen: boolean;
@@ -23,7 +29,12 @@ interface MapSettingsSheetProps {
   mapId?: string; // Required when mode is EDIT
 }
 
-const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mode, mapId }) => {
+function MapSettingsSheet({
+  isOpen,
+  onClose,
+  mode,
+  mapId,
+}: MapSettingsSheetProps): React.ReactElement | null {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const processingHandleRef = useRef<ProcessingHandle | null>(null);
 
@@ -70,7 +81,7 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
       const mapNumbers = maps
         .map((m) => {
           const match = /^Map (\d+)$/.exec(m.name);
-          return match ? parseInt(match[1], 10) : 0;
+          return match ? parseInt(match[1]!, 10) : 0;
         })
         .filter((n) => n > 0);
       const nextNumber = mapNumbers.length > 0 ? Math.max(...mapNumbers) + 1 : maps.length + 1;
@@ -82,15 +93,7 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
       setPendingGridColor(gridColor);
       setPendingDaylightMode(isDaylightMode);
     }
-  }, [
-    mode,
-    mapId,
-    campaign.maps,
-    isOpen,
-    gridType,
-    gridColor,
-    isDaylightMode,
-  ]);
+  }, [mode, mapId, campaign.maps, isOpen, gridType, gridColor, isDaylightMode]);
 
   // Cleanup processing on unmount
   useEffect(() => {
@@ -104,7 +107,9 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
 
   const handleMapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     // Cancel any previous processing
     if (processingHandleRef.current) {
@@ -221,7 +226,9 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
     );
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
@@ -377,8 +384,8 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
             </label>
             {gridType === 'HIDDEN' && (
               <p className="text-[10px] mb-2 text-[var(--app-text-secondary)]">
-                Grid is currently hidden. This color will be applied when you
-                switch to a visible grid type.
+                Grid is currently hidden. This color will be applied when you switch to a visible
+                grid type.
               </p>
             )}
             <div className="flex gap-2 items-center">
@@ -446,6 +453,6 @@ const MapSettingsSheet: React.FC<MapSettingsSheetProps> = ({ isOpen, onClose, mo
       </div>
     </>
   );
-};
+}
 
 export default MapSettingsSheet;

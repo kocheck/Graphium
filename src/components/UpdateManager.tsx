@@ -26,6 +26,7 @@
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+
 import { RiSearchLine, RiDownloadLine, RiRefreshLine } from '@remixicon/react';
 
 // ============================================================================
@@ -131,7 +132,7 @@ const updateMessages = {
  * Randomly selects a message from an array
  */
 const rollForMessage = (messages: string[]): string => {
-  return messages[Math.floor(Math.random() * messages.length)];
+  return messages[Math.floor(Math.random() * messages.length)]!;
 };
 
 /**
@@ -168,7 +169,7 @@ interface DownloadProgress {
   total: number;
 }
 
-const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
+function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
   const [status, setStatus] = useState<UpdateStatus>('idle');
   const [currentVersion, setCurrentVersion] = useState<string>('');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
@@ -203,7 +204,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
     if (window.autoUpdater) {
       // Get current version on mount with error handling
       const autoUpdater = window.autoUpdater;
-      (async () => {
+      void (async () => {
         try {
           const version = await autoUpdater.getCurrentVersion();
           if (isMounted) {
@@ -226,16 +227,18 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
 
   // Set up event listeners for auto-updater (once on mount)
   useEffect(() => {
-    if (!window.autoUpdater) return;
+    if (!window.autoUpdater) {
+      return;
+    }
 
-    const cleanupFunctions: (() => void)[] = [];
+    const cleanupFunctions: Array<() => void> = [];
 
     // Checking for update
     cleanupFunctions.push(
       window.autoUpdater.onCheckingForUpdate(() => {
         setStatus('checking');
         setErrorMessage('');
-      })
+      }),
     );
 
     // Update available
@@ -243,7 +246,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
       window.autoUpdater.onUpdateAvailable((info) => {
         setStatus('update-available');
         setUpdateInfo(info);
-      })
+      }),
     );
 
     // No update available
@@ -251,7 +254,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
       window.autoUpdater.onUpdateNotAvailable(() => {
         setStatus('no-update');
         setUpdateInfo(null);
-      })
+      }),
     );
 
     // Download progress
@@ -260,7 +263,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
         setStatus('downloading');
         setDownloadProgress(progress);
         setErrorMessage(''); // Clear any previous error when download starts
-      })
+      }),
     );
 
     // Update downloaded
@@ -268,7 +271,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
       window.autoUpdater.onUpdateDownloaded((info) => {
         setStatus('downloaded');
         setUpdateInfo(info);
-      })
+      }),
     );
 
     // Error
@@ -276,7 +279,7 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
       window.autoUpdater.onError((error) => {
         setStatus('error');
         setErrorMessage(error.message);
-      })
+      }),
     );
 
     // Cleanup on unmount
@@ -287,23 +290,32 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
 
   // Handle keyboard events
   // Note: Using useCallback to stabilize onClose reference and prevent duplicate listeners
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  }, [onClose]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    },
+    [onClose],
+  );
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleKeyDown]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleCheckForUpdates = async () => {
-    if (!window.autoUpdater) return;
+    if (!window.autoUpdater) {
+      return;
+    }
 
     try {
       setStatus('checking');
@@ -316,7 +328,9 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
   };
 
   const handleDownload = async () => {
-    if (!window.autoUpdater) return;
+    if (!window.autoUpdater) {
+      return;
+    }
 
     try {
       setStatus('downloading');
@@ -329,7 +343,9 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
   };
 
   const handleInstall = async () => {
-    if (!window.autoUpdater) return;
+    if (!window.autoUpdater) {
+      return;
+    }
 
     try {
       await window.autoUpdater.quitAndInstall();
@@ -340,7 +356,9 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
   };
 
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {
+      return '0 B';
+    }
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -455,10 +473,14 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
                   style={{ width: `${downloadProgress.percent}%` }}
                 />
               </div>
-              <div className="flex justify-between text-sm" style={{ color: 'var(--app-text-muted)' }}>
+              <div
+                className="flex justify-between text-sm"
+                style={{ color: 'var(--app-text-muted)' }}
+              >
                 <span>{downloadProgress.percent.toFixed(1)}%</span>
                 <span>
-                  {formatBytes(downloadProgress.transferred)} / {formatBytes(downloadProgress.total)}
+                  {formatBytes(downloadProgress.transferred)} /{' '}
+                  {formatBytes(downloadProgress.total)}
                 </span>
               </div>
               <div className="text-sm text-center mt-2" style={{ color: 'var(--app-text-muted)' }}>
@@ -533,6 +555,6 @@ const UpdateManager = ({ isOpen, onClose }: UpdateManagerProps) => {
       </div>
     </div>
   );
-};
+}
 
 export default UpdateManager;

@@ -46,7 +46,9 @@
  * @component
  */
 
-import { Component, ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+
 import { UpdateErrorFallbackUI } from './UpdateErrorFallbackUI';
 
 /**
@@ -119,7 +121,7 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    * @param error - The error thrown during update operations
    * @param errorInfo - React error info including component stack
    */
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Update manager error:', error);
     console.error('Error info:', errorInfo);
     console.error('Component stack:', errorInfo.componentStack);
@@ -127,18 +129,18 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
     // Log specific error types for better debugging
     if (error.message.includes('Network') || error.message.includes('fetch')) {
       console.error(
-        '[UpdateManager] Network error detected. Check internet connection and GitHub status.'
+        '[UpdateManager] Network error detected. Check internet connection and GitHub status.',
       );
     } else if (error.message.includes('IPC') || error.message.includes('invoke')) {
       console.error(
-        '[UpdateManager] IPC communication error. Check main process autoUpdater handlers.'
+        '[UpdateManager] IPC communication error. Check main process autoUpdater handlers.',
       );
     } else if (
       error.message.toLowerCase().includes('signature') ||
       error.message.toLowerCase().includes('verify')
     ) {
       console.error(
-        '[UpdateManager] Signature verification error. Ensure app is properly code-signed.'
+        '[UpdateManager] Signature verification error. Ensure app is properly code-signed.',
       );
     }
   }
@@ -158,9 +160,11 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    *
    * @returns {ReactNode} UpdateManager component or error fallback UI
    */
-  render() {
+  override render() {
     if (this.state.hasError) {
-      return <UpdateErrorFallbackUI errorMessage={this.state.errorMessage} onReset={this.resetError} />;
+      return (
+        <UpdateErrorFallbackUI errorMessage={this.state.errorMessage} onReset={this.resetError} />
+      );
     }
 
     return this.props.children;

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+
 import { rollForMessage } from '../utils/systemMessages';
-import { Measurement } from '../types/measurement';
+
+import type { Measurement } from '../types/measurement';
 
 /**
  * TokenMetadata represents the shared metadata properties between library items and map tokens
@@ -444,7 +446,8 @@ export const useGameStore = create<GameState>((set, get) => {
         return;
       }
 
-      const activeMap = campaign.maps[campaign.activeMapId];
+      // Safe: guarded by !campaign.maps[campaign.activeMapId] check above
+      const activeMap = campaign.maps[campaign.activeMapId]!;
       set({
         campaign,
         // Hydrate active map state
@@ -514,8 +517,9 @@ export const useGameStore = create<GameState>((set, get) => {
       const activeId = state.campaign.activeMapId;
 
       // Create updated map object
+      // Safe: activeId is state.campaign.activeMapId, always a valid key
       const updatedMap: MapData = {
-        ...state.campaign.maps[activeId], // Preserve name/id
+        ...state.campaign.maps[activeId]!, // Preserve name/id
         tokens: state.tokens,
         drawings: state.drawings,
         doors: state.doors,
@@ -581,8 +585,8 @@ export const useGameStore = create<GameState>((set, get) => {
       if (mapId === activeMapId) {
         const mapIds = Object.keys(maps);
         const currentIndex = mapIds.indexOf(mapId);
-        // Try next, or prev
-        const nextActiveId = mapIds[currentIndex + 1] || mapIds[currentIndex - 1];
+        // Try next, or prev - safe: we already checked maps has more than 1 entry
+        const nextActiveId = (mapIds[currentIndex + 1] ?? mapIds[currentIndex - 1])!;
 
         // Directly switch active map without calling switchMap to avoid syncing the deleted map
         set((currentState) => {
@@ -627,8 +631,12 @@ export const useGameStore = create<GameState>((set, get) => {
 
     switchMap: (mapId: string) => {
       const state = get();
-      if (state.campaign.activeMapId === mapId) return;
-      if (!state.campaign.maps[mapId]) return;
+      if (state.campaign.activeMapId === mapId) {
+        return;
+      }
+      if (!state.campaign.maps[mapId]) {
+        return;
+      }
 
       // 1. Sync current state to campaign
       get().syncActiveMapToCampaign();
@@ -636,7 +644,8 @@ export const useGameStore = create<GameState>((set, get) => {
       // 2. Load new map state
       // We must get FRESH state because syncActiveMapToCampaign updated it
       const freshState = get();
-      const newMap = freshState.campaign.maps[mapId];
+      // Safe: guarded by !state.campaign.maps[mapId] check above
+      const newMap = freshState.campaign.maps[mapId]!;
 
       set({
         campaign: {
@@ -657,18 +666,24 @@ export const useGameStore = create<GameState>((set, get) => {
     },
 
     renameMap: (mapId: string, newName: string) => {
-      set((state) => ({
-        campaign: {
-          ...state.campaign,
-          maps: {
-            ...state.campaign.maps,
-            [mapId]: {
-              ...state.campaign.maps[mapId],
-              name: newName,
+      set((state) => {
+        const existingMap = state.campaign.maps[mapId];
+        if (!existingMap) {
+          return state;
+        }
+        return {
+          campaign: {
+            ...state.campaign,
+            maps: {
+              ...state.campaign.maps,
+              [mapId]: {
+                ...existingMap,
+                name: newName,
+              },
             },
           },
-        },
-      }));
+        };
+      });
     },
 
     // --- Token Actions (Modifies Active State) ---
@@ -720,7 +735,9 @@ export const useGameStore = create<GameState>((set, get) => {
     toggleDoor: (id: string) =>
       set((state) => {
         const door = state.doors.find((d) => d.id === id);
-        if (!door) return state; // Door not found, no change
+        if (!door) {
+          return state;
+        } // Door not found, no change
 
         const newDoors = state.doors.map((d) => (d.id === id ? { ...d, isOpen: !d.isOpen } : d));
 

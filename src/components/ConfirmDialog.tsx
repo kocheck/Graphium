@@ -29,14 +29,17 @@
  */
 
 import { useEffect } from 'react';
+
 import { useGameStore } from '../store/gameStore';
 
-const ConfirmDialog = () => {
+function ConfirmDialog() {
   const { confirmDialog, clearConfirmDialog } = useGameStore();
 
   // Handle keyboard events
   useEffect(() => {
-    if (!confirmDialog) return;
+    if (!confirmDialog) {
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -52,7 +55,9 @@ const ConfirmDialog = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [confirmDialog, clearConfirmDialog]);
 
-  if (!confirmDialog) return null;
+  if (!confirmDialog) {
+    return null;
+  }
 
   const handleConfirm = () => {
     confirmDialog.onConfirm();
@@ -104,6 +109,6 @@ const ConfirmDialog = () => {
       </div>
     </div>
   );
-};
+}
 
 export default ConfirmDialog;

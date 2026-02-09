@@ -1,10 +1,13 @@
 import { useCallback } from 'react';
-import Konva from 'konva';
-import { KonvaEventObject } from 'konva/lib/Node';
+
 import { useTouchSettingsStore } from '../../../store/touchSettingsStore';
+import { snapToGrid } from '../../../utils/grid';
 import { getPointerPosition, getPointerPressure, isMultiTouchGesture } from '../CanvasUtils';
-import { Drawing } from '../../../store/gameStore';
-import { Measurement } from '../../../types/measurement';
+
+import type { Drawing, Door, GridType } from '../../../store/gameStore';
+import type { Measurement } from '../../../types/measurement';
+import type Konva from 'konva';
+import type { KonvaEventObject } from 'konva/lib/Node';
 
 interface UseCanvasInteractionProps {
   tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
@@ -49,8 +52,10 @@ interface UseCanvasInteractionProps {
   // Door tool
   doorPreviewPos: { x: number; y: number } | null;
   setDoorPreviewPos: (pos: { x: number; y: number } | null) => void;
-  gridType: string;
+  gridType: GridType;
   gridSize: number;
+  doorOrientation: 'horizontal' | 'vertical';
+  addDoor: (door: Door) => void;
   // Calibration
   calibrationStart: React.MutableRefObject<{ x: number; y: number } | null>;
   setCalibrationRect: (
@@ -83,6 +88,9 @@ export const useCanvasInteraction = ({
   drawingAnimationFrameRef,
   setDoorPreviewPos,
   gridType,
+  gridSize,
+  doorOrientation,
+  addDoor,
   calibrationStart,
   setCalibrationRect,
   addDrawing,
@@ -93,22 +101,25 @@ export const useCanvasInteraction = ({
   const shouldRejectPointerEvent = useCallback(
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): boolean => {
       const evt = e.evt;
-      if (!('pointerType' in evt)) return false;
+      if (!('pointerType' in evt)) {
+        return false;
+      }
 
-      if (touchSettings.desktopOnlyMode && evt.pointerType === 'touch') return true;
+      if (touchSettings.desktopOnlyMode && evt.pointerType === 'touch') {
+        return true;
+      }
 
       if (tool !== 'select' && !stylusActiveRef.current && evt.pointerType === 'touch') {
         return false;
       }
 
-      const shouldReject = touchSettings.shouldRejectTouch(
-        evt as PointerEvent,
-        stylusActiveRef.current,
-      );
+      const shouldReject = touchSettings.shouldRejectTouch(evt, stylusActiveRef.current);
 
       if (touchSettings.palmRejectionMode === 'smartDelay' && evt.pointerType === 'touch') {
         const timeSinceStylusLift = Date.now() - lastStylusLiftTimeRef.current;
-        if (timeSinceStylusLift < touchSettings.palmRejectionDelay) return true;
+        if (timeSinceStylusLift < touchSettings.palmRejectionDelay) {
+          return true;
+        }
       }
 
       return shouldReject;
@@ -128,7 +139,9 @@ export const useCanvasInteraction = ({
 
   const handlePointerDown = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
     trackStylusUsage(e);
-    if (shouldRejectPointerEvent(e)) return;
+    if (shouldRejectPointerEvent(e)) {
+      return;
+    }
 
     if (
       tool !== 'select' &&
@@ -139,9 +152,34 @@ export const useCanvasInteraction = ({
       e.evt.preventDefault();
     }
 
-    if (isSpacePressed) return;
-    if (isMultiTouchGesture(e)) return;
-    if (tool === 'door') return;
+    if (isSpacePressed) {
+      return;
+    }
+    if (isMultiTouchGesture(e)) {
+      return;
+    }
+    if (tool === 'door') {
+      if (isWorldView) {
+        return;
+      }
+      const pos = getPointerPosition(e);
+      if (!pos) {
+        return;
+      }
+      const snapped = snapToGrid(pos.x, pos.y, gridSize, gridType);
+      const newDoor: Door = {
+        id: crypto.randomUUID(),
+        x: snapped.x,
+        y: snapped.y,
+        orientation: doorOrientation,
+        isOpen: false,
+        isLocked: false,
+        size: gridSize,
+      };
+      addDoor(newDoor);
+      setDoorPreviewPos(null);
+      return;
+    }
 
     if (tool !== 'measure' && !isWorldView) {
       // Logic specific to non-measure tools clearing active measurement?
@@ -154,9 +192,13 @@ export const useCanvasInteraction = ({
 
     // Calibration
     if (isCalibrating) {
-      if (isWorldView) return;
+      if (isWorldView) {
+        return;
+      }
       const pos = getPointerPosition(e);
-      if (!pos) return;
+      if (!pos) {
+        return;
+      }
       calibrationStart.current = { x: pos.x, y: pos.y };
       setCalibrationRect({ x: pos.x, y: pos.y, width: 0, height: 0 });
       return;
@@ -164,20 +206,28 @@ export const useCanvasInteraction = ({
 
     // Measure
     if (tool === 'measure') {
-      if (isWorldView) return;
+      if (isWorldView) {
+        return;
+      }
       isMeasuring.current = true;
       const pos = getPointerPosition(e);
-      if (!pos) return;
+      if (!pos) {
+        return;
+      }
       measurementStart.current = { x: pos.x, y: pos.y };
       return;
     }
 
     // Drawing
     if (tool !== 'select') {
-      if (isWorldView) return;
+      if (isWorldView) {
+        return;
+      }
       isDrawing.current = true;
       const pos = getPointerPosition(e);
-      if (!pos) return;
+      if (!pos) {
+        return;
+      }
 
       const pressure = getPointerPressure(e);
       let drawColor = color;
@@ -208,7 +258,9 @@ export const useCanvasInteraction = ({
 
     if (clickedOnStage || clickedOnMap) {
       const pos = getPointerPosition(e);
-      if (!pos) return;
+      if (!pos) {
+        return;
+      }
 
       selectionStart.current = { x: pos.x, y: pos.y };
       selectionRectCoordsRef.current = { x: pos.x, y: pos.y, width: 0, height: 0 };
@@ -222,7 +274,9 @@ export const useCanvasInteraction = ({
   };
 
   const handlePointerMove = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
-    if (shouldRejectPointerEvent(e)) return;
+    if (shouldRejectPointerEvent(e)) {
+      return;
+    }
 
     if (
       tool !== 'select' &&
@@ -233,8 +287,12 @@ export const useCanvasInteraction = ({
       e.evt.preventDefault();
     }
 
-    if (isSpacePressed) return;
-    if (isMultiTouchGesture(e)) return;
+    if (isSpacePressed) {
+      return;
+    }
+    if (isMultiTouchGesture(e)) {
+      return;
+    }
 
     if (gridType !== 'HIDDEN' && gridType !== 'DOTS') {
       const pos = getPointerPosition(e);
@@ -248,10 +306,11 @@ export const useCanvasInteraction = ({
 
     if (tool === 'door' && !isWorldView) {
       const pos = getPointerPosition(e);
-      if (!pos) return;
-      // TODO: Snap logic
-      // const snapped = snapToGrid(...)
-      // setDoorPreviewPos(snapped);
+      if (!pos) {
+        return;
+      }
+      const snapped = snapToGrid(pos.x, pos.y, gridSize, gridType);
+      setDoorPreviewPos({ x: snapped.x, y: snapped.y });
       return;
     } else {
       setDoorPreviewPos(null);
@@ -261,7 +320,9 @@ export const useCanvasInteraction = ({
 
     if (tool === 'measure' && isMeasuring.current && measurementStart.current) {
       const pos = getPointerPosition(e);
-      if (!pos) return;
+      if (!pos) {
+        return;
+      }
       const origin = measurementStart.current;
 
       // Simple measurement update - full logic would require imported measurement utils
@@ -269,22 +330,32 @@ export const useCanvasInteraction = ({
       // Proper fix: Move measurement logic to distinct hook or util.
 
       // Placeholder to use 'origin':
-      if (origin.x === pos.x && origin.y === pos.y) return;
+      if (origin.x === pos.x && origin.y === pos.y) {
+        return;
+      }
     }
 
     if (tool !== 'select') {
-      if (isWorldView) return;
-      if (!isDrawing.current) return;
+      if (isWorldView) {
+        return;
+      }
+      if (!isDrawing.current) {
+        return;
+      }
       let point = getPointerPosition(e);
-      if (!point) return;
+      if (!point) {
+        return;
+      }
       const cur = currentLine.current;
-      if (!cur) return;
+      if (!cur) {
+        return;
+      }
 
       // START OF CHANGE: Shift key straight line locking
       // Checks if Shift is held down and snaps the current point to match the start point's X or Y
       if (e.evt.shiftKey && cur.points.length >= 2) {
-        const startX = cur.points[0];
-        const startY = cur.points[1];
+        const startX = cur.points[0]!;
+        const startY = cur.points[1]!;
         const dx = Math.abs(point.x - startX);
         const dy = Math.abs(point.y - startY);
 

@@ -65,7 +65,9 @@
  * }, []);
  */
 
-import { sanitizeStack, generateReportBody, SanitizedError } from './errorSanitizer';
+import { sanitizeStack, generateReportBody } from './errorSanitizer';
+
+import type { SanitizedError } from './errorSanitizer';
 
 /** localStorage key for persisting errors */
 const ERROR_STORAGE_KEY = 'graphium_pending_errors';
@@ -153,7 +155,7 @@ export function storeError(error: StoredError): void {
 
     if (existingIndex !== -1) {
       // Error already exists - increment occurrence count
-      const existing = errors[existingIndex];
+      const existing = errors[existingIndex]!;
       existing.occurrences += 1;
       existing.lastOccurrence = error.timestamp;
 
@@ -267,7 +269,7 @@ async function handleGlobalError(
  */
 function onGlobalError(event: ErrorEvent): void {
   const error = event.error || new Error(event.message);
-  handleGlobalError(error, 'global');
+  void handleGlobalError(error, 'global');
 }
 
 /**
@@ -275,7 +277,7 @@ function onGlobalError(event: ErrorEvent): void {
  */
 function onUnhandledRejection(event: PromiseRejectionEvent): void {
   const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
-  handleGlobalError(error, 'promise');
+  void handleGlobalError(error, 'promise');
 }
 
 /**

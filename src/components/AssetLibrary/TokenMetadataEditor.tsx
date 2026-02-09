@@ -31,10 +31,12 @@
  */
 
 import { useState, useEffect } from 'react';
+
 import { RiCloseLine } from '@remixicon/react';
+
 import { useIsMobile } from '../../hooks/useMediaQuery';
-import { useGameStore } from '../../store/gameStore';
 import { getStorage } from '../../services/storage';
+import { useGameStore } from '../../store/gameStore';
 import { rollForMessage } from '../../utils/systemMessages';
 
 /**
@@ -53,7 +55,7 @@ interface TokenMetadataEditorProps {
   onClose: () => void;
 }
 
-const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEditorProps) => {
+function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEditorProps) {
   const isMobile = useIsMobile();
 
   // Get library item and update function from store
@@ -85,7 +87,9 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
   }, [libraryItem]);
 
   const handleSave = () => {
-    if (!libraryItemId) return;
+    if (!libraryItemId) {
+      return;
+    }
 
     // Parse tags (comma-separated)
     const parsedTags = tags
@@ -142,7 +146,9 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
     onClose();
   };
 
-  if (!isOpen || !libraryItem) return null;
+  if (!isOpen || !libraryItem) {
+    return null;
+  }
 
   return (
     <div
@@ -304,6 +310,6 @@ const TokenMetadataEditor = ({ isOpen, libraryItemId, onClose }: TokenMetadataEd
       </div>
     </div>
   );
-};
+}
 
 export default TokenMetadataEditor;

@@ -20,14 +20,14 @@ interface ToggleSwitchProps {
   id?: string;
 }
 
-const ToggleSwitch = ({
+function ToggleSwitch({
   checked,
   onChange,
   label,
   description,
   disabled = false,
   id,
-}: ToggleSwitchProps) => {
+}: ToggleSwitchProps) {
   const handleToggle = () => {
     if (!disabled) {
       onChange(!checked);
@@ -100,6 +100,6 @@ const ToggleSwitch = ({
       )}
     </div>
   );
-};
+}
 
 export default ToggleSwitch;

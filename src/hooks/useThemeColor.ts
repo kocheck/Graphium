@@ -9,7 +9,9 @@ import { useState, useEffect } from 'react';
 export function useThemeColor(variableName: string): string {
   // Helper to get current value
   const getValue = () => {
-    if (typeof window === 'undefined') return '';
+    if (typeof window === 'undefined') {
+      return '';
+    }
     return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
   };
 
@@ -38,6 +40,7 @@ export function useThemeColor(variableName: string): string {
       observer.disconnect();
       window.removeEventListener('theme-change', handleThemeChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variableName]);
 
   return color;

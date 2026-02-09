@@ -1,4 +1,5 @@
 import { createGridGeometry } from './gridGeometry';
+
 import type { GridType } from '../store/gameStore';
 
 /**

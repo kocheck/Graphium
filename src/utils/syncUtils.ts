@@ -1,4 +1,4 @@
-import {
+import type {
   Token,
   Drawing,
   Door,
@@ -8,15 +8,19 @@ import {
   ExploredRegion,
   TokenLibraryItem,
 } from '../store/gameStore';
-import { Measurement } from '../types/measurement';
+import type { Measurement } from '../types/measurement';
 
 /**
  * Deep equality check for simple objects with primitive values and arrays
  * More reliable than JSON.stringify which can fail due to property ordering
  */
 export function isEqual(obj1: unknown, obj2: unknown): boolean {
-  if (obj1 === obj2) return true;
-  if (obj1 == null || obj2 == null) return false;
+  if (obj1 === obj2) {
+    return true;
+  }
+  if (obj1 == null || obj2 == null) {
+    return false;
+  }
 
   // Handle Date objects
   if (obj1 instanceof Date && obj2 instanceof Date) {
@@ -30,7 +34,9 @@ export function isEqual(obj1: unknown, obj2: unknown): boolean {
 
   // Handle Map objects
   if (obj1 instanceof Map && obj2 instanceof Map) {
-    if (obj1.size !== obj2.size) return false;
+    if (obj1.size !== obj2.size) {
+      return false;
+    }
     for (const [key, value] of obj1) {
       if (!obj2.has(key) || !isEqual(value, obj2.get(key))) {
         return false;
@@ -41,9 +47,13 @@ export function isEqual(obj1: unknown, obj2: unknown): boolean {
 
   // Handle Set objects
   if (obj1 instanceof Set && obj2 instanceof Set) {
-    if (obj1.size !== obj2.size) return false;
+    if (obj1.size !== obj2.size) {
+      return false;
+    }
     for (const value of obj1) {
-      if (!obj2.has(value)) return false;
+      if (!obj2.has(value)) {
+        return false;
+      }
     }
     return true;
   }
@@ -63,29 +73,42 @@ export function isEqual(obj1: unknown, obj2: unknown): boolean {
 
   // Handle arrays
   if (Array.isArray(obj1) && Array.isArray(obj2)) {
-    if (obj1.length !== obj2.length) return false;
+    if (obj1.length !== obj2.length) {
+      return false;
+    }
     for (let i = 0; i < obj1.length; i++) {
-      if (!isEqual(obj1[i], obj2[i])) return false;
+      if (!isEqual(obj1[i], obj2[i])) {
+        return false;
+      }
     }
     return true;
   }
 
-  if (Array.isArray(obj1) || Array.isArray(obj2)) return false;
+  if (Array.isArray(obj1) || Array.isArray(obj2)) {
+    return false;
+  }
 
   // Handle objects
-  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
+    return false;
+  }
 
   const keys1 = Object.keys(obj1);
   const keys2 = Object.keys(obj2);
 
-  if (keys1.length !== keys2.length) return false;
+  if (keys1.length !== keys2.length) {
+    return false;
+  }
 
   const keys2Set = new Set(keys2);
 
   for (const key of keys1) {
-    if (!keys2Set.has(key)) return false;
-    if (!isEqual((obj1 as Record<string, unknown>)[key], (obj2 as Record<string, unknown>)[key]))
+    if (!keys2Set.has(key)) {
       return false;
+    }
+    if (!isEqual((obj1 as Record<string, unknown>)[key], (obj2 as Record<string, unknown>)[key])) {
+      return false;
+    }
   }
 
   return true;
@@ -111,7 +134,6 @@ export type SyncAction =
   | { type: 'TOKEN_UPDATE'; payload: { id: string; changes: Partial<Token> } }
   | { type: 'TOKEN_REMOVE'; payload: { id: string } }
   | { type: 'LIBRARY_UPDATE'; payload: TokenLibraryItem[] }
-  | { type: 'TOKEN_REMOVE'; payload: { id: string } }
   | { type: 'TOKEN_DRAG_START'; payload: { id: string; x: number; y: number } }
   | { type: 'TOKEN_DRAG_MOVE'; payload: { id: string; x: number; y: number } }
   | { type: 'TOKEN_DRAG_END'; payload: { id: string; x: number; y: number } }
@@ -194,7 +216,9 @@ export function detectChanges(
 
   // Updated tokens
   currentTokens.forEach((token: Token) => {
-    if (!token || !token.id) return;
+    if (!token?.id) {
+      return;
+    }
 
     const prevToken = prevTokenMap.get(token.id);
     if (prevToken) {
@@ -227,13 +251,17 @@ export function detectChanges(
     );
 
     currentDrawings.forEach((drawing: Drawing) => {
-      if (!drawing || !drawing.id) return;
+      if (!drawing?.id) {
+        return;
+      }
 
       if (!prevDrawingMap.has(drawing.id)) {
         actions.push({ type: 'DRAWING_ADD', payload: drawing });
       } else {
         const prev = prevDrawingMap.get(drawing.id);
-        if (!prev) return;
+        if (!prev) {
+          return;
+        }
         const changes: Partial<Drawing> = {};
         Object.keys(drawing).forEach((key) => {
           const drawingKey = key as keyof Drawing;
@@ -287,13 +315,17 @@ export function detectChanges(
     );
 
     currentDoors.forEach((door: Door) => {
-      if (!door || !door.id) return;
+      if (!door?.id) {
+        return;
+      }
 
       if (!prevDoorMap.has(door.id)) {
         actions.push({ type: 'DOOR_ADD', payload: door });
       } else {
         const prev = prevDoorMap.get(door.id);
-        if (!prev) return;
+        if (!prev) {
+          return;
+        }
 
         // Check changes (including isOpen)
         const changes: Partial<Door> = {};

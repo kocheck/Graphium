@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
+
 import { Group, Rect, Arc, Path, Circle } from 'react-konva';
+
 import type { Door } from '../../store/gameStore';
+import type { KonvaEventObject } from 'konva/lib/Node';
 
 interface DoorShapeProps {
   door: Door;
   isWorldView: boolean;
+  isSelected?: boolean;
+  tool?: string;
   onToggle?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onDoorContextMenu?: (doorId: string, screenX: number, screenY: number) => void;
 }
 
 /**
@@ -28,7 +35,15 @@ interface DoorShapeProps {
  * @param isWorldView - If true, blocks interaction (player view)
  * @param onToggle - Callback when door is clicked (DM only)
  */
-const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
+function DoorShape({
+  door,
+  isWorldView,
+  isSelected,
+  tool,
+  onToggle,
+  onDelete,
+  onDoorContextMenu,
+}: DoorShapeProps) {
   // Animation state: 0 = fully closed, 1 = fully open
   const [animationProgress, setAnimationProgress] = useState(door.isOpen ? 1 : 0);
   const animationFrameRef = useRef<number | null>(null);
@@ -49,14 +64,18 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
     const targetProgress = door.isOpen ? 1 : 0;
 
     // If already at target, no animation needed
-    if (animationProgress === targetProgress) return;
+    if (animationProgress === targetProgress) {
+      return;
+    }
 
     // Start animation
     startTimeRef.current = performance.now();
     const initialProgress = animationProgress;
 
     const animate = (currentTime: number) => {
-      if (!startTimeRef.current) return;
+      if (!startTimeRef.current) {
+        return;
+      }
 
       const elapsed = currentTime - startTimeRef.current;
       const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
@@ -84,32 +103,33 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [door.isOpen]); // animationProgress is intentionally excluded - it's managed by the animation loop, not a dependency
 
   const handleClick = () => {
-    console.log(
-      '[DoorShape] handleClick called for door:',
-      door.id,
-      'isWorldView:',
-      isWorldView,
-      'onToggle:',
-      !!onToggle,
-      'isLocked:',
-      door.isLocked,
-    );
-    // Only allow toggling in DM mode (not World View)
-    if (!isWorldView && onToggle && !door.isLocked) {
-      console.log('[DoorShape] Calling onToggle for door:', door.id);
+    if (isWorldView) {
+      return;
+    }
+
+    // Eraser tool: delete door immediately
+    if (tool === 'eraser' && onDelete) {
+      onDelete(door.id);
+      return;
+    }
+
+    // Default: toggle open/closed
+    if (onToggle && !door.isLocked) {
       onToggle(door.id);
-    } else {
-      console.log(
-        '[DoorShape] Click blocked - isWorldView:',
-        isWorldView,
-        'hasOnToggle:',
-        !!onToggle,
-        'isLocked:',
-        door.isLocked,
-      );
+    }
+  };
+
+  const handleContextMenu = (e: KonvaEventObject<PointerEvent>) => {
+    e.evt.preventDefault();
+    if (isWorldView) {
+      return;
+    }
+    if (onDoorContextMenu) {
+      onDoorContextMenu(door.id, e.evt.clientX, e.evt.clientY);
     }
   };
 
@@ -133,8 +153,9 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
       x={door.x}
       y={door.y}
       onClick={handleClick}
-      listening={!isWorldView} // DM can click, players cannot
-      opacity={1} // Always visible to both DM and players
+      onContextMenu={handleContextMenu}
+      listening={!isWorldView}
+      opacity={1}
     >
       {/* Render door with animated transition */}
       {animationProgress < 1
@@ -143,9 +164,23 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
 
       {/* Lock icon overlay (shown when door is locked) */}
       {door.isLocked && renderLockIcon(door)}
+
+      {/* Selection outline */}
+      {isSelected && !isWorldView && (
+        <Rect
+          x={door.orientation === 'horizontal' ? -halfSize - 4 : -thickness / 2 - 4}
+          y={door.orientation === 'horizontal' ? -thickness / 2 - 4 : -halfSize - 4}
+          width={(door.orientation === 'horizontal' ? door.size : thickness) + 8}
+          height={(door.orientation === 'horizontal' ? thickness : door.size) + 8}
+          stroke="#2563eb"
+          strokeWidth={2}
+          dash={[6, 3]}
+          listening={false}
+        />
+      )}
     </Group>
   );
-};
+}
 
 /**
  * Renders an animated door during open/close transition

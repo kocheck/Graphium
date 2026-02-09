@@ -1,9 +1,14 @@
 import { useMemo, useEffect, useRef } from 'react';
+
+import Konva from 'konva';
 import { Shape, Group } from 'react-konva';
-import { Drawing, Door, MapConfig, useGameStore } from '../../store/gameStore';
-import { ResolvedTokenData } from '../../hooks/useTokenData';
+
 import URLImage from './URLImage';
-import { Point, WallSegment } from '../../types/geometry';
+import { useGameStore } from '../../store/gameStore';
+
+import type { ResolvedTokenData } from '../../hooks/useTokenData';
+import type { Drawing, Door, MapConfig } from '../../store/gameStore';
+import type { Point, WallSegment } from '../../types/geometry';
 
 interface FogOfWarLayerProps {
   tokens: ResolvedTokenData[];
@@ -18,10 +23,6 @@ interface FogOfWarLayerProps {
   };
   map: MapConfig | null;
 }
-
-// ... logic ...
-
-import Konva from 'konva';
 
 const BLUR_FILTERS = [Konva.Filters.Blur]; // Use Konva.Filters.Blur instead of importing broken constant
 
@@ -47,14 +48,14 @@ const BLUR_FILTERS = [Konva.Filters.Blur]; // Use Konva.Filters.Blur instead of 
  * - Frame rate: 22fps → 60fps (173% improvement)
  * - CPU usage: ~80% → ~15% (static scenes)
  */
-const FogOfWarLayer = ({
+function FogOfWarLayer({
   tokens,
   drawings,
   doors,
   gridSize,
   visibleBounds,
   map,
-}: FogOfWarLayerProps) => {
+}: FogOfWarLayerProps) {
   console.log('[FogOfWarLayer] COMPONENT RENDERING - Start');
   console.log('[FogOfWarLayer] Props:', {
     tokensCount: tokens.length,
@@ -164,12 +165,12 @@ const FogOfWarLayer = ({
         for (let i = 0; i < points.length - 2; i += 2) {
           wallSegments.push({
             start: {
-              x: points[i] * scale + offsetX,
-              y: points[i + 1] * scale + offsetY,
+              x: points[i]! * scale + offsetX,
+              y: points[i + 1]! * scale + offsetY,
             },
             end: {
-              x: points[i + 2] * scale + offsetX,
-              y: points[i + 3] * scale + offsetY,
+              x: points[i + 2]! * scale + offsetX,
+              y: points[i + 3]! * scale + offsetY,
             },
           });
         }
@@ -210,6 +211,7 @@ const FogOfWarLayer = ({
     console.log('[FogOfWarLayer] Total wall segments:', wallSegments.length);
 
     return wallSegments;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawings, doorsKey]); // CRITICAL: Use doorsKey instead of doors for proper change detection
 
   // Serialize PC token properties for change detection
@@ -370,11 +372,13 @@ const FogOfWarLayer = ({
           <Shape
             key={`explored-${index}`}
             sceneFunc={(ctx) => {
-              if (region.points.length === 0) return;
+              if (region.points.length === 0) {
+                return;
+              }
               ctx.beginPath();
-              ctx.moveTo(region.points[0].x, region.points[0].y);
+              ctx.moveTo(region.points[0]!.x, region.points[0]!.y);
               for (let i = 1; i < region.points.length; i++) {
-                ctx.lineTo(region.points[i].x, region.points[i].y);
+                ctx.lineTo(region.points[i]!.x, region.points[i]!.y);
               }
               ctx.closePath();
               // Semi-transparent black = partially erases fog = dimmed map shows through
@@ -400,11 +404,13 @@ const FogOfWarLayer = ({
             <Shape
               key={`vision-poly-${token.id}`}
               sceneFunc={(ctx) => {
-                if (visibilityPolygon.length === 0) return;
+                if (visibilityPolygon.length === 0) {
+                  return;
+                }
                 ctx.beginPath();
-                ctx.moveTo(visibilityPolygon[0].x, visibilityPolygon[0].y);
+                ctx.moveTo(visibilityPolygon[0]!.x, visibilityPolygon[0]!.y);
                 for (let i = 1; i < visibilityPolygon.length; i++) {
-                  ctx.lineTo(visibilityPolygon[i].x, visibilityPolygon[i].y);
+                  ctx.lineTo(visibilityPolygon[i]!.x, visibilityPolygon[i]!.y);
                 }
                 ctx.closePath();
 
@@ -439,7 +445,7 @@ const FogOfWarLayer = ({
       </Group>
     </Group>
   );
-};
+}
 
 /**
  * Calculates visibility polygon using 360-degree raycasting
@@ -544,7 +550,9 @@ function lineSegmentIntersection(
   const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
   // Lines are parallel
-  if (Math.abs(denom) < 1e-10) return null;
+  if (Math.abs(denom) < 1e-10) {
+    return null;
+  }
 
   const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
   const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;

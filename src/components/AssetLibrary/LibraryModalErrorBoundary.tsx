@@ -1,4 +1,6 @@
-import React, { Component, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type React from 'react';
+import { Component } from 'react';
 
 /**
  * Props for LibraryModalErrorBoundary
@@ -62,7 +64,7 @@ class LibraryModalErrorBoundary extends Component<
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error('[LibraryModalErrorBoundary] Modal component crashed:', error, errorInfo);
 
     // Optional: Send error to monitoring service
@@ -87,7 +89,7 @@ class LibraryModalErrorBoundary extends Component<
     }
   };
 
-  render() {
+  override render() {
     const { hasError, error } = this.state;
     const { children } = this.props;
 

@@ -114,10 +114,14 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
   // Canvas rendering effect - only runs when dependencies change
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     // Clear canvas
     ctx.clearRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
@@ -184,7 +188,9 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) {
+        return;
+      }
 
       const rect = canvas.getBoundingClientRect();
       const clickX = e.clientX - rect.left;

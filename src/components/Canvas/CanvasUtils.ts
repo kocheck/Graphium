@@ -1,4 +1,4 @@
-import { KonvaEventObject } from 'konva/lib/Node';
+import type { KonvaEventObject } from 'konva/lib/Node';
 
 /**
  * Get the pointer position from a Konva event
@@ -6,7 +6,9 @@ import { KonvaEventObject } from 'konva/lib/Node';
  */
 export const getPointerPosition = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
   const stage = e.target.getStage();
-  if (!stage) return null;
+  if (!stage) {
+    return null;
+  }
   return stage.getRelativePointerPosition();
 };
 

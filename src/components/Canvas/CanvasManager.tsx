@@ -1,33 +1,36 @@
-import Konva from 'konva';
-import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
-import { KonvaEventObject } from 'konva/lib/Node';
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+
+import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
 import { useShallow } from 'zustand/shallow';
-import { snapToGrid } from '../../utils/grid';
-import { useGameStore, DEFAULT_GRID_COLOR, Drawing } from '../../store/gameStore';
-import { useTouchSettingsStore } from '../../store/touchSettingsStore';
-import { isRectInAnyPolygon } from '../../types/geometry';
+
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
+import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
+import DoorLayer from './DoorLayer';
+import { useCanvasInteraction } from './hooks/useCanvasInteraction';
+import { useTokenDrag } from './hooks/useTokenDrag';
+import MeasurementOverlay from './MeasurementOverlay';
+import Minimap from './Minimap';
+import MinimapErrorBoundary from './MinimapErrorBoundary';
+import MovementRangeOverlay from './MovementRangeOverlay';
+import PaperNoiseOverlay from './PaperNoiseOverlay';
+import PressureSensitiveLine from './PressureSensitiveLine';
+import StairsLayer from './StairsLayer';
 import TokenErrorBoundary from './TokenErrorBoundary';
+import URLImage from './URLImage';
+import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
 import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import FogOfWarLayer from './FogOfWarLayer';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import DoorLayer from './DoorLayer';
-import StairsLayer from './StairsLayer';
-import PaperNoiseOverlay from './PaperNoiseOverlay';
-import Minimap from './Minimap';
-import MinimapErrorBoundary from './MinimapErrorBoundary';
-import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
-
-import { useTokenDrag } from './hooks/useTokenDrag';
-import { useCanvasInteraction } from './hooks/useCanvasInteraction';
-import MeasurementOverlay from './MeasurementOverlay';
-import MovementRangeOverlay from './MovementRangeOverlay';
 import { resolveTokenData, DEFAULT_MOVEMENT_SPEED } from '../../hooks/useTokenData';
-import URLImage from './URLImage';
-import PressureSensitiveLine from './PressureSensitiveLine';
+import { useTouchSettingsStore } from '../../store/touchSettingsStore';
+import { isRectInAnyPolygon } from '../../types/geometry';
+import { snapToGrid } from '../../utils/grid';
 import { createGridGeometry } from '../../utils/gridGeometry';
+
+import type { Drawing } from '../../store/gameStore';
+import type Konva from 'konva';
+import type { KonvaEventObject } from 'konva/lib/Node';
 
 // Zoom constants
 const MIN_SCALE = 0.1;
@@ -102,14 +105,14 @@ interface CanvasManagerProps {
  * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
  * @see {@link file://../../App.tsx App.tsx} for UI sanitization
  */
-const CanvasManager = ({
+function CanvasManager({
   tool = 'select',
   color = '#df4b26',
   doorOrientation = 'horizontal',
   isWorldView = false,
   onSelectionChange,
   // measurementMode = 'ruler', // Unused currently
-}: CanvasManagerProps) => {
+}: CanvasManagerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -209,6 +212,10 @@ const CanvasManager = ({
   const removeDrawings = useGameStore((s) => s.removeDrawings);
   const setGridType = useGameStore((s) => s.setGridType);
   const toggleDoor = useGameStore((s) => s.toggleDoor);
+  const addDoor = useGameStore((s) => s.addDoor);
+  const removeDoor = useGameStore((s) => s.removeDoor);
+  const removeDoors = useGameStore((s) => s.removeDoors);
+  const updateDoorLock = useGameStore((s) => s.updateDoorLock);
 
   const updateDrawingTransform = useGameStore((s) => s.updateDrawingTransform);
   const setActiveMeasurement = useGameStore((s) => s.setActiveMeasurement);
@@ -270,6 +277,28 @@ const CanvasManager = ({
 
   // Tool state helpers for disabled Konva drag events (defined once to prevent re-renders)
   const emptyDragHandler = useCallback(() => {}, []);
+
+  const [doorContextMenu, setDoorContextMenu] = useState<{
+    doorId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleDoorContextMenu = useCallback((doorId: string, screenX: number, screenY: number) => {
+    if (!containerRef.current) {
+      return;
+    }
+    const rect = containerRef.current.getBoundingClientRect();
+    setDoorContextMenu({
+      doorId,
+      x: screenX - rect.left,
+      y: screenY - rect.top,
+    });
+  }, []);
+
+  const closeDoorContextMenu = useCallback(() => {
+    setDoorContextMenu(null);
+  }, []);
 
   // Navigation State
   const [isSpacePressed, setIsSpacePressed] = useState(false);
@@ -353,6 +382,8 @@ const CanvasManager = ({
     setDoorPreviewPos,
     gridType,
     gridSize,
+    doorOrientation,
+    addDoor,
     calibrationStart,
     setCalibrationRect,
     setSelectedIds,
@@ -498,7 +529,9 @@ const CanvasManager = ({
   // Keyboard zoom (centered on viewport)
   const handleKeyboardZoom = useCallback(
     (zoomIn: boolean) => {
-      if (!containerRef.current) return;
+      if (!containerRef.current) {
+        return;
+      }
 
       const centerX = size.width / 2;
       const centerY = size.height / 2;
@@ -512,7 +545,9 @@ const CanvasManager = ({
   // Consolidated keyboard event handling for canvas operations
   useEffect(() => {
     const isEditableElement = (el: EventTarget | null): boolean => {
-      if (!(el instanceof HTMLElement)) return false;
+      if (!(el instanceof HTMLElement)) {
+        return false;
+      }
       const tag = el.tagName.toLowerCase();
       return tag === 'input' || tag === 'textarea' || el.isContentEditable;
     };
@@ -525,22 +560,29 @@ const CanvasManager = ({
       }
 
       // Ignore other operations if typing in an input
-      if (isEditableElement(e.target)) return;
+      if (isEditableElement(e.target)) {
+        return;
+      }
 
       // Delete/Backspace - remove selected items
       // BLOCKED in World View (players cannot delete tokens/drawings)
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (isWorldView) return; // Block deletion in World View
+        if (isWorldView) {
+          return;
+        } // Block deletion in World View
         if (selectedIds.length > 0) {
           removeTokens(selectedIds);
           removeDrawings(selectedIds);
+          removeDoors(selectedIds);
           setSelectedIds([]);
         }
       }
 
       // Escape - clear active measurement
       if (e.key === 'Escape') {
-        if (isWorldView) return; // Block in World View
+        if (isWorldView) {
+          return;
+        } // Block in World View
         if (activeMeasurement) {
           setActiveMeasurement(null);
         }
@@ -632,6 +674,7 @@ const CanvasManager = ({
     selectedIds,
     removeTokens,
     removeDrawings,
+    removeDoors,
     handleKeyboardZoom,
     activeMeasurement,
     isWorldView,
@@ -675,8 +718,8 @@ const CanvasManager = ({
     // ONLY handle 2+ finger gestures (pinch-to-zoom)
     if (touches.length === 2) {
       e.evt.preventDefault();
-      const touch1 = touches[0];
-      const touch2 = touches[1];
+      const touch1 = touches[0]!;
+      const touch2 = touches[1]!;
       lastPinchDistance.current = calculatePinchDistance(touch1, touch2);
       lastPinchCenter.current = calculatePinchCenter(touch1, touch2);
     } else if (touches.length === 1 && tool !== 'select') {
@@ -694,13 +737,15 @@ const CanvasManager = ({
       e.evt.preventDefault();
 
       if (lastPinchDistance.current && lastPinchCenter.current) {
-        const touch1 = touches[0];
-        const touch2 = touches[1];
+        const touch1 = touches[0]!;
+        const touch2 = touches[1]!;
         const distance = calculatePinchDistance(touch1, touch2);
         const center = calculatePinchCenter(touch1, touch2);
 
         // Prevent division by zero
-        if (lastPinchDistance.current < MIN_PINCH_DISTANCE) return;
+        if (lastPinchDistance.current < MIN_PINCH_DISTANCE) {
+          return;
+        }
 
         // Calculate distance change to determine gesture type
         const distanceChange = Math.abs(distance - lastPinchDistance.current);
@@ -709,7 +754,9 @@ const CanvasManager = ({
         if (isPinchGesture) {
           // PINCH-TO-ZOOM: Fingers moving together/apart
           const stageRect = containerRef.current?.getBoundingClientRect();
-          if (!stageRect) return;
+          if (!stageRect) {
+            return;
+          }
 
           const canvasX = center.x - stageRect.left;
           const canvasY = center.y - stageRect.top;
@@ -766,17 +813,23 @@ const CanvasManager = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     // BLOCKED in World View (no file drops allowed)
-    if (isWorldView) return;
+    if (isWorldView) {
+      return;
+    }
     e.preventDefault();
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     // BLOCKED in World View (no file drops allowed)
-    if (isWorldView) return;
+    if (isWorldView) {
+      return;
+    }
     e.preventDefault();
 
     const stageRect = containerRef.current?.getBoundingClientRect();
-    if (!stageRect) return;
+    if (!stageRect) {
+      return;
+    }
 
     // 1. Get pointer relative to the container DOM element
     const pointerX = e.clientX - stageRect.left;
@@ -840,20 +893,24 @@ const CanvasManager = ({
     }
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
+      const file = e.dataTransfer.files[0]!;
       // Create Object URL for cropping
       const objectUrl = URL.createObjectURL(file);
       setPendingCrop({ src: objectUrl, x, y });
     }
   };
 
-  const handleCropConfirm = async (blob: Blob) => {
-    if (!pendingCrop) return;
-    handleCropSave(blob);
+  const handleCropConfirm = (blob: Blob) => {
+    if (!pendingCrop) {
+      return;
+    }
+    void handleCropSave(blob);
   };
 
-  const handleCropSave = async (blob: Blob) => {
-    if (!pendingCrop) return;
+  const handleCropSave = (blob: Blob) => {
+    if (!pendingCrop) {
+      return;
+    }
 
     try {
       // Convert blob to base64 for storage/rendering
@@ -899,11 +956,15 @@ const CanvasManager = ({
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const stage = e.target.getStage();
-    if (!stage) return;
+    if (!stage) {
+      return;
+    }
 
     const oldScale = stage.scaleX();
     const pointer = stage.getPointerPosition();
-    if (!pointer) return;
+    if (!pointer) {
+      return;
+    }
 
     // Zoom with Ctrl/Cmd + scroll
     if (e.evt.ctrlKey || e.evt.metaKey) {
@@ -950,7 +1011,9 @@ const CanvasManager = ({
 
   const centerOnPCTokens = useCallback(() => {
     const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
-    if (pcTokens.length === 0) return;
+    if (pcTokens.length === 0) {
+      return;
+    }
 
     // Calculate bounds of all PC tokens
     let minX = Infinity;
@@ -1160,7 +1223,6 @@ const CanvasManager = ({
           {drawings.map((line) => {
             // Common props shared by both component types
             const commonProps = {
-              key: line.id,
               id: line.id,
               name: 'drawing' as const,
               points: line.points,
@@ -1258,6 +1320,7 @@ const CanvasManager = ({
             if (hasPressureData) {
               return (
                 <PressureSensitiveLine
+                  key={line.id}
                   {...commonProps}
                   {...eventHandlers}
                   pressures={line.pressures}
@@ -1267,6 +1330,7 @@ const CanvasManager = ({
             } else {
               return (
                 <Line
+                  key={line.id}
                   {...commonProps}
                   {...eventHandlers}
                   tension={0.5}
@@ -1321,7 +1385,17 @@ const CanvasManager = ({
           {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
           {(() => {
             console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
-            return <DoorLayer doors={doors} isWorldView={isWorldView} onToggleDoor={toggleDoor} />;
+            return (
+              <DoorLayer
+                doors={doors}
+                isWorldView={isWorldView}
+                tool={tool}
+                selectedIds={selectedIds}
+                onToggleDoor={toggleDoor}
+                onDeleteDoor={removeDoor}
+                onDoorContextMenu={handleDoorContextMenu}
+              />
+            );
           })()}
 
           {/* Door Preview - Show preview when hovering with door tool */}
@@ -1342,7 +1416,9 @@ const CanvasManager = ({
           {isDraggingToken &&
             Array.from(snapPreviewPositionsRef.current.entries()).map(([tokenId, snapPos]) => {
               const token = resolvedTokens.find((t) => t.id === tokenId);
-              if (!token) return null;
+              if (!token) {
+                return null;
+              }
 
               const size = gridSize * token.scale;
 
@@ -1367,14 +1443,14 @@ const CanvasManager = ({
                     strokeWidth={2}
                     listening={false}
                     dash={[8, 4]}
-                    closed={true}
+                    closed
                   />
                   {/* Inner fill - actual grid cell shape */}
                   <Line
                     points={cellPoints}
                     fill="rgba(37, 99, 235, 0.1)"
                     listening={false}
-                    closed={true}
+                    closed
                   />
                 </Group>
               );
@@ -1409,7 +1485,9 @@ const CanvasManager = ({
             selectedIds.length === 1 &&
             (() => {
               const selectedToken = resolvedTokens.find((t) => t.id === selectedIds[0]);
-              if (!selectedToken) return null;
+              if (!selectedToken) {
+                return null;
+              }
 
               // Use drag position if token is being dragged
               const dragPos = dragPositionsRef.current.get(selectedToken.id);
@@ -1587,7 +1665,7 @@ const CanvasManager = ({
                       strokeWidth={3}
                       shadowColor="#2563eb"
                       shadowBlur={8}
-                      shadowEnabled={true}
+                      shadowEnabled
                       listening={false}
                       dash={[8, 4]}
                     />
@@ -1733,8 +1811,57 @@ const CanvasManager = ({
           </MinimapErrorBoundary>
         </>
       )}
+
+      {/* Door Context Menu */}
+      {doorContextMenu &&
+        (() => {
+          const door = doors.find((d) => d.id === doorContextMenu.doorId);
+          if (!door) {
+            return null;
+          }
+          return (
+            <>
+              {/* Invisible backdrop to close menu on outside click */}
+              <div className="fixed inset-0 z-40" onClick={closeDoorContextMenu} />
+              <div
+                className="absolute z-50 bg-[var(--app-bg-secondary)] border border-[var(--app-border)] rounded-lg shadow-lg py-1 min-w-[160px]"
+                style={{ left: doorContextMenu.x, top: doorContextMenu.y }}
+              >
+                <button
+                  className="w-full px-3 py-1.5 text-left text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-bg-tertiary)] disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={door.isLocked}
+                  onClick={() => {
+                    toggleDoor(door.id);
+                    closeDoorContextMenu();
+                  }}
+                >
+                  {door.isOpen ? 'Close Door' : 'Open Door'}
+                </button>
+                <button
+                  className="w-full px-3 py-1.5 text-left text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-bg-tertiary)]"
+                  onClick={() => {
+                    updateDoorLock(door.id, !door.isLocked);
+                    closeDoorContextMenu();
+                  }}
+                >
+                  {door.isLocked ? 'Unlock Door' : 'Lock Door'}
+                </button>
+                <div className="border-t border-[var(--app-border)] my-1" />
+                <button
+                  className="w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-[var(--app-bg-tertiary)]"
+                  onClick={() => {
+                    removeDoor(door.id);
+                    closeDoorContextMenu();
+                  }}
+                >
+                  Delete Door
+                </button>
+              </div>
+            </>
+          );
+        })()}
     </div>
   );
-};
+}
 
 export default React.memo(CanvasManager);

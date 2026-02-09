@@ -37,7 +37,8 @@
  * @component
  */
 
-import { Component, ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
 
 import { ErrorFallbackUI } from './ErrorFallbackUI';
 
@@ -85,7 +86,7 @@ class DungeonGeneratorErrorBoundary extends Component<Props, State> {
    * @param error - The error thrown during generation
    * @param errorInfo - React error info including component stack
    */
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Dungeon generator error:', error);
     console.error('Error info:', errorInfo);
     console.error('Component stack:', errorInfo.componentStack);
@@ -103,7 +104,7 @@ class DungeonGeneratorErrorBoundary extends Component<Props, State> {
    *
    * @returns {ReactNode} Children or error UI
    */
-  render() {
+  override render() {
     if (this.state.hasError) {
       return <ErrorFallbackUI error={this.state.error} onReset={this.resetError} />;
     }
