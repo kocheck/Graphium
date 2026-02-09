@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/refactor-modular-architecture-GUfVC`
 > **Created:** 2026-02-09
-> **Status:** In Progress — Session 8 (Logic Extraction I Complete)
+> **Status:** In Progress — Session 9 (Logic Extraction II Complete)
 
 ## Project Vision
 
@@ -1149,9 +1149,9 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 9: Logic Extraction II
 
-- [ ] Extract App.tsx coordination to useToolState + useMenuCommands
-- [ ] Create campaignService.ts
-- [ ] App.tsx under 250 lines
+- [x] Extract App.tsx coordination to useToolState + useMenuCommands
+- [x] Create campaignService.ts
+- [x] App.tsx under 300 lines (283 — remaining is root compositor JSX)
 
 ### Session 10: CanvasManager Decomposition
 
@@ -1508,22 +1508,75 @@ removeRecent, refresh }`.
 (+26 new vision tests).
 **No regressions.**
 
+### Session 9 — Logic Extraction II (2026-02-09)
+
+**Completed:**
+
+- **Task 9.1 — Extract App.tsx coordination hooks:**
+  - Created `src/hooks/useToolState.ts` (152 lines) — Manages tool selection (select/marker/
+    eraser/wall/door/measure), marker colors with recent color tracking, door orientation,
+    measurement mode, and broadcast toggle. Includes tool keyboard shortcuts (V, M, E, W, D,
+    R, I, arrow keys) with proper input field exclusion and Architect View gating.
+  - Created `src/hooks/useMenuCommands.ts` (81 lines) — Registers Electron IPC menu command
+    handlers (save, load, new campaign, toggle resource monitor, generate dungeon, show about).
+    Uses ref pattern for callback stability. No-op in web mode (no ipcRenderer).
+  - Created `src/hooks/useLibraryLoader.ts` (51 lines) — Loads token library index from
+    storage on startup, merging with existing campaign library. Architect View only.
+  - Created `src/components/Toolbar.tsx` (228 lines) — Extracted desktop toolbar JSX from
+    App.tsx including tool buttons, door orientation toggle, measurement mode selector,
+    broadcast toggle, play/pause button, hidden color input, and floating color palette.
+    Receives `UseToolStateReturn` as a single prop object for clean API.
+
+- **Task 9.2 — Create campaign service module:** Created `src/services/campaignService.ts`
+  (91 lines) with three functions:
+  - `saveCampaign()` — Syncs active map, serializes via storage service, updates recent list
+  - `loadCampaign()` — Opens file picker, deserializes, hydrates game store
+  - `startNewCampaign()` — Shows confirmation dialog, resets store on confirm
+    All functions use Zustand stores imperatively via `getState()` — zero React imports.
+
+- **Task 9.3 — Slim App.tsx:** App.tsx reduced from 770 → 283 lines (63% reduction).
+  Remaining content is root compositor JSX: component imports, view state routing
+  (design system / home / editor), and layout composition of 20+ child components.
+  Modal keyboard shortcuts (? for About, Escape to close) kept inline as they reference
+  local React state.
+
+**Architecture notes:**
+
+- `campaignService.ts` imports from `store/` (gameStore, uiStore) for imperative state
+  access. This is acceptable per the import boundary rules (only services→components is
+  restricted, not services→store). The service orchestrates between stores and storage.
+- Keyboard shortcuts split: tool shortcuts (V/M/E/W/D/R/I/arrows) in useToolState,
+  modal shortcuts (?/Escape) in App.tsx. No overlap or conflict.
+- `useMenuCommands` uses a ref pattern (`onShowAboutRef`) to avoid re-registering IPC
+  listeners when the callback prop changes, matching the original `[]` dependency pattern.
+
+**Files created:** useToolState.ts (152), useMenuCommands.ts (81), useLibraryLoader.ts (51),
+campaignService.ts (91), Toolbar.tsx (228)
+**Files modified:** App.tsx (770 → 283 lines)
+**Build output:** Main chunk 889KB (gzip 258KB) — unchanged.
+**Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 818 tests pass.
+**No regressions.**
+
 ---
 
 ## Quick Reference
 
 ### Key Files
 
-| File                                      | Lines | Role              | Status                     |
-| ----------------------------------------- | ----- | ----------------- | -------------------------- |
-| `src/components/Canvas/CanvasManager.tsx` | 1,867 | Canvas monolith   | Needs decomposition (S10)  |
-| `src/components/HomeScreen.tsx`           | 723   | Landing page      | Logic extracted (S8)       |
-| `src/store/gameStore.ts`                  | 607   | Domain state      | UI split complete (S7)     |
-| `src/store/uiStore.ts`                    | 79    | UI state          | New (S7)                   |
-| `src/utils/vision.ts`                     | 205   | Vision/raycasting | New (S8), 100% coverage    |
-| `src/App.tsx`                             | 763   | Root coordinator  | Needs hook extraction (S9) |
-| `src/styles/theme.css`                    | 521   | Theme tokens      | Hardened (S3 complete)     |
-| `electron/main.ts`                        | 1,283 | Electron main     | No changes planned         |
+| File                                      | Lines | Role              | Status                       |
+| ----------------------------------------- | ----- | ----------------- | ---------------------------- |
+| `src/components/Canvas/CanvasManager.tsx` | 1,867 | Canvas monolith   | Needs decomposition (S10)    |
+| `src/components/HomeScreen.tsx`           | 723   | Landing page      | Logic extracted (S8)         |
+| `src/store/gameStore.ts`                  | 607   | Domain state      | UI split complete (S7)       |
+| `src/store/uiStore.ts`                    | 79    | UI state          | New (S7)                     |
+| `src/utils/vision.ts`                     | 205   | Vision/raycasting | New (S8), 100% coverage      |
+| `src/App.tsx`                             | 283   | Root coordinator  | Hooks extracted (S9)         |
+| `src/hooks/useToolState.ts`               | 152   | Tool state        | New (S9)                     |
+| `src/hooks/useMenuCommands.ts`            | 81    | IPC menu commands | New (S9)                     |
+| `src/services/campaignService.ts`         | 91    | Campaign I/O      | New (S9)                     |
+| `src/components/Toolbar.tsx`              | 228   | Desktop toolbar   | New (S9, extracted from App) |
+| `src/styles/theme.css`                    | 521   | Theme tokens      | Hardened (S3 complete)       |
+| `electron/main.ts`                        | 1,283 | Electron main     | No changes planned           |
 
 ### Commands
 
