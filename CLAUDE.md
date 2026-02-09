@@ -1125,9 +1125,9 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 5: UI Primitives — Dialog + HomeScreen
 
-- [ ] Create Dialog primitive with full a11y
-- [ ] Migrate PreferencesDialog + ConfirmDialog to use Dialog
-- [ ] Extract HomeScreen inline CSS to stylesheet
+- [x] Create Dialog primitive with full a11y
+- [x] Migrate PreferencesDialog + ConfirmDialog to use Dialog
+- [x] Extract HomeScreen inline CSS to stylesheet
 
 ### Session 6: Quality Tooling
 
@@ -1348,20 +1348,51 @@ playground-registry.tsx, ToggleSwitch.tsx (re-export), index.css
 **Verification:** TypeScript 0 errors, build succeeds, all 792 tests pass.
 **No regressions.**
 
+### Session 5 — UI Primitives: Dialog + HomeScreen CSS (2026-02-09)
+
+**Completed:**
+
+- **Task 5.1 — Create Dialog primitive:** Created `src/components/primitives/Dialog.tsx`
+  with full accessibility: focus trap (Tab/Shift+Tab cycle), Escape to close, overlay
+  click to close (configurable), auto-focus first focusable element on open, return
+  focus to trigger element on close, scroll lock on body, `role="dialog"` +
+  `aria-modal` + `aria-labelledby` + `aria-describedby`. Four size variants (sm, md,
+  lg, full). Header with title/description/close button, scrollable body, optional
+  footer. Animations respect `prefers-reduced-motion`.
+
+- **Task 5.2 — Migrate dialogs:** Refactored ConfirmDialog and PreferencesDialog to
+  use Dialog primitive. ConfirmDialog: removed manual overlay/keyboard handling (now
+  handled by Dialog), kept Enter-to-confirm behavior. PreferencesDialog: removed
+  manual overlay/Escape handling, moved footer buttons (Reset to Defaults + Done) to
+  Dialog footer prop. Both dialogs now ~40% shorter with consistent a11y behavior.
+
+- **Task 5.3 — Extract HomeScreen inline CSS:** Moved 1,032 lines of `<style>` block
+  from HomeScreen.tsx to `src/styles/home-screen.css`. HomeScreen.tsx dropped from
+  1,776 → 745 lines (58% reduction). CSS is now editable without touching React logic.
+  JS bundle size dropped from 912KB → 886KB (gzip 262KB → 258KB) because the CSS
+  string is no longer embedded in JavaScript.
+
+**Files created:** Dialog.tsx, home-screen.css
+**Files modified:** primitives/index.ts, primitives.css (+dialog styles), index.css
+(+home-screen.css import), ConfirmDialog.tsx, PreferencesDialog.tsx, HomeScreen.tsx
+**Build output:** Main chunk 886KB (gzip 258KB) — 26KB reduction from CSS extraction.
+**Verification:** TypeScript 0 errors, build succeeds, all 792 tests pass.
+**No regressions.**
+
 ---
 
 ## Quick Reference
 
 ### Key Files
 
-| File                                      | Lines | Role             | Status                     |
-| ----------------------------------------- | ----- | ---------------- | -------------------------- |
-| `src/components/Canvas/CanvasManager.tsx` | 1,867 | Canvas monolith  | Needs decomposition (S10)  |
-| `src/components/HomeScreen.tsx`           | 1,776 | Landing page     | Needs CSS extraction (S5)  |
-| `src/store/gameStore.ts`                  | 836   | Central state    | Needs UI split (S7)        |
-| `src/App.tsx`                             | 763   | Root coordinator | Needs hook extraction (S9) |
-| `src/styles/theme.css`                    | 521   | Theme tokens     | Hardened (S3 complete)     |
-| `electron/main.ts`                        | 1,283 | Electron main    | No changes planned         |
+| File                                      | Lines | Role             | Status                      |
+| ----------------------------------------- | ----- | ---------------- | --------------------------- |
+| `src/components/Canvas/CanvasManager.tsx` | 1,867 | Canvas monolith  | Needs decomposition (S10)   |
+| `src/components/HomeScreen.tsx`           | 745   | Landing page     | CSS extracted (S5 complete) |
+| `src/store/gameStore.ts`                  | 836   | Central state    | Needs UI split (S7)         |
+| `src/App.tsx`                             | 763   | Root coordinator | Needs hook extraction (S9)  |
+| `src/styles/theme.css`                    | 521   | Theme tokens     | Hardened (S3 complete)      |
+| `electron/main.ts`                        | 1,283 | Electron main    | No changes planned          |
 
 ### Commands
 

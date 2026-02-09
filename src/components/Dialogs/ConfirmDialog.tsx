@@ -3,13 +3,13 @@
  *
  * Displays a modal dialog for user confirmations (e.g., deleting maps or tokens).
  * Integrated with gameStore for centralized dialog management.
+ * Uses the Dialog primitive for overlay, focus trap, and ARIA attributes.
  *
  * **Features:**
- * - Modal overlay with focus trap
- * - Confirm/Cancel buttons
+ * - Confirm/Cancel buttons using Button primitive
  * - Customizable message and confirm button text
- * - Keyboard support (Enter to confirm, Escape to cancel)
- * - Accessible with ARIA attributes
+ * - Keyboard support (Enter to confirm, Escape to cancel via Dialog)
+ * - Accessible with ARIA attributes (via Dialog)
  *
  * **Integration with gameStore:**
  * Dialogs are triggered via gameStore method:
@@ -28,79 +28,62 @@
  * @returns {JSX.Element | null} Confirmation dialog or null if not active
  */
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 import { useGameStore } from '../../store/gameStore';
 import Button from '../primitives/Button';
+import Dialog from '../primitives/Dialog';
 
 function ConfirmDialog() {
   const { confirmDialog, clearConfirmDialog } = useGameStore();
 
-  // Handle keyboard events
+  const handleConfirm = useCallback(() => {
+    if (confirmDialog) {
+      confirmDialog.onConfirm();
+      clearConfirmDialog();
+    }
+  }, [confirmDialog, clearConfirmDialog]);
+
+  // Enter key to confirm (Dialog handles Escape)
   useEffect(() => {
     if (!confirmDialog) {
       return;
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        clearConfirmDialog();
-      } else if (e.key === 'Enter') {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        confirmDialog.onConfirm();
-        clearConfirmDialog();
+        handleConfirm();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [confirmDialog, clearConfirmDialog]);
+  }, [confirmDialog, handleConfirm]);
 
   if (!confirmDialog) {
     return null;
   }
 
-  const handleConfirm = () => {
-    confirmDialog.onConfirm();
-    clearConfirmDialog();
-  };
-
-  const handleCancel = () => {
-    clearConfirmDialog();
-  };
-
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
-      onClick={handleCancel}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-dialog-title"
-    >
-      <div
-        className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 max-w-md w-full mx-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2
-          id="confirm-dialog-title"
-          className="text-lg font-semibold mb-4"
-          style={{ color: 'var(--app-text)' }}
-        >
-          Confirm Action
-        </h2>
-        <p className="mb-6" style={{ color: 'var(--app-text-muted)' }}>
-          {confirmDialog.message}
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button variant="ghost" onClick={handleCancel}>
+    <Dialog
+      isOpen={!!confirmDialog}
+      onClose={clearConfirmDialog}
+      title="Confirm Action"
+      size="sm"
+      footer={
+        <>
+          <Button variant="ghost" onClick={clearConfirmDialog}>
             Cancel
           </Button>
           <Button variant="destructive" onClick={handleConfirm} autoFocus>
             {confirmDialog.confirmText || 'Confirm'}
           </Button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <p style={{ color: 'var(--app-text-muted)' }}>{confirmDialog.message}</p>
+    </Dialog>
   );
 }
 

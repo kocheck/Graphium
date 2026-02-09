@@ -241,3 +241,157 @@
   background: var(--app-bg-surface);
   border: 1px solid var(--app-border-default);
 }
+
+/* ============================================================
+   Dialog Primitive
+   ============================================================ */
+
+.dialog-primitive__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--app-dialog-backdrop, rgba(0, 0, 0, 0.5));
+  animation: dialog-fade-in 0.15s ease-out;
+}
+
+.dialog-primitive__panel {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border-default);
+  border-radius: 0.5rem;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  margin: 1rem;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: dialog-slide-up 0.15s ease-out;
+}
+
+.dialog-primitive__panel:focus {
+  outline: none;
+}
+
+/* Size variants */
+.dialog-primitive--sm {
+  width: 100%;
+  max-width: 24rem; /* 384px */
+}
+
+.dialog-primitive--md {
+  width: 100%;
+  max-width: 32rem; /* 512px */
+}
+
+.dialog-primitive--lg {
+  width: 100%;
+  max-width: 42rem; /* 672px */
+}
+
+.dialog-primitive--full {
+  width: 100%;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+}
+
+/* Header */
+.dialog-primitive__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--app-border-subtle);
+  flex-shrink: 0;
+}
+
+.dialog-primitive__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--app-text-primary);
+  margin: 0;
+}
+
+.dialog-primitive__description {
+  font-size: 0.875rem;
+  color: var(--app-text-muted);
+  margin: 0.25rem 0 0;
+}
+
+.dialog-primitive__close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--app-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dialog-primitive__close:hover {
+  background: var(--app-bg-hover);
+  color: var(--app-text-primary);
+}
+
+.dialog-primitive__close:focus-visible {
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: 2px;
+}
+
+/* Body */
+.dialog-primitive__body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Footer */
+.dialog-primitive__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--app-border-subtle);
+  flex-shrink: 0;
+}
+
+/* Animations */
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .dialog-primitive__overlay,
+  .dialog-primitive__panel {
+    animation: none;
+  }
+}
