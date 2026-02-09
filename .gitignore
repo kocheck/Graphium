@@ -28,6 +28,9 @@ dist-web
 release
 dist-electron
 
+# Test Coverage
+coverage
+
 # Playwright
 playwright-report
 test-results
