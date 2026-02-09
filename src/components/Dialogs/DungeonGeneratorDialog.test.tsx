@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { act } from 'react';
 import { DungeonGeneratorDialog } from './DungeonGeneratorDialog';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore } from '../../store/gameStore';
 
 // Mock the DungeonGenerator
-vi.mock('../utils/DungeonGenerator', () => ({
+vi.mock('../../utils/DungeonGenerator', () => ({
   DungeonGenerator: vi.fn().mockImplementation(function () {
     return {
       generate: vi.fn().mockReturnValue({

@@ -3,10 +3,11 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
 import { useShallow } from 'zustand/shallow';
 
-import GridOverlay from './GridOverlay';
-import ImageCropper from '../ImageCropper';
 import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorLayer from './DoorLayer';
+import FogOfWarLayer from './FogOfWarLayer';
+import GridOverlay from './GridOverlay';
+import ImageCropper from '../Dialogs/ImageCropper';
 import { useCanvasInteraction } from './hooks/useCanvasInteraction';
 import { useTokenDrag } from './hooks/useTokenDrag';
 import MeasurementOverlay from './MeasurementOverlay';
@@ -16,17 +17,16 @@ import MovementRangeOverlay from './MovementRangeOverlay';
 import PaperNoiseOverlay from './PaperNoiseOverlay';
 import PressureSensitiveLine from './PressureSensitiveLine';
 import StairsLayer from './StairsLayer';
-import TokenErrorBoundary from './TokenErrorBoundary';
 import URLImage from './URLImage';
-import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
-import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
-import FogOfWarLayer from './FogOfWarLayer';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { resolveTokenData, DEFAULT_MOVEMENT_SPEED } from '../../hooks/useTokenData';
+import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 import { isRectInAnyPolygon } from '../../types/geometry';
 import { snapToGrid } from '../../utils/grid';
 import { createGridGeometry } from '../../utils/gridGeometry';
+import AssetProcessingErrorBoundary from '../ErrorBoundaries/AssetProcessingErrorBoundary';
+import TokenErrorBoundary from '../ErrorBoundaries/TokenErrorBoundary';
 
 import type { Drawing } from '../../store/gameStore';
 import type Konva from 'konva';

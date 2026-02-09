@@ -22,7 +22,7 @@ import {
   RiSwordLine,
 } from '@remixicon/react';
 
-import { AboutModal, type AboutModalTab } from './AboutModal';
+import { AboutModal, type AboutModalTab } from './Dialogs/AboutModal';
 import { LogoLockup } from './LogoLockup';
 import Tooltip from './Tooltip';
 import { getStorage } from '../services/storage';

@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import PendingErrorsIndicator from './PendingErrorsIndicator';
-import { mockErrorReporting } from '../test/setup';
-import * as globalErrorHandler from '../utils/globalErrorHandler';
-import type { StoredError } from '../utils/globalErrorHandler';
+import { mockErrorReporting } from '../../test/setup';
+import * as globalErrorHandler from '../../utils/globalErrorHandler';
+import type { StoredError } from '../../utils/globalErrorHandler';
 
 // Mock the globalErrorHandler module
-vi.mock('../utils/globalErrorHandler', () => ({
+vi.mock('../../utils/globalErrorHandler', () => ({
   getStoredErrors: vi.fn(),
   getUnreportedErrorCount: vi.fn(),
   markErrorReported: vi.fn(),

@@ -30,7 +30,7 @@
 
 import { useEffect } from 'react';
 
-import { useGameStore } from '../store/gameStore';
+import { useGameStore } from '../../store/gameStore';
 
 function ConfirmDialog() {
   const { confirmDialog, clearConfirmDialog } = useGameStore();

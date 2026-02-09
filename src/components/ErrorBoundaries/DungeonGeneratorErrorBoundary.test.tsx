@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import DungeonGeneratorErrorBoundary from './DungeonGeneratorErrorBoundary';
-import { useGameStore } from '../store/gameStore';
-import { rollForMessage } from '../utils/systemMessages';
+import { useGameStore } from '../../store/gameStore';
+import { rollForMessage } from '../../utils/systemMessages';
 
 // Mock system messages
-vi.mock('../utils/systemMessages', () => ({
+vi.mock('../../utils/systemMessages', () => ({
   rollForMessage: vi.fn((key) => {
     switch (key) {
       case 'ERROR_DUNGEON_GENERATION_TITLE':

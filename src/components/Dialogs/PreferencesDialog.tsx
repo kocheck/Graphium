@@ -22,10 +22,10 @@
 
 import { useEffect } from 'react';
 
-import { usePreferencesStore } from '../store/preferencesStore';
-import { useTouchSettingsStore } from '../store/touchSettingsStore';
+import { usePreferencesStore } from '../../store/preferencesStore';
+import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 
-import type { PressureCurve, PalmRejectionMode } from '../store/touchSettingsStore';
+import type { PressureCurve, PalmRejectionMode } from '../../store/touchSettingsStore';
 
 interface PreferencesDialogProps {
   isOpen: boolean;

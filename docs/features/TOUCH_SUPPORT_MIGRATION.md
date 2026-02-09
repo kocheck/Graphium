@@ -389,7 +389,7 @@ If issues arise, rollback is straightforward:
 
 ## Extended Manual Testing Checklist
 
-For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./DEVICE_COMPATIBILITY.md).
+For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](../guides/DEVICE_COMPATIBILITY.md).
 
 ### Physical Device Testing
 
@@ -561,4 +561,4 @@ For comprehensive device compatibility testing, see [DEVICE_COMPATIBILITY.md](./
 - [Konva.js Documentation](https://konvajs.org/docs/)
 - [React-Konva Events](https://konvajs.org/docs/react/)
 - [CSS touch-action](https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action)
-- [Device Compatibility Guide](./DEVICE_COMPATIBILITY.md)
+- [Device Compatibility Guide](../guides/DEVICE_COMPATIBILITY.md)

@@ -52,8 +52,8 @@
 
 import { useEffect } from 'react';
 
-import { useGameStore } from '../store/gameStore';
-import { rollForMessage } from '../utils/systemMessages';
+import { useGameStore } from '../../store/gameStore';
+import { rollForMessage } from '../../utils/systemMessages';
 
 export function PauseManager() {
   const setIsGamePaused = useGameStore((state) => state.setIsGamePaused);

@@ -133,7 +133,7 @@ Update documentation when you:
 
 ### Adding a New Feature
 
-1. **Plan**: Review `AI_CONTEXT.md` and `ARCHITECTURE.md`.
+1. **Plan**: Review `docs/context/AI_CONTEXT.md` and `docs/architecture/ARCHITECTURE.md`.
 2. **Implement**: Follow existing patterns (Command Palette, Sidebar).
 3. **Test**: Manual testing in **both** Architect and World views.
 4. **Document**: Update relevant docs.

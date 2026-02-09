@@ -1103,9 +1103,9 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 2: Repo Organization
 
-- [ ] Consolidate root documentation (move 8+ files to docs/)
-- [ ] Reorganize component directory structure (4 new folders)
-- [ ] Extract domain types to src/types/domain.ts
+- [x] Consolidate root documentation (move 8+ files to docs/)
+- [x] Reorganize component directory structure (4 new folders)
+- [x] Extract domain types to src/types/domain.ts
 
 ### Session 3: Theme System Foundation
 
@@ -1228,6 +1228,34 @@ SyncManager, PreferencesDialog, services layer, workers.
 
 **Build output:** Main chunk 908KB (gzip 260KB) — Session 11 code splitting will address.
 **No regressions:** All 39 test files, 792 tests passing.
+
+### Session 2 — Repo Organization & Type Extraction (2026-02-09)
+
+**Completed:**
+
+- Consolidated root documentation: deleted root ARCHITECTURE.md (duplicate), moved 8 docs
+  to docs/ subdirectories (guides/, features/, architecture/, planning/)
+- Moved diagnose-dungeon.ts to tests/helpers/, removed from tsconfig.json
+- Updated all internal cross-references (README.md, CONTRIBUTING.md, TOUCH_SUPPORT_MIGRATION.md,
+  IPC_SYNC_VERIFICATION.md, LINTING_MIGRATION_GUIDE.md)
+- Root now has only 5 markdown files: README, CHANGELOG, CONTRIBUTING, CLAUDE, TESTING_STRATEGY
+
+- Created 4 new component directories: ErrorBoundaries/, Dialogs/, Managers/, Mobile/
+- Moved 17 error boundary files (incl. TokenErrorBoundary from Canvas/)
+- Moved 6 dialog files (AboutModal, ConfirmDialog, PreferencesDialog, DungeonGeneratorDialog,
+  ImageCropper + DungeonGeneratorDialog.test)
+- Moved 6 manager files (SyncManager, ThemeManager, AutoSaveManager, PauseManager,
+  UpdateManager + UpdateManager.test)
+- Moved 3 mobile files (MobileToolbar, MobileBottomSheet, MobileSidebarDrawer)
+- Updated ~35 import paths across consumer files and moved files
+- Fixed vi.mock() paths in test files
+
+- Extracted 14 domain types + 2 constants from gameStore.ts to src/types/domain.ts
+- gameStore.ts re-exports everything for backward compatibility
+- Updated IStorageService.ts to import from types/domain (per architecture contract)
+
+**Verification:** TypeScript 0 errors, build succeeds, lint 0 errors, all 792 tests pass.
+**No regressions.** Components directory is now well-organized with clear boundaries.
 
 ---
 

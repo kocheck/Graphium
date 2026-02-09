@@ -178,7 +178,7 @@ After running `npm run lint:fix`, the following issues remain:
 #### 🔴 Critical Issues (Errors)
 
 1. **Files Not in TSConfig**
-   - `diagnose-dungeon.ts`
+   - `tests/helpers/diagnose-dungeon.ts`
    - `docs/aoe-templates-concept.tsx`
    - `docs/movement-range-concept.tsx`
 
@@ -247,7 +247,7 @@ After running `npm run lint:fix`, the following issues remain:
    ```json
    // tsconfig.json
    {
-     "include": ["src", "electron", "docs", "diagnose-dungeon.ts"]
+     "include": ["src", "electron", "docs", "tests/helpers/diagnose-dungeon.ts"]
    }
    ```
 
@@ -465,7 +465,7 @@ Even without fixing all errors, you now have:
 
 ## Getting Help
 
-- **Common errors:** See [LINTING.md](LINTING.md) "Common Errors and Fixes"
+- **Common errors:** See [LINTING.md](./LINTING.md) "Common Errors and Fixes"
 - **AI development:** See [.ai-rules.md](.ai-rules.md)
 - **Rule explanations:** Comments in `.eslintrc.cjs`
 - **TypeScript errors:** [TypeScript Handbook](https://www.typescriptlang.org/docs/)

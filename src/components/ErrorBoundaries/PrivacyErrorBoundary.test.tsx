@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import PrivacyErrorBoundary from './PrivacyErrorBoundary';
-import { mockErrorReporting } from '../test/setup';
-import { rollForMessage } from '../utils/systemMessages';
+import { mockErrorReporting } from '../../test/setup';
+import { rollForMessage } from '../../utils/systemMessages';
 
 // Mock system messages
-vi.mock('../utils/systemMessages', () => ({
+vi.mock('../../utils/systemMessages', () => ({
   rollForMessage: vi.fn((key) => {
     switch (key) {
       case 'ERROR_PRIVACY_TITLE':

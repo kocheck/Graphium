@@ -26,8 +26,8 @@ import {
 } from '@remixicon/react';
 
 import { useGameStore } from '../../store/gameStore';
+import UpdateManager from '../Managers/UpdateManager';
 import ToggleSwitch from '../ToggleSwitch';
-import UpdateManager from '../UpdateManager';
 
 import type { ComponentExample, ComponentCategory } from './types';
 
@@ -369,7 +369,7 @@ showConfirmDialog(
       }
       return <UpdateManagerDemo />;
     })(),
-    code: `import UpdateManager from './components/UpdateManager';
+    code: `import UpdateManager from './components/Managers/UpdateManager';
 import { useState } from 'react';
 
 const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);

@@ -21,7 +21,7 @@
 
 import { useEffect } from 'react';
 
-import { getStorage } from '../services/storage';
+import { getStorage } from '../../services/storage';
 
 // Note: window.themeAPI types are defined in vite-env.d.ts
 

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 
-import { useGameStore } from '../store/gameStore';
-import { isEqual, detectChanges } from '../utils/syncUtils';
+import { useGameStore } from '../../store/gameStore';
+import { isEqual, detectChanges } from '../../utils/syncUtils';
 
-import type { SyncAction, SyncableGameState } from '../utils/syncUtils';
+import type { SyncAction, SyncableGameState } from '../../utils/syncUtils';
 
 // Basic throttle implementation to limit IPC frequency
 // Ensures leading edge execution and trailing edge (so final state is always sent)

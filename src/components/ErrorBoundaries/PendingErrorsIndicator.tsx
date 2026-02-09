@@ -16,9 +16,9 @@ import {
   getUnreportedErrorCount,
   markErrorReported,
   clearReportedErrors,
-} from '../utils/globalErrorHandler';
+} from '../../utils/globalErrorHandler';
 
-import type { StoredError } from '../utils/globalErrorHandler';
+import type { StoredError } from '../../utils/globalErrorHandler';
 
 // Constants for GitHub issue URL construction
 const MAX_GITHUB_URL_LENGTH = 2000;

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 import { RiSaveLine } from '@remixicon/react';
 
-import MobileBottomSheet from './MobileBottomSheet';
+import MobileBottomSheet from './Mobile/MobileBottomSheet';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';

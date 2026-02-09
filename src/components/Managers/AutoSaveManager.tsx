@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
-import { getStorage } from '../services/storage';
-import { useGameStore } from '../store/gameStore';
+import { getStorage } from '../../services/storage';
+import { useGameStore } from '../../store/gameStore';
 
 /**
  * AutoSaveManager Component

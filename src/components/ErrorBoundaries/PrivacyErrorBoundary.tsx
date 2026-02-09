@@ -58,10 +58,10 @@ import type { ErrorInfo, ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';
 
-import { sanitizeStack, generateReportBody } from '../utils/errorSanitizer';
-import { rollForMessage } from '../utils/systemMessages';
+import { sanitizeStack, generateReportBody } from '../../utils/errorSanitizer';
+import { rollForMessage } from '../../utils/systemMessages';
 
-import type { SanitizedError } from '../utils/errorSanitizer';
+import type { SanitizedError } from '../../utils/errorSanitizer';
 
 // Constants for GitHub issue URL construction
 const MAX_GITHUB_URL_LENGTH = 2000;

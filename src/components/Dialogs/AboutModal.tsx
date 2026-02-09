@@ -9,7 +9,7 @@ import {
   RiPaletteLine,
 } from '@remixicon/react';
 
-import { LogoIcon } from './LogoIcon';
+import { LogoIcon } from '../LogoIcon';
 
 export type AboutModalTab = 'about' | 'tutorial' | 'shortcuts';
 

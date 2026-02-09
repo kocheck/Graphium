@@ -3,8 +3,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import App from './App.tsx';
-import PendingErrorsIndicator from './components/PendingErrorsIndicator.tsx';
-import PrivacyErrorBoundary from './components/PrivacyErrorBoundary.tsx';
+import PendingErrorsIndicator from './components/ErrorBoundaries/PendingErrorsIndicator';
+import PrivacyErrorBoundary from './components/ErrorBoundaries/PrivacyErrorBoundary';
 import { initStorage } from './services/storage.ts';
 import { initGlobalErrorHandlers } from './utils/globalErrorHandler.ts';
 import './index.css';

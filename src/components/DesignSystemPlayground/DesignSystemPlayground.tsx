@@ -28,8 +28,8 @@ import {
 import { componentExamples, categories } from './playground-registry';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
-import ConfirmDialog from '../ConfirmDialog';
-import { ThemeManager } from '../ThemeManager';
+import ConfirmDialog from '../Dialogs/ConfirmDialog';
+import { ThemeManager } from '../Managers/ThemeManager';
 import Toast from '../Toast';
 
 import type { ComponentExample } from './types';

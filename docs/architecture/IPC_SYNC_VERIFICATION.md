@@ -311,4 +311,4 @@ committedPositions.forEach((pos, id) => {
 - **IPC Sync Code:** `CanvasManager.tsx:780-1003`
 - **Test Suite:** `tests/functional/dm-world-sync.spec.ts`
 - **Original Sync Implementation:** `door-sync.spec.ts` (door sync example)
-- **Touch Support Migration:** `TOUCH_SUPPORT_MIGRATION.md`
+- **Touch Support Migration:** `../features/TOUCH_SUPPORT_MIGRATION.md`

@@ -222,7 +222,7 @@ Linting runs automatically before commits via Husky. All checks must pass before
 
 ### Documentation
 
-- **[LINTING.md](LINTING.md)** - Complete linting guide with examples and troubleshooting
+- **[LINTING.md](docs/guides/LINTING.md)** - Complete linting guide with examples and troubleshooting
 - **[.ai-rules.md](.ai-rules.md)** - AI agent code generation rules and requirements
 
 ### Editor Setup

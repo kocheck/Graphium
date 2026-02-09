@@ -1,8 +1,8 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 
-import { useGameStore } from '../store/gameStore';
-import { DungeonGenerator } from '../utils/DungeonGenerator';
+import { useGameStore } from '../../store/gameStore';
+import { DungeonGenerator } from '../../utils/DungeonGenerator';
 
 /**
  * DungeonGeneratorDialog is a modal that allows users to configure and

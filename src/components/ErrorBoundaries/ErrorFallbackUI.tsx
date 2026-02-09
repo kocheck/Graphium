@@ -9,8 +9,8 @@
 
 import { useMemo } from 'react';
 
-import { useGameStore } from '../store/gameStore';
-import { rollForMessage } from '../utils/systemMessages';
+import { useGameStore } from '../../store/gameStore';
+import { rollForMessage } from '../../utils/systemMessages';
 
 interface ErrorFallbackUIProps {
   error?: Error;
