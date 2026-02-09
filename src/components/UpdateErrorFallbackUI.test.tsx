@@ -119,7 +119,7 @@ describe('UpdateErrorFallbackUI', () => {
       expect(screen.getByText(/Firewall blocking update requests/i)).toBeInTheDocument();
       expect(screen.getByText(/Signature verification issues/i)).toBeInTheDocument();
       expect(
-        screen.getByText(/Corrupted update metadata from previous attempts/i)
+        screen.getByText(/Corrupted update metadata from previous attempts/i),
       ).toBeInTheDocument();
     });
 
@@ -212,7 +212,7 @@ describe('UpdateErrorFallbackUI', () => {
     it('should use memoized messages that remain stable', () => {
       const testErrorMessage = 'Test error';
       const { rerender } = render(
-        <UpdateErrorFallbackUI errorMessage={testErrorMessage} onReset={mockOnReset} />
+        <UpdateErrorFallbackUI errorMessage={testErrorMessage} onReset={mockOnReset} />,
       );
 
       // Get the displayed title
@@ -229,7 +229,9 @@ describe('UpdateErrorFallbackUI', () => {
       const errorMessage1 = 'Error 1';
       const errorMessage2 = 'Error 2';
 
-      const { rerender } = render(<UpdateErrorFallbackUI errorMessage={errorMessage1} onReset={mockOnReset} />);
+      const { rerender } = render(
+        <UpdateErrorFallbackUI errorMessage={errorMessage1} onReset={mockOnReset} />,
+      );
 
       const title1 = screen.getByRole('heading', { level: 2 }).textContent;
 

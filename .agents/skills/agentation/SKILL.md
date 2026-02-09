@@ -30,7 +30,9 @@ Set up the Agentation annotation toolbar in this project.
    import { Agentation } from 'agentation';
 
    // Add inside the component's return, after main content:
-   {import.meta.env.DEV && <Agentation />}
+   {
+     import.meta.env.DEV && <Agentation />;
+   }
    ```
 
    For Next.js App Router, add to the root layout:
@@ -39,7 +41,9 @@ Set up the Agentation annotation toolbar in this project.
    import { Agentation } from 'agentation';
 
    // Add inside the body, after children:
-   {process.env.NODE_ENV === 'development' && <Agentation />}
+   {
+     process.env.NODE_ENV === 'development' && <Agentation />;
+   }
    ```
 
    For Next.js Pages Router, add to \_app:
@@ -48,7 +52,9 @@ Set up the Agentation annotation toolbar in this project.
    import { Agentation } from 'agentation';
 
    // Add after Component:
-   {process.env.NODE_ENV === 'development' && <Agentation />}
+   {
+     process.env.NODE_ENV === 'development' && <Agentation />;
+   }
    ```
 
 5. **Confirm component setup**

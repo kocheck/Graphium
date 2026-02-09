@@ -41,7 +41,9 @@ describe('HomeScreen', () => {
     // Mock store functions
     vi.spyOn(useGameStore.getState(), 'showToast').mockImplementation(mockShowToast);
     vi.spyOn(useGameStore.getState(), 'loadCampaign').mockImplementation(mockLoadCampaign);
-    vi.spyOn(useGameStore.getState(), 'resetToNewCampaign').mockImplementation(mockResetToNewCampaign);
+    vi.spyOn(useGameStore.getState(), 'resetToNewCampaign').mockImplementation(
+      mockResetToNewCampaign,
+    );
     vi.spyOn(useGameStore.getState(), 'setGridSize').mockImplementation(mockSetGridSize);
 
     // Mock recentCampaigns to return empty by default
@@ -365,9 +367,7 @@ describe('HomeScreen', () => {
     it('should have ARIA labels on theme switcher', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const themeSwitcher = screen.getByLabelText(
-        /Current theme: .*\. Click to cycle themes\./i
-      );
+      const themeSwitcher = screen.getByLabelText(/Current theme: .*\. Click to cycle themes\./i);
       expect(themeSwitcher).toBeInTheDocument();
     });
   });
@@ -557,8 +557,8 @@ describe('HomeScreen', () => {
       expect(screen.getByText('Download the Windows App')).toBeInTheDocument();
       expect(
         screen.getByText(
-          /Get greater portability, offline support, and privacy with the native desktop application\./i
-        )
+          /Get greater portability, offline support, and privacy with the native desktop application\./i,
+        ),
       ).toBeInTheDocument();
     });
 
@@ -624,9 +624,7 @@ describe('HomeScreen', () => {
     it('should render theme switcher in footer', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const themeSwitcher = screen.getByLabelText(
-        /Current theme: .*\. Click to cycle themes\./i
-      );
+      const themeSwitcher = screen.getByLabelText(/Current theme: .*\. Click to cycle themes\./i);
       expect(themeSwitcher).toBeInTheDocument();
     });
 
@@ -643,12 +641,12 @@ describe('HomeScreen', () => {
 
       // Wait for theme to load
       await waitFor(() => {
-        expect(screen.getByLabelText(/Current theme: Dark\. Click to cycle themes\./i)).toBeInTheDocument();
+        expect(
+          screen.getByLabelText(/Current theme: Dark\. Click to cycle themes\./i),
+        ).toBeInTheDocument();
       });
 
-      const themeSwitcher = screen.getByLabelText(
-        /Current theme: Dark\. Click to cycle themes\./i
-      );
+      const themeSwitcher = screen.getByLabelText(/Current theme: Dark\. Click to cycle themes\./i);
 
       // Click to cycle from dark → system
       fireEvent.click(themeSwitcher);
@@ -672,11 +670,13 @@ describe('HomeScreen', () => {
 
       // Wait for theme to load
       await waitFor(() => {
-        expect(screen.getByLabelText(/Current theme: Light\. Click to cycle themes\./i)).toBeInTheDocument();
+        expect(
+          screen.getByLabelText(/Current theme: Light\. Click to cycle themes\./i),
+        ).toBeInTheDocument();
       });
 
       const themeSwitcher = screen.getByLabelText(
-        /Current theme: Light\. Click to cycle themes\./i
+        /Current theme: Light\. Click to cycle themes\./i,
       );
 
       // Click to cycle theme
@@ -686,7 +686,7 @@ describe('HomeScreen', () => {
         expect(mockSetThemeMode).toHaveBeenCalledWith('dark');
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           '[HomeScreen] Failed to set theme:',
-          expect.any(Error)
+          expect.any(Error),
         );
       });
 
@@ -703,18 +703,14 @@ describe('HomeScreen', () => {
     it('should render lite mode toggle in footer', () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const liteToggle = screen.getByLabelText(
-        /Full Mode enabled\. Click to enable lite mode\./i
-      );
+      const liteToggle = screen.getByLabelText(/Full Mode enabled\. Click to enable lite mode\./i);
       expect(liteToggle).toBeInTheDocument();
     });
 
     it('should toggle lite mode when clicked', async () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const liteToggle = screen.getByLabelText(
-        /Full Mode enabled\. Click to enable lite mode\./i
-      );
+      const liteToggle = screen.getByLabelText(/Full Mode enabled\. Click to enable lite mode\./i);
 
       // Click to enable lite mode
       fireEvent.click(liteToggle);
@@ -725,7 +721,7 @@ describe('HomeScreen', () => {
 
       // Check aria-label updated
       const liteToggleAfter = screen.getByLabelText(
-        /Lite Mode enabled\. Click to enable full mode\./i
+        /Lite Mode enabled\. Click to enable full mode\./i,
       );
       expect(liteToggleAfter).toBeInTheDocument();
 
@@ -742,18 +738,14 @@ describe('HomeScreen', () => {
 
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const liteToggle = screen.getByLabelText(
-        /Lite Mode enabled\. Click to enable full mode\./i
-      );
+      const liteToggle = screen.getByLabelText(/Lite Mode enabled\. Click to enable full mode\./i);
       expect(liteToggle).toBeInTheDocument();
     });
 
     it('should set data-lite-mode attribute on root element', async () => {
       render(<HomeScreen onStartEditor={mockOnStartEditor} />);
 
-      const liteToggle = screen.getByLabelText(
-        /Full Mode enabled\. Click to enable lite mode\./i
-      );
+      const liteToggle = screen.getByLabelText(/Full Mode enabled\. Click to enable lite mode\./i);
 
       // Enable lite mode
       fireEvent.click(liteToggle);

@@ -87,6 +87,7 @@ When running from source, the "Check for Updates" button will show "Development 
 ### Publishing a Release
 
 1. **Build the application:**
+
    ```bash
    npm run build
    ```
@@ -121,6 +122,7 @@ For auto-update to work on macOS in production, the app **must be code-signed an
 ```
 
 Without code signing:
+
 - macOS will block the installer
 - Auto-update will fail with signature verification errors
 
@@ -131,6 +133,7 @@ Without code signing:
 The auto-updater has comprehensive test coverage:
 
 **UpdateManager.test.tsx** - Tests for the UI component:
+
 - Rendering states (idle, checking, available, downloading, downloaded, error)
 - User interactions (check, download, install, close)
 - Event handling (update events, progress updates)
@@ -140,6 +143,7 @@ The auto-updater has comprehensive test coverage:
 - Error handling for all async operations
 
 **UpdateManagerErrorBoundary.test.tsx** - Tests for the error boundary:
+
 - Error catching and display
 - Error reset functionality
 - Console logging verification
@@ -147,6 +151,7 @@ The auto-updater has comprehensive test coverage:
 - Specific error type handling (network, IPC, signature)
 
 Run tests with:
+
 ```bash
 npm test UpdateManager
 npm test UpdateManagerErrorBoundary
@@ -157,6 +162,7 @@ npm test UpdateManagerErrorBoundary
 To test the update workflow without building:
 
 1. Create a `dev-app-update.yml` file in the project root:
+
    ```yaml
    version: 0.5.4
    files:
@@ -168,6 +174,7 @@ To test the update workflow without building:
    ```
 
 2. Set environment variable:
+
    ```bash
    export ELECTRON_UPDATER_ALLOW_PRERELEASE=true
    ```
@@ -261,6 +268,7 @@ autoUpdater.quitAndInstall() → App restarts
 ## Logs
 
 Production logs are written to:
+
 - **macOS:** `~/Library/Logs/Graphium/main.log`
 - **Windows:** `%USERPROFILE%\AppData\Roaming\Graphium\logs\main.log`
 - **Linux:** `~/.config/Graphium/logs/main.log`
@@ -270,6 +278,7 @@ All update events are logged with `[AutoUpdater]` prefix for easy filtering.
 ## Future Enhancements
 
 Potential improvements:
+
 1. **Automatic update checks** on app startup (currently manual only)
 2. **Release notes display** in UpdateManager modal
 3. **Update notifications** badge on About button when update available

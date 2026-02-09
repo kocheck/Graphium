@@ -80,7 +80,7 @@ describe('PendingErrorsIndicator', () => {
 
       const { container } = render(<PendingErrorsIndicator />);
       const element = container.firstChild as HTMLElement;
-      expect(element.className).toContain('bottom-4');
+      expect(element.className).toContain('bottom-16');
       expect(element.className).toContain('right-4');
     });
 
