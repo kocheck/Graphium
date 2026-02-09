@@ -176,7 +176,13 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
               onMouseOver={(e) =>
                 (e.currentTarget.style.backgroundColor = 'var(--app-error-boundary-dismiss-hover)')
               }
+              onFocus={(e) =>
+                (e.currentTarget.style.backgroundColor = 'var(--app-error-boundary-dismiss-hover)')
+              }
               onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = 'var(--app-error-boundary-dismiss)')
+              }
+              onBlur={(e) =>
                 (e.currentTarget.style.backgroundColor = 'var(--app-error-boundary-dismiss)')
               }
             >

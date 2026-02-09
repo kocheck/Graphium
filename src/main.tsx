@@ -112,11 +112,13 @@ async function initApp() {
 }
 
 // Start app initialization
-initApp().catch((error) => {
+initApp().catch((error: unknown) => {
   console.error('[main] Fatal error during app initialization:', error);
   // Show error on screen
   const root = document.getElementById('root');
   if (root) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? (error.stack ?? '') : '';
     root.innerHTML = `
       <div style="
         display: flex;
@@ -134,8 +136,8 @@ initApp().catch((error) => {
           Fatal Error
         </h1>
         <pre style="background: #1a1a1a; padding: 1rem; border-radius: 0.5rem; overflow: auto; max-width: 800px; text-align: left;">
-          ${error.toString()}
-          ${error.stack || ''}
+          ${errorMessage}
+          ${errorStack}
         </pre>
         <button
           onclick="window.location.reload()"

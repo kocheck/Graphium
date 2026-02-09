@@ -45,8 +45,20 @@ export interface ErrorInfo {
   utilsLoadedSuccessfully?: boolean; // Indicates whether enhanced error utilities loaded
 }
 
+/** IPC renderer API exposed by Electron preload via contextBridge */
+export interface ExposedIpcRenderer {
+  on(channel: string, listener: (event: unknown, ...args: unknown[]) => void): void;
+  off(channel: string, listener: (event: unknown, ...args: unknown[]) => void): void;
+  removeAllListeners(channel: string): void;
+  send(channel: string, ...args: unknown[]): void;
+  invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+}
+
 declare global {
   interface Window {
+    // Electron IPC renderer (exposed by preload.ts via contextBridge)
+    ipcRenderer?: ExposedIpcRenderer;
+
     // Game store exposed for testing
     __GAME_STORE__?: typeof useGameStore;
 

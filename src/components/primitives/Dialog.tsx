@@ -180,8 +180,14 @@ const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
       return null;
     }
 
+    /* eslint-disable jsx-a11y/no-noninteractive-element-interactions -- overlay click-to-close is intentional UX */
     return (
-      <div className="dialog-primitive__overlay" onClick={handleOverlayClick} aria-hidden="true">
+      <div
+        className="dialog-primitive__overlay"
+        onClick={handleOverlayClick}
+        aria-hidden="true"
+        role="presentation"
+      >
         <div
           ref={setDialogRef}
           role="dialog"

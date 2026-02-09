@@ -130,7 +130,7 @@ export function getStoredErrors(): StoredError[] {
   try {
     const stored = localStorage.getItem(ERROR_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      return JSON.parse(stored) as StoredError[];
     }
   } catch {
     // localStorage might be unavailable or corrupted
@@ -268,7 +268,7 @@ async function handleGlobalError(
  * Global error event handler
  */
 function onGlobalError(event: ErrorEvent): void {
-  const error = event.error || new Error(event.message);
+  const error = event.error instanceof Error ? event.error : new Error(event.message);
   void handleGlobalError(error, 'global');
 }
 

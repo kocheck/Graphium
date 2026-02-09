@@ -233,11 +233,13 @@ function CommandPalette({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-32 bg-black/50"
+      role="presentation"
       onClick={onClose}
     >
       {/* Modal content */}
       <div
         className="w-full max-w-2xl bg-neutral-900 rounded-lg shadow-2xl overflow-hidden"
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
@@ -284,8 +286,15 @@ function CommandPalette({
                     <div
                       key={cmd.id}
                       role="option"
+                      tabIndex={-1}
                       aria-selected={index === selectedIndex}
                       onClick={() => handleSelectItem(index)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSelectItem(index);
+                        }
+                      }}
                       className={`flex items-center gap-4 p-4 cursor-pointer transition-colors border-b border-neutral-800 ${
                         index === selectedIndex ? 'bg-neutral-700' : 'hover:bg-neutral-800'
                       }`}
@@ -319,8 +328,15 @@ function CommandPalette({
                   <div
                     key={asset.id}
                     role="option"
+                    tabIndex={-1}
                     aria-selected={index === selectedIndex}
                     onClick={() => handleSelectItem(index)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectItem(index);
+                      }
+                    }}
                     className={`flex items-center gap-4 p-4 cursor-pointer transition-colors border-b border-neutral-800 ${
                       index === selectedIndex ? 'bg-neutral-700' : 'hover:bg-neutral-800'
                     }`}

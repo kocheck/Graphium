@@ -312,47 +312,53 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
     return null;
   }
 
-  const handleCheckForUpdates = async () => {
+  const handleCheckForUpdates = (): void => {
     if (!window.autoUpdater) {
       return;
     }
 
-    try {
-      setStatus('checking');
-      setErrorMessage('');
-      await window.autoUpdater.checkForUpdates();
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to check for updates');
-    }
+    void (async () => {
+      try {
+        setStatus('checking');
+        setErrorMessage('');
+        await window.autoUpdater?.checkForUpdates();
+      } catch (error) {
+        setStatus('error');
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to check for updates');
+      }
+    })();
   };
 
-  const handleDownload = async () => {
+  const handleDownload = (): void => {
     if (!window.autoUpdater) {
       return;
     }
 
-    try {
-      setStatus('downloading');
-      setErrorMessage('');
-      await window.autoUpdater.downloadUpdate();
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to download update');
-    }
+    void (async () => {
+      try {
+        setStatus('downloading');
+        setErrorMessage('');
+        await window.autoUpdater?.downloadUpdate();
+      } catch (error) {
+        setStatus('error');
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to download update');
+      }
+    })();
   };
 
-  const handleInstall = async () => {
+  const handleInstall = (): void => {
     if (!window.autoUpdater) {
       return;
     }
 
-    try {
-      await window.autoUpdater.quitAndInstall();
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to install update');
-    }
+    void (async () => {
+      try {
+        await window.autoUpdater?.quitAndInstall();
+      } catch (error) {
+        setStatus('error');
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to install update');
+      }
+    })();
   };
 
   const formatBytes = (bytes: number): string => {
@@ -373,7 +379,9 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
       onClick={onClose}
+      role="presentation"
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents overlay close */}
       <div
         className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 max-w-md w-full mx-4"
         onClick={(e) => e.stopPropagation()}

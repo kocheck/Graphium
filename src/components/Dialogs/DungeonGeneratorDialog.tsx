@@ -85,13 +85,15 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
       onClick={clearDungeonDialog}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="dungeon-dialog-title"
+      role="presentation"
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents overlay close */}
       <div
         className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 min-w-[400px] max-w-md mx-4"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dungeon-dialog-title"
       >
         <h2
           id="dungeon-dialog-title"

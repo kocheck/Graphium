@@ -241,12 +241,14 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
           {/* Token Name */}
           <div>
             <label
+              htmlFor="token-inspector-name"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--app-text-secondary)' }}
             >
               Name
             </label>
             <input
+              id="token-inspector-name"
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
@@ -265,12 +267,12 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
 
           {/* Token Type */}
           <div>
-            <label
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--app-text-secondary)' }}
             >
               Type
-            </label>
+            </span>
             <div className="flex gap-2">
               <button
                 onClick={() => handleTypeChange('PC')}
@@ -324,6 +326,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
           {/* Vision Radius */}
           <div>
             <label
+              htmlFor="token-inspector-vision-radius"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--app-text-secondary)' }}
             >
@@ -356,6 +359,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
               ))}
             </div>
             <input
+              id="token-inspector-vision-radius"
               type="number"
               value={visionRadius}
               onChange={(e) => handleVisionRadiusChange(Number(e.target.value))}
@@ -378,7 +382,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
           {selectedTokens.length === 1 && selectedTokens[0]!.libraryItemId && (
             <div className="pt-2">
               <button
-                onClick={handleSaveToLibrary}
+                onClick={() => void handleSaveToLibrary()}
                 className="w-full py-2 px-4 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors border"
                 style={{
                   borderColor: 'var(--app-border-default)',

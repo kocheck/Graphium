@@ -153,12 +153,14 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="presentation"
       onClick={onClose}
     >
       <div
         className={`flex flex-col overflow-hidden shadow-2xl ${
           isMobile ? 'w-full h-full' : 'max-w-2xl w-full rounded-lg'
         }`}
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: 'var(--app-bg-base)',
@@ -195,8 +197,11 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Name */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Name *</label>
+            <label htmlFor="token-meta-name" className="block text-white text-sm font-medium mb-2">
+              Name *
+            </label>
             <input
+              id="token-meta-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -207,8 +212,14 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Category */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Category</label>
+            <label
+              htmlFor="token-meta-category"
+              className="block text-white text-sm font-medium mb-2"
+            >
+              Category
+            </label>
             <select
+              id="token-meta-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
@@ -223,10 +234,11 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Tags */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
+            <label htmlFor="token-meta-tags" className="block text-white text-sm font-medium mb-2">
               Tags (comma-separated)
             </label>
             <input
+              id="token-meta-tags"
               type="text"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
@@ -240,8 +252,11 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Default Scale */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Default Scale</label>
+            <label htmlFor="token-meta-scale" className="block text-white text-sm font-medium mb-2">
+              Default Scale
+            </label>
             <input
+              id="token-meta-scale"
               type="number"
               step="0.1"
               min="0.1"
@@ -257,8 +272,11 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
 
           {/* Default Type */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Default Type</label>
+            <label htmlFor="token-meta-type" className="block text-white text-sm font-medium mb-2">
+              Default Type
+            </label>
             <select
+              id="token-meta-type"
               value={defaultType}
               onChange={(e) => setDefaultType(e.target.value as 'PC' | 'NPC' | '')}
               className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
@@ -273,10 +291,14 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
           {/* Default Vision Radius */}
           {defaultType === 'PC' && (
             <div>
-              <label className="block text-white text-sm font-medium mb-2">
+              <label
+                htmlFor="token-meta-vision-radius"
+                className="block text-white text-sm font-medium mb-2"
+              >
                 Default Vision Radius (feet)
               </label>
               <input
+                id="token-meta-vision-radius"
                 type="number"
                 step="5"
                 min="0"

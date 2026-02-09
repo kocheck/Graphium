@@ -42,13 +42,15 @@ export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps) {
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="error-dialog-title"
+      role="presentation"
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents overlay close */}
       <div
         className="bg-[var(--app-bg)] border border-red-500 rounded-lg shadow-2xl p-6 max-w-md mx-4"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="error-dialog-title"
       >
         <div className="flex items-start gap-3 mb-4">
           <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center">

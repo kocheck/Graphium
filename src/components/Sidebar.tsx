@@ -362,7 +362,7 @@ function Sidebar() {
                 accept="image/*"
                 ref={tokenInputRef}
                 className="hidden"
-                onChange={handleTokenUpload}
+                onChange={(e) => void handleTokenUpload(e)}
               />
               <Tooltip content="Add token to library">
                 <button

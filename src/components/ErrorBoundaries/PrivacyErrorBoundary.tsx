@@ -202,147 +202,154 @@ class PrivacyErrorBoundary extends Component<Props, State> {
    * Opens GitHub issues page with pre-filled error report
    * Includes optional user context if provided
    */
-  handleReportOnGitHub = async (): Promise<void> => {
+  handleReportOnGitHub = (): void => {
     const { reportBody, userContext, sanitizedError } = this.state;
 
-    try {
-      // Build the final report with optional user context
-      const userContextBlock = userContext.trim()
-        ? `
+    void (async () => {
+      try {
+        // Build the final report with optional user context
+        const userContextBlock = userContext.trim()
+          ? `
 
 ${userContext.trim()}
 
 `
-        : '';
-      const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
+          : '';
+        const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
-      // Construct GitHub issue URL with title truncation and URL length validation
-      const rawTitle = `Bug Report: ${sanitizedError?.name || 'Error'}`;
-      const issueTitle =
-        rawTitle.length > MAX_ISSUE_TITLE_LENGTH
-          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
-          : rawTitle;
+        // Construct GitHub issue URL with title truncation and URL length validation
+        const rawTitle = `Bug Report: ${sanitizedError?.name || 'Error'}`;
+        const issueTitle =
+          rawTitle.length > MAX_ISSUE_TITLE_LENGTH
+            ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
+            : rawTitle;
 
-      const params = new URLSearchParams({
-        body: finalReport,
-        title: issueTitle,
-      });
-      let githubUrl = `https://github.com/kocheck/Graphium/issues/new?${params.toString()}`;
+        const params = new URLSearchParams({
+          body: finalReport,
+          title: issueTitle,
+        });
+        let githubUrl = `https://github.com/kocheck/Graphium/issues/new?${params.toString()}`;
 
-      // Enforce URL length limit to prevent browser issues
-      if (githubUrl.length > MAX_GITHUB_URL_LENGTH) {
-        const baseUrl = 'https://github.com/kocheck/Graphium/issues/new';
-        const titleParam = `?title=${encodeURIComponent(issueTitle)}`;
-        const bodyPrefix = '&body=';
-        const baseWithTitle = `${baseUrl}${titleParam}`;
+        // Enforce URL length limit to prevent browser issues
+        if (githubUrl.length > MAX_GITHUB_URL_LENGTH) {
+          const baseUrl = 'https://github.com/kocheck/Graphium/issues/new';
+          const titleParam = `?title=${encodeURIComponent(issueTitle)}`;
+          const bodyPrefix = '&body=';
+          const baseWithTitle = `${baseUrl}${titleParam}`;
 
-        const allowedBodyLength =
-          MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
+          const allowedBodyLength =
+            MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
 
-        if (allowedBodyLength > 0) {
-          // Truncate non-encoded string first, then encode to avoid breaking escape sequences
-          let currentLength = 0;
-          const encodedChunks: string[] = [];
+          if (allowedBodyLength > 0) {
+            // Truncate non-encoded string first, then encode to avoid breaking escape sequences
+            let currentLength = 0;
+            const encodedChunks: string[] = [];
 
-          for (const char of finalReport) {
-            const encodedChar = encodeURIComponent(char);
-            if (currentLength + encodedChar.length > allowedBodyLength) {
-              break;
+            for (const char of finalReport) {
+              const encodedChar = encodeURIComponent(char);
+              if (currentLength + encodedChar.length > allowedBodyLength) {
+                break;
+              }
+              encodedChunks.push(encodedChar);
+              currentLength += encodedChar.length;
             }
-            encodedChunks.push(encodedChar);
-            currentLength += encodedChar.length;
+
+            const truncatedEncodedBody = encodedChunks.join('');
+            githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedEncodedBody}`;
+          } else {
+            // In the unlikely event the base URL is already too long, drop the body entirely
+            githubUrl = baseWithTitle;
           }
-
-          const truncatedEncodedBody = encodedChunks.join('');
-          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedEncodedBody}`;
-        } else {
-          // In the unlikely event the base URL is already too long, drop the body entirely
-          githubUrl = baseWithTitle;
         }
-      }
 
-      // Open GitHub in browser
-      const errorReporting = window.errorReporting;
-      if (errorReporting) {
-        await errorReporting.openExternal(githubUrl);
-        this.setState({ reportStatus: 'opened' });
-      }
+        // Open GitHub in browser
+        const errorReporting = window.errorReporting;
+        if (errorReporting) {
+          await errorReporting.openExternal(githubUrl);
+          this.setState({ reportStatus: 'opened' });
+        }
 
-      // Reset report status after 3 seconds
-      setTimeout(() => {
-        this.setState({ reportStatus: 'idle' });
-      }, 3000);
-    } catch (err) {
-      if (err instanceof Error) {
-        console.error('Failed to open GitHub:', `${err.name}: ${err.message}`);
-      } else {
-        console.error('Failed to open GitHub:', typeof err === 'string' ? err : '[Unknown error]');
-      }
-      this.setState({ reportStatus: 'error' });
+        // Reset report status after 3 seconds
+        setTimeout(() => {
+          this.setState({ reportStatus: 'idle' });
+        }, 3000);
+      } catch (err) {
+        if (err instanceof Error) {
+          console.error('Failed to open GitHub:', `${err.name}: ${err.message}`);
+        } else {
+          console.error(
+            'Failed to open GitHub:',
+            typeof err === 'string' ? err : '[Unknown error]',
+          );
+        }
+        this.setState({ reportStatus: 'error' });
 
-      // Reset error status after 3 seconds
-      setTimeout(() => {
-        this.setState({ reportStatus: 'idle' });
-      }, 3000);
-    }
+        // Reset error status after 3 seconds
+        setTimeout(() => {
+          this.setState({ reportStatus: 'idle' });
+        }, 3000);
+      }
+    })();
   };
 
   /**
    * Saves error report to file using native save dialog
    * Includes optional user context if provided
    */
-  handleSaveToFile = async (): Promise<void> => {
+  handleSaveToFile = (): void => {
     const { reportBody, userContext } = this.state;
 
-    try {
-      this.setState({ saveStatus: 'saving' });
+    void (async () => {
+      try {
+        this.setState({ saveStatus: 'saving' });
 
-      // Build the final report with optional user context
-      const userContextBlock = userContext.trim()
-        ? `--------------------------------------------------------------------------------
+        // Build the final report with optional user context
+        const userContextBlock = userContext.trim()
+          ? `--------------------------------------------------------------------------------
                             USER CONTEXT (Optional)
 --------------------------------------------------------------------------------
 
 ${userContext.trim()}
 
 `
-        : '';
-      const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
+          : '';
+        const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
-      // Save to file using native dialog
-      const errorReporting = window.errorReporting;
-      if (!errorReporting) {
+        // Save to file using native dialog
+        const errorReporting = window.errorReporting;
+        if (!errorReporting) {
+          this.setState({ saveStatus: 'error' });
+          setTimeout(() => {
+            this.setState({ saveStatus: 'idle' });
+          }, 3000);
+          return;
+        }
+
+        const result = await errorReporting.saveToFile(finalReport);
+
+        if (result.success) {
+          this.setState({ saveStatus: 'saved' });
+          // Reset status after 3 seconds
+          setTimeout(() => {
+            this.setState({ saveStatus: 'idle' });
+          }, 3000);
+        } else if (result.reason === 'canceled') {
+          // User canceled - just reset to idle
+          this.setState({ saveStatus: 'idle' });
+        } else {
+          this.setState({ saveStatus: 'error' });
+          setTimeout(() => {
+            this.setState({ saveStatus: 'idle' });
+          }, 3000);
+        }
+      } catch (err) {
+        console.error('Failed to save error report:', err);
         this.setState({ saveStatus: 'error' });
         setTimeout(() => {
           this.setState({ saveStatus: 'idle' });
         }, 3000);
-        return;
       }
-
-      const result = await errorReporting.saveToFile(finalReport);
-
-      if (result.success) {
-        this.setState({ saveStatus: 'saved' });
-        // Reset status after 3 seconds
-        setTimeout(() => {
-          this.setState({ saveStatus: 'idle' });
-        }, 3000);
-      } else if (result.reason === 'canceled') {
-        // User canceled - just reset to idle
-        this.setState({ saveStatus: 'idle' });
-      } else {
-        this.setState({ saveStatus: 'error' });
-        setTimeout(() => {
-          this.setState({ saveStatus: 'idle' });
-        }, 3000);
-      }
-    } catch (err) {
-      console.error('Failed to save error report:', err);
-      this.setState({ saveStatus: 'error' });
-      setTimeout(() => {
-        this.setState({ saveStatus: 'idle' });
-      }, 3000);
-    }
+    })();
   };
 
   /**

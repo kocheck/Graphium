@@ -1075,7 +1075,7 @@ const filteredCampaigns = campaigns.filter(campaign =>
               </p>
             </div>
             <a
-              href="#"
+              href="https://github.com/kocheck/Graphium/releases"
               style={{
                 background: 'var(--app-accent-solid)',
                 color: 'white',

@@ -93,15 +93,17 @@ function PlaygroundContent() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleToggleTheme = async () => {
-    try {
-      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-      setCurrentTheme(newTheme);
-      await getStorage().setThemeMode(newTheme);
-    } catch (e) {
-      console.error('Failed to toggle theme', e);
-      showToast('Failed to switch theme', 'error');
-    }
+  const handleToggleTheme = (): void => {
+    void (async () => {
+      try {
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        setCurrentTheme(newTheme);
+        await getStorage().setThemeMode(newTheme);
+      } catch (e) {
+        console.error('Failed to toggle theme', e);
+        showToast('Failed to switch theme', 'error');
+      }
+    })();
   };
 
   // Filter components based on search query
@@ -212,6 +214,7 @@ function PlaygroundContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 rounded-lg bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] text-[var(--app-text-primary)] placeholder-[var(--app-text-muted)] focus:outline-none focus:border-[var(--app-accent-solid)] focus:ring-1 focus:ring-[var(--app-accent-solid)] transition-all shadow-sm"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
             {/* Keyboard shortcut hint */}
@@ -293,7 +296,7 @@ function PlaygroundContent() {
                       key={example.id}
                       example={example}
                       isCopied={copiedId === example.id}
-                      onCopy={() => handleCopyCode(example)}
+                      onCopy={() => void handleCopyCode(example)}
                     />
                   ))}
                 </div>

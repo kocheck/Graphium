@@ -144,20 +144,22 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
   const handleDelete = (itemId: string, itemName: string) => {
     showConfirmDialog(
       rollForMessage('CONFIRM_LIBRARY_ASSET_DELETE', { assetName: itemName }),
-      async () => {
-        try {
-          // Delete from storage (filesystem or IndexedDB)
-          const storage = getStorage();
-          await storage.deleteLibraryAsset(itemId);
+      () => {
+        void (async () => {
+          try {
+            // Delete from storage (filesystem or IndexedDB)
+            const storage = getStorage();
+            await storage.deleteLibraryAsset(itemId);
 
-          // Remove from store
-          removeTokenFromLibrary(itemId);
+            // Remove from store
+            removeTokenFromLibrary(itemId);
 
-          showToast(rollForMessage('ASSET_DELETED_SUCCESS'), 'success');
-        } catch (error) {
-          console.error('[LibraryManager] Failed to delete asset:', error);
-          showToast(rollForMessage('ASSET_DELETE_FAILED'), 'error');
-        }
+            showToast(rollForMessage('ASSET_DELETED_SUCCESS'), 'success');
+          } catch (error) {
+            console.error('[LibraryManager] Failed to delete asset:', error);
+            showToast(rollForMessage('ASSET_DELETE_FAILED'), 'error');
+          }
+        })();
       },
       'Delete',
     );
@@ -196,6 +198,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="presentation"
       onClick={onClose}
     >
       {/* Modal container: Full-screen on mobile, centered on desktop */}
@@ -203,6 +206,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
         className={`w-full flex flex-col overflow-hidden shadow-2xl ${
           isMobile ? 'h-full' : 'max-w-6xl h-[80vh] rounded-lg'
         }`}
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: 'var(--app-bg-base)',
@@ -218,7 +222,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
                 accept="image/*"
                 ref={fileInputRef}
                 className="hidden"
-                onChange={handleUpload}
+                onChange={(e) => void handleUpload(e)}
               />
               <button
                 onClick={() => fileInputRef.current?.click()}

@@ -1841,7 +1841,11 @@ function CanvasManager({
           return (
             <>
               {/* Invisible backdrop to close menu on outside click */}
-              <div className="fixed inset-0 z-40" onClick={closeDoorContextMenu} />
+              <div
+                className="fixed inset-0 z-40"
+                onClick={closeDoorContextMenu}
+                role="presentation"
+              />
               <div
                 className="absolute z-50 bg-[var(--app-bg-secondary)] border border-[var(--app-border)] rounded-lg shadow-lg py-1 min-w-[160px]"
                 style={{ left: doorContextMenu.x, top: doorContextMenu.y }}

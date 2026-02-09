@@ -158,22 +158,24 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     onStartEditor();
   }, [onStartEditor]);
 
-  const handleLoadCampaign = useCallback(async () => {
-    try {
-      const storage = getStorage();
-      const campaign = await storage.loadCampaign();
+  const handleLoadCampaign = useCallback((): void => {
+    void (async () => {
+      try {
+        const storage = getStorage();
+        const campaign = await storage.loadCampaign();
 
-      if (campaign) {
-        loadCampaign(campaign);
-        addRecentCampaignWithPlatform(campaign.id, campaign.name);
-        setRecentCampaigns(getRecentCampaigns());
-        onStartEditor();
-        showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
+        if (campaign) {
+          loadCampaign(campaign);
+          addRecentCampaignWithPlatform(campaign.id, campaign.name);
+          setRecentCampaigns(getRecentCampaigns());
+          onStartEditor();
+          showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
+        }
+      } catch (error) {
+        console.error('[HomeScreen] Failed to load campaign:', error);
+        showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(error) }), 'error');
       }
-    } catch (error) {
-      console.error('[HomeScreen] Failed to load campaign:', error);
-      showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(error) }), 'error');
-    }
+    })();
   }, [loadCampaign, onStartEditor, showToast]);
 
   const handleGenerateDungeon = useCallback(() => {
@@ -335,37 +337,39 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     );
   };
 
-  const handleToggleTheme = async () => {
+  const handleToggleTheme = (): void => {
     const storage = getStorage();
     const themes: ThemeMode[] = ['light', 'dark', 'system'];
     const currentIndex = themes.indexOf(currentTheme);
     const nextTheme = themes[(currentIndex + 1) % themes.length]!;
 
-    try {
-      await storage.setThemeMode(nextTheme);
-      setCurrentTheme(nextTheme);
+    void (async () => {
+      try {
+        await storage.setThemeMode(nextTheme);
+        setCurrentTheme(nextTheme);
 
-      // Apply theme immediately for web (Electron handles via IPC)
-      if (storage.getPlatform() === 'web') {
-        const effectiveTheme =
-          nextTheme === 'system'
-            ? window.matchMedia('(prefers-color-scheme: dark)').matches
-              ? 'dark'
-              : 'light'
-            : nextTheme;
-        document.documentElement.setAttribute('data-theme', effectiveTheme);
+        // Apply theme immediately for web (Electron handles via IPC)
+        if (storage.getPlatform() === 'web') {
+          const effectiveTheme =
+            nextTheme === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : nextTheme;
+          document.documentElement.setAttribute('data-theme', effectiveTheme);
 
-        // Broadcast to other tabs
-        if (typeof BroadcastChannel !== 'undefined') {
-          const channel = new BroadcastChannel('graphium-theme-sync');
-          channel.postMessage({ type: 'THEME_CHANGED', mode: nextTheme });
-          // Keep channel open briefly to ensure message delivery
-          setTimeout(() => channel.close(), 100);
+          // Broadcast to other tabs
+          if (typeof BroadcastChannel !== 'undefined') {
+            const channel = new BroadcastChannel('graphium-theme-sync');
+            channel.postMessage({ type: 'THEME_CHANGED', mode: nextTheme });
+            // Keep channel open briefly to ensure message delivery
+            setTimeout(() => channel.close(), 100);
+          }
         }
+      } catch (error) {
+        console.error('[HomeScreen] Failed to set theme:', error);
       }
-    } catch (error) {
-      console.error('[HomeScreen] Failed to set theme:', error);
-    }
+    })();
   };
 
   const handleSelectTemplate = (template: CampaignTemplate) => {
@@ -694,10 +698,15 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
       {/* Templates Modal */}
       {showTemplates && (
-        <div className="templates-overlay" onClick={() => setShowTemplates(false)}>
+        <div
+          className="templates-overlay"
+          onClick={() => setShowTemplates(false)}
+          role="presentation"
+        >
           <div
             className="templates-modal"
             onClick={(e) => e.stopPropagation()}
+            role="presentation"
             ref={templatesModalRef}
           >
             <div className="templates-header">

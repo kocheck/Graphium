@@ -170,16 +170,18 @@ function App() {
   const showToast = useGameStore((state) => state.showToast);
 
   // Handle pause toggle
-  const handlePauseToggle = async () => {
+  const handlePauseToggle = (): void => {
     if (!window.ipcRenderer) {
       return;
     }
-    try {
-      await window.ipcRenderer.invoke('TOGGLE_PAUSE');
-    } catch (e) {
-      console.error('[App] Failed to toggle pause:', e);
-      showToast(rollForMessage('PAUSE_TOGGLE_FAILED'), 'error');
-    }
+    void (async () => {
+      try {
+        await window.ipcRenderer?.invoke('TOGGLE_PAUSE');
+      } catch (e) {
+        console.error('[App] Failed to toggle pause:', e);
+        showToast(rollForMessage('PAUSE_TOGGLE_FAILED'), 'error');
+      }
+    })();
   };
 
   // Filter selected IDs to only include tokens (not drawings)
@@ -338,42 +340,46 @@ function App() {
       return;
     }
 
-    const handleSave = async () => {
-      try {
-        const store = useGameStore.getState();
-        store.syncActiveMapToCampaign();
-        const campaignToSave = useGameStore.getState().campaign;
-        const storage = getStorage();
-        const result = await storage.saveCampaign(campaignToSave);
-        if (result) {
-          // Add to recent campaigns
-          addRecentCampaignWithPlatform(campaignToSave.id, campaignToSave.name);
-          store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
+    const handleSave = (): void => {
+      void (async () => {
+        try {
+          const store = useGameStore.getState();
+          store.syncActiveMapToCampaign();
+          const campaignToSave = useGameStore.getState().campaign;
+          const storage = getStorage();
+          const result = await storage.saveCampaign(campaignToSave);
+          if (result) {
+            // Add to recent campaigns
+            addRecentCampaignWithPlatform(campaignToSave.id, campaignToSave.name);
+            store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
+          }
+        } catch (e) {
+          console.error(e);
+          useGameStore
+            .getState()
+            .showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
         }
-      } catch (e) {
-        console.error(e);
-        useGameStore
-          .getState()
-          .showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
-      }
+      })();
     };
 
-    const handleLoad = async () => {
-      try {
-        const storage = getStorage();
-        const campaign = await storage.loadCampaign();
-        if (campaign) {
-          useGameStore.getState().loadCampaign(campaign);
-          // Add to recent campaigns
-          addRecentCampaignWithPlatform(campaign.id, campaign.name);
-          useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
+    const handleLoad = (): void => {
+      void (async () => {
+        try {
+          const storage = getStorage();
+          const campaign = await storage.loadCampaign();
+          if (campaign) {
+            useGameStore.getState().loadCampaign(campaign);
+            // Add to recent campaigns
+            addRecentCampaignWithPlatform(campaign.id, campaign.name);
+            useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
+          }
+        } catch (e) {
+          console.error(e);
+          useGameStore
+            .getState()
+            .showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
         }
-      } catch (e) {
-        console.error(e);
-        useGameStore
-          .getState()
-          .showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
-      }
+      })();
     };
 
     const handleToggleMonitor = () => {

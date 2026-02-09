@@ -259,9 +259,12 @@ class TokenErrorBoundary extends Component<Props, State> {
           {showDebugOverlay &&
             errorContext &&
             createPortal(
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents overlay close
               <div
                 className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900 text-white p-5 rounded-lg border-2 border-red-500 max-w-[600px] max-h-[80vh] overflow-auto z-[10000] shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-label="Token Error Debug Info"
                 data-testid={`token-error-overlay-${tokenId || 'unknown'}`}
               >
                 <h3 className="m-0 mb-4 text-red-500">Token Error Debug Info</h3>
@@ -309,7 +312,7 @@ class TokenErrorBoundary extends Component<Props, State> {
 
                 <div className="flex gap-2.5 mt-4">
                   <button
-                    onClick={this.handleCopyError}
+                    onClick={() => void this.handleCopyError()}
                     className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white border-none rounded cursor-pointer text-sm"
                   >
                     Copy Error

@@ -100,7 +100,11 @@ function MobileToolbar({
       {showMoreMenu && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setShowMoreMenu(false)} />
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowMoreMenu(false)}
+            role="presentation"
+          />
 
           {/* Menu */}
           <div

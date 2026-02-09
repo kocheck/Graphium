@@ -26,31 +26,35 @@ function AutoSaveManager() {
 
     let isSaving = false;
 
-    const intervalId = setInterval(async () => {
-      if (isSaving) {
-        return;
-      }
-      isSaving = true;
-      try {
-        // Ensure latest map state is in campaign object
-        useGameStore.getState().syncActiveMapToCampaign();
+    const intervalId = setInterval(
+      () =>
+        void (async () => {
+          if (isSaving) {
+            return;
+          }
+          isSaving = true;
+          try {
+            // Ensure latest map state is in campaign object
+            useGameStore.getState().syncActiveMapToCampaign();
 
-        // Get latest campaign data
-        const campaign = useGameStore.getState().campaign;
+            // Get latest campaign data
+            const campaign = useGameStore.getState().campaign;
 
-        // Attempt auto-save
-        // Returns true if saved, false if error
-        const saved = await storage.autoSaveCampaign(campaign);
+            // Attempt auto-save
+            // Returns true if saved, false if error
+            const saved = await storage.autoSaveCampaign(campaign);
 
-        if (saved) {
-          console.log('[AutoSave] Campaign saved successfully');
-        }
-      } catch (err) {
-        console.error('[AutoSave] Failed:', err);
-      } finally {
-        isSaving = false;
-      }
-    }, 60 * 1000); // 60 seconds
+            if (saved) {
+              console.log('[AutoSave] Campaign saved successfully');
+            }
+          } catch (err) {
+            console.error('[AutoSave] Failed:', err);
+          } finally {
+            isSaving = false;
+          }
+        })(),
+      60 * 1000,
+    ); // 60 seconds
 
     return () => clearInterval(intervalId);
   }, []);

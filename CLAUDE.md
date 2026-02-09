@@ -1131,9 +1131,9 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 6: Quality Tooling
 
-- [ ] Install and configure eslint-plugin-jsx-a11y
-- [ ] Upgrade 5 ESLint rules from warn → error
-- [ ] Add import boundary linting rules
+- [x] Install and configure eslint-plugin-jsx-a11y
+- [x] Upgrade 5 ESLint rules from warn → error
+- [x] Add import boundary linting rules
 
 ### Session 7: Store Separation
 
@@ -1377,6 +1377,47 @@ playground-registry.tsx, ToggleSwitch.tsx (re-export), index.css
 (+home-screen.css import), ConfirmDialog.tsx, PreferencesDialog.tsx, HomeScreen.tsx
 **Build output:** Main chunk 886KB (gzip 258KB) — 26KB reduction from CSS extraction.
 **Verification:** TypeScript 0 errors, build succeeds, all 792 tests pass.
+**No regressions.**
+
+### Session 6 — Quality Tooling (2026-02-09)
+
+**Completed:**
+
+- **Task 6.1 — Install and configure eslint-plugin-jsx-a11y:** Installed plugin, added
+  `plugin:jsx-a11y/recommended` to ESLint extends. Fixed 74 a11y violations across ~15
+  files. Overlay/backdrop patterns: added `role="presentation"` to outer overlay divs
+  and moved `role="dialog"` + `aria-modal` to inner dialog panels. Label associations:
+  added `htmlFor` attributes with matching input `id`s. Mouse events: added `onFocus`/
+  `onBlur` alongside `onMouseOver`/`onMouseOut`. Downgraded `no-autofocus` to warn
+  (autoFocus in dialogs is an intentional WCAG pattern). Added inline `eslint-disable`
+  for legitimate stopPropagation patterns on dialog content panels.
+
+- **Task 6.2 — Upgrade 5 ESLint rules from warn → error:**
+  - `@typescript-eslint/no-explicit-any` → `error`
+  - `@typescript-eslint/no-misused-promises` → `error` (fixed 30 violations: wrapped
+    async event handlers with `void` operator)
+  - `@typescript-eslint/no-unsafe-member-access` → `error`
+  - `@typescript-eslint/no-unsafe-call` → `error`
+  - `@typescript-eslint/no-unsafe-assignment` → `error`
+    Fixed ~85 violations in src/ files: added proper types for JSON.parse results, IPC
+    returns, Worker messages, Konva events, browser performance APIs. Added
+    `ExposedIpcRenderer` interface to window.d.ts for typed `window.ipcRenderer` access.
+    Added ESLint overrides (downgrade to warn) for 4 files with deep typing issues
+    scheduled for refactoring in later sessions: SyncManager.tsx (Session 7/9),
+    CanvasManager.tsx (Session 10), ResourceMonitor.tsx, ImageCropper.tsx.
+    Added override for electron/main.ts (system boundary, untyped Electron APIs).
+
+- **Task 6.3 — Add import boundary linting rules:** Added `import/no-restricted-paths`
+  with 5 zones enforcing the Design System Contract: primitives cannot import from
+  store/services, store cannot import from components, services cannot import from
+  components, utils cannot import from components. Zero existing violations — all
+  current imports already follow the contract.
+
+**Files modified:** .eslintrc.cjs (+jsx-a11y, +import boundaries, +rule upgrades,
++file overrides), package.json (+eslint-plugin-jsx-a11y), window.d.ts (+ExposedIpcRenderer),
+~30 component files (a11y fixes, async handler wrapping, type safety improvements).
+**Build output:** Main chunk 888KB (gzip 258KB) — essentially unchanged.
+**Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 792 tests pass.
 **No regressions.**
 
 ---

@@ -217,9 +217,9 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
     // Note: WeakSet persists across entire operation, so objects seen in different
     // branches will be marked as circular. This is a known limitation but acceptable
     // for error logging purposes where false positives are better than crashes.
-    const seen = new WeakSet();
+    const seen = new WeakSet<object>();
     const sanitized = JSON.parse(
-      JSON.stringify(data, (_key, value) => {
+      JSON.stringify(data, (_key, value: unknown) => {
         // Skip functions
         if (typeof value === 'function') {
           return '[Function]';
@@ -235,7 +235,7 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
 
         // Truncate large arrays
         if (Array.isArray(value) && value.length > 100) {
-          return `[Array(${value.length}) - truncated]`;
+          return `[Array(${String(value.length)}) - truncated]`;
         }
 
         // Truncate large strings
@@ -245,9 +245,9 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
 
         return value;
       }),
-    );
+    ) as Record<string, unknown>;
 
-    return sanitized as Record<string, unknown>;
+    return sanitized;
   } catch {
     return undefined;
   }

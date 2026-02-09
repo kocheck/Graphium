@@ -97,7 +97,7 @@ export class WebStorageService implements IStorageService {
       const assetsFolder = zip.folder('assets')!;
 
       // Deep clone to avoid mutation
-      const campaignToSave = JSON.parse(JSON.stringify(campaign));
+      const campaignToSave = JSON.parse(JSON.stringify(campaign)) as Campaign;
 
       // Process all assets and convert URLs to blobs in ZIP
       await this.processCampaignAssets(campaignToSave, assetsFolder);
@@ -172,7 +172,7 @@ export class WebStorageService implements IStorageService {
             throw new Error('Invalid .graphium file: missing manifest.json');
           }
 
-          const campaign: Campaign = JSON.parse(manifestStr);
+          const campaign = JSON.parse(manifestStr) as Campaign;
 
           // Restore assets from ZIP to Object URLs
           await this.restoreCampaignAssets(campaign, zip);
@@ -354,7 +354,7 @@ export class WebStorageService implements IStorageService {
       }
 
       // Get item to revoke any other URLs (fallback)
-      const item = await db.get('library', assetId);
+      const item = (await db.get('library', assetId)) as TokenLibraryItem | undefined;
       if (item) {
         if (item.src?.startsWith('blob:')) {
           URL.revokeObjectURL(item.src);
@@ -381,12 +381,12 @@ export class WebStorageService implements IStorageService {
     try {
       const db = await this.getDB();
 
-      const item = await db.get('library', assetId);
+      const item = (await db.get('library', assetId)) as TokenLibraryItem | undefined;
       if (!item) {
         throw new Error(`Asset ${assetId} not found in library`);
       }
 
-      const updated = { ...item, ...updates };
+      const updated: TokenLibraryItem = { ...item, ...updates };
       await db.put('library', updated);
 
       console.log(`[WebStorageService] Updated library metadata: ${assetId}`);

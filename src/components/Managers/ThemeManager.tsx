@@ -88,12 +88,14 @@ export function ThemeManager() {
 
           // Subscribe to system theme changes (for 'system' mode)
           const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-          const handleSystemThemeChange = async () => {
-            const currentMode = await storage.getThemeMode();
-            if (currentMode === 'system') {
-              const newTheme = resolveEffectiveTheme('system');
-              applyTheme(newTheme);
-            }
+          const handleSystemThemeChange = (): void => {
+            void (async () => {
+              const currentMode = await storage.getThemeMode();
+              if (currentMode === 'system') {
+                const newTheme = resolveEffectiveTheme('system');
+                applyTheme(newTheme);
+              }
+            })();
           };
 
           // Always listen for system theme changes
@@ -104,10 +106,17 @@ export function ThemeManager() {
 
           if (typeof BroadcastChannel !== 'undefined') {
             themeChannel = new BroadcastChannel('graphium-theme-sync');
-            const handleCrossTabThemeChange = (event: MessageEvent) => {
-              if (event.data?.type === 'THEME_CHANGED') {
-                const newMode = event.data.mode as 'light' | 'dark' | 'system';
-                const newTheme = resolveEffectiveTheme(newMode);
+
+            /** Shape of the cross-tab theme sync message */
+            interface ThemeSyncMessage {
+              type: string;
+              mode: 'light' | 'dark' | 'system';
+            }
+
+            const handleCrossTabThemeChange = (event: MessageEvent<unknown>) => {
+              const data = event.data as ThemeSyncMessage | null;
+              if (data && data.type === 'THEME_CHANGED') {
+                const newTheme = resolveEffectiveTheme(data.mode);
                 applyTheme(newTheme);
               }
             };

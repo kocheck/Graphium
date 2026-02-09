@@ -97,10 +97,12 @@ class LibraryModalErrorBoundary extends Component<
       return (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          role="presentation"
           onClick={this.handleClose}
         >
           <div
             className="max-w-md w-full rounded-lg shadow-2xl overflow-hidden"
+            role="presentation"
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: 'var(--app-bg-base)',

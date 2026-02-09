@@ -119,7 +119,9 @@ export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFall
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
       onClick={onReset}
+      role="presentation"
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents overlay close */}
       <div
         className="bg-[var(--app-bg)] border border-[var(--app-error-border)] rounded-lg shadow-2xl p-6 max-w-md mx-4"
         onClick={(e) => e.stopPropagation()}

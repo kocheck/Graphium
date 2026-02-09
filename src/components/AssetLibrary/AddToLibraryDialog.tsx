@@ -183,10 +183,12 @@ function AddToLibraryDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="presentation"
       onClick={handleClose}
     >
       <div
         className={`w-full overflow-hidden ${isMobile ? 'h-full' : 'max-w-md rounded-lg'}`}
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: 'var(--app-bg-surface)',
@@ -277,7 +279,7 @@ function AddToLibraryDialog({
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !name.trim()}
           >

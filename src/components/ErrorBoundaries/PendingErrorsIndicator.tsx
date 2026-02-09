@@ -285,7 +285,9 @@ function PendingErrorsIndicator({
                 {/* Action buttons */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleReportError(selectedError)}
+                    onClick={() => {
+                      void handleReportError(selectedError);
+                    }}
                     className={`flex-1 px-3 py-2 rounded text-sm font-medium flex items-center justify-center gap-2 ${
                       reportStatus === 'opened'
                         ? 'bg-green-600 hover:bg-green-500'
@@ -307,7 +309,9 @@ function PendingErrorsIndicator({
                     )}
                   </button>
                   <button
-                    onClick={() => handleSaveError(selectedError)}
+                    onClick={() => {
+                      void handleSaveError(selectedError);
+                    }}
                     className="flex-1 px-3 py-2 rounded text-sm font-medium bg-neutral-600 hover:bg-neutral-500 flex items-center justify-center gap-2"
                   >
                     <RiSaveLine className="w-4 h-4" />

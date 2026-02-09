@@ -325,10 +325,13 @@ export function AboutModal({
           padding: '2rem',
         }}
         onClick={onClose}
+        role="presentation"
       >
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents overlay close */}
         <div
           ref={modalRef}
           className="about-modal-content"
+          role="dialog"
           style={{
             background: 'var(--app-bg-surface)',
             color: 'var(--app-text-primary)',

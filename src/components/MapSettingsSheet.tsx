@@ -239,6 +239,7 @@ function MapSettingsSheet({
           isCalibrating ? 'bg-transparent pointer-events-none' : 'bg-black/50'
         }`}
         onClick={isCalibrating ? undefined : onClose}
+        role="presentation"
       />
 
       {/* Drawer */}
@@ -278,18 +279,18 @@ function MapSettingsSheet({
 
           {/* Upload Map */}
           <div>
-            <label
+            <span
               className="block text-xs mb-2 uppercase font-semibold"
               style={{ color: 'var(--app-text-secondary)' }}
             >
               Upload Map
-            </label>
+            </span>
             <input
               type="file"
               accept="image/*"
               ref={fileInputRef}
               className="hidden"
-              onChange={handleMapUpload}
+              onChange={(e) => void handleMapUpload(e)}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -302,12 +303,12 @@ function MapSettingsSheet({
           {/* Calibrate Map */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label
+              <span
                 className="block text-xs uppercase font-semibold"
                 style={{ color: 'var(--app-text-secondary)' }}
               >
                 Calibration
-              </label>
+              </span>
               {isCalibrating && (
                 <span className="text-xs animate-pulse" style={{ color: 'var(--app-accent-text)' }}>
                   Active
@@ -426,12 +427,12 @@ function MapSettingsSheet({
           {/* Reset Map */}
           {mode === 'EDIT' && (
             <div>
-              <label
+              <span
                 className="block text-xs mb-2 uppercase font-semibold"
                 style={{ color: 'var(--app-text-secondary)' }}
               >
                 Danger Zone
-              </label>
+              </span>
               <button
                 onClick={handleResetMap}
                 className="btn btn-destructive w-full font-medium py-2 px-3 rounded text-sm flex items-center justify-center gap-2 transition"

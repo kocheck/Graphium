@@ -4,7 +4,7 @@ import { useGameStore } from '../../../store/gameStore';
 import { snapToGrid } from '../../../utils/grid';
 import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { Token } from '../../../store/gameStore';
+import type { Token, GridType } from '../../../store/gameStore';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
@@ -13,7 +13,7 @@ interface UseTokenDragProps {
   isWorldView?: boolean;
   isAltPressed: boolean;
   gridSize: number;
-  gridType: string;
+  gridType: GridType;
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
   resolvedTokens: Token[];
@@ -71,10 +71,8 @@ export const useTokenDrag = ({
       if (now - lastBroadcast >= DRAG_BROADCAST_THROTTLE_MS) {
         dragBroadcastThrottleRef.current.set(tokenId, now);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ipcRenderer = (window as any).ipcRenderer;
-        if (ipcRenderer && !isWorldView) {
-          ipcRenderer.send('SYNC_WORLD_STATE', {
+        if (window.ipcRenderer && !isWorldView) {
+          window.ipcRenderer.send('SYNC_WORLD_STATE', {
             type: 'TOKEN_DRAG_MOVE',
             payload: { id: tokenId, x, y },
           });
@@ -203,8 +201,7 @@ export const useTokenDrag = ({
           const safeScale = token.scale ?? 1;
           const width = gridSize * safeScale;
           const height = gridSize * safeScale;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const snapped = snapToGrid(newX, newY, gridSize, gridType as any, width, height);
+          const snapped = snapToGrid(newX, newY, gridSize, gridType, width, height);
           snapPreviewPositionsRef.current.set(tokenId, snapped);
         }
 
@@ -227,8 +224,7 @@ export const useTokenDrag = ({
                     offsetX,
                     offsetY,
                     gridSize,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    gridType as any,
+                    gridType,
                     gridSize * otherSafeScale,
                     gridSize * otherSafeScale,
                   );
@@ -295,14 +291,7 @@ export const useTokenDrag = ({
           const safeScale = token.scale ?? 1;
           const width = gridSize * safeScale;
           const height = gridSize * safeScale;
-          const snapped = snapToGrid(
-            dragPos.x,
-            dragPos.y,
-            gridSize,
-            gridType as never, // Cast to never to bypass strict string check if necessary, or just remove if compatible
-            width,
-            height,
-          );
+          const snapped = snapToGrid(dragPos.x, dragPos.y, gridSize, gridType, width, height);
 
           if (tokenIds.length > 1) {
             const offsetX = snapped.x - dragPos.x;
@@ -319,7 +308,7 @@ export const useTokenDrag = ({
                   newX,
                   newY,
                   gridSize,
-                  gridType as never,
+                  gridType,
                   gridSize * tSafeScale,
                   gridSize * tSafeScale,
                 );
@@ -332,13 +321,11 @@ export const useTokenDrag = ({
             committedPositions.set(tokenId, snapped);
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const ipcRenderer = (window as any).ipcRenderer;
-          if (ipcRenderer && !isWorldView) {
+          if (window.ipcRenderer && !isWorldView) {
             tokenIds.forEach((id) => {
               const pos = committedPositions.get(id);
               if (pos) {
-                ipcRenderer.send('SYNC_WORLD_STATE', {
+                window.ipcRenderer?.send('SYNC_WORLD_STATE', {
                   type: 'TOKEN_DRAG_END',
                   payload: { id, x: pos.x, y: pos.y },
                 });
