@@ -14,6 +14,17 @@ import { useMemo } from 'react';
 
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 
+// Touch feedback colors — sourced from theme tokens (see theme.css)
+const TOUCH_COLORS = {
+  indicator: '#6366f1', // --app-touch-indicator (indigo)
+  pressureLow: '#3b82f6', // --app-touch-pressure-low (blue)
+  pressureMed: '#10b981', // --app-touch-pressure-med (green)
+  pressureHigh: '#ef4444', // --app-touch-pressure-high (red)
+  panMode: '#3b82f6', // --app-touch-pan-mode (blue)
+  pinchMode: '#10b981', // --app-touch-pinch-mode (green)
+  feedbackBg: 'rgba(0, 0, 0, 0.8)', // --app-touch-feedback-bg
+} as const;
+
 export interface TouchVisualFeedbackProps {
   /** Current pointer pressure (0.0 - 1.0), or null if not drawing */
   pressure: number | null;
@@ -53,18 +64,18 @@ function TouchVisualFeedback({
   // Pressure indicator color changes with pressure (blue -> green -> red)
   const pressureIndicatorColor = useMemo(() => {
     if (!pressure) {
-      return '#3b82f6';
+      return TOUCH_COLORS.pressureLow;
     }
 
     if (pressure < 0.33) {
       // Low pressure: blue
-      return '#3b82f6';
+      return TOUCH_COLORS.pressureLow;
     } else if (pressure < 0.66) {
       // Medium pressure: green
-      return '#10b981';
+      return TOUCH_COLORS.pressureMed;
     } else {
       // High pressure: red
-      return '#ef4444';
+      return TOUCH_COLORS.pressureHigh;
     }
   }, [pressure]);
 
@@ -75,9 +86,9 @@ function TouchVisualFeedback({
     }
 
     if (gestureMode === 'pan') {
-      return { label: 'Pan Mode', color: '#3b82f6' };
+      return { label: 'Pan Mode', color: TOUCH_COLORS.panMode };
     } else if (gestureMode === 'pinch') {
-      return { label: 'Pinch/Zoom Mode', color: '#10b981' };
+      return { label: 'Pinch/Zoom Mode', color: TOUCH_COLORS.pinchMode };
     }
     return null;
   }, [gestureMode]);
@@ -111,7 +122,7 @@ function TouchVisualFeedback({
           <div
             className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 text-xs font-mono px-2 py-0.5 rounded shadow-md whitespace-nowrap"
             style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              backgroundColor: TOUCH_COLORS.feedbackBg,
               color: 'white',
             }}
           >
@@ -139,7 +150,7 @@ function TouchVisualFeedback({
                 style={{
                   width: 40,
                   height: 40,
-                  backgroundColor: '#6366f1', // Indigo
+                  backgroundColor: TOUCH_COLORS.indicator,
                 }}
               />
 
@@ -158,7 +169,7 @@ function TouchVisualFeedback({
                 y1={touchPoints[0]!.y}
                 x2={touchPoints[1]!.x}
                 y2={touchPoints[1]!.y}
-                stroke="#6366f1"
+                stroke={TOUCH_COLORS.indicator}
                 strokeWidth="2"
                 strokeDasharray="5,5"
                 opacity="0.5"

@@ -126,6 +126,7 @@ function App() {
   const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure'>(
     'select',
   );
+  // Default marker colors — match theme tokens (--app-canvas-marker-default, etc.)
   const [color, setColor] = useState('#df4b26');
   const [recentColors, setRecentColors] = useState<string[]>(['#df4b26', '#3b82f6', '#22c55e']);
   const colorInputRef = useRef<HTMLInputElement>(null);

@@ -121,13 +121,15 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
           style={{
             padding: '20px',
             margin: '20px',
-            backgroundColor: '#fee',
-            border: '2px solid #c33',
+            backgroundColor: 'var(--app-error-boundary-bg)',
+            border: '2px solid var(--app-error-boundary-border)',
             borderRadius: '8px',
             fontFamily: 'system-ui, sans-serif',
           }}
         >
-          <h3 style={{ color: '#c33', margin: '0 0 10px 0' }}>{this.state.errorTitle}</h3>
+          <h3 style={{ color: 'var(--app-error-boundary-text)', margin: '0 0 10px 0' }}>
+            {this.state.errorTitle}
+          </h3>
           <p style={{ margin: '10px 0' }}>{this.state.errorDesc}</p>
           <ul style={{ margin: '10px 0 10px 20px' }}>
             <li>The file is corrupt or unsupported</li>
@@ -138,15 +140,15 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
 
           {this.state.error && (
             <details style={{ margin: '10px 0', cursor: 'pointer' }}>
-              <summary style={{ fontWeight: 'bold', color: '#c33' }}>
+              <summary style={{ fontWeight: 'bold', color: 'var(--app-error-boundary-text)' }}>
                 Error Details (for debugging)
               </summary>
               <pre
                 style={{
                   marginTop: '10px',
                   padding: '10px',
-                  backgroundColor: '#fff',
-                  border: '1px solid #ccc',
+                  backgroundColor: 'var(--app-error-boundary-code-bg)',
+                  border: '1px solid var(--app-error-boundary-code-border)',
                   borderRadius: '4px',
                   overflow: 'auto',
                   fontSize: '12px',
@@ -163,7 +165,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
               onClick={this.handleRetry}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#4CAF50',
+                backgroundColor: 'var(--app-error-boundary-dismiss)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
@@ -171,12 +173,22 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
                 fontSize: '14px',
                 fontWeight: 'bold',
               }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#45a049')}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4CAF50')}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.backgroundColor = 'var(--app-error-boundary-dismiss-hover)')
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = 'var(--app-error-boundary-dismiss)')
+              }
             >
               Dismiss
             </button>
-            <span style={{ marginLeft: '10px', color: '#666', fontSize: '14px' }}>
+            <span
+              style={{
+                marginLeft: '10px',
+                color: 'var(--app-error-boundary-helper)',
+                fontSize: '14px',
+              }}
+            >
               Please re-upload or re-crop your image to try again
             </span>
           </div>

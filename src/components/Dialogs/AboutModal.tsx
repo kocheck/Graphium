@@ -188,7 +188,7 @@ const modalStyles = `
   .feature-card:hover {
     border-color: var(--app-accent-solid);
     transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.15);
+    box-shadow: 0 8px 20px var(--app-dialog-button-glow);
   }
 
   .feature-icon-wrapper {
@@ -317,7 +317,7 @@ export function AboutModal({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backgroundColor: 'var(--app-dialog-backdrop)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

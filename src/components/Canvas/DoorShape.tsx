@@ -5,6 +5,24 @@ import { Group, Rect, Arc, Path, Circle } from 'react-konva';
 import type { Door } from '../../store/gameStore';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
+// Door rendering colors — sourced from theme tokens (see theme.css)
+// These are canvas constants because Konva can't read CSS variables directly.
+// Doors use standard tabletop notation: white rectangles with black outlines.
+const DOOR_COLORS = {
+  fill: '#ffffff', // --app-door-fill
+  stroke: '#000000', // --app-door-stroke
+  sweepFill: 'rgba(255, 255, 255, 0.4)', // --app-door-sweep-fill
+  sweepStroke: '#000000', // --app-door-sweep-stroke
+  shadowDm: 'rgba(255, 255, 255, 0.8)', // --app-door-shadow-dm
+  shadowPlayer: 'rgba(0, 0, 0, 0.3)', // --app-door-shadow-player
+  openingFill: 'rgba(255, 255, 255, 0.6)', // --app-door-opening-fill
+  lockHandle: 'rgba(255, 255, 255, 0.9)', // --app-door-lock-handle
+  lockedIcon: '#FF4444', // --app-door-locked-icon
+  lockedOutline: '#8B0000', // --app-door-locked-outline
+  boundingBox: '#2563eb', // --app-door-bounding-box
+  sweepShadow: 'rgba(0, 0, 0, 0.2)', // Door sweep shadow
+} as const;
+
 interface DoorShapeProps {
   door: Door;
   isWorldView: boolean;
@@ -172,7 +190,7 @@ function DoorShape({
           y={door.orientation === 'horizontal' ? -thickness / 2 - 4 : -halfSize - 4}
           width={(door.orientation === 'horizontal' ? door.size : thickness) + 8}
           height={(door.orientation === 'horizontal' ? thickness : door.size) + 8}
-          stroke="#2563eb"
+          stroke={DOOR_COLORS.boundingBox}
           strokeWidth={2}
           dash={[6, 3]}
           listening={false}
@@ -216,10 +234,10 @@ function renderAnimatedDoor(
               y={-thickness / 2}
               width={door.size}
               height={thickness}
-              fill="#ffffff"
-              stroke="#000000"
+              fill={DOOR_COLORS.fill}
+              stroke={DOOR_COLORS.stroke}
               strokeWidth={isWorldView ? 3 : 2}
-              shadowColor={isWorldView ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.3)'}
+              shadowColor={isWorldView ? DOOR_COLORS.shadowDm : DOOR_COLORS.shadowPlayer}
               shadowBlur={isWorldView ? 10 : 4}
               shadowOffsetX={1}
               shadowOffsetY={1}
@@ -230,10 +248,10 @@ function renderAnimatedDoor(
               y={-halfSize}
               width={thickness}
               height={door.size}
-              fill="#ffffff"
-              stroke="#000000"
+              fill={DOOR_COLORS.fill}
+              stroke={DOOR_COLORS.stroke}
               strokeWidth={isWorldView ? 3 : 2}
-              shadowColor={isWorldView ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.3)'}
+              shadowColor={isWorldView ? DOOR_COLORS.shadowDm : DOOR_COLORS.shadowPlayer}
               shadowBlur={isWorldView ? 10 : 4}
               shadowOffsetX={1}
               shadowOffsetY={1}
@@ -302,11 +320,11 @@ function renderSwingArc(
       outerRadius={halfSize + thickness / 2}
       angle={swingAngle}
       rotation={startAngle}
-      fill="rgba(255, 255, 255, 0.4)"
-      stroke="#000000"
+      fill={DOOR_COLORS.sweepFill}
+      stroke={DOOR_COLORS.sweepStroke}
       strokeWidth={1}
       dash={[4, 4]}
-      shadowColor="rgba(0,0,0,0.2)"
+      shadowColor={DOOR_COLORS.sweepShadow}
       shadowBlur={2}
       hitStrokeWidth={0}
     />
@@ -367,11 +385,11 @@ function renderOpenDoor(
         outerRadius={halfSize + thickness / 2}
         angle={swingAngle}
         rotation={startAngle}
-        fill="rgba(255, 255, 255, 0.4)" // Semi-transparent white
-        stroke="#000000"
+        fill={DOOR_COLORS.sweepFill}
+        stroke={DOOR_COLORS.sweepStroke}
         strokeWidth={1}
-        dash={[4, 4]} // Dashed outline
-        shadowColor="rgba(0,0,0,0.2)"
+        dash={[4, 4]}
+        shadowColor={DOOR_COLORS.sweepShadow}
         shadowBlur={2}
         hitStrokeWidth={0}
       />
@@ -425,8 +443,8 @@ function renderOpenDoorEdge(door: Door, halfSize: number, thickness: number) {
       y={y}
       width={width}
       height={height}
-      fill="rgba(255, 255, 255, 0.6)"
-      stroke="#000000"
+      fill={DOOR_COLORS.openingFill}
+      stroke={DOOR_COLORS.stroke}
       strokeWidth={1}
       hitStrokeWidth={0}
     />
@@ -453,15 +471,15 @@ function renderLockIcon(door: Door) {
         x={3}
         y={4}
         radius={6}
-        fill="rgba(255, 255, 255, 0.9)"
-        stroke="#000000"
+        fill={DOOR_COLORS.lockHandle}
+        stroke={DOOR_COLORS.stroke}
         strokeWidth={1}
       />
       {/* Lock icon */}
       <Path
         data={lockPath}
-        fill="#FF4444" // Red lock to indicate locked state
-        stroke="#8B0000" // Dark red outline
+        fill={DOOR_COLORS.lockedIcon}
+        stroke={DOOR_COLORS.lockedOutline}
         strokeWidth={0.5}
         scale={{ x: 0.8, y: 0.8 }}
       />

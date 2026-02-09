@@ -948,7 +948,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
         .dismiss-btn:hover {
           opacity: 1;
-          background: rgba(0, 0, 0, 0.1);
+          background: var(--app-home-hover-overlay);
         }
 
         .banner-content {
@@ -1327,7 +1327,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.6);
+          background: var(--app-home-modal-backdrop);
           backdrop-filter: blur(4px);
           z-index: 1000;
           display: flex;
@@ -1433,7 +1433,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           margin-left: auto;
           margin-right: auto;
           margin-bottom: 0.75rem;
-          color: var(--blue-11); /* Theme-aware blue for icon color */
+          color: var(--app-accent-text); /* Theme-aware blue for icon color */
         }
 
         .template-name {

@@ -44,6 +44,11 @@ import { createGridGeometry } from '../../utils/gridGeometry';
 
 import type { GridType } from '../../store/gameStore';
 
+const GRID_COLORS = {
+  cellFill: 'rgba(255, 255, 255, 0.1)', // Grid cell fill (for highlighted cells)
+  cellStroke: 'rgba(255, 255, 255, 0.5)', // Grid cell stroke (for highlighted cells)
+} as const;
+
 /**
  * Maximum dots to render before using subset rendering
  * Prevents performance degradation when zoomed out on large maps
@@ -257,8 +262,8 @@ function GridOverlay({
       <Line
         key="hover-highlight"
         points={points}
-        fill="rgba(255, 255, 255, 0.1)"
-        stroke="rgba(255, 255, 255, 0.5)"
+        fill={GRID_COLORS.cellFill}
+        stroke={GRID_COLORS.cellStroke}
         strokeWidth={2}
         opacity={1}
         closed

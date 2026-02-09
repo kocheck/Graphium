@@ -10,6 +10,13 @@ import type { ResolvedTokenData } from '../../hooks/useTokenData';
 import type { Drawing, Door, MapConfig } from '../../store/gameStore';
 import type { Point, WallSegment } from '../../types/geometry';
 
+const FOG_COLORS = {
+  fog: 'rgba(0, 0, 0, 0.94)', // --app-canvas-fog
+  fogExplored: 'rgba(0, 0, 0, 0.8)', // --app-canvas-fog-explored
+  gradientOpaque: 'rgba(0, 0, 0, 1)', // Vision gradient (opaque black)
+  gradientTransparent: 'rgba(0, 0, 0, 0)', // Vision gradient edge (transparent)
+} as const;
+
 interface FogOfWarLayerProps {
   tokens: ResolvedTokenData[];
   drawings: Drawing[];
@@ -394,7 +401,7 @@ function FogOfWarLayer({
           <Shape
             key="fog-overlay-no-map"
             sceneFunc={(ctx) => {
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.94)'; // Very dark, similar to blurred map brightness
+              ctx.fillStyle = FOG_COLORS.fog;
               ctx.fillRect(fogBounds.x, fogBounds.y, fogBounds.width, fogBounds.height);
             }}
             listening={false}
@@ -417,7 +424,7 @@ function FogOfWarLayer({
               // Semi-transparent black = partially erases fog = dimmed map shows through
               // Higher alpha = more fog erased = lighter/more visible
               // 0.8 = erases 80% of fog, leaves 20% = nicely dimmed effect
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+              ctx.fillStyle = FOG_COLORS.fogExplored;
               ctx.fill();
             }}
             globalCompositeOperation="destination-out"
@@ -462,11 +469,11 @@ function FogOfWarLayer({
                 );
 
                 // Center: Fully Visible (Erase Fog)
-                gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-                gradient.addColorStop(0.6, 'rgba(0, 0, 0, 1)'); // Keep sharp center
+                gradient.addColorStop(0, FOG_COLORS.gradientOpaque);
+                gradient.addColorStop(0.6, FOG_COLORS.gradientOpaque); // Keep sharp center
 
                 // Edge: Fog Starts to Return (Alpha goes to 0, so we stop erasing)
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                gradient.addColorStop(1, FOG_COLORS.gradientTransparent);
 
                 ctx.fillStyle = gradient;
                 ctx.fill();

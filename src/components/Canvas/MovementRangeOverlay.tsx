@@ -17,6 +17,11 @@ import { createGridGeometry } from '../../utils/gridGeometry';
 
 import type { GridType } from '../../store/gameStore';
 
+const MOVEMENT_COLORS = {
+  fill: 'rgba(0, 150, 255, 0.15)', // --app-movement-range-fill
+  stroke: 'rgba(0, 150, 255, 0.4)', // --app-movement-range-stroke
+} as const;
+
 /**
  * Helper to convert vertex points array to flat coordinate array for Konva Line
  */
@@ -95,8 +100,8 @@ function MovementRangeOverlay({
   movementSpeed,
   gridSize,
   gridType,
-  fillColor = 'rgba(0, 150, 255, 0.15)',
-  strokeColor = 'rgba(0, 150, 255, 0.4)',
+  fillColor = MOVEMENT_COLORS.fill,
+  strokeColor = MOVEMENT_COLORS.stroke,
 }: MovementRangeOverlayProps): React.ReactElement | null {
   const reachableCells = useMemo(() => {
     if (gridType === 'HIDDEN') {

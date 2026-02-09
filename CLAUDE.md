@@ -1109,12 +1109,12 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 3: Theme System Foundation
 
-- [ ] Add all missing theme tokens to theme.css
-- [ ] Sweep all files to replace hardcoded colors
-- [ ] Remove redundant Radix dark-mode CSS imports
-- [ ] Scope global transition rule
-- [ ] Add prefers-contrast support
-- [ ] Create brand.css configuration layer
+- [x] Add all missing theme tokens to theme.css
+- [x] Sweep all files to replace hardcoded colors
+- [x] Remove redundant Radix dark-mode CSS imports
+- [x] Scope global transition rule
+- [x] Add prefers-contrast support
+- [x] Create brand.css configuration layer
 
 ### Session 4: UI Primitives — Core
 
@@ -1257,6 +1257,58 @@ SyncManager, PreferencesDialog, services layer, workers.
 **Verification:** TypeScript 0 errors, build succeeds, lint 0 errors, all 792 tests pass.
 **No regressions.** Components directory is now well-organized with clear boundaries.
 
+### Session 3 — Theme System Foundation (2026-02-09)
+
+**Completed:**
+
+- **Task 3.1 — Harden theme token system:** Added ~120 new CSS custom properties to
+  theme.css organized by category (canvas, doors, stairs, minimap, measurement, touch,
+  tokens, walls, toolbar, monitor, home, dialogs, error boundaries, logo, library).
+  Added dark-mode variants for error boundaries, home screen, monitor tokens.
+  Swept 20+ component files replacing all hardcoded hex/rgba values. For Konva canvas
+  components (which can't use CSS vars), created `*_COLORS` constant objects at file top
+  with JSDoc comments referencing the CSS custom property names.
+
+- **Task 3.2 — Optimize Radix color CSS imports:** Removed 7 redundant dark-mode Radix
+  CSS imports (slate-dark, blue-dark, blue-dark-alpha, red-dark, amber-dark, green-dark,
+  slate-dark-alpha). The `[data-theme='dark']` block already manually re-declares all
+  values, making these imports dead weight. Fixed one raw Radix variable reference
+  (`var(--blue-11)` → `var(--app-accent-text)`) in HomeScreen.tsx.
+
+- **Task 3.3 — Scope global transition rule:** Replaced `*` selector with scoped
+  selectors targeting specific UI classes (.app-root, .sidebar, .toolbar, .btn, etc.).
+  Added `.themed-transition` opt-in class for elements needing smooth theme switching.
+  Canvas/Konva elements no longer have CSS transitions applied.
+
+- **Task 3.4 — Add prefers-contrast support:** Added `@media (prefers-contrast: more)`
+  block with enhanced text contrast (all text → slate-12), stronger borders (slate-8/9/10),
+  thicker border widths (2px buttons/inputs, 3px toolbar), visible focus outlines (3px
+  solid accent), and enhanced shadows on interactive elements.
+
+- **Task 3.5 — Add brand configuration layer:** Created `src/styles/brand.css` with
+  brand identity tokens (name, tagline), accent color overrides, font family references,
+  and logo asset paths. Imported in index.css between theme.css and app.css. Single file
+  controls visual brand identity — edit brand.css to rebrand the app.
+
+**Files modified:** theme.css (+~200 lines tokens, -7 imports, +transition scoping,
++prefers-contrast), app.css (8 hardcoded colors → tokens), brand.css (new), index.css
+(+brand.css import), 20+ component files (hardcoded colors → theme tokens/constants).
+
+**Konva color strategy decision:** Konva renders to `<canvas>`, not DOM, so CSS
+variables can't be used in Konva props. Solution: define `*_COLORS` constant objects
+at file top that mirror theme tokens with JSDoc comments documenting the mapping.
+Files using this pattern: DoorShape, CanvasManager, TouchVisualFeedback, Minimap,
+MeasurementOverlay, MovementRangeOverlay, StairsShape, FogOfWarLayer, GridOverlay,
+TokenErrorBoundary.
+
+**Intentional skips:** main.tsx error fallback (renders before React/CSS loads, must
+stay hardcoded), LogoIcon.tsx (color in CSS filter shorthand), LibraryManager.tsx
+(color in boxShadow shorthand).
+
+**Build output:** Main chunk 910KB (gzip 261KB) — marginal increase from new CSS tokens.
+**Verification:** TypeScript 0 errors, build succeeds, lint 0 errors, all 792 tests pass.
+**No regressions.**
+
 ---
 
 ## Quick Reference
@@ -1269,7 +1321,7 @@ SyncManager, PreferencesDialog, services layer, workers.
 | `src/components/HomeScreen.tsx`           | 1,776 | Landing page     | Needs CSS extraction (S5)  |
 | `src/store/gameStore.ts`                  | 836   | Central state    | Needs UI split (S7)        |
 | `src/App.tsx`                             | 763   | Root coordinator | Needs hook extraction (S9) |
-| `src/styles/theme.css`                    | 309   | Theme tokens     | Needs hardening (S3)       |
+| `src/styles/theme.css`                    | 521   | Theme tokens     | Hardened (S3 complete)     |
 | `electron/main.ts`                        | 1,283 | Electron main    | No changes planned         |
 
 ### Commands

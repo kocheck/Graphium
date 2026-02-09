@@ -94,6 +94,18 @@ interface State {
 }
 
 /**
+ * Konva color constants for the token error indicator.
+ * Konva elements cannot use CSS custom properties, so colors are defined here
+ * as constants. These correspond to the theme tokens:
+ *   --app-token-error-fill, --app-token-error-stroke
+ */
+const TOKEN_ERROR_COLORS = {
+  fill: 'rgba(220, 38, 38, 0.7)', // --app-token-error-fill
+  stroke: '#ef4444', // --app-token-error-stroke
+  iconFill: 'white', // Icon fill (contrast on red)
+} as const;
+
+/**
  * Token-level error boundary that silently hides broken tokens in production
  * and shows debug information in development mode
  */
@@ -228,8 +240,19 @@ class TokenErrorBoundary extends Component<Props, State> {
           {/* Konva error indicator on canvas */}
           <Group x={tokenX} y={tokenY} onClick={this.handleToggleDebug}>
             {/* Red circle with warning icon */}
-            <Circle radius={25} fill="rgba(220, 38, 38, 0.7)" stroke="#ef4444" strokeWidth={2} />
-            <Text text="⚠" fontSize={28} fill="white" offsetX={9} offsetY={14} />
+            <Circle
+              radius={25}
+              fill={TOKEN_ERROR_COLORS.fill}
+              stroke={TOKEN_ERROR_COLORS.stroke}
+              strokeWidth={2}
+            />
+            <Text
+              text="⚠"
+              fontSize={28}
+              fill={TOKEN_ERROR_COLORS.iconFill}
+              offsetX={9}
+              offsetY={14}
+            />
           </Group>
 
           {/* Portal for debug overlay in DOM */}

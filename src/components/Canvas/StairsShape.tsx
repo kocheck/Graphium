@@ -2,6 +2,14 @@ import { Group, Rect, Line, Path } from 'react-konva';
 
 import type { Stairs } from '../../store/gameStore';
 
+const STAIRS_COLORS = {
+  fillUp: '#c0c0c0', // --app-stairs-fill-up (light gray)
+  fillDown: '#808080', // --app-stairs-fill-down (dark gray)
+  stroke: '#000000', // --app-stairs-stroke (black)
+  arrowUp: '#4a90e2', // --app-stairs-arrow-up (blue)
+  arrowDown: '#e24a4a', // --app-stairs-arrow-down (red)
+} as const;
+
 interface StairsShapeProps {
   stairs: Stairs;
   isWorldView: boolean;
@@ -24,9 +32,9 @@ interface StairsShapeProps {
  */
 function StairsShape({ stairs }: StairsShapeProps) {
   // Color scheme based on type
-  const fillColor = stairs.type === 'up' ? '#c0c0c0' : '#808080'; // Light gray for up, dark gray for down
-  const strokeColor = '#000000';
-  const arrowColor = stairs.type === 'up' ? '#4a90e2' : '#e24a4a'; // Blue for up, red for down
+  const fillColor = stairs.type === 'up' ? STAIRS_COLORS.fillUp : STAIRS_COLORS.fillDown;
+  const strokeColor = STAIRS_COLORS.stroke;
+  const arrowColor = stairs.type === 'up' ? STAIRS_COLORS.arrowUp : STAIRS_COLORS.arrowDown;
 
   // Calculate top-left offset for center positioning
   const halfWidth = stairs.width / 2;
@@ -148,7 +156,15 @@ function renderDirectionalArrow(stairs: Stairs, arrowColor: string) {
       break;
   }
 
-  return <Path data={arrowPath} fill={arrowColor} stroke="#000000" strokeWidth={1} opacity={0.8} />;
+  return (
+    <Path
+      data={arrowPath}
+      fill={arrowColor}
+      stroke={STAIRS_COLORS.stroke}
+      strokeWidth={1}
+      opacity={0.8}
+    />
+  );
 }
 
 /**

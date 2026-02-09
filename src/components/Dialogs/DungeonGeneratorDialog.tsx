@@ -50,7 +50,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
 
     // Use default wall settings
     // TODO: Once wall tool settings are in the store, use those instead of defaults
-    const wallColor = '#ff0000'; // Default red
+    const wallColor = '#ff0000'; // Default red — corresponds to --app-wall-color-default
     const wallSize = 8; // Default size
 
     // Generate the dungeon

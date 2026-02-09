@@ -28,6 +28,13 @@ import { formatDistance, formatRadius, formatCone } from '../../utils/measuremen
 
 import type { Measurement } from '../../types/measurement';
 
+const MEASUREMENT_COLORS = {
+  fill: 'rgba(0, 100, 255, 0.3)', // --app-measurement-fill
+  stroke: 'rgba(0, 100, 255, 1)', // --app-measurement-stroke
+  text: '#ffffff', // --app-measurement-text
+  textBg: 'rgba(0, 0, 0, 0.7)', // --app-measurement-text-bg
+} as const;
+
 interface MeasurementOverlayProps {
   /** Active measurement to display (null = no measurement) */
   measurement: Measurement | null;
@@ -59,11 +66,11 @@ interface MeasurementOverlayProps {
 export function MeasurementOverlay({
   measurement,
   gridSize,
-  fillColor = 'rgba(0, 100, 255, 0.3)',
-  strokeColor = 'rgba(0, 100, 255, 1)',
+  fillColor = MEASUREMENT_COLORS.fill,
+  strokeColor = MEASUREMENT_COLORS.stroke,
   strokeWidth = 2,
-  textColor = '#ffffff',
-  textBgColor = 'rgba(0, 0, 0, 0.7)',
+  textColor = MEASUREMENT_COLORS.text,
+  textBgColor = MEASUREMENT_COLORS.textBg,
 }: MeasurementOverlayProps): React.ReactElement | null {
   if (!measurement) {
     return null;

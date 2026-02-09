@@ -13,8 +13,8 @@
 
 /* Toolbar */
 .toolbar {
-  background: #000000;
-  border: 2px solid rgb(82, 82, 82); /* neutral-600 */
+  background: var(--app-toolbar-bg);
+  border: 2px solid var(--app-toolbar-border);
 }
 
 .toolbar-divider {
@@ -52,14 +52,14 @@
 
 /* Tool buttons - active state */
 .btn-tool {
-  background: rgb(64, 64, 64); /* neutral-700 */
-  color: rgb(229, 229, 229); /* neutral-200 */
-  border: 1px solid rgb(82, 82, 82); /* neutral-600 */
+  background: var(--app-toolbar-button-bg);
+  color: var(--app-toolbar-button-text);
+  border: 1px solid var(--app-toolbar-button-border);
 }
 
 .btn-tool:hover {
-  background: rgb(82, 82, 82); /* neutral-600 */
-  border-color: rgb(115, 115, 115); /* neutral-500 */
+  background: var(--app-toolbar-button-hover);
+  border-color: var(--app-toolbar-button-border-hover);
 }
 
 .btn-tool.active {
@@ -108,7 +108,7 @@
 
 .btn-broadcast.active {
   background: var(--app-success-solid);
-  color: white;
+  color: var(--app-accent-solid-text);
 }
 
 .btn-broadcast.active:hover {

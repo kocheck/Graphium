@@ -32,6 +32,25 @@ import type { Drawing } from '../../store/gameStore';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
+// Canvas rendering colors — sourced from theme tokens (see theme.css)
+// Konva renders to <canvas>, so CSS variables aren't available directly.
+// These constants mirror the tokens defined in theme.css.
+const CANVAS_COLORS = {
+  markerDefault: '#df4b26', // --app-canvas-marker-default
+  selectionFill: 'rgba(37, 99, 235, 0.3)', // --app-canvas-selection-fill
+  selectionStroke: '#2563eb', // --app-canvas-selection-stroke
+  snapFill: 'rgba(37, 99, 235, 0.1)', // --app-canvas-snap-fill
+  snapStroke: 'rgba(37, 99, 235, 0.6)', // --app-canvas-snap-stroke
+  calibrationFill: 'rgba(255, 0, 0, 0.2)', // --app-canvas-calibration-fill
+  calibrationStroke: '#ef4444', // --app-canvas-calibration-stroke (using ef4444 instead of 'red')
+  doorPreviewFill: 'rgba(255, 255, 255, 0.5)', // --app-door-preview-fill
+  doorPreviewStroke: 'white', // --app-door-preview-stroke
+  wallStroke: '#000000', // --app-wall-stroke
+  snapTargetStroke: '#2563eb', // --app-canvas-selection-stroke (reused)
+  tokenShadowHover: 'rgba(0, 0, 0, 0.6)', // --app-token-shadow-hover
+  tokenShadow: 'rgba(0, 0, 0, 0.4)', // --app-token-shadow
+} as const;
+
 // Zoom constants
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
@@ -107,7 +126,7 @@ interface CanvasManagerProps {
  */
 function CanvasManager({
   tool = 'select',
-  color = '#df4b26',
+  color = CANVAS_COLORS.markerDefault,
   doorOrientation = 'horizontal',
   isWorldView = false,
   onSelectionChange,
@@ -1231,7 +1250,7 @@ function CanvasManager({
               // Apply uniform scaling (line.scale is a single number applied to both axes)
               scaleX: line.scale || 1,
               scaleY: line.scale || 1,
-              stroke: line.tool === 'wall' && isWorldView ? '#000000' : line.color,
+              stroke: line.tool === 'wall' && isWorldView ? CANVAS_COLORS.wallStroke : line.color,
               strokeWidth:
                 line.tool === 'wall' && isWorldView
                   ? 6 // Fixed thickness for World View
@@ -1405,8 +1424,8 @@ function CanvasManager({
               y={doorPreviewPos.y - gridSize / 2}
               width={doorOrientation === 'horizontal' ? gridSize : gridSize / 5}
               height={doorOrientation === 'horizontal' ? gridSize / 5 : gridSize}
-              fill="rgba(255, 255, 255, 0.5)"
-              stroke="white"
+              fill={CANVAS_COLORS.doorPreviewFill}
+              stroke={CANVAS_COLORS.doorPreviewStroke}
               strokeWidth={2}
               listening={false}
             />
@@ -1439,7 +1458,7 @@ function CanvasManager({
                   {/* Outer ring - actual grid cell shape */}
                   <Line
                     points={cellPoints}
-                    stroke="rgba(37, 99, 235, 0.6)" // Blue accent color
+                    stroke={CANVAS_COLORS.snapStroke}
                     strokeWidth={2}
                     listening={false}
                     dash={[8, 4]}
@@ -1448,7 +1467,7 @@ function CanvasManager({
                   {/* Inner fill - actual grid cell shape */}
                   <Line
                     points={cellPoints}
-                    fill="rgba(37, 99, 235, 0.1)"
+                    fill={CANVAS_COLORS.snapFill}
                     listening={false}
                     closed
                   />
@@ -1567,7 +1586,7 @@ function CanvasManager({
                   opacity: 0.5,
                   scaleX: 1.05,
                   scaleY: 1.05,
-                  shadowColor: 'rgba(0, 0, 0, 0.6)',
+                  shadowColor: CANVAS_COLORS.tokenShadowHover,
                   shadowBlur: 20,
                   shadowOffsetX: 5,
                   shadowOffsetY: 5,
@@ -1578,7 +1597,7 @@ function CanvasManager({
                   ...baseShadowProps,
                   scaleX: 1.02,
                   scaleY: 1.02,
-                  shadowColor: 'rgba(0, 0, 0, 0.4)',
+                  shadowColor: CANVAS_COLORS.tokenShadow,
                   shadowBlur: 12,
                   shadowOffsetX: 2,
                   shadowOffsetY: 2,
@@ -1661,9 +1680,9 @@ function CanvasManager({
                       x={displayX + (gridSize * safeScale) / 2}
                       y={finalDisplayY + (gridSize * safeScale) / 2}
                       radius={(gridSize * safeScale) / 2 + 2}
-                      stroke="#2563eb"
+                      stroke={CANVAS_COLORS.selectionStroke}
                       strokeWidth={3}
-                      shadowColor="#2563eb"
+                      shadowColor={CANVAS_COLORS.snapTargetStroke}
                       shadowBlur={8}
                       shadowEnabled
                       listening={false}
@@ -1700,8 +1719,8 @@ function CanvasManager({
               y={selectionRect.y}
               width={selectionRect.width}
               height={selectionRect.height}
-              fill="rgba(37, 99, 235, 0.3)"
-              stroke="#2563eb"
+              fill={CANVAS_COLORS.selectionFill}
+              stroke={CANVAS_COLORS.selectionStroke}
               listening={false}
             />
           )}
@@ -1713,8 +1732,8 @@ function CanvasManager({
               y={calibrationRect.y}
               width={calibrationRect.width}
               height={calibrationRect.height}
-              fill="rgba(255, 0, 0, 0.2)"
-              stroke="red"
+              fill={CANVAS_COLORS.calibrationFill}
+              stroke={CANVAS_COLORS.calibrationStroke}
               dash={[5, 5]}
               listening={false}
             />
