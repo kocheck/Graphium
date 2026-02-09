@@ -1,4 +1,7 @@
-import React, { Component, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type React from 'react';
+import { Component } from 'react';
+
 import {
   captureErrorContext,
   logErrorWithContext,

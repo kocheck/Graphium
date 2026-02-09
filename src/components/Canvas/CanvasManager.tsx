@@ -1,33 +1,36 @@
-import Konva from 'konva';
-import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
-import { KonvaEventObject } from 'konva/lib/Node';
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+
+import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
 import { useShallow } from 'zustand/shallow';
-import { snapToGrid } from '../../utils/grid';
-import { useGameStore, DEFAULT_GRID_COLOR, Drawing } from '../../store/gameStore';
-import { useTouchSettingsStore } from '../../store/touchSettingsStore';
-import { isRectInAnyPolygon } from '../../types/geometry';
+
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../ImageCropper';
+import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
+import DoorLayer from './DoorLayer';
+import { useCanvasInteraction } from './hooks/useCanvasInteraction';
+import { useTokenDrag } from './hooks/useTokenDrag';
+import MeasurementOverlay from './MeasurementOverlay';
+import Minimap from './Minimap';
+import MinimapErrorBoundary from './MinimapErrorBoundary';
+import MovementRangeOverlay from './MovementRangeOverlay';
+import PaperNoiseOverlay from './PaperNoiseOverlay';
+import PressureSensitiveLine from './PressureSensitiveLine';
+import StairsLayer from './StairsLayer';
 import TokenErrorBoundary from './TokenErrorBoundary';
+import URLImage from './URLImage';
+import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
 import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import FogOfWarLayer from './FogOfWarLayer';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import DoorLayer from './DoorLayer';
-import StairsLayer from './StairsLayer';
-import PaperNoiseOverlay from './PaperNoiseOverlay';
-import Minimap from './Minimap';
-import MinimapErrorBoundary from './MinimapErrorBoundary';
-import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
-
-import { useTokenDrag } from './hooks/useTokenDrag';
-import { useCanvasInteraction } from './hooks/useCanvasInteraction';
-import MeasurementOverlay from './MeasurementOverlay';
-import MovementRangeOverlay from './MovementRangeOverlay';
 import { resolveTokenData, DEFAULT_MOVEMENT_SPEED } from '../../hooks/useTokenData';
-import URLImage from './URLImage';
-import PressureSensitiveLine from './PressureSensitiveLine';
+import { useTouchSettingsStore } from '../../store/touchSettingsStore';
+import { isRectInAnyPolygon } from '../../types/geometry';
+import { snapToGrid } from '../../utils/grid';
 import { createGridGeometry } from '../../utils/gridGeometry';
+
+import type { Drawing } from '../../store/gameStore';
+import type Konva from 'konva';
+import type { KonvaEventObject } from 'konva/lib/Node';
 
 // Zoom constants
 const MIN_SCALE = 0.1;
@@ -102,14 +105,14 @@ interface CanvasManagerProps {
  * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
  * @see {@link file://../../App.tsx App.tsx} for UI sanitization
  */
-const CanvasManager = ({
+function CanvasManager({
   tool = 'select',
   color = '#df4b26',
   doorOrientation = 'horizontal',
   isWorldView = false,
   onSelectionChange,
   // measurementMode = 'ruler', // Unused currently
-}: CanvasManagerProps) => {
+}: CanvasManagerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -498,7 +501,9 @@ const CanvasManager = ({
   // Keyboard zoom (centered on viewport)
   const handleKeyboardZoom = useCallback(
     (zoomIn: boolean) => {
-      if (!containerRef.current) return;
+      if (!containerRef.current) {
+        return;
+      }
 
       const centerX = size.width / 2;
       const centerY = size.height / 2;
@@ -512,7 +517,9 @@ const CanvasManager = ({
   // Consolidated keyboard event handling for canvas operations
   useEffect(() => {
     const isEditableElement = (el: EventTarget | null): boolean => {
-      if (!(el instanceof HTMLElement)) return false;
+      if (!(el instanceof HTMLElement)) {
+        return false;
+      }
       const tag = el.tagName.toLowerCase();
       return tag === 'input' || tag === 'textarea' || el.isContentEditable;
     };
@@ -525,12 +532,16 @@ const CanvasManager = ({
       }
 
       // Ignore other operations if typing in an input
-      if (isEditableElement(e.target)) return;
+      if (isEditableElement(e.target)) {
+        return;
+      }
 
       // Delete/Backspace - remove selected items
       // BLOCKED in World View (players cannot delete tokens/drawings)
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (isWorldView) return; // Block deletion in World View
+        if (isWorldView) {
+          return;
+        } // Block deletion in World View
         if (selectedIds.length > 0) {
           removeTokens(selectedIds);
           removeDrawings(selectedIds);
@@ -540,7 +551,9 @@ const CanvasManager = ({
 
       // Escape - clear active measurement
       if (e.key === 'Escape') {
-        if (isWorldView) return; // Block in World View
+        if (isWorldView) {
+          return;
+        } // Block in World View
         if (activeMeasurement) {
           setActiveMeasurement(null);
         }
@@ -700,7 +713,9 @@ const CanvasManager = ({
         const center = calculatePinchCenter(touch1, touch2);
 
         // Prevent division by zero
-        if (lastPinchDistance.current < MIN_PINCH_DISTANCE) return;
+        if (lastPinchDistance.current < MIN_PINCH_DISTANCE) {
+          return;
+        }
 
         // Calculate distance change to determine gesture type
         const distanceChange = Math.abs(distance - lastPinchDistance.current);
@@ -709,7 +724,9 @@ const CanvasManager = ({
         if (isPinchGesture) {
           // PINCH-TO-ZOOM: Fingers moving together/apart
           const stageRect = containerRef.current?.getBoundingClientRect();
-          if (!stageRect) return;
+          if (!stageRect) {
+            return;
+          }
 
           const canvasX = center.x - stageRect.left;
           const canvasY = center.y - stageRect.top;
@@ -766,17 +783,23 @@ const CanvasManager = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     // BLOCKED in World View (no file drops allowed)
-    if (isWorldView) return;
+    if (isWorldView) {
+      return;
+    }
     e.preventDefault();
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     // BLOCKED in World View (no file drops allowed)
-    if (isWorldView) return;
+    if (isWorldView) {
+      return;
+    }
     e.preventDefault();
 
     const stageRect = containerRef.current?.getBoundingClientRect();
-    if (!stageRect) return;
+    if (!stageRect) {
+      return;
+    }
 
     // 1. Get pointer relative to the container DOM element
     const pointerX = e.clientX - stageRect.left;
@@ -847,13 +870,17 @@ const CanvasManager = ({
     }
   };
 
-  const handleCropConfirm = async (blob: Blob) => {
-    if (!pendingCrop) return;
-    handleCropSave(blob);
+  const handleCropConfirm = (blob: Blob) => {
+    if (!pendingCrop) {
+      return;
+    }
+    void handleCropSave(blob);
   };
 
-  const handleCropSave = async (blob: Blob) => {
-    if (!pendingCrop) return;
+  const handleCropSave = (blob: Blob) => {
+    if (!pendingCrop) {
+      return;
+    }
 
     try {
       // Convert blob to base64 for storage/rendering
@@ -899,11 +926,15 @@ const CanvasManager = ({
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const stage = e.target.getStage();
-    if (!stage) return;
+    if (!stage) {
+      return;
+    }
 
     const oldScale = stage.scaleX();
     const pointer = stage.getPointerPosition();
-    if (!pointer) return;
+    if (!pointer) {
+      return;
+    }
 
     // Zoom with Ctrl/Cmd + scroll
     if (e.evt.ctrlKey || e.evt.metaKey) {
@@ -950,7 +981,9 @@ const CanvasManager = ({
 
   const centerOnPCTokens = useCallback(() => {
     const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
-    if (pcTokens.length === 0) return;
+    if (pcTokens.length === 0) {
+      return;
+    }
 
     // Calculate bounds of all PC tokens
     let minX = Infinity;
@@ -1258,6 +1291,7 @@ const CanvasManager = ({
             if (hasPressureData) {
               return (
                 <PressureSensitiveLine
+                  key={line.id}
                   {...commonProps}
                   {...eventHandlers}
                   pressures={line.pressures}
@@ -1267,6 +1301,7 @@ const CanvasManager = ({
             } else {
               return (
                 <Line
+                  key={line.id}
                   {...commonProps}
                   {...eventHandlers}
                   tension={0.5}
@@ -1342,7 +1377,9 @@ const CanvasManager = ({
           {isDraggingToken &&
             Array.from(snapPreviewPositionsRef.current.entries()).map(([tokenId, snapPos]) => {
               const token = resolvedTokens.find((t) => t.id === tokenId);
-              if (!token) return null;
+              if (!token) {
+                return null;
+              }
 
               const size = gridSize * token.scale;
 
@@ -1367,14 +1404,14 @@ const CanvasManager = ({
                     strokeWidth={2}
                     listening={false}
                     dash={[8, 4]}
-                    closed={true}
+                    closed
                   />
                   {/* Inner fill - actual grid cell shape */}
                   <Line
                     points={cellPoints}
                     fill="rgba(37, 99, 235, 0.1)"
                     listening={false}
-                    closed={true}
+                    closed
                   />
                 </Group>
               );
@@ -1409,7 +1446,9 @@ const CanvasManager = ({
             selectedIds.length === 1 &&
             (() => {
               const selectedToken = resolvedTokens.find((t) => t.id === selectedIds[0]);
-              if (!selectedToken) return null;
+              if (!selectedToken) {
+                return null;
+              }
 
               // Use drag position if token is being dragged
               const dragPos = dragPositionsRef.current.get(selectedToken.id);
@@ -1587,7 +1626,7 @@ const CanvasManager = ({
                       strokeWidth={3}
                       shadowColor="#2563eb"
                       shadowBlur={8}
-                      shadowEnabled={true}
+                      shadowEnabled
                       listening={false}
                       dash={[8, 4]}
                     />
@@ -1735,6 +1774,6 @@ const CanvasManager = ({
       )}
     </div>
   );
-};
+}
 
 export default React.memo(CanvasManager);

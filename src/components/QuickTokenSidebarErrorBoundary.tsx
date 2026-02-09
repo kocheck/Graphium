@@ -6,7 +6,9 @@
  * Shows a minimal, inline error message that fits within the sidebar layout.
  */
 
-import { Component, ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+
 import { RiErrorWarningLine } from '@remixicon/react';
 
 interface Props {

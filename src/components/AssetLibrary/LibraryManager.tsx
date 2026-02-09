@@ -21,25 +21,29 @@
  */
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useGameStore } from '../../store/gameStore';
-import type { TokenLibraryItem } from '../../store/gameStore';
-import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzySearch';
-import { processImage, ProcessingHandle } from '../../utils/AssetProcessor';
-import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
-import AddToLibraryDialog from './AddToLibraryDialog';
-import TokenMetadataEditor from './TokenMetadataEditor';
-import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
-import { getStorage } from '../../services/storage';
-import { useIsMobile } from '../../hooks/useMediaQuery';
-import { rollForMessage } from '../../utils/systemMessages';
+
 import { RiUploadLine, RiCloseLine, RiEditLine, RiDeleteBinLine } from '@remixicon/react';
+
+import AddToLibraryDialog from './AddToLibraryDialog';
+import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
+import TokenMetadataEditor from './TokenMetadataEditor';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import { getStorage } from '../../services/storage';
+import { useGameStore } from '../../store/gameStore';
+import { processImage } from '../../utils/AssetProcessor';
+import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzySearch';
+import { rollForMessage } from '../../utils/systemMessages';
+import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
+
+import type { TokenLibraryItem } from '../../store/gameStore';
+import type { ProcessingHandle } from '../../utils/AssetProcessor';
 
 interface LibraryManagerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
+function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -96,7 +100,9 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
    */
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     try {
       // Process image to optimize it
@@ -135,7 +141,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
    * Handle delete asset
    * Shows confirmation dialog before deleting
    */
-  const handleDelete = async (itemId: string, itemName: string) => {
+  const handleDelete = (itemId: string, itemName: string) => {
     showConfirmDialog(
       rollForMessage('CONFIRM_LIBRARY_ASSET_DELETE', { assetName: itemName }),
       async () => {
@@ -183,7 +189,9 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
     setDraggingItemId(null);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
@@ -262,7 +270,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
                 <>
                   <p className="text-lg mb-2">Library is empty</p>
                   <p className="text-sm">
-                    Add assets using the "Add to Library" button in the sidebar
+                    Add assets using the &quot;Add to Library&quot; button in the sidebar
                   </p>
                 </>
               ) : (
@@ -319,7 +327,7 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDelete(item.id, item.name);
+                            void handleDelete(item.id, item.name);
                           }}
                           className="p-1.5 bg-red-600 hover:bg-red-500 rounded"
                           aria-label={`Delete ${item.name}`}
@@ -422,6 +430,6 @@ const LibraryManager = ({ isOpen, onClose }: LibraryManagerProps) => {
       </LibraryModalErrorBoundary>
     </div>
   );
-};
+}
 
 export default LibraryManager;

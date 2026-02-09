@@ -20,10 +20,13 @@
  * ```
  */
 
-import React from 'react';
+import type React from 'react';
+
 import { Group, Line, Circle, Text } from 'react-konva';
-import { Measurement } from '../../types/measurement';
+
 import { formatDistance, formatRadius, formatCone } from '../../utils/measurement';
+
+import type { Measurement } from '../../types/measurement';
 
 interface MeasurementOverlayProps {
   /** Active measurement to display (null = no measurement) */
@@ -53,7 +56,7 @@ interface MeasurementOverlayProps {
  *
  * Renders the active measurement shape on the canvas
  */
-export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
+export function MeasurementOverlay({
   measurement,
   gridSize,
   fillColor = 'rgba(0, 100, 255, 0.3)',
@@ -61,7 +64,7 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
   strokeWidth = 2,
   textColor = '#ffffff',
   textBgColor = 'rgba(0, 0, 0, 0.7)',
-}) => {
+}: MeasurementOverlayProps): React.ReactElement | null {
   if (!measurement) {
     return null;
   }
@@ -202,6 +205,6 @@ export const MeasurementOverlay: React.FC<MeasurementOverlayProps> = ({
     default:
       return null;
   }
-};
+}
 
 export default MeasurementOverlay;

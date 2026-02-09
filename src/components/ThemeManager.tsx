@@ -20,6 +20,7 @@
  */
 
 import { useEffect } from 'react';
+
 import { getStorage } from '../services/storage';
 
 // Note: window.themeAPI types are defined in vite-env.d.ts
@@ -139,7 +140,7 @@ export function ThemeManager() {
       }
     }
 
-    initializeTheme();
+    void initializeTheme();
 
     // Cleanup: unsubscribe from theme changes
     return () => {

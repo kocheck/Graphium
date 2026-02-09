@@ -26,7 +26,7 @@ interface MobileBottomSheetProps {
   children: React.ReactNode;
 }
 
-const MobileBottomSheet = ({ isOpen, onClose, children }: MobileBottomSheetProps) => {
+function MobileBottomSheet({ isOpen, onClose, children }: MobileBottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
@@ -55,7 +55,9 @@ const MobileBottomSheet = ({ isOpen, onClose, children }: MobileBottomSheetProps
   }, [isOpen]);
 
   // Don't render anything if not open
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
@@ -96,6 +98,6 @@ const MobileBottomSheet = ({ isOpen, onClose, children }: MobileBottomSheetProps
       </div>
     </>
   );
-};
+}
 
 export default MobileBottomSheet;

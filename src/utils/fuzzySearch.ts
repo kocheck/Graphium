@@ -26,12 +26,16 @@ import type { TokenLibraryItem } from '../store/gameStore';
  * @returns Score (higher is better match), 0 if no match
  */
 function scoreMatch(text: string, query: string): number {
-  if (!query) return 0;
+  if (!query) {
+    return 0;
+  }
   const lowerText = text.toLowerCase();
   const lowerQuery = query.toLowerCase();
 
   // Exact match = highest score
-  if (lowerText === lowerQuery) return 100;
+  if (lowerText === lowerQuery) {
+    return 100;
+  }
 
   // 1. Check if query is a subsequence
   let qIdx = 0;
@@ -44,7 +48,9 @@ function scoreMatch(text: string, query: string): number {
   }
 
   // If not all query chars found in order, no match
-  if (qIdx < lowerQuery.length) return 0;
+  if (qIdx < lowerQuery.length) {
+    return 0;
+  }
 
   // 2. Calculate score based on quality of match
   let score = 0;
@@ -53,10 +59,14 @@ function scoreMatch(text: string, query: string): number {
   score += 10;
 
   // Bonus: Starts with query
-  if (lowerText.startsWith(lowerQuery)) score += 40;
+  if (lowerText.startsWith(lowerQuery)) {
+    score += 40;
+  }
 
   // Bonus: Contains exact query substring
-  if (lowerText.includes(lowerQuery)) score += 20;
+  if (lowerText.includes(lowerQuery)) {
+    score += 20;
+  }
 
   // Re-scan for structural bonuses
   let lastMatchIdx = -1;
@@ -125,7 +135,9 @@ export function fuzzySearch(items: TokenLibraryItem[], query: string): TokenLibr
     if (isSectionSearch) {
       score += sectionBoost;
       // If exact "assets" typed, show everything with high score
-      if (lowerQuery === 'assets') return { item, score: 100 };
+      if (lowerQuery === 'assets') {
+        return { item, score: 100 };
+      }
     }
 
     // Score name (weight: 3x)

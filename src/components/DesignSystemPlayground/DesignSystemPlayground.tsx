@@ -14,6 +14,7 @@
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react';
+
 import {
   RiSearchLine,
   RiFileCopyLine,
@@ -23,13 +24,15 @@ import {
   RiMoonLine,
   RiPulseLine,
 } from '@remixicon/react';
+
 import { componentExamples, categories } from './playground-registry';
-import { ComponentExample } from './types';
 import { getStorage } from '../../services/storage';
+import { useGameStore } from '../../store/gameStore';
+import ConfirmDialog from '../ConfirmDialog';
 import { ThemeManager } from '../ThemeManager';
 import Toast from '../Toast';
-import ConfirmDialog from '../ConfirmDialog';
-import { useGameStore } from '../../store/gameStore';
+
+import type { ComponentExample } from './types';
 
 /**
  * Shell component to provide necessary context (Theme, Toasts, Dialogs)
@@ -73,7 +76,7 @@ function PlaygroundContent() {
         console.warn('Failed to load theme preference', e);
       }
     };
-    loadTheme();
+    void loadTheme();
   }, []);
 
   // Keyboard shortcut: "/" to focus search
@@ -233,7 +236,7 @@ function PlaygroundContent() {
                   {filteredExamples.length}
                 </span>{' '}
                 component
-                {filteredExamples.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                {filteredExamples.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
               </>
             ) : (
               <>Showing all {componentExamples.length} components</>
@@ -263,7 +266,9 @@ function PlaygroundContent() {
         ) : (
           categories.map((category) => {
             const examples = groupedExamples[category.id];
-            if (!examples) return null;
+            if (!examples) {
+              return null;
+            }
 
             return (
               <div key={category.id} className="mb-16 scroll-mt-24" id={category.id}>

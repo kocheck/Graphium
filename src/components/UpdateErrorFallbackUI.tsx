@@ -63,7 +63,7 @@ export type UpdateErrorRandomFn = () => number;
 /**
  * Randomly selects a message from an array
  * Accepts an optional random function to enable deterministic testing
- * 
+ *
  * @param messages - Array of messages to choose from
  * @param rng - Random number generator function (defaults to Math.random)
  * @returns Randomly selected message
@@ -82,24 +82,35 @@ export const rollForMessage = (
  */
 export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFallbackUIProps) {
   // Roll for random error messages (memoized per error instance to keep them stable)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const errorTitle = useMemo(() => rollForMessage(updateErrorMessages.title), [errorMessage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const errorDesc = useMemo(() => rollForMessage(updateErrorMessages.description), [errorMessage]);
 
   // Determine which hints to show based on error type
   const hints = useMemo(() => {
     const errorMsg = errorMessage?.toLowerCase() || '';
-    
+
     // Check for signature-related errors
-    if (errorMsg.includes('signature') || errorMsg.includes('verify') || errorMsg.includes('cert')) {
+    if (
+      errorMsg.includes('signature') ||
+      errorMsg.includes('verify') ||
+      errorMsg.includes('cert')
+    ) {
       return updateErrorMessages.hints.signature;
     }
-    
+
     // Check for network-related errors
-    if (errorMsg.includes('network') || errorMsg.includes('timeout') || errorMsg.includes('fetch') || 
-        errorMsg.includes('enotfound') || errorMsg.includes('econnrefused')) {
+    if (
+      errorMsg.includes('network') ||
+      errorMsg.includes('timeout') ||
+      errorMsg.includes('fetch') ||
+      errorMsg.includes('enotfound') ||
+      errorMsg.includes('econnrefused')
+    ) {
       return updateErrorMessages.hints.network;
     }
-    
+
     // Default to general hints
     return updateErrorMessages.hints.general;
   }, [errorMessage]);
@@ -131,7 +142,10 @@ export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFall
             <p className="text-sm mb-3" style={{ color: 'var(--app-text-muted)' }}>
               {errorDesc}
             </p>
-            <ul className="text-sm space-y-1 mb-3 ml-4 list-disc" style={{ color: 'var(--app-text-muted)' }}>
+            <ul
+              className="text-sm space-y-1 mb-3 ml-4 list-disc"
+              style={{ color: 'var(--app-text-muted)' }}
+            >
               {hints.map((hint, index) => (
                 <li key={index}>{hint}</li>
               ))}
@@ -143,7 +157,10 @@ export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFall
                 </summary>
                 <pre
                   className="mt-2 p-2 rounded overflow-auto max-h-32"
-                  style={{ backgroundColor: 'var(--app-bg-subtle)', color: 'var(--app-text-muted)' }}
+                  style={{
+                    backgroundColor: 'var(--app-bg-subtle)',
+                    color: 'var(--app-text-muted)',
+                  }}
                 >
                   {errorMessage}
                 </pre>

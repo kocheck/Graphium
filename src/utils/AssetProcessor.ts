@@ -163,7 +163,9 @@ function processImageWithWorker(
     // Handle worker messages
     worker.onmessage = async (event) => {
       // Ignore messages if already cancelled
-      if (isCancelled) return;
+      if (isCancelled) {
+        return;
+      }
 
       const message = event.data;
 
@@ -183,7 +185,9 @@ function processImageWithWorker(
             const filePath = await storage.saveAssetTemp(message.buffer, webpFileName);
 
             // Check cancellation after async IPC operation
-            if (isCancelled) return;
+            if (isCancelled) {
+              return;
+            }
 
             // Complete progress
             if (onProgress) {
@@ -196,10 +200,12 @@ function processImageWithWorker(
               worker = null;
             }
             rejectPromise = null; // Clear to prevent double-rejection
-            resolve(filePath as string);
+            resolve(filePath);
           } catch (error) {
             // Check cancellation before rejecting with error
-            if (isCancelled) return;
+            if (isCancelled) {
+              return;
+            }
 
             // Cleanup and reject
             if (worker) {
@@ -219,6 +225,8 @@ function processImageWithWorker(
           }
           rejectPromise = null; // Clear to prevent double-rejection
           reject(new Error(message.error));
+          break;
+        default:
           break;
       }
     };
@@ -272,11 +280,15 @@ async function processImageMainThread(
   onProgress?: ProgressCallback,
 ): Promise<string> {
   // Progress: 0%
-  if (onProgress) onProgress(0);
+  if (onProgress) {
+    onProgress(0);
+  }
 
   // 1. Create bitmap from file (efficient image decode)
   const bitmap = await createImageBitmap(file);
-  if (onProgress) onProgress(20);
+  if (onProgress) {
+    onProgress(20);
+  }
 
   const maxDim = type === 'MAP' ? MAX_MAP_DIMENSION : MAX_TOKEN_DIMENSION;
 
@@ -297,7 +309,9 @@ async function processImageMainThread(
     }
   }
 
-  if (onProgress) onProgress(40);
+  if (onProgress) {
+    onProgress(40);
+  }
 
   // 3. Draw to OffscreenCanvas (faster than DOM canvas)
   const canvas = new OffscreenCanvas(width, height);
@@ -313,7 +327,9 @@ async function processImageMainThread(
   // Clean up bitmap (free memory)
   bitmap.close();
 
-  if (onProgress) onProgress(60);
+  if (onProgress) {
+    onProgress(60);
+  }
 
   // 4. Convert to WebP blob (85% quality = good balance)
   const blob = await canvas.convertToBlob({
@@ -321,7 +337,9 @@ async function processImageMainThread(
     quality: 0.85,
   });
 
-  if (onProgress) onProgress(80);
+  if (onProgress) {
+    onProgress(80);
+  }
 
   // 5. Send to storage service for temp asset storage
   const buffer = await blob.arrayBuffer();
@@ -329,7 +347,9 @@ async function processImageMainThread(
   const storage = getStorage();
   const filePath = await storage.saveAssetTemp(buffer, webpFileName);
 
-  if (onProgress) onProgress(100);
+  if (onProgress) {
+    onProgress(100);
+  }
 
   return filePath;
 }
@@ -383,7 +403,9 @@ export const processBatch = (
 
   const updateOverallProgress = () => {
     // Don't update progress if batch processing has been cancelled
-    if (isCancelled) return;
+    if (isCancelled) {
+      return;
+    }
 
     const total = Array.from(fileProgress.values()).reduce((sum, p) => sum + p, 0);
     const overall = Math.round(total / totalFiles);
@@ -396,7 +418,9 @@ export const processBatch = (
   const promises = files.map((file, index) => {
     const handle = processImage(file, type, (progress) => {
       // Don't update progress if batch processing has been cancelled
-      if (isCancelled) return;
+      if (isCancelled) {
+        return;
+      }
 
       fileProgress.set(index, progress);
       updateOverallProgress();

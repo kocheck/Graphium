@@ -5,11 +5,8 @@
  * Each example includes the component instance and its usage code snippet.
  */
 
-import ToggleSwitch from '../ToggleSwitch';
-import { ComponentExample, ComponentCategory } from './types';
-import { useGameStore } from '../../store/gameStore';
 import { useState } from 'react';
-import UpdateManager from '../UpdateManager';
+
 import {
   RiHomeLine,
   RiUserLine,
@@ -27,6 +24,12 @@ import {
   RiBuilding2Line,
   RiTreeLine, // Used in code example strings
 } from '@remixicon/react';
+
+import { useGameStore } from '../../store/gameStore';
+import ToggleSwitch from '../ToggleSwitch';
+import UpdateManager from '../UpdateManager';
+
+import type { ComponentExample, ComponentCategory } from './types';
 
 // @ts-expect-error - RiTreeLine is used in code example strings
 const _unused = RiTreeLine;
@@ -218,7 +221,7 @@ export const componentExamples: ComponentExample[] = [
     name: 'Toggle Switch',
     category: 'toggle',
     description: 'Modern toggle switch component',
-    component: <ToggleSwitch checked={true} onChange={() => {}} label="Enable Feature" />,
+    component: <ToggleSwitch checked onChange={() => {}} label="Enable Feature" />,
     code: `import ToggleSwitch from './components/ToggleSwitch';
 
 <ToggleSwitch
@@ -350,7 +353,7 @@ showConfirmDialog(
     description: 'Software update dialog for electron-updater integration',
     component: (() => {
       // Create a wrapper component with state
-      const UpdateManagerDemo = () => {
+      function UpdateManagerDemo() {
         const [isOpen, setIsOpen] = useState(false);
         return (
           <>
@@ -363,7 +366,7 @@ showConfirmDialog(
             <UpdateManager isOpen={isOpen} onClose={() => setIsOpen(false)} />
           </>
         );
-      };
+      }
       return <UpdateManagerDemo />;
     })(),
     code: `import UpdateManager from './components/UpdateManager';
@@ -627,20 +630,28 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     category: 'landing-patterns',
     description: 'Cyclical theme toggle (Light → Dark → Auto) with icon indicators',
     component: (() => {
-      const ThemeSwitcherDemo = () => {
+      function ThemeSwitcherDemo() {
         const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark');
         const getIcon = () => {
-          if (theme === 'light') return <RiSunLine className="w-4 h-4" />;
-          if (theme === 'dark') return <RiMoonLine className="w-4 h-4" />;
+          if (theme === 'light') {
+            return <RiSunLine className="w-4 h-4" />;
+          }
+          if (theme === 'dark') {
+            return <RiMoonLine className="w-4 h-4" />;
+          }
           return <RiComputerLine className="w-4 h-4" />;
         };
         const getLabel = () => {
-          if (theme === 'light') return 'Light';
-          if (theme === 'dark') return 'Dark';
+          if (theme === 'light') {
+            return 'Light';
+          }
+          if (theme === 'dark') {
+            return 'Dark';
+          }
           return 'Auto';
         };
         const cycleTheme = () => {
-          const themes: (typeof theme)[] = ['light', 'dark', 'system'];
+          const themes: Array<typeof theme> = ['light', 'dark', 'system'];
           const currentIndex = themes.indexOf(theme);
           setTheme(themes[(currentIndex + 1) % themes.length]);
         };
@@ -666,7 +677,7 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
             <span>{getLabel()}</span>
           </button>
         );
-      };
+      }
       return <ThemeSwitcherDemo />;
     })(),
     code: `const [currentTheme, setCurrentTheme] = useState<ThemeMode>('system');
@@ -703,7 +714,7 @@ const handleToggleTheme = async () => {
     category: 'landing-patterns',
     description: 'Performance mode toggle that disables animations/effects for low-end devices',
     component: (() => {
-      const LiteModeDemo = () => {
+      function LiteModeDemo() {
         const [liteMode, setLiteMode] = useState(false);
         return (
           <button
@@ -733,7 +744,7 @@ const handleToggleTheme = async () => {
             <span>{liteMode ? 'Lite' : 'Full'}</span>
           </button>
         );
-      };
+      }
       return <LiteModeDemo />;
     })(),
     code: `const [liteMode, setLiteMode] = useState(() =>
@@ -779,7 +790,7 @@ const handleToggleLiteMode = () => {
     category: 'landing-patterns',
     description: 'Search input with icon that appears when list has 6+ items',
     component: (() => {
-      const SearchFilterDemo = () => {
+      function SearchFilterDemo() {
         const [query, setQuery] = useState('');
         return (
           <div style={{ position: 'relative', marginBottom: '0.75rem', width: '300px' }}>
@@ -814,7 +825,7 @@ const handleToggleLiteMode = () => {
             />
           </div>
         );
-      };
+      }
       return <SearchFilterDemo />;
     })(),
     code: `const [searchQuery, setSearchQuery] = useState('');
@@ -1201,11 +1212,15 @@ const TEMPLATES: CampaignTemplate[] = [
     component: (
       <div className="space-y-3">
         <div className="p-3 bg-[var(--app-bg-surface)] rounded border border-[var(--app-border-subtle)]">
-          <code className="text-xs text-[var(--app-text-secondary)]">data-lite-mode="false"</code>
+          <code className="text-xs text-[var(--app-text-secondary)]">
+            data-lite-mode=&quot;false&quot;
+          </code>
           <p className="text-sm mt-2">✨ Full animations and effects enabled</p>
         </div>
         <div className="p-3 bg-[var(--app-bg-surface)] rounded border border-[var(--app-border-subtle)]">
-          <code className="text-xs text-[var(--app-text-secondary)]">data-lite-mode="true"</code>
+          <code className="text-xs text-[var(--app-text-secondary)]">
+            data-lite-mode=&quot;true&quot;
+          </code>
           <p className="text-sm mt-2">⚡ Animations disabled, ~60% performance boost</p>
         </div>
       </div>

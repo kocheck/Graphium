@@ -1,7 +1,8 @@
-import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
-import type { Campaign, TokenLibraryItem } from '../store/gameStore';
 import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
+
+import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
+import type { Campaign, TokenLibraryItem } from '../store/gameStore';
 
 /**
  * IndexedDB schema version
@@ -192,7 +193,7 @@ export class WebStorageService implements IStorageService {
 
   // ===== ASSET PROCESSING =====
 
-  async saveAssetTemp(buffer: ArrayBuffer, fileName: string): Promise<string> {
+  saveAssetTemp(buffer: ArrayBuffer, fileName: string): Promise<string> {
     try {
       // For web, we'll use Object URLs (simple, session-scoped)
       // OPFS requires more complex setup and isn't critical for MVP
@@ -205,7 +206,7 @@ export class WebStorageService implements IStorageService {
       console.log(
         `[WebStorageService] Created temp asset: ${fileName} → ${url.substring(0, 50)}...`,
       );
-      return url;
+      return Promise.resolve(url);
     } catch (error) {
       console.error('[WebStorageService] Save temp asset failed:', error);
       throw new Error(
@@ -355,10 +356,10 @@ export class WebStorageService implements IStorageService {
       // Get item to revoke any other URLs (fallback)
       const item = await db.get('library', assetId);
       if (item) {
-        if (item.src && item.src.startsWith('blob:')) {
+        if (item.src?.startsWith('blob:')) {
           URL.revokeObjectURL(item.src);
         }
-        if (item.thumbnailSrc && item.thumbnailSrc.startsWith('blob:')) {
+        if (item.thumbnailSrc?.startsWith('blob:')) {
           URL.revokeObjectURL(item.thumbnailSrc);
         }
       }
@@ -400,17 +401,17 @@ export class WebStorageService implements IStorageService {
 
   // ===== THEME PREFERENCES =====
 
-  async getThemeMode(): Promise<ThemeMode> {
+  getThemeMode(): Promise<ThemeMode> {
     try {
       const mode = localStorage.getItem('graphium-theme');
-      return (mode as ThemeMode) || 'system';
+      return Promise.resolve((mode as ThemeMode) || 'system');
     } catch (error) {
       console.error('[WebStorageService] Get theme mode failed:', error);
-      return 'system'; // Safe fallback
+      return Promise.resolve('system'); // Safe fallback
     }
   }
 
-  async setThemeMode(mode: ThemeMode): Promise<void> {
+  setThemeMode(mode: ThemeMode): Promise<void> {
     try {
       localStorage.setItem('graphium-theme', mode);
       console.log(`[WebStorageService] Set theme mode: ${mode}`);
@@ -426,6 +427,7 @@ export class WebStorageService implements IStorageService {
           console.warn('[WebStorageService] BroadcastChannel failed:', broadcastError);
         }
       }
+      return Promise.resolve();
     } catch (error) {
       console.error('[WebStorageService] Set theme mode failed:', error);
       throw error;
@@ -535,7 +537,7 @@ export class WebStorageService implements IStorageService {
     }
 
     const restoreAsset = async (src: string): Promise<string> => {
-      if (!src || !src.startsWith('assets/')) {
+      if (!src?.startsWith('assets/')) {
         return src; // Not a relative asset path
       }
 

@@ -1,10 +1,12 @@
 import React from 'react';
+
 import ReactDOM from 'react-dom/client';
+
 import App from './App.tsx';
-import PrivacyErrorBoundary from './components/PrivacyErrorBoundary.tsx';
 import PendingErrorsIndicator from './components/PendingErrorsIndicator.tsx';
-import { initGlobalErrorHandlers } from './utils/globalErrorHandler.ts';
+import PrivacyErrorBoundary from './components/PrivacyErrorBoundary.tsx';
 import { initStorage } from './services/storage.ts';
+import { initGlobalErrorHandlers } from './utils/globalErrorHandler.ts';
 import './index.css';
 
 // Initialize global error handlers for non-React errors

@@ -51,6 +51,7 @@
  */
 
 import { useEffect } from 'react';
+
 import { useGameStore } from '../store/gameStore';
 import { rollForMessage } from '../utils/systemMessages';
 
@@ -60,13 +61,15 @@ export function PauseManager() {
 
   useEffect(() => {
     // Early return if IPC is not available (e.g., running in browser mode for tests)
-    if (!window.ipcRenderer) return;
+    if (!window.ipcRenderer) {
+      return;
+    }
 
     /**
      * Fetch initial pause state from main process
      * This ensures windows opened after pause was toggled start in correct state
      */
-    // @ts-ignore - Window IPC types not available in renderer
+    // @ts-expect-error - Window IPC types not available in renderer
     window.ipcRenderer
       .invoke('GET_PAUSE_STATE')
       .then((isPaused: boolean) => {
@@ -89,12 +92,12 @@ export function PauseManager() {
     };
 
     // Subscribe to pause state changes
-    // @ts-ignore - Window IPC types not available in renderer
+    // @ts-expect-error - Window IPC types not available in renderer
     window.ipcRenderer.on('PAUSE_STATE_CHANGED', handlePauseStateChanged);
 
     // Cleanup: Remove event listener when component unmounts
     return () => {
-      // @ts-ignore - Window IPC types not available in renderer
+      // @ts-expect-error - Window IPC types not available in renderer
       window.ipcRenderer.off('PAUSE_STATE_CHANGED', handlePauseStateChanged);
     };
   }, [setIsGamePaused, showToast]);

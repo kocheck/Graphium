@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { useGameStore } from '../store/gameStore';
+
 import { getStorage } from '../services/storage';
+import { useGameStore } from '../store/gameStore';
 
 /**
  * AutoSaveManager Component
@@ -14,7 +15,7 @@ import { getStorage } from '../services/storage';
  * **Note:** This only runs if auto-save feature is available on the platform.
  * Check storage.isFeatureAvailable('auto-save') for availability.
  */
-const AutoSaveManager = () => {
+function AutoSaveManager() {
   useEffect(() => {
     // Check if auto-save is supported on this platform
     const storage = getStorage();
@@ -55,6 +56,6 @@ const AutoSaveManager = () => {
   }, []);
 
   return null; // Invisible component
-};
+}
 
 export default AutoSaveManager;

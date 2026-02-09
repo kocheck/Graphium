@@ -151,7 +151,9 @@ export function createCommandRegistry(handlers: {
  * @returns Sorted array of commands by relevance score
  */
 export function searchCommands(commands: Command[], query: string): Command[] {
-  if (!query.trim()) return commands; // Return all if empty
+  if (!query.trim()) {
+    return commands;
+  } // Return all if empty
 
   const trimmedQuery = query.trim();
   const lowerQuery = trimmedQuery.toLowerCase();
@@ -167,7 +169,9 @@ export function searchCommands(commands: Command[], query: string): Command[] {
     if (isSectionSearch) {
       score += sectionBoost;
       // If exact "actions" typed, show everything with high score
-      if (lowerQuery === 'actions') return { cmd, score: 100 };
+      if (lowerQuery === 'actions') {
+        return { cmd, score: 100 };
+      }
     }
 
     // Reuse a simpler scoring logic here since we don't import scoreMatch
@@ -177,18 +181,28 @@ export function searchCommands(commands: Command[], query: string): Command[] {
     // Helper to score text
     const scoreText = (text: string) => {
       const lowerText = text.toLowerCase();
-      if (lowerText === lowerQuery) return 100;
-      if (lowerText.startsWith(lowerQuery)) return 40;
-      if (lowerText.includes(lowerQuery)) return 20;
+      if (lowerText === lowerQuery) {
+        return 100;
+      }
+      if (lowerText.startsWith(lowerQuery)) {
+        return 40;
+      }
+      if (lowerText.includes(lowerQuery)) {
+        return 20;
+      }
 
       // Subsequence check
       let qIdx = 0;
       let tIdx = 0;
       while (tIdx < lowerText.length && qIdx < lowerQuery.length) {
-        if (lowerText[tIdx] === lowerQuery[qIdx]) qIdx++;
+        if (lowerText[tIdx] === lowerQuery[qIdx]) {
+          qIdx++;
+        }
         tIdx++;
       }
-      if (qIdx === lowerQuery.length) return 10;
+      if (qIdx === lowerQuery.length) {
+        return 10;
+      }
 
       return 0;
     };

@@ -2,7 +2,7 @@
  * Type definitions for Measurement and AoE tools
  */
 
-import { Point } from './geometry';
+import type { Point } from './geometry';
 
 /**
  * Measurement tool modes

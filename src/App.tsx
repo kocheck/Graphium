@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+
 import {
   RiPlayFill,
   RiPauseFill,
@@ -9,33 +10,34 @@ import {
   RiDoorOpenLine,
   RiRulerLine,
 } from '@remixicon/react';
+
+import { AboutModal } from './components/AboutModal';
+import CommandPalette from './components/AssetLibrary/CommandPalette';
+import AutoSaveManager from './components/AutoSaveManager';
 import CanvasManager from './components/Canvas/CanvasManager';
+import ConfirmDialog from './components/ConfirmDialog';
+import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
+import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog';
+import { HomeScreen } from './components/HomeScreen';
+import { LoadingOverlay } from './components/LoadingOverlay';
+import MobileToolbar from './components/MobileToolbar';
+import { PauseManager } from './components/PauseManager';
+import ResourceMonitor from './components/ResourceMonitor';
+import Sidebar from './components/Sidebar';
 import SyncManager from './components/SyncManager';
 import { ThemeManager } from './components/ThemeManager';
-import { PauseManager } from './components/PauseManager';
-import { LoadingOverlay } from './components/LoadingOverlay';
-import Sidebar from './components/Sidebar';
 import Toast from './components/Toast';
-import ConfirmDialog from './components/ConfirmDialog';
-import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog';
 import TokenInspector from './components/TokenInspector';
-import ResourceMonitor from './components/ResourceMonitor';
-import { HomeScreen } from './components/HomeScreen';
-import { useGameStore } from './store/gameStore';
-import { useWindowType } from './utils/useWindowType';
-import AutoSaveManager from './components/AutoSaveManager';
-import CommandPalette from './components/AssetLibrary/CommandPalette';
-import { useCommandPalette } from './hooks/useCommandPalette';
-import { getStorage } from './services/storage';
-import { useIsMobile } from './hooks/useMediaQuery';
-import MobileToolbar from './components/MobileToolbar';
-import { rollForMessage } from './utils/systemMessages';
-import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 import Tooltip from './components/Tooltip';
-import { AboutModal } from './components/AboutModal';
-import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
 import UpdateManager from './components/UpdateManager';
 import UpdateManagerErrorBoundary from './components/UpdateManagerErrorBoundary';
+import { useCommandPalette } from './hooks/useCommandPalette';
+import { useIsMobile } from './hooks/useMediaQuery';
+import { getStorage } from './services/storage';
+import { useGameStore } from './store/gameStore';
+import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
+import { rollForMessage } from './utils/systemMessages';
+import { useWindowType } from './utils/useWindowType';
 
 /**
  * App is the root component for Graphium's dual-window architecture
@@ -167,9 +169,11 @@ function App() {
 
   // Handle pause toggle
   const handlePauseToggle = async () => {
-    if (!window.ipcRenderer) return;
+    if (!window.ipcRenderer) {
+      return;
+    }
     try {
-      // @ts-ignore
+      // @ts-expect-error - Window IPC types not available in renderer
       await window.ipcRenderer.invoke('TOGGLE_PAUSE');
     } catch (e) {
       console.error('[App] Failed to toggle pause:', e);
@@ -186,7 +190,9 @@ function App() {
 
   // Load library index on startup (Architect View only)
   useEffect(() => {
-    if (!isArchitectView) return;
+    if (!isArchitectView) {
+      return;
+    }
 
     const loadLibrary = async () => {
       try {
@@ -220,7 +226,7 @@ function App() {
       }
     };
 
-    loadLibrary();
+    void loadLibrary();
   }, [isArchitectView]);
 
   // Clear active measurement when measurement mode changes to prevent confusion
@@ -256,7 +262,9 @@ function App() {
       }
 
       // Prevent tool switching in World View (player mode)
-      if (!isArchitectView) return;
+      if (!isArchitectView) {
+        return;
+      }
 
       // Handle arrow keys separately (they don't need toLowerCase)
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
@@ -313,6 +321,8 @@ function App() {
         case 'i':
           colorInputRef.current?.click();
           break;
+        default:
+          break;
       }
     };
 
@@ -323,7 +333,9 @@ function App() {
   // Handle Menu Commands (Electron IPC)
   useEffect(() => {
     const ipcRenderer = window.ipcRenderer;
-    if (!ipcRenderer) return;
+    if (!ipcRenderer) {
+      return;
+    }
 
     const handleSave = async () => {
       try {
@@ -432,7 +444,10 @@ function App() {
           }}
         />
         <UpdateManagerErrorBoundary>
-          <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+          <UpdateManager
+            isOpen={isUpdateManagerOpen}
+            onClose={() => setIsUpdateManagerOpen(false)}
+          />
         </UpdateManagerErrorBoundary>
 
         {/* Home/Splash Screen */}

@@ -1,14 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import Tooltip from './Tooltip';
-import { getStorage } from '../services/storage';
-import { useGameStore } from '../store/gameStore';
-import {
-  getRecentCampaigns,
-  addRecentCampaignWithPlatform,
-  removeRecentCampaign,
-  type RecentCampaign,
-} from '../utils/recentCampaigns';
-import { rollForMessage } from '../utils/systemMessages';
+
 import {
   RiDownloadCloudLine,
   RiAddLine,
@@ -30,8 +21,20 @@ import {
   RiGobletLine,
   RiSwordLine,
 } from '@remixicon/react';
-import { LogoLockup } from './LogoLockup';
+
 import { AboutModal, type AboutModalTab } from './AboutModal';
+import { LogoLockup } from './LogoLockup';
+import Tooltip from './Tooltip';
+import { getStorage } from '../services/storage';
+import { useGameStore } from '../store/gameStore';
+import {
+  getRecentCampaigns,
+  addRecentCampaignWithPlatform,
+  removeRecentCampaign,
+  type RecentCampaign,
+} from '../utils/recentCampaigns';
+import { rollForMessage } from '../utils/systemMessages';
+
 import type { ThemeMode } from '../services/IStorageService';
 
 interface HomeScreenProps {
@@ -232,10 +235,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
   // Focus trap for templates modal
   useEffect(() => {
-    if (!showTemplates) return;
+    if (!showTemplates) {
+      return;
+    }
 
     const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab' || !templatesModalRef.current) return;
+      if (e.key !== 'Tab' || !templatesModalRef.current) {
+        return;
+      }
 
       const focusableElements = templatesModalRef.current.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
@@ -266,7 +273,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           handleNewCampaign();
         } else if (e.key === 'o') {
           e.preventDefault();
-          handleLoadCampaign();
+          void handleLoadCampaign();
         } else if (e.key === 'g') {
           e.preventDefault();
           handleGenerateDungeon();
@@ -297,7 +304,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isAboutOpen, showTemplates, handleNewCampaign, handleLoadCampaign, handleGenerateDungeon]);
 
-  const handleLoadRecent = async (_recent: RecentCampaign) => {
+  const handleLoadRecent = (_recent: RecentCampaign) => {
     showToast(
       'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .graphium file.',
       'info',
@@ -385,14 +392,22 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   );
 
   const getThemeIcon = () => {
-    if (currentTheme === 'light') return <RiSunLine className="w-4 h-4" />;
-    if (currentTheme === 'dark') return <RiMoonLine className="w-4 h-4" />;
+    if (currentTheme === 'light') {
+      return <RiSunLine className="w-4 h-4" />;
+    }
+    if (currentTheme === 'dark') {
+      return <RiMoonLine className="w-4 h-4" />;
+    }
     return <RiComputerLine className="w-4 h-4" />;
   };
 
   const getThemeLabel = () => {
-    if (currentTheme === 'light') return 'Light';
-    if (currentTheme === 'dark') return 'Dark';
+    if (currentTheme === 'light') {
+      return 'Light';
+    }
+    if (currentTheme === 'dark') {
+      return 'Dark';
+    }
     return 'Auto';
   };
 
@@ -550,7 +565,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
             <div className="recent-list">
               {filteredCampaigns.length === 0 && searchQuery && (
                 <div className="recent-empty">
-                  <p>No campaigns match "{searchQuery}"</p>
+                  <p>No campaigns match &quot;{searchQuery}&quot;</p>
                 </div>
               )}
               {filteredCampaigns.map((recent) => (

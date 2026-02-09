@@ -1,7 +1,7 @@
 import { Group } from 'react-konva';
 
-const TokenLayer = () => {
+function TokenLayer() {
   return <Group>{/* Tokens will be mapped here */}</Group>;
-};
+}
 
 export default TokenLayer;

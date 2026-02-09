@@ -26,6 +26,7 @@
  */
 
 import { useState, useRef } from 'react';
+
 import {
   RiPlayFill,
   RiPauseFill,
@@ -38,6 +39,7 @@ import {
   RiLayoutMasonryLine,
   RiMoreLine,
 } from '@remixicon/react';
+
 import { useGameStore } from '../store/gameStore';
 
 interface MobileToolbarProps {
@@ -51,7 +53,7 @@ interface MobileToolbarProps {
   onPauseToggle: () => void;
 }
 
-const MobileToolbar = ({
+function MobileToolbar({
   tool,
   setTool,
   color,
@@ -60,7 +62,7 @@ const MobileToolbar = ({
   setDoorOrientation,
   isGamePaused,
   onPauseToggle,
-}: MobileToolbarProps) => {
+}: MobileToolbarProps) {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -316,6 +318,6 @@ const MobileToolbar = ({
       </div>
     </>
   );
-};
+}
 
 export default MobileToolbar;

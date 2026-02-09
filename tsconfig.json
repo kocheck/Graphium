@@ -21,9 +21,26 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": false,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "electron"],
-  "exclude": ["**/*.test.ts", "**/*.test.tsx", "src/test"],
+  "include": ["src", "electron", "docs", "diagnose-dungeon.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-electron",
+    "dist-web",
+    "release",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/test"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

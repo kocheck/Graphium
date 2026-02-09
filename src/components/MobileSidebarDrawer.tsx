@@ -25,7 +25,7 @@ interface MobileSidebarDrawerProps {
   children: React.ReactNode;
 }
 
-const MobileSidebarDrawer = ({ isOpen, onClose, children }: MobileSidebarDrawerProps) => {
+function MobileSidebarDrawer({ isOpen, onClose, children }: MobileSidebarDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
@@ -54,7 +54,9 @@ const MobileSidebarDrawer = ({ isOpen, onClose, children }: MobileSidebarDrawerP
   }, [isOpen]);
 
   // Don't render anything if not open (for performance)
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
@@ -80,6 +82,6 @@ const MobileSidebarDrawer = ({ isOpen, onClose, children }: MobileSidebarDrawerP
       </div>
     </>
   );
-};
+}
 
 export default MobileSidebarDrawer;

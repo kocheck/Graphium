@@ -1,14 +1,14 @@
+import type React from 'react';
 import { useState, useEffect } from 'react';
 
-import { DungeonGenerator } from '../utils/DungeonGenerator';
-
 import { useGameStore } from '../store/gameStore';
+import { DungeonGenerator } from '../utils/DungeonGenerator';
 
 /**
  * DungeonGeneratorDialog is a modal that allows users to configure and
  * generate procedural dungeons on the canvas.
  */
-export const DungeonGeneratorDialog: React.FC = () => {
+export function DungeonGeneratorDialog(): React.ReactElement | null {
   const addDrawing = useGameStore((state) => state.addDrawing);
   const addDoor = useGameStore((state) => state.addDoor);
   const removeDrawings = useGameStore((state) => state.removeDrawings);
@@ -25,7 +25,9 @@ export const DungeonGeneratorDialog: React.FC = () => {
 
   // Handle keyboard events
   useEffect(() => {
-    if (!dungeonDialog) return;
+    if (!dungeonDialog) {
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -37,7 +39,9 @@ export const DungeonGeneratorDialog: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [dungeonDialog, clearDungeonDialog]);
 
-  if (!dungeonDialog) return null;
+  if (!dungeonDialog) {
+    return null;
+  }
 
   const handleGenerate = () => {
     // Use the current window size for the canvas, with fallbacks to preserve existing behavior
@@ -208,4 +212,4 @@ export const DungeonGeneratorDialog: React.FC = () => {
       </div>
     </div>
   );
-};
+}

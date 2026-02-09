@@ -14,10 +14,13 @@
  * @component
  */
 
-import React from 'react';
-import Tooltip from './Tooltip';
+import type React from 'react';
+
 import { RiUser3Line } from '@remixicon/react';
-import { TokenLibraryItem } from '../store/gameStore';
+
+import Tooltip from './Tooltip';
+
+import type { TokenLibraryItem } from '../store/gameStore';
 
 interface QuickTokenSidebarProps {
   recentTokens: TokenLibraryItem[];
@@ -28,11 +31,11 @@ interface QuickTokenSidebarProps {
 /**
  * QuickTokenSidebar displays recent and party tokens for quick DM access
  */
-const QuickTokenSidebar: React.FC<QuickTokenSidebarProps> = ({
+function QuickTokenSidebar({
   recentTokens,
   playerTokens,
   onDragStart,
-}) => {
+}: QuickTokenSidebarProps): React.ReactElement {
   /**
    * Handles drag start for the generic token placeholder
    * Creates a special payload with a placeholder type
@@ -157,6 +160,6 @@ const QuickTokenSidebar: React.FC<QuickTokenSidebarProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default QuickTokenSidebar;

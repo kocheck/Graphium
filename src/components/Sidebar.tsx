@@ -50,20 +50,7 @@
  */
 
 import React, { useRef, useState, useEffect } from 'react';
-import { useGameStore } from '../store/gameStore';
-import { processImage, ProcessingHandle } from '../utils/AssetProcessor';
-import AddToLibraryDialog from './AssetLibrary/AddToLibraryDialog';
-import LibraryManager from './AssetLibrary/LibraryManager';
-import MobileSidebarDrawer from './MobileSidebarDrawer';
-import DoorControls from './DoorControls';
-import CollapsibleSection from './CollapsibleSection';
-import MapSettingsSheet from './MapSettingsSheet';
-import Tooltip from './Tooltip';
-import QuickTokenSidebar from './QuickTokenSidebar';
-import { QuickTokenSidebarErrorBoundary } from './QuickTokenSidebarErrorBoundary';
-import { useIsMobile } from '../hooks/useMediaQuery';
-import { rollForMessage } from '../utils/systemMessages';
-import { useCommandPalette } from '../hooks/useCommandPalette';
+
 import {
   RiArrowLeftSLine,
   RiPushpinLine,
@@ -73,12 +60,29 @@ import {
   RiSearchLine,
   RiBookLine,
 } from '@remixicon/react';
+
+import { useGameStore } from '../store/gameStore';
+import { processImage } from '../utils/AssetProcessor';
+import AddToLibraryDialog from './AssetLibrary/AddToLibraryDialog';
+import LibraryManager from './AssetLibrary/LibraryManager';
+import CollapsibleSection from './CollapsibleSection';
+import DoorControls from './DoorControls';
+import MapSettingsSheet from './MapSettingsSheet';
+import MobileSidebarDrawer from './MobileSidebarDrawer';
+import QuickTokenSidebar from './QuickTokenSidebar';
+import { QuickTokenSidebarErrorBoundary } from './QuickTokenSidebarErrorBoundary';
+import Tooltip from './Tooltip';
+import { useCommandPalette } from '../hooks/useCommandPalette';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import { rollForMessage } from '../utils/systemMessages';
 import { getRecentTokens, getPlayerTokens, deduplicatePlayerTokens } from '../utils/tokenUtils';
+
+import type { ProcessingHandle } from '../utils/AssetProcessor';
 
 /**
  * Sidebar component provides map upload, grid settings, and token library
  */
-const Sidebar = () => {
+function Sidebar() {
   // Store selectors
   const campaign = useGameStore((state) => state.campaign);
   const activeMapId = useGameStore((state) => state.campaign.activeMapId);
@@ -188,7 +192,9 @@ const Sidebar = () => {
    */
   const handleTokenUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     // Cancel previous processing
     if (processingHandleRef.current) {
@@ -437,6 +443,6 @@ const Sidebar = () => {
       />
     </>
   );
-};
+}
 
 export default React.memo(Sidebar);

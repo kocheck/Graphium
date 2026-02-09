@@ -98,15 +98,33 @@ try {
   let invalidDoors = 0;
   result.doors.forEach((door, i) => {
     const issues = [];
-    if (!door.id) issues.push('missing ID');
-    if (typeof door.x !== 'number') issues.push('invalid x position');
-    if (typeof door.y !== 'number') issues.push('invalid y position');
-    if (!['horizontal', 'vertical'].includes(door.orientation)) issues.push('invalid orientation');
-    if (typeof door.isOpen !== 'boolean') issues.push('invalid isOpen state');
-    if (typeof door.isLocked !== 'boolean') issues.push('invalid isLocked state');
-    if (!door.size || door.size <= 0) issues.push('invalid size');
-    if (!door.thickness) issues.push('missing thickness');
-    if (!door.swingDirection) issues.push('missing swingDirection');
+    if (!door.id) {
+      issues.push('missing ID');
+    }
+    if (typeof door.x !== 'number') {
+      issues.push('invalid x position');
+    }
+    if (typeof door.y !== 'number') {
+      issues.push('invalid y position');
+    }
+    if (!['horizontal', 'vertical'].includes(door.orientation)) {
+      issues.push('invalid orientation');
+    }
+    if (typeof door.isOpen !== 'boolean') {
+      issues.push('invalid isOpen state');
+    }
+    if (typeof door.isLocked !== 'boolean') {
+      issues.push('invalid isLocked state');
+    }
+    if (!door.size || door.size <= 0) {
+      issues.push('invalid size');
+    }
+    if (!door.thickness) {
+      issues.push('missing thickness');
+    }
+    if (!door.swingDirection) {
+      issues.push('missing swingDirection');
+    }
 
     if (issues.length > 0) {
       console.log(`   ❌ Door ${i + 1} has issues: ${issues.join(', ')}`);

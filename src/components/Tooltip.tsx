@@ -10,6 +10,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
+
 import { createPortal } from 'react-dom';
 
 interface TooltipProps {
@@ -19,7 +20,7 @@ interface TooltipProps {
   offset?: number; // Vertical offset in pixels from element (default: 50)
 }
 
-const Tooltip = ({ content, children, delay = 100, offset = 50 }: TooltipProps) => {
+function Tooltip({ content, children, delay = 100, offset = 50 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -89,6 +90,6 @@ const Tooltip = ({ content, children, delay = 100, offset = 50 }: TooltipProps) 
         )}
     </>
   );
-};
+}
 
 export default Tooltip;

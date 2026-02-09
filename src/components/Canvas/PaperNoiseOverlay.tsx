@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+
 import { Rect } from 'react-konva';
 
 interface PaperNoiseOverlayProps {
@@ -19,7 +21,7 @@ interface PaperNoiseOverlayProps {
  * transform properties, and it is non-interactive (`listening={false}`) so all
  * pointer events pass through to underlying map and token layers.
  */
-const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
+function PaperNoiseOverlay({
   x,
   y,
   width,
@@ -27,7 +29,7 @@ const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
   scaleX,
   scaleY,
   opacity = 0.25,
-}) => {
+}: PaperNoiseOverlayProps): React.ReactElement | null {
   const [patternImage, setPatternImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
@@ -87,6 +89,6 @@ const PaperNoiseOverlay: React.FC<PaperNoiseOverlayProps> = ({
       globalCompositeOperation="overlay"
     />
   );
-};
+}
 
 export default PaperNoiseOverlay;

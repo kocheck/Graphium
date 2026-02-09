@@ -49,16 +49,19 @@
  * @component
  */
 
-import { Component, ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+
 import { createPortal } from 'react-dom';
 import { Group, Circle, Text } from 'react-konva';
+
+import { useGameStore } from '../../store/gameStore';
 import {
   captureErrorContext,
   logErrorWithContext,
   exportErrorToClipboard,
   type ErrorContext,
 } from '../../utils/errorBoundaryUtils';
-import { useGameStore } from '../../store/gameStore';
 
 /**
  * Props for TokenErrorBoundary

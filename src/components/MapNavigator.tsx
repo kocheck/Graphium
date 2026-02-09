@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
+
 import { useGameStore } from '../store/gameStore';
 import { rollForMessage } from '../utils/systemMessages';
 
@@ -8,7 +10,7 @@ import { rollForMessage } from '../utils/systemMessages';
  * Provides UI for managing maps within the current campaign.
  * Allows switching active map, creating new maps, and deleting maps.
  */
-const MapNavigator: React.FC = () => {
+function MapNavigator(): React.ReactElement | null {
   const campaign = useGameStore((state) => state.campaign);
   const activeMapId = useGameStore((state) => state.campaign.activeMapId);
   const addMap = useGameStore((state) => state.addMap);
@@ -64,7 +66,9 @@ const MapNavigator: React.FC = () => {
     );
   };
 
-  if (!campaign) return null;
+  if (!campaign) {
+    return null;
+  }
 
   const maps = Object.values(campaign.maps).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -172,6 +176,6 @@ const MapNavigator: React.FC = () => {
       </button>
     </div>
   );
-};
+}
 
 export default MapNavigator;

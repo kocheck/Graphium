@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+
 import { rollForMessage } from '../utils/systemMessages';
-import { Measurement } from '../types/measurement';
+
+import type { Measurement } from '../types/measurement';
 
 /**
  * TokenMetadata represents the shared metadata properties between library items and map tokens
@@ -627,8 +629,12 @@ export const useGameStore = create<GameState>((set, get) => {
 
     switchMap: (mapId: string) => {
       const state = get();
-      if (state.campaign.activeMapId === mapId) return;
-      if (!state.campaign.maps[mapId]) return;
+      if (state.campaign.activeMapId === mapId) {
+        return;
+      }
+      if (!state.campaign.maps[mapId]) {
+        return;
+      }
 
       // 1. Sync current state to campaign
       get().syncActiveMapToCampaign();
@@ -720,7 +726,9 @@ export const useGameStore = create<GameState>((set, get) => {
     toggleDoor: (id: string) =>
       set((state) => {
         const door = state.doors.find((d) => d.id === id);
-        if (!door) return state; // Door not found, no change
+        if (!door) {
+          return state;
+        } // Door not found, no change
 
         const newDoors = state.doors.map((d) => (d.id === id ? { ...d, isOpen: !d.isOpen } : d));
 

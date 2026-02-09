@@ -1,5 +1,6 @@
-import { useGameStore } from '../store/gameStore';
 import { RiLockLine, RiDoorOpenLine, RiLockUnlockLine } from '@remixicon/react';
+
+import { useGameStore } from '../store/gameStore';
 
 /**
  * DoorControls provides bulk operations for managing all doors in the dungeon
@@ -16,7 +17,7 @@ import { RiLockLine, RiDoorOpenLine, RiLockUnlockLine } from '@remixicon/react';
  *
  * @component
  */
-const DoorControls = () => {
+function DoorControls() {
   const doors = useGameStore((state) => state.doors);
   const updateAllDoorStates = useGameStore((state) => state.updateAllDoorStates);
   const updateAllDoorLocks = useGameStore((state) => state.updateAllDoorLocks);
@@ -127,6 +128,6 @@ const DoorControls = () => {
       </div>
     </div>
   );
-};
+}
 
 export default DoorControls;

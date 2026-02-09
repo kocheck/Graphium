@@ -13,7 +13,9 @@
  * not core functionality - drawing/dragging must work even if feedback breaks.
  */
 
-import React, { Component, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type React from 'react';
+import { Component } from 'react';
 
 interface Props {
   children: ReactNode;

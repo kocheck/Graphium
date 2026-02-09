@@ -22,9 +22,16 @@
  * - Use dev-app-update.yml for local testing if needed
  */
 
-import { autoUpdater, type UpdateInfo, type ProgressInfo, type UpdateDownloadedEvent } from 'electron-updater';
+import { app, ipcMain } from 'electron';
 import log from 'electron-log';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import {
+  autoUpdater,
+  type UpdateInfo,
+  type ProgressInfo,
+  type UpdateDownloadedEvent,
+} from 'electron-updater';
+
+import type { BrowserWindow } from 'electron';
 
 // Configure logging for production debugging
 // Logs are written to ~/Library/Logs/Graphium/main.log (macOS)
@@ -72,10 +79,17 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    * Checks if window exists and webContents is not destroyed before sending
    */
   const safeSend = (channel: string, ...args: unknown[]) => {
-    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+    if (
+      mainWindow &&
+      !mainWindow.isDestroyed() &&
+      mainWindow.webContents &&
+      !mainWindow.webContents.isDestroyed()
+    ) {
       mainWindow.webContents.send(channel, ...args);
     } else {
-      log.warn(`[AutoUpdater] Cannot send IPC event '${channel}': window is destroyed or unavailable`);
+      log.warn(
+        `[AutoUpdater] Cannot send IPC event '${channel}': window is destroyed or unavailable`,
+      );
     }
   };
 
@@ -122,7 +136,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    */
   autoUpdater.on('download-progress', (progress: ProgressInfo) => {
     log.info(
-      `[AutoUpdater] Download progress: ${progress.percent.toFixed(2)}% (${progress.transferred}/${progress.total})`
+      `[AutoUpdater] Download progress: ${progress.percent.toFixed(2)}% (${progress.transferred}/${progress.total})`,
     );
     safeSend('auto-updater:download-progress', {
       percent: progress.percent,
@@ -180,7 +194,7 @@ export function registerAutoUpdaterHandlers() {
     try {
       const result = await autoUpdater.checkForUpdates();
       return {
-        available: result?.updateInfo ? true : false,
+        available: !!result?.updateInfo,
         updateInfo: result?.updateInfo,
       };
     } catch (error) {

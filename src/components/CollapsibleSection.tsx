@@ -7,7 +7,9 @@
  * @component
  */
 
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
+
 import { RiArrowRightSLine } from '@remixicon/react';
 
 interface CollapsibleSectionProps {
@@ -16,11 +18,11 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
 }
 
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
+function CollapsibleSection({
   title,
   children,
   defaultOpen = true,
-}) => {
+}: CollapsibleSectionProps): React.ReactElement {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
@@ -45,6 +47,6 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
       {isOpen && <div className="space-y-2">{children}</div>}
     </div>
   );
-};
+}
 
 export default CollapsibleSection;

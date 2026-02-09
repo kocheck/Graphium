@@ -35,9 +35,13 @@
  * @component
  */
 
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
+
 import { Group, Line, Circle } from 'react-konva';
+
 import { createGridGeometry } from '../../utils/gridGeometry';
+
 import type { GridType } from '../../store/gameStore';
 
 /**
@@ -90,21 +94,21 @@ const verticesToPoints = (vertices: Array<{ x: number; y: number }>): number[] =
  * GridOverlay renders a grid on the canvas with viewport culling
  * Only renders grid elements within visible bounds for performance
  */
-const GridOverlay: React.FC<GridOverlayProps> = ({
+function GridOverlay({
   visibleBounds,
   gridSize,
   stroke = '#222',
   opacity = 0.5, // THEME ADJUSTMENT: Modify this value to change grid visibility (0.0 = invisible, 1.0 = fully opaque)
   type = 'LINES',
   hoveredCell = null,
-}) => {
-  if (type === 'HIDDEN') return null;
-
+}: GridOverlayProps): React.ReactElement | null {
   const { x, y, width, height } = visibleBounds || { x: 0, y: 0, width: 0, height: 0 };
 
   // Render DOTS mode (square grid only)
   const dotElements = useMemo(() => {
-    if (type !== 'DOTS') return null;
+    if (type !== 'DOTS') {
+      return null;
+    }
 
     const elements = [];
 
@@ -170,7 +174,9 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
 
   // Render LINES mode (square grid only - legacy performance optimization)
   const squareLineElements = useMemo(() => {
-    if (type !== 'LINES') return null;
+    if (type !== 'LINES') {
+      return null;
+    }
 
     const elements = [];
 
@@ -211,7 +217,9 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
 
   // Render HEXAGONAL or ISOMETRIC grids using geometry abstraction
   const geometryElements = useMemo(() => {
-    if (type !== 'HEXAGONAL' && type !== 'ISOMETRIC') return null;
+    if (type !== 'HEXAGONAL' && type !== 'ISOMETRIC') {
+      return null;
+    }
 
     const geometry = createGridGeometry(type);
     const visibleCells = geometry.getVisibleCells({ x, y, width, height }, gridSize);
@@ -227,7 +235,7 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
           stroke={stroke}
           strokeWidth={1}
           opacity={opacity}
-          closed={true}
+          closed
         />
       );
     });
@@ -237,7 +245,9 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
   const hoverHighlight = useMemo(() => {
     // DOTS mode deliberately skips hover highlight to avoid extra per-frame geometry work
     // on already dense dot grids (similar to why DOTS is restricted to square grids).
-    if (!hoveredCell || type === 'DOTS') return null;
+    if (!hoveredCell || type === 'DOTS') {
+      return null;
+    }
 
     const geometry = createGridGeometry(type);
     const vertices = geometry.getCellVertices(hoveredCell, gridSize);
@@ -251,10 +261,14 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
         stroke="rgba(255, 255, 255, 0.5)"
         strokeWidth={2}
         opacity={1}
-        closed={true}
+        closed
       />
     );
   }, [hoveredCell, type, gridSize]);
+
+  if (type === 'HIDDEN') {
+    return null;
+  }
 
   return (
     <Group listening={false}>
@@ -264,6 +278,6 @@ const GridOverlay: React.FC<GridOverlayProps> = ({
       {hoverHighlight}
     </Group>
   );
-};
+}
 
 export default GridOverlay;

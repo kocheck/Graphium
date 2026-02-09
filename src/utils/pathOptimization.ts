@@ -5,7 +5,7 @@
  * Includes Ramer-Douglas-Peucker algorithm for path simplification.
  */
 
-import { Point, WallSegment } from '../types/geometry';
+import type { Point, WallSegment } from '../types/geometry';
 
 export type { Point, WallSegment };
 

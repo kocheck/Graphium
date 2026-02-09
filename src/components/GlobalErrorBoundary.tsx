@@ -1,4 +1,5 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -42,7 +43,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   private handleCopyError = () => {
     const { error, errorInfo } = this.state;
     const errorText = `Error: ${error?.message}\n\nStack:\n${errorInfo?.componentStack}`;
-    navigator.clipboard.writeText(errorText);
+    void navigator.clipboard.writeText(errorText);
   };
 
   public render() {

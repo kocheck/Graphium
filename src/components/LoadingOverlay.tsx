@@ -73,15 +73,17 @@
  * @see {@link electron/main.ts} Main process IPC handlers for pause state
  */
 
+import { useMemo } from 'react';
+
 import { useGameStore } from '../store/gameStore';
 import { rollForMessage } from '../utils/systemMessages';
-import { useMemo } from 'react';
 
 export function LoadingOverlay() {
   // Subscribe to pause state from Zustand store
   const isGamePaused = useGameStore((state) => state.isGamePaused);
 
   // Roll for a random loading message; stable during a pause, re-rolls when pause state changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadingMessage = useMemo(() => rollForMessage('LOADING_PAUSE_OVERLAY'), [isGamePaused]);
 
   // Don't render overlay when game is not paused

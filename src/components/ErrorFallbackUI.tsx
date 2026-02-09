@@ -7,9 +7,10 @@
  * @component
  */
 
+import { useMemo } from 'react';
+
 import { useGameStore } from '../store/gameStore';
 import { rollForMessage } from '../utils/systemMessages';
-import { useMemo } from 'react';
 
 interface ErrorFallbackUIProps {
   error?: Error;
@@ -24,7 +25,9 @@ export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps) {
   const clearDungeonDialog = useGameStore((state) => state.clearDungeonDialog);
 
   // Roll for random error messages (memoized per error instance to keep them stable)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const errorTitle = useMemo(() => rollForMessage('ERROR_DUNGEON_GENERATION_TITLE'), [error]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const errorDesc = useMemo(() => rollForMessage('ERROR_DUNGEON_GENERATION_DESC'), [error]);
 
   const handleClose = () => {

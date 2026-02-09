@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+
 import { Group, Rect, Arc, Path, Circle } from 'react-konva';
+
 import type { Door } from '../../store/gameStore';
 
 interface DoorShapeProps {
@@ -28,7 +30,7 @@ interface DoorShapeProps {
  * @param isWorldView - If true, blocks interaction (player view)
  * @param onToggle - Callback when door is clicked (DM only)
  */
-const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
+function DoorShape({ door, isWorldView, onToggle }: DoorShapeProps) {
   // Animation state: 0 = fully closed, 1 = fully open
   const [animationProgress, setAnimationProgress] = useState(door.isOpen ? 1 : 0);
   const animationFrameRef = useRef<number | null>(null);
@@ -49,14 +51,18 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
     const targetProgress = door.isOpen ? 1 : 0;
 
     // If already at target, no animation needed
-    if (animationProgress === targetProgress) return;
+    if (animationProgress === targetProgress) {
+      return;
+    }
 
     // Start animation
     startTimeRef.current = performance.now();
     const initialProgress = animationProgress;
 
     const animate = (currentTime: number) => {
-      if (!startTimeRef.current) return;
+      if (!startTimeRef.current) {
+        return;
+      }
 
       const elapsed = currentTime - startTimeRef.current;
       const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
@@ -84,6 +90,7 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [door.isOpen]); // animationProgress is intentionally excluded - it's managed by the animation loop, not a dependency
 
   const handleClick = () => {
@@ -145,7 +152,7 @@ const DoorShape = ({ door, isWorldView, onToggle }: DoorShapeProps) => {
       {door.isLocked && renderLockIcon(door)}
     </Group>
   );
-};
+}
 
 /**
  * Renders an animated door during open/close transition

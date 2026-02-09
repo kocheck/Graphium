@@ -53,20 +53,20 @@ declare global {
     // Error boundary debugging
     __LAST_TOKEN_ERROR__?: ErrorInfo;
     __LAST_OVERLAY_ERROR__?: ErrorInfo;
-    __OVERLAY_ERRORS__?: Array<ErrorInfo>;
+    __OVERLAY_ERRORS__?: ErrorInfo[];
     __LAST_ASSET_PROCESSING_ERROR__?: ErrorInfo;
-    __ERROR_HISTORY__?: Array<ErrorInfo>;
+    __ERROR_HISTORY__?: ErrorInfo[];
 
     // Error boundary utilities
     __ERROR_UTILS__?: {
-      getErrorHistory: () => Array<ErrorContext>;
+      getErrorHistory: () => ErrorContext[];
       clearErrorHistory: () => void;
       addBreadcrumb: (action: string) => void;
       exportErrorToClipboard: (context: ErrorContext) => Promise<boolean>;
       formatErrorReport: (context: ErrorContext) => string;
     };
     __clearErrorHistory__?: () => void;
-    __getErrorHistory__?: () => Array<ErrorInfo>;
+    __getErrorHistory__?: () => ErrorInfo[];
     __simulateTokenError__?: (tokenId: string) => void;
     __simulateOverlayError__?: (overlayName: string) => void;
 
@@ -77,9 +77,18 @@ declare global {
       quitAndInstall: () => Promise<boolean>;
       getCurrentVersion: () => Promise<string>;
       onCheckingForUpdate: (callback: () => void) => () => void;
-      onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: string; releaseDate?: string }) => void) => () => void;
+      onUpdateAvailable: (
+        callback: (info: { version: string; releaseNotes?: string; releaseDate?: string }) => void,
+      ) => () => void;
       onUpdateNotAvailable: (callback: (info: { version: string }) => void) => () => void;
-      onDownloadProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => () => void;
+      onDownloadProgress: (
+        callback: (progress: {
+          percent: number;
+          bytesPerSecond: number;
+          transferred: number;
+          total: number;
+        }) => void,
+      ) => () => void;
       onUpdateDownloaded: (callback: (info: { version: string }) => void) => () => void;
       onError: (callback: (error: { message: string }) => void) => () => void;
     };

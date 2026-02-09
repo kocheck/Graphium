@@ -1,4 +1,5 @@
 import DoorShape from './DoorShape';
+
 import type { Door } from '../../store/gameStore';
 
 interface DoorLayerProps {
@@ -26,7 +27,7 @@ interface DoorLayerProps {
  * @param isWorldView - If true, blocks interaction (player view)
  * @param onToggleDoor - Callback when a door is toggled (DM only)
  */
-const DoorLayer = ({ doors, isWorldView, onToggleDoor }: DoorLayerProps) => {
+function DoorLayer({ doors, isWorldView, onToggleDoor }: DoorLayerProps) {
   if (import.meta.env.DEV) {
     console.log('[DoorLayer] Rendering', doors.length, 'doors. isWorldView:', isWorldView);
     console.log(
@@ -55,6 +56,6 @@ const DoorLayer = ({ doors, isWorldView, onToggleDoor }: DoorLayerProps) => {
       })}
     </>
   );
-};
+}
 
 export default DoorLayer;

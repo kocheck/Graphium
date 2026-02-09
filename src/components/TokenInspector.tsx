@@ -1,9 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useGameStore, Token } from '../store/gameStore';
-import { useIsMobile } from '../hooks/useMediaQuery';
-import MobileBottomSheet from './MobileBottomSheet';
+
 import { RiSaveLine } from '@remixicon/react';
+
+import MobileBottomSheet from './MobileBottomSheet';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { getStorage } from '../services/storage';
+import { useGameStore } from '../store/gameStore';
+
+import type { Token } from '../store/gameStore';
 
 interface TokenInspectorProps {
   selectedTokenIds: string[];
@@ -33,7 +37,7 @@ interface TokenInspectorProps {
  * @param selectedTokenIds - Array of token IDs currently selected
  * @param onClose - Optional callback to deselect tokens (used on mobile)
  */
-const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
+function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
   const tokens = useGameStore((s) => s.tokens);
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
@@ -108,6 +112,7 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
       setType('NPC');
       setVisionRadius(0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIdsString]); // Depends on IDs, not the token objects themselves
 
   // Update local input values if the underlying token data changes EXTERNALLY
@@ -144,12 +149,18 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
   };
 
   const handleSaveToLibrary = async () => {
-    if (selectedTokens.length !== 1) return;
+    if (selectedTokens.length !== 1) {
+      return;
+    }
     const token = selectedTokens[0];
-    if (!token.libraryItemId) return;
+    if (!token.libraryItemId) {
+      return;
+    }
 
     const libraryItem = tokenLibrary.find((i) => i.id === token.libraryItemId);
-    if (!libraryItem) return;
+    if (!libraryItem) {
+      return;
+    }
 
     const updates = {
       name: name || libraryItem.name, // Use library name if empty
@@ -270,10 +281,14 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
                   color: type === 'PC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)',
                 }}
                 onMouseEnter={(e) => {
-                  if (type !== 'PC') e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                  if (type !== 'PC') {
+                    e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  if (type !== 'PC') e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                  if (type !== 'PC') {
+                    e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                  }
                 }}
               >
                 PC
@@ -288,11 +303,14 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
                     type === 'NPC' ? 'var(--app-accent-solid-text)' : 'var(--app-text-primary)',
                 }}
                 onMouseEnter={(e) => {
-                  if (type !== 'NPC')
+                  if (type !== 'NPC') {
                     e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  if (type !== 'NPC') e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                  if (type !== 'NPC') {
+                    e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                  }
                 }}
               >
                 NPC
@@ -323,12 +341,14 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
                     color: visionRadius === radius ? 'white' : 'var(--app-text-primary)',
                   }}
                   onMouseEnter={(e) => {
-                    if (visionRadius !== radius)
+                    if (visionRadius !== radius) {
                       e.currentTarget.style.backgroundColor = 'var(--app-bg-active)';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    if (visionRadius !== radius)
+                    if (visionRadius !== radius) {
                       e.currentTarget.style.backgroundColor = 'var(--app-bg-hover)';
+                    }
                   }}
                 >
                   {radius}
@@ -410,7 +430,7 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
   // Render: Mobile bottom sheet or desktop fixed panel
   if (isMobile) {
     return (
-      <MobileBottomSheet isOpen={true} onClose={() => onClose?.()}>
+      <MobileBottomSheet isOpen onClose={() => onClose?.()}>
         {inspectorContent}
       </MobileBottomSheet>
     );
@@ -431,6 +451,6 @@ const TokenInspector = ({ selectedTokenIds, onClose }: TokenInspectorProps) => {
       {inspectorContent}
     </div>
   );
-};
+}
 
 export default TokenInspector;
