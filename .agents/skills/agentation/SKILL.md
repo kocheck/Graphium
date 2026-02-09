@@ -1,6 +1,6 @@
 ---
 name: agentation
-description: Add Agentation visual feedback toolbar to a Next.js project
+description: Add Agentation visual feedback toolbar to a Vite/React or Next.js project
 ---
 
 # Agentation Setup
@@ -18,10 +18,20 @@ Set up the Agentation annotation toolbar in this project.
    - If found, report that Agentation is already set up and exit
 
 3. **Detect framework**
+   - Vite/React: has `vite.config.ts` or `vite.config.js`
    - Next.js App Router: has `app/layout.tsx` or `app/layout.js`
    - Next.js Pages Router: has `pages/_app.tsx` or `pages/_app.js`
 
 4. **Add the component**
+
+   For Vite/React, add to the root App component (typically `src/App.tsx`):
+
+   ```tsx
+   import { Agentation } from 'agentation';
+
+   // Add inside the component's return, after main content:
+   {import.meta.env.DEV && <Agentation />}
+   ```
 
    For Next.js App Router, add to the root layout:
 
@@ -29,9 +39,7 @@ Set up the Agentation annotation toolbar in this project.
    import { Agentation } from 'agentation';
 
    // Add inside the body, after children:
-   {
-     process.env.NODE_ENV === 'development' && <Agentation />;
-   }
+   {process.env.NODE_ENV === 'development' && <Agentation />}
    ```
 
    For Next.js Pages Router, add to \_app:
@@ -40,9 +48,7 @@ Set up the Agentation annotation toolbar in this project.
    import { Agentation } from 'agentation';
 
    // Add after Component:
-   {
-     process.env.NODE_ENV === 'development' && <Agentation />;
-   }
+   {process.env.NODE_ENV === 'development' && <Agentation />}
    ```
 
 5. **Confirm component setup**
@@ -78,7 +84,7 @@ Set up the Agentation annotation toolbar in this project.
 
 ## Notes
 
-- The `NODE_ENV` check ensures Agentation only loads in development
+- The environment check (`import.meta.env.DEV` for Vite or `process.env.NODE_ENV === 'development'` for Next.js) ensures Agentation only loads in development
 - Agentation requires React 18
 - The MCP server auto-starts when Claude Code launches (uses npx, no global install needed)
 - Port 4747 is used by default for the HTTP server
