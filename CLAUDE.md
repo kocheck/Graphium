@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/refactor-modular-architecture-GUfVC`
 > **Created:** 2026-02-09
-> **Status:** In Progress — Session 7 (Store Separation Complete)
+> **Status:** In Progress — Session 8 (Logic Extraction I Complete)
 
 ## Project Vision
 
@@ -1143,9 +1143,9 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 8: Logic Extraction I
 
-- [ ] Extract vision/raycasting to src/utils/vision.ts
-- [ ] Write vision.test.ts (80%+ coverage)
-- [ ] Extract HomeScreen business logic to hooks
+- [x] Extract vision/raycasting to src/utils/vision.ts
+- [x] Write vision.test.ts (80%+ coverage)
+- [x] Extract HomeScreen business logic to hooks
 
 ### Session 9: Logic Extraction II
 
@@ -1469,21 +1469,61 @@ playground-registry.tsx, ToggleSwitch.tsx (re-export), index.css
 **Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 792 tests pass.
 **No regressions.**
 
+### Session 8 — Logic Extraction I (2026-02-09)
+
+**Completed:**
+
+- **Task 8.1 — Extract vision/raycasting module:** Created `src/utils/vision.ts` (205 lines)
+  with 4 pure functions extracted from FogOfWarLayer.tsx:
+  - `calculateVisibilityPolygon()` — 360° raycasting sweep, returns visibility polygon
+  - `castRay()` — Single ray with wall intersection detection
+  - `lineSegmentIntersection()` — Parametric line-segment intersection test
+  - `getWallSegments()` — Extracts wall segments from drawings + closed doors
+
+  FogOfWarLayer.tsx reduced from 611 → 424 lines (31% reduction). It now imports from
+  `utils/vision` and is a thin rendering component calling pure functions.
+
+  **Test coverage (vision.ts):** 100% statements, 95.23% branches, 100% functions, 100%
+  lines (26 tests). Tests cover: segment intersection (crossing, parallel, endpoints,
+  diagonal, collinear), ray casting (no walls, angled, wall blocking, closest wall,
+  behind origin, beyond range), visibility polygon (circle with no walls, custom ray
+  count, wall indentation, origin offset, partial blocking), wall extraction (drawings,
+  transforms, doors open/closed, mixed).
+
+- **Task 8.2 — Extract HomeScreen business logic:** Created 2 hooks:
+  - `src/hooks/useRecentCampaigns.ts` (54 lines) — Wraps localStorage read/write for
+    recent campaign list with reactive state. Returns `{ recentCampaigns, addRecent,
+removeRecent, refresh }`.
+  - `src/hooks/usePlatformDetection.ts` (58 lines) — Wraps navigator.userAgent and
+    storage service platform detection. Returns `{ isElectron, isMac, isWindows, isLinux }`.
+
+  HomeScreen.tsx reduced from 745 → 723 lines. It no longer has direct localStorage
+  calls for campaigns or navigator.userAgent checks. Business logic is in testable hooks.
+
+**Files created:** vision.ts (205 lines), vision.test.ts (26 tests), useRecentCampaigns.ts
+(54 lines), usePlatformDetection.ts (58 lines)
+**Files modified:** FogOfWarLayer.tsx (611 → 424 lines), HomeScreen.tsx (745 → 723 lines)
+**Build output:** Main chunk 888KB (gzip 258KB) — unchanged.
+**Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, 818 tests pass
+(+26 new vision tests).
+**No regressions.**
+
 ---
 
 ## Quick Reference
 
 ### Key Files
 
-| File                                      | Lines | Role             | Status                      |
-| ----------------------------------------- | ----- | ---------------- | --------------------------- |
-| `src/components/Canvas/CanvasManager.tsx` | 1,867 | Canvas monolith  | Needs decomposition (S10)   |
-| `src/components/HomeScreen.tsx`           | 745   | Landing page     | CSS extracted (S5 complete) |
-| `src/store/gameStore.ts`                  | 607   | Domain state     | UI split complete (S7)      |
-| `src/store/uiStore.ts`                    | 79    | UI state         | New (S7)                    |
-| `src/App.tsx`                             | 763   | Root coordinator | Needs hook extraction (S9)  |
-| `src/styles/theme.css`                    | 521   | Theme tokens     | Hardened (S3 complete)      |
-| `electron/main.ts`                        | 1,283 | Electron main    | No changes planned          |
+| File                                      | Lines | Role              | Status                     |
+| ----------------------------------------- | ----- | ----------------- | -------------------------- |
+| `src/components/Canvas/CanvasManager.tsx` | 1,867 | Canvas monolith   | Needs decomposition (S10)  |
+| `src/components/HomeScreen.tsx`           | 723   | Landing page      | Logic extracted (S8)       |
+| `src/store/gameStore.ts`                  | 607   | Domain state      | UI split complete (S7)     |
+| `src/store/uiStore.ts`                    | 79    | UI state          | New (S7)                   |
+| `src/utils/vision.ts`                     | 205   | Vision/raycasting | New (S8), 100% coverage    |
+| `src/App.tsx`                             | 763   | Root coordinator  | Needs hook extraction (S9) |
+| `src/styles/theme.css`                    | 521   | Theme tokens      | Hardened (S3 complete)     |
+| `electron/main.ts`                        | 1,283 | Electron main     | No changes planned         |
 
 ### Commands
 

@@ -25,15 +25,11 @@ import {
 import { AboutModal, type AboutModalTab } from './Dialogs/AboutModal';
 import { LogoLockup } from './LogoLockup';
 import Tooltip from './Tooltip';
+import { usePlatformDetection } from '../hooks/usePlatformDetection';
+import { useRecentCampaigns, type RecentCampaign } from '../hooks/useRecentCampaigns';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
 import { useUiStore } from '../store/uiStore';
-import {
-  getRecentCampaigns,
-  addRecentCampaignWithPlatform,
-  removeRecentCampaign,
-  type RecentCampaign,
-} from '../utils/recentCampaigns';
 import { rollForMessage } from '../utils/systemMessages';
 
 import type { ThemeMode } from '../services/IStorageService';
@@ -98,11 +94,8 @@ const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
  * Features quirky TTRPG-themed micro-interactions and CSS-only visuals.
  */
 export function HomeScreen({ onStartEditor }: HomeScreenProps) {
-  const [recentCampaigns, setRecentCampaigns] = useState<RecentCampaign[]>([]);
-  const [isElectron, setIsElectron] = useState(false);
-  const [isMac, setIsMac] = useState(false);
-  const [isWindows, setIsWindows] = useState(false);
-  const [isLinux, setIsLinux] = useState(false);
+  const { recentCampaigns, addRecent, removeRecent } = useRecentCampaigns();
+  const { isElectron, isMac, isWindows, isLinux } = usePlatformDetection();
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [aboutInitialTab, setAboutInitialTab] = useState<AboutModalTab>('about');
   const [hideDownloadBanner, setHideDownloadBanner] = useState(
@@ -167,8 +160,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
         if (campaign) {
           loadCampaign(campaign);
-          addRecentCampaignWithPlatform(campaign.id, campaign.name);
-          setRecentCampaigns(getRecentCampaigns());
+          addRecent(campaign.id, campaign.name);
           onStartEditor();
           showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
         }
@@ -177,7 +169,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(error) }), 'error');
       }
     })();
-  }, [loadCampaign, onStartEditor, showToast]);
+  }, [loadCampaign, onStartEditor, showToast, addRecent]);
 
   const handleGenerateDungeon = useCallback(() => {
     onStartEditor();
@@ -187,36 +179,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     }, 100);
   }, [onStartEditor, showDungeonDialog]);
 
-  // Load recent campaigns and detect platform on mount
+  // Load current theme mode on mount
   useEffect(() => {
-    setRecentCampaigns(getRecentCampaigns());
-
-    // Detect platform
     const storage = getStorage();
-    const platform = storage.getPlatform();
-    setIsElectron(platform === 'electron');
-
-    // Load current theme mode
     storage
       .getThemeMode()
       .then((mode) => setCurrentTheme(mode))
       .catch(() => {});
-
-    // Detect OS for download banners
-    if (typeof navigator !== 'undefined') {
-      const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } })
-        .userAgentData;
-      const platformHint = uaData?.platform ?? '';
-      const userAgent = navigator.userAgent ?? '';
-
-      const isMacOS = platformHint.toLowerCase().includes('mac') || /mac/i.test(userAgent);
-      const isWindowsOS = platformHint.toLowerCase().includes('win') || /win/i.test(userAgent);
-      const isLinuxOS = platformHint.toLowerCase().includes('linux') || /linux/i.test(userAgent);
-
-      setIsMac(isMacOS);
-      setIsWindows(isWindowsOS);
-      setIsLinux(isLinuxOS);
-    }
   }, []);
 
   // Focus management for templates modal
@@ -315,8 +284,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
   };
 
   const handleRemoveRecent = (campaignId: string) => {
-    removeRecentCampaign(campaignId);
-    setRecentCampaigns(getRecentCampaigns());
+    removeRecent(campaignId);
   };
 
   const handleDismissDownloadBanner = () => {

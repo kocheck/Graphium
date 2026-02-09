@@ -5,10 +5,11 @@ import { Shape, Group } from 'react-konva';
 
 import URLImage from './URLImage';
 import { useGameStore } from '../../store/gameStore';
+import { calculateVisibilityPolygon, getWallSegments } from '../../utils/vision';
 
 import type { ResolvedTokenData } from '../../hooks/useTokenData';
 import type { Drawing, Door, MapConfig } from '../../store/gameStore';
-import type { Point, WallSegment } from '../../types/geometry';
+import type { Point } from '../../types/geometry';
 
 const FOG_COLORS = {
   fog: 'rgba(0, 0, 0, 0.94)', // --app-canvas-fog
@@ -168,88 +169,21 @@ function FogOfWarLayer({
   }, [doors]);
 
   // Extract walls from drawings AND closed doors (memoized to prevent unnecessary recalculations)
-  const walls: WallSegment[] = useMemo(() => {
-    const wallSegments: WallSegment[] = [];
-
+  // Uses getWallSegments from src/utils/vision.ts (pure function, no React dependency)
+  const walls = useMemo(() => {
     if (DEBUG_VISION) {
       console.log('[FogOfWarLayer] WALLS MEMO RECALCULATING');
+      console.log('[FogOfWarLayer] Total doors:', doors.length);
+      console.log('[FogOfWarLayer] Closed doors:', doors.filter((d) => !d.isOpen).length);
     }
 
-    // Add static walls from drawings
-    drawings
-      .filter((d) => d.tool === 'wall')
-      .forEach((wall) => {
-        // Convert points array [x1, y1, x2, y2, x3, y3, ...] to segments
-        // CRITICAL FIX: Apply drawing transform (x, y, scale) to points
-        // Otherwise visual wall (transformed) and logical wall (raw points) mismatch
-        const points = wall.points;
-        const offsetX = wall.x || 0;
-        const offsetY = wall.y || 0;
-        const scale = wall.scale || 1;
-
-        for (let i = 0; i < points.length - 2; i += 2) {
-          wallSegments.push({
-            start: {
-              x: points[i]! * scale + offsetX,
-              y: points[i + 1]! * scale + offsetY,
-            },
-            end: {
-              x: points[i + 2]! * scale + offsetX,
-              y: points[i + 3]! * scale + offsetY,
-            },
-          });
-        }
-      });
-
-    const wallSegmentsFromDrawings = wallSegments.length;
-
-    // Add CLOSED doors as blocking walls
-    // Open doors allow vision through, closed doors block it
-    const closedDoors = doors.filter((door) => !door.isOpen);
+    const segments = getWallSegments(drawings, doors);
 
     if (DEBUG_VISION) {
-      console.log('[FogOfWarLayer] Wall segments from drawings:', wallSegmentsFromDrawings);
-      console.log(
-        '[FogOfWarLayer] Total doors:',
-        doors.length,
-        'Closed doors:',
-        closedDoors.length,
-      );
-      doors.forEach((d) => console.log(`  Door ${d.id}: isOpen=${d.isOpen}, x=${d.x}, y=${d.y}`));
+      console.log('[FogOfWarLayer] Total wall segments:', segments.length);
     }
 
-    closedDoors.forEach((door) => {
-      const halfSize = door.size / 2;
-      if (door.orientation === 'horizontal') {
-        // Horizontal door: blocks east-west vision
-        const segment = {
-          start: { x: door.x - halfSize, y: door.y },
-          end: { x: door.x + halfSize, y: door.y },
-        };
-        wallSegments.push(segment);
-        if (DEBUG_VISION) {
-          console.log(`  Adding CLOSED horizontal door wall segment:`, segment);
-        }
-      } else {
-        // Vertical door: blocks north-south vision
-        const segment = {
-          start: { x: door.x, y: door.y - halfSize },
-          end: { x: door.x, y: door.y + halfSize },
-        };
-        wallSegments.push(segment);
-        if (DEBUG_VISION) {
-          console.log(`  Adding CLOSED vertical door wall segment:`, segment);
-        }
-      }
-    });
-
-    if (DEBUG_VISION) {
-      const doorSegments = wallSegments.length - wallSegmentsFromDrawings;
-      console.log('[FogOfWarLayer] Wall segments from doors:', doorSegments);
-      console.log('[FogOfWarLayer] Total wall segments:', wallSegments.length);
-    }
-
-    return wallSegments;
+    return segments;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawings, doorsKey]); // CRITICAL: Use doorsKey instead of doors for proper change detection
 
@@ -485,127 +419,6 @@ function FogOfWarLayer({
       </Group>
     </Group>
   );
-}
-
-/**
- * Calculates visibility polygon using 360-degree raycasting
- *
- * **PERFORMANCE NOTE:** This function is expensive (O(360 × wall_count)).
- * It should only be called when token position or walls change.
- * The parent component uses useMemo to cache results.
- *
- * @param originX - Token center X
- * @param originY - Token center Y
- * @param maxRange - Vision radius in pixels
- * @param walls - Wall segments that block vision
- * @returns Array of points forming visibility polygon
- */
-function calculateVisibilityPolygon(
-  originX: number,
-  originY: number,
-  maxRange: number,
-  walls: WallSegment[],
-): Point[] {
-  const polygon: Point[] = [];
-  const rayCount = 360; // 1-degree resolution
-  const angleStep = (Math.PI * 2) / rayCount;
-
-  for (let i = 0; i < rayCount; i++) {
-    const angle = i * angleStep;
-    const rayEndpoint = castRay(originX, originY, angle, maxRange, walls);
-    polygon.push(rayEndpoint);
-  }
-
-  return polygon;
-}
-
-/**
- * Casts a single ray and finds the closest intersection
- *
- * @param originX - Ray origin X
- * @param originY - Ray origin Y
- * @param angle - Ray angle in radians
- * @param maxRange - Maximum ray length
- * @param walls - Wall segments to test
- * @returns Endpoint of ray (either maxRange or wall intersection)
- */
-function castRay(
-  originX: number,
-  originY: number,
-  angle: number,
-  maxRange: number,
-  walls: WallSegment[],
-): Point {
-  const rayDirX = Math.cos(angle);
-  const rayDirY = Math.sin(angle);
-  const rayEndX = originX + rayDirX * maxRange;
-  const rayEndY = originY + rayDirY * maxRange;
-
-  let closestDistance = maxRange;
-  let closestPoint: Point = { x: rayEndX, y: rayEndY };
-
-  // Test intersection with each wall segment
-  for (const wall of walls) {
-    const intersection = lineSegmentIntersection(
-      originX,
-      originY,
-      rayEndX,
-      rayEndY,
-      wall.start.x,
-      wall.start.y,
-      wall.end.x,
-      wall.end.y,
-    );
-
-    if (intersection) {
-      const distance = Math.hypot(intersection.x - originX, intersection.y - originY);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestPoint = intersection;
-      }
-    }
-  }
-
-  return closestPoint;
-}
-
-/**
- * Line segment intersection algorithm
- *
- * Tests if line segment (x1,y1)-(x2,y2) intersects (x3,y3)-(x4,y4)
- * Returns intersection point or null if no intersection.
- *
- * @returns Intersection point or null
- */
-function lineSegmentIntersection(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  x3: number,
-  y3: number,
-  x4: number,
-  y4: number,
-): Point | null {
-  const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-
-  // Lines are parallel
-  if (Math.abs(denom) < 1e-10) {
-    return null;
-  }
-
-  const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
-  const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
-
-  // Check if intersection is within both segments
-  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-    return {
-      x: x1 + t * (x2 - x1),
-      y: y1 + t * (y2 - y1),
-    };
-  }
-
-  return null;
 }
 
 export default FogOfWarLayer;
