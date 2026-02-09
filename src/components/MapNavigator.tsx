@@ -164,7 +164,7 @@ function MapNavigator(): React.ReactElement | null {
           const mapNumbers = maps
             .map((m) => {
               const match = /^Map (\d+)$/.exec(m.name);
-              return match ? parseInt(match[1], 10) : 0;
+              return match ? parseInt(match[1]!, 10) : 0;
             })
             .filter((n) => n > 0);
           const nextNumber = mapNumbers.length > 0 ? Math.max(...mapNumbers) + 1 : maps.length + 1;

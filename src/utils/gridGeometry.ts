@@ -214,10 +214,10 @@ export class HexagonalGridGeometry implements GridGeometry {
       this.pixelToGrid(bounds.x, bounds.y + bounds.height, gridSize), // Bottom Left
     ];
 
-    let minQ = corners[0].q;
-    let maxQ = corners[0].q;
-    let minR = corners[0].r;
-    let maxR = corners[0].r;
+    let minQ = corners[0]!.q;
+    let maxQ = corners[0]!.q;
+    let minR = corners[0]!.r;
+    let maxR = corners[0]!.r;
 
     for (const corner of corners) {
       minQ = Math.min(minQ, corner.q);

@@ -61,7 +61,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const isDev = import.meta.env.DEV;
     const isTest = import.meta.env.MODE === 'test';
 
@@ -114,7 +114,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div

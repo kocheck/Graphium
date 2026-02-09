@@ -212,6 +212,10 @@ function CanvasManager({
   const removeDrawings = useGameStore((s) => s.removeDrawings);
   const setGridType = useGameStore((s) => s.setGridType);
   const toggleDoor = useGameStore((s) => s.toggleDoor);
+  const addDoor = useGameStore((s) => s.addDoor);
+  const removeDoor = useGameStore((s) => s.removeDoor);
+  const removeDoors = useGameStore((s) => s.removeDoors);
+  const updateDoorLock = useGameStore((s) => s.updateDoorLock);
 
   const updateDrawingTransform = useGameStore((s) => s.updateDrawingTransform);
   const setActiveMeasurement = useGameStore((s) => s.setActiveMeasurement);
@@ -273,6 +277,28 @@ function CanvasManager({
 
   // Tool state helpers for disabled Konva drag events (defined once to prevent re-renders)
   const emptyDragHandler = useCallback(() => {}, []);
+
+  const [doorContextMenu, setDoorContextMenu] = useState<{
+    doorId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleDoorContextMenu = useCallback((doorId: string, screenX: number, screenY: number) => {
+    if (!containerRef.current) {
+      return;
+    }
+    const rect = containerRef.current.getBoundingClientRect();
+    setDoorContextMenu({
+      doorId,
+      x: screenX - rect.left,
+      y: screenY - rect.top,
+    });
+  }, []);
+
+  const closeDoorContextMenu = useCallback(() => {
+    setDoorContextMenu(null);
+  }, []);
 
   // Navigation State
   const [isSpacePressed, setIsSpacePressed] = useState(false);
@@ -356,6 +382,8 @@ function CanvasManager({
     setDoorPreviewPos,
     gridType,
     gridSize,
+    doorOrientation,
+    addDoor,
     calibrationStart,
     setCalibrationRect,
     setSelectedIds,
@@ -545,6 +573,7 @@ function CanvasManager({
         if (selectedIds.length > 0) {
           removeTokens(selectedIds);
           removeDrawings(selectedIds);
+          removeDoors(selectedIds);
           setSelectedIds([]);
         }
       }
@@ -645,6 +674,7 @@ function CanvasManager({
     selectedIds,
     removeTokens,
     removeDrawings,
+    removeDoors,
     handleKeyboardZoom,
     activeMeasurement,
     isWorldView,
@@ -688,8 +718,8 @@ function CanvasManager({
     // ONLY handle 2+ finger gestures (pinch-to-zoom)
     if (touches.length === 2) {
       e.evt.preventDefault();
-      const touch1 = touches[0];
-      const touch2 = touches[1];
+      const touch1 = touches[0]!;
+      const touch2 = touches[1]!;
       lastPinchDistance.current = calculatePinchDistance(touch1, touch2);
       lastPinchCenter.current = calculatePinchCenter(touch1, touch2);
     } else if (touches.length === 1 && tool !== 'select') {
@@ -707,8 +737,8 @@ function CanvasManager({
       e.evt.preventDefault();
 
       if (lastPinchDistance.current && lastPinchCenter.current) {
-        const touch1 = touches[0];
-        const touch2 = touches[1];
+        const touch1 = touches[0]!;
+        const touch2 = touches[1]!;
         const distance = calculatePinchDistance(touch1, touch2);
         const center = calculatePinchCenter(touch1, touch2);
 
@@ -863,7 +893,7 @@ function CanvasManager({
     }
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
+      const file = e.dataTransfer.files[0]!;
       // Create Object URL for cropping
       const objectUrl = URL.createObjectURL(file);
       setPendingCrop({ src: objectUrl, x, y });
@@ -1193,7 +1223,6 @@ function CanvasManager({
           {drawings.map((line) => {
             // Common props shared by both component types
             const commonProps = {
-              key: line.id,
               id: line.id,
               name: 'drawing' as const,
               points: line.points,
@@ -1356,7 +1385,17 @@ function CanvasManager({
           {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
           {(() => {
             console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
-            return <DoorLayer doors={doors} isWorldView={isWorldView} onToggleDoor={toggleDoor} />;
+            return (
+              <DoorLayer
+                doors={doors}
+                isWorldView={isWorldView}
+                tool={tool}
+                selectedIds={selectedIds}
+                onToggleDoor={toggleDoor}
+                onDeleteDoor={removeDoor}
+                onDoorContextMenu={handleDoorContextMenu}
+              />
+            );
           })()}
 
           {/* Door Preview - Show preview when hovering with door tool */}
@@ -1772,6 +1811,55 @@ function CanvasManager({
           </MinimapErrorBoundary>
         </>
       )}
+
+      {/* Door Context Menu */}
+      {doorContextMenu &&
+        (() => {
+          const door = doors.find((d) => d.id === doorContextMenu.doorId);
+          if (!door) {
+            return null;
+          }
+          return (
+            <>
+              {/* Invisible backdrop to close menu on outside click */}
+              <div className="fixed inset-0 z-40" onClick={closeDoorContextMenu} />
+              <div
+                className="absolute z-50 bg-[var(--app-bg-secondary)] border border-[var(--app-border)] rounded-lg shadow-lg py-1 min-w-[160px]"
+                style={{ left: doorContextMenu.x, top: doorContextMenu.y }}
+              >
+                <button
+                  className="w-full px-3 py-1.5 text-left text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-bg-tertiary)] disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={door.isLocked}
+                  onClick={() => {
+                    toggleDoor(door.id);
+                    closeDoorContextMenu();
+                  }}
+                >
+                  {door.isOpen ? 'Close Door' : 'Open Door'}
+                </button>
+                <button
+                  className="w-full px-3 py-1.5 text-left text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-bg-tertiary)]"
+                  onClick={() => {
+                    updateDoorLock(door.id, !door.isLocked);
+                    closeDoorContextMenu();
+                  }}
+                >
+                  {door.isLocked ? 'Unlock Door' : 'Lock Door'}
+                </button>
+                <div className="border-t border-[var(--app-border)] my-1" />
+                <button
+                  className="w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-[var(--app-bg-tertiary)]"
+                  onClick={() => {
+                    removeDoor(door.id);
+                    closeDoorContextMenu();
+                  }}
+                >
+                  Delete Door
+                </button>
+              </div>
+            </>
+          );
+        })()}
     </div>
   );
 }

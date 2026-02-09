@@ -197,7 +197,7 @@ function CommandPalette({
 
         // Skip section headers
         let nextIndex = selectedIndex + 1;
-        while (nextIndex < results.length && results[nextIndex].type === 'section') {
+        while (nextIndex < results.length && results[nextIndex]?.type === 'section') {
           nextIndex++;
         }
         if (nextIndex < results.length) {
@@ -213,7 +213,7 @@ function CommandPalette({
 
         // Skip section headers
         let prevIndex = selectedIndex - 1;
-        while (prevIndex >= 0 && results[prevIndex].type === 'section') {
+        while (prevIndex >= 0 && results[prevIndex]?.type === 'section') {
           prevIndex--;
         }
         if (prevIndex >= 0) {

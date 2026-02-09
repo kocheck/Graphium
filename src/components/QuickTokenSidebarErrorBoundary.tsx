@@ -21,7 +21,7 @@ interface State {
 }
 
 export class QuickTokenSidebarErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false,
     error: null,
   };
@@ -30,7 +30,7 @@ export class QuickTokenSidebarErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[QuickTokenSidebarErrorBoundary] Token sidebar crashed:', error, errorInfo);
   }
 
@@ -38,7 +38,7 @@ export class QuickTokenSidebarErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false, error: null });
   };
 
-  public render() {
+  public override render() {
     if (this.state.hasError) {
       return (
         <div className="p-3 bg-red-900/10 border border-red-900/30 rounded text-sm">

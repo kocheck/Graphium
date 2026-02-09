@@ -154,10 +154,10 @@ function TouchVisualFeedback({
           {touchPoints.length === 2 && (
             <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
               <line
-                x1={touchPoints[0].x}
-                y1={touchPoints[0].y}
-                x2={touchPoints[1].x}
-                y2={touchPoints[1].y}
+                x1={touchPoints[0]!.x}
+                y1={touchPoints[0]!.y}
+                x2={touchPoints[1]!.x}
+                y2={touchPoints[1]!.y}
                 stroke="#6366f1"
                 strokeWidth="2"
                 strokeDasharray="5,5"

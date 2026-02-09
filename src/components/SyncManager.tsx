@@ -265,10 +265,10 @@ function SyncManager() {
           if (prev) {
             const changes: Record<string, any> = {};
             if (!isEqual(token.x, prev.x)) {
-              changes.x = token.x;
+              changes['x'] = token.x;
             }
             if (!isEqual(token.y, prev.y)) {
-              changes.y = token.y;
+              changes['y'] = token.y;
             }
             if (Object.keys(changes).length > 0) {
               actions.push({ type: 'TOKEN_UPDATE', payload: { id: token.id, changes } });

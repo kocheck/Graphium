@@ -5,7 +5,11 @@ import type { Door } from '../../store/gameStore';
 interface DoorLayerProps {
   doors: Door[];
   isWorldView: boolean;
+  tool?: string;
+  selectedIds?: string[];
   onToggleDoor?: (id: string) => void;
+  onDeleteDoor?: (id: string) => void;
+  onDoorContextMenu?: (doorId: string, screenX: number, screenY: number) => void;
 }
 
 /**
@@ -27,7 +31,15 @@ interface DoorLayerProps {
  * @param isWorldView - If true, blocks interaction (player view)
  * @param onToggleDoor - Callback when a door is toggled (DM only)
  */
-function DoorLayer({ doors, isWorldView, onToggleDoor }: DoorLayerProps) {
+function DoorLayer({
+  doors,
+  isWorldView,
+  tool,
+  selectedIds,
+  onToggleDoor,
+  onDeleteDoor,
+  onDoorContextMenu,
+}: DoorLayerProps) {
   if (import.meta.env.DEV) {
     console.log('[DoorLayer] Rendering', doors.length, 'doors. isWorldView:', isWorldView);
     console.log(
@@ -51,7 +63,16 @@ function DoorLayer({ doors, isWorldView, onToggleDoor }: DoorLayerProps) {
           );
         }
         return (
-          <DoorShape key={door.id} door={door} isWorldView={isWorldView} onToggle={onToggleDoor} />
+          <DoorShape
+            key={door.id}
+            door={door}
+            isWorldView={isWorldView}
+            isSelected={selectedIds?.includes(door.id)}
+            tool={tool}
+            onToggle={onToggleDoor}
+            onDelete={onDeleteDoor}
+            onDoorContextMenu={onDoorContextMenu}
+          />
         );
       })}
     </>

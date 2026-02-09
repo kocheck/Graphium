@@ -46,7 +46,7 @@ autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
 // Check if running in development mode
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+const isDev = process.env['NODE_ENV'] === 'development' || !app.isPackaged;
 
 // Track if event listeners are already registered to prevent duplicates
 let isInitialized = false;

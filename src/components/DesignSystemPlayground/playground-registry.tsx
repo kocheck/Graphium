@@ -653,7 +653,7 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
         const cycleTheme = () => {
           const themes: Array<typeof theme> = ['light', 'dark', 'system'];
           const currentIndex = themes.indexOf(theme);
-          setTheme(themes[(currentIndex + 1) % themes.length]);
+          setTheme(themes[(currentIndex + 1) % themes.length]!);
         };
         return (
           <button

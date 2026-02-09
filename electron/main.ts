@@ -579,21 +579,21 @@ void app.whenReady().then(() => {
       state && typeof state === 'object' && 'type' in state && typeof state.type === 'string'
         ? state.type
         : 'unknown';
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.log(
         `[Main Process] SYNC_WORLD_STATE received (${actionType}), relaying to World View`,
       );
     }
     if (worldWindow && !worldWindow.isDestroyed()) {
       worldWindow.webContents.send('SYNC_WORLD_STATE', state);
-    } else if (process.env.NODE_ENV === 'development') {
+    } else if (process.env['NODE_ENV'] === 'development') {
       console.warn('[Main Process] Cannot send SYNC_WORLD_STATE - World View window not available');
     }
   });
 
   // Handler for renderer logs (so we can see World View logs in terminal)
   // Only used in development mode
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env['NODE_ENV'] === 'development') {
     ipcMain.on('LOG_TO_TERMINAL', (_event: IpcMainEvent, message: string) => {
       console.log(message);
     });
@@ -794,10 +794,14 @@ void app.whenReady().then(() => {
       return null;
     }
 
-    currentCampaignPath = filePaths[0]; // Set path for auto-save
+    const selectedPath = filePaths[0];
+    if (!selectedPath) {
+      return null;
+    }
+    currentCampaignPath = selectedPath; // Set path for auto-save
 
     // Read and parse ZIP file
-    const zipContent = await fs.readFile(filePaths[0]);
+    const zipContent = await fs.readFile(selectedPath);
     const zip = await JSZip.loadAsync(zipContent);
 
     // Create unique session directory
@@ -909,6 +913,9 @@ void app.whenReady().then(() => {
       // Restore assets for ALL maps
       for (const mapId in campaign.maps) {
         const map = campaign.maps[mapId];
+        if (!map) {
+          continue;
+        }
 
         // 1. Restore Map Background
         if (map.map?.src) {

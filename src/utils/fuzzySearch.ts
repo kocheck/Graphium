@@ -76,7 +76,7 @@ function scoreMatch(text: string, query: string): number {
   for (let i = 0; i < lowerQuery.length; i++) {
     const char = lowerQuery[i];
     // Find next occurrence
-    const idx = lowerText.indexOf(char, lastMatchIdx + 1);
+    const idx = lowerText.indexOf(char!, lastMatchIdx + 1);
 
     // Bonus: Match is at start of word (or start of string)
     if (

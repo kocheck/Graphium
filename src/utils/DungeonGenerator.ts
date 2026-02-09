@@ -323,7 +323,7 @@ export class DungeonGenerator {
         break;
       }
 
-      const sourcePiece = roomPieces[Math.floor(Math.random() * roomPieces.length)];
+      const sourcePiece = roomPieces[Math.floor(Math.random() * roomPieces.length)]!;
       const usedDirs = usedDirections.get(sourcePiece) || new Set();
 
       // Try all available directions
@@ -382,7 +382,7 @@ export class DungeonGenerator {
    */
   private createRoom(x: number, y: number): DungeonPiece {
     // Randomly select a room template
-    const template = this.roomTemplates[Math.floor(Math.random() * this.roomTemplates.length)];
+    const template = this.roomTemplates[Math.floor(Math.random() * this.roomTemplates.length)]!;
 
     // Generate random size within template bounds
     const widthCells =
@@ -439,8 +439,8 @@ export class DungeonGenerator {
     const corridorWidth = this.corridorTemplate.widthInCells * gridSize;
     const corridorLength = this.corridorTemplate.lengthInCells * gridSize;
 
-    let bounds: Room;
-    let wallSegments: DungeonPiece['wallSegments'];
+    let bounds!: Room;
+    let wallSegments!: DungeonPiece['wallSegments'];
 
     switch (direction) {
       case 'north': {
@@ -572,7 +572,7 @@ export class DungeonGenerator {
     const { gridSize } = this.options;
 
     // Calculate connection point on source piece and snap to grid
-    let connX: number, connY: number;
+    let connX!: number, connY!: number;
 
     switch (direction) {
       case 'north':
@@ -686,8 +686,8 @@ export class DungeonGenerator {
 
     // Calculate exact doorway positions AFTER grid snapping AND corridor adjustment
     // Doorways must align with the corridor's actual connection points
-    let sourceRoomDoorwayX: number, sourceRoomDoorwayY: number;
-    let newRoomDoorwayX: number, newRoomDoorwayY: number;
+    let sourceRoomDoorwayX!: number, sourceRoomDoorwayY!: number;
+    let newRoomDoorwayX!: number, newRoomDoorwayY!: number;
 
     // Use corridor's adjusted bounds to determine exact door positions
     const adjustedCorridor = corridor.bounds;
@@ -800,7 +800,7 @@ export class DungeonGenerator {
     const minSegmentSize = gridSize * DungeonGenerator.MIN_WALL_SEGMENT_FRACTION;
 
     // Calculate doorway position if not provided
-    let centerX: number, centerY: number;
+    let centerX!: number, centerY!: number;
 
     if (doorwayPosition) {
       centerX = doorwayPosition.x;
@@ -837,8 +837,8 @@ export class DungeonGenerator {
       return;
     }
 
-    const start = segment[0];
-    const end = segment[1];
+    const start = segment[0]!;
+    const end = segment[1]!;
 
     if (direction === 'north' || direction === 'south') {
       // Horizontal wall - split left and right of doorway
@@ -986,7 +986,7 @@ export class DungeonGenerator {
           drawings.push({
             id: crypto.randomUUID(),
             tool: 'wall',
-            points: [segment[0].x, segment[0].y, segment[1].x, segment[1].y],
+            points: [segment[0]!.x, segment[0]!.y, segment[1]!.x, segment[1]!.y],
             color: wallColor,
             size: wallSize,
           });
@@ -996,7 +996,7 @@ export class DungeonGenerator {
           drawings.push({
             id: crypto.randomUUID(),
             tool: 'wall',
-            points: [segment[0].x, segment[0].y, segment[1].x, segment[1].y],
+            points: [segment[0]!.x, segment[0]!.y, segment[1]!.x, segment[1]!.y],
             color: wallColor,
             size: wallSize,
           });
@@ -1005,7 +1005,7 @@ export class DungeonGenerator {
           drawings.push({
             id: crypto.randomUUID(),
             tool: 'wall',
-            points: [segment[2].x, segment[2].y, segment[3].x, segment[3].y],
+            points: [segment[2]!.x, segment[2]!.y, segment[3]!.x, segment[3]!.y],
             color: wallColor,
             size: wallSize,
           });
@@ -1033,7 +1033,7 @@ export class DungeonGenerator {
 
     // Determine swing direction (doors swing into rooms, away from corridors)
     // For now, default to standard directions
-    let swingDirection: 'left' | 'right' | 'up' | 'down';
+    let swingDirection!: 'left' | 'right' | 'up' | 'down';
     switch (direction) {
       case 'north':
         swingDirection = 'left'; // Door swings to the left (west)

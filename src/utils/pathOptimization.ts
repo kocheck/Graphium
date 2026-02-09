@@ -26,7 +26,7 @@ export function simplifyPath(points: number[], epsilon: number): number[] {
   // Convert flat array to Point objects
   const pointObjects: Point[] = [];
   for (let i = 0; i < points.length; i += 2) {
-    pointObjects.push({ x: points[i], y: points[i + 1] });
+    pointObjects.push({ x: points[i]!, y: points[i + 1]! });
   }
 
   // Apply RDP algorithm
@@ -52,11 +52,11 @@ function rdpRecursive(points: Point[], epsilon: number): Point[] {
   // Find the point with maximum perpendicular distance from line (first -> last)
   let maxDistance = 0;
   let maxIndex = 0;
-  const start = points[0];
-  const end = points[points.length - 1];
+  const start = points[0]!;
+  const end = points[points.length - 1]!;
 
   for (let i = 1; i < points.length - 1; i++) {
-    const distance = perpendicularDistance(points[i], start, end);
+    const distance = perpendicularDistance(points[i]!, start, end);
     if (distance > maxDistance) {
       maxDistance = distance;
       maxIndex = i;
@@ -169,8 +169,8 @@ function findClosestPointOnPath(
 
   // Check each segment
   for (let i = 0; i < pathPoints.length - 2; i += 2) {
-    const segStart = { x: pathPoints[i], y: pathPoints[i + 1] };
-    const segEnd = { x: pathPoints[i + 2], y: pathPoints[i + 3] };
+    const segStart = { x: pathPoints[i]!, y: pathPoints[i + 1]! };
+    const segEnd = { x: pathPoints[i + 2]!, y: pathPoints[i + 3]! };
 
     const result = pointToSegmentDistanceWithPoint(point, segStart, segEnd);
 
@@ -209,10 +209,10 @@ export function snapPointToPaths(
   let bestVertexMatch: { point: Point; distance: number; pathIndex: number } | null = null;
 
   for (let i = 0; i < existingPaths.length; i++) {
-    const path = existingPaths[i];
+    const path = existingPaths[i]!;
     for (let j = 0; j < path.length; j += 2) {
-      const vx = path[j];
-      const vy = path[j + 1];
+      const vx = path[j]!;
+      const vy = path[j + 1]!;
       const dx = point.x - vx;
       const dy = point.y - vy;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -244,7 +244,7 @@ export function snapPointToPaths(
   let pathIndex = -1;
 
   for (let i = 0; i < existingPaths.length; i++) {
-    const path = existingPaths[i];
+    const path = existingPaths[i]!;
     const result = findClosestPointOnPath(point, path);
 
     if (result && result.distance < minDistance) {

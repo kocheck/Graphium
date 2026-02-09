@@ -137,7 +137,7 @@ class PrivacyErrorBoundary extends Component<Props, State> {
    * @param error - The error that was thrown
    * @param errorInfo - React error info including component stack
    */
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Delegate to async method to keep componentDidCatch synchronous per React lifecycle requirements
     void this.sanitizeAndSetError(error, errorInfo);
   }
@@ -366,7 +366,7 @@ ${userContext.trim()}
     window.location.reload();
   };
 
-  render(): ReactNode {
+  override render(): ReactNode {
     const {
       hasError,
       isLoading,

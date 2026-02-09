@@ -146,7 +146,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       'Chaos Coordinators',
       'Rules Lawyers (The Good Kind)',
     ];
-    return titles[Math.floor(Math.random() * titles.length)];
+    return titles[Math.floor(Math.random() * titles.length)]!;
   });
 
   const loadCampaign = useGameStore((state) => state.loadCampaign);
@@ -339,7 +339,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     const storage = getStorage();
     const themes: ThemeMode[] = ['light', 'dark', 'system'];
     const currentIndex = themes.indexOf(currentTheme);
-    const nextTheme = themes[(currentIndex + 1) % themes.length];
+    const nextTheme = themes[(currentIndex + 1) % themes.length]!;
 
     try {
       await storage.setThemeMode(nextTheme);

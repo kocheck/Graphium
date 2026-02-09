@@ -126,7 +126,7 @@ class TokenErrorBoundary extends Component<Props, State> {
    * @param error - The error that was thrown during token rendering
    * @param errorInfo - React error info including component stack
    */
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
 
@@ -207,7 +207,7 @@ class TokenErrorBoundary extends Component<Props, State> {
    *
    * @returns {ReactNode | null} Children, debug indicator + overlay, or null
    */
-  render() {
+  override render() {
     const { hasError, errorContext, showDebugOverlay } = this.state;
     const { children, tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;

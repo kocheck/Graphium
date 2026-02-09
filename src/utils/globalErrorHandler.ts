@@ -155,7 +155,7 @@ export function storeError(error: StoredError): void {
 
     if (existingIndex !== -1) {
       // Error already exists - increment occurrence count
-      const existing = errors[existingIndex];
+      const existing = errors[existingIndex]!;
       existing.occurrences += 1;
       existing.lastOccurrence = error.timestamp;
 

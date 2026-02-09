@@ -73,7 +73,7 @@ export const rollForMessage = (
   rng: UpdateErrorRandomFn = Math.random,
 ): string => {
   const index = Math.floor(rng() * messages.length);
-  return messages[index];
+  return messages[index]!;
 };
 
 /**

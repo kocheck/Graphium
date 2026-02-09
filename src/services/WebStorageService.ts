@@ -502,6 +502,9 @@ export class WebStorageService implements IStorageService {
     // Process all map backgrounds and tokens
     for (const mapId in campaign.maps) {
       const map = campaign.maps[mapId];
+      if (!map) {
+        continue;
+      }
 
       // Map background
       if (map.map?.src) {
@@ -556,6 +559,9 @@ export class WebStorageService implements IStorageService {
     // Restore all map backgrounds and tokens
     for (const mapId in campaign.maps) {
       const map = campaign.maps[mapId];
+      if (!map) {
+        continue;
+      }
 
       // Map background
       if (map.map?.src) {

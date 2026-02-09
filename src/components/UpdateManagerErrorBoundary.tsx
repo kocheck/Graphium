@@ -121,7 +121,7 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    * @param error - The error thrown during update operations
    * @param errorInfo - React error info including component stack
    */
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Update manager error:', error);
     console.error('Error info:', errorInfo);
     console.error('Component stack:', errorInfo.componentStack);
@@ -160,7 +160,7 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    *
    * @returns {ReactNode} UpdateManager component or error fallback UI
    */
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <UpdateErrorFallbackUI errorMessage={this.state.errorMessage} onReset={this.resetError} />

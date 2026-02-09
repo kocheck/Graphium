@@ -173,7 +173,6 @@ function App() {
       return;
     }
     try {
-      // @ts-expect-error - Window IPC types not available in renderer
       await window.ipcRenderer.invoke('TOGGLE_PAUSE');
     } catch (e) {
       console.error('[App] Failed to toggle pause:', e);

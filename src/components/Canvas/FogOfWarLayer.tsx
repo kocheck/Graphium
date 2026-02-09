@@ -165,12 +165,12 @@ function FogOfWarLayer({
         for (let i = 0; i < points.length - 2; i += 2) {
           wallSegments.push({
             start: {
-              x: points[i] * scale + offsetX,
-              y: points[i + 1] * scale + offsetY,
+              x: points[i]! * scale + offsetX,
+              y: points[i + 1]! * scale + offsetY,
             },
             end: {
-              x: points[i + 2] * scale + offsetX,
-              y: points[i + 3] * scale + offsetY,
+              x: points[i + 2]! * scale + offsetX,
+              y: points[i + 3]! * scale + offsetY,
             },
           });
         }
@@ -376,9 +376,9 @@ function FogOfWarLayer({
                 return;
               }
               ctx.beginPath();
-              ctx.moveTo(region.points[0].x, region.points[0].y);
+              ctx.moveTo(region.points[0]!.x, region.points[0]!.y);
               for (let i = 1; i < region.points.length; i++) {
-                ctx.lineTo(region.points[i].x, region.points[i].y);
+                ctx.lineTo(region.points[i]!.x, region.points[i]!.y);
               }
               ctx.closePath();
               // Semi-transparent black = partially erases fog = dimmed map shows through
@@ -408,9 +408,9 @@ function FogOfWarLayer({
                   return;
                 }
                 ctx.beginPath();
-                ctx.moveTo(visibilityPolygon[0].x, visibilityPolygon[0].y);
+                ctx.moveTo(visibilityPolygon[0]!.x, visibilityPolygon[0]!.y);
                 for (let i = 1; i < visibilityPolygon.length; i++) {
-                  ctx.lineTo(visibilityPolygon[i].x, visibilityPolygon[i].y);
+                  ctx.lineTo(visibilityPolygon[i]!.x, visibilityPolygon[i]!.y);
                 }
                 ctx.closePath();
 

@@ -137,7 +137,7 @@ function PressureSensitiveLineComponent({
     } // Need at least 2 points
 
     context.beginPath();
-    context.moveTo(points[0], points[1]);
+    context.moveTo(points[0]!, points[1]!);
 
     // Explicitly apply styles since we are using custom drawing
     context.strokeStyle = shape.stroke();
@@ -147,7 +147,7 @@ function PressureSensitiveLineComponent({
     // If no valid pressure data, render as regular line
     if (!validatedPressures) {
       for (let i = 2; i < points.length; i += 2) {
-        context.lineTo(points[i], points[i + 1]);
+        context.lineTo(points[i]!, points[i + 1]!);
       }
       context.strokeShape(shape);
       return;
@@ -177,8 +177,8 @@ function PressureSensitiveLineComponent({
 
       // Draw line segment with calculated width
       context.beginPath();
-      context.moveTo(x1, y1);
-      context.lineTo(x2, y2);
+      context.moveTo(x1!, y1!);
+      context.lineTo(x2!, y2!);
       context.lineWidth = segmentWidth;
       context.stroke();
     }

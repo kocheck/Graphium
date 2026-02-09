@@ -56,6 +56,7 @@ function Toast() {
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [toast, clearToast]);
 
   if (!toast) {

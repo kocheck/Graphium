@@ -129,7 +129,7 @@ function PlaygroundContent() {
       if (!groups[example.category]) {
         groups[example.category] = [];
       }
-      groups[example.category].push(example);
+      groups[example.category]!.push(example);
     });
 
     return groups;

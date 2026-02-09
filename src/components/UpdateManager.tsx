@@ -132,7 +132,7 @@ const updateMessages = {
  * Randomly selects a message from an array
  */
 const rollForMessage = (messages: string[]): string => {
-  return messages[Math.floor(Math.random() * messages.length)];
+  return messages[Math.floor(Math.random() * messages.length)]!;
 };
 
 /**

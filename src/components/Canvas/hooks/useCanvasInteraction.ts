@@ -1,9 +1,10 @@
 import { useCallback } from 'react';
 
 import { useTouchSettingsStore } from '../../../store/touchSettingsStore';
+import { snapToGrid } from '../../../utils/grid';
 import { getPointerPosition, getPointerPressure, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { Drawing } from '../../../store/gameStore';
+import type { Drawing, Door, GridType } from '../../../store/gameStore';
 import type { Measurement } from '../../../types/measurement';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
@@ -51,8 +52,10 @@ interface UseCanvasInteractionProps {
   // Door tool
   doorPreviewPos: { x: number; y: number } | null;
   setDoorPreviewPos: (pos: { x: number; y: number } | null) => void;
-  gridType: string;
+  gridType: GridType;
   gridSize: number;
+  doorOrientation: 'horizontal' | 'vertical';
+  addDoor: (door: Door) => void;
   // Calibration
   calibrationStart: React.MutableRefObject<{ x: number; y: number } | null>;
   setCalibrationRect: (
@@ -85,6 +88,9 @@ export const useCanvasInteraction = ({
   drawingAnimationFrameRef,
   setDoorPreviewPos,
   gridType,
+  gridSize,
+  doorOrientation,
+  addDoor,
   calibrationStart,
   setCalibrationRect,
   addDrawing,
@@ -153,6 +159,25 @@ export const useCanvasInteraction = ({
       return;
     }
     if (tool === 'door') {
+      if (isWorldView) {
+        return;
+      }
+      const pos = getPointerPosition(e);
+      if (!pos) {
+        return;
+      }
+      const snapped = snapToGrid(pos.x, pos.y, gridSize, gridType);
+      const newDoor: Door = {
+        id: crypto.randomUUID(),
+        x: snapped.x,
+        y: snapped.y,
+        orientation: doorOrientation,
+        isOpen: false,
+        isLocked: false,
+        size: gridSize,
+      };
+      addDoor(newDoor);
+      setDoorPreviewPos(null);
       return;
     }
 
@@ -284,9 +309,8 @@ export const useCanvasInteraction = ({
       if (!pos) {
         return;
       }
-      // TODO: Snap logic
-      // const snapped = snapToGrid(...)
-      // setDoorPreviewPos(snapped);
+      const snapped = snapToGrid(pos.x, pos.y, gridSize, gridType);
+      setDoorPreviewPos({ x: snapped.x, y: snapped.y });
       return;
     } else {
       setDoorPreviewPos(null);
@@ -330,8 +354,8 @@ export const useCanvasInteraction = ({
       // START OF CHANGE: Shift key straight line locking
       // Checks if Shift is held down and snaps the current point to match the start point's X or Y
       if (e.evt.shiftKey && cur.points.length >= 2) {
-        const startX = cur.points[0];
-        const startY = cur.points[1];
+        const startX = cur.points[0]!;
+        const startY = cur.points[1]!;
         const dx = Math.abs(point.x - startX);
         const dy = Math.abs(point.y - startY);
 

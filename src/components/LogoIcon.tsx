@@ -55,6 +55,7 @@ export function LogoIcon({
         clearTimeout(timeout);
       };
     }
+    return undefined;
   }, [animate, onAnimationComplete]);
 
   return (
