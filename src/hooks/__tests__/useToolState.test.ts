@@ -265,12 +265,14 @@ describe('useToolState', () => {
       const input = document.createElement('input');
       document.body.appendChild(input);
 
-      act(() => {
-        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
-      });
-      expect(result.current.tool).toBe('select'); // Unchanged
-
-      document.body.removeChild(input);
+      try {
+        act(() => {
+          input.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
+        });
+        expect(result.current.tool).toBe('select'); // Unchanged
+      } finally {
+        document.body.removeChild(input);
+      }
     });
 
     it('ignores keyboard when target is a textarea', () => {
@@ -279,12 +281,14 @@ describe('useToolState', () => {
       const textarea = document.createElement('textarea');
       document.body.appendChild(textarea);
 
-      act(() => {
-        textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', bubbles: true }));
-      });
-      expect(result.current.tool).toBe('select'); // Unchanged
-
-      document.body.removeChild(textarea);
+      try {
+        act(() => {
+          textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', bubbles: true }));
+        });
+        expect(result.current.tool).toBe('select'); // Unchanged
+      } finally {
+        document.body.removeChild(textarea);
+      }
     });
   });
 

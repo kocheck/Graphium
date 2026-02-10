@@ -60,8 +60,7 @@ describe('Button', () => {
   describe('sizes', () => {
     it('defaults to md size', () => {
       render(<Button variant="primary">Default</Button>);
-      const button = screen.getByRole('button');
-      expect(button.className).toContain('text-sm');
+      expect(screen.getByRole('button')).toHaveClass('text-sm');
     });
 
     it('applies sm size classes', () => {
@@ -70,8 +69,7 @@ describe('Button', () => {
           Small
         </Button>,
       );
-      const button = screen.getByRole('button');
-      expect(button.className).toContain('text-xs');
+      expect(screen.getByRole('button')).toHaveClass('text-xs');
     });
 
     it('applies lg size classes', () => {
@@ -80,8 +78,7 @@ describe('Button', () => {
           Large
         </Button>,
       );
-      const button = screen.getByRole('button');
-      expect(button.className).toContain('text-base');
+      expect(screen.getByRole('button')).toHaveClass('text-base');
     });
   });
 
@@ -207,6 +204,7 @@ describe('Button', () => {
         </Button>,
       );
       const icons = container.querySelectorAll('.btn-primitive__icon');
+      expect(icons).toHaveLength(2);
       icons.forEach((icon) => {
         expect(icon).toHaveAttribute('aria-hidden', 'true');
       });

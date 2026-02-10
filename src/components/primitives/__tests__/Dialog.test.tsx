@@ -3,9 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 import Dialog from '../Dialog';
 
-// Helper: the overlay has aria-hidden="true" so we need { hidden: true } to find the dialog
+// Helper: the overlay has aria-hidden="true" (decorative backdrop) so we need
+// { hidden: true } to query the dialog panel inside it. The dialog itself has
+// role="dialog" + aria-modal="true" which screen readers respect independently.
 const getDialog = () => screen.getByRole('dialog', { hidden: true });
-const queryDialog = () => screen.queryByRole('dialog', { hidden: true });
 
 describe('Dialog', () => {
   beforeEach(() => {

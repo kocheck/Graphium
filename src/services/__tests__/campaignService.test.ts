@@ -55,6 +55,8 @@ function createTestCampaign(overrides?: Partial<Campaign>): Campaign {
 describe('campaignService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Suppress expected console.error from error-path tests
+    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     // Reset uiStore
     useUiStore.setState({
