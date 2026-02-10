@@ -58,8 +58,17 @@ graphium/
 ├── src/                # Renderer process code (React)
 │   ├── components/     # React components
 │   │   ├── Canvas/     # Map & Token rendering (Konva)
-│   ├── store/          # Zustand state management (gameStore.ts)
-│   └── utils/          # Utility functions (syncUtils.ts, assetProcessor.ts)
+│   │   ├── Dialogs/    # Modal/dialog components
+│   │   ├── ErrorBoundaries/ # Error boundary components
+│   │   ├── Managers/   # Non-visual coordination (Sync, Theme, AutoSave)
+│   │   ├── Mobile/     # Mobile-specific components
+│   │   └── primitives/ # UI design system (Button, Dialog, Input, Card)
+│   ├── hooks/          # App-wide custom hooks (useToolState, useMenuCommands)
+│   ├── services/       # Platform abstraction & campaign I/O
+│   ├── store/          # Zustand state (gameStore + uiStore)
+│   ├── styles/         # CSS tokens, themes, primitives
+│   ├── types/          # Domain types (Token, Drawing, Door, etc.)
+│   └── utils/          # Pure utility functions (vision, grid, sync)
 └── public/             # Static assets
 ```
 
@@ -73,9 +82,10 @@ graphium/
 
 ### State Management (Zustand)
 
-- **Single Store**: `useGameStore` is the source of truth.
-- **Sync Logic**: We use a `syncUtils.ts` delta detector to sync state between windows.
+- **Two stores**: `useGameStore` for domain state (tokens, drawings, maps) and `useUiStore` for ephemeral UI state (toasts, dialogs, sidebar).
+- **Sync Logic**: We use a `syncUtils.ts` delta detector to sync domain state between windows. Only `gameStore` changes trigger IPC sync.
 - **Do not manually dispatch IPC events** for state changes. Let `SyncManager` handle it automatically via diffing.
+- **Campaign I/O**: Use `campaignService.ts` for save/load/new — it orchestrates between stores and storage.
 
 ### Testing
 

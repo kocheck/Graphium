@@ -1876,20 +1876,20 @@ home-screen.css (grid layout, theme tokens), useTokenDrag.ts (-tokenLayerRef,
 
 ### Key Files
 
-| File                                      | Lines | Role              | Status                       |
-| ----------------------------------------- | ----- | ----------------- | ---------------------------- |
-| `src/components/Canvas/CanvasManager.tsx` | 1,450 | Canvas compositor | Decomposed (S10)             |
-| `src/components/HomeScreen.tsx`           | 723   | Landing page      | Logic extracted (S8)         |
-| `src/store/gameStore.ts`                  | 607   | Domain state      | UI split complete (S7)       |
-| `src/store/uiStore.ts`                    | 79    | UI state          | New (S7)                     |
-| `src/utils/vision.ts`                     | 205   | Vision/raycasting | New (S8), 100% coverage      |
-| `src/App.tsx`                             | 283   | Root coordinator  | Hooks extracted (S9)         |
-| `src/hooks/useToolState.ts`               | 152   | Tool state        | New (S9)                     |
-| `src/hooks/useMenuCommands.ts`            | 81    | IPC menu commands | New (S9)                     |
-| `src/services/campaignService.ts`         | 91    | Campaign I/O      | New (S9)                     |
-| `src/components/Toolbar.tsx`              | 228   | Desktop toolbar   | New (S9, extracted from App) |
-| `src/styles/theme.css`                    | 521   | Theme tokens      | Hardened (S3 complete)       |
-| `electron/main.ts`                        | 1,283 | Electron main     | No changes planned           |
+| File                                      | Lines | Role              | Status                             |
+| ----------------------------------------- | ----- | ----------------- | ---------------------------------- |
+| `src/components/Canvas/CanvasManager.tsx` | 1,483 | Canvas compositor | Decomposed (S10), bugs fixed (S14) |
+| `src/components/HomeScreen.tsx`           | 723   | Landing page      | Logic extracted (S8)               |
+| `src/store/gameStore.ts`                  | 586   | Domain state      | gridColor fix (S14)                |
+| `src/store/uiStore.ts`                    | 79    | UI state          | New (S7)                           |
+| `src/utils/vision.ts`                     | 205   | Vision/raycasting | New (S8), 100% coverage            |
+| `src/App.tsx`                             | 325   | Root coordinator  | a11y landmarks (S12)               |
+| `src/hooks/useToolState.ts`               | 152   | Tool state        | New (S9)                           |
+| `src/hooks/useMenuCommands.ts`            | 81    | IPC menu commands | New (S9)                           |
+| `src/services/campaignService.ts`         | 91    | Campaign I/O      | New (S9)                           |
+| `src/components/Toolbar.tsx`              | 228   | Desktop toolbar   | New (S9, extracted from App)       |
+| `src/styles/theme.css`                    | 530   | Theme tokens      | Dark toolbar tokens (S14)          |
+| `electron/main.ts`                        | 1,283 | Electron main     | No changes planned                 |
 
 ### Commands
 
