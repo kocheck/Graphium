@@ -4,11 +4,16 @@ import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'reac
 import { useShallow } from 'zustand/shallow';
 
 import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
+import DoorContextMenu from './DoorContextMenu';
 import DoorLayer from './DoorLayer';
 import FogOfWarLayer from './FogOfWarLayer';
 import GridOverlay from './GridOverlay';
 import ImageCropper from '../Dialogs/ImageCropper';
+import { useCanvasDrawing } from './hooks/useCanvasDrawing';
+import { useCanvasDrop } from './hooks/useCanvasDrop';
 import { useCanvasInteraction } from './hooks/useCanvasInteraction';
+import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
+import { useCanvasSelection } from './hooks/useCanvasSelection';
 import { useTokenDrag } from './hooks/useTokenDrag';
 import MeasurementOverlay from './MeasurementOverlay';
 import Minimap from './Minimap';
@@ -24,14 +29,14 @@ import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 import { useUiStore } from '../../store/uiStore';
 import { isRectInAnyPolygon } from '../../types/geometry';
-import { snapToGrid } from '../../utils/grid';
 import { createGridGeometry } from '../../utils/gridGeometry';
 import AssetProcessingErrorBoundary from '../ErrorBoundaries/AssetProcessingErrorBoundary';
 import TokenErrorBoundary from '../ErrorBoundaries/TokenErrorBoundary';
 
-import type { Drawing } from '../../store/gameStore';
-import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
+
+// Enable to log canvas state diagnostics to console on each render
+const DEBUG_CANVAS = false;
 
 // Canvas rendering colors — sourced from theme tokens (see theme.css)
 // Konva renders to <canvas>, so CSS variables aren't available directly.
@@ -90,40 +95,18 @@ interface CanvasManagerProps {
 }
 
 /**
- * CanvasManager - Main canvas component for battlemap rendering and interaction
+ * CanvasManager - Main canvas compositor for battlemap rendering and interaction
  *
- * This component handles all canvas rendering (map, tokens, drawings, grid) and user
- * interactions (panning, zooming, drawing, token manipulation). It operates in two modes
- * based on the window type:
+ * Composes canvas layers (map, grid, drawings, tokens, fog, UI overlays) and wires
+ * interaction hooks (keyboard, drawing, selection, drag, drop). Operates in two modes:
+ * Architect View (full editing) and World View (read-only navigation).
  *
- * **Architect View (DM Mode):**
- * - Full editing capabilities (draw, erase, add/remove tokens)
- * - File drop support (drag images onto canvas)
- * - Calibration tools (grid alignment)
- * - Token transformation (scale, rotate)
- * - Token duplication (Alt+drag)
- * - Delete tokens/drawings (Delete/Backspace)
- *
- * **World View (Player Mode):**
- * - ✅ ALLOWED: Pan canvas (mouse drag, space+drag, wheel scroll)
- * - ✅ ALLOWED: Zoom (ctrl+wheel, pinch, +/- keys)
- * - ✅ ALLOWED: Select and drag tokens (for DM to demonstrate movement)
- * - ❌ BLOCKED: Drawing tools (marker, eraser, wall)
- * - ❌ BLOCKED: File drops (add tokens/maps)
- * - ❌ BLOCKED: Calibration mode
- * - ❌ BLOCKED: Token transformation (scale, rotate)
- * - ❌ BLOCKED: Token duplication (Alt+drag)
- * - ❌ BLOCKED: Delete tokens/drawings
- *
- * **Interaction Restriction Pattern:**
- * When `isWorldView={true}`, interaction handlers check the flag and return early
- * to prevent editing operations. Navigation (pan/zoom) remains fully functional.
- *
- * @param {CanvasManagerProps} props - Component props
- * @returns Canvas with interactive battlemap
- *
- * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
- * @see {@link file://../../App.tsx App.tsx} for UI sanitization
+ * @see useCanvasKeyboard for keyboard shortcuts and modifier key state
+ * @see useCanvasDrawing for drawing/measurement/calibration state
+ * @see useCanvasSelection for selection rectangle and transformer management
+ * @see useCanvasDrop for file drop and image crop handling
+ * @see useCanvasInteraction for unified pointer event handling
+ * @see useTokenDrag for token drag-and-drop with snap preview
  */
 function CanvasManager({
   tool = 'select',
@@ -136,7 +119,7 @@ function CanvasManager({
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
-  // Atomic selectors to prevent infinite re-render loops and avoid useShallow crashes
+  // --- Store Selectors (atomic to prevent infinite re-render loops) ---
   const map = useGameStore((s) => s.map);
   const tokens = useGameStore((s) => s.tokens);
   const tokenLibrary = useGameStore(useShallow((s) => s.campaign.tokenLibrary));
@@ -150,53 +133,18 @@ function CanvasManager({
   const isDaylightMode = useGameStore((state) => state.isDaylightMode);
   const activeVisionPolygons = useGameStore((state) => state.activeVisionPolygons);
 
-  // DIAGNOSTIC REPORT - Copy/paste this entire block for debugging
-  console.log('═══════════════════════════════════════════════════════');
-  if (import.meta.env.DEV) {
-    console.log('🎮 CANVAS MANAGER DIAGNOSTIC REPORT');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log(
-      '🖥️  VIEW MODE:',
-      isWorldView ? '🌍 WORLD VIEW (Player)' : '🎨 DM VIEW (Architect)',
-    );
-    console.log('☀️  DAYLIGHT MODE:', isDaylightMode ? '✅ ON (no fog)' : '❌ OFF (fog enabled)');
-    console.log('');
-    console.log('📊 COUNTS:');
-    console.log(`  - Total Tokens: ${tokens.length}`);
-    console.log(`  - PC Tokens: ${tokens.filter((t) => t.type === 'PC').length}`);
-    console.log(`  - NPC Tokens: ${tokens.filter((t) => t.type === 'NPC').length}`);
-    console.log(`  - Doors: ${doors.length}`);
-    console.log(`  - Stairs: ${stairs.length}`);
-    console.log(`  - Wall Drawings: ${drawings.filter((d) => d.tool === 'wall').length}`);
-    console.log(`  - Active Vision Polygons: ${activeVisionPolygons.length}`);
-    console.log('');
-    console.log('🔍 VISION SETUP:');
-    const pcTokens = tokens.filter((t) => t.type === 'PC');
-    if (pcTokens.length === 0) {
-      console.log('  ⚠️ NO PC TOKENS! Add a PC token to enable vision.');
-    } else {
-      pcTokens.forEach((t) => {
-        const hasVision = (t.visionRadius ?? 0) > 0;
-        console.log(
-          `  - ${t.name || 'PC'}: Vision = ${t.visionRadius || 'NOT SET'} ${hasVision ? '✅' : '❌ SET VISION RADIUS!'}`,
-        );
-      });
-    }
-    console.log('');
-    console.log('🚪 DOOR STATUS:');
-    if (doors.length === 0) {
-      console.log('  ℹ️  No doors placed yet. Press D to place doors.');
-    } else {
-      console.log(`  - Total: ${doors.length}`);
-      console.log(`  - Closed (blocking): ${doors.filter((d) => !d.isOpen).length}`);
-      console.log(`  - Open (transparent): ${doors.filter((d) => d.isOpen).length}`);
-    }
-    console.log('');
-    console.log(
-      '✅ FOG WILL RENDER:',
-      !isDaylightMode && isWorldView ? 'YES' : `NO (${isDaylightMode ? 'Daylight ON' : 'DM View'})`,
-    );
-    console.log('═══════════════════════════════════════════════════════');
+  // Diagnostic logging — enable DEBUG_CANVAS at file top to debug canvas state
+  if (DEBUG_CANVAS && import.meta.env.DEV) {
+    console.log('🎮 CANVAS DIAGNOSTIC:', {
+      view: isWorldView ? 'World' : 'Architect',
+      daylight: isDaylightMode,
+      tokens: tokens.length,
+      pc: tokens.filter((t) => t.type === 'PC').length,
+      doors: doors.length,
+      walls: drawings.filter((d) => d.tool === 'wall').length,
+      visionPolygons: activeVisionPolygons.length,
+      fog: !isDaylightMode && isWorldView,
+    });
   }
 
   // Resolve token data by merging instance properties with library defaults
@@ -211,22 +159,18 @@ function CanvasManager({
     return mapped;
   }, [tokens, tokenLibrary, gridType]);
 
-  // Preferences
-
-  const touchSettings = useTouchSettingsStore();
-
   // Touch/Stylus tracking for palm rejection
-  const stylusActiveRef = useRef(false); // Track if stylus is currently being used
-  const lastStylusLiftTimeRef = useRef(0); // Timestamp of last stylus lift (for smartDelay palm rejection)
+  const touchSettings = useTouchSettingsStore();
+  const stylusActiveRef = useRef(false);
+  const lastStylusLiftTimeRef = useRef(0);
 
   // Measurement state
   const activeMeasurement = useGameStore((s) => s.activeMeasurement);
   const dmMeasurement = useGameStore((s) => s.dmMeasurement);
 
-  // Actions - these are stable
+  // Store actions (stable references from Zustand)
   const addToken = useGameStore((s) => s.addToken);
   const addDrawing = useGameStore((s) => s.addDrawing);
-
   const updateTokenTransform = useGameStore((s) => s.updateTokenTransform);
   const removeTokens = useGameStore((s) => s.removeTokens);
   const removeDrawings = useGameStore((s) => s.removeDrawings);
@@ -236,68 +180,47 @@ function CanvasManager({
   const removeDoor = useGameStore((s) => s.removeDoor);
   const removeDoors = useGameStore((s) => s.removeDoors);
   const updateDoorLock = useGameStore((s) => s.updateDoorLock);
-
   const updateDrawingTransform = useGameStore((s) => s.updateDrawingTransform);
   const setActiveMeasurement = useGameStore((s) => s.setActiveMeasurement);
   const showToast = useUiStore((s) => s.showToast);
 
-  // Tools State
-  const isDrawing = useRef(false);
-  const currentLine = useRef<Drawing | null>(null);
-  const [tempLine, setTempLine] = useState<Drawing | null>(null);
-  const tempLineRef = useRef<Konva.Line | null>(null);
+  // --- Extracted Hooks ---
 
-  // Door Tool
-  const [doorPreviewPos, setDoorPreviewPos] = useState<{ x: number; y: number } | null>(null);
+  // Drawing/measurement/calibration state (refs + state for useCanvasInteraction)
+  const {
+    isDrawing,
+    currentLine,
+    tempLine,
+    setTempLine,
+    tempLineRef,
+    drawingAnimationFrameRef,
+    doorPreviewPos,
+    setDoorPreviewPos,
+    isMeasuring,
+    measurementStart,
+    calibrationStart,
+    calibrationRect,
+    setCalibrationRect,
+  } = useCanvasDrawing();
 
-  // Measurement
-  const isMeasuring = useRef(false);
-  const measurementStart = useRef<{ x: number; y: number } | null>(null);
-  // Calibration
-  const calibrationStart = useRef<{ x: number; y: number } | null>(null);
-  const [calibrationRect, setCalibrationRect] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null>(null);
+  // Selection state (selectedIds, transformer, selection rect)
+  const {
+    selectedIds,
+    setSelectedIds,
+    hoveredTokenId,
+    setHoveredTokenId,
+    selectionRect,
+    setSelectionRect,
+    selectionStart,
+    selectionRectRef,
+    selectionRectCoordsRef,
+    transformerRef,
+  } = useCanvasSelection({ onSelectionChange });
 
-  // Cropping
-  const [pendingCrop, setPendingCrop] = useState<{ src: string; x: number; y: number } | null>(
-    null,
-  );
-
-  // Selection & Drag State
-  const selectionStart = useRef<{ x: number; y: number } | null>(null);
-  const [selectionRect, setSelectionRect] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    isVisible: boolean;
-  }>({ x: 0, y: 0, width: 0, height: 0, isVisible: false });
-  const selectionRectRef = useRef<Konva.Rect | null>(null);
-  const selectionRectCoordsRef = useRef<{ x: number; y: number; width: number; height: number }>({
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  });
-
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null);
-  // const [hoveredCell, setHoveredCell] = useState<{ q: number; r: number } | null>(null);
-  const transformerRef = useRef<Konva.Transformer | null>(null);
-  const animationFrameRef = useRef<number | null>(null); // RAF handle for throttling
-  const drawingAnimationFrameRef = useRef<number | null>(null); // RAF handle for drawing
-
-  // Ghost / Duplication State
-  const [isAltPressed, setIsAltPressed] = useState(false);
-  const [isMKeyPressed, setIsMKeyPressed] = useState(false); // Logic: Hold M to measure
-
-  // Tool state helpers for disabled Konva drag events (defined once to prevent re-renders)
+  // Stable no-op handler for disabled Konva drag events (defined once to prevent re-renders)
   const emptyDragHandler = useCallback(() => {}, []);
 
+  // Door context menu state
   const [doorContextMenu, setDoorContextMenu] = useState<{
     doorId: string;
     x: number;
@@ -320,8 +243,7 @@ function CanvasManager({
     setDoorContextMenu(null);
   }, []);
 
-  // Navigation State
-  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  // --- Navigation State ---
   const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -342,9 +264,142 @@ function CanvasManager({
   // Clamp to reasonable range (5-50 pixels) to prevent gesture detection issues
   const PINCH_DISTANCE_THRESHOLD = Math.min(Math.max(touchSettings.pinchDistanceThreshold, 5), 50);
 
-  // --- Refactored Hooks ---
+  // --- Navigation Functions ---
 
-  // Refs to break circular dependency between hooks
+  // Helper function to clamp viewport position within bounds
+  const clampPosition = useCallback(
+    (newPos: { x: number; y: number }, newScale: number) => {
+      // Calculate bounds including both map and token positions
+      let bounds = {
+        minX: -5000,
+        maxX: 5000,
+        minY: -5000,
+        maxY: 5000,
+      };
+
+      if (map) {
+        bounds = {
+          minX: map.x,
+          maxX: map.x + map.width * map.scale,
+          minY: map.y,
+          maxY: map.y + map.height * map.scale,
+        };
+      }
+
+      // Expand bounds to include PC tokens (so we can always navigate to party)
+      const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
+      if (pcTokens.length > 0) {
+        pcTokens.forEach((token) => {
+          const tokenSize = gridSize * token.scale;
+          bounds.minX = Math.min(bounds.minX, token.x);
+          bounds.minY = Math.min(bounds.minY, token.y);
+          bounds.maxX = Math.max(bounds.maxX, token.x + tokenSize);
+          bounds.maxY = Math.max(bounds.maxY, token.y + tokenSize);
+        });
+      }
+
+      const viewportCenterX = (-newPos.x + size.width / 2) / newScale;
+      const viewportCenterY = (-newPos.y + size.height / 2) / newScale;
+
+      // Apply padding around bounds
+      const allowedMinX = bounds.minX - VIEWPORT_CLAMP_PADDING;
+      const allowedMaxX = bounds.maxX + VIEWPORT_CLAMP_PADDING;
+      const allowedMinY = bounds.minY - VIEWPORT_CLAMP_PADDING;
+      const allowedMaxY = bounds.maxY + VIEWPORT_CLAMP_PADDING;
+
+      // Hard clamp center
+      const clampedCenterX = Math.max(allowedMinX, Math.min(allowedMaxX, viewportCenterX));
+      const clampedCenterY = Math.max(allowedMinY, Math.min(allowedMaxY, viewportCenterY));
+
+      // Convert back to Stage Position
+      return {
+        x: -(clampedCenterX * newScale - size.width / 2),
+        y: -(clampedCenterY * newScale - size.height / 2),
+      };
+    },
+    [map, gridSize, size.width, size.height, resolvedTokens],
+  );
+
+  // Reusable zoom function
+  const performZoom = useCallback(
+    (
+      newScale: number,
+      centerX: number,
+      centerY: number,
+      currentScale: number,
+      currentPos: { x: number; y: number },
+    ) => {
+      // Apply min/max constraints
+      const constrainedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+      const pointTo = {
+        x: (centerX - currentPos.x) / currentScale,
+        y: (centerY - currentPos.y) / currentScale,
+      };
+
+      const newPos = {
+        x: centerX - pointTo.x * constrainedScale,
+        y: centerY - pointTo.y * constrainedScale,
+      };
+
+      // Clamp position to prevent getting lost in the void
+      const clampedPos = clampPosition(newPos, constrainedScale);
+
+      setScale(constrainedScale);
+      setPosition(clampedPos);
+    },
+    [clampPosition],
+  );
+
+  // Keyboard zoom (centered on viewport)
+  const handleKeyboardZoom = useCallback(
+    (zoomIn: boolean) => {
+      if (!containerRef.current) {
+        return;
+      }
+
+      const centerX = size.width / 2;
+      const centerY = size.height / 2;
+      const newScale = zoomIn ? scale * ZOOM_SCALE_BY : scale / ZOOM_SCALE_BY;
+
+      performZoom(newScale, centerX, centerY, scale, position);
+    },
+    [scale, position, size.width, size.height, performZoom],
+  );
+
+  // --- Keyboard & Drop Hooks (depend on navigation functions) ---
+
+  // Keyboard events: modifier keys (Alt, M, Space), deletion, zoom, grid shortcuts
+  const { isAltPressed, isMKeyPressed, isSpacePressed } = useCanvasKeyboard({
+    isWorldView,
+    selectedIds,
+    activeMeasurement,
+    removeTokens,
+    removeDrawings,
+    removeDoors,
+    handleKeyboardZoom,
+    setActiveMeasurement,
+    setGridType,
+    setSelectedIds,
+    showToast,
+  });
+
+  // File drop + image crop handling
+  const { handleDragOver, handleDrop, handleCropConfirm, pendingCrop, setPendingCrop } =
+    useCanvasDrop({
+      isWorldView,
+      containerRef,
+      position,
+      scale,
+      gridSize,
+      gridType,
+      addToken,
+      showToast,
+    });
+
+  // --- Existing Interaction Hooks ---
+
+  // Refs to break circular dependency between useTokenDrag and useCanvasInteraction
   const shouldRejectRef = useRef<
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => boolean
   >(() => false);
@@ -357,7 +412,7 @@ function CanvasManager({
     handleTokenPointerMove: internalHandleTokenPointerMove,
     handleTokenPointerUp,
     dragPositionsRef,
-    tokenNodesRef, // Keep relevant refs
+    tokenNodesRef,
     draggingTokenIds,
     itemsForDuplication,
     setItemsForDuplication,
@@ -420,21 +475,15 @@ function CanvasManager({
     shouldRejectPointerEvent,
   } = canvasInteraction;
 
-  // Update refs with actual handlers
+  // Update refs with actual handlers (breaks circular dependency)
   useEffect(() => {
     shouldRejectRef.current = shouldRejectPointerEvent;
     trackStylusRef.current = trackStylusUsage;
   }, [shouldRejectPointerEvent, trackStylusUsage]);
 
   /**
-  /**
    * Determines the appropriate cursor style based on current interaction state.
-   * Priority order (highest to lowest):
-   * 1. Space + panning (isDragging) → 'grabbing'
-   * 2. Space pressed (ready to pan) → 'grab'
-   * 3. Token dragging → 'grabbing'
-   * 4. Select tool → 'default'
-   * 5. Other tools (marker, eraser, wall) → 'crosshair'
+   * Priority order: space+panning → space → token dragging → select → crosshair
    */
   const getCursorStyle = useCallback((): React.CSSProperties['cursor'] => {
     if (isSpacePressed && isDragging) {
@@ -452,256 +501,7 @@ function CanvasManager({
     return 'crosshair';
   }, [isSpacePressed, isDragging, isDraggingToken, tool]);
 
-  // Notify parent of selection changes
-  useEffect(() => {
-    if (onSelectionChange) {
-      onSelectionChange(selectedIds);
-    }
-  }, [selectedIds, onSelectionChange]);
-
-  // Helper function to clamp viewport position within bounds
-  const clampPosition = useCallback(
-    (newPos: { x: number; y: number }, newScale: number) => {
-      // Calculate bounds including both map and token positions
-      // This ensures we can navigate to tokens even if they're outside the map
-      let bounds = {
-        minX: -5000,
-        maxX: 5000,
-        minY: -5000,
-        maxY: 5000,
-      };
-
-      if (map) {
-        bounds = {
-          minX: map.x,
-          maxX: map.x + map.width * map.scale,
-          minY: map.y,
-          maxY: map.y + map.height * map.scale,
-        };
-      }
-
-      // Expand bounds to include PC tokens (so we can always navigate to party)
-      const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
-      if (pcTokens.length > 0) {
-        pcTokens.forEach((token) => {
-          const tokenSize = gridSize * token.scale;
-          bounds.minX = Math.min(bounds.minX, token.x);
-          bounds.minY = Math.min(bounds.minY, token.y);
-          bounds.maxX = Math.max(bounds.maxX, token.x + tokenSize);
-          bounds.maxY = Math.max(bounds.maxY, token.y + tokenSize);
-        });
-      }
-
-      const viewportCenterX = (-newPos.x + size.width / 2) / newScale;
-      const viewportCenterY = (-newPos.y + size.height / 2) / newScale;
-
-      // Apply padding around bounds
-      const allowedMinX = bounds.minX - VIEWPORT_CLAMP_PADDING;
-      const allowedMaxX = bounds.maxX + VIEWPORT_CLAMP_PADDING;
-      const allowedMinY = bounds.minY - VIEWPORT_CLAMP_PADDING;
-      const allowedMaxY = bounds.maxY + VIEWPORT_CLAMP_PADDING;
-
-      // Hard clamp center
-      const clampedCenterX = Math.max(allowedMinX, Math.min(allowedMaxX, viewportCenterX));
-      const clampedCenterY = Math.max(allowedMinY, Math.min(allowedMaxY, viewportCenterY));
-
-      // Convert back to Stage Position
-      // newPos.x = - (Center * Scale - ScreenW/2)
-      return {
-        x: -(clampedCenterX * newScale - size.width / 2),
-        y: -(clampedCenterY * newScale - size.height / 2),
-      };
-    },
-    [map, gridSize, size.width, size.height, resolvedTokens],
-  );
-
-  // Reusable zoom function
-  const performZoom = useCallback(
-    (
-      newScale: number,
-      centerX: number,
-      centerY: number,
-      currentScale: number,
-      currentPos: { x: number; y: number },
-    ) => {
-      // Apply min/max constraints
-      const constrainedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-
-      const pointTo = {
-        x: (centerX - currentPos.x) / currentScale,
-        y: (centerY - currentPos.y) / currentScale,
-      };
-
-      const newPos = {
-        x: centerX - pointTo.x * constrainedScale,
-        y: centerY - pointTo.y * constrainedScale,
-      };
-
-      // Clamp position to prevent getting lost in the void
-      const clampedPos = clampPosition(newPos, constrainedScale);
-
-      setScale(constrainedScale);
-      setPosition(clampedPos);
-    },
-    [clampPosition],
-  );
-
-  // Keyboard zoom (centered on viewport)
-  const handleKeyboardZoom = useCallback(
-    (zoomIn: boolean) => {
-      if (!containerRef.current) {
-        return;
-      }
-
-      const centerX = size.width / 2;
-      const centerY = size.height / 2;
-      const newScale = zoomIn ? scale * ZOOM_SCALE_BY : scale / ZOOM_SCALE_BY;
-
-      performZoom(newScale, centerX, centerY, scale, position);
-    },
-    [scale, position, size.width, size.height, performZoom],
-  );
-
-  // Consolidated keyboard event handling for canvas operations
-  useEffect(() => {
-    const isEditableElement = (el: EventTarget | null): boolean => {
-      if (!(el instanceof HTMLElement)) {
-        return false;
-      }
-      const tag = el.tagName.toLowerCase();
-      return tag === 'input' || tag === 'textarea' || el.isContentEditable;
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Track Alt Key (always track, even in inputs, for drag operations)
-      // Disabled in World View to prevent duplication
-      if (e.key === 'Alt' && !isWorldView) {
-        setIsAltPressed(true);
-      }
-
-      // Ignore other operations if typing in an input
-      if (isEditableElement(e.target)) {
-        return;
-      }
-
-      // Delete/Backspace - remove selected items
-      // BLOCKED in World View (players cannot delete tokens/drawings)
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (isWorldView) {
-          return;
-        } // Block deletion in World View
-        if (selectedIds.length > 0) {
-          removeTokens(selectedIds);
-          removeDrawings(selectedIds);
-          removeDoors(selectedIds);
-          setSelectedIds([]);
-        }
-      }
-
-      // Escape - clear active measurement
-      if (e.key === 'Escape') {
-        if (isWorldView) {
-          return;
-        } // Block in World View
-        if (activeMeasurement) {
-          setActiveMeasurement(null);
-        }
-      }
-
-      // Space - enable pan mode
-      if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault();
-        setIsSpacePressed(true);
-      }
-
-      // Zoom in with + or =
-      if ((e.code === 'Equal' || e.code === 'NumpadAdd') && !e.repeat) {
-        e.preventDefault();
-        handleKeyboardZoom(true);
-      }
-
-      // Zoom out with -
-      if ((e.code === 'Minus' || e.code === 'NumpadSubtract') && !e.repeat) {
-        e.preventDefault();
-        handleKeyboardZoom(false);
-      }
-
-      // M key - show movement range overlay
-      if ((e.key === 'm' || e.key === 'M') && !e.repeat && !isEditableElement(e.target)) {
-        e.preventDefault();
-        setIsMKeyPressed(true);
-      }
-
-      // Grid type shortcuts (DM only) - 1-5 keys
-      if (!isWorldView && !e.repeat && !isEditableElement(e.target)) {
-        if (e.key === '1') {
-          e.preventDefault();
-          setGridType('LINES');
-          showToast('Grid: Square - Lines', 'success');
-        } else if (e.key === '2') {
-          e.preventDefault();
-          setGridType('DOTS');
-          showToast('Grid: Square - Dots', 'success');
-        } else if (e.key === '3') {
-          e.preventDefault();
-          setGridType('HEXAGONAL');
-          showToast('Grid: Hexagonal', 'success');
-        } else if (e.key === '4') {
-          e.preventDefault();
-          setGridType('ISOMETRIC');
-          showToast('Grid: Isometric', 'success');
-        } else if (e.key === '5') {
-          e.preventDefault();
-          setGridType('HIDDEN');
-          showToast('Grid: Hidden', 'success');
-        }
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      // Always track Alt key release
-      if (e.key === 'Alt') {
-        setIsAltPressed(false);
-      }
-
-      // Space key release
-      if (!isEditableElement(e.target) && e.code === 'Space') {
-        setIsSpacePressed(false);
-      }
-
-      // M key release
-      if (!isEditableElement(e.target) && (e.key === 'm' || e.key === 'M')) {
-        setIsMKeyPressed(false);
-      }
-    };
-
-    const handleBlur = () => {
-      setIsSpacePressed(false);
-      setIsAltPressed(false);
-      setIsMKeyPressed(false);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleBlur);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('blur', handleBlur);
-    };
-  }, [
-    selectedIds,
-    removeTokens,
-    removeDrawings,
-    removeDoors,
-    handleKeyboardZoom,
-    activeMeasurement,
-    isWorldView,
-    setActiveMeasurement,
-    setGridType,
-    showToast,
-  ]);
+  // --- Effects ---
 
   useEffect(() => {
     const handleResize = () => {
@@ -719,20 +519,11 @@ function CanvasManager({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // handleWheel moved to below to use clamp logic
+  // --- Multi-Touch Gesture Handlers ---
+  // These handlers ONLY process multi-touch gestures (2+ fingers).
+  // Single-touch interactions are handled by the unified pointer event handlers
+  // (handlePointerDown/Move/Up) which support mouse, touch, and pen input.
 
-  /**
-   * Multi-Touch Gesture Handlers
-   *
-   * These handlers ONLY process multi-touch gestures (2+ fingers).
-   * Single-touch interactions are handled by the unified pointer event handlers
-   * (handlePointerDown/Move/Up) which support mouse, touch, and pen input.
-   *
-   * This separation ensures:
-   * - Two-finger pinch-to-zoom works correctly
-   * - Single-finger drawing/dragging uses pointer events
-   * - No event conflicts between touch and pointer APIs
-   */
   const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
     const touches = e.evt.touches;
     // ONLY handle 2+ finger gestures (pinch-to-zoom)
@@ -831,138 +622,10 @@ function CanvasManager({
     // Single-touch events are handled by handlePointerUp
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    // BLOCKED in World View (no file drops allowed)
-    if (isWorldView) {
-      return;
-    }
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    // BLOCKED in World View (no file drops allowed)
-    if (isWorldView) {
-      return;
-    }
-    e.preventDefault();
-
-    const stageRect = containerRef.current?.getBoundingClientRect();
-    if (!stageRect) {
-      return;
-    }
-
-    // 1. Get pointer relative to the container DOM element
-    const pointerX = e.clientX - stageRect.left;
-    const pointerY = e.clientY - stageRect.top;
-
-    // 2. Transform into World Coordinates (reverse stage transform)
-    // Stage Transform: Screen = World * Scale + Position
-    // World = (Screen - Position) / Scale
-    const worldX = (pointerX - position.x) / scale;
-    const worldY = (pointerY - position.y) / scale;
-
-    // Initial snap for drop (assuming standard 1x1 if unknown, or center on mouse)
-    // We don't know image size yet, so we snap top-left to grid line nearby.
-    // Use WORLD coordinates for snapping.
-    const { x, y } = snapToGrid(worldX, worldY, gridSize, gridType);
-
-    // Check for JSON (Library Item or Generic Token)
-    const jsonData = e.dataTransfer.getData('application/json');
-    if (jsonData) {
-      try {
-        const data = JSON.parse(jsonData);
-        if (data.type === 'LIBRARY_TOKEN') {
-          // Create token instance with reference to library item
-          // Metadata (scale, type, visionRadius, name) will be inherited from library
-          addToken({
-            id: crypto.randomUUID(),
-            x,
-            y,
-            src: data.src,
-            libraryItemId: data.libraryItemId, // Reference to prototype
-            // scale, type, visionRadius, name are NOT set - they inherit from library
-          });
-          return;
-        } else if (data.type === 'GENERIC_TOKEN') {
-          // Create a generic placeholder token with an SVG data URL.
-          // Colors are derived from CSS variables so the token matches the current theme.
-          const rootElement = document.documentElement;
-          const computedStyles = getComputedStyle(rootElement);
-          const bgColor = computedStyles.getPropertyValue('--app-bg-subtle')?.trim() || '#6b7280';
-          const fgColor =
-            computedStyles.getPropertyValue('--app-text-primary')?.trim() || '#ffffff';
-
-          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="${bgColor}" rx="16"/><circle cx="64" cy="45" r="18" fill="${fgColor}"/><path d="M64 70 C 40 70 28 82 28 92 L 28 108 L 100 108 L 100 92 C 100 82 88 70 64 70 Z" fill="${fgColor}"/></svg>`;
-          const genericTokenSvg = `data:image/svg+xml;base64,${btoa(svg)}`;
-
-          addToken({
-            id: crypto.randomUUID(),
-            x,
-            y,
-            src: genericTokenSvg,
-            name: 'Generic Token',
-            type: 'NPC',
-            scale: 1,
-            // No libraryItemId - standalone token
-          });
-          return;
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0]!;
-      // Create Object URL for cropping
-      const objectUrl = URL.createObjectURL(file);
-      setPendingCrop({ src: objectUrl, x, y });
-    }
-  };
-
-  const handleCropConfirm = (blob: Blob) => {
-    if (!pendingCrop) {
-      return;
-    }
-    void handleCropSave(blob);
-  };
-
-  const handleCropSave = (blob: Blob) => {
-    if (!pendingCrop) {
-      return;
-    }
-
-    try {
-      // Convert blob to base64 for storage/rendering
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = () => {
-        const base64data = reader.result as string;
-
-        // Add as a new token
-        addToken({
-          id: crypto.randomUUID(),
-          x: pendingCrop.x,
-          y: pendingCrop.y,
-          src: base64data,
-          name: 'New Token',
-          type: 'NPC',
-          scale: 1,
-        });
-
-        setPendingCrop(null);
-      };
-    } catch (error) {
-      console.error('Error saving cropped image:', error);
-      showToast('Failed to save token image', 'error');
-    }
-  };
+  // --- Viewport Calculations ---
 
   // Calculate visible bounds in CANVAS coordinates (unscaled)
   // Memoized to prevent recalculation on every render
-  // The Stage is transformed by scale and position (-x, -y).
-  // Visible region top-left: -position.x / scale, -position.y / scale
-  // Visible region dimensions: size.width / scale, size.height / scale
   const visibleBounds = useMemo(
     () => ({
       x: -position.x / scale,
@@ -1001,34 +664,6 @@ function CanvasManager({
     }
   };
 
-  // Update Transformer nodes
-  useEffect(() => {
-    if (transformerRef.current) {
-      const stage = transformerRef.current.getStage();
-      if (stage) {
-        const selectedNodes = stage.find((node: Konva.Node) => selectedIds.includes(node.id()));
-        transformerRef.current.nodes(selectedNodes);
-        transformerRef.current.getLayer()?.batchDraw();
-      }
-    }
-  }, [selectedIds]); // Only update when selection changes; nodes are automatically updated by React Konva
-
-  // Cleanup: Cancel any active image processing on unmount
-  // CRITICAL: Prevents worker leak if component unmounts during processing
-  useEffect(() => {
-    return () => {
-      // Cancel pending animation frames on unmount
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      if (drawingAnimationFrameRef.current) {
-        cancelAnimationFrame(drawingAnimationFrameRef.current);
-        drawingAnimationFrameRef.current = null;
-      }
-    };
-  }, []); // Run only on mount/unmount
-
   const centerOnPCTokens = useCallback(() => {
     const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
     if (pcTokens.length === 0) {
@@ -1063,8 +698,6 @@ function CanvasManager({
     const scaleX = size.width / boundsWidth;
     const scaleY = size.height / boundsHeight;
     let newScale = Math.min(scaleX, scaleY, MAX_SCALE); // Don't zoom in too much
-
-    // Also ensure we don't zoom out too much
     newScale = Math.max(newScale, MIN_SCALE);
 
     // Calculate center of the bounds
@@ -1072,13 +705,9 @@ function CanvasManager({
     const centerY = minY + boundsHeight / 2;
 
     // Calculate position to center the bounds
-    // Position formula: - (Center * Scale - ScreenCenter)
     const newX = -(centerX * newScale - size.width / 2);
     const newY = -(centerY * newScale - size.height / 2);
 
-    // For "Center on Party", we want to allow navigation to tokens even if they're
-    // outside the map bounds. The viewport constraints will still prevent going too far.
-    // We'll apply a modified clamp that considers both map and token positions.
     const clampedPos = clampPosition({ x: newX, y: newY }, newScale);
 
     setScale(newScale);
@@ -1088,16 +717,18 @@ function CanvasManager({
   // Navigate to a specific world coordinate (used by minimap)
   const navigateToWorldPosition = useCallback(
     (worldX: number, worldY: number) => {
-      // Calculate the stage position needed to center this world coordinate
       const newX = -(worldX * scale - size.width / 2);
       const newY = -(worldY * scale - size.height / 2);
 
-      // Clamp to valid bounds
       const clampedPos = clampPosition({ x: newX, y: newY }, scale);
       setPosition(clampedPos);
     },
     [scale, size, clampPosition],
   );
+
+  // ==========================================================================
+  // JSX — Canvas Layer Composition
+  // ==========================================================================
 
   return (
     <div
@@ -1147,24 +778,16 @@ function CanvasManager({
         }}
         onDragEnd={(e) => {
           if (e.target === e.target.getStage()) {
-            // When space-drag ends, we should ensure we are clamped.
-            // React-Konva Draggable updates the internal node position, but not our state "position" until we sync it?
-            // Or does it?
-            // We typically need to sync state onDragEnd.
             const rawPos = { x: e.target.x(), y: e.target.y() };
             const clamped = clampPosition(rawPos, scale);
-            // If clamped is different, we snap back
             setPosition(clamped);
             setIsDragging(false);
           }
         }}
         onDragMove={(e) => {
-          // We intentionally do NOT clamp the stage position in real time during drag.
-          // Real-time clamping can cause jittery or unnatural movement, especially if the user drags quickly or hits the edge.
-          // Instead, we allow free dragging and only clamp the position on drag end (see onDragEnd above).
-          // This provides a smoother and more predictable user experience.
+          // Intentionally no-op during drag — clamp only on drag end for smooth UX
           if (e.target === e.target.getStage()) {
-            // No action needed here; see comment above.
+            // No action needed here; see onDragEnd above.
           }
         }}
         style={{
@@ -1322,11 +945,6 @@ function CanvasManager({
                 }
 
                 // Update Position (Transform)
-                // Drawings utilize `points` but usually we just move the node (x,y).
-                // However, for persistence we should probably update the `points` OR store x,y offset.
-                // But `Line` points are absolute.
-                // If we move the Node, Konva applies a transform (x,y).
-                // We should use `updateDrawingTransform`.
                 updateDrawingTransform(line.id, x, y, line.scale || 1);
 
                 setItemsForDuplication([]);
@@ -1403,20 +1021,15 @@ function CanvasManager({
           token drag updates via direct Konva batchDraw() calls instead of full React re-renders */}
         <Layer ref={tokenLayerRef}>
           {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
-          {(() => {
-            console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
-            return (
-              <DoorLayer
-                doors={doors}
-                isWorldView={isWorldView}
-                tool={tool}
-                selectedIds={selectedIds}
-                onToggleDoor={toggleDoor}
-                onDeleteDoor={removeDoor}
-                onDoorContextMenu={handleDoorContextMenu}
-              />
-            );
-          })()}
+          <DoorLayer
+            doors={doors}
+            isWorldView={isWorldView}
+            tool={tool}
+            selectedIds={selectedIds}
+            onToggleDoor={toggleDoor}
+            onDeleteDoor={removeDoor}
+            onDoorContextMenu={handleDoorContextMenu}
+          />
 
           {/* Door Preview - Show preview when hovering with door tool */}
           {doorPreviewPos && tool === 'door' && !isWorldView && (
@@ -1619,28 +1232,9 @@ function CanvasManager({
             /**
              * Isometric "Standing" Offset
              *
-             * Visual goal:
-             * - In ISOMETRIC view we want tokens to appear as if they are standing upright on
-             *   the diamond-shaped tile, with their "feet" anchored to the tile center, rather
-             *   than lying flat in the middle of the cell.
-             *
-             * Geometry:
-             * - Our token image is rendered centered on (displayX, displayY).
-             * - tokenHeight represents the rendered token height in pixels for this grid cell:
-             *       tokenHeight = gridSize * safeScale
-             *   so any change to token.scale or gridSize automatically affects this value.
-             * - By shifting the image up by half its rendered height (tokenHeight / 2), we move
-             *   the bottom edge of the token image down to where the center of the isometric
-             *   tile is drawn, creating the illusion that the token is standing on that point.
-             *
-             * Scaling behavior:
-             * - Because the offset is derived from tokenHeight (which already includes safeScale),
-             *   larger tokens are moved proportionally further up, keeping their feet aligned
-             *   with the same ground plane as smaller tokens.
-             *
-             * If the isometric anchoring convention changes (e.g., using a different vertical
-             * anchor point or a non-centered token sprite), this offset calculation should be
-             * updated accordingly.
+             * In ISOMETRIC view, tokens appear as if standing upright on the diamond-shaped
+             * tile with their "feet" anchored to the tile center. Shifting the image up by
+             * half its height creates this illusion. The offset is proportional to token size.
              */
             const displayYOffset = gridType === 'ISOMETRIC' ? -(tokenHeight / 2) : 0;
             const finalDisplayY = displayY + displayYOffset;
@@ -1773,11 +1367,9 @@ function CanvasManager({
                   node.scaleY(1);
                 } else if (node.name() === 'drawing') {
                   // Handle drawing (Line) transformation
-                  // Use average of scaleX and scaleY for uniform scaling
                   const transformScale = (scaleX + scaleY) / 2;
                   const drawing = drawings.find((d) => d.id === node.id());
                   if (drawing) {
-                    // Multiply current scale by transformation scale, or set to transformScale if not previously scaled
                     const newScale = (drawing.scale || 1) * transformScale;
                     updateDrawingTransform(node.id(), node.x(), node.y(), newScale);
                   }
@@ -1840,48 +1432,15 @@ function CanvasManager({
             return null;
           }
           return (
-            <>
-              {/* Invisible backdrop to close menu on outside click */}
-              <div
-                className="fixed inset-0 z-40"
-                onClick={closeDoorContextMenu}
-                role="presentation"
-              />
-              <div
-                className="absolute z-50 bg-[var(--app-bg-secondary)] border border-[var(--app-border)] rounded-lg shadow-lg py-1 min-w-[160px]"
-                style={{ left: doorContextMenu.x, top: doorContextMenu.y }}
-              >
-                <button
-                  className="w-full px-3 py-1.5 text-left text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-bg-tertiary)] disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={door.isLocked}
-                  onClick={() => {
-                    toggleDoor(door.id);
-                    closeDoorContextMenu();
-                  }}
-                >
-                  {door.isOpen ? 'Close Door' : 'Open Door'}
-                </button>
-                <button
-                  className="w-full px-3 py-1.5 text-left text-sm text-[var(--app-text-primary)] hover:bg-[var(--app-bg-tertiary)]"
-                  onClick={() => {
-                    updateDoorLock(door.id, !door.isLocked);
-                    closeDoorContextMenu();
-                  }}
-                >
-                  {door.isLocked ? 'Unlock Door' : 'Lock Door'}
-                </button>
-                <div className="border-t border-[var(--app-border)] my-1" />
-                <button
-                  className="w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-[var(--app-bg-tertiary)]"
-                  onClick={() => {
-                    removeDoor(door.id);
-                    closeDoorContextMenu();
-                  }}
-                >
-                  Delete Door
-                </button>
-              </div>
-            </>
+            <DoorContextMenu
+              door={door}
+              x={doorContextMenu.x}
+              y={doorContextMenu.y}
+              onToggleDoor={toggleDoor}
+              onUpdateDoorLock={updateDoorLock}
+              onRemoveDoor={removeDoor}
+              onClose={closeDoorContextMenu}
+            />
           );
         })()}
     </div>
