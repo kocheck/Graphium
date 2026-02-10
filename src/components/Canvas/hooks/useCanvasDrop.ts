@@ -164,6 +164,8 @@ export function useCanvasDrop({
             scale: 1,
           });
 
+          // Revoke the object URL to prevent memory leak
+          URL.revokeObjectURL(pendingCrop.src);
           setPendingCrop(null);
         };
       } catch (error) {
@@ -174,10 +176,19 @@ export function useCanvasDrop({
     [pendingCrop, addToken, showToast],
   );
 
+  /** Cancel pending crop and clean up object URL */
+  const handleCropCancel = useCallback(() => {
+    if (pendingCrop) {
+      URL.revokeObjectURL(pendingCrop.src);
+    }
+    setPendingCrop(null);
+  }, [pendingCrop]);
+
   return {
     handleDragOver,
     handleDrop,
     handleCropConfirm,
+    handleCropCancel,
     pendingCrop,
     setPendingCrop,
   };

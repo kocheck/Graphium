@@ -408,6 +408,15 @@
   --app-home-shadow-sm: rgba(0, 0, 0, 0.3); /* Deeper shadow in dark mode */
   --app-home-shadow-lg: rgba(0, 0, 0, 0.4); /* Deeper shadow in dark mode */
 
+  /* ===== Toolbar (dark variants — toolbar is always dark, values are identical) ===== */
+  --app-toolbar-bg: #000000;
+  --app-toolbar-border: rgb(82, 82, 82);
+  --app-toolbar-button-bg: rgb(64, 64, 64);
+  --app-toolbar-button-text: rgb(229, 229, 229);
+  --app-toolbar-button-border: rgb(82, 82, 82);
+  --app-toolbar-button-hover: rgb(82, 82, 82);
+  --app-toolbar-button-border-hover: rgb(115, 115, 115);
+
   /* ===== Monitor (dark variants — monitor is always dark, so identical) ===== */
   --app-monitor-muted: var(--slate-11); /* Better contrast in dark mode */
 }

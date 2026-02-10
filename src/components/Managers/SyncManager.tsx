@@ -110,6 +110,7 @@ function SyncManager() {
               stairs: [...(action.payload.stairs || [])],
               gridSize: action.payload.gridSize ?? 50,
               gridType: action.payload.gridType ?? 'LINES',
+              gridColor: action.payload.gridColor ?? '#333333',
               map: action.payload.map ? { ...action.payload.map } : null,
               isDaylightMode: action.payload.isDaylightMode ?? false,
             };
@@ -296,6 +297,7 @@ function SyncManager() {
           stairs: [...(state.stairs || [])],
           gridSize: state.gridSize,
           gridType: state.gridType,
+          gridColor: state.gridColor,
           map: state.map ? { ...state.map } : null,
           isDaylightMode: state.isDaylightMode,
         };
@@ -331,6 +333,7 @@ function SyncManager() {
             stairs: state.stairs || [],
             gridSize: state.gridSize,
             gridType: state.gridType,
+            gridColor: state.gridColor,
             map: state.map,
             exploredRegions: state.exploredRegions,
             isDaylightMode: state.isDaylightMode,
@@ -378,6 +381,7 @@ function SyncManager() {
           stairs: [...(state.stairs || [])],
           gridSize: state.gridSize,
           gridType: state.gridType,
+          gridColor: state.gridColor,
           map: state.map ? { ...state.map } : null,
           exploredRegions: state.exploredRegions ? [...state.exploredRegions] : [],
           isDaylightMode: state.isDaylightMode,

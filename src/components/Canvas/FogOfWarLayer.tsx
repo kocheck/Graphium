@@ -162,25 +162,24 @@ function FogOfWarLayer({
   );
 
   useEffect(() => {
-    if (
-      exploredGroupRef.current &&
-      exploredRegions.length !== prevExploredCountRef.current &&
-      exploredRegions.length > 0
-    ) {
+    if (exploredGroupRef.current && exploredRegions.length !== prevExploredCountRef.current) {
       const group = exploredGroupRef.current;
-      // Clear cache first, then re-cache with new shapes
+      // Clear cache first
       try {
         group.clearCache();
       } catch {
         // clearCache can fail if cache was never set
       }
-      requestAnimationFrame(() => {
-        try {
-          group.cache();
-        } catch {
-          // cache() can fail if node is destroyed
-        }
-      });
+      // Only re-cache if there are regions to render
+      if (exploredRegions.length > 0) {
+        requestAnimationFrame(() => {
+          try {
+            group.cache();
+          } catch {
+            // cache() can fail if node is destroyed
+          }
+        });
+      }
       prevExploredCountRef.current = exploredRegions.length;
     }
   }, [exploredRegions.length]);

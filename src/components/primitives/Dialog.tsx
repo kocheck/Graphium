@@ -145,6 +145,8 @@ const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
           const focusableElements =
             dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
           if (focusableElements.length === 0) {
+            // No focusable children — prevent Tab from escaping the dialog
+            e.preventDefault();
             return;
           }
 

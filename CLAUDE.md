@@ -1187,6 +1187,19 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 - [x] Unit tests for uiStore (80%+) — 100% all metrics
 - [x] Final coverage report — 969 tests, 48 test files, all passing
 
+### Session 14: Bug Fix & Accessibility Pass
+
+- [x] Fix gridColor missing from addMap, resetToNewCampaign, switchMap, deleteMap + SyncableGameState
+- [x] Fix CanvasAccessibility keyboard trap (Escape to exit, Tab pass-through at boundaries)
+- [x] Fix Dialog focus trap edge case when no focusable children
+- [x] Wire onTokenActivate in Sidebar → QuickTokenSidebar for keyboard token placement
+- [x] Add aria-label to MapNavigator rename input
+- [x] Fix Object URL memory leak in useCanvasDrop (revoke on consume/cancel)
+- [x] Fix FogOfWarLayer stale cache when explored regions cleared
+- [x] Fix home-screen.css grid/flex mismatch in tablet media query + hardcoded rgba
+- [x] Remove tokenLayerRef dead code from useTokenDrag
+- [x] Add dark mode variants for toolbar CSS tokens in theme.css
+
 ---
 
 ## Session Notes
@@ -1784,6 +1797,77 @@ Dialog.test.tsx (19 tests), Input.test.tsx (16 tests)
 **Test totals:** 48 test files, 969 tests passing (818 existing + 151 new).
 **Build output:** Main chunk 814KB (gzip 240KB) — unchanged (test-only changes).
 **Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 969 tests pass.
+**No regressions.**
+
+### Session 14 — Bug Fix & Accessibility Pass (2026-02-10)
+
+**Completed:**
+
+- **Fix 1 — gridColor missing from map operations + IPC sync:** Added `gridColor` to
+  `addMap()`, `resetToNewCampaign()`, `switchMap()`, and `deleteMap()` in gameStore.ts.
+  Added `gridColor` to `SyncableGameState` interface and `GRID_UPDATE` action in
+  syncUtils.ts. Updated all 4 state snapshot locations in SyncManager.tsx (world view
+  initial state, world view prev state, architect initial sync, architect prev state).
+  Without this fix, switching maps left a stale grid color from the previous map, and
+  grid color changes never synced between Architect/World View.
+
+- **Fix 2 — CanvasAccessibility keyboard trap (WCAG 2.1.2):** Tab key was captured
+  with `e.preventDefault()` for token cycling with no escape mechanism. Fixed by:
+  allowing Escape to blur out of the widget, allowing Tab to pass through naturally
+  when at boundaries (Shift+Tab at first token exits backward, Tab past last token
+  exits forward), and allowing Tab to pass through when there are no tokens.
+
+- **Fix 3 — Dialog focus trap edge case:** When a dialog had no focusable children,
+  the focus trap returned early without calling `e.preventDefault()`, allowing Tab to
+  escape the dialog. Fixed by adding `e.preventDefault()` before the early return.
+
+- **Fix 4 — Wire onTokenActivate in Sidebar:** Added `handleTokenActivate` callback
+  to Sidebar that places tokens at map origin (0,0 snapped to grid) via `addToken()`.
+  Passed the callback to QuickTokenSidebar. Keyboard users can now press Enter/Space
+  on sidebar token items to place them on the canvas.
+
+- **Fix 5 — MapNavigator rename input aria-label:** Added `aria-label={`Rename ${map.name}`}`
+  to the inline rename text input.
+
+- **Fix 6 — Object URL memory leak in useCanvasDrop:** Added `URL.revokeObjectURL()`
+  in `handleCropConfirm` (after converting to base64) and created `handleCropCancel`
+  that revokes before clearing state. Updated CanvasManager to use `handleCropCancel`
+  instead of raw `setPendingCrop(null)`.
+
+- **Fix 7 — FogOfWarLayer stale cache:** The cache invalidation condition required
+  `exploredRegions.length > 0`, so clearing all regions left a stale GPU bitmap.
+  Fixed by always calling `clearCache()` when count changes, and only re-caching
+  when `exploredRegions.length > 0`.
+
+- **Fix 8 — home-screen.css grid/flex mismatch + hardcoded rgba:** Changed base
+  `.action-cards` from `display: flex` to `display: grid; grid-template-columns:
+repeat(3, 1fr)` so tablet/mobile media query `grid-template-columns` overrides
+  work correctly. Replaced 4 hardcoded `rgba()` values with theme tokens:
+  `--app-home-logo-glow`, `--app-home-shadow-sm`, `--app-home-shadow-lg`,
+  `--app-home-card-shadow`.
+
+- **Fix 9 — Remove tokenLayerRef dead code:** Removed `tokenLayerRef` from
+  useTokenDrag (was initialized as null and never set). Replaced the dead
+  `tokenLayerRef.current.batchDraw()` call with `node?.getLayer()?.batchDraw()`
+  which actually works — gets the layer from the Konva node being dragged.
+  Removed the ref from CanvasManager's Layer component and destructured return.
+
+- **Fix 10 — Dark mode toolbar CSS tokens:** Added explicit dark-mode variants for
+  all 7 `--app-toolbar-*` tokens in `[data-theme='dark']` block. Values are identical
+  to light mode because the toolbar is intentionally always dark, but defining them
+  ensures dark mode doesn't accidentally inherit different values.
+
+**Files modified:** gameStore.ts (+4 `gridColor` in map operations), syncUtils.ts
+(+gridColor in SyncableGameState, GRID_UPDATE, FULL_SYNC, detectChanges),
+SyncManager.tsx (+gridColor in 4 state snapshots), CanvasAccessibility.tsx (Tab/Escape
+keyboard handling), Dialog.tsx (focus trap edge case), Sidebar.tsx (+handleTokenActivate,
++onTokenActivate prop), MapNavigator.tsx (+aria-label on rename input),
+useCanvasDrop.ts (+revokeObjectURL, +handleCropCancel), CanvasManager.tsx
+(+handleCropCancel, -tokenLayerRef, -Layer ref), FogOfWarLayer.tsx (cache invalidation),
+home-screen.css (grid layout, theme tokens), useTokenDrag.ts (-tokenLayerRef,
++getLayer().batchDraw()), theme.css (+dark toolbar tokens)
+**Build output:** Main chunk 814KB (gzip 240KB) — unchanged.
+**Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 975 tests pass.
 **No regressions.**
 
 ---

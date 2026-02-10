@@ -123,6 +123,7 @@ export interface SyncableGameState {
   stairs: Stairs[];
   gridSize: number;
   gridType: GridType;
+  gridColor: string;
   map: MapConfig | null;
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
@@ -147,7 +148,12 @@ export type SyncAction =
   | { type: 'MAP_UPDATE'; payload: MapConfig | null }
   | {
       type: 'GRID_UPDATE';
-      payload: { gridSize?: number; gridType?: GridType; isDaylightMode?: boolean };
+      payload: {
+        gridSize?: number;
+        gridType?: GridType;
+        gridColor?: string;
+        isDaylightMode?: boolean;
+      };
     }
   | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null };
 
@@ -174,6 +180,7 @@ export function detectChanges(
         stairs: currentState.stairs || [],
         gridSize: currentState.gridSize,
         gridType: currentState.gridType,
+        gridColor: currentState.gridColor,
         map: currentState.map,
         exploredRegions: currentState.exploredRegions,
         isDaylightMode: currentState.isDaylightMode,
@@ -285,6 +292,7 @@ export function detectChanges(
   if (
     !isEqual(prevState.gridSize, currentState.gridSize) ||
     !isEqual(prevState.gridType, currentState.gridType) ||
+    !isEqual(prevState.gridColor, currentState.gridColor) ||
     !isEqual(prevState.isDaylightMode, currentState.isDaylightMode)
   ) {
     actions.push({
@@ -292,6 +300,7 @@ export function detectChanges(
       payload: {
         gridSize: currentState.gridSize,
         gridType: currentState.gridType,
+        gridColor: currentState.gridColor,
         isDaylightMode: currentState.isDaylightMode,
       },
     });

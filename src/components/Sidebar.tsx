@@ -49,7 +49,7 @@
  * @component
  */
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 
 import {
   RiArrowLeftSLine,
@@ -75,6 +75,7 @@ import QuickTokenSidebar from './QuickTokenSidebar';
 import Tooltip from './Tooltip';
 import { useCommandPalette } from '../hooks/useCommandPalette';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { snapToGrid } from '../utils/grid';
 import { rollForMessage } from '../utils/systemMessages';
 import { getRecentTokens, getPlayerTokens, deduplicatePlayerTokens } from '../utils/tokenUtils';
 
@@ -90,6 +91,9 @@ function Sidebar() {
   const switchMap = useGameStore((state) => state.switchMap);
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
   const tokens = useGameStore((state) => state.tokens);
+  const gridSize = useGameStore((state) => state.gridSize);
+  const gridType = useGameStore((state) => state.gridType);
+  const addToken = useGameStore((state) => state.addToken);
   const showToast = useUiStore((state) => state.showToast);
 
   // Get recent tokens (last 3 unique tokens placed on the map)
@@ -188,6 +192,40 @@ function Sidebar() {
       document.body.removeChild(div);
     }, 100);
   };
+
+  /**
+   * Handles keyboard activation of tokens (Enter/Space on sidebar items).
+   * Places the token at the center of the visible canvas area.
+   */
+  const handleTokenActivate = useCallback(
+    (type: string, src: string, libraryItemId?: string) => {
+      // Place token at canvas center (0, 0 world coords, snapped to grid)
+      const { x, y } = snapToGrid(0, 0, gridSize, gridType);
+
+      if (type === 'LIBRARY_TOKEN' && libraryItemId) {
+        addToken({
+          id: crypto.randomUUID(),
+          x,
+          y,
+          src,
+          libraryItemId,
+        });
+      } else if (type === 'GENERIC_TOKEN') {
+        addToken({
+          id: crypto.randomUUID(),
+          x,
+          y,
+          src: '',
+          name: 'Generic Token',
+          type: 'NPC',
+          scale: 1,
+        });
+      }
+      showToast('Token placed at map origin', 'success');
+    },
+    [gridSize, gridType, addToken, showToast],
+  );
+
   /**
    * Handles token image upload and addition to library
    */
@@ -391,6 +429,7 @@ function Sidebar() {
                 recentTokens={recentTokens}
                 playerTokens={deduplicatedPlayerTokens}
                 onDragStart={handleDragStart}
+                onTokenActivate={handleTokenActivate}
               />
             </QuickTokenSidebarErrorBoundary>
           </CollapsibleSection>

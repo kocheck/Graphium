@@ -411,7 +411,7 @@ function CanvasManager({
   });
 
   // File drop + image crop handling
-  const { handleDragOver, handleDrop, handleCropConfirm, pendingCrop, setPendingCrop } =
+  const { handleDragOver, handleDrop, handleCropConfirm, handleCropCancel, pendingCrop } =
     useCanvasDrop({
       isWorldView,
       containerRef,
@@ -443,7 +443,6 @@ function CanvasManager({
     itemsForDuplication,
     setItemsForDuplication,
     snapPreviewPositionsRef,
-    tokenLayerRef,
     isDragging: isDraggingToken,
   } = useTokenDrag({
     tool,
@@ -783,7 +782,7 @@ function CanvasManager({
           <ImageCropper
             imageSrc={pendingCrop.src}
             onConfirm={handleCropConfirm}
-            onCancel={() => setPendingCrop(null)}
+            onCancel={handleCropCancel}
           />
         </AssetProcessingErrorBoundary>
       )}
@@ -1052,10 +1051,8 @@ function CanvasManager({
           ) : null;
         })()}
 
-        {/* Layer 3: Tokens, Doors & UI
-          NOTE: tokenLayerRef is used for low-level performance optimizations during
-          token drag updates via direct Konva batchDraw() calls instead of full React re-renders */}
-        <Layer ref={tokenLayerRef}>
+        {/* Layer 3: Tokens, Doors & UI */}
+        <Layer>
           {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
           <DoorLayer
             doors={doors}

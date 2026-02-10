@@ -41,7 +41,6 @@ export const useTokenDrag = ({
   const dragBroadcastThrottleRef = useRef<Map<string, number>>(new Map());
   const snapPreviewPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const tokenNodesRef = useRef<Map<string, Konva.Node>>(new Map());
-  const tokenLayerRef = useRef<Konva.Layer>(null); // We need a way to set this from outside or pass it
 
   // State
   const [draggingTokenIds, setDraggingTokenIds] = useState<Set<string>>(new Set());
@@ -247,8 +246,10 @@ export const useTokenDrag = ({
           node.y(newY);
         }
 
-        if (tokenLayerRef.current) {
-          tokenLayerRef.current.batchDraw();
+        // Trigger a batch redraw on the node's layer for immediate visual update
+        const layer = node?.getLayer();
+        if (layer) {
+          layer.batchDraw();
         }
       }
     },
@@ -395,7 +396,6 @@ export const useTokenDrag = ({
     itemsForDuplication,
     setItemsForDuplication,
     snapPreviewPositionsRef,
-    tokenLayerRef,
     isDragging: isDraggingWithThreshold,
   };
 };

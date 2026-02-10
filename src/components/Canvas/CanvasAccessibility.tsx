@@ -127,19 +127,38 @@ export function CanvasAccessibility({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (tokens.length === 0) {
+      // Escape exits the canvas keyboard widget (returns to normal tab order)
+      if (e.key === 'Escape') {
+        focusedTokenIndex.current = -1;
+        (e.target as HTMLElement).blur();
         return;
+      }
+
+      if (tokens.length === 0) {
+        return; // Let Tab pass through naturally when there are no tokens
       }
 
       const updateTokenPosition = useGameStore.getState().updateTokenPosition;
 
       if (e.key === 'Tab') {
+        // Allow Tab to pass through at boundaries so users can exit the widget
+        if (e.shiftKey && focusedTokenIndex.current <= 0) {
+          // Shift+Tab at first token (or before cycling): exit backward
+          focusedTokenIndex.current = -1;
+          return;
+        }
+        if (!e.shiftKey && focusedTokenIndex.current >= tokens.length - 1) {
+          // Tab past last token: exit forward
+          focusedTokenIndex.current = -1;
+          return;
+        }
+
         e.preventDefault();
         if (e.shiftKey) {
           focusedTokenIndex.current =
             (focusedTokenIndex.current - 1 + tokens.length) % tokens.length;
         } else {
-          focusedTokenIndex.current = (focusedTokenIndex.current + 1) % tokens.length;
+          focusedTokenIndex.current = focusedTokenIndex.current + 1;
         }
         const token = tokens[focusedTokenIndex.current];
         if (token) {
