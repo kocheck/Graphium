@@ -35,11 +35,16 @@ describe('useRecentCampaigns', () => {
 
   it('returns campaigns from storage on mount', () => {
     const campaigns = [{ id: '1', name: 'Campaign 1', lastOpened: 1000, platform: 'web' as const }];
-    // First call is during useState initializer
-    mockGetRecent.mockReturnValueOnce(campaigns);
+    // Use mockReturnValue (not Once) — StrictMode double-invokes the useState
+    // initializer, so mockReturnValueOnce would be consumed on the first call
+    // and the second call would fall through to the default empty array.
+    mockGetRecent.mockReturnValue(campaigns);
 
     const { result } = renderHook(() => useRecentCampaigns());
     expect(result.current.recentCampaigns).toEqual(campaigns);
+
+    // Restore default for subsequent tests
+    mockGetRecent.mockReturnValue([]);
   });
 
   it('addRecent calls utility and refreshes list', () => {
@@ -61,8 +66,8 @@ describe('useRecentCampaigns', () => {
   });
 
   it('removeRecent calls utility and refreshes list', () => {
-    // Start with a campaign in the list
-    mockGetRecent.mockReturnValueOnce([
+    // Use mockReturnValue (not Once) — StrictMode-resilient (see mount test comment)
+    mockGetRecent.mockReturnValue([
       { id: 'to-remove', name: 'Remove Me', lastOpened: 1000, platform: 'web' as const },
     ]);
 

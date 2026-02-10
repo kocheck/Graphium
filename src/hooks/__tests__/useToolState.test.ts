@@ -5,13 +5,17 @@ import { useToolState } from '../useToolState';
 
 import type { ToolType } from '../useToolState';
 
-// Mock gameStore
+// Stable mock references — hoisted outside factory so selectors always return
+// the same function identity (prevents spurious useEffect re-fires).
+const mockSetBroadcastMeasurement = vi.fn();
+const mockSetActiveMeasurement = vi.fn();
+
 vi.mock('../../store/gameStore', () => ({
   useGameStore: vi.fn((selector: (s: Record<string, unknown>) => unknown) => {
     const state = {
       broadcastMeasurement: false,
-      setBroadcastMeasurement: vi.fn(),
-      setActiveMeasurement: vi.fn(),
+      setBroadcastMeasurement: mockSetBroadcastMeasurement,
+      setActiveMeasurement: mockSetActiveMeasurement,
     };
     return selector(state);
   }),
@@ -155,6 +159,18 @@ describe('useToolState', () => {
         result.current.setMeasurementMode('cone');
       });
       expect(result.current.measurementMode).toBe('cone');
+    });
+
+    it('clears active measurement when mode changes', () => {
+      const { result } = renderHook(() => useToolState({ isArchitectView: true }));
+
+      mockSetActiveMeasurement.mockClear();
+
+      act(() => {
+        result.current.setMeasurementMode('blast');
+      });
+
+      expect(mockSetActiveMeasurement).toHaveBeenCalledWith(null);
     });
   });
 
