@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { Door } from '../types/domain';
-import { WallSegment, Point } from '../types/geometry';
+import type { Door } from '../../types/domain';
+import { WallSegment, Point } from '../../types/geometry';
 
 /**
  * Tests for door blocking logic

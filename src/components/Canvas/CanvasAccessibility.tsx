@@ -182,9 +182,9 @@ export function CanvasAccessibility({
         return;
       }
 
-      // Arrow keys move selected token by one grid cell
+      // Arrow keys move selected token by one grid cell (ARCHITECT VIEW ONLY)
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        if (selectedTokenIds.length === 0) {
+        if (selectedTokenIds.length === 0 || isWorldView) {
           return;
         }
         e.preventDefault();
@@ -212,7 +212,7 @@ export function CanvasAccessibility({
         );
       }
     },
-    [tokens, selectedTokenIds, gridSize, onSelectToken, announce],
+    [tokens, selectedTokenIds, gridSize, onSelectToken, announce, isWorldView],
   );
 
   const canvasDescription = buildCanvasDescription(tokens.length, mapName, tool, isWorldView);
