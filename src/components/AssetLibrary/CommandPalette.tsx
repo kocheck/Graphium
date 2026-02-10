@@ -246,6 +246,15 @@ function CommandPalette({
         <div className="p-4 border-b border-neutral-700">
           <input
             aria-label="Search actions and assets"
+            aria-controls="command-palette-results"
+            aria-activedescendant={
+              selectedIndex >= 0 && results[selectedIndex]
+                ? `${results[selectedIndex]?.type === 'command' ? 'command' : 'asset'}-option-${selectedIndex}`
+                : undefined
+            }
+            role="combobox"
+            aria-expanded={results.length > 0}
+            aria-autocomplete="list"
             ref={searchInputRef}
             type="text"
             value={query}
@@ -256,7 +265,7 @@ function CommandPalette({
         </div>
 
         {/* Results list */}
-        <div className="max-h-96 overflow-y-auto">
+        <div id="command-palette-results" role="listbox" className="max-h-96 overflow-y-auto">
           {results.length === 0 ? (
             <div className="p-8 text-center text-neutral-500">
               <p className="text-lg mb-2">No results found</p>
@@ -285,8 +294,9 @@ function CommandPalette({
                   return (
                     <div
                       key={cmd.id}
+                      id={`command-option-${index}`}
                       role="option"
-                      tabIndex={-1}
+                      tabIndex={0}
                       aria-selected={index === selectedIndex}
                       onClick={() => handleSelectItem(index)}
                       onKeyDown={(e) => {
@@ -327,8 +337,9 @@ function CommandPalette({
                 return (
                   <div
                     key={asset.id}
+                    id={`asset-option-${index}`}
                     role="option"
-                    tabIndex={-1}
+                    tabIndex={0}
                     aria-selected={index === selectedIndex}
                     onClick={() => handleSelectItem(index)}
                     onKeyDown={(e) => {

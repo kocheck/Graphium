@@ -133,44 +133,62 @@ export function useCanvasDrop({
 
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0]!;
+
+        // Clean up any existing object URL before creating a new one
+        if (pendingCrop) {
+          URL.revokeObjectURL(pendingCrop.src);
+        }
+
         // Create Object URL for cropping
         const objectUrl = URL.createObjectURL(file);
         setPendingCrop({ src: objectUrl, x, y });
       }
     },
-    [isWorldView, containerRef, position, scale, gridSize, gridType, addToken],
+    [isWorldView, containerRef, position, scale, gridSize, gridType, addToken, pendingCrop],
   );
 
   const handleCropConfirm = useCallback(
-    (blob: Blob) => {
+    async (blob: Blob) => {
       if (!pendingCrop) {
         return;
       }
 
       try {
-        // Convert blob to base64 for storage/rendering
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = () => {
-          const base64data = reader.result as string;
+        // Convert cropped blob to File for asset processing pipeline
+        const file = new File([blob], `token-${Date.now()}.png`, { type: blob.type });
 
-          addToken({
-            id: crypto.randomUUID(),
-            x: pendingCrop.x,
-            y: pendingCrop.y,
-            src: base64data,
-            name: 'New Token',
-            type: 'NPC',
-            scale: 1,
-          });
+        // Dynamically import processImage to avoid circular dependencies
+        const { processImage } = await import('../../../utils/AssetProcessor');
 
-          // Revoke the object URL to prevent memory leak
-          URL.revokeObjectURL(pendingCrop.src);
-          setPendingCrop(null);
-        };
+        // Process through asset pipeline (resize + WebP conversion + temp storage)
+        // This returns a file:// URL (Electron) or Object URL (Web)
+        const handle = processImage(file, 'TOKEN');
+        const processedSrc = await handle.promise;
+
+        // Convert file:// to media:// for secure rendering in Electron
+        const safeSrc = processedSrc.startsWith('file:')
+          ? processedSrc.replace('file:', 'media:')
+          : processedSrc;
+
+        addToken({
+          id: crypto.randomUUID(),
+          x: pendingCrop.x,
+          y: pendingCrop.y,
+          src: safeSrc,
+          name: 'New Token',
+          type: 'NPC',
+          scale: 1,
+        });
+
+        // Revoke the temporary preview object URL to prevent memory leak
+        URL.revokeObjectURL(pendingCrop.src);
+        setPendingCrop(null);
       } catch (error) {
         console.error('Error saving cropped image:', error);
         showToast('Failed to save token image', 'error');
+        // Still clean up the object URL on error
+        URL.revokeObjectURL(pendingCrop.src);
+        setPendingCrop(null);
       }
     },
     [pendingCrop, addToken, showToast],
