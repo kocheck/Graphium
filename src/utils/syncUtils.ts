@@ -7,7 +7,7 @@ import type {
   GridType,
   ExploredRegion,
   TokenLibraryItem,
-} from '../store/gameStore';
+} from '../types/domain';
 import type { Measurement } from '../types/measurement';
 
 /**

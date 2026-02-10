@@ -8,7 +8,7 @@ import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
 import { useUiStore } from '../store/uiStore';
 
-import type { Token } from '../store/gameStore';
+import type { Token } from '../types/domain';
 
 interface TokenInspectorProps {
   selectedTokenIds: string[];

@@ -7,7 +7,7 @@
  * **Design principle:** Types here describe the game domain (tokens, drawings, doors,
  * campaigns, etc.) and should never import from React, Zustand, or any component.
  *
- * **Import from here** when you only need types:
+ * **Import from here** for all domain types:
  * ```ts
  * import type { Token, Drawing, Door } from '../types/domain';
  * ```
@@ -15,7 +15,6 @@
  * **Import from gameStore** when you need the store hook:
  * ```ts
  * import { useGameStore } from '../store/gameStore';
- * import type { Token } from '../store/gameStore'; // re-exported
  * ```
  */
 

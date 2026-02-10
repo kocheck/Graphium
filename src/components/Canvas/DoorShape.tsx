@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import { Group, Rect, Arc, Path, Circle } from 'react-konva';
 
-import type { Door } from '../../store/gameStore';
+import type { Door } from '../../types/domain';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 // Door rendering colors — sourced from theme tokens (see theme.css)

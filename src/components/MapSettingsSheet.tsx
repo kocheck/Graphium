@@ -15,13 +15,13 @@ import { useRef, useState, useEffect } from 'react';
 import { RiRulerLine } from '@remixicon/react';
 
 import Button from './primitives/Button';
-import ToggleSwitch from './ToggleSwitch';
+import ToggleSwitch from './primitives/ToggleSwitch';
 import { useGameStore } from '../store/gameStore';
 import { useUiStore } from '../store/uiStore';
 import { processImage } from '../utils/AssetProcessor';
 import { rollForMessage } from '../utils/systemMessages';
 
-import type { GridType } from '../store/gameStore';
+import type { GridType } from '../types/domain';
 import type { ProcessingHandle } from '../utils/AssetProcessor';
 
 interface MapSettingsSheetProps {

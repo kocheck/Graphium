@@ -8,7 +8,7 @@ import { useGameStore } from '../../store/gameStore';
 import { calculateVisibilityPolygon, getWallSegments } from '../../utils/vision';
 
 import type { ResolvedTokenData } from '../../hooks/useTokenData';
-import type { Drawing, Door, MapConfig } from '../../store/gameStore';
+import type { Drawing, Door, MapConfig } from '../../types/domain';
 import type { Point } from '../../types/geometry';
 
 const FOG_COLORS = {

@@ -4,7 +4,7 @@ import { useGameStore } from '../../../store/gameStore';
 import { snapToGrid } from '../../../utils/grid';
 import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { Token, GridType } from '../../../store/gameStore';
+import type { Token, GridType } from '../../../types/domain';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 

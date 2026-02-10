@@ -20,7 +20,7 @@ import { RiUser3Line } from '@remixicon/react';
 
 import Tooltip from './Tooltip';
 
-import type { TokenLibraryItem } from '../store/gameStore';
+import type { TokenLibraryItem } from '../types/domain';
 
 interface QuickTokenSidebarProps {
   recentTokens: TokenLibraryItem[];

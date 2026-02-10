@@ -1,6 +1,6 @@
 import { createGridGeometry } from './gridGeometry';
 
-import type { GridType } from '../store/gameStore';
+import type { GridType } from '../types/domain';
 
 /**
  * Snaps pixel coordinates to the nearest grid point based on grid type

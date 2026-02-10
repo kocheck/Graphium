@@ -4,7 +4,7 @@ import { useTouchSettingsStore } from '../../../store/touchSettingsStore';
 import { snapToGrid } from '../../../utils/grid';
 import { getPointerPosition, getPointerPressure, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { Drawing, Door, GridType } from '../../../store/gameStore';
+import type { Drawing, Door, GridType } from '../../../types/domain';
 import type { Measurement } from '../../../types/measurement';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';

@@ -5,7 +5,6 @@ import { MAX_EXPLORED_REGIONS, DEFAULT_GRID_COLOR } from '../types/domain';
 import { rollForMessage } from '../utils/systemMessages';
 
 import type {
-  TokenMetadata,
   Token,
   Drawing,
   MapConfig,
@@ -13,35 +12,11 @@ import type {
   MapData,
   TokenLibraryItem,
   Campaign,
-  ToastMessage,
-  ConfirmDialog,
   ExploredRegion,
   Door,
   Stairs,
 } from '../types/domain';
 import type { Measurement } from '../types/measurement';
-
-// ===== Domain Types =====
-// All domain types are defined in src/types/domain.ts and re-exported here
-// for backward compatibility. New code should prefer importing from '../types/domain'.
-
-// Re-export all domain types so existing imports from gameStore continue to work
-export type {
-  TokenMetadata,
-  Token,
-  Drawing,
-  MapConfig,
-  GridType,
-  MapData,
-  TokenLibraryItem,
-  Campaign,
-  ToastMessage,
-  ConfirmDialog,
-  ExploredRegion,
-  Door,
-  Stairs,
-};
-export { MAX_EXPLORED_REGIONS, DEFAULT_GRID_COLOR };
 
 /**
  * Helper to create a default empty map

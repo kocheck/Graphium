@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import { useGameStore } from '../store/gameStore';
 
-import type { Token, TokenLibraryItem } from '../store/gameStore';
+import type { Token, TokenLibraryItem } from '../types/domain';
 
 /**
  * ResolvedTokenData represents the fully resolved token data after merging

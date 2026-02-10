@@ -1,6 +1,6 @@
 import StairsShape from './StairsShape';
 
-import type { Stairs } from '../../store/gameStore';
+import type { Stairs } from '../../types/domain';
 
 interface StairsLayerProps {
   stairs: Stairs[];

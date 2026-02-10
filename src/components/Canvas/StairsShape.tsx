@@ -1,6 +1,6 @@
 import { Group, Rect, Line, Path } from 'react-konva';
 
-import type { Stairs } from '../../store/gameStore';
+import type { Stairs } from '../../types/domain';
 
 const STAIRS_COLORS = {
   fillUp: '#c0c0c0', // --app-stairs-fill-up (light gray)

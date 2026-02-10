@@ -1,4 +1,4 @@
-import type { Drawing, Door } from '../store/gameStore';
+import type { Drawing, Door } from '../types/domain';
 
 /**
  * Room represents a rectangular bounding box for dungeon pieces

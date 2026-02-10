@@ -210,7 +210,7 @@ on:
 ```
 
 **Add branch protection:**
-Follow `docs/ENABLE_CI_TESTING.md`
+Follow `docs/guides/ENABLE_CI_TESTING.md`
 
 ---
 

@@ -9,7 +9,7 @@
  * fuzzySearch(library, "red drg") // Matches "Red Dragon" (substring matching)
  */
 
-import type { TokenLibraryItem } from '../store/gameStore';
+import type { TokenLibraryItem } from '../types/domain';
 
 /**
  * Calculate fuzzy match score for a single string against query

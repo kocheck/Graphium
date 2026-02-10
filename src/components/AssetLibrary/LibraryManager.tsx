@@ -36,7 +36,7 @@ import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzyS
 import { rollForMessage } from '../../utils/systemMessages';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 
-import type { TokenLibraryItem } from '../../store/gameStore';
+import type { TokenLibraryItem } from '../../types/domain';
 import type { ProcessingHandle } from '../../utils/AssetProcessor';
 
 interface LibraryManagerProps {

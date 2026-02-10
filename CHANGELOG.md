@@ -9,6 +9,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Modular Architecture Refactor
+
+- **Design System Separation**: UI presentation fully separable from business logic
+  - CSS custom properties for all colors (theme.css, brand.css) — swap visual identity without touching logic
+  - UI Primitives: Button (5 variants), Dialog (focus trap, a11y), Input, Card, ToggleSwitch
+  - HomeScreen CSS extracted to standalone stylesheet (1,032 lines out of JSX)
+
+- **State Architecture**: Domain state cleanly separated from UI state
+  - `uiStore.ts` — toast, dialogs, pause, sidebar (UI ephemeral state)
+  - `gameStore.ts` — tokens, drawings, doors, campaign (domain-only, SyncManager-watched)
+  - `campaignService.ts` — save/load/new campaign orchestration (zero React imports)
+  - Domain types in `src/types/domain.ts` — importable without Zustand
+
+- **Logic Extraction**: Business logic extracted to testable pure functions and hooks
+  - `vision.ts` — raycasting/visibility polygon (100% test coverage)
+  - `useToolState` — tool selection, colors, keyboard shortcuts
+  - `useMenuCommands` — Electron IPC menu handler registration
+  - `useRecentCampaigns` / `usePlatformDetection` — HomeScreen logic hooks
+  - CanvasManager decomposed: 4 hooks + DoorContextMenu extracted (1,892 → 1,450 lines)
+
+- **Accessibility (WCAG 2.2 AA)**:
+  - Canvas ARIA live region — announces token/door/tool changes to screen readers
+  - Keyboard token navigation (Tab cycle, Enter activate, Arrow move)
+  - Skip-to-content link, landmark roles (nav, main)
+  - Global `:focus-visible` indicators on all interactive elements
+  - `prefers-contrast: more` support, `prefers-reduced-motion` respected
+  - `eslint-plugin-jsx-a11y` enforcing a11y rules
+
+- **Performance**:
+  - Code splitting via React.lazy: 891KB → 810KB main chunk (-9%)
+  - Konva pixelRatio capped on low-end devices (deviceMemory ≤ 4GB)
+  - FogOfWarLayer explored regions Konva-level caching
+  - CSS transitions scoped to UI elements only (canvas unaffected)
+
+- **Quality Tooling**:
+  - Import boundary linting (primitives can't import store, store can't import components)
+  - 5 TypeScript ESLint rules upgraded warn → error (no-explicit-any, no-unsafe-\*)
+  - 975 tests across 48 files, coverage targets met on all extracted modules
+
+### Changed
+
+- Reorganized component directory: ErrorBoundaries/, Dialogs/, Managers/, Mobile/
+- Consolidated root docs: 13+ files → 5 at root, rest in docs/ subdirectories
+- Removed 7 redundant Radix dark-mode CSS imports from theme.css
+- Removed backward-compat re-exports from gameStore (types now in types/domain)
+- Deleted ToggleSwitch re-export shim (all consumers migrated to primitives/)
+
+### Removed
+
+- Dead Vite boilerplate: App.css, react.svg, 3 public SVGs
+- ~40 lines of unguarded console.log in FogOfWarLayer (gated behind DEBUG_VISION flag)
+- UI state from gameStore (migrated to uiStore)
+
 #### Hexagonal and Isometric Grid Support
 
 - **New Grid Types**: Added support for Hexagonal (flat-top) and Isometric grids alongside existing Square grids

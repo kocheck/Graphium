@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Door } from '../store/gameStore';
+import type { Door } from '../types/domain';
 import { WallSegment, Point } from '../types/geometry';
 
 /**

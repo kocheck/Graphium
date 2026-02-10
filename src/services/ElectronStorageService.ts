@@ -1,5 +1,5 @@
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
-import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { Campaign, TokenLibraryItem } from '../types/domain';
 
 /**
  * Storage service for Electron environment

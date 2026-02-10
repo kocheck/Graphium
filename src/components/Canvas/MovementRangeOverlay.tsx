@@ -15,7 +15,7 @@ import { Group, Line } from 'react-konva';
 
 import { createGridGeometry } from '../../utils/gridGeometry';
 
-import type { GridType } from '../../store/gameStore';
+import type { GridType } from '../../types/domain';
 
 const MOVEMENT_COLORS = {
   fill: 'rgba(0, 150, 255, 0.15)', // --app-movement-range-fill

@@ -42,7 +42,7 @@ import { Group, Line, Circle } from 'react-konva';
 
 import { createGridGeometry } from '../../utils/gridGeometry';
 
-import type { GridType } from '../../store/gameStore';
+import type { GridType } from '../../types/domain';
 
 const GRID_COLORS = {
   cellFill: 'rgba(255, 255, 255, 0.1)', // Grid cell fill (for highlighted cells)

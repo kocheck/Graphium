@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import QuickTokenSidebar from './QuickTokenSidebar';
-import { TokenLibraryItem } from '../store/gameStore';
+import type { TokenLibraryItem } from '../types/domain';
 
 describe('QuickTokenSidebar', () => {
   const mockOnDragStart = vi.fn();

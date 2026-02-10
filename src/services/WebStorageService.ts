@@ -2,7 +2,7 @@ import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
 
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
-import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { Campaign, TokenLibraryItem } from '../types/domain';
 
 /**
  * IndexedDB schema version

@@ -1,6 +1,6 @@
 import DoorShape from './DoorShape';
 
-import type { Door } from '../../store/gameStore';
+import type { Door } from '../../types/domain';
 
 interface DoorLayerProps {
   doors: Door[];
