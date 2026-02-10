@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/refactor-modular-architecture-GUfVC`
 > **Created:** 2026-02-09
-> **Status:** In Progress — Session 10 (CanvasManager Decomposition Complete)
+> **Status:** In Progress — Session 11 (Performance Hardening Complete)
 
 ## Project Vision
 
@@ -1164,11 +1164,11 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 11: Performance
 
-- [ ] Lazy-load 7 modal/infrequent components
-- [ ] Document bundle size before/after
-- [ ] Cap Konva pixelRatio on low-end
-- [ ] Disable listening on static layers
-- [ ] Add FogOfWarLayer caching
+- [x] Lazy-load 5 modal/infrequent components (AboutModal shares chunk with HomeScreen)
+- [x] Document bundle size: 891KB → 810KB main chunk (gzip 259KB → 238KB), 9% reduction
+- [x] Cap Konva pixelRatio on low-end (PERFORMANCE_CONFIG with device detection)
+- [x] Static layers already have listening={false} (verified Layer 1, Fog Layer)
+- [x] Add FogOfWarLayer explored regions Konva-level caching
 
 ### Session 12: Accessibility
 
@@ -1620,6 +1620,50 @@ campaignService.ts (91), Toolbar.tsx (228)
 useCanvasKeyboard.ts (193), useCanvasDrop.ts (184), DoorContextMenu.tsx (76)
 **Files modified:** CanvasManager.tsx (1,892 → 1,450 lines)
 **Build output:** Main chunk 891KB (gzip 259KB) — unchanged.
+**Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 818 tests pass.
+**No regressions.**
+
+### Session 11 — Performance Hardening (2026-02-10)
+
+**Completed:**
+
+- **Task 11.1 — Code splitting with React.lazy:** Wrapped 6 infrequently-used components
+  in `React.lazy()` + `<Suspense fallback={null}>`:
+  - `DesignSystemPlayground` → 46.23KB chunk (gzip 11.53KB)
+  - `DungeonGeneratorDialog` → 11.83KB chunk (gzip 3.87KB)
+  - `UpdateManager` → 10.93KB chunk (gzip 3.51KB)
+  - `CommandPalette` → 8.15KB chunk (gzip 2.90KB)
+  - `ResourceMonitor` → 5.94KB chunk (gzip 2.13KB)
+  - `AboutModal` — lazy in App.tsx but Vite correctly keeps it in main chunk because
+    HomeScreen.tsx also statically imports it (landing page needs it on first load).
+
+  **Bundle size impact:**
+  | Metric | Before | After | Change |
+  |--------|--------|-------|--------|
+  | Main chunk (raw) | 891KB | 810KB | -80KB (-9%) |
+  | Main chunk (gzip) | 259KB | 238KB | -21KB (-8%) |
+  | Total lazy chunks | 0 | 83KB (24KB gzip) | — |
+
+  Named exports (DesignSystemPlayground, AboutModal, DungeonGeneratorDialog) use
+  `.then(m => ({ default: m.ExportName }))` pattern for React.lazy compatibility.
+
+- **Task 11.2 — Konva performance budget:**
+  - **pixelRatio cap:** Added `PERFORMANCE_CONFIG` constant computed at module load.
+    Detects low-end devices via `navigator.deviceMemory` (≤4GB) and
+    `navigator.hardwareConcurrency` (≤4 cores). Low-end devices get `pixelRatio: 1`,
+    all others capped at `Math.min(devicePixelRatio, 2)`. Applied to `<Stage>`.
+  - **Static layer listening:** Verified all static layers already have `listening={false}`:
+    Layer 1 (map/grid/noise), Fog Layer, GridOverlay Group, PaperNoiseOverlay Rect.
+    No changes needed.
+  - **FogOfWarLayer caching:** Added Konva-level `cache()` on the explored regions
+    Group via callback ref + `useEffect`. When `exploredRegions.length` changes, the
+    group is re-cached. Between changes, Konva reuses the cached bitmap instead of
+    re-executing each Shape's `sceneFunc`. Uses `requestAnimationFrame` deferral to
+    ensure Konva has rendered shapes before caching.
+
+**Files modified:** App.tsx (lazy imports + Suspense wrappers), CanvasManager.tsx
+(+PERFORMANCE_CONFIG, +pixelRatio on Stage), FogOfWarLayer.tsx (+explored regions caching)
+**Build output:** Main chunk 810KB (gzip 238KB) — 9% reduction from code splitting.
 **Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 818 tests pass.
 **No regressions.**
 

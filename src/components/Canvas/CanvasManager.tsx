@@ -64,6 +64,30 @@ const ZOOM_SCALE_BY = 1.1;
 const MIN_PINCH_DISTANCE = 0.001; // Guard against near-zero division or very small distances that could cause extreme scale changes
 const VIEWPORT_CLAMP_PADDING = 1000; // Padding around map bounds for viewport constraints
 
+/**
+ * Performance budget configuration for low-end device detection.
+ *
+ * - `maxPixelRatio`: Cap canvas resolution to avoid GPU memory pressure.
+ *   Default Konva uses `window.devicePixelRatio` (often 2-3 on modern displays),
+ *   which quadruples pixel count. Capping at 2 is sufficient for crisp rendering.
+ *   On detected low-end devices (≤4GB RAM or ≤4 CPU cores), drops to 1.
+ * - `isLowEnd`: True when device has limited memory or CPU cores. Used to
+ *   reduce visual effects that stress the GPU/CPU.
+ *
+ * Detection uses `navigator.deviceMemory` (Chrome/Edge) and
+ * `navigator.hardwareConcurrency` (all modern browsers).
+ */
+const PERFORMANCE_CONFIG = (() => {
+  const nav = navigator as { deviceMemory?: number };
+  const memoryGB = nav.deviceMemory; // undefined on Firefox/Safari
+  const cores = navigator.hardwareConcurrency; // available in all modern browsers
+  const isLowEnd = (memoryGB !== undefined && memoryGB <= 4) || (cores !== undefined && cores <= 4);
+  return {
+    maxPixelRatio: isLowEnd ? 1 : Math.min(window.devicePixelRatio, 2),
+    isLowEnd,
+  };
+})();
+
 // Helper functions for touch/pinch calculations
 const calculatePinchDistance = (touch1: Touch, touch2: Touch): number => {
   return Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
@@ -756,6 +780,7 @@ function CanvasManager({
       <Stage
         width={size.width}
         height={size.height}
+        pixelRatio={PERFORMANCE_CONFIG.maxPixelRatio}
         draggable={isSpacePressed}
         // Unified Pointer Events API - handles mouse, touch, and pen input
         onPointerDown={handlePointerDown}

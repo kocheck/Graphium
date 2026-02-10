@@ -1,13 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 
 import { Agentation } from 'agentation';
 
-import CommandPalette from './components/AssetLibrary/CommandPalette';
 import CanvasManager from './components/Canvas/CanvasManager';
-import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
-import { AboutModal } from './components/Dialogs/AboutModal';
 import ConfirmDialog from './components/Dialogs/ConfirmDialog';
-import { DungeonGeneratorDialog } from './components/Dialogs/DungeonGeneratorDialog';
 import UpdateManagerErrorBoundary from './components/ErrorBoundaries/UpdateManagerErrorBoundary';
 import { HomeScreen } from './components/HomeScreen';
 import { LoadingOverlay } from './components/LoadingOverlay';
@@ -15,9 +11,7 @@ import AutoSaveManager from './components/Managers/AutoSaveManager';
 import { PauseManager } from './components/Managers/PauseManager';
 import SyncManager from './components/Managers/SyncManager';
 import { ThemeManager } from './components/Managers/ThemeManager';
-import UpdateManager from './components/Managers/UpdateManager';
 import MobileToolbar from './components/Mobile/MobileToolbar';
-import ResourceMonitor from './components/ResourceMonitor';
 import Sidebar from './components/Sidebar';
 import Toast from './components/Toast';
 import TokenInspector from './components/TokenInspector';
@@ -31,6 +25,24 @@ import { useGameStore } from './store/gameStore';
 import { useUiStore } from './store/uiStore';
 import { rollForMessage } from './utils/systemMessages';
 import { useWindowType } from './utils/useWindowType';
+
+// Lazy-loaded components — infrequently used modals/panels (Session 11 code splitting)
+const DesignSystemPlayground = lazy(() =>
+  import('./components/DesignSystemPlayground/DesignSystemPlayground').then((m) => ({
+    default: m.DesignSystemPlayground,
+  })),
+);
+const AboutModal = lazy(() =>
+  import('./components/Dialogs/AboutModal').then((m) => ({ default: m.AboutModal })),
+);
+const DungeonGeneratorDialog = lazy(() =>
+  import('./components/Dialogs/DungeonGeneratorDialog').then((m) => ({
+    default: m.DungeonGeneratorDialog,
+  })),
+);
+const CommandPalette = lazy(() => import('./components/AssetLibrary/CommandPalette'));
+const ResourceMonitor = lazy(() => import('./components/ResourceMonitor'));
+const UpdateManager = lazy(() => import('./components/Managers/UpdateManager'));
 
 /**
  * App — Root component with dual-window architecture
@@ -129,7 +141,9 @@ function App() {
   if (isDesignSystemPlayground) {
     return (
       <>
-        <DesignSystemPlayground />
+        <Suspense fallback={<div style={{ padding: '2rem' }}>Loading playground...</div>}>
+          <DesignSystemPlayground />
+        </Suspense>
         {import.meta.env.DEV && <Agentation />}
       </>
     );
@@ -142,19 +156,23 @@ function App() {
         <ThemeManager />
         <Toast />
         <ConfirmDialog />
-        <AboutModal
-          isOpen={isAboutOpen}
-          onClose={() => setIsAboutOpen(false)}
-          onCheckForUpdates={() => {
-            setIsAboutOpen(false);
-            setIsUpdateManagerOpen(true);
-          }}
-        />
-        <UpdateManagerErrorBoundary>
-          <UpdateManager
-            isOpen={isUpdateManagerOpen}
-            onClose={() => setIsUpdateManagerOpen(false)}
+        <Suspense fallback={null}>
+          <AboutModal
+            isOpen={isAboutOpen}
+            onClose={() => setIsAboutOpen(false)}
+            onCheckForUpdates={() => {
+              setIsAboutOpen(false);
+              setIsUpdateManagerOpen(true);
+            }}
           />
+        </Suspense>
+        <UpdateManagerErrorBoundary>
+          <Suspense fallback={null}>
+            <UpdateManager
+              isOpen={isUpdateManagerOpen}
+              onClose={() => setIsUpdateManagerOpen(false)}
+            />
+          </Suspense>
         </UpdateManagerErrorBoundary>
         <HomeScreen onStartEditor={() => setViewState('EDITOR')} />
         {import.meta.env.DEV && <Agentation />}
@@ -171,17 +189,26 @@ function App() {
       <PauseManager />
       <Toast />
       <ConfirmDialog />
-      <DungeonGeneratorDialog />
-      <AboutModal
-        isOpen={isAboutOpen}
-        onClose={() => setIsAboutOpen(false)}
-        onCheckForUpdates={() => {
-          setIsAboutOpen(false);
-          setIsUpdateManagerOpen(true);
-        }}
-      />
+      <Suspense fallback={null}>
+        <DungeonGeneratorDialog />
+      </Suspense>
+      <Suspense fallback={null}>
+        <AboutModal
+          isOpen={isAboutOpen}
+          onClose={() => setIsAboutOpen(false)}
+          onCheckForUpdates={() => {
+            setIsAboutOpen(false);
+            setIsUpdateManagerOpen(true);
+          }}
+        />
+      </Suspense>
       <UpdateManagerErrorBoundary>
-        <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+        <Suspense fallback={null}>
+          <UpdateManager
+            isOpen={isUpdateManagerOpen}
+            onClose={() => setIsUpdateManagerOpen(false)}
+          />
+        </Suspense>
       </UpdateManagerErrorBoundary>
 
       {isWorldView && <LoadingOverlay />}
@@ -233,7 +260,11 @@ function App() {
           />
         )}
 
-        {isArchitectView && showResourceMonitor && <ResourceMonitor />}
+        {isArchitectView && showResourceMonitor && (
+          <Suspense fallback={null}>
+            <ResourceMonitor />
+          </Suspense>
+        )}
 
         {isArchitectView && selectedTokensOnly.length > 0 && (
           <TokenInspector
@@ -243,23 +274,25 @@ function App() {
         )}
 
         {isArchitectView && (
-          <CommandPalette
-            isOpen={isPaletteOpen}
-            onClose={() => setPaletteOpen(false)}
-            onSetTool={toolState.setTool}
-            onTogglePause={handlePauseToggle}
-            onLaunchWorldView={() => {
-              const ipcRenderer = window.ipcRenderer;
-              if (ipcRenderer) {
-                ipcRenderer.send('create-world-window');
-              } else {
-                const baseUrl = window.location.origin + window.location.pathname;
-                window.open(`${baseUrl}?type=world`, '_blank');
-              }
-            }}
-            onOpenDungeonGenerator={() => useUiStore.getState().showDungeonDialog()}
-            isGamePaused={isGamePaused}
-          />
+          <Suspense fallback={null}>
+            <CommandPalette
+              isOpen={isPaletteOpen}
+              onClose={() => setPaletteOpen(false)}
+              onSetTool={toolState.setTool}
+              onTogglePause={handlePauseToggle}
+              onLaunchWorldView={() => {
+                const ipcRenderer = window.ipcRenderer;
+                if (ipcRenderer) {
+                  ipcRenderer.send('create-world-window');
+                } else {
+                  const baseUrl = window.location.origin + window.location.pathname;
+                  window.open(`${baseUrl}?type=world`, '_blank');
+                }
+              }}
+              onOpenDungeonGenerator={() => useUiStore.getState().showDungeonDialog()}
+              isGamePaused={isGamePaused}
+            />
+          </Suspense>
         )}
 
         {isArchitectView && isMobile && (

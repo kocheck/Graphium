@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useCallback } from 'react';
 
 import Konva from 'konva';
 import { Shape, Group } from 'react-konva';
@@ -134,6 +134,56 @@ function FogOfWarLayer({
   // Track last update time for throttling exploration tracking
   const lastExploreUpdateRef = useRef<number>(0);
   const EXPLORE_UPDATE_INTERVAL = 1000; // Update explored regions every 1 second
+
+  // Ref for Konva-level caching of explored regions group.
+  // When explored regions change, we call cache() on the group so Konva renders
+  // the explored region shapes to an offscreen canvas. Subsequent frames reuse
+  // the cached bitmap instead of re-executing each Shape's sceneFunc.
+  const exploredGroupRef = useRef<Konva.Group | null>(null);
+  const prevExploredCountRef = useRef<number>(0);
+
+  // Cache explored regions group when the region count changes
+  const handleExploredGroupMount = useCallback(
+    (node: Konva.Group | null) => {
+      exploredGroupRef.current = node;
+      if (node && exploredRegions.length > 0) {
+        // Defer cache() to next frame so Konva has rendered the shapes first
+        requestAnimationFrame(() => {
+          try {
+            node.cache();
+          } catch {
+            // cache() can fail if node is destroyed between frames
+          }
+        });
+        prevExploredCountRef.current = exploredRegions.length;
+      }
+    },
+    [exploredRegions.length],
+  );
+
+  useEffect(() => {
+    if (
+      exploredGroupRef.current &&
+      exploredRegions.length !== prevExploredCountRef.current &&
+      exploredRegions.length > 0
+    ) {
+      const group = exploredGroupRef.current;
+      // Clear cache first, then re-cache with new shapes
+      try {
+        group.clearCache();
+      } catch {
+        // clearCache can fail if cache was never set
+      }
+      requestAnimationFrame(() => {
+        try {
+          group.cache();
+        } catch {
+          // cache() can fail if node is destroyed
+        }
+      });
+      prevExploredCountRef.current = exploredRegions.length;
+    }
+  }, [exploredRegions.length]);
 
   // Extract PC tokens with vision (memoized to prevent unnecessary recalculations)
   const pcTokens = useMemo(() => {
@@ -341,29 +391,33 @@ function FogOfWarLayer({
             listening={false}
           />
         )}
-        {/* Layer 2: Explored Areas (Partial Erase for Dimmed Effect) */}
-        {exploredRegions.map((region, index) => (
-          <Shape
-            key={`explored-${index}`}
-            sceneFunc={(ctx) => {
-              if (region.points.length === 0) {
-                return;
-              }
-              ctx.beginPath();
-              ctx.moveTo(region.points[0]!.x, region.points[0]!.y);
-              for (let i = 1; i < region.points.length; i++) {
-                ctx.lineTo(region.points[i]!.x, region.points[i]!.y);
-              }
-              ctx.closePath();
-              // Semi-transparent black = partially erases fog = dimmed map shows through
-              // Higher alpha = more fog erased = lighter/more visible
-              // 0.8 = erases 80% of fog, leaves 20% = nicely dimmed effect
-              ctx.fillStyle = FOG_COLORS.fogExplored;
-              ctx.fill();
-            }}
-            globalCompositeOperation="destination-out"
-          />
-        ))}
+        {/* Layer 2: Explored Areas (Partial Erase for Dimmed Effect)
+            Wrapped in a Group with Konva-level caching: explored regions are append-only
+            and rarely change, so caching avoids re-executing sceneFunc on every frame. */}
+        <Group ref={handleExploredGroupMount}>
+          {exploredRegions.map((region, index) => (
+            <Shape
+              key={`explored-${index}`}
+              sceneFunc={(ctx) => {
+                if (region.points.length === 0) {
+                  return;
+                }
+                ctx.beginPath();
+                ctx.moveTo(region.points[0]!.x, region.points[0]!.y);
+                for (let i = 1; i < region.points.length; i++) {
+                  ctx.lineTo(region.points[i]!.x, region.points[i]!.y);
+                }
+                ctx.closePath();
+                // Semi-transparent black = partially erases fog = dimmed map shows through
+                // Higher alpha = more fog erased = lighter/more visible
+                // 0.8 = erases 80% of fog, leaves 20% = nicely dimmed effect
+                ctx.fillStyle = FOG_COLORS.fogExplored;
+                ctx.fill();
+              }}
+              globalCompositeOperation="destination-out"
+            />
+          ))}
+        </Group>
 
         {/* Layer 3: Current Vision (Full Erase for Clear Map) */}
         {pcTokens.map((token) => {
