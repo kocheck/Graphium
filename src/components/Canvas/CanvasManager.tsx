@@ -781,7 +781,7 @@ function CanvasManager({
         <AssetProcessingErrorBoundary>
           <ImageCropper
             imageSrc={pendingCrop.src}
-            onConfirm={handleCropConfirm}
+            onConfirm={(blob) => void handleCropConfirm(blob)}
             onCancel={handleCropCancel}
           />
         </AssetProcessingErrorBoundary>
