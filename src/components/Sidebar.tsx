@@ -317,7 +317,7 @@ function Sidebar() {
                           setMapSettingsMode('EDIT');
                           setIsMapSettingsOpen(true);
                         }}
-                        className="p-1 opacity-0 group-hover:opacity-100 hover:text-[var(--app-accent-text)] transition-opacity"
+                        className="p-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 hover:text-[var(--app-accent-text)] transition-opacity"
                         aria-label={`Edit ${map.name}`}
                       >
                         <RiSettings4Line className="w-4 h-4" />

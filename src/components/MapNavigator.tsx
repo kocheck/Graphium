@@ -133,7 +133,7 @@ function MapNavigator(): React.ReactElement | null {
                 )}
               </button>
 
-              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

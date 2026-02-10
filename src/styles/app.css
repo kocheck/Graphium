@@ -153,6 +153,66 @@
   color: var(--app-accent-text-contrast);
 }
 
+/* ================================================================
+   Global Focus Indicators (WCAG 2.2 AA)
+   Visible focus ring on all interactive elements when navigating
+   by keyboard. Uses :focus-visible to avoid showing on mouse click.
+   ================================================================ */
+
+/* Base focus ring for all interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: 2px;
+}
+
+/* Sidebar token items: subtle inset ring to fit tight layout */
+.sidebar-token:focus-visible {
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: -2px;
+}
+
+/* Skip-to-content link: hidden until focused, then slides into view */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+  border-radius: 0 0 0.5rem 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.skip-to-content:focus {
+  top: 0;
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: 2px;
+}
+
+/* Screen reader only utility (matches Tailwind sr-only) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* Canvas */
 .canvas-container {
   background: var(--app-bg-base);

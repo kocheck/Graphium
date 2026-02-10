@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/refactor-modular-architecture-GUfVC`
 > **Created:** 2026-02-09
-> **Status:** In Progress — Session 11 (Performance Hardening Complete)
+> **Status:** In Progress — Session 12 (Accessibility Hardening Complete)
 
 ## Project Vision
 
@@ -1172,11 +1172,11 @@ export paths is acceptable. Clean up re-exports in a dedicated pass.
 
 ### Session 12: Accessibility
 
-- [ ] Create CanvasAccessibility live region
-- [ ] Add keyboard token selection
-- [ ] Complete keyboard navigation for Sidebar + MapNavigator
-- [ ] Add visible focus indicators globally
-- [ ] Add skip-to-content link
+- [x] Create CanvasAccessibility live region (token/door/tool announcements)
+- [x] Add keyboard token selection (Tab cycle, Enter activate, Arrow move)
+- [x] Complete keyboard navigation for Sidebar + MapNavigator (focus-within visibility)
+- [x] Add visible focus indicators globally (:focus-visible on all interactive elements)
+- [x] Add skip-to-content link + landmark roles (nav, main)
 
 ### Session 13: Test Hardening
 
@@ -1664,6 +1664,49 @@ useCanvasKeyboard.ts (193), useCanvasDrop.ts (184), DoorContextMenu.tsx (76)
 **Files modified:** App.tsx (lazy imports + Suspense wrappers), CanvasManager.tsx
 (+PERFORMANCE_CONFIG, +pixelRatio on Stage), FogOfWarLayer.tsx (+explored regions caching)
 **Build output:** Main chunk 810KB (gzip 238KB) — 9% reduction from code splitting.
+**Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 818 tests pass.
+**No regressions.**
+
+### Session 12 — Accessibility Hardening (2026-02-10)
+
+**Completed:**
+
+- **Task 12.1 — Canvas accessibility layer:** Created `CanvasAccessibility.tsx` (230 lines)
+  providing screen reader support for the Konva canvas:
+  - **ARIA live region** (`aria-live="polite"`) announces: token additions/removals, door
+    open/close/lock state changes, tool changes. Uses `requestAnimationFrame` to ensure
+    repeated identical messages are announced.
+  - **Canvas description** (`role="application"` + `aria-label`) with dynamic summary:
+    view type, map name, token count, active tool.
+  - **Keyboard token navigation:** Tab cycles through tokens (with screen reader
+    announcement of name + position), Enter activates, Arrow keys move selected tokens
+    by one grid cell. Uses `useGameStore.getState().updateTokenPosition()` for moves.
+  - Integrated into CanvasManager as first child of container div. `role="region"` +
+    `aria-label="Game canvas"` added to container.
+
+- **Task 12.2 — Keyboard navigation:**
+  - **Skip-to-content link** (`<a href="#canvas-main" class="skip-to-content">`) in App.tsx,
+    hidden until focused, links to `<main id="canvas-main">`.
+  - **Landmark roles:** `<nav aria-label="Campaign tools">` wraps Sidebar, `<main>` wraps
+    canvas area (replaces plain `<div>`).
+  - **Sidebar token items:** Added `tabIndex={0}`, `role="button"`, `aria-label`, and
+    `onKeyDown` (Enter/Space) to all QuickTokenSidebar items (recent, generic, player).
+    Added optional `onTokenActivate` callback prop for keyboard placement.
+  - **MapNavigator visibility fix:** Edit/delete buttons changed from `group-hover:opacity-100`
+    to `group-hover:opacity-100 group-focus-within:opacity-100` so keyboard-focused buttons
+    are visible. Same fix applied to Sidebar edit button.
+  - **Global focus indicators:** Added `:focus-visible` rule in app.css for `button`, `a`,
+    `input`, `select`, `textarea`, `[role="button"]`, `[tabindex]` — 2px solid accent
+    outline with 2px offset. Sidebar tokens get inset outline. `.sr-only` utility class
+    added. `.skip-to-content` styles added.
+
+**Files created:** CanvasAccessibility.tsx (230 lines)
+**Files modified:** CanvasManager.tsx (+import, +component integration, +role/aria-label on
+container), App.tsx (+skip-to-content, +nav/main landmarks), QuickTokenSidebar.tsx (+tabIndex,
++role, +aria-label, +onKeyDown, +onTokenActivate prop), MapNavigator.tsx (+group-focus-within),
+Sidebar.tsx (+group-focus-within), app.css (+global focus indicators, +skip-to-content,
++sr-only)
+**Build output:** Main chunk 814KB (gzip 240KB) — marginal +3KB from new component.
 **Verification:** TypeScript 0 errors, ESLint 0 errors, build succeeds, all 818 tests pass.
 **No regressions.**
 

@@ -183,6 +183,11 @@ function App() {
   // Editor view (both Architect and World View)
   return (
     <div className="app-root w-full h-screen flex overflow-hidden" data-testid="editor-view">
+      {/* Skip-to-content link for keyboard users (WCAG 2.4.1) */}
+      <a href="#canvas-main" className="skip-to-content">
+        Skip to canvas
+      </a>
+
       {/* Global components */}
       <ThemeManager />
       <SyncManager />
@@ -213,9 +218,13 @@ function App() {
 
       {isWorldView && <LoadingOverlay />}
       {isArchitectView && <AutoSaveManager />}
-      {isArchitectView && <Sidebar />}
+      {isArchitectView && (
+        <nav aria-label="Campaign tools">
+          <Sidebar />
+        </nav>
+      )}
 
-      <div className="flex-1 relative h-full transition-all duration-300">
+      <main id="canvas-main" className="flex-1 relative h-full transition-all duration-300">
         {/* Mobile Hamburger Menu Button */}
         {isArchitectView && isMobile && (
           <button
@@ -307,7 +316,7 @@ function App() {
             onPauseToggle={handlePauseToggle}
           />
         )}
-      </div>
+      </main>
       {import.meta.env.DEV && <Agentation />}
     </div>
   );

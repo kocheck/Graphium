@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
 import { useShallow } from 'zustand/shallow';
 
+import CanvasAccessibility from './CanvasAccessibility';
 import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorContextMenu from './DoorContextMenu';
 import DoorLayer from './DoorLayer';
@@ -758,6 +759,8 @@ function CanvasManager({
     <div
       ref={containerRef}
       className="canvas-container w-full h-full overflow-hidden relative"
+      role="region"
+      aria-label="Game canvas"
       style={{
         touchAction: 'none',
         userSelect: 'none',
@@ -767,6 +770,13 @@ function CanvasManager({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
+      {/* Accessibility layer: screen reader announcements + keyboard token navigation */}
+      <CanvasAccessibility
+        tool={tool}
+        selectedTokenIds={selectedIds}
+        onSelectToken={(id) => setSelectedIds([id])}
+        isWorldView={isWorldView}
+      />
       {pendingCrop && (
         <AssetProcessingErrorBoundary>
           <ImageCropper

@@ -26,6 +26,8 @@ interface QuickTokenSidebarProps {
   recentTokens: TokenLibraryItem[];
   playerTokens: TokenLibraryItem[];
   onDragStart: (e: React.DragEvent, type: string, src: string, libraryItemId?: string) => void;
+  /** Optional callback when a token is activated via keyboard (Enter/Space) */
+  onTokenActivate?: (type: string, src: string, libraryItemId?: string) => void;
 }
 
 /**
@@ -35,6 +37,7 @@ function QuickTokenSidebar({
   recentTokens,
   playerTokens,
   onDragStart,
+  onTokenActivate,
 }: QuickTokenSidebarProps): React.ReactElement {
   /**
    * Handles drag start for the generic token placeholder
@@ -99,7 +102,16 @@ function QuickTokenSidebar({
                 <div
                   className="sidebar-token w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
                   draggable
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Place ${token.name} token`}
                   onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onTokenActivate?.('LIBRARY_TOKEN', token.src, token.id);
+                    }
+                  }}
                 >
                   <img
                     src={token.thumbnailSrc.replace('file:', 'media:')}
@@ -131,7 +143,16 @@ function QuickTokenSidebar({
                 borderColor: 'var(--app-border-default)',
               }}
               draggable
+              tabIndex={0}
+              role="button"
+              aria-label="Place generic token"
               onDragStart={handleGenericTokenDragStart}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onTokenActivate?.('GENERIC_TOKEN', '');
+                }
+              }}
             >
               <RiUser3Line
                 className="w-8 h-8 pointer-events-none"
@@ -146,7 +167,16 @@ function QuickTokenSidebar({
               <div
                 className="sidebar-token w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
                 draggable
+                tabIndex={0}
+                role="button"
+                aria-label={`Place ${token.name} token`}
                 onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onTokenActivate?.('LIBRARY_TOKEN', token.src, token.id);
+                  }
+                }}
               >
                 <img
                   src={token.thumbnailSrc.replace('file:', 'media:')}
