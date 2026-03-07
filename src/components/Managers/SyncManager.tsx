@@ -7,6 +7,28 @@ import type { GameState } from '../../store/gameStore';
 import type { Token } from '../../types/domain';
 import type { SyncAction, SyncableGameState } from '../../utils/syncUtils';
 
+// All valid SyncAction type discriminants — used to guard BroadcastChannel messages
+const VALID_SYNC_ACTIONS = new Set([
+  'FULL_SYNC',
+  'TOKEN_ADD',
+  'TOKEN_UPDATE',
+  'TOKEN_REMOVE',
+  'LIBRARY_UPDATE',
+  'TOKEN_DRAG_START',
+  'TOKEN_DRAG_MOVE',
+  'TOKEN_DRAG_END',
+  'DRAWING_ADD',
+  'DRAWING_UPDATE',
+  'DRAWING_REMOVE',
+  'DOOR_ADD',
+  'DOOR_UPDATE',
+  'DOOR_REMOVE',
+  'DOOR_TOGGLE',
+  'MAP_UPDATE',
+  'GRID_UPDATE',
+  'MEASUREMENT_UPDATE',
+]);
+
 // Basic throttle implementation to limit IPC frequency
 // Ensures leading edge execution and trailing edge (so final state is always sent)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,7 +74,7 @@ function SyncManager(): null {
   // Use a ref to track if IPC listener is already set up
   const listenerSetupRef = useRef<boolean>(false);
 
-  // eslint-disable-next-line max-lines-per-function, complexity
+  // eslint-disable-next-line max-lines-per-function
   useEffect(() => {
     // Detect platform: Electron vs Web
     const ipcRenderer = window.ipcRenderer;
@@ -239,7 +261,7 @@ function SyncManager(): null {
           const message = event.data as { type?: string };
           if (message?.type === 'REQUEST_INITIAL_STATE') {
             // Ignore (World View doesn't have initial state to give)
-          } else if (message?.type) {
+          } else if (message?.type && VALID_SYNC_ACTIONS.has(message.type)) {
             handleSyncAction(null, message as SyncAction);
           }
         };
@@ -375,8 +397,6 @@ function SyncManager(): null {
             handleInitialStateRequest(event);
           }
         };
-      } else if (isElectron && ipcRenderer) {
-        ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
       }
 
       const handleStoreUpdate = (state: GameState): void => {
@@ -423,18 +443,21 @@ function SyncManager(): null {
       const unsub = useGameStore.subscribe(throttledSync);
 
       // Listen for updates FROM world view
-      if (isElectron && ipcRenderer) {
-        ipcRenderer.on('SYNC_FROM_WORLD_VIEW', (_event, action: SyncAction) => {
-          if (action.type === 'TOKEN_UPDATE') {
-            const { id, changes } = action.payload;
-            const store = useGameStore.getState();
-            const currentToken = store.tokens.find((t) => t.id === id);
-            if (currentToken) {
-              const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
-              useGameStore.setState({ tokens: newTokens });
-            }
+      const syncFromWorldViewListener = (_event: unknown, action: SyncAction): void => {
+        if (action.type === 'TOKEN_UPDATE') {
+          const { id, changes } = action.payload;
+          const store = useGameStore.getState();
+          const currentToken = store.tokens.find((t) => t.id === id);
+          if (currentToken) {
+            const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
+            useGameStore.setState({ tokens: newTokens });
           }
-        });
+        }
+      };
+
+      if (isElectron && ipcRenderer) {
+        ipcRenderer.on('SYNC_FROM_WORLD_VIEW', syncFromWorldViewListener);
+        ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
       }
 
       return () => {
@@ -443,8 +466,8 @@ function SyncManager(): null {
           channel.close();
         }
         if (isElectron && ipcRenderer) {
-          ipcRenderer.removeAllListeners('REQUEST_INITIAL_STATE');
-          ipcRenderer.removeAllListeners('SYNC_FROM_WORLD_VIEW');
+          ipcRenderer.off('REQUEST_INITIAL_STATE', handleInitialStateRequest);
+          ipcRenderer.off('SYNC_FROM_WORLD_VIEW', syncFromWorldViewListener);
         }
         // @ts-expect-error - graphiumSync is dynamically added
         delete window.graphiumSync;

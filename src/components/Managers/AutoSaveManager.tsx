@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 
 /**
  * AutoSaveManager Component
@@ -48,6 +49,10 @@ function AutoSaveManager(): null {
             if (saved) {
               // eslint-disable-next-line no-console
               console.log('[AutoSave] Campaign saved successfully');
+            } else {
+              useUiStore
+                .getState()
+                .showToast('Auto-save failed — your progress may not be saved', 'error');
             }
           } catch (err) {
             console.error('[AutoSave] Failed:', err);

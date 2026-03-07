@@ -28,7 +28,15 @@ export function simplifyPath(points: number[], epsilon: number): number[] {
   // Convert flat array to Point objects
   const pointObjects: Point[] = [];
   for (let i = 0; i < points.length; i += 2) {
-    pointObjects.push({ x: points[i] ?? 0, y: points[i + 1] ?? 0 });
+    const px = points[i];
+    const py = points[i + 1];
+    if (px === undefined || py === undefined) {
+      console.warn(
+        `[pathOptimization] Unexpected undefined coordinate at index ${i} in simplifyPath`,
+      );
+      continue;
+    }
+    pointObjects.push({ x: px, y: py });
   }
 
   // Apply RDP algorithm
@@ -54,11 +62,26 @@ function rdpRecursive(points: Point[], epsilon: number): Point[] {
   // Find the point with maximum perpendicular distance from line (first -> last)
   let maxDistance = 0;
   let maxIndex = 0;
-  const start = points[0] ?? { x: 0, y: 0 };
-  const end = points[points.length - 1] ?? { x: 0, y: 0 };
+  const startPoint = points[0];
+  if (startPoint === undefined) {
+    console.warn('[pathOptimization] Unexpected undefined first point in rdpRecursive');
+    return points;
+  }
+  const start = startPoint;
+  const endPoint = points[points.length - 1];
+  if (endPoint === undefined) {
+    console.warn('[pathOptimization] Unexpected undefined last point in rdpRecursive');
+    return points;
+  }
+  const end = endPoint;
 
   for (let i = 1; i < points.length - 1; i++) {
-    const distance = perpendicularDistance(points[i] ?? { x: 0, y: 0 }, start, end);
+    const interiorPoint = points[i];
+    if (interiorPoint === undefined) {
+      console.warn(`[pathOptimization] Unexpected undefined point at index ${i} in rdpRecursive`);
+      continue;
+    }
+    const distance = perpendicularDistance(interiorPoint, start, end);
     if (distance > maxDistance) {
       maxDistance = distance;
       maxIndex = i;
@@ -171,8 +194,18 @@ function findClosestPointOnPath(
 
   // Check each segment
   for (let i = 0; i < pathPoints.length - 2; i += 2) {
-    const segStart = { x: pathPoints[i] ?? 0, y: pathPoints[i + 1] ?? 0 };
-    const segEnd = { x: pathPoints[i + 2] ?? 0, y: pathPoints[i + 3] ?? 0 };
+    const sx = pathPoints[i];
+    const sy = pathPoints[i + 1];
+    const ex = pathPoints[i + 2];
+    const ey = pathPoints[i + 3];
+    if (sx === undefined || sy === undefined || ex === undefined || ey === undefined) {
+      console.warn(
+        `[pathOptimization] Unexpected undefined coordinate at index ${i} in findClosestPointOnPath`,
+      );
+      continue;
+    }
+    const segStart = { x: sx, y: sy };
+    const segEnd = { x: ex, y: ey };
 
     const result = pointToSegmentDistanceWithPoint(point, segStart, segEnd);
 

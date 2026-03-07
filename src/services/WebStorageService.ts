@@ -154,7 +154,7 @@ export class WebStorageService implements IStorageService {
   }
 
   async loadCampaign(): Promise<Campaign | null> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       // Create file input
       const input = document.createElement('input');
       input.type = 'file';
@@ -189,8 +189,10 @@ export class WebStorageService implements IStorageService {
           resolve(campaign);
         } catch (error) {
           console.error('[WebStorageService] Load campaign failed:', error);
-          throw new Error(
-            `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          reject(
+            new Error(
+              `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            ),
           );
         }
       };

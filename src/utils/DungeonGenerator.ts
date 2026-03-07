@@ -547,7 +547,7 @@ export class DungeonGenerator {
       }
 
       default:
-        break;
+        throw new Error(`Unexpected direction: ${String(direction)}`);
     }
 
     return { type: 'corridor', bounds, wallSegments };
@@ -600,7 +600,7 @@ export class DungeonGenerator {
         connY = Math.round((bounds.y + bounds.height / 2) / gridSize) * gridSize;
         break;
       default:
-        break;
+        throw new Error(`Unexpected direction: ${String(direction)}`);
     }
 
     // Create corridor (already positioned correctly from grid-aligned connection point)
@@ -634,7 +634,7 @@ export class DungeonGenerator {
         newRoom.bounds.y = connY - newRoom.bounds.height / 2;
         break;
       default:
-        break;
+        throw new Error(`Unexpected direction: ${String(direction)}`);
     }
 
     // Grid-snap room position
@@ -680,7 +680,7 @@ export class DungeonGenerator {
         break;
       }
       default:
-        break;
+        throw new Error(`Unexpected direction: ${String(direction)}`);
     }
 
     // Check for collisions (exclude source piece since corridor connects to it)
@@ -739,7 +739,7 @@ export class DungeonGenerator {
         break;
       }
       default:
-        break;
+        throw new Error(`Unexpected direction: ${String(direction)}`);
     }
 
     const sourceRoomDoorway = { x: sourceRoomDoorwayX, y: sourceRoomDoorwayY };
@@ -828,7 +828,7 @@ export class DungeonGenerator {
           centerY = Math.round((bounds.y + bounds.height / 2) / gridSize) * gridSize;
           break;
         default:
-          break;
+          throw new Error(`Unexpected direction: ${String(direction)}`);
       }
     }
 
@@ -1063,7 +1063,7 @@ export class DungeonGenerator {
         swingDirection = 'up'; // Door swings upward (north)
         break;
       default:
-        break;
+        throw new Error(`Unexpected direction: ${String(direction)}`);
     }
 
     return {
