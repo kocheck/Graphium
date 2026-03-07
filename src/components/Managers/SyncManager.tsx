@@ -350,8 +350,8 @@ function SyncManager(): null {
             tokens: state.tokens,
             tokenLibrary: state.campaign.tokenLibrary, // Pass library
             drawings: state.drawings,
-            doors: state.doors || [],
-            stairs: state.stairs || [],
+            doors: state.doors ?? [],
+            stairs: state.stairs ?? [],
             gridSize: state.gridSize,
             gridType: state.gridType,
             gridColor: state.gridColor,

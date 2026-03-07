@@ -166,9 +166,6 @@ export function detectChanges(
   prevState: Partial<SyncableGameState>,
   currentState: Partial<SyncableGameState>,
 ): SyncAction[] {
-  // FORCE RELOAD
-  // eslint-disable-next-line no-console
-  console.log('Safe detectChanges loaded', Date.now());
   const actions: SyncAction[] = [];
 
   // If no previous state, send full sync
