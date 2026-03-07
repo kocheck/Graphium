@@ -18,7 +18,7 @@ import Button from './primitives/Button';
  *
  * @component
  */
-function DoorControls() {
+function DoorControls(): JSX.Element | null {
   const doors = useGameStore((state) => state.doors);
   const updateAllDoorStates = useGameStore((state) => state.updateAllDoorStates);
   const updateAllDoorLocks = useGameStore((state) => state.updateAllDoorLocks);
@@ -28,15 +28,15 @@ function DoorControls() {
   const closedDoorCount = doorCount - openDoorCount;
   const lockedDoorCount = doors.filter((d) => d.isLocked).length;
 
-  const handleOpenAll = () => {
+  const handleOpenAll = (): void => {
     updateAllDoorStates(true);
   };
 
-  const handleCloseAll = () => {
+  const handleCloseAll = (): void => {
     updateAllDoorStates(false);
   };
 
-  const handleUnlockAll = () => {
+  const handleUnlockAll = (): void => {
     updateAllDoorLocks(false);
   };
 

@@ -1,6 +1,34 @@
 import { useState, useRef, useEffect } from 'react';
+import type React from 'react';
 
 import type Konva from 'konva';
+
+interface SelectionRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isVisible: boolean;
+}
+
+interface UseCanvasSelectionReturn {
+  selectedIds: string[];
+  setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>;
+  hoveredTokenId: string | null;
+  setHoveredTokenId: React.Dispatch<React.SetStateAction<string | null>>;
+  selectionRect: SelectionRect;
+  setSelectionRect: React.Dispatch<React.SetStateAction<SelectionRect>>;
+  selectionStart: React.MutableRefObject<{ x: number; y: number } | null>;
+  selectionRectRef: React.MutableRefObject<Konva.Rect | null>;
+  selectionRectCoordsRef: React.MutableRefObject<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
+  transformerRef: React.MutableRefObject<Konva.Transformer | null>;
+  animationFrameRef: React.MutableRefObject<number | null>;
+}
 
 /**
  * Manages selection state for canvas tokens and drawings.
@@ -17,7 +45,7 @@ export function useCanvasSelection({
   onSelectionChange,
 }: {
   onSelectionChange?: (selectedIds: string[]) => void;
-}) {
+}): UseCanvasSelectionReturn {
   // Selection rectangle for drag-select
   const selectionStart = useRef<{ x: number; y: number } | null>(null);
   const [selectionRect, setSelectionRect] = useState<{

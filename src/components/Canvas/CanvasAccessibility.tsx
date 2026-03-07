@@ -48,12 +48,13 @@ function buildCanvasDescription(
   return `${view}. ${mapInfo} ${tokenInfo} on canvas.${toolInfo}`;
 }
 
+// eslint-disable-next-line import/no-unused-modules, max-lines-per-function
 export function CanvasAccessibility({
   tool,
   selectedTokenIds,
   onSelectToken,
   isWorldView,
-}: CanvasAccessibilityProps) {
+}: CanvasAccessibilityProps): JSX.Element {
   const [announcement, setAnnouncement] = useState('');
   const prevTokensRef = useRef<Token[]>([]);
   const prevDoorsRef = useRef<Door[]>([]);
@@ -126,6 +127,7 @@ export function CanvasAccessibility({
   const focusedTokenIndex = useRef(-1);
 
   const handleKeyDown = useCallback(
+    // eslint-disable-next-line complexity
     (e: React.KeyboardEvent) => {
       // Escape exits the canvas keyboard widget (returns to normal tab order)
       if (e.key === 'Escape') {
@@ -189,8 +191,18 @@ export function CanvasAccessibility({
         }
         e.preventDefault();
 
-        const dx = e.key === 'ArrowLeft' ? -gridSize : e.key === 'ArrowRight' ? gridSize : 0;
-        const dy = e.key === 'ArrowUp' ? -gridSize : e.key === 'ArrowDown' ? gridSize : 0;
+        let dx = 0;
+        if (e.key === 'ArrowLeft') {
+          dx = -gridSize;
+        } else if (e.key === 'ArrowRight') {
+          dx = gridSize;
+        }
+        let dy = 0;
+        if (e.key === 'ArrowUp') {
+          dy = -gridSize;
+        } else if (e.key === 'ArrowDown') {
+          dy = gridSize;
+        }
 
         for (const id of selectedTokenIds) {
           const token = tokens.find((t) => t.id === id);
@@ -199,14 +211,14 @@ export function CanvasAccessibility({
           }
         }
 
-        const direction =
-          e.key === 'ArrowUp'
-            ? 'up'
-            : e.key === 'ArrowDown'
-              ? 'down'
-              : e.key === 'ArrowLeft'
-                ? 'left'
-                : 'right';
+        let direction = 'right';
+        if (e.key === 'ArrowUp') {
+          direction = 'up';
+        } else if (e.key === 'ArrowDown') {
+          direction = 'down';
+        } else if (e.key === 'ArrowLeft') {
+          direction = 'left';
+        }
         announce(
           `Moved ${selectedTokenIds.length} token${selectedTokenIds.length > 1 ? 's' : ''} ${direction}`,
         );

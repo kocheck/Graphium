@@ -61,7 +61,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     };
   }
 
-  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const isDev = import.meta.env.DEV;
     const isTest = import.meta.env.MODE === 'test';
 
@@ -101,7 +101,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     });
   }
 
-  handleRetry = () => {
+  handleRetry = (): void => {
     // Reset error state to dismiss the error message
     // Note: This does not retry the failed operation. The user must
     // manually re-upload or re-crop the image after dismissing.
@@ -114,7 +114,7 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
     });
   };
 
-  override render() {
+  override render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div

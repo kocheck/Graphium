@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import type React from 'react';
 
 import { useGameStore } from '../../../store/gameStore';
 import { snapToGrid } from '../../../utils/grid';
@@ -7,6 +8,22 @@ import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 import type { Token, GridType } from '../../../types/domain';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
+
+interface UseTokenDragReturn {
+  handleTokenPointerDown: (
+    e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
+    tokenId: string,
+  ) => void;
+  handleTokenPointerMove: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  handleTokenPointerUp: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  dragPositionsRef: React.MutableRefObject<Map<string, { x: number; y: number }>>;
+  tokenNodesRef: React.MutableRefObject<Map<string, Konva.Node>>;
+  draggingTokenIds: Set<string>;
+  itemsForDuplication: string[];
+  setItemsForDuplication: React.Dispatch<React.SetStateAction<string[]>>;
+  snapPreviewPositionsRef: React.MutableRefObject<Map<string, { x: number; y: number }>>;
+  isDragging: boolean;
+}
 
 interface UseTokenDragProps {
   tool: string;
@@ -23,6 +40,7 @@ interface UseTokenDragProps {
   trackStylusUsage: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
 }
 
+// eslint-disable-next-line max-lines-per-function
 export const useTokenDrag = ({
   tool,
   isWorldView = false,
@@ -34,7 +52,7 @@ export const useTokenDrag = ({
   resolvedTokens,
   shouldRejectPointerEvent,
   trackStylusUsage,
-}: UseTokenDragProps) => {
+}: UseTokenDragProps): UseTokenDragReturn => {
   // Refs for performance (direct manipulation)
   const dragPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
@@ -65,7 +83,7 @@ export const useTokenDrag = ({
   const throttleDragBroadcast = useCallback(
     (tokenId: string, x: number, y: number) => {
       const now = Date.now();
-      const lastBroadcast = dragBroadcastThrottleRef.current.get(tokenId) || 0;
+      const lastBroadcast = dragBroadcastThrottleRef.current.get(tokenId) ?? 0;
 
       if (now - lastBroadcast >= DRAG_BROADCAST_THROTTLE_MS) {
         dragBroadcastThrottleRef.current.set(tokenId, now);
@@ -118,6 +136,7 @@ export const useTokenDrag = ({
   );
 
   const handleTokenPointerMove = useCallback(
+    // eslint-disable-next-line complexity
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
       if (shouldRejectPointerEvent(e)) {
         return;

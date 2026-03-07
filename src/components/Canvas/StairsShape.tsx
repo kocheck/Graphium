@@ -30,7 +30,7 @@ interface StairsShapeProps {
  *
  * @param stairs - Stairs object from gameStore
  */
-function StairsShape({ stairs }: StairsShapeProps) {
+function StairsShape({ stairs }: StairsShapeProps): JSX.Element {
   // Color scheme based on type
   const fillColor = stairs.type === 'up' ? STAIRS_COLORS.fillUp : STAIRS_COLORS.fillDown;
   const strokeColor = STAIRS_COLORS.stroke;
@@ -83,7 +83,7 @@ function renderStairTreads(
   strokeColor: string,
   halfWidth: number,
   halfHeight: number,
-) {
+): JSX.Element {
   const numSteps = 5; // Number of visible step lines
   const lines = [];
 
@@ -128,7 +128,7 @@ function renderStairTreads(
  * @param stairs - Stairs object
  * @param arrowColor - Color for the arrow
  */
-function renderDirectionalArrow(stairs: Stairs, arrowColor: string) {
+function renderDirectionalArrow(stairs: Stairs, arrowColor: string): JSX.Element {
   const centerX = 0; // Already centered by Group
   const centerY = 0; // Already centered by Group
   const arrowSize = Math.min(stairs.width, stairs.height) * 0.3;
@@ -173,7 +173,7 @@ function renderDirectionalArrow(stairs: Stairs, arrowColor: string) {
  * For now, this is primarily handled by color and arrow color.
  * Could add text labels if needed in the future.
  */
-function renderTypeIndicator() {
+function renderTypeIndicator(): null {
   // Optional: Could add "UP" or "DOWN" text here
   // For now, the arrow color (blue/red) indicates the type
   return null;

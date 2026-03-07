@@ -135,7 +135,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
     ctx.clearRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
 
     // Helper to convert world coordinates to minimap coordinates
-    const worldToMinimap = (worldX: number, worldY: number) => ({
+    const worldToMinimap = (worldX: number, worldY: number): { x: number; y: number } => ({
       x: (worldX - worldBounds.minX) * minimapScale,
       y: (worldY - worldBounds.minY) * minimapScale,
     });

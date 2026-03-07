@@ -10,18 +10,18 @@
  * <Input helperText="Used for display only" />
  */
 
-import React, { useId } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes } from 'react';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
 }
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
+const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, className = '', id, ...rest }, ref) => {
     const generatedId = useId();
-    const inputId = id || generatedId;
+    const inputId = id ?? generatedId;
     const errorId = error ? `${inputId}-error` : undefined;
     const helperId = helperText && !error ? `${inputId}-helper` : undefined;
 
@@ -36,7 +36,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           aria-invalid={error ? true : undefined}
-          aria-describedby={errorId || helperId || undefined}
+          aria-describedby={errorId ?? helperId ?? undefined}
           className={['input-primitive', error ? 'input-primitive--error' : '', className]
             .filter(Boolean)
             .join(' ')}

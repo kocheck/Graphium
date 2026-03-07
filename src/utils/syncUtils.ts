@@ -14,6 +14,7 @@ import type { Measurement } from '../types/measurement';
  * Deep equality check for simple objects with primitive values and arrays
  * More reliable than JSON.stringify which can fail due to property ordering
  */
+// eslint-disable-next-line complexity
 export function isEqual(obj1: unknown, obj2: unknown): boolean {
   if (obj1 === obj2) {
     return true;
@@ -160,11 +161,13 @@ export type SyncAction =
 /**
  * Detects changes between previous and current state, returns delta actions
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 export function detectChanges(
   prevState: Partial<SyncableGameState>,
   currentState: Partial<SyncableGameState>,
 ): SyncAction[] {
   // FORCE RELOAD
+  // eslint-disable-next-line no-console
   console.log('Safe detectChanges loaded', Date.now());
   const actions: SyncAction[] = [];
 
@@ -176,8 +179,8 @@ export function detectChanges(
         tokens: currentState.tokens,
         tokenLibrary: currentState.tokenLibrary,
         drawings: currentState.drawings,
-        doors: currentState.doors || [],
-        stairs: currentState.stairs || [],
+        doors: currentState.doors ?? [],
+        stairs: currentState.stairs ?? [],
         gridSize: currentState.gridSize,
         gridType: currentState.gridType,
         gridColor: currentState.gridColor,
@@ -192,31 +195,29 @@ export function detectChanges(
   // --- TOKEN LIBRARY ---
   // Simple equality check for the whole library for now (optimization: can be granular later if needed)
   if (!isEqual(prevState.tokenLibrary, currentState.tokenLibrary)) {
-    actions.push({ type: 'LIBRARY_UPDATE', payload: currentState.tokenLibrary || [] });
+    actions.push({ type: 'LIBRARY_UPDATE', payload: currentState.tokenLibrary ?? [] });
   }
 
   // --- TOKENS ---
-  const prevTokens = prevState.tokens || [];
-  const currentTokens = currentState.tokens || [];
+  const prevTokens = prevState.tokens ?? [];
+  const currentTokens = currentState.tokens ?? [];
 
   // Create maps, filtering out any invalid tokens
-  const prevTokenMap = new Map(
-    prevTokens.filter((t: Token) => t && t.id).map((t: Token) => [t.id, t]),
-  );
+  const prevTokenMap = new Map(prevTokens.filter((t: Token) => t?.id).map((t: Token) => [t.id, t]));
   const currentTokenMap = new Map(
-    currentTokens.filter((t: Token) => t && t.id).map((t: Token) => [t.id, t]),
+    currentTokens.filter((t: Token) => t?.id).map((t: Token) => [t.id, t]),
   );
 
   // New tokens
   currentTokens.forEach((token: Token) => {
-    if (token && token.id && !prevTokenMap.has(token.id)) {
+    if (token?.id && !prevTokenMap.has(token.id)) {
       actions.push({ type: 'TOKEN_ADD', payload: token });
     }
   });
 
   // Removed tokens
   prevTokens.forEach((token: Token) => {
-    if (token && token.id && !currentTokenMap.has(token.id)) {
+    if (token?.id && !currentTokenMap.has(token.id)) {
       actions.push({ type: 'TOKEN_REMOVE', payload: { id: token.id } });
     }
   });
@@ -246,15 +247,15 @@ export function detectChanges(
   });
 
   // --- DRAWINGS ---
-  const prevDrawings = prevState.drawings || [];
-  const currentDrawings = currentState.drawings || [];
+  const prevDrawings = prevState.drawings ?? [];
+  const currentDrawings = currentState.drawings ?? [];
 
   if (!isEqual(prevDrawings, currentDrawings)) {
     const prevDrawingMap = new Map(
-      prevDrawings.filter((d: Drawing) => d && d.id).map((d: Drawing) => [d.id, d]),
+      prevDrawings.filter((d: Drawing) => d?.id).map((d: Drawing) => [d.id, d]),
     );
     const currentDrawingMap = new Map(
-      currentDrawings.filter((d: Drawing) => d && d.id).map((d: Drawing) => [d.id, d]),
+      currentDrawings.filter((d: Drawing) => d?.id).map((d: Drawing) => [d.id, d]),
     );
 
     currentDrawings.forEach((drawing: Drawing) => {
@@ -282,7 +283,7 @@ export function detectChanges(
       }
     });
     prevDrawings.forEach((drawing: Drawing) => {
-      if (drawing && drawing.id && !currentDrawingMap.has(drawing.id)) {
+      if (drawing?.id && !currentDrawingMap.has(drawing.id)) {
         actions.push({ type: 'DRAWING_REMOVE', payload: { id: drawing.id } });
       }
     });
@@ -312,15 +313,13 @@ export function detectChanges(
 
   // --- DOORS ---
   // If door count changes or properties change
-  const prevDoors = prevState.doors || [];
-  const currentDoors = currentState.doors || [];
+  const prevDoors = prevState.doors ?? [];
+  const currentDoors = currentState.doors ?? [];
 
   if (!isEqual(prevDoors, currentDoors)) {
-    const prevDoorMap = new Map(
-      prevDoors.filter((d: Door) => d && d.id).map((d: Door) => [d.id, d]),
-    );
+    const prevDoorMap = new Map(prevDoors.filter((d: Door) => d?.id).map((d: Door) => [d.id, d]));
     const currentDoorMap = new Map(
-      currentDoors.filter((d: Door) => d && d.id).map((d: Door) => [d.id, d]),
+      currentDoors.filter((d: Door) => d?.id).map((d: Door) => [d.id, d]),
     );
 
     currentDoors.forEach((door: Door) => {
@@ -351,7 +350,7 @@ export function detectChanges(
     });
 
     prevDoors.forEach((door: Door) => {
-      if (door && door.id && !currentDoorMap.has(door.id)) {
+      if (door?.id && !currentDoorMap.has(door.id)) {
         actions.push({ type: 'DOOR_REMOVE', payload: { id: door.id } });
       }
     });

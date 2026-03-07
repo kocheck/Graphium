@@ -110,7 +110,7 @@ function generateErrorId(): string {
  * Uses error name, message, and first line of stack
  */
 function generateErrorHash(sanitizedError: SanitizedError): string {
-  const stackFirstLine = sanitizedError.stack.split('\n')[0] || '';
+  const stackFirstLine = sanitizedError.stack.split('\n')[0] ?? '';
   const hashInput = `${sanitizedError.name}:${sanitizedError.message}:${stackFirstLine}`;
 
   // Simple hash function (for deduplication, not cryptographic)
@@ -143,6 +143,7 @@ export function getStoredErrors(): StoredError[] {
  * Stores an error in localStorage for later reporting
  * Handles deduplication by incrementing occurrence count for duplicate errors
  */
+// eslint-disable-next-line import/no-unused-modules
 export function storeError(error: StoredError): void {
   try {
     const errors = getStoredErrors();
@@ -155,7 +156,10 @@ export function storeError(error: StoredError): void {
 
     if (existingIndex !== -1) {
       // Error already exists - increment occurrence count
-      const existing = errors[existingIndex]!;
+      const existing = errors[existingIndex];
+      if (!existing) {
+        return;
+      }
       existing.occurrences += 1;
       existing.lastOccurrence = error.timestamp;
 
@@ -195,6 +199,7 @@ export function markErrorReported(errorId: string): void {
 /**
  * Clears all stored errors
  */
+// eslint-disable-next-line import/no-unused-modules
 export function clearStoredErrors(): void {
   try {
     localStorage.removeItem(ERROR_STORAGE_KEY);
@@ -345,6 +350,7 @@ export function initGlobalErrorHandlers(): () => void {
  * Manually capture and store an error
  * Useful for try/catch blocks where you want to log but not crash
  */
+// eslint-disable-next-line import/no-unused-modules
 export async function captureError(
   error: Error,
   source: StoredError['source'] = 'global',

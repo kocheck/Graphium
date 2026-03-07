@@ -25,6 +25,7 @@ import type { TokenLibraryItem } from '../types/domain';
  * @param query - Search query
  * @returns Score (higher is better match), 0 if no match
  */
+// eslint-disable-next-line complexity
 function scoreMatch(text: string, query: string): number {
   if (!query) {
     return 0;
@@ -76,7 +77,7 @@ function scoreMatch(text: string, query: string): number {
   for (let i = 0; i < lowerQuery.length; i++) {
     const char = lowerQuery[i];
     // Find next occurrence
-    const idx = lowerText.indexOf(char!, lastMatchIdx + 1);
+    const idx = lowerText.indexOf(char ?? '', lastMatchIdx + 1);
 
     // Bonus: Match is at start of word (or start of string)
     if (

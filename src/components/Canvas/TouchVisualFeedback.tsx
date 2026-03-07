@@ -25,6 +25,7 @@ const TOUCH_COLORS = {
   feedbackBg: 'rgba(0, 0, 0, 0.8)', // --app-touch-feedback-bg
 } as const;
 
+// eslint-disable-next-line import/no-unused-modules
 export interface TouchVisualFeedbackProps {
   /** Current pointer pressure (0.0 - 1.0), or null if not drawing */
   pressure: number | null;
@@ -48,7 +49,7 @@ function TouchVisualFeedback({
   touchPoints,
   gestureMode,
   containerBounds,
-}: TouchVisualFeedbackProps) {
+}: TouchVisualFeedbackProps): JSX.Element {
   const settings = useTouchSettingsStore();
 
   // Calculate pressure indicator size (10-40px based on pressure)
@@ -162,13 +163,13 @@ function TouchVisualFeedback({
           ))}
 
           {/* Connection line between two touch points */}
-          {touchPoints.length === 2 && (
+          {touchPoints.length === 2 && touchPoints[0] && touchPoints[1] && (
             <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
               <line
-                x1={touchPoints[0]!.x}
-                y1={touchPoints[0]!.y}
-                x2={touchPoints[1]!.x}
-                y2={touchPoints[1]!.y}
+                x1={touchPoints[0].x}
+                y1={touchPoints[0].y}
+                x2={touchPoints[1].x}
+                y2={touchPoints[1].y}
                 stroke={TOUCH_COLORS.indicator}
                 strokeWidth="2"
                 strokeDasharray="5,5"
@@ -195,4 +196,5 @@ function TouchVisualFeedback({
   );
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default TouchVisualFeedback;

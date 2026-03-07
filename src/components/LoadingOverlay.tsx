@@ -78,7 +78,7 @@ import { useMemo } from 'react';
 import { useUiStore } from '../store/uiStore';
 import { rollForMessage } from '../utils/systemMessages';
 
-export function LoadingOverlay() {
+export function LoadingOverlay(): JSX.Element | null {
   // Subscribe to pause state from Zustand uiStore
   const isGamePaused = useUiStore((state) => state.isGamePaused);
 

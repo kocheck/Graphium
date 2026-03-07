@@ -86,16 +86,18 @@ class DungeonGeneratorErrorBoundary extends Component<Props, State> {
    * @param error - The error thrown during generation
    * @param errorInfo - React error info including component stack
    */
-  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('Dungeon generator error:', error);
+
     console.error('Error info:', errorInfo);
+
     console.error('Component stack:', errorInfo.componentStack);
   }
 
   /**
    * Resets error state to allow retry
    */
-  resetError = () => {
+  resetError = (): void => {
     this.setState({ hasError: false, error: undefined });
   };
 
@@ -104,7 +106,7 @@ class DungeonGeneratorErrorBoundary extends Component<Props, State> {
    *
    * @returns {ReactNode} Children or error UI
    */
-  override render() {
+  override render(): ReactNode {
     if (this.state.hasError) {
       return <ErrorFallbackUI error={this.state.error} onReset={this.resetError} />;
     }
@@ -113,4 +115,5 @@ class DungeonGeneratorErrorBoundary extends Component<Props, State> {
   }
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default DungeonGeneratorErrorBoundary;

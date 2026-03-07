@@ -43,7 +43,7 @@ function QuickTokenSidebar({
    * Handles drag start for the generic token placeholder
    * Creates a special payload with a placeholder type
    */
-  const handleGenericTokenDragStart = (e: React.DragEvent) => {
+  const handleGenericTokenDragStart = (e: React.DragEvent): void => {
     // Create a generic token payload with a placeholder identifier
     const genericTokenData = {
       type: 'GENERIC_TOKEN',
@@ -79,6 +79,7 @@ function QuickTokenSidebar({
           document.body.removeChild(div);
         } catch (error) {
           // Safe no-op: drag helper is already gone or cannot be removed
+          // eslint-disable-next-line no-console
           console.debug('Drag helper cleanup failed:', error);
         }
       }

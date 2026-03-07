@@ -55,7 +55,8 @@ const UpdateManager = lazy(() => import('./components/Managers/UpdateManager'));
  * @see src/utils/useWindowType.ts for window detection
  * @see src/components/Canvas/CanvasManager.tsx for canvas rendering
  */
-function App() {
+// eslint-disable-next-line max-lines-per-function, complexity
+function App(): JSX.Element {
   // Detect window type for UI sanitization
   const { isArchitectView, isWorldView } = useWindowType();
   const isDesignSystemPlayground = window.location.pathname === '/design-system';
@@ -108,7 +109,7 @@ function App() {
 
   // Modal keyboard shortcuts (About: ?, Escape; UpdateManager: Escape)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }

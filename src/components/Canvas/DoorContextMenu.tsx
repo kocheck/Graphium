@@ -32,7 +32,7 @@ export default function DoorContextMenu({
   onUpdateDoorLock,
   onRemoveDoor,
   onClose,
-}: DoorContextMenuProps) {
+}: DoorContextMenuProps): JSX.Element {
   return (
     <>
       {/* Invisible backdrop to close menu on outside click */}

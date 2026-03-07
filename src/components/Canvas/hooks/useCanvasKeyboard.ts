@@ -43,7 +43,11 @@ export function useCanvasKeyboard({
   setGridType,
   setSelectedIds,
   showToast,
-}: UseCanvasKeyboardProps) {
+}: UseCanvasKeyboardProps): {
+  isAltPressed: boolean;
+  isMKeyPressed: boolean;
+  isSpacePressed: boolean;
+} {
   const [isAltPressed, setIsAltPressed] = useState(false);
   const [isMKeyPressed, setIsMKeyPressed] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
@@ -57,7 +61,8 @@ export function useCanvasKeyboard({
       return tag === 'input' || tag === 'textarea' || el.isContentEditable;
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    // eslint-disable-next-line complexity
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Track Alt Key (always track, even in inputs, for drag operations)
       // Disabled in World View to prevent duplication
       if (e.key === 'Alt' && !isWorldView) {
@@ -143,7 +148,7 @@ export function useCanvasKeyboard({
       }
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
+    const handleKeyUp = (e: KeyboardEvent): void => {
       // Always track Alt key release
       if (e.key === 'Alt') {
         setIsAltPressed(false);
@@ -160,7 +165,7 @@ export function useCanvasKeyboard({
       }
     };
 
-    const handleBlur = () => {
+    const handleBlur = (): void => {
       setIsSpacePressed(false);
       setIsAltPressed(false);
       setIsMKeyPressed(false);

@@ -13,8 +13,11 @@ import { useState, useEffect, useRef } from 'react';
 
 import { useGameStore } from '../store/gameStore';
 
+// eslint-disable-next-line import/no-unused-modules
 export type ToolType = 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
+// eslint-disable-next-line import/no-unused-modules
 export type MeasurementMode = 'ruler' | 'blast' | 'cone';
+// eslint-disable-next-line import/no-unused-modules
 export type DoorOrientation = 'horizontal' | 'vertical';
 
 interface UseToolStateOptions {
@@ -54,7 +57,7 @@ export function useToolState({ isArchitectView }: UseToolStateOptions): UseToolS
   const [recentColors, setRecentColors] = useState<string[]>(['#df4b26', '#3b82f6', '#22c55e']);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
-  const handleColorChange = (newColor: string) => {
+  const handleColorChange = (newColor: string): void => {
     setColor(newColor);
     setRecentColors((prev) => {
       const filtered = prev.filter((c) => c.toLowerCase() !== newColor.toLowerCase());
@@ -82,7 +85,7 @@ export function useToolState({ isArchitectView }: UseToolStateOptions): UseToolS
       return;
     }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;

@@ -411,6 +411,7 @@ export const processBatch = (
     }
     return {
       promise: Promise.resolve([]),
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       cancel: () => {},
     };
   }
@@ -419,7 +420,7 @@ export const processBatch = (
   const handles: ProcessingHandle[] = [];
   let isCancelled = false;
 
-  const updateOverallProgress = () => {
+  const updateOverallProgress = (): void => {
     // Don't update progress if batch processing has been cancelled
     if (isCancelled) {
       return;

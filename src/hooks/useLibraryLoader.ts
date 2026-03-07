@@ -18,7 +18,7 @@ export function useLibraryLoader(isArchitectView: boolean): void {
       return;
     }
 
-    const loadLibrary = async () => {
+    const loadLibrary = async (): Promise<void> => {
       try {
         const storage = getStorage();
         const libraryItems = await storage.loadLibraryIndex();

@@ -39,9 +39,11 @@ function DoorLayer({
   onToggleDoor,
   onDeleteDoor,
   onDoorContextMenu,
-}: DoorLayerProps) {
+}: DoorLayerProps): JSX.Element {
   if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
     console.log('[DoorLayer] Rendering', doors.length, 'doors. isWorldView:', isWorldView);
+    // eslint-disable-next-line no-console
     console.log(
       '[DoorLayer] Doors state:',
       doors.map((d) => ({ id: d.id, isOpen: d.isOpen })),
@@ -52,6 +54,7 @@ function DoorLayer({
     <>
       {doors.map((door) => {
         if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
           console.log(
             '[DoorLayer] Rendering door:',
             door.id,

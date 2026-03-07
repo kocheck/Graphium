@@ -16,8 +16,10 @@ import { create } from 'zustand';
 import type { ToastMessage, ConfirmDialog } from '../types/domain';
 
 // Re-export types for consumer convenience
+// eslint-disable-next-line import/no-unused-modules
 export type { ToastMessage, ConfirmDialog };
 
+// eslint-disable-next-line import/no-unused-modules
 export interface UiState {
   // --- Toast notifications ---
   toast: ToastMessage | null;

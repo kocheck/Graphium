@@ -74,7 +74,7 @@ class LibraryModalErrorBoundary extends Component<
     // });
   }
 
-  handleClose = () => {
+  handleClose = (): void => {
     const { onClose } = this.props;
 
     // Reset error state
@@ -89,7 +89,7 @@ class LibraryModalErrorBoundary extends Component<
     }
   };
 
-  override render() {
+  override render(): ReactNode {
     const { hasError, error } = this.state;
     const { children } = this.props;
 

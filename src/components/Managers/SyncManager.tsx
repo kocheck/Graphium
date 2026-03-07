@@ -3,10 +3,13 @@ import { useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { isEqual, detectChanges } from '../../utils/syncUtils';
 
+import type { GameState } from '../../store/gameStore';
+import type { Token } from '../../types/domain';
 import type { SyncAction, SyncableGameState } from '../../utils/syncUtils';
 
 // Basic throttle implementation to limit IPC frequency
 // Ensures leading edge execution and trailing edge (so final state is always sent)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
   let lastFunc: ReturnType<typeof setTimeout>;
   let lastRan: number | undefined;
@@ -19,7 +22,7 @@ function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T
       clearTimeout(lastFunc);
       lastFunc = setTimeout(
         () => {
-          if (Date.now() - lastRan! >= limit) {
+          if (lastRan !== undefined && Date.now() - lastRan >= limit) {
             func.apply(this, args);
             lastRan = Date.now();
           }
@@ -38,16 +41,18 @@ function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T
  *
  * ... (Comments preserved)
  */
-function SyncManager() {
+// eslint-disable-next-line max-lines-per-function
+function SyncManager(): null {
   // Track previous state for diffing
-  const prevStateRef = useRef<any>(null);
+  const prevStateRef = useRef<Partial<SyncableGameState> | null>(null);
 
   // Track previous state for World View changes (bidirectional sync)
-  const worldViewPrevStateRef = useRef<any>(null);
+  const worldViewPrevStateRef = useRef<Partial<SyncableGameState> | null>(null);
 
   // Use a ref to track if IPC listener is already set up
   const listenerSetupRef = useRef<boolean>(false);
 
+  // eslint-disable-next-line max-lines-per-function, complexity
   useEffect(() => {
     // Detect platform: Electron vs Web
     const ipcRenderer = window.ipcRenderer;
@@ -55,7 +60,7 @@ function SyncManager() {
     const isWeb = !isElectron;
 
     // Store IPC listener reference for cleanup
-    let ipcListener: ((event: any, action: SyncAction) => void) | null = null;
+    let ipcListener: ((event: unknown, action: SyncAction) => void) | null = null;
 
     // Detect window type from URL parameter
     const params = new URLSearchParams(window.location.search);
@@ -64,7 +69,7 @@ function SyncManager() {
     // Transport Setup
     let channel: BroadcastChannel | null = null;
 
-    const sendSyncActionDirectly = (action: SyncAction) => {
+    const sendSyncActionDirectly = (action: SyncAction): void => {
       if (isWeb && channel) {
         channel.postMessage(action);
       } else if (isElectron && ipcRenderer) {
@@ -86,7 +91,8 @@ function SyncManager() {
       // WORLD VIEW (CONSUMER)
       // ============================================================
 
-      const handleSyncAction = (_event: any, action: SyncAction) => {
+      // eslint-disable-next-line complexity
+      const handleSyncAction = (_event: unknown, action: SyncAction): void => {
         const store = useGameStore.getState();
 
         switch (action.type) {
@@ -105,9 +111,9 @@ function SyncManager() {
             worldViewPrevStateRef.current = {
               tokens: action.payload.tokens ? [...action.payload.tokens] : [],
               tokenLibrary: fullLib ? [...fullLib] : [], // Initialize library for diffing
-              drawings: [...(action.payload.drawings || [])],
-              doors: [...(action.payload.doors || [])],
-              stairs: [...(action.payload.stairs || [])],
+              drawings: [...(action.payload.drawings ?? [])],
+              doors: [...(action.payload.doors ?? [])],
+              stairs: [...(action.payload.stairs ?? [])],
               gridSize: action.payload.gridSize ?? 50,
               gridType: action.payload.gridType ?? 'LINES',
               gridColor: action.payload.gridColor ?? '#333333',
@@ -216,7 +222,7 @@ function SyncManager() {
             break;
 
           case 'GRID_UPDATE':
-            useGameStore.setState(action.payload as any);
+            useGameStore.setState(action.payload);
             break;
 
           case 'MEASUREMENT_UPDATE':
@@ -230,17 +236,17 @@ function SyncManager() {
 
       if (isWeb && channel) {
         channel.onmessage = (event) => {
-          const message = event.data;
+          const message = event.data as { type?: string };
           if (message?.type === 'REQUEST_INITIAL_STATE') {
             // Ignore (World View doesn't have initial state to give)
           } else if (message?.type) {
-            handleSyncAction(null, message);
+            handleSyncAction(null, message as SyncAction);
           }
         };
         // Request initial state
         channel.postMessage({ type: 'REQUEST_INITIAL_STATE' });
       } else if (isElectron && ipcRenderer) {
-        ipcListener = (event: any, action: SyncAction) => {
+        ipcListener = (event: unknown, action: SyncAction) => {
           handleSyncAction(event, action);
         };
 
@@ -253,23 +259,26 @@ function SyncManager() {
       }
 
       // BIDIRECTIONAL: Sync from World View to Architect
-      const detectWorldViewChanges = (prevState: any, currentState: any): SyncAction[] => {
+      const detectWorldViewChanges = (
+        prevState: Partial<SyncableGameState> | null,
+        currentState: Partial<SyncableGameState>,
+      ): SyncAction[] => {
         const actions: SyncAction[] = [];
         if (!prevState) {
           return actions;
         }
 
-        const prevTokenMap = new Map(prevState.tokens.map((t: any) => [t.id, t]));
+        const prevTokenMap = new Map((prevState.tokens ?? []).map((t) => [t.id, t]));
 
-        currentState.tokens.forEach((token: any) => {
-          const prev: any = prevTokenMap.get(token.id);
+        (currentState.tokens ?? []).forEach((token) => {
+          const prev = prevTokenMap.get(token.id);
           if (prev) {
-            const changes: Record<string, any> = {};
+            const changes: Partial<Token> = {};
             if (!isEqual(token.x, prev.x)) {
-              changes['x'] = token.x;
+              changes.x = token.x;
             }
             if (!isEqual(token.y, prev.y)) {
-              changes['y'] = token.y;
+              changes.y = token.y;
             }
             if (Object.keys(changes).length > 0) {
               actions.push({ type: 'TOKEN_UPDATE', payload: { id: token.id, changes } });
@@ -279,8 +288,20 @@ function SyncManager() {
         return actions;
       };
 
-      const handleWorldViewUpdate = (state: any) => {
-        const actions = detectWorldViewChanges(worldViewPrevStateRef.current, state);
+      const handleWorldViewUpdate = (state: GameState): void => {
+        const syncable: Partial<SyncableGameState> = {
+          tokens: state.tokens,
+          tokenLibrary: state.campaign.tokenLibrary,
+          drawings: state.drawings,
+          doors: state.doors,
+          stairs: state.stairs,
+          gridSize: state.gridSize,
+          gridType: state.gridType,
+          gridColor: state.gridColor,
+          map: state.map,
+          isDaylightMode: state.isDaylightMode,
+        };
+        const actions = detectWorldViewChanges(worldViewPrevStateRef.current, syncable);
         actions.forEach((action) => {
           if (isWeb && channel) {
             channel.postMessage(action);
@@ -291,10 +312,10 @@ function SyncManager() {
 
         worldViewPrevStateRef.current = {
           tokens: [...state.tokens],
-          tokenLibrary: [...(state.campaign?.tokenLibrary || [])], // This usually won't change from WV, but good for completeness
+          tokenLibrary: [...(state.campaign.tokenLibrary ?? [])], // This usually won't change from WV, but good for completeness
           drawings: [...state.drawings],
-          doors: [...(state.doors || [])],
-          stairs: [...(state.stairs || [])],
+          doors: [...(state.doors ?? [])],
+          stairs: [...(state.stairs ?? [])],
           gridSize: state.gridSize,
           gridType: state.gridType,
           gridColor: state.gridColor,
@@ -321,7 +342,7 @@ function SyncManager() {
       // ARCHITECT VIEW (PRODUCER)
       // ============================================================
 
-      const handleInitialStateRequest = (_event: any) => {
+      const handleInitialStateRequest = (_event: unknown): void => {
         const state = useGameStore.getState();
         const initialAction: SyncAction = {
           type: 'FULL_SYNC',
@@ -349,7 +370,8 @@ function SyncManager() {
 
       if (isWeb && channel) {
         channel.onmessage = (event) => {
-          if (event.data?.type === 'REQUEST_INITIAL_STATE') {
+          const msg = event.data as { type?: string } | null;
+          if (msg?.type === 'REQUEST_INITIAL_STATE') {
             handleInitialStateRequest(event);
           }
         };
@@ -357,14 +379,23 @@ function SyncManager() {
         ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
       }
 
-      const handleStoreUpdate = (state: any) => {
+      const handleStoreUpdate = (state: GameState): void => {
         // Create a syncable state object including tokenLibrary from campaign
         const syncableState: Partial<SyncableGameState> = {
-          ...state,
+          tokens: state.tokens,
           tokenLibrary: state.campaign.tokenLibrary,
+          drawings: state.drawings,
+          doors: state.doors,
+          stairs: state.stairs,
+          gridSize: state.gridSize,
+          gridType: state.gridType,
+          gridColor: state.gridColor,
+          map: state.map,
+          exploredRegions: state.exploredRegions,
+          isDaylightMode: state.isDaylightMode,
         };
 
-        const actions = detectChanges(prevStateRef.current, syncableState);
+        const actions = detectChanges(prevStateRef.current ?? {}, syncableState);
         actions.forEach((action) => {
           if (isWeb && channel) {
             channel.postMessage(action);
@@ -377,8 +408,8 @@ function SyncManager() {
           tokens: [...state.tokens],
           tokenLibrary: [...state.campaign.tokenLibrary],
           drawings: [...state.drawings],
-          doors: [...(state.doors || [])],
-          stairs: [...(state.stairs || [])],
+          doors: [...(state.doors ?? [])],
+          stairs: [...(state.stairs ?? [])],
           gridSize: state.gridSize,
           gridType: state.gridType,
           gridColor: state.gridColor,
@@ -393,7 +424,7 @@ function SyncManager() {
 
       // Listen for updates FROM world view
       if (isElectron && ipcRenderer) {
-        ipcRenderer.on('SYNC_FROM_WORLD_VIEW', (_event, action) => {
+        ipcRenderer.on('SYNC_FROM_WORLD_VIEW', (_event, action: SyncAction) => {
           if (action.type === 'TOKEN_UPDATE') {
             const { id, changes } = action.payload;
             const store = useGameStore.getState();

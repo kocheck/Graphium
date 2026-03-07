@@ -11,6 +11,8 @@
  * @param disabled - Whether the toggle is disabled
  * @param id - Optional ID for the toggle (for accessibility)
  */
+import { type KeyboardEvent } from 'react';
+
 interface ToggleSwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -27,21 +29,21 @@ function ToggleSwitch({
   description,
   disabled = false,
   id,
-}: ToggleSwitchProps) {
-  const handleToggle = () => {
+}: ToggleSwitchProps): JSX.Element {
+  const handleToggle = (): void => {
     if (!disabled) {
       onChange(!checked);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent): void => {
     if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       onChange(!checked);
     }
   };
 
-  const toggleId = id || `toggle-${Math.random().toString(36).substr(2, 9)}`;
+  const toggleId = id ?? `toggle-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
     <div>

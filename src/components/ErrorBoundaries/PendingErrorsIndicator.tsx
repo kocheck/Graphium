@@ -34,6 +34,7 @@ interface PendingErrorsIndicatorProps {
  * Floating indicator that shows when there are pending unreported errors.
  * Allows users to review, report, or dismiss stored errors.
  */
+// eslint-disable-next-line max-lines-per-function
 function PendingErrorsIndicator({
   position = 'bottom-right',
 }: PendingErrorsIndicatorProps): React.ReactElement | null {
@@ -43,7 +44,7 @@ function PendingErrorsIndicator({
   const [selectedError, setSelectedError] = useState<StoredError | null>(null);
   const [reportStatus, setReportStatus] = useState<'idle' | 'opened' | 'error'>('idle');
 
-  const refreshErrors = useCallback(() => {
+  const refreshErrors = useCallback((): void => {
     const stored = getStoredErrors();
     // Create a new array to force React to re-render
     setErrors([...stored]);
@@ -54,7 +55,7 @@ function PendingErrorsIndicator({
     refreshErrors();
 
     // Listen for new errors
-    const handleNewError = () => {
+    const handleNewError = (): void => {
       refreshErrors();
     };
 
@@ -64,7 +65,7 @@ function PendingErrorsIndicator({
     };
   }, [refreshErrors]);
 
-  const handleReportError = async (error: StoredError) => {
+  const handleReportError = async (error: StoredError): Promise<void> => {
     try {
       // GitHub issue URLs can break if they get too long, so enforce a conservative limit
       const rawTitle = `Bug Report: ${error.sanitizedError.name}`;
@@ -97,6 +98,7 @@ function PendingErrorsIndicator({
 
           for (const char of issueBody) {
             const encodedChar = encodeURIComponent(char);
+            // eslint-disable-next-line max-depth
             if (currentLength + encodedChar.length > allowedBodyLength) {
               break;
             }
@@ -129,7 +131,7 @@ function PendingErrorsIndicator({
     }
   };
 
-  const handleSaveError = async (error: StoredError) => {
+  const handleSaveError = async (error: StoredError): Promise<void> => {
     try {
       const errorReporting = window.errorReporting;
       if (errorReporting) {
@@ -144,7 +146,7 @@ function PendingErrorsIndicator({
     }
   };
 
-  const handleDismissReported = () => {
+  const handleDismissReported = (): void => {
     clearReportedErrors();
     refreshErrors();
     setSelectedError(null);
@@ -162,7 +164,7 @@ function PendingErrorsIndicator({
     return null;
   }
 
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = (timestamp: string): string => {
     const date = new Date(timestamp);
     return date.toLocaleString();
   };
@@ -289,6 +291,7 @@ function PendingErrorsIndicator({
                       void handleReportError(selectedError);
                     }}
                     className={`flex-1 px-3 py-2 rounded text-sm font-medium flex items-center justify-center gap-2 ${
+                      // eslint-disable-next-line no-nested-ternary
                       reportStatus === 'opened'
                         ? 'bg-green-600 hover:bg-green-500'
                         : reportStatus === 'error'

@@ -40,7 +40,7 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
  * Helper to create a default campaign
  */
 const createDefaultCampaign = (firstMap?: MapData): Campaign => {
-  const map = firstMap || createDefaultMap('Default Map');
+  const map = firstMap ?? createDefaultMap('Default Map');
   return {
     id: crypto.randomUUID(),
     name: 'New Campaign',
@@ -59,6 +59,7 @@ const createDefaultCampaign = (firstMap?: MapData): Campaign => {
  * 2. `campaign` property holds the full persistence data for all maps.
  * 3. Switching maps involves syncing Top-level -> Campaign, then Campaign -> Top-level.
  */
+
 export interface GameState {
   // --- Active Map State (Proxied for Component Compatibility) ---
   tokens: Token[];
@@ -167,6 +168,7 @@ export interface GameState {
   setDmMeasurement: (measurement: Measurement | null) => void;
 }
 
+// eslint-disable-next-line max-lines-per-function
 export const useGameStore = create<GameState>((set, get) => {
   // Initialize with a default campaign
   const initialMap = createDefaultMap('Map 1');
@@ -206,6 +208,7 @@ export const useGameStore = create<GameState>((set, get) => {
       }
 
       // Safe: guarded by !campaign.maps[campaign.activeMapId] check above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const activeMap = campaign.maps[campaign.activeMapId]!;
       set({
         campaign,
@@ -216,8 +219,8 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: activeMap.stairs || [],
         gridSize: activeMap.gridSize || 50,
         gridType: activeMap.gridType || 'LINES',
-        gridColor: activeMap.gridColor || DEFAULT_GRID_COLOR,
-        map: activeMap.map || null,
+        gridColor: activeMap.gridColor ?? DEFAULT_GRID_COLOR,
+        map: activeMap.map ?? null,
         exploredRegions: activeMap.exploredRegions || [],
         isDaylightMode: activeMap.isDaylightMode || false,
       });
@@ -279,6 +282,7 @@ export const useGameStore = create<GameState>((set, get) => {
       // Create updated map object
       // Safe: activeId is state.campaign.activeMapId, always a valid key
       const updatedMap: MapData = {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         ...state.campaign.maps[activeId]!, // Preserve name/id
         tokens: state.tokens,
         drawings: state.drawings,
@@ -347,6 +351,7 @@ export const useGameStore = create<GameState>((set, get) => {
         const mapIds = Object.keys(maps);
         const currentIndex = mapIds.indexOf(mapId);
         // Try next, or prev - safe: we already checked maps has more than 1 entry
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const nextActiveId = (mapIds[currentIndex + 1] ?? mapIds[currentIndex - 1])!;
 
         // Directly switch active map without calling switchMap to avoid syncing the deleted map
@@ -407,6 +412,7 @@ export const useGameStore = create<GameState>((set, get) => {
       // We must get FRESH state because syncActiveMapToCampaign updated it
       const freshState = get();
       // Safe: guarded by !state.campaign.maps[mapId] check above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const newMap = freshState.campaign.maps[mapId]!;
 
       set({

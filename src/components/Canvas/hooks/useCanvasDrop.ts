@@ -1,10 +1,21 @@
 import { useState, useCallback } from 'react';
+import type React from 'react';
 
 import { snapToGrid } from '../../../utils/grid';
 
 import type { Token, GridType } from '../../../types/domain';
 
+interface UseCanvasDropReturn {
+  handleDragOver: (e: React.DragEvent) => void;
+  handleDrop: (e: React.DragEvent) => void;
+  handleCropConfirm: (blob: Blob) => Promise<void>;
+  handleCropCancel: () => void;
+  pendingCrop: PendingCrop | null;
+  setPendingCrop: React.Dispatch<React.SetStateAction<PendingCrop | null>>;
+}
+
 /** Pending crop state for images dropped onto the canvas */
+// eslint-disable-next-line import/no-unused-modules
 export interface PendingCrop {
   src: string;
   x: number;
@@ -43,7 +54,7 @@ export function useCanvasDrop({
   gridType,
   addToken,
   showToast,
-}: UseCanvasDropProps) {
+}: UseCanvasDropProps): UseCanvasDropReturn {
   const [pendingCrop, setPendingCrop] = useState<PendingCrop | null>(null);
 
   const handleDragOver = useCallback(
@@ -132,7 +143,10 @@ export function useCanvasDrop({
       }
 
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0]!;
+        const file = e.dataTransfer.files[0];
+        if (!file) {
+          return;
+        }
 
         // Clean up any existing object URL before creating a new one
         if (pendingCrop) {

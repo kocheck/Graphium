@@ -66,10 +66,17 @@ interface ImageCropperProps {
  *   />
  * )}
  */
-function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
+interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps): JSX.Element {
   const [crop, setCrop] = useState({ x: 0, y: 0 }); // Crop area position
   const [zoom, setZoom] = useState(1); // Zoom level (1x-3x)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null); // Pixel coordinates for extraction
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CropArea | null>(null); // Pixel coordinates for extraction
 
   /**
    * Callback fired when crop area changes
@@ -81,9 +88,12 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
    * @param _croppedArea - Normalized crop area (0-1 range, not used)
    * @param croppedAreaPixels - Pixel coordinates { x, y, width, height }
    */
-  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+  const onCropComplete = useCallback(
+    (_croppedArea: CropArea, croppedAreaPixels: CropArea): void => {
+      setCroppedAreaPixels(croppedAreaPixels);
+    },
+    [],
+  );
 
   /**
    * Processes the crop and calls onConfirm with resulting blob
@@ -97,7 +107,7 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
    * // getCroppedImg() → WebP blob (45KB)
    * // onConfirm(blob) → CanvasManager.handleCropConfirm(blob)
    */
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     try {
       if (!croppedAreaPixels) {
         return;
@@ -200,7 +210,7 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
  * );
  * // Returns: Blob { size: 45632, type: 'image/webp' }
  */
-async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | null> {
+async function getCroppedImg(imageSrc: string, pixelCrop: CropArea): Promise<Blob | null> {
   // Load source image (waits for async load)
   const image = await createImage(imageSrc);
 

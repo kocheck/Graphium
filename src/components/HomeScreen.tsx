@@ -93,7 +93,8 @@ const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
  * A lightweight, high-performance launcher with a modern fantasy aesthetic.
  * Features quirky TTRPG-themed micro-interactions and CSS-only visuals.
  */
-export function HomeScreen({ onStartEditor }: HomeScreenProps) {
+// eslint-disable-next-line max-lines-per-function, complexity
+export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
   const { recentCampaigns, addRecent, removeRecent } = useRecentCampaigns();
   const { isElectron, isMac, isWindows, isLinux } = usePlatformDetection();
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -140,6 +141,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       'Chaos Coordinators',
       'Rules Lawyers (The Good Kind)',
     ];
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return titles[Math.floor(Math.random() * titles.length)]!;
   });
 
@@ -185,6 +187,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     storage
       .getThemeMode()
       .then((mode) => setCurrentTheme(mode))
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       .catch(() => {});
   }, []);
 
@@ -211,7 +214,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       return;
     }
 
-    const handleTabKey = (e: KeyboardEvent) => {
+    const handleTabKey = (e: KeyboardEvent): void => {
       if (e.key !== 'Tab' || !templatesModalRef.current) {
         return;
       }
@@ -237,7 +240,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
   // Global keyboard shortcuts
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
+    // eslint-disable-next-line complexity
+    const handleKeyPress = (e: KeyboardEvent): void => {
       // Global shortcuts (Ctrl/Cmd + key)
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
         if (e.key === 'n') {
@@ -276,25 +280,25 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isAboutOpen, showTemplates, handleNewCampaign, handleLoadCampaign, handleGenerateDungeon]);
 
-  const handleLoadRecent = (_recent: RecentCampaign) => {
+  const handleLoadRecent = (_recent: RecentCampaign): void => {
     showToast(
       'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .graphium file.',
       'info',
     );
   };
 
-  const handleRemoveRecent = (campaignId: string) => {
+  const handleRemoveRecent = (campaignId: string): void => {
     removeRecent(campaignId);
   };
 
-  const handleDismissDownloadBanner = () => {
+  const handleDismissDownloadBanner = (): void => {
     localStorage.setItem('hideDownloadBanner', 'true');
     setHideDownloadBanner(true);
   };
 
   // NEW FEATURE HANDLERS
 
-  const handleToggleLiteMode = () => {
+  const handleToggleLiteMode = (): void => {
     const newLiteMode = !liteMode;
     setLiteMode(newLiteMode);
     localStorage.setItem('liteMode', String(newLiteMode));
@@ -310,6 +314,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     const storage = getStorage();
     const themes: ThemeMode[] = ['light', 'dark', 'system'];
     const currentIndex = themes.indexOf(currentTheme);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const nextTheme = themes[(currentIndex + 1) % themes.length]!;
 
     void (async () => {
@@ -319,12 +324,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
         // Apply theme immediately for web (Electron handles via IPC)
         if (storage.getPlatform() === 'web') {
-          const effectiveTheme =
-            nextTheme === 'system'
-              ? window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light'
-              : nextTheme;
+          let effectiveTheme: string = nextTheme;
+          if (nextTheme === 'system') {
+            effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+          }
           document.documentElement.setAttribute('data-theme', effectiveTheme);
 
           // Broadcast to other tabs
@@ -341,7 +346,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     })();
   };
 
-  const handleSelectTemplate = (template: CampaignTemplate) => {
+  const handleSelectTemplate = (template: CampaignTemplate): void => {
     setShowTemplates(false);
 
     // Set up new campaign with template settings
@@ -364,7 +369,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     [recentCampaigns, searchQuery],
   );
 
-  const getThemeIcon = () => {
+  const getThemeIcon = (): JSX.Element => {
     if (currentTheme === 'light') {
       return <RiSunLine className="w-4 h-4" />;
     }
@@ -374,7 +379,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     return <RiComputerLine className="w-4 h-4" />;
   };
 
-  const getThemeLabel = () => {
+  const getThemeLabel = (): string => {
     if (currentTheme === 'light') {
       return 'Light';
     }

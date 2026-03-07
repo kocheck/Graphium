@@ -30,7 +30,8 @@ interface ToolbarProps {
   onPauseToggle: () => void;
 }
 
-function Toolbar({ toolState, isGamePaused, onPauseToggle }: ToolbarProps) {
+// eslint-disable-next-line max-lines-per-function, complexity
+function Toolbar({ toolState, isGamePaused, onPauseToggle }: ToolbarProps): JSX.Element {
   const {
     tool,
     setTool,

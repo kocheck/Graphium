@@ -33,7 +33,7 @@ import { getStorage } from '../../services/storage';
  *
  * @param theme - 'light' or 'dark'
  */
-function applyTheme(theme: 'light' | 'dark') {
+function applyTheme(theme: 'light' | 'dark'): void {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
@@ -42,7 +42,7 @@ function applyTheme(theme: 'light' | 'dark') {
  *
  * Mount this once at the app root. It has no visible UI.
  */
-export function ThemeManager() {
+export function ThemeManager(): null {
   useEffect(() => {
     let cleanup: (() => void) | undefined;
 
@@ -66,7 +66,7 @@ export function ThemeManager() {
      * 3. Subscribe to theme changes (platform-specific)
      * 4. Remove 'theme-loading' class to enable transitions
      */
-    async function initializeTheme() {
+    async function initializeTheme(): Promise<void> {
       try {
         const storage = getStorage();
         const isElectron = storage.getPlatform() === 'electron';
@@ -113,7 +113,7 @@ export function ThemeManager() {
               mode: 'light' | 'dark' | 'system';
             }
 
-            const handleCrossTabThemeChange = (event: MessageEvent<unknown>) => {
+            const handleCrossTabThemeChange = (event: MessageEvent<unknown>): void => {
               const data = event.data as ThemeSyncMessage | null;
               if (data && data.type === 'THEME_CHANGED') {
                 const newTheme = resolveEffectiveTheme(data.mode);

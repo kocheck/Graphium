@@ -25,7 +25,7 @@ interface StairsLayerProps {
  * @param stairs - Array of stairs from gameStore
  * @param isWorldView - If true, player view (currently no behavioral difference)
  */
-function StairsLayer({ stairs, isWorldView }: StairsLayerProps) {
+function StairsLayer({ stairs, isWorldView }: StairsLayerProps): JSX.Element {
   return (
     <>
       {stairs.map((stair) => (

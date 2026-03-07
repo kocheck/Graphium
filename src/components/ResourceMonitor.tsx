@@ -54,7 +54,8 @@ interface PerformanceMetrics {
  *   Toggle Resource Monitor
  * </button>
  */
-function ResourceMonitor() {
+// eslint-disable-next-line max-lines-per-function, complexity
+function ResourceMonitor(): JSX.Element {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fps: 0,
     memory: null,
@@ -90,7 +91,7 @@ function ResourceMonitor() {
   useEffect(() => {
     let animationFrameId: number;
 
-    const countFrame = () => {
+    const countFrame = (): void => {
       frameCountRef.current++;
       animationFrameId = requestAnimationFrame(countFrame);
     };
@@ -122,11 +123,20 @@ function ResourceMonitor() {
    * Updates every 500ms
    */
   useEffect(() => {
-    const updateMetrics = () => {
+    const updateMetrics = (): void => {
       // Memory API (Chrome/Edge only)
+      interface ChromeMemory {
+        usedJSHeapSize: number;
+        totalJSHeapSize: number;
+        jsHeapSizeLimit: number;
+      }
+      interface ChromePerformance extends Performance {
+        memory?: ChromeMemory;
+      }
       let memory = null;
-      if ('memory' in performance && (performance as any).memory) {
-        const mem = (performance as any).memory;
+      const chromePerf = performance as ChromePerformance;
+      if ('memory' in performance && chromePerf.memory) {
+        const mem = chromePerf.memory;
         memory = {
           used: mem.usedJSHeapSize,
           total: mem.totalJSHeapSize,
@@ -199,8 +209,12 @@ function ResourceMonitor() {
       return;
     }
 
-    let originalSend: any;
-    let originalOn: any;
+    type IpcSendFn = (channel: string, ...args: unknown[]) => void;
+    type IpcListenerFn = (event: unknown, ...args: unknown[]) => void;
+    type IpcOnFn = (channel: string, listener: IpcListenerFn) => void;
+
+    let originalSend: IpcSendFn | undefined;
+    let originalOn: IpcOnFn | undefined;
     let isTracking = true;
 
     try {
@@ -210,7 +224,7 @@ function ResourceMonitor() {
       originalOn = window.ipcRenderer.on;
 
       // Intercept send (outgoing messages)
-      window.ipcRenderer.send = function (channel: string, ...args: any[]) {
+      window.ipcRenderer.send = function (channel: string, ...args: unknown[]): void {
         if (isTracking) {
           try {
             ipcMessageCountRef.current++;
@@ -222,7 +236,7 @@ function ResourceMonitor() {
             console.warn('[ResourceMonitor] Failed to track IPC send:', err);
           }
         }
-        return originalSend.call(this, channel, ...args);
+        originalSend?.call(this, channel, ...args);
       };
 
       // Intercept on (incoming messages)
@@ -238,8 +252,8 @@ function ResourceMonitor() {
       // To fix this, implement a WeakMap to maintain original-to-wrapped listener mappings:
       // const listenerMap = new WeakMap<Function, Function>();
       // Then store the mapping and use it for proper cleanup in the `off()` interceptor.
-      window.ipcRenderer.on = function (channel: string, listener: any) {
-        const wrappedListener = (...args: any[]) => {
+      window.ipcRenderer.on = function (channel: string, listener: IpcListenerFn): void {
+        const wrappedListener = (event: unknown, ...args: unknown[]): void => {
           if (isTracking) {
             try {
               ipcMessageCountRef.current++;
@@ -250,9 +264,9 @@ function ResourceMonitor() {
               console.warn('[ResourceMonitor] Failed to track IPC receive:', err);
             }
           }
-          listener(...args);
+          listener(event, ...args);
         };
-        return originalOn.call(this, channel, wrappedListener);
+        originalOn?.call(this, channel, wrappedListener);
       };
     } catch (err) {
       console.error('[ResourceMonitor] Failed to intercept IPC methods:', err);

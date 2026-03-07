@@ -4,6 +4,7 @@
 
 import type { useGameStore } from './store/gameStore';
 
+// eslint-disable-next-line import/no-unused-modules
 export interface ErrorContext {
   timestamp: number;
   error: {
@@ -36,6 +37,7 @@ export interface ErrorContext {
   importFailed?: boolean;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export interface ErrorInfo {
   tokenId?: string;
   overlayName?: string;
@@ -46,6 +48,7 @@ export interface ErrorInfo {
 }
 
 /** IPC renderer API exposed by Electron preload via contextBridge */
+// eslint-disable-next-line import/no-unused-modules
 export interface ExposedIpcRenderer {
   on(channel: string, listener: (event: unknown, ...args: unknown[]) => void): void;
   off(channel: string, listener: (event: unknown, ...args: unknown[]) => void): void;

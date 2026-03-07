@@ -38,7 +38,7 @@ import type { ComponentExample } from './types';
  * Shell component to provide necessary context (Theme, Toasts, Dialogs)
  * isolated from the main app's providers.
  */
-function PlaygroundShell({ children }: { children: React.ReactNode }) {
+function PlaygroundShell({ children }: { children: React.ReactNode }): JSX.Element {
   return (
     <div className="playground-shell w-full h-full bg-[var(--app-bg-base)] text-[var(--app-text-primary)] transition-colors duration-200">
       <ThemeManager />
@@ -49,7 +49,7 @@ function PlaygroundShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DesignSystemPlayground() {
+export function DesignSystemPlayground(): JSX.Element {
   return (
     <PlaygroundShell>
       <PlaygroundContent />
@@ -57,7 +57,8 @@ export function DesignSystemPlayground() {
   );
 }
 
-function PlaygroundContent() {
+// eslint-disable-next-line max-lines-per-function
+function PlaygroundContent(): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
@@ -66,7 +67,7 @@ function PlaygroundContent() {
 
   // Load initial theme
   useEffect(() => {
-    const loadTheme = async () => {
+    const loadTheme = async (): Promise<void> => {
       try {
         const storage = getStorage();
         const mode = await storage.getThemeMode();
@@ -81,7 +82,7 @@ function PlaygroundContent() {
 
   // Keyboard shortcut: "/" to focus search
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Focus search input when "/" is pressed
       if (e.key === '/' && document.activeElement !== searchInputRef.current) {
         e.preventDefault();
@@ -131,6 +132,7 @@ function PlaygroundContent() {
       if (!groups[example.category]) {
         groups[example.category] = [];
       }
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       groups[example.category]!.push(example);
     });
 
@@ -138,7 +140,7 @@ function PlaygroundContent() {
   }, [filteredExamples]);
 
   // Handle copy to clipboard
-  const handleCopyCode = async (example: ComponentExample) => {
+  const handleCopyCode = async (example: ComponentExample): Promise<void> => {
     try {
       await navigator.clipboard.writeText(example.code);
       setCopiedId(example.id);
@@ -318,7 +320,7 @@ interface ComponentCardProps {
   onCopy: () => void;
 }
 
-function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps) {
+function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps): JSX.Element {
   const [showCode, setShowCode] = useState(false);
 
   return (

@@ -19,7 +19,8 @@ initGlobalErrorHandlers();
  * Storage service must be initialized before React renders,
  * as components may call getStorage() during mount.
  */
-async function initApp() {
+
+async function initApp(): Promise<void> {
   try {
     // Initialize storage service (detects Electron vs Web)
     await initStorage();
@@ -101,6 +102,7 @@ async function initApp() {
     return;
   }
 
+  // eslint-disable-next-line import/no-named-as-default-member
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
       <PrivacyErrorBoundary>
@@ -162,6 +164,7 @@ initApp().catch((error: unknown) => {
 // Use contextBridge (if available - not present in browser testing)
 if (window.ipcRenderer) {
   window.ipcRenderer.on('main-process-message', (_event, message) => {
+    // eslint-disable-next-line no-console
     console.log(message);
   });
 }

@@ -138,7 +138,7 @@ class TokenErrorBoundary extends Component<Props, State> {
    * @param error - The error that was thrown during token rendering
    * @param errorInfo - React error info including component stack
    */
-  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
 
@@ -184,14 +184,14 @@ class TokenErrorBoundary extends Component<Props, State> {
   /**
    * Toggle debug overlay visibility
    */
-  handleToggleDebug = () => {
+  handleToggleDebug = (): void => {
     this.setState((prev) => ({ showDebugOverlay: !prev.showDebugOverlay }));
   };
 
   /**
    * Copy error details to the clipboard and show a toast notification
    */
-  handleCopyError = async () => {
+  handleCopyError = async (): Promise<void> => {
     const { errorContext } = this.state;
     const { onShowToast } = this.props;
 
@@ -203,7 +203,7 @@ class TokenErrorBoundary extends Component<Props, State> {
       // where hooks cannot be used. While this creates coupling to the game store,
       // it provides a fallback when the parent component doesn't provide the callback.
       // Consider making onShowToast mandatory if this coupling becomes problematic.
-      const showToast = onShowToast || useUiStore.getState().showToast;
+      const showToast = onShowToast ?? useUiStore.getState().showToast;
 
       if (success) {
         showToast('Error details copied to clipboard!', 'success');
@@ -219,7 +219,7 @@ class TokenErrorBoundary extends Component<Props, State> {
    *
    * @returns {ReactNode | null} Children, debug indicator + overlay, or null
    */
-  override render() {
+  override render(): ReactNode {
     const { hasError, errorContext, showDebugOverlay } = this.state;
     const { children, tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
@@ -265,12 +265,12 @@ class TokenErrorBoundary extends Component<Props, State> {
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-label="Token Error Debug Info"
-                data-testid={`token-error-overlay-${tokenId || 'unknown'}`}
+                data-testid={`token-error-overlay-${tokenId ?? 'unknown'}`}
               >
                 <h3 className="m-0 mb-4 text-red-500">Token Error Debug Info</h3>
 
                 <div className="mb-4">
-                  <strong>Token ID:</strong> {tokenId || 'N/A'}
+                  <strong>Token ID:</strong> {tokenId ?? 'N/A'}
                 </div>
 
                 <div className="mb-4">

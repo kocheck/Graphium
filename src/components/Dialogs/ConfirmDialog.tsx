@@ -34,7 +34,7 @@ import { useUiStore } from '../../store/uiStore';
 import Button from '../primitives/Button';
 import Dialog from '../primitives/Dialog';
 
-function ConfirmDialog() {
+function ConfirmDialog(): JSX.Element | null {
   const { confirmDialog, clearConfirmDialog } = useUiStore();
 
   const handleConfirm = useCallback(() => {
@@ -50,7 +50,7 @@ function ConfirmDialog() {
       return;
     }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Enter') {
         e.preventDefault();
         handleConfirm();
@@ -76,8 +76,9 @@ function ConfirmDialog() {
           <Button variant="ghost" onClick={clearConfirmDialog}>
             Cancel
           </Button>
+          {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
           <Button variant="destructive" onClick={handleConfirm} autoFocus>
-            {confirmDialog.confirmText || 'Confirm'}
+            {confirmDialog.confirmText ?? 'Confirm'}
           </Button>
         </>
       }

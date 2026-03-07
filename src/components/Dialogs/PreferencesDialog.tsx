@@ -31,11 +31,12 @@ interface PreferencesDialogProps {
   onClose: () => void;
 }
 
-function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps) {
+// eslint-disable-next-line max-lines-per-function
+function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps): JSX.Element {
   const { wallTool, setWallToolPreference, resetWallToolPreferences } = usePreferencesStore();
   const touchSettings = useTouchSettingsStore();
 
-  const handleReset = () => {
+  const handleReset = (): void => {
     resetWallToolPreferences();
     touchSettings.resetToDefaults();
   };
@@ -51,6 +52,7 @@ function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps) {
           <Button variant="ghost" onClick={handleReset} className="mr-auto">
             Reset to Defaults
           </Button>
+          {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
           <Button variant="primary" onClick={onClose} autoFocus>
             Done
           </Button>
@@ -617,4 +619,5 @@ function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps) {
   );
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default PreferencesDialog;

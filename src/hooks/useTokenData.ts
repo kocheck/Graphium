@@ -51,6 +51,7 @@ export interface ResolvedTokenData {
  * // resolvedToken.scale is either token.scale or libraryItem.defaultScale or 1
  * // resolvedToken.name is either token.name or libraryItem.name
  */
+// eslint-disable-next-line import/no-unused-modules
 export function useTokenData(token: Token): ResolvedTokenData {
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
 
@@ -60,7 +61,9 @@ export function useTokenData(token: Token): ResolvedTokenData {
 /**
  * Default values for token properties
  */
+// eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_SCALE = 1;
+// eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_NAME = 'Token';
 export const DEFAULT_MOVEMENT_SPEED = 30; // Standard D&D 5e movement speed
 
@@ -72,6 +75,7 @@ export const DEFAULT_MOVEMENT_SPEED = 30; // Standard D&D 5e movement speed
  * @param tokenLibrary - The array of library items
  * @returns Fully resolved token data
  */
+// eslint-disable-next-line complexity
 export function resolveTokenData(
   token: Token,
   tokenLibrary: TokenLibraryItem[],

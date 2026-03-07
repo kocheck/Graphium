@@ -1,8 +1,10 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react';
+import type React from 'react';
 
 import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
 import { useShallow } from 'zustand/shallow';
 
+// eslint-disable-next-line import/no-named-as-default
 import CanvasAccessibility from './CanvasAccessibility';
 import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorContextMenu from './DoorContextMenu';
@@ -16,6 +18,7 @@ import { useCanvasInteraction } from './hooks/useCanvasInteraction';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import { useCanvasSelection } from './hooks/useCanvasSelection';
 import { useTokenDrag } from './hooks/useTokenDrag';
+// eslint-disable-next-line import/no-named-as-default
 import MeasurementOverlay from './MeasurementOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
@@ -134,6 +137,7 @@ interface CanvasManagerProps {
  * @see useCanvasInteraction for unified pointer event handling
  * @see useTokenDrag for token drag-and-drop with snap preview
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 function CanvasManager({
   tool = 'select',
   color = CANVAS_COLORS.markerDefault,
@@ -141,7 +145,7 @@ function CanvasManager({
   isWorldView = false,
   onSelectionChange,
   // measurementMode = 'ruler', // Unused currently
-}: CanvasManagerProps) {
+}: CanvasManagerProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -161,6 +165,7 @@ function CanvasManager({
 
   // Diagnostic logging — enable DEBUG_CANVAS at file top to debug canvas state
   if (DEBUG_CANVAS && import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
     console.log('🎮 CANVAS DIAGNOSTIC:', {
       view: isWorldView ? 'World' : 'Architect',
       daylight: isDaylightMode,
@@ -244,6 +249,7 @@ function CanvasManager({
   } = useCanvasSelection({ onSelectionChange });
 
   // Stable no-op handler for disabled Konva drag events (defined once to prevent re-renders)
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   const emptyDragHandler = useCallback(() => {}, []);
 
   // Door context menu state
@@ -431,6 +437,7 @@ function CanvasManager({
   >(() => false);
   const trackStylusRef = useRef<
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
   >(() => {});
 
   const {
@@ -529,7 +536,7 @@ function CanvasManager({
   // --- Effects ---
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleResize = (): void => {
       if (containerRef.current) {
         setSize({
           width: containerRef.current.offsetWidth,
@@ -549,13 +556,16 @@ function CanvasManager({
   // Single-touch interactions are handled by the unified pointer event handlers
   // (handlePointerDown/Move/Up) which support mouse, touch, and pen input.
 
-  const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
+  const handleTouchStart = (e: KonvaEventObject<TouchEvent>): void => {
     const touches = e.evt.touches;
     // ONLY handle 2+ finger gestures (pinch-to-zoom)
     if (touches.length === 2) {
       e.evt.preventDefault();
-      const touch1 = touches[0]!;
-      const touch2 = touches[1]!;
+      const touch1 = touches[0];
+      const touch2 = touches[1];
+      if (!touch1 || !touch2) {
+        return;
+      }
       lastPinchDistance.current = calculatePinchDistance(touch1, touch2);
       lastPinchCenter.current = calculatePinchCenter(touch1, touch2);
     } else if (touches.length === 1 && tool !== 'select') {
@@ -566,15 +576,18 @@ function CanvasManager({
     // Single-touch events are handled by handlePointerDown
   };
 
-  const handleTouchMove = (e: KonvaEventObject<TouchEvent>) => {
+  const handleTouchMove = (e: KonvaEventObject<TouchEvent>): void => {
     const touches = e.evt.touches;
     // ONLY handle 2-finger gestures (pinch-to-zoom or two-finger pan)
     if (touches.length === 2) {
       e.evt.preventDefault();
 
       if (lastPinchDistance.current && lastPinchCenter.current) {
-        const touch1 = touches[0]!;
-        const touch2 = touches[1]!;
+        const touch1 = touches[0];
+        const touch2 = touches[1];
+        if (!touch1 || !touch2) {
+          return;
+        }
         const distance = calculatePinchDistance(touch1, touch2);
         const center = calculatePinchCenter(touch1, touch2);
 
@@ -636,7 +649,7 @@ function CanvasManager({
     // Single-touch events are handled by handlePointerMove
   };
 
-  const handleTouchEnd = (e: KonvaEventObject<TouchEvent>) => {
+  const handleTouchEnd = (e: KonvaEventObject<TouchEvent>): void => {
     const touches = e.evt.touches;
     // Reset gesture state when fewer than 2 fingers remain
     if (touches.length < 2) {
@@ -661,7 +674,7 @@ function CanvasManager({
     [position.x, position.y, scale, size.width, size.height],
   );
 
-  const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
+  const handleWheel = (e: KonvaEventObject<WheelEvent>): void => {
     e.evt.preventDefault();
     const stage = e.target.getStage();
     if (!stage) {
@@ -844,7 +857,9 @@ function CanvasManager({
               scaleX={map.scale}
               scaleY={map.scale}
               draggable={false}
+              // eslint-disable-next-line @typescript-eslint/no-empty-function
               onSelect={() => {}}
+              // eslint-disable-next-line @typescript-eslint/no-empty-function
               onDragEnd={() => {}}
             />
           )}
@@ -904,11 +919,11 @@ function CanvasManager({
               id: line.id,
               name: 'drawing' as const,
               points: line.points,
-              x: line.x || 0,
-              y: line.y || 0,
+              x: line.x ?? 0,
+              y: line.y ?? 0,
               // Apply uniform scaling (line.scale is a single number applied to both axes)
-              scaleX: line.scale || 1,
-              scaleY: line.scale || 1,
+              scaleX: line.scale ?? 1,
+              scaleY: line.scale ?? 1,
               stroke: line.tool === 'wall' && isWorldView ? CANVAS_COLORS.wallStroke : line.color,
               strokeWidth:
                 line.tool === 'wall' && isWorldView
@@ -962,8 +977,8 @@ function CanvasManager({
                       // Calculate drag offset and apply to all points
                       // Points array format: [x1, y1, x2, y2, ...] (alternating x,y coordinates)
                       const points = drawing.points;
-                      const dx = x - (drawing.x || 0);
-                      const dy = y - (drawing.y || 0);
+                      const dx = x - (drawing.x ?? 0);
+                      const dy = y - (drawing.y ?? 0);
                       // Offset all points by (dx, dy)
                       const newPoints = points.map(
                         (val, idx) => (idx % 2 === 0 ? val + dx : val + dy), // Even indices are X, odd are Y
@@ -980,7 +995,7 @@ function CanvasManager({
                 }
 
                 // Update Position (Transform)
-                updateDrawingTransform(line.id, x, y, line.scale || 1);
+                updateDrawingTransform(line.id, x, y, line.scale ?? 1);
 
                 setItemsForDuplication([]);
               },
@@ -1141,6 +1156,7 @@ function CanvasManager({
                   opacity={0.5}
                   name="ghost-token"
                   // No-op handlers
+                  // eslint-disable-next-line @typescript-eslint/no-empty-function
                   onSelect={() => {}}
                 />
               ))}
@@ -1157,7 +1173,7 @@ function CanvasManager({
 
               // Use drag position if token is being dragged
               const dragPos = dragPositionsRef.current.get(selectedToken.id);
-              const tokenPos = dragPos || { x: selectedToken.x, y: selectedToken.y };
+              const tokenPos = dragPos ?? { x: selectedToken.x, y: selectedToken.y };
 
               // Movement speed is resolved from token data
               const movementSpeed = selectedToken.movementSpeed ?? DEFAULT_MOVEMENT_SPEED;
@@ -1221,7 +1237,16 @@ function CanvasManager({
              * - Konva-level caching for complex visual effects
              * - Resting state has no shadow to reduce continuous rendering cost
              */
-            const getVisualProps = () => {
+            const getVisualProps = (): {
+              shadowForStrokeEnabled: boolean;
+              scaleX: number;
+              scaleY: number;
+              opacity?: number;
+              shadowColor?: string;
+              shadowBlur?: number;
+              shadowOffsetX?: number;
+              shadowOffsetY?: number;
+            } => {
               // Common performance optimization: disable shadow for strokes
               const baseShadowProps = {
                 shadowForStrokeEnabled: false, // Performance: Only shadow fill, not stroke
@@ -1259,7 +1284,7 @@ function CanvasManager({
             };
 
             const visualProps = getVisualProps();
-            const safeScale = token.scale || 1;
+            const safeScale = token.scale ?? 1;
             const tokenHeight = gridSize * safeScale;
 
             /**
@@ -1403,7 +1428,7 @@ function CanvasManager({
                   const transformScale = (scaleX + scaleY) / 2;
                   const drawing = drawings.find((d) => d.id === node.id());
                   if (drawing) {
-                    const newScale = (drawing.scale || 1) * transformScale;
+                    const newScale = (drawing.scale ?? 1) * transformScale;
                     updateDrawingTransform(node.id(), node.x(), node.y(), newScale);
                   }
                   // Reset scale to 1 since the new scale is stored
@@ -1480,4 +1505,4 @@ function CanvasManager({
   );
 }
 
-export default React.memo(CanvasManager);
+export default memo(CanvasManager);

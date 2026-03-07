@@ -44,7 +44,8 @@ interface LibraryManagerProps {
   onClose: () => void;
 }
 
-function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
+// eslint-disable-next-line max-lines-per-function
+function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element | null {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -99,7 +100,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
    * Handle file upload
    * Opens AddToLibraryDialog for metadata input
    */
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file) {
       return;
@@ -121,7 +122,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
         setPendingImage({
           src,
           blob,
-          name: file.name.split('.')[0] || 'New Asset',
+          name: file.name.split('.')[0] ?? 'New Asset',
         });
         setIsAddDialogOpen(true);
       } catch (fetchErr) {
@@ -142,7 +143,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
    * Handle delete asset
    * Shows confirmation dialog before deleting
    */
-  const handleDelete = (itemId: string, itemName: string) => {
+  const handleDelete = (itemId: string, itemName: string): void => {
     showConfirmDialog(
       rollForMessage('CONFIRM_LIBRARY_ASSET_DELETE', { assetName: itemName }),
       () => {
@@ -171,7 +172,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
    * Allows dragging tokens from library to canvas
    * Passes library item ID to create instance reference
    */
-  const handleDragStart = (e: React.DragEvent, libraryToken: TokenLibraryItem) => {
+  const handleDragStart = (e: React.DragEvent, libraryToken: TokenLibraryItem): void => {
     setDraggingItemId(libraryToken.id);
     e.dataTransfer.setData(
       'application/json',
@@ -188,7 +189,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
    * Handle drag end for library tokens
    * Clear dragging state
    */
-  const handleDragEnd = () => {
+  const handleDragEnd = (): void => {
     setDraggingItemId(null);
   };
 
@@ -404,8 +405,8 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
       {/* Add to Library Dialog */}
       <AddToLibraryDialog
         isOpen={isAddDialogOpen}
-        imageSrc={pendingImage?.src || null}
-        imageBlob={pendingImage?.blob || null}
+        imageSrc={pendingImage?.src ?? null}
+        imageBlob={pendingImage?.blob ?? null}
         suggestedName={pendingImage?.name}
         onClose={() => {
           setIsAddDialogOpen(false);

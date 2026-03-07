@@ -15,11 +15,12 @@ import { useGameStore } from '../../store/gameStore';
  * **Note:** This only runs if auto-save feature is available on the platform.
  * Check storage.isFeatureAvailable('auto-save') for availability.
  */
-function AutoSaveManager() {
+function AutoSaveManager(): null {
   useEffect(() => {
     // Check if auto-save is supported on this platform
     const storage = getStorage();
     if (!storage.isFeatureAvailable('auto-save')) {
+      // eslint-disable-next-line no-console
       console.log('[AutoSave] Auto-save not available on this platform');
       return;
     }
@@ -45,6 +46,7 @@ function AutoSaveManager() {
             const saved = await storage.autoSaveCampaign(campaign);
 
             if (saved) {
+              // eslint-disable-next-line no-console
               console.log('[AutoSave] Campaign saved successfully');
             }
           } catch (err) {

@@ -52,6 +52,7 @@ type ResultItem =
   | { type: 'asset'; data: ReturnType<typeof fuzzySearch>[number] }
   | { type: 'section'; label: string };
 
+// eslint-disable-next-line max-lines-per-function
 function CommandPalette({
   isOpen,
   onClose,
@@ -60,7 +61,7 @@ function CommandPalette({
   onLaunchWorldView,
   onOpenDungeonGenerator,
   isGamePaused,
-}: CommandPaletteProps) {
+}: CommandPaletteProps): JSX.Element | null {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -176,7 +177,8 @@ function CommandPalette({
       return;
     }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    // eslint-disable-next-line complexity
+    const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'Enter' && results.length > 0) {
@@ -311,7 +313,7 @@ function CommandPalette({
                     >
                       {/* Icon */}
                       <div className="w-10 h-10 flex items-center justify-center text-2xl bg-neutral-800 rounded">
-                        {cmd.icon || '⚡'}
+                        {cmd.icon ?? '⚡'}
                       </div>
 
                       {/* Metadata */}

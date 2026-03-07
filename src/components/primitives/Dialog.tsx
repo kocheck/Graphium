@@ -25,7 +25,17 @@
  * </Dialog>
  */
 
-import React, { useEffect, useRef, useCallback, useId } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useRef,
+  useCallback,
+  useId,
+  type ReactNode,
+  type MutableRefObject,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 
 export interface DialogProps {
   isOpen: boolean;
@@ -33,8 +43,8 @@ export interface DialogProps {
   title: string;
   description?: string;
   size?: 'sm' | 'md' | 'lg' | 'full';
-  children: React.ReactNode;
-  footer?: React.ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
   closeOnOverlayClick?: boolean;
 }
 
@@ -48,7 +58,8 @@ const sizeClasses = {
 const FOCUSABLE_SELECTOR =
   'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 
-const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
+const Dialog = forwardRef<HTMLDivElement, DialogProps>(
+  // eslint-disable-next-line max-lines-per-function
   (
     {
       isOpen,
@@ -71,7 +82,7 @@ const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
     // Merge forwarded ref with internal ref
     const setDialogRef = useCallback(
       (node: HTMLDivElement | null) => {
-        (dialogRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        (dialogRef as MutableRefObject<HTMLDivElement | null>).current = node;
         if (typeof ref === 'function') {
           ref(node);
         } else if (ref) {
@@ -133,7 +144,7 @@ const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
 
     // Keyboard handling: Escape + focus trap
     const handleKeyDown = useCallback(
-      (e: React.KeyboardEvent) => {
+      (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           e.stopPropagation();
           onClose();
@@ -150,7 +161,9 @@ const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
             return;
           }
 
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           const first = focusableElements[0]!;
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           const last = focusableElements[focusableElements.length - 1]!;
 
           if (e.shiftKey) {
@@ -170,7 +183,7 @@ const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
     );
 
     const handleOverlayClick = useCallback(
-      (e: React.MouseEvent) => {
+      (e: MouseEvent) => {
         if (closeOnOverlayClick && e.target === e.currentTarget) {
           onClose();
         }

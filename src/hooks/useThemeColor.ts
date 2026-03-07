@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
  */
 export function useThemeColor(variableName: string): string {
   // Helper to get current value
-  const getValue = () => {
+  const getValue = (): string => {
     if (typeof window === 'undefined') {
       return '';
     }
@@ -33,7 +33,7 @@ export function useThemeColor(variableName: string): string {
     });
 
     // Also listen for any custom 'theme-change' events we might emit
-    const handleThemeChange = () => setColor(getValue());
+    const handleThemeChange = (): void => setColor(getValue());
     window.addEventListener('theme-change', handleThemeChange);
 
     return () => {

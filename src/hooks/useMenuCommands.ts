@@ -46,19 +46,19 @@ export function useMenuCommands({ onShowAbout }: UseMenuCommandsOptions): void {
       void loadCampaign();
     };
 
-    const handleToggleMonitor = () => {
+    const handleToggleMonitor = (): void => {
       useUiStore.getState().setShowResourceMonitor(!useUiStore.getState().showResourceMonitor);
     };
 
-    const handleGenerateDungeon = () => {
+    const handleGenerateDungeon = (): void => {
       useUiStore.getState().showDungeonDialog();
     };
 
-    const handleNewCampaign = () => {
+    const handleNewCampaign = (): void => {
       startNewCampaign();
     };
 
-    const handleShowAbout = () => {
+    const handleShowAbout = (): void => {
       onShowAboutRef.current();
     };
 

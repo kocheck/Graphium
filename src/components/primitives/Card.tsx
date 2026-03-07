@@ -14,9 +14,9 @@
  * <Card variant="elevated" padding="lg">Important content</Card>
  */
 
-import React from 'react';
+import { forwardRef, type HTMLAttributes } from 'react';
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'surface' | 'elevated' | 'outlined';
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
@@ -34,7 +34,7 @@ const variantClasses = {
   outlined: 'card-primitive card-primitive--outlined',
 } as const;
 
-const Card = React.forwardRef<HTMLDivElement, CardProps>(
+const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ variant = 'surface', padding = 'md', className = '', children, ...rest }, ref) => {
     return (
       <div

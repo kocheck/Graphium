@@ -7,6 +7,7 @@
 
 import type { Point, WallSegment } from '../types/geometry';
 
+// eslint-disable-next-line import/no-unused-modules
 export type { Point, WallSegment };
 
 /**
@@ -17,6 +18,7 @@ export type { Point, WallSegment };
  * @param epsilon - Maximum perpendicular distance tolerance (pixels)
  * @returns Simplified flat array of coordinates
  */
+// eslint-disable-next-line import/no-unused-modules
 export function simplifyPath(points: number[], epsilon: number): number[] {
   if (points.length <= 4) {
     // Need at least 2 points (4 values) to form a line
@@ -26,7 +28,7 @@ export function simplifyPath(points: number[], epsilon: number): number[] {
   // Convert flat array to Point objects
   const pointObjects: Point[] = [];
   for (let i = 0; i < points.length; i += 2) {
-    pointObjects.push({ x: points[i]!, y: points[i + 1]! });
+    pointObjects.push({ x: points[i] ?? 0, y: points[i + 1] ?? 0 });
   }
 
   // Apply RDP algorithm
@@ -52,11 +54,11 @@ function rdpRecursive(points: Point[], epsilon: number): Point[] {
   // Find the point with maximum perpendicular distance from line (first -> last)
   let maxDistance = 0;
   let maxIndex = 0;
-  const start = points[0]!;
-  const end = points[points.length - 1]!;
+  const start = points[0] ?? { x: 0, y: 0 };
+  const end = points[points.length - 1] ?? { x: 0, y: 0 };
 
   for (let i = 1; i < points.length - 1; i++) {
-    const distance = perpendicularDistance(points[i]!, start, end);
+    const distance = perpendicularDistance(points[i] ?? { x: 0, y: 0 }, start, end);
     if (distance > maxDistance) {
       maxDistance = distance;
       maxIndex = i;
@@ -169,8 +171,8 @@ function findClosestPointOnPath(
 
   // Check each segment
   for (let i = 0; i < pathPoints.length - 2; i += 2) {
-    const segStart = { x: pathPoints[i]!, y: pathPoints[i + 1]! };
-    const segEnd = { x: pathPoints[i + 2]!, y: pathPoints[i + 3]! };
+    const segStart = { x: pathPoints[i] ?? 0, y: pathPoints[i + 1] ?? 0 };
+    const segEnd = { x: pathPoints[i + 2] ?? 0, y: pathPoints[i + 3] ?? 0 };
 
     const result = pointToSegmentDistanceWithPoint(point, segStart, segEnd);
 
@@ -200,6 +202,7 @@ function findClosestPointOnPath(
  * @param threshold - Maximum distance for snapping (pixels)
  * @returns Snapped point or original point if no snap found
  */
+// eslint-disable-next-line import/no-unused-modules
 export function snapPointToPaths(
   point: Point,
   existingPaths: number[][],
@@ -209,10 +212,10 @@ export function snapPointToPaths(
   let bestVertexMatch: { point: Point; distance: number; pathIndex: number } | null = null;
 
   for (let i = 0; i < existingPaths.length; i++) {
-    const path = existingPaths[i]!;
+    const path = existingPaths[i] ?? [];
     for (let j = 0; j < path.length; j += 2) {
-      const vx = path[j]!;
-      const vy = path[j + 1]!;
+      const vx = path[j] ?? 0;
+      const vy = path[j + 1] ?? 0;
       const dx = point.x - vx;
       const dy = point.y - vy;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -244,7 +247,7 @@ export function snapPointToPaths(
   let pathIndex = -1;
 
   for (let i = 0; i < existingPaths.length; i++) {
-    const path = existingPaths[i]!;
+    const path = existingPaths[i] ?? [];
     const result = findClosestPointOnPath(point, path);
 
     if (result && result.distance < minDistance) {

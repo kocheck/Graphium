@@ -25,6 +25,7 @@
  * This interface defines the properties that can be inherited from prototypes (library items)
  * or overridden on instances (map tokens).
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface TokenMetadata {
   name?: string;
   type?: 'PC' | 'NPC';

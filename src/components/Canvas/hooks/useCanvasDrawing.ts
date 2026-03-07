@@ -1,7 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
+import type React from 'react';
 
 import type { Drawing } from '../../../types/domain';
 import type Konva from 'konva';
+
+interface UseCanvasDrawingReturn {
+  isDrawing: React.MutableRefObject<boolean>;
+  currentLine: React.MutableRefObject<Drawing | null>;
+  tempLine: Drawing | null;
+  setTempLine: React.Dispatch<React.SetStateAction<Drawing | null>>;
+  tempLineRef: React.MutableRefObject<Konva.Line | null>;
+  drawingAnimationFrameRef: React.MutableRefObject<number | null>;
+  doorPreviewPos: { x: number; y: number } | null;
+  setDoorPreviewPos: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>;
+  isMeasuring: React.MutableRefObject<boolean>;
+  measurementStart: React.MutableRefObject<{ x: number; y: number } | null>;
+  calibrationStart: React.MutableRefObject<{ x: number; y: number } | null>;
+  calibrationRect: { x: number; y: number; width: number; height: number } | null;
+  setCalibrationRect: React.Dispatch<
+    React.SetStateAction<{ x: number; y: number; width: number; height: number } | null>
+  >;
+}
 
 /**
  * Manages drawing-related state and refs for canvas drawing tools.
@@ -13,7 +32,7 @@ import type Konva from 'konva';
  *
  * @returns Drawing state refs and state setters consumed by useCanvasInteraction
  */
-export function useCanvasDrawing() {
+export function useCanvasDrawing(): UseCanvasDrawingReturn {
   // Drawing tool refs (used by useCanvasInteraction for stroke tracking)
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null);

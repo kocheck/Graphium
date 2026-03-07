@@ -53,6 +53,7 @@ interface MobileToolbarProps {
   onPauseToggle: () => void;
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity
 function MobileToolbar({
   tool,
   setTool,
@@ -62,21 +63,21 @@ function MobileToolbar({
   setDoorOrientation,
   isGamePaused,
   onPauseToggle,
-}: MobileToolbarProps) {
+}: MobileToolbarProps): JSX.Element {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Close menu when clicking outside
-  const handleMoreClick = () => {
+  const handleMoreClick = (): void => {
     setShowMoreMenu(!showMoreMenu);
   };
 
-  const handleDungeonGen = () => {
+  const handleDungeonGen = (): void => {
     useUiStore.getState().showDungeonDialog();
     setShowMoreMenu(false);
   };
 
-  const handleWorldView = () => {
+  const handleWorldView = (): void => {
     const ipcRenderer = window.ipcRenderer;
     if (ipcRenderer) {
       // Electron: Use IPC to create separate window
@@ -89,7 +90,7 @@ function MobileToolbar({
     setShowMoreMenu(false);
   };
 
-  const handleColorPicker = () => {
+  const handleColorPicker = (): void => {
     colorInputRef.current?.click();
     setShowMoreMenu(false);
   };

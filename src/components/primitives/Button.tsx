@@ -17,15 +17,15 @@
  * <Button variant="tool" isActive={tool === 'draw'}>Draw</Button>
  */
 
-import React from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant: 'primary' | 'secondary' | 'ghost' | 'destructive' | 'tool';
   size?: 'sm' | 'md' | 'lg';
   isActive?: boolean;
   isLoading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
 }
 
 const sizeClasses = {
@@ -42,7 +42,7 @@ const variantClasses = {
   tool: 'btn-primitive btn-primitive--tool',
 } as const;
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       variant,
@@ -59,6 +59,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const isDisabled = disabled || isLoading;
 
     return (
@@ -79,6 +80,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           .join(' ')}
         {...rest}
       >
+        {/* eslint-disable-next-line no-nested-ternary */}
         {isLoading ? (
           <span className="btn-primitive__spinner" aria-hidden="true" />
         ) : leftIcon ? (

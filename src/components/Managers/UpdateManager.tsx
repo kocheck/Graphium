@@ -132,6 +132,7 @@ const updateMessages = {
  * Randomly selects a message from an array
  */
 const rollForMessage = (messages: string[]): string => {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return messages[Math.floor(Math.random() * messages.length)]!;
 };
 
@@ -169,7 +170,8 @@ interface DownloadProgress {
   total: number;
 }
 
-function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
+// eslint-disable-next-line max-lines-per-function, complexity
+function UpdateManager({ isOpen, onClose }: UpdateManagerProps): JSX.Element | null {
   const [status, setStatus] = useState<UpdateStatus>('idle');
   const [currentVersion, setCurrentVersion] = useState<string>('');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);

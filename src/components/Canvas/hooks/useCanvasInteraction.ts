@@ -64,6 +64,21 @@ interface UseCanvasInteractionProps {
   addDrawing: (drawing: Drawing) => void;
 }
 
+type CanvasPointerHandler = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+
+type CanvasPointerPredicate = (
+  e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
+) => boolean;
+
+interface UseCanvasInteractionReturn {
+  handlePointerDown: CanvasPointerHandler;
+  handlePointerMove: CanvasPointerHandler;
+  handlePointerUp: CanvasPointerHandler;
+  shouldRejectPointerEvent: CanvasPointerPredicate;
+  trackStylusUsage: CanvasPointerHandler;
+}
+
+// eslint-disable-next-line max-lines-per-function
 export const useCanvasInteraction = ({
   tool,
   isSpacePressed,
@@ -94,7 +109,7 @@ export const useCanvasInteraction = ({
   calibrationStart,
   setCalibrationRect,
   addDrawing,
-}: UseCanvasInteractionProps) => {
+}: UseCanvasInteractionProps): UseCanvasInteractionReturn => {
   const touchSettings = useTouchSettingsStore();
 
   // Palm Rejection Logic
@@ -137,7 +152,8 @@ export const useCanvasInteraction = ({
     [stylusActiveRef],
   );
 
-  const handlePointerDown = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+  // eslint-disable-next-line complexity
+  const handlePointerDown = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
     trackStylusUsage(e);
     if (shouldRejectPointerEvent(e)) {
       return;
@@ -273,7 +289,8 @@ export const useCanvasInteraction = ({
     }
   };
 
-  const handlePointerMove = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+  // eslint-disable-next-line complexity
+  const handlePointerMove = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
     if (shouldRejectPointerEvent(e)) {
       return;
     }
@@ -354,8 +371,11 @@ export const useCanvasInteraction = ({
       // START OF CHANGE: Shift key straight line locking
       // Checks if Shift is held down and snaps the current point to match the start point's X or Y
       if (e.evt.shiftKey && cur.points.length >= 2) {
-        const startX = cur.points[0]!;
-        const startY = cur.points[1]!;
+        const startX = cur.points[0];
+        const startY = cur.points[1];
+        if (startX === undefined || startY === undefined) {
+          return;
+        }
         const dx = Math.abs(point.x - startX);
         const dy = Math.abs(point.y - startY);
 
@@ -395,7 +415,7 @@ export const useCanvasInteraction = ({
     }
   };
 
-  const handlePointerUp = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+  const handlePointerUp = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
     trackStylusUsage(e);
     // Token Drag End
     handleTokenPointerUp(e);

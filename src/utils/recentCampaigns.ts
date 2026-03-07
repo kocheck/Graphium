@@ -61,6 +61,7 @@ export function getRecentCampaigns(): RecentCampaign[] {
  * Add or update a campaign in the recent list
  * @param campaign Campaign to add/update
  */
+// eslint-disable-next-line import/no-unused-modules
 export function addRecentCampaign(campaign: RecentCampaign): void {
   try {
     const existing = getRecentCampaigns();
@@ -121,6 +122,7 @@ export function removeRecentCampaign(campaignId: string): void {
 /**
  * Clear all recent campaigns
  */
+// eslint-disable-next-line import/no-unused-modules
 export function clearRecentCampaigns(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);

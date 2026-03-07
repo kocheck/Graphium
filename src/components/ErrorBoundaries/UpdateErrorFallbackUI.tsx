@@ -58,6 +58,7 @@ const updateErrorMessages = {
  * Random number generator function type for testing
  * Allows injecting deterministic RNG for tests
  */
+// eslint-disable-next-line import/no-unused-modules
 export type UpdateErrorRandomFn = () => number;
 
 /**
@@ -68,11 +69,13 @@ export type UpdateErrorRandomFn = () => number;
  * @param rng - Random number generator function (defaults to Math.random)
  * @returns Randomly selected message
  */
+// eslint-disable-next-line import/no-unused-modules, react-refresh/only-export-components
 export const rollForMessage = (
   messages: string[],
   rng: UpdateErrorRandomFn = Math.random,
 ): string => {
   const index = Math.floor(rng() * messages.length);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return messages[index]!;
 };
 
@@ -80,7 +83,10 @@ export const rollForMessage = (
  * Update error fallback UI component
  * Displays user-friendly error message with retry and close options
  */
-export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFallbackUIProps) {
+export function UpdateErrorFallbackUI({
+  errorMessage,
+  onReset,
+}: UpdateErrorFallbackUIProps): JSX.Element {
   // Roll for random error messages (memoized per error instance to keep them stable)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const errorTitle = useMemo(() => rollForMessage(updateErrorMessages.title), [errorMessage]);
@@ -89,7 +95,7 @@ export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFall
 
   // Determine which hints to show based on error type
   const hints = useMemo(() => {
-    const errorMsg = errorMessage?.toLowerCase() || '';
+    const errorMsg = errorMessage?.toLowerCase() ?? '';
 
     // Check for signature-related errors
     if (

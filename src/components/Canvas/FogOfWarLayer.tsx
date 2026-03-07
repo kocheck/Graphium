@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { useMemo, useEffect, useRef, useCallback } from 'react';
 
 import Konva from 'konva';
@@ -68,6 +69,7 @@ const DEBUG_VISION = false;
  * Set `DEBUG_VISION = true` at the top of this file to enable detailed logging
  * of token positions, door states, wall segments, and raycasting data.
  */
+// eslint-disable-next-line max-lines-per-function
 function FogOfWarLayer({
   tokens,
   drawings,
@@ -75,7 +77,7 @@ function FogOfWarLayer({
   gridSize,
   visibleBounds,
   map,
-}: FogOfWarLayerProps) {
+}: FogOfWarLayerProps): JSX.Element {
   if (DEBUG_VISION) {
     console.log('[FogOfWarLayer] COMPONENT RENDERING - Start');
     console.log('[FogOfWarLayer] Props:', {
@@ -97,10 +99,10 @@ function FogOfWarLayer({
     console.log('═══════════════════════════════════════════════════════');
     console.log('TOKENS:');
     tokens.forEach((t) => {
-      console.log(`  - ${t.type} Token "${t.name || t.id.substring(0, 8)}":`, {
+      console.log(`  - ${t.type} Token "${t.name ?? t.id.substring(0, 8)}":`, {
         id: t.id,
         position: `(${t.x}, ${t.y})`,
-        visionRadius: t.visionRadius || 'NOT SET',
+        visionRadius: t.visionRadius ?? 'NOT SET',
         type: t.type,
       });
     });
@@ -402,9 +404,16 @@ function FogOfWarLayer({
                   return;
                 }
                 ctx.beginPath();
-                ctx.moveTo(region.points[0]!.x, region.points[0]!.y);
+                const firstPoint = region.points[0];
+                if (!firstPoint) {
+                  return;
+                }
+                ctx.moveTo(firstPoint.x, firstPoint.y);
                 for (let i = 1; i < region.points.length; i++) {
-                  ctx.lineTo(region.points[i]!.x, region.points[i]!.y);
+                  const pt = region.points[i];
+                  if (pt) {
+                    ctx.lineTo(pt.x, pt.y);
+                  }
                 }
                 ctx.closePath();
                 // Semi-transparent black = partially erases fog = dimmed map shows through
@@ -425,7 +434,7 @@ function FogOfWarLayer({
           const visionRadiusPx = ((token.visionRadius ?? 0) / 5) * gridSize;
 
           // Get cached visibility polygon (no recalculation!)
-          const visibilityPolygon = visibilityCache.get(token.id) || [];
+          const visibilityPolygon = visibilityCache.get(token.id) ?? [];
 
           return (
             <Shape
@@ -435,9 +444,16 @@ function FogOfWarLayer({
                   return;
                 }
                 ctx.beginPath();
-                ctx.moveTo(visibilityPolygon[0]!.x, visibilityPolygon[0]!.y);
+                const firstVP = visibilityPolygon[0];
+                if (!firstVP) {
+                  return;
+                }
+                ctx.moveTo(firstVP.x, firstVP.y);
                 for (let i = 1; i < visibilityPolygon.length; i++) {
-                  ctx.lineTo(visibilityPolygon[i]!.x, visibilityPolygon[i]!.y);
+                  const vp = visibilityPolygon[i];
+                  if (vp) {
+                    ctx.lineTo(vp.x, vp.y);
+                  }
                 }
                 ctx.closePath();
 

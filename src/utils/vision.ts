@@ -61,6 +61,7 @@ export function calculateVisibilityPolygon(
  * @param walls - Wall segments to test against
  * @returns Endpoint of ray — either maxRange distance or wall intersection
  */
+// eslint-disable-next-line import/no-unused-modules
 export function castRay(
   originX: number,
   originY: number,
@@ -109,6 +110,7 @@ export function castRay(
  *
  * @returns Intersection point or null if segments don't cross
  */
+// eslint-disable-next-line import/no-unused-modules, max-params
 export function lineSegmentIntersection(
   x1: number,
   y1: number,
@@ -163,19 +165,19 @@ export function getWallSegments(drawings: Drawing[], doors: Door[]): WallSegment
       // Convert points array [x1, y1, x2, y2, ...] to segments
       // Apply drawing transform (x, y, scale) so logical walls match visual walls
       const points = wall.points;
-      const offsetX = wall.x || 0;
-      const offsetY = wall.y || 0;
-      const scale = wall.scale || 1;
+      const offsetX = wall.x ?? 0;
+      const offsetY = wall.y ?? 0;
+      const scale = wall.scale ?? 1;
 
       for (let i = 0; i < points.length - 2; i += 2) {
         wallSegments.push({
           start: {
-            x: points[i]! * scale + offsetX,
-            y: points[i + 1]! * scale + offsetY,
+            x: (points[i] ?? 0) * scale + offsetX,
+            y: (points[i + 1] ?? 0) * scale + offsetY,
           },
           end: {
-            x: points[i + 2]! * scale + offsetX,
-            y: points[i + 3]! * scale + offsetY,
+            x: (points[i + 2] ?? 0) * scale + offsetX,
+            y: (points[i + 3] ?? 0) * scale + offsetY,
           },
         });
       }
