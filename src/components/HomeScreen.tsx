@@ -187,8 +187,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
     storage
       .getThemeMode()
       .then((mode) => setCurrentTheme(mode))
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      .catch(() => {});
+      .catch((error: unknown) => {
+        console.warn('[HomeScreen] Failed to load theme mode, using default:', error);
+      });
   }, []);
 
   // Focus management for templates modal
