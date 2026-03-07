@@ -62,18 +62,11 @@ function rdpRecursive(points: Point[], epsilon: number): Point[] {
   // Find the point with maximum perpendicular distance from line (first -> last)
   let maxDistance = 0;
   let maxIndex = 0;
-  const startPoint = points[0];
-  if (startPoint === undefined) {
-    console.warn('[pathOptimization] Unexpected undefined first point in rdpRecursive');
-    return points;
-  }
-  const start = startPoint;
-  const endPoint = points[points.length - 1];
-  if (endPoint === undefined) {
-    console.warn('[pathOptimization] Unexpected undefined last point in rdpRecursive');
-    return points;
-  }
-  const end = endPoint;
+  // length >= 3 guaranteed by the guard above — non-null assertions are safe here
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const start = points[0]!;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const end = points[points.length - 1]!;
 
   for (let i = 1; i < points.length - 1; i++) {
     const interiorPoint = points[i];

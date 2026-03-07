@@ -160,6 +160,11 @@ export class WebStorageService implements IStorageService {
       input.type = 'file';
       input.accept = '.graphium';
 
+      // Resolve null if user cancels the file picker without selecting a file
+      input.addEventListener('cancel', () => {
+        resolve(null);
+      });
+
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) {

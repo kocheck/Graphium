@@ -56,6 +56,9 @@ function AutoSaveManager(): null {
             }
           } catch (err) {
             console.error('[AutoSave] Failed:', err);
+            useUiStore
+              .getState()
+              .showToast('Auto-save failed — your progress may not be saved', 'error');
           } finally {
             isSaving = false;
           }

@@ -1,33 +1,11 @@
 import { useEffect, useRef } from 'react';
 
 import { useGameStore } from '../../store/gameStore';
-import { isEqual, detectChanges } from '../../utils/syncUtils';
+import { isEqual, detectChanges, isSyncActionType } from '../../utils/syncUtils';
 
 import type { GameState } from '../../store/gameStore';
 import type { Token } from '../../types/domain';
 import type { SyncAction, SyncableGameState } from '../../utils/syncUtils';
-
-// All valid SyncAction type discriminants — used to guard BroadcastChannel messages
-const VALID_SYNC_ACTIONS = new Set([
-  'FULL_SYNC',
-  'TOKEN_ADD',
-  'TOKEN_UPDATE',
-  'TOKEN_REMOVE',
-  'LIBRARY_UPDATE',
-  'TOKEN_DRAG_START',
-  'TOKEN_DRAG_MOVE',
-  'TOKEN_DRAG_END',
-  'DRAWING_ADD',
-  'DRAWING_UPDATE',
-  'DRAWING_REMOVE',
-  'DOOR_ADD',
-  'DOOR_UPDATE',
-  'DOOR_REMOVE',
-  'DOOR_TOGGLE',
-  'MAP_UPDATE',
-  'GRID_UPDATE',
-  'MEASUREMENT_UPDATE',
-]);
 
 // Basic throttle implementation to limit IPC frequency
 // Ensures leading edge execution and trailing edge (so final state is always sent)
@@ -261,7 +239,7 @@ function SyncManager(): null {
           const message = event.data as { type?: string };
           if (message?.type === 'REQUEST_INITIAL_STATE') {
             // Ignore (World View doesn't have initial state to give)
-          } else if (message?.type && VALID_SYNC_ACTIONS.has(message.type)) {
+          } else if (message?.type && isSyncActionType(message.type)) {
             handleSyncAction(null, message as SyncAction);
           }
         };
@@ -455,9 +433,10 @@ function SyncManager(): null {
         }
       };
 
-      if (isElectron && ipcRenderer) {
+      if (isElectron && ipcRenderer && !listenerSetupRef.current) {
         ipcRenderer.on('SYNC_FROM_WORLD_VIEW', syncFromWorldViewListener);
         ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
+        listenerSetupRef.current = true;
       }
 
       return () => {

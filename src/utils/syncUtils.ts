@@ -159,6 +159,37 @@ export type SyncAction =
   | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null };
 
 /**
+ * All valid SyncAction type discriminants as a runtime Set.
+ * Import this instead of maintaining a local copy — it stays in sync with the union above.
+ */
+// eslint-disable-next-line import/no-unused-modules
+export const SYNC_ACTION_TYPES = new Set<SyncAction['type']>([
+  'FULL_SYNC',
+  'TOKEN_ADD',
+  'TOKEN_UPDATE',
+  'TOKEN_REMOVE',
+  'LIBRARY_UPDATE',
+  'TOKEN_DRAG_START',
+  'TOKEN_DRAG_MOVE',
+  'TOKEN_DRAG_END',
+  'DRAWING_ADD',
+  'DRAWING_UPDATE',
+  'DRAWING_REMOVE',
+  'DOOR_ADD',
+  'DOOR_UPDATE',
+  'DOOR_REMOVE',
+  'DOOR_TOGGLE',
+  'MAP_UPDATE',
+  'GRID_UPDATE',
+  'MEASUREMENT_UPDATE',
+]);
+
+/** Type guard — narrows an unknown string to a valid SyncAction['type'] */
+export function isSyncActionType(type: string): type is SyncAction['type'] {
+  return (SYNC_ACTION_TYPES as Set<string>).has(type);
+}
+
+/**
  * Detects changes between previous and current state, returns delta actions
  */
 // eslint-disable-next-line max-lines-per-function, complexity
