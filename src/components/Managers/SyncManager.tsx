@@ -447,6 +447,7 @@ function SyncManager(): null {
         if (isElectron && ipcRenderer) {
           ipcRenderer.off('REQUEST_INITIAL_STATE', handleInitialStateRequest);
           ipcRenderer.off('SYNC_FROM_WORLD_VIEW', syncFromWorldViewListener);
+          listenerSetupRef.current = false;
         }
         // @ts-expect-error - graphiumSync is dynamically added
         delete window.graphiumSync;

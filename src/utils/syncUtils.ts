@@ -159,34 +159,43 @@ export type SyncAction =
   | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null };
 
 /**
+ * Exhaustiveness map for SyncAction discriminants.
+ * TypeScript requires every SyncAction['type'] union member as a key — adding a
+ * new variant to the union without updating this map will produce a compile error.
+ */
+const SYNC_ACTION_TYPE_MAP: Record<SyncAction['type'], true> = {
+  FULL_SYNC: true,
+  TOKEN_ADD: true,
+  TOKEN_UPDATE: true,
+  TOKEN_REMOVE: true,
+  LIBRARY_UPDATE: true,
+  TOKEN_DRAG_START: true,
+  TOKEN_DRAG_MOVE: true,
+  TOKEN_DRAG_END: true,
+  DRAWING_ADD: true,
+  DRAWING_UPDATE: true,
+  DRAWING_REMOVE: true,
+  DOOR_ADD: true,
+  DOOR_UPDATE: true,
+  DOOR_REMOVE: true,
+  DOOR_TOGGLE: true,
+  MAP_UPDATE: true,
+  GRID_UPDATE: true,
+  MEASUREMENT_UPDATE: true,
+};
+
+/**
  * All valid SyncAction type discriminants as a runtime Set.
- * Import this instead of maintaining a local copy — it stays in sync with the union above.
+ * Derived from SYNC_ACTION_TYPE_MAP — stays in sync with the union automatically.
  */
 // eslint-disable-next-line import/no-unused-modules
-export const SYNC_ACTION_TYPES = new Set<SyncAction['type']>([
-  'FULL_SYNC',
-  'TOKEN_ADD',
-  'TOKEN_UPDATE',
-  'TOKEN_REMOVE',
-  'LIBRARY_UPDATE',
-  'TOKEN_DRAG_START',
-  'TOKEN_DRAG_MOVE',
-  'TOKEN_DRAG_END',
-  'DRAWING_ADD',
-  'DRAWING_UPDATE',
-  'DRAWING_REMOVE',
-  'DOOR_ADD',
-  'DOOR_UPDATE',
-  'DOOR_REMOVE',
-  'DOOR_TOGGLE',
-  'MAP_UPDATE',
-  'GRID_UPDATE',
-  'MEASUREMENT_UPDATE',
-]);
+export const SYNC_ACTION_TYPES = new Set(
+  Object.keys(SYNC_ACTION_TYPE_MAP) as Array<SyncAction['type']>,
+);
 
 /** Type guard — narrows an unknown string to a valid SyncAction['type'] */
 export function isSyncActionType(type: string): type is SyncAction['type'] {
-  return (SYNC_ACTION_TYPES as Set<string>).has(type);
+  return Object.prototype.hasOwnProperty.call(SYNC_ACTION_TYPE_MAP, type);
 }
 
 /**
