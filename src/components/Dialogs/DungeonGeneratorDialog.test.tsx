@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { act } from 'react';
 import { DungeonGeneratorDialog } from './DungeonGeneratorDialog';
+import { DungeonGenerator } from '../../utils/DungeonGenerator';
 import { useGameStore } from '../../store/gameStore';
 import { useUiStore } from '../../store/uiStore';
+import type { HexColor, PixelSize } from '../../types/domain';
 
 // Mock the DungeonGenerator
 vi.mock('../../utils/DungeonGenerator', () => ({
@@ -25,6 +27,11 @@ vi.mock('../../utils/DungeonGenerator', () => ({
   }),
 }));
 
+const defaultProps = {
+  wallColor: '#ff0000' as HexColor,
+  wallSize: 8 as PixelSize,
+};
+
 describe('DungeonGeneratorDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,20 +45,20 @@ describe('DungeonGeneratorDialog', () => {
   });
 
   it('should not render when dungeonDialog is false', () => {
-    const { container } = render(<DungeonGeneratorDialog />);
+    const { container } = render(<DungeonGeneratorDialog {...defaultProps} />);
     expect(container.firstChild).toBeNull();
   });
 
   it('should render when dungeonDialog is true', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     expect(screen.getByText('Dungeon Generator')).toBeInTheDocument();
   });
 
   it('should display all parameter controls', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     expect(screen.getByText(/Number of Rooms:/)).toBeInTheDocument();
     expect(screen.getByText(/Min Room Size/)).toBeInTheDocument();
@@ -61,7 +68,7 @@ describe('DungeonGeneratorDialog', () => {
 
   it('should close dialog when Escape key is pressed', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     expect(screen.getByText('Dungeon Generator')).toBeInTheDocument();
 
@@ -74,7 +81,7 @@ describe('DungeonGeneratorDialog', () => {
 
   it('should close dialog when Cancel button is clicked', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const cancelButton = screen.getByText('Cancel');
 
@@ -87,7 +94,7 @@ describe('DungeonGeneratorDialog', () => {
 
   it('should close dialog when background is clicked', () => {
     useUiStore.setState({ dungeonDialog: true });
-    const { container } = render(<DungeonGeneratorDialog />);
+    const { container } = render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const background = container.querySelector('.fixed.inset-0');
     expect(background).toBeInTheDocument();
@@ -101,7 +108,7 @@ describe('DungeonGeneratorDialog', () => {
 
   it('should not close dialog when dialog content is clicked', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const dialogContent = screen.getByText('Dungeon Generator').closest('div');
 
@@ -115,7 +122,7 @@ describe('DungeonGeneratorDialog', () => {
   it('should generate dungeon when Generate button is clicked', () => {
     useGameStore.setState({ gridSize: 50 });
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const generateButton = screen.getByText('Generate Dungeon');
 
@@ -129,9 +136,23 @@ describe('DungeonGeneratorDialog', () => {
     expect(useUiStore.getState().dungeonDialog).toBe(false);
   });
 
+  it('should pass wallColor and wallSize props to DungeonGenerator', () => {
+    useGameStore.setState({ gridSize: 50 });
+    useUiStore.setState({ dungeonDialog: true });
+    render(<DungeonGeneratorDialog wallColor={'#123456' as HexColor} wallSize={12 as PixelSize} />);
+
+    act(() => {
+      screen.getByText('Generate Dungeon').click();
+    });
+
+    expect(DungeonGenerator).toHaveBeenCalledWith(
+      expect.objectContaining({ wallColor: '#123456', wallSize: 12 }),
+    );
+  });
+
   it('should allow changing number of rooms', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const slider = screen.getAllByRole('slider')[0];
 
@@ -144,7 +165,7 @@ describe('DungeonGeneratorDialog', () => {
 
   it('should allow changing min room size', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const slider = screen.getAllByRole('slider')[1];
 
@@ -157,7 +178,7 @@ describe('DungeonGeneratorDialog', () => {
 
   it('should allow changing max room size', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const slider = screen.getAllByRole('slider')[2];
 
@@ -170,7 +191,7 @@ describe('DungeonGeneratorDialog', () => {
 
   it('should allow toggling clear canvas option', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const checkbox = screen.getByRole('checkbox');
 
@@ -197,7 +218,7 @@ describe('DungeonGeneratorDialog', () => {
       ],
     });
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const checkbox = screen.getByRole('checkbox');
     const generateButton = screen.getByText('Generate Dungeon');
@@ -223,7 +244,7 @@ describe('DungeonGeneratorDialog', () => {
     Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
     Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
 
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     const generateButton = screen.getByText('Generate Dungeon');
 
@@ -237,7 +258,7 @@ describe('DungeonGeneratorDialog', () => {
 
   it('should display info text about wall tool', () => {
     useUiStore.setState({ dungeonDialog: true });
-    render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog {...defaultProps} />);
 
     expect(screen.getByText(/will be drawn using the Wall tool/)).toBeInTheDocument();
     expect(screen.getByText(/fully interactive/)).toBeInTheDocument();

@@ -5,12 +5,22 @@ import { useGameStore } from '../../store/gameStore';
 import { useUiStore } from '../../store/uiStore';
 import { DungeonGenerator } from '../../utils/DungeonGenerator';
 
+import type { HexColor, PixelSize } from '../../types/domain';
+
+interface DungeonGeneratorDialogProps {
+  wallColor: HexColor;
+  wallSize: PixelSize;
+}
+
 /**
  * DungeonGeneratorDialog is a modal that allows users to configure and
  * generate procedural dungeons on the canvas.
  */
 // eslint-disable-next-line max-lines-per-function
-export function DungeonGeneratorDialog(): React.ReactElement | null {
+export function DungeonGeneratorDialog({
+  wallColor,
+  wallSize,
+}: DungeonGeneratorDialogProps): React.ReactElement | null {
   const addDrawing = useGameStore((state) => state.addDrawing);
   const addDoor = useGameStore((state) => state.addDoor);
   const removeDrawings = useGameStore((state) => state.removeDrawings);
@@ -49,11 +59,6 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
     // Use the current window size for the canvas, with fallbacks to preserve existing behavior
     const canvasWidth = window.innerWidth || 1920;
     const canvasHeight = window.innerHeight || 1080;
-
-    // Use default wall settings
-    // TODO: Once wall tool settings are in the store, use those instead of defaults
-    const wallColor = '#ff0000'; // Default red — corresponds to --app-wall-color-default
-    const wallSize = 8; // Default size
 
     // Generate the dungeon
     const generator = new DungeonGenerator({
