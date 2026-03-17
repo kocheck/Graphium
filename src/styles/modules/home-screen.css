@@ -121,7 +121,7 @@
 }
 
 .hero-title {
-  font-size: clamp(1.25rem, 2.5vw + 0.5rem, 1.75rem); /* Fluid typography */
+  font-size: clamp(1.375rem, 2.5vw + 0.5rem, 1.75rem); /* Fluid typography */
   font-weight: 600;
   font-family: var(--font-display);
   letter-spacing: var(--tracking-tight);
@@ -300,6 +300,12 @@
   font-weight: 600;
   color: var(--app-text-primary);
   z-index: 1; /* Ensure title is above shimmer */
+}
+
+.card-description {
+  font-size: var(--text-sm);
+  color: var(--app-text-secondary);
+  line-height: var(--leading-normal);
 }
 
 /* Hover shimmer effect */
@@ -541,6 +547,7 @@
   border: 1px solid var(--app-border-subtle);
   border-radius: 8px;
   color: var(--app-text-primary);
+  font-family: var(--font-body);
   font-size: 0.875rem;
   transition: border-color 0.2s;
 }
@@ -776,6 +783,7 @@
     min-height: 100vh; /* Fallback for browsers without dvh support */
     justify-content: flex-start;
     padding: 2rem 0;
+    scroll-padding-bottom: 0; /* Reset scroll padding on mobile */
   }
 
   @supports (height: 100dvh) {
@@ -788,10 +796,6 @@
     padding: 0 1.5rem 2rem; /* Mobile: Footer is relative, no extra bottom padding needed */
     gap: 1.5rem;
     margin-bottom: 0;
-  }
-
-  .home-screen {
-    scroll-padding-bottom: 0; /* Reset scroll padding on mobile */
   }
 
   .logo-container {
@@ -892,15 +896,12 @@
 @media (max-width: 480px) {
   .home-screen {
     padding: 1.5rem 0;
+    scroll-padding-bottom: 0;
   }
 
   .content-container {
     padding: 0 1rem 1.5rem;
     gap: 1.25rem;
-  }
-
-  .home-screen {
-    scroll-padding-bottom: 0;
   }
 
   .logo-container {
@@ -960,15 +961,12 @@
 @media (max-width: 360px) {
   .home-screen {
     padding: 1rem 0;
+    scroll-padding-bottom: 0;
   }
 
   .content-container {
     padding: 0 0.875rem 1rem;
     gap: 1rem;
-  }
-
-  .home-screen {
-    scroll-padding-bottom: 0;
   }
 
   .logo-container {
