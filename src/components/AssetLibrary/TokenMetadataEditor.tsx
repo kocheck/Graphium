@@ -61,7 +61,7 @@ function TokenMetadataEditor({
   isOpen,
   libraryItemId,
   onClose,
-}: TokenMetadataEditorProps): JSX.Element | null {
+}: TokenMetadataEditorProps): React.JSX.Element | null {
   const isMobile = useIsMobile();
 
   // Get library item and update function from store

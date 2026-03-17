@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useCallback } from 'react';
 
 import Cropper from 'react-easy-crop';
@@ -73,7 +74,7 @@ interface CropArea {
   height: number;
 }
 
-function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps): JSX.Element {
+function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps): React.JSX.Element {
   const [crop, setCrop] = useState({ x: 0, y: 0 }); // Crop area position
   const [zoom, setZoom] = useState(1); // Zoom level (1x-3x)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<CropArea | null>(null); // Pixel coordinates for extraction

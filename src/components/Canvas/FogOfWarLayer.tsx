@@ -1,3 +1,4 @@
+import type React from 'react';
 /* eslint-disable no-console */
 import { useMemo, useEffect, useRef, useCallback } from 'react';
 
@@ -77,7 +78,7 @@ function FogOfWarLayer({
   gridSize,
   visibleBounds,
   map,
-}: FogOfWarLayerProps): JSX.Element {
+}: FogOfWarLayerProps): React.JSX.Element {
   if (DEBUG_VISION) {
     console.log('[FogOfWarLayer] COMPONENT RENDERING - Start');
     console.log('[FogOfWarLayer] Props:', {

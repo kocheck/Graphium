@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useEffect } from 'react';
 
 import iconUrl from '../assets/branding/icon.png';
@@ -22,7 +23,7 @@ export function LogoIcon({
   animate = false,
   onAnimationComplete,
   className = '',
-}: LogoIconProps): JSX.Element {
+}: LogoIconProps): React.JSX.Element {
   const [isRolling, setIsRolling] = useState(false);
   const [rotation, setRotation] = useState(0);
 

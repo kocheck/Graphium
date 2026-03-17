@@ -38,7 +38,7 @@ import type { ComponentExample } from './types';
  * Shell component to provide necessary context (Theme, Toasts, Dialogs)
  * isolated from the main app's providers.
  */
-function PlaygroundShell({ children }: { children: React.ReactNode }): JSX.Element {
+function PlaygroundShell({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
     <div className="playground-shell w-full h-full bg-[var(--app-bg-base)] text-[var(--app-text-primary)] transition-colors duration-200">
       <ThemeManager />
@@ -49,7 +49,7 @@ function PlaygroundShell({ children }: { children: React.ReactNode }): JSX.Eleme
   );
 }
 
-export function DesignSystemPlayground(): JSX.Element {
+export function DesignSystemPlayground(): React.JSX.Element {
   return (
     <PlaygroundShell>
       <PlaygroundContent />
@@ -58,7 +58,7 @@ export function DesignSystemPlayground(): JSX.Element {
 }
 
 // eslint-disable-next-line max-lines-per-function
-function PlaygroundContent(): JSX.Element {
+function PlaygroundContent(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
@@ -320,7 +320,7 @@ interface ComponentCardProps {
   onCopy: () => void;
 }
 
-function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps): JSX.Element {
+function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps): React.JSX.Element {
   const [showCode, setShowCode] = useState(false);
 
   return (

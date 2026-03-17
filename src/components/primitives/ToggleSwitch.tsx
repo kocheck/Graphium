@@ -1,3 +1,4 @@
+import type React from 'react';
 /**
  * ToggleSwitch Component - Modern toggle switch with theme support
  *
@@ -29,7 +30,7 @@ function ToggleSwitch({
   description,
   disabled = false,
   id,
-}: ToggleSwitchProps): JSX.Element {
+}: ToggleSwitchProps): React.JSX.Element {
   const handleToggle = (): void => {
     if (!disabled) {
       onChange(!checked);

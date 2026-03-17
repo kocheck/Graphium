@@ -49,7 +49,7 @@ function TouchVisualFeedback({
   touchPoints,
   gestureMode,
   containerBounds,
-}: TouchVisualFeedbackProps): JSX.Element {
+}: TouchVisualFeedbackProps): React.JSX.Element {
   const settings = useTouchSettingsStore();
 
   // Calculate pressure indicator size (10-40px based on pressure)

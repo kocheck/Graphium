@@ -1,3 +1,4 @@
+import type React from 'react';
 /**
  * Toolbar — Desktop floating toolbar for tool selection and game controls
  *
@@ -32,7 +33,7 @@ interface ToolbarProps {
 }
 
 // eslint-disable-next-line max-lines-per-function, complexity
-function Toolbar({ toolState, isGamePaused, onPauseToggle }: ToolbarProps): JSX.Element {
+function Toolbar({ toolState, isGamePaused, onPauseToggle }: ToolbarProps): React.JSX.Element {
   const {
     tool,
     setTool,

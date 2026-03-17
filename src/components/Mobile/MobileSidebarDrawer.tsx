@@ -29,7 +29,7 @@ function MobileSidebarDrawer({
   isOpen,
   onClose,
   children,
-}: MobileSidebarDrawerProps): JSX.Element | null {
+}: MobileSidebarDrawerProps): React.JSX.Element | null {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key

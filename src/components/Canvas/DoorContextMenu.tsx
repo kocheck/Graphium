@@ -1,3 +1,5 @@
+import type React from 'react';
+
 import type { Door } from '../../types/domain';
 
 interface DoorContextMenuProps {
@@ -32,7 +34,7 @@ export default function DoorContextMenu({
   onUpdateDoorLock,
   onRemoveDoor,
   onClose,
-}: DoorContextMenuProps): JSX.Element {
+}: DoorContextMenuProps): React.JSX.Element {
   return (
     <>
       {/* Invisible backdrop to close menu on outside click */}

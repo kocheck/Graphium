@@ -1,6 +1,8 @@
+import type React from 'react';
+
 import { Group } from 'react-konva';
 
-function TokenLayer(): JSX.Element {
+function TokenLayer(): React.JSX.Element {
   return <Group>{/* Tokens will be mapped here */}</Group>;
 }
 

@@ -37,7 +37,7 @@ export interface UseToolStateReturn {
   setColor: (color: HexColor) => void;
   handleColorChange: (newColor: HexColor) => void;
   recentColors: HexColor[];
-  colorInputRef: React.RefObject<HTMLInputElement>;
+  colorInputRef: React.RefObject<HTMLInputElement | null>;
 
   // Door state
   doorOrientation: DoorOrientation;

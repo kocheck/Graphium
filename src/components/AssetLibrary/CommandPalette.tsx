@@ -61,7 +61,7 @@ function CommandPalette({
   onLaunchWorldView,
   onOpenDungeonGenerator,
   isGamePaused,
-}: CommandPaletteProps): JSX.Element | null {
+}: CommandPaletteProps): React.JSX.Element | null {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);

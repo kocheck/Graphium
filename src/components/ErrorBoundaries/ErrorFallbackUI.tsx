@@ -21,7 +21,7 @@ interface ErrorFallbackUIProps {
  * Error fallback UI component
  * Displays user-friendly error message with retry and close options
  */
-export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps): JSX.Element {
+export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps): React.JSX.Element {
   const clearDungeonDialog = useUiStore((state) => state.clearDungeonDialog);
 
   // Roll for random error messages (memoized per error instance to keep them stable)

@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 import { useGameStore } from '../../store/gameStore';
@@ -54,7 +55,7 @@ export function CanvasAccessibility({
   selectedTokenIds,
   onSelectToken,
   isWorldView,
-}: CanvasAccessibilityProps): JSX.Element {
+}: CanvasAccessibilityProps): React.JSX.Element {
   const [announcement, setAnnouncement] = useState('');
   const prevTokensRef = useRef<Token[]>([]);
   const prevDoorsRef = useRef<Door[]>([]);

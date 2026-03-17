@@ -440,7 +440,7 @@ showConfirmDialog(
     description: 'Software update dialog for electron-updater integration',
     component: (() => {
       // Create a wrapper component with state
-      function UpdateManagerDemo(): JSX.Element {
+      function UpdateManagerDemo(): React.JSX.Element {
         const [isOpen, setIsOpen] = useState(false);
         return (
           <>
@@ -727,9 +727,9 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     category: 'landing-patterns',
     description: 'Cyclical theme toggle (Light → Dark → Auto) with icon indicators',
     component: (() => {
-      function ThemeSwitcherDemo(): JSX.Element {
+      function ThemeSwitcherDemo(): React.JSX.Element {
         const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark');
-        const getIcon = (): JSX.Element => {
+        const getIcon = (): React.JSX.Element => {
           if (theme === 'light') {
             return <RiSunLine className="w-4 h-4" />;
           }
@@ -812,7 +812,7 @@ const handleToggleTheme = async () => {
     category: 'landing-patterns',
     description: 'Performance mode toggle that disables animations/effects for low-end devices',
     component: (() => {
-      function LiteModeDemo(): JSX.Element {
+      function LiteModeDemo(): React.JSX.Element {
         const [liteMode, setLiteMode] = useState(false);
         return (
           <button
@@ -888,7 +888,7 @@ const handleToggleLiteMode = () => {
     category: 'landing-patterns',
     description: 'Search input with icon that appears when list has 6+ items',
     component: (() => {
-      function SearchFilterDemo(): JSX.Element {
+      function SearchFilterDemo(): React.JSX.Element {
         const [query, setQuery] = useState('');
         return (
           <div style={{ position: 'relative', marginBottom: '0.75rem', width: '300px' }}>

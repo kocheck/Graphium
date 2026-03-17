@@ -1,3 +1,4 @@
+import type React from 'react';
 /**
  * Preferences Dialog Component
  *
@@ -16,7 +17,7 @@
  * - Geometry Snapping/Fusing - Enable/disable and adjust snap threshold
  *
  * @component
- * @returns {JSX.Element | null} Preferences dialog or null if not active
+ * @returns {React.JSX.Element | null} Preferences dialog or null if not active
  */
 
 import { usePreferencesStore } from '../../store/preferencesStore';
@@ -32,7 +33,7 @@ interface PreferencesDialogProps {
 }
 
 // eslint-disable-next-line max-lines-per-function
-function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps): JSX.Element {
+function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps): React.JSX.Element {
   const { wallTool, setWallToolPreference, resetWallToolPreferences } = usePreferencesStore();
   const touchSettings = useTouchSettingsStore();
 

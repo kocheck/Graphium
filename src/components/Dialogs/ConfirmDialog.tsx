@@ -25,7 +25,7 @@
  * );
  *
  * @component
- * @returns {JSX.Element | null} Confirmation dialog or null if not active
+ * @returns {React.JSX.Element | null} Confirmation dialog or null if not active
  */
 
 import { useEffect, useCallback } from 'react';
@@ -34,7 +34,7 @@ import { useUiStore } from '../../store/uiStore';
 import Button from '../primitives/Button';
 import Dialog from '../primitives/Dialog';
 
-function ConfirmDialog(): JSX.Element | null {
+function ConfirmDialog(): React.JSX.Element | null {
   const { confirmDialog, clearConfirmDialog } = useUiStore();
 
   const handleConfirm = useCallback(() => {

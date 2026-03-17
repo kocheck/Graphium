@@ -1,3 +1,5 @@
+import type React from 'react';
+
 import { Group, Rect, Line, Path } from 'react-konva';
 
 import type { Stairs } from '../../types/domain';
@@ -30,7 +32,7 @@ interface StairsShapeProps {
  *
  * @param stairs - Stairs object from gameStore
  */
-function StairsShape({ stairs }: StairsShapeProps): JSX.Element {
+function StairsShape({ stairs }: StairsShapeProps): React.JSX.Element {
   // Color scheme based on type
   const fillColor = stairs.type === 'up' ? STAIRS_COLORS.fillUp : STAIRS_COLORS.fillDown;
   const strokeColor = STAIRS_COLORS.stroke;
@@ -83,7 +85,7 @@ function renderStairTreads(
   strokeColor: string,
   halfWidth: number,
   halfHeight: number,
-): JSX.Element {
+): React.JSX.Element {
   const numSteps = 5; // Number of visible step lines
   const lines = [];
 
@@ -128,7 +130,7 @@ function renderStairTreads(
  * @param stairs - Stairs object
  * @param arrowColor - Color for the arrow
  */
-function renderDirectionalArrow(stairs: Stairs, arrowColor: string): JSX.Element {
+function renderDirectionalArrow(stairs: Stairs, arrowColor: string): React.JSX.Element {
   const centerX = 0; // Already centered by Group
   const centerY = 0; // Already centered by Group
   const arrowSize = Math.min(stairs.width, stairs.height) * 0.3;

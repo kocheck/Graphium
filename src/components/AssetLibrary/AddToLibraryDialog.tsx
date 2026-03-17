@@ -44,7 +44,7 @@ function AddToLibraryDialog({
   suggestedName,
   onClose,
   onConfirm,
-}: AddToLibraryDialogProps): JSX.Element | null {
+}: AddToLibraryDialogProps): React.JSX.Element | null {
   const [name, setName] = useState(suggestedName ?? '');
   const [category, setCategory] = useState('Monsters');
   const [tagsInput, setTagsInput] = useState('');

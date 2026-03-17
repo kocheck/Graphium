@@ -86,7 +86,7 @@ export const rollForMessage = (
 export function UpdateErrorFallbackUI({
   errorMessage,
   onReset,
-}: UpdateErrorFallbackUIProps): JSX.Element {
+}: UpdateErrorFallbackUIProps): React.JSX.Element {
   // Roll for random error messages (memoized per error instance to keep them stable)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const errorTitle = useMemo(() => rollForMessage(updateErrorMessages.title), [errorMessage]);

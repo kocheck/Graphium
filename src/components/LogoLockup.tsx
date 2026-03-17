@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useEffect, useState } from 'react';
 
 import logoDarkUrl from '../assets/branding/logo-dark.svg';
@@ -24,7 +25,7 @@ export function LogoLockup({
   className = '',
   width = 'auto',
   style = {},
-}: LogoLockupProps): JSX.Element {
+}: LogoLockupProps): React.JSX.Element {
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(theme ?? 'light');
 
   useEffect(() => {

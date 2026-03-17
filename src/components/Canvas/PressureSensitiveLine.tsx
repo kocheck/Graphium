@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useRef, memo } from 'react';
 
 import { Shape } from 'react-konva';
@@ -124,7 +125,7 @@ function PressureSensitiveLineComponent({
   x,
   y,
   pressureRange = { min: 0.3, max: 1.5 }, // Default to 'normal' curve
-}: PressureSensitiveLineProps): JSX.Element {
+}: PressureSensitiveLineProps): React.JSX.Element {
   const shapeRef = useRef<Konva.Shape>(null);
 
   // Validate pressure data

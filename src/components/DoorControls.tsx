@@ -1,3 +1,5 @@
+import type React from 'react';
+
 import { RiLockLine, RiDoorOpenLine, RiLockUnlockLine } from '@remixicon/react';
 
 import { useGameStore } from '../store/gameStore';
@@ -18,7 +20,7 @@ import Button from './primitives/Button';
  *
  * @component
  */
-function DoorControls(): JSX.Element | null {
+function DoorControls(): React.JSX.Element | null {
   const doors = useGameStore((state) => state.doors);
   const updateAllDoorStates = useGameStore((state) => state.updateAllDoorStates);
   const updateAllDoorLocks = useGameStore((state) => state.updateAllDoorLocks);

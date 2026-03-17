@@ -1,3 +1,5 @@
+import type React from 'react';
+
 import DoorShape from './DoorShape';
 
 import type { Door } from '../../types/domain';
@@ -39,7 +41,7 @@ function DoorLayer({
   onToggleDoor,
   onDeleteDoor,
   onDoorContextMenu,
-}: DoorLayerProps): JSX.Element {
+}: DoorLayerProps): React.JSX.Element {
   if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.log('[DoorLayer] Rendering', doors.length, 'doors. isWorldView:', isWorldView);

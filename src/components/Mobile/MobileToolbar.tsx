@@ -65,7 +65,7 @@ function MobileToolbar({
   setDoorOrientation,
   isGamePaused,
   onPauseToggle,
-}: MobileToolbarProps): JSX.Element {
+}: MobileToolbarProps): React.JSX.Element {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 

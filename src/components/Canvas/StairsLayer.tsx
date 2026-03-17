@@ -1,3 +1,5 @@
+import type React from 'react';
+
 import StairsShape from './StairsShape';
 
 import type { Stairs } from '../../types/domain';
@@ -25,7 +27,7 @@ interface StairsLayerProps {
  * @param stairs - Array of stairs from gameStore
  * @param isWorldView - If true, player view (currently no behavioral difference)
  */
-function StairsLayer({ stairs, isWorldView }: StairsLayerProps): JSX.Element {
+function StairsLayer({ stairs, isWorldView }: StairsLayerProps): React.JSX.Element {
   return (
     <>
       {stairs.map((stair) => (

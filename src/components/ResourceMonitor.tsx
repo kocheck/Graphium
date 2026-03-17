@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useEffect, useState, useRef } from 'react';
 
 import { useGameStore } from '../store/gameStore';
@@ -55,7 +56,7 @@ interface PerformanceMetrics {
  * </button>
  */
 // eslint-disable-next-line max-lines-per-function, complexity
-function ResourceMonitor(): JSX.Element {
+function ResourceMonitor(): React.JSX.Element {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fps: 0,
     memory: null,
@@ -73,7 +74,7 @@ function ResourceMonitor(): JSX.Element {
   // FPS tracking
   const frameCountRef = useRef(0);
   const lastFrameTimeRef = useRef(Date.now());
-  const fpsUpdateIntervalRef = useRef<NodeJS.Timeout>();
+  const fpsUpdateIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   // IPC tracking
   const ipcMessageCountRef = useRef(0);

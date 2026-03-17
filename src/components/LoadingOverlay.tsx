@@ -65,7 +65,7 @@
  * 8. LoadingOverlay disappears, players see updated state
  * ```
  *
- * @returns {JSX.Element | null} Full-screen overlay or null if not paused
+ * @returns {React.JSX.Element | null} Full-screen overlay or null if not paused
  *
  * @see {@link PauseManager} Synchronizes pause state via IPC
  * @see {@link App.tsx} Contains pause toggle button and conditional rendering
@@ -78,7 +78,7 @@ import { useMemo } from 'react';
 import { useUiStore } from '../store/uiStore';
 import { rollForMessage } from '../utils/systemMessages';
 
-export function LoadingOverlay(): JSX.Element | null {
+export function LoadingOverlay(): React.JSX.Element | null {
   // Subscribe to pause state from Zustand uiStore
   const isGamePaused = useUiStore((state) => state.isGamePaused);
 

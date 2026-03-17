@@ -86,7 +86,7 @@ import type { ProcessingHandle } from '../utils/AssetProcessor';
  * Sidebar component provides map upload, grid settings, and token library
  */
 // eslint-disable-next-line max-lines-per-function
-function Sidebar(): JSX.Element {
+function Sidebar(): React.JSX.Element {
   // Store selectors
   const campaign = useGameStore((state) => state.campaign);
   const activeMapId = useGameStore((state) => state.campaign.activeMapId);

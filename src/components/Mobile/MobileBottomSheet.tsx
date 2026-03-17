@@ -30,7 +30,7 @@ function MobileBottomSheet({
   isOpen,
   onClose,
   children,
-}: MobileBottomSheetProps): JSX.Element | null {
+}: MobileBottomSheetProps): React.JSX.Element | null {
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key

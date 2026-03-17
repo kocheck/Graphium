@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 
 import { Agentation } from 'agentation';
@@ -56,7 +57,7 @@ const UpdateManager = lazy(() => import('./components/Managers/UpdateManager'));
  * @see src/components/Canvas/CanvasManager.tsx for canvas rendering
  */
 // eslint-disable-next-line max-lines-per-function, complexity
-function App(): JSX.Element {
+function App(): React.JSX.Element {
   // Detect window type for UI sanitization
   const { isArchitectView, isWorldView } = useWindowType();
   const isDesignSystemPlayground = window.location.pathname === '/design-system';

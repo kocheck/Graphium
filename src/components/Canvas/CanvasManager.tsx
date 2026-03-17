@@ -153,7 +153,7 @@ function CanvasManager({
   isWorldView = false,
   onSelectionChange,
   // measurementMode = 'ruler', // Unused currently
-}: CanvasManagerProps): JSX.Element {
+}: CanvasManagerProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 

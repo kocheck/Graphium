@@ -22,7 +22,7 @@
  * 5. User clicks "Restart & Install" → App restarts with new version
  *
  * @component
- * @returns {JSX.Element | null} Update dialog or null if not active
+ * @returns {React.JSX.Element | null} Update dialog or null if not active
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
@@ -171,7 +171,7 @@ interface DownloadProgress {
 }
 
 // eslint-disable-next-line max-lines-per-function, complexity
-function UpdateManager({ isOpen, onClose }: UpdateManagerProps): JSX.Element | null {
+function UpdateManager({ isOpen, onClose }: UpdateManagerProps): React.JSX.Element | null {
   const [status, setStatus] = useState<UpdateStatus>('idle');
   const [currentVersion, setCurrentVersion] = useState<string>('');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);

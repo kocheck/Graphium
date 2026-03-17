@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 
 import { RiSaveLine } from '@remixicon/react';
@@ -39,7 +40,10 @@ interface TokenInspectorProps {
  * @param onClose - Optional callback to deselect tokens (used on mobile)
  */
 // eslint-disable-next-line max-lines-per-function, complexity
-function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps): JSX.Element | null {
+function TokenInspector({
+  selectedTokenIds,
+  onClose,
+}: TokenInspectorProps): React.JSX.Element | null {
   const tokens = useGameStore((s) => s.tokens);
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);

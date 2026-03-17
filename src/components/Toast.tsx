@@ -35,7 +35,7 @@
  * showToast('Autosave enabled', 'info');
  *
  * @component
- * @returns {JSX.Element | null} Toast notification or null if no active toast
+ * @returns {React.JSX.Element | null} Toast notification or null if no active toast
  */
 
 import { useEffect } from 'react';
@@ -45,7 +45,7 @@ import { useUiStore } from '../store/uiStore';
 /**
  * Toast component displays notification messages
  */
-function Toast(): JSX.Element | null {
+function Toast(): React.JSX.Element | null {
   const { toast, clearToast } = useUiStore();
 
   useEffect(() => {

@@ -45,7 +45,7 @@ interface LibraryManagerProps {
 }
 
 // eslint-disable-next-line max-lines-per-function
-function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element | null {
+function LibraryManager({ isOpen, onClose }: LibraryManagerProps): React.JSX.Element | null {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 

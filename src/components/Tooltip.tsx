@@ -20,7 +20,7 @@ interface TooltipProps {
   offset?: number; // Vertical offset in pixels from element (default: 50)
 }
 
-function Tooltip({ content, children, delay = 100, offset = 50 }: TooltipProps): JSX.Element {
+function Tooltip({ content, children, delay = 100, offset = 50 }: TooltipProps): React.JSX.Element {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);

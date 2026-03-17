@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useEffect, useRef } from 'react';
 
 import {
@@ -240,7 +241,7 @@ export function AboutModal({
   onClose,
   initialTab = 'about',
   onCheckForUpdates,
-}: AboutModalProps): JSX.Element | null {
+}: AboutModalProps): React.JSX.Element | null {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<AboutModalTab>(initialTab);
 

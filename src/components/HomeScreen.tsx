@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
 import {
@@ -95,7 +96,7 @@ const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
  * Features quirky TTRPG-themed micro-interactions and CSS-only visuals.
  */
 // eslint-disable-next-line max-lines-per-function, complexity
-export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
+export function HomeScreen({ onStartEditor }: HomeScreenProps): React.JSX.Element {
   const { recentCampaigns, addRecent, removeRecent } = useRecentCampaigns();
   const { isElectron, isMac, isWindows, isLinux } = usePlatformDetection();
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -371,7 +372,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
     [recentCampaigns, searchQuery],
   );
 
-  const getThemeIcon = (): JSX.Element => {
+  const getThemeIcon = (): React.JSX.Element => {
     if (currentTheme === 'light') {
       return <RiSunLine className="w-4 h-4" />;
     }
