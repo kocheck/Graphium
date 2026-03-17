@@ -253,6 +253,29 @@ module.exports = {
     // No cycle dependencies
     'import/no-cycle': ['error', { maxDepth: 3, ignoreExternal: true }],
 
+    // Enforce PixiJS migration — no Konva imports allowed after migration
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            name: 'konva',
+            message: 'Konva has been replaced with PixiJS. Use pixi.js instead.',
+          },
+          {
+            name: 'react-konva',
+            message: 'react-konva has been replaced with @pixi/react. Use pixi.js/@pixi/react instead.',
+          },
+        ],
+        patterns: [
+          {
+            group: ['konva/*', 'konva/lib/*'],
+            message: 'Konva has been replaced with PixiJS.',
+          },
+        ],
+      },
+    ],
+
     // No self imports
     'import/no-self-import': 'error',
 
@@ -543,6 +566,19 @@ module.exports = {
         '@typescript-eslint/no-unsafe-call': 'warn',
         '@typescript-eslint/no-unsafe-return': 'warn',
         '@typescript-eslint/no-unsafe-argument': 'warn',
+      },
+    },
+    // Canvas components — Konva imports allowed during migration phases 0-5
+    // Remove this override when migration is complete (Task 5.6)
+    {
+      files: [
+        'src/components/Canvas/**/*.ts',
+        'src/components/Canvas/**/*.tsx',
+        // TokenErrorBoundary wraps Konva tokens — migrated alongside Canvas in Task 5.x
+        'src/components/ErrorBoundaries/TokenErrorBoundary.tsx',
+      ],
+      rules: {
+        'no-restricted-imports': 'off',
       },
     },
     // Allow looser rules in docs/examples
