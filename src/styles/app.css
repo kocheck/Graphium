@@ -40,44 +40,6 @@
   background: var(--app-accent-solid-hover);
 }
 
-/* Sidebar */
-.sidebar {
-  background: var(--app-bg-surface);
-  border-right: 1px solid var(--app-border-subtle);
-  color: var(--app-text-primary);
-}
-
-.sidebar-section {
-  border-top: 1px solid var(--app-border-subtle);
-}
-
-.sidebar-input {
-  background: var(--app-bg-active);
-  border: 1px solid var(--app-border-default);
-  color: var(--app-text-primary);
-}
-
-.sidebar-input:focus {
-  outline: none;
-  border-color: var(--app-accent-solid);
-}
-
-.sidebar-token {
-  background: var(--app-bg-active);
-  color: var(--app-text-primary);
-}
-
-.sidebar-token:hover {
-  background: var(--app-bg-hover);
-}
-
-/* Info boxes */
-.info-box {
-  background: var(--app-accent-bg);
-  border: 1px solid var(--app-accent-solid);
-  color: var(--app-accent-text-contrast);
-}
-
 /* ================================================================
    Global Focus Indicators (WCAG 2.2 AA)
    Visible focus ring on all interactive elements when navigating
@@ -94,12 +56,6 @@ textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--app-accent-solid);
   outline-offset: 2px;
-}
-
-/* Sidebar token items: subtle inset ring to fit tight layout */
-.sidebar-token:focus-visible {
-  outline: 2px solid var(--app-accent-solid);
-  outline-offset: -2px;
 }
 
 /* Skip-to-content link: hidden until focused, then slides into view */
