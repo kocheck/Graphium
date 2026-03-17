@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react';
 import type React from 'react';
 
 import { Application } from '@pixi/react';
+import { Container } from 'pixi.js';
 import { useShallow } from 'zustand/shallow';
 
 // eslint-disable-next-line import/no-named-as-default
@@ -16,6 +17,7 @@ import ImageCropper from '../Dialogs/ImageCropper';
 import { useCanvasDrop } from './hooks/useCanvasDrop';
 // TODO Phase 5: useCanvasInteraction — import { useCanvasInteraction } from './hooks/useCanvasInteraction';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
+import { usePixiViewport } from './hooks/usePixiViewport';
 // TODO Phase 2: useCanvasSelection — import { useCanvasSelection } from './hooks/useCanvasSelection';
 // TODO Phase 2: useTokenDrag — import { useTokenDrag } from './hooks/useTokenDrag';
 // TODO Phase 5: MeasurementOverlay — import MeasurementOverlay from './MeasurementOverlay';
@@ -307,6 +309,25 @@ function CanvasManager({
   // const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  // PixiJS viewport: pan/zoom-to-cursor via world Container transform
+  const {
+    worldContainerRef,
+    scaleRef,
+    handleWheel,
+    handlePointerDown: handleViewportPointerDown,
+    handlePointerMove: handleViewportPointerMove,
+    handlePointerUp: handleViewportPointerUp,
+    screenToWorld,
+  } = usePixiViewport({
+    mapWidth: map?.width ?? 3000,
+    mapHeight: map?.height ?? 3000,
+    viewWidth: size.width,
+    viewHeight: size.height,
+  });
+  // Keep legacy scale/position state in sync with viewport for minimap + keyboard zoom
+  void scaleRef;
+  void screenToWorld; // used in Phase 2+ for pointer coordinate conversion
 
   // TODO Phase 2: textColor — re-add when token nameplates are re-implemented
   // const textColor = useThemeColor('--app-text-primary');
@@ -666,6 +687,16 @@ function CanvasManager({
         height={size.height}
         onInit={(app: PixiApplication) => {
           pixiAppRef.current = app;
+          // Create world container — all world-space children go inside this Container
+          const worldContainer = new Container();
+          app.stage.addChild(worldContainer);
+          worldContainerRef.current = worldContainer;
+          // Wire native pointer/wheel events directly to the canvas element
+          const canvas = app.canvas;
+          canvas.addEventListener('wheel', handleWheel, { passive: false });
+          canvas.addEventListener('pointerdown', handleViewportPointerDown);
+          canvas.addEventListener('pointermove', handleViewportPointerMove);
+          canvas.addEventListener('pointerup', handleViewportPointerUp);
         }}
         background={0x1a1008}
         antialias
