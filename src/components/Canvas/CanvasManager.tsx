@@ -10,6 +10,7 @@ import CanvasAccessibility from './CanvasAccessibility';
 // TODO Phase 5: CanvasOverlayErrorBoundary — import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorContextMenu from './DoorContextMenu';
 // TODO Phase 5: DoorLayer — import DoorLayer from './DoorLayer';
+import { DrawingLayer } from './DrawingLayer';
 import { FogOfWarLayer } from './FogOfWarLayer';
 import { GridOverlay } from './GridOverlay';
 import ImageCropper from '../Dialogs/ImageCropper';
@@ -710,8 +711,7 @@ function CanvasManager({
         {/* TODO Phase 2: SelectionRect — PixiJS Graphics selection rectangle */}
         {/* TODO Phase 2: Transformer — PixiJS resize/rotate handles */}
         {/* Phase 3: FogOfWarLayer — implemented imperatively outside Application below */}
-        {/* TODO Phase 4: DrawingLayer — PixiJS Mesh/Graphics for pressure-sensitive lines */}
-        {/* TODO Phase 4: PressureSensitiveLine — PixiJS Mesh geometry */}
+        {/* Phase 4: DrawingLayer and PressureSensitiveLine rendered imperatively below */}
         {/* TODO Phase 5: DoorLayer */}
         {/* TODO Phase 5: StairsLayer */}
         {/* TODO Phase 5: MeasurementOverlay */}
@@ -755,6 +755,9 @@ function CanvasManager({
           isDMView={!isWorldView}
         />
       )}
+
+      {/* Phase 4: Drawing strokes — PixiJS Mesh per completed stroke */}
+      <DrawingLayer worldContainer={worldContainer} gridSize={gridSize} />
 
       {/* World View Controls */}
       {isWorldView && (

@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import type React from 'react';
 
 import type { Drawing } from '../../../types/domain';
-import type Konva from 'konva';
 
 interface UseCanvasDrawingReturn {
   isDrawing: React.MutableRefObject<boolean>;
   currentLine: React.MutableRefObject<Drawing | null>;
   tempLine: Drawing | null;
   setTempLine: React.Dispatch<React.SetStateAction<Drawing | null>>;
-  tempLineRef: React.MutableRefObject<Konva.Line | null>;
+  /** Placeholder ref — Konva.Line removed; PixiJS mesh managed imperatively in PressureSensitiveLine */
+  tempLineRef: React.MutableRefObject<null>;
   drawingAnimationFrameRef: React.MutableRefObject<number | null>;
   doorPreviewPos: { x: number; y: number } | null;
   setDoorPreviewPos: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>;
@@ -37,7 +37,8 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
   const isDrawing = useRef(false);
   const currentLine = useRef<Drawing | null>(null);
   const [tempLine, setTempLine] = useState<Drawing | null>(null);
-  const tempLineRef = useRef<Konva.Line | null>(null);
+  // Konva.Line removed — PixiJS mesh managed imperatively in PressureSensitiveLine
+  const tempLineRef = useRef<null>(null);
   const drawingAnimationFrameRef = useRef<number | null>(null);
 
   // Door tool preview position (snapped to grid)
