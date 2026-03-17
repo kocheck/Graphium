@@ -1,46 +1,47 @@
 import { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react';
 import type React from 'react';
 
-import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
+import { Application } from '@pixi/react';
 import { useShallow } from 'zustand/shallow';
 
 // eslint-disable-next-line import/no-named-as-default
 import CanvasAccessibility from './CanvasAccessibility';
-import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
+// TODO Phase 5: CanvasOverlayErrorBoundary — import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorContextMenu from './DoorContextMenu';
-import DoorLayer from './DoorLayer';
-import FogOfWarLayer from './FogOfWarLayer';
-import GridOverlay from './GridOverlay';
+// TODO Phase 5: DoorLayer — import DoorLayer from './DoorLayer';
+// TODO Phase 3: FogOfWarLayer — import FogOfWarLayer from './FogOfWarLayer';
+// TODO Phase 1: GridOverlay — import GridOverlay from './GridOverlay';
 import ImageCropper from '../Dialogs/ImageCropper';
-import { useCanvasDrawing } from './hooks/useCanvasDrawing';
+// TODO Phase 4: useCanvasDrawing — import { useCanvasDrawing } from './hooks/useCanvasDrawing';
 import { useCanvasDrop } from './hooks/useCanvasDrop';
-import { useCanvasInteraction } from './hooks/useCanvasInteraction';
+// TODO Phase 5: useCanvasInteraction — import { useCanvasInteraction } from './hooks/useCanvasInteraction';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
-import { useCanvasSelection } from './hooks/useCanvasSelection';
-import { useTokenDrag } from './hooks/useTokenDrag';
-// eslint-disable-next-line import/no-named-as-default
-import MeasurementOverlay from './MeasurementOverlay';
+// TODO Phase 2: useCanvasSelection — import { useCanvasSelection } from './hooks/useCanvasSelection';
+// TODO Phase 2: useTokenDrag — import { useTokenDrag } from './hooks/useTokenDrag';
+// TODO Phase 5: MeasurementOverlay — import MeasurementOverlay from './MeasurementOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
-import MovementRangeOverlay from './MovementRangeOverlay';
-import PaperNoiseOverlay from './PaperNoiseOverlay';
-import PressureSensitiveLine from './PressureSensitiveLine';
-import StairsLayer from './StairsLayer';
-import URLImage from './URLImage';
+// TODO Phase 5: MovementRangeOverlay — import MovementRangeOverlay from './MovementRangeOverlay';
+// TODO Phase 1: PaperNoiseOverlay — import PaperNoiseOverlay from './PaperNoiseOverlay';
+// TODO Phase 4: PressureSensitiveLine — import PressureSensitiveLine from './PressureSensitiveLine';
+// TODO Phase 5: StairsLayer — import StairsLayer from './StairsLayer';
+// TODO Phase 1: URLImage (map background) — import URLImage from './URLImage';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import { resolveTokenData, DEFAULT_MOVEMENT_SPEED } from '../../hooks/useTokenData';
+import { resolveTokenData } from '../../hooks/useTokenData';
+// TODO Phase 2: DEFAULT_MOVEMENT_SPEED — re-add when token rendering is re-implemented
 import { useGameStore } from '../../store/gameStore';
-import { useTouchSettingsStore } from '../../store/touchSettingsStore';
+// TODO Phase 1: useTouchSettingsStore — re-add when PixiJS viewport touch/stylus is implemented
+// import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 import { useUiStore } from '../../store/uiStore';
 import { DEFAULT_GRID_COLOR } from '../../types/domain';
-import { isRectInAnyPolygon } from '../../types/geometry';
-import { createGridGeometry } from '../../utils/gridGeometry';
+// TODO Phase 2/3: isRectInAnyPolygon — import { isRectInAnyPolygon } from '../../types/geometry';
+// TODO Phase 2: createGridGeometry — import { createGridGeometry } from '../../utils/gridGeometry';
 import AssetProcessingErrorBoundary from '../ErrorBoundaries/AssetProcessingErrorBoundary';
-import TokenErrorBoundary from '../ErrorBoundaries/TokenErrorBoundary';
+// TODO Phase 2: TokenErrorBoundary — import TokenErrorBoundary from '../ErrorBoundaries/TokenErrorBoundary';
 
 import type { HexColor, PixelSize } from '../../types/domain';
-import type { GridCell } from '../../types/grid';
-import type { KonvaEventObject } from 'konva/lib/Node';
+import type { Application as PixiApplication } from 'pixi.js';
+// TODO Phase 1: GridCell — import type { GridCell } from '../../types/grid';
 
 // Enable to log canvas state diagnostics to console on each render
 const DEBUG_CANVAS = false;
@@ -68,7 +69,8 @@ const CANVAS_COLORS = {
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
 const ZOOM_SCALE_BY = 1.1;
-const MIN_PINCH_DISTANCE = 0.001; // Guard against near-zero division or very small distances that could cause extreme scale changes
+// TODO Phase 1: MIN_PINCH_DISTANCE — re-enable when PixiJS viewport touch gestures are implemented
+// const MIN_PINCH_DISTANCE = 0.001;
 const VIEWPORT_CLAMP_PADDING = 1000; // Padding around map bounds for viewport constraints
 
 /**
@@ -95,17 +97,13 @@ const PERFORMANCE_CONFIG = (() => {
   };
 })();
 
-// Helper functions for touch/pinch calculations
-const calculatePinchDistance = (touch1: Touch, touch2: Touch): number => {
-  return Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
-};
-
-const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number; y: number } => {
-  return {
-    x: (touch1.clientX + touch2.clientX) / 2,
-    y: (touch1.clientY + touch2.clientY) / 2,
-  };
-};
+// TODO Phase 1: Touch/pinch helpers — re-enable when PixiJS viewport touch gestures are implemented
+// const calculatePinchDistance = (touch1: Touch, touch2: Touch): number => {
+//   return Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+// };
+// const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number; y: number } => {
+//   return { x: (touch1.clientX + touch2.clientX) / 2, y: (touch1.clientY + touch2.clientY) / 2 };
+// };
 
 /**
  * Props for CanvasManager component
@@ -143,18 +141,19 @@ interface CanvasManagerProps {
  * @see useCanvasInteraction for unified pointer event handling
  * @see useTokenDrag for token drag-and-drop with snap preview
  */
-// eslint-disable-next-line max-lines-per-function, complexity
+// eslint-disable-next-line max-lines-per-function
 function CanvasManager({
   tool = 'select',
-  color = CANVAS_COLORS.markerDefault as HexColor,
-  doorOrientation = 'horizontal',
-  wallColor = '#ff0000' as HexColor,
-  wallSize = 8 as PixelSize,
+  color: _color = CANVAS_COLORS.markerDefault as HexColor, // TODO Phase 4: used by drawing tool
+  doorOrientation: _doorOrientation = 'horizontal', // TODO Phase 5: used by door tool
+  wallColor: _wallColor = '#ff0000' as HexColor, // TODO Phase 4: used by wall tool
+  wallSize: _wallSize = 8 as PixelSize, // TODO Phase 4: used by wall tool
   isWorldView = false,
-  onSelectionChange,
+  onSelectionChange: _onSelectionChange, // TODO Phase 2: used by selection hook
   // measurementMode = 'ruler', // Unused currently
 }: CanvasManagerProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
+  const pixiAppRef = useRef<PixiApplication | null>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   // --- Store Selectors (atomic to prevent infinite re-render loops) ---
@@ -163,11 +162,13 @@ function CanvasManager({
   const tokenLibrary = useGameStore(useShallow((s) => s.campaign.tokenLibrary));
   const drawings = useGameStore((s) => s.drawings);
   const doors = useGameStore((s) => s.doors);
-  const stairs = useGameStore((s) => s.stairs);
+  // TODO Phase 5: stairs — re-add when StairsLayer is implemented
+  // const stairs = useGameStore((s) => s.stairs);
   const gridSize = useGameStore((s) => s.gridSize);
   const gridType = useGameStore((state) => state.gridType);
   const gridColor = useGameStore((state) => state.gridColor);
-  const isCalibrating = useGameStore((s) => s.isCalibrating);
+  // TODO Phase 5: isCalibrating — re-add when calibration overlay is implemented
+  // const isCalibrating = useGameStore((s) => s.isCalibrating);
   const isDaylightMode = useGameStore((state) => state.isDaylightMode);
   const activeVisionPolygons = useGameStore((state) => state.activeVisionPolygons);
 
@@ -199,76 +200,89 @@ function CanvasManager({
   }, [tokens, tokenLibrary, gridType]);
 
   // Touch/Stylus tracking for palm rejection
-  const touchSettings = useTouchSettingsStore();
-  const stylusActiveRef = useRef(false);
-  const lastStylusLiftTimeRef = useRef(0);
+  // TODO Phase 1: touchSettings — re-add when PixiJS viewport touch/stylus is implemented
+  // const touchSettings = useTouchSettingsStore();
+  // TODO Phase 5: stylusActiveRef/lastStylusLiftTimeRef — re-add when pointer interaction is re-implemented
+  // const stylusActiveRef = useRef(false);
+  // const lastStylusLiftTimeRef = useRef(0);
 
   // Measurement state
   const activeMeasurement = useGameStore((s) => s.activeMeasurement);
-  const dmMeasurement = useGameStore((s) => s.dmMeasurement);
+  // TODO Phase 5: dmMeasurement — re-add when MeasurementOverlay is re-implemented
+  // const dmMeasurement = useGameStore((s) => s.dmMeasurement);
 
   // Store actions (stable references from Zustand)
   const addToken = useGameStore((s) => s.addToken);
-  const addDrawing = useGameStore((s) => s.addDrawing);
-  const updateTokenTransform = useGameStore((s) => s.updateTokenTransform);
+  // TODO Phase 4: addDrawing — re-add when DrawingLayer is implemented
+  // const addDrawing = useGameStore((s) => s.addDrawing);
+  // TODO Phase 2: updateTokenTransform — re-add when token drag is implemented
+  // const updateTokenTransform = useGameStore((s) => s.updateTokenTransform);
   const removeTokens = useGameStore((s) => s.removeTokens);
   const removeDrawings = useGameStore((s) => s.removeDrawings);
   const setGridType = useGameStore((s) => s.setGridType);
   const toggleDoor = useGameStore((s) => s.toggleDoor);
-  const addDoor = useGameStore((s) => s.addDoor);
+  // TODO Phase 5: addDoor — re-add when door tool is implemented
+  // const addDoor = useGameStore((s) => s.addDoor);
   const removeDoor = useGameStore((s) => s.removeDoor);
   const removeDoors = useGameStore((s) => s.removeDoors);
   const updateDoorLock = useGameStore((s) => s.updateDoorLock);
-  const updateDrawingTransform = useGameStore((s) => s.updateDrawingTransform);
+  // TODO Phase 4: updateDrawingTransform — re-add when DrawingLayer is implemented
+  // const updateDrawingTransform = useGameStore((s) => s.updateDrawingTransform);
   const setActiveMeasurement = useGameStore((s) => s.setActiveMeasurement);
   const showToast = useUiStore((s) => s.showToast);
 
   // --- Extracted Hooks ---
 
-  // Drawing/measurement/calibration state (refs + state for useCanvasInteraction)
-  const {
-    isDrawing,
-    currentLine,
-    tempLine,
-    setTempLine,
-    tempLineRef,
-    drawingAnimationFrameRef,
-    doorPreviewPos,
-    setDoorPreviewPos,
-    isMeasuring,
-    measurementStart,
-    calibrationStart,
-    calibrationRect,
-    setCalibrationRect,
-  } = useCanvasDrawing();
+  // TODO Phase 4: useCanvasDrawing — Drawing/measurement/calibration state
+  // const {
+  //   isDrawing,
+  //   currentLine,
+  //   tempLine,
+  //   setTempLine,
+  //   tempLineRef,
+  //   drawingAnimationFrameRef,
+  //   doorPreviewPos,
+  //   setDoorPreviewPos,
+  //   isMeasuring,
+  //   measurementStart,
+  //   calibrationStart,
+  //   calibrationRect,
+  //   setCalibrationRect,
+  // } = useCanvasDrawing();
 
-  // Selection state (selectedIds, transformer, selection rect)
-  const {
-    selectedIds,
-    setSelectedIds,
-    hoveredTokenId,
-    setHoveredTokenId,
-    selectionRect,
-    setSelectionRect,
-    selectionStart,
-    selectionRectRef,
-    selectionRectCoordsRef,
-    transformerRef,
-  } = useCanvasSelection({ onSelectionChange });
+  // TODO Phase 2: useCanvasSelection — Selection state (selectedIds, transformer, selection rect)
+  // const {
+  //   selectedIds,
+  //   setSelectedIds,
+  //   hoveredTokenId,
+  //   setHoveredTokenId,
+  //   selectionRect,
+  //   setSelectionRect,
+  //   selectionStart,
+  //   selectionRectRef,
+  //   selectionRectCoordsRef,
+  //   transformerRef,
+  // } = useCanvasSelection({ onSelectionChange });
 
-  // Stable no-op handler for disabled Konva drag events (defined once to prevent re-renders)
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const emptyDragHandler = useCallback(() => {}, []);
+  // Temporary scaffolding: stub out selection state until Phase 2 re-implements it
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // TODO Phase 2: hoveredTokenId — re-add when token hover is re-implemented
+  // const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null);
 
-  // Grid hover highlight state
-  const [hoveredCell, setHoveredCell] = useState<GridCell | null>(null);
+  // TODO Phase 4: drawing state stubs — will be replaced by useCanvasDrawing in Phase 4
+  // const doorPreviewPos = null;
+  // const isMeasuring = false;
+  // const isDrawing = false;
+  // const tempLine = null;
 
-  // Clear hover highlight when switching to a grid type that doesn't support it
-  useEffect(() => {
-    if (gridType === 'HIDDEN' || gridType === 'DOTS') {
-      setHoveredCell(null);
-    }
-  }, [gridType]);
+  // TODO Phase 2: emptyDragHandler — re-add when token drag is re-implemented
+  // const emptyDragHandler = useCallback(() => {}, []);
+
+  // TODO Phase 1: Grid hover highlight state — re-add when GridOverlay is re-implemented
+  // const [hoveredCell, setHoveredCell] = useState<GridCell | null>(null);
+  // useEffect(() => {
+  //   if (gridType === 'HIDDEN' || gridType === 'DOTS') setHoveredCell(null);
+  // }, [gridType]);
 
   // Door context menu state
   const [doorContextMenu, setDoorContextMenu] = useState<{
@@ -277,42 +291,40 @@ function CanvasManager({
     y: number;
   } | null>(null);
 
-  const handleDoorContextMenu = useCallback((doorId: string, screenX: number, screenY: number) => {
-    if (!containerRef.current) {
-      return;
-    }
-    const rect = containerRef.current.getBoundingClientRect();
-    setDoorContextMenu({
-      doorId,
-      x: screenX - rect.left,
-      y: screenY - rect.top,
-    });
-  }, []);
+  // TODO Phase 5: handleDoorContextMenu — will be passed to DoorLayer in Phase 5
+  // const handleDoorContextMenu = useCallback((doorId: string, screenX: number, screenY: number) => {
+  //   if (!containerRef.current) return;
+  //   const rect = containerRef.current.getBoundingClientRect();
+  //   setDoorContextMenu({ doorId, x: screenX - rect.left, y: screenY - rect.top });
+  // }, []);
 
   const closeDoorContextMenu = useCallback(() => {
     setDoorContextMenu(null);
   }, []);
 
   // --- Navigation State ---
-  const [isDragging, setIsDragging] = useState(false);
+  // TODO Phase 1: isDragging/setIsDragging — re-add when PixiJS viewport pan is implemented
+  // const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  // Theme-aware text color for contrast
-  const textColor = useThemeColor('--app-text-primary');
+  // TODO Phase 2: textColor — re-add when token nameplates are re-implemented
+  // const textColor = useThemeColor('--app-text-primary');
+  void useThemeColor; // keep import alive — used by textColor in Phase 2
 
-  // Theme-aware grid color (Adaptive default)
-  const defaultGridColor = useThemeColor('--app-grid-color');
-  const resolvedGridColor = gridColor === DEFAULT_GRID_COLOR ? defaultGridColor : gridColor;
+  // TODO Phase 1: resolvedGridColor — re-add when GridOverlay is re-implemented
+  // const defaultGridColor = useThemeColor('--app-grid-color');
+  // const resolvedGridColor = gridColor === DEFAULT_GRID_COLOR ? defaultGridColor : gridColor;
+  void gridColor;
+  void DEFAULT_GRID_COLOR; // keep imports alive for Phase 1
 
-  // Touch/Pinch State
-  const lastPinchDistance = useRef<number | null>(null);
-  const lastPinchCenter = useRef<{ x: number; y: number } | null>(null);
-  const lastPanCenter = useRef<{ x: number; y: number } | null>(null);
+  // TODO Phase 1: Touch/Pinch State — re-add when PixiJS viewport touch is implemented
+  // const lastPinchDistance = useRef<number | null>(null);
+  // const lastPinchCenter = useRef<{ x: number; y: number } | null>(null);
+  // const lastPanCenter = useRef<{ x: number; y: number } | null>(null);
 
-  // Use pinch distance threshold from settings (user-configurable)
-  // Clamp to reasonable range (5-50 pixels) to prevent gesture detection issues
-  const PINCH_DISTANCE_THRESHOLD = Math.min(Math.max(touchSettings.pinchDistanceThreshold, 5), 50);
+  // TODO Phase 1: PINCH_DISTANCE_THRESHOLD — re-add when PixiJS viewport touch is implemented
+  // const PINCH_DISTANCE_THRESHOLD = Math.min(Math.max(touchSettings.pinchDistanceThreshold, 5), 50);
 
   // --- Navigation Functions ---
 
@@ -420,7 +432,13 @@ function CanvasManager({
   // --- Keyboard & Drop Hooks (depend on navigation functions) ---
 
   // Keyboard events: modifier keys (Alt, M, Space), deletion, zoom, grid shortcuts
-  const { isAltPressed, isMKeyPressed, isSpacePressed } = useCanvasKeyboard({
+  // isAltPressed, isMKeyPressed, isSpacePressed will be re-used in Phases 1/2/5
+  // isSpacePressed for pan cursor, isAltPressed for duplication, isMKeyPressed for movement range
+  const {
+    isAltPressed: _isAltPressed,
+    isMKeyPressed: _isMKeyPressed,
+    isSpacePressed: _isSpacePressed,
+  } = useCanvasKeyboard({
     isWorldView,
     selectedIds,
     activeMeasurement,
@@ -447,112 +465,55 @@ function CanvasManager({
       showToast,
     });
 
-  // --- Existing Interaction Hooks ---
+  // TODO Phase 2: useTokenDrag + useCanvasInteraction — Konva-based interaction hooks
+  // These hooks depend on KonvaEventObject and Konva stage refs; they will be
+  // re-implemented using PixiJS FederatedPointerEvent in Phase 2 and 5.
 
-  // Refs to break circular dependency between useTokenDrag and useCanvasInteraction
-  const shouldRejectRef = useRef<
-    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => boolean
-  >(() => false);
-  const trackStylusRef = useRef<
-    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-  >(() => {});
+  // TODO Phase 2: useTokenDrag
+  // const shouldRejectRef = useRef<
+  //   (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => boolean
+  // >(() => false);
+  // const trackStylusRef = useRef<
+  //   (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void
+  // >(() => {});
+  // const {
+  //   handleTokenPointerDown,
+  //   handleTokenPointerMove: internalHandleTokenPointerMove,
+  //   handleTokenPointerUp,
+  //   dragPositionsRef,
+  //   tokenNodesRef,
+  //   draggingTokenIds,
+  //   itemsForDuplication,
+  //   setItemsForDuplication,
+  //   snapPreviewPositionsRef,
+  //   isDragging: isDraggingToken,
+  // } = useTokenDrag({ ... });
 
-  const {
-    handleTokenPointerDown,
-    handleTokenPointerMove: internalHandleTokenPointerMove,
-    handleTokenPointerUp,
-    dragPositionsRef,
-    tokenNodesRef,
-    draggingTokenIds,
-    itemsForDuplication,
-    setItemsForDuplication,
-    snapPreviewPositionsRef,
-    isDragging: isDraggingToken,
-  } = useTokenDrag({
-    tool,
-    isWorldView,
-    isAltPressed,
-    gridSize,
-    gridType,
-    selectedIds,
-    setSelectedIds,
-    resolvedTokens,
-    shouldRejectPointerEvent: (e) => shouldRejectRef.current(e),
-    trackStylusUsage: (e) => trackStylusRef.current(e),
-  });
+  // TODO Phase 5: useCanvasInteraction
+  // const canvasInteraction = useCanvasInteraction({ ... });
+  // const { handlePointerDown, handlePointerMove, handlePointerUp,
+  //         trackStylusUsage, shouldRejectPointerEvent } = canvasInteraction;
+  // useEffect(() => {
+  //   shouldRejectRef.current = shouldRejectPointerEvent;
+  //   trackStylusRef.current = trackStylusUsage;
+  // }, [shouldRejectPointerEvent, trackStylusUsage]);
 
-  const canvasInteraction = useCanvasInteraction({
-    tool,
-    isSpacePressed,
-    isWorldView,
-    isCalibrating: !!isCalibrating,
-    color,
-    handleTokenPointerDown,
-    handleTokenPointerMove: internalHandleTokenPointerMove,
-    handleTokenPointerUp,
-    isMeasuring,
-    measurementStart,
-    isDrawing,
-    currentLine,
-    selectionStart,
-    selectionRectCoordsRef,
-    setSelectionRect,
-    stylusActiveRef,
-    lastStylusLiftTimeRef,
-    setTempLine,
-    tempLineRef,
-    drawingAnimationFrameRef,
-    doorPreviewPos,
-    setDoorPreviewPos,
-    gridType,
-    gridSize,
-    doorOrientation,
-    addDoor,
-    calibrationStart,
-    setCalibrationRect,
-    setSelectedIds,
-    setActiveMeasurement,
-    addDrawing,
-    setHoveredCell,
-    wallColor,
-    wallSize,
-  });
+  // TODO Phase 2: drag/interaction state stubs — will be replaced by useTokenDrag in Phase 2
+  // const dragPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  // const draggingTokenIds = new Set<string>();
+  // TODO Phase 2: isDraggingToken — re-add when useTokenDrag is implemented
+  // const isDraggingToken = false;
+  // const [itemsForDuplication, setItemsForDuplication] = useState<string[]>([]);
+  // const snapPreviewPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
 
-  // Destructure handlers from canvasInteraction
-  const {
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    trackStylusUsage,
-    shouldRejectPointerEvent,
-  } = canvasInteraction;
-
-  // Update refs with actual handlers (breaks circular dependency)
-  useEffect(() => {
-    shouldRejectRef.current = shouldRejectPointerEvent;
-    trackStylusRef.current = trackStylusUsage;
-  }, [shouldRejectPointerEvent, trackStylusUsage]);
-
-  /**
-   * Determines the appropriate cursor style based on current interaction state.
-   * Priority order: space+panning → space → token dragging → select → crosshair
-   */
-  const getCursorStyle = useCallback((): React.CSSProperties['cursor'] => {
-    if (isSpacePressed && isDragging) {
-      return 'grabbing';
-    }
-    if (isSpacePressed) {
-      return 'grab';
-    }
-    if (isDraggingToken) {
-      return 'grabbing';
-    }
-    if (tool === 'select') {
-      return 'default';
-    }
-    return 'crosshair';
-  }, [isSpacePressed, isDragging, isDraggingToken, tool]);
+  // TODO Phase 1: getCursorStyle — re-add when PixiJS viewport is wired; apply to container div
+  // const getCursorStyle = useCallback((): React.CSSProperties['cursor'] => {
+  //   if (isSpacePressed && isDragging) return 'grabbing';
+  //   if (isSpacePressed) return 'grab';
+  //   if (isDraggingToken) return 'grabbing';
+  //   if (tool === 'select') return 'default';
+  //   return 'crosshair';
+  // }, [isSpacePressed, isDragging, isDraggingToken, tool]);
 
   // --- Effects ---
 
@@ -572,156 +533,32 @@ function CanvasManager({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // --- Multi-Touch Gesture Handlers ---
-  // These handlers ONLY process multi-touch gestures (2+ fingers).
-  // Single-touch interactions are handled by the unified pointer event handlers
-  // (handlePointerDown/Move/Up) which support mouse, touch, and pen input.
-
-  const handleTouchStart = (e: KonvaEventObject<TouchEvent>): void => {
-    const touches = e.evt.touches;
-    // ONLY handle 2+ finger gestures (pinch-to-zoom)
-    if (touches.length === 2) {
-      e.evt.preventDefault();
-      const touch1 = touches[0];
-      const touch2 = touches[1];
-      if (!touch1 || !touch2) {
-        return;
-      }
-      lastPinchDistance.current = calculatePinchDistance(touch1, touch2);
-      lastPinchCenter.current = calculatePinchCenter(touch1, touch2);
-    } else if (touches.length === 1 && tool !== 'select') {
-      // If using a drawing tool with a single finger, prevent default
-      // to stop scrolling/text selection
-      e.evt.preventDefault();
-    }
-    // Single-touch events are handled by handlePointerDown
-  };
-
-  const handleTouchMove = (e: KonvaEventObject<TouchEvent>): void => {
-    const touches = e.evt.touches;
-    // ONLY handle 2-finger gestures (pinch-to-zoom or two-finger pan)
-    if (touches.length === 2) {
-      e.evt.preventDefault();
-
-      if (lastPinchDistance.current && lastPinchCenter.current) {
-        const touch1 = touches[0];
-        const touch2 = touches[1];
-        if (!touch1 || !touch2) {
-          return;
-        }
-        const distance = calculatePinchDistance(touch1, touch2);
-        const center = calculatePinchCenter(touch1, touch2);
-
-        // Prevent division by zero
-        if (lastPinchDistance.current < MIN_PINCH_DISTANCE) {
-          return;
-        }
-
-        // Calculate distance change to determine gesture type
-        const distanceChange = Math.abs(distance - lastPinchDistance.current);
-        const isPinchGesture = distanceChange > PINCH_DISTANCE_THRESHOLD;
-
-        if (isPinchGesture) {
-          // PINCH-TO-ZOOM: Fingers moving together/apart
-          const stageRect = containerRef.current?.getBoundingClientRect();
-          if (!stageRect) {
-            return;
-          }
-
-          const canvasX = center.x - stageRect.left;
-          const canvasY = center.y - stageRect.top;
-
-          // Calculate scale change
-          const scaleChange = distance / lastPinchDistance.current;
-          const newScale = scale * scaleChange;
-
-          // Use the pinch center for zoom
-          performZoom(newScale, canvasX, canvasY, scale, position);
-
-          lastPinchDistance.current = distance;
-          lastPinchCenter.current = center;
-          lastPanCenter.current = null; // Reset pan tracking
-        } else if (lastPanCenter.current) {
-          // TWO-FINGER PAN: Fingers moving together without changing distance
-          const dx = center.x - lastPanCenter.current.x;
-          const dy = center.y - lastPanCenter.current.y;
-
-          // Update canvas position (pan)
-          const newPos = {
-            x: position.x + dx,
-            y: position.y + dy,
-          };
-
-          // Clamp to valid bounds and update position
-          const clampedPos = clampPosition(newPos, scale);
-          setPosition(clampedPos);
-
-          lastPanCenter.current = center;
-        } else {
-          // Initialize pan tracking
-          lastPanCenter.current = center;
-        }
-      }
-    } else if (touches.length === 1 && tool !== 'select') {
-      // If using a drawing tool with a single finger, prevent default
-      // to stop scrolling/text selection while drawing
-      e.evt.preventDefault();
-    }
-    // Single-touch events are handled by handlePointerMove
-  };
-
-  const handleTouchEnd = (e: KonvaEventObject<TouchEvent>): void => {
-    const touches = e.evt.touches;
-    // Reset gesture state when fewer than 2 fingers remain
-    if (touches.length < 2) {
-      lastPinchDistance.current = null;
-      lastPinchCenter.current = null;
-      lastPanCenter.current = null;
-    }
-    // Single-touch events are handled by handlePointerUp
-  };
+  // TODO Phase 1: Multi-Touch Gesture Handlers — will be re-implemented with PixiJS viewport
+  // These handlers used KonvaEventObject and Konva Stage methods (stage.scaleX(), etc.)
+  // They will be replaced with PixiJS-native pan/zoom in Phase 1 (usePixiViewport).
+  //
+  // const handleTouchStart = (e: KonvaEventObject<TouchEvent>): void => { ... };
+  // const handleTouchMove = (e: KonvaEventObject<TouchEvent>): void => { ... };
+  // const handleTouchEnd = (e: KonvaEventObject<TouchEvent>): void => { ... };
 
   // --- Viewport Calculations ---
 
-  // Calculate visible bounds in CANVAS coordinates (unscaled)
-  // Memoized to prevent recalculation on every render
-  const visibleBounds = useMemo(
-    () => ({
-      x: -position.x / scale,
-      y: -position.y / scale,
-      width: size.width / scale,
-      height: size.height / scale,
-    }),
-    [position.x, position.y, scale, size.width, size.height],
-  );
+  // TODO Phase 1: visibleBounds — re-add when GridOverlay/PaperNoiseOverlay are re-implemented
+  // const visibleBounds = useMemo(
+  //   () => ({
+  //     x: -position.x / scale,
+  //     y: -position.y / scale,
+  //     width: size.width / scale,
+  //     height: size.height / scale,
+  //   }),
+  //   [position.x, position.y, scale, size.width, size.height],
+  // );
 
-  const handleWheel = (e: KonvaEventObject<WheelEvent>): void => {
-    e.evt.preventDefault();
-    const stage = e.target.getStage();
-    if (!stage) {
-      return;
-    }
-
-    const oldScale = stage.scaleX();
-    const pointer = stage.getPointerPosition();
-    if (!pointer) {
-      return;
-    }
-
-    // Zoom with Ctrl/Cmd + scroll
-    if (e.evt.ctrlKey || e.evt.metaKey) {
-      const newScale = e.evt.deltaY < 0 ? oldScale * ZOOM_SCALE_BY : oldScale / ZOOM_SCALE_BY;
-      performZoom(newScale, pointer.x, pointer.y, oldScale, { x: stage.x(), y: stage.y() });
-    } else {
-      // Pan
-      const rawNewPos = {
-        x: stage.x() - e.evt.deltaX,
-        y: stage.y() - e.evt.deltaY,
-      };
-      const clampedPos = clampPosition(rawNewPos, scale);
-      setPosition(clampedPos);
-    }
-  };
+  // TODO Phase 1: handleWheel — will be re-implemented with PixiJS viewport
+  // This handler used Konva Stage methods (stage.scaleX(), stage.getPointerPosition(), etc.)
+  // It will be replaced with PixiJS-native wheel zoom in Phase 1 (usePixiViewport).
+  //
+  // const handleWheel = (e: KonvaEventObject<WheelEvent>): void => { ... };
 
   const centerOnPCTokens = useCallback(() => {
     const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
@@ -821,649 +658,37 @@ function CanvasManager({
         </AssetProcessingErrorBoundary>
       )}
 
-      <Stage
+      {/* PixiJS Application — Phase 0 scaffold: blank canvas replacing Konva Stage */}
+      {/* All Konva layers are commented out below as TODO items for Phases 1–5 */}
+      {/* ApplicationOptions are spread as direct props per @pixi/react v8 API */}
+      <Application
         width={size.width}
         height={size.height}
-        pixelRatio={PERFORMANCE_CONFIG.maxPixelRatio}
-        draggable={isSpacePressed}
-        // Unified Pointer Events API - handles mouse, touch, and pen input
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={(e) => {
-          handlePointerUp(e);
-          setHoveredCell(null);
+        onInit={(app: PixiApplication) => {
+          pixiAppRef.current = app;
         }}
-        onWheel={handleWheel}
-        // Multi-touch gestures (pinch-to-zoom) - 2+ fingers only
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        scaleX={scale}
-        scaleY={scale}
-        x={position.x}
-        y={position.y}
-        onDragStart={(e) => {
-          if (e.target === e.target.getStage()) {
-            setIsDragging(true);
-          }
-        }}
-        onDragEnd={(e) => {
-          if (e.target === e.target.getStage()) {
-            const rawPos = { x: e.target.x(), y: e.target.y() };
-            const clamped = clampPosition(rawPos, scale);
-            setPosition(clamped);
-            setIsDragging(false);
-          }
-        }}
-        onDragMove={(e) => {
-          // Intentionally no-op during drag — clamp only on drag end for smooth UX
-          if (e.target === e.target.getStage()) {
-            // No action needed here; see onDragEnd above.
-          }
-        }}
-        style={{
-          cursor: getCursorStyle(),
-        }}
+        background={0x1a1008}
+        antialias
+        resolution={PERFORMANCE_CONFIG.maxPixelRatio}
+        autoDensity
       >
-        {/* Layer 1: Background & Map (Listening False to let internal events pass to Stage for selection) */}
-        <Layer listening={false}>
-          {map && (
-            <URLImage
-              key="bg-map"
-              name="map-image"
-              id="map"
-              src={map.src}
-              x={map.x}
-              y={map.y}
-              width={map.width}
-              height={map.height}
-              scaleX={map.scale}
-              scaleY={map.scale}
-              draggable={false}
-              // eslint-disable-next-line @typescript-eslint/no-empty-function
-              onSelect={() => {}}
-              // eslint-disable-next-line @typescript-eslint/no-empty-function
-              onDragEnd={() => {}}
-            />
-          )}
-
-          {/* Paper Noise Texture Overlay - Adds texture to entire canvas background */}
-          <CanvasOverlayErrorBoundary overlayName="PaperNoiseOverlay">
-            <PaperNoiseOverlay
-              x={map ? map.x : visibleBounds.x}
-              y={map ? map.y : visibleBounds.y}
-              width={map ? map.width : visibleBounds.width}
-              height={map ? map.height : visibleBounds.height}
-              scaleX={map ? map.scale : 1}
-              scaleY={map ? map.scale : 1}
-              opacity={0.25}
-            />
-          </CanvasOverlayErrorBoundary>
-
-          <GridOverlay
-            visibleBounds={visibleBounds}
-            gridSize={gridSize}
-            type={gridType}
-            stroke={resolvedGridColor}
-            hoveredCell={hoveredCell}
-          />
-        </Layer>
-
-        {/* Fog of War Layer moved below Drawings Layer to correct occlusion */}
-
-        {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
-        <Layer>
-          {isAltPressed &&
-            drawings
-              .filter((d) => itemsForDuplication.includes(d.id))
-              .map((ghostLine) => (
-                <Line
-                  key={`ghost-${ghostLine.id}`}
-                  id={`ghost-${ghostLine.id}`}
-                  name="ghost-drawing"
-                  points={ghostLine.points}
-                  stroke={ghostLine.color}
-                  strokeWidth={ghostLine.size}
-                  tension={0.5}
-                  lineCap="round"
-                  dash={ghostLine.tool === 'wall' ? [10, 5] : undefined}
-                  opacity={
-                    ghostLine.tool === 'wall' && isWorldView
-                      ? 1 // Always visible
-                      : 0.5
-                  }
-                  listening={false}
-                />
-              ))}
-
-          {drawings.map((line) => {
-            // Common props shared by both component types
-            const commonProps = {
-              id: line.id,
-              name: 'drawing' as const,
-              points: line.points,
-              x: line.x ?? 0,
-              y: line.y ?? 0,
-              // Apply uniform scaling (line.scale is a single number applied to both axes)
-              scaleX: line.scale ?? 1,
-              scaleY: line.scale ?? 1,
-              stroke: line.tool === 'wall' && isWorldView ? CANVAS_COLORS.wallStroke : line.color,
-              strokeWidth:
-                line.tool === 'wall' && isWorldView
-                  ? 6 // Fixed thickness for World View
-                  : line.size,
-              lineCap: 'round' as const,
-              // Always visible in World View (unless fog covers it)
-              opacity: 1,
-              globalCompositeOperation:
-                line.tool === 'eraser' ? ('destination-out' as const) : ('source-over' as const),
-              draggable: tool === 'select' && line.tool !== 'wall',
-            };
-
-            // Event handlers (shared by both component types)
-            const eventHandlers = {
-              onClick: (e: KonvaEventObject<MouseEvent>) => {
-                if (tool === 'select' && line.tool !== 'wall') {
-                  e.evt.stopPropagation();
-                  if (e.evt.shiftKey) {
-                    if (selectedIds.includes(line.id)) {
-                      setSelectedIds(selectedIds.filter((id) => id !== line.id));
-                    } else {
-                      setSelectedIds([...selectedIds, line.id]);
-                    }
-                  } else {
-                    setSelectedIds([line.id]);
-                  }
-                }
-              },
-              onDragStart: () => {
-                if (selectedIds.includes(line.id)) {
-                  setItemsForDuplication(selectedIds);
-                } else {
-                  setItemsForDuplication([line.id]);
-                }
-              },
-              onDragEnd: (e: KonvaEventObject<MouseEvent>) => {
-                const node = e.target;
-                const x = node.x();
-                const y = node.y();
-
-                // Duplication Logic (Option/Alt + Drag)
-                // BLOCKED in World View (players cannot duplicate drawings)
-                // Use isAltPressed state for consistency instead of e.evt.altKey
-                if (isAltPressed && !isWorldView) {
-                  const idsToDuplicate = selectedIds.includes(line.id) ? selectedIds : [line.id];
-                  idsToDuplicate.forEach((id) => {
-                    // Only duplicate drawings here; tokens are handled in their own handler.
-                    const drawing = drawings.find((d) => d.id === id);
-                    if (drawing) {
-                      // Calculate drag offset and apply to all points
-                      // Points array format: [x1, y1, x2, y2, ...] (alternating x,y coordinates)
-                      const points = drawing.points;
-                      const dx = x - (drawing.x ?? 0);
-                      const dy = y - (drawing.y ?? 0);
-                      // Offset all points by (dx, dy)
-                      const newPoints = points.map(
-                        (val, idx) => (idx % 2 === 0 ? val + dx : val + dy), // Even indices are X, odd are Y
-                      );
-                      addDrawing({
-                        ...drawing,
-                        id: crypto.randomUUID(),
-                        points: newPoints,
-                        x: 0,
-                        y: 0,
-                      });
-                    }
-                  });
-                }
-
-                // Update Position (Transform)
-                updateDrawingTransform(line.id, x, y, line.scale ?? 1);
-
-                setItemsForDuplication([]);
-              },
-            };
-
-            // Use pressure-sensitive rendering if pressure data is available
-            const hasPressureData = line.pressures && line.pressures.length > 0;
-
-            // Render pressure-sensitive line or regular line with type-safe props
-            if (hasPressureData) {
-              return (
-                <PressureSensitiveLine
-                  key={line.id}
-                  {...commonProps}
-                  {...eventHandlers}
-                  pressures={line.pressures}
-                  pressureRange={touchSettings.getPressureRange()}
-                />
-              );
-            } else {
-              return (
-                <Line
-                  key={line.id}
-                  {...commonProps}
-                  {...eventHandlers}
-                  tension={0.5}
-                  dash={line.tool === 'wall' ? [10, 5] : undefined}
-                />
-              );
-            }
-          })}
-          {/* Temp Line */}
-          {tempLine && (
-            <Line
-              ref={tempLineRef}
-              points={tempLine.points}
-              stroke={tempLine.color}
-              strokeWidth={tempLine.size}
-              tension={0.5}
-              lineCap="round"
-              dash={tempLine.tool === 'wall' ? [10, 5] : undefined}
-              opacity={1}
-              globalCompositeOperation={
-                tempLine.tool === 'eraser' ? 'destination-out' : 'source-over'
-              }
-            />
-          )}
-
-          {/* Stairs (Architectural elements, rendered with drawings) */}
-          <StairsLayer stairs={stairs} isWorldView={isWorldView} />
-        </Layer>
-
-        {/* Fog of War Layer (World View only) - Renders Overlay */}
-        {/* Rendered AFTER Drawings so walls are properly hidden by fog */}
-        {(() => {
-          const shouldRenderFog = isWorldView && !isDaylightMode;
-          return shouldRenderFog ? (
-            <Layer listening={false}>
-              <FogOfWarLayer
-                tokens={resolvedTokens}
-                drawings={drawings}
-                doors={doors}
-                gridSize={gridSize}
-                visibleBounds={visibleBounds}
-                map={map}
-              />
-            </Layer>
-          ) : null;
-        })()}
-
-        {/* Layer 3: Tokens, Doors & UI */}
-        <Layer>
-          {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
-          <DoorLayer
-            doors={doors}
-            isWorldView={isWorldView}
-            tool={tool}
-            selectedIds={selectedIds}
-            onToggleDoor={toggleDoor}
-            onDeleteDoor={removeDoor}
-            onDoorContextMenu={handleDoorContextMenu}
-          />
-
-          {/* Door Preview - Show preview when hovering with door tool */}
-          {doorPreviewPos && tool === 'door' && !isWorldView && (
-            <Rect
-              x={doorPreviewPos.x - gridSize / 2}
-              y={doorPreviewPos.y - gridSize / 2}
-              width={doorOrientation === 'horizontal' ? gridSize : gridSize / 5}
-              height={doorOrientation === 'horizontal' ? gridSize / 5 : gridSize}
-              fill={CANVAS_COLORS.doorPreviewFill}
-              stroke={CANVAS_COLORS.doorPreviewStroke}
-              strokeWidth={2}
-              listening={false}
-            />
-          )}
-
-          {/* Snap Preview - Show where tokens will snap when released */}
-          {isDraggingToken &&
-            Array.from(snapPreviewPositionsRef.current.entries()).map(([tokenId, snapPos]) => {
-              const token = resolvedTokens.find((t) => t.id === tokenId);
-              if (!token) {
-                return null;
-              }
-
-              const size = gridSize * token.scale;
-
-              // Get the grid cell that the token will snap to
-              const geometry = createGridGeometry(gridType);
-              const snapCell = geometry.pixelToGrid(
-                snapPos.x + size / 2,
-                snapPos.y + size / 2,
-                gridSize,
-              );
-
-              // Get the vertices of the grid cell for the snap preview
-              const cellVertices = geometry.getCellVertices(snapCell, gridSize);
-              const cellPoints = cellVertices.flatMap((v) => [v.x, v.y]);
-
-              return (
-                <Group key={`snap-preview-${tokenId}`}>
-                  {/* Outer ring - actual grid cell shape */}
-                  <Line
-                    points={cellPoints}
-                    stroke={CANVAS_COLORS.snapStroke}
-                    strokeWidth={2}
-                    listening={false}
-                    dash={[8, 4]}
-                    closed
-                  />
-                  {/* Inner fill - actual grid cell shape */}
-                  <Line
-                    points={cellPoints}
-                    fill={CANVAS_COLORS.snapFill}
-                    listening={false}
-                    closed
-                  />
-                </Group>
-              );
-            })}
-
-          {isAltPressed &&
-            resolvedTokens
-              .filter((t) => itemsForDuplication.includes(t.id))
-              .map((ghostToken) => (
-                <URLImage
-                  key={`ghost-${ghostToken.id}`}
-                  id={`ghost-${ghostToken.id}`} // Unique ID
-                  src={ghostToken.src}
-                  x={ghostToken.x}
-                  y={ghostToken.y}
-                  width={gridSize * ghostToken.scale}
-                  height={gridSize * ghostToken.scale}
-                  scaleX={1}
-                  scaleY={1}
-                  draggable={false}
-                  listening={false}
-                  opacity={0.5}
-                  name="ghost-token"
-                  // No-op handlers
-                  // eslint-disable-next-line @typescript-eslint/no-empty-function
-                  onSelect={() => {}}
-                />
-              ))}
-
-          {/* Movement Range Overlay - Shows reachable cells for selected token (Hold M key) */}
-          {isMKeyPressed &&
-            !isWorldView &&
-            selectedIds.length === 1 &&
-            (() => {
-              const selectedToken = resolvedTokens.find((t) => t.id === selectedIds[0]);
-              if (!selectedToken) {
-                return null;
-              }
-
-              // Use drag position if token is being dragged
-              const dragPos = dragPositionsRef.current.get(selectedToken.id);
-              const tokenPos = dragPos ?? { x: selectedToken.x, y: selectedToken.y };
-
-              // Movement speed is resolved from token data
-              const movementSpeed = selectedToken.movementSpeed ?? DEFAULT_MOVEMENT_SPEED;
-
-              return (
-                <CanvasOverlayErrorBoundary overlayName="MovementRangeOverlay">
-                  <MovementRangeOverlay
-                    tokenPosition={tokenPos}
-                    movementSpeed={movementSpeed}
-                    gridSize={gridSize}
-                    gridType={gridType}
-                  />
-                </CanvasOverlayErrorBoundary>
-              );
-            })()}
-
-          {resolvedTokens.map((token) => {
-            // Use drag position if available (for real-time visual feedback)
-            const dragPos = dragPositionsRef.current.get(token.id);
-            const displayX = dragPos ? dragPos.x : token.x;
-            const displayY = dragPos ? dragPos.y : token.y;
-            const isDragging = draggingTokenIds.has(token.id);
-            const isSelected = selectedIds.includes(token.id);
-            const isHovered = hoveredTokenId === token.id && tool === 'select' && !isDragging;
-
-            // Check if token should be visible based on Fog of War rules
-            // In World View with Fog of War enabled:
-            // - PC tokens: Always visible (players need to see their own characters)
-            // - NPC tokens: Only visible in active vision areas (hidden in explored-but-not-visible areas)
-            // In DM mode (Architect View) or Daylight mode: All tokens always visible
-            let isVisible = true;
-            if (isWorldView && !isDaylightMode) {
-              if (token.type === 'NPC') {
-                // NPCs only visible in active vision
-                isVisible = isRectInAnyPolygon(
-                  displayX,
-                  displayY,
-                  gridSize * token.scale,
-                  gridSize * token.scale,
-                  activeVisionPolygons,
-                );
-              }
-              // PC tokens always visible (type === 'PC' or undefined)
-            }
-
-            // Don't render tokens that aren't visible
-            if (!isVisible) {
-              return null;
-            }
-
-            /**
-             * Visual Effects & Performance
-             *
-             * Tokens render with dynamic shadows and scaling for visual feedback:
-             * - Hover state: Enhanced shadow (12px blur) + 2% scale increase
-             * - Dragging state: Strong shadow (20px blur) + 5% scale + opacity change
-             *
-             * Performance optimizations:
-             * - shadowForStrokeEnabled=false (only shadow fills, not strokes)
-             * - RAF-throttled batchDraw() during drag (limited to browser refresh rate, typically 60fps)
-             * - Konva-level caching for complex visual effects
-             * - Resting state has no shadow to reduce continuous rendering cost
-             */
-            const getVisualProps = (): {
-              shadowForStrokeEnabled: boolean;
-              scaleX: number;
-              scaleY: number;
-              opacity?: number;
-              shadowColor?: string;
-              shadowBlur?: number;
-              shadowOffsetX?: number;
-              shadowOffsetY?: number;
-            } => {
-              // Common performance optimization: disable shadow for strokes
-              const baseShadowProps = {
-                shadowForStrokeEnabled: false, // Performance: Only shadow fill, not stroke
-              };
-
-              if (isDragging) {
-                return {
-                  ...baseShadowProps,
-                  opacity: 0.5,
-                  scaleX: 1.05,
-                  scaleY: 1.05,
-                  shadowColor: CANVAS_COLORS.tokenShadowHover,
-                  shadowBlur: 20,
-                  shadowOffsetX: 5,
-                  shadowOffsetY: 5,
-                };
-              }
-              if (isHovered) {
-                return {
-                  ...baseShadowProps,
-                  scaleX: 1.02,
-                  scaleY: 1.02,
-                  shadowColor: CANVAS_COLORS.tokenShadow,
-                  shadowBlur: 12,
-                  shadowOffsetX: 2,
-                  shadowOffsetY: 2,
-                };
-              }
-              // Resting state - no shadow for better performance
-              return {
-                ...baseShadowProps,
-                scaleX: 1,
-                scaleY: 1,
-              };
-            };
-
-            const visualProps = getVisualProps();
-            const safeScale = token.scale ?? 1;
-            const tokenHeight = gridSize * safeScale;
-
-            /**
-             * Isometric "Standing" Offset
-             *
-             * In ISOMETRIC view, tokens appear as if standing upright on the diamond-shaped
-             * tile with their "feet" anchored to the tile center. Shifting the image up by
-             * half its height creates this illusion. The offset is proportional to token size.
-             */
-            const displayYOffset = gridType === 'ISOMETRIC' ? -(tokenHeight / 2) : 0;
-            const finalDisplayY = displayY + displayYOffset;
-
-            return (
-              <Group key={token.id}>
-                <TokenErrorBoundary tokenId={token.id} onShowToast={showToast}>
-                  <URLImage
-                    ref={(node) => {
-                      if (node) {
-                        tokenNodesRef.current.set(token.id, node);
-                      } else {
-                        tokenNodesRef.current.delete(token.id);
-                      }
-                    }}
-                    name="token"
-                    id={token.id}
-                    src={token.src}
-                    x={displayX}
-                    y={finalDisplayY}
-                    width={gridSize * safeScale}
-                    height={tokenHeight}
-                    draggable={false}
-                    // Visual props (scaleX, scaleY, opacity, shadow) are transformation properties
-                    // that multiply with base dimensions to create hover/drag feedback effects
-                    {...visualProps}
-                    onSelect={(e) => handleTokenPointerDown(e, token.id)}
-                    onMouseEnter={() => tool === 'select' && setHoveredTokenId(token.id)}
-                    onMouseLeave={() => tool === 'select' && setHoveredTokenId(null)}
-                    onDragStart={emptyDragHandler}
-                    onDragMove={emptyDragHandler}
-                    onDragEnd={emptyDragHandler}
-                  />
-                  {/* Selection border - enhanced with glow effect */}
-                  {/* Hide when dragging to prevent double-circle visual clutter (selection + snap preview) */}
-                  {isSelected && !isDragging && (
-                    <Circle
-                      x={displayX + (gridSize * safeScale) / 2}
-                      y={finalDisplayY + (gridSize * safeScale) / 2}
-                      radius={(gridSize * safeScale) / 2 + 2}
-                      stroke={CANVAS_COLORS.selectionStroke}
-                      strokeWidth={3}
-                      shadowColor={CANVAS_COLORS.snapTargetStroke}
-                      shadowBlur={8}
-                      shadowEnabled
-                      listening={false}
-                      dash={[8, 4]}
-                    />
-                  )}
-                </TokenErrorBoundary>
-
-                {/* Token Nameplate - Rendered outside ErrorBoundary to prevent nesting issues */}
-                {token.name && (
-                  <Text
-                    text={token.name}
-                    fontSize={12}
-                    fontFamily="DM Sans, sans-serif"
-                    fill={textColor}
-                    fontStyle="bold"
-                    align="center"
-                    verticalAlign="middle"
-                    width={gridSize * safeScale * 2}
-                    x={displayX - (gridSize * safeScale) / 2}
-                    y={displayY + gridSize * safeScale + 8}
-                    listening={false}
-                  />
-                )}
-              </Group>
-            );
-          })}
-
-          {/* Selection Rect */}
-          {selectionRect.isVisible && (
-            <Rect
-              ref={selectionRectRef}
-              x={selectionRect.x}
-              y={selectionRect.y}
-              width={selectionRect.width}
-              height={selectionRect.height}
-              fill={CANVAS_COLORS.selectionFill}
-              stroke={CANVAS_COLORS.selectionStroke}
-              listening={false}
-            />
-          )}
-
-          {/* Calibration Overlay */}
-          {isCalibrating && calibrationRect && (
-            <Rect
-              x={calibrationRect.x}
-              y={calibrationRect.y}
-              width={calibrationRect.width}
-              height={calibrationRect.height}
-              fill={CANVAS_COLORS.calibrationFill}
-              stroke={CANVAS_COLORS.calibrationStroke}
-              dash={[5, 5]}
-              listening={false}
-            />
-          )}
-
-          {/* Measurement Overlay - Shows active measurement (Architect View) or DM's broadcast (World View) */}
-          <CanvasOverlayErrorBoundary overlayName="MeasurementOverlay">
-            <MeasurementOverlay
-              measurement={isWorldView ? dmMeasurement : activeMeasurement}
-              gridSize={gridSize}
-            />
-          </CanvasOverlayErrorBoundary>
-
-          {/* Transformer: BLOCKED in World View (players cannot scale/rotate) */}
-          {!isWorldView && (
-            <Transformer
-              ref={transformerRef}
-              onTransformEnd={(e) => {
-                const node = e.target;
-                const scaleX = node.scaleX();
-                const scaleY = node.scaleY();
-
-                // Update token transform in store
-                if (node.name() === 'token') {
-                  // Use average of scaleX and scaleY for uniform scaling
-                  const transformScale = (scaleX + scaleY) / 2;
-                  const token = resolvedTokens.find((t) => t.id === node.id());
-                  if (token) {
-                    // Multiply current scale by transformation scale
-                    const newScale = token.scale * transformScale;
-                    updateTokenTransform(node.id(), node.x(), node.y(), newScale);
-                  }
-
-                  // Reset scale to 1 since the new scale is stored
-                  node.scaleX(1);
-                  node.scaleY(1);
-                } else if (node.name() === 'drawing') {
-                  // Handle drawing (Line) transformation
-                  const transformScale = (scaleX + scaleY) / 2;
-                  const drawing = drawings.find((d) => d.id === node.id());
-                  if (drawing) {
-                    const newScale = (drawing.scale ?? 1) * transformScale;
-                    updateDrawingTransform(node.id(), node.x(), node.y(), newScale);
-                  }
-                  // Reset scale to 1 since the new scale is stored
-                  node.scaleX(1);
-                  node.scaleY(1);
-                }
-              }}
-            />
-          )}
-        </Layer>
-      </Stage>
+        {/* TODO Phase 1: GridOverlay — PixiJS Graphics grid */}
+        {/* TODO Phase 1: MapBackground (was URLImage) — PixiJS Sprite for map image */}
+        {/* TODO Phase 1: PaperNoiseOverlay — PixiJS TilingSprite for texture */}
+        {/* TODO Phase 2: TokenLayer — PixiJS Sprite per token with FederatedPointerEvent drag */}
+        {/* TODO Phase 2: SelectionRect — PixiJS Graphics selection rectangle */}
+        {/* TODO Phase 2: Transformer — PixiJS resize/rotate handles */}
+        {/* TODO Phase 3: FogOfWarLayer — PixiJS shader-based fog */}
+        {/* TODO Phase 4: DrawingLayer — PixiJS Mesh/Graphics for pressure-sensitive lines */}
+        {/* TODO Phase 4: PressureSensitiveLine — PixiJS Mesh geometry */}
+        {/* TODO Phase 5: DoorLayer */}
+        {/* TODO Phase 5: StairsLayer */}
+        {/* TODO Phase 5: MeasurementOverlay */}
+        {/* TODO Phase 5: MovementRangeOverlay */}
+        {/* TODO Phase 5: DoorPreview (was Rect) */}
+        {/* TODO Phase 5: SnapPreview (was Group+Line) */}
+        {/* TODO Phase 5: CalibrationOverlay (was Rect) */}
+      </Application>
 
       {/* World View Controls */}
       {isWorldView && (
