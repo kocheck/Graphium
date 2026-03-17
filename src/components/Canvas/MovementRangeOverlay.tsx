@@ -13,6 +13,7 @@ import { useEffect, useRef, useMemo } from 'react';
 import { Container, Graphics } from 'pixi.js';
 
 import { createGridGeometry } from '../../utils/gridGeometry';
+import { parseRgba } from '../../utils/pixiColor';
 
 import type { GridType } from '../../types/domain';
 import type { Container as PixiContainer } from 'pixi.js';
@@ -21,27 +22,6 @@ const MOVEMENT_COLORS = {
   fill: 'rgba(140, 105, 20, 0.12)', // --app-movement-range-fill
   stroke: 'rgba(140, 105, 20, 0.4)', // --app-movement-range-stroke
 } as const;
-
-/**
- * Parse a CSS rgba/rgb string into a PixiJS-compatible { color, alpha } object.
- * Falls back to black/opaque if the string cannot be parsed.
- */
-function parseRgba(css: string): { color: number; alpha: number } {
-  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(css);
-  if (!m) {
-    if (css.startsWith('#')) {
-      const hex = css.slice(1);
-      const fullHex = hex.length === 3 ? hex.replace(/./g, (c) => c + c) : hex;
-      return { color: parseInt(fullHex, 16), alpha: 1 };
-    }
-    return { color: 0x000000, alpha: 1 };
-  }
-  const r = parseInt(m[1]!, 10);
-  const g = parseInt(m[2]!, 10);
-  const b = parseInt(m[3]!, 10);
-  const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
-  return { color: (r << 16) | (g << 8) | b, alpha: a };
-}
 
 /**
  * Get neighboring cells based on grid type.
@@ -110,7 +90,7 @@ interface MovementRangeOverlayProps {
  * Returns null (imperative pattern): all drawing happens via PixiJS
  * Graphics objects added/removed from worldContainer.
  */
-function MovementRangeOverlay({
+export function MovementRangeOverlay({
   worldContainer,
   tokenPosition,
   movementSpeed,

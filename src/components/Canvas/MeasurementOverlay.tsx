@@ -26,6 +26,7 @@ import { useEffect, useRef } from 'react';
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 
 import { formatDistance, formatRadius, formatCone } from '../../utils/measurement';
+import { parseRgba } from '../../utils/pixiColor';
 
 import type { Measurement } from '../../types/measurement';
 import type { Container as PixiContainer } from 'pixi.js';
@@ -36,28 +37,6 @@ const MEASUREMENT_COLORS = {
   text: '#f7edda', // --app-measurement-text
   textBg: 'rgba(28, 16, 7, 0.75)', // --app-measurement-text-bg
 } as const;
-
-/**
- * Parse a CSS rgba/rgb string into a PixiJS-compatible { color, alpha } object.
- * Falls back to black/opaque if the string cannot be parsed.
- */
-function parseRgba(css: string): { color: number; alpha: number } {
-  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(css);
-  if (!m) {
-    // Try parsing a hex color string like '#f7edda'
-    if (css.startsWith('#')) {
-      const hex = css.slice(1);
-      const fullHex = hex.length === 3 ? hex.replace(/./g, (c) => c + c) : hex;
-      return { color: parseInt(fullHex, 16), alpha: 1 };
-    }
-    return { color: 0x000000, alpha: 1 };
-  }
-  const r = parseInt(m[1]!, 10);
-  const g = parseInt(m[2]!, 10);
-  const b = parseInt(m[3]!, 10);
-  const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
-  return { color: (r << 16) | (g << 8) | b, alpha: a };
-}
 
 interface MeasurementOverlayProps {
   /** PixiJS world container to attach graphics to */
