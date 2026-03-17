@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { useUiStore } from './uiStore';
-import { MAX_EXPLORED_REGIONS, DEFAULT_GRID_COLOR } from '../types/domain';
+import { MAX_EXPLORED_REGIONS, DEFAULT_GRID_COLOR, toHexColor, toPixelSize } from '../types/domain';
 import { rollForMessage } from '../utils/systemMessages';
 
 import type {
@@ -15,6 +15,8 @@ import type {
   ExploredRegion,
   Door,
   Stairs,
+  HexColor,
+  PixelSize,
 } from '../types/domain';
 import type { Measurement } from '../types/measurement';
 
@@ -29,9 +31,9 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
   doors: [],
   stairs: [],
   map: null,
-  gridSize: 50,
+  gridSize: 50 as PixelSize,
   gridType: 'LINES',
-  gridColor: DEFAULT_GRID_COLOR, // Default dark gray grid
+  gridColor: DEFAULT_GRID_COLOR as HexColor, // Default dark gray grid
   exploredRegions: [],
   isDaylightMode: false,
 });
@@ -66,9 +68,9 @@ export interface GameState {
   drawings: Drawing[];
   doors: Door[];
   stairs: Stairs[];
-  gridSize: number;
+  gridSize: PixelSize;
   gridType: GridType;
-  gridColor: string;
+  gridColor: HexColor;
   map: MapConfig | null;
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
@@ -141,9 +143,9 @@ export interface GameState {
   removeMultipleStairs: (ids: string[]) => void;
 
   // Map/Grid Attributes Actions
-  setGridSize: (size: number) => void;
+  setGridSize: (size: PixelSize) => void;
   setGridType: (type: GridType) => void;
-  setGridColor: (color: string) => void;
+  setGridColor: (color: HexColor) => void;
   setMap: (map: MapConfig | null) => void;
   updateMapPosition: (x: number, y: number) => void;
   updateMapScale: (scale: number) => void;
@@ -214,12 +216,23 @@ export const useGameStore = create<GameState>((set, get) => {
         campaign,
         // Hydrate active map state
         tokens: activeMap.tokens || [],
-        drawings: activeMap.drawings || [],
+        drawings: (activeMap.drawings || []).map((d) => ({
+          ...d,
+          color: d.color ?? '#df4b26',
+          size: Math.max(1, Math.round(d.size ?? 5)) as PixelSize,
+        })),
         doors: activeMap.doors || [],
         stairs: activeMap.stairs || [],
-        gridSize: activeMap.gridSize || 50,
+        gridSize: toPixelSize(activeMap.gridSize || 50),
         gridType: activeMap.gridType || 'LINES',
-        gridColor: activeMap.gridColor ?? DEFAULT_GRID_COLOR,
+        gridColor: (() => {
+          try {
+            return toHexColor(activeMap.gridColor ?? DEFAULT_GRID_COLOR);
+          } catch {
+            console.warn(`[gameStore] Invalid gridColor "${activeMap.gridColor}", using default`);
+            return DEFAULT_GRID_COLOR as HexColor;
+          }
+        })(),
         map: activeMap.map ?? null,
         exploredRegions: activeMap.exploredRegions || [],
         isDaylightMode: activeMap.isDaylightMode || false,
@@ -375,7 +388,7 @@ export const useGameStore = create<GameState>((set, get) => {
             map: nextMap.map,
             gridSize: nextMap.gridSize,
             gridType: nextMap.gridType,
-            gridColor: nextMap.gridColor || DEFAULT_GRID_COLOR,
+            gridColor: nextMap.gridColor ?? (DEFAULT_GRID_COLOR as HexColor),
             exploredRegions: nextMap.exploredRegions,
             isDaylightMode: nextMap.isDaylightMode,
           };
@@ -427,7 +440,7 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: newMap.stairs || [],
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
-        gridColor: newMap.gridColor || DEFAULT_GRID_COLOR,
+        gridColor: newMap.gridColor ?? (DEFAULT_GRID_COLOR as HexColor),
         map: newMap.map,
         exploredRegions: newMap.exploredRegions || [],
         isDaylightMode: newMap.isDaylightMode,
@@ -540,9 +553,9 @@ export const useGameStore = create<GameState>((set, get) => {
       set((state) => ({ stairs: state.stairs.filter((s) => !ids.includes(s.id)) })),
 
     // --- Grid/Map Actions ---
-    setGridSize: (size: number) => set({ gridSize: size }),
+    setGridSize: (size: PixelSize) => set({ gridSize: size }),
     setGridType: (type: GridType) => set({ gridType: type }),
-    setGridColor: (color: string) => set({ gridColor: color }),
+    setGridColor: (color: HexColor) => set({ gridColor: color }),
     setMap: (map: MapConfig | null) => set({ map }),
     updateMapPosition: (x: number, y: number) =>
       set((state) => ({
