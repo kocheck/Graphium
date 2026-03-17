@@ -11,7 +11,7 @@ import CanvasAccessibility from './CanvasAccessibility';
 import DoorContextMenu from './DoorContextMenu';
 // TODO Phase 5: DoorLayer — import DoorLayer from './DoorLayer';
 // TODO Phase 3: FogOfWarLayer — import FogOfWarLayer from './FogOfWarLayer';
-// TODO Phase 1: GridOverlay — import GridOverlay from './GridOverlay';
+import { GridOverlay } from './GridOverlay';
 import ImageCropper from '../Dialogs/ImageCropper';
 // TODO Phase 4: useCanvasDrawing — import { useCanvasDrawing } from './hooks/useCanvasDrawing';
 import { useCanvasDrop } from './hooks/useCanvasDrop';
@@ -25,9 +25,10 @@ import { MapBackground } from './MapBackground';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
 // TODO Phase 5: MovementRangeOverlay — import MovementRangeOverlay from './MovementRangeOverlay';
-// TODO Phase 1: PaperNoiseOverlay — import PaperNoiseOverlay from './PaperNoiseOverlay';
+import { PaperNoiseOverlay } from './PaperNoiseOverlay';
 // TODO Phase 4: PressureSensitiveLine — import PressureSensitiveLine from './PressureSensitiveLine';
 // TODO Phase 5: StairsLayer — import StairsLayer from './StairsLayer';
+import { TokenLayer } from './TokenLayer';
 // TODO Phase 1: URLImage (map background) — import URLImage from './URLImage';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { resolveTokenData } from '../../hooks/useTokenData';
@@ -144,7 +145,7 @@ interface CanvasManagerProps {
  * @see useCanvasInteraction for unified pointer event handling
  * @see useTokenDrag for token drag-and-drop with snap preview
  */
-// eslint-disable-next-line max-lines-per-function
+// eslint-disable-next-line max-lines-per-function, complexity
 function CanvasManager({
   tool = 'select',
   color: _color = CANVAS_COLORS.markerDefault as HexColor, // TODO Phase 4: used by drawing tool
@@ -335,13 +336,10 @@ function CanvasManager({
 
   // TODO Phase 2: textColor — re-add when token nameplates are re-implemented
   // const textColor = useThemeColor('--app-text-primary');
-  void useThemeColor; // keep import alive — used by textColor in Phase 2
 
-  // TODO Phase 1: resolvedGridColor — re-add when GridOverlay is re-implemented
-  // const defaultGridColor = useThemeColor('--app-grid-color');
-  // const resolvedGridColor = gridColor === DEFAULT_GRID_COLOR ? defaultGridColor : gridColor;
-  void gridColor;
-  void DEFAULT_GRID_COLOR; // keep imports alive for Phase 1
+  // Resolve grid color: use theme token when store has the default, otherwise use custom color
+  const defaultGridColor = useThemeColor('--app-grid-color');
+  const resolvedGridColor = gridColor === DEFAULT_GRID_COLOR ? defaultGridColor : gridColor;
 
   // TODO Phase 1: Touch/Pinch State — re-add when PixiJS viewport touch is implemented
   // const lastPinchDistance = useRef<number | null>(null);
@@ -708,10 +706,7 @@ function CanvasManager({
         resolution={PERFORMANCE_CONFIG.maxPixelRatio}
         autoDensity
       >
-        {/* TODO Phase 1: GridOverlay — PixiJS Graphics grid */}
         {/* TODO Phase 1: MapBackground (was URLImage) — PixiJS Sprite for map image */}
-        {/* TODO Phase 1: PaperNoiseOverlay — PixiJS TilingSprite for texture */}
-        {/* TODO Phase 2: TokenLayer — PixiJS Sprite per token with FederatedPointerEvent drag */}
         {/* TODO Phase 2: SelectionRect — PixiJS Graphics selection rectangle */}
         {/* TODO Phase 2: Transformer — PixiJS resize/rotate handles */}
         {/* TODO Phase 3: FogOfWarLayer — PixiJS shader-based fog */}
@@ -728,6 +723,27 @@ function CanvasManager({
 
       {/* Phase 1: Map background — imperative PixiJS Sprite, renders null JSX */}
       <MapBackground imageUrl={map?.src ?? null} worldContainer={worldContainer} />
+
+      {/* Phase 1: Grid overlay — PixiJS Graphics grid lines */}
+      <GridOverlay
+        worldContainer={worldContainer}
+        gridSize={gridSize}
+        gridColor={resolvedGridColor ?? DEFAULT_GRID_COLOR}
+        gridOpacity={0.5}
+        mapWidth={map?.width ?? 3000}
+        mapHeight={map?.height ?? 3000}
+        gridType="square"
+      />
+
+      {/* Phase 1: Paper noise — PixiJS TilingSprite texture (no-op without noiseUrl) */}
+      <PaperNoiseOverlay
+        worldContainer={worldContainer}
+        mapWidth={map?.width ?? 3000}
+        mapHeight={map?.height ?? 3000}
+      />
+
+      {/* Phase 2: Token sprites — PixiJS Sprite per token with texture deduplication */}
+      <TokenLayer worldContainer={worldContainer} gridSize={gridSize} />
 
       {/* World View Controls */}
       {isWorldView && (
