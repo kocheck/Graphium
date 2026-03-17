@@ -3,21 +3,30 @@ import type React from 'react';
 
 import { useGameStore } from '../../../store/gameStore';
 import { snapToGrid } from '../../../utils/grid';
-import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 
 import type { Token, GridType } from '../../../types/domain';
-import type Konva from 'konva';
-import type { KonvaEventObject } from 'konva/lib/Node';
+import type { FederatedPointerEvent } from 'pixi.js';
+
+/**
+ * snapPositionToGrid — exported for unit testing.
+ * Simple square-grid snap using Math.round.
+ * For hexagonal/isometric grids, use snapToGrid from utils/grid.ts instead.
+ */
+export function snapPositionToGrid(
+  pos: { x: number; y: number },
+  gridSize: number,
+): { x: number; y: number } {
+  return {
+    x: Math.round(pos.x / gridSize) * gridSize,
+    y: Math.round(pos.y / gridSize) * gridSize,
+  };
+}
 
 interface UseTokenDragReturn {
-  handleTokenPointerDown: (
-    e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
-    tokenId: string,
-  ) => void;
-  handleTokenPointerMove: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
-  handleTokenPointerUp: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  handleTokenPointerDown: (e: FederatedPointerEvent, tokenId: string) => void;
+  handleTokenPointerMove: (e: FederatedPointerEvent) => void;
+  handleTokenPointerUp: (e: FederatedPointerEvent) => void;
   dragPositionsRef: React.MutableRefObject<Map<string, { x: number; y: number }>>;
-  tokenNodesRef: React.MutableRefObject<Map<string, Konva.Node>>;
   draggingTokenIds: Set<string>;
   itemsForDuplication: string[];
   setItemsForDuplication: React.Dispatch<React.SetStateAction<string[]>>;
@@ -34,10 +43,7 @@ interface UseTokenDragProps {
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
   resolvedTokens: Token[];
-  shouldRejectPointerEvent: (
-    e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
-  ) => boolean;
-  trackStylusUsage: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  screenToWorld: (screenX: number, screenY: number) => { x: number; y: number };
 }
 
 // eslint-disable-next-line max-lines-per-function
@@ -50,15 +56,13 @@ export const useTokenDrag = ({
   selectedIds,
   setSelectedIds,
   resolvedTokens,
-  shouldRejectPointerEvent,
-  trackStylusUsage,
+  screenToWorld,
 }: UseTokenDragProps): UseTokenDragReturn => {
   // Refs for performance (direct manipulation)
   const dragPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const dragBroadcastThrottleRef = useRef<Map<string, number>>(new Map());
   const snapPreviewPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const tokenNodesRef = useRef<Map<string, Konva.Node>>(new Map());
 
   // State
   const [draggingTokenIds, setDraggingTokenIds] = useState<Set<string>>(new Set());
@@ -71,7 +75,7 @@ export const useTokenDrag = ({
     x: number;
     y: number;
     tokenId: string;
-    stagePos: { x: number; y: number };
+    worldPos: { x: number; y: number };
   } | null>(null);
   const [isDraggingWithThreshold, setIsDraggingWithThreshold] = useState(false);
 
@@ -100,20 +104,12 @@ export const useTokenDrag = ({
   );
 
   const handleTokenPointerDown = useCallback(
-    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string) => {
-      trackStylusUsage(e);
-      if (shouldRejectPointerEvent(e)) {
+    (e: FederatedPointerEvent, tokenId: string) => {
+      // Guard: only primary pointer button (left click / primary touch)
+      if (e.button !== undefined && e.button !== 0) {
         return;
       }
       if (tool !== 'select') {
-        return;
-      }
-      if (isMultiTouchGesture(e)) {
-        return;
-      }
-
-      const pointerPos = getPointerPosition(e);
-      if (!pointerPos) {
         return;
       }
 
@@ -122,39 +118,32 @@ export const useTokenDrag = ({
         return;
       }
 
-      e.evt.stopPropagation();
+      // stopPropagation is not available on PixiTouch — guard before calling
+      if ('stopPropagation' in e.nativeEvent) {
+        e.nativeEvent.stopPropagation();
+      }
 
       setTokenMouseDownStart({
-        x: pointerPos.x,
-        y: pointerPos.y,
+        x: e.global.x,
+        y: e.global.y,
         tokenId,
-        stagePos: { x: token.x, y: token.y },
+        worldPos: { x: token.x, y: token.y },
       });
       setIsDraggingWithThreshold(false);
     },
-    [tool, resolvedTokens, shouldRejectPointerEvent, trackStylusUsage],
+    [tool, resolvedTokens],
   );
 
   const handleTokenPointerMove = useCallback(
     // eslint-disable-next-line complexity
-    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
-      if (shouldRejectPointerEvent(e)) {
-        return;
-      }
+    (e: FederatedPointerEvent) => {
       if (!tokenMouseDownStart || tool !== 'select') {
         return;
       }
-      if (isMultiTouchGesture(e)) {
-        return;
-      }
 
-      const pointerPos = getPointerPosition(e);
-      if (!pointerPos) {
-        return;
-      }
-
-      const dx = pointerPos.x - tokenMouseDownStart.x;
-      const dy = pointerPos.y - tokenMouseDownStart.y;
+      // dx/dy in screen space for threshold check
+      const dx = e.global.x - tokenMouseDownStart.x;
+      const dy = e.global.y - tokenMouseDownStart.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (!isDraggingWithThreshold && distance > DRAG_THRESHOLD) {
@@ -165,7 +154,7 @@ export const useTokenDrag = ({
         if (selectedIds.includes(tokenId)) {
           tokenIds = selectedIds;
         } else {
-          tokenIds = e.evt.shiftKey ? [...selectedIds, tokenId] : [tokenId];
+          tokenIds = e.nativeEvent.shiftKey ? [...selectedIds, tokenId] : [tokenId];
           setSelectedIds(tokenIds);
         }
 
@@ -208,8 +197,16 @@ export const useTokenDrag = ({
 
       if (isDraggingWithThreshold) {
         const tokenId = tokenMouseDownStart.tokenId;
-        const newX = tokenMouseDownStart.stagePos.x + dx;
-        const newY = tokenMouseDownStart.stagePos.y + dy;
+
+        // Convert current screen pointer to world space, then compute delta from token's
+        // stored world-space origin to get the new world-space position
+        const currentWorld = screenToWorld(e.global.x, e.global.y);
+        const originWorld = screenToWorld(tokenMouseDownStart.x, tokenMouseDownStart.y);
+        const worldDx = currentWorld.x - originWorld.x;
+        const worldDy = currentWorld.y - originWorld.y;
+
+        const newX = tokenMouseDownStart.worldPos.x + worldDx;
+        const newY = tokenMouseDownStart.worldPos.y + worldDy;
 
         dragPositionsRef.current.set(tokenId, { x: newX, y: newY });
         throttleDragBroadcast(tokenId, newX, newY);
@@ -248,32 +245,13 @@ export const useTokenDrag = ({
                   );
                   snapPreviewPositionsRef.current.set(id, snapped);
                 }
-
-                const node = tokenNodesRef.current.get(id);
-                if (node) {
-                  node.x(offsetX);
-                  node.y(offsetY);
-                }
               }
             }
           });
         }
-
-        const node = tokenNodesRef.current.get(tokenId);
-        if (node) {
-          node.x(newX);
-          node.y(newY);
-        }
-
-        // Trigger a batch redraw on the node's layer for immediate visual update
-        const layer = node?.getLayer();
-        if (layer) {
-          layer.batchDraw();
-        }
       }
     },
     [
-      shouldRejectPointerEvent,
       tokenMouseDownStart,
       tool,
       isDraggingWithThreshold,
@@ -284,11 +262,12 @@ export const useTokenDrag = ({
       gridType,
       isWorldView,
       throttleDragBroadcast,
+      screenToWorld,
     ],
   );
 
   const handleTokenPointerUp = useCallback(
-    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    (e: FederatedPointerEvent) => {
       if (!tokenMouseDownStart) {
         return;
       }
@@ -364,7 +343,6 @@ export const useTokenDrag = ({
           }
         }
 
-        dragPositionsRef.current.delete(tokenId); // Should clear all?
         tokenIds.forEach((id) => {
           dragPositionsRef.current.delete(id);
           dragBroadcastThrottleRef.current.delete(id);
@@ -374,8 +352,10 @@ export const useTokenDrag = ({
         setItemsForDuplication([]);
       } else {
         // Selection Click
-        e.evt.stopPropagation();
-        if (e.evt.shiftKey) {
+        if ('stopPropagation' in e.nativeEvent) {
+          e.nativeEvent.stopPropagation();
+        }
+        if (e.nativeEvent.shiftKey) {
           if (selectedIds.includes(tokenId)) {
             setSelectedIds(selectedIds.filter((id) => id !== tokenId));
           } else {
@@ -410,7 +390,6 @@ export const useTokenDrag = ({
     handleTokenPointerMove,
     handleTokenPointerUp,
     dragPositionsRef,
-    tokenNodesRef,
     draggingTokenIds,
     itemsForDuplication,
     setItemsForDuplication,
