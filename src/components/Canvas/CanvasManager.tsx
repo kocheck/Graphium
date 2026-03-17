@@ -28,7 +28,7 @@ import MinimapErrorBoundary from './MinimapErrorBoundary';
 // TODO Phase 5: MovementRangeOverlay — import MovementRangeOverlay from './MovementRangeOverlay';
 import { PaperNoiseOverlay } from './PaperNoiseOverlay';
 // TODO Phase 4: PressureSensitiveLine — import PressureSensitiveLine from './PressureSensitiveLine';
-// TODO Phase 5: StairsLayer — import StairsLayer from './StairsLayer';
+import { StairsLayer } from './StairsLayer';
 import { TokenLayer } from './TokenLayer';
 // TODO Phase 1: URLImage (map background) — import URLImage from './URLImage';
 import { useThemeColor } from '../../hooks/useThemeColor';
@@ -171,7 +171,6 @@ function CanvasManager({
   const drawings = useGameStore((s) => s.drawings);
   const doors = useGameStore((s) => s.doors);
   const stairs = useGameStore((s) => s.stairs);
-  void stairs; // TODO Phase 5: remove void when StairsLayer is wired in below
   const gridSize = useGameStore((s) => s.gridSize);
   const gridType = useGameStore((state) => state.gridType);
   const gridColor = useGameStore((state) => state.gridColor);
@@ -760,6 +759,9 @@ function CanvasManager({
 
       {/* Phase 4: Drawing strokes — PixiJS Mesh per completed stroke */}
       <DrawingLayer worldContainer={worldContainer} gridSize={gridSize} />
+
+      {/* Phase 5: Stairs shapes — PixiJS Graphics, non-interactive architectural elements */}
+      <StairsLayer worldContainer={worldContainer} stairs={stairs} isWorldView={isWorldView} />
 
       {/* Phase 5: Door shapes — PixiJS Graphics, interactive in DM mode */}
       <DoorLayer
