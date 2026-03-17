@@ -35,7 +35,7 @@ export type HexColor = string & { readonly __brand: 'HexColor' };
  */
 export type PixelSize = number & { readonly __brand: 'PixelSize' };
 
-const HEX_COLOR_RE = /^#[0-9a-fA-F]{3,8}$/;
+const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 /**
  * Validates and brands a string as a HexColor.

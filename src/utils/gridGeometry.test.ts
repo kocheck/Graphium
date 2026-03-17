@@ -437,6 +437,15 @@ describe('toHexColor', () => {
   it('rejects plain text', () => {
     expect(() => toHexColor('red')).toThrow('Invalid hex color');
   });
+  it('rejects 4-char hex', () => {
+    expect(() => toHexColor('#ffff')).toThrow('Invalid hex color');
+  });
+  it('rejects 5-char hex', () => {
+    expect(() => toHexColor('#fffff')).toThrow('Invalid hex color');
+  });
+  it('rejects 7-char hex', () => {
+    expect(() => toHexColor('#fffffff')).toThrow('Invalid hex color');
+  });
 });
 
 describe('toPixelSize', () => {
