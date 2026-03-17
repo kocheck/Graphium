@@ -1,10 +1,13 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 import { useTouchSettingsStore } from '../../../store/touchSettingsStore';
 import { snapToGrid } from '../../../utils/grid';
+import { createGridGeometry } from '../../../utils/gridGeometry';
 import { getPointerPosition, getPointerPressure, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { Drawing, Door, GridType } from '../../../types/domain';
+import type { Drawing, Door, GridType, HexColor, PixelSize } from '../../../types/domain';
+import type { GridCell } from '../../../types/grid';
 import type { Measurement } from '../../../types/measurement';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
@@ -14,7 +17,7 @@ interface UseCanvasInteractionProps {
   isSpacePressed: boolean;
   isWorldView: boolean;
   isCalibrating: boolean;
-  color: string;
+  color: HexColor;
   // Callbacks from parent or other hooks
   handleTokenPointerDown: (
     e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
@@ -62,6 +65,9 @@ interface UseCanvasInteractionProps {
     rect: { x: number; y: number; width: number; height: number } | null,
   ) => void;
   addDrawing: (drawing: Drawing) => void;
+  setHoveredCell: Dispatch<SetStateAction<GridCell | null>>;
+  wallColor: HexColor;
+  wallSize: PixelSize;
 }
 
 type CanvasPointerHandler = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
@@ -109,8 +115,16 @@ export const useCanvasInteraction = ({
   calibrationStart,
   setCalibrationRect,
   addDrawing,
+  setHoveredCell,
+  wallColor,
+  wallSize,
 }: UseCanvasInteractionProps): UseCanvasInteractionReturn => {
   const touchSettings = useTouchSettingsStore();
+
+  // Memoize geometry instance — gridType changes rarely, so this avoids allocating
+  // a new class instance on every pointermove event (a hot path that fires at
+  // the browser's native pointer rate, which varies by device and OS)
+  const gridGeometry = useMemo(() => createGridGeometry(gridType), [gridType]);
 
   // Palm Rejection Logic
   const shouldRejectPointerEvent = useCallback(
@@ -198,11 +212,7 @@ export const useCanvasInteraction = ({
     }
 
     if (tool !== 'measure' && !isWorldView) {
-      // Logic specific to non-measure tools clearing active measurement?
-      // In original code: if (tool !== 'measure' && activeMeasurement) setActiveMeasurement(null);
-      // We'll trust parent to handle this? Or pass activeMeasurement from parent.
-      // Let's assume parent handles state clearing if needed or we access store.
-      // Actually, since setActiveMeasurement is passed, we can call it.
+      // Clear any active measurement when the user starts a non-measure action
       setActiveMeasurement(null);
     }
 
@@ -246,15 +256,15 @@ export const useCanvasInteraction = ({
       }
 
       const pressure = getPointerPressure(e);
-      let drawColor = color;
-      let drawSize = 5;
+      let drawColor: HexColor = color;
+      let drawSize: PixelSize = 5 as PixelSize;
 
       if (tool === 'eraser') {
-        drawColor = '#000000';
-        drawSize = 20;
+        drawColor = '#000000' as HexColor;
+        drawSize = 20 as PixelSize;
       } else if (tool === 'wall') {
-        drawColor = '#ff0000';
-        drawSize = 8;
+        drawColor = wallColor;
+        drawSize = wallSize;
       }
 
       currentLine.current = {
@@ -314,10 +324,10 @@ export const useCanvasInteraction = ({
     if (gridType !== 'HIDDEN' && gridType !== 'DOTS') {
       const pos = getPointerPosition(e);
       if (pos) {
-        // TODO: Import geometry logic or pass as prop
-        // For now, we rely on parent or ignore grid highlight in refactor if too complex
-        // Or simply calculate it if we import createGridGeometry?
-        // setHoveredCell({ q: 0, r: 0 }); // Placeholder
+        const next = gridGeometry.pixelToGrid(pos.x, pos.y, gridSize);
+        setHoveredCell((prev) =>
+          prev !== null && prev.q === next.q && prev.r === next.r ? prev : next,
+        );
       }
     }
 
