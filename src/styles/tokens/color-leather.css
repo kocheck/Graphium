@@ -69,4 +69,19 @@
   --app-toolbar-button-border: #4a3020;
   --app-toolbar-button-hover: #3a2718;
   --app-toolbar-button-border-hover: #5e3c24;
+
+  /* Resource Monitor — identical in dark mode (always dark panel) */
+  --app-monitor-bg: rgba(26, 16, 8, 0.9);
+  --app-monitor-text: #ede0c4;
+  --app-monitor-border: rgba(237, 224, 196, 0.12);
+  --app-monitor-divider: rgba(237, 224, 196, 0.2);
+  --app-monitor-bar-bg: rgba(237, 224, 196, 0.15);
+  --app-monitor-fps-good: #30a46c;
+  --app-monitor-fps-medium: #ffc53d;
+  --app-monitor-fps-low: #e5484d;
+  --app-monitor-memory-ok: #30a46c;
+  --app-monitor-memory-high: #e5484d;
+  --app-monitor-warning-bg: rgba(255, 197, 61, 0.15);
+  --app-monitor-warning-accent: #ffc53d;
+  --app-monitor-muted: #9a7e5c;
 }
