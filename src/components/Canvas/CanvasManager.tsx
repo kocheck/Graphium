@@ -743,7 +743,7 @@ function CanvasManager({
       />
 
       {/* Phase 2: Token sprites — PixiJS Sprite per token with texture deduplication */}
-      <TokenLayer worldContainer={worldContainer} gridSize={gridSize} />
+      <TokenLayer worldContainer={worldContainer} gridSize={gridSize} selectedIds={selectedIds} />
 
       {/* World View Controls */}
       {isWorldView && (
