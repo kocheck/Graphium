@@ -86,7 +86,7 @@
 /* Destructive */
 .btn-primitive--destructive {
   background: var(--app-error-solid);
-  color: white;
+  color: var(--app-accent-solid-text);
   border-color: var(--app-error-solid);
 }
 
