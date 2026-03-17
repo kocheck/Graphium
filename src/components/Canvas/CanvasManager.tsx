@@ -22,7 +22,7 @@ import { usePixiViewport } from './hooks/usePixiViewport';
 import { MapBackground } from './MapBackground';
 // TODO Phase 2: useCanvasSelection — import { useCanvasSelection } from './hooks/useCanvasSelection';
 // TODO Phase 2: useTokenDrag — import { useTokenDrag } from './hooks/useTokenDrag';
-// TODO Phase 5: MeasurementOverlay — import MeasurementOverlay from './MeasurementOverlay';
+import { MeasurementOverlay } from './MeasurementOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
 // TODO Phase 5: MovementRangeOverlay — import MovementRangeOverlay from './MovementRangeOverlay';
@@ -215,7 +215,7 @@ function CanvasManager({
 
   // Measurement state
   const activeMeasurement = useGameStore((s) => s.activeMeasurement);
-  // TODO Phase 5: dmMeasurement — re-add when MeasurementOverlay is re-implemented
+  // dmMeasurement — available for World View broadcast when that feature is implemented
   // const dmMeasurement = useGameStore((s) => s.dmMeasurement);
 
   // Store actions (stable references from Zustand)
@@ -715,8 +715,8 @@ function CanvasManager({
         {/* Phase 4: DrawingLayer and PressureSensitiveLine rendered imperatively below */}
         {/* TODO Phase 5: DoorLayer */}
         {/* TODO Phase 5: StairsLayer */}
-        {/* TODO Phase 5: MeasurementOverlay */}
-        {/* TODO Phase 5: MovementRangeOverlay */}
+        {/* Phase 5: MeasurementOverlay — wired imperatively below Application */}
+        {/* Phase 5: MovementRangeOverlay — wired imperatively below Application when token is selected */}
         {/* TODO Phase 5: DoorPreview (was Rect) */}
         {/* TODO Phase 5: SnapPreview (was Group+Line) */}
         {/* TODO Phase 5: CalibrationOverlay (was Rect) */}
@@ -773,6 +773,13 @@ function CanvasManager({
         onToggleDoor={toggleDoor}
         onDeleteDoor={removeDoor}
         onDoorContextMenu={handleDoorContextMenu}
+      />
+
+      {/* Phase 5: Measurement overlay — ruler, blast, cone shapes */}
+      <MeasurementOverlay
+        worldContainer={worldContainer}
+        measurement={activeMeasurement}
+        gridSize={gridSize}
       />
 
       {/* World View Controls */}

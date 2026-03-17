@@ -14,19 +14,21 @@
  * **Usage:**
  * ```tsx
  * <MeasurementOverlay
+ *   worldContainer={worldContainer}
  *   measurement={activeMeasurement}
  *   gridSize={50}
  * />
  * ```
  */
 
-import type React from 'react';
+import { useEffect, useRef } from 'react';
 
-import { Group, Line, Circle, Text } from 'react-konva';
+import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 
 import { formatDistance, formatRadius, formatCone } from '../../utils/measurement';
 
 import type { Measurement } from '../../types/measurement';
+import type { Container as PixiContainer } from 'pixi.js';
 
 const MEASUREMENT_COLORS = {
   fill: 'rgba(140, 105, 20, 0.25)', // --app-measurement-fill
@@ -35,184 +37,228 @@ const MEASUREMENT_COLORS = {
   textBg: 'rgba(28, 16, 7, 0.75)', // --app-measurement-text-bg
 } as const;
 
+/**
+ * Parse a CSS rgba/rgb string into a PixiJS-compatible { color, alpha } object.
+ * Falls back to black/opaque if the string cannot be parsed.
+ */
+function parseRgba(css: string): { color: number; alpha: number } {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(css);
+  if (!m) {
+    // Try parsing a hex color string like '#f7edda'
+    if (css.startsWith('#')) {
+      const hex = css.slice(1);
+      const fullHex = hex.length === 3 ? hex.replace(/./g, (c) => c + c) : hex;
+      return { color: parseInt(fullHex, 16), alpha: 1 };
+    }
+    return { color: 0x000000, alpha: 1 };
+  }
+  const r = parseInt(m[1]!, 10);
+  const g = parseInt(m[2]!, 10);
+  const b = parseInt(m[3]!, 10);
+  const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
+  return { color: (r << 16) | (g << 8) | b, alpha: a };
+}
+
 interface MeasurementOverlayProps {
+  /** PixiJS world container to attach graphics to */
+  worldContainer: PixiContainer | null;
+
   /** Active measurement to display (null = no measurement) */
   measurement: Measurement | null;
 
   /** Grid size in pixels (for positioning text) */
   gridSize: number;
 
-  /** Fill color (default: semi-transparent blue) */
+  /** Fill color (default: semi-transparent brass) */
   fillColor?: string;
 
-  /** Stroke color (default: solid blue) */
+  /** Stroke color (default: solid brass) */
   strokeColor?: string;
 
   /** Stroke width (default: 2) */
   strokeWidth?: number;
 
-  /** Text color (default: white) */
+  /** Text color (default: parchment) */
   textColor?: string;
 
-  /** Text background color (default: semi-transparent black) */
+  /** Text background color (kept in interface for API compatibility; not used in PixiJS Text) */
   textBgColor?: string;
 }
 
 /**
- * MeasurementOverlay Component
- *
- * Renders the active measurement shape on the canvas
+ * Adds a PixiJS Text label to a container at the given position.
  */
-// eslint-disable-next-line import/no-unused-modules
+function addLabel(c: PixiContainer, text: string, x: number, y: number, textColor: string): void {
+  const label = new Text({
+    text,
+    style: new TextStyle({ fontSize: 16, fontWeight: 'bold', fill: textColor }),
+  });
+  label.x = x;
+  label.y = y;
+  c.addChild(label);
+}
+
+/**
+ * Draws a ruler (line) shape + distance label.
+ */
+function drawRuler(
+  c: PixiContainer,
+  measurement: Extract<Measurement, { type: 'ruler' }>,
+  gridSize: number,
+  strokeColor: string,
+  strokeWidth: number,
+  textColor: string,
+): void {
+  const { origin, end, distanceFeet } = measurement;
+  const stroke = parseRgba(strokeColor);
+
+  const gfx = new Graphics();
+  gfx.moveTo(origin.x, origin.y);
+  gfx.lineTo(end.x, end.y);
+  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: strokeWidth, cap: 'round' });
+  c.addChild(gfx);
+
+  const midX = (origin.x + end.x) / 2;
+  const midY = (origin.y + end.y) / 2;
+  addLabel(c, formatDistance(distanceFeet), midX - gridSize, midY - 20, textColor);
+}
+
+/**
+ * Draws a blast (circle) shape + center dot + radius label.
+ */
+function drawBlast(
+  c: PixiContainer,
+  measurement: Extract<Measurement, { type: 'blast' }>,
+  gridSize: number,
+  fillColor: string,
+  strokeColor: string,
+  strokeWidth: number,
+  textColor: string,
+): void {
+  const { origin, radius, radiusFeet } = measurement;
+  const fill = parseRgba(fillColor);
+  const stroke = parseRgba(strokeColor);
+
+  // Main circle
+  const gfx = new Graphics();
+  gfx.circle(origin.x, origin.y, radius);
+  gfx.fill({ color: fill.color, alpha: fill.alpha });
+  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: strokeWidth });
+  c.addChild(gfx);
+
+  // Center dot
+  const dot = new Graphics();
+  dot.circle(origin.x, origin.y, 4);
+  dot.fill({ color: stroke.color, alpha: stroke.alpha });
+  c.addChild(dot);
+
+  const textX = origin.x - gridSize;
+  const textY = origin.y - radius - 20;
+  addLabel(c, formatRadius(radiusFeet), textX, textY, textColor);
+}
+
+/**
+ * Draws a cone (triangle) shape + origin dot + cone label.
+ */
+function drawCone(
+  c: PixiContainer,
+  measurement: Extract<Measurement, { type: 'cone' }>,
+  gridSize: number,
+  fillColor: string,
+  strokeColor: string,
+  strokeWidth: number,
+  textColor: string,
+): void {
+  const [origin, left, right] = measurement.vertices;
+  const { lengthFeet, angleDegrees } = measurement;
+  const fill = parseRgba(fillColor);
+  const stroke = parseRgba(strokeColor);
+
+  // Cone polygon
+  const gfx = new Graphics();
+  gfx.poly([origin, left, right], true);
+  gfx.fill({ color: fill.color, alpha: fill.alpha });
+  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: strokeWidth });
+  c.addChild(gfx);
+
+  // Origin dot
+  const dot = new Graphics();
+  dot.circle(origin.x, origin.y, 4);
+  dot.fill({ color: stroke.color, alpha: stroke.alpha });
+  c.addChild(dot);
+
+  const textX = (left.x + right.x) / 2 - gridSize;
+  const textY = (left.y + right.y) / 2;
+  addLabel(c, formatCone(lengthFeet, angleDegrees), textX, textY, textColor);
+}
+
+/**
+ * MeasurementOverlay — PixiJS imperative measurement rendering.
+ *
+ * Returns null (imperative pattern): all drawing happens via PixiJS
+ * Graphics objects added/removed from worldContainer.
+ */
 export function MeasurementOverlay({
+  worldContainer,
   measurement,
   gridSize,
   fillColor = MEASUREMENT_COLORS.fill,
   strokeColor = MEASUREMENT_COLORS.stroke,
   strokeWidth = 2,
   textColor = MEASUREMENT_COLORS.text,
-  textBgColor = MEASUREMENT_COLORS.textBg,
-}: MeasurementOverlayProps): React.ReactElement | null {
-  if (!measurement) {
-    return null;
-  }
+  textBgColor: _textBgColor = MEASUREMENT_COLORS.textBg, // kept for API compatibility
+}: MeasurementOverlayProps): null {
+  const containerRef = useRef<PixiContainer | null>(null);
 
-  /**
-   * Renders a ruler (line) measurement
-   */
-  const renderRuler = (ruler: Extract<Measurement, { type: 'ruler' }>): React.JSX.Element => {
-    const points = [ruler.origin.x, ruler.origin.y, ruler.end.x, ruler.end.y];
-    const midX = (ruler.origin.x + ruler.end.x) / 2;
-    const midY = (ruler.origin.y + ruler.end.y) / 2;
-    const text = formatDistance(ruler.distanceFeet);
+  // Mount/unmount layer container alongside worldContainer
+  useEffect(() => {
+    if (!worldContainer) {
+      return;
+    }
 
-    return (
-      <Group>
-        {/* Line */}
-        <Line points={points} stroke={strokeColor} strokeWidth={strokeWidth} lineCap="round" />
+    const c = new Container();
+    c.zIndex = 150;
+    worldContainer.addChild(c);
+    containerRef.current = c;
 
-        {/* Distance label */}
-        <Text
-          x={midX - gridSize}
-          y={midY - 20}
-          width={gridSize * 2}
-          text={text}
-          fontSize={16}
-          fontStyle="bold"
-          fill={textColor}
-          padding={4}
-          align="center"
-          shadowColor={textBgColor}
-          shadowBlur={4}
-          shadowOffset={{ x: 0, y: 0 }}
-          shadowOpacity={0.8}
-        />
-      </Group>
-    );
-  };
+    return () => {
+      worldContainer.removeChild(c);
+      c.destroy({ children: true });
+      containerRef.current = null;
+    };
+  }, [worldContainer]);
 
-  /**
-   * Renders a blast (circle) measurement
-   */
-  const renderBlast = (blast: Extract<Measurement, { type: 'blast' }>): React.JSX.Element => {
-    const text = formatRadius(blast.radiusFeet);
-    const textX = blast.origin.x;
-    const textY = blast.origin.y - blast.radius - 20;
+  // Redraw whenever measurement or display props change
+  useEffect(() => {
+    const c = containerRef.current;
+    if (!c) {
+      return;
+    }
 
-    return (
-      <Group>
-        {/* Circle */}
-        <Circle
-          x={blast.origin.x}
-          y={blast.origin.y}
-          radius={blast.radius}
-          fill={fillColor}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-        />
+    // Clear previous frame
+    c.removeChildren().forEach((child) => child.destroy({ children: true }));
 
-        {/* Center point */}
-        <Circle x={blast.origin.x} y={blast.origin.y} radius={4} fill={strokeColor} />
+    if (!measurement) {
+      return;
+    }
 
-        {/* Radius label */}
-        <Text
-          x={textX - gridSize}
-          y={textY}
-          width={gridSize * 2}
-          text={text}
-          fontSize={16}
-          fontStyle="bold"
-          fill={textColor}
-          padding={6}
-          align="center"
-          shadowColor={textBgColor}
-          shadowBlur={4}
-          shadowOffset={{ x: 0, y: 0 }}
-          shadowOpacity={0.8}
-        />
-      </Group>
-    );
-  };
+    switch (measurement.type) {
+      case 'ruler':
+        drawRuler(c, measurement, gridSize, strokeColor, strokeWidth, textColor);
+        break;
+      case 'blast':
+        drawBlast(c, measurement, gridSize, fillColor, strokeColor, strokeWidth, textColor);
+        break;
+      case 'cone':
+        drawCone(c, measurement, gridSize, fillColor, strokeColor, strokeWidth, textColor);
+        break;
+      default:
+        // Unknown measurement type — render nothing
+        break;
+    }
+  }, [measurement, gridSize, fillColor, strokeColor, strokeWidth, textColor]);
 
-  /**
-   * Renders a cone measurement
-   */
-  const renderCone = (cone: Extract<Measurement, { type: 'cone' }>): React.JSX.Element => {
-    const [origin, left, right] = cone.vertices;
-
-    // Convert vertices to flat points array for Konva Line
-    const points = [origin.x, origin.y, left.x, left.y, right.x, right.y];
-
-    const text = formatCone(cone.lengthFeet, cone.angleDegrees);
-    const textX = (left.x + right.x) / 2;
-    const textY = (left.y + right.y) / 2;
-
-    return (
-      <Group>
-        {/* Cone triangle */}
-        <Line
-          points={points}
-          closed
-          fill={fillColor}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          lineJoin="round"
-        />
-
-        {/* Origin point */}
-        <Circle x={origin.x} y={origin.y} radius={4} fill={strokeColor} />
-
-        {/* Cone label */}
-        <Text
-          x={textX - gridSize}
-          y={textY}
-          width={gridSize * 2}
-          text={text}
-          fontSize={16}
-          fontStyle="bold"
-          fill={textColor}
-          padding={6}
-          align="center"
-          shadowColor={textBgColor}
-          shadowBlur={4}
-          shadowOffset={{ x: 0, y: 0 }}
-          shadowOpacity={0.8}
-        />
-      </Group>
-    );
-  };
-
-  // Render the appropriate measurement type
-  switch (measurement.type) {
-    case 'ruler':
-      return renderRuler(measurement);
-    case 'blast':
-      return renderBlast(measurement);
-    case 'cone':
-      return renderCone(measurement);
-    default:
-      return null;
-  }
+  return null;
 }
 
 export default MeasurementOverlay;

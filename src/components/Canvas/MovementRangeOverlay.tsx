@@ -8,14 +8,14 @@
  * @component
  */
 
-import type React from 'react';
-import { useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 
-import { Group, Line } from 'react-konva';
+import { Container, Graphics } from 'pixi.js';
 
 import { createGridGeometry } from '../../utils/gridGeometry';
 
 import type { GridType } from '../../types/domain';
+import type { Container as PixiContainer } from 'pixi.js';
 
 const MOVEMENT_COLORS = {
   fill: 'rgba(140, 105, 20, 0.12)', // --app-movement-range-fill
@@ -23,19 +23,29 @@ const MOVEMENT_COLORS = {
 } as const;
 
 /**
- * Helper to convert vertex points array to flat coordinate array for Konva Line
+ * Parse a CSS rgba/rgb string into a PixiJS-compatible { color, alpha } object.
+ * Falls back to black/opaque if the string cannot be parsed.
  */
-const verticesToPoints = (vertices: Array<{ x: number; y: number }>): number[] => {
-  const points: number[] = [];
-  for (const v of vertices) {
-    points.push(v.x, v.y);
+function parseRgba(css: string): { color: number; alpha: number } {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(css);
+  if (!m) {
+    if (css.startsWith('#')) {
+      const hex = css.slice(1);
+      const fullHex = hex.length === 3 ? hex.replace(/./g, (c) => c + c) : hex;
+      return { color: parseInt(fullHex, 16), alpha: 1 };
+    }
+    return { color: 0x000000, alpha: 1 };
   }
-  return points;
-};
+  const r = parseInt(m[1]!, 10);
+  const g = parseInt(m[2]!, 10);
+  const b = parseInt(m[3]!, 10);
+  const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
+  return { color: (r << 16) | (g << 8) | b, alpha: a };
+}
 
 /**
- * Get neighboring cells based on grid type
- * Uses grid-specific neighbor patterns
+ * Get neighboring cells based on grid type.
+ * Uses grid-specific neighbor patterns.
  *
  * **Note on Isometric Grids:**
  * In isometric grids, movement appears diagonal in visual space but is actually
@@ -78,6 +88,8 @@ function getNeighbors(
 }
 
 interface MovementRangeOverlayProps {
+  /** PixiJS world container to attach graphics to */
+  worldContainer: PixiContainer | null;
   /** Token position in canvas coordinates */
   tokenPosition: { x: number; y: number };
   /** Movement speed in feet (e.g., 30 for 30ft) */
@@ -86,23 +98,30 @@ interface MovementRangeOverlayProps {
   gridSize: number;
   /** Grid type */
   gridType: GridType;
-  /** Optional color for the overlay (default: blue) */
+  /** Optional color for the overlay (default: brass, low alpha) */
   fillColor?: string;
-  /** Optional stroke color (default: darker blue) */
+  /** Optional stroke color (default: brass, medium alpha) */
   strokeColor?: string;
 }
 
 /**
- * MovementRangeOverlay renders a visual overlay showing reachable grid cells
+ * MovementRangeOverlay — PixiJS imperative movement range rendering.
+ *
+ * Returns null (imperative pattern): all drawing happens via PixiJS
+ * Graphics objects added/removed from worldContainer.
  */
 function MovementRangeOverlay({
+  worldContainer,
   tokenPosition,
   movementSpeed,
   gridSize,
   gridType,
   fillColor = MOVEMENT_COLORS.fill,
   strokeColor = MOVEMENT_COLORS.stroke,
-}: MovementRangeOverlayProps): React.ReactElement | null {
+}: MovementRangeOverlayProps): null {
+  const containerRef = useRef<PixiContainer | null>(null);
+
+  // BFS flood-fill to find reachable cells — unchanged logic from Konva version
   const reachableCells = useMemo(() => {
     if (gridType === 'HIDDEN') {
       return [];
@@ -150,32 +169,56 @@ function MovementRangeOverlay({
     return cells;
   }, [tokenPosition.x, tokenPosition.y, movementSpeed, gridSize, gridType]);
 
-  if (gridType === 'HIDDEN' || reachableCells.length === 0) {
-    return null;
-  }
+  // Mount/unmount layer container alongside worldContainer
+  useEffect(() => {
+    if (!worldContainer) {
+      return;
+    }
 
-  const geometry = createGridGeometry(gridType);
+    const c = new Container();
+    c.zIndex = 140;
+    worldContainer.addChild(c);
+    containerRef.current = c;
 
-  return (
-    <Group listening={false}>
-      {reachableCells.map((cell) => {
-        const vertices = geometry.getCellVertices(cell, gridSize);
-        const points = verticesToPoints(vertices);
+    return () => {
+      worldContainer.removeChild(c);
+      c.destroy({ children: true });
+      containerRef.current = null;
+    };
+  }, [worldContainer]);
 
-        return (
-          <Line
-            key={`range-${cell.q}-${cell.r}`}
-            points={points}
-            fill={fillColor}
-            stroke={strokeColor}
-            strokeWidth={1}
-            closed
-            listening={false}
-          />
-        );
-      })}
-    </Group>
-  );
+  // Redraw cells when reachableCells or color props change
+  useEffect(() => {
+    const c = containerRef.current;
+    if (!c) {
+      return;
+    }
+
+    // Remove and destroy previous graphics
+    c.removeChildren().forEach((child) => child.destroy({ children: true }));
+
+    if (gridType === 'HIDDEN' || reachableCells.length === 0) {
+      return;
+    }
+
+    const fill = parseRgba(fillColor);
+    const stroke = parseRgba(strokeColor);
+    const geometry = createGridGeometry(gridType);
+
+    const gfx = new Graphics();
+    gfx.eventMode = 'none';
+
+    for (const cell of reachableCells) {
+      const vertices = geometry.getCellVertices(cell, gridSize);
+      gfx.poly(vertices, true);
+      gfx.fill({ color: fill.color, alpha: fill.alpha });
+      gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: 1 });
+    }
+
+    c.addChild(gfx);
+  }, [reachableCells, gridSize, gridType, fillColor, strokeColor]);
+
+  return null;
 }
 
 export default MovementRangeOverlay;
