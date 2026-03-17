@@ -7,6 +7,8 @@ import type {
   GridType,
   ExploredRegion,
   TokenLibraryItem,
+  HexColor,
+  PixelSize,
 } from '../types/domain';
 import type { Measurement } from '../types/measurement';
 
@@ -122,9 +124,9 @@ export interface SyncableGameState {
   drawings: Drawing[];
   doors: Door[];
   stairs: Stairs[];
-  gridSize: number;
+  gridSize: PixelSize;
   gridType: GridType;
-  gridColor: string;
+  gridColor: HexColor;
   map: MapConfig | null;
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
@@ -150,9 +152,9 @@ export type SyncAction =
   | {
       type: 'GRID_UPDATE';
       payload: {
-        gridSize?: number;
+        gridSize?: PixelSize;
         gridType?: GridType;
-        gridColor?: string;
+        gridColor?: HexColor;
         isDaylightMode?: boolean;
       };
     }

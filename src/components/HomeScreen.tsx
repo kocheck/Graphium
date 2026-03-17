@@ -33,6 +33,7 @@ import { useUiStore } from '../store/uiStore';
 import { rollForMessage } from '../utils/systemMessages';
 
 import type { ThemeMode } from '../services/IStorageService';
+import type { PixelSize } from '../types/domain';
 
 interface HomeScreenProps {
   onStartEditor: () => void;
@@ -355,7 +356,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
     store.resetToNewCampaign();
     // Note: Only cell size can be set via store. Grid width/height are reference
     // values - actual canvas size is determined by the uploaded map image.
-    store.setGridSize(template.grid.cellSize);
+    store.setGridSize(template.grid.cellSize as PixelSize);
 
     onStartEditor();
     showToast(`🎲 Created ${template.name} campaign!`, 'success');

@@ -23,6 +23,7 @@ import {
 import Tooltip from './Tooltip';
 
 import type { UseToolStateReturn } from '../hooks/useToolState';
+import type { HexColor } from '../types/domain';
 
 interface ToolbarProps {
   toolState: UseToolStateReturn;
@@ -189,7 +190,7 @@ function Toolbar({ toolState, isGamePaused, onPauseToggle }: ToolbarProps): JSX.
           ref={colorInputRef}
           type="color"
           value={color}
-          onChange={(e) => handleColorChange(e.target.value)}
+          onChange={(e) => handleColorChange(e.target.value as HexColor)}
           className="hidden"
         />
       </div>

@@ -4,7 +4,7 @@ import { useGameStore } from '../../store/gameStore';
 import { isEqual, detectChanges, isSyncActionType } from '../../utils/syncUtils';
 
 import type { GameState } from '../../store/gameStore';
-import type { Token } from '../../types/domain';
+import type { Token, HexColor, PixelSize } from '../../types/domain';
 import type { SyncAction, SyncableGameState } from '../../utils/syncUtils';
 
 // Basic throttle implementation to limit IPC frequency
@@ -114,9 +114,9 @@ function SyncManager(): null {
               drawings: [...(action.payload.drawings ?? [])],
               doors: [...(action.payload.doors ?? [])],
               stairs: [...(action.payload.stairs ?? [])],
-              gridSize: action.payload.gridSize ?? 50,
+              gridSize: (action.payload.gridSize ?? 50) as PixelSize,
               gridType: action.payload.gridType ?? 'LINES',
-              gridColor: action.payload.gridColor ?? '#333333',
+              gridColor: (action.payload.gridColor ?? '#333333') as HexColor,
               map: action.payload.map ? { ...action.payload.map } : null,
               isDaylightMode: action.payload.isDaylightMode ?? false,
             };

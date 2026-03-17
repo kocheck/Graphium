@@ -196,7 +196,7 @@ function App(): JSX.Element {
       <Toast />
       <ConfirmDialog />
       <Suspense fallback={null}>
-        <DungeonGeneratorDialog />
+        <DungeonGeneratorDialog wallColor={toolState.wallColor} wallSize={toolState.wallSize} />
       </Suspense>
       <Suspense fallback={null}>
         <AboutModal
@@ -256,6 +256,8 @@ function App(): JSX.Element {
           tool={toolState.tool}
           color={toolState.color}
           doorOrientation={toolState.doorOrientation}
+          wallColor={toolState.wallColor}
+          wallSize={toolState.wallSize}
           isWorldView={isWorldView}
           onSelectionChange={setSelectedTokenIds}
           measurementMode={toolState.measurementMode}

@@ -42,11 +42,13 @@ import {
 
 import { useUiStore } from '../../store/uiStore';
 
+import type { HexColor } from '../../types/domain';
+
 interface MobileToolbarProps {
   tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
   setTool: (tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure') => void;
-  color: string;
-  setColor: (color: string) => void;
+  color: HexColor;
+  setColor: (color: HexColor) => void;
   doorOrientation?: 'horizontal' | 'vertical';
   setDoorOrientation?: (orientation: 'horizontal' | 'vertical') => void;
   isGamePaused: boolean;
@@ -210,7 +212,7 @@ function MobileToolbar({
                 ref={colorInputRef}
                 type="color"
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={(e) => setColor(e.target.value as HexColor)}
                 className="hidden"
               />
             </button>
