@@ -1,0 +1,126 @@
+/**
+ * Canvas Color Tokens
+ *
+ * Colors for canvas-rendered elements that use CSS vars (not Konva).
+ * Konva-rendered elements use *_COLORS const objects in component files.
+ * Those are updated in Phase 4 of the parchment redesign.
+ */
+
+:root,
+[data-theme='light'] {
+  /* ===== Grid ===== */
+  --app-grid-color: #a8904c; /* parchment-toned grid lines */
+
+  /* ===== Fog of War ===== */
+  --app-canvas-fog: rgba(0, 0, 0, 0.94);
+  --app-canvas-fog-explored: rgba(0, 0, 0, 0.8);
+
+  /* ===== Selection & Interaction ===== */
+  --app-canvas-selection-fill: rgba(140, 105, 20, 0.25); /* brass selection */
+  --app-canvas-selection-stroke: #8c6914;
+  --app-canvas-snap-fill: rgba(140, 105, 20, 0.1);
+  --app-canvas-snap-stroke: rgba(140, 105, 20, 0.55);
+  --app-canvas-calibration-fill: rgba(229, 72, 77, 0.2);
+  --app-canvas-calibration-stroke: #e5484d;
+
+  /* ===== Marker ===== */
+  --app-canvas-marker-default: #df4b26;
+  --app-canvas-marker-preset-blue: #3b82f6;
+  --app-canvas-marker-preset-green: #22c55e;
+
+  /* ===== Doors ===== */
+  --app-door-fill: #f7edda;
+  --app-door-stroke: #1c1007;
+  --app-door-sweep-fill: rgba(247, 237, 218, 0.4);
+  --app-door-sweep-stroke: #1c1007;
+  --app-door-shadow-dm: rgba(247, 237, 218, 0.8);
+  --app-door-shadow-player: rgba(28, 16, 7, 0.3);
+  --app-door-opening-fill: rgba(247, 237, 218, 0.6);
+  --app-door-lock-handle: rgba(247, 237, 218, 0.9);
+  --app-door-locked-icon: #e5484d;
+  --app-door-locked-outline: #8c0000;
+  --app-door-preview-fill: rgba(247, 237, 218, 0.5);
+  --app-door-preview-stroke: #f7edda;
+  --app-door-bounding-box: #8c6914;
+
+  /* ===== Stairs ===== */
+  --app-stairs-fill-up: #c0c0c0;
+  --app-stairs-fill-down: #808080;
+  --app-stairs-stroke: #1c1007;
+  --app-stairs-arrow-up: #8c6914;
+  --app-stairs-arrow-down: #e5484d;
+
+  /* ===== Minimap ===== */
+  --app-minimap-bg: rgba(168, 144, 76, 0.2);
+  --app-minimap-border: rgba(140, 105, 20, 0.5);
+  --app-minimap-viewport-fill: rgba(140, 105, 20, 0.15);
+  --app-minimap-viewport-stroke: #8c6914;
+  --app-minimap-token-pc: #22c55e;
+
+  /* ===== Measurement ===== */
+  --app-measurement-fill: rgba(140, 105, 20, 0.25);
+  --app-measurement-stroke: rgba(140, 105, 20, 1);
+  --app-measurement-text: #f7edda;
+  --app-measurement-text-bg: rgba(28, 16, 7, 0.75);
+  --app-movement-range-fill: rgba(140, 105, 20, 0.12);
+  --app-movement-range-stroke: rgba(140, 105, 20, 0.4);
+
+  /* ===== Touch Feedback ===== */
+  --app-touch-indicator: #8c6914;
+  --app-touch-pressure-low: #3b82f6;
+  --app-touch-pressure-med: #22c55e;
+  --app-touch-pressure-high: #e5484d;
+  --app-touch-pan-mode: #8c6914;
+  --app-touch-pinch-mode: #22c55e;
+  --app-touch-feedback-bg: rgba(28, 16, 7, 0.85);
+
+  /* ===== Token Rendering ===== */
+  --app-token-shadow-hover: rgba(28, 16, 7, 0.6);
+  --app-token-shadow: rgba(28, 16, 7, 0.4);
+  --app-token-error-fill: rgba(229, 72, 77, 0.7);
+  --app-token-error-stroke: #e5484d;
+
+  /* ===== Walls ===== */
+  --app-wall-stroke: #1c1007;
+  --app-wall-color-default: #e5484d;
+}
+
+[data-theme='dark'] {
+  /* ===== Grid ===== */
+  --app-grid-color: #5e3c24;
+
+  /* ===== Doors (leather dark mode) ===== */
+  --app-door-fill: #ede0c4;
+  --app-door-stroke: #1a1008;
+  --app-door-sweep-fill: rgba(237, 224, 196, 0.35);
+  --app-door-sweep-stroke: #1a1008;
+  --app-door-shadow-dm: rgba(237, 224, 196, 0.7);
+  --app-door-shadow-player: rgba(0, 0, 0, 0.4);
+  --app-door-opening-fill: rgba(237, 224, 196, 0.55);
+  --app-door-lock-handle: rgba(237, 224, 196, 0.85);
+  --app-door-bounding-box: #c89a18;
+
+  /* ===== Minimap ===== */
+  --app-minimap-bg: rgba(94, 60, 36, 0.3);
+  --app-minimap-border: rgba(200, 154, 24, 0.5);
+  --app-minimap-viewport-fill: rgba(200, 154, 24, 0.15);
+  --app-minimap-viewport-stroke: #c89a18;
+
+  /* ===== Selection ===== */
+  --app-canvas-selection-fill: rgba(200, 154, 24, 0.2);
+  --app-canvas-selection-stroke: #c89a18;
+  --app-canvas-snap-fill: rgba(200, 154, 24, 0.08);
+  --app-canvas-snap-stroke: rgba(200, 154, 24, 0.5);
+
+  /* ===== Measurement ===== */
+  --app-measurement-fill: rgba(200, 154, 24, 0.2);
+  --app-measurement-stroke: rgba(200, 154, 24, 1);
+  --app-measurement-text: #1a1008;
+  --app-measurement-text-bg: rgba(237, 224, 196, 0.85);
+  --app-movement-range-fill: rgba(200, 154, 24, 0.1);
+  --app-movement-range-stroke: rgba(200, 154, 24, 0.38);
+
+  /* ===== Token Rendering ===== */
+  --app-token-shadow-hover: rgba(0, 0, 0, 0.7);
+  --app-token-shadow: rgba(0, 0, 0, 0.5);
+}

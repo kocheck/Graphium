@@ -1,0 +1,125 @@
+/**
+ * Status Color Tokens
+ *
+ * Uses Radix Colors for error (red), warning (amber), success (green).
+ * Light mode values come from Radix CSS imports.
+ * Dark mode values are manually declared to work with [data-theme="dark"]
+ * instead of Radix's .dark class selector.
+ */
+
+@import '@radix-ui/colors/red.css';
+@import '@radix-ui/colors/amber.css';
+@import '@radix-ui/colors/green.css';
+
+/* ===== Light Mode Status Tokens ===== */
+:root,
+[data-theme='light'] {
+  /* Error (Red) */
+  --app-error-bg: var(--red-3);
+  --app-error-bg-hover: var(--red-4);
+  --app-error-border: var(--red-7);
+  --app-error-solid: var(--red-9);
+  --app-error-solid-hover: var(--red-10);
+  --app-error-text: var(--red-11);
+
+  /* Warning (Amber) */
+  --app-warning-bg: var(--amber-3);
+  --app-warning-bg-hover: var(--amber-4);
+  --app-warning-border: var(--amber-7);
+  --app-warning-solid: var(--amber-9);
+  --app-warning-solid-hover: var(--amber-10);
+  --app-warning-text: var(--amber-11);
+
+  /* Success (Green) */
+  --app-success-bg: var(--green-3);
+  --app-success-bg-hover: var(--green-4);
+  --app-success-border: var(--green-7);
+  --app-success-solid: var(--green-9);
+  --app-success-solid-hover: var(--green-10);
+  --app-success-text: var(--green-11);
+
+  /* Error Boundaries */
+  --app-error-boundary-bg: #fee2e2;
+  --app-error-boundary-border: #dc2626;
+  --app-error-boundary-text: #dc2626;
+  --app-error-boundary-code-bg: #fff8f0;
+  --app-error-boundary-code-border: #d1c5b0;
+  --app-error-boundary-dismiss: #4caf50;
+  --app-error-boundary-dismiss-hover: #45a049;
+  --app-error-boundary-helper: #6b4e28;
+}
+
+/* ===== Dark Mode Status Tokens ===== */
+[data-theme='dark'] {
+  /* Radix dark-mode raw values for red */
+  --red-1: #191111;
+  --red-2: #201314;
+  --red-3: #3b1219;
+  --red-4: #500f1c;
+  --red-5: #611623;
+  --red-6: #72232d;
+  --red-7: #8c333a;
+  --red-8: #b54548;
+  --red-9: #e5484d;
+  --red-10: #ec5d5e;
+  --red-11: #ff9592;
+  --red-12: #ffd1d9;
+
+  /* Radix dark-mode raw values for amber */
+  --amber-1: #16120c;
+  --amber-2: #1d180f;
+  --amber-3: #302008;
+  --amber-4: #3f2700;
+  --amber-5: #4d3000;
+  --amber-6: #5c3d05;
+  --amber-7: #714f19;
+  --amber-8: #8f6424;
+  --amber-9: #ffc53d;
+  --amber-10: #ffd60a;
+  --amber-11: #ffca16;
+  --amber-12: #ffe7b3;
+
+  /* Radix dark-mode raw values for green */
+  --green-1: #0d1912;
+  --green-2: #0f1e13;
+  --green-3: #132d1b;
+  --green-4: #113b1f;
+  --green-5: #174933;
+  --green-6: #20573e;
+  --green-7: #28684a;
+  --green-8: #2f7c57;
+  --green-9: #30a46c;
+  --green-10: #33b074;
+  --green-11: #3dd68c;
+  --green-12: #b1f1cb;
+
+  /* Status tokens reference the overridden raw values */
+  --app-error-bg: var(--red-3);
+  --app-error-bg-hover: var(--red-4);
+  --app-error-border: var(--red-7);
+  --app-error-solid: var(--red-9);
+  --app-error-solid-hover: var(--red-10);
+  --app-error-text: var(--red-11);
+
+  --app-warning-bg: var(--amber-3);
+  --app-warning-bg-hover: var(--amber-4);
+  --app-warning-border: var(--amber-7);
+  --app-warning-solid: var(--amber-9);
+  --app-warning-solid-hover: var(--amber-10);
+  --app-warning-text: var(--amber-11);
+
+  --app-success-bg: var(--green-3);
+  --app-success-bg-hover: var(--green-4);
+  --app-success-border: var(--green-7);
+  --app-success-solid: var(--green-9);
+  --app-success-solid-hover: var(--green-10);
+  --app-success-text: var(--green-11);
+
+  /* Error Boundaries — dark */
+  --app-error-boundary-bg: var(--red-3);
+  --app-error-boundary-border: var(--red-7);
+  --app-error-boundary-text: var(--red-11);
+  --app-error-boundary-code-bg: #2e1e0e;
+  --app-error-boundary-code-border: #5e3c24;
+  --app-error-boundary-helper: #9a7e5c;
+}
