@@ -2,8 +2,8 @@
  * useToolState — Tool selection, drawing mode, and tool keyboard shortcuts
  *
  * Manages the active tool (select/marker/eraser/wall/door/measure),
- * marker colors, door orientation, and measurement mode. Registers
- * keyboard shortcuts for tool switching (V, M, E, W, D, R, I, arrows).
+ * marker colors, door orientation, wall color/thickness, and measurement mode.
+ * Registers keyboard shortcuts for tool switching (V, M, E, W, D, R, I, arrows).
  *
  * @see src/App.tsx for the consumer
  * @see src/components/Canvas/CanvasManager.tsx for tool behavior
@@ -12,6 +12,8 @@
 import { useState, useEffect, useRef } from 'react';
 
 import { useGameStore } from '../store/gameStore';
+
+import type { HexColor, PixelSize } from '../types/domain';
 
 // eslint-disable-next-line import/no-unused-modules
 export type ToolType = 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
@@ -31,15 +33,22 @@ export interface UseToolStateReturn {
   setTool: (tool: ToolType) => void;
 
   // Marker colors
-  color: string;
-  setColor: (color: string) => void;
-  handleColorChange: (newColor: string) => void;
-  recentColors: string[];
+  color: HexColor;
+  setColor: (color: HexColor) => void;
+  handleColorChange: (newColor: HexColor) => void;
+  recentColors: HexColor[];
   colorInputRef: React.RefObject<HTMLInputElement>;
 
   // Door state
   doorOrientation: DoorOrientation;
   setDoorOrientation: React.Dispatch<React.SetStateAction<DoorOrientation>>;
+
+  // Wall tool color and stroke width — applied to both manual canvas drawing
+  // and procedural dungeon generation (DungeonGeneratorDialog)
+  wallColor: HexColor;
+  setWallColor: (color: HexColor) => void;
+  wallSize: PixelSize;
+  setWallSize: (size: PixelSize) => void;
 
   // Measurement state
   measurementMode: MeasurementMode;
@@ -53,11 +62,15 @@ export function useToolState({ isArchitectView }: UseToolStateOptions): UseToolS
   const [tool, setTool] = useState<ToolType>('select');
 
   // Marker color state
-  const [color, setColor] = useState('#df4b26');
-  const [recentColors, setRecentColors] = useState<string[]>(['#df4b26', '#3b82f6', '#22c55e']);
+  const [color, setColor] = useState<HexColor>('#df4b26' as HexColor);
+  const [recentColors, setRecentColors] = useState<HexColor[]>([
+    '#df4b26' as HexColor,
+    '#3b82f6' as HexColor,
+    '#22c55e' as HexColor,
+  ]);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
-  const handleColorChange = (newColor: string): void => {
+  const handleColorChange = (newColor: HexColor): void => {
     setColor(newColor);
     setRecentColors((prev) => {
       const filtered = prev.filter((c) => c.toLowerCase() !== newColor.toLowerCase());
@@ -67,6 +80,10 @@ export function useToolState({ isArchitectView }: UseToolStateOptions): UseToolS
 
   // Door orientation
   const [doorOrientation, setDoorOrientation] = useState<DoorOrientation>('horizontal');
+
+  // Wall tool color and stroke width
+  const [wallColor, setWallColor] = useState<HexColor>('#ff0000' as HexColor);
+  const [wallSize, setWallSize] = useState<PixelSize>(8 as PixelSize);
 
   // Measurement mode
   const [measurementMode, setMeasurementMode] = useState<MeasurementMode>('ruler');
@@ -147,6 +164,10 @@ export function useToolState({ isArchitectView }: UseToolStateOptions): UseToolS
     colorInputRef,
     doorOrientation,
     setDoorOrientation,
+    wallColor,
+    setWallColor,
+    wallSize,
+    setWallSize,
     measurementMode,
     setMeasurementMode,
     broadcastMeasurement,
