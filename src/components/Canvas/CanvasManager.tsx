@@ -10,7 +10,7 @@ import CanvasAccessibility from './CanvasAccessibility';
 // TODO Phase 5: CanvasOverlayErrorBoundary — import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorContextMenu from './DoorContextMenu';
 // TODO Phase 5: DoorLayer — import DoorLayer from './DoorLayer';
-// TODO Phase 3: FogOfWarLayer — import FogOfWarLayer from './FogOfWarLayer';
+import { FogOfWarLayer } from './FogOfWarLayer';
 import { GridOverlay } from './GridOverlay';
 import ImageCropper from '../Dialogs/ImageCropper';
 // TODO Phase 4: useCanvasDrawing — import { useCanvasDrawing } from './hooks/useCanvasDrawing';
@@ -709,7 +709,7 @@ function CanvasManager({
         {/* TODO Phase 1: MapBackground (was URLImage) — PixiJS Sprite for map image */}
         {/* TODO Phase 2: SelectionRect — PixiJS Graphics selection rectangle */}
         {/* TODO Phase 2: Transformer — PixiJS resize/rotate handles */}
-        {/* TODO Phase 3: FogOfWarLayer — PixiJS shader-based fog */}
+        {/* Phase 3: FogOfWarLayer — implemented imperatively outside Application below */}
         {/* TODO Phase 4: DrawingLayer — PixiJS Mesh/Graphics for pressure-sensitive lines */}
         {/* TODO Phase 4: PressureSensitiveLine — PixiJS Mesh geometry */}
         {/* TODO Phase 5: DoorLayer */}
@@ -744,6 +744,17 @@ function CanvasManager({
 
       {/* Phase 2: Token sprites — PixiJS Sprite per token with texture deduplication */}
       <TokenLayer worldContainer={worldContainer} gridSize={gridSize} selectedIds={selectedIds} />
+
+      {/* Phase 3: Fog of war — GPU GLSL shader, only active in World View + night mode */}
+      {!isDaylightMode && (
+        <FogOfWarLayer
+          worldContainer={worldContainer}
+          gridSize={gridSize}
+          mapWidth={map?.width ?? 3000}
+          mapHeight={map?.height ?? 3000}
+          isDMView={!isWorldView}
+        />
+      )}
 
       {/* World View Controls */}
       {isWorldView && (
