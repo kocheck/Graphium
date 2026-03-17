@@ -9,7 +9,7 @@
  * Tests cover coordinate conversion, snapping, rendering, and viewport culling.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   SquareGridGeometry,
   HexagonalGridGeometry,
@@ -17,6 +17,7 @@ import {
   createGridGeometry,
 } from './gridGeometry';
 import { toHexColor, toPixelSize } from '../types/domain';
+import type { GridType } from '../types/domain';
 
 describe('SquareGridGeometry', () => {
   const geometry = new SquareGridGeometry();
@@ -371,6 +372,17 @@ describe('createGridGeometry factory', () => {
   it('creates IsometricGridGeometry for ISOMETRIC type', () => {
     const geometry = createGridGeometry('ISOMETRIC');
     expect(geometry).toBeInstanceOf(IsometricGridGeometry);
+  });
+
+  it('returns SquareGridGeometry for unknown grid type', () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const geometry = createGridGeometry('UNKNOWN' as GridType);
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('unknown grid type'));
+    // Verify it behaves as square grid — pixelToGrid should return finite coords
+    const cell = geometry.pixelToGrid(100, 100, 50);
+    expect(Number.isFinite(cell.q)).toBe(true);
+    expect(Number.isFinite(cell.r)).toBe(true);
+    consoleSpy.mockRestore();
   });
 });
 

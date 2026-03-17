@@ -415,8 +415,16 @@ export function createGridGeometry(
       return new HexagonalGridGeometry();
     case 'ISOMETRIC':
       return new IsometricGridGeometry();
-    default:
-      // Fail loudly for unknown types to avoid masking configuration bugs
-      throw new Error(`createGridGeometry: Unknown grid type "${String(gridType)}"`);
+    default: {
+      // Unknown gridType from a corrupted or future-version campaign file.
+      // Degrade gracefully rather than crashing the React component tree.
+      // The `never` annotation keeps TypeScript exhaustiveness checking intact —
+      // adding a new GridType without updating this switch will be a compile error.
+      const unknown: never = gridType;
+      console.warn(
+        `createGridGeometry: unknown grid type "${String(unknown)}", falling back to square grid`,
+      );
+      return new SquareGridGeometry();
+    }
   }
 }
