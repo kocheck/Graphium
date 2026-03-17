@@ -21,7 +21,7 @@ import { useUiStore } from '../store/uiStore';
 import { processImage } from '../utils/AssetProcessor';
 import { rollForMessage } from '../utils/systemMessages';
 
-import type { GridType } from '../types/domain';
+import type { GridType, HexColor } from '../types/domain';
 import type { ProcessingHandle } from '../utils/AssetProcessor';
 
 interface MapSettingsSheetProps {
@@ -71,7 +71,7 @@ function MapSettingsSheet({
 
   // Local state for pending changes
   const [pendingGridType, setPendingGridType] = useState<GridType>(gridType);
-  const [pendingGridColor, setPendingGridColor] = useState<string>(gridColor);
+  const [pendingGridColor, setPendingGridColor] = useState<HexColor>(gridColor);
   const [pendingDaylightMode, setPendingDaylightMode] = useState<boolean>(isDaylightMode);
 
   // Load current map data when in EDIT mode
@@ -400,8 +400,8 @@ function MapSettingsSheet({
                 value={mode === 'CREATE' ? pendingGridColor : gridColor}
                 onChange={(e) =>
                   mode === 'CREATE'
-                    ? setPendingGridColor(e.target.value)
-                    : setGridColor(e.target.value)
+                    ? setPendingGridColor(e.target.value as HexColor)
+                    : setGridColor(e.target.value as HexColor)
                 }
                 className="h-10 w-20 rounded cursor-pointer border border-[var(--app-border-default)]"
               />
