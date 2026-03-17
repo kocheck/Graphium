@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import path from 'node:path';
 import electron from 'vite-plugin-electron/simple';
 import react from '@vitejs/plugin-react';
+import glsl from 'vite-plugin-glsl';
 import pkg from './package.json';
 
 // https://vitejs.dev/config/
@@ -15,6 +16,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      glsl(),
       // Only load Electron plugin for Electron builds
       !isWeb &&
         electron({
