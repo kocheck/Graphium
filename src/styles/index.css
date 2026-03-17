@@ -1,0 +1,51 @@
+/**
+ * Graphium Style Entry Point
+ *
+ * Import order matters:
+ * 1. Fonts — loaded first so they're available to everything
+ * 2. Tokens — custom properties, no selectors
+ * 3. Brand — overrides accent/fonts after tokens are defined
+ * 4. Textures — grain and transitions reference token vars
+ * 5. Primitives — button, input, card, dialog
+ * 6. Modules — toolbar, home-screen, sidebar, canvas, monitor
+ * 7. App utilities — global utility classes (last, highest specificity wins)
+ *
+ * To add a new module: create src/styles/modules/my-module.css,
+ * add one @import line here. Nothing else needs to change.
+ */
+
+/* 1. Fonts */
+@import './fonts.css';
+
+/* 2. Tokens */
+@import './tokens/color-parchment.css';
+@import './tokens/color-leather.css';
+@import './tokens/color-status.css';
+@import './tokens/color-canvas.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/radius.css';
+@import './tokens/motion.css';
+
+/* 3. Brand */
+@import './brand.css';
+
+/* 4. Textures */
+@import './textures/grain.css';
+@import './textures/transitions.css';
+
+/* 5. Primitives */
+@import './primitives/button.css';
+@import './primitives/input.css';
+@import './primitives/card.css';
+@import './primitives/dialog.css';
+
+/* 6. Modules */
+@import './modules/home-screen.css';
+@import './modules/toolbar.css';
+@import './modules/sidebar.css';
+@import './modules/canvas.css';
+@import './modules/monitor.css';
+
+/* 7. App utilities */
+@import './app.css';

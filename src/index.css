@@ -1,10 +1,5 @@
 @import 'tailwindcss';
-@import './styles/fonts.css';
-@import './styles/theme.css';
-@import './styles/brand.css';
-@import './styles/primitives.css';
-@import './styles/app.css';
-@import './styles/home-screen.css';
+@import './styles/index.css';
 
 /* Ensure html, body, and root fill viewport */
 html,

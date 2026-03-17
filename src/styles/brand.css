@@ -1,22 +1,18 @@
 /**
  * Brand Configuration Layer
  *
- * This file centralizes all brand-specific visual overrides for Graphium.
- * To rebrand the application, edit ONLY this file.
- *
- * Import order: fonts.css → theme.css → brand.css → app.css
- * Brand overrides are applied after theme tokens, before component styles.
+ * Edit ONLY this file to rebrand Graphium.
+ * Import order: fonts.css → tokens/ → brand.css → textures/ → primitives/ → modules/
  *
  * WHAT GOES HERE:
- * - Accent color overrides
+ * - Accent color overrides (brass by default)
  * - Font family references
- * - Logo asset paths (as CSS custom properties)
- * - App name/branding strings (as CSS custom properties for ::before content)
+ * - Logo asset paths
  *
  * WHAT DOES NOT GO HERE:
- * - Layout or spacing changes (those go in app.css or component styles)
- * - New component styles (those go in app.css or component files)
- * - Raw Radix color overrides (those go in theme.css)
+ * - Layout or spacing (those go in modules/ or app.css)
+ * - New component styles (those go in primitives/ or modules/)
+ * - Raw color overrides (those go in tokens/color-parchment.css or tokens/color-leather.css)
  */
 
 :root {
@@ -24,30 +20,13 @@
   --brand-name: 'Graphium';
   --brand-tagline: 'Digital Stylus for World Builders';
 
-  /* ===== Accent Color =====
-     Override to change the primary interactive color throughout the app.
-     Must maintain WCAG AA contrast (4.5:1) with --app-accent-solid-text. */
-  --app-accent-solid: #0070c1;
-  --app-accent-solid-hover: #005a9c;
-  --app-accent-solid-text: white;
-
   /* ===== Font Family =====
-     The primary font is loaded in fonts.css. Override here to swap fonts. */
-  --brand-font-family: 'Satoshi', 'Inter', system-ui, -apple-system, sans-serif;
-  --brand-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+     Override here to swap fonts without touching token files. */
+  --brand-font-family: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --brand-font-display: 'Cormorant Garamond', Georgia, serif;
+  --brand-font-mono: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
 
-  /* ===== Logo Assets =====
-     Referenced by LogoIcon.tsx and LogoLockup.tsx via CSS custom properties.
-     Paths are relative to the public/ directory. */
+  /* ===== Logo Assets ===== */
   --brand-logo-icon: url('/icon.svg');
   --brand-logo-png: url('/icon.png');
-}
-
-/* Dark mode accent overrides (if accent should differ in dark mode) */
-[data-theme='dark'] {
-  /* By default, accent colors are the same in both themes.
-     Uncomment and modify to use different accent colors in dark mode:
-  --app-accent-solid: #3b9eff;
-  --app-accent-solid-hover: #70b8ff;
-  */
 }
