@@ -16,13 +16,13 @@ import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 
 // Touch feedback colors — sourced from theme tokens (see theme.css)
 const TOUCH_COLORS = {
-  indicator: '#6366f1', // --app-touch-indicator (indigo)
-  pressureLow: '#3b82f6', // --app-touch-pressure-low (blue)
-  pressureMed: '#10b981', // --app-touch-pressure-med (green)
-  pressureHigh: '#ef4444', // --app-touch-pressure-high (red)
-  panMode: '#3b82f6', // --app-touch-pan-mode (blue)
-  pinchMode: '#10b981', // --app-touch-pinch-mode (green)
-  feedbackBg: 'rgba(0, 0, 0, 0.8)', // --app-touch-feedback-bg
+  indicator: '#8c6914', // --app-touch-indicator (antique brass)
+  pressureLow: '#3b82f6', // --app-touch-pressure-low (blue — functional identity)
+  pressureMed: '#22c55e', // --app-touch-pressure-med (green — functional identity)
+  pressureHigh: '#e5484d', // --app-touch-pressure-high (red — functional identity)
+  panMode: '#8c6914', // --app-touch-pan-mode (antique brass)
+  pinchMode: '#22c55e', // --app-touch-pinch-mode (green — functional identity)
+  feedbackBg: 'rgba(28, 16, 7, 0.85)', // --app-touch-feedback-bg
 } as const;
 
 // eslint-disable-next-line import/no-unused-modules

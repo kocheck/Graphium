@@ -9,18 +9,18 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 // These are canvas constants because Konva can't read CSS variables directly.
 // Doors use standard tabletop notation: white rectangles with black outlines.
 const DOOR_COLORS = {
-  fill: '#ffffff', // --app-door-fill
-  stroke: '#000000', // --app-door-stroke
-  sweepFill: 'rgba(255, 255, 255, 0.4)', // --app-door-sweep-fill
-  sweepStroke: '#000000', // --app-door-sweep-stroke
-  shadowDm: 'rgba(255, 255, 255, 0.8)', // --app-door-shadow-dm
-  shadowPlayer: 'rgba(0, 0, 0, 0.3)', // --app-door-shadow-player
-  openingFill: 'rgba(255, 255, 255, 0.6)', // --app-door-opening-fill
-  lockHandle: 'rgba(255, 255, 255, 0.9)', // --app-door-lock-handle
-  lockedIcon: '#FF4444', // --app-door-locked-icon
-  lockedOutline: '#8B0000', // --app-door-locked-outline
-  boundingBox: '#2563eb', // --app-door-bounding-box
-  sweepShadow: 'rgba(0, 0, 0, 0.2)', // Door sweep shadow
+  fill: '#f7edda', // --app-door-fill
+  stroke: '#1c1007', // --app-door-stroke
+  sweepFill: 'rgba(247, 237, 218, 0.4)', // --app-door-sweep-fill
+  sweepStroke: '#1c1007', // --app-door-sweep-stroke
+  shadowDm: 'rgba(247, 237, 218, 0.8)', // --app-door-shadow-dm
+  shadowPlayer: 'rgba(28, 16, 7, 0.3)', // --app-door-shadow-player
+  openingFill: 'rgba(247, 237, 218, 0.6)', // --app-door-opening-fill
+  lockHandle: 'rgba(247, 237, 218, 0.9)', // --app-door-lock-handle
+  lockedIcon: '#e5484d', // --app-door-locked-icon
+  lockedOutline: '#8c0000', // --app-door-locked-outline
+  boundingBox: '#8c6914', // --app-door-bounding-box
+  sweepShadow: 'rgba(28, 16, 7, 0.2)', // Door sweep shadow
 } as const;
 
 interface DoorShapeProps {

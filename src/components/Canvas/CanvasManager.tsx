@@ -50,18 +50,18 @@ const DEBUG_CANVAS = false;
 // These constants mirror the tokens defined in theme.css.
 const CANVAS_COLORS = {
   markerDefault: '#df4b26', // --app-canvas-marker-default
-  selectionFill: 'rgba(37, 99, 235, 0.3)', // --app-canvas-selection-fill
-  selectionStroke: '#2563eb', // --app-canvas-selection-stroke
-  snapFill: 'rgba(37, 99, 235, 0.1)', // --app-canvas-snap-fill
-  snapStroke: 'rgba(37, 99, 235, 0.6)', // --app-canvas-snap-stroke
-  calibrationFill: 'rgba(255, 0, 0, 0.2)', // --app-canvas-calibration-fill
-  calibrationStroke: '#ef4444', // --app-canvas-calibration-stroke (using ef4444 instead of 'red')
-  doorPreviewFill: 'rgba(255, 255, 255, 0.5)', // --app-door-preview-fill
-  doorPreviewStroke: 'white', // --app-door-preview-stroke
-  wallStroke: '#000000', // --app-wall-stroke
-  snapTargetStroke: '#2563eb', // --app-canvas-selection-stroke (reused)
-  tokenShadowHover: 'rgba(0, 0, 0, 0.6)', // --app-token-shadow-hover
-  tokenShadow: 'rgba(0, 0, 0, 0.4)', // --app-token-shadow
+  selectionFill: 'rgba(140, 105, 20, 0.25)', // --app-canvas-selection-fill
+  selectionStroke: '#8c6914', // --app-canvas-selection-stroke
+  snapFill: 'rgba(140, 105, 20, 0.1)', // --app-canvas-snap-fill
+  snapStroke: 'rgba(140, 105, 20, 0.55)', // --app-canvas-snap-stroke
+  calibrationFill: 'rgba(229, 72, 77, 0.2)', // --app-canvas-calibration-fill
+  calibrationStroke: '#e5484d', // --app-canvas-calibration-stroke
+  doorPreviewFill: 'rgba(247, 237, 218, 0.5)', // --app-door-preview-fill
+  doorPreviewStroke: '#f7edda', // --app-door-preview-stroke
+  wallStroke: '#1c1007', // --app-wall-stroke
+  snapTargetStroke: '#8c6914', // --app-canvas-selection-stroke (reused)
+  tokenShadowHover: 'rgba(28, 16, 7, 0.6)', // --app-token-shadow-hover
+  tokenShadow: 'rgba(28, 16, 7, 0.4)', // --app-token-shadow
 } as const;
 
 // Zoom constants

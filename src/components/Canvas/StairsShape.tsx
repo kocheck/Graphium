@@ -5,9 +5,9 @@ import type { Stairs } from '../../types/domain';
 const STAIRS_COLORS = {
   fillUp: '#c0c0c0', // --app-stairs-fill-up (light gray)
   fillDown: '#808080', // --app-stairs-fill-down (dark gray)
-  stroke: '#000000', // --app-stairs-stroke (black)
-  arrowUp: '#4a90e2', // --app-stairs-arrow-up (blue)
-  arrowDown: '#e24a4a', // --app-stairs-arrow-down (red)
+  stroke: '#1c1007', // --app-stairs-stroke (warm ink)
+  arrowUp: '#8c6914', // --app-stairs-arrow-up (antique brass)
+  arrowDown: '#e5484d', // --app-stairs-arrow-down (red)
 } as const;
 
 interface StairsShapeProps {

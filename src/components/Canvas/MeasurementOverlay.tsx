@@ -29,10 +29,10 @@ import { formatDistance, formatRadius, formatCone } from '../../utils/measuremen
 import type { Measurement } from '../../types/measurement';
 
 const MEASUREMENT_COLORS = {
-  fill: 'rgba(0, 100, 255, 0.3)', // --app-measurement-fill
-  stroke: 'rgba(0, 100, 255, 1)', // --app-measurement-stroke
-  text: '#ffffff', // --app-measurement-text
-  textBg: 'rgba(0, 0, 0, 0.7)', // --app-measurement-text-bg
+  fill: 'rgba(140, 105, 20, 0.25)', // --app-measurement-fill
+  stroke: 'rgba(140, 105, 20, 1)', // --app-measurement-stroke
+  text: '#f7edda', // --app-measurement-text
+  textBg: 'rgba(28, 16, 7, 0.75)', // --app-measurement-text-bg
 } as const;
 
 interface MeasurementOverlayProps {

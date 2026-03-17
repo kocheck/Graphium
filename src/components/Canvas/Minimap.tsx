@@ -1,10 +1,10 @@
 import { useEffect, useRef, useMemo, useCallback, memo } from 'react';
 
 const MINIMAP_COLORS = {
-  bg: 'rgba(100, 100, 100, 0.3)', // --app-minimap-bg
-  border: 'rgba(200, 200, 200, 0.6)', // --app-minimap-border
-  viewportFill: 'rgba(59, 130, 246, 0.2)', // --app-minimap-viewport-fill
-  viewportStroke: '#3b82f6', // --app-minimap-viewport-stroke
+  bg: 'rgba(168, 144, 76, 0.2)', // --app-minimap-bg
+  border: 'rgba(140, 105, 20, 0.5)', // --app-minimap-border
+  viewportFill: 'rgba(140, 105, 20, 0.15)', // --app-minimap-viewport-fill
+  viewportStroke: '#8c6914', // --app-minimap-viewport-stroke
   tokenPc: '#22c55e', // --app-minimap-token-pc
 } as const;
 

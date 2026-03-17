@@ -18,8 +18,8 @@ import { createGridGeometry } from '../../utils/gridGeometry';
 import type { GridType } from '../../types/domain';
 
 const MOVEMENT_COLORS = {
-  fill: 'rgba(0, 150, 255, 0.15)', // --app-movement-range-fill
-  stroke: 'rgba(0, 150, 255, 0.4)', // --app-movement-range-stroke
+  fill: 'rgba(140, 105, 20, 0.12)', // --app-movement-range-fill
+  stroke: 'rgba(140, 105, 20, 0.4)', // --app-movement-range-stroke
 } as const;
 
 /**
