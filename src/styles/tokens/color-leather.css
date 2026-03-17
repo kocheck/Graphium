@@ -52,6 +52,8 @@
   --app-home-hover-overlay: rgba(255, 255, 255, 0.04);
   --app-home-shadow-sm: rgba(0, 0, 0, 0.3);
   --app-home-shadow-lg: rgba(0, 0, 0, 0.4);
+  --app-home-modal-backdrop: rgba(0, 0, 0, 0.78);
+  --app-home-card-shadow: rgba(0, 0, 0, 0.25);
 
   /* ===== Logo ===== */
   --app-logo-shadow: rgba(0, 0, 0, 0.5);
