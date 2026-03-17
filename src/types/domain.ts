@@ -18,6 +18,55 @@
  * ```
  */
 
+// ===== BRANDED PRIMITIVE TYPES =====
+
+/**
+ * A CSS hex color string accepted by Konva canvas rendering.
+ * Valid formats: #rgb, #rrggbb, #rrggbbaa
+ *
+ * Note: Konva renders to <canvas> — CSS variables (var(--app-*)) are NOT valid here.
+ * Use resolved hex strings only. See CLAUDE.md "Konva + CSS variables" gotcha.
+ */
+export type HexColor = string & { readonly __brand: 'HexColor' };
+
+/**
+ * A positive finite pixel dimension (grid cell size, stroke width, etc.)
+ * Always a positive integer — toPixelSize rounds fractional values.
+ */
+export type PixelSize = number & { readonly __brand: 'PixelSize' };
+
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{3,8}$/;
+
+/**
+ * Validates and brands a string as a HexColor.
+ * Throws if the string is not a valid CSS hex color.
+ *
+ * @example toHexColor('#ff0000')  // ok
+ * @example toHexColor('red')      // throws
+ */
+export function toHexColor(value: string): HexColor {
+  if (!HEX_COLOR_RE.test(value)) {
+    throw new Error(`Invalid hex color: "${value}"`);
+  }
+  return value as HexColor;
+}
+
+/**
+ * Validates and brands a number as a PixelSize.
+ * Throws if value is not a positive finite number.
+ * Rounds fractional values to the nearest integer.
+ *
+ * @example toPixelSize(50)   // ok → 50
+ * @example toPixelSize(50.7) // ok → 51
+ * @example toPixelSize(0)    // throws
+ */
+export function toPixelSize(value: number): PixelSize {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`Invalid pixel size: ${value}`);
+  }
+  return Math.round(value) as PixelSize;
+}
+
 // ===== TOKEN TYPES =====
 
 /**
