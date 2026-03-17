@@ -38,6 +38,8 @@ import { createGridGeometry } from '../../utils/gridGeometry';
 import AssetProcessingErrorBoundary from '../ErrorBoundaries/AssetProcessingErrorBoundary';
 import TokenErrorBoundary from '../ErrorBoundaries/TokenErrorBoundary';
 
+import type { HexColor, PixelSize } from '../../types/domain';
+import type { GridCell } from '../../types/grid';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 // Enable to log canvas state diagnostics to console on each render
@@ -111,13 +113,17 @@ const calculatePinchCenter = (touch1: Touch, touch2: Touch): { x: number; y: num
  * @property {string} tool - Active drawing/interaction tool (select, marker, eraser, wall, door, measure)
  * @property {string} color - Color for marker tool (hex format)
  * @property {string} doorOrientation - Orientation for door placement (horizontal, vertical)
+ * @property {string} wallColor - Color for wall tool strokes (hex format)
+ * @property {number} wallSize - Stroke width for wall tool
  * @property {boolean} isWorldView - If true, restricts interactions for player-facing World View
  * @property {MeasurementMode} measurementMode - Active measurement mode (ruler, blast, cone)
  */
 interface CanvasManagerProps {
   tool?: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
-  color?: string;
+  color?: HexColor;
   doorOrientation?: 'horizontal' | 'vertical';
+  wallColor?: HexColor;
+  wallSize?: PixelSize;
   isWorldView?: boolean;
   onSelectionChange?: (selectedIds: string[]) => void;
   measurementMode?: 'ruler' | 'blast' | 'cone';
@@ -140,8 +146,10 @@ interface CanvasManagerProps {
 // eslint-disable-next-line max-lines-per-function, complexity
 function CanvasManager({
   tool = 'select',
-  color = CANVAS_COLORS.markerDefault,
+  color = CANVAS_COLORS.markerDefault as HexColor,
   doorOrientation = 'horizontal',
+  wallColor = '#ff0000' as HexColor,
+  wallSize = 8 as PixelSize,
   isWorldView = false,
   onSelectionChange,
   // measurementMode = 'ruler', // Unused currently
@@ -251,6 +259,16 @@ function CanvasManager({
   // Stable no-op handler for disabled Konva drag events (defined once to prevent re-renders)
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const emptyDragHandler = useCallback(() => {}, []);
+
+  // Grid hover highlight state
+  const [hoveredCell, setHoveredCell] = useState<GridCell | null>(null);
+
+  // Clear hover highlight when switching to a grid type that doesn't support it
+  useEffect(() => {
+    if (gridType === 'HIDDEN' || gridType === 'DOTS') {
+      setHoveredCell(null);
+    }
+  }, [gridType]);
 
   // Door context menu state
   const [doorContextMenu, setDoorContextMenu] = useState<{
@@ -496,6 +514,9 @@ function CanvasManager({
     setSelectedIds,
     setActiveMeasurement,
     addDrawing,
+    setHoveredCell,
+    wallColor,
+    wallSize,
   });
 
   // Destructure handlers from canvasInteraction
@@ -809,7 +830,10 @@ function CanvasManager({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onPointerLeave={(e) => {
+          handlePointerUp(e);
+          setHoveredCell(null);
+        }}
         onWheel={handleWheel}
         // Multi-touch gestures (pinch-to-zoom) - 2+ fingers only
         onTouchStart={handleTouchStart}
@@ -882,7 +906,7 @@ function CanvasManager({
             gridSize={gridSize}
             type={gridType}
             stroke={resolvedGridColor}
-            hoveredCell={null}
+            hoveredCell={hoveredCell}
           />
         </Layer>
 
