@@ -30,6 +30,7 @@ export function TokenLayer({ worldContainer, gridSize }: TokenLayerProps): null 
 
   const containerRef = useRef<PixiContainer | null>(null);
   const spritesRef = useRef<Map<string, Sprite>>(new Map());
+  const pendingRef = useRef<Set<string>>(new Set());
 
   // Mount / unmount the token container alongside worldContainer
   useEffect(() => {
@@ -67,6 +68,7 @@ export function TokenLayer({ worldContainer, gridSize }: TokenLayerProps): null 
         container.removeChild(sprite);
         sprite.destroy();
         spritesRef.current.delete(id);
+        pendingRef.current.delete(id);
       }
     }
 
@@ -76,9 +78,16 @@ export function TokenLayer({ worldContainer, gridSize }: TokenLayerProps): null 
       const size = gridSize * token.scale;
 
       if (!existing && token.src) {
+        // Capture the target container before the async call to detect stale closures
+        const targetContainer = container;
+        pendingRef.current.add(token.id);
         void getOrLoadTexture(token.src).then((texture: Texture) => {
-          // Guard: component may have unmounted while texture was loading
-          if (!containerRef.current) {
+          // Guard: bail out if the token was deleted while loading
+          if (!pendingRef.current.has(token.id)) {
+            return;
+          }
+          // Guard: bail out if a different container has since been mounted (stale closure)
+          if (containerRef.current !== targetContainer) {
             return;
           }
           const sprite = new Sprite(texture);
@@ -87,8 +96,9 @@ export function TokenLayer({ worldContainer, gridSize }: TokenLayerProps): null 
           sprite.position.set(token.x, token.y);
           sprite.eventMode = 'static';
           sprite.cursor = 'pointer';
-          containerRef.current.addChild(sprite);
+          targetContainer.addChild(sprite);
           spritesRef.current.set(token.id, sprite);
+          pendingRef.current.delete(token.id);
         });
       } else if (existing) {
         existing.width = size;

@@ -18,3 +18,8 @@ export function evictTexture(url: string): void {
   inFlight.delete(url);
   void Assets.unload(url);
 }
+
+/** @internal — test-only reset; clears the inFlight deduplication map */
+export function resetInFlightForTesting(): void {
+  inFlight.clear();
+}

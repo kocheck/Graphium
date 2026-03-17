@@ -7,33 +7,29 @@ vi.mock('pixi.js', () => ({
   },
 }));
 
-import { getOrLoadTexture, evictTexture } from '../TextureCache';
+import { getOrLoadTexture, evictTexture, resetInFlightForTesting } from '../TextureCache';
 
 describe('getOrLoadTexture', () => {
   beforeEach(() => {
-    // Reset module between tests to clear the inFlight map
-    vi.resetModules();
+    resetInFlightForTesting();
   });
 
-  it('returns the same promise for duplicate URLs (deduplication)', async () => {
-    const { getOrLoadTexture: fresh } = await import('../TextureCache');
-    const p1 = fresh('https://example.com/token.png');
-    const p2 = fresh('https://example.com/token.png');
-    expect(p1).toBe(p2); // Same promise object = deduplicated
+  it('returns the same promise for duplicate URLs (deduplication)', () => {
+    const p1 = getOrLoadTexture('https://example.com/token.png');
+    const p2 = getOrLoadTexture('https://example.com/token.png');
+    expect(p1).toBe(p2);
   });
 
-  it('returns different promises for different URLs', async () => {
-    const { getOrLoadTexture: fresh } = await import('../TextureCache');
-    const p1 = fresh('https://example.com/a.png');
-    const p2 = fresh('https://example.com/b.png');
+  it('returns different promises for different URLs', () => {
+    const p1 = getOrLoadTexture('https://example.com/a.png');
+    const p2 = getOrLoadTexture('https://example.com/b.png');
     expect(p1).not.toBe(p2);
   });
 
-  it('evictTexture removes from cache so next call creates new promise', async () => {
-    const { getOrLoadTexture: fresh, evictTexture: freshEvict } = await import('../TextureCache');
-    const p1 = fresh('https://example.com/token.png');
-    freshEvict('https://example.com/token.png');
-    const p2 = fresh('https://example.com/token.png');
+  it('evictTexture removes from cache so next call creates new promise', () => {
+    const p1 = getOrLoadTexture('https://example.com/token.png');
+    evictTexture('https://example.com/token.png');
+    const p2 = getOrLoadTexture('https://example.com/token.png');
     expect(p1).not.toBe(p2);
   });
 });
