@@ -18,6 +18,7 @@ import { useCanvasDrop } from './hooks/useCanvasDrop';
 // TODO Phase 5: useCanvasInteraction — import { useCanvasInteraction } from './hooks/useCanvasInteraction';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import { usePixiViewport } from './hooks/usePixiViewport';
+import { MapBackground } from './MapBackground';
 // TODO Phase 2: useCanvasSelection — import { useCanvasSelection } from './hooks/useCanvasSelection';
 // TODO Phase 2: useTokenDrag — import { useTokenDrag } from './hooks/useTokenDrag';
 // TODO Phase 5: MeasurementOverlay — import MeasurementOverlay from './MeasurementOverlay';
@@ -31,9 +32,9 @@ import MinimapErrorBoundary from './MinimapErrorBoundary';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { resolveTokenData } from '../../hooks/useTokenData';
 // TODO Phase 2: DEFAULT_MOVEMENT_SPEED — re-add when token rendering is re-implemented
-import { useGameStore } from '../../store/gameStore';
 // TODO Phase 1: useTouchSettingsStore — re-add when PixiJS viewport touch/stylus is implemented
 // import { useTouchSettingsStore } from '../../store/touchSettingsStore';
+import { useGameStore } from '../../store/gameStore';
 import { useUiStore } from '../../store/uiStore';
 import { DEFAULT_GRID_COLOR } from '../../types/domain';
 // TODO Phase 2/3: isRectInAnyPolygon — import { isRectInAnyPolygon } from '../../types/geometry';
@@ -157,6 +158,9 @@ function CanvasManager({
   const containerRef = useRef<HTMLDivElement>(null);
   const pixiAppRef = useRef<PixiApplication | null>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  // worldContainer is stored in state (not just a ref) so that MapBackground re-renders
+  // once onInit fires and the Container is available for imperative PixiJS rendering.
+  const [worldContainer, setWorldContainer] = useState<Container | null>(null);
 
   // --- Store Selectors (atomic to prevent infinite re-render loops) ---
   const map = useGameStore((s) => s.map);
@@ -688,9 +692,10 @@ function CanvasManager({
         onInit={(app: PixiApplication) => {
           pixiAppRef.current = app;
           // Create world container — all world-space children go inside this Container
-          const worldContainer = new Container();
-          app.stage.addChild(worldContainer);
-          worldContainerRef.current = worldContainer;
+          const wc = new Container();
+          app.stage.addChild(wc);
+          worldContainerRef.current = wc;
+          setWorldContainer(wc); // triggers re-render so MapBackground receives the container
           // Wire native pointer/wheel events directly to the canvas element
           const canvas = app.canvas;
           canvas.addEventListener('wheel', handleWheel, { passive: false });
@@ -720,6 +725,9 @@ function CanvasManager({
         {/* TODO Phase 5: SnapPreview (was Group+Line) */}
         {/* TODO Phase 5: CalibrationOverlay (was Rect) */}
       </Application>
+
+      {/* Phase 1: Map background — imperative PixiJS Sprite, renders null JSX */}
+      <MapBackground imageUrl={map?.src ?? null} worldContainer={worldContainer} />
 
       {/* World View Controls */}
       {isWorldView && (
