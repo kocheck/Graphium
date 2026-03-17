@@ -11,16 +11,6 @@
   color: var(--app-text-primary);
 }
 
-/* Toolbar */
-.toolbar {
-  background: var(--app-toolbar-bg);
-  border: 2px solid var(--app-toolbar-border);
-}
-
-.toolbar-divider {
-  background: var(--app-border-subtle);
-}
-
 /* Buttons */
 .btn {
   padding: 0.25rem 0.75rem;
@@ -48,71 +38,6 @@
 
 .btn-primary:hover {
   background: var(--app-accent-solid-hover);
-}
-
-/* Tool buttons - active state */
-.btn-tool {
-  background: var(--app-toolbar-button-bg);
-  color: var(--app-toolbar-button-text);
-  border: 1px solid var(--app-toolbar-button-border);
-}
-
-.btn-tool:hover {
-  background: var(--app-toolbar-button-hover);
-  border-color: var(--app-toolbar-button-border-hover);
-}
-
-.btn-tool.active {
-  background: var(--app-accent-solid);
-  color: var(--app-accent-solid-text);
-  border-color: var(--app-accent-solid);
-}
-
-.btn-tool.active:hover {
-  background: var(--app-accent-solid-hover);
-  border-color: var(--app-accent-solid-hover);
-}
-
-/* Measurement mode buttons (smaller, used as sub-options) */
-.btn-mode {
-  padding: 0.125rem 0.5rem;
-  font-size: 0.75rem;
-  background: var(--app-bg-active);
-  color: var(--app-text-primary);
-}
-
-.btn-mode:hover {
-  background: var(--app-bg-hover);
-}
-
-.btn-mode.active {
-  background: var(--app-accent-solid);
-  color: var(--app-accent-solid-text);
-}
-
-.btn-mode.active:hover {
-  background: var(--app-accent-solid-hover);
-}
-
-/* Broadcast toggle button (success state for active) */
-.btn-broadcast {
-  padding: 0.125rem 0.5rem;
-  font-size: 0.75rem;
-  background: var(--app-bg-active);
-  color: var(--app-text-primary);
-}
-
-.btn-broadcast:hover {
-  background: var(--app-bg-hover);
-}
-
-.btn-broadcast.active {
-  background: var(--app-success-solid);
-  color: var(--app-accent-solid-text);
-}
-
-.btn-broadcast.active:hover {
-  background: var(--app-success-solid-hover);
 }
 
 /* Sidebar */

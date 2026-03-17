@@ -62,4 +62,13 @@
 
   /* ===== Library/Assets ===== */
   --app-drag-shadow: rgba(28, 16, 7, 0.55);
+
+  /* Toolbar — always dark leather even in light mode */
+  --app-toolbar-bg: #1a1008;
+  --app-toolbar-border: #4a3020;
+  --app-toolbar-button-bg: #2e1e0e;
+  --app-toolbar-button-text: #ede0c4;
+  --app-toolbar-button-border: #4a3020;
+  --app-toolbar-button-hover: #3a2718;
+  --app-toolbar-button-border-hover: #5e3c24;
 }

@@ -1,0 +1,94 @@
+/**
+ * Toolbar Module
+ *
+ * The toolbar is a permanent dark leather strip regardless of the app theme.
+ * In parchment (light) mode it still shows dark leather — it behaves like a
+ * hardware element (the DM's toolbelt) that doesn't switch with paper mode.
+ *
+ * All colors reference --app-toolbar-* tokens defined in both color-parchment.css
+ * and color-leather.css with identical values, so the toolbar is always dark.
+ *
+ * Button hierarchy:
+ *   .btn-primitive--tool (button.css) — primitive base sizing/shape
+ *   .btn-tool            (this file)  — toolbar-specific color + active state
+ *   .btn-mode            (this file)  — smaller sub-option buttons
+ *   .btn-broadcast       (this file)  — broadcast toggle (success active state)
+ */
+
+/* ===== Main container ===== */
+.toolbar {
+  background: var(--app-toolbar-bg);
+  border: 2px solid var(--app-toolbar-border);
+  /* Panel highlight — co-located here to avoid cascade conflicts with grain.css */
+  box-shadow: inset 0 1px 0 var(--texture-panel-highlight);
+}
+
+/* ===== Divider between button groups ===== */
+.toolbar-divider {
+  background: var(--app-toolbar-border);
+}
+
+/* ===== Tool buttons ===== */
+.btn-tool {
+  background: var(--app-toolbar-button-bg);
+  color: var(--app-toolbar-button-text);
+  border: 1px solid var(--app-toolbar-button-border);
+}
+
+.btn-tool:hover {
+  background: var(--app-toolbar-button-hover);
+  border-color: var(--app-toolbar-button-border-hover);
+}
+
+.btn-tool.active {
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+  border-color: var(--app-accent-solid);
+}
+
+.btn-tool.active:hover {
+  background: var(--app-accent-solid-hover);
+  border-color: var(--app-accent-solid-hover);
+}
+
+/* ===== Mode buttons (smaller sub-options: Ruler / Blast / Cone) ===== */
+.btn-mode {
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.75rem;
+  background: var(--app-toolbar-button-bg);
+  color: var(--app-toolbar-button-text);
+}
+
+.btn-mode:hover {
+  background: var(--app-toolbar-button-hover);
+}
+
+.btn-mode.active {
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+}
+
+.btn-mode.active:hover {
+  background: var(--app-accent-solid-hover);
+}
+
+/* ===== Broadcast toggle button (success state when active) ===== */
+.btn-broadcast {
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.75rem;
+  background: var(--app-toolbar-button-bg);
+  color: var(--app-toolbar-button-text);
+}
+
+.btn-broadcast:hover {
+  background: var(--app-toolbar-button-hover);
+}
+
+.btn-broadcast.active {
+  background: var(--app-success-solid);
+  color: var(--app-accent-solid-text);
+}
+
+.btn-broadcast.active:hover {
+  background: var(--app-success-solid-hover);
+}
