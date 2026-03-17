@@ -1,94 +1,73 @@
-import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
-import { Rect } from 'react-konva';
+import { Assets, TilingSprite } from 'pixi.js';
+
+import type { Container, Texture } from 'pixi.js';
 
 interface PaperNoiseOverlayProps {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  scaleX: number;
-  scaleY: number;
+  worldContainer: Container | null;
+  mapWidth: number;
+  mapHeight: number;
   opacity?: number;
+  noiseUrl?: string;
 }
 
 /**
  * PaperNoiseOverlay - Adds a subtle paper texture over the map background
  *
- * Creates a soft noise pattern using SVG that gives the map a textured paper feel.
- * The overlay moves with the map during panning/zooming since it uses the same
- * transform properties, and it is non-interactive (`listening={false}`) so all
- * pointer events pass through to underlying map and token layers.
+ * Creates a tiling noise pattern using a PixiJS TilingSprite. When a noiseUrl
+ * is provided the texture is loaded via Assets.load and tiled across the full
+ * map area. The sprite is non-interactive by default and sits at zIndex 5 so
+ * it renders above the map background but beneath tokens and drawings.
+ *
+ * Any change to mapWidth, mapHeight, opacity, or noiseUrl triggers a full
+ * sprite remount so the TilingSprite always reflects the current props.
+ *
+ * If no noiseUrl is supplied the component renders nothing — the caller is
+ * responsible for providing the texture asset.
  */
-function PaperNoiseOverlay({
-  x,
-  y,
-  width,
-  height,
-  scaleX,
-  scaleY,
+export function PaperNoiseOverlay({
+  worldContainer,
+  mapWidth,
+  mapHeight,
   opacity = 0.25,
-}: PaperNoiseOverlayProps): React.ReactElement | null {
-  const [patternImage, setPatternImage] = useState<HTMLImageElement | null>(null);
+  noiseUrl,
+}: PaperNoiseOverlayProps): null {
+  const spriteRef = useRef<TilingSprite | null>(null);
 
   useEffect(() => {
-    // Create SVG noise pattern using feTurbulence for realistic paper texture
-    const svgNoise = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-        <filter id="noise">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.9"
-            numOctaves="4"
-            stitchTiles="stitch"
-          />
-          <feColorMatrix type="saturate" values="0"/>
-        </filter>
-        <rect width="200" height="200" filter="url(#noise)" opacity="1"/>
-      </svg>
-    `;
+    if (!worldContainer || !noiseUrl) {
+      return;
+    }
 
-    const encodedSvg = encodeURIComponent(svgNoise);
-    const dataUri = `data:image/svg+xml,${encodedSvg}`;
+    let cancelled = false;
 
-    // Load the SVG as an image for Konva
-    const img = new Image();
-    img.onload = () => {
-      setPatternImage(img);
-    };
-    img.onerror = (err) => {
-      console.error('[PaperNoiseOverlay] Failed to load pattern image:', err);
-    };
-    img.src = dataUri;
+    void Assets.load<Texture>(noiseUrl).then((texture) => {
+      if (cancelled) {
+        return;
+      }
+
+      const sprite = new TilingSprite({ texture, width: mapWidth, height: mapHeight });
+      sprite.zIndex = 5;
+      sprite.alpha = opacity;
+      sprite.eventMode = 'none';
+      worldContainer.addChild(sprite);
+      spriteRef.current = sprite;
+    });
 
     return () => {
-      img.onload = null;
-      img.onerror = null;
+      cancelled = true;
+      const sprite = spriteRef.current;
+      if (sprite) {
+        worldContainer.removeChild(sprite);
+        sprite.destroy();
+        spriteRef.current = null;
+      }
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [worldContainer, mapWidth, mapHeight, opacity, noiseUrl]);
 
-  if (!patternImage) {
-    return null;
-  }
-
-  return (
-    <Rect
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      scaleX={scaleX}
-      scaleY={scaleY}
-      fillPatternImage={patternImage}
-      fillPatternRepeat="repeat"
-      fillPatternScale={{ x: 1, y: 1 }}
-      opacity={opacity}
-      listening={false}
-      // Using overlay blend mode for more visible texture
-      globalCompositeOperation="overlay"
-    />
-  );
+  return null;
 }
 
 export default PaperNoiseOverlay;
