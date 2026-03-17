@@ -1,0 +1,61 @@
+/**
+ * Leather Color Tokens — Dark Theme
+ *
+ * Material reference: oiled leather + tooled seams + polished brass hardware.
+ * Text reads as warm cream (aged parchment) on dark leather ground.
+ */
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* ===== Backgrounds (oiled leather) ===== */
+  --app-bg-base: #1a1008; /* darkest leather, canvas area */
+  --app-bg-subtle: #231508; /* page background */
+  --app-bg-surface: #2e1e0e; /* panel/card surfaces */
+  --app-bg-hover: #3a2718; /* hover state */
+  --app-bg-active: #482e1a; /* active/pressed */
+
+  /* ===== Borders (tooled leather seams) ===== */
+  --app-border-subtle: #4a3020;
+  --app-border-default: #5e3c24;
+  --app-border-hover: #724a30;
+
+  /* ===== Text (aged parchment on leather) ===== */
+  --app-text-primary: #ede0c4; /* warm cream, high contrast */
+  --app-text-secondary: #c8ad88; /* aged, secondary */
+  --app-text-muted: #9a7e5c; /* worn, muted */
+  --app-text-disabled: #6b5038; /* intentionally below AA */
+
+  /* ===== Brass Accent (brighter — needs contrast against dark leather) ===== */
+  --app-accent-solid: #c89a18; /* polished brass */
+  --app-accent-solid-hover: #dab030; /* gleaming hover */
+  --app-accent-solid-text: #1a1008; /* leather on brass */
+  --app-accent-bg: rgba(200, 154, 24, 0.12);
+  --app-accent-bg-hover: rgba(200, 154, 24, 0.18);
+  --app-accent-bg-active: rgba(200, 154, 24, 0.25);
+  --app-accent-text: #dab030; /* inline links */
+  --app-accent-text-contrast: #f0c840;
+
+  /* ===== Overlays & Shadows ===== */
+  --app-overlay: rgba(0, 0, 0, 0.78);
+  --app-shadow-sm: rgba(0, 0, 0, 0.2);
+  --app-shadow-md: rgba(0, 0, 0, 0.38);
+  --app-shadow-lg: rgba(0, 0, 0, 0.55);
+
+  /* ===== Dialog ===== */
+  --app-dialog-backdrop: rgba(0, 0, 0, 0.78);
+  --app-dialog-shadow: rgba(0, 0, 0, 0.55);
+  --app-dialog-button-glow: rgba(200, 154, 24, 0.15);
+
+  /* ===== HomeScreen ===== */
+  --app-home-logo-glow: rgba(200, 154, 24, 0.3);
+  --app-home-hover-overlay: rgba(255, 255, 255, 0.04);
+  --app-home-shadow-sm: rgba(0, 0, 0, 0.3);
+  --app-home-shadow-lg: rgba(0, 0, 0, 0.4);
+
+  /* ===== Logo ===== */
+  --app-logo-shadow: rgba(0, 0, 0, 0.5);
+
+  /* ===== Library/Assets ===== */
+  --app-drag-shadow: rgba(0, 0, 0, 0.65);
+}
