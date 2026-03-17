@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--app-dialog-backdrop, rgba(0, 0, 0, 0.5));
+  background: var(--app-dialog-backdrop);
   animation: dialog-fade-in var(--duration-base) var(--ease-out);
 }
 
@@ -89,7 +89,7 @@
   height: 2rem;
   border: none;
   border-radius: var(--radius-sm);
-  background: transparent;
+  background: none;
   color: var(--app-text-muted);
   font-size: 1.5rem;
   line-height: 1;
