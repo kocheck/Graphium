@@ -1,0 +1,45 @@
+/**
+ * Typography Tokens
+ *
+ * --font-display: Cormorant Garamond — headings at text-xl and above ONLY
+ * --font-body:    DM Sans — all UI chrome, buttons, labels, body text
+ * --font-mono:    JetBrains Mono — data values (numbers, coordinates, grid size)
+ *
+ * Section labels: font-body, text-xs, weight-semibold, uppercase, tracking-wide
+ * Data values:    font-mono always
+ */
+
+:root {
+  /* Font Families */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+
+  /* Size Scale */
+  --text-xs: 0.6875rem; /* 11px — section labels, ALL-CAPS only */
+  --text-sm: 0.8125rem; /* 13px — meta, helper text */
+  --text-base: 0.875rem; /* 14px — body, labels, buttons */
+  --text-md: 1rem; /* 16px — dialog body */
+  --text-lg: 1.125rem; /* 18px — dialog titles */
+  --text-xl: 1.375rem; /* 22px — screen headers (display font) */
+  --text-2xl: 1.875rem; /* 30px — section heroes (display font) */
+  --text-hero: 3rem; /* 48px — home screen headline */
+
+  /* Weights */
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 800; /* display font only */
+
+  /* Line Heights */
+  --leading-tight: 1.2; /* display headings */
+  --leading-snug: 1.35; /* card titles */
+  --leading-normal: 1.5; /* body text */
+  --leading-loose: 1.7; /* long-form descriptions */
+
+  /* Letter Spacing */
+  --tracking-tight: -0.02em; /* display/hero headings */
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em; /* ALL-CAPS section labels only */
+}
