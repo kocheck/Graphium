@@ -370,9 +370,13 @@
 }
 
 .recent-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--app-text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--app-text-secondary);
+  margin: 0;
 }
 
 .recent-list {
@@ -692,7 +696,7 @@
 .template-specs {
   font-size: 0.8125rem;
   color: var(--app-text-muted);
-  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-family: var(--font-mono);
 }
 
 /* ======================
