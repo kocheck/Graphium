@@ -1373,7 +1373,7 @@ function CanvasManager({
                   <Text
                     text={token.name}
                     fontSize={12}
-                    fontFamily="IBM Plex Sans, sans-serif"
+                    fontFamily="DM Sans, sans-serif"
                     fill={textColor}
                     fontStyle="bold"
                     align="center"
