@@ -37,6 +37,7 @@
   --app-success-solid: var(--green-9);
   --app-success-solid-hover: var(--green-10);
   --app-success-text: var(--green-11);
+  --app-success-solid-text: #f7edda; /* parchment on green — AA compliant */
 
   /* Error Boundaries */
   --app-error-boundary-bg: #fee2e2;
@@ -114,6 +115,7 @@
   --app-success-solid: var(--green-9);
   --app-success-solid-hover: var(--green-10);
   --app-success-text: var(--green-11);
+  --app-success-solid-text: #0d1912; /* dark green on polished brass — AA compliant */
 
   /* Error Boundaries — dark */
   --app-error-boundary-bg: var(--red-3);

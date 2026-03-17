@@ -57,6 +57,7 @@
   font-size: 0.75rem;
   background: var(--app-toolbar-button-bg);
   color: var(--app-toolbar-button-text);
+  border: none;
 }
 
 .btn-mode:hover {
@@ -78,6 +79,7 @@
   font-size: 0.75rem;
   background: var(--app-toolbar-button-bg);
   color: var(--app-toolbar-button-text);
+  border: none;
 }
 
 .btn-broadcast:hover {
@@ -86,7 +88,7 @@
 
 .btn-broadcast.active {
   background: var(--app-success-solid);
-  color: var(--app-accent-solid-text);
+  color: var(--app-success-solid-text);
 }
 
 .btn-broadcast.active:hover {
