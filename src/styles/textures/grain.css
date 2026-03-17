@@ -35,13 +35,12 @@
   background-size: var(--texture-grain-size);
 }
 
-/* Panel top-edge highlight — light catches paper/leather surface */
-.card-primitive,
-.dialog-primitive__panel,
-.sidebar,
-.toolbar {
-  box-shadow: inset 0 1px 0 var(--texture-panel-highlight);
-}
+/*
+ * Panel highlight tokens are consumed by primitive/module CSS files
+ * when their box-shadow declarations are written (Phase 2/3).
+ * Example usage in primitives/card.css:
+ *   box-shadow: 0 1px 3px var(--app-shadow-sm), inset 0 1px 0 var(--texture-panel-highlight);
+ */
 
 /* Brass button highlight — polished metal catches light */
 .btn-primitive--primary,
