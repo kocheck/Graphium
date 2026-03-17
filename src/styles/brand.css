@@ -5,8 +5,8 @@
  * Import order: fonts.css → tokens/ → brand.css → textures/ → primitives/ → modules/
  *
  * WHAT GOES HERE:
- * - Accent color overrides (brass by default)
- * - Font family references
+ * - Accent color overrides (if accent should differ from token defaults)
+ * - Font family overrides (override --font-* tokens from typography.css)
  * - Logo asset paths
  *
  * WHAT DOES NOT GO HERE:
@@ -21,10 +21,11 @@
   --brand-tagline: 'Digital Stylus for World Builders';
 
   /* ===== Font Family =====
-     Override here to swap fonts without touching token files. */
-  --brand-font-family: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
-  --brand-font-display: 'Cormorant Garamond', Georgia, serif;
-  --brand-font-mono: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+     Override these --font-* tokens to swap fonts without touching token files.
+     brand.css loads after typography.css — declarations here take precedence. */
+  --font-body: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
 
   /* ===== Logo Assets ===== */
   --brand-logo-icon: url('/icon.svg');
