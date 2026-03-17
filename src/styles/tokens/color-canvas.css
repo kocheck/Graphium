@@ -124,6 +124,17 @@
   --app-movement-range-fill: rgba(200, 154, 24, 0.1);
   --app-movement-range-stroke: rgba(200, 154, 24, 0.38);
 
+  /* ===== Stairs ===== */
+  /* Stairs are Konva-rendered (*_COLORS consts) — tokens provided for completeness */
+  --app-stairs-fill-up: #b0b0b0; /* slightly darker on leather bg for contrast */
+  --app-stairs-fill-down: #707070;
+  --app-stairs-stroke: #1a1008;
+  --app-stairs-arrow-up: #c89a18; /* brass replaces blue-gray in leather dark mode */
+  --app-stairs-arrow-down: #e5484d; /* keep red — functional color */
+
+  /* ===== Minimap ===== */
+  --app-minimap-token-pc: #22c55e; /* green stays readable on dark leather */
+
   /* ===== Token Rendering ===== */
   --app-token-shadow-hover: rgba(0, 0, 0, 0.7);
   --app-token-shadow: rgba(0, 0, 0, 0.5);
