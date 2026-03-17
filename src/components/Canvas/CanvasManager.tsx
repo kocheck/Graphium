@@ -9,7 +9,7 @@ import { useShallow } from 'zustand/shallow';
 import CanvasAccessibility from './CanvasAccessibility';
 // TODO Phase 5: CanvasOverlayErrorBoundary — import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorContextMenu from './DoorContextMenu';
-// TODO Phase 5: DoorLayer — import DoorLayer from './DoorLayer';
+import { DoorLayer } from './DoorLayer';
 import { DrawingLayer } from './DrawingLayer';
 import { FogOfWarLayer } from './FogOfWarLayer';
 import { GridOverlay } from './GridOverlay';
@@ -170,8 +170,8 @@ function CanvasManager({
   const tokenLibrary = useGameStore(useShallow((s) => s.campaign.tokenLibrary));
   const drawings = useGameStore((s) => s.drawings);
   const doors = useGameStore((s) => s.doors);
-  // TODO Phase 5: stairs — re-add when StairsLayer is implemented
-  // const stairs = useGameStore((s) => s.stairs);
+  const stairs = useGameStore((s) => s.stairs);
+  void stairs; // TODO Phase 5: remove void when StairsLayer is wired in below
   const gridSize = useGameStore((s) => s.gridSize);
   const gridType = useGameStore((state) => state.gridType);
   const gridColor = useGameStore((state) => state.gridColor);
@@ -299,12 +299,14 @@ function CanvasManager({
     y: number;
   } | null>(null);
 
-  // TODO Phase 5: handleDoorContextMenu — will be passed to DoorLayer in Phase 5
-  // const handleDoorContextMenu = useCallback((doorId: string, screenX: number, screenY: number) => {
-  //   if (!containerRef.current) return;
-  //   const rect = containerRef.current.getBoundingClientRect();
-  //   setDoorContextMenu({ doorId, x: screenX - rect.left, y: screenY - rect.top });
-  // }, []);
+  // Phase 5: handleDoorContextMenu — passed to DoorLayer
+  const handleDoorContextMenu = useCallback((doorId: string, screenX: number, screenY: number) => {
+    if (!containerRef.current) {
+      return;
+    }
+    const rect = containerRef.current.getBoundingClientRect();
+    setDoorContextMenu({ doorId, x: screenX - rect.left, y: screenY - rect.top });
+  }, []);
 
   const closeDoorContextMenu = useCallback(() => {
     setDoorContextMenu(null);
@@ -758,6 +760,18 @@ function CanvasManager({
 
       {/* Phase 4: Drawing strokes — PixiJS Mesh per completed stroke */}
       <DrawingLayer worldContainer={worldContainer} gridSize={gridSize} />
+
+      {/* Phase 5: Door shapes — PixiJS Graphics, interactive in DM mode */}
+      <DoorLayer
+        worldContainer={worldContainer}
+        isWorldView={isWorldView}
+        tool={tool}
+        selectedIds={selectedIds}
+        doors={doors}
+        onToggleDoor={toggleDoor}
+        onDeleteDoor={removeDoor}
+        onDoorContextMenu={handleDoorContextMenu}
+      />
 
       {/* World View Controls */}
       {isWorldView && (
