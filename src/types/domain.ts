@@ -129,8 +129,8 @@ export interface Drawing {
   id: string;
   tool: 'marker' | 'eraser' | 'wall';
   points: number[]; // [x1, y1, x2, y2, ...] coordinate pairs
-  color: string;
-  size: number; // Base stroke size (multiplied by pressure for variable width)
+  color: HexColor;
+  size: PixelSize; // Base stroke size (multiplied by pressure for variable width)
   pressures?: number[]; // Optional: [p1, p2, p3, ...] pressure values (0.0-1.0)
   scale?: number;
   x?: number;
@@ -172,9 +172,9 @@ export interface MapData {
   doors: Door[];
   stairs: Stairs[];
   map: MapConfig | null;
-  gridSize: number;
+  gridSize: PixelSize;
   gridType: GridType;
-  gridColor: string; // Hex color for grid lines (e.g., '#222')
+  gridColor: HexColor; // Hex color for grid lines (e.g., '#222222')
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
 }

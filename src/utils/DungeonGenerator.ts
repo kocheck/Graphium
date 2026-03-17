@@ -1,4 +1,4 @@
-import type { Drawing, Door } from '../types/domain';
+import type { Drawing, Door, HexColor, PixelSize } from '../types/domain';
 
 /**
  * Room represents a rectangular bounding box for dungeon pieces
@@ -155,8 +155,8 @@ export interface DungeonGeneratorOptions {
   gridSize?: number;
   canvasWidth?: number;
   canvasHeight?: number;
-  wallColor?: string;
-  wallSize?: number;
+  wallColor?: HexColor;
+  wallSize?: PixelSize;
 }
 
 /**
@@ -235,8 +235,8 @@ export class DungeonGenerator {
       gridSize: options.gridSize ?? 50,
       canvasWidth: options.canvasWidth ?? 1920,
       canvasHeight: options.canvasHeight ?? 1080,
-      wallColor: options.wallColor ?? '#ff0000',
-      wallSize: options.wallSize ?? 8,
+      wallColor: options.wallColor ?? ('#ff0000' as HexColor),
+      wallSize: options.wallSize ?? (8 as PixelSize),
     };
 
     // Initialize room templates
