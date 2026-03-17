@@ -122,4 +122,6 @@
   --app-error-boundary-code-bg: #2e1e0e;
   --app-error-boundary-code-border: #5e3c24;
   --app-error-boundary-helper: #9a7e5c;
+  --app-error-boundary-dismiss: #45a049; /* slightly muted green works on dark */
+  --app-error-boundary-dismiss-hover: #3d8b40;
 }

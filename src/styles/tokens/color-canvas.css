@@ -98,6 +98,10 @@
   --app-door-shadow-player: rgba(0, 0, 0, 0.4);
   --app-door-opening-fill: rgba(237, 224, 196, 0.55);
   --app-door-lock-handle: rgba(237, 224, 196, 0.85);
+  --app-door-locked-icon: #e5484d; /* keep red — functional color */
+  --app-door-locked-outline: #8c0000;
+  --app-door-preview-fill: rgba(237, 224, 196, 0.45);
+  --app-door-preview-stroke: #ede0c4;
   --app-door-bounding-box: #c89a18;
 
   /* ===== Minimap ===== */
