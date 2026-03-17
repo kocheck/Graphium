@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type React from 'react';
 
-import type Konva from 'konva';
+import type { Graphics } from 'pixi.js';
 
 interface SelectionRect {
   x: number;
@@ -9,6 +9,21 @@ interface SelectionRect {
   width: number;
   height: number;
   isVisible: boolean;
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Pure function — returns true when two axis-aligned rectangles overlap.
+ * Adjacent rects (touching edges) are NOT considered overlapping.
+ */
+export function rectsOverlap(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 interface UseCanvasSelectionReturn {
@@ -19,14 +34,19 @@ interface UseCanvasSelectionReturn {
   selectionRect: SelectionRect;
   setSelectionRect: React.Dispatch<React.SetStateAction<SelectionRect>>;
   selectionStart: React.MutableRefObject<{ x: number; y: number } | null>;
-  selectionRectRef: React.MutableRefObject<Konva.Rect | null>;
+  /** PixiJS Graphics node that renders the drag-select rectangle. */
+  selectionRectRef: React.MutableRefObject<Graphics | null>;
   selectionRectCoordsRef: React.MutableRefObject<{
     x: number;
     y: number;
     width: number;
     height: number;
   }>;
-  transformerRef: React.MutableRefObject<Konva.Transformer | null>;
+  /**
+   * No-op placeholder — transformer is wired into TokenLayer in Task 2.4.
+   * Typed as `null` to satisfy call-sites that check `.current` before use.
+   */
+  transformerRef: React.MutableRefObject<null>;
   animationFrameRef: React.MutableRefObject<number | null>;
 }
 
@@ -34,9 +54,10 @@ interface UseCanvasSelectionReturn {
  * Manages selection state for canvas tokens and drawings.
  *
  * Groups selection rectangle (drag-select), hovered token tracking,
- * Konva Transformer ref, and animation frame ref into a cohesive hook.
- * Handles selection-change notification to parent and Transformer node
- * updates when selection changes.
+ * and animation frame ref into a cohesive hook.
+ *
+ * The Konva Transformer has been removed; multi-select transform handles
+ * are handled by TokenLayer (PixiJS) as of Task 2.4.
  *
  * @param options.onSelectionChange - Optional callback notified when selectedIds changes
  * @returns Selection state, refs, and setters consumed by CanvasManager and useCanvasInteraction
@@ -48,14 +69,15 @@ export function useCanvasSelection({
 }): UseCanvasSelectionReturn {
   // Selection rectangle for drag-select
   const selectionStart = useRef<{ x: number; y: number } | null>(null);
-  const [selectionRect, setSelectionRect] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    isVisible: boolean;
-  }>({ x: 0, y: 0, width: 0, height: 0, isVisible: false });
-  const selectionRectRef = useRef<Konva.Rect | null>(null);
+  const [selectionRect, setSelectionRect] = useState<SelectionRect>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    isVisible: false,
+  });
+  // PixiJS Graphics node — replaces Konva.Rect ref
+  const selectionRectRef = useRef<Graphics | null>(null);
   const selectionRectCoordsRef = useRef<{ x: number; y: number; width: number; height: number }>({
     x: 0,
     y: 0,
@@ -67,8 +89,8 @@ export function useCanvasSelection({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null);
 
-  // Konva Transformer reference (for scale/rotate handles in Architect View)
-  const transformerRef = useRef<Konva.Transformer | null>(null);
+  // No-op transformer ref — transformer moves to TokenLayer in Task 2.4
+  const transformerRef = useRef<null>(null);
 
   // RAF handle for throttling selection rect updates
   const animationFrameRef = useRef<number | null>(null);
@@ -79,18 +101,6 @@ export function useCanvasSelection({
       onSelectionChange(selectedIds);
     }
   }, [selectedIds, onSelectionChange]);
-
-  // Update Transformer nodes when selection changes
-  useEffect(() => {
-    if (transformerRef.current) {
-      const stage = transformerRef.current.getStage();
-      if (stage) {
-        const selectedNodes = stage.find((node: Konva.Node) => selectedIds.includes(node.id()));
-        transformerRef.current.nodes(selectedNodes);
-        transformerRef.current.getLayer()?.batchDraw();
-      }
-    }
-  }, [selectedIds]);
 
   // Cleanup: Cancel pending animation frame on unmount
   useEffect(() => {
@@ -114,7 +124,7 @@ export function useCanvasSelection({
     selectionStart,
     selectionRectRef,
     selectionRectCoordsRef,
-    // Transformer
+    // Transformer (no-op until Task 2.4)
     transformerRef,
     // Animation frame
     animationFrameRef,
