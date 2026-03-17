@@ -1,117 +1,39 @@
 /**
- * IBM Plex Font Definitions
+ * Parchment & Leather Font Stack
  *
- * This file defines local font-face declarations for IBM Plex Sans and IBM Plex Mono.
- * Fonts are loaded from the @ibm/plex npm package and bundled by Vite for offline capability and privacy.
+ * Display:  Cormorant Garamond — old-world elegance for headers at xl+
+ * Body:     DM Sans — neutral, legible UI labels, buttons, body text
+ * Mono:     JetBrains Mono — data values: grid size, coordinates, vision
  *
- * License: SIL Open Font License 1.1
- * Source: https://github.com/IBM/plex
- * Package: https://www.npmjs.com/package/@ibm/plex
+ * Loaded from @fontsource npm packages (offline, no CDN dependency).
  *
- * Font Weights:
- * - Regular: 400
- * - Medium: 500
- * - SemiBold: 600
- * - Bold: 700
+ * Note: Cormorant Garamond max weight is 700 (800 not available in @fontsource).
  */
 
-/* ============================================
-   IBM PLEX SANS (Primary UI Font)
-   ============================================ */
+/* Cormorant Garamond — display font (regular + italic + bold weights) */
+@import '@fontsource/cormorant-garamond/400.css';
+@import '@fontsource/cormorant-garamond/400-italic.css';
+@import '@fontsource/cormorant-garamond/600.css';
+@import '@fontsource/cormorant-garamond/700.css';
 
-/* IBM Plex Sans - Regular (400) */
-@font-face {
-  font-family: 'IBM Plex Sans';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Regular.woff2') format('woff2');
-}
+/* DM Sans — body/UI font */
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/500.css';
+@import '@fontsource/dm-sans/600.css';
+@import '@fontsource/dm-sans/700.css';
 
-/* IBM Plex Sans - Medium (500) */
-@font-face {
-  font-family: 'IBM Plex Sans';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Medium.woff2') format('woff2');
-}
+/* JetBrains Mono — data/numeric values */
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/700.css';
 
-/* IBM Plex Sans - SemiBold (600) */
-@font-face {
-  font-family: 'IBM Plex Sans';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-SemiBold.woff2')
-    format('woff2');
-}
-
-/* IBM Plex Sans - Bold (700) */
-@font-face {
-  font-family: 'IBM Plex Sans';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Sans/fonts/complete/woff2/IBMPlexSans-Bold.woff2') format('woff2');
-}
-
-/* ============================================
-   IBM PLEX MONO (Code Blocks & Data Tables)
-   ============================================ */
-
-/* IBM Plex Mono - Regular (400) */
-@font-face {
-  font-family: 'IBM Plex Mono';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Regular.woff2') format('woff2');
-}
-
-/* IBM Plex Mono - Medium (500) */
-@font-face {
-  font-family: 'IBM Plex Mono';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Medium.woff2') format('woff2');
-}
-
-/* IBM Plex Mono - SemiBold (600) */
-@font-face {
-  font-family: 'IBM Plex Mono';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-SemiBold.woff2')
-    format('woff2');
-}
-
-/* IBM Plex Mono - Bold (700) */
-@font-face {
-  font-family: 'IBM Plex Mono';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('@ibm/plex/IBM-Plex-Mono/fonts/complete/woff2/IBMPlexMono-Bold.woff2') format('woff2');
-}
-
-/* ============================================
-   GLOBAL FONT APPLICATION
-   ============================================ */
-
-/* Apply IBM Plex Sans globally with system font fallback stack */
+/* Apply DM Sans globally */
 body {
   font-family:
-    'IBM Plex Sans',
+    'DM Sans',
+    'Inter',
+    system-ui,
     -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    'Helvetica Neue',
-    Arial,
     sans-serif;
-  /* font-feature-settings for enhanced typography */
   font-feature-settings:
     'liga' 1,
     'calt' 1;
@@ -120,20 +42,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Apply IBM Plex Mono to code elements */
+/* Mono elements */
 code,
 kbd,
 samp,
 pre,
 .font-mono {
-  font-family:
-    'IBM Plex Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New',
-    monospace;
-}
-
-/* Data table styling with monospace for better number alignment */
-table.data-table,
-.numeric-data {
-  font-family: 'IBM Plex Mono', 'SF Mono', Monaco, monospace;
-  font-variant-numeric: tabular-nums;
+  font-family: 'JetBrains Mono', 'SF Mono', Monaco, 'Courier New', monospace;
 }
