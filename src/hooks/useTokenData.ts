@@ -11,6 +11,7 @@ import type { Token, TokenLibraryItem } from '../types/domain';
  * All optional properties from Token are now required, as they've been resolved
  * to either the instance value, library default, or system default.
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface ResolvedTokenData {
   id: string;
   x: number;
@@ -65,6 +66,7 @@ export function useTokenData(token: Token): ResolvedTokenData {
 export const DEFAULT_SCALE = 1;
 // eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_NAME = 'Token';
+// eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_MOVEMENT_SPEED = 30; // Standard D&D 5e movement speed
 
 /**

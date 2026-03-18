@@ -64,6 +64,14 @@ interface MeasurementOverlayProps {
   textBgColor?: string;
 }
 
+interface DrawStyle {
+  fillColor: string;
+  strokeColor: string;
+  strokeWidth: number;
+  textColor: string;
+  gridSize: number;
+}
+
 /**
  * Adds a PixiJS Text label to a container at the given position.
  */
@@ -83,23 +91,20 @@ function addLabel(c: PixiContainer, text: string, x: number, y: number, textColo
 function drawRuler(
   c: PixiContainer,
   measurement: Extract<Measurement, { type: 'ruler' }>,
-  gridSize: number,
-  strokeColor: string,
-  strokeWidth: number,
-  textColor: string,
+  style: DrawStyle,
 ): void {
   const { origin, end, distanceFeet } = measurement;
-  const stroke = parseRgba(strokeColor);
+  const stroke = parseRgba(style.strokeColor);
 
   const gfx = new Graphics();
   gfx.moveTo(origin.x, origin.y);
   gfx.lineTo(end.x, end.y);
-  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: strokeWidth, cap: 'round' });
+  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: style.strokeWidth, cap: 'round' });
   c.addChild(gfx);
 
   const midX = (origin.x + end.x) / 2;
   const midY = (origin.y + end.y) / 2;
-  addLabel(c, formatDistance(distanceFeet), midX - gridSize, midY - 20, textColor);
+  addLabel(c, formatDistance(distanceFeet), midX - style.gridSize, midY - 20, style.textColor);
 }
 
 /**
@@ -108,21 +113,17 @@ function drawRuler(
 function drawBlast(
   c: PixiContainer,
   measurement: Extract<Measurement, { type: 'blast' }>,
-  gridSize: number,
-  fillColor: string,
-  strokeColor: string,
-  strokeWidth: number,
-  textColor: string,
+  style: DrawStyle,
 ): void {
   const { origin, radius, radiusFeet } = measurement;
-  const fill = parseRgba(fillColor);
-  const stroke = parseRgba(strokeColor);
+  const fill = parseRgba(style.fillColor);
+  const stroke = parseRgba(style.strokeColor);
 
   // Main circle
   const gfx = new Graphics();
   gfx.circle(origin.x, origin.y, radius);
   gfx.fill({ color: fill.color, alpha: fill.alpha });
-  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: strokeWidth });
+  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: style.strokeWidth });
   c.addChild(gfx);
 
   // Center dot
@@ -131,9 +132,9 @@ function drawBlast(
   dot.fill({ color: stroke.color, alpha: stroke.alpha });
   c.addChild(dot);
 
-  const textX = origin.x - gridSize;
+  const textX = origin.x - style.gridSize;
   const textY = origin.y - radius - 20;
-  addLabel(c, formatRadius(radiusFeet), textX, textY, textColor);
+  addLabel(c, formatRadius(radiusFeet), textX, textY, style.textColor);
 }
 
 /**
@@ -142,22 +143,18 @@ function drawBlast(
 function drawCone(
   c: PixiContainer,
   measurement: Extract<Measurement, { type: 'cone' }>,
-  gridSize: number,
-  fillColor: string,
-  strokeColor: string,
-  strokeWidth: number,
-  textColor: string,
+  style: DrawStyle,
 ): void {
   const [origin, left, right] = measurement.vertices;
   const { lengthFeet, angleDegrees } = measurement;
-  const fill = parseRgba(fillColor);
-  const stroke = parseRgba(strokeColor);
+  const fill = parseRgba(style.fillColor);
+  const stroke = parseRgba(style.strokeColor);
 
   // Cone polygon
   const gfx = new Graphics();
   gfx.poly([origin, left, right], true);
   gfx.fill({ color: fill.color, alpha: fill.alpha });
-  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: strokeWidth });
+  gfx.stroke({ color: stroke.color, alpha: stroke.alpha, width: style.strokeWidth });
   c.addChild(gfx);
 
   // Origin dot
@@ -166,9 +163,9 @@ function drawCone(
   dot.fill({ color: stroke.color, alpha: stroke.alpha });
   c.addChild(dot);
 
-  const textX = (left.x + right.x) / 2 - gridSize;
+  const textX = (left.x + right.x) / 2 - style.gridSize;
   const textY = (left.y + right.y) / 2;
-  addLabel(c, formatCone(lengthFeet, angleDegrees), textX, textY, textColor);
+  addLabel(c, formatCone(lengthFeet, angleDegrees), textX, textY, style.textColor);
 }
 
 /**
@@ -221,15 +218,17 @@ export function MeasurementOverlay({
       return;
     }
 
+    const style: DrawStyle = { fillColor, strokeColor, strokeWidth, textColor, gridSize };
+
     switch (measurement.type) {
       case 'ruler':
-        drawRuler(c, measurement, gridSize, strokeColor, strokeWidth, textColor);
+        drawRuler(c, measurement, style);
         break;
       case 'blast':
-        drawBlast(c, measurement, gridSize, fillColor, strokeColor, strokeWidth, textColor);
+        drawBlast(c, measurement, style);
         break;
       case 'cone':
-        drawCone(c, measurement, gridSize, fillColor, strokeColor, strokeWidth, textColor);
+        drawCone(c, measurement, style);
         break;
       default:
         // Unknown measurement type — render nothing
@@ -240,4 +239,5 @@ export function MeasurementOverlay({
   return null;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default MeasurementOverlay;

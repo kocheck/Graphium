@@ -14,12 +14,14 @@ export function getOrLoadTexture(url: string): Promise<Texture> {
   return promise;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export function evictTexture(url: string): void {
   inFlight.delete(url);
   void Assets.unload(url);
 }
 
 /** @internal — test-only reset; clears the inFlight deduplication map */
+// eslint-disable-next-line import/no-unused-modules
 export function resetInFlightForTesting(): void {
   inFlight.clear();
 }

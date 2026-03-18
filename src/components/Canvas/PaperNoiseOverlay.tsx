@@ -69,4 +69,5 @@ export function PaperNoiseOverlay({
   return null;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default PaperNoiseOverlay;

@@ -125,9 +125,11 @@ function PressureSensitiveLineComponent({
     const sampleCount = Math.floor(points.length / 2);
     const samples: Array<{ x: number; y: number; pressure: number }> = [];
     for (let i = 0; i < sampleCount; i++) {
+      const px = points[i * 2] ?? 0;
+      const py = points[i * 2 + 1] ?? 0;
       samples.push({
-        x: points[i * 2]!,
-        y: points[i * 2 + 1]!,
+        x: px,
+        y: py,
         pressure: pressures?.[i] ?? 1.0,
       });
     }

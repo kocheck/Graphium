@@ -90,6 +90,7 @@ interface MovementRangeOverlayProps {
  * Returns null (imperative pattern): all drawing happens via PixiJS
  * Graphics objects added/removed from worldContainer.
  */
+// eslint-disable-next-line import/no-unused-modules
 export function MovementRangeOverlay({
   worldContainer,
   tokenPosition,
@@ -201,4 +202,5 @@ export function MovementRangeOverlay({
   return null;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default MovementRangeOverlay;

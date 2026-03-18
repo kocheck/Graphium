@@ -289,4 +289,5 @@ class TokenErrorBoundary extends Component<Props, State> {
   }
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default TokenErrorBoundary;

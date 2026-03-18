@@ -32,6 +32,7 @@ import type { Point, WallSegment } from '../types/geometry';
  * @param rayCount - Number of rays to cast (default 360 for 1° resolution)
  * @returns Array of points forming visibility polygon
  */
+// eslint-disable-next-line import/no-unused-modules
 export function calculateVisibilityPolygon(
   originX: number,
   originY: number,
@@ -155,6 +156,7 @@ export function lineSegmentIntersection(
  * @param doors - All doors on the current map
  * @returns Wall segments that block vision
  */
+// eslint-disable-next-line import/no-unused-modules
 export function getWallSegments(drawings: Drawing[], doors: Door[]): WallSegment[] {
   const wallSegments: WallSegment[] = [];
 

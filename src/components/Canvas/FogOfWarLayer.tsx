@@ -112,4 +112,5 @@ export function FogOfWarLayer({
   return null;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default FogOfWarLayer;

@@ -32,6 +32,7 @@ interface UseCanvasDrawingReturn {
  *
  * @returns Drawing state refs and state setters consumed by useCanvasInteraction
  */
+// eslint-disable-next-line import/no-unused-modules
 export function useCanvasDrawing(): UseCanvasDrawingReturn {
   // Drawing tool refs (used by useCanvasInteraction for stroke tracking)
   const isDrawing = useRef(false);

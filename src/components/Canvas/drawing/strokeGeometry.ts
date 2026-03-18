@@ -8,12 +8,14 @@
  * Note: indices use Uint32Array to match PixiJS v8 MeshGeometry.indices type.
  */
 
+// eslint-disable-next-line import/no-unused-modules
 export interface StrokeSample {
   x: number;
   y: number;
   pressure: number; // 0.0–1.0
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export interface StrokeGeometry {
   /** Flat array of vertex positions: [x0, y0, x1, y1, ...] */
   vertices: Float32Array;
@@ -58,22 +60,26 @@ export function buildStrokeGeometry(samples: StrokeSample[], baseWidth: number):
     let ny = 1;
 
     if (i < samples.length - 1) {
-      const next = samples[i + 1]!;
-      const dx = next.x - sample.x;
-      const dy = next.y - sample.y;
-      const len = Math.hypot(dx, dy);
-      if (len > 0) {
-        nx = -dy / len;
-        ny = dx / len;
+      const next = samples[i + 1];
+      if (next !== undefined) {
+        const dx = next.x - sample.x;
+        const dy = next.y - sample.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 0) {
+          nx = -dy / len;
+          ny = dx / len;
+        }
       }
     } else {
-      const prev = samples[i - 1]!;
-      const dx = sample.x - prev.x;
-      const dy = sample.y - prev.y;
-      const len = Math.hypot(dx, dy);
-      if (len > 0) {
-        nx = -dy / len;
-        ny = dx / len;
+      const prev = samples[i - 1];
+      if (prev !== undefined) {
+        const dx = sample.x - prev.x;
+        const dy = sample.y - prev.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 0) {
+          nx = -dy / len;
+          ny = dx / len;
+        }
       }
     }
 

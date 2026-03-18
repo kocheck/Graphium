@@ -16,7 +16,6 @@ import { GridOverlay } from './GridOverlay';
 import ImageCropper from '../Dialogs/ImageCropper';
 // TODO Phase 4: useCanvasDrawing — import { useCanvasDrawing } from './hooks/useCanvasDrawing';
 import { useCanvasDrop } from './hooks/useCanvasDrop';
-// TODO Phase 5: useCanvasInteraction — import { useCanvasInteraction } from './hooks/useCanvasInteraction';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import { usePixiViewport } from './hooks/usePixiViewport';
 import { MapBackground } from './MapBackground';
@@ -30,7 +29,6 @@ import { PaperNoiseOverlay } from './PaperNoiseOverlay';
 // TODO Phase 4: PressureSensitiveLine — import PressureSensitiveLine from './PressureSensitiveLine';
 import { StairsLayer } from './StairsLayer';
 import { TokenLayer } from './TokenLayer';
-// TODO Phase 1: URLImage (map background) — import URLImage from './URLImage';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { resolveTokenData } from '../../hooks/useTokenData';
 // TODO Phase 2: DEFAULT_MOVEMENT_SPEED — re-add when token rendering is re-implemented
@@ -42,7 +40,6 @@ import { DEFAULT_GRID_COLOR } from '../../types/domain';
 // TODO Phase 2/3: isRectInAnyPolygon — import { isRectInAnyPolygon } from '../../types/geometry';
 // TODO Phase 2: createGridGeometry — import { createGridGeometry } from '../../utils/gridGeometry';
 import AssetProcessingErrorBoundary from '../ErrorBoundaries/AssetProcessingErrorBoundary';
-// TODO Phase 2: TokenErrorBoundary — import TokenErrorBoundary from '../ErrorBoundaries/TokenErrorBoundary';
 
 import type { HexColor, PixelSize } from '../../types/domain';
 import type { Application as PixiApplication } from 'pixi.js';
@@ -143,7 +140,6 @@ interface CanvasManagerProps {
  * @see useCanvasDrawing for drawing/measurement/calibration state
  * @see useCanvasSelection for selection rectangle and transformer management
  * @see useCanvasDrop for file drop and image crop handling
- * @see useCanvasInteraction for unified pointer event handling
  * @see useTokenDrag for token drag-and-drop with snap preview
  */
 // eslint-disable-next-line max-lines-per-function, complexity
@@ -514,15 +510,6 @@ function CanvasManager({
   //   isDragging: isDraggingToken,
   // } = useTokenDrag({ ... });
 
-  // TODO Phase 5: useCanvasInteraction
-  // const canvasInteraction = useCanvasInteraction({ ... });
-  // const { handlePointerDown, handlePointerMove, handlePointerUp,
-  //         trackStylusUsage, shouldRejectPointerEvent } = canvasInteraction;
-  // useEffect(() => {
-  //   shouldRejectRef.current = shouldRejectPointerEvent;
-  //   trackStylusRef.current = trackStylusUsage;
-  // }, [shouldRejectPointerEvent, trackStylusUsage]);
-
   // TODO Phase 2: drag/interaction state stubs — will be replaced by useTokenDrag in Phase 2
   // const dragPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   // const draggingTokenIds = new Set<string>();
@@ -708,7 +695,6 @@ function CanvasManager({
         resolution={PERFORMANCE_CONFIG.maxPixelRatio}
         autoDensity
       >
-        {/* TODO Phase 1: MapBackground (was URLImage) — PixiJS Sprite for map image */}
         {/* TODO Phase 2: SelectionRect — PixiJS Graphics selection rectangle */}
         {/* TODO Phase 2: Transformer — PixiJS resize/rotate handles */}
         {/* Phase 3: FogOfWarLayer — implemented imperatively outside Application below */}

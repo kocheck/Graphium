@@ -12,6 +12,7 @@ import type { FederatedPointerEvent } from 'pixi.js';
  * Simple square-grid snap using Math.round.
  * For hexagonal/isometric grids, use snapToGrid from utils/grid.ts instead.
  */
+// eslint-disable-next-line import/no-unused-modules
 export function snapPositionToGrid(
   pos: { x: number; y: number },
   gridSize: number,
@@ -46,7 +47,7 @@ interface UseTokenDragProps {
   screenToWorld: (screenX: number, screenY: number) => { x: number; y: number };
 }
 
-// eslint-disable-next-line max-lines-per-function
+// eslint-disable-next-line import/no-unused-modules, max-lines-per-function
 export const useTokenDrag = ({
   tool,
   isWorldView = false,

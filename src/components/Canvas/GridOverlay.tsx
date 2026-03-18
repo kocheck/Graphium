@@ -35,6 +35,7 @@ interface BuildGridOptions {
  * for a square grid that spans [0, mapWidth] × [0, mapHeight].
  * Exported for unit testing.
  */
+// eslint-disable-next-line import/no-unused-modules, react-refresh/only-export-components
 export function buildGridGeometry({
   gridSize,
   mapWidth,
@@ -124,4 +125,5 @@ export function GridOverlay({
   return null;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default GridOverlay;

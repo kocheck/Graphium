@@ -78,6 +78,7 @@ export function isPointInAnyPolygon(point: Point, polygons: Point[][]): boolean 
  * @param polygons - Active vision polygons
  * @returns true if any part of the rectangle is visible
  */
+// eslint-disable-next-line import/no-unused-modules
 export function isRectInAnyPolygon(
   x: number,
   y: number,

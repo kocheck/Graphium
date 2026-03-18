@@ -157,4 +157,5 @@ export function TokenLayer({ worldContainer, gridSize, selectedIds = [] }: Token
   return null;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default TokenLayer;

@@ -22,6 +22,7 @@ interface Rect {
  * Pure function — returns true when two axis-aligned rectangles overlap.
  * Adjacent rects (touching edges) are NOT considered overlapping.
  */
+// eslint-disable-next-line import/no-unused-modules
 export function rectsOverlap(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -62,6 +63,7 @@ interface UseCanvasSelectionReturn {
  * @param options.onSelectionChange - Optional callback notified when selectedIds changes
  * @returns Selection state, refs, and setters consumed by CanvasManager and useCanvasInteraction
  */
+// eslint-disable-next-line import/no-unused-modules
 export function useCanvasSelection({
   onSelectionChange,
 }: {

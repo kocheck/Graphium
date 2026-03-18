@@ -16,6 +16,7 @@ interface ClampOptions {
   viewHeight: number;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export function clampViewport(
   pos: { x: number; y: number },
   opts: ClampOptions,

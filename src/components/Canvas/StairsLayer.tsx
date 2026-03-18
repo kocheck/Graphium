@@ -182,4 +182,5 @@ export function StairsLayer({ worldContainer, stairs }: StairsLayerProps): null 
   return null;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default StairsLayer;

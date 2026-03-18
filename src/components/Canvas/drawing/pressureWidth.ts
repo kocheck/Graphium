@@ -7,6 +7,7 @@
  * @param range     - Multiplier range: { min, max }
  * @returns Computed stroke width in pixels
  */
+// eslint-disable-next-line import/no-unused-modules
 export function pressureToWidth(
   pressure: number,
   baseWidth: number,

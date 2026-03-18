@@ -15,6 +15,7 @@ export interface MapDimensions {
   gridSize: number;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export function worldToUV(
   pos: { x: number; y: number },
   dims: { mapWidth: number; mapHeight: number },
