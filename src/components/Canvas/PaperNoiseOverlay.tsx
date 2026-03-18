@@ -64,7 +64,6 @@ export function PaperNoiseOverlay({
         spriteRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [worldContainer, mapWidth, mapHeight, opacity, noiseUrl]);
 
   return null;

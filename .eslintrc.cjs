@@ -568,19 +568,6 @@ module.exports = {
         '@typescript-eslint/no-unsafe-argument': 'warn',
       },
     },
-    // Canvas components — Konva imports allowed during migration phases 0-5
-    // Remove this override when migration is complete (Task 5.6)
-    {
-      files: [
-        'src/components/Canvas/**/*.ts',
-        'src/components/Canvas/**/*.tsx',
-        // TokenErrorBoundary wraps Konva tokens — migrated alongside Canvas in Task 5.x
-        'src/components/ErrorBoundaries/TokenErrorBoundary.tsx',
-      ],
-      rules: {
-        'no-restricted-imports': 'off',
-      },
-    },
     // Allow looser rules in docs/examples
     {
       files: ['docs/**/*'],

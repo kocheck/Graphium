@@ -53,7 +53,6 @@ import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
 
 import { createPortal } from 'react-dom';
-import { Group, Circle, Text } from 'react-konva';
 
 import { useUiStore } from '../../store/uiStore';
 import {
@@ -83,27 +82,13 @@ interface Props {
  *
  * @property hasError - Whether an error has been caught
  * @property errorContext - Full error context for debugging (dev mode only)
- * @property showDebugOverlay - Whether to show debug overlay (dev mode only)
  * @property errorCount - Number of errors caught (for tracking flaky errors)
  */
 interface State {
   hasError: boolean;
   errorContext: ErrorContext | null;
-  showDebugOverlay: boolean;
   errorCount: number;
 }
-
-/**
- * Konva color constants for the token error indicator.
- * Konva elements cannot use CSS custom properties, so colors are defined here
- * as constants. These correspond to the theme tokens:
- *   --app-token-error-fill, --app-token-error-stroke
- */
-const TOKEN_ERROR_COLORS = {
-  fill: 'rgba(220, 38, 38, 0.7)', // --app-token-error-fill
-  stroke: '#ef4444', // --app-token-error-stroke
-  iconFill: 'white', // Icon fill (contrast on red)
-} as const;
 
 /**
  * Token-level error boundary that silently hides broken tokens in production
@@ -115,7 +100,6 @@ class TokenErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       errorContext: null,
-      showDebugOverlay: false,
       errorCount: 0,
     };
   }
@@ -182,13 +166,6 @@ class TokenErrorBoundary extends Component<Props, State> {
   }
 
   /**
-   * Toggle debug overlay visibility
-   */
-  handleToggleDebug = (): void => {
-    this.setState((prev) => ({ showDebugOverlay: !prev.showDebugOverlay }));
-  };
-
-  /**
    * Copy error details to the clipboard and show a toast notification
    */
   handleCopyError = async (): Promise<void> => {
@@ -215,13 +192,13 @@ class TokenErrorBoundary extends Component<Props, State> {
 
   /**
    * Renders children if no error, null if error occurred (production)
-   * In dev mode, shows a Konva-based debug error indicator with Portal-based overlay
+   * In dev mode, shows a DOM Portal overlay with full error details
    *
-   * @returns {ReactNode | null} Children, debug indicator + overlay, or null
+   * @returns {ReactNode | null} Children, debug overlay, or null
    */
   override render(): ReactNode {
-    const { hasError, errorContext, showDebugOverlay } = this.state;
-    const { children, tokenId, tokenData } = this.props;
+    const { hasError, errorContext } = this.state;
+    const { children, tokenId } = this.props;
     const isDev = import.meta.env.DEV;
 
     if (hasError) {
@@ -230,33 +207,10 @@ class TokenErrorBoundary extends Component<Props, State> {
         return null;
       }
 
-      // In dev mode: Show Konva-based error indicator with Portal overlay
-      // Get token position from tokenData, fallback to origin if not available
-      const tokenX = (tokenData as { x?: number })?.x ?? 0;
-      const tokenY = (tokenData as { y?: number })?.y ?? 0;
-
+      // In dev mode: Show Portal overlay with error details (auto-shown, no canvas indicator needed)
       return (
         <>
-          {/* Konva error indicator on canvas */}
-          <Group x={tokenX} y={tokenY} onClick={this.handleToggleDebug}>
-            {/* Red circle with warning icon */}
-            <Circle
-              radius={25}
-              fill={TOKEN_ERROR_COLORS.fill}
-              stroke={TOKEN_ERROR_COLORS.stroke}
-              strokeWidth={2}
-            />
-            <Text
-              text="⚠"
-              fontSize={28}
-              fill={TOKEN_ERROR_COLORS.iconFill}
-              offsetX={9}
-              offsetY={14}
-            />
-          </Group>
-
-          {/* Portal for debug overlay in DOM */}
-          {showDebugOverlay &&
+          {isDev &&
             errorContext &&
             createPortal(
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents overlay close
@@ -318,7 +272,7 @@ class TokenErrorBoundary extends Component<Props, State> {
                     Copy Error
                   </button>
                   <button
-                    onClick={this.handleToggleDebug}
+                    onClick={() => this.setState({ hasError: false })}
                     className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white border-none rounded cursor-pointer text-sm"
                   >
                     Close

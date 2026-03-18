@@ -135,7 +135,6 @@ export const useTokenDrag = ({
   );
 
   const handleTokenPointerMove = useCallback(
-    // eslint-disable-next-line complexity
     (e: FederatedPointerEvent) => {
       if (!tokenMouseDownStart || tool !== 'select') {
         return;
