@@ -127,6 +127,7 @@ function PressureSensitiveLineComponent({
     }
 
     return () => {
+      shader.destroy();
       shaderRef.current = null;
     };
   }, [stroke, opacity, worldContainer]);
