@@ -22,7 +22,6 @@ import { useEffect, useRef, useCallback } from 'react';
 import { Graphics } from 'pixi.js';
 
 import { usePixiContainer } from './hooks/usePixiContainer';
-import { clearContainer } from '../../utils/pixiUtils';
 
 import type { Door } from '../../types/domain';
 import type { Container as PixiContainer } from 'pixi.js';
@@ -279,6 +278,22 @@ function createDoorGraphics(door: Door, isWorldView: boolean, isSelected: boolea
   return g;
 }
 
+// eslint-disable-next-line import/no-unused-modules, react-refresh/only-export-components
+export function doorStateKey(door: Door, isWorldView: boolean, isSelected: boolean): string {
+  return [
+    door.isOpen,
+    door.isLocked,
+    door.x,
+    door.y,
+    door.orientation,
+    door.size,
+    door.thickness ?? 12,
+    door.swingDirection ?? '',
+    isWorldView,
+    isSelected,
+  ].join(':');
+}
+
 export function DoorLayer({
   worldContainer,
   isWorldView,
@@ -290,6 +305,7 @@ export function DoorLayer({
   onDoorContextMenu,
 }: DoorLayerProps): null {
   const containerRef = usePixiContainer(worldContainer, 60);
+  const graphicsMapRef = useRef<Map<string, { g: Graphics; key: string }>>(new Map());
 
   // Stable callback refs so the redraw effect doesn't need them as deps
   const onToggleDoorRef = useRef(onToggleDoor);
@@ -304,6 +320,15 @@ export function DoorLayer({
 
   const isWorldViewRef = useRef(isWorldView);
   isWorldViewRef.current = isWorldView;
+
+  // Clear the map when worldContainer changes — usePixiContainer destroys the
+  // old container's children, so any Graphics refs in the map become stale.
+  useEffect(() => {
+    const map = graphicsMapRef.current;
+    return () => {
+      map.clear();
+    };
+  }, [worldContainer]);
 
   // Build stable click/context-menu handler factory using useCallback
   const makeHandlers = useCallback(
@@ -339,27 +364,48 @@ export function DoorLayer({
     [], // no reactive deps — all accessed via refs
   );
 
-  // Redraw all doors whenever door state, selection, or tool changes
+  // Incrementally add/update/remove doors — no full rebuild on every change.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
       return;
     }
 
-    // Remove and destroy old graphics
-    clearContainer(container);
+    const map = graphicsMapRef.current;
+    const currentIds = new Set(doors.map((d) => d.id));
 
+    // Remove Graphics for deleted doors
+    for (const [id, entry] of map) {
+      if (!currentIds.has(id)) {
+        container.removeChild(entry.g);
+        entry.g.destroy();
+        map.delete(id);
+      }
+    }
+
+    // Add or update doors
     for (const door of doors) {
       const isSelected = selectedIds.includes(door.id);
-      const g = createDoorGraphics(door, isWorldView, isSelected);
+      const key = doorStateKey(door, isWorldView, isSelected);
+      const existing = map.get(door.id);
 
+      if (existing) {
+        if (existing.key === key) {
+          continue; // State unchanged — skip
+        }
+        // State changed — destroy old Graphics
+        container.removeChild(existing.g);
+        existing.g.destroy();
+      }
+
+      const g = createDoorGraphics(door, isWorldView, isSelected);
       if (!isWorldView) {
         makeHandlers(door, g);
       }
-
       container.addChild(g);
+      map.set(door.id, { g, key });
     }
-  }, [containerRef, doors, isWorldView, selectedIds, makeHandlers]);
+  }, [containerRef, doors, isWorldView, selectedIds, makeHandlers, worldContainer]);
 
   return null;
 }
