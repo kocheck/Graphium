@@ -266,6 +266,11 @@ module.exports = {
             name: 'react-konva',
             message: 'react-konva has been replaced with @pixi/react. Use pixi.js/@pixi/react instead.',
           },
+          {
+            name: '@pixi-essentials/transformer',
+            message:
+              'This package targets PixiJS v6 and uses dynamic require("url") which crashes Vite ESM renderer. Use a PixiJS v8-native solution instead.',
+          },
         ],
         patterns: [
           {
