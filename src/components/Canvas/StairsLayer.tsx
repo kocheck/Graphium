@@ -143,11 +143,6 @@ function createStairsGraphics(stairs: Stairs): Graphics {
   return g;
 }
 
-// eslint-disable-next-line import/no-unused-modules, react-refresh/only-export-components
-export function stairsKey(stair: Stairs): string {
-  return stair.id;
-}
-
 export function StairsLayer({ worldContainer, stairs }: StairsLayerProps): null {
   const containerRef = usePixiContainer(worldContainer, 55);
   const graphicsMapRef = useRef<Map<string, Graphics>>(new Map());
@@ -188,10 +183,7 @@ export function StairsLayer({ worldContainer, stairs }: StairsLayerProps): null 
         map.set(stair.id, g);
       }
     }
-  }, [containerRef, stairs]);
+  }, [containerRef, stairs, worldContainer]);
 
   return null;
 }
-
-// eslint-disable-next-line import/no-unused-modules
-export default StairsLayer;
