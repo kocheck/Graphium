@@ -1,13 +1,15 @@
+import type React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 
 import { RiSaveLine } from '@remixicon/react';
 
-import MobileBottomSheet from './MobileBottomSheet';
+import MobileBottomSheet from './Mobile/MobileBottomSheet';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 
-import type { Token } from '../store/gameStore';
+import type { Token, TokenLibraryItem } from '../types/domain';
 
 interface TokenInspectorProps {
   selectedTokenIds: string[];
@@ -37,12 +39,16 @@ interface TokenInspectorProps {
  * @param selectedTokenIds - Array of token IDs currently selected
  * @param onClose - Optional callback to deselect tokens (used on mobile)
  */
-function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
+// eslint-disable-next-line max-lines-per-function, complexity
+function TokenInspector({
+  selectedTokenIds,
+  onClose,
+}: TokenInspectorProps): React.JSX.Element | null {
   const tokens = useGameStore((s) => s.tokens);
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
   const updateLibraryToken = useGameStore((s) => s.updateLibraryToken);
-  const showToast = useGameStore((s) => s.showToast);
+  const showToast = useUiStore((s) => s.showToast);
 
   // Mobile responsiveness
   const isMobile = useIsMobile();
@@ -54,7 +60,14 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
   );
 
   // Helper to resolve effective properties (instance > library > default)
-  const getEffectiveValues = (token: Token) => {
+  const getEffectiveValues = (
+    token: Token,
+  ): {
+    name: string;
+    type: 'PC' | 'NPC';
+    visionRadius: number;
+    libraryItem: TokenLibraryItem | undefined;
+  } => {
     const libraryItem = token.libraryItemId
       ? tokenLibrary.find((i) => i.id === token.libraryItemId)
       : undefined;
@@ -74,7 +87,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
     }
 
     // Determine effective name
-    const effectiveName = token.name || libraryItem?.name || '';
+    const effectiveName = token.name ?? libraryItem?.name ?? '';
 
     // Determine effective vision radius
     const effectiveVisionRadius = token.visionRadius ?? libraryItem?.defaultVisionRadius ?? 0;
@@ -103,6 +116,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
     setIsEditing(false); // Reset to summary view on NEW selection
 
     if (selectedTokens.length === 1) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const { name, type, visionRadius } = getEffectiveValues(selectedTokens[0]!);
       setName(name);
       setType(type);
@@ -127,31 +141,32 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
     return null;
   }
 
-  const handleNameChange = (newName: string) => {
+  const handleNameChange = (newName: string): void => {
     setName(newName);
     selectedTokenIds.forEach((id) => {
       updateTokenProperties(id, { name: newName });
     });
   };
 
-  const handleTypeChange = (newType: 'PC' | 'NPC') => {
+  const handleTypeChange = (newType: 'PC' | 'NPC'): void => {
     setType(newType);
     selectedTokenIds.forEach((id) => {
       updateTokenProperties(id, { type: newType });
     });
   };
 
-  const handleVisionRadiusChange = (radius: number) => {
+  const handleVisionRadiusChange = (radius: number): void => {
     setVisionRadius(radius);
     selectedTokenIds.forEach((id) => {
       updateTokenProperties(id, { visionRadius: radius });
     });
   };
 
-  const handleSaveToLibrary = async () => {
+  const handleSaveToLibrary = async (): Promise<void> => {
     if (selectedTokens.length !== 1) {
       return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token = selectedTokens[0]!;
     if (!token.libraryItemId) {
       return;
@@ -190,7 +205,8 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--app-text-primary)' }}>
           {selectedTokens.length === 1
-            ? getEffectiveValues(selectedTokens[0]!).name || 'Unnamed Token'
+            ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              getEffectiveValues(selectedTokens[0]!).name || 'Unnamed Token'
             : `${selectedTokens.length} Tokens Selected`}
         </h3>
         {isEditing && (
@@ -210,6 +226,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
         <div>
           {selectedTokens.length === 1 &&
             (() => {
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               const { type, visionRadius } = getEffectiveValues(selectedTokens[0]!);
               return (
                 <div className="text-sm mb-4" style={{ color: 'var(--app-text-secondary)' }}>
@@ -241,12 +258,14 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
           {/* Token Name */}
           <div>
             <label
+              htmlFor="token-inspector-name"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--app-text-secondary)' }}
             >
               Name
             </label>
             <input
+              id="token-inspector-name"
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
@@ -265,12 +284,12 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
 
           {/* Token Type */}
           <div>
-            <label
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--app-text-secondary)' }}
             >
               Type
-            </label>
+            </span>
             <div className="flex gap-2">
               <button
                 onClick={() => handleTypeChange('PC')}
@@ -324,6 +343,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
           {/* Vision Radius */}
           <div>
             <label
+              htmlFor="token-inspector-vision-radius"
               className="block text-sm font-medium mb-1"
               style={{ color: 'var(--app-text-secondary)' }}
             >
@@ -356,6 +376,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
               ))}
             </div>
             <input
+              id="token-inspector-vision-radius"
               type="number"
               value={visionRadius}
               onChange={(e) => handleVisionRadiusChange(Number(e.target.value))}
@@ -375,10 +396,11 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
           </div>
 
           {/* Save to Library Button */}
+          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
           {selectedTokens.length === 1 && selectedTokens[0]!.libraryItemId && (
             <div className="pt-2">
               <button
-                onClick={handleSaveToLibrary}
+                onClick={() => void handleSaveToLibrary()}
                 className="w-full py-2 px-4 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors border"
                 style={{
                   borderColor: 'var(--app-border-default)',
@@ -414,11 +436,14 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
               }}
             >
               <p className="text-xs" style={{ color: 'var(--app-text-muted)' }}>
+                {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
                 <strong>Scale:</strong> {selectedTokens[0]!.scale}x
               </p>
               <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
+                {/* eslint-disable @typescript-eslint/no-non-null-assertion */}
                 <strong>Position:</strong> ({Math.round(selectedTokens[0]!.x)},{' '}
                 {Math.round(selectedTokens[0]!.y)})
+                {/* eslint-enable @typescript-eslint/no-non-null-assertion */}
               </p>
             </div>
           )}

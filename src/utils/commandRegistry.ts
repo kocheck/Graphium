@@ -11,6 +11,7 @@
  * - System: Save, Load, other system actions
  */
 
+// eslint-disable-next-line import/no-unused-modules
 export type CommandCategory = 'Tool' | 'World View' | 'Generation' | 'System';
 
 export interface Command {
@@ -23,6 +24,7 @@ export interface Command {
   execute: () => void;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export type CommandRegistry = Command[];
 
 /**
@@ -179,7 +181,7 @@ export function searchCommands(commands: Command[], query: string): Command[] {
     // For now, let's inline a simplified subsequence check
 
     // Helper to score text
-    const scoreText = (text: string) => {
+    const scoreText = (text: string): number => {
       const lowerText = text.toLowerCase();
       if (lowerText === lowerQuery) {
         return 100;

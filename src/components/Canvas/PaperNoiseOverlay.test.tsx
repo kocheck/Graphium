@@ -1,373 +1,429 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act } from '@testing-library/react';
+
+// ---------------------------------------------------------------------------
+// PixiJS mock — vi.hoisted ensures these values are available inside the
+// vi.mock factory, which Vitest hoists to the top of the module before any
+// other declarations run.
+// ---------------------------------------------------------------------------
+const { mockSprite, mockTilingSprite, mockAssetsLoad, getAssetsLoadResolve, setAssetsLoadResolve } =
+  vi.hoisted(() => {
+    const sprite = {
+      zIndex: 0,
+      alpha: 0,
+      eventMode: '',
+      width: 0,
+      height: 0,
+      destroyed: false,
+      destroy: vi.fn(),
+    };
+
+    let resolveRef: ((texture: object) => void) | null = null;
+
+    const assetsLoad = vi.fn(
+      () =>
+        new Promise<object>((resolve) => {
+          resolveRef = resolve;
+        }),
+    );
+
+    // Must use a regular function (not arrow) so it can be called with `new`.
+    // eslint-disable-next-line prefer-arrow-callback
+    const tilingSprite = vi.fn(function TilingSpriteMock() {
+      return sprite;
+    });
+
+    return {
+      mockSprite: sprite,
+      mockTilingSprite: tilingSprite,
+      mockAssetsLoad: assetsLoad,
+      getAssetsLoadResolve: () => resolveRef,
+      setAssetsLoadResolve: (r: ((texture: object) => void) | null) => {
+        resolveRef = r;
+      },
+    };
+  });
+
+vi.mock('pixi.js', () => ({
+  Assets: { load: mockAssetsLoad },
+  TilingSprite: mockTilingSprite,
+}));
+
+// ---------------------------------------------------------------------------
+// Import component AFTER mocks are in place.
+// ---------------------------------------------------------------------------
+import { PaperNoiseOverlay } from './PaperNoiseOverlay';
+import React from 'react';
 import { render } from '@testing-library/react';
-import { Stage, Layer } from 'react-konva';
-import PaperNoiseOverlay from './PaperNoiseOverlay';
+
+/** Shorthand to resolve the pending Assets.load promise in a test. */
+const resolveLoad = (texture: object): void => {
+  getAssetsLoadResolve()?.(texture);
+};
 
 /**
  * Test Suite for PaperNoiseOverlay Component
  *
- * Tests the paper texture overlay that provides a subtle background effect.
+ * Tests the PixiJS-based paper texture overlay that provides a subtle
+ * background effect over the battlemap canvas.
  * Covers:
- * - SVG pattern generation and loading
- * - Image load success and failure scenarios
- * - Component rendering with various props
- * - Transform properties (position, scale, opacity)
- * - Non-interactive behavior
+ * - Sprite creation and attachment to worldContainer
+ * - No-op when worldContainer or noiseUrl is absent
+ * - Opacity and dimension synchronisation
+ * - Cleanup on unmount
  */
 describe('PaperNoiseOverlay', () => {
-  let originalImage: typeof Image;
-  let mockImage: {
-    onload: ((this: HTMLImageElement, ev: Event) => void) | null;
-    onerror: ((this: HTMLImageElement, ev: Event | string) => void) | null;
-    src: string;
-  };
+  const mockTexture = { id: 'mock-texture' };
+
+  const makeContainer = () => ({
+    addChild: vi.fn(),
+    removeChild: vi.fn(),
+  });
 
   beforeEach(() => {
-    // Save original Image constructor
-    originalImage = global.Image;
-
-    // Create mock Image
-    mockImage = {
-      onload: null,
-      onerror: null,
-      src: '',
-    };
-
-    // Mock Image constructor
-    global.Image = vi.fn(function () {
-      return mockImage;
-    }) as any;
-
-    // Suppress console.error for cleaner test output
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.clearAllMocks();
+    setAssetsLoadResolve(null);
+    mockSprite.zIndex = 0;
+    mockSprite.alpha = 0;
+    mockSprite.eventMode = '';
+    mockSprite.width = 0;
+    mockSprite.height = 0;
+    mockSprite.destroyed = false;
+    mockSprite.destroy.mockClear();
+    // vi.clearAllMocks resets mock implementations — restore the constructor.
+    // eslint-disable-next-line prefer-arrow-callback
+    mockTilingSprite.mockImplementation(function TilingSpriteMock() {
+      return mockSprite;
+    });
+    // Restore the Assets.load implementation too.
+    mockAssetsLoad.mockImplementation(
+      () =>
+        new Promise<object>((resolve) => {
+          setAssetsLoadResolve(resolve);
+        }),
+    );
   });
 
   afterEach(() => {
-    // Restore original Image constructor
-    global.Image = originalImage;
     vi.restoreAllMocks();
   });
 
-  it('should return null when pattern image is not loaded yet', () => {
-    const { container } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
-    );
+  // -------------------------------------------------------------------------
+  // Rendering
+  // -------------------------------------------------------------------------
 
-    // Component should render but Rect should not be present
-    expect(container.querySelector('canvas')).toBeInTheDocument();
+  it('renders nothing (returns null) — is a pure side-effect component', () => {
+    const container = makeContainer();
+    const { container: domContainer } = render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
+    );
+    // Component returns null — no DOM nodes added by the component itself
+    expect(domContainer.firstChild).toBeNull();
   });
 
-  it('should load SVG pattern as data URI', () => {
+  // -------------------------------------------------------------------------
+  // No-op guards
+  // -------------------------------------------------------------------------
+
+  it('does not call Assets.load when worldContainer is null', () => {
     render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
+      <PaperNoiseOverlay
+        worldContainer={null}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
     );
-
-    // Verify Image was created
-    expect(global.Image).toHaveBeenCalled();
-
-    // Verify src is a data URI containing SVG
-    expect(mockImage.src).toContain('data:image/svg+xml');
-    expect(mockImage.src).toContain('feTurbulence');
+    expect(mockAssetsLoad).not.toHaveBeenCalled();
   });
 
-  it('should render Rect after successful image load', () => {
-    const { rerender } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
-    );
-
-    // Simulate successful image load
-    if (mockImage.onload) {
-      mockImage.onload.call(mockImage as any, new Event('load'));
-    }
-
-    // Force re-render
-    rerender(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
-    );
-
-    // Component should still be in document
-    expect(document.querySelector('canvas')).toBeInTheDocument();
-  });
-
-  it('should use provided position props', () => {
-    const { rerender } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={100} y={200} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
-    );
-
-    // Simulate image load
-    if (mockImage.onload) {
-      mockImage.onload.call(mockImage as any, new Event('load'));
-    }
-
-    rerender(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={100} y={200} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
-    );
-
-    // Verify canvas is rendered
-    expect(document.querySelector('canvas')).toBeInTheDocument();
-  });
-
-  it('should use provided scale props', () => {
-    const { rerender } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={2.5} scaleY={1.5} />
-        </Layer>
-      </Stage>,
-    );
-
-    // Simulate image load
-    if (mockImage.onload) {
-      mockImage.onload.call(mockImage as any, new Event('load'));
-    }
-
-    rerender(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={2.5} scaleY={1.5} />
-        </Layer>
-      </Stage>,
-    );
-
-    expect(document.querySelector('canvas')).toBeInTheDocument();
-  });
-
-  it('should use custom opacity when provided', () => {
-    const { rerender } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-            opacity={0.5}
-          />
-        </Layer>
-      </Stage>,
-    );
-
-    // Simulate image load
-    if (mockImage.onload) {
-      mockImage.onload.call(mockImage as any, new Event('load'));
-    }
-
-    rerender(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay
-            x={0}
-            y={0}
-            width={800}
-            height={600}
-            scaleX={1}
-            scaleY={1}
-            opacity={0.5}
-          />
-        </Layer>
-      </Stage>,
-    );
-
-    expect(document.querySelector('canvas')).toBeInTheDocument();
-  });
-
-  it('should use default opacity of 0.25 when not provided', () => {
-    const { rerender } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
-    );
-
-    // Simulate image load
-    if (mockImage.onload) {
-      mockImage.onload.call(mockImage as any, new Event('load'));
-    }
-
-    rerender(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
-    );
-
-    expect(document.querySelector('canvas')).toBeInTheDocument();
-  });
-
-  it('should handle image load error gracefully', () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
+  it('does not call Assets.load when noiseUrl is undefined', () => {
+    const container = makeContainer();
     render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
+      <PaperNoiseOverlay worldContainer={container as never} mapWidth={800} mapHeight={600} />,
     );
-
-    // Simulate image load error
-    if (mockImage.onerror) {
-      mockImage.onerror.call(mockImage as any, new Event('error'));
-    }
-
-    // Should log error
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[PaperNoiseOverlay] Failed to load pattern image:'),
-      expect.any(Event),
-    );
-
-    consoleErrorSpy.mockRestore();
+    expect(mockAssetsLoad).not.toHaveBeenCalled();
   });
 
-  it('should clean up image event handlers on unmount', () => {
+  it('does not call Assets.load when noiseUrl is an empty string', () => {
+    const container = makeContainer();
+    render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl=""
+      />,
+    );
+    expect(mockAssetsLoad).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
+  // Sprite creation
+  // -------------------------------------------------------------------------
+
+  it('calls Assets.load with the provided noiseUrl', () => {
+    const container = makeContainer();
+    render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/assets/paper-noise.png"
+      />,
+    );
+    expect(mockAssetsLoad).toHaveBeenCalledWith('/assets/paper-noise.png');
+  });
+
+  it('creates a TilingSprite with correct dimensions after texture loads', async () => {
+    const container = makeContainer();
+    render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={1024}
+        mapHeight={768}
+        noiseUrl="/noise.png"
+      />,
+    );
+
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    expect(mockTilingSprite).toHaveBeenCalledWith({
+      texture: mockTexture,
+      width: 1024,
+      height: 768,
+    });
+  });
+
+  it('sets zIndex to 5 on the sprite', async () => {
+    const container = makeContainer();
+    render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
+    );
+
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    expect(mockSprite.zIndex).toBe(5);
+  });
+
+  it('uses the provided opacity', async () => {
+    const container = makeContainer();
+    render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        opacity={0.5}
+        noiseUrl="/noise.png"
+      />,
+    );
+
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    expect(mockSprite.alpha).toBe(0.5);
+  });
+
+  it('defaults opacity to 0.25', async () => {
+    const container = makeContainer();
+    render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
+    );
+
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    expect(mockSprite.alpha).toBe(0.25);
+  });
+
+  it('sets eventMode to "none" so the overlay is non-interactive', async () => {
+    const container = makeContainer();
+    render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
+    );
+
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    expect(mockSprite.eventMode).toBe('none');
+  });
+
+  it('adds the sprite to worldContainer', async () => {
+    const container = makeContainer();
+    render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
+    );
+
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    expect(container.addChild).toHaveBeenCalledWith(mockSprite);
+  });
+
+  // -------------------------------------------------------------------------
+  // Cleanup
+  // -------------------------------------------------------------------------
+
+  it('removes sprite from worldContainer on unmount', async () => {
+    const container = makeContainer();
     const { unmount } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
     );
 
-    // Verify handlers are set
-    expect(mockImage.onload).not.toBeNull();
-    expect(mockImage.onerror).not.toBeNull();
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
 
-    // Unmount component
     unmount();
 
-    // Handlers should be cleaned up
-    expect(mockImage.onload).toBeNull();
-    expect(mockImage.onerror).toBeNull();
+    expect(container.removeChild).toHaveBeenCalledWith(mockSprite);
+    expect(mockSprite.destroy).toHaveBeenCalled();
   });
 
-  it('should handle rapid prop changes without memory leaks', () => {
-    const { rerender, unmount } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
+  it('cancels pending texture load on unmount — does not add sprite after unmount', async () => {
+    const container = makeContainer();
+    const { unmount } = render(
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
     );
 
-    // Simulate rapid position changes (e.g., during panning)
-    for (let i = 0; i < 10; i++) {
-      rerender(
-        <Stage width={800} height={600}>
-          <Layer>
-            <PaperNoiseOverlay
-              x={i * 10}
-              y={i * 10}
-              width={800}
-              height={600}
-              scaleX={1 + i * 0.1}
-              scaleY={1 + i * 0.1}
-            />
-          </Layer>
-        </Stage>,
-      );
-    }
-
-    // Should not crash
-    expect(document.querySelector('canvas')).toBeInTheDocument();
-
+    // Unmount BEFORE the texture resolves
     unmount();
+
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    // Sprite should never have been added
+    expect(container.addChild).not.toHaveBeenCalled();
   });
 
-  it('should generate SVG with correct feTurbulence parameters', () => {
-    render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
-    );
+  // -------------------------------------------------------------------------
+  // Prop updates
+  // -------------------------------------------------------------------------
 
-    // Verify SVG contains expected turbulence parameters
-    const decodedSvg = decodeURIComponent(mockImage.src.replace('data:image/svg+xml,', ''));
-    expect(decodedSvg).toContain('feTurbulence');
-    expect(decodedSvg).toContain('type="fractalNoise"');
-    expect(decodedSvg).toContain('baseFrequency="0.9"');
-    expect(decodedSvg).toContain('numOctaves="4"');
-    expect(decodedSvg).toContain('stitchTiles="stitch"');
-  });
-
-  it('should handle zero dimensions gracefully', () => {
+  it('remounts sprite with new dimensions when mapWidth/mapHeight props change', async () => {
+    const container = makeContainer();
     const { rerender } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={0} height={0} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        noiseUrl="/noise.png"
+      />,
     );
 
-    // Simulate image load
-    if (mockImage.onload) {
-      mockImage.onload.call(mockImage as any, new Event('load'));
-    }
+    // Resolve the first load so the sprite is mounted.
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
 
+    expect(container.addChild).toHaveBeenCalledTimes(1);
+
+    // Rerender with new dimensions — triggers effect cleanup + re-run.
     rerender(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={0} height={0} scaleX={1} scaleY={1} />
-        </Layer>
-      </Stage>,
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={1600}
+        mapHeight={1200}
+        noiseUrl="/noise.png"
+      />,
     );
 
-    // Should still render without errors
-    expect(document.querySelector('canvas')).toBeInTheDocument();
+    // Old sprite is removed.
+    expect(container.removeChild).toHaveBeenCalledWith(mockSprite);
+
+    // Resolve the second load triggered by the remount.
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    // New TilingSprite is created with updated dimensions.
+    expect(mockTilingSprite).toHaveBeenLastCalledWith({
+      texture: mockTexture,
+      width: 1600,
+      height: 1200,
+    });
   });
 
-  it('should handle negative scale values', () => {
+  it('remounts sprite with new alpha when opacity prop changes', async () => {
+    const container = makeContainer();
     const { rerender } = render(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={-1} scaleY={-1} />
-        </Layer>
-      </Stage>,
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        opacity={0.1}
+        noiseUrl="/noise.png"
+      />,
     );
 
-    // Simulate image load
-    if (mockImage.onload) {
-      mockImage.onload.call(mockImage as any, new Event('load'));
-    }
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
 
+    // Verify initial alpha.
+    expect(mockSprite.alpha).toBe(0.1);
+
+    // Change opacity — effect re-runs.
     rerender(
-      <Stage width={800} height={600}>
-        <Layer>
-          <PaperNoiseOverlay x={0} y={0} width={800} height={600} scaleX={-1} scaleY={-1} />
-        </Layer>
-      </Stage>,
+      <PaperNoiseOverlay
+        worldContainer={container as never}
+        mapWidth={800}
+        mapHeight={600}
+        opacity={0.8}
+        noiseUrl="/noise.png"
+      />,
     );
 
-    // Should handle negative scales (for flipping)
-    expect(document.querySelector('canvas')).toBeInTheDocument();
+    // Old sprite cleaned up; resolve the new load.
+    await act(async () => {
+      resolveLoad(mockTexture);
+    });
+
+    // New sprite has updated alpha.
+    expect(mockSprite.alpha).toBe(0.8);
   });
 });

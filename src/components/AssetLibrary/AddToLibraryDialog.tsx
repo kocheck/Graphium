@@ -22,6 +22,7 @@ import { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { rollForMessage } from '../../utils/systemMessages';
 
 interface AddToLibraryDialogProps {
@@ -35,6 +36,7 @@ interface AddToLibraryDialogProps {
 
 const DEFAULT_CATEGORIES = ['PC', 'Monsters', 'NPCs', 'Props', 'Items', 'Custom'];
 
+// eslint-disable-next-line max-lines-per-function
 function AddToLibraryDialog({
   isOpen,
   imageSrc,
@@ -42,8 +44,8 @@ function AddToLibraryDialog({
   suggestedName,
   onClose,
   onConfirm,
-}: AddToLibraryDialogProps) {
-  const [name, setName] = useState(suggestedName || '');
+}: AddToLibraryDialogProps): React.JSX.Element | null {
+  const [name, setName] = useState(suggestedName ?? '');
   const [category, setCategory] = useState('Monsters');
   const [tagsInput, setTagsInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +54,7 @@ function AddToLibraryDialog({
   const isMobile = useIsMobile();
 
   const addTokenToLibrary = useGameStore((state) => state.addTokenToLibrary);
-  const showToast = useGameStore((state) => state.showToast);
+  const showToast = useUiStore((state) => state.showToast);
 
   // Update name when suggestedName changes
   useEffect(() => {
@@ -112,7 +114,7 @@ function AddToLibraryDialog({
    * Handle save to library
    * Generates thumbnail, saves via IPC, updates store
    */
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     if (!name.trim()) {
       showToast(rollForMessage('LIBRARY_NAME_REQUIRED'), 'error');
       return;
@@ -168,8 +170,8 @@ function AddToLibraryDialog({
   /**
    * Reset form and close
    */
-  const handleClose = () => {
-    setName(suggestedName || '');
+  const handleClose = (): void => {
+    setName(suggestedName ?? '');
     setCategory('Monsters');
     setTagsInput('');
     setIsLoading(false);
@@ -183,10 +185,12 @@ function AddToLibraryDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="presentation"
       onClick={handleClose}
     >
       <div
         className={`w-full overflow-hidden ${isMobile ? 'h-full' : 'max-w-md rounded-lg'}`}
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: 'var(--app-bg-surface)',
@@ -277,7 +281,7 @@ function AddToLibraryDialog({
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !name.trim()}
           >

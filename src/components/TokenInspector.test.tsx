@@ -2,10 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TokenInspector from './TokenInspector';
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 
 // Mock dependencies
 vi.mock('../store/gameStore', () => ({
   useGameStore: vi.fn(),
+}));
+
+vi.mock('../store/uiStore', () => ({
+  useUiStore: vi.fn(),
 }));
 
 vi.mock('../hooks/useMediaQuery', () => ({
@@ -61,6 +66,11 @@ describe('TokenInspector', () => {
         },
         updateTokenProperties: mockUpdateTokenProperties,
         updateLibraryToken: mockUpdateLibraryToken,
+      };
+      return selector(state);
+    });
+    (useUiStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector: any) => {
+      const state = {
         showToast: mockShowToast,
       };
       return selector(state);
@@ -130,7 +140,6 @@ describe('TokenInspector', () => {
         campaign: { tokenLibrary: [mockLibraryItem] },
         updateTokenProperties: mockUpdateTokenProperties,
         updateLibraryToken: mockUpdateLibraryToken,
-        showToast: mockShowToast,
       };
       return selector(state);
     });

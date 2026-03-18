@@ -39,15 +39,18 @@ export async function initStorage(): Promise<void> {
   const isElectron = typeof window !== 'undefined' && Boolean(window.ipcRenderer);
 
   if (isElectron) {
+    // eslint-disable-next-line no-console
     console.log('[Storage] Detected Electron environment, using ElectronStorageService');
     const { ElectronStorageService } = await import('./ElectronStorageService');
     storageInstance = new ElectronStorageService();
   } else {
+    // eslint-disable-next-line no-console
     console.log('[Storage] Detected Web environment, using WebStorageService');
     const { WebStorageService } = await import('./WebStorageService');
     storageInstance = new WebStorageService();
   }
 
+  // eslint-disable-next-line no-console
   console.log(`[Storage] Initialized: platform=${storageInstance.getPlatform()}`);
 }
 
@@ -83,6 +86,7 @@ export function getStorage(): IStorageService {
  *   const storage = getStorage();
  * }
  */
+// eslint-disable-next-line import/no-unused-modules
 export function isStorageInitialized(): boolean {
   return storageInstance !== null;
 }

@@ -1,0 +1,1012 @@
+/**
+ * HomeScreen Styles — Modular (Parchment & Leather theme)
+ *
+ * Migrated from src/styles/home-screen.css.
+ * Colors use CSS custom properties from tokens/color-parchment.css and
+ * tokens/color-leather.css. Typography from tokens/typography.css.
+ * Paper grain texture is handled globally by textures/grain.css (.app-root::before).
+ */
+
+/* ======================
+   Base Layout
+   ====================== */
+.home-screen {
+  position: relative;
+  width: 100%;
+  height: 100%; /* Constrain within global overflow:hidden */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* Allow scrolling from top */
+  overflow-x: hidden;
+  overflow-y: auto; /* Ensure vertical scrolling works */
+  background: var(--app-bg-base);
+  color: var(--app-text-primary);
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  scroll-behavior: smooth;
+  scroll-padding-bottom: 140px; /* Ensure scrolled-to elements aren't hidden behind footer */
+}
+
+/* ======================
+   Animated Background
+   ====================== */
+.bg-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Parchment-tinted ambient gradients */
+  background:
+    radial-gradient(circle at 50% 30%, var(--app-accent-bg) 0%, transparent 60%),
+    radial-gradient(circle at 80% 10%, var(--app-bg-hover) 0%, transparent 40%);
+  filter: blur(40px);
+}
+
+/* Subtle dot grid overlay */
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle, var(--app-border-subtle) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 1; /* Opacity handled by alpha in the token */
+}
+
+/* ======================
+   Content Container
+   ====================== */
+.content-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 800px;
+  padding: 2rem;
+  padding-bottom: 140px; /* Prevent overlap with fixed footer */
+  margin: auto; /* Vertically center content if it fits, scroll if it doesn't */
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ======================
+   Hero Section
+   ====================== */
+.hero-section {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1.5rem; /* Breathing room on small screens */
+}
+
+.logo {
+  width: 100%;
+  height: auto;
+  max-width: 420px;
+  filter: drop-shadow(0 4px 20px var(--app-home-logo-glow));
+}
+
+.hero-title {
+  font-size: clamp(1.375rem, 2.5vw + 0.5rem, 1.75rem); /* Fluid typography */
+  font-weight: 600;
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: 0.75rem;
+  color: var(--app-text-primary);
+  line-height: 1.3;
+}
+
+.hero-title .highlight {
+  color: var(--app-accent-solid);
+  font-weight: 700;
+  position: relative;
+  display: inline-block;
+}
+
+.hero-title .highlight::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--app-accent-solid), transparent);
+  opacity: 0.5;
+}
+
+.hero-subtitle {
+  font-size: clamp(0.875rem, 1.5vw + 0.5rem, 1.125rem); /* Fluid typography */
+  color: var(--app-text-secondary);
+  font-style: italic;
+}
+
+/* ======================
+   Download Banner (Multi-Platform)
+   ====================== */
+.download-banner {
+  background: var(--app-accent-bg);
+  border: 1px solid var(--app-accent-solid);
+  border-radius: 12px;
+  padding: 1rem;
+  position: relative;
+  animation: slideIn 0.5s ease-out 0.3s both;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.dismiss-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--app-accent-text);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.dismiss-btn:hover {
+  opacity: 1;
+  background: var(--app-home-hover-overlay);
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.banner-icon {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  color: var(--app-accent-text);
+}
+
+.banner-text {
+  flex: 1;
+  padding-right: 1rem;
+}
+
+.banner-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--app-accent-text-contrast);
+  margin-bottom: 0.25rem;
+}
+
+.banner-description {
+  font-size: 0.875rem;
+  color: var(--app-accent-text-contrast);
+}
+
+.banner-button {
+  background: var(--app-accent-solid);
+  color: var(--app-accent-solid-text);
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.banner-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--app-home-shadow-sm);
+}
+
+/* ======================
+   Action Cards
+   ====================== */
+.action-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.action-card {
+  position: relative;
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border-default);
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  min-width: 180px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--app-text-primary) !important;
+  overflow: hidden; /* Ensure shimmer handles overflow correctly */
+}
+
+.action-card:hover {
+  border-color: var(--app-accent-solid);
+  background: var(--app-bg-subtle);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--app-home-shadow-lg);
+}
+
+.action-card:active {
+  transform: translateY(0);
+}
+
+.card-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--app-text-secondary); /* Muted by default */
+  transition: color 0.2s;
+}
+
+.action-card:hover .card-icon {
+  color: var(--app-accent-solid); /* Brass on hover */
+}
+
+.card-title {
+  font-size: clamp(0.9375rem, 1.2vw + 0.6rem, 1rem); /* Fluid typography */
+  font-weight: 600;
+  color: var(--app-text-primary);
+  z-index: 1; /* Ensure title is above shimmer */
+}
+
+.card-description {
+  font-size: var(--text-sm);
+  color: var(--app-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+/* Hover shimmer effect */
+.card-hover-effect {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--app-bg-hover), transparent);
+  transition: left 0.5s;
+  pointer-events: none;
+}
+
+.action-card:hover .card-hover-effect {
+  left: 100%;
+}
+
+/* ======================
+   Quick Actions
+   ====================== */
+.quick-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.quick-action-btn {
+  background: var(--app-bg-hover);
+  border: 1px solid var(--app-border-subtle);
+  color: var(--app-text-primary) !important;
+  padding: 0.875rem 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-action-btn:hover {
+  border-color: var(--app-accent-solid);
+  color: var(--app-accent-text);
+  transform: translateY(-2px);
+}
+
+/* ======================
+   Recent Campaigns
+   ====================== */
+.recent-campaigns {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border-subtle);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.recent-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.recent-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--app-accent-solid);
+}
+
+.recent-title {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--app-text-secondary);
+  margin: 0;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--app-bg-base);
+  border: 1px solid var(--app-border-subtle);
+  border-radius: 10px;
+  padding: 0.875rem;
+  transition: all 0.2s;
+}
+
+.recent-item:hover {
+  background: var(--app-bg-hover);
+  border-color: var(--app-border-default);
+  transform: translateX(4px);
+}
+
+.recent-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.recent-item-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--app-text-secondary);
+  flex-shrink: 0;
+}
+
+.recent-info {
+  flex: 1;
+}
+
+.recent-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--app-text-primary);
+  margin-bottom: 0.125rem;
+}
+
+.recent-date {
+  font-size: 0.8125rem;
+  color: var(--app-text-muted);
+}
+
+.recent-remove {
+  background: transparent;
+  border: none;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.recent-item:hover .recent-remove {
+  opacity: 1;
+}
+
+.recent-remove:hover {
+  background: var(--app-bg-active);
+  color: var(--app-text-primary);
+}
+
+/* ======================
+   Footer
+   ====================== */
+.footer {
+  position: fixed;
+  bottom: 1rem;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.footer-link {
+  color: var(--app-text-muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: var(--app-accent-text);
+}
+
+.footer-separator {
+  color: var(--app-border-default);
+}
+
+.footer-version {
+  font-size: clamp(0.75rem, 1vw + 0.4rem, 0.8125rem); /* Fluid typography */
+  color: var(--app-text-muted);
+}
+
+.footer-icon-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.footer-link-label {
+  font-size: 0.875rem;
+}
+
+/* ======================
+   Recent Campaigns Search
+   ====================== */
+.recent-search-container {
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.recent-search-container .search-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--app-text-muted);
+  pointer-events: none;
+}
+
+.recent-search {
+  width: 100%;
+  padding: 0.625rem 0.875rem 0.625rem 2.75rem;
+  background: var(--app-bg-base);
+  border: 1px solid var(--app-border-subtle);
+  border-radius: 8px;
+  color: var(--app-text-primary);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+}
+
+.recent-search:focus {
+  outline: none;
+  border-color: var(--app-accent-solid);
+}
+
+.recent-search::placeholder {
+  color: var(--app-text-muted);
+}
+
+.recent-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--app-text-muted);
+  font-size: 0.875rem;
+}
+
+/* ======================
+   Templates Modal
+   ====================== */
+.templates-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--app-home-modal-backdrop);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.templates-modal {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border-default);
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.templates-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.templates-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.templates-close {
+  background: transparent;
+  border: none;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.templates-close:hover {
+  background: var(--app-bg-hover);
+  color: var(--app-text-primary);
+}
+
+.templates-description {
+  font-size: 0.9375rem;
+  color: var(--app-text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.template-card {
+  background: var(--app-bg-base);
+  border: 1px solid var(--app-border-subtle);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.template-card:hover {
+  border-color: var(--app-accent-solid);
+  background: var(--app-bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--app-home-card-shadow);
+}
+
+.template-icon {
+  width: 3rem;
+  height: 3rem;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 0.75rem;
+  color: var(--app-accent-text);
+}
+
+.template-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--app-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.template-description {
+  font-size: 0.875rem;
+  color: var(--app-text-secondary);
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.template-specs {
+  font-size: 0.8125rem;
+  color: var(--app-text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ======================
+   Lite Mode Overrides
+   ====================== */
+/* Disable performance-intensive features in Lite Mode */
+[data-lite-mode='true'] .bg-gradient,
+[data-lite-mode='true'] .grid-overlay {
+  display: none;
+}
+
+[data-lite-mode='true'] .content-container {
+  animation: none; /* Disable fadeInUp */
+}
+
+[data-lite-mode='true'] .download-banner {
+  animation: none; /* Disable slideIn */
+}
+
+[data-lite-mode='true'] .card-hover-effect {
+  display: none; /* Disable shimmer */
+}
+
+[data-lite-mode='true'] .logo {
+  filter: none; /* Disable drop-shadow */
+}
+
+[data-lite-mode='true'] .action-card:hover,
+[data-lite-mode='true'] .template-card:hover {
+  transform: none; /* Disable lift effect */
+}
+
+/* ======================
+   Accessibility - Focus Indicators
+   ====================== */
+/* Enhanced keyboard navigation focus indicators */
+.action-card:focus-visible,
+.quick-action-btn:focus-visible,
+.footer-link:focus-visible,
+.recent-button:focus-visible,
+.recent-remove:focus-visible,
+.recent-search:focus-visible,
+.banner-button:focus-visible,
+.dismiss-btn:focus-visible,
+.template-card:focus-visible,
+.templates-close:focus-visible {
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Ensure focus is visible even with existing borders */
+.action-card:focus-visible,
+.template-card:focus-visible {
+  outline-offset: 4px; /* Extra space to clear card border */
+}
+
+/* ======================
+   Responsive
+   ====================== */
+/* Tablet: 769px - 1024px */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .action-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .action-card:last-child {
+    grid-column: 1 / -1;
+    max-width: 50%;
+    margin: 0 auto;
+  }
+}
+
+/* Mobile: Up to 768px */
+@media (max-width: 768px) {
+  .home-screen {
+    min-height: 100vh; /* Fallback for browsers without dvh support */
+    justify-content: flex-start;
+    padding: 2rem 0;
+    scroll-padding-bottom: 0; /* Reset scroll padding on mobile */
+  }
+
+  @supports (height: 100dvh) {
+    .home-screen {
+      min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    }
+  }
+
+  .content-container {
+    padding: 0 1.5rem 2rem; /* Mobile: Footer is relative, no extra bottom padding needed */
+    gap: 1.5rem;
+    margin-bottom: 0;
+  }
+
+  .logo-container {
+    max-width: 280px;
+  }
+
+  .hero-title {
+    font-size: 1.375rem;
+    line-height: 1.4;
+  }
+
+  .hero-subtitle {
+    font-size: 0.875rem;
+  }
+
+  /* Action cards stack vertically on mobile */
+  .action-cards {
+    grid-template-columns: 1fr;
+    gap: 0.875rem;
+  }
+
+  .action-card {
+    padding: 1.5rem;
+  }
+
+  .card-title {
+    font-size: 1.125rem;
+  }
+
+  .card-description {
+    font-size: 0.8125rem;
+  }
+
+  /* Download banner improvements */
+  .download-banner {
+    padding: 1rem;
+  }
+
+  .banner-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
+
+  .banner-text {
+    padding-right: 0;
+  }
+
+  .banner-button {
+    width: 100%;
+    text-align: center;
+    padding: 0.625rem 1.5rem;
+  }
+
+  .dismiss-btn {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  /* Templates modal mobile */
+  .templates-modal {
+    padding: 1rem;
+    max-height: 85vh;
+  }
+
+  .templates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-link-label {
+    display: none; /* Hide labels on mobile to save space */
+  }
+
+  /* Recent campaigns */
+  .recent-campaigns {
+    padding: 1rem;
+  }
+
+  .recent-item {
+    padding: 0.75rem;
+  }
+
+  /* Footer adjustments */
+  .footer {
+    position: relative;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: var(--app-bg-base);
+  }
+
+  .footer-links {
+    font-size: 0.8125rem;
+    gap: 0.5rem;
+  }
+}
+
+/* Small mobile: Up to 480px */
+@media (max-width: 480px) {
+  .home-screen {
+    padding: 1.5rem 0;
+    scroll-padding-bottom: 0;
+  }
+
+  .content-container {
+    padding: 0 1rem 1.5rem;
+    gap: 1.25rem;
+  }
+
+  .logo-container {
+    max-width: 200px;
+    margin-bottom: 1rem;
+  }
+
+  .hero-section {
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title {
+    font-size: 1.25rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.8125rem;
+    padding: 0 0.5rem;
+  }
+
+  .action-card {
+    padding: 1rem;
+  }
+
+  .card-icon-wrapper {
+    margin-bottom: 0.75rem;
+  }
+
+  .quick-action-btn {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    line-height: 2;
+  }
+
+  .footer-separator {
+    display: none;
+  }
+
+  .footer-version {
+    font-size: 0.75rem;
+  }
+
+  /* Make touch targets larger on mobile */
+  .action-card,
+  .quick-action-btn,
+  .recent-button {
+    min-height: 44px; /* iOS recommended minimum touch target */
+  }
+}
+
+/* Very small mobile: Up to 360px */
+@media (max-width: 360px) {
+  .home-screen {
+    padding: 1rem 0;
+    scroll-padding-bottom: 0;
+  }
+
+  .content-container {
+    padding: 0 0.875rem 1rem;
+    gap: 1rem;
+  }
+
+  .logo-container {
+    max-width: 180px;
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-title {
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  .card-description {
+    font-size: 0.75rem;
+  }
+
+  .action-card {
+    padding: 0.875rem;
+    min-height: 44px; /* Maintain minimum touch target height */
+  }
+
+  .quick-action-btn {
+    min-height: 44px; /* Preserve touch target size */
+  }
+
+  .banner-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .footer {
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+  }
+}

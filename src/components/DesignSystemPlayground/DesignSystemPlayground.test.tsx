@@ -11,12 +11,12 @@ vi.mock('../../services/storage', () => ({
   })),
 }));
 
-// Mock useGameStore
+// Mock useUiStore
 const mockShowToast = vi.fn();
 const mockShowConfirmDialog = vi.fn();
 
-vi.mock('../../store/gameStore', () => ({
-  useGameStore: vi.fn(() => ({
+vi.mock('../../store/uiStore', () => ({
+  useUiStore: vi.fn(() => ({
     toast: null,
     confirmDialog: null,
     clearToast: vi.fn(),

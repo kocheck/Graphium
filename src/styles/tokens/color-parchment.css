@@ -1,0 +1,89 @@
+/**
+ * Parchment Color Tokens — Light Theme
+ *
+ * Material reference: aged writing parchment + iron gall ink + antique brass.
+ * All --app-* tokens consumed by primitives and modules via var().
+ * Never reference these hex values directly in component files.
+ */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* ===== Backgrounds (warm cream → aged paper) ===== */
+  --app-bg-base: #f7edda; /* freshest parchment, main page */
+  --app-bg-subtle: #f0e2c4; /* slightly aged */
+  --app-bg-surface: #e8d5aa; /* panel/card surfaces */
+  --app-bg-hover: #dfca96; /* hover state */
+  --app-bg-active: #d4bc80; /* active/pressed */
+
+  /* ===== Borders (dried ink lines) ===== */
+  --app-border-subtle: #c4a96e; /* faint edge */
+  --app-border-default: #a8904c; /* standard separator */
+  --app-border-hover: #8c7634; /* hover emphasis */
+
+  /* ===== Text (iron gall ink scale) ===== */
+  --app-text-primary: #1c1007; /* near-black warm ink */
+  --app-text-secondary: #3d2b0f; /* medium ink */
+  --app-text-muted: #6b4e28; /* faded ink */
+  --app-text-disabled: #a08060; /* intentionally below AA */
+
+  /* ===== Brass Accent ===== */
+  --app-accent-solid: #8c6914; /* antique brass, AA on parchment bg */
+  --app-accent-solid-hover: #6e5010; /* darker, pressed */
+  --app-accent-solid-text: #f7edda; /* parchment on brass */
+  --app-accent-bg: rgba(140, 105, 20, 0.1); /* accent tint */
+  --app-accent-bg-hover: rgba(140, 105, 20, 0.16);
+  --app-accent-bg-active: rgba(140, 105, 20, 0.22);
+  --app-accent-text: #6e5010; /* inline links */
+  --app-accent-text-contrast: #4a3508; /* high contrast accent text */
+
+  /* ===== Overlays & Shadows ===== */
+  --app-overlay: rgba(28, 16, 7, 0.7); /* modal overlay */
+  --app-shadow-sm: rgba(28, 16, 7, 0.08);
+  --app-shadow-md: rgba(28, 16, 7, 0.15);
+  --app-shadow-lg: rgba(28, 16, 7, 0.28);
+
+  /* ===== Dialog ===== */
+  --app-dialog-backdrop: rgba(28, 16, 7, 0.72);
+  --app-dialog-shadow: rgba(28, 16, 7, 0.45);
+  --app-dialog-button-glow: rgba(140, 105, 20, 0.15);
+
+  /* ===== HomeScreen ===== */
+  --app-home-logo-glow: rgba(140, 105, 20, 0.3);
+  --app-home-hover-overlay: rgba(28, 16, 7, 0.06);
+  --app-home-shadow-sm: rgba(28, 16, 7, 0.12);
+  --app-home-shadow-lg: rgba(28, 16, 7, 0.2);
+  --app-home-modal-backdrop: rgba(28, 16, 7, 0.6);
+  --app-home-card-shadow: rgba(28, 16, 7, 0.1);
+
+  /* ===== Logo ===== */
+  --app-logo-shadow: rgba(28, 16, 7, 0.3);
+
+  /* ===== Library/Assets ===== */
+  --app-drag-shadow: rgba(28, 16, 7, 0.55);
+
+  /* Toolbar — always dark leather even in light mode */
+  --app-toolbar-bg: #1a1008;
+  --app-toolbar-border: #4a3020;
+  --app-toolbar-button-bg: #2e1e0e;
+  --app-toolbar-button-text: #ede0c4;
+  --app-toolbar-button-border: #4a3020;
+  --app-toolbar-button-hover: #3a2718;
+  --app-toolbar-button-border-hover: #5e3c24;
+
+  /* Resource Monitor — always dark panel */
+  --app-monitor-bg: rgba(26, 16, 8, 0.9);
+  --app-monitor-text: #ede0c4;
+  --app-monitor-border: rgba(237, 224, 196, 0.12);
+  --app-monitor-divider: rgba(237, 224, 196, 0.2);
+  --app-monitor-bar-bg: rgba(237, 224, 196, 0.15);
+  --app-monitor-fps-good: #30a46c;
+  --app-monitor-fps-medium: #ffc53d;
+  --app-monitor-fps-low: #e5484d;
+  --app-monitor-memory-ok: #30a46c;
+  --app-monitor-memory-high: #e5484d;
+  --app-monitor-warning-bg: rgba(255, 197, 61, 0.15);
+  --app-monitor-warning-accent: #ffc53d;
+  --app-monitor-muted: #9a7e5c;
+}

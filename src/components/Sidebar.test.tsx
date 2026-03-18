@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Sidebar from './Sidebar';
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import * as AssetProcessor from '../utils/AssetProcessor';
 import { rollForMessage } from '../utils/systemMessages';
 
@@ -21,7 +22,6 @@ describe('Sidebar - Map Upload Error Handling', () => {
     vi.mocked(rollForMessage).mockReturnValue('Failed to upload map');
     // Reset store
     useGameStore.setState({
-      toast: null,
       map: null,
       gridType: 'LINES',
       isCalibrating: false,
@@ -50,7 +50,7 @@ describe('Sidebar - Map Upload Error Handling', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      const state = useGameStore.getState();
+      const state = useUiStore.getState();
       expect(state.toast).not.toBeNull();
       expect(state.toast?.type).toBe('error');
       expect(state.toast?.message).toContain('Failed to upload map');
@@ -100,7 +100,7 @@ describe('Sidebar - Map Upload Error Handling', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      const state = useGameStore.getState();
+      const state = useUiStore.getState();
       expect(state.toast).not.toBeNull();
       expect(state.toast?.type).toBe('error');
       expect(state.toast?.message).toBe('Failed to upload map');
@@ -140,7 +140,6 @@ describe('Sidebar - Token Drag and Drop', () => {
           libraryItemId: 'token-1',
         },
       ],
-      toast: null,
     });
   });
 

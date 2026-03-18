@@ -14,12 +14,14 @@ import { useRef, useState, useEffect } from 'react';
 
 import { RiRulerLine } from '@remixicon/react';
 
-import ToggleSwitch from './ToggleSwitch';
+import Button from './primitives/Button';
+import ToggleSwitch from './primitives/ToggleSwitch';
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import { processImage } from '../utils/AssetProcessor';
 import { rollForMessage } from '../utils/systemMessages';
 
-import type { GridType } from '../store/gameStore';
+import type { GridType, HexColor } from '../types/domain';
 import type { ProcessingHandle } from '../utils/AssetProcessor';
 
 interface MapSettingsSheetProps {
@@ -29,6 +31,7 @@ interface MapSettingsSheetProps {
   mapId?: string; // Required when mode is EDIT
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity
 function MapSettingsSheet({
   isOpen,
   onClose,
@@ -51,9 +54,9 @@ function MapSettingsSheet({
   const setIsCalibrating = useGameStore((state) => state.setIsCalibrating);
   const updateMapPosition = useGameStore((state) => state.updateMapPosition);
   const updateMapScale = useGameStore((state) => state.updateMapScale);
-  const showToast = useGameStore((state) => state.showToast);
-  const showConfirmDialog = useGameStore((state) => state.showConfirmDialog);
   const addMap = useGameStore((state) => state.addMap);
+  const showToast = useUiStore((state) => state.showToast);
+  const showConfirmDialog = useUiStore((state) => state.showConfirmDialog);
   const renameMap = useGameStore((state) => state.renameMap);
 
   // Local state for map name
@@ -68,7 +71,7 @@ function MapSettingsSheet({
 
   // Local state for pending changes
   const [pendingGridType, setPendingGridType] = useState<GridType>(gridType);
-  const [pendingGridColor, setPendingGridColor] = useState<string>(gridColor);
+  const [pendingGridColor, setPendingGridColor] = useState<HexColor>(gridColor);
   const [pendingDaylightMode, setPendingDaylightMode] = useState<boolean>(isDaylightMode);
 
   // Load current map data when in EDIT mode
@@ -81,6 +84,7 @@ function MapSettingsSheet({
       const mapNumbers = maps
         .map((m) => {
           const match = /^Map (\d+)$/.exec(m.name);
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           return match ? parseInt(match[1]!, 10) : 0;
         })
         .filter((n) => n > 0);
@@ -105,7 +109,7 @@ function MapSettingsSheet({
     };
   }, []);
 
-  const handleMapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMapUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file) {
       return;
@@ -175,7 +179,7 @@ function MapSettingsSheet({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = (): void => {
     const trimmedName = mapName.trim();
 
     if (mode === 'CREATE') {
@@ -215,7 +219,7 @@ function MapSettingsSheet({
     }
   };
 
-  const handleResetMap = () => {
+  const handleResetMap = (): void => {
     showConfirmDialog(
       'Reset map position and scale to default?',
       () => {
@@ -238,6 +242,7 @@ function MapSettingsSheet({
           isCalibrating ? 'bg-transparent pointer-events-none' : 'bg-black/50'
         }`}
         onClick={isCalibrating ? undefined : onClose}
+        role="presentation"
       />
 
       {/* Drawer */}
@@ -277,18 +282,18 @@ function MapSettingsSheet({
 
           {/* Upload Map */}
           <div>
-            <label
+            <span
               className="block text-xs mb-2 uppercase font-semibold"
               style={{ color: 'var(--app-text-secondary)' }}
             >
               Upload Map
-            </label>
+            </span>
             <input
               type="file"
               accept="image/*"
               ref={fileInputRef}
               className="hidden"
-              onChange={handleMapUpload}
+              onChange={(e) => void handleMapUpload(e)}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -301,12 +306,12 @@ function MapSettingsSheet({
           {/* Calibrate Map */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label
+              <span
                 className="block text-xs uppercase font-semibold"
                 style={{ color: 'var(--app-text-secondary)' }}
               >
                 Calibration
-              </label>
+              </span>
               {isCalibrating && (
                 <span className="text-xs animate-pulse" style={{ color: 'var(--app-accent-text)' }}>
                   Active
@@ -395,8 +400,8 @@ function MapSettingsSheet({
                 value={mode === 'CREATE' ? pendingGridColor : gridColor}
                 onChange={(e) =>
                   mode === 'CREATE'
-                    ? setPendingGridColor(e.target.value)
-                    : setGridColor(e.target.value)
+                    ? setPendingGridColor(e.target.value as HexColor)
+                    : setGridColor(e.target.value as HexColor)
                 }
                 className="h-10 w-20 rounded cursor-pointer border border-[var(--app-border-default)]"
               />
@@ -425,12 +430,12 @@ function MapSettingsSheet({
           {/* Reset Map */}
           {mode === 'EDIT' && (
             <div>
-              <label
+              <span
                 className="block text-xs mb-2 uppercase font-semibold"
                 style={{ color: 'var(--app-text-secondary)' }}
               >
                 Danger Zone
-              </label>
+              </span>
               <button
                 onClick={handleResetMap}
                 className="btn btn-destructive w-full font-medium py-2 px-3 rounded text-sm flex items-center justify-center gap-2 transition"
@@ -443,12 +448,12 @@ function MapSettingsSheet({
 
         {/* Footer */}
         <div className="sticky bottom-0 bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)] p-4 flex gap-2">
-          <button onClick={onClose} className="btn btn-ghost flex-1 py-2 rounded">
+          <Button variant="ghost" onClick={onClose} className="flex-1">
             Cancel
-          </button>
-          <button onClick={handleSave} className="btn btn-primary flex-1 py-2 rounded">
+          </Button>
+          <Button variant="primary" onClick={handleSave} className="flex-1">
             {mode === 'CREATE' ? 'Create Map' : 'Save Changes'}
-          </button>
+          </Button>
         </div>
       </div>
     </>

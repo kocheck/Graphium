@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { addLibraryTokenToMap } from './tokenHelpers';
-import type { TokenLibraryItem, MapConfig } from '../store/gameStore';
+import type { TokenLibraryItem, MapConfig } from '../types/domain';
 
 describe('tokenHelpers', () => {
   describe('addLibraryTokenToMap', () => {

@@ -147,7 +147,7 @@ class CanvasOverlayErrorBoundary extends Component<
     }
   }
 
-  override render() {
+  override render(): ReactNode {
     const { hasError } = this.state;
     const { children, overlayName } = this.props;
 
@@ -162,7 +162,7 @@ class CanvasOverlayErrorBoundary extends Component<
         // Return an invisible marker for testing
         return (
           <div
-            data-testid={`overlay-error-${overlayName?.toLowerCase().replace(/\s+/g, '-') || 'unknown'}`}
+            data-testid={`overlay-error-${overlayName?.toLowerCase().replace(/\s+/g, '-') ?? 'unknown'}`}
             data-error-timestamp={this.state.errorTimestamp}
             style={{ display: 'none' }}
           />
@@ -176,4 +176,5 @@ class CanvasOverlayErrorBoundary extends Component<
   }
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default CanvasOverlayErrorBoundary;

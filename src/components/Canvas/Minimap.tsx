@@ -1,5 +1,13 @@
 import { useEffect, useRef, useMemo, useCallback, memo } from 'react';
 
+const MINIMAP_COLORS = {
+  bg: 'rgba(168, 144, 76, 0.2)', // --app-minimap-bg
+  border: 'rgba(140, 105, 20, 0.5)', // --app-minimap-border
+  viewportFill: 'rgba(140, 105, 20, 0.15)', // --app-minimap-viewport-fill
+  viewportStroke: '#8c6914', // --app-minimap-viewport-stroke
+  tokenPc: '#22c55e', // --app-minimap-token-pc
+} as const;
+
 interface MinimapProps {
   /** Current viewport position (stage x, y) */
   position: { x: number; y: number };
@@ -127,7 +135,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
     ctx.clearRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
 
     // Helper to convert world coordinates to minimap coordinates
-    const worldToMinimap = (worldX: number, worldY: number) => ({
+    const worldToMinimap = (worldX: number, worldY: number): { x: number; y: number } => ({
       x: (worldX - worldBounds.minX) * minimapScale,
       y: (worldY - worldBounds.minY) * minimapScale,
     });
@@ -137,10 +145,10 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
       const topLeft = worldToMinimap(worldBounds.minX, worldBounds.minY);
       const bottomRight = worldToMinimap(worldBounds.maxX, worldBounds.maxY);
 
-      ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
+      ctx.fillStyle = MINIMAP_COLORS.bg;
       ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
 
-      ctx.strokeStyle = 'rgba(200, 200, 200, 0.6)';
+      ctx.strokeStyle = MINIMAP_COLORS.border;
       ctx.lineWidth = 2;
       ctx.strokeRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
     }
@@ -148,7 +156,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
     // Draw PC tokens (green dots)
     pcTokens.forEach((token) => {
       const pos = worldToMinimap(token.x, token.y);
-      ctx.fillStyle = '#22c55e'; // green-500
+      ctx.fillStyle = MINIMAP_COLORS.tokenPc;
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
       ctx.fill();
@@ -166,7 +174,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
       viewportWorldY + viewportWorldHeight,
     );
 
-    ctx.strokeStyle = '#3b82f6'; // blue-500
+    ctx.strokeStyle = MINIMAP_COLORS.viewportStroke;
     ctx.lineWidth = 2;
     ctx.strokeRect(
       viewportTopLeft.x,
@@ -175,7 +183,7 @@ const Minimap = memo(({ position, scale, viewportSize, map, tokens, onNavigate }
       viewportBottomRight.y - viewportTopLeft.y,
     );
 
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'; // blue-500 with alpha
+    ctx.fillStyle = MINIMAP_COLORS.viewportFill;
     ctx.fillRect(
       viewportTopLeft.x,
       viewportTopLeft.y,

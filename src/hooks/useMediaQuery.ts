@@ -14,6 +14,7 @@
 
 import { useState, useEffect } from 'react';
 
+// eslint-disable-next-line import/no-unused-modules
 export function useMediaQuery(query: string): boolean {
   // Initialize with current match state
   const [matches, setMatches] = useState(() => {
@@ -31,7 +32,7 @@ export function useMediaQuery(query: string): boolean {
     setMatches(mediaQuery.matches);
 
     // Handler for media query changes
-    const handler = (e: MediaQueryListEvent) => {
+    const handler = (e: MediaQueryListEvent): void => {
       setMatches(e.matches);
     };
 
@@ -59,6 +60,7 @@ export function useIsMobile(): boolean {
  * Convenience hook: Tablet devices
  * Breakpoint: 768px - 1023px
  */
+// eslint-disable-next-line import/no-unused-modules
 export function useIsTablet(): boolean {
   return useMediaQuery('(min-width: 768px) and (max-width: 1023px)');
 }
@@ -67,6 +69,7 @@ export function useIsTablet(): boolean {
  * Convenience hook: Desktop devices
  * Breakpoint: 1024px and above
  */
+// eslint-disable-next-line import/no-unused-modules
 export function useIsDesktop(): boolean {
   return useMediaQuery('(min-width: 1024px)');
 }
@@ -75,6 +78,7 @@ export function useIsDesktop(): boolean {
  * Convenience hook: Touch-capable devices
  * Detects if device supports touch (not just screen size)
  */
+// eslint-disable-next-line import/no-unused-modules
 export function useIsTouchDevice(): boolean {
   const [isTouch] = useState(() => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {

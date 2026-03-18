@@ -138,6 +138,24 @@ function wrapPromiseAsHandle(promise: Promise<string>): ProcessingHandle {
   };
 }
 
+/** Message types received from the image processing Web Worker */
+interface WorkerProgressMessage {
+  type: 'PROGRESS';
+  progress: number;
+}
+
+interface WorkerCompleteMessage {
+  type: 'COMPLETE';
+  buffer: ArrayBuffer;
+}
+
+interface WorkerErrorMessage {
+  type: 'ERROR';
+  error: string;
+}
+
+type WorkerMessage = WorkerProgressMessage | WorkerCompleteMessage | WorkerErrorMessage;
+
 /**
  * Process image using Web Worker (non-blocking, preferred method)
  *
@@ -161,13 +179,13 @@ function processImageWithWorker(
     });
 
     // Handle worker messages
-    worker.onmessage = async (event) => {
+    worker.onmessage = async (event: MessageEvent) => {
       // Ignore messages if already cancelled
       if (isCancelled) {
         return;
       }
 
-      const message = event.data;
+      const message = event.data as WorkerMessage;
 
       switch (message.type) {
         case 'PROGRESS':
@@ -393,6 +411,7 @@ export const processBatch = (
     }
     return {
       promise: Promise.resolve([]),
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       cancel: () => {},
     };
   }
@@ -401,7 +420,7 @@ export const processBatch = (
   const handles: ProcessingHandle[] = [];
   let isCancelled = false;
 
-  const updateOverallProgress = () => {
+  const updateOverallProgress = (): void => {
     // Don't update progress if batch processing has been cancelled
     if (isCancelled) {
       return;

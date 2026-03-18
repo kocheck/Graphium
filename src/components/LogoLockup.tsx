@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useEffect, useState } from 'react';
 
 import logoDarkUrl from '../assets/branding/logo-dark.svg';
@@ -19,8 +20,13 @@ interface LogoLockupProps {
  * Automatically switches between light and dark versions based on
  * the current application theme or provided prop.
  */
-export function LogoLockup({ theme, className = '', width = 'auto', style = {} }: LogoLockupProps) {
-  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(theme || 'light');
+export function LogoLockup({
+  theme,
+  className = '',
+  width = 'auto',
+  style = {},
+}: LogoLockupProps): React.JSX.Element {
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(theme ?? 'light');
 
   useEffect(() => {
     // If theme is manually provided, stick with it
@@ -30,7 +36,7 @@ export function LogoLockup({ theme, className = '', width = 'auto', style = {} }
     }
 
     // Otherwise, detect from HTML data-theme attribute
-    const updateTheme = () => {
+    const updateTheme = (): void => {
       const htmlTheme = document.documentElement.getAttribute('data-theme');
       setCurrentTheme(htmlTheme === 'dark' ? 'dark' : 'light');
     };

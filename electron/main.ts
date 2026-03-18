@@ -117,7 +117,7 @@ let isGamePaused = false;
  * - Dark mode (force dark theme)
  * - System (follow OS preference) ← default
  */
-function buildApplicationMenu() {
+function buildApplicationMenu(): void {
   const currentTheme = getThemeState().mode;
 
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -291,7 +291,7 @@ function buildApplicationMenu() {
  * Loads from Vite dev server if VITE_DEV_SERVER_URL is set, otherwise loads
  * from built dist/index.html file.
  */
-function createMainWindow() {
+function createMainWindow(): void {
   const bounds = store.get('windowBounds');
 
   mainWindow = new BrowserWindow({
@@ -306,7 +306,7 @@ function createMainWindow() {
   });
 
   // Save window bounds on resize/move
-  const saveBounds = () => {
+  const saveBounds = (): void => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       store.set('windowBounds', mainWindow.getBounds());
     }
@@ -354,7 +354,7 @@ function createMainWindow() {
  * // Triggered by App.tsx "World View" button:
  * window.ipcRenderer.send('create-world-window')
  */
-function createWorldWindow() {
+function createWorldWindow(): void {
   // Singleton pattern: reuse existing window if it exists
   if (worldWindow && !worldWindow.isDestroyed()) {
     worldWindow.focus();
@@ -452,6 +452,7 @@ if (!gotTheLock) {
  * - IPC handlers for all renderer→main communication
  * - Main window creation
  */
+// eslint-disable-next-line max-lines-per-function
 void app.whenReady().then(() => {
   /**
    * Custom protocol handler for media:// URLs
@@ -669,8 +670,9 @@ void app.whenReady().then(() => {
       const absolutePath = fileURLToPath(src);
 
       // If already processed, return the existing relative path
-      if (processedAssets.has(absolutePath)) {
-        return processedAssets.get(absolutePath)!;
+      const cached = processedAssets.get(absolutePath);
+      if (cached !== undefined) {
+        return cached;
       }
 
       const basename = path.basename(absolutePath);
@@ -786,6 +788,7 @@ void app.whenReady().then(() => {
    * Deserializes a .graphium ZIP file and restores campaign state.
    * Handles migration from legacy single-map files to new Campaign format.
    */
+  // eslint-disable-next-line complexity
   ipcMain.handle('LOAD_CAMPAIGN', async () => {
     const { filePaths } = await dialog.showOpenDialog({
       filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }],
@@ -870,13 +873,13 @@ void app.whenReady().then(() => {
       const mapData: MapData = {
         id: mapId,
         name: 'Imported Map',
-        tokens: loadedData.tokens || [],
-        drawings: loadedData.drawings || [],
-        map: loadedData.map || null,
-        gridSize: loadedData.gridSize || 50,
-        gridType: loadedData.gridType || 'LINES',
-        exploredRegions: loadedData.exploredRegions || [],
-        isDaylightMode: loadedData.isDaylightMode || false,
+        tokens: loadedData.tokens ?? [],
+        drawings: loadedData.drawings ?? [],
+        map: loadedData.map ?? null,
+        gridSize: loadedData.gridSize ?? 50,
+        gridType: loadedData.gridType ?? 'LINES',
+        exploredRegions: loadedData.exploredRegions ?? [],
+        isDaylightMode: loadedData.isDaylightMode ?? false,
       };
 
       campaign = {
@@ -898,7 +901,7 @@ void app.whenReady().then(() => {
       await fs.mkdir(assetsDir, { recursive: true });
 
       const restoreAsset = async (src: string): Promise<string> => {
-        if (src && src.startsWith('assets/')) {
+        if (src?.startsWith('assets/')) {
           const fileName = path.basename(src);
           const fileData = await assets.file(fileName)?.async('nodebuffer');
           if (fileData) {

@@ -1,239 +1,24 @@
 import { create } from 'zustand';
 
+import { useUiStore } from './uiStore';
+import { MAX_EXPLORED_REGIONS, DEFAULT_GRID_COLOR, toHexColor, toPixelSize } from '../types/domain';
 import { rollForMessage } from '../utils/systemMessages';
 
+import type {
+  Token,
+  Drawing,
+  MapConfig,
+  GridType,
+  MapData,
+  TokenLibraryItem,
+  Campaign,
+  ExploredRegion,
+  Door,
+  Stairs,
+  HexColor,
+  PixelSize,
+} from '../types/domain';
 import type { Measurement } from '../types/measurement';
-
-/**
- * TokenMetadata represents the shared metadata properties between library items and map tokens
- * This interface defines the properties that can be inherited from prototypes (library items)
- * or overridden on instances (map tokens).
- */
-export interface TokenMetadata {
-  name?: string;
-  type?: 'PC' | 'NPC';
-  visionRadius?: number;
-  scale?: number;
-  movementSpeed?: number;
-}
-
-/**
- * Token represents a character, creature, or object on the battlemap (Instance)
- *
- * Implements a Prototype/Instance pattern:
- * - If libraryItemId is set, this token references a library item as its prototype
- * - Properties like name, type, visionRadius, scale act as OVERRIDES when present
- * - If a property is undefined, it should fall back to the library item's default value
- * - Position (x, y) and src are always instance-specific
- *
- * @property libraryItemId - Optional reference to a TokenLibraryItem (prototype)
- * @property x - Position X in world coordinates (instance-specific)
- * @property y - Position Y in world coordinates (instance-specific)
- * @property src - Image file:// URL (instance-specific or inherited)
- * @property scale - Size multiplier override (falls back to library defaultScale)
- * @property type - Token type override (falls back to library defaultType)
- * @property visionRadius - Vision radius override (falls back to library defaultVisionRadius)
- * @property name - Name override (falls back to library name)
- */
-export interface Token {
-  id: string;
-  x: number;
-  y: number;
-  src: string;
-  libraryItemId?: string; // Reference to library item prototype
-  scale?: number; // Override for library defaultScale
-  type?: 'PC' | 'NPC'; // Override for library defaultType
-  visionRadius?: number; // Override for library defaultVisionRadius
-  name?: string; // Override for library name
-  movementSpeed?: number; // Movement speed in feet (default: 30ft)
-}
-
-/**
- * Drawing represents a freehand stroke drawn with marker, eraser, or wall tool
- *
- * Supports pressure-sensitive input for variable-width strokes:
- * - pressures array has length = points.length / 2
- * - Each pressure value corresponds to one (x, y) coordinate pair
- * - Pressure ranges from 0.0 to 1.0 (0.5 for mouse/no pressure)
- * - Used for rendering variable-width strokes with pens/styluses
- */
-export interface Drawing {
-  id: string;
-  tool: 'marker' | 'eraser' | 'wall';
-  points: number[]; // [x1, y1, x2, y2, ...] coordinate pairs
-  color: string;
-  size: number; // Base stroke size (multiplied by pressure for variable width)
-  pressures?: number[]; // Optional: [p1, p2, p3, ...] pressure values (0.0-1.0)
-  scale?: number;
-  x?: number;
-  y?: number;
-}
-
-/**
- * MapConfig represents the background map image configuration
- * ... (same documentation as before)
- */
-export interface MapConfig {
-  src: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  scale: number;
-}
-
-/**
- * GridType determines how the tactical grid is displayed
- *
- * Visual modes for each geometry:
- * - LINES/DOTS/HIDDEN: Square grid (orthogonal)
- * - HEXAGONAL: Hexagonal grid (flat-top orientation)
- * - ISOMETRIC: Diamond/isometric grid (45° rotation)
- */
-export type GridType = 'LINES' | 'DOTS' | 'HIDDEN' | 'HEXAGONAL' | 'ISOMETRIC';
-
-/**
- * MapData represents the persistent state of a single map within a campaign
- */
-export interface MapData {
-  id: string;
-  name: string;
-  tokens: Token[];
-  drawings: Drawing[];
-  doors: Door[];
-  stairs: Stairs[];
-  map: MapConfig | null;
-  gridSize: number;
-  gridType: GridType;
-  gridColor: string; // Hex color for grid lines (e.g., '#222')
-  exploredRegions: ExploredRegion[];
-  isDaylightMode: boolean;
-}
-
-/**
- * TokenLibraryItem represents a reusable token in the persistent library
- *
- * The library persists across campaigns and sessions, allowing users to
- * build a collection of frequently-used tokens (monsters, NPCs, props).
- *
- * **Storage:**
- * - Full-size images: userData/library/assets/{id}.webp
- * - Thumbnails: userData/library/assets/thumb-{id}.webp
- * - Metadata index: userData/library/index.json
- */
-export interface TokenLibraryItem {
-  id: string;
-  name: string;
-  src: string; // file:// URL to full-size image
-  thumbnailSrc: string; // file:// URL to 128x128 thumbnail
-  category: string; // e.g., "Monsters", "NPCs", "Props", "Custom"
-  tags: string[]; // For fuzzy search (e.g., ["dragon", "red", "large"])
-  dateAdded: number; // Timestamp (Date.now())
-  defaultScale?: number; // Optional default scale when placed
-  defaultVisionRadius?: number; // Optional default vision radius
-  defaultType?: 'PC' | 'NPC'; // Optional default token type
-  defaultMovementSpeed?: number; // Optional default movement speed in feet
-}
-
-/**
- * Campaign represents a collection of maps and shared assets
- */
-export interface Campaign {
-  id: string;
-  name: string;
-  maps: Record<string, MapData>;
-  activeMapId: string;
-  tokenLibrary: TokenLibraryItem[];
-}
-
-/**
- * ToastMessage represents a temporary notification
- */
-export interface ToastMessage {
-  message: string;
-  type: 'error' | 'success' | 'info';
-}
-
-/**
- * ConfirmDialog represents a confirmation dialog state
- */
-export interface ConfirmDialog {
-  message: string;
-  onConfirm: () => void;
-  confirmText?: string;
-}
-
-/**
- * ExploredRegion represents an area that PC tokens have previously seen
- */
-export interface ExploredRegion {
-  points: Array<{ x: number; y: number }>;
-  timestamp: number;
-}
-
-/**
- * Door represents an interactive door object in the dungeon
- *
- * Doors are rendered as white rectangles with black outlines (standard tabletop symbol).
- * When open, they display a swing arc to show the door's position.
- * Closed doors block Fog of War vision, while open doors allow vision through.
- *
- * @property id - Unique identifier
- * @property x - Center position X in world coordinates
- * @property y - Center position Y in world coordinates
- * @property orientation - Door alignment ('horizontal' = east-west wall, 'vertical' = north-south wall)
- * @property isOpen - Current state (true = open, false = closed)
- * @property isLocked - Whether door requires unlocking (shows lock icon)
- * @property size - Door width/height in pixels (typically gridSize)
- * @property thickness - Visual thickness for rendering (default: 12px for better visibility)
- * @property swingDirection - Which way door opens: 'left', 'right', 'up', 'down' (for swing arc)
- */
-export interface Door {
-  id: string;
-  x: number;
-  y: number;
-  orientation: 'horizontal' | 'vertical';
-  isOpen: boolean;
-  isLocked: boolean;
-  size: number;
-  thickness?: number;
-  swingDirection?: 'left' | 'right' | 'up' | 'down';
-}
-
-/**
- * Stairs represents a staircase connecting different levels in a dungeon
- *
- * Stairs are rendered with a stepped pattern and directional arrows.
- * They provide visual indication of level transitions in multi-floor dungeons.
- *
- * @property id - Unique identifier
- * @property x - Center position X in world coordinates
- * @property y - Center position Y in world coordinates
- * @property direction - Which compass direction the stairs face ('north', 'south', 'east', 'west')
- * @property type - Whether stairs go up or down ('up' or 'down')
- * @property width - Width in pixels (typically 2 * gridSize for 2-cell width)
- * @property height - Height in pixels (typically 2 * gridSize for 2-cell height)
- */
-export interface Stairs {
-  id: string;
-  x: number;
-  y: number;
-  direction: 'north' | 'south' | 'east' | 'west';
-  type: 'up' | 'down';
-  width: number;
-  height: number;
-}
-
-/**
- * Maximum number of explored regions to store in memory.
- */
-const MAX_EXPLORED_REGIONS = 2000;
-
-/**
- * Default grid color (Dark Gray) for light mode.
- * Adaptively mapped to lighter gray in dark mode via CanvasManager.
- */
-export const DEFAULT_GRID_COLOR = '#222222';
 
 /**
  * Helper to create a default empty map
@@ -246,9 +31,9 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
   doors: [],
   stairs: [],
   map: null,
-  gridSize: 50,
+  gridSize: 50 as PixelSize,
   gridType: 'LINES',
-  gridColor: DEFAULT_GRID_COLOR, // Default dark gray grid
+  gridColor: DEFAULT_GRID_COLOR as HexColor, // Default dark gray grid
   exploredRegions: [],
   isDaylightMode: false,
 });
@@ -257,7 +42,7 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
  * Helper to create a default campaign
  */
 const createDefaultCampaign = (firstMap?: MapData): Campaign => {
-  const map = firstMap || createDefaultMap('Default Map');
+  const map = firstMap ?? createDefaultMap('Default Map');
   return {
     id: crypto.randomUUID(),
     name: 'New Campaign',
@@ -276,28 +61,22 @@ const createDefaultCampaign = (firstMap?: MapData): Campaign => {
  * 2. `campaign` property holds the full persistence data for all maps.
  * 3. Switching maps involves syncing Top-level -> Campaign, then Campaign -> Top-level.
  */
+
 export interface GameState {
   // --- Active Map State (Proxied for Component Compatibility) ---
   tokens: Token[];
   drawings: Drawing[];
   doors: Door[];
   stairs: Stairs[];
-  gridSize: number;
+  gridSize: PixelSize;
   gridType: GridType;
-  gridColor: string;
+  gridColor: HexColor;
   map: MapConfig | null;
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
 
-  // --- UI/System State (Not persisted in MapData) ---
+  // --- System State (Not persisted in MapData) ---
   isCalibrating: boolean;
-  toast: ToastMessage | null;
-  confirmDialog: ConfirmDialog | null;
-  showResourceMonitor: boolean;
-  dungeonDialog: boolean;
-  isGamePaused: boolean;
-  isMobileSidebarOpen: boolean;
-  isCommandPaletteOpen: boolean;
 
   // --- Vision State (Computed, not persisted) ---
   /** Active vision polygons for current PC tokens (used for token visibility) */
@@ -364,9 +143,9 @@ export interface GameState {
   removeMultipleStairs: (ids: string[]) => void;
 
   // Map/Grid Attributes Actions
-  setGridSize: (size: number) => void;
+  setGridSize: (size: PixelSize) => void;
   setGridType: (type: GridType) => void;
-  setGridColor: (color: string) => void;
+  setGridColor: (color: HexColor) => void;
   setMap: (map: MapConfig | null) => void;
   updateMapPosition: (x: number, y: number) => void;
   updateMapScale: (scale: number) => void;
@@ -384,16 +163,6 @@ export interface GameState {
   setDaylightMode: (enabled: boolean) => void;
   setState: (state: Partial<GameState>) => void; // Legacy support
   setTokens: (tokens: Token[]) => void;
-  showToast: (message: string, type: 'error' | 'success' | 'info') => void;
-  clearToast: () => void;
-  showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) => void;
-  clearConfirmDialog: () => void;
-  setShowResourceMonitor: (show: boolean) => void;
-  showDungeonDialog: () => void;
-  clearDungeonDialog: () => void;
-  setIsGamePaused: (isPaused: boolean) => void;
-  setMobileSidebarOpen: (isOpen: boolean) => void;
-  setCommandPaletteOpen: (isOpen: boolean) => void;
 
   // Measurement Actions
   setActiveMeasurement: (measurement: Measurement | null) => void;
@@ -401,6 +170,7 @@ export interface GameState {
   setDmMeasurement: (measurement: Measurement | null) => void;
 }
 
+// eslint-disable-next-line max-lines-per-function
 export const useGameStore = create<GameState>((set, get) => {
   // Initialize with a default campaign
   const initialMap = createDefaultMap('Map 1');
@@ -421,19 +191,12 @@ export const useGameStore = create<GameState>((set, get) => {
 
     // --- Initial State (System) ---
     isCalibrating: false,
-    toast: null,
-    confirmDialog: null,
-    showResourceMonitor: false,
-    dungeonDialog: false,
-    isGamePaused: false,
-    isMobileSidebarOpen: false,
     activeVisionPolygons: [],
 
     // --- Initial State (Measurement) ---
     activeMeasurement: null,
     broadcastMeasurement: false,
     dmMeasurement: null,
-    isCommandPaletteOpen: false,
 
     campaign: initialCampaign,
 
@@ -447,18 +210,30 @@ export const useGameStore = create<GameState>((set, get) => {
       }
 
       // Safe: guarded by !campaign.maps[campaign.activeMapId] check above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const activeMap = campaign.maps[campaign.activeMapId]!;
       set({
         campaign,
         // Hydrate active map state
         tokens: activeMap.tokens || [],
-        drawings: activeMap.drawings || [],
+        drawings: (activeMap.drawings || []).map((d) => ({
+          ...d,
+          color: d.color ?? '#df4b26',
+          size: Math.max(1, Math.round(d.size ?? 5)) as PixelSize,
+        })),
         doors: activeMap.doors || [],
         stairs: activeMap.stairs || [],
-        gridSize: activeMap.gridSize || 50,
+        gridSize: toPixelSize(activeMap.gridSize || 50),
         gridType: activeMap.gridType || 'LINES',
-        gridColor: activeMap.gridColor || DEFAULT_GRID_COLOR,
-        map: activeMap.map || null,
+        gridColor: (() => {
+          try {
+            return toHexColor(activeMap.gridColor ?? DEFAULT_GRID_COLOR);
+          } catch {
+            console.warn(`[gameStore] Invalid gridColor "${activeMap.gridColor}", using default`);
+            return DEFAULT_GRID_COLOR as HexColor;
+          }
+        })(),
+        map: activeMap.map ?? null,
         exploredRegions: activeMap.exploredRegions || [],
         isDaylightMode: activeMap.isDaylightMode || false,
       });
@@ -478,6 +253,7 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: newMap.stairs,
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
+        gridColor: newMap.gridColor,
         map: newMap.map,
         exploredRegions: newMap.exploredRegions,
         isDaylightMode: newMap.isDaylightMode,
@@ -519,6 +295,7 @@ export const useGameStore = create<GameState>((set, get) => {
       // Create updated map object
       // Safe: activeId is state.campaign.activeMapId, always a valid key
       const updatedMap: MapData = {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         ...state.campaign.maps[activeId]!, // Preserve name/id
         tokens: state.tokens,
         drawings: state.drawings,
@@ -566,6 +343,7 @@ export const useGameStore = create<GameState>((set, get) => {
         map: newMap.map,
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
+        gridColor: newMap.gridColor,
         exploredRegions: newMap.exploredRegions,
         isDaylightMode: newMap.isDaylightMode,
       }));
@@ -577,7 +355,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
       // Prevent deleting the last map
       if (Object.keys(maps).length <= 1) {
-        get().showToast(rollForMessage('CANNOT_DELETE_ONLY_MAP'), 'error');
+        useUiStore.getState().showToast(rollForMessage('CANNOT_DELETE_ONLY_MAP'), 'error');
         return;
       }
 
@@ -586,6 +364,7 @@ export const useGameStore = create<GameState>((set, get) => {
         const mapIds = Object.keys(maps);
         const currentIndex = mapIds.indexOf(mapId);
         // Try next, or prev - safe: we already checked maps has more than 1 entry
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const nextActiveId = (mapIds[currentIndex + 1] ?? mapIds[currentIndex - 1])!;
 
         // Directly switch active map without calling switchMap to avoid syncing the deleted map
@@ -609,6 +388,7 @@ export const useGameStore = create<GameState>((set, get) => {
             map: nextMap.map,
             gridSize: nextMap.gridSize,
             gridType: nextMap.gridType,
+            gridColor: nextMap.gridColor ?? (DEFAULT_GRID_COLOR as HexColor),
             exploredRegions: nextMap.exploredRegions,
             isDaylightMode: nextMap.isDaylightMode,
           };
@@ -645,6 +425,7 @@ export const useGameStore = create<GameState>((set, get) => {
       // We must get FRESH state because syncActiveMapToCampaign updated it
       const freshState = get();
       // Safe: guarded by !state.campaign.maps[mapId] check above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const newMap = freshState.campaign.maps[mapId]!;
 
       set({
@@ -659,6 +440,7 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: newMap.stairs || [],
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
+        gridColor: newMap.gridColor ?? (DEFAULT_GRID_COLOR as HexColor),
         map: newMap.map,
         exploredRegions: newMap.exploredRegions || [],
         isDaylightMode: newMap.isDaylightMode,
@@ -771,9 +553,9 @@ export const useGameStore = create<GameState>((set, get) => {
       set((state) => ({ stairs: state.stairs.filter((s) => !ids.includes(s.id)) })),
 
     // --- Grid/Map Actions ---
-    setGridSize: (size: number) => set({ gridSize: size }),
+    setGridSize: (size: PixelSize) => set({ gridSize: size }),
     setGridType: (type: GridType) => set({ gridType: type }),
-    setGridColor: (color: string) => set({ gridColor: color }),
+    setGridColor: (color: HexColor) => set({ gridColor: color }),
     setMap: (map: MapConfig | null) => set({ map }),
     updateMapPosition: (x: number, y: number) =>
       set((state) => ({
@@ -804,18 +586,6 @@ export const useGameStore = create<GameState>((set, get) => {
     setDaylightMode: (enabled: boolean) => set({ isDaylightMode: enabled }),
     setTokens: (tokens: Token[]) => set({ tokens }),
     setState: (state: Partial<GameState>) => set(state),
-    showToast: (message: string, type: 'error' | 'success' | 'info') =>
-      set({ toast: { message, type } }),
-    clearToast: () => set({ toast: null }),
-    showConfirmDialog: (message: string, onConfirm: () => void, confirmText?: string) =>
-      set({ confirmDialog: { message, onConfirm, confirmText } }),
-    clearConfirmDialog: () => set({ confirmDialog: null }),
-    setShowResourceMonitor: (show: boolean) => set({ showResourceMonitor: show }),
-    showDungeonDialog: () => set({ dungeonDialog: true }),
-    clearDungeonDialog: () => set({ dungeonDialog: false }),
-    setIsGamePaused: (isPaused: boolean) => set({ isGamePaused: isPaused }),
-    setMobileSidebarOpen: (isOpen: boolean) => set({ isMobileSidebarOpen: isOpen }),
-    setCommandPaletteOpen: (isOpen: boolean) => set({ isCommandPaletteOpen: isOpen }),
 
     // --- Measurement Actions ---
     setActiveMeasurement: (measurement: Measurement | null) =>

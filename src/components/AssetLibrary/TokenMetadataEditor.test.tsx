@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TokenMetadataEditor from './TokenMetadataEditor';
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 
 /**
  * Test Suite for TokenMetadataEditor Component
@@ -22,6 +23,11 @@ import { useGameStore } from '../../store/gameStore';
 // Mock the useGameStore
 vi.mock('../../store/gameStore', () => ({
   useGameStore: vi.fn(),
+}));
+
+// Mock the useUiStore
+vi.mock('../../store/uiStore', () => ({
+  useUiStore: vi.fn(),
 }));
 
 vi.mock('../../hooks/useMediaQuery', () => ({
@@ -68,6 +74,13 @@ describe('TokenMetadataEditor', () => {
           tokenLibrary: mockTokenLibrary,
         },
         updateLibraryToken: mockUpdateLibraryToken,
+      };
+      return selector(state);
+    });
+
+    // Mock the useUiStore implementation
+    vi.mocked(useUiStore).mockImplementation((selector: any) => {
+      const state = {
         showToast: mockShowToast,
       };
       return selector(state);

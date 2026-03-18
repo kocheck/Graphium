@@ -1,0 +1,49 @@
+/**
+ * Texture Layer — Paper Grain & Leather Grain
+ *
+ * Applied via ::before pseudo-element on .app-root.
+ * pointer-events: none — never blocks interaction.
+ * z-index: 9999 — sits above all UI, below nothing.
+ * Konva <canvas> renders its own pixels; grain layering over it is harmless.
+ *
+ * Light mode: fine paper grain at 3% opacity, 180px tile
+ * Dark mode: coarser leather grain at 5% opacity
+ */
+
+:root {
+  --texture-grain-opacity: 0.03;
+  --texture-grain-size: 180px;
+  --texture-panel-highlight: rgba(255, 255, 255, 0.55);
+  --texture-brass-highlight: rgba(255, 255, 255, 0.22);
+}
+
+[data-theme='dark'] {
+  --texture-grain-opacity: 0.05;
+  --texture-panel-highlight: rgba(0, 0, 0, 0.4);
+}
+
+/* Paper/leather grain overlay */
+.app-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: var(--texture-grain-opacity);
+  background-image: url("data:image/svg+xml,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='noise'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23noise)'/></svg>");
+  background-repeat: repeat;
+  background-size: var(--texture-grain-size);
+}
+
+/*
+ * Panel highlight tokens are consumed by primitive/module CSS files
+ * when their box-shadow declarations are written (Phase 2/3).
+ * Example usage in primitives/card.css:
+ *   box-shadow: 0 1px 3px var(--app-shadow-sm), inset 0 1px 0 var(--texture-panel-highlight);
+ */
+
+/* Brass button highlight — polished metal catches light */
+.btn-primitive--primary,
+.btn-primitive--tool.active {
+  box-shadow: inset 0 1px 0 var(--texture-brass-highlight);
+}

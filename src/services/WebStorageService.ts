@@ -2,7 +2,7 @@ import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
 
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
-import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { Campaign, TokenLibraryItem } from '../types/domain';
 
 /**
  * IndexedDB schema version
@@ -56,6 +56,7 @@ export class WebStorageService implements IStorageService {
   private async initDB(): Promise<IDBPDatabase> {
     const db = await openDB(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion, newVersion) {
+        // eslint-disable-next-line no-console
         console.log(`[WebStorageService] Upgrading DB from ${oldVersion} to ${newVersion}`);
 
         // Token library store
@@ -63,12 +64,14 @@ export class WebStorageService implements IStorageService {
           const libraryStore = db.createObjectStore('library', { keyPath: 'id' });
           libraryStore.createIndex('category', 'category', { unique: false });
           libraryStore.createIndex('dateAdded', 'dateAdded', { unique: false });
+          // eslint-disable-next-line no-console
           console.log('[WebStorageService] Created library object store');
         }
 
         // Auto-save store (stores latest campaign state)
         if (!db.objectStoreNames.contains('autosave')) {
           db.createObjectStore('autosave', { keyPath: 'id' });
+          // eslint-disable-next-line no-console
           console.log('[WebStorageService] Created autosave object store');
         }
       },
@@ -94,10 +97,11 @@ export class WebStorageService implements IStorageService {
     try {
       // Serialize campaign to ZIP
       const zip = new JSZip();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const assetsFolder = zip.folder('assets')!;
 
       // Deep clone to avoid mutation
-      const campaignToSave = JSON.parse(JSON.stringify(campaign));
+      const campaignToSave = JSON.parse(JSON.stringify(campaign)) as Campaign;
 
       // Process all assets and convert URLs to blobs in ZIP
       await this.processCampaignAssets(campaignToSave, assetsFolder);
@@ -118,6 +122,7 @@ export class WebStorageService implements IStorageService {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      // eslint-disable-next-line no-console
       console.log('[WebStorageService] Campaign downloaded successfully');
       return true;
     } catch (error) {
@@ -139,6 +144,7 @@ export class WebStorageService implements IStorageService {
         timestamp: Date.now(),
       });
 
+      // eslint-disable-next-line no-console
       console.log('[WebStorageService] Auto-save completed');
       return true;
     } catch (error) {
@@ -148,11 +154,16 @@ export class WebStorageService implements IStorageService {
   }
 
   async loadCampaign(): Promise<Campaign | null> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       // Create file input
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.graphium';
+
+      // Resolve null if user cancels the file picker without selecting a file
+      input.addEventListener('cancel', () => {
+        resolve(null);
+      });
 
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
@@ -162,6 +173,7 @@ export class WebStorageService implements IStorageService {
         }
 
         try {
+          // eslint-disable-next-line no-console
           console.log('[WebStorageService] Loading campaign from file:', file.name);
 
           // Parse ZIP
@@ -172,17 +184,20 @@ export class WebStorageService implements IStorageService {
             throw new Error('Invalid .graphium file: missing manifest.json');
           }
 
-          const campaign: Campaign = JSON.parse(manifestStr);
+          const campaign = JSON.parse(manifestStr) as Campaign;
 
           // Restore assets from ZIP to Object URLs
           await this.restoreCampaignAssets(campaign, zip);
 
+          // eslint-disable-next-line no-console
           console.log('[WebStorageService] Campaign loaded successfully');
           resolve(campaign);
         } catch (error) {
           console.error('[WebStorageService] Load campaign failed:', error);
-          throw new Error(
-            `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          reject(
+            new Error(
+              `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            ),
           );
         }
       };
@@ -203,6 +218,7 @@ export class WebStorageService implements IStorageService {
       // Track URL for cleanup when saved to campaign or discarded
       this.tempAssetURLs.add(url);
 
+      // eslint-disable-next-line no-console
       console.log(
         `[WebStorageService] Created temp asset: ${fileName} → ${url.substring(0, 50)}...`,
       );
@@ -225,6 +241,7 @@ export class WebStorageService implements IStorageService {
         if (this.tempAssetURLs.has(url)) {
           URL.revokeObjectURL(url);
           this.tempAssetURLs.delete(url);
+          // eslint-disable-next-line no-console
           console.log(`[WebStorageService] Revoked temp asset URL: ${url.substring(0, 50)}...`);
         }
       });
@@ -232,6 +249,7 @@ export class WebStorageService implements IStorageService {
       // Clean up all temp assets
       this.tempAssetURLs.forEach((url) => {
         URL.revokeObjectURL(url);
+        // eslint-disable-next-line no-console
         console.log(`[WebStorageService] Revoked temp asset URL: ${url.substring(0, 50)}...`);
       });
       this.tempAssetURLs.clear();
@@ -268,6 +286,7 @@ export class WebStorageService implements IStorageService {
 
       await db.put('library', item);
 
+      // eslint-disable-next-line no-console
       console.log(`[WebStorageService] Saved asset to library: ${metadata.name}`);
       return item;
     } catch (error) {
@@ -300,10 +319,10 @@ export class WebStorageService implements IStorageService {
 
         // Also revoke any blob URLs that exist on the item itself (from previous sessions)
         // Only revoke if they're blob URLs (start with 'blob:')
-        if (item.src && item.src.startsWith('blob:')) {
+        if (item.src?.startsWith('blob:')) {
           URL.revokeObjectURL(item.src);
         }
-        if (item.thumbnailSrc && item.thumbnailSrc.startsWith('blob:')) {
+        if (item.thumbnailSrc?.startsWith('blob:')) {
           URL.revokeObjectURL(item.thumbnailSrc);
         }
       });
@@ -333,6 +352,7 @@ export class WebStorageService implements IStorageService {
         };
       });
 
+      // eslint-disable-next-line no-console
       console.log(`[WebStorageService] Loaded ${itemsWithURLs.length} library items`);
       return itemsWithURLs;
     } catch (error) {
@@ -354,7 +374,7 @@ export class WebStorageService implements IStorageService {
       }
 
       // Get item to revoke any other URLs (fallback)
-      const item = await db.get('library', assetId);
+      const item = (await db.get('library', assetId)) as TokenLibraryItem | undefined;
       if (item) {
         if (item.src?.startsWith('blob:')) {
           URL.revokeObjectURL(item.src);
@@ -365,6 +385,7 @@ export class WebStorageService implements IStorageService {
       }
 
       await db.delete('library', assetId);
+      // eslint-disable-next-line no-console
       console.log(`[WebStorageService] Deleted library asset: ${assetId}`);
     } catch (error) {
       console.error('[WebStorageService] Delete library asset failed:', error);
@@ -381,14 +402,15 @@ export class WebStorageService implements IStorageService {
     try {
       const db = await this.getDB();
 
-      const item = await db.get('library', assetId);
+      const item = (await db.get('library', assetId)) as TokenLibraryItem | undefined;
       if (!item) {
         throw new Error(`Asset ${assetId} not found in library`);
       }
 
-      const updated = { ...item, ...updates };
+      const updated: TokenLibraryItem = { ...item, ...updates };
       await db.put('library', updated);
 
+      // eslint-disable-next-line no-console
       console.log(`[WebStorageService] Updated library metadata: ${assetId}`);
       return updated;
     } catch (error) {
@@ -414,6 +436,7 @@ export class WebStorageService implements IStorageService {
   setThemeMode(mode: ThemeMode): Promise<void> {
     try {
       localStorage.setItem('graphium-theme', mode);
+      // eslint-disable-next-line no-console
       console.log(`[WebStorageService] Set theme mode: ${mode}`);
 
       // Broadcast theme change to other tabs (if supported)
@@ -476,6 +499,7 @@ export class WebStorageService implements IStorageService {
 
       // Check if already processed
       if (processedAssets.has(src)) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return processedAssets.get(src)!;
       }
 

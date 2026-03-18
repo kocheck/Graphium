@@ -41,6 +41,7 @@ const HEX_BOUNDS_SAFETY_FACTOR = 1.2;
  * - GridCell.r = row (y-axis)
  * - Cell (0,0) has top-left corner at pixel (0,0)
  */
+// eslint-disable-next-line import/no-unused-modules
 export class SquareGridGeometry implements GridGeometry {
   pixelToGrid(x: number, y: number, gridSize: number): GridCell {
     return {
@@ -138,6 +139,7 @@ export class SquareGridGeometry implements GridGeometry {
  * - Pre-computed SQRT3 constants to avoid repeated Math.sqrt calls
  * - Efficient hex rounding algorithm (no cube coordinate conversion)
  */
+// eslint-disable-next-line import/no-unused-modules
 export class HexagonalGridGeometry implements GridGeometry {
   pixelToGrid(x: number, y: number, gridSize: number): GridCell {
     // Convert pixel to fractional axial coordinates
@@ -214,10 +216,11 @@ export class HexagonalGridGeometry implements GridGeometry {
       this.pixelToGrid(bounds.x, bounds.y + bounds.height, gridSize), // Bottom Left
     ];
 
-    let minQ = corners[0]!.q;
-    let maxQ = corners[0]!.q;
-    let minR = corners[0]!.r;
-    let maxR = corners[0]!.r;
+    const firstCorner = corners[0] ?? { q: 0, r: 0 };
+    let minQ = firstCorner.q;
+    let maxQ = firstCorner.q;
+    let minR = firstCorner.r;
+    let maxR = firstCorner.r;
 
     for (const corner of corners) {
       minQ = Math.min(minQ, corner.q);
@@ -303,6 +306,7 @@ export class HexagonalGridGeometry implements GridGeometry {
  * - Simple linear transforms (no trigonometry needed)
  * - Minimal allocations
  */
+// eslint-disable-next-line import/no-unused-modules
 export class IsometricGridGeometry implements GridGeometry {
   pixelToGrid(x: number, y: number, gridSize: number): GridCell {
     // Inverse isometric projection
@@ -411,8 +415,16 @@ export function createGridGeometry(
       return new HexagonalGridGeometry();
     case 'ISOMETRIC':
       return new IsometricGridGeometry();
-    default:
-      // Fail loudly for unknown types to avoid masking configuration bugs
-      throw new Error(`createGridGeometry: Unknown grid type "${String(gridType)}"`);
+    default: {
+      // Unknown gridType from a corrupted or future-version campaign file.
+      // Degrade gracefully rather than crashing the React component tree.
+      // The `never` annotation keeps TypeScript exhaustiveness checking intact —
+      // adding a new GridType without updating this switch will be a compile error.
+      const unknown: never = gridType;
+      console.warn(
+        `createGridGeometry: unknown grid type "${String(unknown)}", falling back to square grid`,
+      );
+      return new SquareGridGeometry();
+    }
   }
 }

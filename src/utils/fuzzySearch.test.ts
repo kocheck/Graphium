@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { fuzzySearch, filterByCategory, getCategories } from './fuzzySearch';
-import type { TokenLibraryItem } from '../store/gameStore';
+import type { TokenLibraryItem } from '../types/domain';
 
 describe('fuzzySearch', () => {
   const mockLibrary: TokenLibraryItem[] = [

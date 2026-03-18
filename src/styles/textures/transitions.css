@@ -1,0 +1,71 @@
+/**
+ * Theme Transitions & Motion Preferences
+ *
+ * Scoped to UI elements only — never applied to Konva canvas (performance).
+ * Add .themed-transition to any element that should animate during theme switch.
+ */
+
+.app-root,
+.sidebar,
+.toolbar,
+.btn,
+.btn-tool,
+.btn-mode,
+.btn-broadcast,
+.sidebar-input,
+.sidebar-token,
+.info-box,
+.themed-transition,
+[data-theme] .themed-transition {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: var(--duration-slow);
+  transition-timing-function: var(--ease-default);
+}
+
+/* Prevent transitions on initial load (flash of wrong theme) */
+.theme-loading .app-root,
+.theme-loading .sidebar,
+.theme-loading .toolbar,
+.theme-loading .btn,
+.theme-loading .btn-tool,
+.theme-loading .themed-transition {
+  transition: none !important;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: more) {
+  :root,
+  [data-theme='light'],
+  [data-theme='dark'] {
+    --app-text-secondary: var(--app-text-primary);
+    --app-text-muted: var(--app-text-primary);
+    --app-border-subtle: var(--app-border-hover);
+    --app-border-default: var(--app-border-hover);
+  }
+
+  .btn,
+  .btn-tool,
+  .btn-mode,
+  input,
+  select,
+  textarea {
+    border-width: 2px;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--app-accent-solid);
+    outline-offset: 2px;
+  }
+
+  .toolbar {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

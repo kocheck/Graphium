@@ -25,9 +25,9 @@ import {
   RiTreeLine, // Used in code example strings
 } from '@remixicon/react';
 
-import { useGameStore } from '../../store/gameStore';
-import ToggleSwitch from '../ToggleSwitch';
-import UpdateManager from '../UpdateManager';
+import { useUiStore } from '../../store/uiStore';
+import UpdateManager from '../Managers/UpdateManager';
+import { Button, Input, Card, ToggleSwitch } from '../primitives';
 
 import type { ComponentExample, ComponentCategory } from './types';
 
@@ -105,35 +105,25 @@ export const categories: ComponentCategory[] = [
  * Component examples registry
  */
 export const componentExamples: ComponentExample[] = [
-  // BUTTONS
+  // BUTTONS (using Button primitive from components/primitives/)
   {
     id: 'button-primary',
     name: 'Primary Button',
     category: 'button',
     description: 'Main call-to-action button with accent color',
-    component: (
-      <button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white shadow-sm">
-        Primary Action
-      </button>
-    ),
-    code: `<button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white shadow-sm">
-  Primary Action
-</button>`,
+    component: <Button variant="primary">Primary Action</Button>,
+    code: `import { Button } from './components/primitives';
+
+<Button variant="primary" onClick={handleSave}>Primary Action</Button>`,
     tags: ['button', 'primary', 'action'],
   },
   {
     id: 'button-secondary',
     name: 'Secondary Button',
     category: 'button',
-    description: 'Secondary action button with subtle styling',
-    component: (
-      <button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-bg-surface)] hover:bg-[var(--app-bg-hover)] border border-[var(--app-border-default)] text-[var(--app-text-primary)]">
-        Secondary Action
-      </button>
-    ),
-    code: `<button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-bg-surface)] hover:bg-[var(--app-bg-hover)] border border-[var(--app-border-default)] text-[var(--app-text-primary)]">
-  Secondary Action
-</button>`,
+    description: 'Secondary action button with border',
+    component: <Button variant="secondary">Secondary Action</Button>,
+    code: `<Button variant="secondary" onClick={handleCancel}>Secondary Action</Button>`,
     tags: ['button', 'secondary'],
   },
   {
@@ -141,51 +131,144 @@ export const componentExamples: ComponentExample[] = [
     name: 'Danger Button',
     category: 'button',
     description: 'Destructive action button (delete, remove, etc.)',
-    component: (
-      <button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-error-solid)] hover:bg-[var(--app-error-solid-hover)] text-white shadow-sm">
-        Delete
-      </button>
-    ),
-    code: `<button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-error-solid)] hover:bg-[var(--app-error-solid-hover)] text-white shadow-sm">
-  Delete
-</button>`,
+    component: <Button variant="destructive">Delete</Button>,
+    code: `<Button variant="destructive" onClick={handleDelete}>Delete</Button>`,
     tags: ['button', 'danger', 'delete'],
   },
   {
     id: 'button-ghost',
     name: 'Ghost Button',
     category: 'button',
-    description: 'Transparent button with border only',
-    component: (
-      <button className="px-4 py-2 rounded font-medium transition-all border border-[var(--app-border-subtle)] hover:bg-[var(--app-bg-hover)] text-[var(--app-text-primary)]">
-        Ghost Button
-      </button>
-    ),
-    code: `<button className="px-4 py-2 rounded font-medium transition-all border border-[var(--app-border-subtle)] hover:bg-[var(--app-bg-hover)] text-[var(--app-text-primary)]">
-  Ghost Button
-</button>`,
+    description: 'Transparent button for cancel/dismiss actions',
+    component: <Button variant="ghost">Cancel</Button>,
+    code: `<Button variant="ghost" onClick={onClose}>Cancel</Button>`,
     tags: ['button', 'ghost', 'outline'],
   },
+  {
+    id: 'button-tool',
+    name: 'Tool Button',
+    category: 'button',
+    description: 'Toolbar toggle button with active state',
+    component: (
+      <div className="flex gap-2">
+        <Button variant="tool">Inactive</Button>
+        <Button variant="tool" isActive>
+          Active
+        </Button>
+      </div>
+    ),
+    code: `<Button variant="tool" isActive={tool === 'draw'} onClick={() => setTool('draw')}>
+  Draw
+</Button>`,
+    tags: ['button', 'tool', 'toggle'],
+  },
+  {
+    id: 'button-sizes',
+    name: 'Button Sizes',
+    category: 'button',
+    description: 'Small, medium (default), and large sizes',
+    component: (
+      <div className="flex items-center gap-2">
+        <Button variant="primary" size="sm">
+          Small
+        </Button>
+        <Button variant="primary" size="md">
+          Medium
+        </Button>
+        <Button variant="primary" size="lg">
+          Large
+        </Button>
+      </div>
+    ),
+    code: `<Button variant="primary" size="sm">Small</Button>
+<Button variant="primary" size="md">Medium</Button>
+<Button variant="primary" size="lg">Large</Button>`,
+    tags: ['button', 'sizes'],
+  },
+  {
+    id: 'button-with-icon',
+    name: 'Button with Icon',
+    category: 'button',
+    description: 'Button with leading or trailing icon',
+    component: (
+      <div className="flex gap-2">
+        <Button variant="primary" leftIcon={<RiHomeLine className="w-4 h-4" />}>
+          Home
+        </Button>
+        <Button variant="secondary" leftIcon={<RiSettings3Line className="w-4 h-4" />}>
+          Settings
+        </Button>
+      </div>
+    ),
+    code: `<Button variant="primary" leftIcon={<RiHomeLine className="w-4 h-4" />}>Home</Button>`,
+    tags: ['button', 'icon'],
+  },
+  {
+    id: 'button-loading',
+    name: 'Loading Button',
+    category: 'button',
+    description: 'Button in loading state with spinner',
+    component: (
+      <Button variant="primary" isLoading>
+        Saving...
+      </Button>
+    ),
+    code: `<Button variant="primary" isLoading={isSaving}>
+  {isSaving ? 'Saving...' : 'Save'}
+</Button>`,
+    tags: ['button', 'loading', 'spinner'],
+  },
+  {
+    id: 'button-disabled',
+    name: 'Disabled Button',
+    category: 'button',
+    description: 'Button in disabled state',
+    component: (
+      <Button variant="primary" disabled>
+        Disabled
+      </Button>
+    ),
+    code: `<Button variant="primary" disabled>Disabled</Button>`,
+    tags: ['button', 'disabled'],
+  },
 
-  // INPUTS
+  // INPUTS (using Input primitive from components/primitives/)
   {
     id: 'input-text',
     name: 'Text Input',
     category: 'input',
-    description: 'Standard text input field',
+    description: 'Standard text input with label',
+    component: <Input label="Campaign Name" placeholder="Enter campaign name..." />,
+    code: `import { Input } from './components/primitives';
+
+<Input label="Campaign Name" placeholder="Enter campaign name..." />`,
+    tags: ['input', 'text', 'form'],
+  },
+  {
+    id: 'input-error',
+    name: 'Input with Error',
+    category: 'input',
+    description: 'Text input showing validation error',
     component: (
-      <input
-        type="text"
-        placeholder="Enter text..."
-        className="px-3 py-2 rounded bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] text-[var(--app-text-primary)] placeholder-[var(--app-text-muted)] focus:outline-none focus:border-[var(--app-accent-solid)] focus:ring-1 focus:ring-[var(--app-accent-solid)] transition-all"
+      <Input label="Email" defaultValue="invalid" error="Please enter a valid email address" />
+    ),
+    code: `<Input label="Email" value={email} error={emailError} onChange={handleChange} />`,
+    tags: ['input', 'error', 'validation'],
+  },
+  {
+    id: 'input-helper',
+    name: 'Input with Helper Text',
+    category: 'input',
+    description: 'Text input with descriptive helper text',
+    component: (
+      <Input
+        label="Map Name"
+        placeholder="e.g. Goblin Caves"
+        helperText="Used for display in the sidebar"
       />
     ),
-    code: `<input
-  type="text"
-  placeholder="Enter text..."
-  className="px-3 py-2 rounded bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] text-[var(--app-text-primary)] placeholder-[var(--app-text-muted)] focus:outline-none focus:border-[var(--app-accent-solid)] focus:ring-1 focus:ring-[var(--app-accent-solid)] transition-all"
-/>`,
-    tags: ['input', 'text', 'form'],
+    code: `<Input label="Map Name" helperText="Used for display in the sidebar" />`,
+    tags: ['input', 'helper', 'form'],
   },
   {
     id: 'input-search',
@@ -221,7 +304,10 @@ export const componentExamples: ComponentExample[] = [
     name: 'Toggle Switch',
     category: 'toggle',
     description: 'Modern toggle switch component',
-    component: <ToggleSwitch checked onChange={() => {}} label="Enable Feature" />,
+    component: (
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      <ToggleSwitch checked onChange={() => {}} label="Enable Feature" />
+    ),
     code: `import ToggleSwitch from './components/ToggleSwitch';
 
 <ToggleSwitch
@@ -239,6 +325,7 @@ export const componentExamples: ComponentExample[] = [
     component: (
       <ToggleSwitch
         checked={false}
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         onChange={() => {}}
         label="Dark Mode"
         description="Enable dark theme across the application"
@@ -325,11 +412,11 @@ export const componentExamples: ComponentExample[] = [
       <button
         className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-bg-surface)] hover:bg-[var(--app-bg-hover)] border border-[var(--app-border-default)] text-[var(--app-text-primary)]"
         onClick={() => {
-          useGameStore
+          useUiStore
             .getState()
             .showConfirmDialog(
               'Are you sure you want to proceed with this potentially destructive action?',
-              () => useGameStore.getState().showToast('Confirmed!', 'success'),
+              () => useUiStore.getState().showToast('Confirmed!', 'success'),
               'Proceed',
             );
         }}
@@ -337,7 +424,7 @@ export const componentExamples: ComponentExample[] = [
         Open Dialog
       </button>
     ),
-    code: `const { showConfirmDialog, showToast } = useGameStore();
+    code: `const { showConfirmDialog, showToast } = useUiStore();
 
 showConfirmDialog(
   'Are you sure you want to proceed?',
@@ -353,7 +440,7 @@ showConfirmDialog(
     description: 'Software update dialog for electron-updater integration',
     component: (() => {
       // Create a wrapper component with state
-      function UpdateManagerDemo() {
+      function UpdateManagerDemo(): React.JSX.Element {
         const [isOpen, setIsOpen] = useState(false);
         return (
           <>
@@ -369,7 +456,7 @@ showConfirmDialog(
       }
       return <UpdateManagerDemo />;
     })(),
-    code: `import UpdateManager from './components/UpdateManager';
+    code: `import UpdateManager from './components/Managers/UpdateManager';
 import { useState } from 'react';
 
 const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
@@ -404,13 +491,13 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
       <button
         className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-success-bg)] text-[var(--app-success-text)] border border-[var(--app-success-border)] hover:brightness-110"
         onClick={() =>
-          useGameStore.getState().showToast('Operation completed successfully', 'success')
+          useUiStore.getState().showToast('Operation completed successfully', 'success')
         }
       >
         Show Success
       </button>
     ),
-    code: `useGameStore.getState().showToast('Operation completed successfully', 'success');`,
+    code: `useUiStore.getState().showToast('Operation completed successfully', 'success');`,
     tags: ['toast', 'notification', 'success'],
   },
   {
@@ -421,12 +508,12 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     component: (
       <button
         className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-error-bg)] text-[var(--app-error-text)] border border-[var(--app-error-border)] hover:brightness-110"
-        onClick={() => useGameStore.getState().showToast('Something went wrong', 'error')}
+        onClick={() => useUiStore.getState().showToast('Something went wrong', 'error')}
       >
         Show Error
       </button>
     ),
-    code: `useGameStore.getState().showToast('Something went wrong', 'error');`,
+    code: `useUiStore.getState().showToast('Something went wrong', 'error');`,
     tags: ['toast', 'notification', 'error'],
   },
   {
@@ -437,12 +524,12 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     component: (
       <button
         className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-bg)] text-[var(--app-accent-text)] border border-[var(--app-accent-solid)] hover:brightness-110"
-        onClick={() => useGameStore.getState().showToast('Here is some useful information', 'info')}
+        onClick={() => useUiStore.getState().showToast('Here is some useful information', 'info')}
       >
         Show Info
       </button>
     ),
-    code: `useGameStore.getState().showToast('Here is some useful information', 'info');`,
+    code: `useUiStore.getState().showToast('Here is some useful information', 'info');`,
     tags: ['toast', 'notification', 'info'],
   },
 
@@ -585,42 +672,52 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     tags: ['color', 'primary', 'theme'],
   },
 
-  // CARDS
+  // CARDS (using Card primitive from components/primitives/)
   {
-    id: 'card-basic',
-    name: 'Basic Card',
+    id: 'card-surface',
+    name: 'Surface Card',
     category: 'card',
-    description: 'Standard card container',
+    description: 'Flat surface card (default)',
     component: (
-      <div className="p-4 rounded-lg bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] shadow-sm">
-        <h3 className="text-lg font-semibold text-[var(--app-text-primary)] mb-2">Card Title</h3>
+      <Card variant="surface">
+        <h3 className="text-lg font-semibold text-[var(--app-text-primary)] mb-2">Surface Card</h3>
         <p className="text-sm text-[var(--app-text-secondary)]">
-          This is a basic card with some content inside.
+          Flat background, no border or shadow.
         </p>
-      </div>
+      </Card>
     ),
-    code: `<div className="p-4 rounded-lg bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] shadow-sm">
-  <h3 className="text-lg font-semibold text-[var(--app-text-primary)] mb-2">Card Title</h3>
-  <p className="text-sm text-[var(--app-text-secondary)]">Card content here.</p>
-</div>`,
-    tags: ['card', 'container'],
+    code: `import { Card } from './components/primitives';
+
+<Card variant="surface">Content</Card>`,
+    tags: ['card', 'container', 'surface'],
   },
   {
-    id: 'card-hover',
-    name: 'Hoverable Card',
+    id: 'card-outlined',
+    name: 'Outlined Card',
     category: 'card',
-    description: 'Card with hover state',
+    description: 'Card with border',
     component: (
-      <div className="p-4 rounded-lg bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] hover:bg-[var(--app-bg-hover)] hover:border-[var(--app-border-hover)] transition-all cursor-pointer shadow-sm hover:shadow-md">
-        <h3 className="text-lg font-semibold text-[var(--app-text-primary)] mb-2">Hover Me</h3>
-        <p className="text-sm text-[var(--app-text-secondary)]">This card changes on hover.</p>
-      </div>
+      <Card variant="outlined">
+        <h3 className="text-lg font-semibold text-[var(--app-text-primary)] mb-2">Outlined Card</h3>
+        <p className="text-sm text-[var(--app-text-secondary)]">Surface with a subtle border.</p>
+      </Card>
     ),
-    code: `<div className="p-4 rounded-lg bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] hover:bg-[var(--app-bg-hover)] hover:border-[var(--app-border-hover)] transition-all cursor-pointer shadow-sm hover:shadow-md">
-  <h3 className="text-lg font-semibold text-[var(--app-text-primary)] mb-2">Hover Me</h3>
-  <p className="text-sm text-[var(--app-text-secondary)]">This card changes on hover.</p>
-</div>`,
-    tags: ['card', 'hover', 'interactive'],
+    code: `<Card variant="outlined">Content</Card>`,
+    tags: ['card', 'container', 'outlined'],
+  },
+  {
+    id: 'card-elevated',
+    name: 'Elevated Card',
+    category: 'card',
+    description: 'Card with shadow for emphasis',
+    component: (
+      <Card variant="elevated">
+        <h3 className="text-lg font-semibold text-[var(--app-text-primary)] mb-2">Elevated Card</h3>
+        <p className="text-sm text-[var(--app-text-secondary)]">Raised with a subtle shadow.</p>
+      </Card>
+    ),
+    code: `<Card variant="elevated">Content</Card>`,
+    tags: ['card', 'container', 'elevated', 'shadow'],
   },
 
   // LANDING PAGE PATTERNS
@@ -630,9 +727,9 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     category: 'landing-patterns',
     description: 'Cyclical theme toggle (Light → Dark → Auto) with icon indicators',
     component: (() => {
-      function ThemeSwitcherDemo() {
+      function ThemeSwitcherDemo(): React.JSX.Element {
         const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark');
-        const getIcon = () => {
+        const getIcon = (): React.JSX.Element => {
           if (theme === 'light') {
             return <RiSunLine className="w-4 h-4" />;
           }
@@ -641,7 +738,7 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
           }
           return <RiComputerLine className="w-4 h-4" />;
         };
-        const getLabel = () => {
+        const getLabel = (): string => {
           if (theme === 'light') {
             return 'Light';
           }
@@ -650,9 +747,10 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
           }
           return 'Auto';
         };
-        const cycleTheme = () => {
+        const cycleTheme = (): void => {
           const themes: Array<typeof theme> = ['light', 'dark', 'system'];
           const currentIndex = themes.indexOf(theme);
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           setTheme(themes[(currentIndex + 1) % themes.length]!);
         };
         return (
@@ -714,7 +812,7 @@ const handleToggleTheme = async () => {
     category: 'landing-patterns',
     description: 'Performance mode toggle that disables animations/effects for low-end devices',
     component: (() => {
-      function LiteModeDemo() {
+      function LiteModeDemo(): React.JSX.Element {
         const [liteMode, setLiteMode] = useState(false);
         return (
           <button
@@ -790,7 +888,7 @@ const handleToggleLiteMode = () => {
     category: 'landing-patterns',
     description: 'Search input with icon that appears when list has 6+ items',
     component: (() => {
-      function SearchFilterDemo() {
+      function SearchFilterDemo(): React.JSX.Element {
         const [query, setQuery] = useState('');
         return (
           <div style={{ position: 'relative', marginBottom: '0.75rem', width: '300px' }}>
@@ -982,7 +1080,7 @@ const filteredCampaigns = campaigns.filter(campaign =>
               </p>
             </div>
             <a
-              href="#"
+              href="https://github.com/kocheck/Graphium/releases"
               style={{
                 background: 'var(--app-accent-solid)',
                 color: 'white',

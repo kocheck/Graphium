@@ -52,6 +52,7 @@ type ResultItem =
   | { type: 'asset'; data: ReturnType<typeof fuzzySearch>[number] }
   | { type: 'section'; label: string };
 
+// eslint-disable-next-line max-lines-per-function
 function CommandPalette({
   isOpen,
   onClose,
@@ -60,7 +61,7 @@ function CommandPalette({
   onLaunchWorldView,
   onOpenDungeonGenerator,
   isGamePaused,
-}: CommandPaletteProps) {
+}: CommandPaletteProps): React.JSX.Element | null {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -176,7 +177,8 @@ function CommandPalette({
       return;
     }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    // eslint-disable-next-line complexity
+    const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'Enter' && results.length > 0) {
@@ -233,17 +235,28 @@ function CommandPalette({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-32 bg-black/50"
+      role="presentation"
       onClick={onClose}
     >
       {/* Modal content */}
       <div
         className="w-full max-w-2xl bg-neutral-900 rounded-lg shadow-2xl overflow-hidden"
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
         <div className="p-4 border-b border-neutral-700">
           <input
             aria-label="Search actions and assets"
+            aria-controls="command-palette-results"
+            aria-activedescendant={
+              selectedIndex >= 0 && results[selectedIndex]
+                ? `${results[selectedIndex]?.type === 'command' ? 'command' : 'asset'}-option-${selectedIndex}`
+                : undefined
+            }
+            role="combobox"
+            aria-expanded={results.length > 0}
+            aria-autocomplete="list"
             ref={searchInputRef}
             type="text"
             value={query}
@@ -254,7 +267,7 @@ function CommandPalette({
         </div>
 
         {/* Results list */}
-        <div className="max-h-96 overflow-y-auto">
+        <div id="command-palette-results" role="listbox" className="max-h-96 overflow-y-auto">
           {results.length === 0 ? (
             <div className="p-8 text-center text-neutral-500">
               <p className="text-lg mb-2">No results found</p>
@@ -283,16 +296,24 @@ function CommandPalette({
                   return (
                     <div
                       key={cmd.id}
+                      id={`command-option-${index}`}
                       role="option"
+                      tabIndex={0}
                       aria-selected={index === selectedIndex}
                       onClick={() => handleSelectItem(index)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSelectItem(index);
+                        }
+                      }}
                       className={`flex items-center gap-4 p-4 cursor-pointer transition-colors border-b border-neutral-800 ${
                         index === selectedIndex ? 'bg-neutral-700' : 'hover:bg-neutral-800'
                       }`}
                     >
                       {/* Icon */}
                       <div className="w-10 h-10 flex items-center justify-center text-2xl bg-neutral-800 rounded">
-                        {cmd.icon || '⚡'}
+                        {cmd.icon ?? '⚡'}
                       </div>
 
                       {/* Metadata */}
@@ -318,9 +339,17 @@ function CommandPalette({
                 return (
                   <div
                     key={asset.id}
+                    id={`asset-option-${index}`}
                     role="option"
+                    tabIndex={0}
                     aria-selected={index === selectedIndex}
                     onClick={() => handleSelectItem(index)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectItem(index);
+                      }
+                    }}
                     className={`flex items-center gap-4 p-4 cursor-pointer transition-colors border-b border-neutral-800 ${
                       index === selectedIndex ? 'bg-neutral-700' : 'hover:bg-neutral-800'
                     }`}
