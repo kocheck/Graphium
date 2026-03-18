@@ -15,12 +15,11 @@
  * zIndex: 55 (below doors at 60, above tokens at 50)
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { Graphics } from 'pixi.js';
 
 import { usePixiContainer } from './hooks/usePixiContainer';
-import { clearContainer } from '../../utils/pixiUtils';
 
 import type { Stairs } from '../../types/domain';
 import type { Container as PixiContainer } from 'pixi.js';
@@ -144,22 +143,50 @@ function createStairsGraphics(stairs: Stairs): Graphics {
   return g;
 }
 
+// eslint-disable-next-line import/no-unused-modules, react-refresh/only-export-components
+export function stairsKey(stair: Stairs): string {
+  return stair.id;
+}
+
 export function StairsLayer({ worldContainer, stairs }: StairsLayerProps): null {
   const containerRef = usePixiContainer(worldContainer, 55);
+  const graphicsMapRef = useRef<Map<string, Graphics>>(new Map());
 
-  // Redraw all stairs whenever the stairs array changes
+  // Clear the map when worldContainer changes — usePixiContainer destroys the
+  // old container's children, so any Graphics refs in the map become stale.
+  useEffect(() => {
+    const map = graphicsMapRef.current;
+    return () => {
+      map.clear();
+    };
+  }, [worldContainer]);
+
+  // Incrementally add/remove stairs — no full rebuild on every change.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
       return;
     }
 
-    // Remove and destroy old graphics
-    clearContainer(container);
+    const map = graphicsMapRef.current;
+    const currentIds = new Set(stairs.map((s) => s.id));
 
+    // Remove stairs that are no longer present
+    for (const [id, g] of map) {
+      if (!currentIds.has(id)) {
+        container.removeChild(g);
+        g.destroy();
+        map.delete(id);
+      }
+    }
+
+    // Add stairs that are not yet in the map
     for (const stair of stairs) {
-      const g = createStairsGraphics(stair);
-      container.addChild(g);
+      if (!map.has(stair.id)) {
+        const g = createStairsGraphics(stair);
+        container.addChild(g);
+        map.set(stair.id, g);
+      }
     }
   }, [containerRef, stairs]);
 
