@@ -21,12 +21,14 @@
  * ```
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
-import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Graphics, Text, TextStyle } from 'pixi.js';
 
+import { usePixiContainer } from './hooks/usePixiContainer';
 import { formatDistance, formatRadius, formatCone } from '../../utils/measurement';
 import { parseRgba } from '../../utils/pixiColor';
+import { clearContainer } from '../../utils/pixiUtils';
 
 import type { Measurement } from '../../types/measurement';
 import type { Container as PixiContainer } from 'pixi.js';
@@ -184,25 +186,7 @@ export function MeasurementOverlay({
   textColor = MEASUREMENT_COLORS.text,
   textBgColor: _textBgColor = MEASUREMENT_COLORS.textBg, // kept for API compatibility
 }: MeasurementOverlayProps): null {
-  const containerRef = useRef<PixiContainer | null>(null);
-
-  // Mount/unmount layer container alongside worldContainer
-  useEffect(() => {
-    if (!worldContainer) {
-      return;
-    }
-
-    const c = new Container();
-    c.zIndex = 150;
-    worldContainer.addChild(c);
-    containerRef.current = c;
-
-    return () => {
-      worldContainer.removeChild(c);
-      c.destroy({ children: true });
-      containerRef.current = null;
-    };
-  }, [worldContainer]);
+  const containerRef = usePixiContainer(worldContainer, 150);
 
   // Redraw whenever measurement or display props change
   useEffect(() => {
@@ -212,7 +196,7 @@ export function MeasurementOverlay({
     }
 
     // Clear previous frame
-    c.removeChildren().forEach((child) => child.destroy({ children: true }));
+    clearContainer(c);
 
     if (!measurement) {
       return;
@@ -234,7 +218,7 @@ export function MeasurementOverlay({
         // Unknown measurement type — render nothing
         break;
     }
-  }, [measurement, gridSize, fillColor, strokeColor, strokeWidth, textColor]);
+  }, [containerRef, measurement, gridSize, fillColor, strokeColor, strokeWidth, textColor]);
 
   return null;
 }

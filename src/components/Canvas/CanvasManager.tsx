@@ -747,7 +747,7 @@ function CanvasManager({
       <DrawingLayer worldContainer={worldContainer} gridSize={gridSize} />
 
       {/* Phase 5: Stairs shapes — PixiJS Graphics, non-interactive architectural elements */}
-      <StairsLayer worldContainer={worldContainer} stairs={stairs} isWorldView={isWorldView} />
+      <StairsLayer worldContainer={worldContainer} stairs={stairs} />
 
       {/* Phase 5: Door shapes — PixiJS Graphics, interactive in DM mode */}
       <DoorLayer

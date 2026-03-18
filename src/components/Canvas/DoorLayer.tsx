@@ -19,7 +19,10 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 
-import { Container, Graphics } from 'pixi.js';
+import { Graphics } from 'pixi.js';
+
+import { usePixiContainer } from './hooks/usePixiContainer';
+import { clearContainer } from '../../utils/pixiUtils';
 
 import type { Door } from '../../types/domain';
 import type { Container as PixiContainer } from 'pixi.js';
@@ -286,7 +289,7 @@ export function DoorLayer({
   onDeleteDoor,
   onDoorContextMenu,
 }: DoorLayerProps): null {
-  const containerRef = useRef<PixiContainer | null>(null);
+  const containerRef = usePixiContainer(worldContainer, 60);
 
   // Stable callback refs so the redraw effect doesn't need them as deps
   const onToggleDoorRef = useRef(onToggleDoor);
@@ -301,24 +304,6 @@ export function DoorLayer({
 
   const isWorldViewRef = useRef(isWorldView);
   isWorldViewRef.current = isWorldView;
-
-  // Mount/unmount the layer container alongside worldContainer
-  useEffect(() => {
-    if (!worldContainer) {
-      return;
-    }
-
-    const c = new Container();
-    c.zIndex = 60;
-    worldContainer.addChild(c);
-    containerRef.current = c;
-
-    return () => {
-      worldContainer.removeChild(c);
-      c.destroy({ children: true });
-      containerRef.current = null;
-    };
-  }, [worldContainer]);
 
   // Build stable click/context-menu handler factory using useCallback
   const makeHandlers = useCallback(
@@ -362,7 +347,7 @@ export function DoorLayer({
     }
 
     // Remove and destroy old graphics
-    container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    clearContainer(container);
 
     for (const door of doors) {
       const isSelected = selectedIds.includes(door.id);
@@ -374,7 +359,7 @@ export function DoorLayer({
 
       container.addChild(g);
     }
-  }, [doors, isWorldView, selectedIds, makeHandlers]);
+  }, [containerRef, doors, isWorldView, selectedIds, makeHandlers]);
 
   return null;
 }

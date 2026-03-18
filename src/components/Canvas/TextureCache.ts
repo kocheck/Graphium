@@ -2,6 +2,11 @@ import { Assets } from 'pixi.js';
 
 import type { Texture } from 'pixi.js';
 
+/**
+ * In-flight deduplication map: prevents duplicate concurrent loads for the same URL.
+ * Entries are removed once the promise settles — resolved calls delegate to
+ * PixiJS Assets, which maintains its own permanent texture cache internally.
+ */
 const inFlight = new Map<string, Promise<Texture>>();
 
 export function getOrLoadTexture(url: string): Promise<Texture> {
@@ -9,7 +14,9 @@ export function getOrLoadTexture(url: string): Promise<Texture> {
   if (existing) {
     return existing;
   }
-  const promise = Assets.load<Texture>(url);
+  const promise = Assets.load<Texture>(url).finally(() => {
+    inFlight.delete(url);
+  });
   inFlight.set(url, promise);
   return promise;
 }

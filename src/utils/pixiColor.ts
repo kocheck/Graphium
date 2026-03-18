@@ -39,3 +39,12 @@ export function parseRgba(css: string): { color: number; alpha: number } {
   const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
   return { color: (r << 16) | (g << 8) | b, alpha: a };
 }
+
+/**
+ * Converts a CSS hex color string (#rrggbb or #rgb) to normalized [r, g, b] floats (0–1).
+ * Used for PixiJS shader vec3/vec4 color uniforms.
+ */
+export function hexToRgbFloats(hex: string): [number, number, number] {
+  const { color } = parseRgba(hex);
+  return [((color >> 16) & 0xff) / 255, ((color >> 8) & 0xff) / 255, (color & 0xff) / 255];
+}

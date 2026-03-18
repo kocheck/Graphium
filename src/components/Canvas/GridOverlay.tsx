@@ -9,6 +9,8 @@ import { useEffect, useRef } from 'react';
 
 import { Graphics } from 'pixi.js';
 
+import { parseRgba } from '../../utils/pixiColor';
+
 import type { Container } from 'pixi.js';
 
 interface GridLine {
@@ -105,7 +107,7 @@ export function GridOverlay({
 
     g.clear();
 
-    const colorNum = parseInt(gridColor.replace('#', ''), 16);
+    const colorNum = parseRgba(gridColor).color;
     const { horizontal, vertical } = buildGridGeometry({
       gridSize,
       mapWidth,

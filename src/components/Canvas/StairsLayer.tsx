@@ -15,9 +15,12 @@
  * zIndex: 55 (below doors at 60, above tokens at 50)
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
-import { Container, Graphics } from 'pixi.js';
+import { Graphics } from 'pixi.js';
+
+import { usePixiContainer } from './hooks/usePixiContainer';
+import { clearContainer } from '../../utils/pixiUtils';
 
 import type { Stairs } from '../../types/domain';
 import type { Container as PixiContainer } from 'pixi.js';
@@ -34,7 +37,6 @@ const STAIRS_COLORS = {
 interface StairsLayerProps {
   worldContainer: PixiContainer | null;
   stairs: Stairs[];
-  isWorldView: boolean;
 }
 
 /**
@@ -143,25 +145,7 @@ function createStairsGraphics(stairs: Stairs): Graphics {
 }
 
 export function StairsLayer({ worldContainer, stairs }: StairsLayerProps): null {
-  const containerRef = useRef<PixiContainer | null>(null);
-
-  // Mount/unmount the layer container alongside worldContainer
-  useEffect(() => {
-    if (!worldContainer) {
-      return;
-    }
-
-    const c = new Container();
-    c.zIndex = 55;
-    worldContainer.addChild(c);
-    containerRef.current = c;
-
-    return () => {
-      worldContainer.removeChild(c);
-      c.destroy({ children: true });
-      containerRef.current = null;
-    };
-  }, [worldContainer]);
+  const containerRef = usePixiContainer(worldContainer, 55);
 
   // Redraw all stairs whenever the stairs array changes
   useEffect(() => {
@@ -171,13 +155,13 @@ export function StairsLayer({ worldContainer, stairs }: StairsLayerProps): null 
     }
 
     // Remove and destroy old graphics
-    container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    clearContainer(container);
 
     for (const stair of stairs) {
       const g = createStairsGraphics(stair);
       container.addChild(g);
     }
-  }, [stairs]);
+  }, [containerRef, stairs]);
 
   return null;
 }

@@ -17,6 +17,7 @@ import { useEffect, useRef, memo } from 'react';
 import { GlProgram, Mesh, MeshGeometry, Shader, UniformGroup } from 'pixi.js';
 
 import { buildStrokeGeometry } from './drawing/strokeGeometry';
+import { hexToRgbFloats } from '../../utils/pixiColor';
 
 import type { Container } from 'pixi.js';
 
@@ -84,24 +85,6 @@ interface PressureSensitiveLineProps {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Convert a CSS hex string (#rrggbb or #rgb) to [r, g, b] floats in [0, 1]. */
-function hexToRgb(hex: string): [number, number, number] {
-  const raw = hex.replace('#', '');
-  const full =
-    raw.length === 3
-      ? raw
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      : raw;
-  const colorHex = parseInt(full, 16);
-  return [((colorHex >> 16) & 255) / 255, ((colorHex >> 8) & 255) / 255, (colorHex & 255) / 255];
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -150,7 +133,7 @@ function PressureSensitiveLineComponent({
     });
 
     // Colour uniform — vec4 (r, g, b, a)
-    const [r, g, b] = hexToRgb(stroke);
+    const [r, g, b] = hexToRgbFloats(stroke);
     const uniformGroup = new UniformGroup({
       uColor: { value: new Float32Array([r, g, b, opacity]), type: 'vec4<f32>' },
     });

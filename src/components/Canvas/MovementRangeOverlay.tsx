@@ -8,12 +8,14 @@
  * @component
  */
 
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
-import { Container, Graphics } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 
+import { usePixiContainer } from './hooks/usePixiContainer';
 import { createGridGeometry } from '../../utils/gridGeometry';
 import { parseRgba } from '../../utils/pixiColor';
+import { clearContainer } from '../../utils/pixiUtils';
 
 import type { GridType } from '../../types/domain';
 import type { Container as PixiContainer } from 'pixi.js';
@@ -100,22 +102,22 @@ export function MovementRangeOverlay({
   fillColor = MOVEMENT_COLORS.fill,
   strokeColor = MOVEMENT_COLORS.stroke,
 }: MovementRangeOverlayProps): null {
-  const containerRef = useRef<PixiContainer | null>(null);
+  const containerRef = usePixiContainer(worldContainer, 140);
 
   // BFS flood-fill to find reachable cells — unchanged logic from Konva version
-  const reachableCells = useMemo(() => {
+  const { reachableCells, geometry } = useMemo(() => {
     if (gridType === 'HIDDEN') {
-      return [];
+      return { reachableCells: [], geometry: createGridGeometry(gridType) };
     }
 
-    const geometry = createGridGeometry(gridType);
+    const geom = createGridGeometry(gridType);
     const cells: Array<{ q: number; r: number }> = [];
 
     // Calculate maximum cells based on movement (assuming 5ft per cell)
     const maxCells = Math.ceil(movementSpeed / 5);
 
     // Get starting cell from token position
-    const startCell = geometry.pixelToGrid(tokenPosition.x, tokenPosition.y, gridSize);
+    const startCell = geom.pixelToGrid(tokenPosition.x, tokenPosition.y, gridSize);
 
     // BFS flood-fill to find reachable cells
     const visited = new Set<string>();
@@ -147,26 +149,8 @@ export function MovementRangeOverlay({
       });
     }
 
-    return cells;
+    return { reachableCells: cells, geometry: geom };
   }, [tokenPosition.x, tokenPosition.y, movementSpeed, gridSize, gridType]);
-
-  // Mount/unmount layer container alongside worldContainer
-  useEffect(() => {
-    if (!worldContainer) {
-      return;
-    }
-
-    const c = new Container();
-    c.zIndex = 140;
-    worldContainer.addChild(c);
-    containerRef.current = c;
-
-    return () => {
-      worldContainer.removeChild(c);
-      c.destroy({ children: true });
-      containerRef.current = null;
-    };
-  }, [worldContainer]);
 
   // Redraw cells when reachableCells or color props change
   useEffect(() => {
@@ -176,7 +160,7 @@ export function MovementRangeOverlay({
     }
 
     // Remove and destroy previous graphics
-    c.removeChildren().forEach((child) => child.destroy({ children: true }));
+    clearContainer(c);
 
     if (gridType === 'HIDDEN' || reachableCells.length === 0) {
       return;
@@ -184,7 +168,6 @@ export function MovementRangeOverlay({
 
     const fill = parseRgba(fillColor);
     const stroke = parseRgba(strokeColor);
-    const geometry = createGridGeometry(gridType);
 
     const gfx = new Graphics();
     gfx.eventMode = 'none';
@@ -197,7 +180,7 @@ export function MovementRangeOverlay({
     }
 
     c.addChild(gfx);
-  }, [reachableCells, gridSize, gridType, fillColor, strokeColor]);
+  }, [containerRef, reachableCells, geometry, gridSize, gridType, fillColor, strokeColor]);
 
   return null;
 }

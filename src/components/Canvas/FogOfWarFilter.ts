@@ -74,6 +74,10 @@ export class FogOfWarFilter extends Filter {
   // UniformGroup stored in resources so PixiJS can sync it to the GPU.
   private readonly _fogUniforms: UniformGroup<FogUniformStructures>;
 
+  // Pre-allocated scratch arrays — reused on every updateLights call to avoid GC pressure.
+  private readonly _lightsA = new Float32Array(32 * 4);
+  private readonly _lightsB = new Float32Array(32 * 4);
+
   constructor() {
     const fogUniforms = new UniformGroup<FogUniformStructures>({
       uFogAlpha: { value: 0.94, type: 'f32' },
@@ -136,23 +140,23 @@ export class FogOfWarFilter extends Filter {
   updateLights(tokens: LightToken[], dims: MapDimensions): void {
     const data = tokensToLightUniforms(tokens, dims);
 
-    const a = new Float32Array(32 * 4);
-    const b = new Float32Array(32 * 4);
+    this._lightsA.fill(0);
+    this._lightsB.fill(0);
 
     for (let i = 0; i < 32; i++) {
       const src = i * 8;
-      a[i * 4 + 0] = data[src + 0] ?? 0; // u
-      a[i * 4 + 1] = data[src + 1] ?? 0; // v
-      a[i * 4 + 2] = data[src + 2] ?? 0; // radius
-      a[i * 4 + 3] = data[src + 3] ?? 0; // r (red)
-      b[i * 4 + 0] = data[src + 4] ?? 0; // g (green)
-      b[i * 4 + 1] = data[src + 5] ?? 0; // b (blue)
-      b[i * 4 + 2] = data[src + 6] ?? 0; // falloff exponent
-      b[i * 4 + 3] = data[src + 7] ?? 0; // padding
+      this._lightsA[i * 4 + 0] = data[src + 0] ?? 0; // u
+      this._lightsA[i * 4 + 1] = data[src + 1] ?? 0; // v
+      this._lightsA[i * 4 + 2] = data[src + 2] ?? 0; // radius
+      this._lightsA[i * 4 + 3] = data[src + 3] ?? 0; // r (red)
+      this._lightsB[i * 4 + 0] = data[src + 4] ?? 0; // g (green)
+      this._lightsB[i * 4 + 1] = data[src + 5] ?? 0; // b (blue)
+      this._lightsB[i * 4 + 2] = data[src + 6] ?? 0; // falloff exponent
+      this._lightsB[i * 4 + 3] = data[src + 7] ?? 0; // padding
     }
 
-    this._fogUniforms.uniforms.uLightsA = a;
-    this._fogUniforms.uniforms.uLightsB = b;
+    this._fogUniforms.uniforms.uLightsA = this._lightsA;
+    this._fogUniforms.uniforms.uLightsB = this._lightsB;
     this._fogUniforms.uniforms.uLightCount = Math.min(tokens.length, 32);
   }
 }
