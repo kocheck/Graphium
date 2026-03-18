@@ -37,7 +37,6 @@
     "@fontsource/cormorant-garamond": "^5.2.11",
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
-    "@pixi-essentials/transformer": "^3.0.4",
     "@pixi/react": "^8.0.5",
     "@radix-ui/colors": "^3.0.0",
     "@remixicon/react": "^4.8.0",
