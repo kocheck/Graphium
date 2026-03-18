@@ -10,8 +10,6 @@
 
 import { useEffect, useRef } from 'react';
 
-// @pixi-essentials/transformer v3 targets PixiJS v6 types; `as any` casts bridge v8 compat
-import { Transformer } from '@pixi-essentials/transformer';
 import { Container, Sprite } from 'pixi.js';
 import { useShallow } from 'zustand/shallow';
 
@@ -34,7 +32,6 @@ export function TokenLayer({ worldContainer, gridSize, selectedIds = [] }: Token
   const containerRef = useRef<PixiContainer | null>(null);
   const spritesRef = useRef<Map<string, Sprite>>(new Map());
   const pendingRef = useRef<Set<string>>(new Set());
-  const transformerRef = useRef<Transformer | null>(null);
 
   // Mount / unmount the token container alongside worldContainer
   useEffect(() => {
@@ -48,13 +45,6 @@ export function TokenLayer({ worldContainer, gridSize, selectedIds = [] }: Token
     // Capture the sprites map at effect time so cleanup uses the stable reference
     const sprites = spritesRef.current;
     return () => {
-      // Clean up transformer before destroying the container
-      if (transformerRef.current) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        c.removeChild(transformerRef.current as any);
-        transformerRef.current.destroy();
-        transformerRef.current = null;
-      }
       worldContainer.removeChild(c);
       c.destroy({ children: true });
       containerRef.current = null;
@@ -119,40 +109,11 @@ export function TokenLayer({ worldContainer, gridSize, selectedIds = [] }: Token
     });
   }, [tokens, tokenLibrary, gridSize]);
 
-  // Sync transformer handles with the current selection
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-
-    // Remove the existing transformer before rebuilding
-    if (transformerRef.current) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      container.removeChild(transformerRef.current as any);
-      transformerRef.current.destroy();
-      transformerRef.current = null;
-    }
-
-    if (selectedIds.length === 0) {
-      return;
-    }
-
-    const selectedSprites = selectedIds
-      .map((id) => spritesRef.current.get(id))
-      .filter((s): s is Sprite => s !== undefined);
-
-    if (selectedSprites.length === 0) {
-      return;
-    }
-
-    // @pixi-essentials/transformer v3 uses PixiJS v6 DisplayObject type; v8 Sprite is runtime-compatible
-    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
-    const transformer: Transformer = new Transformer({ group: selectedSprites as any });
-    container.addChild(transformer as any);
-    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
-    transformerRef.current = transformer;
-  }, [selectedIds]);
+  // TODO Phase 2: Re-implement transformer using a PixiJS v8-native solution.
+  // @pixi-essentials/transformer targets PixiJS v6 and uses dynamic require('url')
+  // which crashes Vite's ESM renderer. Removing until replaced with a v8-compatible
+  // selection/resize handle system.
+  void selectedIds;
 
   return null;
 }
