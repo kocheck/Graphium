@@ -98,21 +98,61 @@ function PressureSensitiveLineComponent({
   worldContainer,
 }: PressureSensitiveLineProps): null {
   const meshRef = useRef<Mesh<MeshGeometry, Shader> | null>(null);
+  const shaderRef = useRef<Shader | null>(null);
 
+  // ---------------------------------------------------------------------------
+  // Effect 1: Shader lifecycle
+  // Runs only when color or opacity changes — avoids recreating shader on
+  // every geometry update (e.g. live drawing adding points).
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!worldContainer) {
+      return;
+    }
+
+    const [r, g, b] = hexToRgbFloats(stroke);
+    const uniformGroup = new UniformGroup({
+      uColor: { value: new Float32Array([r, g, b, opacity]), type: 'vec4<f32>' },
+    });
+    const shader = new Shader({
+      glProgram: getSharedGlProgram(),
+      resources: { uniforms: uniformGroup },
+    });
+
+    shaderRef.current = shader;
+
+    // If a Mesh is already live, hot-swap its shader
+    if (meshRef.current) {
+      meshRef.current.shader = shader;
+    }
+
+    return () => {
+      shaderRef.current = null;
+    };
+  }, [stroke, opacity, worldContainer]);
+
+  // ---------------------------------------------------------------------------
+  // Effect 2: Mesh + geometry lifecycle
+  // On geometry change: swaps mesh.geometry in-place (avoids Mesh recreate).
+  // On first render: creates Mesh using shader from Effect 1.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!worldContainer || points.length < 4) {
       return;
     }
 
-    // Build ordered samples from the flat points array
+    const shader = shaderRef.current;
+    if (!shader) {
+      return;
+    }
+
+    // Build geometry from current points
     const sampleCount = Math.floor(points.length / 2);
     const samples: Array<{ x: number; y: number; pressure: number }> = [];
     for (let i = 0; i < sampleCount; i++) {
-      const px = points[i * 2] ?? 0;
-      const py = points[i * 2 + 1] ?? 0;
       samples.push({
-        x: px,
-        y: py,
+        x: points[i * 2] ?? 0,
+        y: points[i * 2 + 1] ?? 0,
         pressure: pressures?.[i] ?? 1.0,
       });
     }
@@ -123,34 +163,22 @@ function PressureSensitiveLineComponent({
       return;
     }
 
-    // MeshGeometry requires uvs at least as long as positions
     const uvs = new Float32Array(vertices.length);
+    const geometry = new MeshGeometry({ positions: vertices, uvs, indices });
 
-    const geometry = new MeshGeometry({
-      positions: vertices,
-      uvs,
-      indices,
-    });
-
-    // Colour uniform — vec4 (r, g, b, a)
-    const [r, g, b] = hexToRgbFloats(stroke);
-    const uniformGroup = new UniformGroup({
-      uColor: { value: new Float32Array([r, g, b, opacity]), type: 'vec4<f32>' },
-    });
-
-    const shader = new Shader({
-      glProgram: getSharedGlProgram(),
-      resources: {
-        uniforms: uniformGroup,
-      },
-    });
-
-    const mesh = new Mesh({ geometry, shader });
-    mesh.name = id;
-    mesh.zIndex = 30;
-
-    worldContainer.addChild(mesh);
-    meshRef.current = mesh;
+    if (meshRef.current) {
+      // Swap geometry only — Mesh and Shader are reused
+      const oldGeometry = meshRef.current.geometry;
+      meshRef.current.geometry = geometry;
+      oldGeometry.destroy();
+    } else {
+      // First render — create Mesh and add to container
+      const mesh = new Mesh({ geometry, shader });
+      mesh.name = id;
+      mesh.zIndex = 30;
+      worldContainer.addChild(mesh);
+      meshRef.current = mesh;
+    }
 
     return () => {
       if (meshRef.current) {
@@ -159,7 +187,7 @@ function PressureSensitiveLineComponent({
         meshRef.current = null;
       }
     };
-  }, [id, points, pressures, stroke, strokeWidth, opacity, worldContainer]);
+  }, [id, points, pressures, strokeWidth, worldContainer]);
 
   return null;
 }
