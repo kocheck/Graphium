@@ -13,6 +13,12 @@ import type {
 
 // ===== MAP =====
 
+/**
+ * MapConfig describes the background image and its canvas-space transform.
+ * null on MapData means no background image is loaded for this map.
+ * x/y are canvas-space offsets; scale is a multiplier (1.0 = natural size).
+ * Renamed from the legacy `map` field — see domain.ts shim for the compat alias.
+ */
 export interface MapConfig {
   src: string; // file:// URL to background image
   x: number;
@@ -22,6 +28,11 @@ export interface MapConfig {
   scale: number;
 }
 
+/**
+ * ExploredRegion records an area the GM has revealed via fog-of-war.
+ * GM-only — stripped from PlayerViewSnapshot before IPC.
+ * timestamp is Date.now() at creation; used for ordering in the migration pipeline.
+ */
 export interface ExploredRegion {
   points: Array<{ x: number; y: number }>;
   timestamp: number;
