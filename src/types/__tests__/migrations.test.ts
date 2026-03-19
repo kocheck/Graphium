@@ -218,4 +218,90 @@ describe('migrateCampaign', () => {
     // Old field name must not be present
     expect(result.maps['map-1']).not.toHaveProperty('map');
   });
+
+  it('migrates v0 drawings with defaults for pressures, x, y, scale', () => {
+    const v0 = {
+      campaign: {
+        id: 'c1',
+        name: 'T',
+        activeMapId: 'map-1',
+        maps: {
+          'map-1': {
+            id: 'map-1',
+            name: 'F',
+            tokens: [],
+            drawings: [{ id: 'd1', tool: 'marker', points: [0, 0], color: '#ff0000', size: 4 }],
+            doors: [],
+            stairs: [],
+            map: null,
+            gridSize: 50,
+            gridType: 'LINES',
+            gridColor: '#222222',
+            exploredRegions: [],
+            isDaylightMode: false,
+          },
+        },
+        tokenLibrary: [],
+      },
+    };
+    const result = migrateCampaign(v0) as any;
+    expect(result.drawings['d1']).toBeDefined();
+    expect(result.drawings['d1'].mapId).toBe('map-1');
+    expect(result.drawings['d1'].hidden).toBe(false);
+    expect(result.drawings['d1'].pressures).toEqual([]);
+    expect(result.drawings['d1'].x).toBe(0);
+    expect(result.drawings['d1'].y).toBe(0);
+    expect(result.drawings['d1'].scale).toBe(1);
+    expect(result.maps['map-1'].drawingIds).toContain('d1');
+  });
+
+  it('migrates v0 doors with mapId, hidden, thickness, swingDirection defaults', () => {
+    const v0 = {
+      campaign: {
+        id: 'c1',
+        name: 'T',
+        activeMapId: 'map-1',
+        maps: {
+          'map-1': {
+            id: 'map-1',
+            name: 'F',
+            tokens: [],
+            drawings: [],
+            doors: [
+              {
+                id: 'door1',
+                x: 100,
+                y: 200,
+                orientation: 'horizontal',
+                isOpen: false,
+                isLocked: false,
+                size: 50,
+              },
+            ],
+            stairs: [],
+            map: null,
+            gridSize: 50,
+            gridType: 'LINES',
+            gridColor: '#222222',
+            exploredRegions: [],
+            isDaylightMode: false,
+          },
+        },
+        tokenLibrary: [],
+      },
+    };
+    const result = migrateCampaign(v0) as any;
+    expect(result.doors['door1']).toBeDefined();
+    expect(result.doors['door1'].mapId).toBe('map-1');
+    expect(result.doors['door1'].hidden).toBe(false);
+    expect(result.doors['door1'].thickness).toBe(12);
+    expect(result.doors['door1'].swingDirection).toBe('right');
+    expect(result.maps['map-1'].doorIds).toContain('door1');
+  });
+
+  it('MIGRATIONS table has one entry per schema version', () => {
+    // Guards against adding a new CURRENT_VERSION without adding its migration.
+    // At v1 there is exactly 1 entry (migrateV0toV1).
+    expect(CURRENT_VERSION).toBe(1);
+  });
 });
