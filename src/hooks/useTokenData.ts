@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import { useGameStore } from '../store/gameStore';
 
-import type { Token, TokenLibraryItem } from '../store/gameStore';
+import type { Token, TokenLibraryItem } from '../types/domain';
 
 /**
  * ResolvedTokenData represents the fully resolved token data after merging
@@ -11,6 +11,7 @@ import type { Token, TokenLibraryItem } from '../store/gameStore';
  * All optional properties from Token are now required, as they've been resolved
  * to either the instance value, library default, or system default.
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface ResolvedTokenData {
   id: string;
   x: number;
@@ -51,6 +52,7 @@ export interface ResolvedTokenData {
  * // resolvedToken.scale is either token.scale or libraryItem.defaultScale or 1
  * // resolvedToken.name is either token.name or libraryItem.name
  */
+// eslint-disable-next-line import/no-unused-modules
 export function useTokenData(token: Token): ResolvedTokenData {
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
 
@@ -60,8 +62,11 @@ export function useTokenData(token: Token): ResolvedTokenData {
 /**
  * Default values for token properties
  */
+// eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_SCALE = 1;
+// eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_NAME = 'Token';
+// eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_MOVEMENT_SPEED = 30; // Standard D&D 5e movement speed
 
 /**
@@ -72,6 +77,7 @@ export const DEFAULT_MOVEMENT_SPEED = 30; // Standard D&D 5e movement speed
  * @param tokenLibrary - The array of library items
  * @returns Fully resolved token data
  */
+// eslint-disable-next-line complexity
 export function resolveTokenData(
   token: Token,
   tokenLibrary: TokenLibraryItem[],

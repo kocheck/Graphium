@@ -1,0 +1,67 @@
+/**
+ * Sidebar Module
+ *
+ * The sidebar adapts to the active app theme (parchment / leather).
+ * It uses standard --app-bg-* and --app-border-* tokens so it reads
+ * as a panel surface, not a separate hardware element like the toolbar.
+ *
+ * Classes:
+ *   .sidebar          — Outer panel container
+ *   .sidebar-section  — Internal divider between groups
+ *   .sidebar-input    — Text inputs nested inside the sidebar
+ *   .sidebar-token    — Draggable token thumbnail items
+ *   .info-box         — Accent-tinted informational callout box
+ */
+
+/* ===== Outer panel ===== */
+.sidebar {
+  background: var(--app-bg-surface);
+  border-right: 1px solid var(--app-border-subtle);
+  color: var(--app-text-primary);
+  /* Panel highlight — co-located here to avoid cascade conflicts with grain.css */
+  box-shadow: inset 0 1px 0 var(--texture-panel-highlight);
+}
+
+/* ===== Section divider ===== */
+.sidebar-section {
+  border-top: 1px solid var(--app-border-subtle);
+}
+
+/* ===== Sidebar inputs ===== */
+.sidebar-input {
+  background: var(--app-bg-active);
+  border: 1px solid var(--app-border-default);
+  color: var(--app-text-primary);
+}
+
+.sidebar-input:focus {
+  outline: none;
+  border-color: var(--app-accent-solid);
+}
+
+/* ===== Token thumbnail items ===== */
+.sidebar-token {
+  background: var(--app-bg-active);
+  color: var(--app-text-primary);
+}
+
+.sidebar-token:hover {
+  background: var(--app-bg-hover);
+}
+
+.sidebar-token:active {
+  background: var(--app-bg-active);
+}
+
+/* Subtle inset ring to fit tight token-grid layout */
+.sidebar-token:focus-visible {
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: -2px;
+}
+
+/* ===== Info / callout box ===== */
+.info-box {
+  background: var(--app-accent-bg);
+  border: 1px solid var(--app-accent-solid);
+  color: var(--app-accent-text-contrast);
+}

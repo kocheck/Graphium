@@ -9,13 +9,15 @@
  * Tests cover coordinate conversion, snapping, rendering, and viewport culling.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   SquareGridGeometry,
   HexagonalGridGeometry,
   IsometricGridGeometry,
   createGridGeometry,
 } from './gridGeometry';
+import { toHexColor, toPixelSize } from '../types/domain';
+import type { GridType } from '../types/domain';
 
 describe('SquareGridGeometry', () => {
   const geometry = new SquareGridGeometry();
@@ -371,6 +373,17 @@ describe('createGridGeometry factory', () => {
     const geometry = createGridGeometry('ISOMETRIC');
     expect(geometry).toBeInstanceOf(IsometricGridGeometry);
   });
+
+  it('returns SquareGridGeometry for unknown grid type', () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const geometry = createGridGeometry('UNKNOWN' as GridType);
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('unknown grid type'));
+    // Verify it behaves as square grid — pixelToGrid should return finite coords
+    const cell = geometry.pixelToGrid(100, 100, 50);
+    expect(Number.isFinite(cell.q)).toBe(true);
+    expect(Number.isFinite(cell.r)).toBe(true);
+    consoleSpy.mockRestore();
+  });
 });
 
 describe('Performance tests', () => {
@@ -414,5 +427,56 @@ describe('Performance tests', () => {
     // Iso culling should also be fast
     expect(duration).toBeLessThan(200);
     expect(cells.length).toBeGreaterThan(0);
+  });
+});
+
+describe('toHexColor', () => {
+  it('accepts #rgb', () => {
+    expect(toHexColor('#fff')).toBe('#fff');
+  });
+  it('accepts #rrggbb', () => {
+    expect(toHexColor('#ff0000')).toBe('#ff0000');
+  });
+  it('accepts #rrggbbaa', () => {
+    expect(toHexColor('#ff000080')).toBe('#ff000080');
+  });
+  it('rejects rgba strings', () => {
+    expect(() => toHexColor('rgba(255,0,0,0.5)')).toThrow('Invalid hex color');
+  });
+  it('rejects empty string', () => {
+    expect(() => toHexColor('')).toThrow('Invalid hex color');
+  });
+  it('rejects plain text', () => {
+    expect(() => toHexColor('red')).toThrow('Invalid hex color');
+  });
+  it('rejects 4-char hex', () => {
+    expect(() => toHexColor('#ffff')).toThrow('Invalid hex color');
+  });
+  it('rejects 5-char hex', () => {
+    expect(() => toHexColor('#fffff')).toThrow('Invalid hex color');
+  });
+  it('rejects 7-char hex', () => {
+    expect(() => toHexColor('#fffffff')).toThrow('Invalid hex color');
+  });
+});
+
+describe('toPixelSize', () => {
+  it('accepts positive integer', () => {
+    expect(toPixelSize(50)).toBe(50);
+  });
+  it('rounds fractional values', () => {
+    expect(toPixelSize(50.7)).toBe(51);
+  });
+  it('rejects zero', () => {
+    expect(() => toPixelSize(0)).toThrow('Invalid pixel size');
+  });
+  it('rejects negative', () => {
+    expect(() => toPixelSize(-1)).toThrow('Invalid pixel size');
+  });
+  it('rejects NaN', () => {
+    expect(() => toPixelSize(NaN)).toThrow('Invalid pixel size');
+  });
+  it('rejects Infinity', () => {
+    expect(() => toPixelSize(Infinity)).toThrow('Invalid pixel size');
   });
 });

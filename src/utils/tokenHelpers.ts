@@ -4,7 +4,7 @@
  * Shared helpers for token operations across components.
  */
 
-import type { Token, TokenLibraryItem, MapConfig } from '../store/gameStore';
+import type { Token, TokenLibraryItem, MapConfig } from '../types/domain';
 
 /**
  * Add a library token to the map at the center position

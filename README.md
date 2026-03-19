@@ -18,7 +18,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Build Status](https://github.com/kocheck/Graphium/actions/workflows/build-release.yml/badge.svg)
 ![Tests](https://github.com/kocheck/Graphium/actions/workflows/test.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-36%25-yellow)
 
 <!-- Coverage badge intentionally omitted from external services: coverage is tracked via Vitest (`npm run test:coverage`), but we avoid external coverage services to keep Graphium fully local-first. -->
 
@@ -222,7 +222,7 @@ Linting runs automatically before commits via Husky. All checks must pass before
 
 ### Documentation
 
-- **[LINTING.md](LINTING.md)** - Complete linting guide with examples and troubleshooting
+- **[LINTING.md](docs/guides/LINTING.md)** - Complete linting guide with examples and troubleshooting
 - **[.ai-rules.md](.ai-rules.md)** - AI agent code generation rules and requirements
 
 ### Editor Setup

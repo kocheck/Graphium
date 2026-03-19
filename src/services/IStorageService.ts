@@ -1,4 +1,4 @@
-import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { Campaign, TokenLibraryItem } from '../types/domain';
 
 /**
  * Metadata for a library asset (before URLs are assigned)

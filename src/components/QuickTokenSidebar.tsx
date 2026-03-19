@@ -20,12 +20,14 @@ import { RiUser3Line } from '@remixicon/react';
 
 import Tooltip from './Tooltip';
 
-import type { TokenLibraryItem } from '../store/gameStore';
+import type { TokenLibraryItem } from '../types/domain';
 
 interface QuickTokenSidebarProps {
   recentTokens: TokenLibraryItem[];
   playerTokens: TokenLibraryItem[];
   onDragStart: (e: React.DragEvent, type: string, src: string, libraryItemId?: string) => void;
+  /** Optional callback when a token is activated via keyboard (Enter/Space) */
+  onTokenActivate?: (type: string, src: string, libraryItemId?: string) => void;
 }
 
 /**
@@ -35,12 +37,13 @@ function QuickTokenSidebar({
   recentTokens,
   playerTokens,
   onDragStart,
+  onTokenActivate,
 }: QuickTokenSidebarProps): React.ReactElement {
   /**
    * Handles drag start for the generic token placeholder
    * Creates a special payload with a placeholder type
    */
-  const handleGenericTokenDragStart = (e: React.DragEvent) => {
+  const handleGenericTokenDragStart = (e: React.DragEvent): void => {
     // Create a generic token payload with a placeholder identifier
     const genericTokenData = {
       type: 'GENERIC_TOKEN',
@@ -76,6 +79,7 @@ function QuickTokenSidebar({
           document.body.removeChild(div);
         } catch (error) {
           // Safe no-op: drag helper is already gone or cannot be removed
+          // eslint-disable-next-line no-console
           console.debug('Drag helper cleanup failed:', error);
         }
       }
@@ -99,7 +103,16 @@ function QuickTokenSidebar({
                 <div
                   className="sidebar-token w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
                   draggable
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Place ${token.name} token`}
                   onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onTokenActivate?.('LIBRARY_TOKEN', token.src, token.id);
+                    }
+                  }}
                 >
                   <img
                     src={token.thumbnailSrc.replace('file:', 'media:')}
@@ -131,7 +144,16 @@ function QuickTokenSidebar({
                 borderColor: 'var(--app-border-default)',
               }}
               draggable
+              tabIndex={0}
+              role="button"
+              aria-label="Place generic token"
               onDragStart={handleGenericTokenDragStart}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onTokenActivate?.('GENERIC_TOKEN', '');
+                }
+              }}
             >
               <RiUser3Line
                 className="w-8 h-8 pointer-events-none"
@@ -146,7 +168,16 @@ function QuickTokenSidebar({
               <div
                 className="sidebar-token w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
                 draggable
+                tabIndex={0}
+                role="button"
+                aria-label={`Place ${token.name} token`}
                 onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onTokenActivate?.('LIBRARY_TOKEN', token.src, token.id);
+                  }
+                }}
               >
                 <img
                   src={token.thumbnailSrc.replace('file:', 'media:')}

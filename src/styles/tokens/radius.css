@@ -1,0 +1,14 @@
+/**
+ * Border Radius Tokens
+ *
+ * Parchment aesthetic uses very small radius — feels like cut paper edges,
+ * not sharp right angles or overly rounded UI.
+ */
+
+:root {
+  --radius-none: 0;
+  --radius-sm: 0.125rem; /* 2px — cut paper edge */
+  --radius-md: 0.25rem; /* 4px — standard UI elements */
+  --radius-lg: 0.375rem; /* 6px — cards, dialogs */
+  --radius-full: 9999px; /* pill shape */
+}

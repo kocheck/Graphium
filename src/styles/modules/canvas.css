@@ -1,0 +1,48 @@
+/**
+ * Canvas Module
+ *
+ * Styles for the HTML wrapper elements surrounding the Konva stage.
+ * Konva renders to a <canvas> element — CSS variables are not available
+ * inside Konva rendering. All Konva-layer colors use *_COLORS const objects
+ * (updated in Task 16 as part of the parchment redesign).
+ *
+ * This file only styles the HTML containers that hold the Konva stage
+ * and any HTML-layer overlays.
+ *
+ * Classes:
+ *   .canvas-container  — Outer div wrapping the entire Konva Stage
+ *   .minimap-panel     — HTML wrapper for the minimap canvas element
+ *   .minimap-label     — "Minimap" label bar below the minimap canvas
+ */
+
+/* ===== Main canvas container ===== */
+/*
+ * Wraps the Konva Stage. Background color shows through wherever no map
+ * image is loaded (or when fog is fully transparent). Uses the darkest
+ * bg token so the canvas area reads as a distinct workspace.
+ */
+.canvas-container {
+  background: var(--app-bg-base);
+  /* No border — the sidebar and toolbar frame the canvas visually */
+}
+
+/* ===== Minimap wrapper ===== */
+/*
+ * The minimap sits in the bottom-left corner of the canvas area.
+ * It uses canvas token colors to match the map aesthetic rather than
+ * the general panel surface tokens.
+ */
+.minimap-panel {
+  background: var(--app-minimap-bg);
+  border: 1px solid var(--app-minimap-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px var(--app-shadow-md);
+  overflow: hidden;
+}
+
+/* ===== Minimap label bar ===== */
+.minimap-label {
+  background: var(--app-bg-surface);
+  border-top: 1px solid var(--app-border-subtle);
+  color: var(--app-text-muted);
+}

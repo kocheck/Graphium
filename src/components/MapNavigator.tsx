@@ -1,7 +1,8 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import { rollForMessage } from '../utils/systemMessages';
 
 /**
@@ -10,6 +11,7 @@ import { rollForMessage } from '../utils/systemMessages';
  * Provides UI for managing maps within the current campaign.
  * Allows switching active map, creating new maps, and deleting maps.
  */
+// eslint-disable-next-line max-lines-per-function
 function MapNavigator(): React.ReactElement | null {
   const campaign = useGameStore((state) => state.campaign);
   const activeMapId = useGameStore((state) => state.campaign.activeMapId);
@@ -17,17 +19,25 @@ function MapNavigator(): React.ReactElement | null {
   const switchMap = useGameStore((state) => state.switchMap);
   const deleteMap = useGameStore((state) => state.deleteMap);
   const renameMap = useGameStore((state) => state.renameMap);
-  const showConfirmDialog = useGameStore((state) => state.showConfirmDialog);
+  const showConfirmDialog = useUiStore((state) => state.showConfirmDialog);
 
   const [editingMapId, setEditingMapId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
 
-  const handleStartEdit = (id: string, currentName: string) => {
+  // Focus the rename input when editing starts (replaces autoFocus for a11y)
+  useEffect(() => {
+    if (editingMapId) {
+      editInputRef.current?.focus();
+    }
+  }, [editingMapId]);
+
+  const handleStartEdit = (id: string, currentName: string): void => {
     setEditingMapId(id);
     setEditName(currentName);
   };
 
-  const handleFinishEdit = () => {
+  const handleFinishEdit = (): void => {
     if (!editingMapId) {
       return;
     }
@@ -37,7 +47,7 @@ function MapNavigator(): React.ReactElement | null {
     // Prevent renaming to an empty or whitespace-only name.
     if (!newName) {
       // Revert to the original name if available.
-      const originalMap = campaign && campaign.maps ? campaign.maps[editingMapId] : undefined;
+      const originalMap = campaign?.maps ? campaign.maps[editingMapId] : undefined;
       if (originalMap) {
         setEditName(originalMap.name);
       }
@@ -49,7 +59,7 @@ function MapNavigator(): React.ReactElement | null {
     setEditingMapId(null);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter') {
       handleFinishEdit();
     } else if (e.key === 'Escape') {
@@ -57,7 +67,7 @@ function MapNavigator(): React.ReactElement | null {
     }
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string, name: string): void => {
     e.stopPropagation();
     showConfirmDialog(
       rollForMessage('CONFIRM_MAP_DELETE', { mapName: name }),
@@ -114,8 +124,9 @@ function MapNavigator(): React.ReactElement | null {
                     onChange={(e) => setEditName(e.target.value)}
                     onBlur={handleFinishEdit}
                     onKeyDown={handleKeyDown}
+                    ref={editInputRef}
                     className="bg-[var(--app-bg-base)] text-[var(--app-text-primary)] px-1 rounded w-full border border-[var(--app-border-default)] text-sm"
-                    autoFocus
+                    aria-label={`Rename ${map.name}`}
                     onClick={(e) => e.stopPropagation()}
                   />
                 ) : (
@@ -132,7 +143,7 @@ function MapNavigator(): React.ReactElement | null {
                 )}
               </button>
 
-              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -164,6 +175,7 @@ function MapNavigator(): React.ReactElement | null {
           const mapNumbers = maps
             .map((m) => {
               const match = /^Map (\d+)$/.exec(m.name);
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               return match ? parseInt(match[1]!, 10) : 0;
             })
             .filter((n) => n > 0);
@@ -178,4 +190,5 @@ function MapNavigator(): React.ReactElement | null {
   );
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default MapNavigator;

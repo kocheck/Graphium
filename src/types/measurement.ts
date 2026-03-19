@@ -7,11 +7,13 @@ import type { Point } from './geometry';
 /**
  * Measurement tool modes
  */
+// eslint-disable-next-line import/no-unused-modules
 export type MeasurementMode = 'ruler' | 'blast' | 'cone';
 
 /**
  * Base measurement shape interface
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface BaseMeasurement {
   /** Unique identifier for the measurement */
   id: string;
@@ -27,6 +29,7 @@ export interface BaseMeasurement {
  * Ruler (line) measurement
  * Measures distance between two points
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface RulerMeasurement extends BaseMeasurement {
   type: 'ruler';
 
@@ -41,6 +44,7 @@ export interface RulerMeasurement extends BaseMeasurement {
  * Blast (circle) measurement
  * Measures a circular AoE from a center point
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface BlastMeasurement extends BaseMeasurement {
   type: 'blast';
 
@@ -55,6 +59,7 @@ export interface BlastMeasurement extends BaseMeasurement {
  * Cone measurement
  * Measures a cone-shaped AoE
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface ConeMeasurement extends BaseMeasurement {
   type: 'cone';
 
@@ -79,6 +84,7 @@ export type Measurement = RulerMeasurement | BlastMeasurement | ConeMeasurement;
 /**
  * Measurement state in the game store
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface MeasurementState {
   /** Currently active measurement being drawn */
   activeMeasurement: Measurement | null;

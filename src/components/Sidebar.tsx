@@ -49,7 +49,8 @@
  * @component
  */
 
-import React, { useRef, useState, useEffect } from 'react';
+import type React from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo, memo } from 'react';
 
 import {
   RiArrowLeftSLine,
@@ -62,18 +63,20 @@ import {
 } from '@remixicon/react';
 
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import { processImage } from '../utils/AssetProcessor';
 import AddToLibraryDialog from './AssetLibrary/AddToLibraryDialog';
 import LibraryManager from './AssetLibrary/LibraryManager';
 import CollapsibleSection from './CollapsibleSection';
 import DoorControls from './DoorControls';
+import { QuickTokenSidebarErrorBoundary } from './ErrorBoundaries/QuickTokenSidebarErrorBoundary';
 import MapSettingsSheet from './MapSettingsSheet';
-import MobileSidebarDrawer from './MobileSidebarDrawer';
+import MobileSidebarDrawer from './Mobile/MobileSidebarDrawer';
 import QuickTokenSidebar from './QuickTokenSidebar';
-import { QuickTokenSidebarErrorBoundary } from './QuickTokenSidebarErrorBoundary';
 import Tooltip from './Tooltip';
 import { useCommandPalette } from '../hooks/useCommandPalette';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { snapToGrid } from '../utils/grid';
 import { rollForMessage } from '../utils/systemMessages';
 import { getRecentTokens, getPlayerTokens, deduplicatePlayerTokens } from '../utils/tokenUtils';
 
@@ -82,27 +85,31 @@ import type { ProcessingHandle } from '../utils/AssetProcessor';
 /**
  * Sidebar component provides map upload, grid settings, and token library
  */
-function Sidebar() {
+// eslint-disable-next-line max-lines-per-function
+function Sidebar(): React.JSX.Element {
   // Store selectors
   const campaign = useGameStore((state) => state.campaign);
   const activeMapId = useGameStore((state) => state.campaign.activeMapId);
   const switchMap = useGameStore((state) => state.switchMap);
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
-  const showToast = useGameStore((state) => state.showToast);
   const tokens = useGameStore((state) => state.tokens);
+  const gridSize = useGameStore((state) => state.gridSize);
+  const gridType = useGameStore((state) => state.gridType);
+  const addToken = useGameStore((state) => state.addToken);
+  const showToast = useUiStore((state) => state.showToast);
 
   // Get recent tokens (last 3 unique tokens placed on the map)
-  const recentTokens = React.useMemo(() => {
+  const recentTokens = useMemo(() => {
     return getRecentTokens(tokens, tokenLibrary);
   }, [tokens, tokenLibrary]);
 
   // Get player tokens from library (up to 5)
-  const playerTokens = React.useMemo(() => {
+  const playerTokens = useMemo(() => {
     return getPlayerTokens(tokenLibrary, 5);
   }, [tokenLibrary]);
 
   // Deduplicate player tokens (remove any that appear in recent history)
-  const deduplicatedPlayerTokens = React.useMemo(() => {
+  const deduplicatedPlayerTokens = useMemo(() => {
     return deduplicatePlayerTokens(playerTokens, recentTokens);
   }, [playerTokens, recentTokens]);
 
@@ -132,8 +139,8 @@ function Sidebar() {
 
   // Mobile drawer state
   const isMobile = useIsMobile();
-  const isMobileDrawerOpen = useGameStore((state) => state.isMobileSidebarOpen);
-  const setMobileDrawerOpen = useGameStore((state) => state.setMobileSidebarOpen);
+  const isMobileDrawerOpen = useUiStore((state) => state.isMobileSidebarOpen);
+  const setMobileDrawerOpen = useUiStore((state) => state.setMobileSidebarOpen);
 
   // Reset sidebar collapse state when switching to mobile
   useEffect(() => {
@@ -156,7 +163,7 @@ function Sidebar() {
     type: string,
     src: string,
     libraryItemId?: string,
-  ) => {
+  ): void => {
     e.dataTransfer.setData('application/json', JSON.stringify({ type, src, libraryItemId }));
 
     // Create custom drag image
@@ -187,10 +194,44 @@ function Sidebar() {
       document.body.removeChild(div);
     }, 100);
   };
+
+  /**
+   * Handles keyboard activation of tokens (Enter/Space on sidebar items).
+   * Places the token at the center of the visible canvas area.
+   */
+  const handleTokenActivate = useCallback(
+    (type: string, src: string, libraryItemId?: string) => {
+      // Place token at canvas center (0, 0 world coords, snapped to grid)
+      const { x, y } = snapToGrid(0, 0, gridSize, gridType);
+
+      if (type === 'LIBRARY_TOKEN' && libraryItemId) {
+        addToken({
+          id: crypto.randomUUID(),
+          x,
+          y,
+          src,
+          libraryItemId,
+        });
+      } else if (type === 'GENERIC_TOKEN') {
+        addToken({
+          id: crypto.randomUUID(),
+          x,
+          y,
+          src: '',
+          name: 'Generic Token',
+          type: 'NPC',
+          scale: 1,
+        });
+      }
+      showToast('Token placed at map origin', 'success');
+    },
+    [gridSize, gridType, addToken, showToast],
+  );
+
   /**
    * Handles token image upload and addition to library
    */
-  const handleTokenUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTokenUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file) {
       return;
@@ -219,7 +260,7 @@ function Sidebar() {
       setPendingLibraryImage({
         src,
         blob,
-        name: file.name.split('.')[0] || 'New Token',
+        name: file.name.split('.')[0] ?? 'New Token',
       });
       setIsAddToLibraryOpen(true);
     } catch (err) {
@@ -233,10 +274,17 @@ function Sidebar() {
 
   const maps = Object.values(campaign.maps).sort((a, b) => a.name.localeCompare(b.name));
 
+  let sidebarWidthClass = 'w-64 shrink-0';
+  if (isMobile) {
+    sidebarWidthClass = 'w-full h-full';
+  } else if (isSidebarCollapsed) {
+    sidebarWidthClass = 'w-16 shrink-0';
+  }
+
   // Sidebar content (same for mobile and desktop)
   const sidebarContent = (
     <div
-      className={`sidebar flex flex-col p-4 z-10 overflow-y-auto transition-all duration-300 ${isMobile ? 'w-full h-full' : isSidebarCollapsed ? 'w-16 shrink-0' : 'w-64 shrink-0'}`}
+      className={`sidebar flex flex-col p-4 z-10 overflow-y-auto transition-all duration-300 ${sidebarWidthClass}`}
     >
       {/* Header Section */}
       <div className="mb-6">
@@ -316,7 +364,7 @@ function Sidebar() {
                           setMapSettingsMode('EDIT');
                           setIsMapSettingsOpen(true);
                         }}
-                        className="p-1 opacity-0 group-hover:opacity-100 hover:text-[var(--app-accent-text)] transition-opacity"
+                        className="p-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 hover:text-[var(--app-accent-text)] transition-opacity"
                         aria-label={`Edit ${map.name}`}
                       >
                         <RiSettings4Line className="w-4 h-4" />
@@ -362,7 +410,7 @@ function Sidebar() {
                 accept="image/*"
                 ref={tokenInputRef}
                 className="hidden"
-                onChange={handleTokenUpload}
+                onChange={(e) => void handleTokenUpload(e)}
               />
               <Tooltip content="Add token to library">
                 <button
@@ -390,6 +438,7 @@ function Sidebar() {
                 recentTokens={recentTokens}
                 playerTokens={deduplicatedPlayerTokens}
                 onDragStart={handleDragStart}
+                onTokenActivate={handleTokenActivate}
               />
             </QuickTokenSidebarErrorBoundary>
           </CollapsibleSection>
@@ -417,7 +466,7 @@ function Sidebar() {
           setEditingMapId(null);
         }}
         mode={mapSettingsMode}
-        mapId={editingMapId || undefined}
+        mapId={editingMapId ?? undefined}
       />
 
       {/* Library Manager Modal */}
@@ -429,8 +478,8 @@ function Sidebar() {
       {/* Add to Library Dialog */}
       <AddToLibraryDialog
         isOpen={isAddToLibraryOpen}
-        imageSrc={pendingLibraryImage?.src || null}
-        imageBlob={pendingLibraryImage?.blob || null}
+        imageSrc={pendingLibraryImage?.src ?? null}
+        imageBlob={pendingLibraryImage?.blob ?? null}
         suggestedName={pendingLibraryImage?.name}
         onClose={() => {
           setIsAddToLibraryOpen(false);
@@ -445,4 +494,4 @@ function Sidebar() {
   );
 }
 
-export default React.memo(Sidebar);
+export default memo(Sidebar);

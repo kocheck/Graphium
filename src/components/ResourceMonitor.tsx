@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useEffect, useState, useRef } from 'react';
 
 import { useGameStore } from '../store/gameStore';
@@ -54,7 +55,8 @@ interface PerformanceMetrics {
  *   Toggle Resource Monitor
  * </button>
  */
-function ResourceMonitor() {
+// eslint-disable-next-line max-lines-per-function, complexity
+function ResourceMonitor(): React.JSX.Element {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fps: 0,
     memory: null,
@@ -72,7 +74,7 @@ function ResourceMonitor() {
   // FPS tracking
   const frameCountRef = useRef(0);
   const lastFrameTimeRef = useRef(Date.now());
-  const fpsUpdateIntervalRef = useRef<NodeJS.Timeout>();
+  const fpsUpdateIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   // IPC tracking
   const ipcMessageCountRef = useRef(0);
@@ -90,7 +92,7 @@ function ResourceMonitor() {
   useEffect(() => {
     let animationFrameId: number;
 
-    const countFrame = () => {
+    const countFrame = (): void => {
       frameCountRef.current++;
       animationFrameId = requestAnimationFrame(countFrame);
     };
@@ -122,11 +124,20 @@ function ResourceMonitor() {
    * Updates every 500ms
    */
   useEffect(() => {
-    const updateMetrics = () => {
+    const updateMetrics = (): void => {
       // Memory API (Chrome/Edge only)
+      interface ChromeMemory {
+        usedJSHeapSize: number;
+        totalJSHeapSize: number;
+        jsHeapSizeLimit: number;
+      }
+      interface ChromePerformance extends Performance {
+        memory?: ChromeMemory;
+      }
       let memory = null;
-      if ('memory' in performance && (performance as any).memory) {
-        const mem = (performance as any).memory;
+      const chromePerf = performance as ChromePerformance;
+      if ('memory' in performance && chromePerf.memory) {
+        const mem = chromePerf.memory;
         memory = {
           used: mem.usedJSHeapSize,
           total: mem.totalJSHeapSize,
@@ -199,8 +210,12 @@ function ResourceMonitor() {
       return;
     }
 
-    let originalSend: any;
-    let originalOn: any;
+    type IpcSendFn = (channel: string, ...args: unknown[]) => void;
+    type IpcListenerFn = (event: unknown, ...args: unknown[]) => void;
+    type IpcOnFn = (channel: string, listener: IpcListenerFn) => void;
+
+    let originalSend: IpcSendFn | undefined;
+    let originalOn: IpcOnFn | undefined;
     let isTracking = true;
 
     try {
@@ -210,7 +225,7 @@ function ResourceMonitor() {
       originalOn = window.ipcRenderer.on;
 
       // Intercept send (outgoing messages)
-      window.ipcRenderer.send = function (channel: string, ...args: any[]) {
+      window.ipcRenderer.send = function (channel: string, ...args: unknown[]): void {
         if (isTracking) {
           try {
             ipcMessageCountRef.current++;
@@ -222,7 +237,7 @@ function ResourceMonitor() {
             console.warn('[ResourceMonitor] Failed to track IPC send:', err);
           }
         }
-        return originalSend.call(this, channel, ...args);
+        originalSend?.call(this, channel, ...args);
       };
 
       // Intercept on (incoming messages)
@@ -238,8 +253,8 @@ function ResourceMonitor() {
       // To fix this, implement a WeakMap to maintain original-to-wrapped listener mappings:
       // const listenerMap = new WeakMap<Function, Function>();
       // Then store the mapping and use it for proper cleanup in the `off()` interceptor.
-      window.ipcRenderer.on = function (channel: string, listener: any) {
-        const wrappedListener = (...args: any[]) => {
+      window.ipcRenderer.on = function (channel: string, listener: IpcListenerFn): void {
+        const wrappedListener = (event: unknown, ...args: unknown[]): void => {
           if (isTracking) {
             try {
               ipcMessageCountRef.current++;
@@ -250,9 +265,9 @@ function ResourceMonitor() {
               console.warn('[ResourceMonitor] Failed to track IPC receive:', err);
             }
           }
-          listener(...args);
+          listener(event, ...args);
         };
-        return originalOn.call(this, channel, wrappedListener);
+        originalOn?.call(this, channel, wrappedListener);
       };
     } catch (err) {
       console.error('[ResourceMonitor] Failed to intercept IPC methods:', err);
@@ -296,12 +311,12 @@ function ResourceMonitor() {
    */
   const getFPSColor = (fps: number): string => {
     if (fps >= 55) {
-      return '#4CAF50';
+      return 'var(--app-monitor-fps-good)';
     } // Green
     if (fps >= 30) {
-      return '#FFC107';
+      return 'var(--app-monitor-fps-medium)';
     } // Yellow
-    return '#f44336'; // Red
+    return 'var(--app-monitor-fps-low)'; // Red
   };
 
   /**
@@ -320,8 +335,8 @@ function ResourceMonitor() {
         position: 'fixed',
         bottom: '20px',
         right: '20px',
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        color: '#fff',
+        backgroundColor: 'var(--app-monitor-bg)',
+        color: 'var(--app-monitor-text)',
         padding: '12px',
         borderRadius: '8px',
         fontFamily: 'monospace',
@@ -329,7 +344,7 @@ function ResourceMonitor() {
         zIndex: 9999,
         minWidth: isExpanded ? '280px' : '120px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid var(--app-monitor-border)',
       }}
     >
       {/* Header */}
@@ -339,7 +354,7 @@ function ResourceMonitor() {
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: isExpanded ? '10px' : '0',
-          borderBottom: isExpanded ? '1px solid rgba(255,255,255,0.2)' : 'none',
+          borderBottom: isExpanded ? '1px solid var(--app-monitor-divider)' : 'none',
           paddingBottom: isExpanded ? '8px' : '0',
         }}
       >
@@ -349,7 +364,7 @@ function ResourceMonitor() {
           style={{
             background: 'none',
             border: 'none',
-            color: '#fff',
+            color: 'var(--app-monitor-text)',
             cursor: 'pointer',
             fontSize: '16px',
             padding: '0 4px',
@@ -366,7 +381,15 @@ function ResourceMonitor() {
           <div style={{ marginBottom: '8px' }}>
             <strong style={{ color: getFPSColor(metrics.fps) }}>FPS: {metrics.fps}</strong>
             {metrics.fps < 55 && (
-              <span style={{ color: '#FFC107', marginLeft: '8px', fontSize: '11px' }}>⚠️ Low</span>
+              <span
+                style={{
+                  color: 'var(--app-monitor-warning-accent)',
+                  marginLeft: '8px',
+                  fontSize: '11px',
+                }}
+              >
+                ⚠️ Low
+              </span>
             )}
           </div>
 
@@ -374,14 +397,14 @@ function ResourceMonitor() {
           {metrics.memory && (
             <div style={{ marginBottom: '8px' }}>
               <div>Memory: {formatBytes(metrics.memory.used)}</div>
-              <div style={{ fontSize: '11px', color: '#aaa' }}>
+              <div style={{ fontSize: '11px', color: 'var(--app-monitor-divider)' }}>
                 {getMemoryPercent()}% of {formatBytes(metrics.memory.limit)}
               </div>
               <div
                 style={{
                   width: '100%',
                   height: '4px',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  backgroundColor: 'var(--app-monitor-divider)',
                   borderRadius: '2px',
                   marginTop: '4px',
                   overflow: 'hidden',
@@ -391,7 +414,10 @@ function ResourceMonitor() {
                   style={{
                     width: `${getMemoryPercent()}%`,
                     height: '100%',
-                    backgroundColor: getMemoryPercent() > 80 ? '#f44336' : '#4CAF50',
+                    backgroundColor:
+                      getMemoryPercent() > 80
+                        ? 'var(--app-monitor-memory-high)'
+                        : 'var(--app-monitor-memory-ok)',
                     transition: 'width 0.3s',
                   }}
                 />
@@ -410,14 +436,20 @@ function ResourceMonitor() {
             style={{
               marginBottom: '8px',
               fontSize: '11px',
-              borderTop: '1px solid rgba(255,255,255,0.1)',
+              borderTop: '1px solid var(--app-monitor-border)',
               paddingTop: '8px',
             }}
           >
             <div>IPC Messages: {metrics.ipcMessageCount}/sec</div>
             <div>IPC Bandwidth: {formatBytes(metrics.ipcBandwidth)}/s</div>
             {metrics.ipcBandwidth > 100000 && (
-              <div style={{ color: '#FFC107', fontSize: '10px', marginTop: '2px' }}>
+              <div
+                style={{
+                  color: 'var(--app-monitor-warning-accent)',
+                  fontSize: '10px',
+                  marginTop: '2px',
+                }}
+              >
                 ⚠️ High bandwidth (check delta sync)
               </div>
             )}
@@ -427,7 +459,9 @@ function ResourceMonitor() {
           <div style={{ marginBottom: '8px', fontSize: '11px' }}>
             <div>Active Workers: {metrics.activeWorkers}</div>
             {metrics.activeWorkers > 2 && (
-              <div style={{ color: '#f44336', fontSize: '10px', marginTop: '2px' }}>
+              <div
+                style={{ color: 'var(--app-monitor-fps-low)', fontSize: '10px', marginTop: '2px' }}
+              >
                 ⚠️ Possible worker leak
               </div>
             )}
@@ -439,10 +473,10 @@ function ResourceMonitor() {
               style={{
                 marginTop: '8px',
                 padding: '6px',
-                backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                backgroundColor: 'var(--app-monitor-warning-bg)',
                 borderRadius: '4px',
                 fontSize: '10px',
-                borderLeft: '2px solid #FFC107',
+                borderLeft: '2px solid var(--app-monitor-warning-accent)',
               }}
             >
               <strong>⚠️ Performance Issues Detected:</strong>
@@ -459,7 +493,7 @@ function ResourceMonitor() {
             style={{
               marginTop: '8px',
               fontSize: '10px',
-              color: '#666',
+              color: 'var(--app-monitor-muted)',
               textAlign: 'right',
             }}
           >

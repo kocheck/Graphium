@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useTokenData, resolveTokenData, ResolvedTokenData } from './useTokenData';
-import { Token, TokenLibraryItem } from '../store/gameStore';
+import type { Token, TokenLibraryItem } from '../types/domain';
 import { create } from 'zustand';
 import { useGameStore } from '../store/gameStore';
 

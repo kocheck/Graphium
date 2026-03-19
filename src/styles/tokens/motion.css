@@ -1,0 +1,14 @@
+/**
+ * Motion Tokens
+ *
+ * Transitions should feel deliberate and physical — not snappy or bouncy.
+ * Theme transitions are slower to let the material "settle".
+ */
+
+:root {
+  --duration-fast: 0.1s; /* micro-interactions: focus rings */
+  --duration-base: 0.15s; /* hover states */
+  --duration-slow: 0.2s; /* theme transitions, panels */
+  --ease-default: ease;
+  --ease-out: ease-out;
+}

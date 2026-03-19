@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 /**
  * Preferences for wall tool path optimization
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface WallToolPreferences {
   /** Enable path smoothing using RDP algorithm */
   enableSmoothing: boolean;
@@ -20,6 +21,7 @@ export interface WallToolPreferences {
 /**
  * Application preferences state
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface PreferencesState {
   wallTool: WallToolPreferences;
   setWallToolPreference: <K extends keyof WallToolPreferences>(

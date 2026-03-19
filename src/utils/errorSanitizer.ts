@@ -174,8 +174,8 @@ function sanitizePII(text: string): string {
  */
 export function sanitizeStack(error: Error, username: string): SanitizedError {
   const errorName = error.name || 'Error';
-  let errorMessage = error.message || '';
-  let errorStack = error.stack || '';
+  let errorMessage = error.message ?? '';
+  let errorStack = error.stack ?? '';
 
   // Create regex patterns to match the username in various path formats
   // Handles: /Users/username/, /home/username/, C:\Users\username\, etc.

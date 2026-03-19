@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useGameStore } from '../../store/gameStore';
 
-import type { Door } from '../../store/gameStore';
+import type { Door } from '../../types/domain';
 
 // Mock system messages to avoid dependency on random message selection
 vi.mock('../../utils/systemMessages', () => ({

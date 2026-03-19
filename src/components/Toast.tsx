@@ -2,7 +2,7 @@
  * Toast Notification Component
  *
  * Displays transient notification messages at the top of the screen.
- * Integrated with gameStore for centralized notification management.
+ * Integrated with uiStore for centralized notification management.
  *
  * **Features:**
  * - Auto-dismiss after 5 seconds
@@ -12,8 +12,8 @@
  * - High z-index (100) to appear above all other content
  * - Accessible with ARIA labels
  *
- * **Integration with gameStore:**
- * Toast messages are dispatched via gameStore methods:
+ * **Integration with uiStore:**
+ * Toast messages are dispatched via uiStore methods:
  * - `showToast(message, type)` - Show new toast
  * - `clearToast()` - Dismiss current toast
  *
@@ -21,32 +21,32 @@
  *
  * @example
  * // Show success toast
- * const { showToast } = useGameStore();
+ * const { showToast } = useUiStore();
  * showToast('Map uploaded successfully!', 'success');
  *
  * @example
  * // Show error toast
- * const { showToast } = useGameStore();
+ * const { showToast } = useUiStore();
  * showToast('Failed to load game state', 'error');
  *
  * @example
  * // Show info toast
- * const { showToast } = useGameStore();
+ * const { showToast } = useUiStore();
  * showToast('Autosave enabled', 'info');
  *
  * @component
- * @returns {JSX.Element | null} Toast notification or null if no active toast
+ * @returns {React.JSX.Element | null} Toast notification or null if no active toast
  */
 
 import { useEffect } from 'react';
 
-import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 
 /**
  * Toast component displays notification messages
  */
-function Toast() {
-  const { toast, clearToast } = useGameStore();
+function Toast(): React.JSX.Element | null {
+  const { toast, clearToast } = useUiStore();
 
   useEffect(() => {
     if (toast) {
@@ -63,21 +63,26 @@ function Toast() {
     return null;
   }
 
-  const bgColor =
-    toast.type === 'error'
-      ? 'bg-red-600'
-      : toast.type === 'success'
-        ? 'bg-green-600'
-        : 'bg-blue-600';
+  let bgColor = 'bg-blue-600';
+  if (toast.type === 'error') {
+    bgColor = 'bg-red-600';
+  } else if (toast.type === 'success') {
+    bgColor = 'bg-green-600';
+  }
+
+  let toastIcon = 'ℹ️';
+  if (toast.type === 'error') {
+    toastIcon = '⚠️';
+  } else if (toast.type === 'success') {
+    toastIcon = '✓';
+  }
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-slide-down">
       <div
         className={`${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] max-w-[500px]`}
       >
-        <span className="text-lg">
-          {toast.type === 'error' ? '⚠️' : toast.type === 'success' ? '✓' : 'ℹ️'}
-        </span>
+        <span className="text-lg">{toastIcon}</span>
         <span className="flex-1">{toast.message}</span>
         <button
           onClick={clearToast}

@@ -13,14 +13,14 @@
 
 import { useEffect } from 'react';
 
-import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 
 export function useCommandPalette(): [boolean, (isOpen: boolean) => void] {
-  const isOpen = useGameStore((state) => state.isCommandPaletteOpen);
-  const setIsOpen = useGameStore((state) => state.setCommandPaletteOpen);
+  const isOpen = useUiStore((state) => state.isCommandPaletteOpen);
+  const setIsOpen = useUiStore((state) => state.setCommandPaletteOpen);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Cmd+P or Cmd+K (Mac) / Ctrl+P or Ctrl+K (Windows/Linux)
       if ((e.metaKey || e.ctrlKey) && (e.key === 'p' || e.key === 'k')) {
         e.preventDefault(); // Prevent browser print dialog or other default actions

@@ -74,6 +74,7 @@ const MAX_BREADCRUMBS = 20;
 /**
  * Add a breadcrumb to track user actions
  */
+// eslint-disable-next-line import/no-unused-modules
 export function addBreadcrumb(action: string): void {
   const timestamp = new Date().toISOString();
   breadcrumbs.push(`[${timestamp}] ${action}`);
@@ -217,9 +218,9 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
     // Note: WeakSet persists across entire operation, so objects seen in different
     // branches will be marked as circular. This is a known limitation but acceptable
     // for error logging purposes where false positives are better than crashes.
-    const seen = new WeakSet();
+    const seen = new WeakSet<object>();
     const sanitized = JSON.parse(
-      JSON.stringify(data, (_key, value) => {
+      JSON.stringify(data, (_key, value: unknown) => {
         // Skip functions
         if (typeof value === 'function') {
           return '[Function]';
@@ -235,7 +236,7 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
 
         // Truncate large arrays
         if (Array.isArray(value) && value.length > 100) {
-          return `[Array(${value.length}) - truncated]`;
+          return `[Array(${String(value.length)}) - truncated]`;
         }
 
         // Truncate large strings
@@ -245,9 +246,9 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
 
         return value;
       }),
-    );
+    ) as Record<string, unknown>;
 
-    return sanitized as Record<string, unknown>;
+    return sanitized;
   } catch {
     return undefined;
   }
@@ -259,48 +260,65 @@ function sanitizeForLogging(data: unknown): Record<string, unknown> | undefined 
 export function logErrorWithContext(context: ErrorContext): void {
   const timestamp = new Date(context.timestamp).toISOString();
 
-  console.group(`🚨 Error Boundary: ${context.componentName || 'Component'} [${timestamp}]`);
+  // eslint-disable-next-line no-console
+  console.group(`🚨 Error Boundary: ${context.componentName ?? 'Component'} [${timestamp}]`);
 
   // Error details
+
   console.error('Error:', context.error.name, '-', context.error.message);
 
   // Stack traces
   if (context.error.stack) {
+    // eslint-disable-next-line no-console
     console.groupCollapsed('JavaScript Stack Trace');
+
     console.error(context.error.stack);
+    // eslint-disable-next-line no-console
     console.groupEnd();
   }
 
   if (context.componentStack) {
+    // eslint-disable-next-line no-console
     console.groupCollapsed('React Component Stack');
+
     console.error(context.componentStack);
+    // eslint-disable-next-line no-console
     console.groupEnd();
   }
 
   // Component state
-  if (context.props || context.state) {
+  if (context.props != null || context.state != null) {
+    // eslint-disable-next-line no-console
     console.groupCollapsed('Component State & Props');
     if (context.props) {
+      // eslint-disable-next-line no-console
       console.log('Props:', context.props);
     }
     if (context.state) {
+      // eslint-disable-next-line no-console
       console.log('State:', context.state);
     }
+    // eslint-disable-next-line no-console
     console.groupEnd();
   }
 
   // Breadcrumbs
   if (context.breadcrumbs && context.breadcrumbs.length > 0) {
+    // eslint-disable-next-line no-console
     console.groupCollapsed('User Actions (Breadcrumbs)');
+    // eslint-disable-next-line no-console
     context.breadcrumbs.forEach((crumb) => console.log(crumb));
+    // eslint-disable-next-line no-console
     console.groupEnd();
   }
 
   // Performance metrics
   if (context.performance) {
+    // eslint-disable-next-line no-console
     console.groupCollapsed('Performance Metrics');
     if (context.performance.memory) {
       const { usedJSHeapSize, jsHeapSizeLimit } = context.performance.memory;
+      // eslint-disable-next-line no-console
       console.log('Memory Usage:', {
         used: `${(usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
         limit: `${(jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`,
@@ -308,28 +326,38 @@ export function logErrorWithContext(context: ErrorContext): void {
       });
     }
     if (context.performance.timing) {
+      // eslint-disable-next-line no-console
       console.log('Page Timing:', {
         loadTime: `${context.performance.timing.loadTime}ms`,
         domReady: `${context.performance.timing.domReady}ms`,
       });
     }
+    // eslint-disable-next-line no-console
     console.groupEnd();
   }
 
   // Environment
+  // eslint-disable-next-line no-console
   console.groupCollapsed('Environment');
+  // eslint-disable-next-line no-console
   console.log('Mode:', context.environment.isDev ? 'Development' : 'Production');
+  // eslint-disable-next-line no-console
   console.log('Test Mode:', context.environment.isTest);
+  // eslint-disable-next-line no-console
   console.log('URL:', context.environment.url);
+  // eslint-disable-next-line no-console
   console.log('User Agent:', context.environment.userAgent);
+  // eslint-disable-next-line no-console
   console.groupEnd();
 
+  // eslint-disable-next-line no-console
   console.groupEnd();
 }
 
 /**
  * Get error history (dev/test mode only)
  */
+// eslint-disable-next-line import/no-unused-modules
 export function getErrorHistory(): ErrorContext[] {
   return [...errorHistory];
 }
@@ -339,6 +367,7 @@ export function getErrorHistory(): ErrorContext[] {
  * Note: Uses .length = 0 pattern because errorHistory is declared as const.
  * This is safe because getErrorHistory() returns a shallow copy, preventing external references.
  */
+// eslint-disable-next-line import/no-unused-modules
 export function clearErrorHistory(): void {
   errorHistory.length = 0;
 }
@@ -360,12 +389,13 @@ export async function exportErrorToClipboard(context: ErrorContext): Promise<boo
 /**
  * Format error context as human-readable report
  */
+// eslint-disable-next-line import/no-unused-modules
 export function formatErrorReport(context: ErrorContext): string {
   const timestamp = new Date(context.timestamp).toISOString();
   const lines: string[] = [];
 
   lines.push('================================================================================');
-  lines.push(`ERROR REPORT: ${context.componentName || 'Component'}`);
+  lines.push(`ERROR REPORT: ${context.componentName ?? 'Component'}`);
   lines.push(`Timestamp: ${timestamp}`);
   lines.push('================================================================================');
   lines.push('');
@@ -389,7 +419,7 @@ export function formatErrorReport(context: ErrorContext): string {
   }
 
   // Component state
-  if (context.props || context.state) {
+  if (context.props != null || context.state != null) {
     lines.push('Component State & Props:');
     if (context.props) {
       lines.push('Props:');
@@ -454,4 +484,5 @@ if (typeof window !== 'undefined' && (import.meta.env.DEV || import.meta.env.MOD
 /**
  * React.ErrorInfo type re-export for convenience
  */
+// eslint-disable-next-line import/no-unused-modules
 export type { ErrorInfo } from 'react';

@@ -14,6 +14,7 @@ module.exports = {
     'plugin:react-hooks/recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
+    'plugin:jsx-a11y/recommended',
     'plugin:prettier/recommended',
   ],
   ignorePatterns: [
@@ -83,8 +84,7 @@ module.exports = {
     ],
 
     // Disallow 'any' type - forces explicit typing
-    // TODO: Upgrade to 'error' after migrating existing 'any' types
-    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-explicit-any': 'error',
 
     // Require type annotations for function parameters
     '@typescript-eslint/no-inferrable-types': 'off',
@@ -100,8 +100,7 @@ module.exports = {
     '@typescript-eslint/require-await': 'error',
 
     // No misused promises (e.g., in conditionals)
-    // TODO: Upgrade to 'error' after wrapping async event handlers
-    '@typescript-eslint/no-misused-promises': 'warn',
+    '@typescript-eslint/no-misused-promises': 'error',
 
     // Enforce consistent type imports
     '@typescript-eslint/consistent-type-imports': [
@@ -122,14 +121,13 @@ module.exports = {
     ],
 
     // No unsafe member access
-    // TODO: Upgrade to 'error' after adding proper types to JSON parsing and IPC calls
-    '@typescript-eslint/no-unsafe-member-access': 'warn',
+    '@typescript-eslint/no-unsafe-member-access': 'error',
 
     // No unsafe calls
-    '@typescript-eslint/no-unsafe-call': 'warn',
+    '@typescript-eslint/no-unsafe-call': 'error',
 
     // No unsafe assignment
-    '@typescript-eslint/no-unsafe-assignment': 'warn',
+    '@typescript-eslint/no-unsafe-assignment': 'error',
 
     // No unsafe return
     '@typescript-eslint/no-unsafe-return': 'warn',
@@ -255,8 +253,77 @@ module.exports = {
     // No cycle dependencies
     'import/no-cycle': ['error', { maxDepth: 3, ignoreExternal: true }],
 
+    // Enforce PixiJS migration — no Konva imports allowed after migration
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            name: 'konva',
+            message: 'Konva has been replaced with PixiJS. Use pixi.js instead.',
+          },
+          {
+            name: 'react-konva',
+            message: 'react-konva has been replaced with @pixi/react. Use pixi.js/@pixi/react instead.',
+          },
+          {
+            name: '@pixi-essentials/transformer',
+            message:
+              'This package targets PixiJS v6 and uses dynamic require("url") which crashes Vite ESM renderer. Use a PixiJS v8-native solution instead.',
+          },
+        ],
+        patterns: [
+          {
+            group: ['konva/*', 'konva/lib/*'],
+            message: 'Konva has been replaced with PixiJS.',
+          },
+        ],
+      },
+    ],
+
     // No self imports
     'import/no-self-import': 'error',
+
+    // ==========================================
+    // Module Boundary Enforcement
+    // ==========================================
+    // See CLAUDE.md "Design System Contract" for boundary rules.
+    'import/no-restricted-paths': [
+      'error',
+      {
+        zones: [
+          // Primitives cannot import from store or services
+          {
+            target: './src/components/primitives',
+            from: './src/store',
+            message: 'Primitives must not import from store (Design System Contract)',
+          },
+          {
+            target: './src/components/primitives',
+            from: './src/services',
+            message: 'Primitives must not import from services (Design System Contract)',
+          },
+          // Store cannot import from components
+          {
+            target: './src/store',
+            from: './src/components',
+            message: 'Store must not import from components (Design System Contract)',
+          },
+          // Services cannot import from components or store
+          {
+            target: './src/services',
+            from: './src/components',
+            message: 'Services must not import from components (Design System Contract)',
+          },
+          // Utils cannot import from React components
+          {
+            target: './src/utils',
+            from: './src/components',
+            message: 'Utils must not import from components (Design System Contract)',
+          },
+        ],
+      },
+    ],
 
     // ==========================================
     // React Specific Rules
@@ -306,6 +373,13 @@ module.exports = {
         unnamedComponents: 'arrow-function',
       },
     ],
+
+    // ==========================================
+    // Accessibility (jsx-a11y) Overrides
+    // ==========================================
+
+    // autoFocus is intentional within dialogs and search inputs (WCAG dialog pattern)
+    'jsx-a11y/no-autofocus': 'warn',
 
     // ==========================================
     // Code Style & Best Practices
@@ -465,11 +539,38 @@ module.exports = {
         '@typescript-eslint/no-unsafe-call': 'off',
       },
     },
-    // Main entry points can have console
+    // Electron main process — system boundary with many untyped Electron/Node APIs
     {
       files: ['electron/main.ts', 'electron/preload.ts'],
       rules: {
         'no-console': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-unsafe-return': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+      },
+    },
+    // Files with deep typing issues scheduled for refactoring in later sessions.
+    // SyncManager: Session 7 (store separation) + Session 9 (campaign service)
+    // CanvasManager: Session 10 (decomposition)
+    // ResourceMonitor: needs typed browser API wrappers
+    // ImageCropper: needs typed canvas API wrappers
+    {
+      files: [
+        'src/components/Managers/SyncManager.tsx',
+        'src/components/Canvas/CanvasManager.tsx',
+        'src/components/ResourceMonitor.tsx',
+        'src/components/Dialogs/ImageCropper.tsx',
+      ],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'warn',
+        '@typescript-eslint/no-unsafe-assignment': 'warn',
+        '@typescript-eslint/no-unsafe-member-access': 'warn',
+        '@typescript-eslint/no-unsafe-call': 'warn',
+        '@typescript-eslint/no-unsafe-return': 'warn',
+        '@typescript-eslint/no-unsafe-argument': 'warn',
       },
     },
     // Allow looser rules in docs/examples

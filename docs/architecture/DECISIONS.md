@@ -901,3 +901,74 @@ Decisions should be revisited when:
 
 **Last updated:** 2025-01-XX
 **Document version:** 1.0
+
+---
+
+## Modular Architecture Refactor ADRs (Sessions 1-14, Feb 2026)
+
+### ADR-R1: Zustand Store Split (UI vs Domain)
+
+**Decision:** Split gameStore into gameStore (domain) + uiStore (UI ephemeral).
+
+**Context:** gameStore mixed Toast/Dialog/Sidebar state with Token/Drawing/Campaign
+state. UI state changes triggered IPC sync in SyncManager unnecessarily.
+
+**Consequences:** Two stores to import from. Backward-compat re-exports ease migration.
+SyncManager watches only gameStore, reducing unnecessary IPC traffic.
+
+---
+
+### ADR-R2: CSS Custom Properties over Tailwind for Theming
+
+**Decision:** Keep theme tokens as CSS custom properties in theme.css, not as Tailwind
+theme config. Use Tailwind for layout/spacing utilities only.
+
+**Context:** theme.css already has a comprehensive token system. Duplicating into
+tailwind.config.js would create two sources of truth. CSS custom properties support
+runtime theming (dark mode toggle) which Tailwind's JIT doesn't.
+
+**Consequences:** Components use `var(--app-*)` for colors, Tailwind for layout.
+Brand swapping works by overriding CSS properties in `src/styles/brand.css`.
+
+---
+
+### ADR-R3: UI Primitives as Plain Components (No Library)
+
+**Decision:** Build primitives as local components in src/components/primitives/, not
+using an external component library (Radix UI, Headless UI, etc.).
+
+**Context:** Bundle size is critical for Chromebook target (4GB RAM, Intel Celeron).
+Radix UI Primitives add ~30-50KB gzipped. Primitive needs are small: Button, Dialog,
+Input, Card, Toggle.
+
+**Consequences:** We own the accessibility implementation and must test it thoroughly.
+Bundle stays minimal. Zero external dependency risk.
+
+---
+
+### ADR-R4: Vision Logic as Pure Functions
+
+**Decision:** Extract raycasting/vision from FogOfWarLayer into pure utility functions
+with no React or Konva dependency (src/utils/vision.ts).
+
+**Context:** Vision calculation is the most CPU-intensive operation. Pure functions
+enable unit testing with geometric assertions, Web Worker offloading (future), and
+sharing between components without React coupling.
+
+**Consequences:** FogOfWarLayer is a thin renderer. Vision logic is testable with
+mathematical assertions (100% statement coverage achieved). Future path: move to
+Web Worker for off-thread calculation.
+
+---
+
+### ADR-R5: Incremental File Moves with Re-Exports
+
+**Decision:** When moving files (types, components, hooks), always add re-exports at
+the old path to prevent breaking changes. Remove re-exports only after all consumers
+are migrated.
+
+**Context:** The codebase has 100+ source files with complex import graphs. Moving a
+file without re-exports would require updating every consumer atomically.
+
+**Consequences:** Migrations happen file-by-file. Temporary duplication of export paths
+is acceptable. Clean up re-exports in a dedicated pass after all consumers migrate.

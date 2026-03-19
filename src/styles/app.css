@@ -11,16 +11,6 @@
   color: var(--app-text-primary);
 }
 
-/* Toolbar */
-.toolbar {
-  background: #000000;
-  border: 2px solid rgb(82, 82, 82); /* neutral-600 */
-}
-
-.toolbar-divider {
-  background: var(--app-border-subtle);
-}
-
 /* Buttons */
 .btn {
   padding: 0.25rem 0.75rem;
@@ -50,107 +40,58 @@
   background: var(--app-accent-solid-hover);
 }
 
-/* Tool buttons - active state */
-.btn-tool {
-  background: rgb(64, 64, 64); /* neutral-700 */
-  color: rgb(229, 229, 229); /* neutral-200 */
-  border: 1px solid rgb(82, 82, 82); /* neutral-600 */
+/* ================================================================
+   Global Focus Indicators (WCAG 2.2 AA)
+   Visible focus ring on all interactive elements when navigating
+   by keyboard. Uses :focus-visible to avoid showing on mouse click.
+   ================================================================ */
+
+/* Base focus ring for all interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: 2px;
 }
 
-.btn-tool:hover {
-  background: rgb(82, 82, 82); /* neutral-600 */
-  border-color: rgb(115, 115, 115); /* neutral-500 */
-}
-
-.btn-tool.active {
+/* Skip-to-content link: hidden until focused, then slides into view */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
   background: var(--app-accent-solid);
   color: var(--app-accent-solid-text);
-  border-color: var(--app-accent-solid);
+  border-radius: 0 0 0.5rem 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.btn-tool.active:hover {
-  background: var(--app-accent-solid-hover);
-  border-color: var(--app-accent-solid-hover);
+.skip-to-content:focus {
+  top: 0;
+  outline: 2px solid var(--app-accent-solid);
+  outline-offset: 2px;
 }
 
-/* Measurement mode buttons (smaller, used as sub-options) */
-.btn-mode {
-  padding: 0.125rem 0.5rem;
-  font-size: 0.75rem;
-  background: var(--app-bg-active);
-  color: var(--app-text-primary);
-}
-
-.btn-mode:hover {
-  background: var(--app-bg-hover);
-}
-
-.btn-mode.active {
-  background: var(--app-accent-solid);
-  color: var(--app-accent-solid-text);
-}
-
-.btn-mode.active:hover {
-  background: var(--app-accent-solid-hover);
-}
-
-/* Broadcast toggle button (success state for active) */
-.btn-broadcast {
-  padding: 0.125rem 0.5rem;
-  font-size: 0.75rem;
-  background: var(--app-bg-active);
-  color: var(--app-text-primary);
-}
-
-.btn-broadcast:hover {
-  background: var(--app-bg-hover);
-}
-
-.btn-broadcast.active {
-  background: var(--app-success-solid);
-  color: white;
-}
-
-.btn-broadcast.active:hover {
-  background: var(--app-success-solid-hover);
-}
-
-/* Sidebar */
-.sidebar {
-  background: var(--app-bg-surface);
-  border-right: 1px solid var(--app-border-subtle);
-  color: var(--app-text-primary);
-}
-
-.sidebar-section {
-  border-top: 1px solid var(--app-border-subtle);
-}
-
-.sidebar-input {
-  background: var(--app-bg-active);
-  border: 1px solid var(--app-border-default);
-  color: var(--app-text-primary);
-}
-
-.sidebar-input:focus {
-  outline: none;
-  border-color: var(--app-accent-solid);
-}
-
-.sidebar-token {
-  background: var(--app-bg-active);
-  color: var(--app-text-primary);
-}
-
-.sidebar-token:hover {
-  background: var(--app-bg-hover);
-}
-
-/* Info boxes */
-.info-box {
-  background: var(--app-accent-bg);
-  border: 1px solid var(--app-accent-solid);
-  color: var(--app-accent-text-contrast);
+/* Screen reader only utility (matches Tailwind sr-only) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* Canvas */

@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import Toast from './Toast';
-import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 
 describe('Toast', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     // Reset store
-    useGameStore.setState({ toast: null });
+    useUiStore.setState({ toast: null });
   });
 
   afterEach(() => {
@@ -22,7 +22,7 @@ describe('Toast', () => {
   });
 
   it('should render error toast with message', () => {
-    useGameStore.setState({
+    useUiStore.setState({
       toast: { message: 'Test error message', type: 'error' },
     });
 
@@ -32,7 +32,7 @@ describe('Toast', () => {
   });
 
   it('should render success toast with message', () => {
-    useGameStore.setState({
+    useUiStore.setState({
       toast: { message: 'Success message', type: 'success' },
     });
 
@@ -42,7 +42,7 @@ describe('Toast', () => {
   });
 
   it('should render info toast with message', () => {
-    useGameStore.setState({
+    useUiStore.setState({
       toast: { message: 'Info message', type: 'info' },
     });
 
@@ -52,7 +52,7 @@ describe('Toast', () => {
   });
 
   it('should auto-dismiss after 5 seconds', async () => {
-    useGameStore.setState({
+    useUiStore.setState({
       toast: { message: 'Auto dismiss test', type: 'info' },
     });
 
@@ -65,11 +65,11 @@ describe('Toast', () => {
     });
 
     // Check that toast is cleared
-    expect(useGameStore.getState().toast).toBeNull();
+    expect(useUiStore.getState().toast).toBeNull();
   });
 
   it('should clear toast when close button is clicked', () => {
-    useGameStore.setState({
+    useUiStore.setState({
       toast: { message: 'Closeable message', type: 'error' },
     });
 
@@ -80,6 +80,6 @@ describe('Toast', () => {
       closeButton.click();
     });
 
-    expect(useGameStore.getState().toast).toBeNull();
+    expect(useUiStore.getState().toast).toBeNull();
   });
 });

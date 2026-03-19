@@ -30,12 +30,13 @@ import TokenMetadataEditor from './TokenMetadataEditor';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { processImage } from '../../utils/AssetProcessor';
 import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzySearch';
 import { rollForMessage } from '../../utils/systemMessages';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 
-import type { TokenLibraryItem } from '../../store/gameStore';
+import type { TokenLibraryItem } from '../../types/domain';
 import type { ProcessingHandle } from '../../utils/AssetProcessor';
 
 interface LibraryManagerProps {
@@ -43,7 +44,8 @@ interface LibraryManagerProps {
   onClose: () => void;
 }
 
-function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
+// eslint-disable-next-line max-lines-per-function
+function LibraryManager({ isOpen, onClose }: LibraryManagerProps): React.JSX.Element | null {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -70,10 +72,10 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
   // Store selectors
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
   const removeTokenFromLibrary = useGameStore((state) => state.removeTokenFromLibrary);
-  const showConfirmDialog = useGameStore((state) => state.showConfirmDialog);
-  const showToast = useGameStore((state) => state.showToast);
   const addToken = useGameStore((state) => state.addToken);
   const map = useGameStore((state) => state.map);
+  const showConfirmDialog = useUiStore((state) => state.showConfirmDialog);
+  const showToast = useUiStore((state) => state.showToast);
 
   // Get categories from library
   const categories = ['All', ...getCategories(tokenLibrary)];
@@ -98,7 +100,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
    * Handle file upload
    * Opens AddToLibraryDialog for metadata input
    */
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file) {
       return;
@@ -120,7 +122,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
         setPendingImage({
           src,
           blob,
-          name: file.name.split('.')[0] || 'New Asset',
+          name: file.name.split('.')[0] ?? 'New Asset',
         });
         setIsAddDialogOpen(true);
       } catch (fetchErr) {
@@ -141,23 +143,25 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
    * Handle delete asset
    * Shows confirmation dialog before deleting
    */
-  const handleDelete = (itemId: string, itemName: string) => {
+  const handleDelete = (itemId: string, itemName: string): void => {
     showConfirmDialog(
       rollForMessage('CONFIRM_LIBRARY_ASSET_DELETE', { assetName: itemName }),
-      async () => {
-        try {
-          // Delete from storage (filesystem or IndexedDB)
-          const storage = getStorage();
-          await storage.deleteLibraryAsset(itemId);
+      () => {
+        void (async () => {
+          try {
+            // Delete from storage (filesystem or IndexedDB)
+            const storage = getStorage();
+            await storage.deleteLibraryAsset(itemId);
 
-          // Remove from store
-          removeTokenFromLibrary(itemId);
+            // Remove from store
+            removeTokenFromLibrary(itemId);
 
-          showToast(rollForMessage('ASSET_DELETED_SUCCESS'), 'success');
-        } catch (error) {
-          console.error('[LibraryManager] Failed to delete asset:', error);
-          showToast(rollForMessage('ASSET_DELETE_FAILED'), 'error');
-        }
+            showToast(rollForMessage('ASSET_DELETED_SUCCESS'), 'success');
+          } catch (error) {
+            console.error('[LibraryManager] Failed to delete asset:', error);
+            showToast(rollForMessage('ASSET_DELETE_FAILED'), 'error');
+          }
+        })();
       },
       'Delete',
     );
@@ -168,7 +172,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
    * Allows dragging tokens from library to canvas
    * Passes library item ID to create instance reference
    */
-  const handleDragStart = (e: React.DragEvent, libraryToken: TokenLibraryItem) => {
+  const handleDragStart = (e: React.DragEvent, libraryToken: TokenLibraryItem): void => {
     setDraggingItemId(libraryToken.id);
     e.dataTransfer.setData(
       'application/json',
@@ -185,7 +189,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
    * Handle drag end for library tokens
    * Clear dragging state
    */
-  const handleDragEnd = () => {
+  const handleDragEnd = (): void => {
     setDraggingItemId(null);
   };
 
@@ -196,6 +200,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="presentation"
       onClick={onClose}
     >
       {/* Modal container: Full-screen on mobile, centered on desktop */}
@@ -203,6 +208,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
         className={`w-full flex flex-col overflow-hidden shadow-2xl ${
           isMobile ? 'h-full' : 'max-w-6xl h-[80vh] rounded-lg'
         }`}
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: 'var(--app-bg-base)',
@@ -218,7 +224,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
                 accept="image/*"
                 ref={fileInputRef}
                 className="hidden"
-                onChange={handleUpload}
+                onChange={(e) => void handleUpload(e)}
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -399,8 +405,8 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps) {
       {/* Add to Library Dialog */}
       <AddToLibraryDialog
         isOpen={isAddDialogOpen}
-        imageSrc={pendingImage?.src || null}
-        imageBlob={pendingImage?.blob || null}
+        imageSrc={pendingImage?.src ?? null}
+        imageBlob={pendingImage?.blob ?? null}
         suggestedName={pendingImage?.name}
         onClose={() => {
           setIsAddDialogOpen(false);

@@ -27,9 +27,9 @@ import {
 
 import { componentExamples, categories } from './playground-registry';
 import { getStorage } from '../../services/storage';
-import { useGameStore } from '../../store/gameStore';
-import ConfirmDialog from '../ConfirmDialog';
-import { ThemeManager } from '../ThemeManager';
+import { useUiStore } from '../../store/uiStore';
+import ConfirmDialog from '../Dialogs/ConfirmDialog';
+import { ThemeManager } from '../Managers/ThemeManager';
 import Toast from '../Toast';
 
 import type { ComponentExample } from './types';
@@ -38,7 +38,7 @@ import type { ComponentExample } from './types';
  * Shell component to provide necessary context (Theme, Toasts, Dialogs)
  * isolated from the main app's providers.
  */
-function PlaygroundShell({ children }: { children: React.ReactNode }) {
+function PlaygroundShell({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
     <div className="playground-shell w-full h-full bg-[var(--app-bg-base)] text-[var(--app-text-primary)] transition-colors duration-200">
       <ThemeManager />
@@ -49,7 +49,7 @@ function PlaygroundShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DesignSystemPlayground() {
+export function DesignSystemPlayground(): React.JSX.Element {
   return (
     <PlaygroundShell>
       <PlaygroundContent />
@@ -57,16 +57,17 @@ export function DesignSystemPlayground() {
   );
 }
 
-function PlaygroundContent() {
+// eslint-disable-next-line max-lines-per-function
+function PlaygroundContent(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { showToast } = useGameStore();
+  const { showToast } = useUiStore();
 
   // Load initial theme
   useEffect(() => {
-    const loadTheme = async () => {
+    const loadTheme = async (): Promise<void> => {
       try {
         const storage = getStorage();
         const mode = await storage.getThemeMode();
@@ -81,7 +82,7 @@ function PlaygroundContent() {
 
   // Keyboard shortcut: "/" to focus search
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Focus search input when "/" is pressed
       if (e.key === '/' && document.activeElement !== searchInputRef.current) {
         e.preventDefault();
@@ -93,15 +94,17 @@ function PlaygroundContent() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleToggleTheme = async () => {
-    try {
-      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-      setCurrentTheme(newTheme);
-      await getStorage().setThemeMode(newTheme);
-    } catch (e) {
-      console.error('Failed to toggle theme', e);
-      showToast('Failed to switch theme', 'error');
-    }
+  const handleToggleTheme = (): void => {
+    void (async () => {
+      try {
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        setCurrentTheme(newTheme);
+        await getStorage().setThemeMode(newTheme);
+      } catch (e) {
+        console.error('Failed to toggle theme', e);
+        showToast('Failed to switch theme', 'error');
+      }
+    })();
   };
 
   // Filter components based on search query
@@ -129,6 +132,7 @@ function PlaygroundContent() {
       if (!groups[example.category]) {
         groups[example.category] = [];
       }
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       groups[example.category]!.push(example);
     });
 
@@ -136,7 +140,7 @@ function PlaygroundContent() {
   }, [filteredExamples]);
 
   // Handle copy to clipboard
-  const handleCopyCode = async (example: ComponentExample) => {
+  const handleCopyCode = async (example: ComponentExample): Promise<void> => {
     try {
       await navigator.clipboard.writeText(example.code);
       setCopiedId(example.id);
@@ -212,6 +216,7 @@ function PlaygroundContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 rounded-lg bg-[var(--app-bg-surface)] border border-[var(--app-border-default)] text-[var(--app-text-primary)] placeholder-[var(--app-text-muted)] focus:outline-none focus:border-[var(--app-accent-solid)] focus:ring-1 focus:ring-[var(--app-accent-solid)] transition-all shadow-sm"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
             {/* Keyboard shortcut hint */}
@@ -293,7 +298,7 @@ function PlaygroundContent() {
                       key={example.id}
                       example={example}
                       isCopied={copiedId === example.id}
-                      onCopy={() => handleCopyCode(example)}
+                      onCopy={() => void handleCopyCode(example)}
                     />
                   ))}
                 </div>
@@ -315,7 +320,7 @@ interface ComponentCardProps {
   onCopy: () => void;
 }
 
-function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps) {
+function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps): React.JSX.Element {
   const [showCode, setShowCode] = useState(false);
 
   return (

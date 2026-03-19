@@ -41,7 +41,7 @@ class MinimapErrorBoundary extends Component<Props, State> {
     return { hasError: true };
   }
 
-  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('[MinimapErrorBoundary] Minimap rendering error:', error);
     console.error('[MinimapErrorBoundary] Error info:', errorInfo);
     console.warn(
@@ -49,7 +49,7 @@ class MinimapErrorBoundary extends Component<Props, State> {
     );
   }
 
-  override render() {
+  override render(): ReactNode {
     if (this.state.hasError) {
       // Return null to hide the minimap without showing error UI
       // This is a graceful degradation - minimap is not critical

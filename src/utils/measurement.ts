@@ -12,6 +12,7 @@ import type { Point } from '../types/geometry';
 /**
  * D&D 5e distance calculation modes
  */
+// eslint-disable-next-line import/no-unused-modules
 export enum DistanceMode {
   /** Simple Euclidean distance */
   EUCLIDEAN = 'euclidean',
@@ -27,6 +28,7 @@ export enum DistanceMode {
  * @param p2 - Second point
  * @returns Distance in pixels
  */
+// eslint-disable-next-line import/no-unused-modules
 export const euclideanDistance = (p1: Point, p2: Point): number => {
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
@@ -47,6 +49,7 @@ export const euclideanDistance = (p1: Point, p2: Point): number => {
  * @param gridSize - Size of one grid cell in pixels
  * @returns Distance in grid cells
  */
+// eslint-disable-next-line import/no-unused-modules
 export const dnd5eDistance = (p1: Point, p2: Point, gridSize: number): number => {
   const dx = Math.abs(p2.x - p1.x);
   const dy = Math.abs(p2.y - p1.y);
@@ -80,6 +83,7 @@ export const dnd5eDistance = (p1: Point, p2: Point, gridSize: number): number =>
  * @param p2 - Second point (required for D&D 5e mode)
  * @returns Distance in feet
  */
+// eslint-disable-next-line import/no-unused-modules
 export const pixelsToFeet = (
   pixelDistance: number,
   gridSize: number,
@@ -104,6 +108,7 @@ export const pixelsToFeet = (
  * @param p2 - Target point
  * @returns Angle in radians
  */
+// eslint-disable-next-line import/no-unused-modules
 export const calculateAngle = (p1: Point, p2: Point): number => {
   return Math.atan2(p2.y - p1.y, p2.x - p1.x);
 };
@@ -115,6 +120,7 @@ export const calculateAngle = (p1: Point, p2: Point): number => {
  * @param p2 - Target point
  * @returns Angle in degrees (0-360)
  */
+// eslint-disable-next-line import/no-unused-modules
 export const calculateAngleDegrees = (p1: Point, p2: Point): number => {
   const radians = calculateAngle(p1, p2);
   const degrees = (radians * 180) / Math.PI;
@@ -133,6 +139,7 @@ export const calculateAngleDegrees = (p1: Point, p2: Point): number => {
  * @param coneAngleDegrees - Total cone angle in degrees (default: 53)
  * @returns Array of 3 points forming the cone triangle [origin, left vertex, right vertex]
  */
+// eslint-disable-next-line import/no-unused-modules
 export const calculateConeVertices = (
   origin: Point,
   target: Point,

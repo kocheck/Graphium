@@ -1,0 +1,25 @@
+/**
+ * Card Primitive Styles
+ */
+
+.card-primitive {
+  border-radius: var(--radius-lg);
+  color: var(--app-text-primary);
+}
+
+.card-primitive--surface {
+  background: var(--app-bg-surface);
+}
+
+.card-primitive--elevated {
+  background: var(--app-bg-surface);
+  box-shadow:
+    0 1px 3px var(--app-shadow-sm),
+    0 2px 8px var(--app-shadow-md),
+    inset 0 1px 0 var(--texture-panel-highlight);
+}
+
+.card-primitive--outlined {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border-default);
+}

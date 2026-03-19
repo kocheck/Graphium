@@ -1,0 +1,33 @@
+/**
+ * Brand Configuration Layer
+ *
+ * Edit ONLY this file to rebrand Graphium.
+ * Import order: fonts.css → tokens/ → brand.css → textures/ → primitives/ → modules/
+ *
+ * WHAT GOES HERE:
+ * - Accent color overrides (if accent should differ from token defaults)
+ * - Font family overrides (override --font-* tokens from typography.css)
+ * - Logo asset paths
+ *
+ * WHAT DOES NOT GO HERE:
+ * - Layout or spacing (those go in modules/ or app.css)
+ * - New component styles (those go in primitives/ or modules/)
+ * - Raw color overrides (those go in tokens/color-parchment.css or tokens/color-leather.css)
+ */
+
+:root {
+  /* ===== Brand Identity ===== */
+  --brand-name: 'Graphium';
+  --brand-tagline: 'Digital Stylus for World Builders';
+
+  /* ===== Font Family =====
+     Override these --font-* tokens to swap fonts without touching token files.
+     brand.css loads after typography.css — declarations here take precedence. */
+  --font-body: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+
+  /* ===== Logo Assets ===== */
+  --brand-logo-icon: url('/icon.svg');
+  --brand-logo-png: url('/icon.png');
+}

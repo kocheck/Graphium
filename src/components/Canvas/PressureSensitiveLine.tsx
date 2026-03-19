@@ -1,214 +1,201 @@
-import { useRef, memo } from 'react';
+/**
+ * PressureSensitiveLine — PixiJS Mesh implementation
+ *
+ * Renders a variable-width stroke ribbon using a PixiJS Mesh driven by
+ * buildStrokeGeometry().  The component is imperative: it adds a Mesh to
+ * worldContainer on mount and removes it on unmount, returning null from JSX.
+ *
+ * Performance notes:
+ * - Wrapped in React.memo — only re-renders when props change.
+ * - Geometry and shader objects are recreated on each render pass; the old
+ *   Mesh is destroyed and a new one added so worldContainer stays consistent.
+ * - zIndex = 30 keeps strokes above the map background (10) and grid (20).
+ */
 
-import { Shape } from 'react-konva';
+import { useEffect, useRef, memo } from 'react';
 
-import type Konva from 'konva';
+import { GlProgram, Mesh, MeshGeometry, Shader, UniformGroup } from 'pixi.js';
 
-// Import the globalCompositeOperationType from Konva
-type GlobalCompositeOperationType =
-  | ''
-  | 'source-over'
-  | 'source-in'
-  | 'source-out'
-  | 'source-atop'
-  | 'destination-over'
-  | 'destination-in'
-  | 'destination-out'
-  | 'destination-atop'
-  | 'lighter'
-  | 'copy'
-  | 'xor'
-  | 'multiply'
-  | 'screen'
-  | 'overlay'
-  | 'darken'
-  | 'lighten'
-  | 'color-dodge'
-  | 'color-burn'
-  | 'hard-light'
-  | 'soft-light'
-  | 'difference'
-  | 'exclusion'
-  | 'hue'
-  | 'saturation'
-  | 'color'
-  | 'luminosity';
+import { buildStrokeGeometry } from './drawing/strokeGeometry';
+import { hexToRgbFloats } from '../../utils/pixiColor';
+
+import type { Container } from 'pixi.js';
+
+// ---------------------------------------------------------------------------
+// GLSL shaders
+// ---------------------------------------------------------------------------
+
+// mirrors: colour passed in as a vec4 uniform, no texture sampling
+const VERTEX_GLSL = `
+in vec2 aPosition;
+
+uniform mat3 uProjectionMatrix;
+uniform mat3 uWorldTransformMatrix;
+uniform mat3 uTransformMatrix;
+
+void main(void) {
+  mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
+  gl_Position = vec4((mvp * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
+}
+`.trim();
+
+const FRAGMENT_GLSL = `
+uniform vec4 uColor;
+
+out vec4 outColor;
+
+void main(void) {
+  outColor = uColor;
+}
+`.trim();
+
+// ---------------------------------------------------------------------------
+// Shared cached GlProgram (reused across all instances)
+// mirrors var(--app-drawing-stroke) in spirit; actual colour comes via uniform
+// ---------------------------------------------------------------------------
+
+let _sharedGlProgram: GlProgram | null = null;
+
+function getSharedGlProgram(): GlProgram {
+  if (!_sharedGlProgram) {
+    _sharedGlProgram = new GlProgram({ vertex: VERTEX_GLSL, fragment: FRAGMENT_GLSL });
+  }
+  return _sharedGlProgram;
+}
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 interface PressureSensitiveLineProps {
-  id?: string;
-  name?: string;
-  points: number[]; // [x1, y1, x2, y2, ...]
-  pressures?: number[]; // [p1, p2, p3, ...] Optional pressure values (0.0-1.0)
+  /** Unique DOM/Pixi id used as Mesh name for debug tooling */
+  id: string;
+  /** Flat coordinate array [x0, y0, x1, y1, …] */
+  points: number[];
+  /** Per-point pressure values [p0, p1, …], length === points.length / 2 */
+  pressures?: number[];
+  /** Hex colour string e.g. "#e87722" */
   stroke: string;
-  strokeWidth: number; // Base stroke width (multiplied by pressure)
-  lineCap?: 'butt' | 'round' | 'square';
-  lineJoin?: 'miter' | 'round' | 'bevel';
-  globalCompositeOperation?: GlobalCompositeOperationType;
+  /** Base stroke width in pixels (scaled by pressure) */
+  strokeWidth: number;
+  /** Alpha value 0.0–1.0, default 1.0 */
   opacity?: number;
-  listening?: boolean;
-  scale?: { x: number; y: number }; // Legacy support (use scaleX/scaleY instead)
-  scaleX?: number;
-  scaleY?: number;
-  x?: number;
-  y?: number;
-  pressureRange?: { min: number; max: number }; // Pressure multiplier range from settings
+  /** PixiJS Container to add the Mesh to */
+  worldContainer: Container | null;
 }
 
-/**
- * Validate pressure data matches point count
- * Returns null if invalid, otherwise returns validated pressures
- */
-function validatePressureData(points: number[], pressures?: number[]): number[] | null {
-  if (!pressures || pressures.length === 0) {
-    return null; // No pressure data - use regular line
-  }
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
-  const expectedLength = points.length / 2;
-
-  if (pressures.length !== expectedLength) {
-    if (import.meta.env.DEV) {
-      console.warn(
-        `[PressureSensitiveLine] Pressure array length mismatch. ` +
-          `Expected ${expectedLength} pressure values for ${points.length / 2} points, ` +
-          `but got ${pressures.length}. Falling back to regular line.`,
-      );
-    }
-    return null;
-  }
-
-  // Validate pressure values are in 0-1 range
-  const hasInvalidPressure = pressures.some((p) => p < 0 || p > 1 || !Number.isFinite(p));
-  if (hasInvalidPressure) {
-    if (import.meta.env.DEV) {
-      console.warn(
-        `[PressureSensitiveLine] Invalid pressure values detected. ` +
-          `All pressures must be between 0.0 and 1.0. Falling back to regular line.`,
-      );
-    }
-    return null;
-  }
-
-  return pressures;
-}
-
-/**
- * PressureSensitiveLine Component
- *
- * Renders a line with variable stroke width based on pointer pressure.
- * Automatically falls back to regular line rendering if pressure data is
- * invalid or not provided.
- *
- * Performance optimizations:
- * - Memoized to prevent unnecessary re-renders
- * - Validates pressure data once per render
- * - Uses Konva's Shape sceneFunc for efficient custom rendering
- *
- * @param props - PressureSensitiveLineProps
- * @returns Konva Shape component
- */
 function PressureSensitiveLineComponent({
   id,
-  name,
   points,
   pressures,
   stroke,
   strokeWidth,
-  lineCap = 'round',
-  lineJoin = 'round',
-  globalCompositeOperation,
-  opacity,
-  listening = false,
-  scale,
-  scaleX,
-  scaleY,
-  x,
-  y,
-  pressureRange = { min: 0.3, max: 1.5 }, // Default to 'normal' curve
-}: PressureSensitiveLineProps) {
-  const shapeRef = useRef<Konva.Shape>(null);
+  opacity = 1,
+  worldContainer,
+}: PressureSensitiveLineProps): null {
+  const meshRef = useRef<Mesh<MeshGeometry, Shader> | null>(null);
+  const shaderRef = useRef<Shader | null>(null);
 
-  // Validate pressure data
-  const validatedPressures = validatePressureData(points, pressures);
-
-  // Custom rendering function for variable-width strokes
-  const sceneFunc = (context: Konva.Context, shape: Konva.Shape) => {
-    if (points.length < 4) {
+  // ---------------------------------------------------------------------------
+  // Effect 1: Shader lifecycle
+  // Runs only when color or opacity changes — avoids recreating shader on
+  // every geometry update (e.g. live drawing adding points).
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!worldContainer) {
       return;
-    } // Need at least 2 points
+    }
 
-    context.beginPath();
-    context.moveTo(points[0]!, points[1]!);
+    const [r, g, b] = hexToRgbFloats(stroke);
+    const uniformGroup = new UniformGroup({
+      uColor: { value: new Float32Array([r, g, b, opacity]), type: 'vec4<f32>' },
+    });
+    const shader = new Shader({
+      glProgram: getSharedGlProgram(),
+      resources: { uniforms: uniformGroup },
+    });
 
-    // Explicitly apply styles since we are using custom drawing
-    context.strokeStyle = shape.stroke();
-    context.lineCap = shape.lineCap();
-    context.lineJoin = shape.lineJoin();
+    shaderRef.current = shader;
 
-    // If no valid pressure data, render as regular line
-    if (!validatedPressures) {
-      for (let i = 2; i < points.length; i += 2) {
-        context.lineTo(points[i]!, points[i + 1]!);
+    // If a Mesh is already live, hot-swap its shader
+    if (meshRef.current) {
+      meshRef.current.shader = shader;
+    }
+
+    return () => {
+      shader.destroy();
+      shaderRef.current = null;
+    };
+  }, [stroke, opacity, worldContainer]);
+
+  // ---------------------------------------------------------------------------
+  // Effect 2: Mesh + geometry lifecycle
+  // On geometry change: swaps mesh.geometry in-place (avoids Mesh recreate).
+  // On first render: creates Mesh using shader from Effect 1.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!worldContainer || points.length < 4) {
+      return;
+    }
+
+    const shader = shaderRef.current;
+    if (!shader) {
+      return;
+    }
+
+    // Build geometry from current points
+    const sampleCount = Math.floor(points.length / 2);
+    const samples: Array<{ x: number; y: number; pressure: number }> = [];
+    for (let i = 0; i < sampleCount; i++) {
+      samples.push({
+        x: points[i * 2] ?? 0,
+        y: points[i * 2 + 1] ?? 0,
+        pressure: pressures?.[i] ?? 1.0,
+      });
+    }
+
+    const { vertices, indices } = buildStrokeGeometry(samples, strokeWidth);
+
+    if (vertices.length === 0) {
+      return;
+    }
+
+    const uvs = new Float32Array(vertices.length);
+    const geometry = new MeshGeometry({ positions: vertices, uvs, indices });
+
+    if (meshRef.current) {
+      // Swap geometry only — Mesh and Shader are reused
+      const oldGeometry = meshRef.current.geometry;
+      meshRef.current.geometry = geometry;
+      oldGeometry.destroy();
+    } else {
+      // First render — create Mesh and add to container
+      const mesh = new Mesh({ geometry, shader });
+      mesh.name = id;
+      mesh.zIndex = 30;
+      worldContainer.addChild(mesh);
+      meshRef.current = mesh;
+    }
+
+    return () => {
+      if (meshRef.current) {
+        worldContainer.removeChild(meshRef.current);
+        meshRef.current.destroy();
+        meshRef.current = null;
       }
-      context.strokeShape(shape);
-      return;
-    }
+    };
+  }, [id, points, pressures, strokeWidth, worldContainer]);
 
-    // Render pressure-sensitive line with variable width
-    // We'll draw multiple segments with different stroke widths
-    const numPoints = points.length / 2;
-
-    for (let i = 1; i < numPoints; i++) {
-      const x1 = points[(i - 1) * 2];
-      const y1 = points[(i - 1) * 2 + 1];
-      const x2 = points[i * 2];
-      const y2 = points[i * 2 + 1];
-
-      const pressure1 = validatedPressures[i - 1] || 0.5;
-      const pressure2 = validatedPressures[i] || 0.5;
-
-      // Calculate average pressure for this segment
-      const avgPressure = (pressure1 + pressure2) / 2;
-
-      // Vary stroke width based on pressure using configured range
-      // Map pressure (0.0-1.0) to multiplier (min-max)
-      const pressureMultiplier =
-        pressureRange.min + avgPressure * (pressureRange.max - pressureRange.min);
-      const segmentWidth = strokeWidth * pressureMultiplier;
-
-      // Draw line segment with calculated width
-      context.beginPath();
-      context.moveTo(x1!, y1!);
-      context.lineTo(x2!, y2!);
-      context.lineWidth = segmentWidth;
-      context.stroke();
-    }
-  };
-
-  return (
-    <Shape
-      ref={shapeRef}
-      id={id}
-      name={name}
-      sceneFunc={sceneFunc}
-      stroke={stroke}
-      strokeWidth={strokeWidth}
-      lineCap={lineCap}
-      lineJoin={lineJoin}
-      globalCompositeOperation={globalCompositeOperation}
-      opacity={opacity}
-      listening={listening}
-      scale={scale}
-      scaleX={scaleX}
-      scaleY={scaleY}
-      x={x}
-      y={y}
-    />
-  );
+  return null;
 }
 
 /**
- * Memoized export to prevent unnecessary re-renders when parent components update.
- * Only re-renders if props actually change (points, pressures, stroke, etc.)
+ * Memoized export — only re-renders when points, pressures, stroke, or
+ * strokeWidth change.
  */
 const PressureSensitiveLine = memo(PressureSensitiveLineComponent);
 

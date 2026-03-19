@@ -1,0 +1,154 @@
+/**
+ * Resource Monitor Module
+ *
+ * Floating dark-panel performance HUD overlay (dev tool).
+ * Always rendered with a dark leather aesthetic regardless of app theme,
+ * mirroring the toolbar's "always dark" treatment.
+ *
+ * The component currently uses inline styles that reference --app-monitor-*
+ * tokens directly. These class-based rules are provided for future migration
+ * of those inline styles and for any className-based wrappers added later.
+ */
+
+/* ===== Container ===== */
+
+.monitor {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--app-monitor-bg);
+  color: var(--app-monitor-text);
+  padding: 12px;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 12px;
+  z-index: 9999;
+  min-width: 280px;
+  box-shadow: 0 4px 12px var(--app-shadow-lg);
+  border: 1px solid var(--app-monitor-border);
+}
+
+.monitor--collapsed {
+  min-width: 120px;
+}
+
+/* ===== Header ===== */
+
+.monitor__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--app-monitor-divider);
+  padding-bottom: 8px;
+}
+
+.monitor__header--collapsed {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.monitor__title {
+  font-size: 14px;
+}
+
+.monitor__toggle {
+  background: none;
+  border: none;
+  color: var(--app-monitor-text);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+}
+
+/* ===== Body sections ===== */
+
+.monitor__section {
+  margin-bottom: 8px;
+}
+
+.monitor__section--small {
+  font-size: 11px;
+}
+
+.monitor__section--divider {
+  border-top: 1px solid var(--app-monitor-border);
+  padding-top: 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+/* ===== FPS ===== */
+
+.monitor__fps-good {
+  color: var(--app-monitor-fps-good);
+}
+
+.monitor__fps-medium {
+  color: var(--app-monitor-fps-medium);
+}
+
+.monitor__fps-low {
+  color: var(--app-monitor-fps-low);
+}
+
+/* ===== Warning inline label ===== */
+
+.monitor__warning-label {
+  color: var(--app-monitor-warning-accent);
+  margin-left: 8px;
+  font-size: 11px;
+}
+
+.monitor__warning-label--small {
+  color: var(--app-monitor-warning-accent);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+/* ===== Memory progress bar ===== */
+
+.monitor__bar-track {
+  width: 100%;
+  height: 4px;
+  background-color: var(--app-monitor-bar-bg);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.monitor__bar-fill {
+  height: 100%;
+  background-color: var(--app-monitor-memory-ok);
+  transition: width 0.3s;
+}
+
+.monitor__bar-fill--high {
+  background-color: var(--app-monitor-memory-high);
+}
+
+/* ===== Muted / timestamp row ===== */
+
+.monitor__timestamp {
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--app-monitor-muted);
+  text-align: right;
+}
+
+/* ===== Performance warning box ===== */
+
+.monitor__alert {
+  margin-top: 8px;
+  padding: 6px;
+  background-color: var(--app-monitor-warning-bg);
+  border-radius: 4px;
+  font-size: 10px;
+  border-left: 2px solid var(--app-monitor-warning-accent);
+}
+
+.monitor__alert ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}

@@ -14,6 +14,18 @@ import { useMemo } from 'react';
 
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
 
+// Touch feedback colors — sourced from theme tokens (see theme.css)
+const TOUCH_COLORS = {
+  indicator: '#8c6914', // --app-touch-indicator (antique brass)
+  pressureLow: '#3b82f6', // --app-touch-pressure-low (blue — functional identity)
+  pressureMed: '#22c55e', // --app-touch-pressure-med (green — functional identity)
+  pressureHigh: '#e5484d', // --app-touch-pressure-high (red — functional identity)
+  panMode: '#8c6914', // --app-touch-pan-mode (antique brass)
+  pinchMode: '#22c55e', // --app-touch-pinch-mode (green — functional identity)
+  feedbackBg: 'rgba(28, 16, 7, 0.85)', // --app-touch-feedback-bg
+} as const;
+
+// eslint-disable-next-line import/no-unused-modules
 export interface TouchVisualFeedbackProps {
   /** Current pointer pressure (0.0 - 1.0), or null if not drawing */
   pressure: number | null;
@@ -37,7 +49,7 @@ function TouchVisualFeedback({
   touchPoints,
   gestureMode,
   containerBounds,
-}: TouchVisualFeedbackProps) {
+}: TouchVisualFeedbackProps): React.JSX.Element {
   const settings = useTouchSettingsStore();
 
   // Calculate pressure indicator size (10-40px based on pressure)
@@ -53,18 +65,18 @@ function TouchVisualFeedback({
   // Pressure indicator color changes with pressure (blue -> green -> red)
   const pressureIndicatorColor = useMemo(() => {
     if (!pressure) {
-      return '#3b82f6';
+      return TOUCH_COLORS.pressureLow;
     }
 
     if (pressure < 0.33) {
       // Low pressure: blue
-      return '#3b82f6';
+      return TOUCH_COLORS.pressureLow;
     } else if (pressure < 0.66) {
       // Medium pressure: green
-      return '#10b981';
+      return TOUCH_COLORS.pressureMed;
     } else {
       // High pressure: red
-      return '#ef4444';
+      return TOUCH_COLORS.pressureHigh;
     }
   }, [pressure]);
 
@@ -75,9 +87,9 @@ function TouchVisualFeedback({
     }
 
     if (gestureMode === 'pan') {
-      return { label: 'Pan Mode', color: '#3b82f6' };
+      return { label: 'Pan Mode', color: TOUCH_COLORS.panMode };
     } else if (gestureMode === 'pinch') {
-      return { label: 'Pinch/Zoom Mode', color: '#10b981' };
+      return { label: 'Pinch/Zoom Mode', color: TOUCH_COLORS.pinchMode };
     }
     return null;
   }, [gestureMode]);
@@ -111,7 +123,7 @@ function TouchVisualFeedback({
           <div
             className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 text-xs font-mono px-2 py-0.5 rounded shadow-md whitespace-nowrap"
             style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              backgroundColor: TOUCH_COLORS.feedbackBg,
               color: 'white',
             }}
           >
@@ -139,7 +151,7 @@ function TouchVisualFeedback({
                 style={{
                   width: 40,
                   height: 40,
-                  backgroundColor: '#6366f1', // Indigo
+                  backgroundColor: TOUCH_COLORS.indicator,
                 }}
               />
 
@@ -151,14 +163,14 @@ function TouchVisualFeedback({
           ))}
 
           {/* Connection line between two touch points */}
-          {touchPoints.length === 2 && (
+          {touchPoints.length === 2 && touchPoints[0] && touchPoints[1] && (
             <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
               <line
-                x1={touchPoints[0]!.x}
-                y1={touchPoints[0]!.y}
-                x2={touchPoints[1]!.x}
-                y2={touchPoints[1]!.y}
-                stroke="#6366f1"
+                x1={touchPoints[0].x}
+                y1={touchPoints[0].y}
+                x2={touchPoints[1].x}
+                y2={touchPoints[1].y}
+                stroke={TOUCH_COLORS.indicator}
                 strokeWidth="2"
                 strokeDasharray="5,5"
                 opacity="0.5"
@@ -184,4 +196,5 @@ function TouchVisualFeedback({
   );
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default TouchVisualFeedback;
