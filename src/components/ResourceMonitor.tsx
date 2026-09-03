@@ -2,6 +2,16 @@ import { useEffect, useState, useRef } from 'react';
 
 import { useGameStore } from '../store/gameStore';
 
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+interface PerformanceWithMemory extends Performance {
+  memory: PerformanceMemory;
+}
+
 interface PerformanceMetrics {
   fps: number;
   memory: {
@@ -17,6 +27,10 @@ interface PerformanceMetrics {
   renderTime: number; // ms
   lastUpdate: number;
 }
+
+type IpcSendFn = (channel: string, ...args: unknown[]) => void;
+type IpcListenerFn = (...args: unknown[]) => void;
+type IpcOnFn = (channel: string, listener: IpcListenerFn) => IpcOnFn;
 
 /**
  * ResourceMonitor - Real-time Performance Diagnostics Overlay
@@ -54,7 +68,8 @@ interface PerformanceMetrics {
  *   Toggle Resource Monitor
  * </button>
  */
-function ResourceMonitor() {
+// eslint-disable-next-line max-lines-per-function, complexity
+function ResourceMonitor(): React.JSX.Element {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fps: 0,
     memory: null,
@@ -72,7 +87,7 @@ function ResourceMonitor() {
   // FPS tracking
   const frameCountRef = useRef(0);
   const lastFrameTimeRef = useRef(Date.now());
-  const fpsUpdateIntervalRef = useRef<NodeJS.Timeout>();
+  const fpsUpdateIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   // IPC tracking
   const ipcMessageCountRef = useRef(0);
@@ -87,10 +102,10 @@ function ResourceMonitor() {
    * FPS Counter using requestAnimationFrame
    * Counts frames and calculates FPS every second
    */
-  useEffect(() => {
+  useEffect((): (() => void) => {
     let animationFrameId: number;
 
-    const countFrame = () => {
+    const countFrame = (): void => {
       frameCountRef.current++;
       animationFrameId = requestAnimationFrame(countFrame);
     };
@@ -98,7 +113,7 @@ function ResourceMonitor() {
     animationFrameId = requestAnimationFrame(countFrame);
 
     // Calculate FPS every second
-    fpsUpdateIntervalRef.current = setInterval(() => {
+    fpsUpdateIntervalRef.current = setInterval((): void => {
       const now = Date.now();
       const elapsed = (now - lastFrameTimeRef.current) / 1000;
       const fps = Math.round(frameCountRef.current / elapsed);
@@ -109,9 +124,9 @@ function ResourceMonitor() {
       setMetrics((prev) => ({ ...prev, fps }));
     }, 1000);
 
-    return () => {
+    return (): void => {
       cancelAnimationFrame(animationFrameId);
-      if (fpsUpdateIntervalRef.current) {
+      if (fpsUpdateIntervalRef.current !== undefined) {
         clearInterval(fpsUpdateIntervalRef.current);
       }
     };
@@ -121,12 +136,13 @@ function ResourceMonitor() {
    * Memory, Token Count, and IPC Metrics
    * Updates every 500ms
    */
-  useEffect(() => {
-    const updateMetrics = () => {
+  useEffect((): (() => void) => {
+    const updateMetrics = (): void => {
       // Memory API (Chrome/Edge only)
       let memory = null;
-      if ('memory' in performance && (performance as any).memory) {
-        const mem = (performance as any).memory;
+      const perf = performance as PerformanceWithMemory;
+      if ('memory' in performance && perf.memory) {
+        const mem = perf.memory;
         memory = {
           used: mem.usedJSHeapSize,
           total: mem.totalJSHeapSize,
@@ -169,7 +185,7 @@ function ResourceMonitor() {
     const interval = setInterval(updateMetrics, 500);
     updateMetrics(); // Initial update
 
-    return () => clearInterval(interval);
+    return (): void => clearInterval(interval);
   }, [tokens.length, drawings.length]);
 
   /**
@@ -185,7 +201,7 @@ function ResourceMonitor() {
    * in place for existing listeners, but tracking is disabled via the isTracking flag.
    * This prevents memory leaks while ensuring IPC continues to function normally.
    */
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!window.ipcRenderer) {
       return;
     }
@@ -195,34 +211,40 @@ function ResourceMonitor() {
       typeof window.ipcRenderer.send !== 'function' ||
       typeof window.ipcRenderer.on !== 'function'
     ) {
-      console.warn('[ResourceMonitor] IPC methods not available, skipping interception');
+      if (import.meta.env.DEV) {
+        console.warn('[ResourceMonitor] IPC methods not available, skipping interception');
+      }
       return;
     }
 
-    let originalSend: any;
-    let originalOn: any;
+    let originalSend: IpcSendFn | undefined;
+    let originalOn: IpcOnFn | undefined;
     let isTracking = true;
 
     try {
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      originalSend = window.ipcRenderer.send;
+      originalSend = window.ipcRenderer.send as IpcSendFn;
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      originalOn = window.ipcRenderer.on;
+      originalOn = window.ipcRenderer.on as IpcOnFn;
 
       // Intercept send (outgoing messages)
-      window.ipcRenderer.send = function (channel: string, ...args: any[]) {
+      window.ipcRenderer.send = function (channel: string, ...args: unknown[]): void {
         if (isTracking) {
           try {
             ipcMessageCountRef.current++;
             // Estimate message size (rough approximation, with circular ref protection)
             const size = JSON.stringify(args).length;
             ipcBytesRef.current += size;
-          } catch (err) {
+          } catch {
             // Ignore errors in metrics collection (don't break IPC)
-            console.warn('[ResourceMonitor] Failed to track IPC send:', err);
+            if (import.meta.env.DEV) {
+              console.warn('[ResourceMonitor] Failed to track IPC send');
+            }
           }
         }
-        return originalSend.call(this, channel, ...args);
+        if (originalSend) {
+          originalSend.call(this as unknown as typeof window.ipcRenderer, channel, ...args);
+        }
       };
 
       // Intercept on (incoming messages)
@@ -238,42 +260,55 @@ function ResourceMonitor() {
       // To fix this, implement a WeakMap to maintain original-to-wrapped listener mappings:
       // const listenerMap = new WeakMap<Function, Function>();
       // Then store the mapping and use it for proper cleanup in the `off()` interceptor.
-      window.ipcRenderer.on = function (channel: string, listener: any) {
-        const wrappedListener = (...args: any[]) => {
+      window.ipcRenderer.on = function (channel: string, listener: IpcListenerFn): IpcOnFn {
+        const wrappedListener = (...args: unknown[]): void => {
           if (isTracking) {
             try {
               ipcMessageCountRef.current++;
               const size = JSON.stringify(args).length;
               ipcBytesRef.current += size;
-            } catch (err) {
+            } catch {
               // Ignore errors in metrics collection
-              console.warn('[ResourceMonitor] Failed to track IPC receive:', err);
+              if (import.meta.env.DEV) {
+                console.warn('[ResourceMonitor] Failed to track IPC receive');
+              }
             }
           }
           listener(...args);
         };
-        return originalOn.call(this, channel, wrappedListener);
+        if (originalOn) {
+          return originalOn.call(
+            this as unknown as typeof window.ipcRenderer,
+            channel,
+            wrappedListener,
+          );
+        }
+        return this as unknown as IpcOnFn;
       };
     } catch (err) {
-      console.error('[ResourceMonitor] Failed to intercept IPC methods:', err);
+      if (import.meta.env.DEV) {
+        console.error('[ResourceMonitor] Failed to intercept IPC methods:', err);
+      }
       // Don't throw - just skip interception
       return;
     }
 
-    return () => {
+    return (): void => {
       // Disable tracking before restoring to prevent metrics updates during cleanup
       isTracking = false;
 
       // Restore original methods (cleanup)
       try {
         if (originalSend && window.ipcRenderer) {
-          window.ipcRenderer.send = originalSend;
+          window.ipcRenderer.send = originalSend as typeof window.ipcRenderer.send;
         }
         if (originalOn && window.ipcRenderer) {
-          window.ipcRenderer.on = originalOn;
+          window.ipcRenderer.on = originalOn as typeof window.ipcRenderer.on;
         }
       } catch (err) {
-        console.error('[ResourceMonitor] Failed to restore IPC methods:', err);
+        if (import.meta.env.DEV) {
+          console.error('[ResourceMonitor] Failed to restore IPC methods:', err);
+        }
       }
     };
   }, []);
@@ -345,7 +380,7 @@ function ResourceMonitor() {
       >
         <strong style={{ fontSize: '14px' }}>⚡ Performance</strong>
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={(): void => setIsExpanded(!isExpanded)}
           style={{
             background: 'none',
             border: 'none',

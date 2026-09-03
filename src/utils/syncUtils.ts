@@ -14,6 +14,7 @@ import type { Measurement } from '../types/measurement';
  * Deep equality check for simple objects with primitive values and arrays
  * More reliable than JSON.stringify which can fail due to property ordering
  */
+// eslint-disable-next-line complexity
 export function isEqual(obj1: unknown, obj2: unknown): boolean {
   if (obj1 === obj2) {
     return true;
@@ -163,6 +164,243 @@ export type SyncAction =
   | { type: 'EXPLORED_UPDATE'; payload: ExploredRegion[] }
   | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null };
 
+// ---------------------------------------------------------------------------
+// Helpers extracted from detectChanges to reduce per-function complexity
+// ---------------------------------------------------------------------------
+
+function buildFullSync(currentState: Partial<SyncableGameState>): SyncAction {
+  return {
+    type: 'FULL_SYNC',
+    payload: {
+      tokens: currentState.tokens,
+      tokenLibrary: currentState.tokenLibrary,
+      drawings: currentState.drawings,
+      doors: currentState.doors ?? [],
+      stairs: currentState.stairs ?? [],
+      gridSize: currentState.gridSize,
+      gridType: currentState.gridType,
+      gridColor: currentState.gridColor,
+      map: currentState.map,
+      exploredRegions: currentState.exploredRegions,
+      isDaylightMode: currentState.isDaylightMode,
+      activeMeasurement: currentState.activeMeasurement ?? null,
+      broadcastMeasurement: Boolean(currentState.broadcastMeasurement ?? false),
+    },
+  };
+}
+
+function detectTokenActions(
+  prevState: Partial<SyncableGameState>,
+  currentState: Partial<SyncableGameState>,
+): SyncAction[] {
+  const actions: SyncAction[] = [];
+  const prevTokens = prevState.tokens ?? [];
+  const currentTokens = currentState.tokens ?? [];
+
+  const prevTokenMap = new Map(prevTokens.filter((t) => t?.id).map((t) => [t.id, t]));
+  const currentTokenMap = new Map(currentTokens.filter((t) => t?.id).map((t) => [t.id, t]));
+
+  for (const token of currentTokens) {
+    if (token?.id && !prevTokenMap.has(token.id)) {
+      actions.push({ type: 'TOKEN_ADD', payload: token });
+    }
+  }
+
+  for (const token of prevTokens) {
+    if (token?.id && !currentTokenMap.has(token.id)) {
+      actions.push({ type: 'TOKEN_REMOVE', payload: { id: token.id } });
+    }
+  }
+
+  for (const token of currentTokens) {
+    if (!token?.id) {
+      continue;
+    }
+    const prevToken = prevTokenMap.get(token.id);
+    if (!prevToken) {
+      continue;
+    }
+    const changes: Partial<Token> = {};
+    for (const key of Object.keys(token)) {
+      const tokenKey = key as keyof Token;
+      if (!isEqual(token[tokenKey], prevToken[tokenKey])) {
+        (changes as Record<string, unknown>)[key] = token[tokenKey];
+      }
+    }
+    if (Object.keys(changes).length > 0) {
+      actions.push({ type: 'TOKEN_UPDATE', payload: { id: token.id, changes } });
+    }
+  }
+
+  return actions;
+}
+
+function detectDrawingActions(
+  prevState: Partial<SyncableGameState>,
+  currentState: Partial<SyncableGameState>,
+): SyncAction[] {
+  const actions: SyncAction[] = [];
+  const prevDrawings = prevState.drawings ?? [];
+  const currentDrawings = currentState.drawings ?? [];
+
+  if (isEqual(prevDrawings, currentDrawings)) {
+    return actions;
+  }
+
+  const prevDrawingMap = new Map(prevDrawings.filter((d) => d?.id).map((d) => [d.id, d]));
+  const currentDrawingMap = new Map(currentDrawings.filter((d) => d?.id).map((d) => [d.id, d]));
+
+  for (const drawing of currentDrawings) {
+    if (!drawing?.id) {
+      continue;
+    }
+    if (!prevDrawingMap.has(drawing.id)) {
+      actions.push({ type: 'DRAWING_ADD', payload: drawing });
+    } else {
+      const prev = prevDrawingMap.get(drawing.id);
+      if (!prev) {
+        continue;
+      }
+      const changes: Partial<Drawing> = {};
+      for (const key of Object.keys(drawing)) {
+        const drawingKey = key as keyof Drawing;
+        if (!isEqual(drawing[drawingKey], prev[drawingKey])) {
+          (changes as Record<string, unknown>)[key] = drawing[drawingKey];
+        }
+      }
+      if (Object.keys(changes).length > 0) {
+        actions.push({ type: 'DRAWING_UPDATE', payload: { id: drawing.id, changes } });
+      }
+    }
+  }
+
+  for (const drawing of prevDrawings) {
+    if (drawing?.id && !currentDrawingMap.has(drawing.id)) {
+      actions.push({ type: 'DRAWING_REMOVE', payload: { id: drawing.id } });
+    }
+  }
+
+  return actions;
+}
+
+function detectDoorActions(
+  prevState: Partial<SyncableGameState>,
+  currentState: Partial<SyncableGameState>,
+): SyncAction[] {
+  const actions: SyncAction[] = [];
+  const prevDoors = prevState.doors ?? [];
+  const currentDoors = currentState.doors ?? [];
+
+  if (isEqual(prevDoors, currentDoors)) {
+    return actions;
+  }
+
+  const prevDoorMap = new Map(prevDoors.filter((d) => d?.id).map((d) => [d.id, d]));
+  const currentDoorMap = new Map(currentDoors.filter((d) => d?.id).map((d) => [d.id, d]));
+
+  for (const door of currentDoors) {
+    if (!door?.id) {
+      continue;
+    }
+    if (!prevDoorMap.has(door.id)) {
+      actions.push({ type: 'DOOR_ADD', payload: door });
+    } else {
+      const prev = prevDoorMap.get(door.id);
+      if (!prev) {
+        continue;
+      }
+      const changes: Partial<Door> = {};
+      for (const key of Object.keys(door)) {
+        const doorKey = key as keyof Door;
+        if (!isEqual(door[doorKey], prev[doorKey])) {
+          (changes as Record<string, unknown>)[key] = door[doorKey];
+        }
+      }
+      if (Object.keys(changes).length > 0) {
+        actions.push({ type: 'DOOR_UPDATE', payload: { id: door.id, changes } });
+      }
+    }
+  }
+
+  for (const door of prevDoors) {
+    if (door?.id && !currentDoorMap.has(door.id)) {
+      actions.push({ type: 'DOOR_REMOVE', payload: { id: door.id } });
+    }
+  }
+
+  return actions;
+}
+
+function detectStairsActions(
+  prevState: Partial<SyncableGameState>,
+  currentState: Partial<SyncableGameState>,
+): SyncAction[] {
+  const actions: SyncAction[] = [];
+  const prevStairs = prevState.stairs ?? [];
+  const currentStairs = currentState.stairs ?? [];
+
+  if (isEqual(prevStairs, currentStairs)) {
+    return actions;
+  }
+
+  const prevStairsMap = new Map(prevStairs.filter((s) => s?.id).map((s) => [s.id, s]));
+  const currentStairsMap = new Map(currentStairs.filter((s) => s?.id).map((s) => [s.id, s]));
+
+  for (const stairs of currentStairs) {
+    if (!stairs?.id) {
+      continue;
+    }
+    if (!prevStairsMap.has(stairs.id)) {
+      actions.push({ type: 'STAIRS_ADD', payload: stairs });
+    } else {
+      const prev = prevStairsMap.get(stairs.id);
+      if (!prev) {
+        continue;
+      }
+      const changes: Partial<Stairs> = {};
+      for (const key of Object.keys(stairs)) {
+        const stairsKey = key as keyof Stairs;
+        if (!isEqual(stairs[stairsKey], prev[stairsKey])) {
+          (changes as Record<string, unknown>)[key] = stairs[stairsKey];
+        }
+      }
+      if (Object.keys(changes).length > 0) {
+        actions.push({ type: 'STAIRS_UPDATE', payload: { id: stairs.id, changes } });
+      }
+    }
+  }
+
+  for (const stairs of prevStairs) {
+    if (stairs?.id && !currentStairsMap.has(stairs.id)) {
+      actions.push({ type: 'STAIRS_REMOVE', payload: { id: stairs.id } });
+    }
+  }
+
+  return actions;
+}
+
+function detectMeasurementActions(
+  prevState: Partial<SyncableGameState>,
+  currentState: Partial<SyncableGameState>,
+): SyncAction[] {
+  const actions: SyncAction[] = [];
+  const shouldBroadcast = Boolean(currentState.broadcastMeasurement);
+  const prevBroadcast = Boolean(prevState.broadcastMeasurement);
+
+  if (shouldBroadcast) {
+    if (!isEqual(prevState.activeMeasurement, currentState.activeMeasurement) || !prevBroadcast) {
+      actions.push({
+        type: 'MEASUREMENT_UPDATE',
+        payload: currentState.activeMeasurement ?? null,
+      });
+    }
+  } else if (prevBroadcast) {
+    actions.push({ type: 'MEASUREMENT_UPDATE', payload: null });
+  }
+
+  return actions;
+}
+
 /**
  * Detects changes between previous and current state, returns delta actions
  */
@@ -170,131 +408,22 @@ export function detectChanges(
   prevState: Partial<SyncableGameState>,
   currentState: Partial<SyncableGameState>,
 ): SyncAction[] {
-  const actions: SyncAction[] = [];
-
   // If no previous state, send full sync
   if (!prevState) {
-    actions.push({
-      type: 'FULL_SYNC',
-      payload: {
-        tokens: currentState.tokens,
-        tokenLibrary: currentState.tokenLibrary,
-        drawings: currentState.drawings,
-        doors: currentState.doors || [],
-        stairs: currentState.stairs || [],
-        gridSize: currentState.gridSize,
-        gridType: currentState.gridType,
-        gridColor: currentState.gridColor,
-        map: currentState.map,
-        exploredRegions: currentState.exploredRegions,
-        isDaylightMode: currentState.isDaylightMode,
-        activeMeasurement: currentState.activeMeasurement ?? null,
-        broadcastMeasurement: Boolean(currentState.broadcastMeasurement ?? false),
-      },
-    });
-    return actions;
+    return [buildFullSync(currentState)];
   }
 
-  // --- TOKEN LIBRARY ---
-  // Simple equality check for the whole library for now (optimization: can be granular later if needed)
+  const actions: SyncAction[] = [];
+
+  // Token library
   if (!isEqual(prevState.tokenLibrary, currentState.tokenLibrary)) {
-    actions.push({ type: 'LIBRARY_UPDATE', payload: currentState.tokenLibrary || [] });
+    actions.push({ type: 'LIBRARY_UPDATE', payload: currentState.tokenLibrary ?? [] });
   }
 
-  // --- TOKENS ---
-  const prevTokens = prevState.tokens || [];
-  const currentTokens = currentState.tokens || [];
+  actions.push(...detectTokenActions(prevState, currentState));
+  actions.push(...detectDrawingActions(prevState, currentState));
 
-  // Create maps, filtering out any invalid tokens
-  const prevTokenMap = new Map(
-    prevTokens.filter((t: Token) => t && t.id).map((t: Token) => [t.id, t]),
-  );
-  const currentTokenMap = new Map(
-    currentTokens.filter((t: Token) => t && t.id).map((t: Token) => [t.id, t]),
-  );
-
-  // New tokens
-  currentTokens.forEach((token: Token) => {
-    if (token && token.id && !prevTokenMap.has(token.id)) {
-      actions.push({ type: 'TOKEN_ADD', payload: token });
-    }
-  });
-
-  // Removed tokens
-  prevTokens.forEach((token: Token) => {
-    if (token && token.id && !currentTokenMap.has(token.id)) {
-      actions.push({ type: 'TOKEN_REMOVE', payload: { id: token.id } });
-    }
-  });
-
-  // Updated tokens
-  currentTokens.forEach((token: Token) => {
-    if (!token?.id) {
-      return;
-    }
-
-    const prevToken = prevTokenMap.get(token.id);
-    if (prevToken) {
-      const changes: Partial<Token> = {};
-      Object.keys(token).forEach((key) => {
-        const tokenKey = key as keyof Token;
-        if (!isEqual(token[tokenKey], prevToken[tokenKey])) {
-          (changes as Record<string, unknown>)[key] = token[tokenKey];
-        }
-      });
-      if (Object.keys(changes).length > 0) {
-        actions.push({
-          type: 'TOKEN_UPDATE',
-          payload: { id: token.id, changes },
-        });
-      }
-    }
-  });
-
-  // --- DRAWINGS ---
-  const prevDrawings = prevState.drawings || [];
-  const currentDrawings = currentState.drawings || [];
-
-  if (!isEqual(prevDrawings, currentDrawings)) {
-    const prevDrawingMap = new Map(
-      prevDrawings.filter((d: Drawing) => d && d.id).map((d: Drawing) => [d.id, d]),
-    );
-    const currentDrawingMap = new Map(
-      currentDrawings.filter((d: Drawing) => d && d.id).map((d: Drawing) => [d.id, d]),
-    );
-
-    currentDrawings.forEach((drawing: Drawing) => {
-      if (!drawing?.id) {
-        return;
-      }
-
-      if (!prevDrawingMap.has(drawing.id)) {
-        actions.push({ type: 'DRAWING_ADD', payload: drawing });
-      } else {
-        const prev = prevDrawingMap.get(drawing.id);
-        if (!prev) {
-          return;
-        }
-        const changes: Partial<Drawing> = {};
-        Object.keys(drawing).forEach((key) => {
-          const drawingKey = key as keyof Drawing;
-          if (!isEqual(drawing[drawingKey], prev[drawingKey])) {
-            (changes as Record<string, unknown>)[key] = drawing[drawingKey];
-          }
-        });
-        if (Object.keys(changes).length > 0) {
-          actions.push({ type: 'DRAWING_UPDATE', payload: { id: drawing.id, changes } });
-        }
-      }
-    });
-    prevDrawings.forEach((drawing: Drawing) => {
-      if (drawing && drawing.id && !currentDrawingMap.has(drawing.id)) {
-        actions.push({ type: 'DRAWING_REMOVE', payload: { id: drawing.id } });
-      }
-    });
-  }
-
-  // --- GRID & MAP ---
+  // Grid & map
   if (
     !isEqual(prevState.gridSize, currentState.gridSize) ||
     !isEqual(prevState.gridType, currentState.gridType) ||
@@ -316,119 +445,16 @@ export function detectChanges(
     actions.push({ type: 'MAP_UPDATE', payload: currentState.map ?? null });
   }
 
-  // --- EXPLORED REGIONS ---
   if (!isEqual(prevState.exploredRegions, currentState.exploredRegions)) {
     actions.push({
       type: 'EXPLORED_UPDATE',
-      payload: currentState.exploredRegions || [],
+      payload: currentState.exploredRegions ?? [],
     });
   }
 
-  // --- MEASUREMENT (broadcast only when enabled) ---
-  const shouldBroadcast = Boolean(currentState.broadcastMeasurement);
-  const prevBroadcast = Boolean(prevState.broadcastMeasurement);
-  if (shouldBroadcast) {
-    if (!isEqual(prevState.activeMeasurement, currentState.activeMeasurement) || !prevBroadcast) {
-      actions.push({
-        type: 'MEASUREMENT_UPDATE',
-        payload: currentState.activeMeasurement ?? null,
-      });
-    }
-  } else if (prevBroadcast) {
-    // Broadcasting turned off — clear World View measurement
-    actions.push({ type: 'MEASUREMENT_UPDATE', payload: null });
-  }
-
-  // --- DOORS ---
-  // If door count changes or properties change
-  const prevDoors = prevState.doors || [];
-  const currentDoors = currentState.doors || [];
-
-  if (!isEqual(prevDoors, currentDoors)) {
-    const prevDoorMap = new Map(
-      prevDoors.filter((d: Door) => d && d.id).map((d: Door) => [d.id, d]),
-    );
-    const currentDoorMap = new Map(
-      currentDoors.filter((d: Door) => d && d.id).map((d: Door) => [d.id, d]),
-    );
-
-    currentDoors.forEach((door: Door) => {
-      if (!door?.id) {
-        return;
-      }
-
-      if (!prevDoorMap.has(door.id)) {
-        actions.push({ type: 'DOOR_ADD', payload: door });
-      } else {
-        const prev = prevDoorMap.get(door.id);
-        if (!prev) {
-          return;
-        }
-
-        // Check changes (including isOpen)
-        const changes: Partial<Door> = {};
-        Object.keys(door).forEach((key) => {
-          const doorKey = key as keyof Door;
-          if (!isEqual(door[doorKey], prev[doorKey])) {
-            (changes as Record<string, unknown>)[key] = door[doorKey];
-          }
-        });
-        if (Object.keys(changes).length > 0) {
-          actions.push({ type: 'DOOR_UPDATE', payload: { id: door.id, changes } });
-        }
-      }
-    });
-
-    prevDoors.forEach((door: Door) => {
-      if (door && door.id && !currentDoorMap.has(door.id)) {
-        actions.push({ type: 'DOOR_REMOVE', payload: { id: door.id } });
-      }
-    });
-  }
-
-  // --- STAIRS ---
-  const prevStairs = prevState.stairs || [];
-  const currentStairs = currentState.stairs || [];
-
-  if (!isEqual(prevStairs, currentStairs)) {
-    const prevStairsMap = new Map(
-      prevStairs.filter((s: Stairs) => s && s.id).map((s: Stairs) => [s.id, s]),
-    );
-    const currentStairsMap = new Map(
-      currentStairs.filter((s: Stairs) => s && s.id).map((s: Stairs) => [s.id, s]),
-    );
-
-    currentStairs.forEach((stairs: Stairs) => {
-      if (!stairs?.id) {
-        return;
-      }
-
-      if (!prevStairsMap.has(stairs.id)) {
-        actions.push({ type: 'STAIRS_ADD', payload: stairs });
-      } else {
-        const prev = prevStairsMap.get(stairs.id);
-        if (!prev) {
-          return;
-        }
-        const changes: Partial<Stairs> = {};
-        Object.keys(stairs).forEach((key) => {
-          const stairsKey = key as keyof Stairs;
-          if (!isEqual(stairs[stairsKey], prev[stairsKey])) {
-            (changes as Record<string, unknown>)[key] = stairs[stairsKey];
-          }
-        });
-        if (Object.keys(changes).length > 0) {
-          actions.push({ type: 'STAIRS_UPDATE', payload: { id: stairs.id, changes } });
-        }
-      }
-    });
-
-    prevStairs.forEach((stairs: Stairs) => {
-      if (stairs && stairs.id && !currentStairsMap.has(stairs.id)) {
-        actions.push({ type: 'STAIRS_REMOVE', payload: { id: stairs.id } });
-      }
-    });
-  }
+  actions.push(...detectMeasurementActions(prevState, currentState));
+  actions.push(...detectDoorActions(prevState, currentState));
+  actions.push(...detectStairsActions(prevState, currentState));
 
   return actions;
 }

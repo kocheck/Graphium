@@ -106,7 +106,8 @@ import { useWindowType } from './utils/useWindowType';
  * @see {@link file://./components/SyncManager.tsx SyncManager} for state synchronization
  * @see {@link file://./components/Canvas/CanvasManager.tsx CanvasManager} for interaction restrictions
  */
-function App() {
+// eslint-disable-next-line max-lines-per-function, complexity
+function App(): React.JSX.Element {
   // Detect window type for UI sanitization
   const { isArchitectView, isWorldView } = useWindowType();
 
@@ -131,7 +132,7 @@ function App() {
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Update recent colors when color changes
-  const handleColorChange = (newColor: string) => {
+  const handleColorChange = (newColor: string): void => {
     setColor(newColor);
     setRecentColors((prev) => {
       // Remove duplicates and add new color at the start
@@ -169,14 +170,16 @@ function App() {
   const showToast = useGameStore((state) => state.showToast);
 
   // Handle pause toggle
-  const handlePauseToggle = async () => {
+  const handlePauseToggle = async (): Promise<void> => {
     if (!window.ipcRenderer) {
       return;
     }
     try {
       await window.ipcRenderer.invoke('TOGGLE_PAUSE');
     } catch (e) {
-      console.error('[App] Failed to toggle pause:', e);
+      if (import.meta.env.DEV) {
+        console.error('[App] Failed to toggle pause:', e);
+      }
       showToast(rollForMessage('PAUSE_TOGGLE_FAILED'), 'error');
     }
   };
@@ -194,7 +197,7 @@ function App() {
       return;
     }
 
-    const loadLibrary = async () => {
+    const loadLibrary = async (): Promise<void> => {
       try {
         const storage = getStorage();
         const libraryItems = await storage.loadLibraryIndex();
@@ -221,7 +224,9 @@ function App() {
           });
         }
       } catch (error) {
-        console.error('[App] Failed to load library index:', error);
+        if (import.meta.env.DEV) {
+          console.error('[App] Failed to load library index:', error);
+        }
         // Don't show toast - this is a non-critical error on startup
       }
     };
@@ -235,7 +240,8 @@ function App() {
   }, [measurementMode, setActiveMeasurement]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    // eslint-disable-next-line complexity
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
@@ -271,14 +277,7 @@ function App() {
         if (tool === 'door') {
           e.preventDefault(); // Prevent page scrolling
           setDoorOrientation((prev) => {
-            const newOrientation = prev === 'horizontal' ? 'vertical' : 'horizontal';
-            console.log(
-              '[App] Arrow key pressed - door orientation changed from',
-              prev,
-              'to',
-              newOrientation,
-            );
-            return newOrientation;
+            return prev === 'horizontal' ? 'vertical' : 'horizontal';
           });
         }
         return;
@@ -305,14 +304,7 @@ function App() {
           // Otherwise, switch to measure tool
           if (tool === 'door') {
             setDoorOrientation((prev) => {
-              const newOrientation = prev === 'horizontal' ? 'vertical' : 'horizontal';
-              console.log(
-                '[App] R key pressed - door orientation changed from',
-                prev,
-                'to',
-                newOrientation,
-              );
-              return newOrientation;
+              return prev === 'horizontal' ? 'vertical' : 'horizontal';
             });
           } else {
             setTool('measure');
@@ -337,7 +329,7 @@ function App() {
       return;
     }
 
-    const handleSave = async () => {
+    const handleSave = async (): Promise<void> => {
       try {
         const store = useGameStore.getState();
         store.syncActiveMapToCampaign();
@@ -350,14 +342,16 @@ function App() {
           store.showToast(rollForMessage('CAMPAIGN_SAVE_SUCCESS'), 'success');
         }
       } catch (e) {
-        console.error(e);
+        if (import.meta.env.DEV) {
+          console.error(e);
+        }
         useGameStore
           .getState()
           .showToast(rollForMessage('CAMPAIGN_SAVE_FAILED', { error: String(e) }), 'error');
       }
     };
 
-    const handleLoad = async () => {
+    const handleLoad = async (): Promise<void> => {
       try {
         const storage = getStorage();
         const campaign = await storage.loadCampaign();
@@ -368,22 +362,24 @@ function App() {
           useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
         }
       } catch (e) {
-        console.error(e);
+        if (import.meta.env.DEV) {
+          console.error(e);
+        }
         useGameStore
           .getState()
           .showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
       }
     };
 
-    const handleToggleMonitor = () => {
+    const handleToggleMonitor = (): void => {
       useGameStore.getState().setShowResourceMonitor(!useGameStore.getState().showResourceMonitor);
     };
 
-    const handleGenerateDungeon = () => {
+    const handleGenerateDungeon = (): void => {
       useGameStore.getState().showDungeonDialog();
     };
 
-    const handleNewCampaign = () => {
+    const handleNewCampaign = (): void => {
       // Show confirmation dialog before creating new campaign
       useGameStore.getState().showConfirmDialog(
         'Create a new campaign? Any unsaved changes will be lost.',
@@ -396,20 +392,27 @@ function App() {
       );
     };
 
-    const handleShowAbout = () => {
+    const handleShowAbout = (): void => {
       setIsAboutOpen(true);
     };
 
-    ipcRenderer.on('MENU_SAVE_CAMPAIGN', handleSave);
-    ipcRenderer.on('MENU_LOAD_CAMPAIGN', handleLoad);
+    const saveWrapper = (): void => {
+      void handleSave();
+    };
+    const loadWrapper = (): void => {
+      void handleLoad();
+    };
+
+    ipcRenderer.on('MENU_SAVE_CAMPAIGN', saveWrapper);
+    ipcRenderer.on('MENU_LOAD_CAMPAIGN', loadWrapper);
     ipcRenderer.on('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
     ipcRenderer.on('MENU_GENERATE_DUNGEON', handleGenerateDungeon);
     ipcRenderer.on('MENU_NEW_CAMPAIGN', handleNewCampaign);
     ipcRenderer.on('MENU_SHOW_ABOUT', handleShowAbout);
 
-    return () => {
-      ipcRenderer.off('MENU_SAVE_CAMPAIGN', handleSave);
-      ipcRenderer.off('MENU_LOAD_CAMPAIGN', handleLoad);
+    return (): void => {
+      ipcRenderer.off('MENU_SAVE_CAMPAIGN', saveWrapper);
+      ipcRenderer.off('MENU_LOAD_CAMPAIGN', loadWrapper);
       ipcRenderer.off('MENU_TOGGLE_RESOURCE_MONITOR', handleToggleMonitor);
       ipcRenderer.off('MENU_GENERATE_DUNGEON', handleGenerateDungeon);
       ipcRenderer.off('MENU_NEW_CAMPAIGN', handleNewCampaign);
@@ -418,7 +421,7 @@ function App() {
   }, []); // Empty dependency array as handlers use getState()
 
   // Handler to transition from HOME to EDITOR
-  const handleStartEditor = () => {
+  const handleStartEditor = (): void => {
     setViewState('EDITOR');
   };
 
@@ -545,7 +548,9 @@ function App() {
                     ? 'bg-red-500 hover:bg-red-600 text-white'
                     : 'bg-green-500 hover:bg-green-600 text-white'
                 }`}
-                onClick={handlePauseToggle}
+                onClick={(): void => {
+                  void handlePauseToggle();
+                }}
                 aria-label={isGamePaused ? 'Resume game' : 'Pause game'}
               >
                 {isGamePaused ? (
@@ -725,7 +730,9 @@ function App() {
             isOpen={isPaletteOpen}
             onClose={() => setPaletteOpen(false)}
             onSetTool={setTool}
-            onTogglePause={handlePauseToggle}
+            onTogglePause={(): void => {
+              void handlePauseToggle();
+            }}
             onLaunchWorldView={() => {
               const ipcRenderer = window.ipcRenderer;
               if (ipcRenderer) {
@@ -750,7 +757,9 @@ function App() {
             doorOrientation={doorOrientation}
             setDoorOrientation={setDoorOrientation}
             isGamePaused={isGamePaused}
-            onPauseToggle={handlePauseToggle}
+            onPauseToggle={(): void => {
+              void handlePauseToggle();
+            }}
           />
         )}
       </div>
