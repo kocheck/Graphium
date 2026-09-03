@@ -43,7 +43,7 @@ function DoorShape({
   onToggle,
   onDelete,
   onDoorContextMenu,
-}: DoorShapeProps) {
+}: DoorShapeProps): JSX.Element {
   // Animation state: 0 = fully closed, 1 = fully open
   const [animationProgress, setAnimationProgress] = useState(door.isOpen ? 1 : 0);
   const animationFrameRef = useRef<number | null>(null);
@@ -53,6 +53,7 @@ function DoorShape({
 
   // Animate when door.isOpen changes
   useEffect(() => {
+    // eslint-disable-next-line no-console
     console.log(
       '[DoorShape] door.isOpen changed:',
       door.id,
@@ -72,7 +73,7 @@ function DoorShape({
     startTimeRef.current = performance.now();
     const initialProgress = animationProgress;
 
-    const animate = (currentTime: number) => {
+    const animate = (currentTime: number): void => {
       if (!startTimeRef.current) {
         return;
       }
@@ -106,7 +107,7 @@ function DoorShape({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [door.isOpen]); // animationProgress is intentionally excluded - it's managed by the animation loop, not a dependency
 
-  const handleClick = () => {
+  const handleClick = (): void => {
     if (isWorldView) {
       return;
     }
@@ -123,7 +124,7 @@ function DoorShape({
     }
   };
 
-  const handleContextMenu = (e: KonvaEventObject<PointerEvent>) => {
+  const handleContextMenu = (e: KonvaEventObject<PointerEvent>): void => {
     e.evt.preventDefault();
     if (isWorldView) {
       return;
@@ -136,6 +137,7 @@ function DoorShape({
   const thickness = door.thickness ?? 12; // Thicker default for better visibility
   const halfSize = door.size / 2;
 
+  // eslint-disable-next-line no-console
   console.log(
     '[DoorShape] Rendering door:',
     door.id,
@@ -200,7 +202,7 @@ function renderAnimatedDoor(
   thickness: number,
   progress: number,
   isWorldView: boolean = false,
-) {
+): JSX.Element {
   const swingAngle = 90 * progress; // Gradually increase swing angle from 0° to 90°
   const closedOpacity = 1 - progress; // Fade out closed door
   const openOpacity = progress; // Fade in open door
@@ -267,7 +269,7 @@ function renderSwingArc(
   thickness: number,
   swingAngle: number,
   _isWorldView: boolean = false,
-) {
+): JSX.Element {
   let arcX = 0;
   let arcY = 0;
   let startAngle = 0;
@@ -323,7 +325,7 @@ function renderOpenDoor(
   halfSize: number,
   thickness: number,
   _isWorldView: boolean = false,
-) {
+): JSX.Element {
   const swingAngle = 90; // Door swings 90 degrees when open
 
   // Calculate arc parameters based on swing direction
@@ -385,7 +387,7 @@ function renderOpenDoor(
 /**
  * Renders a small rectangle at the edge of the swing arc to show the door's position when open
  */
-function renderOpenDoorEdge(door: Door, halfSize: number, thickness: number) {
+function renderOpenDoorEdge(door: Door, halfSize: number, thickness: number): JSX.Element {
   let x = 0;
   let y = 0;
   let width = thickness;
@@ -438,7 +440,7 @@ function renderOpenDoorEdge(door: Door, halfSize: number, thickness: number) {
  *
  * Shows a simple padlock symbol to indicate the door is locked.
  */
-function renderLockIcon(door: Door) {
+function renderLockIcon(door: Door): JSX.Element {
   const offsetY = door.orientation === 'horizontal' ? 6 : 0;
   const offsetX = door.orientation === 'vertical' ? 6 : 0;
 

@@ -38,7 +38,7 @@ import type { ComponentExample } from './types';
  * Shell component to provide necessary context (Theme, Toasts, Dialogs)
  * isolated from the main app's providers.
  */
-function PlaygroundShell({ children }: { children: React.ReactNode }) {
+function PlaygroundShell({ children }: { children: React.ReactNode }): JSX.Element {
   return (
     <div className="playground-shell w-full h-full bg-[var(--app-bg-base)] text-[var(--app-text-primary)] transition-colors duration-200">
       <ThemeManager />
@@ -49,7 +49,7 @@ function PlaygroundShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DesignSystemPlayground() {
+export function DesignSystemPlayground(): JSX.Element {
   return (
     <PlaygroundShell>
       <PlaygroundContent />
@@ -57,7 +57,8 @@ export function DesignSystemPlayground() {
   );
 }
 
-function PlaygroundContent() {
+// eslint-disable-next-line max-lines-per-function
+function PlaygroundContent(): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
@@ -66,13 +67,14 @@ function PlaygroundContent() {
 
   // Load initial theme
   useEffect(() => {
-    const loadTheme = async () => {
+    const loadTheme = async (): Promise<void> => {
       try {
         const storage = getStorage();
         const mode = await storage.getThemeMode();
         // Simple mapping for demo purposes, actual resolution handles 'system'
         setCurrentTheme(mode === 'light' ? 'light' : 'dark');
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.warn('Failed to load theme preference', e);
       }
     };
@@ -81,7 +83,7 @@ function PlaygroundContent() {
 
   // Keyboard shortcut: "/" to focus search
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Focus search input when "/" is pressed
       if (e.key === '/' && document.activeElement !== searchInputRef.current) {
         e.preventDefault();
@@ -93,12 +95,13 @@ function PlaygroundContent() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleToggleTheme = async () => {
+  const handleToggleTheme = async (): Promise<void> => {
     try {
       const newTheme = currentTheme === 'light' ? 'dark' : 'light';
       setCurrentTheme(newTheme);
       await getStorage().setThemeMode(newTheme);
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error('Failed to toggle theme', e);
       showToast('Failed to switch theme', 'error');
     }
@@ -129,20 +132,21 @@ function PlaygroundContent() {
       if (!groups[example.category]) {
         groups[example.category] = [];
       }
-      groups[example.category]!.push(example);
+      (groups[example.category] as ComponentExample[]).push(example);
     });
 
     return groups;
   }, [filteredExamples]);
 
   // Handle copy to clipboard
-  const handleCopyCode = async (example: ComponentExample) => {
+  const handleCopyCode = async (example: ComponentExample): Promise<void> => {
     try {
       await navigator.clipboard.writeText(example.code);
       setCopiedId(example.id);
       setTimeout(() => setCopiedId(null), 2000);
       showToast('Code copied to clipboard', 'success');
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to copy code:', error);
       showToast('Failed to copy code to clipboard', 'error');
     }
@@ -178,7 +182,9 @@ function PlaygroundContent() {
 
               {/* Theme Toggle */}
               <button
-                onClick={handleToggleTheme}
+                onClick={() => {
+                  void handleToggleTheme();
+                }}
                 className="p-2 rounded-lg bg-[var(--app-bg-surface)] hover:bg-[var(--app-bg-hover)] border border-[var(--app-border-subtle)] text-[var(--app-text-secondary)] transition-all"
                 title={`Switch to ${currentTheme === 'light' ? 'Dark' : 'Light'} Mode`}
                 aria-label={`Switch to ${currentTheme === 'light' ? 'Dark' : 'Light'} Mode`}
@@ -293,7 +299,9 @@ function PlaygroundContent() {
                       key={example.id}
                       example={example}
                       isCopied={copiedId === example.id}
-                      onCopy={() => handleCopyCode(example)}
+                      onCopy={() => {
+                        void handleCopyCode(example);
+                      }}
                     />
                   ))}
                 </div>
@@ -315,7 +323,7 @@ interface ComponentCardProps {
   onCopy: () => void;
 }
 
-function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps) {
+function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps): JSX.Element {
   const [showCode, setShowCode] = useState(false);
 
   return (
