@@ -374,7 +374,7 @@ function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerPro
   useEffect(() => {
     const polygons = Array.from(visibilityCache.values());
     setVision(polygons, computeHiddenNpcIds(tokens, libraryById, polygons, gridSize));
-  }, [visibilityCache, tokenKeys, tokens, libraryById, gridSize, setVision]);
+  }, [visibilityCache, tokenKeys, tokens, libraryById, gridSize, walls, setVision]);
 
   useEffect(() => {
     return () => {
