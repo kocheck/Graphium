@@ -40,7 +40,12 @@ import Store from 'electron-store';
 import JSZip from 'jszip';
 
 import { initializeAutoUpdater, registerAutoUpdaterHandlers } from './autoUpdater.js';
-import { isPathInsideOrEqual, sanitizeAssetFileName, isValidUuid } from './pathSecurity.js';
+import {
+  isPathInsideOrEqual,
+  sanitizeAssetFileName,
+  isValidUuid,
+  mediaUrlToFilePath,
+} from './pathSecurity.js';
 import {
   initializeThemeManager,
   getThemeState,
@@ -541,7 +546,7 @@ interface AppContext {
 /** Processes a single file:// asset src, copying it into the ZIP and returning relative path. */
 async function processAssetForZip(
   src: string,
-  userDataPath: string,
+  allowedAssetRoots: string[],
   processedAssets: Map<string, string>,
   assetsFolder: JSZip | null,
 ): Promise<string> {
@@ -550,9 +555,12 @@ async function processAssetForZip(
   }
   const absolutePath = fileURLToPath(src);
   const resolvedAssetPath = path.resolve(absolutePath);
-  const isWithinUserData = isPathInsideOrEqual(userDataPath, resolvedAssetPath);
-  if (!isWithinUserData) {
-    return src;
+  const isWithinAllowedRoots = allowedAssetRoots.some((root) =>
+    isPathInsideOrEqual(root, resolvedAssetPath),
+  );
+  if (!isWithinAllowedRoots) {
+    // Do not persist absolute paths outside the allowed asset roots.
+    return '';
   }
   const cached = processedAssets.get(resolvedAssetPath);
   if (cached !== undefined) {
@@ -568,7 +576,7 @@ async function processAssetForZip(
   } catch (error) {
     const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
     if (code === 'ENOENT') {
-      return src;
+      return '';
     }
     throw error;
   }
@@ -578,14 +586,14 @@ async function processAssetForZip(
 async function serializeCampaignToZip(
   campaign: SerializableCampaign,
   zip: JSZip,
-  userDataPath: string,
+  allowedAssetRoots: string[],
 ): Promise<SerializableCampaign> {
   const assetsFolder = zip.folder('assets');
   const campaignToSave = JSON.parse(JSON.stringify(campaign)) as SerializableCampaign;
   const processedAssets = new Map<string, string>();
 
   const processAsset = async (src: string): Promise<string> =>
-    processAssetForZip(src, userDataPath, processedAssets, assetsFolder);
+    processAssetForZip(src, allowedAssetRoots, processedAssets, assetsFolder);
 
   await rewriteCampaignAssetSrcs(campaignToSave, processAsset, { includeThumbnails: true });
   return campaignToSave;
@@ -594,11 +602,11 @@ async function serializeCampaignToZip(
 async function writeCampaignZip(
   filePath: string,
   campaign: SerializableCampaign,
-  userDataPath: string,
+  allowedAssetRoots: string[],
   options: { atomic: boolean },
 ): Promise<void> {
   const zip = new JSZip();
-  const campaignToSave = await serializeCampaignToZip(campaign, zip, userDataPath);
+  const campaignToSave = await serializeCampaignToZip(campaign, zip, allowedAssetRoots);
   zip.file('manifest.json', JSON.stringify(campaignToSave));
   const content = await zip.generateAsync({ type: 'nodebuffer' });
   if (options.atomic) {
@@ -692,7 +700,7 @@ function parseLibraryIndex(raw: unknown, warnOnBadStructure = false): LibraryInd
 
 /** Registers campaign-related IPC handlers (SAVE_ASSET_TEMP, SAVE/AUTO_SAVE/LOAD_CAMPAIGN). */
 function registerCampaignHandlers(ctx: AppContext): void {
-  const { userDataPath, tempAssetsDir, sessionsRootDir } = ctx;
+  const { tempAssetsDir, sessionsRootDir, allowedMediaRoots } = ctx;
   let currentCampaignPath: string | null = null;
 
   ipcMain.handle(
@@ -717,7 +725,7 @@ function registerCampaignHandlers(ctx: AppContext): void {
         return false;
       }
       currentCampaignPath = filePath;
-      await writeCampaignZip(filePath, campaign, userDataPath, { atomic: false });
+      await writeCampaignZip(filePath, campaign, allowedMediaRoots, { atomic: false });
       return true;
     },
   );
@@ -729,7 +737,7 @@ function registerCampaignHandlers(ctx: AppContext): void {
         return false;
       }
       try {
-        await writeCampaignZip(currentCampaignPath, campaign, userDataPath, { atomic: true });
+        await writeCampaignZip(currentCampaignPath, campaign, allowedMediaRoots, { atomic: true });
         return true;
       } catch (err) {
         console.error('Auto-save failed:', err);
@@ -807,6 +815,9 @@ function registerLibraryHandlers(ctx: AppContext): void {
         metadata: { id: string; name: string; category: string; tags: string[] };
       },
     ) => {
+      if (!isValidUuid(metadata.id)) {
+        throw new Error('Invalid asset ID');
+      }
       await fs.mkdir(libraryAssetsDir, { recursive: true });
       const fullPath = path.join(libraryAssetsDir, `${metadata.id}.webp`);
       await fs.writeFile(fullPath, Buffer.from(fullSizeBuffer));
@@ -1004,16 +1015,15 @@ void app.whenReady().then((): void => {
    * Result: Image loads successfully in Konva canvas
    *
    * **Why this is secure:**
-   * - Only works for assets our app explicitly saved to temp_assets/
-   * - Renderer can't access arbitrary file:// paths (no directory traversal)
-   * - media:// URLs are validated by our code (no user-controlled paths)
+   * - Paths must resolve inside userData temp_assets/, sessions/, or library/
+   * - media:// URLs are normalized to file: before parsing, then sandboxed with isPathInsideOrEqual
+   * - Renderer cannot read arbitrary filesystem paths via directory traversal
    *
    * See CanvasManager.URLImage component for usage (src/components/Canvas/CanvasManager.tsx:47-52).
    */
   protocol.handle('media', (request: Request) => {
     try {
-      const decodedTargetPath = fileURLToPath(request.url);
-      const resolvedTargetPath = path.resolve(decodedTargetPath);
+      const resolvedTargetPath = mediaUrlToFilePath(request.url);
       const isWithinAllowedRoots = allowedMediaRoots.some((allowedRoot) =>
         isPathInsideOrEqual(allowedRoot, resolvedTargetPath),
       );

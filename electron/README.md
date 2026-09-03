@@ -239,7 +239,7 @@ World View may also send scoped token-position `TOKEN_UPDATE` / `BATCH` actions 
 
 ```typescript
 protocol.handle('media', (request) => {
-  const resolvedTargetPath = path.resolve(fileURLToPath(request.url));
+  const resolvedTargetPath = mediaUrlToFilePath(request.url);
   const isWithinAllowedRoots = allowedMediaRoots.some((root) =>
     isPathInsideOrEqual(root, resolvedTargetPath),
   );

@@ -3,6 +3,7 @@ import {
   isEqual,
   detectChanges,
   coalesceSyncActions,
+  detectWorldViewTokenUpdates,
   FULL_SYNC_ACTION_THRESHOLD,
 } from './syncUtils';
 
@@ -219,6 +220,32 @@ describe('syncUtils', () => {
       const coalesced = coalesceSyncActions(actions, { tokens: [] });
       expect(coalesced).toHaveLength(1);
       expect(coalesced[0]?.type).toBe('FULL_SYNC');
+    });
+  });
+
+  describe('detectWorldViewTokenUpdates', () => {
+    it('returns no actions when previous state is null', () => {
+      expect(detectWorldViewTokenUpdates(null, [{ id: 't1', x: 1, y: 2, src: 'a' }])).toEqual([]);
+    });
+
+    it('emits position-only TOKEN_UPDATE actions', () => {
+      const prev = {
+        tokens: [{ id: 't1', x: 0, y: 0, src: 'file://a.webp', type: 'PC' as const }],
+      };
+      const current = [
+        { id: 't1', x: 10, y: 20, src: 'file://changed.webp', type: 'NPC' as const },
+      ];
+      expect(detectWorldViewTokenUpdates(prev as any, current)).toEqual([
+        { type: 'TOKEN_UPDATE', payload: { id: 't1', changes: { x: 10, y: 20 } } },
+      ]);
+    });
+
+    it('ignores newly added or removed tokens', () => {
+      const prev = {
+        tokens: [{ id: 't1', x: 0, y: 0, src: 'a' }],
+      };
+      const current = [{ id: 't2', x: 5, y: 5, src: 'b' }];
+      expect(detectWorldViewTokenUpdates(prev as any, current)).toEqual([]);
     });
   });
 });

@@ -7,6 +7,7 @@ import {
   isPathInsideOrEqual,
   sanitizeAssetFileName,
   isValidUuid,
+  mediaUrlToFilePath,
 } from '../../electron/pathSecurity';
 
 describe('pathSecurity', () => {
@@ -45,6 +46,24 @@ describe('pathSecurity', () => {
       const base = '/tmp/graphium/userData';
       const target = '/tmp/graphium/secret.txt';
       expect(isPathInsideOrEqual(base, target)).toBe(false);
+    });
+  });
+
+  describe('mediaUrlToFilePath', () => {
+    it('converts media:// URLs to resolved filesystem paths', () => {
+      expect(mediaUrlToFilePath('media:///tmp/graphium/token.webp')).toBe(
+        path.resolve('/tmp/graphium/token.webp'),
+      );
+    });
+
+    it('accepts file:// URLs', () => {
+      expect(mediaUrlToFilePath('file:///tmp/graphium/token.webp')).toBe(
+        path.resolve('/tmp/graphium/token.webp'),
+      );
+    });
+
+    it('rejects non-file/media schemes', () => {
+      expect(() => mediaUrlToFilePath('https://example.com/token.webp')).toThrow();
     });
   });
 
