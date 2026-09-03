@@ -109,6 +109,40 @@ describe('syncUtils', () => {
       });
     });
 
+    it('includes activeMeasurement in FULL_SYNC when broadcasting', () => {
+      const measurement = {
+        id: 'active',
+        type: 'ruler' as const,
+        origin: { x: 0, y: 0 },
+        end: { x: 50, y: 0 },
+        distanceFeet: 5,
+      };
+
+      const curr = {
+        tokens: [],
+        tokenLibrary: [],
+        drawings: [],
+        doors: [],
+        stairs: [],
+        gridSize: 50,
+        gridType: 'LINES' as const,
+        gridColor: '#222222',
+        map: null,
+        exploredRegions: [],
+        isDaylightMode: false,
+        activeMeasurement: measurement,
+        broadcastMeasurement: true,
+      };
+
+      const changes = detectChanges(null as any, curr as any);
+      const fullSync = changes.find((c) => c.type === 'FULL_SYNC');
+      expect(fullSync).toBeTruthy();
+      if (fullSync && fullSync.type === 'FULL_SYNC') {
+        expect(fullSync.payload.activeMeasurement).toEqual(measurement);
+        expect(fullSync.payload.broadcastMeasurement).toBe(true);
+      }
+    });
+
     it('detects stairs add/remove', () => {
       const stairs = {
         id: 's1',

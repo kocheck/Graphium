@@ -188,6 +188,8 @@ export function detectChanges(
         map: currentState.map,
         exploredRegions: currentState.exploredRegions,
         isDaylightMode: currentState.isDaylightMode,
+        activeMeasurement: currentState.activeMeasurement ?? null,
+        broadcastMeasurement: Boolean(currentState.broadcastMeasurement ?? false),
       },
     });
     return actions;

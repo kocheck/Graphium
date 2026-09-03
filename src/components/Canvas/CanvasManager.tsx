@@ -893,13 +893,14 @@ function CanvasManager({
     }
 
     const { x, y } = pendingCrop;
+    // Unmount cropper first so it doesn't keep a revoked blob: URL around
+    setPendingCrop(null);
     revokePendingCropUrl();
 
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result !== 'string') {
         showToast('Failed to save token image', 'error');
-        setPendingCrop(null);
         return;
       }
 
@@ -913,11 +914,10 @@ function CanvasManager({
         scale: 1,
       });
 
-      setPendingCrop(null);
+      // pendingCrop already cleared above
     };
     reader.onerror = () => {
       showToast('Failed to save token image', 'error');
-      setPendingCrop(null);
     };
     reader.readAsDataURL(blob);
   };

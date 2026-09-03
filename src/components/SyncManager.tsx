@@ -110,6 +110,11 @@ function SyncManager() {
             const { tokenLibrary: fullLib, ...restState } = action.payload;
             useGameStore.setState(restState as Partial<SyncableGameState>);
 
+            // Initialize World View's DM measurement from Architect broadcast settings
+            const activeMeasurement = action.payload.activeMeasurement ?? null;
+            const broadcastMeasurement = Boolean(action.payload.broadcastMeasurement ?? false);
+            store.setDmMeasurement(broadcastMeasurement ? activeMeasurement : null);
+
             if (fullLib) {
               useGameStore.setState((state) => ({
                 campaign: { ...state.campaign, tokenLibrary: fullLib },
@@ -377,6 +382,8 @@ function SyncManager() {
             map: state.map,
             exploredRegions: state.exploredRegions,
             isDaylightMode: state.isDaylightMode,
+            activeMeasurement: state.activeMeasurement ?? null,
+            broadcastMeasurement: state.broadcastMeasurement ?? false,
           },
         };
 
@@ -455,8 +462,8 @@ function SyncManager() {
 
       // Listen for updates FROM world view
       if (isElectron && ipcRenderer) {
-        ipcRenderer.on('SYNC_FROM_WORLD_VIEW', (_event, action) => {
-          if (action.type === 'TOKEN_UPDATE') {
+        ipcRenderer.on('SYNC_WORLD_STATE', (_event, action: SyncAction) => {
+          if (action?.type === 'TOKEN_UPDATE') {
             applyArchitectTokenUpdate(action.payload.id, action.payload.changes);
           }
         });
@@ -470,7 +477,7 @@ function SyncManager() {
         }
         if (isElectron && ipcRenderer) {
           ipcRenderer.removeAllListeners('REQUEST_INITIAL_STATE');
-          ipcRenderer.removeAllListeners('SYNC_FROM_WORLD_VIEW');
+          ipcRenderer.removeAllListeners('SYNC_WORLD_STATE');
         }
         // @ts-expect-error - graphiumSync is dynamically added
         delete window.graphiumSync;

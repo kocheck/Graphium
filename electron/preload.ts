@@ -165,6 +165,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @param channel - IPC channel name
    */
   removeAllListeners(channel: string) {
+    assertAllowedChannel(channel, ALLOWED_RECEIVE_CHANNELS, 'receive');
     return ipcRenderer.removeAllListeners(channel);
   },
 

@@ -33,7 +33,7 @@ interface UseCanvasInteractionProps {
   ) => void;
   handleTokenPointerMove: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
   handleTokenPointerUp: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
-  setSelectedIds: (ids: string[]) => void;
+  setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>;
   setActiveMeasurement: (m: Measurement | null) => void;
   isMeasuring: React.MutableRefObject<boolean>;
   measurementStart: React.MutableRefObject<{ x: number; y: number } | null>;
@@ -666,7 +666,15 @@ export const useCanvasInteraction = ({
           return Konva.Util.haveIntersection(clientBox, shape.getClientRect());
         });
 
-        setSelectedIds(selected.map((n) => n.id()));
+        const evt = e.evt;
+        const additive = 'shiftKey' in evt && evt.shiftKey;
+        const newIds = selected.map((n) => n.id());
+
+        if (additive) {
+          setSelectedIds((prev) => Array.from(new Set([...prev, ...newIds])));
+        } else {
+          setSelectedIds(newIds);
+        }
       }
 
       selectionStart.current = null;
