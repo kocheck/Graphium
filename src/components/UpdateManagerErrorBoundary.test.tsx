@@ -208,8 +208,12 @@ describe('UpdateManagerErrorBoundary', () => {
         </UpdateManagerErrorBoundary>,
       );
 
-      // Verify component stack is logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Component stack:', expect.any(String));
+      // Verify the React component stack is logged through logErrorWithContext
+      expect(
+        consoleErrorSpy.mock.calls.some(
+          ([first]) => typeof first === 'string' && first.includes('at UpdateManagerErrorBoundary'),
+        ),
+      ).toBe(true);
     });
   });
 
