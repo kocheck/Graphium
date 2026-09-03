@@ -1,10 +1,14 @@
 import path from 'node:path';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  allocateUniqueZipBasename,
   isPathInside,
   isPathInsideOrEqual,
+  isRealPathInsideAllowedRoots,
   sanitizeAssetFileName,
   isValidUuid,
   mediaUrlToFilePath,
@@ -88,6 +92,45 @@ describe('pathSecurity', () => {
 
     it('rejects invalid UUIDs', () => {
       expect(isValidUuid('../not-a-uuid')).toBe(false);
+    });
+  });
+
+  describe('allocateUniqueZipBasename', () => {
+    it('keeps the first basename and suffixes collisions', () => {
+      const used = new Set<string>();
+      expect(allocateUniqueZipBasename('/a/token.webp', used)).toBe('token.webp');
+      expect(allocateUniqueZipBasename('/b/token.webp', used)).toBe('token-2.webp');
+      expect(allocateUniqueZipBasename('/c/token.webp', used)).toBe('token-3.webp');
+      expect(allocateUniqueZipBasename('/d/other.webp', used)).toBe('other.webp');
+    });
+  });
+
+  describe('isRealPathInsideAllowedRoots', () => {
+    const tempDirs: string[] = [];
+
+    afterEach(async () => {
+      await Promise.all(
+        tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })),
+      );
+    });
+
+    it('accepts files under an allowed root', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'graphium-root-'));
+      tempDirs.push(root);
+      const filePath = path.join(root, 'token.webp');
+      await fs.writeFile(filePath, 'x');
+      await expect(isRealPathInsideAllowedRoots(filePath, [root])).resolves.toBe(true);
+    });
+
+    it('rejects symlink escape outside allowed roots', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'graphium-root-'));
+      const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'graphium-out-'));
+      tempDirs.push(root, outside);
+      const secret = path.join(outside, 'secret.txt');
+      await fs.writeFile(secret, 'secret');
+      const linkPath = path.join(root, 'escape.txt');
+      await fs.symlink(secret, linkPath);
+      await expect(isRealPathInsideAllowedRoots(linkPath, [root])).resolves.toBe(false);
     });
   });
 });
