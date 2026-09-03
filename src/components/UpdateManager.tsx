@@ -25,6 +25,7 @@
  * @returns {JSX.Element | null} Update dialog or null if not active
  */
 
+import type React from 'react';
 import { useEffect, useState, useRef, useCallback } from 'react';
 
 import { RiSearchLine, RiDownloadLine, RiRefreshLine } from '@remixicon/react';
@@ -132,7 +133,7 @@ const updateMessages = {
  * Randomly selects a message from an array
  */
 const rollForMessage = (messages: string[]): string => {
-  return messages[Math.floor(Math.random() * messages.length)]!;
+  return messages[Math.floor(Math.random() * messages.length)] ?? '';
 };
 
 /**
@@ -169,7 +170,164 @@ interface DownloadProgress {
   total: number;
 }
 
-function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
+// ============================================================================
+// UTILITY FUNCTIONS (outside component to reduce complexity)
+// ============================================================================
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) {
+    return '0 B';
+  }
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}
+
+function formatSpeed(bytesPerSecond: number): string {
+  return `${formatBytes(bytesPerSecond)}/s`;
+}
+
+// ============================================================================
+// STATUS CONTENT SUB-COMPONENT
+// ============================================================================
+
+interface StatusContentProps {
+  isElectron: boolean;
+  status: UpdateStatus;
+  updateInfo: UpdateInfo | null;
+  downloadProgress: DownloadProgress | null;
+  errorMessage: string;
+  messages: {
+    nonElectronTitle: string;
+    nonElectronSubtitle: string;
+    idle: string;
+    checking: string;
+    noUpdateTitle: string;
+    noUpdateSubtitle: string;
+    updateAvailableTitle: string;
+    updateAvailableSubtitle: string;
+    downloading: string;
+    downloadedTitle: string;
+    downloadedSubtitle: string;
+    downloadedInstruction: string;
+    error: string;
+  };
+}
+
+function StatusContent({
+  isElectron,
+  status,
+  updateInfo,
+  downloadProgress,
+  errorMessage,
+  messages,
+}: StatusContentProps): React.ReactElement | null {
+  return (
+    <>
+      {!isElectron && (
+        <div className="text-center py-4">
+          <p className="mb-2" style={{ color: 'var(--app-text)' }}>
+            {messages.nonElectronTitle}
+          </p>
+          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
+            {messages.nonElectronSubtitle}
+          </p>
+        </div>
+      )}
+      {isElectron && status === 'idle' && (
+        <div className="text-center py-4">
+          <p className="mb-4" style={{ color: 'var(--app-text-muted)' }}>
+            {messages.idle}
+          </p>
+        </div>
+      )}
+      {status === 'checking' && (
+        <div className="text-center py-4">
+          <div className="animate-pulse mb-2" style={{ color: 'var(--app-text)' }}>
+            {messages.checking}
+          </div>
+        </div>
+      )}
+      {status === 'no-update' && (
+        <div className="text-center py-4">
+          <p className="mb-2" style={{ color: 'var(--app-text)' }}>
+            {messages.noUpdateTitle}
+          </p>
+          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
+            {messages.noUpdateSubtitle}
+          </p>
+        </div>
+      )}
+      {status === 'update-available' && updateInfo && (
+        <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
+          <p className="mb-2 font-medium" style={{ color: 'var(--app-text)' }}>
+            {formatMessage(messages.updateAvailableTitle, updateInfo.version)}
+          </p>
+          <p className="text-sm mb-4" style={{ color: 'var(--app-text-muted)' }}>
+            {messages.updateAvailableSubtitle}
+          </p>
+        </div>
+      )}
+      {status === 'downloading' && downloadProgress && (
+        <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
+          <p className="mb-3 font-medium" style={{ color: 'var(--app-text)' }}>
+            {messages.downloading}
+          </p>
+          <div className="mb-2 bg-[var(--app-bg)] rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full bg-[var(--app-accent-solid)] transition-all duration-300"
+              style={{ width: `${downloadProgress.percent}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-sm" style={{ color: 'var(--app-text-muted)' }}>
+            <span>{downloadProgress.percent.toFixed(1)}%</span>
+            <span>
+              {formatBytes(downloadProgress.transferred)} / {formatBytes(downloadProgress.total)}
+            </span>
+          </div>
+          <div className="text-sm text-center mt-2" style={{ color: 'var(--app-text-muted)' }}>
+            {formatSpeed(downloadProgress.bytesPerSecond)}
+          </div>
+        </div>
+      )}
+      {status === 'downloaded' && updateInfo && (
+        <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
+          <p className="mb-2 font-medium" style={{ color: 'var(--app-text)' }}>
+            {messages.downloadedTitle}
+          </p>
+          <p className="text-sm mb-2" style={{ color: 'var(--app-text-muted)' }}>
+            {formatMessage(messages.downloadedSubtitle, updateInfo.version)}
+          </p>
+          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
+            {messages.downloadedInstruction}
+          </p>
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="p-4 bg-[var(--app-error-bg)] border border-[var(--app-error-border)] rounded">
+          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
+            {errorMessage || messages.error}
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
+interface AutoUpdaterState {
+  status: UpdateStatus;
+  currentVersion: string;
+  updateInfo: UpdateInfo | null;
+  downloadProgress: DownloadProgress | null;
+  errorMessage: string;
+  isElectron: boolean;
+  handleCheckForUpdates: () => Promise<void>;
+  handleDownload: () => Promise<void>;
+  handleInstall: () => Promise<void>;
+}
+
+function useAutoUpdater(): AutoUpdaterState {
   const [status, setStatus] = useState<UpdateStatus>('idle');
   const [currentVersion, setCurrentVersion] = useState<string>('');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
@@ -177,8 +335,143 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isElectron, setIsElectron] = useState<boolean>(false);
 
-  // Randomize messages on mount using useRef for stable references
-  // Messages persist for the lifetime of this component instance
+  useEffect(() => {
+    let isMounted = true;
+    setIsElectron(!!window.autoUpdater);
+    if (window.autoUpdater) {
+      const autoUpdater = window.autoUpdater;
+      void (async (): Promise<void> => {
+        try {
+          const version = await autoUpdater.getCurrentVersion();
+          if (isMounted) {
+            setCurrentVersion(version);
+          }
+        } catch (error) {
+          console.error('Failed to get current app version', error);
+          if (isMounted) {
+            setErrorMessage('Failed to get current app version');
+          }
+        }
+      })();
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!window.autoUpdater) {
+      return;
+    }
+    const cleanupFunctions: Array<() => void> = [];
+    cleanupFunctions.push(
+      window.autoUpdater.onCheckingForUpdate(() => {
+        setStatus('checking');
+        setErrorMessage('');
+      }),
+    );
+    cleanupFunctions.push(
+      window.autoUpdater.onUpdateAvailable((info) => {
+        setStatus('update-available');
+        setUpdateInfo(info);
+      }),
+    );
+    cleanupFunctions.push(
+      window.autoUpdater.onUpdateNotAvailable(() => {
+        setStatus('no-update');
+        setUpdateInfo(null);
+      }),
+    );
+    cleanupFunctions.push(
+      window.autoUpdater.onDownloadProgress((progress) => {
+        setStatus('downloading');
+        setDownloadProgress(progress);
+        setErrorMessage('');
+      }),
+    );
+    cleanupFunctions.push(
+      window.autoUpdater.onUpdateDownloaded((info) => {
+        setStatus('downloaded');
+        setUpdateInfo(info);
+      }),
+    );
+    cleanupFunctions.push(
+      window.autoUpdater.onError((error) => {
+        setStatus('error');
+        setErrorMessage(error.message);
+      }),
+    );
+    return () => {
+      cleanupFunctions.forEach((cleanup) => cleanup());
+    };
+  }, []);
+
+  const handleCheckForUpdates = async (): Promise<void> => {
+    if (!window.autoUpdater) {
+      return;
+    }
+    try {
+      setStatus('checking');
+      setErrorMessage('');
+      await window.autoUpdater.checkForUpdates();
+    } catch (error) {
+      setStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to check for updates');
+    }
+  };
+
+  const handleDownload = async (): Promise<void> => {
+    if (!window.autoUpdater) {
+      return;
+    }
+    try {
+      setStatus('downloading');
+      setErrorMessage('');
+      await window.autoUpdater.downloadUpdate();
+    } catch (error) {
+      setStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to download update');
+    }
+  };
+
+  const handleInstall = async (): Promise<void> => {
+    if (!window.autoUpdater) {
+      return;
+    }
+    try {
+      await window.autoUpdater.quitAndInstall();
+    } catch (error) {
+      setStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to install update');
+    }
+  };
+
+  return {
+    status,
+    currentVersion,
+    updateInfo,
+    downloadProgress,
+    errorMessage,
+    isElectron,
+    handleCheckForUpdates,
+    handleDownload,
+    handleInstall,
+  };
+}
+
+function UpdateManager({ isOpen, onClose }: UpdateManagerProps): React.ReactElement | null {
+  const {
+    status,
+    currentVersion,
+    updateInfo,
+    downloadProgress,
+    errorMessage,
+    isElectron,
+    handleCheckForUpdates,
+    handleDownload,
+    handleInstall,
+  } = useAutoUpdater();
+
   const messages = useRef({
     nonElectronTitle: rollForMessage(updateMessages.nonElectron.title),
     nonElectronSubtitle: rollForMessage(updateMessages.nonElectron.subtitle),
@@ -194,99 +487,6 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
     downloadedInstruction: rollForMessage(updateMessages.downloaded.instruction),
     error: rollForMessage(updateMessages.error),
   }).current;
-
-  // Check if running in Electron
-  useEffect(() => {
-    let isMounted = true;
-
-    setIsElectron(!!window.autoUpdater);
-
-    if (window.autoUpdater) {
-      // Get current version on mount with error handling
-      const autoUpdater = window.autoUpdater;
-      void (async () => {
-        try {
-          const version = await autoUpdater.getCurrentVersion();
-          if (isMounted) {
-            setCurrentVersion(version);
-          }
-        } catch (error) {
-          // Renderer process uses console for logging (not electron-log)
-          console.error('Failed to get current app version', error);
-          if (isMounted) {
-            setErrorMessage('Failed to get current app version');
-          }
-        }
-      })();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Set up event listeners for auto-updater (once on mount)
-  useEffect(() => {
-    if (!window.autoUpdater) {
-      return;
-    }
-
-    const cleanupFunctions: Array<() => void> = [];
-
-    // Checking for update
-    cleanupFunctions.push(
-      window.autoUpdater.onCheckingForUpdate(() => {
-        setStatus('checking');
-        setErrorMessage('');
-      }),
-    );
-
-    // Update available
-    cleanupFunctions.push(
-      window.autoUpdater.onUpdateAvailable((info) => {
-        setStatus('update-available');
-        setUpdateInfo(info);
-      }),
-    );
-
-    // No update available
-    cleanupFunctions.push(
-      window.autoUpdater.onUpdateNotAvailable(() => {
-        setStatus('no-update');
-        setUpdateInfo(null);
-      }),
-    );
-
-    // Download progress
-    cleanupFunctions.push(
-      window.autoUpdater.onDownloadProgress((progress) => {
-        setStatus('downloading');
-        setDownloadProgress(progress);
-        setErrorMessage(''); // Clear any previous error when download starts
-      }),
-    );
-
-    // Update downloaded
-    cleanupFunctions.push(
-      window.autoUpdater.onUpdateDownloaded((info) => {
-        setStatus('downloaded');
-        setUpdateInfo(info);
-      }),
-    );
-
-    // Error
-    cleanupFunctions.push(
-      window.autoUpdater.onError((error) => {
-        setStatus('error');
-        setErrorMessage(error.message);
-      }),
-    );
-
-    // Cleanup on unmount
-    return () => {
-      cleanupFunctions.forEach((cleanup) => cleanup());
-    };
-  }, []);
 
   // Handle keyboard events
   // Note: Using useCallback to stabilize onClose reference and prevent duplicate listeners
@@ -311,63 +511,6 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
   if (!isOpen) {
     return null;
   }
-
-  const handleCheckForUpdates = async () => {
-    if (!window.autoUpdater) {
-      return;
-    }
-
-    try {
-      setStatus('checking');
-      setErrorMessage('');
-      await window.autoUpdater.checkForUpdates();
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to check for updates');
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!window.autoUpdater) {
-      return;
-    }
-
-    try {
-      setStatus('downloading');
-      setErrorMessage('');
-      await window.autoUpdater.downloadUpdate();
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to download update');
-    }
-  };
-
-  const handleInstall = async () => {
-    if (!window.autoUpdater) {
-      return;
-    }
-
-    try {
-      await window.autoUpdater.quitAndInstall();
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to install update');
-    }
-  };
-
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) {
-      return '0 B';
-    }
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-  };
-
-  const formatSpeed = (bytesPerSecond: number): string => {
-    return `${formatBytes(bytesPerSecond)}/s`;
-  };
 
   return (
     <div
@@ -413,110 +556,23 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
 
         {/* Status Content */}
         <div className="mb-6">
-          {!isElectron && (
-            <div className="text-center py-4">
-              <p className="mb-2" style={{ color: 'var(--app-text)' }}>
-                {messages.nonElectronTitle}
-              </p>
-              <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
-                {messages.nonElectronSubtitle}
-              </p>
-            </div>
-          )}
-
-          {isElectron && status === 'idle' && (
-            <div className="text-center py-4">
-              <p className="mb-4" style={{ color: 'var(--app-text-muted)' }}>
-                {messages.idle}
-              </p>
-            </div>
-          )}
-
-          {status === 'checking' && (
-            <div className="text-center py-4">
-              <div className="animate-pulse mb-2" style={{ color: 'var(--app-text)' }}>
-                {messages.checking}
-              </div>
-            </div>
-          )}
-
-          {status === 'no-update' && (
-            <div className="text-center py-4">
-              <p className="mb-2" style={{ color: 'var(--app-text)' }}>
-                {messages.noUpdateTitle}
-              </p>
-              <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
-                {messages.noUpdateSubtitle}
-              </p>
-            </div>
-          )}
-
-          {status === 'update-available' && updateInfo && (
-            <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
-              <p className="mb-2 font-medium" style={{ color: 'var(--app-text)' }}>
-                {formatMessage(messages.updateAvailableTitle, updateInfo.version)}
-              </p>
-              <p className="text-sm mb-4" style={{ color: 'var(--app-text-muted)' }}>
-                {messages.updateAvailableSubtitle}
-              </p>
-            </div>
-          )}
-
-          {status === 'downloading' && downloadProgress && (
-            <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
-              <p className="mb-3 font-medium" style={{ color: 'var(--app-text)' }}>
-                {messages.downloading}
-              </p>
-              <div className="mb-2 bg-[var(--app-bg)] rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-full bg-[var(--app-accent-solid)] transition-all duration-300"
-                  style={{ width: `${downloadProgress.percent}%` }}
-                />
-              </div>
-              <div
-                className="flex justify-between text-sm"
-                style={{ color: 'var(--app-text-muted)' }}
-              >
-                <span>{downloadProgress.percent.toFixed(1)}%</span>
-                <span>
-                  {formatBytes(downloadProgress.transferred)} /{' '}
-                  {formatBytes(downloadProgress.total)}
-                </span>
-              </div>
-              <div className="text-sm text-center mt-2" style={{ color: 'var(--app-text-muted)' }}>
-                {formatSpeed(downloadProgress.bytesPerSecond)}
-              </div>
-            </div>
-          )}
-
-          {status === 'downloaded' && updateInfo && (
-            <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
-              <p className="mb-2 font-medium" style={{ color: 'var(--app-text)' }}>
-                {messages.downloadedTitle}
-              </p>
-              <p className="text-sm mb-2" style={{ color: 'var(--app-text-muted)' }}>
-                {formatMessage(messages.downloadedSubtitle, updateInfo.version)}
-              </p>
-              <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
-                {messages.downloadedInstruction}
-              </p>
-            </div>
-          )}
-
-          {status === 'error' && (
-            <div className="p-4 bg-[var(--app-error-bg)] border border-[var(--app-error-border)] rounded">
-              <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
-                {errorMessage || messages.error}
-              </p>
-            </div>
-          )}
+          <StatusContent
+            isElectron={isElectron}
+            status={status}
+            updateInfo={updateInfo}
+            downloadProgress={downloadProgress}
+            errorMessage={errorMessage}
+            messages={messages}
+          />
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-3">
           {isElectron && (status === 'idle' || status === 'no-update' || status === 'error') && (
             <button
-              onClick={handleCheckForUpdates}
+              onClick={() => {
+                void handleCheckForUpdates();
+              }}
               className="flex-1 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
               <RiSearchLine className="w-5 h-5" />
@@ -526,7 +582,9 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
 
           {status === 'update-available' && (
             <button
-              onClick={handleDownload}
+              onClick={() => {
+                void handleDownload();
+              }}
               className="flex-1 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
               <RiDownloadLine className="w-5 h-5" />
@@ -536,7 +594,9 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps) {
 
           {status === 'downloaded' && (
             <button
-              onClick={handleInstall}
+              onClick={() => {
+                void handleInstall();
+              }}
               className="flex-1 px-4 py-2 bg-[var(--app-success-solid)] hover:bg-[var(--app-success-solid-hover)] text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
               <RiRefreshLine className="w-5 h-5" />

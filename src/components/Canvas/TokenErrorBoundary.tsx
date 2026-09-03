@@ -112,7 +112,7 @@ class TokenErrorBoundary extends Component<Props, State> {
    * React lifecycle method called when error is caught
    * Immediately sets hasError to trigger null render
    */
-  static getDerivedStateFromError(): Partial<State> {
+  static getDerivedStateFromError(_error: Error): Partial<State> {
     return {
       hasError: true,
     };
@@ -126,7 +126,7 @@ class TokenErrorBoundary extends Component<Props, State> {
    * @param error - The error that was thrown during token rendering
    * @param errorInfo - React error info including component stack
    */
-  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
 
@@ -172,14 +172,14 @@ class TokenErrorBoundary extends Component<Props, State> {
   /**
    * Toggle debug overlay visibility
    */
-  handleToggleDebug = () => {
+  handleToggleDebug = (): void => {
     this.setState((prev) => ({ showDebugOverlay: !prev.showDebugOverlay }));
   };
 
   /**
    * Copy error details to the clipboard and show a toast notification
    */
-  handleCopyError = async () => {
+  handleCopyError = async (): Promise<void> => {
     const { errorContext } = this.state;
     const { onShowToast } = this.props;
 
@@ -191,7 +191,7 @@ class TokenErrorBoundary extends Component<Props, State> {
       // where hooks cannot be used. While this creates coupling to the game store,
       // it provides a fallback when the parent component doesn't provide the callback.
       // Consider making onShowToast mandatory if this coupling becomes problematic.
-      const showToast = onShowToast || useGameStore.getState().showToast;
+      const showToast = onShowToast ?? useGameStore.getState().showToast;
 
       if (success) {
         showToast('Error details copied to clipboard!', 'success');
@@ -207,7 +207,7 @@ class TokenErrorBoundary extends Component<Props, State> {
    *
    * @returns {ReactNode | null} Children, debug indicator + overlay, or null
    */
-  override render() {
+  override render(): ReactNode {
     const { hasError, errorContext, showDebugOverlay } = this.state;
     const { children, tokenId, tokenData } = this.props;
     const isDev = import.meta.env.DEV;
@@ -239,12 +239,12 @@ class TokenErrorBoundary extends Component<Props, State> {
               <div
                 className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900 text-white p-5 rounded-lg border-2 border-red-500 max-w-[600px] max-h-[80vh] overflow-auto z-[10000] shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
-                data-testid={`token-error-overlay-${tokenId || 'unknown'}`}
+                data-testid={`token-error-overlay-${tokenId ?? 'unknown'}`}
               >
                 <h3 className="m-0 mb-4 text-red-500">Token Error Debug Info</h3>
 
                 <div className="mb-4">
-                  <strong>Token ID:</strong> {tokenId || 'N/A'}
+                  <strong>Token ID:</strong> {tokenId ?? 'N/A'}
                 </div>
 
                 <div className="mb-4">
@@ -286,7 +286,9 @@ class TokenErrorBoundary extends Component<Props, State> {
 
                 <div className="flex gap-2.5 mt-4">
                   <button
-                    onClick={this.handleCopyError}
+                    onClick={() => {
+                      void this.handleCopyError();
+                    }}
                     className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white border-none rounded cursor-pointer text-sm"
                   >
                     Copy Error

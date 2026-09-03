@@ -12,7 +12,6 @@ import { rollForMessage } from '../utils/systemMessages';
  */
 function MapNavigator(): React.ReactElement | null {
   const campaign = useGameStore((state) => state.campaign);
-  const activeMapId = useGameStore((state) => state.campaign.activeMapId);
   const addMap = useGameStore((state) => state.addMap);
   const switchMap = useGameStore((state) => state.switchMap);
   const deleteMap = useGameStore((state) => state.deleteMap);
@@ -22,12 +21,12 @@ function MapNavigator(): React.ReactElement | null {
   const [editingMapId, setEditingMapId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
 
-  const handleStartEdit = (id: string, currentName: string) => {
+  const handleStartEdit = (id: string, currentName: string): void => {
     setEditingMapId(id);
     setEditName(currentName);
   };
 
-  const handleFinishEdit = () => {
+  const handleFinishEdit = (): void => {
     if (!editingMapId) {
       return;
     }
@@ -37,7 +36,7 @@ function MapNavigator(): React.ReactElement | null {
     // Prevent renaming to an empty or whitespace-only name.
     if (!newName) {
       // Revert to the original name if available.
-      const originalMap = campaign && campaign.maps ? campaign.maps[editingMapId] : undefined;
+      const originalMap = campaign?.maps?.[editingMapId];
       if (originalMap) {
         setEditName(originalMap.name);
       }
@@ -49,7 +48,7 @@ function MapNavigator(): React.ReactElement | null {
     setEditingMapId(null);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter') {
       handleFinishEdit();
     } else if (e.key === 'Escape') {
@@ -57,7 +56,7 @@ function MapNavigator(): React.ReactElement | null {
     }
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string, name: string): void => {
     e.stopPropagation();
     showConfirmDialog(
       rollForMessage('CONFIRM_MAP_DELETE', { mapName: name }),
@@ -65,7 +64,6 @@ function MapNavigator(): React.ReactElement | null {
       'Delete',
     );
   };
-
   if (!campaign) {
     return null;
   }
@@ -87,7 +85,7 @@ function MapNavigator(): React.ReactElement | null {
 
       <ul className="space-y-2 mb-4" aria-label="Campaign maps">
         {maps.map((map) => {
-          const isActive = map.id === activeMapId;
+          const isActive = map.id === campaign.activeMapId;
           return (
             <li
               key={map.id}
@@ -164,7 +162,7 @@ function MapNavigator(): React.ReactElement | null {
           const mapNumbers = maps
             .map((m) => {
               const match = /^Map (\d+)$/.exec(m.name);
-              return match ? parseInt(match[1]!, 10) : 0;
+              return match ? parseInt(match[1] ?? '0', 10) : 0;
             })
             .filter((n) => n > 0);
           const nextNumber = mapNumbers.length > 0 ? Math.max(...mapNumbers) + 1 : maps.length + 1;
@@ -178,4 +176,5 @@ function MapNavigator(): React.ReactElement | null {
   );
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default MapNavigator;

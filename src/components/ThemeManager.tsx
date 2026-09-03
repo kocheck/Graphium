@@ -33,7 +33,7 @@ import { getStorage } from '../services/storage';
  *
  * @param theme - 'light' or 'dark'
  */
-function applyTheme(theme: 'light' | 'dark') {
+function applyTheme(theme: 'light' | 'dark'): void {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
@@ -42,7 +42,7 @@ function applyTheme(theme: 'light' | 'dark') {
  *
  * Mount this once at the app root. It has no visible UI.
  */
-export function ThemeManager() {
+export function ThemeManager(): null {
   useEffect(() => {
     let cleanup: (() => void) | undefined;
 
@@ -66,7 +66,7 @@ export function ThemeManager() {
      * 3. Subscribe to theme changes (platform-specific)
      * 4. Remove 'theme-loading' class to enable transitions
      */
-    async function initializeTheme() {
+    async function initializeTheme(): Promise<void> {
       try {
         const storage = getStorage();
         const isElectron = storage.getPlatform() === 'electron';
@@ -88,12 +88,14 @@ export function ThemeManager() {
 
           // Subscribe to system theme changes (for 'system' mode)
           const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-          const handleSystemThemeChange = async () => {
-            const currentMode = await storage.getThemeMode();
-            if (currentMode === 'system') {
-              const newTheme = resolveEffectiveTheme('system');
-              applyTheme(newTheme);
-            }
+          const handleSystemThemeChange = (): void => {
+            void (async (): Promise<void> => {
+              const currentMode = await storage.getThemeMode();
+              if (currentMode === 'system') {
+                const newTheme = resolveEffectiveTheme('system');
+                applyTheme(newTheme);
+              }
+            })();
           };
 
           // Always listen for system theme changes
@@ -104,9 +106,11 @@ export function ThemeManager() {
 
           if (typeof BroadcastChannel !== 'undefined') {
             themeChannel = new BroadcastChannel('graphium-theme-sync');
-            const handleCrossTabThemeChange = (event: MessageEvent) => {
+            const handleCrossTabThemeChange = (
+              event: MessageEvent<{ type?: string; mode?: 'light' | 'dark' | 'system' }>,
+            ): void => {
               if (event.data?.type === 'THEME_CHANGED') {
-                const newMode = event.data.mode as 'light' | 'dark' | 'system';
+                const newMode = event.data.mode ?? 'system';
                 const newTheme = resolveEffectiveTheme(newMode);
                 applyTheme(newTheme);
               }
