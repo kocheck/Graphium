@@ -1,4 +1,5 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react';
+import type React from 'react';
 
 import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
 import { useShallow } from 'zustand/shallow';
@@ -9,6 +10,7 @@ import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorLayer from './DoorLayer';
 import { useCanvasInteraction } from './hooks/useCanvasInteraction';
 import { useTokenDrag } from './hooks/useTokenDrag';
+// eslint-disable-next-line import/no-named-as-default
 import MeasurementOverlay from './MeasurementOverlay';
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
@@ -105,6 +107,7 @@ interface CanvasManagerProps {
  * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
  * @see {@link file://../../App.tsx App.tsx} for UI sanitization
  */
+// eslint-disable-next-line max-lines-per-function, complexity
 function CanvasManager({
   tool = 'select',
   color = '#df4b26',
@@ -112,7 +115,7 @@ function CanvasManager({
   isWorldView = false,
   onSelectionChange,
   measurementMode = 'ruler',
-}: CanvasManagerProps) {
+}: CanvasManagerProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -131,6 +134,7 @@ function CanvasManager({
   const activeVisionPolygons = useGameStore((state) => state.activeVisionPolygons);
 
   if (import.meta.env.DEV && (window as Window & { DEBUG_CANVAS?: boolean }).DEBUG_CANVAS) {
+    // eslint-disable-next-line no-console
     console.log('[CanvasManager]', {
       isWorldView,
       isDaylightMode,
@@ -248,7 +252,8 @@ function CanvasManager({
   const [isMKeyPressed, setIsMKeyPressed] = useState(false); // Logic: Hold M to measure
 
   // Tool state helpers for disabled Konva drag events (defined once to prevent re-renders)
-  const emptyDragHandler = useCallback(() => {}, []);
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  const emptyDragHandler = useCallback((): void => {}, []);
 
   const [doorContextMenu, setDoorContextMenu] = useState<{
     doorId: string;
@@ -302,7 +307,8 @@ function CanvasManager({
   >(() => false);
   const trackStylusRef = useRef<
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void
-  >(() => {});
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+  >((): void => {});
 
   const {
     handleTokenPointerDown,
@@ -531,7 +537,8 @@ function CanvasManager({
       return tag === 'input' || tag === 'textarea' || el.isContentEditable;
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    // eslint-disable-next-line complexity
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Track Alt Key (always track, even in inputs, for drag operations)
       // Disabled in World View to prevent duplication
       if (e.key === 'Alt' && !isWorldView) {
@@ -617,7 +624,7 @@ function CanvasManager({
       }
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
+    const handleKeyUp = (e: KeyboardEvent): void => {
       // Always track Alt key release
       if (e.key === 'Alt') {
         setIsAltPressed(false);
@@ -634,7 +641,7 @@ function CanvasManager({
       }
     };
 
-    const handleBlur = () => {
+    const handleBlur = (): void => {
       setIsSpacePressed(false);
       setIsAltPressed(false);
       setIsMKeyPressed(false);
@@ -663,7 +670,7 @@ function CanvasManager({
   ]);
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleResize = (): void => {
       if (containerRef.current) {
         setSize({
           width: containerRef.current.offsetWidth,
@@ -692,13 +699,16 @@ function CanvasManager({
    * - Single-finger drawing/dragging uses pointer events
    * - No event conflicts between touch and pointer APIs
    */
-  const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
+  const handleTouchStart = (e: KonvaEventObject<TouchEvent>): void => {
     const touches = e.evt.touches;
     // ONLY handle 2+ finger gestures (pinch-to-zoom)
     if (touches.length === 2) {
       e.evt.preventDefault();
-      const touch1 = touches[0]!;
-      const touch2 = touches[1]!;
+      const touch1 = touches[0];
+      const touch2 = touches[1];
+      if (!touch1 || !touch2) {
+        return;
+      }
       lastPinchDistance.current = calculatePinchDistance(touch1, touch2);
       lastPinchCenter.current = calculatePinchCenter(touch1, touch2);
     } else if (touches.length === 1 && tool !== 'select') {
@@ -709,15 +719,18 @@ function CanvasManager({
     // Single-touch events are handled by handlePointerDown
   };
 
-  const handleTouchMove = (e: KonvaEventObject<TouchEvent>) => {
+  const handleTouchMove = (e: KonvaEventObject<TouchEvent>): void => {
     const touches = e.evt.touches;
     // ONLY handle 2-finger gestures (pinch-to-zoom or two-finger pan)
     if (touches.length === 2) {
       e.evt.preventDefault();
 
       if (lastPinchDistance.current && lastPinchCenter.current) {
-        const touch1 = touches[0]!;
-        const touch2 = touches[1]!;
+        const touch1 = touches[0];
+        const touch2 = touches[1];
+        if (!touch1 || !touch2) {
+          return;
+        }
         const distance = calculatePinchDistance(touch1, touch2);
         const center = calculatePinchCenter(touch1, touch2);
 
@@ -779,7 +792,7 @@ function CanvasManager({
     // Single-touch events are handled by handlePointerMove
   };
 
-  const handleTouchEnd = (e: KonvaEventObject<TouchEvent>) => {
+  const handleTouchEnd = (e: KonvaEventObject<TouchEvent>): void => {
     const touches = e.evt.touches;
     // Reset gesture state when fewer than 2 fingers remain
     if (touches.length < 2) {
@@ -790,7 +803,7 @@ function CanvasManager({
     // Single-touch events are handled by handlePointerUp
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent): void => {
     // BLOCKED in World View (no file drops allowed)
     if (isWorldView) {
       return;
@@ -798,7 +811,7 @@ function CanvasManager({
     e.preventDefault();
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent): void => {
     // BLOCKED in World View (no file drops allowed)
     if (isWorldView) {
       return;
@@ -829,7 +842,12 @@ function CanvasManager({
     const jsonData = e.dataTransfer.getData('application/json');
     if (jsonData) {
       try {
-        const data = JSON.parse(jsonData);
+        interface DroppedTokenData {
+          type: string;
+          src?: string;
+          libraryItemId?: string;
+        }
+        const data = JSON.parse(jsonData) as DroppedTokenData;
         if (data.type === 'LIBRARY_TOKEN') {
           // Create token instance with reference to library item
           // Metadata (scale, type, visionRadius, name) will be inherited from library
@@ -837,8 +855,8 @@ function CanvasManager({
             id: crypto.randomUUID(),
             x,
             y,
-            src: data.src,
-            libraryItemId: data.libraryItemId, // Reference to prototype
+            src: data.src ?? '',
+            libraryItemId: data.libraryItemId,
             // scale, type, visionRadius, name are NOT set - they inherit from library
           });
           return;
@@ -867,12 +885,16 @@ function CanvasManager({
           return;
         }
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error(err);
       }
     }
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0]!;
+      const file = e.dataTransfer.files[0];
+      if (!file) {
+        return;
+      }
       revokePendingCropUrl();
       const objectUrl = URL.createObjectURL(file);
       pendingCropUrlRef.current = objectUrl;
@@ -880,14 +902,14 @@ function CanvasManager({
     }
   };
 
-  const handleCropConfirm = (blob: Blob) => {
+  const handleCropConfirm = (blob: Blob): void => {
     if (!pendingCrop) {
       return;
     }
     void handleCropSave(blob);
   };
 
-  const handleCropSave = (blob: Blob) => {
+  const handleCropSave = (blob: Blob): void => {
     if (!pendingCrop) {
       return;
     }
@@ -937,7 +959,7 @@ function CanvasManager({
     [position.x, position.y, scale, size.width, size.height],
   );
 
-  const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
+  const handleWheel = (e: KonvaEventObject<WheelEvent>): void => {
     e.evt.preventDefault();
     const stage = e.target.getStage();
     if (!stage) {
@@ -1153,8 +1175,8 @@ function CanvasManager({
               scaleX={map.scale}
               scaleY={map.scale}
               draggable={false}
-              onSelect={() => {}}
-              onDragEnd={() => {}}
+              onSelect={emptyDragHandler}
+              onDragEnd={emptyDragHandler}
             />
           )}
 
@@ -1213,11 +1235,11 @@ function CanvasManager({
               id: line.id,
               name: 'drawing' as const,
               points: line.points,
-              x: line.x || 0,
-              y: line.y || 0,
+              x: line.x ?? 0,
+              y: line.y ?? 0,
               // Apply uniform scaling (line.scale is a single number applied to both axes)
-              scaleX: line.scale || 1,
-              scaleY: line.scale || 1,
+              scaleX: line.scale ?? 1,
+              scaleY: line.scale ?? 1,
               stroke: line.tool === 'wall' && isWorldView ? '#000000' : line.color,
               strokeWidth:
                 line.tool === 'wall' && isWorldView
@@ -1271,8 +1293,8 @@ function CanvasManager({
                       // Calculate drag offset and apply to all points
                       // Points array format: [x1, y1, x2, y2, ...] (alternating x,y coordinates)
                       const points = drawing.points;
-                      const dx = x - (drawing.x || 0);
-                      const dy = y - (drawing.y || 0);
+                      const dx = x - (drawing.x ?? 0);
+                      const dy = y - (drawing.y ?? 0);
                       // Offset all points by (dx, dy)
                       const newPoints = points.map(
                         (val, idx) => (idx % 2 === 0 ? val + dx : val + dy), // Even indices are X, odd are Y
@@ -1294,7 +1316,7 @@ function CanvasManager({
                 // But `Line` points are absolute.
                 // If we move the Node, Konva applies a transform (x,y).
                 // We should use `updateDrawingTransform`.
-                updateDrawingTransform(line.id, x, y, line.scale || 1);
+                updateDrawingTransform(line.id, x, y, line.scale ?? 1);
 
                 setItemsForDuplication([]);
               },
@@ -1371,7 +1393,10 @@ function CanvasManager({
         <Layer ref={tokenLayerRef}>
           {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
           {(() => {
-            console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
+            if (import.meta.env.DEV) {
+              // eslint-disable-next-line no-console
+              console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
+            }
             return (
               <DoorLayer
                 doors={doors}
@@ -1462,7 +1487,7 @@ function CanvasManager({
                   opacity={0.5}
                   name="ghost-token"
                   // No-op handlers
-                  onSelect={() => {}}
+                  onSelect={emptyDragHandler}
                 />
               ))}
 
@@ -1478,7 +1503,7 @@ function CanvasManager({
 
               // Use drag position if token is being dragged
               const dragPos = dragPositionsRef.current.get(selectedToken.id);
-              const tokenPos = dragPos || { x: selectedToken.x, y: selectedToken.y };
+              const tokenPos = dragPos ?? { x: selectedToken.x, y: selectedToken.y };
 
               // Movement speed is resolved from token data
               const movementSpeed = selectedToken.movementSpeed ?? DEFAULT_MOVEMENT_SPEED;
@@ -1542,7 +1567,7 @@ function CanvasManager({
              * - Konva-level caching for complex visual effects
              * - Resting state has no shadow to reduce continuous rendering cost
              */
-            const getVisualProps = () => {
+            const getVisualProps = (): Record<string, unknown> => {
               // Common performance optimization: disable shadow for strokes
               const baseShadowProps = {
                 shadowForStrokeEnabled: false, // Performance: Only shadow fill, not stroke
@@ -1580,7 +1605,7 @@ function CanvasManager({
             };
 
             const visualProps = getVisualProps();
-            const safeScale = token.scale || 1;
+            const safeScale = token.scale ?? 1;
             const tokenHeight = gridSize * safeScale;
 
             /**
@@ -1745,7 +1770,7 @@ function CanvasManager({
                   const drawing = drawings.find((d) => d.id === node.id());
                   if (drawing) {
                     // Multiply current scale by transformation scale, or set to transformScale if not previously scaled
-                    const newScale = (drawing.scale || 1) * transformScale;
+                    const newScale = (drawing.scale ?? 1) * transformScale;
                     updateDrawingTransform(node.id(), node.x(), node.y(), newScale);
                   }
                   // Reset scale to 1 since the new scale is stored
@@ -1851,4 +1876,4 @@ function CanvasManager({
   );
 }
 
-export default React.memo(CanvasManager);
+export default memo(CanvasManager);
