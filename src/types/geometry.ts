@@ -24,6 +24,7 @@ export interface WallSegment {
  * @param polygon - Array of points forming a closed polygon
  * @returns true if point is inside polygon
  */
+// eslint-disable-next-line import/no-unused-modules
 export function isPointInPolygon(point: Point, polygon: Point[]): boolean {
   if (polygon.length < 3) {
     return false;
@@ -31,10 +32,16 @@ export function isPointInPolygon(point: Point, polygon: Point[]): boolean {
 
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i]!.x;
-    const yi = polygon[i]!.y;
-    const xj = polygon[j]!.x;
-    const yj = polygon[j]!.y;
+    const currentPoint = polygon[i];
+    const previousPoint = polygon[j];
+    if (!currentPoint || !previousPoint) {
+      continue;
+    }
+
+    const xi = currentPoint.x;
+    const yi = currentPoint.y;
+    const xj = previousPoint.x;
+    const yj = previousPoint.y;
 
     // Check if point is on horizontal edge
     const onEdge =
@@ -55,6 +62,7 @@ export function isPointInPolygon(point: Point, polygon: Point[]): boolean {
  * @param polygons - Array of polygons to test against
  * @returns true if point is inside at least one polygon
  */
+// eslint-disable-next-line import/no-unused-modules
 export function isPointInAnyPolygon(point: Point, polygons: Point[][]): boolean {
   return polygons.some((polygon) => isPointInPolygon(point, polygon));
 }

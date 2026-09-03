@@ -19,6 +19,7 @@ interface State {
  * fallback UI instead of a white screen. It also logs errors to the console
  * and provides options for the user to reload the app.
  */
+// eslint-disable-next-line import/no-unused-modules
 export class GlobalErrorBoundary extends Component<Props, State> {
   public override state: State = {
     hasError: false,
@@ -27,26 +28,26 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true, error, errorInfo: null };
   }
 
-  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // eslint-disable-next-line no-console
     console.error('Uncaught error:', error, errorInfo);
     this.setState({ errorInfo });
   }
 
-  private handleReload = () => {
+  private handleReload = (): void => {
     window.location.reload();
   };
 
-  private handleCopyError = () => {
+  private handleCopyError = (): void => {
     const { error, errorInfo } = this.state;
     const errorText = `Error: ${error?.message}\n\nStack:\n${errorInfo?.componentStack}`;
     void navigator.clipboard.writeText(errorText);
   };
 
-  public override render() {
+  public override render(): ReactNode {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

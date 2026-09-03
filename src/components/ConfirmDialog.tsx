@@ -28,11 +28,11 @@
  * @returns {JSX.Element | null} Confirmation dialog or null if not active
  */
 
-import { useEffect } from 'react';
+import { type JSX, useEffect } from 'react';
 
 import { useGameStore } from '../store/gameStore';
 
-function ConfirmDialog() {
+function ConfirmDialog(): JSX.Element | null {
   const confirmDialog = useGameStore((state) => state.confirmDialog);
   const clearConfirmDialog = useGameStore((state) => state.clearConfirmDialog);
 
@@ -42,7 +42,7 @@ function ConfirmDialog() {
       return;
     }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         clearConfirmDialog();
       } else if (e.key === 'Enter') {
@@ -60,12 +60,12 @@ function ConfirmDialog() {
     return null;
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = (): void => {
     confirmDialog.onConfirm();
     clearConfirmDialog();
   };
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     clearConfirmDialog();
   };
 
@@ -104,7 +104,7 @@ function ConfirmDialog() {
             className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white transition"
             autoFocus
           >
-            {confirmDialog.confirmText || 'Confirm'}
+            {confirmDialog.confirmText ?? 'Confirm'}
           </button>
         </div>
       </div>
