@@ -170,17 +170,17 @@ export async function injectCampaignState(page: Page, campaign: any) {
  * @param page - Playwright Page object
  */
 export async function clearAllTestData(page: Page) {
-  const url = page.url();
-  if (!url.startsWith('http')) {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+  // about:blank / opaque origins cannot read localStorage. Skip until a later
+  // helper (bypassLandingPageAndInjectState) navigates with init scripts.
+  if (!page.url().startsWith('http')) {
+    return;
   }
 
   await page.evaluate(() => {
     try {
       localStorage.clear();
     } catch {
-      // Opaque origins (about:blank) cannot read localStorage.
+      // Ignore storage access errors on unexpected origins.
     }
     return indexedDB.deleteDatabase('graphium-storage');
   });
