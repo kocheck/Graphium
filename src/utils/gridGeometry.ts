@@ -15,6 +15,7 @@
  * - Hexagonal: Flat-top hexagons using axial coordinates
  * - Isometric: Diamond-shaped cells (45° rotated square grid)
  */
+/* eslint-disable import/no-unused-modules */
 
 import type { GridGeometry, GridCell, Point, Bounds } from '../types/grid';
 
@@ -214,10 +215,11 @@ export class HexagonalGridGeometry implements GridGeometry {
       this.pixelToGrid(bounds.x, bounds.y + bounds.height, gridSize), // Bottom Left
     ];
 
-    let minQ = corners[0]!.q;
-    let maxQ = corners[0]!.q;
-    let minR = corners[0]!.r;
-    let maxR = corners[0]!.r;
+    const firstCorner = corners[0] ?? { q: 0, r: 0 };
+    let minQ = firstCorner.q;
+    let maxQ = firstCorner.q;
+    let minR = firstCorner.r;
+    let maxR = firstCorner.r;
 
     for (const corner of corners) {
       minQ = Math.min(minQ, corner.q);

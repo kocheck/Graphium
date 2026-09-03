@@ -7,7 +7,9 @@
  *
  * @component
  */
+/* eslint-disable import/no-unused-modules */
 
+import type React from 'react';
 import { useMemo } from 'react';
 
 interface UpdateErrorFallbackUIProps {
@@ -68,19 +70,23 @@ export type UpdateErrorRandomFn = () => number;
  * @param rng - Random number generator function (defaults to Math.random)
  * @returns Randomly selected message
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const rollForMessage = (
   messages: string[],
   rng: UpdateErrorRandomFn = Math.random,
 ): string => {
   const index = Math.floor(rng() * messages.length);
-  return messages[index]!;
+  return messages[index] ?? messages[0] ?? '';
 };
 
 /**
  * Update error fallback UI component
  * Displays user-friendly error message with retry and close options
  */
-export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFallbackUIProps) {
+export function UpdateErrorFallbackUI({
+  errorMessage,
+  onReset,
+}: UpdateErrorFallbackUIProps): React.ReactElement {
   // Roll for random error messages (memoized per error instance to keep them stable)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const errorTitle = useMemo(() => rollForMessage(updateErrorMessages.title), [errorMessage]);
@@ -89,7 +95,7 @@ export function UpdateErrorFallbackUI({ errorMessage, onReset }: UpdateErrorFall
 
   // Determine which hints to show based on error type
   const hints = useMemo(() => {
-    const errorMsg = errorMessage?.toLowerCase() || '';
+    const errorMsg = errorMessage?.toLowerCase() ?? '';
 
     // Check for signature-related errors
     if (

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import ReactDOM from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 
 import App from './App.tsx';
 import PendingErrorsIndicator from './components/PendingErrorsIndicator.tsx';
@@ -19,7 +19,7 @@ initGlobalErrorHandlers();
  * Storage service must be initialized before React renders,
  * as components may call getStorage() during mount.
  */
-async function initApp() {
+async function initApp(): Promise<void> {
   try {
     // Initialize storage service (detects Electron vs Web)
     await initStorage();
@@ -101,7 +101,7 @@ async function initApp() {
     return;
   }
 
-  ReactDOM.createRoot(rootElement).render(
+  createRoot(rootElement).render(
     <React.StrictMode>
       <PrivacyErrorBoundary>
         <App />
@@ -112,7 +112,9 @@ async function initApp() {
 }
 
 // Start app initialization
-initApp().catch((error) => {
+initApp().catch((error: unknown) => {
+  const errorText = error instanceof Error ? error.toString() : String(error);
+  const errorStack = error instanceof Error ? (error.stack ?? '') : '';
   console.error('[main] Fatal error during app initialization:', error);
   // Show error on screen
   const root = document.getElementById('root');
@@ -134,8 +136,8 @@ initApp().catch((error) => {
           Fatal Error
         </h1>
         <pre style="background: #1a1a1a; padding: 1rem; border-radius: 0.5rem; overflow: auto; max-width: 800px; text-align: left;">
-          ${error.toString()}
-          ${error.stack || ''}
+          ${errorText}
+          ${errorStack}
         </pre>
         <button
           onclick="window.location.reload()"
@@ -160,6 +162,7 @@ initApp().catch((error) => {
 // Use contextBridge (if available - not present in browser testing)
 if (window.ipcRenderer) {
   window.ipcRenderer.on('main-process-message', (_event, message) => {
+    // eslint-disable-next-line no-console
     console.log(message);
   });
 }

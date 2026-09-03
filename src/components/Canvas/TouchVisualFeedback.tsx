@@ -9,7 +9,9 @@
  * All feedback elements are controlled by user settings (useTouchSettingsStore).
  * Renders as a HUD overlay above the canvas.
  */
+/* eslint-disable import/no-unused-modules */
 
+import type React from 'react';
 import { useMemo } from 'react';
 
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
@@ -37,7 +39,7 @@ function TouchVisualFeedback({
   touchPoints,
   gestureMode,
   containerBounds,
-}: TouchVisualFeedbackProps) {
+}: TouchVisualFeedbackProps): React.ReactElement {
   const settings = useTouchSettingsStore();
   const shouldHideVisualFeedback = settings.desktopOnlyMode;
 
@@ -155,13 +157,13 @@ function TouchVisualFeedback({
           ))}
 
           {/* Connection line between two touch points */}
-          {touchPoints.length === 2 && (
+          {touchPoints.length === 2 && touchPoints[0] && touchPoints[1] && (
             <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
               <line
-                x1={touchPoints[0]!.x}
-                y1={touchPoints[0]!.y}
-                x2={touchPoints[1]!.x}
-                y2={touchPoints[1]!.y}
+                x1={touchPoints[0].x}
+                y1={touchPoints[0].y}
+                x2={touchPoints[1].x}
+                y2={touchPoints[1].y}
                 stroke="#6366f1"
                 strokeWidth="2"
                 strokeDasharray="5,5"
