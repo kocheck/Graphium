@@ -1,3 +1,6 @@
+/* eslint-disable no-console */
+// Console usage in this file is intentional: dev-time logging and error reporting for storage ops.
+// Production error logs (console.error/warn) remain enabled; debug logs are guarded by import.meta.env.DEV.
 import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
 
@@ -56,20 +59,21 @@ export class WebStorageService implements IStorageService {
   private async initDB(): Promise<IDBPDatabase> {
     const db = await openDB(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion, newVersion) {
-        console.log(`[WebStorageService] Upgrading DB from ${oldVersion} to ${newVersion}`);
+        import.meta.env.DEV &&
+          console.log(`[WebStorageService] Upgrading DB from ${oldVersion} to ${newVersion}`);
 
         // Token library store
         if (!db.objectStoreNames.contains('library')) {
           const libraryStore = db.createObjectStore('library', { keyPath: 'id' });
           libraryStore.createIndex('category', 'category', { unique: false });
           libraryStore.createIndex('dateAdded', 'dateAdded', { unique: false });
-          console.log('[WebStorageService] Created library object store');
+          import.meta.env.DEV && console.log('[WebStorageService] Created library object store');
         }
 
         // Auto-save store (stores latest campaign state)
         if (!db.objectStoreNames.contains('autosave')) {
           db.createObjectStore('autosave', { keyPath: 'id' });
-          console.log('[WebStorageService] Created autosave object store');
+          import.meta.env.DEV && console.log('[WebStorageService] Created autosave object store');
         }
       },
     });
@@ -94,10 +98,13 @@ export class WebStorageService implements IStorageService {
     try {
       // Serialize campaign to ZIP
       const zip = new JSZip();
-      const assetsFolder = zip.folder('assets')!;
+      const assetsFolder = zip.folder('assets');
+      if (!assetsFolder) {
+        throw new Error('Failed to create assets folder in ZIP');
+      }
 
       // Deep clone to avoid mutation
-      const campaignToSave = JSON.parse(JSON.stringify(campaign));
+      const campaignToSave = JSON.parse(JSON.stringify(campaign)) as Campaign;
 
       // Process all assets and convert URLs to blobs in ZIP
       await this.processCampaignAssets(campaignToSave, assetsFolder);
@@ -118,7 +125,7 @@ export class WebStorageService implements IStorageService {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      console.log('[WebStorageService] Campaign downloaded successfully');
+      import.meta.env.DEV && console.log('[WebStorageService] Campaign downloaded successfully');
       return true;
     } catch (error) {
       console.error('[WebStorageService] Save campaign failed:', error);
@@ -139,7 +146,7 @@ export class WebStorageService implements IStorageService {
         timestamp: Date.now(),
       });
 
-      console.log('[WebStorageService] Auto-save completed');
+      import.meta.env.DEV && console.log('[WebStorageService] Auto-save completed');
       return true;
     } catch (error) {
       console.error('[WebStorageService] Auto-save failed:', error);
@@ -162,7 +169,8 @@ export class WebStorageService implements IStorageService {
         }
 
         try {
-          console.log('[WebStorageService] Loading campaign from file:', file.name);
+          import.meta.env.DEV &&
+            console.log('[WebStorageService] Loading campaign from file:', file.name);
 
           // Parse ZIP
           const zip = await JSZip.loadAsync(file);
@@ -172,12 +180,12 @@ export class WebStorageService implements IStorageService {
             throw new Error('Invalid .graphium file: missing manifest.json');
           }
 
-          const campaign: Campaign = JSON.parse(manifestStr);
+          const campaign = JSON.parse(manifestStr) as Campaign;
 
           // Restore assets from ZIP to Object URLs
           await this.restoreCampaignAssets(campaign, zip);
 
-          console.log('[WebStorageService] Campaign loaded successfully');
+          import.meta.env.DEV && console.log('[WebStorageService] Campaign loaded successfully');
           resolve(campaign);
         } catch (error) {
           console.error('[WebStorageService] Load campaign failed:', error);
@@ -203,9 +211,10 @@ export class WebStorageService implements IStorageService {
       // Track URL for cleanup when saved to campaign or discarded
       this.tempAssetURLs.add(url);
 
-      console.log(
-        `[WebStorageService] Created temp asset: ${fileName} → ${url.substring(0, 50)}...`,
-      );
+      import.meta.env.DEV &&
+        console.log(
+          `[WebStorageService] Created temp asset: ${fileName} → ${url.substring(0, 50)}...`,
+        );
       return Promise.resolve(url);
     } catch (error) {
       console.error('[WebStorageService] Save temp asset failed:', error);
@@ -225,14 +234,16 @@ export class WebStorageService implements IStorageService {
         if (this.tempAssetURLs.has(url)) {
           URL.revokeObjectURL(url);
           this.tempAssetURLs.delete(url);
-          console.log(`[WebStorageService] Revoked temp asset URL: ${url.substring(0, 50)}...`);
+          import.meta.env.DEV &&
+            console.log(`[WebStorageService] Revoked temp asset URL: ${url.substring(0, 50)}...`);
         }
       });
     } else {
       // Clean up all temp assets
       this.tempAssetURLs.forEach((url) => {
         URL.revokeObjectURL(url);
-        console.log(`[WebStorageService] Revoked temp asset URL: ${url.substring(0, 50)}...`);
+        import.meta.env.DEV &&
+          console.log(`[WebStorageService] Revoked temp asset URL: ${url.substring(0, 50)}...`);
       });
       this.tempAssetURLs.clear();
     }
@@ -268,7 +279,8 @@ export class WebStorageService implements IStorageService {
 
       await db.put('library', item);
 
-      console.log(`[WebStorageService] Saved asset to library: ${metadata.name}`);
+      import.meta.env.DEV &&
+        console.log(`[WebStorageService] Saved asset to library: ${metadata.name}`);
       return item;
     } catch (error) {
       console.error('[WebStorageService] Save to library failed:', error);
@@ -281,13 +293,15 @@ export class WebStorageService implements IStorageService {
   async loadLibraryIndex(): Promise<TokenLibraryItem[]> {
     try {
       const db = await this.getDB();
-      const items = await db.getAll('library');
 
       // Type for stored library items (includes internal blob properties)
       interface StoredLibraryItem extends TokenLibraryItem {
         _fullSizeBlob?: Blob;
         _thumbnailBlob?: Blob;
       }
+
+      // db.getAll returns unknown[] without a typed schema; cast to known stored shape
+      const items = (await db.getAll('library')) as StoredLibraryItem[];
 
       // Revoke old URLs before creating new ones
       items.forEach((item: StoredLibraryItem) => {
@@ -300,10 +314,10 @@ export class WebStorageService implements IStorageService {
 
         // Also revoke any blob URLs that exist on the item itself (from previous sessions)
         // Only revoke if they're blob URLs (start with 'blob:')
-        if (item.src && item.src.startsWith('blob:')) {
+        if (item.src?.startsWith('blob:')) {
           URL.revokeObjectURL(item.src);
         }
-        if (item.thumbnailSrc && item.thumbnailSrc.startsWith('blob:')) {
+        if (item.thumbnailSrc?.startsWith('blob:')) {
           URL.revokeObjectURL(item.thumbnailSrc);
         }
       });
@@ -333,7 +347,8 @@ export class WebStorageService implements IStorageService {
         };
       });
 
-      console.log(`[WebStorageService] Loaded ${itemsWithURLs.length} library items`);
+      import.meta.env.DEV &&
+        console.log(`[WebStorageService] Loaded ${itemsWithURLs.length} library items`);
       return itemsWithURLs;
     } catch (error) {
       console.error('[WebStorageService] Load library failed:', error);
@@ -354,7 +369,7 @@ export class WebStorageService implements IStorageService {
       }
 
       // Get item to revoke any other URLs (fallback)
-      const item = await db.get('library', assetId);
+      const item = (await db.get('library', assetId)) as TokenLibraryItem | undefined;
       if (item) {
         if (item.src?.startsWith('blob:')) {
           URL.revokeObjectURL(item.src);
@@ -365,7 +380,7 @@ export class WebStorageService implements IStorageService {
       }
 
       await db.delete('library', assetId);
-      console.log(`[WebStorageService] Deleted library asset: ${assetId}`);
+      import.meta.env.DEV && console.log(`[WebStorageService] Deleted library asset: ${assetId}`);
     } catch (error) {
       console.error('[WebStorageService] Delete library asset failed:', error);
       throw new Error(
@@ -381,15 +396,16 @@ export class WebStorageService implements IStorageService {
     try {
       const db = await this.getDB();
 
-      const item = await db.get('library', assetId);
+      const item = (await db.get('library', assetId)) as TokenLibraryItem | undefined;
       if (!item) {
         throw new Error(`Asset ${assetId} not found in library`);
       }
 
-      const updated = { ...item, ...updates };
+      const updated: TokenLibraryItem = { ...item, ...updates };
       await db.put('library', updated);
 
-      console.log(`[WebStorageService] Updated library metadata: ${assetId}`);
+      import.meta.env.DEV &&
+        console.log(`[WebStorageService] Updated library metadata: ${assetId}`);
       return updated;
     } catch (error) {
       console.error('[WebStorageService] Update library metadata failed:', error);
@@ -414,7 +430,7 @@ export class WebStorageService implements IStorageService {
   setThemeMode(mode: ThemeMode): Promise<void> {
     try {
       localStorage.setItem('graphium-theme', mode);
-      console.log(`[WebStorageService] Set theme mode: ${mode}`);
+      import.meta.env.DEV && console.log(`[WebStorageService] Set theme mode: ${mode}`);
 
       // Broadcast theme change to other tabs (if supported)
       if (typeof BroadcastChannel !== 'undefined') {
@@ -475,8 +491,9 @@ export class WebStorageService implements IStorageService {
       }
 
       // Check if already processed
-      if (processedAssets.has(src)) {
-        return processedAssets.get(src)!;
+      const cached = processedAssets.get(src);
+      if (cached !== undefined) {
+        return cached;
       }
 
       try {
