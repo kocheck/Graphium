@@ -70,6 +70,27 @@ const MAX_ISSUE_TITLE_LENGTH = 200;
 const TITLE_ELLIPSIS_MARGIN = 10;
 
 /**
+ * Truncates a GitHub issue URL to stay within browser URL length limits.
+ */
+function truncateGitHubUrl(baseWithTitle: string, bodyPrefix: string, finalReport: string): string {
+  const allowedBodyLength = MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
+  if (allowedBodyLength <= 0) {
+    return baseWithTitle;
+  }
+  let currentLength = 0;
+  const encodedChunks: string[] = [];
+  for (const char of finalReport) {
+    const encodedChar = encodeURIComponent(char);
+    if (currentLength + encodedChar.length > allowedBodyLength) {
+      break;
+    }
+    encodedChunks.push(encodedChar);
+    currentLength += encodedChar.length;
+  }
+  return `${baseWithTitle}${bodyPrefix}${encodedChunks.join('')}`;
+}
+
+/**
  * Props for PrivacyErrorBoundary
  *
  * @property children - React components to protect with error boundary
@@ -170,7 +191,7 @@ class PrivacyErrorBoundary extends Component<Props, State> {
       // Create a combined error with component stack
       const combinedError = new Error(error.message);
       combinedError.name = error.name;
-      combinedError.stack = `${error.stack || ''}\n\nComponent Stack:${errorInfo.componentStack || ''}`;
+      combinedError.stack = `${error.stack ?? ''}\n\nComponent Stack:${errorInfo.componentStack ?? ''}`;
 
       // Sanitize the error to remove PII
       const sanitizedError = sanitizeStack(combinedError, username);
@@ -217,7 +238,7 @@ ${userContext.trim()}
       const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
       // Construct GitHub issue URL with title truncation and URL length validation
-      const rawTitle = `Bug Report: ${sanitizedError?.name || 'Error'}`;
+      const rawTitle = `Bug Report: ${sanitizedError?.name ?? 'Error'}`;
       const issueTitle =
         rawTitle.length > MAX_ISSUE_TITLE_LENGTH
           ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
@@ -236,29 +257,7 @@ ${userContext.trim()}
         const bodyPrefix = '&body=';
         const baseWithTitle = `${baseUrl}${titleParam}`;
 
-        const allowedBodyLength =
-          MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
-
-        if (allowedBodyLength > 0) {
-          // Truncate non-encoded string first, then encode to avoid breaking escape sequences
-          let currentLength = 0;
-          const encodedChunks: string[] = [];
-
-          for (const char of finalReport) {
-            const encodedChar = encodeURIComponent(char);
-            if (currentLength + encodedChar.length > allowedBodyLength) {
-              break;
-            }
-            encodedChunks.push(encodedChar);
-            currentLength += encodedChar.length;
-          }
-
-          const truncatedEncodedBody = encodedChunks.join('');
-          githubUrl = `${baseWithTitle}${bodyPrefix}${truncatedEncodedBody}`;
-        } else {
-          // In the unlikely event the base URL is already too long, drop the body entirely
-          githubUrl = baseWithTitle;
-        }
+        githubUrl = truncateGitHubUrl(baseWithTitle, bodyPrefix, finalReport);
       }
 
       // Open GitHub in browser
@@ -360,12 +359,118 @@ ${userContext.trim()}
   };
 
   /**
+   * Renders the content of the GitHub report button based on reportStatus
+   */
+  private renderReportButtonContent(): ReactNode {
+    const { reportStatus } = this.state;
+    if (reportStatus === 'opened') {
+      return (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Opened GitHub!
+        </>
+      );
+    }
+    if (reportStatus === 'error') {
+      return (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+          Failed - Try Again
+        </>
+      );
+    }
+    return (
+      <>
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+        </svg>
+        Report on GitHub
+      </>
+    );
+  }
+
+  /**
+   * Renders the content of the save-to-file button based on saveStatus
+   */
+  private renderSaveButtonContent(): ReactNode {
+    const { saveStatus } = this.state;
+    if (saveStatus === 'saved') {
+      return (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Saved!
+        </>
+      );
+    }
+    if (saveStatus === 'error') {
+      return (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+          Failed - Try Again
+        </>
+      );
+    }
+    if (saveStatus === 'saving') {
+      return (
+        <>
+          <svg
+            className="w-5 h-5 animate-spin"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Saving...
+        </>
+      );
+    }
+    return (
+      <>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+          />
+        </svg>
+        Save to File
+      </>
+    );
+  }
+
+  /**
    * Reloads the application to attempt recovery from error
    */
   handleReload = (): void => {
     window.location.reload();
   };
 
+  // eslint-disable-next-line max-lines-per-function, complexity
   override render(): ReactNode {
     const {
       hasError,
@@ -377,6 +482,28 @@ ${userContext.trim()}
       showContextInput,
     } = this.state;
     const { children } = this.props;
+
+    let reportBtnColor: string;
+    if (reportStatus === 'opened') {
+      reportBtnColor = 'bg-green-600 hover:bg-green-500';
+    } else if (reportStatus === 'error') {
+      reportBtnColor = 'bg-red-600 hover:bg-red-500';
+    } else {
+      reportBtnColor = 'bg-blue-600 hover:bg-blue-500';
+    }
+    const reportBtnClass = `flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${reportBtnColor}`;
+
+    let saveBtnColorClass: string;
+    if (saveStatus === 'saved') {
+      saveBtnColorClass = 'bg-green-600 hover:bg-green-500';
+    } else if (saveStatus === 'error') {
+      saveBtnColorClass = 'bg-red-600 hover:bg-red-500';
+    } else if (saveStatus === 'saving') {
+      saveBtnColorClass = 'bg-neutral-700 cursor-wait';
+    } else {
+      saveBtnColorClass = 'bg-neutral-600 hover:bg-neutral-500';
+    }
+    const saveBtnClass = `flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${saveBtnColorClass}`;
 
     if (hasError) {
       return (
@@ -493,141 +620,22 @@ ${userContext.trim()}
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-2">
                     <button
-                      onClick={this.handleReportOnGitHub}
-                      className={`flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${
-                        reportStatus === 'opened'
-                          ? 'bg-green-600 hover:bg-green-500'
-                          : reportStatus === 'error'
-                            ? 'bg-red-600 hover:bg-red-500'
-                            : 'bg-blue-600 hover:bg-blue-500'
-                      }`}
+                      onClick={() => {
+                        void this.handleReportOnGitHub();
+                      }}
+                      className={reportBtnClass}
                     >
-                      {reportStatus === 'opened' ? (
-                        <>
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          Opened GitHub!
-                        </>
-                      ) : reportStatus === 'error' ? (
-                        <>
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                          Failed - Try Again
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-                          </svg>
-                          Report on GitHub
-                        </>
-                      )}
+                      {this.renderReportButtonContent()}
                     </button>
 
                     <button
-                      onClick={this.handleSaveToFile}
-                      className={`flex-1 px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 ${
-                        saveStatus === 'saved'
-                          ? 'bg-green-600 hover:bg-green-500'
-                          : saveStatus === 'error'
-                            ? 'bg-red-600 hover:bg-red-500'
-                            : saveStatus === 'saving'
-                              ? 'bg-neutral-700 cursor-wait'
-                              : 'bg-neutral-600 hover:bg-neutral-500'
-                      }`}
+                      onClick={() => {
+                        void this.handleSaveToFile();
+                      }}
+                      className={saveBtnClass}
                       disabled={saveStatus === 'saving'}
                     >
-                      {saveStatus === 'saved' ? (
-                        <>
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          Saved!
-                        </>
-                      ) : saveStatus === 'error' ? (
-                        <>
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                          Failed - Try Again
-                        </>
-                      ) : saveStatus === 'saving' ? (
-                        <>
-                          <svg
-                            className="w-5 h-5 animate-spin"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                            />
-                          </svg>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                            />
-                          </svg>
-                          Save to File
-                        </>
-                      )}
+                      {this.renderSaveButtonContent()}
                     </button>
 
                     <button
