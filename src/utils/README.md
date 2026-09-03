@@ -48,6 +48,15 @@ buildGitHubIssueUrl('Bug Report: Error', reportBody); // truncated under URL lim
 
 Shared throttle used by `SyncManager` and `UpdateManager` download progress.
 
+### `worldViewTokenSync.ts`
+
+Keeps World → Architect sync scoped to token positions:
+
+- `pickTokenPositionChanges` — drops every field except finite `x`/`y`
+- `sanitizeWorldToArchitectAction` — allows `TOKEN_UPDATE` / single-level `BATCH` only
+
+Used by `SyncManager` and Electron `SYNC_FROM_WORLD_VIEW` relay.
+
 ### `AssetProcessor.ts` (48 lines)
 
 **Image optimization pipeline for uploaded assets**

@@ -11,9 +11,14 @@ import {
   isSyncSliceUnchanged,
 } from '../utils/syncUtils';
 import { throttle } from '../utils/throttle';
+import {
+  pickTokenPositionChanges,
+  sanitizeWorldToArchitectAction,
+} from '../utils/worldViewTokenSync';
 
 import type { GameState, Token } from '../store/gameStore';
 import type { SyncAction, SyncableGameState } from '../utils/syncUtils';
+import type { WorldToArchitectAction } from '../utils/worldViewTokenSync';
 
 // eslint-disable-next-line max-lines-per-function
 function SyncManager(): null {
@@ -302,14 +307,41 @@ function SyncManager(): null {
     };
 
     const applyArchitectTokenUpdate = (id: string, changes: Partial<Token>): void => {
+      const positionOnly = pickTokenPositionChanges(changes);
+      if (positionOnly.x === undefined && positionOnly.y === undefined) {
+        return;
+      }
+
       const store = useGameStore.getState();
       if (!store.tokens.some((t) => t.id === id)) {
         return;
       }
-      const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
+      const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...positionOnly } : t));
       useGameStore.setState({ tokens: newTokens });
       if (prevStateRef.current) {
         prevStateRef.current.tokens = newTokens;
+      }
+    };
+
+    const applyWorldToArchitectAction = (rawAction: unknown): void => {
+      const action = sanitizeWorldToArchitectAction(rawAction);
+      if (!action) {
+        return;
+      }
+
+      const applyOne = (
+        update: Extract<WorldToArchitectAction, { type: 'TOKEN_UPDATE' }>,
+      ): void => {
+        applyArchitectTokenUpdate(update.payload.id, update.payload.changes);
+      };
+
+      if (action.type === 'TOKEN_UPDATE') {
+        applyOne(action);
+        return;
+      }
+
+      for (const inner of action.payload) {
+        applyOne(inner);
       }
     };
 
@@ -317,16 +349,8 @@ function SyncManager(): null {
       channel.onmessage = (event: MessageEvent<{ type: string }>): void => {
         if (event.data?.type === 'REQUEST_INITIAL_STATE') {
           handleInitialStateRequest(event);
-        } else if (event.data?.type === 'TOKEN_UPDATE') {
-          const updateAction = event.data as Extract<SyncAction, { type: 'TOKEN_UPDATE' }>;
-          applyArchitectTokenUpdate(updateAction.payload.id, updateAction.payload.changes);
-        } else if (event.data?.type === 'BATCH') {
-          const batch = event.data as Extract<SyncAction, { type: 'BATCH' }>;
-          for (const inner of batch.payload) {
-            if (inner.type === 'TOKEN_UPDATE') {
-              applyArchitectTokenUpdate(inner.payload.id, inner.payload.changes);
-            }
-          }
+        } else if (event.data?.type === 'TOKEN_UPDATE' || event.data?.type === 'BATCH') {
+          applyWorldToArchitectAction(event.data);
         }
       };
     } else if (isElectron && ipcRenderer) {
@@ -363,15 +387,7 @@ function SyncManager(): null {
       ipcRenderer.on(
         'SYNC_WORLD_STATE',
         (_event: Electron.IpcRendererEvent, action: SyncAction) => {
-          if (action?.type === 'TOKEN_UPDATE') {
-            applyArchitectTokenUpdate(action.payload.id, action.payload.changes);
-          } else if (action?.type === 'BATCH') {
-            for (const inner of action.payload) {
-              if (inner.type === 'TOKEN_UPDATE') {
-                applyArchitectTokenUpdate(inner.payload.id, inner.payload.changes);
-              }
-            }
-          }
+          applyWorldToArchitectAction(action);
         },
       );
     }

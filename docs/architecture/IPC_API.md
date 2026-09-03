@@ -243,7 +243,9 @@ window.ipcRenderer.send('SYNC_FROM_WORLD_VIEW', {
 });
 ```
 
-Main relays those actions onto the Architect window as `SYNC_WORLD_STATE`. Architect applies `TOKEN_UPDATE` / nested `BATCH` token updates without treating World View as a full state publisher.
+Main validates with `sanitizeWorldToArchitectAction` (strips non-position fields, rejects
+`FULL_SYNC` / entity add-remove) before relaying onto the Architect window as
+`SYNC_WORLD_STATE`. Architect applies the same sanitizer again and merges **only** `x`/`y`.
 
 #### Real-Time Drag Sync
 
