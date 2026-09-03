@@ -41,7 +41,13 @@ import JSZip from 'jszip';
 
 import { initializeAutoUpdater, registerAutoUpdaterHandlers } from './autoUpdater.js';
 import {
-  isPathInsideOrEqual,
+  beginQuitCleanup,
+  waitForCampaignWritesIdle,
+  withCampaignWrite,
+} from './campaignWriteGate.js';
+import {
+  allocateUniqueZipBasename,
+  isRealPathInsideAllowedRoots,
   sanitizeAssetFileName,
   isValidUuid,
   mediaUrlToFilePath,
@@ -548,6 +554,7 @@ async function processAssetForZip(
   src: string,
   allowedAssetRoots: string[],
   processedAssets: Map<string, string>,
+  usedBasenames: Set<string>,
   assetsFolder: JSZip | null,
 ): Promise<string> {
   if (!src.startsWith('file://')) {
@@ -555,31 +562,36 @@ async function processAssetForZip(
   }
   const absolutePath = fileURLToPath(src);
   const resolvedAssetPath = path.resolve(absolutePath);
-  const isWithinAllowedRoots = allowedAssetRoots.some((root) =>
-    isPathInsideOrEqual(root, resolvedAssetPath),
-  );
-  if (!isWithinAllowedRoots) {
-    // Do not persist absolute paths outside the allowed asset roots.
-    return '';
-  }
-  const cached = processedAssets.get(resolvedAssetPath);
-  if (cached !== undefined) {
-    return cached;
-  }
-  const basename = path.basename(resolvedAssetPath);
+
+  let realAssetPath: string;
   try {
-    const content = await fs.readFile(resolvedAssetPath);
-    assetsFolder?.file(basename, content);
-    const relativePath = `assets/${basename}`;
-    processedAssets.set(resolvedAssetPath, relativePath);
-    return relativePath;
+    realAssetPath = await fs.realpath(resolvedAssetPath);
   } catch (error) {
     const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
     if (code === 'ENOENT') {
-      return '';
+      throw new Error(`Campaign asset file not found: ${path.basename(resolvedAssetPath)}`);
     }
     throw error;
   }
+
+  const isWithinAllowedRoots = await isRealPathInsideAllowedRoots(realAssetPath, allowedAssetRoots);
+  if (!isWithinAllowedRoots) {
+    throw new Error(
+      `Campaign asset is outside allowed directories: ${path.basename(resolvedAssetPath)}`,
+    );
+  }
+
+  const cached = processedAssets.get(realAssetPath);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const zipBasename = allocateUniqueZipBasename(realAssetPath, usedBasenames);
+  const content = await fs.readFile(realAssetPath);
+  assetsFolder?.file(zipBasename, content);
+  const relativePath = `assets/${zipBasename}`;
+  processedAssets.set(realAssetPath, relativePath);
+  return relativePath;
 }
 
 /** Serializes all campaign assets into a ZIP, replacing file:// srcs with relative paths. */
@@ -591,9 +603,10 @@ async function serializeCampaignToZip(
   const assetsFolder = zip.folder('assets');
   const campaignToSave = JSON.parse(JSON.stringify(campaign)) as SerializableCampaign;
   const processedAssets = new Map<string, string>();
+  const usedBasenames = new Set<string>();
 
   const processAsset = async (src: string): Promise<string> =>
-    processAssetForZip(src, allowedAssetRoots, processedAssets, assetsFolder);
+    processAssetForZip(src, allowedAssetRoots, processedAssets, usedBasenames, assetsFolder);
 
   await rewriteCampaignAssetSrcs(campaignToSave, processAsset, { includeThumbnails: true });
   return campaignToSave;
@@ -724,21 +737,26 @@ function registerCampaignHandlers(ctx: AppContext): void {
       if (canceled || !filePath) {
         return false;
       }
-      currentCampaignPath = filePath;
-      await writeCampaignZip(filePath, campaign, allowedMediaRoots, { atomic: false });
-      return true;
+      return withCampaignWrite(async () => {
+        currentCampaignPath = filePath;
+        await writeCampaignZip(filePath, campaign, allowedMediaRoots, { atomic: false });
+        return true;
+      });
     },
   );
 
   ipcMain.handle(
     'AUTO_SAVE',
     async (_event: IpcMainInvokeEvent, campaign: SerializableCampaign) => {
-      if (!currentCampaignPath) {
+      const targetPath = currentCampaignPath;
+      if (!targetPath) {
         return false;
       }
       try {
-        await writeCampaignZip(currentCampaignPath, campaign, allowedMediaRoots, { atomic: true });
-        return true;
+        return await withCampaignWrite(async () => {
+          await writeCampaignZip(targetPath, campaign, allowedMediaRoots, { atomic: true });
+          return true;
+        });
       } catch (err) {
         console.error('Auto-save failed:', err);
         return false;
@@ -885,6 +903,9 @@ function registerLibraryHandlers(ctx: AppContext): void {
       assetId: string,
       updates: { name?: string; category?: string; tags?: string[] },
     ) => {
+      if (!isValidUuid(assetId)) {
+        throw new Error('Invalid asset ID');
+      }
       const indexPath = path.join(libraryDir, 'index.json');
       const raw: unknown = JSON.parse(await fs.readFile(indexPath, 'utf-8'));
       if (
@@ -1016,23 +1037,26 @@ void app.whenReady().then((): void => {
    *
    * **Why this is secure:**
    * - Paths must resolve inside userData temp_assets/, sessions/, or library/
-   * - media:// URLs are normalized to file: before parsing, then sandboxed with isPathInsideOrEqual
+   * - media:// URLs are normalized to file: before parsing, then sandboxed with realpath + isPathInsideOrEqual
+   * - Symlinks that escape allowed roots are rejected
    * - Renderer cannot read arbitrary filesystem paths via directory traversal
    *
    * See CanvasManager.URLImage component for usage (src/components/Canvas/CanvasManager.tsx:47-52).
    */
-  protocol.handle('media', (request: Request) => {
+  protocol.handle('media', async (request: Request) => {
     try {
       const resolvedTargetPath = mediaUrlToFilePath(request.url);
-      const isWithinAllowedRoots = allowedMediaRoots.some((allowedRoot) =>
-        isPathInsideOrEqual(allowedRoot, resolvedTargetPath),
+      const isWithinAllowedRoots = await isRealPathInsideAllowedRoots(
+        resolvedTargetPath,
+        allowedMediaRoots,
       );
 
       if (!isWithinAllowedRoots) {
         return new Response('Forbidden media path', { status: 403 });
       }
 
-      return net.fetch(`file://${resolvedTargetPath}`);
+      const realTargetPath = await fs.realpath(resolvedTargetPath);
+      return net.fetch(`file://${realTargetPath}`);
     } catch {
       return new Response('Invalid media path', { status: 400 });
     }
@@ -1123,6 +1147,7 @@ void app.whenReady().then((): void => {
       return;
     }
     event.preventDefault();
+    beginQuitCleanup();
 
     const cleanupEntries = async (
       directory: string,
@@ -1142,6 +1167,8 @@ void app.whenReady().then((): void => {
 
     void (async (): Promise<void> => {
       try {
+        // Wait for in-flight SAVE_CAMPAIGN / AUTO_SAVE so they finish reading temp_assets.
+        await waitForCampaignWritesIdle();
         await cleanupEntries(tempAssetsDir);
         await cleanupEntries(sessionsRootDir, activeSessionDir);
       } finally {

@@ -377,7 +377,9 @@ function detectMeasurementActions(
 
 /**
  * Detects changes between previous and current state, returns delta actions.
- * A null previous state produces a single FULL_SYNC.
+ * A null previous state produces a single FULL_SYNC (first Architect→World
+ * snapshot when prev is unknown). World-open REQUEST_INITIAL_STATE sends
+ * FULL_SYNC explicitly via buildFullSyncPayload instead of this path.
  */
 export function detectChanges(
   prevState: Partial<SyncableGameState> | null,

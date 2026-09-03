@@ -319,7 +319,11 @@ function SyncManager(): null {
       const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...positionOnly } : t));
       useGameStore.setState({ tokens: newTokens });
       if (prevStateRef.current) {
-        prevStateRef.current.tokens = newTokens;
+        // Copy so prev snapshot does not alias the live store array reference.
+        prevStateRef.current = {
+          ...prevStateRef.current,
+          tokens: newTokens.map((token) => ({ ...token })),
+        };
       }
     };
 
@@ -363,6 +367,7 @@ function SyncManager(): null {
         tokenLibrary: state.campaign.tokenLibrary,
       };
 
+      // null prev → FULL_SYNC (first Architect subscribe snapshot after mount).
       const actions = detectChanges(prevStateRef.current, syncableState);
       sendCoalescedActions(actions, syncableState);
 
