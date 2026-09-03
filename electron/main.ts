@@ -341,7 +341,8 @@ function createMainWindow() {
  *
  * **State synchronization:**
  * This window is the CONSUMER. It receives state updates via the SYNC_WORLD_STATE
- * IPC channel but NEVER modifies state itself (see SyncManager.tsx:80-96).
+ * IPC channel and can emit scoped token-position updates via SYNC_FROM_WORLD_VIEW,
+ * while Architect View remains the source of truth.
  *
  * **Window detection:**
  * Loads same React app as main window but with `?type=world` query parameter.

@@ -39,7 +39,6 @@
     "electron-log": "^5.2.4",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.3.9",
-    "fs-extra": "^11.3.2",
     "idb": "^8.0.3",
     "jszip": "^3.10.1",
     "konva": "^10.0.12",
@@ -58,7 +57,6 @@
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.6.1",
-    "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
@@ -89,8 +87,7 @@
     "vite": "^6.4.1",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
-    "vitest": "^4.0.18",
-    "wait-on": "^9.0.3"
+    "vitest": "^4.0.18"
   },
   "main": "dist-electron/main.js",
   "lint-staged": {

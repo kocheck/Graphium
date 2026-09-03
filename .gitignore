@@ -32,3 +32,6 @@ dist-electron
 playwright-report
 test-results
 accessibility-violations*.json
+
+# Test coverage artifacts
+coverage/
