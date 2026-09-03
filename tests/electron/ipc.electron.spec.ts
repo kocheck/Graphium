@@ -12,13 +12,12 @@
  * - System integration
  */
 
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { launchElectron } from '../helpers/launchElectron';
 
 test.describe('Theme IPC Communication', () => {
   test('should get theme state via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -37,9 +36,7 @@ test.describe('Theme IPC Communication', () => {
   });
 
   test('should set theme mode via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -63,9 +60,7 @@ test.describe('Theme IPC Communication', () => {
   });
 
   test('should listen to theme changes via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -88,9 +83,7 @@ test.describe('Theme IPC Communication', () => {
   });
 
   test('should sync with system theme preference', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -116,9 +109,7 @@ test.describe('Theme IPC Communication', () => {
 
 test.describe('File System IPC Communication', () => {
   test('should save file via native dialog', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -138,9 +129,7 @@ test.describe('File System IPC Communication', () => {
   });
 
   test('should load file via native dialog', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -154,9 +143,7 @@ test.describe('File System IPC Communication', () => {
   });
 
   test('should handle file save errors via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -180,9 +167,7 @@ test.describe('File System IPC Communication', () => {
 
 test.describe('Native Dialog IPC', () => {
   test('should show native file picker dialog', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -196,9 +181,7 @@ test.describe('Native Dialog IPC', () => {
   });
 
   test('should show native save dialog', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -216,9 +199,7 @@ test.describe('Native Dialog IPC', () => {
   });
 
   test('should handle dialog cancellation', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -232,9 +213,7 @@ test.describe('Native Dialog IPC', () => {
 
 test.describe('Error Reporting IPC', () => {
   test('should send errors to main process via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -249,9 +228,7 @@ test.describe('Error Reporting IPC', () => {
   });
 
   test('should get username via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -267,9 +244,7 @@ test.describe('Error Reporting IPC', () => {
   });
 
   test('should open external links via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -284,9 +259,7 @@ test.describe('Error Reporting IPC', () => {
   });
 
   test('should save error report to file via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -308,9 +281,7 @@ test.describe('Error Reporting IPC', () => {
 
 test.describe('IPC Security', () => {
   test('should not expose Node.js APIs directly to renderer', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -334,9 +305,7 @@ test.describe('IPC Security', () => {
   });
 
   test('should only expose whitelisted IPC channels', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -360,9 +329,7 @@ test.describe('IPC Security', () => {
 
 test.describe('IPC Performance', () => {
   test('should handle rapid IPC calls without blocking', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -385,9 +352,7 @@ test.describe('IPC Performance', () => {
   });
 
   test('should handle large data transfer via IPC', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -424,9 +389,7 @@ test.describe('IPC Performance', () => {
 
 test.describe('IPC Error Handling', () => {
   test('should handle IPC timeout', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -437,9 +400,7 @@ test.describe('IPC Error Handling', () => {
   });
 
   test('should handle IPC main process crash gracefully', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -452,9 +413,7 @@ test.describe('IPC Error Handling', () => {
   });
 
   test('should retry failed IPC calls', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 

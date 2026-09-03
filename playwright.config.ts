@@ -60,7 +60,7 @@ export default defineConfig({
 
       // Run all web functional tests (excludes Electron-specific)
       testMatch: /.*\.spec\.ts/,
-      testIgnore: /.*\.electron\.spec\.ts/,
+      testIgnore: [/.*\.electron\.spec\.ts/, /tests\/unit\//, /tests\/integration\//],
     },
 
     // ===== PROJECT 2: Electron-App (Integration Testing) =====

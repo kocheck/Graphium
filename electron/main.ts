@@ -40,6 +40,7 @@ import Store from 'electron-store';
 import JSZip from 'jszip';
 
 import { initializeAutoUpdater, registerAutoUpdaterHandlers } from './autoUpdater.js';
+import { isPathInside, sanitizeAssetFileName, isValidUuid } from './pathSecurity.js';
 import {
   initializeThemeManager,
   getThemeState,
@@ -103,6 +104,7 @@ let worldWindow: BrowserWindow | null;
 
 // Global pause state - persists across map changes
 let isGamePaused = false;
+let activeSessionDir: string | null = null;
 
 /**
  * Build application menu with theme options
@@ -453,6 +455,13 @@ if (!gotTheLock) {
  * - Main window creation
  */
 void app.whenReady().then(() => {
+  const userDataPath = app.getPath('userData');
+  const tempAssetsDir = path.join(userDataPath, 'temp_assets');
+  const sessionsRootDir = path.join(userDataPath, 'sessions');
+  const libraryDir = path.join(userDataPath, 'library');
+  const libraryAssetsDir = path.join(libraryDir, 'assets');
+  const allowedMediaRoots = [tempAssetsDir, sessionsRootDir, libraryDir];
+
   /**
    * Custom protocol handler for media:// URLs
    *
@@ -473,7 +482,23 @@ void app.whenReady().then(() => {
    * See CanvasManager.URLImage component for usage (src/components/Canvas/CanvasManager.tsx:47-52).
    */
   protocol.handle('media', (request: Request) => {
-    return net.fetch('file://' + request.url.slice('media://'.length));
+    try {
+      const decodedTargetPath = fileURLToPath(request.url);
+      const resolvedTargetPath = path.resolve(decodedTargetPath);
+      const isWithinAllowedRoots = allowedMediaRoots.some(
+        (allowedRoot) =>
+          resolvedTargetPath === path.resolve(allowedRoot) ||
+          isPathInside(allowedRoot, resolvedTargetPath),
+      );
+
+      if (!isWithinAllowedRoots) {
+        return new Response('Forbidden media path', { status: 403 });
+      }
+
+      return net.fetch(`file://${resolvedTargetPath}`);
+    } catch {
+      return new Response('Invalid media path', { status: 400 });
+    }
   });
 
   // Initialize theme system (must be before window creation)
@@ -630,10 +655,10 @@ void app.whenReady().then(() => {
   ipcMain.handle(
     'SAVE_ASSET_TEMP',
     async (_event: IpcMainInvokeEvent, buffer: ArrayBuffer, name: string) => {
-      const tempDir = path.join(app.getPath('userData'), 'temp_assets');
-      await fs.mkdir(tempDir, { recursive: true }); // Create if doesn't exist
-      const fileName = `${Date.now()}-${name}`; // Timestamp prevents collisions
-      const filePath = path.join(tempDir, fileName);
+      await fs.mkdir(tempAssetsDir, { recursive: true }); // Create if doesn't exist
+      const safeName = sanitizeAssetFileName(name);
+      const fileName = `${Date.now()}-${safeName}`; // Timestamp prevents collisions
+      const filePath = path.join(tempAssetsDir, fileName);
       await fs.writeFile(filePath, Buffer.from(buffer));
       return `file://${filePath}`; // Return file:// URL for renderer
     },
@@ -667,18 +692,25 @@ void app.whenReady().then(() => {
       }
 
       const absolutePath = fileURLToPath(src);
-
-      // If already processed, return the existing relative path
-      if (processedAssets.has(absolutePath)) {
-        return processedAssets.get(absolutePath)!;
+      const resolvedAssetPath = path.resolve(absolutePath);
+      const isWithinUserData =
+        resolvedAssetPath === path.resolve(userDataPath) ||
+        isPathInside(userDataPath, resolvedAssetPath);
+      if (!isWithinUserData) {
+        return src;
       }
 
-      const basename = path.basename(absolutePath);
-      const content = await fs.readFile(absolutePath).catch(() => null);
+      // If already processed, return the existing relative path
+      if (processedAssets.has(resolvedAssetPath)) {
+        return processedAssets.get(resolvedAssetPath)!;
+      }
+
+      const basename = path.basename(resolvedAssetPath);
+      const content = await fs.readFile(resolvedAssetPath).catch(() => null);
       if (content) {
         assetsFolder?.file(basename, content);
         const relativePath = `assets/${basename}`;
-        processedAssets.set(absolutePath, relativePath);
+        processedAssets.set(resolvedAssetPath, relativePath);
         return relativePath;
       }
       return src; // Keep original if read fails
@@ -805,7 +837,8 @@ void app.whenReady().then(() => {
     const zip = await JSZip.loadAsync(zipContent);
 
     // Create unique session directory
-    const sessionDir = path.join(app.getPath('userData'), 'sessions', Date.now().toString());
+    const sessionDir = path.join(sessionsRootDir, Date.now().toString());
+    activeSessionDir = sessionDir;
     await fs.mkdir(sessionDir, { recursive: true });
 
     // Extract manifest
@@ -1054,21 +1087,20 @@ void app.whenReady().then(() => {
         };
       },
     ) => {
-      const libraryPath = path.join(app.getPath('userData'), 'library', 'assets');
-      await fs.mkdir(libraryPath, { recursive: true });
+      await fs.mkdir(libraryAssetsDir, { recursive: true });
 
       // Save full-size image
       const filename = `${metadata.id}.webp`;
-      const fullPath = path.join(libraryPath, filename);
+      const fullPath = path.join(libraryAssetsDir, filename);
       await fs.writeFile(fullPath, Buffer.from(fullSizeBuffer));
 
       // Save thumbnail
       const thumbFilename = `thumb-${metadata.id}.webp`;
-      const thumbPath = path.join(libraryPath, thumbFilename);
+      const thumbPath = path.join(libraryAssetsDir, thumbFilename);
       await fs.writeFile(thumbPath, Buffer.from(thumbnailBuffer));
 
       // Update index.json
-      const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+      const indexPath = path.join(libraryDir, 'index.json');
       let index: { items: unknown[] } = { items: [] };
 
       try {
@@ -1107,7 +1139,7 @@ void app.whenReady().then(() => {
    * @returns Array of TokenLibraryItem objects
    */
   ipcMain.handle('LOAD_LIBRARY_INDEX', async () => {
-    const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+    const indexPath = path.join(libraryDir, 'index.json');
 
     try {
       const data = await fs.readFile(indexPath, 'utf-8');
@@ -1136,21 +1168,23 @@ void app.whenReady().then(() => {
    * @returns true if successful
    */
   ipcMain.handle('DELETE_LIBRARY_ASSET', async (_event: IpcMainInvokeEvent, assetId: string) => {
-    const libraryPath = path.join(app.getPath('userData'), 'library', 'assets');
+    if (!isValidUuid(assetId)) {
+      throw new Error('Invalid asset ID');
+    }
 
     try {
       // Delete full-size image
-      await fs.unlink(path.join(libraryPath, `${assetId}.webp`));
+      await fs.unlink(path.join(libraryAssetsDir, `${assetId}.webp`));
 
       // Delete thumbnail
-      await fs.unlink(path.join(libraryPath, `thumb-${assetId}.webp`));
+      await fs.unlink(path.join(libraryAssetsDir, `thumb-${assetId}.webp`));
     } catch (err) {
       console.error('[MAIN] Failed to delete library asset files:', err);
       // Continue to update index even if files don't exist
     }
 
     // Update index.json
-    const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+    const indexPath = path.join(libraryDir, 'index.json');
 
     try {
       const data = await fs.readFile(indexPath, 'utf-8');
@@ -1189,7 +1223,7 @@ void app.whenReady().then(() => {
       assetId: string,
       updates: { name?: string; category?: string; tags?: string[] },
     ) => {
-      const indexPath = path.join(app.getPath('userData'), 'library', 'index.json');
+      const indexPath = path.join(libraryDir, 'index.json');
 
       const data = await fs.readFile(indexPath, 'utf-8');
       const index = JSON.parse(data);
@@ -1279,5 +1313,26 @@ void app.whenReady().then(() => {
         reason: error instanceof Error ? error.message : 'Unknown error',
       };
     }
+  });
+
+  app.on('before-quit', () => {
+    const cleanupEntries = async (
+      directory: string,
+      keepDirectory: string | null = null,
+    ): Promise<void> => {
+      const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
+      await Promise.all(
+        entries.map(async (entry) => {
+          const entryPath = path.join(directory, entry.name);
+          if (keepDirectory && path.resolve(entryPath) === path.resolve(keepDirectory)) {
+            return;
+          }
+          await fs.rm(entryPath, { recursive: true, force: true });
+        }),
+      );
+    };
+
+    void cleanupEntries(tempAssetsDir);
+    void cleanupEntries(sessionsRootDir, activeSessionDir);
   });
 });
