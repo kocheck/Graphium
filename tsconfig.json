@@ -31,7 +31,7 @@
     "exactOptionalPropertyTypes": false,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "electron", "diagnose-dungeon.ts"],
+  "include": ["src", "electron"],
   "exclude": [
     "node_modules",
     "dist",
