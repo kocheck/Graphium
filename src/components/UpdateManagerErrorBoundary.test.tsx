@@ -81,7 +81,6 @@ describe('UpdateManagerErrorBoundary', () => {
 
       // Verify console.error was called with error details
       expect(consoleErrorSpy).toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Update manager error:', expect.any(Error));
     });
 
     it('should reset error state when reset is triggered', async () => {

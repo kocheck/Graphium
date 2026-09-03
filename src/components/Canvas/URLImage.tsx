@@ -3,6 +3,8 @@ import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 
+import { toMediaProtocol } from '../../utils/mediaProtocol';
+
 import type Konva from 'konva';
 import type { KonvaEventObject, Filter } from 'konva/lib/Node';
 
@@ -68,7 +70,7 @@ const URLImage = forwardRef<Konva.Image, URLImageProps>(
     },
     ref,
   ) => {
-    const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
+    const safeSrc = toMediaProtocol(src);
     const [img] = useImage(safeSrc);
     const imageRef = useRef<Konva.Image>(null);
 

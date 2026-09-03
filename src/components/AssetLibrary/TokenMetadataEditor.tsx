@@ -38,6 +38,7 @@ import { RiCloseLine } from '@remixicon/react';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { toMediaProtocol } from '../../utils/mediaProtocol';
 import { rollForMessage } from '../../utils/systemMessages';
 
 /**
@@ -189,7 +190,7 @@ function TokenMetadataEditor({
           {/* Preview */}
           <div className="flex items-center gap-4 p-4 bg-neutral-800 rounded-lg">
             <img
-              src={libraryItem.thumbnailSrc.replace('file:', 'media:')}
+              src={toMediaProtocol(libraryItem.thumbnailSrc)}
               alt={libraryItem.name}
               className="w-20 h-20 object-cover rounded"
             />

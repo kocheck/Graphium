@@ -23,6 +23,7 @@ import { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { toMediaProtocol } from '../../utils/mediaProtocol';
 import { rollForMessage } from '../../utils/systemMessages';
 
 interface AddToLibraryDialogProps {
@@ -205,7 +206,7 @@ function AddToLibraryDialog({
           {imageSrc && (
             <div className="flex justify-center">
               <img
-                src={imageSrc.replace('file:', 'media:')}
+                src={toMediaProtocol(imageSrc)}
                 alt="Preview"
                 className="w-32 h-32 object-cover rounded bg-neutral-800"
               />

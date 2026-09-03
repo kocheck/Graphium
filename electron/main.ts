@@ -47,6 +47,7 @@ import {
   setThemeMode,
   type ThemeMode,
 } from './themeManager.js';
+import { rewriteCampaignAssetSrcs } from '../src/utils/campaignAssets.js';
 
 import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 
@@ -105,6 +106,7 @@ let worldWindow: BrowserWindow | null;
 // Global pause state - persists across map changes
 let isGamePaused = false;
 let activeSessionDir: string | null = null;
+let pendingOpenFile: string | undefined;
 
 /**
  * Build application menu with theme options
@@ -307,15 +309,23 @@ function createMainWindow(): void {
     },
   });
 
-  // Save window bounds on resize/move
   const saveBounds = (): void => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       store.set('windowBounds', mainWindow.getBounds());
     }
   };
 
-  mainWindow.on('resize', saveBounds);
-  mainWindow.on('move', saveBounds);
+  let boundsTimer: ReturnType<typeof setTimeout> | undefined;
+  const debouncedSaveBounds = (): void => {
+    if (boundsTimer) {
+      clearTimeout(boundsTimer);
+    }
+    boundsTimer = setTimeout(saveBounds, 400);
+  };
+
+  mainWindow.on('resize', debouncedSaveBounds);
+  mainWindow.on('move', debouncedSaveBounds);
+  mainWindow.on('close', saveBounds);
 
   // Legacy template diagnostic event; keep it development-only to reduce noise.
   if (process.env['NODE_ENV'] === 'development') {
@@ -424,7 +434,7 @@ app.on('open-file', (_event, path) => {
     // For simplicity, we'll let the standard startup flow handle it if it captures it,
     // or just rely on the user re-opening if it was a cold start from file
     // Actually, capturing it here for cold start:
-    (global as unknown as { openedFile?: string }).openedFile = path;
+    pendingOpenFile = path;
   }
 });
 
@@ -548,14 +558,19 @@ async function processAssetForZip(
     return cached;
   }
   const basename = path.basename(resolvedAssetPath);
-  const content = await fs.readFile(resolvedAssetPath).catch(() => null);
-  if (content) {
+  try {
+    const content = await fs.readFile(resolvedAssetPath);
     assetsFolder?.file(basename, content);
     const relativePath = `assets/${basename}`;
     processedAssets.set(resolvedAssetPath, relativePath);
     return relativePath;
+  } catch (error) {
+    const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+    if (code === 'ENOENT') {
+      return src;
+    }
+    throw error;
   }
-  return src;
 }
 
 /** Serializes all campaign assets into a ZIP, replacing file:// srcs with relative paths. */
@@ -571,28 +586,27 @@ async function serializeCampaignToZip(
   const processAsset = async (src: string): Promise<string> =>
     processAssetForZip(src, userDataPath, processedAssets, assetsFolder);
 
-  if (campaignToSave.maps) {
-    for (const mapId in campaignToSave.maps) {
-      const map = campaignToSave.maps[mapId];
-      if (!map) {
-        continue;
-      }
-      if (map.map?.src) {
-        map.map.src = await processAsset(map.map.src);
-      }
-      if (map.tokens) {
-        for (const token of map.tokens) {
-          token.src = await processAsset(token.src);
-        }
-      }
-    }
-  }
-  if (campaignToSave.tokenLibrary) {
-    for (const item of campaignToSave.tokenLibrary) {
-      item.src = await processAsset(item.src);
-    }
-  }
+  await rewriteCampaignAssetSrcs(campaignToSave, processAsset, { includeThumbnails: true });
   return campaignToSave;
+}
+
+async function writeCampaignZip(
+  filePath: string,
+  campaign: SerializableCampaign,
+  userDataPath: string,
+  options: { atomic: boolean },
+): Promise<void> {
+  const zip = new JSZip();
+  const campaignToSave = await serializeCampaignToZip(campaign, zip, userDataPath);
+  zip.file('manifest.json', JSON.stringify(campaignToSave));
+  const content = await zip.generateAsync({ type: 'nodebuffer' });
+  if (options.atomic) {
+    const tempPath = `${filePath}.tmp`;
+    await fs.writeFile(tempPath, content);
+    await fs.rename(tempPath, filePath);
+    return;
+  }
+  await fs.writeFile(filePath, content);
 }
 
 /** Migrates a legacy single-map GameState to the modern Campaign structure. */
@@ -648,25 +662,7 @@ async function restoreCampaignAssets(
     return src;
   };
 
-  for (const mapId in campaign.maps) {
-    const map = campaign.maps[mapId];
-    if (!map) {
-      continue;
-    }
-    if (map.map?.src) {
-      map.map.src = await restoreAsset(map.map.src);
-    }
-    if (map.tokens) {
-      for (const token of map.tokens) {
-        token.src = await restoreAsset(token.src);
-      }
-    }
-  }
-  if (campaign.tokenLibrary) {
-    for (const item of campaign.tokenLibrary) {
-      item.src = await restoreAsset(item.src);
-    }
-  }
+  await rewriteCampaignAssetSrcs(campaign, restoreAsset, { includeThumbnails: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -713,18 +709,14 @@ function registerCampaignHandlers(ctx: AppContext): void {
   ipcMain.handle(
     'SAVE_CAMPAIGN',
     async (_event: IpcMainInvokeEvent, campaign: SerializableCampaign) => {
-      const { filePath } = await dialog.showSaveDialog({
+      const { canceled, filePath } = await dialog.showSaveDialog({
         filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }],
       });
-      if (!filePath) {
+      if (canceled || !filePath) {
         return false;
       }
       currentCampaignPath = filePath;
-      const zip = new JSZip();
-      const campaignToSave = await serializeCampaignToZip(campaign, zip, userDataPath);
-      zip.file('manifest.json', JSON.stringify(campaignToSave));
-      const content = await zip.generateAsync({ type: 'nodebuffer' });
-      await fs.writeFile(filePath, content);
+      await writeCampaignZip(filePath, campaign, userDataPath, { atomic: false });
       return true;
     },
   );
@@ -736,13 +728,7 @@ function registerCampaignHandlers(ctx: AppContext): void {
         return false;
       }
       try {
-        const zip = new JSZip();
-        const campaignToSave = await serializeCampaignToZip(campaign, zip, userDataPath);
-        zip.file('manifest.json', JSON.stringify(campaignToSave));
-        const content = await zip.generateAsync({ type: 'nodebuffer' });
-        const tempPath = currentCampaignPath + '.tmp';
-        await fs.writeFile(tempPath, content);
-        await fs.rename(tempPath, currentCampaignPath);
+        await writeCampaignZip(currentCampaignPath, campaign, userDataPath, { atomic: true });
         return true;
       } catch (err) {
         console.error('Auto-save failed:', err);
@@ -1056,9 +1042,9 @@ void app.whenReady().then((): void => {
   initializeAutoUpdater(mainWindow);
 
   // Check for cold-start file open (macOS)
-  const globalWithFile = global as unknown as { openedFile?: string };
-  if (globalWithFile.openedFile && mainWindow) {
-    const fileToOpen = globalWithFile.openedFile;
+  if (pendingOpenFile && mainWindow) {
+    const fileToOpen = pendingOpenFile;
+    pendingOpenFile = undefined;
     mainWindow.webContents.on('did-finish-load', () => {
       mainWindow?.webContents.send('OPEN_FILE_FROM_OS', fileToOpen);
     });
