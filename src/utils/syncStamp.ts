@@ -4,7 +4,7 @@ import type { Token } from '../store/gameStore';
 type StampFn = (id: string, x: number, y: number) => void;
 
 let stampArchitectPrev: StampFn | null = null;
-let inboundApplyDepth = 0;
+let inboundApply = false;
 
 export function registerArchitectPrevStamper(fn: StampFn | null): void {
   stampArchitectPrev = fn;
@@ -29,13 +29,13 @@ export function stampTokenPositionsOnSnapshot(
 }
 
 export function beginInboundApply(): void {
-  inboundApplyDepth += 1;
+  inboundApply = true;
 }
 
 export function endInboundApply(): void {
-  inboundApplyDepth = Math.max(0, inboundApplyDepth - 1);
+  inboundApply = false;
 }
 
 export function isInboundApply(): boolean {
-  return inboundApplyDepth > 0;
+  return inboundApply;
 }

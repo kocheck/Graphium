@@ -3,9 +3,15 @@ import { memo, useMemo, useEffect, useRef } from 'react';
 import { Shape, Group } from 'react-konva';
 import { useShallow } from 'zustand/shallow';
 
-import { resolveTokenData } from '../../hooks/useTokenData';
+import {
+  indexTokenLibrary,
+  peekTokenScale,
+  peekTokenType,
+  peekVisionRadius,
+} from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
 import { useVisionStore } from '../../store/visionStore';
+import { computeHiddenNpcIds, getFogBounds } from '../../utils/fogVisibility';
 import { recordFowRecalc } from '../../utils/perfCounters';
 
 import type { Door, MapConfig } from '../../store/gameStore';
@@ -114,14 +120,11 @@ function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerPro
   const wallDrawings = useGameStore(
     useShallow((s) => s.drawings.filter((drawing) => drawing.tool === 'wall')),
   );
-  const resolvedTokens = useMemo(
-    () => tokens.map((token) => resolveTokenData(token, tokenLibrary)),
-    [tokens, tokenLibrary],
-  );
+  const libraryById = useMemo(() => indexTokenLibrary(tokenLibrary), [tokenLibrary]);
 
   fogLog('[FogOfWarLayer] COMPONENT RENDERING - Start');
   fogLog('[FogOfWarLayer] Props:', {
-    tokensCount: resolvedTokens.length,
+    tokensCount: tokens.length,
     doorsCount: doors.length,
     drawingsCount: wallDrawings.length,
     hasMap: !!map,
@@ -130,7 +133,7 @@ function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerPro
   // Get explored regions and actions from store
   const exploredRegions = useGameStore((state) => state.exploredRegions);
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
-  const setVisionPolygons = useVisionStore((state) => state.setPolygons);
+  const setVision = useVisionStore((state) => state.setVision);
 
   // DIAGNOSTIC REPORT - only when explicitly enabled
   if (DEBUG_FOG) {
@@ -138,17 +141,19 @@ function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerPro
     fogLog('🔍 VISION SYSTEM DIAGNOSTIC REPORT');
     fogLog('═══════════════════════════════════════════════════════');
     fogLog('📊 TOKENS:');
-    resolvedTokens.forEach((t) => {
-      fogLog(`  - ${t.type} Token "${t.name ?? t.id.substring(0, 8)}":`, {
+    tokens.forEach((t) => {
+      fogLog(`  - ${peekTokenType(t, libraryById)} Token "${t.name ?? t.id.substring(0, 8)}":`, {
         id: t.id,
         position: `(${t.x}, ${t.y})`,
-        visionRadius: t.visionRadius ?? 'NOT SET',
-        type: t.type,
+        visionRadius: peekVisionRadius(t, libraryById) ?? 'NOT SET',
+        type: peekTokenType(t, libraryById),
       });
     });
-    fogLog(`  Total PC tokens: ${resolvedTokens.filter((t) => t.type === 'PC').length}`);
     fogLog(
-      `  PC tokens with vision: ${resolvedTokens.filter((t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0).length}`,
+      `  Total PC tokens: ${tokens.filter((t) => peekTokenType(t, libraryById) === 'PC').length}`,
+    );
+    fogLog(
+      `  PC tokens with vision: ${tokens.filter((t) => peekTokenType(t, libraryById) === 'PC' && (peekVisionRadius(t, libraryById) ?? 0) > 0).length}`,
     );
     fogLog('');
     fogLog('🚪 DOORS:');
@@ -182,25 +187,47 @@ function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerPro
     boundsKey: string;
   } | null>(null);
 
-  // Extract PC tokens with vision (memoized to prevent unnecessary recalculations)
+  // Extract PC tokens with vision (resolve only PCs — skip the NPC majority)
   const pcTokens = useMemo(() => {
-    const pcs = resolvedTokens.filter((t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0);
+    const pcs: Array<{
+      id: string;
+      x: number;
+      y: number;
+      scale: number;
+      visionRadius: number;
+    }> = [];
+    for (const token of tokens) {
+      if (peekTokenType(token, libraryById) !== 'PC') {
+        continue;
+      }
+      const visionRadius = peekVisionRadius(token, libraryById) ?? 0;
+      if (visionRadius <= 0) {
+        continue;
+      }
+      pcs.push({
+        id: token.id,
+        x: token.x,
+        y: token.y,
+        scale: peekTokenScale(token, libraryById),
+        visionRadius,
+      });
+    }
     fogLog(
       '[FogOfWarLayer] PC tokens with vision:',
       pcs.length,
       'out of',
-      resolvedTokens.length,
+      tokens.length,
       'total tokens',
     );
 
-    if (pcs.length === 0 && resolvedTokens.some((t) => t.type === 'PC')) {
+    if (pcs.length === 0 && tokens.some((t) => peekTokenType(t, libraryById) === 'PC')) {
       fogLog('[FogOfWarLayer] WARNING: PC tokens exist but NONE have vision radius set!');
       fogLog('[FogOfWarLayer] Set vision radius on PC tokens in TokenInspector (try 60ft)');
       fogLog('[FogOfWarLayer] Without vision, the entire map will be covered in fog!');
     }
 
     return pcs;
-  }, [resolvedTokens]);
+  }, [tokens, libraryById]);
 
   // CRITICAL FIX: Serialize doors to detect when door states change (isOpen toggle)
   // React's useMemo doesn't detect changes inside objects in arrays
@@ -345,8 +372,15 @@ function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerPro
   }, [pcTokens, tokenKeys, walls, gridSize, visibleBounds.width]);
 
   useEffect(() => {
-    setVisionPolygons(Array.from(visibilityCache.values()));
-  }, [visibilityCache, tokenKeys, setVisionPolygons]);
+    const polygons = Array.from(visibilityCache.values());
+    setVision(polygons, computeHiddenNpcIds(tokens, libraryById, polygons, gridSize));
+  }, [visibilityCache, tokenKeys, tokens, libraryById, gridSize, setVision]);
+
+  useEffect(() => {
+    return () => {
+      useVisionStore.getState().setVision([], new Set());
+    };
+  }, []);
 
   // Save current vision to explored regions periodically
   // Triggers when token positions change (not just when pcTokens array reference changes)
@@ -380,29 +414,9 @@ function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerPro
     }
 
     lastExploreUpdateRef.current = now;
-  }, [resolvedTokens, pcTokens, visibilityCache, addExploredRegion]);
+  }, [pcTokens, visibilityCache, addExploredRegion]);
 
-  // Calculate fog coverage area
-  // If map exists, use map bounds; otherwise use a large area covering the canvas
-  const fogBounds = useMemo(() => {
-    if (map) {
-      return {
-        x: map.x,
-        y: map.y,
-        width: map.width * map.scale,
-        height: map.height * map.scale,
-      };
-    }
-    // No map: cover a large area (10,000x10,000) centered around visible area
-    // This ensures fog covers hand-drawn maps and tokens
-    const padding = 5000;
-    return {
-      x: visibleBounds.x - padding,
-      y: visibleBounds.y - padding,
-      width: visibleBounds.width + padding * 2,
-      height: visibleBounds.height + padding * 2,
-    };
-  }, [map, visibleBounds]);
+  const fogBounds = useMemo(() => getFogBounds(map), [map]);
 
   const exploredMask = useMemo(() => {
     const boundsKey = `${fogBounds.x}:${fogBounds.y}:${fogBounds.width}:${fogBounds.height}`;

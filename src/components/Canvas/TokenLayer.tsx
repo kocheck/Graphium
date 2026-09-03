@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import type { ReactElement } from 'react';
 
 import { Group } from 'react-konva';
@@ -10,14 +10,13 @@ import { getResolvedToken } from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
 
 import type { TokenLibraryItem } from '../../store/gameStore';
+import type { ViewportBounds } from '../../utils/viewportCulling';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 interface TokenLayerProps {
   tokenLibrary: TokenLibraryItem[];
   gridSize: number;
   gridType: string;
-  isWorldView: boolean;
-  isDaylightMode: boolean;
   tool: string;
   selectedIds: string[];
   draggingTokenIds: Set<string>;
@@ -25,6 +24,7 @@ interface TokenLayerProps {
   ghostTokenIds: string[];
   showGhosts: boolean;
   textColor: string;
+  visibleBounds: ViewportBounds;
   onSelect: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string) => void;
   onHover: (tokenId: string | null) => void;
   onShowToast: (message: string, type: 'error' | 'success' | 'info') => void;
@@ -34,8 +34,6 @@ function TokenLayerComponent({
   tokenLibrary,
   gridSize,
   gridType,
-  isWorldView,
-  isDaylightMode,
   tool,
   selectedIds,
   draggingTokenIds,
@@ -43,19 +41,20 @@ function TokenLayerComponent({
   ghostTokenIds,
   showGhosts,
   textColor,
+  visibleBounds,
   onSelect,
   onHover,
   onShowToast,
 }: TokenLayerProps): ReactElement {
   const tokenIds = useGameStore(
     useShallow((s) => {
-      const ids = s.tokens.map((token) => token.id);
-      if (gridType !== 'ISOMETRIC') {
-        return ids;
-      }
-      return [...ids].sort((a, b) => (s.tokensById[a]?.y ?? 0) - (s.tokensById[b]?.y ?? 0));
+      const ids = s.tokenIds ?? [];
+      return gridType === 'ISOMETRIC'
+        ? [...ids].sort((a, b) => (s.tokensById[a]?.y ?? 0) - (s.tokensById[b]?.y ?? 0))
+        : ids;
     }),
   );
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   return (
     <Group>
@@ -90,13 +89,12 @@ function TokenLayerComponent({
           tokenLibrary={tokenLibrary}
           gridSize={gridSize}
           gridType={gridType}
-          isWorldView={isWorldView}
-          isDaylightMode={isDaylightMode}
           tool={tool}
-          isSelected={selectedIds.includes(tokenId)}
+          isSelected={selectedIdSet.has(tokenId)}
           isDragging={draggingTokenIds.has(tokenId)}
           dragPos={dragPositions.get(tokenId)}
           textColor={textColor}
+          visibleBounds={visibleBounds}
           onSelect={onSelect}
           onHover={onHover}
           onShowToast={onShowToast}

@@ -3,7 +3,12 @@ import type { ReactElement } from 'react';
 
 import Minimap from './Minimap';
 import MinimapErrorBoundary from './MinimapErrorBoundary';
-import { resolveTokenData } from '../../hooks/useTokenData';
+import {
+  DEFAULT_SCALE,
+  indexTokenLibrary,
+  peekTokenScale,
+  peekTokenType,
+} from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
 
 interface ConnectedMinimapProps {
@@ -23,10 +28,16 @@ function ConnectedMinimapComponent({
   const tokens = useGameStore((s) => s.tokens);
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
 
-  const resolved = useMemo(
-    () => tokens.map((token) => resolveTokenData(token, tokenLibrary)),
-    [tokens, tokenLibrary],
-  );
+  const minimapTokens = useMemo(() => {
+    const libraryById = indexTokenLibrary(tokenLibrary);
+    return tokens.map((token) => ({
+      id: token.id,
+      x: token.x,
+      y: token.y,
+      scale: peekTokenScale(token, libraryById) || DEFAULT_SCALE,
+      type: peekTokenType(token, libraryById),
+    }));
+  }, [tokens, tokenLibrary]);
 
   return (
     <MinimapErrorBoundary>
@@ -35,7 +46,7 @@ function ConnectedMinimapComponent({
         scale={scale}
         viewportSize={viewportSize}
         map={map}
-        tokens={resolved}
+        tokens={minimapTokens}
         onNavigate={onNavigate}
       />
     </MinimapErrorBoundary>

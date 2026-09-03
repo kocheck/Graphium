@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 
 import { rollForMessage } from '../utils/systemMessages';
-import { buildTokenIndex, patchTokenInIndex, withTokenIndex } from '../utils/tokenIndex';
+import {
+  buildTokenIndex,
+  patchTokenInIndex,
+  patchTokenPositions,
+  withTokenIndex,
+} from '../utils/tokenIndex';
 
 import type { Measurement } from '../types/measurement';
 
@@ -286,6 +291,7 @@ export interface GameState {
   // --- Active Map State (Proxied for Component Compatibility) ---
   tokens: Token[];
   tokensById: Record<string, Token>;
+  tokenIds: string[];
   drawings: Drawing[];
   doors: Door[];
   stairs: Stairs[];
@@ -337,6 +343,7 @@ export interface GameState {
   removeToken: (id: string) => void;
   removeTokens: (ids: string[]) => void;
   updateTokenPosition: (id: string, x: number, y: number) => void;
+  updateTokenPositions: (updates: Array<{ id: string; x: number; y: number }>) => void;
   updateTokenTransform: (id: string, x: number, y: number, scale: number) => void;
   updateTokenProperties: (
     id: string,
@@ -411,6 +418,7 @@ export const useGameStore = create<GameState>((set, get) => {
     // --- Initial State (Active Map) ---
     tokens: initialMap.tokens,
     tokensById: buildTokenIndex(initialMap.tokens),
+    tokenIds: initialMap.tokens.map((token) => token.id),
     drawings: initialMap.drawings,
     doors: initialMap.doors,
     stairs: initialMap.stairs,
@@ -703,6 +711,8 @@ export const useGameStore = create<GameState>((set, get) => {
       set((state) => withTokenIndex(state.tokens.filter((t) => !ids.includes(t.id)))),
     updateTokenPosition: (id: string, x: number, y: number) =>
       set((state) => patchTokenInIndex(state.tokens, state.tokensById, id, { x, y }) ?? state),
+    updateTokenPositions: (updates) =>
+      set((state) => patchTokenPositions(state.tokens, state.tokensById, updates) ?? state),
     updateTokenTransform: (id: string, x: number, y: number, scale: number) =>
       set(
         (state) => patchTokenInIndex(state.tokens, state.tokensById, id, { x, y, scale }) ?? state,

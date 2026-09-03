@@ -19,14 +19,10 @@ export function registerTokenLayer(layer: Konva.Layer | null): void {
 }
 
 export function applyTokenNodePosition(id: string, x: number, y: number): boolean {
-  const node = nodes.get(id);
-  if (!node) {
+  if (!nodes.has(id)) {
     return false;
   }
-  const offset = isometricOffsets.get(id) ?? 0;
-  node.x(x);
-  node.y(y + offset);
-  tokenLayer?.batchDraw();
+  applyTokenNodePositions([{ id, x, y }]);
   return true;
 }
 

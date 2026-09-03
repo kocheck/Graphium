@@ -110,7 +110,7 @@ interface CanvasManagerProps {
  * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
  * @see {@link file://../../App.tsx App.tsx} for UI sanitization
  */
-// eslint-disable-next-line max-lines-per-function, complexity
+// eslint-disable-next-line max-lines-per-function
 function CanvasManager({
   tool = 'select',
   color = '#df4b26',
@@ -332,7 +332,6 @@ function CanvasManager({
     draggingTokenIds,
     itemsForDuplication,
     setItemsForDuplication,
-    snapPreviewPositionsRef,
     tokenLayerRef,
     isDragging: isDraggingToken,
   } = useTokenDrag({
@@ -1007,6 +1006,9 @@ function CanvasManager({
   };
 
   useEffect(() => {
+    if (!useGameStore.getState().showResourceMonitor) {
+      return;
+    }
     const start = performance.now();
     const frame = requestAnimationFrame(() => {
       recordCanvasCommit(performance.now() - start);
@@ -1323,8 +1325,6 @@ function CanvasManager({
             tokenLibrary={tokenLibrary}
             gridSize={gridSize}
             gridType={gridType}
-            isWorldView={isWorldView}
-            isDaylightMode={isDaylightMode}
             tool={tool}
             selectedIds={selectedIds}
             draggingTokenIds={draggingTokenIds}
@@ -1332,6 +1332,7 @@ function CanvasManager({
             ghostTokenIds={itemsForDuplication}
             showGhosts={isAltPressed}
             textColor={textColor}
+            visibleBounds={visibleBounds}
             onSelect={handleTokenPointerDown}
             onHover={setHoveredTokenId}
             onShowToast={showToast}
@@ -1343,8 +1344,6 @@ function CanvasManager({
             doorOrientation={doorOrientation}
             gridSize={gridSize}
             gridType={gridType}
-            isDraggingToken={isDraggingToken}
-            snapPreviewPositionsRef={snapPreviewPositionsRef}
             selectedIds={selectedIds}
             isMKeyPressed={isMKeyPressed}
             dragPositionsRef={dragPositionsRef}

@@ -9,10 +9,12 @@ import { resolveTokenData } from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
 import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { useVisionStore } from '../../store/visionStore';
-import { isRectInAnyPolygon } from '../../types/geometry';
 import { registerTokenNode } from '../../utils/tokenNodeRegistry';
+import { isTokenInViewport } from '../../utils/viewportCulling';
 
+import type { URLImageProps } from './URLImage';
 import type { TokenLibraryItem } from '../../store/gameStore';
+import type { ViewportBounds } from '../../utils/viewportCulling';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 interface TokenNodeProps {
@@ -20,65 +22,84 @@ interface TokenNodeProps {
   tokenLibrary: TokenLibraryItem[];
   gridSize: number;
   gridType: string;
-  isWorldView: boolean;
-  isDaylightMode: boolean;
   tool: string;
   isSelected: boolean;
   isDragging: boolean;
   dragPos: { x: number; y: number } | undefined;
   textColor: string;
+  visibleBounds: ViewportBounds;
   onSelect: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string) => void;
   onHover: (tokenId: string | null) => void;
   onShowToast: (message: string, type: 'error' | 'success' | 'info') => void;
 }
 
-function isNpcHiddenByFog(args: {
-  isWorldView: boolean;
-  isDaylightMode: boolean;
-  type: string | undefined;
-  displayX: number;
-  displayY: number;
-  size: number;
-  visionPolygons: Array<Array<{ x: number; y: number }>>;
-}): boolean {
-  if (!args.isWorldView || args.isDaylightMode || args.type !== 'NPC') {
-    return false;
-  }
-  return !isRectInAnyPolygon(
-    args.displayX,
-    args.displayY,
-    args.size,
-    args.size,
-    args.visionPolygons,
-  );
-}
+const TOKEN_VISUAL_IDLE: Pick<URLImageProps, 'shadowForStrokeEnabled' | 'scaleX' | 'scaleY'> = {
+  shadowForStrokeEnabled: false,
+  scaleX: 1,
+  scaleY: 1,
+};
 
-function tokenVisualProps(isDragging: boolean, isHovered: boolean): Record<string, unknown> {
-  const base = { shadowForStrokeEnabled: false };
+const TOKEN_VISUAL_DRAGGING: Pick<
+  URLImageProps,
+  | 'shadowForStrokeEnabled'
+  | 'opacity'
+  | 'scaleX'
+  | 'scaleY'
+  | 'shadowColor'
+  | 'shadowBlur'
+  | 'shadowOffsetX'
+  | 'shadowOffsetY'
+> = {
+  shadowForStrokeEnabled: false,
+  opacity: 0.5,
+  scaleX: 1.05,
+  scaleY: 1.05,
+  shadowColor: 'rgba(0, 0, 0, 0.6)',
+  shadowBlur: 20,
+  shadowOffsetX: 5,
+  shadowOffsetY: 5,
+};
+
+const TOKEN_VISUAL_HOVERED: Pick<
+  URLImageProps,
+  | 'shadowForStrokeEnabled'
+  | 'scaleX'
+  | 'scaleY'
+  | 'shadowColor'
+  | 'shadowBlur'
+  | 'shadowOffsetX'
+  | 'shadowOffsetY'
+> = {
+  shadowForStrokeEnabled: false,
+  scaleX: 1.02,
+  scaleY: 1.02,
+  shadowColor: 'rgba(0, 0, 0, 0.4)',
+  shadowBlur: 12,
+  shadowOffsetX: 2,
+  shadowOffsetY: 2,
+};
+
+function tokenVisualProps(
+  isDragging: boolean,
+  isHovered: boolean,
+): Pick<
+  URLImageProps,
+  | 'shadowForStrokeEnabled'
+  | 'opacity'
+  | 'scaleX'
+  | 'scaleY'
+  | 'shadowColor'
+  | 'shadowBlur'
+  | 'shadowOffsetX'
+  | 'shadowOffsetY'
+> {
   if (isDragging) {
-    return {
-      ...base,
-      opacity: 0.5,
-      scaleX: 1.05,
-      scaleY: 1.05,
-      shadowColor: 'rgba(0, 0, 0, 0.6)',
-      shadowBlur: 20,
-      shadowOffsetX: 5,
-      shadowOffsetY: 5,
-    };
+    return TOKEN_VISUAL_DRAGGING;
   }
   if (isHovered) {
-    return {
-      ...base,
-      scaleX: 1.02,
-      scaleY: 1.02,
-      shadowColor: 'rgba(0, 0, 0, 0.4)',
-      shadowBlur: 12,
-      shadowOffsetX: 2,
-      shadowOffsetY: 2,
-    };
+    return TOKEN_VISUAL_HOVERED;
   }
-  return { ...base, scaleX: 1, scaleY: 1 };
+  return TOKEN_VISUAL_IDLE;
 }
 
 function TokenNodeComponent({
@@ -86,20 +107,19 @@ function TokenNodeComponent({
   tokenLibrary,
   gridSize,
   gridType,
-  isWorldView,
-  isDaylightMode,
   tool,
   isSelected,
   isDragging,
   dragPos,
   textColor,
+  visibleBounds,
   onSelect,
   onHover,
   onShowToast,
 }: TokenNodeProps): ReactElement | null {
   const token = useGameStore((s) => s.tokensById[tokenId]);
   const isHovered = usePointerOverlayStore((s) => s.hoveredTokenId === tokenId);
-  const visionPolygons = useVisionStore((s) => s.polygons);
+  const hiddenByFog = useVisionStore((s) => s.hiddenTokenIds.has(tokenId));
 
   const resolved = useMemo(
     () => (token ? resolveTokenData(token, tokenLibrary) : null),
@@ -113,20 +133,18 @@ function TokenNodeComponent({
   const displayX = dragPos ? dragPos.x : resolved.x;
   const displayY = dragPos ? dragPos.y : resolved.y;
   const safeScale = resolved.scale || 1;
-  const tokenHeight = gridSize * safeScale;
+  const tokenSize = gridSize * safeScale;
+  const tokenHeight = tokenSize;
   const displayYOffset = gridType === 'ISOMETRIC' ? -(tokenHeight / 2) : 0;
   const finalDisplayY = displayY + displayYOffset;
 
+  if (hiddenByFog) {
+    return null;
+  }
+
   if (
-    isNpcHiddenByFog({
-      isWorldView,
-      isDaylightMode,
-      type: resolved.type,
-      displayX,
-      displayY,
-      size: gridSize * safeScale,
-      visionPolygons,
-    })
+    !isDragging &&
+    !isTokenInViewport(displayX, displayY, tokenSize, visibleBounds, gridSize * 2)
   ) {
     return null;
   }
@@ -145,7 +163,7 @@ function TokenNodeComponent({
           src={resolved.src}
           x={displayX}
           y={finalDisplayY}
-          width={gridSize * safeScale}
+          width={tokenSize}
           height={tokenHeight}
           draggable={false}
           listening
@@ -157,9 +175,9 @@ function TokenNodeComponent({
         />
         {isSelected && !isDragging && (
           <Circle
-            x={displayX + (gridSize * safeScale) / 2}
-            y={finalDisplayY + (gridSize * safeScale) / 2}
-            radius={(gridSize * safeScale) / 2 + 2}
+            x={displayX + tokenSize / 2}
+            y={finalDisplayY + tokenSize / 2}
+            radius={tokenSize / 2 + 2}
             stroke="#2563eb"
             strokeWidth={3}
             shadowColor="#2563eb"
@@ -180,9 +198,9 @@ function TokenNodeComponent({
           fontStyle="bold"
           align="center"
           verticalAlign="middle"
-          width={gridSize * safeScale * 2}
-          x={displayX - (gridSize * safeScale) / 2}
-          y={displayY + gridSize * safeScale + 8}
+          width={tokenSize * 2}
+          x={displayX - tokenSize / 2}
+          y={displayY + tokenSize + 8}
           listening={false}
           perfectDrawEnabled={false}
         />

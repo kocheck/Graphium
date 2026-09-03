@@ -7,11 +7,7 @@ import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 // eslint-disable-next-line import/no-named-as-default
 import MeasurementOverlay from './MeasurementOverlay';
 import MovementRangeOverlay from './MovementRangeOverlay';
-import {
-  DEFAULT_MOVEMENT_SPEED,
-  getResolvedToken,
-  resolveTokenData,
-} from '../../hooks/useTokenData';
+import { DEFAULT_MOVEMENT_SPEED, resolveTokenData } from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
 import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { createGridGeometry } from '../../utils/gridGeometry';
@@ -53,19 +49,13 @@ function DoorPreviewOverlay({
 }
 
 interface SnapPreviewOverlayProps {
-  isDraggingToken: boolean;
-  snapPreviewPositionsRef: MutableRefObject<Map<string, { x: number; y: number }>>;
   gridSize: number;
   gridType: GridType;
 }
 
-function SnapPreviewOverlay({
-  isDraggingToken,
-  snapPreviewPositionsRef,
-  gridSize,
-  gridType,
-}: SnapPreviewOverlayProps): ReactElement | null {
-  if (!isDraggingToken) {
+function SnapPreviewOverlay({ gridSize, gridType }: SnapPreviewOverlayProps): ReactElement | null {
+  const snapPreviews = usePointerOverlayStore((s) => s.snapPreviews);
+  if (snapPreviews.length === 0) {
     return null;
   }
 
@@ -73,16 +63,15 @@ function SnapPreviewOverlay({
 
   return (
     <Group listening={false}>
-      {Array.from(snapPreviewPositionsRef.current.entries()).map(([tokenId, snapPos]) => {
-        const token = getResolvedToken(tokenId);
-        if (!token) {
-          return null;
-        }
-        const size = gridSize * token.scale;
-        const snapCell = geometry.pixelToGrid(snapPos.x + size / 2, snapPos.y + size / 2, gridSize);
+      {snapPreviews.map((preview) => {
+        const snapCell = geometry.pixelToGrid(
+          preview.x + preview.size / 2,
+          preview.y + preview.size / 2,
+          gridSize,
+        );
         const cellPoints = geometry.getCellVertices(snapCell, gridSize).flatMap((v) => [v.x, v.y]);
         return (
-          <Group key={`snap-preview-${tokenId}`}>
+          <Group key={`snap-preview-${preview.id}`}>
             <Line
               points={cellPoints}
               stroke="rgba(37, 99, 235, 0.6)"
@@ -153,8 +142,6 @@ interface OverlayLayerProps {
   doorOrientation: 'horizontal' | 'vertical';
   gridSize: number;
   gridType: GridType;
-  isDraggingToken: boolean;
-  snapPreviewPositionsRef: MutableRefObject<Map<string, { x: number; y: number }>>;
   selectedIds: string[];
   isMKeyPressed: boolean;
   dragPositionsRef: MutableRefObject<Map<string, { x: number; y: number }>>;
@@ -171,8 +158,6 @@ function OverlayLayerComponent({
   doorOrientation,
   gridSize,
   gridType,
-  isDraggingToken,
-  snapPreviewPositionsRef,
   selectedIds,
   isMKeyPressed,
   dragPositionsRef,
@@ -190,12 +175,7 @@ function OverlayLayerComponent({
         doorOrientation={doorOrientation}
         gridSize={gridSize}
       />
-      <SnapPreviewOverlay
-        isDraggingToken={isDraggingToken}
-        snapPreviewPositionsRef={snapPreviewPositionsRef}
-        gridSize={gridSize}
-        gridType={gridType}
-      />
+      <SnapPreviewOverlay gridSize={gridSize} gridType={gridType} />
       <IsolatedMovementRange
         selectedIds={selectedIds}
         isMKeyPressed={isMKeyPressed}

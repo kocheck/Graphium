@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useTokenData, resolveTokenData, ResolvedTokenData } from './useTokenData';
+import {
+  useTokenData,
+  resolveTokenData,
+  ResolvedTokenData,
+  indexTokenLibrary,
+  peekTokenType,
+  peekTokenScale,
+  peekVisionRadius,
+} from './useTokenData';
 import { Token, TokenLibraryItem } from '../store/gameStore';
 import { create } from 'zustand';
 import { useGameStore } from '../store/gameStore';
@@ -550,6 +558,47 @@ describe('useTokenData and resolveTokenData', () => {
       expect(resolved.name).toBe('Second');
       expect(resolved.scale).toBe(2.0);
       expect(resolved._isInherited.scale).toBe(true);
+    });
+  });
+
+  describe('library peek helpers', () => {
+    const library: TokenLibraryItem[] = [
+      {
+        id: 'lib-pc',
+        name: 'Hero proto',
+        src: '/pc.png',
+        thumbnailSrc: '/pc-thumb.png',
+        category: 'PC',
+        tags: [],
+        dateAdded: 0,
+        defaultType: 'PC',
+        defaultScale: 2,
+        defaultVisionRadius: 60,
+      },
+    ];
+    const libraryById = indexTokenLibrary(library);
+
+    it('reads type, scale, and vision without a full resolve', () => {
+      const token: Token = { id: 't1', x: 0, y: 0, src: '/t.png', libraryItemId: 'lib-pc' };
+      expect(peekTokenType(token, libraryById)).toBe('PC');
+      expect(peekTokenScale(token, libraryById)).toBe(2);
+      expect(peekVisionRadius(token, libraryById)).toBe(60);
+    });
+
+    it('prefers instance overrides', () => {
+      const token: Token = {
+        id: 't1',
+        x: 0,
+        y: 0,
+        src: '/t.png',
+        libraryItemId: 'lib-pc',
+        type: 'NPC',
+        scale: 1,
+        visionRadius: 10,
+      };
+      expect(peekTokenType(token, libraryById)).toBe('NPC');
+      expect(peekTokenScale(token, libraryById)).toBe(1);
+      expect(peekVisionRadius(token, libraryById)).toBe(10);
     });
   });
 });

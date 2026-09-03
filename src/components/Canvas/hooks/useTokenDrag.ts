@@ -3,6 +3,7 @@ import { useState, useRef, useCallback } from 'react';
 
 import { getResolvedToken } from '../../../hooks/useTokenData';
 import { useGameStore } from '../../../store/gameStore';
+import { usePointerOverlayStore } from '../../../store/pointerOverlayStore';
 import { snapToGrid } from '../../../utils/grid';
 import { flushRafSync, queueSyncAction } from '../../../utils/rafSync';
 import { stampArchitectPrevTokenPosition } from '../../../utils/syncStamp';
@@ -10,6 +11,7 @@ import { applyTokenNodePositions } from '../../../utils/tokenNodeRegistry';
 import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 
 import type { GridType } from '../../../store/gameStore';
+import type { SnapPreview } from '../../../store/pointerOverlayStore';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
@@ -24,7 +26,6 @@ interface UseTokenDragReturn {
   draggingTokenIds: Set<string>;
   itemsForDuplication: string[];
   setItemsForDuplication: (ids: string[]) => void;
-  snapPreviewPositionsRef: React.MutableRefObject<Map<string, { x: number; y: number }>>;
   tokenLayerRef: React.MutableRefObject<Konva.Layer | null>;
   isDragging: boolean;
 }
@@ -43,6 +44,22 @@ interface UseTokenDragProps {
   trackStylusUsage: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
 }
 
+interface DragSize {
+  width: number;
+  height: number;
+}
+
+function publishSnapPreviews(previews: SnapPreview[]): void {
+  usePointerOverlayStore.getState().setSnapPreviews(previews);
+}
+
+function clearSnapPreviews(): void {
+  const store = usePointerOverlayStore.getState();
+  if (store.snapPreviews.length > 0) {
+    store.setSnapPreviews([]);
+  }
+}
+
 // eslint-disable-next-line max-lines-per-function
 export const useTokenDrag = ({
   tool,
@@ -55,17 +72,14 @@ export const useTokenDrag = ({
   shouldRejectPointerEvent,
   trackStylusUsage,
 }: UseTokenDragProps): UseTokenDragReturn => {
-  // Refs for performance (direct manipulation)
   const dragPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const snapPreviewPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const dragSizeRef = useRef<Map<string, DragSize>>(new Map());
   const tokenLayerRef = useRef<Konva.Layer | null>(null);
 
-  // State
   const [draggingTokenIds, setDraggingTokenIds] = useState<Set<string>>(new Set());
   const [itemsForDuplication, setItemsForDuplication] = useState<string[]>([]);
 
-  // Press-and-Hold / Threshold Drag State
   const DRAG_THRESHOLD = 5;
   const [tokenMouseDownStart, setTokenMouseDownStart] = useState<{
     x: number;
@@ -75,8 +89,7 @@ export const useTokenDrag = ({
   } | null>(null);
   const [isDraggingWithThreshold, setIsDraggingWithThreshold] = useState(false);
 
-  // Actions
-  const updateTokenPosition = useGameStore((s) => s.updateTokenPosition);
+  const updateTokenPositions = useGameStore((s) => s.updateTokenPositions);
   const addToken = useGameStore((s) => s.addToken);
 
   const queueDragMove = useCallback(
@@ -89,6 +102,38 @@ export const useTokenDrag = ({
       }
     },
     [isWorldView],
+  );
+
+  const cacheDragGeometry = useCallback(
+    (tokenIds: string[], primaryId: string): boolean => {
+      const primaryToken = getResolvedToken(primaryId);
+      if (!primaryToken) {
+        return false;
+      }
+
+      dragStartOffsetsRef.current.clear();
+      dragSizeRef.current.clear();
+      tokenIds.forEach((id) => {
+        const token = getResolvedToken(id);
+        if (!token) {
+          return;
+        }
+        dragSizeRef.current.set(id, {
+          width: gridSize * token.scale,
+          height: gridSize * token.scale,
+        });
+        if (id === primaryId) {
+          dragStartOffsetsRef.current.set(id, { x: 0, y: 0 });
+        } else {
+          dragStartOffsetsRef.current.set(id, {
+            x: token.x - primaryToken.x,
+            y: token.y - primaryToken.y,
+          });
+        }
+      });
+      return true;
+    },
+    [gridSize],
   );
 
   const handleTokenPointerDown = useCallback(
@@ -161,32 +206,16 @@ export const useTokenDrag = ({
           setSelectedIds(tokenIds);
         }
 
-        const primaryToken = getResolvedToken(tokenId);
-        if (!primaryToken) {
+        if (!cacheDragGeometry(tokenIds, tokenId)) {
           return;
         }
 
         setDraggingTokenIds(new Set(tokenIds));
         setItemsForDuplication(tokenIds);
 
-        dragStartOffsetsRef.current.clear();
-        tokenIds.forEach((id) => {
-          const token = getResolvedToken(id);
-          if (token) {
-            if (id === tokenId) {
-              dragStartOffsetsRef.current.set(id, { x: 0, y: 0 });
-            } else {
-              dragStartOffsetsRef.current.set(id, {
-                x: token.x - primaryToken.x,
-                y: token.y - primaryToken.y,
-              });
-            }
-          }
-        });
-
         if (!isWorldView) {
           tokenIds.forEach((id) => {
-            const token = getResolvedToken(id);
+            const token = useGameStore.getState().tokensById[id];
             if (token) {
               queueSyncAction({
                 type: 'TOKEN_DRAG_START',
@@ -205,46 +234,53 @@ export const useTokenDrag = ({
         dragPositionsRef.current.set(tokenId, { x: newX, y: newY });
         queueDragMove(tokenId, newX, newY);
 
-        const token = getResolvedToken(tokenId);
-        if (token) {
-          const safeScale = token.scale ?? 1;
-          const width = gridSize * safeScale;
-          const height = gridSize * safeScale;
-          const snapped = snapToGrid(newX, newY, gridSize, gridType, width, height);
-          snapPreviewPositionsRef.current.set(tokenId, snapped);
+        const livePositions = [{ id: tokenId, x: newX, y: newY }];
+        const snapPreviews: SnapPreview[] = [];
+        const primarySize = dragSizeRef.current.get(tokenId);
+        if (primarySize) {
+          const snapped = snapToGrid(
+            newX,
+            newY,
+            gridSize,
+            gridType,
+            primarySize.width,
+            primarySize.height,
+          );
+          snapPreviews.push({ id: tokenId, x: snapped.x, y: snapped.y, size: primarySize.width });
         }
 
-        const livePositions = [{ id: tokenId, x: newX, y: newY }];
         const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
         if (tokenIds.length > 1) {
           tokenIds.forEach((id) => {
-            if (id !== tokenId) {
-              const offset = dragStartOffsetsRef.current.get(id);
-              if (offset) {
-                const offsetX = newX + offset.x;
-                const offsetY = newY + offset.y;
-                dragPositionsRef.current.set(id, { x: offsetX, y: offsetY });
-                queueDragMove(id, offsetX, offsetY);
-                livePositions.push({ id, x: offsetX, y: offsetY });
+            if (id === tokenId) {
+              return;
+            }
+            const offset = dragStartOffsetsRef.current.get(id);
+            if (!offset) {
+              return;
+            }
+            const offsetX = newX + offset.x;
+            const offsetY = newY + offset.y;
+            dragPositionsRef.current.set(id, { x: offsetX, y: offsetY });
+            queueDragMove(id, offsetX, offsetY);
+            livePositions.push({ id, x: offsetX, y: offsetY });
 
-                const otherToken = getResolvedToken(id);
-                if (otherToken) {
-                  const otherSafeScale = otherToken.scale ?? 1;
-                  const snapped = snapToGrid(
-                    offsetX,
-                    offsetY,
-                    gridSize,
-                    gridType,
-                    gridSize * otherSafeScale,
-                    gridSize * otherSafeScale,
-                  );
-                  snapPreviewPositionsRef.current.set(id, snapped);
-                }
-              }
+            const otherSize = dragSizeRef.current.get(id);
+            if (otherSize) {
+              const snapped = snapToGrid(
+                offsetX,
+                offsetY,
+                gridSize,
+                gridType,
+                otherSize.width,
+                otherSize.height,
+              );
+              snapPreviews.push({ id, x: snapped.x, y: snapped.y, size: otherSize.width });
             }
           });
         }
 
+        publishSnapPreviews(snapPreviews);
         applyTokenNodePositions(livePositions);
       }
     },
@@ -259,6 +295,7 @@ export const useTokenDrag = ({
       gridType,
       isWorldView,
       queueDragMove,
+      cacheDragGeometry,
     ],
   );
 
@@ -274,83 +311,91 @@ export const useTokenDrag = ({
       if (!token) {
         setTokenMouseDownStart(null);
         setIsDraggingWithThreshold(false);
+        clearSnapPreviews();
         return;
       }
 
       if (isDraggingWithThreshold) {
         const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
-        const committedPositions = new Map<string, { x: number; y: number }>();
         const dragPos = dragPositionsRef.current.get(tokenId);
+        const primarySize = dragSizeRef.current.get(tokenId) ?? {
+          width: gridSize * token.scale,
+          height: gridSize * token.scale,
+        };
 
         if (dragPos) {
-          const safeScale = token.scale ?? 1;
-          const width = gridSize * safeScale;
-          const height = gridSize * safeScale;
-          const snapped = snapToGrid(dragPos.x, dragPos.y, gridSize, gridType, width, height);
+          const snapped = snapToGrid(
+            dragPos.x,
+            dragPos.y,
+            gridSize,
+            gridType,
+            primarySize.width,
+            primarySize.height,
+          );
+          const committedPositions: Array<{ id: string; x: number; y: number }> = [];
 
           if (tokenIds.length > 1) {
             const offsetX = snapped.x - dragPos.x;
             const offsetY = snapped.y - dragPos.y;
 
             tokenIds.forEach((id) => {
-              const t = getResolvedToken(id);
-              if (t) {
-                const tSafeScale = t.scale ?? 1;
-                const dragPosForToken = dragPositionsRef.current.get(id) ?? { x: t.x, y: t.y };
-                const newX = dragPosForToken.x + offsetX;
-                const newY = dragPosForToken.y + offsetY;
-                const snappedPos = snapToGrid(
-                  newX,
-                  newY,
-                  gridSize,
-                  gridType,
-                  gridSize * tSafeScale,
-                  gridSize * tSafeScale,
-                );
-                stampArchitectPrevTokenPosition(id, snappedPos.x, snappedPos.y);
-                updateTokenPosition(id, snappedPos.x, snappedPos.y);
-                committedPositions.set(id, snappedPos);
+              const size = dragSizeRef.current.get(id);
+              const existing = useGameStore.getState().tokensById[id];
+              if (!existing) {
+                return;
               }
+              const dragPosForToken = dragPositionsRef.current.get(id) ?? {
+                x: existing.x,
+                y: existing.y,
+              };
+              const newX = dragPosForToken.x + offsetX;
+              const newY = dragPosForToken.y + offsetY;
+              const snappedPos = snapToGrid(
+                newX,
+                newY,
+                gridSize,
+                gridType,
+                size?.width ?? gridSize,
+                size?.height ?? gridSize,
+              );
+              stampArchitectPrevTokenPosition(id, snappedPos.x, snappedPos.y);
+              committedPositions.push({ id, x: snappedPos.x, y: snappedPos.y });
             });
           } else {
             stampArchitectPrevTokenPosition(tokenId, snapped.x, snapped.y);
-            updateTokenPosition(tokenId, snapped.x, snapped.y);
-            committedPositions.set(tokenId, snapped);
+            committedPositions.push({ id: tokenId, x: snapped.x, y: snapped.y });
           }
 
+          updateTokenPositions(committedPositions);
+
           if (!isWorldView) {
-            tokenIds.forEach((id) => {
-              const pos = committedPositions.get(id);
-              if (pos) {
-                queueSyncAction({
-                  type: 'TOKEN_DRAG_END',
-                  payload: { id, x: pos.x, y: pos.y },
-                });
-              }
+            committedPositions.forEach((pos) => {
+              queueSyncAction({
+                type: 'TOKEN_DRAG_END',
+                payload: pos,
+              });
             });
             flushRafSync();
           }
 
           if (isAltPressed && !isWorldView) {
-            tokenIds.forEach((id) => {
-              const t = getResolvedToken(id);
-              const pos = committedPositions.get(id);
-              if (t && pos) {
-                addToken({ ...t, id: crypto.randomUUID(), x: pos.x, y: pos.y });
+            committedPositions.forEach((pos) => {
+              const source = getResolvedToken(pos.id);
+              if (source) {
+                addToken({ ...source, id: crypto.randomUUID(), x: pos.x, y: pos.y });
               }
             });
           }
         }
 
-        dragPositionsRef.current.delete(tokenId); // Should clear all?
         tokenIds.forEach((id) => {
           dragPositionsRef.current.delete(id);
           dragStartOffsetsRef.current.delete(id);
+          dragSizeRef.current.delete(id);
         });
         setDraggingTokenIds(new Set());
         setItemsForDuplication([]);
       } else {
-        // Selection Click
         e.evt.stopPropagation();
         if (e.evt.shiftKey) {
           if (selectedIds.includes(tokenId)) {
@@ -365,7 +410,7 @@ export const useTokenDrag = ({
 
       setTokenMouseDownStart(null);
       setIsDraggingWithThreshold(false);
-      snapPreviewPositionsRef.current.clear();
+      clearSnapPreviews();
     },
     [
       tokenMouseDownStart,
@@ -375,7 +420,7 @@ export const useTokenDrag = ({
       gridType,
       isWorldView,
       isAltPressed,
-      updateTokenPosition,
+      updateTokenPositions,
       addToken,
       setSelectedIds,
     ],
@@ -389,7 +434,6 @@ export const useTokenDrag = ({
     draggingTokenIds,
     itemsForDuplication,
     setItemsForDuplication,
-    snapPreviewPositionsRef,
     tokenLayerRef,
     isDragging: isDraggingWithThreshold,
   };

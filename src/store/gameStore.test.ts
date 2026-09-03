@@ -43,6 +43,7 @@ describe('gameStore', () => {
     useGameStore.setState({
       tokens: [],
       tokensById: {},
+      tokenIds: [],
       drawings: [],
       doors: [],
       stairs: [],
@@ -82,6 +83,7 @@ describe('gameStore', () => {
       expect(state.tokens).toHaveLength(1);
       expect(state.tokens[0]).toEqual(token);
       expect(state.tokensById[token.id]).toEqual(token);
+      expect(state.tokenIds).toEqual([token.id]);
     });
 
     it('should remove a token by id', () => {
@@ -127,11 +129,31 @@ describe('gameStore', () => {
       };
 
       store.addToken(token);
+      const idsBefore = useGameStore.getState().tokenIds;
       store.updateTokenPosition('token-1', 300, 400);
 
       const state = useGameStore.getState();
       expect(state.tokens[0].x).toBe(300);
       expect(state.tokens[0].y).toBe(400);
+      expect(state.tokenIds).toBe(idsBefore);
+      expect(state.tokenIds).toEqual(['token-1']);
+    });
+
+    it('should update multiple token positions in one write', () => {
+      const store = useGameStore.getState();
+      store.addToken({ id: 'token-1', x: 0, y: 0, src: 'a.png' });
+      store.addToken({ id: 'token-2', x: 10, y: 10, src: 'b.png' });
+      const idsBefore = useGameStore.getState().tokenIds;
+
+      store.updateTokenPositions([
+        { id: 'token-1', x: 50, y: 60 },
+        { id: 'token-2', x: 70, y: 80 },
+      ]);
+
+      const state = useGameStore.getState();
+      expect(state.tokensById['token-1']).toMatchObject({ x: 50, y: 60 });
+      expect(state.tokensById['token-2']).toMatchObject({ x: 70, y: 80 });
+      expect(state.tokenIds).toBe(idsBefore);
     });
 
     it('should update token transform (position and scale)', () => {

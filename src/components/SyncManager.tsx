@@ -78,7 +78,6 @@ function SyncManager(): null {
     }
 
     if (isWorldView) {
-      // eslint-disable-next-line complexity
       const applyDragPositions = (
         positions: Array<{ id: string; x: number; y: number }>,
         commit: boolean,
@@ -89,9 +88,7 @@ function SyncManager(): null {
         }
         beginInboundApply();
         try {
-          for (const pos of positions) {
-            useGameStore.getState().updateTokenPosition(pos.id, pos.x, pos.y);
-          }
+          useGameStore.getState().updateTokenPositions(positions);
           if (worldViewPrevStateRef.current) {
             stampTokenPositionsOnSnapshot(worldViewPrevStateRef.current, positions);
           }
