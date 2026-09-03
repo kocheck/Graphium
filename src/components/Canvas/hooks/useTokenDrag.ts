@@ -4,7 +4,7 @@ import { useGameStore } from '../../../store/gameStore';
 import { snapToGrid } from '../../../utils/grid';
 import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { Token } from '../../../store/gameStore';
+import type { Token, GridType } from '../../../store/gameStore';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
@@ -13,7 +13,7 @@ interface UseTokenDragProps {
   isWorldView?: boolean;
   isAltPressed: boolean;
   gridSize: number;
-  gridType: string;
+  gridType: GridType;
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
   resolvedTokens: Token[];
@@ -71,8 +71,7 @@ export const useTokenDrag = ({
       if (now - lastBroadcast >= DRAG_BROADCAST_THROTTLE_MS) {
         dragBroadcastThrottleRef.current.set(tokenId, now);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ipcRenderer = (window as any).ipcRenderer;
+        const ipcRenderer = window.ipcRenderer;
         if (ipcRenderer && !isWorldView) {
           ipcRenderer.send('SYNC_WORLD_STATE', {
             type: 'TOKEN_DRAG_MOVE',

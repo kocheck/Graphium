@@ -65,6 +65,8 @@ export function PauseManager() {
       return;
     }
 
+    let cancelled = false;
+
     /**
      * Fetch initial pause state from main process
      * This ensures windows opened after pause was toggled start in correct state
@@ -72,9 +74,14 @@ export function PauseManager() {
     window.ipcRenderer
       .invoke('GET_PAUSE_STATE')
       .then((isPaused: boolean) => {
-        setIsGamePaused(isPaused);
+        if (!cancelled) {
+          setIsGamePaused(isPaused);
+        }
       })
       .catch((error: Error) => {
+        if (cancelled) {
+          return;
+        }
         console.error('[PauseManager] Failed to fetch initial pause state:', error);
         showToast(rollForMessage('PAUSE_STATE_SYNC_FAILED'), 'error');
       });
@@ -95,6 +102,7 @@ export function PauseManager() {
 
     // Cleanup: Remove event listener when component unmounts
     return () => {
+      cancelled = true;
       // @ts-expect-error - Window IPC types not available in renderer
       window.ipcRenderer.off('PAUSE_STATE_CHANGED', handlePauseStateChanged);
     };

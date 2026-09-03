@@ -33,6 +33,72 @@ import { ipcRenderer, contextBridge } from 'electron';
 
 import type { IpcRendererEvent } from 'electron';
 
+/** Channels the renderer may send (one-way) */
+const ALLOWED_SEND_CHANNELS = [
+  'create-world-window',
+  'SYNC_WORLD_STATE',
+  'SYNC_FROM_WORLD_VIEW',
+  'REQUEST_INITIAL_STATE',
+  'LOG_TO_TERMINAL',
+] as const;
+
+/** Channels the renderer may invoke (request/response) */
+const ALLOWED_INVOKE_CHANNELS = [
+  'SAVE_CAMPAIGN',
+  'AUTO_SAVE',
+  'LOAD_CAMPAIGN',
+  'SAVE_ASSET_TEMP',
+  'SAVE_ASSET_TO_LIBRARY',
+  'LOAD_LIBRARY_INDEX',
+  'DELETE_LIBRARY_ASSET',
+  'UPDATE_LIBRARY_METADATA',
+  'SELECT_LIBRARY_PATH',
+  'TOGGLE_PAUSE',
+  'GET_PAUSE_STATE',
+  'get-theme-state',
+  'set-theme-mode',
+  'get-username',
+  'open-external',
+  'save-error-report',
+  'check-for-updates',
+  'download-update',
+  'quit-and-install',
+  'get-current-version',
+] as const;
+
+/** Channels the renderer may subscribe to */
+const ALLOWED_RECEIVE_CHANNELS = [
+  'SYNC_WORLD_STATE',
+  'REQUEST_INITIAL_STATE',
+  'SYNC_FROM_WORLD_VIEW',
+  'PAUSE_STATE_CHANGED',
+  'MENU_SAVE_CAMPAIGN',
+  'MENU_LOAD_CAMPAIGN',
+  'MENU_TOGGLE_RESOURCE_MONITOR',
+  'MENU_GENERATE_DUNGEON',
+  'MENU_NEW_CAMPAIGN',
+  'MENU_SHOW_ABOUT',
+  'main-process-message',
+  'main-process-error',
+  'theme-changed',
+  'auto-updater:checking-for-update',
+  'auto-updater:update-available',
+  'auto-updater:update-not-available',
+  'auto-updater:download-progress',
+  'auto-updater:update-downloaded',
+  'auto-updater:error',
+] as const;
+
+function assertAllowedChannel(
+  channel: string,
+  allowed: readonly string[],
+  kind: 'send' | 'invoke' | 'receive',
+): void {
+  if (!allowed.includes(channel)) {
+    throw new Error(`[preload] Blocked IPC ${kind} on unauthorized channel: ${channel}`);
+  }
+}
+
 // WeakMap to store original listeners -> wrapper listeners
 // This is needed because we wrap listeners in on(), so we need the wrapper reference for off()
 // Using WeakMap allows garbage collection when listener references are no longer accessible
@@ -61,6 +127,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    */
   on(...args: Parameters<typeof ipcRenderer.on>) {
     const [channel, listener] = args;
+    assertAllowedChannel(channel, ALLOWED_RECEIVE_CHANNELS, 'receive');
 
     // Create a wrapper that we can look up later
     const wrapper = (event: IpcRendererEvent, ...args: unknown[]) => listener(event, ...args);
@@ -111,6 +178,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    */
   send(...args: Parameters<typeof ipcRenderer.send>) {
     const [channel, ...omit] = args;
+    assertAllowedChannel(channel, ALLOWED_SEND_CHANNELS, 'send');
     return ipcRenderer.send(channel, ...omit);
   },
 
@@ -125,6 +193,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    */
   invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
     const [channel, ...omit] = args;
+    assertAllowedChannel(channel, ALLOWED_INVOKE_CHANNELS, 'invoke');
     return ipcRenderer.invoke(channel, ...omit);
   },
 });

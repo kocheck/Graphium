@@ -7,16 +7,21 @@ import type { SyncAction, SyncableGameState } from '../utils/syncUtils';
 
 // Basic throttle implementation to limit IPC frequency
 // Ensures leading edge execution and trailing edge (so final state is always sent)
-function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
-  let lastFunc: ReturnType<typeof setTimeout>;
+function throttle<T extends (...args: any[]) => void>(
+  func: T,
+  limit: number,
+): T & { cancel: () => void } {
+  let lastFunc: ReturnType<typeof setTimeout> | undefined;
   let lastRan: number | undefined;
 
-  return function (this: unknown, ...args: Parameters<T>) {
+  const throttled = function (this: unknown, ...args: Parameters<T>) {
     if (lastRan === undefined) {
       func.apply(this, args);
       lastRan = Date.now();
     } else {
-      clearTimeout(lastFunc);
+      if (lastFunc) {
+        clearTimeout(lastFunc);
+      }
       lastFunc = setTimeout(
         () => {
           if (Date.now() - lastRan! >= limit) {
@@ -27,7 +32,16 @@ function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T
         limit - (Date.now() - lastRan),
       );
     }
-  } as T;
+  } as T & { cancel: () => void };
+
+  throttled.cancel = () => {
+    if (lastFunc) {
+      clearTimeout(lastFunc);
+      lastFunc = undefined;
+    }
+  };
+
+  return throttled;
 }
 
 /**
@@ -110,7 +124,11 @@ function SyncManager() {
               stairs: [...(action.payload.stairs || [])],
               gridSize: action.payload.gridSize ?? 50,
               gridType: action.payload.gridType ?? 'LINES',
+              gridColor: action.payload.gridColor ?? '#222222',
               map: action.payload.map ? { ...action.payload.map } : null,
+              exploredRegions: action.payload.exploredRegions
+                ? [...action.payload.exploredRegions]
+                : [],
               isDaylightMode: action.payload.isDaylightMode ?? false,
             };
             break;
@@ -210,12 +228,32 @@ function SyncManager() {
             store.toggleDoor(action.payload.id);
             break;
 
+          case 'STAIRS_ADD':
+            store.addStairs(action.payload);
+            break;
+
+          case 'STAIRS_UPDATE': {
+            const { id: stairsId, changes: stairsChanges } = action.payload;
+            useGameStore.setState({
+              stairs: store.stairs.map((s) => (s.id === stairsId ? { ...s, ...stairsChanges } : s)),
+            });
+            break;
+          }
+
+          case 'STAIRS_REMOVE':
+            store.removeStairs(action.payload.id);
+            break;
+
           case 'MAP_UPDATE':
             useGameStore.setState({ map: action.payload });
             break;
 
           case 'GRID_UPDATE':
-            useGameStore.setState(action.payload as any);
+            useGameStore.setState(action.payload);
+            break;
+
+          case 'EXPLORED_UPDATE':
+            useGameStore.setState({ exploredRegions: action.payload });
             break;
 
           case 'MEASUREMENT_UPDATE':
@@ -290,13 +328,15 @@ function SyncManager() {
 
         worldViewPrevStateRef.current = {
           tokens: [...state.tokens],
-          tokenLibrary: [...(state.campaign?.tokenLibrary || [])], // This usually won't change from WV, but good for completeness
+          tokenLibrary: [...(state.campaign?.tokenLibrary || [])],
           drawings: [...state.drawings],
           doors: [...(state.doors || [])],
           stairs: [...(state.stairs || [])],
           gridSize: state.gridSize,
           gridType: state.gridType,
+          gridColor: state.gridColor,
           map: state.map ? { ...state.map } : null,
+          exploredRegions: state.exploredRegions ? [...state.exploredRegions] : [],
           isDaylightMode: state.isDaylightMode,
         };
       };
@@ -305,6 +345,7 @@ function SyncManager() {
       const unsubWorldView = useGameStore.subscribe(throttledWorldViewSync);
 
       return () => {
+        throttledWorldViewSync.cancel();
         unsubWorldView();
         if (channel) {
           channel.close();
@@ -331,6 +372,7 @@ function SyncManager() {
             stairs: state.stairs || [],
             gridSize: state.gridSize,
             gridType: state.gridType,
+            gridColor: state.gridColor,
             map: state.map,
             exploredRegions: state.exploredRegions,
             isDaylightMode: state.isDaylightMode,
@@ -348,6 +390,17 @@ function SyncManager() {
         channel.onmessage = (event) => {
           if (event.data?.type === 'REQUEST_INITIAL_STATE') {
             handleInitialStateRequest(event);
+          } else if (event.data?.type === 'TOKEN_UPDATE') {
+            const { id, changes } = event.data.payload;
+            const store = useGameStore.getState();
+            const currentToken = store.tokens.find((t) => t.id === id);
+            if (currentToken) {
+              const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
+              useGameStore.setState({ tokens: newTokens });
+              if (prevStateRef.current) {
+                prevStateRef.current.tokens = [...newTokens];
+              }
+            }
           }
         };
       } else if (isElectron && ipcRenderer) {
@@ -378,9 +431,12 @@ function SyncManager() {
           stairs: [...(state.stairs || [])],
           gridSize: state.gridSize,
           gridType: state.gridType,
+          gridColor: state.gridColor,
           map: state.map ? { ...state.map } : null,
           exploredRegions: state.exploredRegions ? [...state.exploredRegions] : [],
           isDaylightMode: state.isDaylightMode,
+          activeMeasurement: state.activeMeasurement ?? null,
+          broadcastMeasurement: state.broadcastMeasurement ?? false,
         };
       };
 
@@ -397,12 +453,16 @@ function SyncManager() {
             if (currentToken) {
               const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
               useGameStore.setState({ tokens: newTokens });
+              if (prevStateRef.current) {
+                prevStateRef.current.tokens = [...newTokens];
+              }
             }
           }
         });
       }
 
       return () => {
+        throttledSync.cancel();
         unsub();
         if (channel) {
           channel.close();
