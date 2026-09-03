@@ -234,7 +234,7 @@ const modalStyles = `
  * A modal explaining what Graphium is and how to use it,
  * written in the signature "Digital Dungeon Master" tone.
  */
-// eslint-disable-next-line max-lines-per-function, import/no-unused-modules
+// eslint-disable-next-line max-lines-per-function
 export function AboutModal({
   isOpen,
   onClose,

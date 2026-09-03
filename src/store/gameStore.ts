@@ -280,7 +280,7 @@ const createDefaultCampaign = (firstMap?: MapData): Campaign => {
  * 2. `campaign` property holds the full persistence data for all maps.
  * 3. Switching maps involves syncing Top-level -> Campaign, then Campaign -> Top-level.
  */
-// eslint-disable-next-line import/no-unused-modules
+
 export interface GameState {
   // --- Active Map State (Proxied for Component Compatibility) ---
   tokens: Token[];

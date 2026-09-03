@@ -470,7 +470,7 @@ ${userContext.trim()}
     window.location.reload();
   };
 
-  // eslint-disable-next-line max-lines-per-function, complexity
+  // eslint-disable-next-line max-lines-per-function
   override render(): ReactNode {
     const {
       hasError,

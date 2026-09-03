@@ -122,11 +122,10 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    * @param errorInfo - React error info including component stack
    */
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // eslint-disable-next-line no-console
     console.error('Update manager error:', error);
-    // eslint-disable-next-line no-console
+
     console.error('Error info:', errorInfo);
-    // eslint-disable-next-line no-console
+
     console.error('Component stack:', errorInfo.componentStack);
 
     // Log specific error types for better debugging
