@@ -25,7 +25,7 @@ interface UseTokenDragReturn {
   itemsForDuplication: string[];
   setItemsForDuplication: (ids: string[]) => void;
   snapPreviewPositionsRef: React.MutableRefObject<Map<string, { x: number; y: number }>>;
-  tokenLayerRef: React.RefObject<Konva.Layer>;
+  tokenLayerRef: React.MutableRefObject<Konva.Layer | null>;
   isDragging: boolean;
 }
 
@@ -59,7 +59,7 @@ export const useTokenDrag = ({
   const dragPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const snapPreviewPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const tokenLayerRef = useRef<Konva.Layer>(null);
+  const tokenLayerRef = useRef<Konva.Layer | null>(null);
 
   // State
   const [draggingTokenIds, setDraggingTokenIds] = useState<Set<string>>(new Set());
@@ -319,7 +319,6 @@ export const useTokenDrag = ({
           }
 
           if (!isWorldView) {
-            flushRafSync();
             tokenIds.forEach((id) => {
               const pos = committedPositions.get(id);
               if (pos) {

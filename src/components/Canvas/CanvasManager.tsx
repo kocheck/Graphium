@@ -38,6 +38,12 @@ const ZOOM_SCALE_BY = 1.1;
 const MIN_PINCH_DISTANCE = 0.001; // Guard against near-zero division or very small distances that could cause extreme scale changes
 const VIEWPORT_CLAMP_PADDING = 1000; // Padding around map bounds for viewport constraints
 
+const PRESSURE_RANGES = {
+  light: { min: 0.2, max: 2.0 },
+  heavy: { min: 0.4, max: 1.2 },
+  normal: { min: 0.3, max: 1.5 },
+} as const;
+
 // Helper functions for touch/pinch calculations
 const calculatePinchDistance = (touch1: Touch, touch2: Touch): number => {
   return Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
@@ -131,7 +137,8 @@ function CanvasManager({
   // Preferences
 
   const pinchDistanceThreshold = useTouchSettingsStore((s) => s.pinchDistanceThreshold);
-  const getPressureRange = useTouchSettingsStore((s) => s.getPressureRange);
+  const pressureCurve = useTouchSettingsStore((s) => s.pressureCurve);
+  const pressureRange = PRESSURE_RANGES[pressureCurve];
 
   // Touch/Stylus tracking for palm rejection
   const stylusActiveRef = useRef(false); // Track if stylus is currently being used
@@ -1000,13 +1007,6 @@ function CanvasManager({
   };
 
   useEffect(() => {
-    registerTokenLayer(tokenLayerRef.current);
-    return () => {
-      registerTokenLayer(null);
-    };
-  });
-
-  useEffect(() => {
     const start = performance.now();
     const frame = requestAnimationFrame(() => {
       recordCanvasCommit(performance.now() - start);
@@ -1251,7 +1251,7 @@ function CanvasManager({
             itemsForDuplication={itemsForDuplication}
             tempLine={tempLine}
             tempLineRef={tempLineRef}
-            pressureRange={getPressureRange()}
+            pressureRange={pressureRange}
             onSelectIds={setSelectedIds}
             onDragStart={(id) => {
               setItemsForDuplication(selectedIds.includes(id) ? selectedIds : [id]);
@@ -1291,7 +1291,6 @@ function CanvasManager({
           return shouldRenderFog ? (
             <Layer listening={false}>
               <FogOfWarLayer
-                drawings={drawings}
                 doors={doors}
                 gridSize={gridSize}
                 visibleBounds={visibleBounds}
@@ -1304,7 +1303,12 @@ function CanvasManager({
         {/* Layer 3: Tokens, Doors & UI
           NOTE: tokenLayerRef is used for low-level performance optimizations during
           token drag updates via direct Konva batchDraw() calls instead of full React re-renders */}
-        <Layer ref={tokenLayerRef}>
+        <Layer
+          ref={(layer) => {
+            tokenLayerRef.current = layer;
+            registerTokenLayer(layer);
+          }}
+        >
           <DoorLayer
             doors={doors}
             isWorldView={isWorldView}

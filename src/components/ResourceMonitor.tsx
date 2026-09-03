@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 
 import { useGameStore } from '../store/gameStore';
-import { consumePerfSnapshot, estimatePayloadBytes } from '../utils/perfCounters';
+import { consumePerfSnapshot, estimateIpcArgs } from '../utils/perfCounters';
 import { loadStressFixture } from '../utils/stressFixture';
 
 interface PerformanceMemory {
@@ -242,7 +242,7 @@ function ResourceMonitor(): React.JSX.Element {
           try {
             ipcMessageCountRef.current++;
             // Estimate message size (rough approximation, with circular ref protection)
-            const size = estimatePayloadBytes(args);
+            const size = estimateIpcArgs(args);
             ipcBytesRef.current += size;
           } catch {
             // Ignore errors in metrics collection (don't break IPC)
@@ -274,7 +274,7 @@ function ResourceMonitor(): React.JSX.Element {
           if (isTracking) {
             try {
               ipcMessageCountRef.current++;
-              const size = estimatePayloadBytes(args);
+              const size = estimateIpcArgs(args);
               ipcBytesRef.current += size;
             } catch {
               // Ignore errors in metrics collection

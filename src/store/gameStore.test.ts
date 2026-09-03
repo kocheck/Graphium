@@ -58,7 +58,6 @@ describe('gameStore', () => {
       dungeonDialog: false,
       isGamePaused: false,
       isMobileSidebarOpen: false,
-      activeVisionPolygons: [],
       activeMeasurement: null,
       broadcastMeasurement: false,
       dmMeasurement: null,
@@ -1091,29 +1090,6 @@ describe('gameStore', () => {
 
       store.setMobileSidebarOpen(true);
       expect(useGameStore.getState().isMobileSidebarOpen).toBe(true);
-    });
-  });
-
-  describe('Vision Operations', () => {
-    it('should set active vision polygons', () => {
-      const store = useGameStore.getState();
-      const polygons = [
-        [
-          { x: 0, y: 0 },
-          { x: 100, y: 0 },
-          { x: 100, y: 100 },
-        ],
-        [
-          { x: 200, y: 200 },
-          { x: 300, y: 200 },
-          { x: 300, y: 300 },
-        ],
-      ];
-
-      store.setActiveVisionPolygons(polygons);
-
-      const state = useGameStore.getState();
-      expect(state.activeVisionPolygons).toEqual(polygons);
     });
   });
 

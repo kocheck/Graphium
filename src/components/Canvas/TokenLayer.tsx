@@ -80,7 +80,6 @@ function TokenLayerComponent({
               listening={false}
               opacity={0.5}
               name="ghost-token"
-              onSelect={() => undefined}
             />
           );
         })}

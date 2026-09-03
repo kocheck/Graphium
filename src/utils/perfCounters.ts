@@ -38,7 +38,29 @@ export function consumePerfSnapshot(): PerfSnapshot {
   return snapshot;
 }
 
+/** Cheap IPC size: known sync actions use a fixed estimate, never walk point arrays. */
+export function estimateIpcArgs(args: unknown[]): number {
+  const payload = args.find((arg) => arg && typeof arg === 'object' && 'type' in arg) as
+    | { type?: string; payload?: unknown }
+    | undefined;
+  switch (payload?.type) {
+    case 'TOKEN_DRAG_MOVE':
+    case 'TOKEN_DRAG_START':
+    case 'TOKEN_DRAG_END':
+      return 48;
+    case 'TOKEN_DRAG_MOVE_BATCH':
+      return 32 + 24 * (Array.isArray(payload.payload) ? payload.payload.length : 1);
+    case 'FULL_SYNC':
+    case 'EXPLORED_UPDATE':
+    case 'LIBRARY_UPDATE':
+      return 256;
+    default:
+      return 64;
+  }
+}
+
 /** Rough byte size without JSON.stringify of the full payload. */
+// eslint-disable-next-line import/no-unused-modules -- covered by perfCounters unit tests
 export function estimatePayloadBytes(value: unknown): number {
   if (value == null) {
     return 0;

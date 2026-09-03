@@ -174,17 +174,9 @@ function SyncManager(): null {
             break;
 
           case 'TOKEN_DRAG_START':
-          case 'TOKEN_DRAG_MOVE': {
-            const applied = applyTokenNodePosition(
-              action.payload.id,
-              action.payload.x,
-              action.payload.y,
-            );
-            if (!applied) {
-              applyDragPositions([action.payload], false);
-            }
+          case 'TOKEN_DRAG_MOVE':
+            applyTokenNodePosition(action.payload.id, action.payload.x, action.payload.y);
             break;
-          }
 
           case 'TOKEN_DRAG_MOVE_BATCH':
             applyTokenNodePositions(action.payload);

@@ -1,17 +1,17 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { memo, useMemo, useEffect, useRef } from 'react';
 
 import { Shape, Group } from 'react-konva';
+import { useShallow } from 'zustand/shallow';
 
 import { resolveTokenData } from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
 import { useVisionStore } from '../../store/visionStore';
 import { recordFowRecalc } from '../../utils/perfCounters';
 
-import type { Drawing, Door, MapConfig } from '../../store/gameStore';
+import type { Door, MapConfig } from '../../store/gameStore';
 import type { Point, WallSegment } from '../../types/geometry';
 
 interface FogOfWarLayerProps {
-  drawings: Drawing[];
   doors: Door[];
   gridSize: number;
   visibleBounds: {
@@ -108,15 +108,12 @@ const fogLog = (...args: unknown[]): void => {
  * - CPU usage: ~80% → ~15% (static scenes)
  */
 // eslint-disable-next-line max-lines-per-function
-function FogOfWarLayer({
-  drawings,
-  doors,
-  gridSize,
-  visibleBounds,
-  map,
-}: FogOfWarLayerProps): JSX.Element {
+function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerProps): JSX.Element {
   const tokens = useGameStore((s) => s.tokens);
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
+  const wallDrawings = useGameStore(
+    useShallow((s) => s.drawings.filter((drawing) => drawing.tool === 'wall')),
+  );
   const resolvedTokens = useMemo(
     () => tokens.map((token) => resolveTokenData(token, tokenLibrary)),
     [tokens, tokenLibrary],
@@ -126,7 +123,7 @@ function FogOfWarLayer({
   fogLog('[FogOfWarLayer] Props:', {
     tokensCount: resolvedTokens.length,
     doorsCount: doors.length,
-    drawingsCount: drawings.length,
+    drawingsCount: wallDrawings.length,
     hasMap: !!map,
   });
 
@@ -222,37 +219,35 @@ function FogOfWarLayer({
     fogLog('[FogOfWarLayer] WALLS MEMO RECALCULATING');
 
     // Add static walls from drawings
-    drawings
-      .filter((d) => d.tool === 'wall')
-      .forEach((wall) => {
-        // Convert points array [x1, y1, x2, y2, x3, y3, ...] to segments
-        // CRITICAL FIX: Apply drawing transform (x, y, scale) to points
-        // Otherwise visual wall (transformed) and logical wall (raw points) mismatch
-        const points = wall.points;
-        const offsetX = wall.x ?? 0;
-        const offsetY = wall.y ?? 0;
-        const scale = wall.scale ?? 1;
+    wallDrawings.forEach((wall) => {
+      // Convert points array [x1, y1, x2, y2, x3, y3, ...] to segments
+      // CRITICAL FIX: Apply drawing transform (x, y, scale) to points
+      // Otherwise visual wall (transformed) and logical wall (raw points) mismatch
+      const points = wall.points;
+      const offsetX = wall.x ?? 0;
+      const offsetY = wall.y ?? 0;
+      const scale = wall.scale ?? 1;
 
-        for (let i = 0; i < points.length - 2; i += 2) {
-          const p0 = points[i];
-          const p1 = points[i + 1];
-          const p2 = points[i + 2];
-          const p3 = points[i + 3];
-          if (p0 === undefined || p1 === undefined || p2 === undefined || p3 === undefined) {
-            continue;
-          }
-          wallSegments.push({
-            start: {
-              x: p0 * scale + offsetX,
-              y: p1 * scale + offsetY,
-            },
-            end: {
-              x: p2 * scale + offsetX,
-              y: p3 * scale + offsetY,
-            },
-          });
+      for (let i = 0; i < points.length - 2; i += 2) {
+        const p0 = points[i];
+        const p1 = points[i + 1];
+        const p2 = points[i + 2];
+        const p3 = points[i + 3];
+        if (p0 === undefined || p1 === undefined || p2 === undefined || p3 === undefined) {
+          continue;
         }
-      });
+        wallSegments.push({
+          start: {
+            x: p0 * scale + offsetX,
+            y: p1 * scale + offsetY,
+          },
+          end: {
+            x: p2 * scale + offsetX,
+            y: p3 * scale + offsetY,
+          },
+        });
+      }
+    });
 
     const wallSegmentsFromDrawings = wallSegments.length;
     fogLog('[FogOfWarLayer] Wall segments from drawings:', wallSegmentsFromDrawings);
@@ -290,7 +285,7 @@ function FogOfWarLayer({
 
     return wallSegments;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawings, doorsKey]); // CRITICAL: Use doorsKey instead of doors for proper change detection
+  }, [wallDrawings, doorsKey]);
 
   const tokenKeys = useMemo(
     () =>
@@ -328,7 +323,7 @@ function FogOfWarLayer({
       const tokenCenterX = token.x + (gridSize * token.scale) / 2;
       const tokenCenterY = token.y + (gridSize * token.scale) / 2;
       const visionRadiusPx = ((token.visionRadius ?? 0) / 5) * gridSize;
-      const zoom = visibleBounds.width > 0 ? sizeFallbackZoom(visibleBounds.width) : 1;
+      const zoom = sizeFallbackZoom(visibleBounds.width);
       cache.set(
         token.id,
         calculateVisibilityPolygon(
@@ -646,4 +641,7 @@ function lineSegmentIntersection(
   return null;
 }
 
-export default FogOfWarLayer;
+const MemoFogOfWarLayer = memo(FogOfWarLayer);
+MemoFogOfWarLayer.displayName = 'FogOfWarLayer';
+
+export default MemoFogOfWarLayer;
