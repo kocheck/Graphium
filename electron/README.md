@@ -208,49 +208,67 @@ load creates a new active session.
 
 **Channel types:**
 
-| Channel               | Direction | Type   | Payload             | Response          |
-| --------------------- | --------- | ------ | ------------------- | ----------------- |
-| `create-world-window` | R→M       | send   | none                | none              |
-| `SYNC_WORLD_STATE`    | R→M       | send   | GameState           | none              |
-| `SYNC_WORLD_STATE`    | M→R       | send   | GameState           | none              |
-| `SAVE_ASSET_TEMP`     | R→M       | invoke | ArrayBuffer, string | file:// URL       |
-| `SAVE_CAMPAIGN`       | R→M       | invoke | GameState           | boolean           |
-| `LOAD_CAMPAIGN`       | R→M       | invoke | none                | GameState \| null |
+| Channel                | Direction | Type   | Payload             | Response         |
+| ---------------------- | --------- | ------ | ------------------- | ---------------- |
+| `create-world-window`  | R→M       | send   | none                | none             |
+| `SYNC_WORLD_STATE`     | R→M       | send   | SyncAction          | none             |
+| `SYNC_WORLD_STATE`     | M→R       | send   | SyncAction          | none             |
+| `SYNC_FROM_WORLD_VIEW` | R→M       | send   | SyncAction (token)  | none             |
+| `SAVE_ASSET_TEMP`      | R→M       | invoke | ArrayBuffer, string | file:// URL      |
+| `SAVE_CAMPAIGN`        | R→M       | invoke | Campaign            | boolean          |
+| `LOAD_CAMPAIGN`        | R→M       | invoke | none                | Campaign \| null |
 
 **Broadcast pattern:**
 
 ```
-Main Window renderer
-  ↓ send 'SYNC_WORLD_STATE'
+Architect Window renderer
+  ↓ send SyncAction ('SYNC_WORLD_STATE')
 Main Process
-  ↓ send 'SYNC_WORLD_STATE'
+  ↓ relay SyncAction ('SYNC_WORLD_STATE')
 World Window renderer
 ```
 
-**Important:** World Window is passive (never sends state updates)
+World View may also send scoped token-position `TOKEN_UPDATE` / `BATCH` actions via
+`SYNC_FROM_WORLD_VIEW`; Architect remains the source of truth for campaign state.
 
 ### Custom Protocol Handler
 
-**Purpose:** Allow Konva to load local files without CORS errors
+**Purpose:** Allow Konva to load local files without CORS errors, without exposing the whole filesystem.
 
 **Implementation:**
 
 ```typescript
 protocol.handle('media', (request) => {
-  // Convert media://path → file://path
-  return net.fetch('file://' + request.url.slice('media://'.length'))
-})
+  const resolvedTargetPath = path.resolve(fileURLToPath(request.url));
+  const isWithinAllowedRoots = allowedMediaRoots.some((root) =>
+    isPathInsideOrEqual(root, resolvedTargetPath),
+  );
+  if (!isWithinAllowedRoots) {
+    return new Response('Forbidden media path', { status: 403 });
+  }
+  return net.fetch(`file://${resolvedTargetPath}`);
+});
 ```
+
+Allowed roots (under `app.getPath('userData')`):
+
+- `temp_assets/`
+- `sessions/`
+- `library/`
+
+Helpers live in `electron/pathSecurity.ts` (`isPathInsideOrEqual`, `sanitizeAssetFileName`, `isValidUuid`).
 
 **Usage flow:**
 
-1. GameStore stores: `file:///path/to/token.webp`
-2. Renderer converts: `media:///path/to/token.webp`
-3. Konva requests: `media://...`
-4. Protocol handler fetches: `file://...`
+1. GameStore stores: `file:///…/userData/temp_assets/token.webp`
+2. Renderer converts with `toMediaProtocol()`: `media:///…/token.webp`
+3. Konva requests: `media://…`
+4. Protocol handler validates the path, then fetches: `file://…`
 5. Returns image data
 
-**Why needed:** Browsers block `file://` requests due to security (CORS). Custom protocol bypasses this.
+**Why needed:** Browsers block `file://` requests due to security (CORS). Custom protocol bypasses this while keeping reads inside app-owned directories.
+
+Cold-start `.graphium` opens (macOS `open-file`) are stored in `pendingOpenFile` and delivered after the Architect window finishes loading — not via `global.openedFile`.
 
 ## Key Patterns
 

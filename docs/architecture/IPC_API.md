@@ -159,20 +159,19 @@ ipcMain.on('create-world-window', createWorldWindow);
 
 #### Usage
 
-**Caller:** `src/components/SyncManager.tsx:111`
+**Caller:** `src/components/SyncManager.tsx` (Architect View Zustand subscription)
 
 **Renderer (Architect - Publisher):**
 
 ```typescript
-// Triggered on every Zustand store update
+// Store updates are coalesced into SyncAction messages
 window.ipcRenderer.send('SYNC_WORLD_STATE', {
-  tokens: [...],
-  drawings: [...],
-  gridSize: 50
-})
+  type: 'TOKEN_UPDATE',
+  payload: { id: 'abc', changes: { x: 100, y: 200 } },
+});
 ```
 
-**Main Process (Relay):** `electron/main.ts:225`
+**Main Process (Relay):** `electron/main.ts`
 
 ```typescript
 ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
@@ -182,53 +181,73 @@ ipcMain.on('SYNC_WORLD_STATE', (_event, state) => {
 });
 ```
 
-**Renderer (World Window - Subscriber):** `src/components/SyncManager.tsx:85`
+**Renderer (World Window - Subscriber):** `src/components/SyncManager.tsx`
 
 ```typescript
-window.ipcRenderer.on('SYNC_WORLD_STATE', (event, state) => {
-  useGameStore.getState().setState(state);
+window.ipcRenderer.on('SYNC_WORLD_STATE', (_event, action: SyncAction) => {
+  // Apply FULL_SYNC / BATCH / entity deltas to the World View store
 });
 ```
 
 #### Payload
 
-**Type:** `SyncAction` (delta-based action)
+**Type:** `SyncAction` (delta-based action from `src/utils/syncUtils.ts`)
 
 ```typescript
-// Full sync (initial load or bulk operations)
-{ type: 'FULL_SYNC', payload: GameState }
+// Full sync (initial load, null previous state, or ≥ FULL_SYNC_ACTION_THRESHOLD deltas)
+{ type: 'FULL_SYNC', payload: Partial<SyncableGameState> }
+
+// Batch several small deltas into one IPC message
+{ type: 'BATCH', payload: SyncAction[] }
 
 // Token operations
 { type: 'TOKEN_ADD', payload: Token }
 { type: 'TOKEN_UPDATE', payload: { id: string, changes: Partial<Token> } }
 { type: 'TOKEN_REMOVE', payload: { id: string } }
 
-// Real-time drag sync (NEW - for smooth multi-user experience)
+// Real-time drag sync
 { type: 'TOKEN_DRAG_START', payload: { id: string, x: number, y: number } }
 { type: 'TOKEN_DRAG_MOVE', payload: { id: string, x: number, y: number } }
 { type: 'TOKEN_DRAG_END', payload: { id: string, x: number, y: number } }
 
-// Drawing operations
+// Drawing / door / stairs operations (same ADD/UPDATE/REMOVE shape)
 { type: 'DRAWING_ADD', payload: Drawing }
-{ type: 'DRAWING_UPDATE', payload: { id: string, changes: Partial<Drawing> } }
-{ type: 'DRAWING_REMOVE', payload: { id: string } }
+{ type: 'DOOR_TOGGLE', payload: { id: string } }
+{ type: 'STAIRS_REMOVE', payload: { id: string } }
 
-// Map/Grid operations
-{ type: 'MAP_UPDATE', payload: MapConfig }
-{ type: 'GRID_UPDATE', payload: { gridSize?: number, gridType?: string, isDaylightMode?: boolean } }
+// Map/Grid / explored / measurement
+{ type: 'MAP_UPDATE', payload: MapConfig | null }
+{ type: 'GRID_UPDATE', payload: { gridSize?: number, gridType?: string, gridColor?: string, isDaylightMode?: boolean } }
+{ type: 'EXPLORED_UPDATE', payload: ExploredRegion[] }
+{ type: 'MEASUREMENT_UPDATE', payload: Measurement | null }
+{ type: 'LIBRARY_UPDATE', payload: TokenLibraryItem[] }
 ```
 
 #### Behavior
 
-- **Frequency:** Fires on EVERY store mutation in Architect Window
-- **Direction:** Unidirectional (Architect → World only)
-- **World Window:** Read-only consumer, never sends state back
-- **Performance:** Delta-based updates reduce IPC traffic by ~95%
-- **Real-time Drag:** `TOKEN_DRAG_MOVE` events are throttled to ~60fps for smooth sync
+- **Frequency:** Fires when syncable Architect store fields change (tokens, drawings, doors, stairs, map, grid, library, fog, measurement)
+- **Direction:** Architect is the source of truth for campaign state
+- **World → Architect:** Only scoped token **position** updates via `SYNC_FROM_WORLD_VIEW` (see below)
+- **Coalescing:** Multiple small deltas become one `BATCH`; 20+ deltas collapse to a single `FULL_SYNC`
+- **Empty snapshots:** Architect skips snapshot cloning when `detectChanges` returns no actions
+- **Real-time Drag:** `TOKEN_DRAG_*` events are throttled (~32ms) for smooth sync
+
+#### Related: SYNC_FROM_WORLD_VIEW
+
+World View may emit token position updates only:
+
+```typescript
+window.ipcRenderer.send('SYNC_FROM_WORLD_VIEW', {
+  type: 'TOKEN_UPDATE',
+  payload: { id: 'abc', changes: { x: 120, y: 80 } },
+});
+```
+
+Main relays those actions onto the Architect window as `SYNC_WORLD_STATE`. Architect applies `TOKEN_UPDATE` / nested `BATCH` token updates without treating World View as a full state publisher.
 
 #### Real-Time Drag Sync
 
-**New in v2.0:** Token dragging now broadcasts position updates during drag (not just on drop), enabling real-time multi-user sync.
+Token dragging broadcasts position updates during drag (not just on drop).
 
 **Drag Event Flow:**
 
@@ -237,7 +256,7 @@ User starts dragging token
   ↓
 TOKEN_DRAG_START → World View (shows "held" state with opacity)
   ↓
-TOKEN_DRAG_MOVE (throttled ~60fps) → World View (updates position in real-time)
+TOKEN_DRAG_MOVE (throttled) → World View (updates position in real-time)
   ↓
 User drops token
   ↓
@@ -246,16 +265,17 @@ TOKEN_DRAG_END → World View (commits final snapped position)
 
 **Performance:**
 
-- Architect View drag position updates use refs (no Architect store updates during `dragMove`) = minimal React re-renders in Architect View
-- World View store is updated for `TOKEN_DRAG_START`, `TOKEN_DRAG_MOVE`, and `TOKEN_DRAG_END` events to reflect real-time token positions
-- IPC broadcasts throttled to 16ms intervals (~60fps) to prevent IPC spam
-- Visual feedback: Dragging tokens show 0.7 opacity in both views
+- Architect View drag position updates use refs during `dragMove` where possible
+- World View store updates for `TOKEN_DRAG_*` so players see live motion
+- IPC broadcasts throttled (~32ms) to limit spam
+- Visual feedback: dragging tokens show reduced opacity in both views
 
 #### Related Files
 
 - Publisher: `src/components/SyncManager.tsx` (Architect View subscription)
 - Relay: `electron/main.ts` (broadcast handler)
 - Subscriber: `src/components/SyncManager.tsx` (World View listener)
+- Diff helpers: `src/utils/syncUtils.ts` (`detectChanges`, `coalesceSyncActions`, `detectWorldViewTokenUpdates`)
 - State schema: `src/store/gameStore.ts` (GameState interface)
 
 ---

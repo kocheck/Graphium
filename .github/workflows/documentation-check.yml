@@ -10,6 +10,9 @@ permissions:
   pull-requests: write
   contents: read
 
+# GitHub Models (models.inference.ai.azure.com / models.github.ai) was retired on
+# 2026-07-30. This workflow no longer calls that API. Prefer the rule-based
+# Documentation Check (Simple) workflow for actionable review prompts.
 jobs:
   check-documentation:
     runs-on: ubuntu-latest
@@ -18,112 +21,43 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Get full history for diff
+          fetch-depth: 0
 
-      - name: Get PR diff
-        id: diff
+      - name: Summarize documentation review status
+        id: summary
         run: |
-          # Get the base branch (main)
           git fetch origin ${{ github.base_ref }}
-
-          # Generate diff between base and PR branch
-          git diff origin/${{ github.base_ref }}...${{ github.sha }} > pr_diff.txt
-
-          # Get list of changed files
           git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} > changed_files.txt
 
-          echo "diff_size=$(wc -l < pr_diff.txt)" >> $GITHUB_OUTPUT
-
-      - name: Analyze with GitHub Copilot
-        id: copilot
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Create analysis prompt
-          cat > analysis_prompt.txt << 'EOF'
-          You are reviewing a pull request to determine if documentation needs to be updated.
-
-          Review the code changes and determine if any of these documentation files need updates:
-
-          **Root Documentation:**
-          - .cursorrules (AI assistant reference)
-          - ARCHITECTURE.md (system architecture)
-          - CONVENTIONS.md (code standards)
-          - CONTEXT.md (domain knowledge)
-          - IPC_API.md (IPC channels)
-          - DECISIONS.md (architectural decisions)
-          - TROUBLESHOOTING.md (common issues)
-          - TUTORIALS.md (workflow guides)
-          - DOCUMENTATION.md (documentation index)
-
-          **Directory READMEs:**
-          - electron/README.md
-          - src/README.md
-          - src/components/README.md
-          - src/components/Canvas/README.md
-          - src/store/README.md
-          - src/utils/README.md
-
-          **Inline Documentation:**
-          - JSDoc in all modified files
-
-          **Changed Files:**
-          EOF
-          cat changed_files.txt >> analysis_prompt.txt
-
-          cat >> analysis_prompt.txt << 'EOF'
-
-          **Code Changes:**
-          EOF
-          head -n 500 pr_diff.txt >> analysis_prompt.txt
-
-          cat >> analysis_prompt.txt << 'EOF'
-
-          Analyze the changes and provide:
-
-          1. **Documentation Impact**: High/Medium/Low/None
-          2. **Files Needing Updates**: List specific documentation files that should be updated
-          3. **Required Changes**: Brief description of what needs to be updated in each file
-          4. **New Documentation**: Any new files that should be created
-
-          Format your response as markdown for a GitHub PR comment.
-          EOF
-
-          # Call GitHub Models API (OpenAI-compatible endpoint)
-          response=$(curl -s https://models.inference.ai.azure.com/chat/completions \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -d @- << JSON
           {
-            "model": "gpt-4o",
-            "messages": [
-              {
-                "role": "system",
-                "content": "You are a helpful documentation reviewer. Analyze code changes and provide specific, actionable documentation suggestions."
-              },
-              {
-                "role": "user",
-                "content": $(cat analysis_prompt.txt | jq -Rs .)
-              }
-            ],
-            "max_tokens": 4096,
-            "temperature": 0.3
-          }
-          JSON
-          )
+            echo '## Documentation Check'
+            echo
+            echo '**Status:** AI analysis unavailable'
+            echo
+            echo 'GitHub Models was retired on 2026-07-30, so this workflow no longer calls the inference API.'
+            echo 'Use **Documentation Check (Simple)** for rule-based suggestions, and update docs when the PR changes IPC, Electron security, sync, or public utilities.'
+            echo
+            echo '### Changed files in this PR'
+            echo
+            sed 's/^/- /' changed_files.txt | head -n 80
+            if [ "$(wc -l < changed_files.txt)" -gt 80 ]; then
+              echo
+              echo "_…and $(( $(wc -l < changed_files.txt) - 80 )) more files._"
+            fi
+            echo
+            echo '### Suggested review targets'
+            echo
+            echo '- `docs/architecture/IPC_API.md` — IPC / sync action changes'
+            echo '- `electron/README.md` — main-process / media protocol / path security'
+            echo '- `src/utils/README.md` — new or renamed shared helpers'
+            echo '- `.cursorrules` — assistant quick-reference patterns'
+            echo
+            echo '**Documentation Impact**: Low'
+            echo
+            echo '<sub>Successor of the retired GitHub Models documentation analyzer • See [documentation-check-simple.yml](.github/workflows/documentation-check-simple.yml)</sub>'
+          } > analysis_result.md
 
-          # Extract content from response
-          analysis=$(echo "$response" | jq -r '.choices[0].message.content')
-
-          # Save to file for comment
-          echo "$analysis" > analysis_result.md
-
-          # Check if high or medium impact
-          if echo "$analysis" | grep -qE "(Documentation Impact: High|Documentation Impact: Medium)"; then
-            echo "needs_update=true" >> $GITHUB_OUTPUT
-          else
-            echo "needs_update=false" >> $GITHUB_OUTPUT
-          fi
+          echo "needs_update=false" >> "$GITHUB_OUTPUT"
 
       - name: Post PR comment
         uses: actions/github-script@v7
@@ -132,42 +66,9 @@ jobs:
             const fs = require('fs');
             const analysis = fs.readFileSync('analysis_result.md', 'utf8');
 
-            const comment = `## 📚 Documentation Check
-
-            GitHub Copilot has analyzed this PR for documentation impact.
-
-            ${analysis}
-
-            ---
-
-            ### 📝 Documentation Files Reference
-
-            **Root docs:** [View all](https://github.com/${{ github.repository }}/tree/${{ github.base_ref }})
-            - [\`.cursorrules\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/.cursorrules)
-            - [\`ARCHITECTURE.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/ARCHITECTURE.md)
-            - [\`IPC_API.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/IPC_API.md)
-            - [\`CONVENTIONS.md\`](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/CONVENTIONS.md)
-
-            **See [DOCUMENTATION.md](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/DOCUMENTATION.md) for complete documentation inventory.**
-
-            <sub>Powered by GitHub Copilot • [Documentation Guide](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/DOCUMENTATION.md)</sub>`;
-
-            // Post comment on PR
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: comment
-            });
-
-      - name: Add PR label
-        if: steps.copilot.outputs.needs_update == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.addLabels({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: ['documentation-needed']
+              body: analysis,
             });

@@ -6,16 +6,18 @@ This directory contains automated workflows for Graphium repository maintenance.
 
 **File:** `documentation-check.yml`
 
-**Purpose:** Automatically reviews pull requests to main branch and determines if documentation needs to be updated based on code changes.
+**Purpose:** Posts a documentation-review reminder on PRs to `main`.
+
+> **Note:** GitHub Models was retired on 2026-07-30. This workflow no longer calls
+> an inference API. For actionable pattern-based suggestions, use
+> [`documentation-check-simple.yml`](./documentation-check-simple.yml).
 
 ### Features
 
-- ✅ Analyzes PR diffs using GitHub Copilot (GPT-4o)
-- ✅ Identifies which documentation files need updates
-- ✅ Posts detailed analysis as PR comment
-- ✅ Adds `documentation-needed` label for high/medium impact changes
-- ✅ Provides direct links to relevant documentation files
-- ✅ No external API keys required - uses built-in GitHub token
+- ✅ Lists changed files on the PR
+- ✅ Points reviewers at the usual documentation targets (IPC, Electron, utils)
+- ✅ Does not require external API keys
+- ❌ No longer uses GitHub Models / GPT analysis (service retired)
 
 ### Setup
 
@@ -33,10 +35,9 @@ This directory contains automated workflows for Graphium repository maintenance.
    - Color: Choose a color (e.g., #FFA500 for orange)
    - Click "Create label"
 
-3. **Enable GitHub Models (if required):**
-   - GitHub Models is generally available for public repositories
-   - For private repositories, you may need a GitHub Copilot subscription
-   - The workflow uses the built-in `GITHUB_TOKEN` automatically
+3. **Enable GitHub Models (retired):**
+   - GitHub Models was retired on 2026-07-30
+   - Do not enable this workflow expecting AI analysis; use Documentation Check (Simple) instead
 
 ### Usage
 
