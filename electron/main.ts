@@ -40,7 +40,7 @@ import Store from 'electron-store';
 import JSZip from 'jszip';
 
 import { initializeAutoUpdater, registerAutoUpdaterHandlers } from './autoUpdater.js';
-import { isPathInside, sanitizeAssetFileName, isValidUuid } from './pathSecurity.js';
+import { isPathInsideOrEqual, sanitizeAssetFileName, isValidUuid } from './pathSecurity.js';
 import {
   initializeThemeManager,
   getThemeState,
@@ -539,9 +539,7 @@ async function processAssetForZip(
   }
   const absolutePath = fileURLToPath(src);
   const resolvedAssetPath = path.resolve(absolutePath);
-  const isWithinUserData =
-    resolvedAssetPath === path.resolve(userDataPath) ||
-    isPathInside(userDataPath, resolvedAssetPath);
+  const isWithinUserData = isPathInsideOrEqual(userDataPath, resolvedAssetPath);
   if (!isWithinUserData) {
     return src;
   }
@@ -970,7 +968,7 @@ function registerMiscHandlers(): void {
           { name: 'All Files', extensions: ['*'] },
         ],
       });
-      if (canceled ?? !filePath) {
+      if (canceled || !filePath) {
         return { success: false, reason: 'User canceled' };
       }
       await fs.writeFile(filePath, reportContent, 'utf-8');
@@ -979,12 +977,6 @@ function registerMiscHandlers(): void {
       return { success: false, reason: error instanceof Error ? error.message : 'Unknown error' };
     }
   });
-}
-
-function registerIpcHandlers(ctx: AppContext): void {
-  registerCampaignHandlers(ctx);
-  registerLibraryHandlers(ctx);
-  registerMiscHandlers();
 }
 
 /**
@@ -1035,10 +1027,8 @@ void app.whenReady().then((): void => {
     try {
       const decodedTargetPath = fileURLToPath(request.url);
       const resolvedTargetPath = path.resolve(decodedTargetPath);
-      const isWithinAllowedRoots = allowedMediaRoots.some(
-        (allowedRoot) =>
-          resolvedTargetPath === path.resolve(allowedRoot) ||
-          isPathInside(allowedRoot, resolvedTargetPath),
+      const isWithinAllowedRoots = allowedMediaRoots.some((allowedRoot) =>
+        isPathInsideOrEqual(allowedRoot, resolvedTargetPath),
       );
 
       if (!isWithinAllowedRoots) {
@@ -1124,8 +1114,9 @@ void app.whenReady().then((): void => {
     });
   }
 
-  // Register all file-system-dependent IPC handlers
-  registerIpcHandlers(ctx);
+  registerCampaignHandlers(ctx);
+  registerLibraryHandlers(ctx);
+  registerMiscHandlers();
 
   app.on('before-quit', () => {
     const cleanupEntries = async (

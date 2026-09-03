@@ -50,6 +50,7 @@ import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
 
 import { UpdateErrorFallbackUI } from './UpdateErrorFallbackUI';
+import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
 
 /**
  * Props for UpdateManagerErrorBoundary
@@ -122,13 +123,8 @@ class UpdateManagerErrorBoundary extends Component<Props, State> {
    * @param errorInfo - React error info including component stack
    */
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Update manager error:', error);
+    logErrorWithContext(captureErrorContext(error, errorInfo, { componentName: 'UpdateManager' }));
 
-    console.error('Error info:', errorInfo);
-
-    console.error('Component stack:', errorInfo.componentStack);
-
-    // Log specific error types for better debugging
     if (error.message.includes('Network') || error.message.includes('fetch')) {
       console.error(
         '[UpdateManager] Network error detected. Check internet connection and GitHub status.',

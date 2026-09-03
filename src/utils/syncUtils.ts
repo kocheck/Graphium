@@ -7,6 +7,7 @@ import type {
   GridType,
   ExploredRegion,
   TokenLibraryItem,
+  GameState,
 } from '../store/gameStore';
 import type { Measurement } from '../types/measurement';
 
@@ -14,7 +15,7 @@ import type { Measurement } from '../types/measurement';
  * Deep equality check for simple objects with primitive values and arrays
  * More reliable than JSON.stringify which can fail due to property ordering
  */
-// eslint-disable-next-line complexity
+// eslint-disable-next-line complexity, import/no-unused-modules -- used by syncUtils tests and detectChanges
 export function isEqual(obj1: unknown, obj2: unknown): boolean {
   if (obj1 === obj2) {
     return true;
@@ -171,22 +172,118 @@ export type SyncAction =
 function buildFullSync(currentState: Partial<SyncableGameState>): SyncAction {
   return {
     type: 'FULL_SYNC',
-    payload: {
-      tokens: currentState.tokens,
-      tokenLibrary: currentState.tokenLibrary,
-      drawings: currentState.drawings,
-      doors: currentState.doors ?? [],
-      stairs: currentState.stairs ?? [],
-      gridSize: currentState.gridSize,
-      gridType: currentState.gridType,
-      gridColor: currentState.gridColor,
-      map: currentState.map,
-      exploredRegions: currentState.exploredRegions,
-      isDaylightMode: currentState.isDaylightMode,
-      activeMeasurement: currentState.activeMeasurement ?? null,
-      broadcastMeasurement: Boolean(currentState.broadcastMeasurement ?? false),
-    },
+    payload: buildFullSyncPayload(currentState),
   };
+}
+
+/** Builds the payload used by FULL_SYNC and initial state broadcasts. */
+export function buildFullSyncPayload(
+  state: Partial<SyncableGameState>,
+): Partial<SyncableGameState> {
+  return {
+    tokens: state.tokens,
+    tokenLibrary: state.tokenLibrary,
+    drawings: state.drawings,
+    doors: state.doors ?? [],
+    stairs: state.stairs ?? [],
+    gridSize: state.gridSize,
+    gridType: state.gridType,
+    gridColor: state.gridColor,
+    map: state.map,
+    exploredRegions: state.exploredRegions,
+    isDaylightMode: state.isDaylightMode,
+    activeMeasurement: state.activeMeasurement ?? null,
+    broadcastMeasurement: Boolean(state.broadcastMeasurement ?? false),
+  };
+}
+
+/** Clones game store state into a sync snapshot for diffing. */
+export function cloneSyncableStateFromGame(
+  state: GameState,
+  options: { prevExploredRegions?: ExploredRegion[] } = {},
+): SyncableGameState {
+  const prevExplored = options.prevExploredRegions;
+  const nextExplored = state.exploredRegions;
+  let exploredRegions: ExploredRegion[];
+  if (prevExplored === nextExplored) {
+    exploredRegions = prevExplored ?? [];
+  } else if (nextExplored) {
+    exploredRegions = [...nextExplored];
+  } else {
+    exploredRegions = [];
+  }
+
+  return {
+    tokens: [...state.tokens],
+    tokenLibrary: [...state.campaign.tokenLibrary],
+    drawings: [...state.drawings],
+    doors: [...(state.doors ?? [])],
+    stairs: [...(state.stairs ?? [])],
+    gridSize: state.gridSize,
+    gridType: state.gridType,
+    gridColor: state.gridColor,
+    map: state.map ? { ...state.map } : null,
+    exploredRegions,
+    isDaylightMode: state.isDaylightMode,
+    activeMeasurement: state.activeMeasurement ?? null,
+    broadcastMeasurement: state.broadcastMeasurement ?? false,
+  };
+}
+
+/** Clones a FULL_SYNC payload into a sync snapshot with defaults for missing fields. */
+export function cloneSyncableStateFromPayload(
+  payload: Partial<SyncableGameState>,
+  defaults: { gridColor: string },
+): SyncableGameState {
+  return {
+    tokens: payload.tokens ? [...payload.tokens] : [],
+    tokenLibrary: payload.tokenLibrary ? [...payload.tokenLibrary] : [],
+    drawings: [...(payload.drawings ?? [])],
+    doors: [...(payload.doors ?? [])],
+    stairs: [...(payload.stairs ?? [])],
+    gridSize: payload.gridSize ?? 50,
+    gridType: payload.gridType ?? 'LINES',
+    gridColor: payload.gridColor ?? defaults.gridColor,
+    map: payload.map ? { ...payload.map } : null,
+    exploredRegions: payload.exploredRegions ? [...payload.exploredRegions] : [],
+    isDaylightMode: payload.isDaylightMode ?? false,
+    activeMeasurement: payload.activeMeasurement ?? null,
+    broadcastMeasurement: payload.broadcastMeasurement ?? false,
+  };
+}
+
+/** Detects World View token position changes for scoped Architect sync. */
+export function detectWorldViewTokenUpdates(
+  prevState: SyncableGameState | null,
+  currentTokens: Token[],
+): SyncAction[] {
+  if (!prevState) {
+    return [];
+  }
+
+  const prevTokenMap = new Map(prevState.tokens.map((token) => [token.id, token]));
+  const actions: SyncAction[] = [];
+
+  for (const token of currentTokens) {
+    const prev = prevTokenMap.get(token.id);
+    if (!prev) {
+      continue;
+    }
+
+    const changes: Partial<Token> = {};
+    if (token.x !== prev.x) {
+      changes.x = token.x;
+    }
+    if (token.y !== prev.y) {
+      changes.y = token.y;
+    }
+
+    if (Object.keys(changes).length > 0) {
+      actions.push({ type: 'TOKEN_UPDATE', payload: { id: token.id, changes } });
+    }
+  }
+
+  return actions;
 }
 
 function detectTokenActions(

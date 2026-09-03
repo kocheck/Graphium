@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
 
 import { DEFAULT_GRID_COLOR, useGameStore } from '../store/gameStore';
-import { isEqual, detectChanges } from '../utils/syncUtils';
+import {
+  buildFullSyncPayload,
+  cloneSyncableStateFromGame,
+  cloneSyncableStateFromPayload,
+  detectChanges,
+  detectWorldViewTokenUpdates,
+} from '../utils/syncUtils';
 
 import type { GameState, Token } from '../store/gameStore';
 import type { SyncAction, SyncableGameState } from '../utils/syncUtils';
@@ -109,23 +115,9 @@ function SyncManager(): null {
               }));
             }
 
-            worldViewPrevStateRef.current = {
-              tokens: action.payload.tokens ? [...action.payload.tokens] : [],
-              tokenLibrary: fullLib ? [...fullLib] : [],
-              drawings: [...(action.payload.drawings ?? [])],
-              doors: [...(action.payload.doors ?? [])],
-              stairs: [...(action.payload.stairs ?? [])],
-              gridSize: action.payload.gridSize ?? 50,
-              gridType: action.payload.gridType ?? 'LINES',
-              gridColor: action.payload.gridColor ?? DEFAULT_GRID_COLOR,
-              map: action.payload.map ? { ...action.payload.map } : null,
-              exploredRegions: action.payload.exploredRegions
-                ? [...action.payload.exploredRegions]
-                : [],
-              isDaylightMode: action.payload.isDaylightMode ?? false,
-              activeMeasurement: action.payload.activeMeasurement ?? null,
-              broadcastMeasurement: action.payload.broadcastMeasurement ?? false,
-            };
+            worldViewPrevStateRef.current = cloneSyncableStateFromPayload(action.payload, {
+              gridColor: DEFAULT_GRID_COLOR,
+            });
             break;
           }
 
@@ -282,37 +274,8 @@ function SyncManager(): null {
       }
 
       // BIDIRECTIONAL: Sync from World View to Architect
-      const detectWorldViewChanges = (
-        prevState: SyncableGameState | null,
-        currentState: GameState,
-      ): SyncAction[] => {
-        const actions: SyncAction[] = [];
-        if (!prevState) {
-          return actions;
-        }
-
-        const prevTokenMap = new Map(prevState.tokens.map((t: Token) => [t.id, t]));
-
-        currentState.tokens.forEach((token: Token) => {
-          const prev = prevTokenMap.get(token.id);
-          if (prev) {
-            const changes: Partial<Token> = {};
-            if (!isEqual(token.x, prev.x)) {
-              changes.x = token.x;
-            }
-            if (!isEqual(token.y, prev.y)) {
-              changes.y = token.y;
-            }
-            if (Object.keys(changes).length > 0) {
-              actions.push({ type: 'TOKEN_UPDATE', payload: { id: token.id, changes } });
-            }
-          }
-        });
-        return actions;
-      };
-
       const handleWorldViewUpdate = (state: GameState): void => {
-        const actions = detectWorldViewChanges(worldViewPrevStateRef.current, state);
+        const actions = detectWorldViewTokenUpdates(worldViewPrevStateRef.current, state.tokens);
         actions.forEach((action) => {
           if (isWeb && channel) {
             channel.postMessage(action);
@@ -321,21 +284,7 @@ function SyncManager(): null {
           }
         });
 
-        worldViewPrevStateRef.current = {
-          tokens: [...state.tokens],
-          tokenLibrary: [...(state.campaign?.tokenLibrary ?? [])],
-          drawings: [...state.drawings],
-          doors: [...(state.doors ?? [])],
-          stairs: [...(state.stairs ?? [])],
-          gridSize: state.gridSize,
-          gridType: state.gridType,
-          gridColor: state.gridColor,
-          map: state.map ? { ...state.map } : null,
-          exploredRegions: state.exploredRegions ? [...state.exploredRegions] : [],
-          isDaylightMode: state.isDaylightMode,
-          activeMeasurement: state.activeMeasurement ?? null,
-          broadcastMeasurement: state.broadcastMeasurement ?? false,
-        };
+        worldViewPrevStateRef.current = cloneSyncableStateFromGame(state);
       };
 
       const throttledWorldViewSync = throttle(handleWorldViewUpdate, 32);
@@ -365,7 +314,7 @@ function SyncManager(): null {
         const state = useGameStore.getState();
         const initialAction: SyncAction = {
           type: 'FULL_SYNC',
-          payload: {
+          payload: buildFullSyncPayload({
             tokens: state.tokens,
             tokenLibrary: state.campaign.tokenLibrary,
             drawings: state.drawings,
@@ -379,7 +328,7 @@ function SyncManager(): null {
             isDaylightMode: state.isDaylightMode,
             activeMeasurement: state.activeMeasurement ?? null,
             broadcastMeasurement: state.broadcastMeasurement ?? false,
-          },
+          }),
         };
 
         if (isWeb && channel) {
@@ -430,28 +379,9 @@ function SyncManager(): null {
         });
 
         const prev = prevStateRef.current;
-        const prevExplored = prev?.exploredRegions;
-        const nextExplored = state.exploredRegions;
-        prevStateRef.current = {
-          tokens: [...state.tokens],
-          tokenLibrary: [...state.campaign.tokenLibrary],
-          drawings: [...state.drawings],
-          doors: [...(state.doors ?? [])],
-          stairs: [...(state.stairs ?? [])],
-          gridSize: state.gridSize,
-          gridType: state.gridType,
-          gridColor: state.gridColor,
-          map: state.map ? { ...state.map } : null,
-          exploredRegions: (() => {
-            if (prevExplored === nextExplored) {
-              return prevExplored ?? [];
-            }
-            return nextExplored ? [...nextExplored] : [];
-          })(),
-          isDaylightMode: state.isDaylightMode,
-          activeMeasurement: state.activeMeasurement ?? null,
-          broadcastMeasurement: state.broadcastMeasurement ?? false,
-        };
+        prevStateRef.current = cloneSyncableStateFromGame(state, {
+          prevExploredRegions: prev?.exploredRegions,
+        });
       };
 
       const throttledSync = throttle(handleStoreUpdate, 32);
