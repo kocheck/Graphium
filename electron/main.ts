@@ -48,6 +48,7 @@ import {
   type ThemeMode,
 } from './themeManager.js';
 import { rewriteCampaignAssetSrcs } from '../src/utils/campaignAssets.js';
+import { sanitizeWorldToArchitectAction } from '../src/utils/worldViewTokenSync.js';
 
 import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 
@@ -1068,11 +1069,13 @@ void app.whenReady().then((): void => {
     }
   });
 
-  // IPC: SYNC_FROM_WORLD_VIEW — relay World View token updates back to Architect View
+  // IPC: SYNC_FROM_WORLD_VIEW — relay scoped token-position updates to Architect View
   ipcMain.on('SYNC_FROM_WORLD_VIEW', (_event: IpcMainEvent, action: unknown) => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('SYNC_WORLD_STATE', action);
+    const sanitized = sanitizeWorldToArchitectAction(action);
+    if (!sanitized || !mainWindow || mainWindow.isDestroyed()) {
+      return;
     }
+    mainWindow.webContents.send('SYNC_WORLD_STATE', sanitized);
   });
 
   // IPC: SYNC_WORLD_STATE — broadcast Architect state to World View
@@ -1104,7 +1107,13 @@ void app.whenReady().then((): void => {
   registerLibraryHandlers(ctx);
   registerMiscHandlers();
 
-  app.on('before-quit', () => {
+  let didRunQuitCleanup = false;
+  app.on('before-quit', (event) => {
+    if (didRunQuitCleanup) {
+      return;
+    }
+    event.preventDefault();
+
     const cleanupEntries = async (
       directory: string,
       keepDirectory: string | null = null,
@@ -1121,7 +1130,14 @@ void app.whenReady().then((): void => {
       );
     };
 
-    void cleanupEntries(tempAssetsDir);
-    void cleanupEntries(sessionsRootDir, activeSessionDir);
+    void (async (): Promise<void> => {
+      try {
+        await cleanupEntries(tempAssetsDir);
+        await cleanupEntries(sessionsRootDir, activeSessionDir);
+      } finally {
+        didRunQuitCleanup = true;
+        app.quit();
+      }
+    })();
   });
 });
