@@ -200,7 +200,9 @@ Main Process
 4. Return file:// URL
 ```
 
-**Cleanup note:** Temp assets are never deleted (TODO: clear on quit)
+**Cleanup note:** On app quit, Graphium removes `temp_assets/*` and all inactive
+`sessions/*` directories. The active session directory is preserved until the next
+load creates a new active session.
 
 ### IPC Message Routing
 

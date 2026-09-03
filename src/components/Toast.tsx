@@ -46,7 +46,8 @@ import { useGameStore } from '../store/gameStore';
  * Toast component displays notification messages
  */
 function Toast() {
-  const { toast, clearToast } = useGameStore();
+  const toast = useGameStore((state) => state.toast);
+  const clearToast = useGameStore((state) => state.clearToast);
 
   useEffect(() => {
     if (toast) {

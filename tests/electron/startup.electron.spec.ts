@@ -12,7 +12,8 @@
  * These tests run against the actual Electron executable.
  */
 
-import { test, expect, _electron as electron } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { launchElectron } from '../helpers/launchElectron';
 
 // Window size tolerance in pixels - accounts for OS-specific window chrome,
 // DPI scaling, and window decorations that may vary across platforms
@@ -20,9 +21,7 @@ const WINDOW_SIZE_TOLERANCE = 50;
 
 test.describe('Electron App Startup', () => {
   test('should launch Electron app successfully', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     // Get first window
     const window = await app.firstWindow();
@@ -37,9 +36,7 @@ test.describe('Electron App Startup', () => {
   });
 
   test('should create window with correct dimensions', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -57,9 +54,7 @@ test.describe('Electron App Startup', () => {
   });
 
   test('should set window minimum size', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -81,9 +76,7 @@ test.describe('Electron App Startup', () => {
 
   test('should restore window size from previous session', async () => {
     // First launch - set custom size
-    let app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    let app = await launchElectron();
 
     let window = await app.firstWindow();
     await window.setViewportSize({ width: 1200, height: 800 });
@@ -92,9 +85,7 @@ test.describe('Electron App Startup', () => {
     await app.close();
 
     // Second launch - should restore size
-    app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    app = await launchElectron();
 
     window = await app.firstWindow();
 
@@ -119,9 +110,7 @@ test.describe('Electron App Startup', () => {
 
 test.describe('Electron App Environment', () => {
   test('should have Electron APIs available', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -144,9 +133,7 @@ test.describe('Electron App Environment', () => {
   });
 
   test('should detect Electron platform', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -163,9 +150,7 @@ test.describe('Electron App Environment', () => {
 
 test.describe('Electron Menu Bar', () => {
   test('should initialize application menu', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     // Check if app menu is set
     const hasMenu = await app.evaluate(async ({ Menu }) => {
@@ -179,9 +164,7 @@ test.describe('Electron Menu Bar', () => {
   });
 
   test('should have File menu with expected items', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const menuItems = await app.evaluate(async ({ Menu }) => {
       const appMenu = Menu.getApplicationMenu();
@@ -205,8 +188,7 @@ test.describe('Electron Menu Bar', () => {
 
 test.describe('Electron Dev Tools', () => {
   test('should have dev tools available in development', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
+    const app = await launchElectron({
       env: {
         ...process.env,
         NODE_ENV: 'development',
@@ -229,9 +211,7 @@ test.describe('Electron Dev Tools', () => {
 
 test.describe('Electron Auto-Updater', () => {
   test('should initialize auto-updater', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     // Check if auto-updater is initialized
     const autoUpdaterReady = await app.evaluate(async ({ autoUpdater }) => {
@@ -247,9 +227,7 @@ test.describe('Electron Auto-Updater', () => {
 
 test.describe('Electron Protocol Handlers', () => {
   test('should register custom protocol', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const hasProtocol = await app.evaluate(async ({ protocol }) => {
       return protocol.isProtocolHandled('graphium');
@@ -264,9 +242,7 @@ test.describe('Electron Protocol Handlers', () => {
 
 test.describe('Electron App Lifecycle', () => {
   test('should handle window close event', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -281,9 +257,7 @@ test.describe('Electron App Lifecycle', () => {
   });
 
   test('should handle app quit', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     // Quit app
     await app.close();
@@ -292,9 +266,7 @@ test.describe('Electron App Lifecycle', () => {
   });
 
   test('should save state before quit', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -307,9 +279,7 @@ test.describe('Electron App Lifecycle', () => {
     await app.close();
 
     // Relaunch
-    const newApp = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const newApp = await launchElectron();
 
     const newWindow = await newApp.firstWindow();
 
@@ -327,9 +297,7 @@ test.describe('Electron Performance', () => {
   test('should launch within reasonable time', async () => {
     const startTime = Date.now();
 
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     const window = await app.firstWindow();
 
@@ -344,9 +312,7 @@ test.describe('Electron Performance', () => {
   });
 
   test('should have low memory footprint on startup', async () => {
-    const app = await electron.launch({
-      args: ['./dist-electron/main.js'],
-    });
+    const app = await launchElectron();
 
     // Note: Memory testing depends on your setup
     // This is a conceptual test

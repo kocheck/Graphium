@@ -39,6 +39,7 @@ function TouchVisualFeedback({
   containerBounds,
 }: TouchVisualFeedbackProps) {
   const settings = useTouchSettingsStore();
+  const shouldHideVisualFeedback = settings.desktopOnlyMode;
 
   // Calculate pressure indicator size (10-40px based on pressure)
   const pressureIndicatorSize = useMemo(() => {
@@ -88,40 +89,43 @@ function TouchVisualFeedback({
       style={{ width: containerBounds.width, height: containerBounds.height }}
     >
       {/* Pressure Indicator */}
-      {settings.showPressureIndicator && pressure !== null && pointerPosition && (
-        <div
-          className="absolute transition-all duration-75"
-          style={{
-            left: pointerPosition.x + 30, // Offset from cursor
-            top: pointerPosition.y - 30,
-            transform: 'translate(-50%, -50%)',
-          }}
-        >
-          {/* Pressure circle */}
+      {!shouldHideVisualFeedback &&
+        settings.showPressureIndicator &&
+        pressure !== null &&
+        pointerPosition && (
           <div
-            className="rounded-full opacity-80 border-2 border-white shadow-lg transition-all duration-75"
+            className="absolute transition-all duration-75"
             style={{
-              width: pressureIndicatorSize,
-              height: pressureIndicatorSize,
-              backgroundColor: pressureIndicatorColor,
-            }}
-          />
-
-          {/* Pressure value text */}
-          <div
-            className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 text-xs font-mono px-2 py-0.5 rounded shadow-md whitespace-nowrap"
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              color: 'white',
+              left: pointerPosition.x + 30, // Offset from cursor
+              top: pointerPosition.y - 30,
+              transform: 'translate(-50%, -50%)',
             }}
           >
-            {(pressure * 100).toFixed(0)}%
+            {/* Pressure circle */}
+            <div
+              className="rounded-full opacity-80 border-2 border-white shadow-lg transition-all duration-75"
+              style={{
+                width: pressureIndicatorSize,
+                height: pressureIndicatorSize,
+                backgroundColor: pressureIndicatorColor,
+              }}
+            />
+
+            {/* Pressure value text */}
+            <div
+              className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 text-xs font-mono px-2 py-0.5 rounded shadow-md whitespace-nowrap"
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                color: 'white',
+              }}
+            >
+              {(pressure * 100).toFixed(0)}%
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Multi-Touch Point Indicators */}
-      {settings.showTouchPointIndicators && touchPoints.length > 0 && (
+      {!shouldHideVisualFeedback && settings.showTouchPointIndicators && touchPoints.length > 0 && (
         <>
           {touchPoints.map((point, index) => (
             <div
@@ -169,7 +173,7 @@ function TouchVisualFeedback({
       )}
 
       {/* Gesture Mode Feedback */}
-      {settings.showGestureFeedback && gestureModeInfo && (
+      {!shouldHideVisualFeedback && settings.showGestureFeedback && gestureModeInfo && (
         <div
           className="absolute top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg font-semibold text-sm animate-fade-in"
           style={{
