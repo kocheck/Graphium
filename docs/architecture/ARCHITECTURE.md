@@ -120,17 +120,17 @@ World Window:
 
 **Channel Definitions:**
 
-| Channel               | Direction     | Type   | Purpose                                    |
-| --------------------- | ------------- | ------ | ------------------------------------------ |
-| `create-world-window` | Renderer→Main | send   | Open World Window                          |
-| `SYNC_WORLD_STATE`    | Main→World    | send   | Broadcast state updates                    |
-| `SYNC_WORLD_STATE`    | Main→Main     | on     | Receive state from Main Window             |
-| `SAVE_ASSET_TEMP`     | Renderer→Main | invoke | Save uploaded asset, return file path      |
-| `SAVE_CAMPAIGN`       | Renderer→Main | invoke | Save .graphium file, return success bool   |
-| `LOAD_CAMPAIGN`       | Renderer→Main | invoke | Load .graphium file, return GameState      |
-| `get-theme-state`     | Renderer→Main | invoke | Get current theme mode and effective theme |
-| `set-theme-mode`      | Renderer→Main | invoke | Set theme mode (light/dark/system)         |
-| `theme-changed`       | Main→Renderer | send   | Broadcast theme updates to all windows     |
+| Channel                | Direction            | Type   | Purpose                                                      |
+| ---------------------- | -------------------- | ------ | ------------------------------------------------------------ |
+| `create-world-window`  | Renderer→Main        | send   | Open World Window                                            |
+| `SYNC_WORLD_STATE`     | Architect→Main→World | send   | Broadcast SyncAction deltas (`BATCH` / `FULL_SYNC` / entity) |
+| `SYNC_FROM_WORLD_VIEW` | World→Main→Architect | send   | Scoped token-position SyncAction only                        |
+| `SAVE_ASSET_TEMP`      | Renderer→Main        | invoke | Save uploaded asset, return file path                        |
+| `SAVE_CAMPAIGN`        | Renderer→Main        | invoke | Save .graphium file, return success bool                     |
+| `LOAD_CAMPAIGN`        | Renderer→Main        | invoke | Load .graphium file, return GameState                        |
+| `get-theme-state`      | Renderer→Main        | invoke | Get current theme mode and effective theme                   |
+| `set-theme-mode`       | Renderer→Main        | invoke | Set theme mode (light/dark/system)                           |
+| `theme-changed`        | Main→Renderer        | send   | Broadcast theme updates to all windows                       |
 
 **State Broadcast Flow:**
 

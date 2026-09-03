@@ -67,22 +67,20 @@ Only send what changed:
 
 **Action Types Implemented:**
 
-- `FULL_SYNC` - Initial load or campaign load
-- `TOKEN_ADD` - New token added
-- `TOKEN_UPDATE` - Token properties changed (position, scale, etc.)
-- `TOKEN_REMOVE` - Token deleted
-- `DRAWING_ADD` - New drawing stroke
-- `DRAWING_REMOVE` - Drawing deleted
-- `MAP_UPDATE` - Map changed
-- `GRID_UPDATE` - Grid settings changed
+- `FULL_SYNC` - Initial load, null previous state, or ≥20 deltas
+- `BATCH` - Multiple small deltas in one IPC message
+- `TOKEN_ADD` / `TOKEN_UPDATE` / `TOKEN_REMOVE`
+- `DRAWING_*`, `DOOR_*`, `STAIRS_*` - Entity add/update/remove
+- `MAP_UPDATE` / `GRID_UPDATE` / `EXPLORED_UPDATE` / `MEASUREMENT_UPDATE` / `LIBRARY_UPDATE`
 
 **Change Detection Algorithm:**
 
-1. Track previous state in `useRef`
-2. On store update, diff current vs previous
-3. Generate action array containing only changes
-4. Send each action via IPC
-5. Update previous state reference
+1. Track previous syncable snapshot in `useRef`
+2. Skip when syncable Zustand fields are unchanged by reference
+3. Diff with `detectChanges` (`src/utils/syncUtils.ts`)
+4. Coalesce via `coalesceSyncActions` (`BATCH` or `FULL_SYNC`)
+5. Skip snapshot cloning when no actions were emitted
+6. World View → Architect uses `detectWorldViewTokenUpdates` (positions only)
 
 **Performance Impact:**
 | Metric | Before | After | Improvement |

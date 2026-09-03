@@ -8,10 +8,45 @@ This directory contains:
 
 - **Image processing** - Resize, convert, optimize uploaded assets
 - **Grid math** - Coordinate snapping calculations
-- **File operations** - Path manipulation, format conversion (future)
-- **Validation** - Type guards, data validation (future)
+- **Sync diffs** - Architect ↔ World View delta detection and coalescing
+- **Campaign assets** - Parallel rewrite of map/token/thumbnail srcs for ZIP I/O
+- **URL helpers** - `media://` conversion and GitHub issue URL building
+- **Throttling** - Shared leading/trailing throttle for sync and update UI
 
 ## Contents
+
+### `syncUtils.ts`
+
+**Delta sync helpers for Architect ↔ World View**
+
+- `detectChanges` / `detectEntityActions` / `detectWorldViewTokenUpdates`
+- `coalesceSyncActions` (`BATCH` under threshold, `FULL_SYNC` at/above)
+- `cloneSyncableStateFromGame` / `buildFullSyncPayload` / `isSyncSliceUnchanged`
+- `isEqual` for deep equality of sync payloads
+
+### `campaignAssets.ts`
+
+**Shared campaign asset walker**
+
+- `rewriteCampaignAssetSrcs(campaign, rewrite, { includeThumbnails })`
+- Parallel jobs with concurrency cap and identical-src dedupe
+- Used by Electron ZIP save/load and `WebStorageService`
+
+### `mediaProtocol.ts`
+
+```typescript
+toMediaProtocol('file:///…/token.webp'); // → 'media:///…/token.webp'
+```
+
+### `githubIssueUrl.ts`
+
+```typescript
+buildGitHubIssueUrl('Bug Report: Error', reportBody); // truncated under URL limits
+```
+
+### `throttle.ts`
+
+Shared throttle used by `SyncManager` and `UpdateManager` download progress.
 
 ### `AssetProcessor.ts` (48 lines)
 
