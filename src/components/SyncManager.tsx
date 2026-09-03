@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { DEFAULT_GRID_COLOR, useGameStore } from '../store/gameStore';
+import { usePointerOverlayStore } from '../store/pointerOverlayStore';
 import { recordIpcAction } from '../utils/perfCounters';
 import { queueSyncAction, setRafSyncSender } from '../utils/rafSync';
 import {
@@ -21,7 +22,7 @@ import {
 } from '../utils/syncUtils';
 import { throttle } from '../utils/throttle';
 import { patchTokenInIndex } from '../utils/tokenIndex';
-import { applyTokenNodePosition, applyTokenNodePositions } from '../utils/tokenNodeRegistry';
+import { applyTokenNodePositions } from '../utils/tokenNodeRegistry';
 import {
   pickTokenPositionChanges,
   sanitizeWorldToArchitectAction,
@@ -84,6 +85,7 @@ function SyncManager(): null {
       ): void => {
         applyTokenNodePositions(positions);
         if (!commit) {
+          usePointerOverlayStore.getState().setLivePositions(positions);
           return;
         }
         beginInboundApply();
@@ -94,11 +96,24 @@ function SyncManager(): null {
           }
         } finally {
           endInboundApply();
+          usePointerOverlayStore.getState().clearLivePositions();
+        }
+      };
+
+      const handleSyncAction = (
+        _event: Electron.IpcRendererEvent | null,
+        action: SyncAction,
+      ): void => {
+        beginInboundApply();
+        try {
+          applySyncAction(_event, action);
+        } finally {
+          endInboundApply();
         }
       };
 
       // eslint-disable-next-line complexity
-      const handleSyncAction = (
+      const applySyncAction = (
         _event: Electron.IpcRendererEvent | null,
         action: SyncAction,
       ): void => {
@@ -108,7 +123,7 @@ function SyncManager(): null {
           case 'BATCH':
             for (const inner of action.payload) {
               if (inner.type !== 'BATCH') {
-                handleSyncAction(_event, inner);
+                applySyncAction(_event, inner);
               }
             }
             break;
@@ -172,11 +187,11 @@ function SyncManager(): null {
 
           case 'TOKEN_DRAG_START':
           case 'TOKEN_DRAG_MOVE':
-            applyTokenNodePosition(action.payload.id, action.payload.x, action.payload.y);
+            applyDragPositions([action.payload], false);
             break;
 
           case 'TOKEN_DRAG_MOVE_BATCH':
-            applyTokenNodePositions(action.payload);
+            applyDragPositions(action.payload, false);
             break;
 
           case 'TOKEN_DRAG_END': {

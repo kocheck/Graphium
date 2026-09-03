@@ -24,6 +24,19 @@ export function getFogBounds(map: MapConfig | null): {
   return NO_MAP_FOG_BOUNDS;
 }
 
+export function applyLiveTokenPositions(
+  tokens: Token[],
+  livePositions: ReadonlyMap<string, { x: number; y: number }>,
+): Token[] {
+  if (livePositions.size === 0) {
+    return tokens;
+  }
+  return tokens.map((token) => {
+    const live = livePositions.get(token.id);
+    return live ? { ...token, x: live.x, y: live.y } : token;
+  });
+}
+
 export function computeHiddenNpcIds(
   tokens: Token[],
   libraryById: Map<string, TokenLibraryItem>,

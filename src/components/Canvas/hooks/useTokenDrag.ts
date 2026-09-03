@@ -60,6 +60,17 @@ function clearSnapPreviews(): void {
   }
 }
 
+function publishLivePositions(positions: Array<{ id: string; x: number; y: number }>): void {
+  usePointerOverlayStore.getState().setLivePositions(positions);
+}
+
+function clearLivePositions(): void {
+  const store = usePointerOverlayStore.getState();
+  if (store.livePositions.size > 0) {
+    store.clearLivePositions();
+  }
+}
+
 // eslint-disable-next-line max-lines-per-function
 export const useTokenDrag = ({
   tool,
@@ -281,6 +292,7 @@ export const useTokenDrag = ({
         }
 
         publishSnapPreviews(snapPreviews);
+        publishLivePositions(livePositions);
         applyTokenNodePositions(livePositions);
       }
     },
@@ -312,6 +324,7 @@ export const useTokenDrag = ({
         setTokenMouseDownStart(null);
         setIsDraggingWithThreshold(false);
         clearSnapPreviews();
+        clearLivePositions();
         return;
       }
 
@@ -411,6 +424,7 @@ export const useTokenDrag = ({
       setTokenMouseDownStart(null);
       setIsDraggingWithThreshold(false);
       clearSnapPreviews();
+      clearLivePositions();
     },
     [
       tokenMouseDownStart,

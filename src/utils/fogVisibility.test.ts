@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeHiddenNpcIds, getFogBounds } from './fogVisibility';
+import { applyLiveTokenPositions, computeHiddenNpcIds, getFogBounds } from './fogVisibility';
 import { indexTokenLibrary } from '../hooks/useTokenData';
 
 import type { Token } from '../store/gameStore';
@@ -39,5 +39,31 @@ describe('fogVisibility', () => {
     expect(hidden.has('seen')).toBe(false);
     expect(hidden.has('hidden')).toBe(true);
     expect(hidden.has('pc')).toBe(false);
+  });
+
+  it('overlays live drag positions without mutating the original tokens', () => {
+    const tokens: Token[] = [
+      { id: 'npc', x: 400, y: 400, src: 'npc.png', type: 'NPC' },
+      { id: 'still', x: 10, y: 10, src: 'npc.png', type: 'NPC' },
+    ];
+    const live = new Map([['npc', { x: 12, y: 12 }]]);
+    const next = applyLiveTokenPositions(tokens, live);
+
+    expect(next[0]).toMatchObject({ id: 'npc', x: 12, y: 12 });
+    expect(tokens[0]).toMatchObject({ x: 400, y: 400 });
+    expect(next[1]).toBe(tokens[1]);
+  });
+
+  it('hides NPCs from live positions, not stale store coordinates', () => {
+    const tokens: Token[] = [{ id: 'npc', x: 10, y: 10, src: 'npc.png', type: 'NPC' }];
+    const polygon = [
+      { x: 0, y: 0 },
+      { x: 80, y: 0 },
+      { x: 80, y: 80 },
+      { x: 0, y: 80 },
+    ];
+    const live = applyLiveTokenPositions(tokens, new Map([['npc', { x: 400, y: 400 }]]));
+    const hidden = computeHiddenNpcIds(live, indexTokenLibrary([]), [polygon], 50);
+    expect(hidden.has('npc')).toBe(true);
   });
 });

@@ -5,6 +5,18 @@ export interface ViewportBounds {
   height: number;
 }
 
+/** Culled tokens stay mounted so inbound TOKEN_DRAG_MOVE can still find a Konva node. */
+export function shouldRenderTokenVisuals(
+  hiddenByFog: boolean,
+  isDragging: boolean,
+  inViewport: boolean,
+): boolean {
+  if (hiddenByFog) {
+    return false;
+  }
+  return isDragging || inViewport;
+}
+
 export function isTokenInViewport(
   x: number,
   y: number,

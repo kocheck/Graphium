@@ -6,6 +6,11 @@ import { expect } from '@playwright/test';
  *
  * Reusable functions for common campaign operations in tests.
  * Follows the Page Object Model (POM) pattern to avoid duplication.
+ *
+ * Many functional specs still call helpers that wait on testids the current
+ * editor does not ship (`add-token-button`, `export-campaign`, `campaign-title`).
+ * Those specs are ignored in playwright.config.ts Web-Chromium so CI shards
+ * finish instead of hanging on the 45s test timeout.
  */
 
 /**

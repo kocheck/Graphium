@@ -10,8 +10,13 @@ import {
   peekVisionRadius,
 } from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
+import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { useVisionStore } from '../../store/visionStore';
-import { computeHiddenNpcIds, getFogBounds } from '../../utils/fogVisibility';
+import {
+  applyLiveTokenPositions,
+  computeHiddenNpcIds,
+  getFogBounds,
+} from '../../utils/fogVisibility';
 import { recordFowRecalc } from '../../utils/perfCounters';
 
 import type { Door, MapConfig } from '../../store/gameStore';
@@ -115,7 +120,12 @@ const fogLog = (...args: unknown[]): void => {
  */
 // eslint-disable-next-line max-lines-per-function
 function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerProps): JSX.Element {
-  const tokens = useGameStore((s) => s.tokens);
+  const storeTokens = useGameStore((s) => s.tokens);
+  const livePositions = usePointerOverlayStore((s) => s.livePositions);
+  const tokens = useMemo(
+    () => applyLiveTokenPositions(storeTokens, livePositions),
+    [storeTokens, livePositions],
+  );
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
   const wallDrawings = useGameStore(
     useShallow((s) => s.drawings.filter((drawing) => drawing.tool === 'wall')),

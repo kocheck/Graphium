@@ -8,7 +8,6 @@ import { toMediaProtocol } from '../../utils/mediaProtocol';
 import type Konva from 'konva';
 import type { KonvaEventObject, Filter } from 'konva/lib/Node';
 
-// eslint-disable-next-line import/no-unused-modules
 export interface URLImageProps {
   name?: string;
   src: string;

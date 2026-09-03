@@ -10,7 +10,7 @@ import { useGameStore } from '../../store/gameStore';
 import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { useVisionStore } from '../../store/visionStore';
 import { registerTokenNode } from '../../utils/tokenNodeRegistry';
-import { isTokenInViewport } from '../../utils/viewportCulling';
+import { isTokenInViewport, shouldRenderTokenVisuals } from '../../utils/viewportCulling';
 
 import type { URLImageProps } from './URLImage';
 import type { TokenLibraryItem } from '../../store/gameStore';
@@ -102,6 +102,17 @@ function tokenVisualProps(
   return TOKEN_VISUAL_IDLE;
 }
 
+function resolveDisplayPosition(
+  dragPos: { x: number; y: number } | undefined,
+  livePos: { x: number; y: number } | undefined,
+  fallback: { x: number; y: number },
+): { x: number; y: number } {
+  return {
+    x: dragPos?.x ?? livePos?.x ?? fallback.x,
+    y: dragPos?.y ?? livePos?.y ?? fallback.y,
+  };
+}
+
 function TokenNodeComponent({
   tokenId,
   tokenLibrary,
@@ -119,6 +130,7 @@ function TokenNodeComponent({
 }: TokenNodeProps): ReactElement | null {
   const token = useGameStore((s) => s.tokensById[tokenId]);
   const isHovered = usePointerOverlayStore((s) => s.hoveredTokenId === tokenId);
+  const livePos = usePointerOverlayStore((s) => s.livePositions.get(tokenId));
   const hiddenByFog = useVisionStore((s) => s.hiddenTokenIds.has(tokenId));
 
   const resolved = useMemo(
@@ -130,66 +142,61 @@ function TokenNodeComponent({
     return null;
   }
 
-  const displayX = dragPos ? dragPos.x : resolved.x;
-  const displayY = dragPos ? dragPos.y : resolved.y;
+  const { x: displayX, y: displayY } = resolveDisplayPosition(dragPos, livePos, resolved);
   const safeScale = resolved.scale || 1;
   const tokenSize = gridSize * safeScale;
   const tokenHeight = tokenSize;
   const displayYOffset = gridType === 'ISOMETRIC' ? -(tokenHeight / 2) : 0;
   const finalDisplayY = displayY + displayYOffset;
-
-  if (hiddenByFog) {
-    return null;
-  }
-
-  if (
-    !isDragging &&
-    !isTokenInViewport(displayX, displayY, tokenSize, visibleBounds, gridSize * 2)
-  ) {
-    return null;
-  }
-
+  const inViewport = isTokenInViewport(displayX, displayY, tokenSize, visibleBounds, gridSize * 2);
+  const showVisuals = shouldRenderTokenVisuals(hiddenByFog, isDragging, inViewport);
   const visualProps = tokenVisualProps(isDragging, isHovered && tool === 'select' && !isDragging);
 
   return (
-    <Group>
-      <TokenErrorBoundary tokenId={token.id} onShowToast={onShowToast}>
-        <URLImage
-          ref={(node) => {
-            registerTokenNode(token.id, node, displayYOffset);
-          }}
-          name="token"
-          id={token.id}
-          src={resolved.src}
-          x={displayX}
-          y={finalDisplayY}
-          width={tokenSize}
-          height={tokenHeight}
-          draggable={false}
-          listening
-          perfectDrawEnabled={false}
-          {...visualProps}
-          onSelect={(e) => onSelect(e, token.id)}
-          onMouseEnter={() => tool === 'select' && onHover(token.id)}
-          onMouseLeave={() => tool === 'select' && onHover(null)}
-        />
-        {isSelected && !isDragging && (
-          <Circle
-            x={displayX + tokenSize / 2}
-            y={finalDisplayY + tokenSize / 2}
-            radius={tokenSize / 2 + 2}
-            stroke="#2563eb"
-            strokeWidth={3}
-            shadowColor="#2563eb"
-            shadowBlur={8}
-            shadowEnabled
-            listening={false}
+    <Group
+      ref={(node) => {
+        registerTokenNode(token.id, node, displayYOffset);
+      }}
+      x={displayX}
+      y={finalDisplayY}
+      listening={!hiddenByFog}
+    >
+      {showVisuals && (
+        <TokenErrorBoundary tokenId={token.id} onShowToast={onShowToast}>
+          <URLImage
+            name="token"
+            id={token.id}
+            src={resolved.src}
+            x={0}
+            y={0}
+            width={tokenSize}
+            height={tokenHeight}
+            draggable={false}
+            listening
             perfectDrawEnabled={false}
-            dash={[8, 4]}
+            {...visualProps}
+            onSelect={(e) => onSelect(e, token.id)}
+            onMouseEnter={() => tool === 'select' && onHover(token.id)}
+            onMouseLeave={() => tool === 'select' && onHover(null)}
           />
-        )}
-      </TokenErrorBoundary>
-      {resolved.name && (
+          {isSelected && !isDragging && (
+            <Circle
+              x={tokenSize / 2}
+              y={tokenSize / 2}
+              radius={tokenSize / 2 + 2}
+              stroke="#2563eb"
+              strokeWidth={3}
+              shadowColor="#2563eb"
+              shadowBlur={8}
+              shadowEnabled
+              listening={false}
+              perfectDrawEnabled={false}
+              dash={[8, 4]}
+            />
+          )}
+        </TokenErrorBoundary>
+      )}
+      {showVisuals && resolved.name && (
         <Text
           text={resolved.name}
           fontSize={12}
@@ -199,8 +206,8 @@ function TokenNodeComponent({
           align="center"
           verticalAlign="middle"
           width={tokenSize * 2}
-          x={displayX - tokenSize / 2}
-          y={displayY + tokenSize + 8}
+          x={-tokenSize / 2}
+          y={tokenSize + 8 - displayYOffset}
           listening={false}
           perfectDrawEnabled={false}
         />

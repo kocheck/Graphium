@@ -18,6 +18,7 @@ export function registerTokenLayer(layer: Konva.Layer | null): void {
   tokenLayer = layer;
 }
 
+// eslint-disable-next-line import/no-unused-modules -- used by unit tests
 export function applyTokenNodePosition(id: string, x: number, y: number): boolean {
   if (!nodes.has(id)) {
     return false;
