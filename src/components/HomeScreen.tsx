@@ -96,7 +96,8 @@ const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
  * A lightweight, high-performance launcher with a modern fantasy aesthetic.
  * Features quirky TTRPG-themed micro-interactions and CSS-only visuals.
  */
-export function HomeScreen({ onStartEditor }: HomeScreenProps) {
+// eslint-disable-next-line max-lines-per-function, complexity
+export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
   const [recentCampaigns, setRecentCampaigns] = useState<RecentCampaign[]>([]);
   const [isElectron, setIsElectron] = useState(false);
   const [isMac, setIsMac] = useState(false);
@@ -146,7 +147,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       'Chaos Coordinators',
       'Rules Lawyers (The Good Kind)',
     ];
-    return titles[Math.floor(Math.random() * titles.length)]!;
+    const chosen = titles[Math.floor(Math.random() * titles.length)];
+    return chosen ?? 'Dungeon Masters';
   });
 
   const loadCampaign = useGameStore((state) => state.loadCampaign);
@@ -197,7 +199,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     storage
       .getThemeMode()
       .then((mode) => setCurrentTheme(mode))
-      .catch(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      .catch((): void => {});
 
     // Detect OS for download banners
     if (typeof navigator !== 'undefined') {
@@ -239,7 +242,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
       return;
     }
 
-    const handleTabKey = (e: KeyboardEvent) => {
+    const handleTabKey = (e: KeyboardEvent): void => {
       if (e.key !== 'Tab' || !templatesModalRef.current) {
         return;
       }
@@ -265,7 +268,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
   // Global keyboard shortcuts
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
+    // eslint-disable-next-line complexity
+    const handleKeyPress = (e: KeyboardEvent): void => {
       // Global shortcuts (Ctrl/Cmd + key)
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
         if (e.key === 'n') {
@@ -304,26 +308,26 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isAboutOpen, showTemplates, handleNewCampaign, handleLoadCampaign, handleGenerateDungeon]);
 
-  const handleLoadRecent = (_recent: RecentCampaign) => {
+  const handleLoadRecent = (_recent: RecentCampaign): void => {
     showToast(
       'Recent campaigns are a reference list only right now. Use "Load Campaign" and select the matching .graphium file.',
       'info',
     );
   };
 
-  const handleRemoveRecent = (campaignId: string) => {
+  const handleRemoveRecent = (campaignId: string): void => {
     removeRecentCampaign(campaignId);
     setRecentCampaigns(getRecentCampaigns());
   };
 
-  const handleDismissDownloadBanner = () => {
+  const handleDismissDownloadBanner = (): void => {
     localStorage.setItem('hideDownloadBanner', 'true');
     setHideDownloadBanner(true);
   };
 
   // NEW FEATURE HANDLERS
 
-  const handleToggleLiteMode = () => {
+  const handleToggleLiteMode = (): void => {
     const newLiteMode = !liteMode;
     setLiteMode(newLiteMode);
     localStorage.setItem('liteMode', String(newLiteMode));
@@ -335,11 +339,15 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     );
   };
 
-  const handleToggleTheme = async () => {
+  const handleToggleTheme = async (): Promise<void> => {
     const storage = getStorage();
     const themes: ThemeMode[] = ['light', 'dark', 'system'];
     const currentIndex = themes.indexOf(currentTheme);
-    const nextTheme = themes[(currentIndex + 1) % themes.length]!;
+    const nextThemeCandidate = themes[(currentIndex + 1) % themes.length];
+    if (!nextThemeCandidate) {
+      return;
+    }
+    const nextTheme = nextThemeCandidate;
 
     try {
       await storage.setThemeMode(nextTheme);
@@ -347,12 +355,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
       // Apply theme immediately for web (Electron handles via IPC)
       if (storage.getPlatform() === 'web') {
-        const effectiveTheme =
-          nextTheme === 'system'
-            ? window.matchMedia('(prefers-color-scheme: dark)').matches
-              ? 'dark'
-              : 'light'
-            : nextTheme;
+        let effectiveTheme: string;
+        if (nextTheme === 'system') {
+          effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+        } else {
+          effectiveTheme = nextTheme;
+        }
         document.documentElement.setAttribute('data-theme', effectiveTheme);
 
         // Broadcast to other tabs
@@ -364,11 +374,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
         }
       }
     } catch (error) {
-      console.error('[HomeScreen] Failed to set theme:', error);
+      if (import.meta.env.DEV) {
+        console.error('[HomeScreen] Failed to set theme:', error);
+      }
     }
   };
 
-  const handleSelectTemplate = (template: CampaignTemplate) => {
+  const handleSelectTemplate = (template: CampaignTemplate): void => {
     setShowTemplates(false);
 
     // Set up new campaign with template settings
@@ -391,7 +403,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     [recentCampaigns, searchQuery],
   );
 
-  const getThemeIcon = () => {
+  const getThemeIcon = (): JSX.Element => {
     if (currentTheme === 'light') {
       return <RiSunLine className="w-4 h-4" />;
     }
@@ -401,7 +413,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
     return <RiComputerLine className="w-4 h-4" />;
   };
 
-  const getThemeLabel = () => {
+  const getThemeLabel = (): string => {
     if (currentTheme === 'light') {
       return 'Light';
     }
@@ -489,7 +501,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
 
           <Tooltip content="Continue an existing campaign from a .graphium file" offset={20}>
             <button
-              onClick={handleLoadCampaign}
+              onClick={() => {
+                void handleLoadCampaign();
+              }}
               className="action-card"
               aria-label="Load an existing campaign"
             >
@@ -651,7 +665,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps) {
           </a>
           <span className="footer-separator">·</span>
           <button
-            onClick={handleToggleTheme}
+            onClick={() => {
+              void handleToggleTheme();
+            }}
             className="footer-link footer-icon-link"
             title={`Theme: ${getThemeLabel()} (click to cycle)`}
             aria-label={`Current theme: ${getThemeLabel()}. Click to cycle themes.`}
