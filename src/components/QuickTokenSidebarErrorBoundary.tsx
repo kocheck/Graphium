@@ -11,6 +11,8 @@ import { Component } from 'react';
 
 import { RiErrorWarningLine } from '@remixicon/react';
 
+import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
+
 interface Props {
   children: ReactNode;
 }
@@ -31,7 +33,9 @@ export class QuickTokenSidebarErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('[QuickTokenSidebarErrorBoundary] Token sidebar crashed:', error, errorInfo);
+    logErrorWithContext(
+      captureErrorContext(error, errorInfo, { componentName: 'QuickTokenSidebar' }),
+    );
   }
 
   private handleReset = (): void => {

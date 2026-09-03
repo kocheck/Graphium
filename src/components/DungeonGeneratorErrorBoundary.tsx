@@ -41,6 +41,7 @@ import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
 
 import { ErrorFallbackUI } from './ErrorFallbackUI';
+import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
 
 /**
  * Props for DungeonGeneratorErrorBoundary
@@ -87,11 +88,9 @@ class DungeonGeneratorErrorBoundary extends Component<Props, State> {
    * @param errorInfo - React error info including component stack
    */
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Dungeon generator error:', error);
-
-    console.error('Error info:', errorInfo);
-
-    console.error('Component stack:', errorInfo.componentStack);
+    logErrorWithContext(
+      captureErrorContext(error, errorInfo, { componentName: 'DungeonGenerator' }),
+    );
   }
 
   /**

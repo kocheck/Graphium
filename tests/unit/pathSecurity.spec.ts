@@ -2,7 +2,12 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { isPathInside, sanitizeAssetFileName, isValidUuid } from '../../electron/pathSecurity';
+import {
+  isPathInside,
+  isPathInsideOrEqual,
+  sanitizeAssetFileName,
+  isValidUuid,
+} from '../../electron/pathSecurity';
 
 describe('pathSecurity', () => {
   describe('isPathInside', () => {
@@ -21,6 +26,25 @@ describe('pathSecurity', () => {
     it('returns false for equal paths', () => {
       const base = '/tmp/graphium/userData';
       expect(isPathInside(base, base)).toBe(false);
+    });
+  });
+
+  describe('isPathInsideOrEqual', () => {
+    it('returns true for equal paths', () => {
+      const base = '/tmp/graphium/userData';
+      expect(isPathInsideOrEqual(base, base)).toBe(true);
+    });
+
+    it('returns true for nested child paths', () => {
+      const base = '/tmp/graphium/userData';
+      const target = '/tmp/graphium/userData/temp_assets/token.webp';
+      expect(isPathInsideOrEqual(base, target)).toBe(true);
+    });
+
+    it('returns false for traversal paths', () => {
+      const base = '/tmp/graphium/userData';
+      const target = '/tmp/graphium/secret.txt';
+      expect(isPathInsideOrEqual(base, target)).toBe(false);
     });
   });
 
