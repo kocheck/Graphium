@@ -18,10 +18,9 @@ import {
   detectChanges,
   detectWorldViewTokenUpdates,
   isSyncSliceUnchanged,
-  isTokenDragAction,
 } from '../utils/syncUtils';
 import { throttle } from '../utils/throttle';
-import { withTokenIndex } from '../utils/tokenIndex';
+import { patchTokenInIndex } from '../utils/tokenIndex';
 import { applyTokenNodePosition, applyTokenNodePositions } from '../utils/tokenNodeRegistry';
 import {
   pickTokenPositionChanges,
@@ -51,7 +50,7 @@ function SyncManager(): null {
     let channel: BroadcastChannel | null = null;
 
     const sendSyncAction = (action: SyncAction): void => {
-      recordIpcAction(isTokenDragAction(action) ? action.type : action.type);
+      recordIpcAction(action.type);
       if (isWeb && channel) {
         channel.postMessage(action);
       } else if (isElectron && ipcRenderer) {
@@ -119,10 +118,9 @@ function SyncManager(): null {
 
           case 'FULL_SYNC': {
             const { tokenLibrary: fullLib, ...restState } = action.payload;
-            const incomingTokens = action.payload.tokens ?? store.tokens;
-            useGameStore.setState({
+            store.setState({
               ...(restState as Partial<SyncableGameState>),
-              ...withTokenIndex(incomingTokens),
+              tokens: action.payload.tokens ?? store.tokens,
             });
 
             const activeMeasurement = action.payload.activeMeasurement ?? null;
@@ -156,14 +154,13 @@ function SyncManager(): null {
 
           case 'TOKEN_UPDATE': {
             const { id, changes } = action.payload;
-            const currentToken = store.tokensById[id];
-            if (currentToken) {
+            const patched = patchTokenInIndex(store.tokens, store.tokensById, id, changes);
+            if (patched) {
               beginInboundApply();
               try {
-                const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
-                useGameStore.setState(withTokenIndex(newTokens));
+                useGameStore.setState(patched);
                 if (worldViewPrevStateRef.current) {
-                  worldViewPrevStateRef.current.tokens = [...newTokens];
+                  worldViewPrevStateRef.current.tokens = [...patched.tokens];
                 }
               } finally {
                 endInboundApply();
@@ -351,23 +348,18 @@ function SyncManager(): null {
 
     const applyArchitectTokenUpdate = (id: string, changes: Partial<Token>): void => {
       const positionOnly = pickTokenPositionChanges(changes);
-      if (positionOnly.x === undefined && positionOnly.y === undefined) {
-        return;
-      }
-
       const store = useGameStore.getState();
-      if (!store.tokens.some((t) => t.id === id)) {
+      const existing = store.tokensById[id];
+      if (!existing) {
         return;
       }
-      const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...positionOnly } : t));
-      useGameStore.setState(withTokenIndex(newTokens));
-      if (prevStateRef.current) {
-        // Copy so prev snapshot does not alias the live store array reference.
-        prevStateRef.current = {
-          ...prevStateRef.current,
-          tokens: newTokens.map((token) => ({ ...token })),
-        };
+      const x = positionOnly.x ?? existing.x;
+      const y = positionOnly.y ?? existing.y;
+      if (x === existing.x && y === existing.y) {
+        return;
       }
+      store.updateTokenPosition(id, x, y);
+      stampTokenPositionsOnSnapshot(prevStateRef.current, [{ id, x, y }]);
     };
 
     const applyWorldToArchitectAction = (rawAction: unknown): void => {

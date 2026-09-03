@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/shallow';
 
 import TokenNode from './TokenNode';
 import URLImage from './URLImage';
-import { resolveTokenData } from '../../hooks/useTokenData';
+import { getResolvedToken } from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
 
 import type { TokenLibraryItem } from '../../store/gameStore';
@@ -61,11 +61,10 @@ function TokenLayerComponent({
     <Group>
       {showGhosts &&
         ghostTokenIds.map((ghostId) => {
-          const raw = useGameStore.getState().tokensById[ghostId];
-          if (!raw) {
+          const ghostToken = getResolvedToken(ghostId);
+          if (!ghostToken) {
             return null;
           }
-          const ghostToken = resolveTokenData(raw, tokenLibrary);
           return (
             <URLImage
               key={`ghost-${ghostToken.id}`}

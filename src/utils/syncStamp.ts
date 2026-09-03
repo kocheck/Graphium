@@ -21,8 +21,9 @@ export function stampTokenPositionsOnSnapshot(
   if (!snapshot) {
     return;
   }
+  const byId = new Map(updates.map((item) => [item.id, item]));
   snapshot.tokens = snapshot.tokens.map((token) => {
-    const update = updates.find((item) => item.id === token.id);
+    const update = byId.get(token.id);
     return update ? ({ ...token, x: update.x, y: update.y } satisfies Token) : token;
   });
 }

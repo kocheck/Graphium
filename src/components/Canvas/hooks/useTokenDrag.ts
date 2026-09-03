@@ -1,14 +1,14 @@
 import type React from 'react';
 import { useState, useRef, useCallback } from 'react';
 
-import { resolveTokenData } from '../../../hooks/useTokenData';
+import { getResolvedToken } from '../../../hooks/useTokenData';
 import { useGameStore } from '../../../store/gameStore';
 import { snapToGrid } from '../../../utils/grid';
 import { flushRafSync, queueSyncAction } from '../../../utils/rafSync';
 import { stampArchitectPrevTokenPosition } from '../../../utils/syncStamp';
+import { applyTokenNodePositions } from '../../../utils/tokenNodeRegistry';
 import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { ResolvedTokenData } from '../../../hooks/useTokenData';
 import type { GridType } from '../../../store/gameStore';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
@@ -21,7 +21,6 @@ interface UseTokenDragReturn {
   handleTokenPointerMove: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
   handleTokenPointerUp: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
   dragPositionsRef: React.MutableRefObject<Map<string, { x: number; y: number }>>;
-  tokenNodesRef: React.MutableRefObject<Map<string, Konva.Node>>;
   draggingTokenIds: Set<string>;
   itemsForDuplication: string[];
   setItemsForDuplication: (ids: string[]) => void;
@@ -59,10 +58,8 @@ export const useTokenDrag = ({
   // Refs for performance (direct manipulation)
   const dragPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const dragBroadcastThrottleRef = useRef<Map<string, number>>(new Map());
   const snapPreviewPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const tokenNodesRef = useRef<Map<string, Konva.Node>>(new Map());
-  const tokenLayerRef = useRef<Konva.Layer>(null); // We need a way to set this from outside or pass it
+  const tokenLayerRef = useRef<Konva.Layer>(null);
 
   // State
   const [draggingTokenIds, setDraggingTokenIds] = useState<Set<string>>(new Set());
@@ -70,7 +67,6 @@ export const useTokenDrag = ({
 
   // Press-and-Hold / Threshold Drag State
   const DRAG_THRESHOLD = 5;
-  const DRAG_BROADCAST_THROTTLE_MS = 16;
   const [tokenMouseDownStart, setTokenMouseDownStart] = useState<{
     x: number;
     y: number;
@@ -83,27 +79,13 @@ export const useTokenDrag = ({
   const updateTokenPosition = useGameStore((s) => s.updateTokenPosition);
   const addToken = useGameStore((s) => s.addToken);
 
-  const lookupToken = useCallback((tokenId: string): ResolvedTokenData | undefined => {
-    const state = useGameStore.getState();
-    const token = state.tokensById[tokenId];
-    return token ? resolveTokenData(token, state.campaign.tokenLibrary) : undefined;
-  }, []);
-
-  // Throttle utility
-  const throttleDragBroadcast = useCallback(
+  const queueDragMove = useCallback(
     (tokenId: string, x: number, y: number): void => {
-      const now = Date.now();
-      const lastBroadcast = dragBroadcastThrottleRef.current.get(tokenId) ?? 0;
-
-      if (now - lastBroadcast >= DRAG_BROADCAST_THROTTLE_MS) {
-        dragBroadcastThrottleRef.current.set(tokenId, now);
-
-        if (!isWorldView) {
-          queueSyncAction({
-            type: 'TOKEN_DRAG_MOVE',
-            payload: { id: tokenId, x, y },
-          });
-        }
+      if (!isWorldView) {
+        queueSyncAction({
+          type: 'TOKEN_DRAG_MOVE',
+          payload: { id: tokenId, x, y },
+        });
       }
     },
     [isWorldView],
@@ -127,7 +109,7 @@ export const useTokenDrag = ({
         return;
       }
 
-      const token = lookupToken(tokenId);
+      const token = getResolvedToken(tokenId);
       if (!token) {
         return;
       }
@@ -142,7 +124,7 @@ export const useTokenDrag = ({
       });
       setIsDraggingWithThreshold(false);
     },
-    [tool, lookupToken, shouldRejectPointerEvent, trackStylusUsage],
+    [tool, shouldRejectPointerEvent, trackStylusUsage],
   );
 
   const handleTokenPointerMove = useCallback(
@@ -179,7 +161,7 @@ export const useTokenDrag = ({
           setSelectedIds(tokenIds);
         }
 
-        const primaryToken = lookupToken(tokenId);
+        const primaryToken = getResolvedToken(tokenId);
         if (!primaryToken) {
           return;
         }
@@ -189,7 +171,7 @@ export const useTokenDrag = ({
 
         dragStartOffsetsRef.current.clear();
         tokenIds.forEach((id) => {
-          const token = lookupToken(id);
+          const token = getResolvedToken(id);
           if (token) {
             if (id === tokenId) {
               dragStartOffsetsRef.current.set(id, { x: 0, y: 0 });
@@ -204,7 +186,7 @@ export const useTokenDrag = ({
 
         if (!isWorldView) {
           tokenIds.forEach((id) => {
-            const token = lookupToken(id);
+            const token = getResolvedToken(id);
             if (token) {
               queueSyncAction({
                 type: 'TOKEN_DRAG_START',
@@ -221,9 +203,9 @@ export const useTokenDrag = ({
         const newY = tokenMouseDownStart.stagePos.y + dy;
 
         dragPositionsRef.current.set(tokenId, { x: newX, y: newY });
-        throttleDragBroadcast(tokenId, newX, newY);
+        queueDragMove(tokenId, newX, newY);
 
-        const token = lookupToken(tokenId);
+        const token = getResolvedToken(tokenId);
         if (token) {
           const safeScale = token.scale ?? 1;
           const width = gridSize * safeScale;
@@ -232,7 +214,7 @@ export const useTokenDrag = ({
           snapPreviewPositionsRef.current.set(tokenId, snapped);
         }
 
-        // Multi-token
+        const livePositions = [{ id: tokenId, x: newX, y: newY }];
         const tokenIds = selectedIds.includes(tokenId) ? selectedIds : [tokenId];
         if (tokenIds.length > 1) {
           tokenIds.forEach((id) => {
@@ -242,9 +224,10 @@ export const useTokenDrag = ({
                 const offsetX = newX + offset.x;
                 const offsetY = newY + offset.y;
                 dragPositionsRef.current.set(id, { x: offsetX, y: offsetY });
-                throttleDragBroadcast(id, offsetX, offsetY);
+                queueDragMove(id, offsetX, offsetY);
+                livePositions.push({ id, x: offsetX, y: offsetY });
 
-                const otherToken = lookupToken(id);
+                const otherToken = getResolvedToken(id);
                 if (otherToken) {
                   const otherSafeScale = otherToken.scale ?? 1;
                   const snapped = snapToGrid(
@@ -257,26 +240,12 @@ export const useTokenDrag = ({
                   );
                   snapPreviewPositionsRef.current.set(id, snapped);
                 }
-
-                const node = tokenNodesRef.current.get(id);
-                if (node) {
-                  node.x(offsetX);
-                  node.y(offsetY);
-                }
               }
             }
           });
         }
 
-        const node = tokenNodesRef.current.get(tokenId);
-        if (node) {
-          node.x(newX);
-          node.y(newY);
-        }
-
-        if (tokenLayerRef.current) {
-          tokenLayerRef.current.batchDraw();
-        }
+        applyTokenNodePositions(livePositions);
       }
     },
     [
@@ -285,12 +254,11 @@ export const useTokenDrag = ({
       tool,
       isDraggingWithThreshold,
       selectedIds,
-      lookupToken,
       setSelectedIds,
       gridSize,
       gridType,
       isWorldView,
-      throttleDragBroadcast,
+      queueDragMove,
     ],
   );
 
@@ -301,7 +269,7 @@ export const useTokenDrag = ({
       }
 
       const tokenId = tokenMouseDownStart.tokenId;
-      const token = lookupToken(tokenId);
+      const token = getResolvedToken(tokenId);
 
       if (!token) {
         setTokenMouseDownStart(null);
@@ -325,7 +293,7 @@ export const useTokenDrag = ({
             const offsetY = snapped.y - dragPos.y;
 
             tokenIds.forEach((id) => {
-              const t = lookupToken(id);
+              const t = getResolvedToken(id);
               if (t) {
                 const tSafeScale = t.scale ?? 1;
                 const dragPosForToken = dragPositionsRef.current.get(id) ?? { x: t.x, y: t.y };
@@ -366,7 +334,7 @@ export const useTokenDrag = ({
 
           if (isAltPressed && !isWorldView) {
             tokenIds.forEach((id) => {
-              const t = lookupToken(id);
+              const t = getResolvedToken(id);
               const pos = committedPositions.get(id);
               if (t && pos) {
                 addToken({ ...t, id: crypto.randomUUID(), x: pos.x, y: pos.y });
@@ -378,7 +346,6 @@ export const useTokenDrag = ({
         dragPositionsRef.current.delete(tokenId); // Should clear all?
         tokenIds.forEach((id) => {
           dragPositionsRef.current.delete(id);
-          dragBroadcastThrottleRef.current.delete(id);
           dragStartOffsetsRef.current.delete(id);
         });
         setDraggingTokenIds(new Set());
@@ -403,7 +370,6 @@ export const useTokenDrag = ({
     },
     [
       tokenMouseDownStart,
-      lookupToken,
       isDraggingWithThreshold,
       selectedIds,
       gridSize,
@@ -421,7 +387,6 @@ export const useTokenDrag = ({
     handleTokenPointerMove,
     handleTokenPointerUp,
     dragPositionsRef,
-    tokenNodesRef,
     draggingTokenIds,
     itemsForDuplication,
     setItemsForDuplication,

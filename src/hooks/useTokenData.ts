@@ -11,6 +11,7 @@ import type { Token, TokenLibraryItem } from '../store/gameStore';
  * All optional properties from Token are now required, as they've been resolved
  * to either the instance value, library default, or system default.
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface ResolvedTokenData {
   id: string;
   x: number;
@@ -117,4 +118,19 @@ export function resolveTokenData(
         token.movementSpeed === undefined && libraryItem?.defaultMovementSpeed !== undefined,
     },
   };
+}
+
+/** Resolve a token from the live store by id (event handlers / overlays). */
+export function getResolvedToken(tokenId: string): ResolvedTokenData | undefined {
+  const state = useGameStore.getState();
+  const token = state.tokensById[tokenId];
+  return token ? resolveTokenData(token, state.campaign.tokenLibrary) : undefined;
+}
+
+/** All PC tokens with library defaults applied. */
+export function getResolvedPcTokens(): ResolvedTokenData[] {
+  const state = useGameStore.getState();
+  return state.tokens
+    .map((token) => resolveTokenData(token, state.campaign.tokenLibrary))
+    .filter((token) => token.type === 'PC');
 }

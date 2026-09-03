@@ -7,7 +7,11 @@ import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 // eslint-disable-next-line import/no-named-as-default
 import MeasurementOverlay from './MeasurementOverlay';
 import MovementRangeOverlay from './MovementRangeOverlay';
-import { resolveTokenData, DEFAULT_MOVEMENT_SPEED } from '../../hooks/useTokenData';
+import {
+  DEFAULT_MOVEMENT_SPEED,
+  getResolvedToken,
+  resolveTokenData,
+} from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
 import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { createGridGeometry } from '../../utils/gridGeometry';
@@ -65,17 +69,15 @@ function SnapPreviewOverlay({
     return null;
   }
 
-  const { tokensById, campaign } = useGameStore.getState();
   const geometry = createGridGeometry(gridType);
 
   return (
     <Group listening={false}>
       {Array.from(snapPreviewPositionsRef.current.entries()).map(([tokenId, snapPos]) => {
-        const raw = tokensById[tokenId];
-        if (!raw) {
+        const token = getResolvedToken(tokenId);
+        if (!token) {
           return null;
         }
-        const token = resolveTokenData(raw, campaign.tokenLibrary);
         const size = gridSize * token.scale;
         const snapCell = geometry.pixelToGrid(snapPos.x + size / 2, snapPos.y + size / 2, gridSize);
         const cellPoints = geometry.getCellVertices(snapCell, gridSize).flatMap((v) => [v.x, v.y]);

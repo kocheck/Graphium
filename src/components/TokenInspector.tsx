@@ -46,7 +46,7 @@ function TokenInspector({
   const selectedTokens = useGameStore(
     useShallow((s) =>
       selectedTokenIds
-        .map((id) => s.tokensById?.[id] ?? s.tokens.find((token) => token.id === id))
+        .map((id) => s.tokensById[id])
         .filter((token): token is Token => Boolean(token)),
     ),
   );

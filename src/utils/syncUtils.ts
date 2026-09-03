@@ -224,7 +224,7 @@ export function cloneSyncableStateFromPayload(
   };
 }
 
-/** True when none of the Architect→World syncable fields changed by reference. */
+// eslint-disable-next-line import/no-unused-modules -- covered by syncUtils unit tests
 export function isTokenDragAction(
   action: SyncAction,
 ): action is Extract<
@@ -239,6 +239,7 @@ export function isTokenDragAction(
   );
 }
 
+/** True when none of the Architect→World syncable fields changed by reference. */
 export function isSyncSliceUnchanged(current: GameState, previous: GameState): boolean {
   return (
     current.tokens === previous.tokens &&

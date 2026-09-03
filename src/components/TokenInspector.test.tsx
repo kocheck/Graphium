@@ -90,6 +90,7 @@ describe('TokenInspector', () => {
     (useGameStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector: any) => {
       const state = {
         tokens: [overrideToken],
+        tokensById: { [overrideToken.id]: overrideToken },
         campaign: {
           tokenLibrary: [mockLibraryItem],
         },
@@ -128,6 +129,7 @@ describe('TokenInspector', () => {
     (useGameStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector: any) => {
       const state = {
         tokens: [updatedToken],
+        tokensById: { [updatedToken.id]: updatedToken },
         campaign: { tokenLibrary: [mockLibraryItem] },
         updateTokenProperties: mockUpdateTokenProperties,
         updateLibraryToken: mockUpdateLibraryToken,

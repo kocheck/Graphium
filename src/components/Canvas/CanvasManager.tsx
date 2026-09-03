@@ -19,7 +19,7 @@ import PaperNoiseOverlay from './PaperNoiseOverlay';
 import TokenLayer from './TokenLayer';
 import URLImage from './URLImage';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import { resolveTokenData } from '../../hooks/useTokenData';
+import { getResolvedPcTokens, getResolvedToken } from '../../hooks/useTokenData';
 import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
 import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
@@ -450,11 +450,7 @@ function CanvasManager({
         };
       }
 
-      // Expand bounds to include PC tokens (so we can always navigate to party)
-      const { tokens, campaign } = useGameStore.getState();
-      const pcTokens = tokens
-        .map((token) => resolveTokenData(token, campaign.tokenLibrary))
-        .filter((t) => t.type === 'PC');
+      const pcTokens = getResolvedPcTokens();
       if (pcTokens.length > 0) {
         pcTokens.forEach((token) => {
           const tokenSize = gridSize * token.scale;
@@ -1054,10 +1050,7 @@ function CanvasManager({
   }, [revokePendingCropUrl]);
 
   const centerOnPCTokens = useCallback(() => {
-    const { tokens, campaign } = useGameStore.getState();
-    const pcTokens = tokens
-      .map((token) => resolveTokenData(token, campaign.tokenLibrary))
-      .filter((t) => t.type === 'PC');
+    const pcTokens = getResolvedPcTokens();
     if (pcTokens.length === 0) {
       return;
     }
@@ -1371,10 +1364,7 @@ function CanvasManager({
                 if (node.name() === 'token') {
                   // Use average of scaleX and scaleY for uniform scaling
                   const transformScale = (scaleX + scaleY) / 2;
-                  const raw = useGameStore.getState().tokensById[node.id()];
-                  const token = raw
-                    ? resolveTokenData(raw, useGameStore.getState().campaign.tokenLibrary)
-                    : undefined;
+                  const token = getResolvedToken(node.id());
                   if (token) {
                     // Multiply current scale by transformation scale
                     const newScale = token.scale * transformScale;
