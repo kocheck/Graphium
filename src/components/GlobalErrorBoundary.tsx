@@ -1,6 +1,8 @@
 import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
 
+import { captureErrorContext, logErrorWithContext } from '../utils/errorBoundaryUtils';
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -32,7 +34,9 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Uncaught error:', error, errorInfo);
+    logErrorWithContext(
+      captureErrorContext(error, errorInfo, { componentName: 'GlobalErrorBoundary' }),
+    );
     this.setState({ errorInfo });
   }
 

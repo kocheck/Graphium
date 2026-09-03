@@ -19,6 +19,7 @@ import type React from 'react';
 import { RiUser3Line } from '@remixicon/react';
 
 import Tooltip from './Tooltip';
+import { toMediaProtocol } from '../utils/mediaProtocol';
 
 import type { TokenLibraryItem } from '../store/gameStore';
 
@@ -101,7 +102,7 @@ function QuickTokenSidebar({
                   onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
                 >
                   <img
-                    src={token.thumbnailSrc.replace('file:', 'media:')}
+                    src={toMediaProtocol(token.thumbnailSrc)}
                     alt={token.name}
                     className="w-full h-full object-contain pointer-events-none rounded"
                   />
@@ -148,7 +149,7 @@ function QuickTokenSidebar({
                 onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
               >
                 <img
-                  src={token.thumbnailSrc.replace('file:', 'media:')}
+                  src={toMediaProtocol(token.thumbnailSrc)}
                   alt={token.name}
                   className="w-full h-full object-contain pointer-events-none rounded"
                 />

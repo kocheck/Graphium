@@ -17,6 +17,8 @@ import type { ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';
 
+import { captureErrorContext, logErrorWithContext } from '../../utils/errorBoundaryUtils';
+
 interface Props {
   children: ReactNode;
 }
@@ -44,28 +46,9 @@ class TouchVisualFeedbackErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // Log error details in development mode
-    if (import.meta.env.DEV) {
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.error('❌ TouchVisualFeedback Error Boundary Caught Error');
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.error('Error:', error);
-      console.error('Error Message:', error.message);
-      console.error('Error Stack:', error.stack);
-      console.error('Component Stack:', errorInfo.componentStack);
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.error('💡 Tip: Visual feedback is disabled. Core canvas functionality unaffected.');
-      console.error('💡 Check TouchVisualFeedback component props and state.');
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    }
-
-    // Optional: Send error to error tracking service
-    // if (window.errorTracker) {
-    //   window.errorTracker.captureException(error, {
-    //     context: 'TouchVisualFeedback',
-    //     componentStack: errorInfo.componentStack,
-    //   });
-    // }
+    logErrorWithContext(
+      captureErrorContext(error, errorInfo, { componentName: 'TouchVisualFeedback' }),
+    );
   }
 
   override render(): ReactNode {

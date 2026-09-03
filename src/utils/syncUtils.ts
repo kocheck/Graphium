@@ -11,99 +11,42 @@ import type {
 } from '../store/gameStore';
 import type { Measurement } from '../types/measurement';
 
-/**
- * Deep equality check for simple objects with primitive values and arrays
- * More reliable than JSON.stringify which can fail due to property ordering
- */
-// eslint-disable-next-line complexity, import/no-unused-modules -- used by syncUtils tests and detectChanges
-export function isEqual(obj1: unknown, obj2: unknown): boolean {
-  if (obj1 === obj2) {
-    return true;
-  }
-  if (obj1 == null || obj2 == null) {
-    return false;
-  }
-
-  // Handle Date objects
+function isEqualDate(obj1: unknown, obj2: unknown): boolean | undefined {
   if (obj1 instanceof Date && obj2 instanceof Date) {
     return obj1.getTime() === obj2.getTime();
   }
-
-  // Handle RegExp objects
-  if (obj1 instanceof RegExp && obj2 instanceof RegExp) {
-    return obj1.toString() === obj2.toString();
-  }
-
-  // Handle Map objects
-  if (obj1 instanceof Map && obj2 instanceof Map) {
-    if (obj1.size !== obj2.size) {
-      return false;
-    }
-    for (const [key, value] of obj1) {
-      if (!obj2.has(key) || !isEqual(value, obj2.get(key))) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // Handle Set objects
-  if (obj1 instanceof Set && obj2 instanceof Set) {
-    if (obj1.size !== obj2.size) {
-      return false;
-    }
-    for (const value of obj1) {
-      if (!obj2.has(value)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  if (
-    obj1 instanceof Date ||
-    obj1 instanceof RegExp ||
-    obj1 instanceof Map ||
-    obj1 instanceof Set ||
-    obj2 instanceof Date ||
-    obj2 instanceof RegExp ||
-    obj2 instanceof Map ||
-    obj2 instanceof Set
-  ) {
+  if (obj1 instanceof Date || obj2 instanceof Date) {
     return false;
   }
+  return undefined;
+}
 
-  // Handle arrays
-  if (Array.isArray(obj1) && Array.isArray(obj2)) {
-    if (obj1.length !== obj2.length) {
+function isEqualArray(obj1: unknown, obj2: unknown): boolean | undefined {
+  if (!Array.isArray(obj1) || !Array.isArray(obj2)) {
+    if (Array.isArray(obj1) || Array.isArray(obj2)) {
       return false;
     }
-    for (let i = 0; i < obj1.length; i++) {
-      if (!isEqual(obj1[i], obj2[i])) {
-        return false;
-      }
+    return undefined;
+  }
+  if (obj1.length !== obj2.length) {
+    return false;
+  }
+  for (let i = 0; i < obj1.length; i++) {
+    if (!isEqual(obj1[i], obj2[i])) {
+      return false;
     }
-    return true;
   }
+  return true;
+}
 
-  if (Array.isArray(obj1) || Array.isArray(obj2)) {
-    return false;
-  }
-
-  // Handle objects
-  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
-    return false;
-  }
-
+function isEqualObject(obj1: object, obj2: object): boolean {
   const keys1 = Object.keys(obj1);
   const keys2 = Object.keys(obj2);
-
   if (keys1.length !== keys2.length) {
     return false;
   }
 
   const keys2Set = new Set(keys2);
-
   for (const key of keys1) {
     if (!keys2Set.has(key)) {
       return false;
@@ -112,11 +55,39 @@ export function isEqual(obj1: unknown, obj2: unknown): boolean {
       return false;
     }
   }
-
   return true;
 }
 
-// Define a type for the game state that gets synced
+/**
+ * Deep equality for primitives, arrays, plain objects, and Date values
+ * used by campaign/sync payloads.
+ */
+// eslint-disable-next-line import/no-unused-modules -- covered by syncUtils unit tests
+export function isEqual(obj1: unknown, obj2: unknown): boolean {
+  if (obj1 === obj2) {
+    return true;
+  }
+  if (obj1 == null || obj2 == null) {
+    return false;
+  }
+
+  const dateResult = isEqualDate(obj1, obj2);
+  if (dateResult !== undefined) {
+    return dateResult;
+  }
+
+  const arrayResult = isEqualArray(obj1, obj2);
+  if (arrayResult !== undefined) {
+    return arrayResult;
+  }
+
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
+    return false;
+  }
+
+  return isEqualObject(obj1, obj2);
+}
+
 export interface SyncableGameState {
   tokens: Token[];
   tokenLibrary: TokenLibraryItem[];
@@ -133,8 +104,12 @@ export interface SyncableGameState {
   broadcastMeasurement: boolean;
 }
 
+// eslint-disable-next-line import/no-unused-modules -- covered by syncUtils unit tests
+export const FULL_SYNC_ACTION_THRESHOLD = 20;
+
 export type SyncAction =
   | { type: 'FULL_SYNC'; payload: Partial<SyncableGameState> }
+  | { type: 'BATCH'; payload: SyncAction[] }
   | { type: 'TOKEN_ADD'; payload: Token }
   | { type: 'TOKEN_UPDATE'; payload: { id: string; changes: Partial<Token> } }
   | { type: 'TOKEN_REMOVE'; payload: { id: string } }
@@ -164,10 +139,6 @@ export type SyncAction =
     }
   | { type: 'EXPLORED_UPDATE'; payload: ExploredRegion[] }
   | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null };
-
-// ---------------------------------------------------------------------------
-// Helpers extracted from detectChanges to reduce per-function complexity
-// ---------------------------------------------------------------------------
 
 function buildFullSync(currentState: Partial<SyncableGameState>): SyncAction {
   return {
@@ -252,6 +223,42 @@ export function cloneSyncableStateFromPayload(
   };
 }
 
+/** True when none of the Architect→World syncable fields changed by reference. */
+export function isSyncSliceUnchanged(current: GameState, previous: GameState): boolean {
+  return (
+    current.tokens === previous.tokens &&
+    current.drawings === previous.drawings &&
+    current.doors === previous.doors &&
+    current.stairs === previous.stairs &&
+    current.gridSize === previous.gridSize &&
+    current.gridType === previous.gridType &&
+    current.gridColor === previous.gridColor &&
+    current.map === previous.map &&
+    current.exploredRegions === previous.exploredRegions &&
+    current.isDaylightMode === previous.isDaylightMode &&
+    current.activeMeasurement === previous.activeMeasurement &&
+    current.broadcastMeasurement === previous.broadcastMeasurement &&
+    current.campaign.tokenLibrary === previous.campaign.tokenLibrary
+  );
+}
+
+/** Collapses many delta actions into a BATCH or a single FULL_SYNC. */
+export function coalesceSyncActions(
+  actions: SyncAction[],
+  currentState: Partial<SyncableGameState>,
+): SyncAction[] {
+  if (actions.length === 0) {
+    return [];
+  }
+  if (actions.length >= FULL_SYNC_ACTION_THRESHOLD) {
+    return [buildFullSync(currentState)];
+  }
+  if (actions.length === 1) {
+    return actions;
+  }
+  return [{ type: 'BATCH', payload: actions }];
+}
+
 /** Detects World View token position changes for scoped Architect sync. */
 export function detectWorldViewTokenUpdates(
   prevState: SyncableGameState | null,
@@ -286,190 +293,60 @@ export function detectWorldViewTokenUpdates(
   return actions;
 }
 
-function detectTokenActions(
-  prevState: Partial<SyncableGameState>,
-  currentState: Partial<SyncableGameState>,
+interface Identifiable {
+  id: string;
+}
+
+function detectEntityActions<T extends Identifiable>(
+  prevItems: T[] | undefined,
+  currentItems: T[] | undefined,
+  types: {
+    add: SyncAction['type'];
+    update: SyncAction['type'];
+    remove: SyncAction['type'];
+  },
 ): SyncAction[] {
+  const prev = prevItems ?? [];
+  const current = currentItems ?? [];
+  if (isEqual(prev, current)) {
+    return [];
+  }
+
   const actions: SyncAction[] = [];
-  const prevTokens = prevState.tokens ?? [];
-  const currentTokens = currentState.tokens ?? [];
+  const prevMap = new Map(prev.filter((item) => item.id).map((item) => [item.id, item]));
+  const currentMap = new Map(current.filter((item) => item.id).map((item) => [item.id, item]));
 
-  const prevTokenMap = new Map(prevTokens.filter((t) => t?.id).map((t) => [t.id, t]));
-  const currentTokenMap = new Map(currentTokens.filter((t) => t?.id).map((t) => [t.id, t]));
-
-  for (const token of currentTokens) {
-    if (token?.id && !prevTokenMap.has(token.id)) {
-      actions.push({ type: 'TOKEN_ADD', payload: token });
-    }
-  }
-
-  for (const token of prevTokens) {
-    if (token?.id && !currentTokenMap.has(token.id)) {
-      actions.push({ type: 'TOKEN_REMOVE', payload: { id: token.id } });
-    }
-  }
-
-  for (const token of currentTokens) {
-    if (!token?.id) {
+  for (const item of current) {
+    if (!item.id) {
       continue;
     }
-    const prevToken = prevTokenMap.get(token.id);
-    if (!prevToken) {
+    if (!prevMap.has(item.id)) {
+      actions.push({ type: types.add, payload: item } as SyncAction);
       continue;
     }
-    const changes: Partial<Token> = {};
-    for (const key of Object.keys(token)) {
-      const tokenKey = key as keyof Token;
-      if (!isEqual(token[tokenKey], prevToken[tokenKey])) {
-        (changes as Record<string, unknown>)[key] = token[tokenKey];
+
+    const prevItem = prevMap.get(item.id);
+    if (!prevItem) {
+      continue;
+    }
+
+    const changes: Partial<T> = {};
+    for (const key of Object.keys(item) as Array<keyof T>) {
+      if (!isEqual(item[key], prevItem[key])) {
+        changes[key] = item[key];
       }
     }
     if (Object.keys(changes).length > 0) {
-      actions.push({ type: 'TOKEN_UPDATE', payload: { id: token.id, changes } });
+      actions.push({
+        type: types.update,
+        payload: { id: item.id, changes },
+      } as SyncAction);
     }
   }
 
-  return actions;
-}
-
-function detectDrawingActions(
-  prevState: Partial<SyncableGameState>,
-  currentState: Partial<SyncableGameState>,
-): SyncAction[] {
-  const actions: SyncAction[] = [];
-  const prevDrawings = prevState.drawings ?? [];
-  const currentDrawings = currentState.drawings ?? [];
-
-  if (isEqual(prevDrawings, currentDrawings)) {
-    return actions;
-  }
-
-  const prevDrawingMap = new Map(prevDrawings.filter((d) => d?.id).map((d) => [d.id, d]));
-  const currentDrawingMap = new Map(currentDrawings.filter((d) => d?.id).map((d) => [d.id, d]));
-
-  for (const drawing of currentDrawings) {
-    if (!drawing?.id) {
-      continue;
-    }
-    if (!prevDrawingMap.has(drawing.id)) {
-      actions.push({ type: 'DRAWING_ADD', payload: drawing });
-    } else {
-      const prev = prevDrawingMap.get(drawing.id);
-      if (!prev) {
-        continue;
-      }
-      const changes: Partial<Drawing> = {};
-      for (const key of Object.keys(drawing)) {
-        const drawingKey = key as keyof Drawing;
-        if (!isEqual(drawing[drawingKey], prev[drawingKey])) {
-          (changes as Record<string, unknown>)[key] = drawing[drawingKey];
-        }
-      }
-      if (Object.keys(changes).length > 0) {
-        actions.push({ type: 'DRAWING_UPDATE', payload: { id: drawing.id, changes } });
-      }
-    }
-  }
-
-  for (const drawing of prevDrawings) {
-    if (drawing?.id && !currentDrawingMap.has(drawing.id)) {
-      actions.push({ type: 'DRAWING_REMOVE', payload: { id: drawing.id } });
-    }
-  }
-
-  return actions;
-}
-
-function detectDoorActions(
-  prevState: Partial<SyncableGameState>,
-  currentState: Partial<SyncableGameState>,
-): SyncAction[] {
-  const actions: SyncAction[] = [];
-  const prevDoors = prevState.doors ?? [];
-  const currentDoors = currentState.doors ?? [];
-
-  if (isEqual(prevDoors, currentDoors)) {
-    return actions;
-  }
-
-  const prevDoorMap = new Map(prevDoors.filter((d) => d?.id).map((d) => [d.id, d]));
-  const currentDoorMap = new Map(currentDoors.filter((d) => d?.id).map((d) => [d.id, d]));
-
-  for (const door of currentDoors) {
-    if (!door?.id) {
-      continue;
-    }
-    if (!prevDoorMap.has(door.id)) {
-      actions.push({ type: 'DOOR_ADD', payload: door });
-    } else {
-      const prev = prevDoorMap.get(door.id);
-      if (!prev) {
-        continue;
-      }
-      const changes: Partial<Door> = {};
-      for (const key of Object.keys(door)) {
-        const doorKey = key as keyof Door;
-        if (!isEqual(door[doorKey], prev[doorKey])) {
-          (changes as Record<string, unknown>)[key] = door[doorKey];
-        }
-      }
-      if (Object.keys(changes).length > 0) {
-        actions.push({ type: 'DOOR_UPDATE', payload: { id: door.id, changes } });
-      }
-    }
-  }
-
-  for (const door of prevDoors) {
-    if (door?.id && !currentDoorMap.has(door.id)) {
-      actions.push({ type: 'DOOR_REMOVE', payload: { id: door.id } });
-    }
-  }
-
-  return actions;
-}
-
-function detectStairsActions(
-  prevState: Partial<SyncableGameState>,
-  currentState: Partial<SyncableGameState>,
-): SyncAction[] {
-  const actions: SyncAction[] = [];
-  const prevStairs = prevState.stairs ?? [];
-  const currentStairs = currentState.stairs ?? [];
-
-  if (isEqual(prevStairs, currentStairs)) {
-    return actions;
-  }
-
-  const prevStairsMap = new Map(prevStairs.filter((s) => s?.id).map((s) => [s.id, s]));
-  const currentStairsMap = new Map(currentStairs.filter((s) => s?.id).map((s) => [s.id, s]));
-
-  for (const stairs of currentStairs) {
-    if (!stairs?.id) {
-      continue;
-    }
-    if (!prevStairsMap.has(stairs.id)) {
-      actions.push({ type: 'STAIRS_ADD', payload: stairs });
-    } else {
-      const prev = prevStairsMap.get(stairs.id);
-      if (!prev) {
-        continue;
-      }
-      const changes: Partial<Stairs> = {};
-      for (const key of Object.keys(stairs)) {
-        const stairsKey = key as keyof Stairs;
-        if (!isEqual(stairs[stairsKey], prev[stairsKey])) {
-          (changes as Record<string, unknown>)[key] = stairs[stairsKey];
-        }
-      }
-      if (Object.keys(changes).length > 0) {
-        actions.push({ type: 'STAIRS_UPDATE', payload: { id: stairs.id, changes } });
-      }
-    }
-  }
-
-  for (const stairs of prevStairs) {
-    if (stairs?.id && !currentStairsMap.has(stairs.id)) {
-      actions.push({ type: 'STAIRS_REMOVE', payload: { id: stairs.id } });
+  for (const item of prev) {
+    if (item.id && !currentMap.has(item.id)) {
+      actions.push({ type: types.remove, payload: { id: item.id } } as SyncAction);
     }
   }
 
@@ -499,28 +376,38 @@ function detectMeasurementActions(
 }
 
 /**
- * Detects changes between previous and current state, returns delta actions
+ * Detects changes between previous and current state, returns delta actions.
+ * A null previous state produces a single FULL_SYNC.
  */
 export function detectChanges(
-  prevState: Partial<SyncableGameState>,
+  prevState: Partial<SyncableGameState> | null,
   currentState: Partial<SyncableGameState>,
 ): SyncAction[] {
-  // If no previous state, send full sync
   if (!prevState) {
     return [buildFullSync(currentState)];
   }
 
   const actions: SyncAction[] = [];
 
-  // Token library
   if (!isEqual(prevState.tokenLibrary, currentState.tokenLibrary)) {
     actions.push({ type: 'LIBRARY_UPDATE', payload: currentState.tokenLibrary ?? [] });
   }
 
-  actions.push(...detectTokenActions(prevState, currentState));
-  actions.push(...detectDrawingActions(prevState, currentState));
+  actions.push(
+    ...detectEntityActions(prevState.tokens, currentState.tokens, {
+      add: 'TOKEN_ADD',
+      update: 'TOKEN_UPDATE',
+      remove: 'TOKEN_REMOVE',
+    }),
+  );
+  actions.push(
+    ...detectEntityActions(prevState.drawings, currentState.drawings, {
+      add: 'DRAWING_ADD',
+      update: 'DRAWING_UPDATE',
+      remove: 'DRAWING_REMOVE',
+    }),
+  );
 
-  // Grid & map
   if (
     !isEqual(prevState.gridSize, currentState.gridSize) ||
     !isEqual(prevState.gridType, currentState.gridType) ||
@@ -550,8 +437,20 @@ export function detectChanges(
   }
 
   actions.push(...detectMeasurementActions(prevState, currentState));
-  actions.push(...detectDoorActions(prevState, currentState));
-  actions.push(...detectStairsActions(prevState, currentState));
+  actions.push(
+    ...detectEntityActions(prevState.doors, currentState.doors, {
+      add: 'DOOR_ADD',
+      update: 'DOOR_UPDATE',
+      remove: 'DOOR_REMOVE',
+    }),
+  );
+  actions.push(
+    ...detectEntityActions(prevState.stairs, currentState.stairs, {
+      add: 'STAIRS_ADD',
+      update: 'STAIRS_UPDATE',
+      remove: 'STAIRS_REMOVE',
+    }),
+  );
 
   return actions;
 }

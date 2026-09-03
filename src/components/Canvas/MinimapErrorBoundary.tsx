@@ -2,6 +2,8 @@ import type React from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 import { Component } from 'react';
 
+import { captureErrorContext, logErrorWithContext } from '../../utils/errorBoundaryUtils';
+
 interface Props {
   children: ReactNode;
 }
@@ -43,11 +45,7 @@ class MinimapErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('[MinimapErrorBoundary] Minimap rendering error:', error);
-    console.error('[MinimapErrorBoundary] Error info:', errorInfo);
-    console.warn(
-      '[MinimapErrorBoundary] Minimap has been hidden due to error. World View continues working.',
-    );
+    logErrorWithContext(captureErrorContext(error, errorInfo, { componentName: 'Minimap' }));
   }
 
   override render(): React.ReactNode {

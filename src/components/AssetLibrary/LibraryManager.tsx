@@ -32,6 +32,7 @@ import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
 import { processImage } from '../../utils/AssetProcessor';
 import { fuzzySearch, filterByCategory, getCategories } from '../../utils/fuzzySearch';
+import { toMediaProtocol } from '../../utils/mediaProtocol';
 import { rollForMessage } from '../../utils/systemMessages';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 
@@ -311,7 +312,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
                     {/* Thumbnail */}
                     <div className="aspect-square bg-neutral-700 relative">
                       <img
-                        src={item.thumbnailSrc.replace('file:', 'media:')}
+                        src={toMediaProtocol(item.thumbnailSrc)}
                         alt={item.name}
                         className="w-full h-full object-cover"
                       />

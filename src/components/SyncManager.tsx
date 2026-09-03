@@ -5,60 +5,22 @@ import {
   buildFullSyncPayload,
   cloneSyncableStateFromGame,
   cloneSyncableStateFromPayload,
+  coalesceSyncActions,
   detectChanges,
   detectWorldViewTokenUpdates,
+  isSyncSliceUnchanged,
 } from '../utils/syncUtils';
+import { throttle } from '../utils/throttle';
 
 import type { GameState, Token } from '../store/gameStore';
 import type { SyncAction, SyncableGameState } from '../utils/syncUtils';
-
-// Basic throttle implementation to limit IPC frequency
-// Ensures leading edge execution and trailing edge (so final state is always sent)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function throttle<T extends (...args: any[]) => void>(
-  func: T,
-  limit: number,
-): T & { cancel: () => void } {
-  let lastFunc: ReturnType<typeof setTimeout> | undefined;
-  let lastRan: number | undefined;
-
-  const throttled = function (this: unknown, ...args: Parameters<T>): void {
-    if (lastRan === undefined) {
-      func.apply(this, args);
-      lastRan = Date.now();
-    } else {
-      if (lastFunc) {
-        clearTimeout(lastFunc);
-      }
-      lastFunc = setTimeout(
-        () => {
-          if (Date.now() - (lastRan ?? 0) >= limit) {
-            func.apply(this, args);
-            lastRan = Date.now();
-          }
-        },
-        limit - (Date.now() - (lastRan ?? 0)),
-      );
-    }
-  } as T & { cancel: () => void };
-
-  throttled.cancel = (): void => {
-    if (lastFunc) {
-      clearTimeout(lastFunc);
-      lastFunc = undefined;
-    }
-  };
-
-  return throttled;
-}
 
 // eslint-disable-next-line max-lines-per-function
 function SyncManager(): null {
   const prevStateRef = useRef<SyncableGameState | null>(null);
   const worldViewPrevStateRef = useRef<SyncableGameState | null>(null);
-  const listenerSetupRef = useRef<boolean>(false);
 
-  // eslint-disable-next-line max-lines-per-function, complexity
+  // eslint-disable-next-line max-lines-per-function
   useEffect((): (() => void) => {
     const ipcRenderer = window.ipcRenderer;
     const isElectron = Boolean(ipcRenderer);
@@ -71,7 +33,7 @@ function SyncManager(): null {
 
     let channel: BroadcastChannel | null = null;
 
-    const sendSyncActionDirectly = (action: SyncAction): void => {
+    const sendSyncAction = (action: SyncAction): void => {
       if (isWeb && channel) {
         channel.postMessage(action);
       } else if (isElectron && ipcRenderer) {
@@ -79,9 +41,17 @@ function SyncManager(): null {
       }
     };
 
+    const sendCoalescedActions = (
+      actions: SyncAction[],
+      currentState: Partial<SyncableGameState>,
+    ): void => {
+      for (const action of coalesceSyncActions(actions, currentState)) {
+        sendSyncAction(action);
+      }
+    };
+
     if (!isWorldView) {
-      // @ts-expect-error - graphiumSync is dynamically added
-      window.graphiumSync = sendSyncActionDirectly;
+      window.graphiumSync = sendSyncAction;
     }
 
     if (isWeb && typeof BroadcastChannel !== 'undefined') {
@@ -89,10 +59,6 @@ function SyncManager(): null {
     }
 
     if (isWorldView) {
-      // ============================================================
-      // WORLD VIEW (CONSUMER)
-      // ============================================================
-
       // eslint-disable-next-line complexity
       const handleSyncAction = (
         _event: Electron.IpcRendererEvent | null,
@@ -101,6 +67,14 @@ function SyncManager(): null {
         const store = useGameStore.getState();
 
         switch (action.type) {
+          case 'BATCH':
+            for (const inner of action.payload) {
+              if (inner.type !== 'BATCH') {
+                handleSyncAction(_event, inner);
+              }
+            }
+            break;
+
           case 'FULL_SYNC': {
             const { tokenLibrary: fullLib, ...restState } = action.payload;
             useGameStore.setState(restState as Partial<SyncableGameState>);
@@ -253,9 +227,7 @@ function SyncManager(): null {
       if (isWeb && channel) {
         channel.onmessage = (event: MessageEvent<{ type: string }>): void => {
           const message = event.data;
-          if (message?.type === 'REQUEST_INITIAL_STATE') {
-            // Ignore (World View doesn't have initial state to give)
-          } else if (message?.type) {
+          if (message?.type && message.type !== 'REQUEST_INITIAL_STATE') {
             handleSyncAction(null, message as SyncAction);
           }
         };
@@ -264,16 +236,10 @@ function SyncManager(): null {
         ipcListener = (event: Electron.IpcRendererEvent, action: SyncAction): void => {
           handleSyncAction(event, action);
         };
-
-        if (!listenerSetupRef.current) {
-          ipcRenderer.on('SYNC_WORLD_STATE', ipcListener);
-          listenerSetupRef.current = true;
-        }
-
+        ipcRenderer.on('SYNC_WORLD_STATE', ipcListener);
         ipcRenderer.send('REQUEST_INITIAL_STATE');
       }
 
-      // BIDIRECTIONAL: Sync from World View to Architect
       const handleWorldViewUpdate = (state: GameState): void => {
         const actions = detectWorldViewTokenUpdates(worldViewPrevStateRef.current, state.tokens);
         actions.forEach((action) => {
@@ -284,13 +250,20 @@ function SyncManager(): null {
           }
         });
 
-        worldViewPrevStateRef.current = cloneSyncableStateFromGame(state);
+        if (actions.length > 0 || !worldViewPrevStateRef.current) {
+          worldViewPrevStateRef.current = cloneSyncableStateFromGame(state);
+        } else {
+          worldViewPrevStateRef.current.tokens = [...state.tokens];
+        }
       };
 
       const throttledWorldViewSync = throttle(handleWorldViewUpdate, 32);
-      const unsubWorldView = useGameStore.subscribe((state: GameState) =>
-        throttledWorldViewSync(state),
-      );
+      const unsubWorldView = useGameStore.subscribe((state: GameState, previous: GameState) => {
+        if (state.tokens === previous.tokens) {
+          return;
+        }
+        throttledWorldViewSync(state);
+      });
 
       return (): void => {
         throttledWorldViewSync.cancel();
@@ -298,120 +271,123 @@ function SyncManager(): null {
         if (channel) {
           channel.close();
         }
-        if (listenerSetupRef.current && ipcRenderer && ipcListener) {
+        if (ipcRenderer && ipcListener) {
           ipcRenderer.off('SYNC_WORLD_STATE', ipcListener);
-          listenerSetupRef.current = false;
         }
-      };
-    } else {
-      // ============================================================
-      // ARCHITECT VIEW (PRODUCER)
-      // ============================================================
-
-      const handleInitialStateRequest = (
-        _event: Electron.IpcRendererEvent | MessageEvent | null,
-      ): void => {
-        const state = useGameStore.getState();
-        const initialAction: SyncAction = {
-          type: 'FULL_SYNC',
-          payload: buildFullSyncPayload({
-            tokens: state.tokens,
-            tokenLibrary: state.campaign.tokenLibrary,
-            drawings: state.drawings,
-            doors: state.doors ?? [],
-            stairs: state.stairs ?? [],
-            gridSize: state.gridSize,
-            gridType: state.gridType,
-            gridColor: state.gridColor,
-            map: state.map,
-            exploredRegions: state.exploredRegions,
-            isDaylightMode: state.isDaylightMode,
-            activeMeasurement: state.activeMeasurement ?? null,
-            broadcastMeasurement: state.broadcastMeasurement ?? false,
-          }),
-        };
-
-        if (isWeb && channel) {
-          channel.postMessage(initialAction);
-        } else if (isElectron && ipcRenderer) {
-          ipcRenderer.send('SYNC_WORLD_STATE', initialAction);
-        }
-      };
-
-      const applyArchitectTokenUpdate = (id: string, changes: Partial<Token>): void => {
-        const store = useGameStore.getState();
-        if (!store.tokens.some((t) => t.id === id)) {
-          return;
-        }
-        const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
-        useGameStore.setState({ tokens: newTokens });
-        if (prevStateRef.current) {
-          prevStateRef.current.tokens = newTokens;
-        }
-      };
-
-      if (isWeb && channel) {
-        channel.onmessage = (event: MessageEvent<{ type: string }>): void => {
-          if (event.data?.type === 'REQUEST_INITIAL_STATE') {
-            handleInitialStateRequest(event);
-          } else if (event.data?.type === 'TOKEN_UPDATE') {
-            const updateAction = event.data as Extract<SyncAction, { type: 'TOKEN_UPDATE' }>;
-            applyArchitectTokenUpdate(updateAction.payload.id, updateAction.payload.changes);
-          }
-        };
-      } else if (isElectron && ipcRenderer) {
-        ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
-      }
-
-      const handleStoreUpdate = (state: GameState): void => {
-        const syncableState: Partial<SyncableGameState> = {
-          ...state,
-          tokenLibrary: state.campaign.tokenLibrary,
-        };
-
-        const actions = detectChanges(prevStateRef.current ?? {}, syncableState);
-        actions.forEach((action) => {
-          if (isWeb && channel) {
-            channel.postMessage(action);
-          } else if (isElectron && ipcRenderer) {
-            ipcRenderer.send('SYNC_WORLD_STATE', action);
-          }
-        });
-
-        const prev = prevStateRef.current;
-        prevStateRef.current = cloneSyncableStateFromGame(state, {
-          prevExploredRegions: prev?.exploredRegions,
-        });
-      };
-
-      const throttledSync = throttle(handleStoreUpdate, 32);
-      const unsub = useGameStore.subscribe((state: GameState) => throttledSync(state));
-
-      if (isElectron && ipcRenderer) {
-        ipcRenderer.on(
-          'SYNC_WORLD_STATE',
-          (_event: Electron.IpcRendererEvent, action: SyncAction) => {
-            if (action?.type === 'TOKEN_UPDATE') {
-              applyArchitectTokenUpdate(action.payload.id, action.payload.changes);
-            }
-          },
-        );
-      }
-
-      return (): void => {
-        throttledSync.cancel();
-        unsub();
-        if (channel) {
-          channel.close();
-        }
-        if (isElectron && ipcRenderer) {
-          ipcRenderer.removeAllListeners('REQUEST_INITIAL_STATE');
-          ipcRenderer.removeAllListeners('SYNC_WORLD_STATE');
-        }
-        // @ts-expect-error - graphiumSync is dynamically added
-        delete window.graphiumSync;
       };
     }
+
+    const handleInitialStateRequest = (
+      _event: Electron.IpcRendererEvent | MessageEvent | null,
+    ): void => {
+      const state = useGameStore.getState();
+      sendSyncAction({
+        type: 'FULL_SYNC',
+        payload: buildFullSyncPayload({
+          tokens: state.tokens,
+          tokenLibrary: state.campaign.tokenLibrary,
+          drawings: state.drawings,
+          doors: state.doors ?? [],
+          stairs: state.stairs ?? [],
+          gridSize: state.gridSize,
+          gridType: state.gridType,
+          gridColor: state.gridColor,
+          map: state.map,
+          exploredRegions: state.exploredRegions,
+          isDaylightMode: state.isDaylightMode,
+          activeMeasurement: state.activeMeasurement ?? null,
+          broadcastMeasurement: state.broadcastMeasurement ?? false,
+        }),
+      });
+    };
+
+    const applyArchitectTokenUpdate = (id: string, changes: Partial<Token>): void => {
+      const store = useGameStore.getState();
+      if (!store.tokens.some((t) => t.id === id)) {
+        return;
+      }
+      const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
+      useGameStore.setState({ tokens: newTokens });
+      if (prevStateRef.current) {
+        prevStateRef.current.tokens = newTokens;
+      }
+    };
+
+    if (isWeb && channel) {
+      channel.onmessage = (event: MessageEvent<{ type: string }>): void => {
+        if (event.data?.type === 'REQUEST_INITIAL_STATE') {
+          handleInitialStateRequest(event);
+        } else if (event.data?.type === 'TOKEN_UPDATE') {
+          const updateAction = event.data as Extract<SyncAction, { type: 'TOKEN_UPDATE' }>;
+          applyArchitectTokenUpdate(updateAction.payload.id, updateAction.payload.changes);
+        } else if (event.data?.type === 'BATCH') {
+          const batch = event.data as Extract<SyncAction, { type: 'BATCH' }>;
+          for (const inner of batch.payload) {
+            if (inner.type === 'TOKEN_UPDATE') {
+              applyArchitectTokenUpdate(inner.payload.id, inner.payload.changes);
+            }
+          }
+        }
+      };
+    } else if (isElectron && ipcRenderer) {
+      ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
+    }
+
+    const handleStoreUpdate = (state: GameState): void => {
+      const syncableState: Partial<SyncableGameState> = {
+        ...state,
+        tokenLibrary: state.campaign.tokenLibrary,
+      };
+
+      const actions = detectChanges(prevStateRef.current, syncableState);
+      sendCoalescedActions(actions, syncableState);
+
+      if (actions.length === 0 && prevStateRef.current) {
+        return;
+      }
+
+      prevStateRef.current = cloneSyncableStateFromGame(state, {
+        prevExploredRegions: prevStateRef.current?.exploredRegions,
+      });
+    };
+
+    const throttledSync = throttle(handleStoreUpdate, 32);
+    const unsub = useGameStore.subscribe((state: GameState, previous: GameState) => {
+      if (isSyncSliceUnchanged(state, previous)) {
+        return;
+      }
+      throttledSync(state);
+    });
+
+    if (isElectron && ipcRenderer) {
+      ipcRenderer.on(
+        'SYNC_WORLD_STATE',
+        (_event: Electron.IpcRendererEvent, action: SyncAction) => {
+          if (action?.type === 'TOKEN_UPDATE') {
+            applyArchitectTokenUpdate(action.payload.id, action.payload.changes);
+          } else if (action?.type === 'BATCH') {
+            for (const inner of action.payload) {
+              if (inner.type === 'TOKEN_UPDATE') {
+                applyArchitectTokenUpdate(inner.payload.id, inner.payload.changes);
+              }
+            }
+          }
+        },
+      );
+    }
+
+    return (): void => {
+      throttledSync.cancel();
+      unsub();
+      if (channel) {
+        channel.close();
+      }
+      if (isElectron && ipcRenderer) {
+        ipcRenderer.removeAllListeners('REQUEST_INITIAL_STATE');
+        ipcRenderer.removeAllListeners('SYNC_WORLD_STATE');
+      }
+      delete window.graphiumSync;
+    };
   }, []);
 
   return null;

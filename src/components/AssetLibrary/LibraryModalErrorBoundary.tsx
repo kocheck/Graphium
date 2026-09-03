@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';
 
+import { captureErrorContext, logErrorWithContext } from '../../utils/errorBoundaryUtils';
+
 /**
  * Props for LibraryModalErrorBoundary
  */
@@ -65,13 +67,8 @@ class LibraryModalErrorBoundary extends Component<
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    logErrorWithContext(captureErrorContext(error, errorInfo, { componentName: 'LibraryModal' }));
     console.error('[LibraryModalErrorBoundary] Modal component crashed:', error, errorInfo);
-
-    // Optional: Send error to monitoring service
-    // ErrorReportingService.captureException(error, {
-    //   context: 'library-modal',
-    //   componentStack: errorInfo.componentStack,
-    // });
   }
 
   handleClose = (): void => {

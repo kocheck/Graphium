@@ -34,6 +34,7 @@ import TokenMetadataEditor from './TokenMetadataEditor';
 import { useGameStore } from '../../store/gameStore';
 import { createCommandRegistry, searchCommands, type Command } from '../../utils/commandRegistry';
 import { fuzzySearch } from '../../utils/fuzzySearch';
+import { toMediaProtocol } from '../../utils/mediaProtocol';
 import { addLibraryTokenToMap } from '../../utils/tokenHelpers';
 
 interface CommandPaletteProps {
@@ -329,7 +330,7 @@ function CommandPalette({
                   >
                     {/* Thumbnail */}
                     <img
-                      src={asset.thumbnailSrc.replace('file:', 'media:')}
+                      src={toMediaProtocol(asset.thumbnailSrc)}
                       alt={asset.name}
                       className="w-16 h-16 object-cover rounded bg-neutral-700"
                     />

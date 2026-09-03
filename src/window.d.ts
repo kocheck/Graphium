@@ -3,6 +3,7 @@
  */
 
 import type { useGameStore } from './store/gameStore';
+import type { SyncAction } from './utils/syncUtils';
 
 // eslint-disable-next-line import/no-unused-modules
 export interface ErrorContext {
@@ -71,6 +72,9 @@ declare global {
     __getErrorHistory__?: () => ErrorInfo[];
     __simulateTokenError__?: (tokenId: string) => void;
     __simulateOverlayError__?: (overlayName: string) => void;
+
+    // Architect View hook for tests / diagnostics to send a sync action
+    graphiumSync?: (action: SyncAction) => void;
 
     // Auto-updater API (exposed via preload.ts)
     autoUpdater?: {

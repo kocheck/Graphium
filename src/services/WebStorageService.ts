@@ -4,6 +4,8 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
 
+import { rewriteCampaignAssetSrcs } from '../utils/campaignAssets';
+
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
 import type { Campaign, TokenLibraryItem } from '../store/gameStore';
 
@@ -516,33 +518,7 @@ export class WebStorageService implements IStorageService {
       }
     };
 
-    // Process all map backgrounds and tokens
-    for (const mapId in campaign.maps) {
-      const map = campaign.maps[mapId];
-      if (!map) {
-        continue;
-      }
-
-      // Map background
-      if (map.map?.src) {
-        map.map.src = await processAsset(map.map.src);
-      }
-
-      // Tokens
-      if (map.tokens) {
-        for (const token of map.tokens) {
-          token.src = await processAsset(token.src);
-        }
-      }
-    }
-
-    // Process campaign token library
-    if (campaign.tokenLibrary) {
-      for (const item of campaign.tokenLibrary) {
-        item.src = await processAsset(item.src);
-        item.thumbnailSrc = await processAsset(item.thumbnailSrc);
-      }
-    }
+    await rewriteCampaignAssetSrcs(campaign, processAsset, { includeThumbnails: true });
   }
 
   /**

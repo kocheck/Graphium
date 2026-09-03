@@ -11,6 +11,7 @@ import {
   RiSaveLine,
 } from '@remixicon/react';
 
+import { buildGitHubIssueUrl } from '../utils/githubIssueUrl';
 import {
   getStoredErrors,
   getUnreportedErrorCount,
@@ -19,12 +20,6 @@ import {
 } from '../utils/globalErrorHandler';
 
 import type { StoredError } from '../utils/globalErrorHandler';
-
-// Constants for GitHub issue URL construction
-const MAX_GITHUB_URL_LENGTH = 2000;
-const MAX_ISSUE_TITLE_LENGTH = 200;
-// Safety margin to account for URL-encoded ellipsis character (… becomes %E2%80%A6)
-const TITLE_ELLIPSIS_MARGIN = 10;
 
 interface PendingErrorsIndicatorProps {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
@@ -35,38 +30,7 @@ function formatTimestamp(timestamp: string): string {
 }
 
 function buildGithubUrl(error: StoredError): string {
-  const rawTitle = `Bug Report: ${error.sanitizedError.name}`;
-  const issueTitle =
-    rawTitle.length > MAX_ISSUE_TITLE_LENGTH
-      ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
-      : rawTitle;
-
-  const baseUrl = 'https://github.com/kocheck/Graphium/issues/new';
-  const baseWithTitle = `${baseUrl}?title=${encodeURIComponent(issueTitle)}`;
-  const bodyPrefix = '&body=';
-  const encodedBody = encodeURIComponent(error.reportBody);
-
-  const fullUrl = `${baseWithTitle}${bodyPrefix}${encodedBody}`;
-  if (fullUrl.length <= MAX_GITHUB_URL_LENGTH) {
-    return fullUrl;
-  }
-
-  const allowedBodyLength = MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
-  if (allowedBodyLength <= 0) {
-    return baseWithTitle;
-  }
-
-  let currentLength = 0;
-  const encodedChunks: string[] = [];
-  for (const char of error.reportBody) {
-    const encodedChar = encodeURIComponent(char);
-    if (currentLength + encodedChar.length > allowedBodyLength) {
-      break;
-    }
-    encodedChunks.push(encodedChar);
-    currentLength += encodedChar.length;
-  }
-  return `${baseWithTitle}${bodyPrefix}${encodedChunks.join('')}`;
+  return buildGitHubIssueUrl(`Bug Report: ${error.sanitizedError.name}`, error.reportBody);
 }
 
 // ============================================================================

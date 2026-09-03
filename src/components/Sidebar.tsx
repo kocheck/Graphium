@@ -83,6 +83,7 @@ import { QuickTokenSidebarErrorBoundary } from './QuickTokenSidebarErrorBoundary
 import Tooltip from './Tooltip';
 import { useCommandPalette } from '../hooks/useCommandPalette';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { toMediaProtocol } from '../utils/mediaProtocol';
 import { rollForMessage } from '../utils/systemMessages';
 import { getRecentTokens, getPlayerTokens, deduplicatePlayerTokens } from '../utils/tokenUtils';
 
@@ -171,7 +172,7 @@ function Sidebar(): JSX.Element {
 
     // Create custom drag image
     const img = new Image();
-    img.src = src.replace('file:', 'media:');
+    img.src = toMediaProtocol(src);
     img.width = 64;
     img.height = 64;
 
@@ -183,7 +184,7 @@ function Sidebar(): JSX.Element {
     div.style.left = '-1000px';
     div.style.width = '64px';
     div.style.height = '64px';
-    div.style.backgroundImage = `url(${src.replace('file:', 'media:')})`;
+    div.style.backgroundImage = `url(${toMediaProtocol(src)})`;
     div.style.backgroundSize = 'contain';
     div.style.backgroundRepeat = 'no-repeat';
     div.style.backgroundPosition = 'center';
@@ -219,7 +220,7 @@ function Sidebar(): JSX.Element {
       processingHandleRef.current = null;
 
       // Convert file:// URL to media:// for fetch (Electron security requirement)
-      const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
+      const safeSrc = toMediaProtocol(src);
 
       // Convert to blob for AddToLibraryDialog
       const response = await fetch(safeSrc);

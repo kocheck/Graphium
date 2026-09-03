@@ -30,6 +30,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 
 import { RiSearchLine, RiDownloadLine, RiRefreshLine } from '@remixicon/react';
 
+import { throttle } from '../utils/throttle';
+
 // ============================================================================
 // MESSAGE VARIATIONS - Randomized for delightful UX
 // ============================================================================
@@ -363,6 +365,13 @@ function useAutoUpdater(): AutoUpdaterState {
     if (!window.autoUpdater) {
       return;
     }
+    const applyDownloadProgress = (progress: DownloadProgress): void => {
+      setStatus('downloading');
+      setDownloadProgress(progress);
+      setErrorMessage('');
+    };
+    const throttledProgress = throttle(applyDownloadProgress, 100);
+
     const cleanupFunctions: Array<() => void> = [];
     cleanupFunctions.push(
       window.autoUpdater.onCheckingForUpdate(() => {
@@ -384,9 +393,12 @@ function useAutoUpdater(): AutoUpdaterState {
     );
     cleanupFunctions.push(
       window.autoUpdater.onDownloadProgress((progress) => {
-        setStatus('downloading');
-        setDownloadProgress(progress);
-        setErrorMessage('');
+        if (progress.percent >= 99.9) {
+          throttledProgress.cancel();
+          applyDownloadProgress(progress);
+          return;
+        }
+        throttledProgress(progress);
       }),
     );
     cleanupFunctions.push(
@@ -402,6 +414,7 @@ function useAutoUpdater(): AutoUpdaterState {
       }),
     );
     return () => {
+      throttledProgress.cancel();
       cleanupFunctions.forEach((cleanup) => cleanup());
     };
   }, []);

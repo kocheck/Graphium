@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { isEqual, detectChanges } from './syncUtils';
+import {
+  isEqual,
+  detectChanges,
+  coalesceSyncActions,
+  FULL_SYNC_ACTION_THRESHOLD,
+} from './syncUtils';
 
 describe('syncUtils', () => {
   describe('isEqual', () => {
@@ -134,7 +139,7 @@ describe('syncUtils', () => {
         broadcastMeasurement: true,
       };
 
-      const changes = detectChanges(null as any, curr as any);
+      const changes = detectChanges(null, curr);
       const fullSync = changes.find((c) => c.type === 'FULL_SYNC');
       expect(fullSync).toBeTruthy();
       if (fullSync && fullSync.type === 'FULL_SYNC') {
@@ -179,6 +184,41 @@ describe('syncUtils', () => {
         type: 'EXPLORED_UPDATE',
         payload: regions,
       });
+    });
+
+    it('emits FULL_SYNC when previous state is null', () => {
+      const changes = detectChanges(null, { tokens: [{ id: 't1', x: 0 }] });
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.type).toBe('FULL_SYNC');
+    });
+  });
+
+  describe('coalesceSyncActions', () => {
+    it('returns an empty list when there are no actions', () => {
+      expect(coalesceSyncActions([], {})).toEqual([]);
+    });
+
+    it('leaves a single action unwrapped', () => {
+      const action = { type: 'TOKEN_REMOVE' as const, payload: { id: 't1' } };
+      expect(coalesceSyncActions([action], {})).toEqual([action]);
+    });
+
+    it('batches a small set of actions', () => {
+      const actions = [
+        { type: 'TOKEN_REMOVE' as const, payload: { id: 't1' } },
+        { type: 'TOKEN_REMOVE' as const, payload: { id: 't2' } },
+      ];
+      expect(coalesceSyncActions(actions, {})).toEqual([{ type: 'BATCH', payload: actions }]);
+    });
+
+    it('collapses a large set of actions into FULL_SYNC', () => {
+      const actions = Array.from({ length: FULL_SYNC_ACTION_THRESHOLD }, (_, i) => ({
+        type: 'TOKEN_REMOVE' as const,
+        payload: { id: `t${i}` },
+      }));
+      const coalesced = coalesceSyncActions(actions, { tokens: [] });
+      expect(coalesced).toHaveLength(1);
+      expect(coalesced[0]?.type).toBe('FULL_SYNC');
     });
   });
 });

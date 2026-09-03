@@ -59,36 +59,10 @@ import type React from 'react';
 import { Component } from 'react';
 
 import { sanitizeStack, generateReportBody } from '../utils/errorSanitizer';
+import { buildGitHubIssueUrl } from '../utils/githubIssueUrl';
 import { rollForMessage } from '../utils/systemMessages';
 
 import type { SanitizedError } from '../utils/errorSanitizer';
-
-// Constants for GitHub issue URL construction
-const MAX_GITHUB_URL_LENGTH = 2000;
-const MAX_ISSUE_TITLE_LENGTH = 200;
-// Safety margin to account for URL-encoded ellipsis character (… becomes %E2%80%A6)
-const TITLE_ELLIPSIS_MARGIN = 10;
-
-/**
- * Truncates a GitHub issue URL to stay within browser URL length limits.
- */
-function truncateGitHubUrl(baseWithTitle: string, bodyPrefix: string, finalReport: string): string {
-  const allowedBodyLength = MAX_GITHUB_URL_LENGTH - (baseWithTitle.length + bodyPrefix.length);
-  if (allowedBodyLength <= 0) {
-    return baseWithTitle;
-  }
-  let currentLength = 0;
-  const encodedChunks: string[] = [];
-  for (const char of finalReport) {
-    const encodedChar = encodeURIComponent(char);
-    if (currentLength + encodedChar.length > allowedBodyLength) {
-      break;
-    }
-    encodedChunks.push(encodedChar);
-    currentLength += encodedChar.length;
-  }
-  return `${baseWithTitle}${bodyPrefix}${encodedChunks.join('')}`;
-}
 
 /**
  * Props for PrivacyErrorBoundary
@@ -237,28 +211,10 @@ ${userContext.trim()}
         : '';
       const finalReport = reportBody.replace('{{USER_CONTEXT}}', userContextBlock);
 
-      // Construct GitHub issue URL with title truncation and URL length validation
-      const rawTitle = `Bug Report: ${sanitizedError?.name ?? 'Error'}`;
-      const issueTitle =
-        rawTitle.length > MAX_ISSUE_TITLE_LENGTH
-          ? `${rawTitle.slice(0, MAX_ISSUE_TITLE_LENGTH - TITLE_ELLIPSIS_MARGIN)}…`
-          : rawTitle;
-
-      const params = new URLSearchParams({
-        body: finalReport,
-        title: issueTitle,
-      });
-      let githubUrl = `https://github.com/kocheck/Graphium/issues/new?${params.toString()}`;
-
-      // Enforce URL length limit to prevent browser issues
-      if (githubUrl.length > MAX_GITHUB_URL_LENGTH) {
-        const baseUrl = 'https://github.com/kocheck/Graphium/issues/new';
-        const titleParam = `?title=${encodeURIComponent(issueTitle)}`;
-        const bodyPrefix = '&body=';
-        const baseWithTitle = `${baseUrl}${titleParam}`;
-
-        githubUrl = truncateGitHubUrl(baseWithTitle, bodyPrefix, finalReport);
-      }
+      const githubUrl = buildGitHubIssueUrl(
+        `Bug Report: ${sanitizedError?.name ?? 'Error'}`,
+        finalReport,
+      );
 
       // Open GitHub in browser
       const errorReporting = window.errorReporting;
