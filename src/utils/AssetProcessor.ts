@@ -6,6 +6,7 @@ import { getStorage } from '../services/storage';
  * - MAP: Background map images (max 4096px for 4K display support)
  * - TOKEN: Character/creature tokens (max 512px for performance)
  */
+// eslint-disable-next-line import/no-unused-modules
 export type AssetType = 'MAP' | 'TOKEN';
 
 /**
@@ -27,6 +28,7 @@ const MAX_TOKEN_DIMENSION = 512;
 /**
  * Progress callback for image processing
  */
+// eslint-disable-next-line import/no-unused-modules
 export type ProgressCallback = (progress: number) => void;
 
 /**
@@ -40,6 +42,7 @@ export interface ProcessingHandle {
 /**
  * Cancellable batch processing handle returned by processBatch
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface BatchProcessingHandle {
   promise: Promise<string[]>;
   cancel: () => void;
@@ -139,6 +142,26 @@ function wrapPromiseAsHandle(promise: Promise<string>): ProcessingHandle {
 }
 
 /**
+ * Message type for worker responses
+ */
+interface WorkerProgressMessage {
+  type: 'PROGRESS';
+  progress: number;
+}
+
+interface WorkerCompleteMessage {
+  type: 'COMPLETE';
+  buffer: ArrayBuffer;
+}
+
+interface WorkerErrorMessage {
+  type: 'ERROR';
+  error: string;
+}
+
+type WorkerMessage = WorkerProgressMessage | WorkerCompleteMessage | WorkerErrorMessage;
+
+/**
  * Process image using Web Worker (non-blocking, preferred method)
  *
  * **RESOURCE MANAGEMENT:** Properly terminates worker on cancel, completion, or error.
@@ -161,7 +184,7 @@ function processImageWithWorker(
     });
 
     // Handle worker messages
-    worker.onmessage = async (event) => {
+    worker.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       // Ignore messages if already cancelled
       if (isCancelled) {
         return;
@@ -379,6 +402,7 @@ async function processImageMainThread(
  *   return () => handle.cancel();
  * }, [files]);
  */
+// eslint-disable-next-line import/no-unused-modules
 export const processBatch = (
   files: File[],
   type: AssetType,
@@ -393,7 +417,9 @@ export const processBatch = (
     }
     return {
       promise: Promise.resolve([]),
-      cancel: () => {},
+      cancel: () => {
+        /* no-op: nothing to cancel */
+      },
     };
   }
 
@@ -401,7 +427,7 @@ export const processBatch = (
   const handles: ProcessingHandle[] = [];
   let isCancelled = false;
 
-  const updateOverallProgress = () => {
+  const updateOverallProgress = (): void => {
     // Don't update progress if batch processing has been cancelled
     if (isCancelled) {
       return;
