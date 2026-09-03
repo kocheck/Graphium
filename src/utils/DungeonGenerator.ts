@@ -147,6 +147,7 @@ interface CorridorTemplate {
  * @property wallColor - Wall color hex code (default: '#ff0000')
  * @property wallSize - Wall thickness in pixels (default: 8)
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface DungeonGeneratorOptions {
   numRooms: number;
   minRoomSize?: number;
@@ -323,8 +324,12 @@ export class DungeonGenerator {
         break;
       }
 
-      const sourcePiece = roomPieces[Math.floor(Math.random() * roomPieces.length)]!;
-      const usedDirs = usedDirections.get(sourcePiece) || new Set();
+      const sourcePieceCandidate = roomPieces[Math.floor(Math.random() * roomPieces.length)];
+      if (!sourcePieceCandidate) {
+        break;
+      }
+      const sourcePiece = sourcePieceCandidate;
+      const usedDirs = usedDirections.get(sourcePiece) ?? new Set<Direction>();
 
       // Try all available directions
       const availableDirs: Direction[] = ['north', 'south', 'east', 'west']
@@ -382,7 +387,12 @@ export class DungeonGenerator {
    */
   private createRoom(x: number, y: number): DungeonPiece {
     // Randomly select a room template
-    const template = this.roomTemplates[Math.floor(Math.random() * this.roomTemplates.length)]!;
+    const templateCandidate =
+      this.roomTemplates[Math.floor(Math.random() * this.roomTemplates.length)];
+    if (!templateCandidate) {
+      throw new Error('No room templates available');
+    }
+    const template = templateCandidate;
 
     // Generate random size within template bounds
     const widthCells =
@@ -439,8 +449,8 @@ export class DungeonGenerator {
     const corridorWidth = this.corridorTemplate.widthInCells * gridSize;
     const corridorLength = this.corridorTemplate.lengthInCells * gridSize;
 
-    let bounds!: Room;
-    let wallSegments!: DungeonPiece['wallSegments'];
+    let bounds: Room = { x: 0, y: 0, width: 0, height: 0 };
+    let wallSegments: DungeonPiece['wallSegments'] = {};
 
     switch (direction) {
       case 'north': {
@@ -562,6 +572,7 @@ export class DungeonGenerator {
   /**
    * Tries to add a corridor and room in the specified direction
    */
+  // eslint-disable-next-line complexity
   private tryAddPieceInDirection(
     sourcePiece: DungeonPiece,
     direction: Direction,
@@ -572,7 +583,8 @@ export class DungeonGenerator {
     const { gridSize } = this.options;
 
     // Calculate connection point on source piece and snap to grid
-    let connX!: number, connY!: number;
+    let connX = 0;
+    let connY = 0;
 
     switch (direction) {
       case 'north':
@@ -686,8 +698,10 @@ export class DungeonGenerator {
 
     // Calculate exact doorway positions AFTER grid snapping AND corridor adjustment
     // Doorways must align with the corridor's actual connection points
-    let sourceRoomDoorwayX!: number, sourceRoomDoorwayY!: number;
-    let newRoomDoorwayX!: number, newRoomDoorwayY!: number;
+    let sourceRoomDoorwayX = 0;
+    let sourceRoomDoorwayY = 0;
+    let newRoomDoorwayX = 0;
+    let newRoomDoorwayY = 0;
 
     // Use corridor's adjusted bounds to determine exact door positions
     const adjustedCorridor = corridor.bounds;
@@ -789,6 +803,7 @@ export class DungeonGenerator {
    * @param direction - Which wall direction to place the door
    * @param doorwayPosition - Exact center position of the door
    */
+  // eslint-disable-next-line complexity
   private removeConnectingWalls(
     piece: DungeonPiece,
     direction: Direction,
@@ -800,7 +815,8 @@ export class DungeonGenerator {
     const minSegmentSize = gridSize * DungeonGenerator.MIN_WALL_SEGMENT_FRACTION;
 
     // Calculate doorway position if not provided
-    let centerX!: number, centerY!: number;
+    let centerX = 0;
+    let centerY = 0;
 
     if (doorwayPosition) {
       centerX = doorwayPosition.x;
@@ -837,8 +853,11 @@ export class DungeonGenerator {
       return;
     }
 
-    const start = segment[0]!;
-    const end = segment[1]!;
+    const start = segment[0];
+    const end = segment[1];
+    if (!start || !end) {
+      return;
+    }
 
     if (direction === 'north' || direction === 'south') {
       // Horizontal wall - split left and right of doorway
@@ -982,33 +1001,44 @@ export class DungeonGenerator {
       if (segment && segment.length >= 2) {
         // Check if this is a split wall (4 points) or simple wall (2 points)
         if (segment.length === 2) {
-          // Simple wall - draw as single line
-          drawings.push({
-            id: crypto.randomUUID(),
-            tool: 'wall',
-            points: [segment[0]!.x, segment[0]!.y, segment[1]!.x, segment[1]!.y],
-            color: wallColor,
-            size: wallSize,
-          });
+          const p0 = segment[0];
+          const p1 = segment[1];
+          if (p0 && p1) {
+            // Simple wall - draw as single line
+            drawings.push({
+              id: crypto.randomUUID(),
+              tool: 'wall',
+              points: [p0.x, p0.y, p1.x, p1.y],
+              color: wallColor,
+              size: wallSize,
+            });
+          }
         } else if (segment.length === 4) {
-          // Split wall with doorway - draw as two separate lines
-          // First segment (e.g., left side or top side)
-          drawings.push({
-            id: crypto.randomUUID(),
-            tool: 'wall',
-            points: [segment[0]!.x, segment[0]!.y, segment[1]!.x, segment[1]!.y],
-            color: wallColor,
-            size: wallSize,
-          });
-
-          // Second segment (e.g., right side or bottom side)
-          drawings.push({
-            id: crypto.randomUUID(),
-            tool: 'wall',
-            points: [segment[2]!.x, segment[2]!.y, segment[3]!.x, segment[3]!.y],
-            color: wallColor,
-            size: wallSize,
-          });
+          const p0 = segment[0];
+          const p1 = segment[1];
+          const p2 = segment[2];
+          const p3 = segment[3];
+          if (p0 && p1) {
+            // Split wall with doorway - draw as two separate lines
+            // First segment (e.g., left side or top side)
+            drawings.push({
+              id: crypto.randomUUID(),
+              tool: 'wall',
+              points: [p0.x, p0.y, p1.x, p1.y],
+              color: wallColor,
+              size: wallSize,
+            });
+          }
+          if (p2 && p3) {
+            // Second segment (e.g., right side or bottom side)
+            drawings.push({
+              id: crypto.randomUUID(),
+              tool: 'wall',
+              points: [p2.x, p2.y, p3.x, p3.y],
+              color: wallColor,
+              size: wallSize,
+            });
+          }
         }
       }
     }
@@ -1033,23 +1063,13 @@ export class DungeonGenerator {
 
     // Determine swing direction (doors swing into rooms, away from corridors)
     // For now, default to standard directions
-    let swingDirection!: 'left' | 'right' | 'up' | 'down';
-    switch (direction) {
-      case 'north':
-        swingDirection = 'left'; // Door swings to the left (west)
-        break;
-      case 'south':
-        swingDirection = 'right'; // Door swings to the right (east)
-        break;
-      case 'east':
-        swingDirection = 'down'; // Door swings downward (south)
-        break;
-      case 'west':
-        swingDirection = 'up'; // Door swings upward (north)
-        break;
-      default:
-        break;
-    }
+    const swingDirectionMap: Record<Direction, 'left' | 'right' | 'up' | 'down'> = {
+      north: 'left',
+      south: 'right',
+      east: 'down',
+      west: 'up',
+    };
+    const swingDirection = swingDirectionMap[direction];
 
     return {
       id: crypto.randomUUID(),
