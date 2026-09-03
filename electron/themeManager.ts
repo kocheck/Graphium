@@ -27,6 +27,7 @@ import { nativeTheme, BrowserWindow } from 'electron';
 import Store from 'electron-store';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
+// eslint-disable-next-line import/no-unused-modules
 export type EffectiveTheme = 'light' | 'dark';
 
 interface ThemeStoreSchema {
@@ -51,6 +52,7 @@ const store = new Store<ThemeStoreSchema>({
  *
  * @returns The user's theme preference ('light', 'dark', or 'system')
  */
+// eslint-disable-next-line import/no-unused-modules
 export function getThemeMode(): ThemeMode {
   return store.get('theme');
 }
@@ -82,6 +84,7 @@ export function setThemeMode(mode: ThemeMode): void {
  *
  * @returns 'light' or 'dark' based on current mode and OS preference
  */
+// eslint-disable-next-line import/no-unused-modules
 export function getEffectiveTheme(): EffectiveTheme {
   const mode = getThemeMode();
 
@@ -102,6 +105,7 @@ export function getEffectiveTheme(): EffectiveTheme {
  * - OS theme changes (system mode only)
  * - New window is created (initial theme sync)
  */
+// eslint-disable-next-line import/no-unused-modules
 export function broadcastThemeToRenderers(): void {
   const effectiveTheme = getEffectiveTheme();
   const mode = getThemeMode();

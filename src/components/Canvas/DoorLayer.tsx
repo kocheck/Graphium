@@ -1,3 +1,5 @@
+import type React from 'react';
+
 import DoorShape from './DoorShape';
 
 import type { Door } from '../../store/gameStore';
@@ -39,9 +41,11 @@ function DoorLayer({
   onToggleDoor,
   onDeleteDoor,
   onDoorContextMenu,
-}: DoorLayerProps) {
+}: DoorLayerProps): React.ReactElement {
   if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
     console.log('[DoorLayer] Rendering', doors.length, 'doors. isWorldView:', isWorldView);
+    // eslint-disable-next-line no-console
     console.log(
       '[DoorLayer] Doors state:',
       doors.map((d) => ({ id: d.id, isOpen: d.isOpen })),
@@ -52,6 +56,7 @@ function DoorLayer({
     <>
       {doors.map((door) => {
         if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
           console.log(
             '[DoorLayer] Rendering door:',
             door.id,
