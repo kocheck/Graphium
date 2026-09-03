@@ -89,20 +89,22 @@ export default defineConfig({
     },
   ],
 
-  // Web server for Web-Chromium tests
-  webServer: process.env.CI
-    ? {
-        command: 'npm run preview:web', // Production preview
-        port: 4173,
-        reuseExistingServer: false, // Always fresh server in CI
-        timeout: 120000, // 2 minutes startup timeout
-        stdout: 'pipe',
-        stderr: 'pipe',
-      }
-    : {
-        command: 'npm run dev:web', // Dev server locally
-        port: 5173,
-        reuseExistingServer: true, // Reuse if already running
-        timeout: 120000,
-      },
+  // Web server for Web-Chromium tests (Electron CI job sets SKIP_WEB_SERVER=1)
+  webServer: process.env.SKIP_WEB_SERVER
+    ? undefined
+    : process.env.CI
+      ? {
+          command: 'npm run preview:web', // Production preview
+          port: 4173,
+          reuseExistingServer: false, // Always fresh server in CI
+          timeout: 120000, // 2 minutes startup timeout
+          stdout: 'pipe',
+          stderr: 'pipe',
+        }
+      : {
+          command: 'npm run dev:web', // Dev server locally
+          port: 5173,
+          reuseExistingServer: true, // Reuse if already running
+          timeout: 120000,
+        },
 });

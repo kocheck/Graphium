@@ -68,7 +68,7 @@ jobs:
   test-electron:
     name: Electron Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -93,6 +93,7 @@ jobs:
         run: xvfb-run -a npx playwright test --project=Electron-App
         env:
           CI: true
+          SKIP_WEB_SERVER: '1'
 
       - name: Upload test results (on failure)
         if: failure()
