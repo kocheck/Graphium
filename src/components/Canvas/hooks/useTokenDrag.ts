@@ -1,11 +1,15 @@
 import type React from 'react';
 import { useState, useRef, useCallback } from 'react';
 
+import { resolveTokenData } from '../../../hooks/useTokenData';
 import { useGameStore } from '../../../store/gameStore';
 import { snapToGrid } from '../../../utils/grid';
+import { flushRafSync, queueSyncAction } from '../../../utils/rafSync';
+import { stampArchitectPrevTokenPosition } from '../../../utils/syncStamp';
 import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { Token, GridType } from '../../../store/gameStore';
+import type { ResolvedTokenData } from '../../../hooks/useTokenData';
+import type { GridType } from '../../../store/gameStore';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
@@ -34,7 +38,6 @@ interface UseTokenDragProps {
   gridType: GridType;
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
-  resolvedTokens: Token[];
   shouldRejectPointerEvent: (
     e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
   ) => boolean;
@@ -50,7 +53,6 @@ export const useTokenDrag = ({
   gridType,
   selectedIds,
   setSelectedIds,
-  resolvedTokens,
   shouldRejectPointerEvent,
   trackStylusUsage,
 }: UseTokenDragProps): UseTokenDragReturn => {
@@ -81,6 +83,12 @@ export const useTokenDrag = ({
   const updateTokenPosition = useGameStore((s) => s.updateTokenPosition);
   const addToken = useGameStore((s) => s.addToken);
 
+  const lookupToken = useCallback((tokenId: string): ResolvedTokenData | undefined => {
+    const state = useGameStore.getState();
+    const token = state.tokensById[tokenId];
+    return token ? resolveTokenData(token, state.campaign.tokenLibrary) : undefined;
+  }, []);
+
   // Throttle utility
   const throttleDragBroadcast = useCallback(
     (tokenId: string, x: number, y: number): void => {
@@ -90,9 +98,8 @@ export const useTokenDrag = ({
       if (now - lastBroadcast >= DRAG_BROADCAST_THROTTLE_MS) {
         dragBroadcastThrottleRef.current.set(tokenId, now);
 
-        const ipcRenderer = window.ipcRenderer;
-        if (ipcRenderer && !isWorldView) {
-          ipcRenderer.send('SYNC_WORLD_STATE', {
+        if (!isWorldView) {
+          queueSyncAction({
             type: 'TOKEN_DRAG_MOVE',
             payload: { id: tokenId, x, y },
           });
@@ -120,7 +127,7 @@ export const useTokenDrag = ({
         return;
       }
 
-      const token = resolvedTokens.find((t) => t.id === tokenId);
+      const token = lookupToken(tokenId);
       if (!token) {
         return;
       }
@@ -135,7 +142,7 @@ export const useTokenDrag = ({
       });
       setIsDraggingWithThreshold(false);
     },
-    [tool, resolvedTokens, shouldRejectPointerEvent, trackStylusUsage],
+    [tool, lookupToken, shouldRejectPointerEvent, trackStylusUsage],
   );
 
   const handleTokenPointerMove = useCallback(
@@ -172,7 +179,7 @@ export const useTokenDrag = ({
           setSelectedIds(tokenIds);
         }
 
-        const primaryToken = resolvedTokens.find((t) => t.id === tokenId);
+        const primaryToken = lookupToken(tokenId);
         if (!primaryToken) {
           return;
         }
@@ -182,7 +189,7 @@ export const useTokenDrag = ({
 
         dragStartOffsetsRef.current.clear();
         tokenIds.forEach((id) => {
-          const token = resolvedTokens.find((t) => t.id === id);
+          const token = lookupToken(id);
           if (token) {
             if (id === tokenId) {
               dragStartOffsetsRef.current.set(id, { x: 0, y: 0 });
@@ -195,12 +202,11 @@ export const useTokenDrag = ({
           }
         });
 
-        const ipcRenderer = window.ipcRenderer;
-        if (ipcRenderer && !isWorldView) {
+        if (!isWorldView) {
           tokenIds.forEach((id) => {
-            const token = resolvedTokens.find((t) => t.id === id);
+            const token = lookupToken(id);
             if (token) {
-              ipcRenderer.send('SYNC_WORLD_STATE', {
+              queueSyncAction({
                 type: 'TOKEN_DRAG_START',
                 payload: { id, x: token.x, y: token.y },
               });
@@ -217,7 +223,7 @@ export const useTokenDrag = ({
         dragPositionsRef.current.set(tokenId, { x: newX, y: newY });
         throttleDragBroadcast(tokenId, newX, newY);
 
-        const token = resolvedTokens.find((t) => t.id === tokenId);
+        const token = lookupToken(tokenId);
         if (token) {
           const safeScale = token.scale ?? 1;
           const width = gridSize * safeScale;
@@ -238,7 +244,7 @@ export const useTokenDrag = ({
                 dragPositionsRef.current.set(id, { x: offsetX, y: offsetY });
                 throttleDragBroadcast(id, offsetX, offsetY);
 
-                const otherToken = resolvedTokens.find((t) => t.id === id);
+                const otherToken = lookupToken(id);
                 if (otherToken) {
                   const otherSafeScale = otherToken.scale ?? 1;
                   const snapped = snapToGrid(
@@ -279,7 +285,7 @@ export const useTokenDrag = ({
       tool,
       isDraggingWithThreshold,
       selectedIds,
-      resolvedTokens,
+      lookupToken,
       setSelectedIds,
       gridSize,
       gridType,
@@ -295,7 +301,7 @@ export const useTokenDrag = ({
       }
 
       const tokenId = tokenMouseDownStart.tokenId;
-      const token = resolvedTokens.find((t) => t.id === tokenId);
+      const token = lookupToken(tokenId);
 
       if (!token) {
         setTokenMouseDownStart(null);
@@ -319,7 +325,7 @@ export const useTokenDrag = ({
             const offsetY = snapped.y - dragPos.y;
 
             tokenIds.forEach((id) => {
-              const t = resolvedTokens.find((tk) => tk.id === id);
+              const t = lookupToken(id);
               if (t) {
                 const tSafeScale = t.scale ?? 1;
                 const dragPosForToken = dragPositionsRef.current.get(id) ?? { x: t.x, y: t.y };
@@ -333,31 +339,34 @@ export const useTokenDrag = ({
                   gridSize * tSafeScale,
                   gridSize * tSafeScale,
                 );
+                stampArchitectPrevTokenPosition(id, snappedPos.x, snappedPos.y);
                 updateTokenPosition(id, snappedPos.x, snappedPos.y);
                 committedPositions.set(id, snappedPos);
               }
             });
           } else {
+            stampArchitectPrevTokenPosition(tokenId, snapped.x, snapped.y);
             updateTokenPosition(tokenId, snapped.x, snapped.y);
             committedPositions.set(tokenId, snapped);
           }
 
-          const ipcRenderer = window.ipcRenderer;
-          if (ipcRenderer && !isWorldView) {
+          if (!isWorldView) {
+            flushRafSync();
             tokenIds.forEach((id) => {
               const pos = committedPositions.get(id);
               if (pos) {
-                ipcRenderer.send('SYNC_WORLD_STATE', {
+                queueSyncAction({
                   type: 'TOKEN_DRAG_END',
                   payload: { id, x: pos.x, y: pos.y },
                 });
               }
             });
+            flushRafSync();
           }
 
           if (isAltPressed && !isWorldView) {
             tokenIds.forEach((id) => {
-              const t = resolvedTokens.find((tk) => tk.id === id);
+              const t = lookupToken(id);
               const pos = committedPositions.get(id);
               if (t && pos) {
                 addToken({ ...t, id: crypto.randomUUID(), x: pos.x, y: pos.y });
@@ -394,7 +403,7 @@ export const useTokenDrag = ({
     },
     [
       tokenMouseDownStart,
-      resolvedTokens,
+      lookupToken,
       isDraggingWithThreshold,
       selectedIds,
       gridSize,

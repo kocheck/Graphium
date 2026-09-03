@@ -36,10 +36,11 @@
  */
 
 import type React from 'react';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import { Group, Line, Circle } from 'react-konva';
 
+import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { createGridGeometry } from '../../utils/gridGeometry';
 
 import type { GridType } from '../../store/gameStore';
@@ -70,7 +71,7 @@ let hasWarnedAboutDensity = false;
  * @property type - Grid rendering type (default: 'LINES')
  * @property hoveredCell - Grid cell currently under cursor (for hover highlight)
  */
-interface GridOverlayProps {
+export interface GridOverlayProps {
   visibleBounds: { x: number; y: number; width: number; height: number };
   gridSize: number;
   stroke?: string;
@@ -146,6 +147,8 @@ function GridOverlay({
               radius={2}
               fill={stroke}
               opacity={opacity}
+              listening={false}
+              perfectDrawEnabled={false}
             />,
           );
         }
@@ -163,6 +166,8 @@ function GridOverlay({
               radius={2}
               fill={stroke}
               opacity={opacity}
+              listening={false}
+              perfectDrawEnabled={false}
             />,
           );
         }
@@ -195,6 +200,8 @@ function GridOverlay({
           stroke={stroke}
           strokeWidth={1}
           opacity={opacity}
+          listening={false}
+          perfectDrawEnabled={false}
         />,
       );
     }
@@ -208,6 +215,8 @@ function GridOverlay({
           stroke={stroke}
           strokeWidth={1}
           opacity={opacity}
+          listening={false}
+          perfectDrawEnabled={false}
         />,
       );
     }
@@ -236,6 +245,8 @@ function GridOverlay({
           strokeWidth={1}
           opacity={opacity}
           closed
+          listening={false}
+          perfectDrawEnabled={false}
         />
       );
     });
@@ -262,6 +273,8 @@ function GridOverlay({
         strokeWidth={2}
         opacity={1}
         closed
+        listening={false}
+        perfectDrawEnabled={false}
       />
     );
   }, [hoveredCell, type, gridSize]);
@@ -280,4 +293,14 @@ function GridOverlay({
   );
 }
 
-export default GridOverlay;
+const MemoGridOverlay = memo(GridOverlay);
+MemoGridOverlay.displayName = 'GridOverlay';
+
+export function IsolatedGridOverlay(
+  props: Omit<GridOverlayProps, 'hoveredCell'>,
+): React.ReactElement | null {
+  const hoveredCell = usePointerOverlayStore((s) => s.hoveredCell);
+  return <MemoGridOverlay {...props} hoveredCell={hoveredCell} />;
+}
+
+export default MemoGridOverlay;

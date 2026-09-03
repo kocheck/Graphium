@@ -4,10 +4,21 @@ import {
   detectChanges,
   coalesceSyncActions,
   detectWorldViewTokenUpdates,
+  isTokenDragAction,
   FULL_SYNC_ACTION_THRESHOLD,
 } from './syncUtils';
 
 describe('syncUtils', () => {
+  describe('isTokenDragAction', () => {
+    it('identifies drag motion actions', () => {
+      expect(isTokenDragAction({ type: 'TOKEN_DRAG_MOVE', payload: { id: 't', x: 0, y: 0 } })).toBe(
+        true,
+      );
+      expect(
+        isTokenDragAction({ type: 'TOKEN_ADD', payload: { id: 't', x: 0, y: 0, src: '' } }),
+      ).toBe(false);
+    });
+  });
   describe('isEqual', () => {
     it('handles primitives', () => {
       expect(isEqual(1, 1)).toBe(true);
@@ -191,6 +202,36 @@ describe('syncUtils', () => {
       const changes = detectChanges(null, { tokens: [{ id: 't1', x: 0 }] });
       expect(changes).toHaveLength(1);
       expect(changes[0]?.type).toBe('FULL_SYNC');
+    });
+
+    it('skips entity diffs when collection references are unchanged', () => {
+      const tokens = [{ id: 't1', x: 0, y: 0, src: 'a' }];
+      const drawings = [
+        { id: 'd1', tool: 'marker' as const, points: [0, 0, 10, 10], color: '#f00', size: 2 },
+      ];
+      const exploredRegions = [
+        {
+          points: [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+            { x: 10, y: 10 },
+          ],
+          timestamp: 1,
+        },
+      ];
+      const prev = { tokens, drawings, exploredRegions };
+      const curr = { tokens, drawings, exploredRegions };
+      expect(detectChanges(prev, curr)).toEqual([]);
+    });
+
+    it('skips deep compare when a token object reference is unchanged', () => {
+      const unchanged = { id: 't1', x: 0, y: 0, src: 'a' };
+      const moved = { id: 't2', x: 5, y: 5, src: 'b' };
+      const prev = { tokens: [unchanged, { id: 't2', x: 0, y: 0, src: 'b' }] };
+      const curr = { tokens: [unchanged, moved] };
+      expect(detectChanges(prev, curr)).toEqual([
+        { type: 'TOKEN_UPDATE', payload: { id: 't2', changes: { x: 5, y: 5 } } },
+      ]);
     });
   });
 

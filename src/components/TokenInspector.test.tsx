@@ -56,6 +56,7 @@ describe('TokenInspector', () => {
     (useGameStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector: any) => {
       const state = {
         tokens: [mockToken],
+        tokensById: { [mockToken.id]: mockToken },
         campaign: {
           tokenLibrary: [mockLibraryItem],
         },

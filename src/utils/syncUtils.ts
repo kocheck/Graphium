@@ -116,6 +116,7 @@ export type SyncAction =
   | { type: 'LIBRARY_UPDATE'; payload: TokenLibraryItem[] }
   | { type: 'TOKEN_DRAG_START'; payload: { id: string; x: number; y: number } }
   | { type: 'TOKEN_DRAG_MOVE'; payload: { id: string; x: number; y: number } }
+  | { type: 'TOKEN_DRAG_MOVE_BATCH'; payload: Array<{ id: string; x: number; y: number }> }
   | { type: 'TOKEN_DRAG_END'; payload: { id: string; x: number; y: number } }
   | { type: 'DRAWING_ADD'; payload: Drawing }
   | { type: 'DRAWING_UPDATE'; payload: { id: string; changes: Partial<Drawing> } }
@@ -224,6 +225,20 @@ export function cloneSyncableStateFromPayload(
 }
 
 /** True when none of the Architect→World syncable fields changed by reference. */
+export function isTokenDragAction(
+  action: SyncAction,
+): action is Extract<
+  SyncAction,
+  { type: 'TOKEN_DRAG_START' | 'TOKEN_DRAG_MOVE' | 'TOKEN_DRAG_MOVE_BATCH' | 'TOKEN_DRAG_END' }
+> {
+  return (
+    action.type === 'TOKEN_DRAG_START' ||
+    action.type === 'TOKEN_DRAG_MOVE' ||
+    action.type === 'TOKEN_DRAG_MOVE_BATCH' ||
+    action.type === 'TOKEN_DRAG_END'
+  );
+}
+
 export function isSyncSliceUnchanged(current: GameState, previous: GameState): boolean {
   return (
     current.tokens === previous.tokens &&
@@ -308,7 +323,7 @@ function detectEntityActions<T extends Identifiable>(
 ): SyncAction[] {
   const prev = prevItems ?? [];
   const current = currentItems ?? [];
-  if (isEqual(prev, current)) {
+  if (prev === current) {
     return [];
   }
 
@@ -326,7 +341,7 @@ function detectEntityActions<T extends Identifiable>(
     }
 
     const prevItem = prevMap.get(item.id);
-    if (!prevItem) {
+    if (!prevItem || prevItem === item) {
       continue;
     }
 
@@ -391,8 +406,10 @@ export function detectChanges(
 
   const actions: SyncAction[] = [];
 
-  if (!isEqual(prevState.tokenLibrary, currentState.tokenLibrary)) {
-    actions.push({ type: 'LIBRARY_UPDATE', payload: currentState.tokenLibrary ?? [] });
+  if (prevState.tokenLibrary !== currentState.tokenLibrary) {
+    if (!isEqual(prevState.tokenLibrary, currentState.tokenLibrary)) {
+      actions.push({ type: 'LIBRARY_UPDATE', payload: currentState.tokenLibrary ?? [] });
+    }
   }
 
   actions.push(
@@ -431,7 +448,7 @@ export function detectChanges(
     actions.push({ type: 'MAP_UPDATE', payload: currentState.map ?? null });
   }
 
-  if (!isEqual(prevState.exploredRegions, currentState.exploredRegions)) {
+  if (prevState.exploredRegions !== currentState.exploredRegions) {
     actions.push({
       type: 'EXPLORED_UPDATE',
       payload: currentState.exploredRegions ?? [],

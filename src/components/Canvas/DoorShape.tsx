@@ -53,15 +53,6 @@ function DoorShape({
 
   // Animate when door.isOpen changes
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log(
-      '[DoorShape] door.isOpen changed:',
-      door.id,
-      'from',
-      animationProgress === 1 ? 'open' : 'closed',
-      'to',
-      door.isOpen ? 'open' : 'closed',
-    );
     const targetProgress = door.isOpen ? 1 : 0;
 
     // If already at target, no animation needed
@@ -136,19 +127,6 @@ function DoorShape({
 
   const thickness = door.thickness ?? 12; // Thicker default for better visibility
   const halfSize = door.size / 2;
-
-  // eslint-disable-next-line no-console
-  console.log(
-    '[DoorShape] Rendering door:',
-    door.id,
-    'isWorldView:',
-    isWorldView,
-    'isOpen:',
-    door.isOpen,
-    'position:',
-    door.x,
-    door.y,
-  );
 
   return (
     <Group

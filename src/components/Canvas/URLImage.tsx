@@ -36,6 +36,7 @@ export interface URLImageProps {
   shadowOffsetX?: number;
   shadowOffsetY?: number;
   shadowForStrokeEnabled?: boolean;
+  perfectDrawEnabled?: boolean;
 }
 
 const URLImage = forwardRef<Konva.Image, URLImageProps>(
@@ -67,6 +68,7 @@ const URLImage = forwardRef<Konva.Image, URLImageProps>(
       shadowOffsetX,
       shadowOffsetY,
       shadowForStrokeEnabled,
+      perfectDrawEnabled,
     },
     ref,
   ) => {
@@ -122,6 +124,7 @@ const URLImage = forwardRef<Konva.Image, URLImageProps>(
         shadowOffsetX={shadowOffsetX}
         shadowOffsetY={shadowOffsetY}
         shadowForStrokeEnabled={shadowForStrokeEnabled}
+        perfectDrawEnabled={perfectDrawEnabled}
       />
     );
   },

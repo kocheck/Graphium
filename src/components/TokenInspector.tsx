@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 
 import { RiSaveLine } from '@remixicon/react';
+import { useShallow } from 'zustand/shallow';
 
 import MobileBottomSheet from './MobileBottomSheet';
 import { useIsMobile } from '../hooks/useMediaQuery';
@@ -42,7 +43,13 @@ function TokenInspector({
   selectedTokenIds,
   onClose,
 }: TokenInspectorProps): React.ReactElement | null {
-  const tokens = useGameStore((s) => s.tokens);
+  const selectedTokens = useGameStore(
+    useShallow((s) =>
+      selectedTokenIds
+        .map((id) => s.tokensById?.[id] ?? s.tokens.find((token) => token.id === id))
+        .filter((token): token is Token => Boolean(token)),
+    ),
+  );
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
   const updateLibraryToken = useGameStore((s) => s.updateLibraryToken);
@@ -50,12 +57,6 @@ function TokenInspector({
 
   // Mobile responsiveness
   const isMobile = useIsMobile();
-
-  // Get selected tokens (memoized to avoid unnecessary recalculations)
-  const selectedTokens = useMemo(
-    () => tokens.filter((t) => selectedTokenIds.includes(t.id)),
-    [tokens, selectedTokenIds],
-  );
 
   // Helper to resolve effective properties (instance > library > default)
   const getEffectiveValues = (

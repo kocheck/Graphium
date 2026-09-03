@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 
 import { useGameStore } from '../store/gameStore';
+import { consumePerfSnapshot, estimatePayloadBytes } from '../utils/perfCounters';
+import { loadStressFixture } from '../utils/stressFixture';
 
 interface PerformanceMemory {
   usedJSHeapSize: number;
@@ -26,6 +28,9 @@ interface PerformanceMetrics {
   activeWorkers: number;
   renderTime: number; // ms
   lastUpdate: number;
+  fowRecalcCount: number;
+  canvasCommitMs: number;
+  ipcActionsByType: Record<string, number>;
 }
 
 type IpcSendFn = (channel: string, ...args: unknown[]) => void;
@@ -80,6 +85,9 @@ function ResourceMonitor(): React.JSX.Element {
     activeWorkers: 0,
     renderTime: 0,
     lastUpdate: Date.now(),
+    fowRecalcCount: 0,
+    canvasCommitMs: 0,
+    ipcActionsByType: {},
   });
 
   const [isExpanded, setIsExpanded] = useState(true);
@@ -95,8 +103,8 @@ function ResourceMonitor(): React.JSX.Element {
   const lastIPCResetRef = useRef(Date.now());
 
   // Get store data
-  const tokens = useGameStore((state) => state.tokens);
-  const drawings = useGameStore((state) => state.drawings);
+  const tokenCount = useGameStore((state) => state.tokens.length);
+  const drawingCount = useGameStore((state) => state.drawings.length);
 
   /**
    * FPS Counter using requestAnimationFrame
@@ -168,12 +176,13 @@ function ResourceMonitor(): React.JSX.Element {
       setMetrics((prev) => ({
         ...prev,
         memory,
-        tokenCount: tokens.length,
-        drawingCount: drawings.length,
+        tokenCount,
+        drawingCount,
         ipcMessageCount: ipcMessageCountRef.current,
         ipcBandwidth: bandwidth,
         activeWorkers,
         lastUpdate: now,
+        ...consumePerfSnapshot(),
       }));
 
       // Reset IPC counters every update
@@ -186,7 +195,7 @@ function ResourceMonitor(): React.JSX.Element {
     updateMetrics(); // Initial update
 
     return (): void => clearInterval(interval);
-  }, [tokens.length, drawings.length]);
+  }, [tokenCount, drawingCount]);
 
   /**
    * IPC Message Interceptor
@@ -233,7 +242,7 @@ function ResourceMonitor(): React.JSX.Element {
           try {
             ipcMessageCountRef.current++;
             // Estimate message size (rough approximation, with circular ref protection)
-            const size = JSON.stringify(args).length;
+            const size = estimatePayloadBytes(args);
             ipcBytesRef.current += size;
           } catch {
             // Ignore errors in metrics collection (don't break IPC)
@@ -265,7 +274,7 @@ function ResourceMonitor(): React.JSX.Element {
           if (isTracking) {
             try {
               ipcMessageCountRef.current++;
-              const size = JSON.stringify(args).length;
+              const size = estimatePayloadBytes(args);
               ipcBytesRef.current += size;
             } catch {
               // Ignore errors in metrics collection
@@ -440,6 +449,11 @@ function ResourceMonitor(): React.JSX.Element {
             <div>Drawings: {metrics.drawingCount}</div>
           </div>
 
+          <div style={{ marginBottom: '8px', fontSize: '11px' }}>
+            <div>FOW recals / 0.5s: {metrics.fowRecalcCount}</div>
+            <div>Canvas commit: {metrics.canvasCommitMs.toFixed(1)} ms</div>
+          </div>
+
           {/* IPC Metrics */}
           <div
             style={{
@@ -451,6 +465,18 @@ function ResourceMonitor(): React.JSX.Element {
           >
             <div>IPC Messages: {metrics.ipcMessageCount}/sec</div>
             <div>IPC Bandwidth: {formatBytes(metrics.ipcBandwidth)}/s</div>
+            {Object.keys(metrics.ipcActionsByType).length > 0 && (
+              <div style={{ color: '#aaa', marginTop: '4px' }}>
+                {Object.entries(metrics.ipcActionsByType)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 6)
+                  .map(([type, count]) => (
+                    <div key={type}>
+                      {type}: {count}
+                    </div>
+                  ))}
+              </div>
+            )}
             {metrics.ipcBandwidth > 100000 && (
               <div style={{ color: '#FFC107', fontSize: '10px', marginTop: '2px' }}>
                 ⚠️ High bandwidth (check delta sync)
@@ -488,6 +514,24 @@ function ResourceMonitor(): React.JSX.Element {
               </ul>
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={(): void => loadStressFixture()}
+            style={{
+              width: '100%',
+              marginTop: '8px',
+              padding: '6px 8px',
+              background: 'rgba(255,255,255,0.08)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '11px',
+            }}
+          >
+            Load stress fixture (200 tokens)
+          </button>
 
           {/* Last Update */}
           <div

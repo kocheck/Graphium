@@ -42,6 +42,7 @@ describe('gameStore', () => {
 
     useGameStore.setState({
       tokens: [],
+      tokensById: {},
       drawings: [],
       doors: [],
       stairs: [],
@@ -81,6 +82,7 @@ describe('gameStore', () => {
       const state = useGameStore.getState();
       expect(state.tokens).toHaveLength(1);
       expect(state.tokens[0]).toEqual(token);
+      expect(state.tokensById[token.id]).toEqual(token);
     });
 
     it('should remove a token by id', () => {
