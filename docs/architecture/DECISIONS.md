@@ -520,14 +520,18 @@ Renderer process needs to load local images, but Electron security model blocks 
 **Implementation:**
 
 ```typescript
-// electron/main.ts (register protocol)
+// electron/main.ts — media:// only serves files under userData roots
 protocol.handle('media', (request) => {
-  return net.fetch('file://' + request.url.slice('media://'.length));
+  const resolvedTargetPath = path.resolve(fileURLToPath(request.url));
+  if (!allowedMediaRoots.some((root) => isPathInsideOrEqual(root, resolvedTargetPath))) {
+    return new Response('Forbidden media path', { status: 403 });
+  }
+  return net.fetch(`file://${resolvedTargetPath}`);
 });
 
-// src/components/Canvas/CanvasManager.tsx (use in renderer)
-const safeSrc = src.startsWith('file:') ? src.replace('file:', 'media:') : src;
-const [img] = useImage(safeSrc); // Loads successfully
+// Renderer usage (shared helper)
+const safeSrc = toMediaProtocol(src); // file: → media:
+const [img] = useImage(safeSrc);
 ```
 
 **Trade-offs:**
