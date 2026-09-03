@@ -3,11 +3,12 @@ import { useEffect, useRef } from 'react';
 import { DEFAULT_GRID_COLOR, useGameStore } from '../store/gameStore';
 import { isEqual, detectChanges } from '../utils/syncUtils';
 
-import type { Token } from '../store/gameStore';
+import type { GameState, Token } from '../store/gameStore';
 import type { SyncAction, SyncableGameState } from '../utils/syncUtils';
 
 // Basic throttle implementation to limit IPC frequency
 // Ensures leading edge execution and trailing edge (so final state is always sent)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function throttle<T extends (...args: any[]) => void>(
   func: T,
   limit: number,
@@ -15,7 +16,7 @@ function throttle<T extends (...args: any[]) => void>(
   let lastFunc: ReturnType<typeof setTimeout> | undefined;
   let lastRan: number | undefined;
 
-  const throttled = function (this: unknown, ...args: Parameters<T>) {
+  const throttled = function (this: unknown, ...args: Parameters<T>): void {
     if (lastRan === undefined) {
       func.apply(this, args);
       lastRan = Date.now();
@@ -25,17 +26,17 @@ function throttle<T extends (...args: any[]) => void>(
       }
       lastFunc = setTimeout(
         () => {
-          if (Date.now() - lastRan! >= limit) {
+          if (Date.now() - (lastRan ?? 0) >= limit) {
             func.apply(this, args);
             lastRan = Date.now();
           }
         },
-        limit - (Date.now() - lastRan),
+        limit - (Date.now() - (lastRan ?? 0)),
       );
     }
   } as T & { cancel: () => void };
 
-  throttled.cancel = () => {
+  throttled.cancel = (): void => {
     if (lastFunc) {
       clearTimeout(lastFunc);
       lastFunc = undefined;
@@ -45,41 +46,26 @@ function throttle<T extends (...args: any[]) => void>(
   return throttled;
 }
 
-/**
- * SyncManager handles real-time state synchronization between windows
- *
- * **PERFORMANCE OPTIMIZATION:** This component now uses delta-based updates instead of
- * full state broadcasts. This reduces IPC traffic by ~95% for single-entity changes.
- *
- * ... (Comments preserved)
- */
-function SyncManager() {
-  // Track previous state for diffing
-  const prevStateRef = useRef<any>(null);
-
-  // Track previous state for World View changes (bidirectional sync)
-  const worldViewPrevStateRef = useRef<any>(null);
-
-  // Use a ref to track if IPC listener is already set up
+// eslint-disable-next-line max-lines-per-function
+function SyncManager(): null {
+  const prevStateRef = useRef<SyncableGameState | null>(null);
+  const worldViewPrevStateRef = useRef<SyncableGameState | null>(null);
   const listenerSetupRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    // Detect platform: Electron vs Web
+  // eslint-disable-next-line max-lines-per-function, complexity
+  useEffect((): (() => void) => {
     const ipcRenderer = window.ipcRenderer;
     const isElectron = Boolean(ipcRenderer);
     const isWeb = !isElectron;
 
-    // Store IPC listener reference for cleanup
-    let ipcListener: ((event: any, action: SyncAction) => void) | null = null;
+    let ipcListener: ((event: Electron.IpcRendererEvent, action: SyncAction) => void) | null = null;
 
-    // Detect window type from URL parameter
     const params = new URLSearchParams(window.location.search);
     const isWorldView = params.get('type') === 'world';
 
-    // Transport Setup
     let channel: BroadcastChannel | null = null;
 
-    const sendSyncActionDirectly = (action: SyncAction) => {
+    const sendSyncActionDirectly = (action: SyncAction): void => {
       if (isWeb && channel) {
         channel.postMessage(action);
       } else if (isElectron && ipcRenderer) {
@@ -101,16 +87,18 @@ function SyncManager() {
       // WORLD VIEW (CONSUMER)
       // ============================================================
 
-      const handleSyncAction = (_event: any, action: SyncAction) => {
+      // eslint-disable-next-line complexity
+      const handleSyncAction = (
+        _event: Electron.IpcRendererEvent | null,
+        action: SyncAction,
+      ): void => {
         const store = useGameStore.getState();
 
         switch (action.type) {
           case 'FULL_SYNC': {
-            // Separate tokenLibrary from the rest because it lives in 'campaign'
             const { tokenLibrary: fullLib, ...restState } = action.payload;
             useGameStore.setState(restState as Partial<SyncableGameState>);
 
-            // Initialize World View's DM measurement from Architect broadcast settings
             const activeMeasurement = action.payload.activeMeasurement ?? null;
             const broadcastMeasurement = Boolean(action.payload.broadcastMeasurement ?? false);
             store.setDmMeasurement(broadcastMeasurement ? activeMeasurement : null);
@@ -121,13 +109,12 @@ function SyncManager() {
               }));
             }
 
-            // Initialize World View's previous state for bidirectional sync
             worldViewPrevStateRef.current = {
               tokens: action.payload.tokens ? [...action.payload.tokens] : [],
-              tokenLibrary: fullLib ? [...fullLib] : [], // Initialize library for diffing
-              drawings: [...(action.payload.drawings || [])],
-              doors: [...(action.payload.doors || [])],
-              stairs: [...(action.payload.stairs || [])],
+              tokenLibrary: fullLib ? [...fullLib] : [],
+              drawings: [...(action.payload.drawings ?? [])],
+              doors: [...(action.payload.doors ?? [])],
+              stairs: [...(action.payload.stairs ?? [])],
               gridSize: action.payload.gridSize ?? 50,
               gridType: action.payload.gridType ?? 'LINES',
               gridColor: action.payload.gridColor ?? DEFAULT_GRID_COLOR,
@@ -136,6 +123,8 @@ function SyncManager() {
                 ? [...action.payload.exploredRegions]
                 : [],
               isDaylightMode: action.payload.isDaylightMode ?? false,
+              activeMeasurement: action.payload.activeMeasurement ?? null,
+              broadcastMeasurement: action.payload.broadcastMeasurement ?? false,
             };
             break;
           }
@@ -144,7 +133,6 @@ function SyncManager() {
             useGameStore.setState((state) => ({
               campaign: { ...state.campaign, tokenLibrary: action.payload },
             }));
-            // Update ref
             if (worldViewPrevStateRef.current) {
               worldViewPrevStateRef.current.tokenLibrary = [...action.payload];
             }
@@ -173,7 +161,6 @@ function SyncManager() {
 
           case 'TOKEN_DRAG_START':
           case 'TOKEN_DRAG_MOVE': {
-            // Temporarily update position for smooth visual feedback
             const { id: dId, x: dX, y: dY } = action.payload;
             const dToken = store.tokens.find((t) => t.id === dId);
             if (dToken) {
@@ -272,18 +259,17 @@ function SyncManager() {
       };
 
       if (isWeb && channel) {
-        channel.onmessage = (event) => {
+        channel.onmessage = (event: MessageEvent<{ type: string }>): void => {
           const message = event.data;
           if (message?.type === 'REQUEST_INITIAL_STATE') {
             // Ignore (World View doesn't have initial state to give)
           } else if (message?.type) {
-            handleSyncAction(null, message);
+            handleSyncAction(null, message as SyncAction);
           }
         };
-        // Request initial state
         channel.postMessage({ type: 'REQUEST_INITIAL_STATE' });
       } else if (isElectron && ipcRenderer) {
-        ipcListener = (event: any, action: SyncAction) => {
+        ipcListener = (event: Electron.IpcRendererEvent, action: SyncAction): void => {
           handleSyncAction(event, action);
         };
 
@@ -296,23 +282,26 @@ function SyncManager() {
       }
 
       // BIDIRECTIONAL: Sync from World View to Architect
-      const detectWorldViewChanges = (prevState: any, currentState: any): SyncAction[] => {
+      const detectWorldViewChanges = (
+        prevState: SyncableGameState | null,
+        currentState: GameState,
+      ): SyncAction[] => {
         const actions: SyncAction[] = [];
         if (!prevState) {
           return actions;
         }
 
-        const prevTokenMap = new Map(prevState.tokens.map((t: any) => [t.id, t]));
+        const prevTokenMap = new Map(prevState.tokens.map((t: Token) => [t.id, t]));
 
-        currentState.tokens.forEach((token: any) => {
-          const prev: any = prevTokenMap.get(token.id);
+        currentState.tokens.forEach((token: Token) => {
+          const prev = prevTokenMap.get(token.id);
           if (prev) {
-            const changes: Record<string, any> = {};
+            const changes: Partial<Token> = {};
             if (!isEqual(token.x, prev.x)) {
-              changes['x'] = token.x;
+              changes.x = token.x;
             }
             if (!isEqual(token.y, prev.y)) {
-              changes['y'] = token.y;
+              changes.y = token.y;
             }
             if (Object.keys(changes).length > 0) {
               actions.push({ type: 'TOKEN_UPDATE', payload: { id: token.id, changes } });
@@ -322,7 +311,7 @@ function SyncManager() {
         return actions;
       };
 
-      const handleWorldViewUpdate = (state: any) => {
+      const handleWorldViewUpdate = (state: GameState): void => {
         const actions = detectWorldViewChanges(worldViewPrevStateRef.current, state);
         actions.forEach((action) => {
           if (isWeb && channel) {
@@ -334,23 +323,27 @@ function SyncManager() {
 
         worldViewPrevStateRef.current = {
           tokens: [...state.tokens],
-          tokenLibrary: [...(state.campaign?.tokenLibrary || [])],
+          tokenLibrary: [...(state.campaign?.tokenLibrary ?? [])],
           drawings: [...state.drawings],
-          doors: [...(state.doors || [])],
-          stairs: [...(state.stairs || [])],
+          doors: [...(state.doors ?? [])],
+          stairs: [...(state.stairs ?? [])],
           gridSize: state.gridSize,
           gridType: state.gridType,
           gridColor: state.gridColor,
           map: state.map ? { ...state.map } : null,
           exploredRegions: state.exploredRegions ? [...state.exploredRegions] : [],
           isDaylightMode: state.isDaylightMode,
+          activeMeasurement: state.activeMeasurement ?? null,
+          broadcastMeasurement: state.broadcastMeasurement ?? false,
         };
       };
 
       const throttledWorldViewSync = throttle(handleWorldViewUpdate, 32);
-      const unsubWorldView = useGameStore.subscribe(throttledWorldViewSync);
+      const unsubWorldView = useGameStore.subscribe((state: GameState) =>
+        throttledWorldViewSync(state),
+      );
 
-      return () => {
+      return (): void => {
         throttledWorldViewSync.cancel();
         unsubWorldView();
         if (channel) {
@@ -366,16 +359,18 @@ function SyncManager() {
       // ARCHITECT VIEW (PRODUCER)
       // ============================================================
 
-      const handleInitialStateRequest = (_event: any) => {
+      const handleInitialStateRequest = (
+        _event: Electron.IpcRendererEvent | MessageEvent | null,
+      ): void => {
         const state = useGameStore.getState();
         const initialAction: SyncAction = {
           type: 'FULL_SYNC',
           payload: {
             tokens: state.tokens,
-            tokenLibrary: state.campaign.tokenLibrary, // Pass library
+            tokenLibrary: state.campaign.tokenLibrary,
             drawings: state.drawings,
-            doors: state.doors || [],
-            stairs: state.stairs || [],
+            doors: state.doors ?? [],
+            stairs: state.stairs ?? [],
             gridSize: state.gridSize,
             gridType: state.gridType,
             gridColor: state.gridColor,
@@ -394,7 +389,7 @@ function SyncManager() {
         }
       };
 
-      const applyArchitectTokenUpdate = (id: string, changes: Partial<Token>) => {
+      const applyArchitectTokenUpdate = (id: string, changes: Partial<Token>): void => {
         const store = useGameStore.getState();
         if (!store.tokens.some((t) => t.id === id)) {
           return;
@@ -407,25 +402,25 @@ function SyncManager() {
       };
 
       if (isWeb && channel) {
-        channel.onmessage = (event) => {
+        channel.onmessage = (event: MessageEvent<{ type: string }>): void => {
           if (event.data?.type === 'REQUEST_INITIAL_STATE') {
             handleInitialStateRequest(event);
           } else if (event.data?.type === 'TOKEN_UPDATE') {
-            applyArchitectTokenUpdate(event.data.payload.id, event.data.payload.changes);
+            const updateAction = event.data as Extract<SyncAction, { type: 'TOKEN_UPDATE' }>;
+            applyArchitectTokenUpdate(updateAction.payload.id, updateAction.payload.changes);
           }
         };
       } else if (isElectron && ipcRenderer) {
         ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
       }
 
-      const handleStoreUpdate = (state: any) => {
-        // Create a syncable state object including tokenLibrary from campaign
+      const handleStoreUpdate = (state: GameState): void => {
         const syncableState: Partial<SyncableGameState> = {
           ...state,
           tokenLibrary: state.campaign.tokenLibrary,
         };
 
-        const actions = detectChanges(prevStateRef.current, syncableState);
+        const actions = detectChanges(prevStateRef.current ?? {}, syncableState);
         actions.forEach((action) => {
           if (isWeb && channel) {
             channel.postMessage(action);
@@ -435,22 +430,24 @@ function SyncManager() {
         });
 
         const prev = prevStateRef.current;
+        const prevExplored = prev?.exploredRegions;
+        const nextExplored = state.exploredRegions;
         prevStateRef.current = {
           tokens: [...state.tokens],
           tokenLibrary: [...state.campaign.tokenLibrary],
           drawings: [...state.drawings],
-          doors: [...(state.doors || [])],
-          stairs: [...(state.stairs || [])],
+          doors: [...(state.doors ?? [])],
+          stairs: [...(state.stairs ?? [])],
           gridSize: state.gridSize,
           gridType: state.gridType,
           gridColor: state.gridColor,
           map: state.map ? { ...state.map } : null,
-          exploredRegions:
-            prev?.exploredRegions === state.exploredRegions
-              ? prev.exploredRegions
-              : state.exploredRegions
-                ? [...state.exploredRegions]
-                : [],
+          exploredRegions: (() => {
+            if (prevExplored === nextExplored) {
+              return prevExplored ?? [];
+            }
+            return nextExplored ? [...nextExplored] : [];
+          })(),
           isDaylightMode: state.isDaylightMode,
           activeMeasurement: state.activeMeasurement ?? null,
           broadcastMeasurement: state.broadcastMeasurement ?? false,
@@ -458,18 +455,20 @@ function SyncManager() {
       };
 
       const throttledSync = throttle(handleStoreUpdate, 32);
-      const unsub = useGameStore.subscribe(throttledSync);
+      const unsub = useGameStore.subscribe((state: GameState) => throttledSync(state));
 
-      // Listen for updates FROM world view
       if (isElectron && ipcRenderer) {
-        ipcRenderer.on('SYNC_WORLD_STATE', (_event, action: SyncAction) => {
-          if (action?.type === 'TOKEN_UPDATE') {
-            applyArchitectTokenUpdate(action.payload.id, action.payload.changes);
-          }
-        });
+        ipcRenderer.on(
+          'SYNC_WORLD_STATE',
+          (_event: Electron.IpcRendererEvent, action: SyncAction) => {
+            if (action?.type === 'TOKEN_UPDATE') {
+              applyArchitectTokenUpdate(action.payload.id, action.payload.changes);
+            }
+          },
+        );
       }
 
-      return () => {
+      return (): void => {
         throttledSync.cancel();
         unsub();
         if (channel) {
