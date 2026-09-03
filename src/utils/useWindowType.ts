@@ -60,7 +60,7 @@
  * @see {@link file://./src/components/Canvas/CanvasManager.tsx CanvasManager.tsx} for interaction restrictions
  * @see {@link file://../electron/main.ts electron/main.ts:243-263} for World Window creation
  */
-export const useWindowType = () => {
+export const useWindowType = (): { isWorldView: boolean; isArchitectView: boolean } => {
   const params = new URLSearchParams(window.location.search);
   const isWorldView = params.get('type') === 'world';
 

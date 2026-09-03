@@ -25,6 +25,43 @@ import type { TokenLibraryItem } from '../store/gameStore';
  * @param query - Search query
  * @returns Score (higher is better match), 0 if no match
  */
+/**
+ * Calculate structural bonuses for subsequence match quality
+ */
+function scoreStructuralBonuses(lowerText: string, lowerQuery: string): number {
+  let score = 0;
+  let lastMatchIdx = -1;
+  let compactness = 0;
+
+  for (let i = 0; i < lowerQuery.length; i++) {
+    const char = lowerQuery[i];
+    if (char === undefined) {
+      continue;
+    }
+    const idx = lowerText.indexOf(char, lastMatchIdx + 1);
+
+    if (
+      idx === 0 ||
+      lowerText[idx - 1] === ' ' ||
+      lowerText[idx - 1] === '-' ||
+      lowerText[idx - 1] === '_'
+    ) {
+      score += 15;
+    }
+
+    if (idx === lastMatchIdx + 1) {
+      score += 10;
+    } else if (lastMatchIdx !== -1) {
+      compactness += idx - lastMatchIdx;
+    }
+
+    lastMatchIdx = idx;
+  }
+
+  score -= Math.min(compactness, 20);
+  return score;
+}
+
 function scoreMatch(text: string, query: string): number {
   if (!query) {
     return 0;
@@ -69,40 +106,7 @@ function scoreMatch(text: string, query: string): number {
   }
 
   // Re-scan for structural bonuses
-  let lastMatchIdx = -1;
-  let compactness = 0; // Penalty for distance between matches
-
-  qIdx = 0;
-  for (let i = 0; i < lowerQuery.length; i++) {
-    const char = lowerQuery[i];
-    // Find next occurrence
-    const idx = lowerText.indexOf(char!, lastMatchIdx + 1);
-
-    // Bonus: Match is at start of word (or start of string)
-    if (
-      idx === 0 ||
-      lowerText[idx - 1] === ' ' ||
-      lowerText[idx - 1] === '-' ||
-      lowerText[idx - 1] === '_'
-    ) {
-      score += 15;
-    }
-
-    // Bonus: Consecutive match
-    if (idx === lastMatchIdx + 1) {
-      score += 10;
-    } else {
-      // Distance penalty
-      if (lastMatchIdx !== -1) {
-        compactness += idx - lastMatchIdx;
-      }
-    }
-
-    lastMatchIdx = idx;
-  }
-
-  // Deduct penalty for spread out matches (shorter spread is better)
-  score -= Math.min(compactness, 20);
+  score += scoreStructuralBonuses(lowerText, lowerQuery);
 
   return Math.max(0, score);
 }

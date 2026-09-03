@@ -20,7 +20,7 @@ export function useCommandPalette(): [boolean, (isOpen: boolean) => void] {
   const setIsOpen = useGameStore((state) => state.setCommandPaletteOpen);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       // Cmd+P or Cmd+K (Mac) / Ctrl+P or Ctrl+K (Windows/Linux)
       if ((e.metaKey || e.ctrlKey) && (e.key === 'p' || e.key === 'k')) {
         e.preventDefault(); // Prevent browser print dialog or other default actions

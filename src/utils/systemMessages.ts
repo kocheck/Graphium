@@ -11,6 +11,7 @@
 // TYPE DEFINITIONS
 // ============================================================================
 
+// eslint-disable-next-line import/no-unused-modules
 export type MessageIntent =
   // Toast: Success Messages
   | 'CAMPAIGN_SAVE_SUCCESS'
@@ -399,7 +400,11 @@ export function rollForMessage(
 
   // Roll the dice! (Random selection)
   const randomIndex = Math.floor(Math.random() * messages.length);
-  let selectedMessage = messages[randomIndex]!;
+  const initialMessage = messages[randomIndex];
+  if (!initialMessage) {
+    return '✨ The message scroll is blank. Please report this to the archmage.';
+  }
+  let selectedMessage = initialMessage;
 
   // Apply dynamic replacements if provided (e.g., {error}, {mapName}, {itemName})
   if (replacements) {

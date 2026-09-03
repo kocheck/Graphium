@@ -82,6 +82,7 @@ import type { GridType } from '../store/gameStore';
  *   updateTokenPosition(token.id(), x, y);
  * };
  */
+/* eslint-disable max-params -- width/height are optional snap dimensions used across canvas call sites */
 export const snapToGrid = (
   x: number,
   y: number,
@@ -93,3 +94,4 @@ export const snapToGrid = (
   const geometry = createGridGeometry(gridType);
   return geometry.getSnapPoint(x, y, gridSize, width, height);
 };
+/* eslint-enable max-params */
