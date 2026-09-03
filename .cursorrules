@@ -20,6 +20,7 @@
 - IPC for state sync (Architect → World with scoped World → Architect token updates)
 - Local-first (no cloud, `.graphium` ZIP files for campaigns)
 - Privacy-focused error handling (PII sanitization)
+- Canonical sync contract lives in `docs/architecture/IPC_API.md`
 
 ## Project Structure
 
@@ -372,7 +373,7 @@ const handleMouseDown = (e) => {
 
 **❌ DON'T:**
 - Mutate Zustand state directly (`state.tokens.push(...)`)
-- Send full game state from World View back to Architect (only scoped token sync is supported)
+- Send full game state from World View back to Architect (only scoped token sync is supported; see `docs/architecture/IPC_API.md`)
 - Use `file://` URLs directly in renderer (use `media://` protocol)
 - Store sensitive data in error reports (always sanitize)
 - Create commits without explicit user request

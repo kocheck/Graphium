@@ -317,10 +317,12 @@ function createMainWindow() {
   mainWindow.on('resize', saveBounds);
   mainWindow.on('move', saveBounds);
 
-  // Test active push message to Renderer-process (legacy from template)
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow?.webContents.send('main-process-message', new Date().toLocaleString());
-  });
+  // Legacy template diagnostic event; keep it development-only to reduce noise.
+  if (process.env['NODE_ENV'] === 'development') {
+    mainWindow.webContents.on('did-finish-load', () => {
+      mainWindow?.webContents.send('main-process-message', new Date().toLocaleString());
+    });
+  }
 
   // Load renderer (dev server in development, static files in production)
   if (VITE_DEV_SERVER_URL) {
@@ -343,6 +345,7 @@ function createMainWindow() {
  * This window is the CONSUMER. It receives state updates via the SYNC_WORLD_STATE
  * IPC channel and can emit scoped token-position updates via SYNC_FROM_WORLD_VIEW,
  * while Architect View remains the source of truth.
+ * See docs/architecture/IPC_API.md for canonical sync contract details.
  *
  * **Window detection:**
  * Loads same React app as main window but with `?type=world` query parameter.
