@@ -17,6 +17,7 @@
  * 5. Send ArrayBuffer back to main thread (100% progress)
  */
 
+// eslint-disable-next-line import/no-unused-modules
 export type AssetType = 'MAP' | 'TOKEN';
 
 interface ProcessImageMessage {

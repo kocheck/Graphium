@@ -25,12 +25,16 @@ interface MobileSidebarDrawerProps {
   children: React.ReactNode;
 }
 
-function MobileSidebarDrawer({ isOpen, onClose, children }: MobileSidebarDrawerProps) {
+function MobileSidebarDrawer({
+  isOpen,
+  onClose,
+  children,
+}: MobileSidebarDrawerProps): JSX.Element | null {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleEscape = (e: KeyboardEvent): void => {
       if (e.key === 'Escape' && isOpen) {
         onClose();
       }

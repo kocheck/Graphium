@@ -119,7 +119,11 @@ function MovementRangeOverlay({
     ];
 
     while (queue.length > 0) {
-      const { cell, distance } = queue.shift()!;
+      const shifted = queue.shift();
+      if (!shifted) {
+        continue;
+      }
+      const { cell, distance } = shifted;
       const key = `${cell.q},${cell.r}`;
 
       if (visited.has(key) || distance > maxCells) {

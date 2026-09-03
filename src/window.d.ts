@@ -4,6 +4,7 @@
 
 import type { useGameStore } from './store/gameStore';
 
+// eslint-disable-next-line import/no-unused-modules
 export interface ErrorContext {
   timestamp: number;
   error: {
@@ -36,6 +37,7 @@ export interface ErrorContext {
   importFailed?: boolean;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export interface ErrorInfo {
   tokenId?: string;
   overlayName?: string;

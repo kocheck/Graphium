@@ -26,12 +26,16 @@ interface MobileBottomSheetProps {
   children: React.ReactNode;
 }
 
-function MobileBottomSheet({ isOpen, onClose, children }: MobileBottomSheetProps) {
+function MobileBottomSheet({
+  isOpen,
+  onClose,
+  children,
+}: MobileBottomSheetProps): JSX.Element | null {
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleEscape = (e: KeyboardEvent): void => {
       if (e.key === 'Escape' && isOpen) {
         onClose();
       }

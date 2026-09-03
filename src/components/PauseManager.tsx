@@ -55,7 +55,7 @@ import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { rollForMessage } from '../utils/systemMessages';
 
-export function PauseManager() {
+export function PauseManager(): null {
   const setIsGamePaused = useGameStore((state) => state.setIsGamePaused);
   const showToast = useGameStore((state) => state.showToast);
 
@@ -93,7 +93,7 @@ export function PauseManager() {
      * @param _event - IPC event object (unused)
      * @param isPaused - New pause state from main process
      */
-    const handlePauseStateChanged = (_event: unknown, isPaused: boolean) => {
+    const handlePauseStateChanged = (_event: unknown, isPaused: boolean): void => {
       setIsGamePaused(isPaused);
     };
 

@@ -24,6 +24,7 @@ export type PalmRejectionMode = 'off' | 'touchSize' | 'stylusOnly' | 'smartDelay
  * These settings persist across sessions and allow users to customize
  * the touch experience for their specific device and workflow.
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface TouchSettings {
   // --- Pressure Sensitivity ---
   /** Enable pressure-sensitive drawing (variable stroke width) */
