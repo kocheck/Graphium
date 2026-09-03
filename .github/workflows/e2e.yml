@@ -90,7 +90,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Build Electron app
-        run: npm run type-check && npm run build:web && npm run build:electron
+        run: npm run type-check && npm run build:electron
 
       - name: Run Playwright tests (Electron-App)
         run: xvfb-run -a npx playwright test --project=Electron-App

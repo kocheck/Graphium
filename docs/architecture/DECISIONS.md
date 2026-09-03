@@ -522,7 +522,7 @@ Renderer process needs to load local images, but Electron security model blocks 
 ```typescript
 // electron/main.ts — media:// only serves files under userData roots
 protocol.handle('media', (request) => {
-  const resolvedTargetPath = path.resolve(fileURLToPath(request.url));
+  const resolvedTargetPath = mediaUrlToFilePath(request.url);
   if (!allowedMediaRoots.some((root) => isPathInsideOrEqual(root, resolvedTargetPath))) {
     return new Response('Forbidden media path', { status: 403 });
   }

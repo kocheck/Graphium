@@ -454,24 +454,24 @@ const handleDrop = (e: React.DragEvent) => {
 
 **State Synchronization:**
 
-- **Architect View**: PRODUCER mode - all state changes broadcast via IPC
-- **World View**: CONSUMER mode - receives state updates via IPC, never modifies state
-- Token dragging in World View updates position locally but does NOT broadcast changes
-  (only Architect View broadcasts)
+- **Architect View**: Source of truth — syncable store changes broadcast as `SyncAction` deltas (`BATCH` / `FULL_SYNC` / entity updates)
+- **World View**: Primarily a consumer — applies Architect deltas to a local store mirror
+- World View may emit **scoped token-position updates only** (`x`/`y`) via `SYNC_FROM_WORLD_VIEW`; main + Architect sanitize to reject other fields
+- Token dragging in World View updates local position and can sync those coordinates back; campaign edits (library, drawings, fog, etc.) still originate from Architect
 
 **Benefits:**
 
-1. **Security**: Players cannot accidentally modify game state
+1. **Security**: Players cannot rewrite campaign state beyond token positions
 2. **Immersion**: Clean canvas view without DM controls improves player experience
 3. **Simplicity**: Same React app, no code duplication, single source of truth
-4. **Performance**: No IPC overhead for detection (pure client-side logic)
+4. **Performance**: Delta IPC instead of full-state broadcasts
 5. **Maintainability**: Clear separation via single `isWorldView` prop
 
 **Design Decision Rationale:**
 
 - Chose URL parameter over IPC flag: Simpler, no async initialization, works on first render
 - Chose component-level restrictions over separate routes: Reduces code duplication
-- Kept token dragging enabled: Allows DM to demonstrate movement on projector
+- Kept token dragging enabled: Allows DM to demonstrate movement on projector; positions can sync back
 - Blocked transformation: Prevents accidental resizing during projection
 
 **See also:**
