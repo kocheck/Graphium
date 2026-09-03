@@ -59,7 +59,7 @@ let isInitialized = false;
  *
  * @param mainWindow - Reference to main application window for sending IPC events
  */
-export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
+export function initializeAutoUpdater(mainWindow: BrowserWindow | null): void {
   // Skip auto-updater in development mode
   if (isDev) {
     log.info('[AutoUpdater] Running in development mode, updates disabled');
@@ -78,7 +78,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
    * Safely send IPC message to main window
    * Checks if window exists and webContents is not destroyed before sending
    */
-  const safeSend = (channel: string, ...args: unknown[]) => {
+  const safeSend = (channel: string, ...args: unknown[]): void => {
     if (
       mainWindow &&
       !mainWindow.isDestroyed() &&
@@ -177,7 +177,7 @@ export function initializeAutoUpdater(mainWindow: BrowserWindow | null) {
  * Exposes methods for checking, downloading, and installing updates.
  * Call this once from main.ts after app.whenReady().
  */
-export function registerAutoUpdaterHandlers() {
+export function registerAutoUpdaterHandlers(): void {
   /**
    * IPC handler: check-for-updates
    * Initiates update check against GitHub Releases

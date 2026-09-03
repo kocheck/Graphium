@@ -22,7 +22,7 @@ export function LogoIcon({
   animate = false,
   onAnimationComplete,
   className = '',
-}: LogoIconProps) {
+}: LogoIconProps): JSX.Element {
   const [isRolling, setIsRolling] = useState(false);
   const [rotation, setRotation] = useState(0);
 

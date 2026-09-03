@@ -20,7 +20,7 @@
  * @returns {JSX.Element | null} Preferences dialog or null if not active
  */
 
-import { useEffect } from 'react';
+import { type JSX, useEffect } from 'react';
 
 import { usePreferencesStore } from '../store/preferencesStore';
 import { useTouchSettingsStore } from '../store/touchSettingsStore';
@@ -32,7 +32,8 @@ interface PreferencesDialogProps {
   onClose: () => void;
 }
 
-function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps) {
+// eslint-disable-next-line max-lines-per-function
+function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps): JSX.Element | null {
   const { wallTool, setWallToolPreference, resetWallToolPreferences } = usePreferencesStore();
   const touchSettings = useTouchSettingsStore();
 
@@ -42,7 +43,7 @@ function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps) {
       return;
     }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         onClose();
       }
@@ -56,7 +57,7 @@ function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps) {
     return null;
   }
 
-  const handleReset = () => {
+  const handleReset = (): void => {
     resetWallToolPreferences();
     touchSettings.resetToDefaults();
   };
@@ -672,4 +673,5 @@ function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps) {
   );
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default PreferencesDialog;

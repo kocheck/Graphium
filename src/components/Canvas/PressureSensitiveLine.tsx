@@ -1,4 +1,4 @@
-import { useRef, memo } from 'react';
+import { useRef, memo, type JSX } from 'react';
 
 import { Shape } from 'react-konva';
 
@@ -124,20 +124,20 @@ function PressureSensitiveLineComponent({
   x,
   y,
   pressureRange = { min: 0.3, max: 1.5 }, // Default to 'normal' curve
-}: PressureSensitiveLineProps) {
+}: PressureSensitiveLineProps): JSX.Element {
   const shapeRef = useRef<Konva.Shape>(null);
 
   // Validate pressure data
   const validatedPressures = validatePressureData(points, pressures);
 
   // Custom rendering function for variable-width strokes
-  const sceneFunc = (context: Konva.Context, shape: Konva.Shape) => {
+  const sceneFunc = (context: Konva.Context, shape: Konva.Shape): void => {
     if (points.length < 4) {
       return;
     } // Need at least 2 points
 
     context.beginPath();
-    context.moveTo(points[0]!, points[1]!);
+    context.moveTo(points[0] ?? 0, points[1] ?? 0);
 
     // Explicitly apply styles since we are using custom drawing
     context.strokeStyle = shape.stroke();
@@ -147,7 +147,7 @@ function PressureSensitiveLineComponent({
     // If no valid pressure data, render as regular line
     if (!validatedPressures) {
       for (let i = 2; i < points.length; i += 2) {
-        context.lineTo(points[i]!, points[i + 1]!);
+        context.lineTo(points[i] ?? 0, points[i + 1] ?? 0);
       }
       context.strokeShape(shape);
       return;
@@ -163,8 +163,8 @@ function PressureSensitiveLineComponent({
       const x2 = points[i * 2];
       const y2 = points[i * 2 + 1];
 
-      const pressure1 = validatedPressures[i - 1] || 0.5;
-      const pressure2 = validatedPressures[i] || 0.5;
+      const pressure1 = validatedPressures[i - 1] ?? 0.5;
+      const pressure2 = validatedPressures[i] ?? 0.5;
 
       // Calculate average pressure for this segment
       const avgPressure = (pressure1 + pressure2) / 2;
@@ -177,8 +177,8 @@ function PressureSensitiveLineComponent({
 
       // Draw line segment with calculated width
       context.beginPath();
-      context.moveTo(x1!, y1!);
-      context.lineTo(x2!, y2!);
+      context.moveTo(x1 ?? 0, y1 ?? 0);
+      context.lineTo(x2 ?? 0, y2 ?? 0);
       context.lineWidth = segmentWidth;
       context.stroke();
     }

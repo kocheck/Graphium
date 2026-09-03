@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useRef, useCallback } from 'react';
 
 import { useGameStore } from '../../../store/gameStore';
@@ -7,6 +8,23 @@ import { getPointerPosition, isMultiTouchGesture } from '../CanvasUtils';
 import type { Token, GridType } from '../../../store/gameStore';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
+
+interface UseTokenDragReturn {
+  handleTokenPointerDown: (
+    e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
+    tokenId: string,
+  ) => void;
+  handleTokenPointerMove: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  handleTokenPointerUp: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  dragPositionsRef: React.MutableRefObject<Map<string, { x: number; y: number }>>;
+  tokenNodesRef: React.MutableRefObject<Map<string, Konva.Node>>;
+  draggingTokenIds: Set<string>;
+  itemsForDuplication: string[];
+  setItemsForDuplication: (ids: string[]) => void;
+  snapPreviewPositionsRef: React.MutableRefObject<Map<string, { x: number; y: number }>>;
+  tokenLayerRef: React.RefObject<Konva.Layer>;
+  isDragging: boolean;
+}
 
 interface UseTokenDragProps {
   tool: string;
@@ -23,6 +41,7 @@ interface UseTokenDragProps {
   trackStylusUsage: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
 }
 
+// eslint-disable-next-line max-lines-per-function
 export const useTokenDrag = ({
   tool,
   isWorldView = false,
@@ -34,7 +53,7 @@ export const useTokenDrag = ({
   resolvedTokens,
   shouldRejectPointerEvent,
   trackStylusUsage,
-}: UseTokenDragProps) => {
+}: UseTokenDragProps): UseTokenDragReturn => {
   // Refs for performance (direct manipulation)
   const dragPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const dragStartOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
@@ -64,9 +83,9 @@ export const useTokenDrag = ({
 
   // Throttle utility
   const throttleDragBroadcast = useCallback(
-    (tokenId: string, x: number, y: number) => {
+    (tokenId: string, x: number, y: number): void => {
       const now = Date.now();
-      const lastBroadcast = dragBroadcastThrottleRef.current.get(tokenId) || 0;
+      const lastBroadcast = dragBroadcastThrottleRef.current.get(tokenId) ?? 0;
 
       if (now - lastBroadcast >= DRAG_BROADCAST_THROTTLE_MS) {
         dragBroadcastThrottleRef.current.set(tokenId, now);
@@ -84,7 +103,7 @@ export const useTokenDrag = ({
   );
 
   const handleTokenPointerDown = useCallback(
-    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string) => {
+    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>, tokenId: string): void => {
       trackStylusUsage(e);
       if (shouldRejectPointerEvent(e)) {
         return;
@@ -120,7 +139,8 @@ export const useTokenDrag = ({
   );
 
   const handleTokenPointerMove = useCallback(
-    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    // eslint-disable-next-line complexity
+    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
       if (shouldRejectPointerEvent(e)) {
         return;
       }
@@ -202,8 +222,7 @@ export const useTokenDrag = ({
           const safeScale = token.scale ?? 1;
           const width = gridSize * safeScale;
           const height = gridSize * safeScale;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const snapped = snapToGrid(newX, newY, gridSize, gridType as any, width, height);
+          const snapped = snapToGrid(newX, newY, gridSize, gridType, width, height);
           snapPreviewPositionsRef.current.set(tokenId, snapped);
         }
 
@@ -226,8 +245,7 @@ export const useTokenDrag = ({
                     offsetX,
                     offsetY,
                     gridSize,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    gridType as any,
+                    gridType,
                     gridSize * otherSafeScale,
                     gridSize * otherSafeScale,
                   );
@@ -271,7 +289,7 @@ export const useTokenDrag = ({
   );
 
   const handleTokenPointerUp = useCallback(
-    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+    (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
       if (!tokenMouseDownStart) {
         return;
       }
@@ -294,14 +312,7 @@ export const useTokenDrag = ({
           const safeScale = token.scale ?? 1;
           const width = gridSize * safeScale;
           const height = gridSize * safeScale;
-          const snapped = snapToGrid(
-            dragPos.x,
-            dragPos.y,
-            gridSize,
-            gridType as never, // Cast to never to bypass strict string check if necessary, or just remove if compatible
-            width,
-            height,
-          );
+          const snapped = snapToGrid(dragPos.x, dragPos.y, gridSize, gridType, width, height);
 
           if (tokenIds.length > 1) {
             const offsetX = snapped.x - dragPos.x;
@@ -318,7 +329,7 @@ export const useTokenDrag = ({
                   newX,
                   newY,
                   gridSize,
-                  gridType as never,
+                  gridType,
                   gridSize * tSafeScale,
                   gridSize * tSafeScale,
                 );
@@ -331,8 +342,7 @@ export const useTokenDrag = ({
             committedPositions.set(tokenId, snapped);
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const ipcRenderer = (window as any).ipcRenderer;
+          const ipcRenderer = window.ipcRenderer;
           if (ipcRenderer && !isWorldView) {
             tokenIds.forEach((id) => {
               const pos = committedPositions.get(id);

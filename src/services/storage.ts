@@ -31,7 +31,6 @@ let storageInstance: IStorageService | null = null;
  */
 export async function initStorage(): Promise<void> {
   if (storageInstance) {
-    console.warn('[Storage] Storage already initialized, skipping');
     return;
   }
 
@@ -39,16 +38,12 @@ export async function initStorage(): Promise<void> {
   const isElectron = typeof window !== 'undefined' && Boolean(window.ipcRenderer);
 
   if (isElectron) {
-    console.log('[Storage] Detected Electron environment, using ElectronStorageService');
     const { ElectronStorageService } = await import('./ElectronStorageService');
     storageInstance = new ElectronStorageService();
   } else {
-    console.log('[Storage] Detected Web environment, using WebStorageService');
     const { WebStorageService } = await import('./WebStorageService');
     storageInstance = new WebStorageService();
   }
-
-  console.log(`[Storage] Initialized: platform=${storageInstance.getPlatform()}`);
 }
 
 /**
@@ -83,6 +78,7 @@ export function getStorage(): IStorageService {
  *   const storage = getStorage();
  * }
  */
+// eslint-disable-next-line import/no-unused-modules
 export function isStorageInitialized(): boolean {
   return storageInstance !== null;
 }

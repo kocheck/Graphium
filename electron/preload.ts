@@ -130,7 +130,9 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     assertAllowedChannel(channel, ALLOWED_RECEIVE_CHANNELS, 'receive');
 
     // Create a wrapper that we can look up later
-    const wrapper = (event: IpcRendererEvent, ...args: unknown[]) => listener(event, ...args);
+    const wrapper = (event: IpcRendererEvent, ...args: unknown[]): void => {
+      listener(event, ...args);
+    };
     listenerMap.set(listener, wrapper);
 
     return ipcRenderer.on(channel, wrapper);
@@ -177,10 +179,10 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @param channel - IPC channel name (e.g., 'create-world-window', 'SYNC_WORLD_STATE')
    * @param args - Arguments to pass to main process handler
    */
-  send(...args: Parameters<typeof ipcRenderer.send>) {
+  send(...args: Parameters<typeof ipcRenderer.send>): void {
     const [channel, ...omit] = args;
     assertAllowedChannel(channel, ALLOWED_SEND_CHANNELS, 'send');
-    return ipcRenderer.send(channel, ...omit);
+    ipcRenderer.send(channel, ...(omit as Parameters<typeof ipcRenderer.send>));
   },
 
   /**
@@ -192,10 +194,13 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
    * @param args - Arguments to pass to main process handler
    * @returns Promise resolving to handler's return value
    */
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
+  invoke(...args: Parameters<typeof ipcRenderer.invoke>): Promise<unknown> {
     const [channel, ...omit] = args;
     assertAllowedChannel(channel, ALLOWED_INVOKE_CHANNELS, 'invoke');
-    return ipcRenderer.invoke(channel, ...omit);
+    return ipcRenderer.invoke(
+      channel,
+      ...(omit as Parameters<typeof ipcRenderer.invoke>),
+    ) as Promise<unknown>;
   },
 });
 
@@ -206,22 +211,29 @@ contextBridge.exposeInMainWorld('themeAPI', {
    * @returns {mode: 'light'|'dark'|'system', effectiveTheme: 'light'|'dark'}
    */
   getThemeState: (): Promise<{ mode: string; effectiveTheme: string }> =>
-    ipcRenderer.invoke('get-theme-state'),
+    ipcRenderer.invoke('get-theme-state') as Promise<{ mode: string; effectiveTheme: string }>,
 
   /**
    * Set theme mode
    * @param mode - 'light', 'dark', or 'system'
    */
-  setThemeMode: (mode: string): Promise<void> => ipcRenderer.invoke('set-theme-mode', mode),
+  setThemeMode: (mode: string): Promise<void> =>
+    ipcRenderer.invoke('set-theme-mode', mode) as Promise<void>,
 
   /**
    * Listen for theme changes from main process
    * @param callback - Called when theme changes
    * @returns Cleanup function
    */
-  onThemeChanged: (callback: (data: { mode: string; effectiveTheme: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, data: { mode: string; effectiveTheme: string }) =>
+  onThemeChanged: (
+    callback: (data: { mode: string; effectiveTheme: string }) => void,
+  ): (() => void) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      data: { mode: string; effectiveTheme: string },
+    ): void => {
       callback(data);
+    };
     ipcRenderer.on('theme-changed', listener);
 
     // Return cleanup function
@@ -236,12 +248,13 @@ contextBridge.exposeInMainWorld('errorReporting', {
   /**
    * Get the system username for PII sanitization
    */
-  getUsername: (): Promise<string> => ipcRenderer.invoke('get-username'),
+  getUsername: (): Promise<string> => ipcRenderer.invoke('get-username') as Promise<string>,
 
   /**
    * Open an external URL (mailto: or https:) in the default application
    */
-  openExternal: (url: string): Promise<boolean> => ipcRenderer.invoke('open-external', url),
+  openExternal: (url: string): Promise<boolean> =>
+    ipcRenderer.invoke('open-external', url) as Promise<boolean>,
 
   /**
    * Save error report to a file using native save dialog
@@ -249,7 +262,11 @@ contextBridge.exposeInMainWorld('errorReporting', {
   saveToFile: (
     reportContent: string,
   ): Promise<{ success: boolean; filePath?: string; reason?: string }> =>
-    ipcRenderer.invoke('save-error-report', reportContent),
+    ipcRenderer.invoke('save-error-report', reportContent) as Promise<{
+      success: boolean;
+      filePath?: string;
+      reason?: string;
+    }>,
 });
 
 // --------- Auto-updater API ---------
@@ -259,52 +276,70 @@ contextBridge.exposeInMainWorld('autoUpdater', {
    * @returns {available: boolean, updateInfo?: object, reason?: string}
    */
   checkForUpdates: (): Promise<{ available: boolean; updateInfo?: unknown; reason?: string }> =>
-    ipcRenderer.invoke('check-for-updates'),
+    ipcRenderer.invoke('check-for-updates') as Promise<{
+      available: boolean;
+      updateInfo?: unknown;
+      reason?: string;
+    }>,
 
   /**
    * Start downloading the available update
    * @returns true if download started successfully
    */
-  downloadUpdate: (): Promise<boolean> => ipcRenderer.invoke('download-update'),
+  downloadUpdate: (): Promise<boolean> => ipcRenderer.invoke('download-update') as Promise<boolean>,
 
   /**
    * Quit the application and install the downloaded update
    * @returns true if install process started
    */
-  quitAndInstall: (): Promise<boolean> => ipcRenderer.invoke('quit-and-install'),
+  quitAndInstall: (): Promise<boolean> =>
+    ipcRenderer.invoke('quit-and-install') as Promise<boolean>,
 
   /**
    * Get the current application version
    * @returns Version string (e.g., "0.5.3")
    */
-  getCurrentVersion: (): Promise<string> => ipcRenderer.invoke('get-current-version'),
+  getCurrentVersion: (): Promise<string> =>
+    ipcRenderer.invoke('get-current-version') as Promise<string>,
 
   /**
    * Listen for update status events
    * @param callback - Called when update status changes
    * @returns Cleanup function
    */
-  onCheckingForUpdate: (callback: () => void) => {
-    const listener = () => callback();
+  onCheckingForUpdate: (callback: () => void): (() => void) => {
+    const listener = (): void => {
+      callback();
+    };
     ipcRenderer.on('auto-updater:checking-for-update', listener);
-    return () => ipcRenderer.off('auto-updater:checking-for-update', listener);
+    return () => {
+      ipcRenderer.off('auto-updater:checking-for-update', listener);
+    };
   },
 
   onUpdateAvailable: (
     callback: (info: { version: string; releaseNotes?: string; releaseDate?: string }) => void,
-  ) => {
+  ): (() => void) => {
     const listener = (
       _event: IpcRendererEvent,
       info: { version: string; releaseNotes?: string; releaseDate?: string },
-    ) => callback(info);
+    ): void => {
+      callback(info);
+    };
     ipcRenderer.on('auto-updater:update-available', listener);
-    return () => ipcRenderer.off('auto-updater:update-available', listener);
+    return () => {
+      ipcRenderer.off('auto-updater:update-available', listener);
+    };
   },
 
-  onUpdateNotAvailable: (callback: (info: { version: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, info: { version: string }) => callback(info);
+  onUpdateNotAvailable: (callback: (info: { version: string }) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, info: { version: string }): void => {
+      callback(info);
+    };
     ipcRenderer.on('auto-updater:update-not-available', listener);
-    return () => ipcRenderer.off('auto-updater:update-not-available', listener);
+    return () => {
+      ipcRenderer.off('auto-updater:update-not-available', listener);
+    };
   },
 
   onDownloadProgress: (
@@ -314,7 +349,7 @@ contextBridge.exposeInMainWorld('autoUpdater', {
       transferred: number;
       total: number;
     }) => void,
-  ) => {
+  ): (() => void) => {
     const listener = (
       _event: IpcRendererEvent,
       progress: {
@@ -323,20 +358,32 @@ contextBridge.exposeInMainWorld('autoUpdater', {
         transferred: number;
         total: number;
       },
-    ) => callback(progress);
+    ): void => {
+      callback(progress);
+    };
     ipcRenderer.on('auto-updater:download-progress', listener);
-    return () => ipcRenderer.off('auto-updater:download-progress', listener);
+    return () => {
+      ipcRenderer.off('auto-updater:download-progress', listener);
+    };
   },
 
-  onUpdateDownloaded: (callback: (info: { version: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, info: { version: string }) => callback(info);
+  onUpdateDownloaded: (callback: (info: { version: string }) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, info: { version: string }): void => {
+      callback(info);
+    };
     ipcRenderer.on('auto-updater:update-downloaded', listener);
-    return () => ipcRenderer.off('auto-updater:update-downloaded', listener);
+    return () => {
+      ipcRenderer.off('auto-updater:update-downloaded', listener);
+    };
   },
 
-  onError: (callback: (error: { message: string }) => void) => {
-    const listener = (_event: IpcRendererEvent, error: { message: string }) => callback(error);
+  onError: (callback: (error: { message: string }) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, error: { message: string }): void => {
+      callback(error);
+    };
     ipcRenderer.on('auto-updater:error', listener);
-    return () => ipcRenderer.off('auto-updater:error', listener);
+    return () => {
+      ipcRenderer.off('auto-updater:error', listener);
+    };
   },
 });

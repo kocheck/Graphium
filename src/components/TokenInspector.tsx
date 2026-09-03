@@ -37,7 +37,11 @@ interface TokenInspectorProps {
  * @param selectedTokenIds - Array of token IDs currently selected
  * @param onClose - Optional callback to deselect tokens (used on mobile)
  */
-function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
+// eslint-disable-next-line max-lines-per-function, complexity
+function TokenInspector({
+  selectedTokenIds,
+  onClose,
+}: TokenInspectorProps): React.ReactElement | null {
   const tokens = useGameStore((s) => s.tokens);
   const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
   const updateTokenProperties = useGameStore((s) => s.updateTokenProperties);
@@ -54,7 +58,14 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
   );
 
   // Helper to resolve effective properties (instance > library > default)
-  const getEffectiveValues = (token: Token) => {
+  const getEffectiveValues = (
+    token: Token,
+  ): {
+    name: string;
+    type: 'PC' | 'NPC';
+    visionRadius: number;
+    libraryItem: ReturnType<typeof tokenLibrary.find>;
+  } => {
     const libraryItem = token.libraryItemId
       ? tokenLibrary.find((i) => i.id === token.libraryItemId)
       : undefined;
@@ -74,7 +85,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
     }
 
     // Determine effective name
-    const effectiveName = token.name || libraryItem?.name || '';
+    const effectiveName = token.name ?? libraryItem?.name ?? '';
 
     // Determine effective vision radius
     const effectiveVisionRadius = token.visionRadius ?? libraryItem?.defaultVisionRadius ?? 0;
@@ -103,10 +114,13 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
     setIsEditing(false); // Reset to summary view on NEW selection
 
     if (selectedTokens.length === 1) {
-      const { name, type, visionRadius } = getEffectiveValues(selectedTokens[0]!);
-      setName(name);
-      setType(type);
-      setVisionRadius(visionRadius);
+      const firstToken = selectedTokens[0];
+      if (firstToken) {
+        const { name, type, visionRadius } = getEffectiveValues(firstToken);
+        setName(name);
+        setType(type);
+        setVisionRadius(visionRadius);
+      }
     } else if (selectedTokens.length > 1) {
       setName('');
       setType('NPC');
@@ -127,32 +141,35 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
     return null;
   }
 
-  const handleNameChange = (newName: string) => {
+  const handleNameChange = (newName: string): void => {
     setName(newName);
     selectedTokenIds.forEach((id) => {
       updateTokenProperties(id, { name: newName });
     });
   };
 
-  const handleTypeChange = (newType: 'PC' | 'NPC') => {
+  const handleTypeChange = (newType: 'PC' | 'NPC'): void => {
     setType(newType);
     selectedTokenIds.forEach((id) => {
       updateTokenProperties(id, { type: newType });
     });
   };
 
-  const handleVisionRadiusChange = (radius: number) => {
+  const handleVisionRadiusChange = (radius: number): void => {
     setVisionRadius(radius);
     selectedTokenIds.forEach((id) => {
       updateTokenProperties(id, { visionRadius: radius });
     });
   };
 
-  const handleSaveToLibrary = async () => {
+  const handleSaveToLibrary = async (): Promise<void> => {
     if (selectedTokens.length !== 1) {
       return;
     }
-    const token = selectedTokens[0]!;
+    const token = selectedTokens[0];
+    if (!token) {
+      return;
+    }
     if (!token.libraryItemId) {
       return;
     }
@@ -163,7 +180,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
     }
 
     const updates = {
-      name: name || libraryItem.name, // Use library name if empty
+      name: name || libraryItem.name,
       category: libraryItem.category,
       tags: libraryItem.tags,
       defaultType: type,
@@ -190,7 +207,8 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--app-text-primary)' }}>
           {selectedTokens.length === 1
-            ? getEffectiveValues(selectedTokens[0]!).name || 'Unnamed Token'
+            ? (selectedTokens[0] ? getEffectiveValues(selectedTokens[0]).name : '') ||
+              'Unnamed Token'
             : `${selectedTokens.length} Tokens Selected`}
         </h3>
         {isEditing && (
@@ -210,7 +228,11 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
         <div>
           {selectedTokens.length === 1 &&
             (() => {
-              const { type, visionRadius } = getEffectiveValues(selectedTokens[0]!);
+              const token0 = selectedTokens[0];
+              if (!token0) {
+                return null;
+              }
+              const { type, visionRadius } = getEffectiveValues(token0);
               return (
                 <div className="text-sm mb-4" style={{ color: 'var(--app-text-secondary)' }}>
                   <p>Type: {type}</p>
@@ -375,10 +397,12 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
           </div>
 
           {/* Save to Library Button */}
-          {selectedTokens.length === 1 && selectedTokens[0]!.libraryItemId && (
+          {selectedTokens.length === 1 && selectedTokens[0]?.libraryItemId && (
             <div className="pt-2">
               <button
-                onClick={handleSaveToLibrary}
+                onClick={() => {
+                  void handleSaveToLibrary();
+                }}
                 className="w-full py-2 px-4 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors border"
                 style={{
                   borderColor: 'var(--app-border-default)',
@@ -404,7 +428,7 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
           )}
 
           {/* Token Info Footer */}
-          {selectedTokens.length === 1 && (
+          {selectedTokens.length === 1 && selectedTokens[0] && (
             <div
               className="pt-3"
               style={{
@@ -414,11 +438,11 @@ function TokenInspector({ selectedTokenIds, onClose }: TokenInspectorProps) {
               }}
             >
               <p className="text-xs" style={{ color: 'var(--app-text-muted)' }}>
-                <strong>Scale:</strong> {selectedTokens[0]!.scale}x
+                <strong>Scale:</strong> {selectedTokens[0].scale}x
               </p>
               <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
-                <strong>Position:</strong> ({Math.round(selectedTokens[0]!.x)},{' '}
-                {Math.round(selectedTokens[0]!.y)})
+                <strong>Position:</strong> ({Math.round(selectedTokens[0].x)},{' '}
+                {Math.round(selectedTokens[0].y)})
               </p>
             </div>
           )}

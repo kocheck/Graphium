@@ -4,7 +4,9 @@ import type { KonvaEventObject } from 'konva/lib/Node';
  * Get the pointer position from a Konva event
  * Extracts the canvas-relative pointer position from any pointer event type.
  */
-export const getPointerPosition = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+export const getPointerPosition = (
+  e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
+): { x: number; y: number } | null => {
   const stage = e.target.getStage();
   if (!stage) {
     return null;

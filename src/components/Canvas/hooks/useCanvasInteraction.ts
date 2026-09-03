@@ -78,6 +78,29 @@ interface UseCanvasInteractionProps {
   setHoveredCell: (cell: GridCell | null) => void;
 }
 
+function applyWallSnapping(
+  line: Drawing,
+  existingWallPaths: number[][],
+  snapThreshold: number,
+): Drawing {
+  const points = [...line.points];
+  const startPoint = { x: points[0] ?? 0, y: points[1] ?? 0 };
+  const startSnap = snapPointToPaths(startPoint, existingWallPaths, snapThreshold);
+  if (startSnap.snapped) {
+    points[0] = startSnap.point.x;
+    points[1] = startSnap.point.y;
+  }
+  const endIdx = points.length - 2;
+  const endPoint = { x: points[endIdx] ?? 0, y: points[endIdx + 1] ?? 0 };
+  const endSnap = snapPointToPaths(endPoint, existingWallPaths, snapThreshold);
+  if (endSnap.snapped) {
+    points[endIdx] = endSnap.point.x;
+    points[endIdx + 1] = endSnap.point.y;
+  }
+  return { ...line, points };
+}
+
+// eslint-disable-next-line max-lines-per-function
 export const useCanvasInteraction = ({
   tool,
   measurementMode,
@@ -117,14 +140,22 @@ export const useCanvasInteraction = ({
   addDrawing,
   drawings,
   setHoveredCell,
-}: UseCanvasInteractionProps) => {
+}: UseCanvasInteractionProps): {
+  handlePointerDown: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  handlePointerMove: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  handlePointerUp: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+  shouldRejectPointerEvent: (
+    e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
+  ) => boolean;
+  trackStylusUsage: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
+} => {
   const touchSettings = useTouchSettingsStore();
   const wallToolPrefs = usePreferencesStore((s) => s.wallTool);
   const gridGeometry = useMemo(() => createGridGeometry(gridType), [gridType]);
   const lastHoveredCellRef = useRef<GridCell | null>(null);
   const lastDoorPreviewRef = useRef<{ x: number; y: number } | null>(null);
 
-  const updateHoveredCell = (cell: GridCell | null) => {
+  const updateHoveredCell = (cell: GridCell | null): void => {
     const prev = lastHoveredCellRef.current;
     if (cell === null && prev === null) {
       return;
@@ -136,7 +167,7 @@ export const useCanvasInteraction = ({
     setHoveredCell(cell);
   };
 
-  const updateDoorPreview = (pos: { x: number; y: number } | null) => {
+  const updateDoorPreview = (pos: { x: number; y: number } | null): void => {
     const prev = lastDoorPreviewRef.current;
     if (pos === null) {
       if (prev !== null) {
@@ -191,7 +222,8 @@ export const useCanvasInteraction = ({
     [stylusActiveRef],
   );
 
-  const handlePointerDown = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+  // eslint-disable-next-line complexity
+  const handlePointerDown = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
     trackStylusUsage(e);
     if (shouldRejectPointerEvent(e)) {
       return;
@@ -319,7 +351,8 @@ export const useCanvasInteraction = ({
     }
   };
 
-  const handlePointerMove = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+  // eslint-disable-next-line max-lines-per-function, complexity
+  const handlePointerMove = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
     if (shouldRejectPointerEvent(e)) {
       return;
     }
@@ -485,8 +518,8 @@ export const useCanvasInteraction = ({
       }
 
       if (e.evt.shiftKey && cur.points.length >= 2) {
-        const startX = cur.points[0]!;
-        const startY = cur.points[1]!;
+        const startX = cur.points[0] ?? 0;
+        const startY = cur.points[1] ?? 0;
         const dx = Math.abs(point.x - startX);
         const dy = Math.abs(point.y - startY);
 
@@ -523,7 +556,8 @@ export const useCanvasInteraction = ({
     }
   };
 
-  const handlePointerUp = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+  // eslint-disable-next-line complexity
+  const handlePointerUp = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): void => {
     trackStylusUsage(e);
 
     if (isMultiTouchGesture(e)) {
@@ -595,34 +629,14 @@ export const useCanvasInteraction = ({
 
         if (processedLine.tool === 'wall' && wallToolPrefs.enableSnapping) {
           const existingWallPaths = drawings.filter((d) => d.tool === 'wall').map((w) => w.points);
+          const canSnap = existingWallPaths.length > 0 && processedLine.points.length >= 4;
 
-          if (existingWallPaths.length > 0 && processedLine.points.length >= 4) {
-            const points = [...processedLine.points];
-
-            const startPoint = { x: points[0]!, y: points[1]! };
-            const startSnap = snapPointToPaths(
-              startPoint,
+          if (canSnap) {
+            processedLine = applyWallSnapping(
+              processedLine,
               existingWallPaths,
               wallToolPrefs.snapThreshold,
             );
-            if (startSnap.snapped) {
-              points[0] = startSnap.point.x;
-              points[1] = startSnap.point.y;
-            }
-
-            const endIdx = points.length - 2;
-            const endPoint = { x: points[endIdx]!, y: points[endIdx + 1]! };
-            const endSnap = snapPointToPaths(
-              endPoint,
-              existingWallPaths,
-              wallToolPrefs.snapThreshold,
-            );
-            if (endSnap.snapped) {
-              points[endIdx] = endSnap.point.x;
-              points[endIdx + 1] = endSnap.point.y;
-            }
-
-            processedLine = { ...processedLine, points };
           }
         }
 

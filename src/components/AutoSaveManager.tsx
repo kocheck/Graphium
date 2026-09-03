@@ -15,18 +15,17 @@ import { useGameStore } from '../store/gameStore';
  * **Note:** This only runs if auto-save feature is available on the platform.
  * Check storage.isFeatureAvailable('auto-save') for availability.
  */
-function AutoSaveManager() {
+function AutoSaveManager(): null {
   useEffect(() => {
     // Check if auto-save is supported on this platform
     const storage = getStorage();
     if (!storage.isFeatureAvailable('auto-save')) {
-      console.log('[AutoSave] Auto-save not available on this platform');
       return;
     }
 
     let isSaving = false;
 
-    const intervalId = setInterval(async () => {
+    const runAutoSave = async (): Promise<void> => {
       if (isSaving) {
         return;
       }
@@ -40,16 +39,16 @@ function AutoSaveManager() {
 
         // Attempt auto-save
         // Returns true if saved, false if error
-        const saved = await storage.autoSaveCampaign(campaign);
-
-        if (saved) {
-          console.log('[AutoSave] Campaign saved successfully');
-        }
-      } catch (err) {
-        console.error('[AutoSave] Failed:', err);
+        await storage.autoSaveCampaign(campaign);
+      } catch {
+        // Auto-save failures are silent to avoid disrupting gameplay
       } finally {
         isSaving = false;
       }
+    };
+
+    const intervalId = setInterval(() => {
+      void runAutoSave();
     }, 60 * 1000); // 60 seconds
 
     return () => clearInterval(intervalId);

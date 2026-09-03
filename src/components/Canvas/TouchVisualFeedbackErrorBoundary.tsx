@@ -43,7 +43,7 @@ class TouchVisualFeedbackErrorBoundary extends Component<Props, State> {
     };
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     // Log error details in development mode
     if (import.meta.env.DEV) {
       console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -68,7 +68,7 @@ class TouchVisualFeedbackErrorBoundary extends Component<Props, State> {
     // }
   }
 
-  override render() {
+  override render(): ReactNode {
     if (this.state.hasError) {
       // Render nothing - visual feedback is optional
       // Canvas continues to work without visual indicators
@@ -79,4 +79,5 @@ class TouchVisualFeedbackErrorBoundary extends Component<Props, State> {
   }
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default TouchVisualFeedbackErrorBoundary;

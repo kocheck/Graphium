@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 
 import Cropper from 'react-easy-crop';
 
+import type { Area } from 'react-easy-crop';
+
 /**
  * Props for ImageCropper component
  *
@@ -66,10 +68,10 @@ interface ImageCropperProps {
  *   />
  * )}
  */
-function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
+function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps): JSX.Element {
   const [crop, setCrop] = useState({ x: 0, y: 0 }); // Crop area position
   const [zoom, setZoom] = useState(1); // Zoom level (1x-3x)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null); // Pixel coordinates for extraction
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null); // Pixel coordinates for extraction
 
   /**
    * Callback fired when crop area changes
@@ -81,7 +83,7 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
    * @param _croppedArea - Normalized crop area (0-1 range, not used)
    * @param croppedAreaPixels - Pixel coordinates { x, y, width, height }
    */
-  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area): void => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
@@ -97,18 +99,20 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
    * // getCroppedImg() → WebP blob (45KB)
    * // onConfirm(blob) → CanvasManager.handleCropConfirm(blob)
    */
-  const handleSave = async () => {
-    try {
-      if (!croppedAreaPixels) {
-        return;
+  const handleSave = (): void => {
+    void (async () => {
+      try {
+        if (!croppedAreaPixels) {
+          return;
+        }
+        const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
+        if (croppedImage) {
+          onConfirm(croppedImage);
+        }
+      } catch (e) {
+        console.error(e);
       }
-      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
-      if (croppedImage) {
-        onConfirm(croppedImage);
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    })();
   };
 
   return (
@@ -200,7 +204,7 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps) {
  * );
  * // Returns: Blob { size: 45632, type: 'image/webp' }
  */
-async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | null> {
+async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob | null> {
   // Load source image (waits for async load)
   const image = await createImage(imageSrc);
 

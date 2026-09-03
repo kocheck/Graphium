@@ -49,7 +49,16 @@
  * @component
  */
 
-import React, { useRef, useState, useEffect } from 'react';
+import {
+  memo,
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  type JSX,
+  type DragEvent,
+  type ChangeEvent,
+} from 'react';
 
 import {
   RiArrowLeftSLine,
@@ -82,7 +91,8 @@ import type { ProcessingHandle } from '../utils/AssetProcessor';
 /**
  * Sidebar component provides map upload, grid settings, and token library
  */
-function Sidebar() {
+// eslint-disable-next-line max-lines-per-function
+function Sidebar(): JSX.Element {
   // Store selectors
   const campaign = useGameStore((state) => state.campaign);
   const activeMapId = useGameStore((state) => state.campaign.activeMapId);
@@ -92,17 +102,17 @@ function Sidebar() {
   const tokens = useGameStore((state) => state.tokens);
 
   // Get recent tokens (last 3 unique tokens placed on the map)
-  const recentTokens = React.useMemo(() => {
+  const recentTokens = useMemo(() => {
     return getRecentTokens(tokens, tokenLibrary);
   }, [tokens, tokenLibrary]);
 
   // Get player tokens from library (up to 5)
-  const playerTokens = React.useMemo(() => {
+  const playerTokens = useMemo(() => {
     return getPlayerTokens(tokenLibrary, 5);
   }, [tokenLibrary]);
 
   // Deduplicate player tokens (remove any that appear in recent history)
-  const deduplicatedPlayerTokens = React.useMemo(() => {
+  const deduplicatedPlayerTokens = useMemo(() => {
     return deduplicatePlayerTokens(playerTokens, recentTokens);
   }, [playerTokens, recentTokens]);
 
@@ -152,11 +162,11 @@ function Sidebar() {
    * @param libraryItemId - Optional library item ID for prototype linkage
    */
   const handleDragStart = (
-    e: React.DragEvent,
+    e: DragEvent,
     type: string,
     src: string,
     libraryItemId?: string,
-  ) => {
+  ): void => {
     e.dataTransfer.setData('application/json', JSON.stringify({ type, src, libraryItemId }));
 
     // Create custom drag image
@@ -190,7 +200,7 @@ function Sidebar() {
   /**
    * Handles token image upload and addition to library
    */
-  const handleTokenUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTokenUpload = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file) {
       return;
@@ -219,7 +229,7 @@ function Sidebar() {
       setPendingLibraryImage({
         src,
         blob,
-        name: file.name.split('.')[0] || 'New Token',
+        name: file.name.split('.')[0] ?? 'New Token',
       });
       setIsAddToLibraryOpen(true);
     } catch (err) {
@@ -233,10 +243,19 @@ function Sidebar() {
 
   const maps = Object.values(campaign.maps).sort((a, b) => a.name.localeCompare(b.name));
 
+  let sidebarWidthClass: string;
+  if (isMobile) {
+    sidebarWidthClass = 'w-full h-full';
+  } else if (isSidebarCollapsed) {
+    sidebarWidthClass = 'w-16 shrink-0';
+  } else {
+    sidebarWidthClass = 'w-64 shrink-0';
+  }
+
   // Sidebar content (same for mobile and desktop)
   const sidebarContent = (
     <div
-      className={`sidebar flex flex-col p-4 z-10 overflow-y-auto transition-all duration-300 ${isMobile ? 'w-full h-full' : isSidebarCollapsed ? 'w-16 shrink-0' : 'w-64 shrink-0'}`}
+      className={`sidebar flex flex-col p-4 z-10 overflow-y-auto transition-all duration-300 ${sidebarWidthClass}`}
     >
       {/* Header Section */}
       <div className="mb-6">
@@ -362,7 +381,9 @@ function Sidebar() {
                 accept="image/*"
                 ref={tokenInputRef}
                 className="hidden"
-                onChange={handleTokenUpload}
+                onChange={(e) => {
+                  void handleTokenUpload(e);
+                }}
               />
               <Tooltip content="Add token to library">
                 <button
@@ -417,7 +438,7 @@ function Sidebar() {
           setEditingMapId(null);
         }}
         mode={mapSettingsMode}
-        mapId={editingMapId || undefined}
+        mapId={editingMapId ?? undefined}
       />
 
       {/* Library Manager Modal */}
@@ -429,8 +450,8 @@ function Sidebar() {
       {/* Add to Library Dialog */}
       <AddToLibraryDialog
         isOpen={isAddToLibraryOpen}
-        imageSrc={pendingLibraryImage?.src || null}
-        imageBlob={pendingLibraryImage?.blob || null}
+        imageSrc={pendingLibraryImage?.src ?? null}
+        imageBlob={pendingLibraryImage?.blob ?? null}
         suggestedName={pendingLibraryImage?.name}
         onClose={() => {
           setIsAddToLibraryOpen(false);
@@ -445,4 +466,4 @@ function Sidebar() {
   );
 }
 
-export default React.memo(Sidebar);
+export default memo(Sidebar);

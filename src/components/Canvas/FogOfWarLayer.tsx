@@ -31,6 +31,7 @@ const DEBUG_FOG =
 
 const fogLog = (...args: unknown[]): void => {
   if (DEBUG_FOG) {
+    // eslint-disable-next-line no-console
     console.log(...args);
   }
 };
@@ -57,6 +58,7 @@ const fogLog = (...args: unknown[]): void => {
  * - Frame rate: 22fps → 60fps (173% improvement)
  * - CPU usage: ~80% → ~15% (static scenes)
  */
+// eslint-disable-next-line max-lines-per-function
 function FogOfWarLayer({
   tokens,
   drawings,
@@ -64,7 +66,7 @@ function FogOfWarLayer({
   gridSize,
   visibleBounds,
   map,
-}: FogOfWarLayerProps) {
+}: FogOfWarLayerProps): JSX.Element {
   fogLog('[FogOfWarLayer] COMPONENT RENDERING - Start');
   fogLog('[FogOfWarLayer] Props:', {
     tokensCount: tokens.length,
@@ -85,10 +87,10 @@ function FogOfWarLayer({
     fogLog('═══════════════════════════════════════════════════════');
     fogLog('📊 TOKENS:');
     tokens.forEach((t) => {
-      fogLog(`  - ${t.type} Token "${t.name || t.id.substring(0, 8)}":`, {
+      fogLog(`  - ${t.type} Token "${t.name ?? t.id.substring(0, 8)}":`, {
         id: t.id,
         position: `(${t.x}, ${t.y})`,
-        visionRadius: t.visionRadius || 'NOT SET',
+        visionRadius: t.visionRadius ?? 'NOT SET',
         type: t.type,
       });
     });
@@ -167,19 +169,26 @@ function FogOfWarLayer({
         // CRITICAL FIX: Apply drawing transform (x, y, scale) to points
         // Otherwise visual wall (transformed) and logical wall (raw points) mismatch
         const points = wall.points;
-        const offsetX = wall.x || 0;
-        const offsetY = wall.y || 0;
-        const scale = wall.scale || 1;
+        const offsetX = wall.x ?? 0;
+        const offsetY = wall.y ?? 0;
+        const scale = wall.scale ?? 1;
 
         for (let i = 0; i < points.length - 2; i += 2) {
+          const p0 = points[i];
+          const p1 = points[i + 1];
+          const p2 = points[i + 2];
+          const p3 = points[i + 3];
+          if (p0 === undefined || p1 === undefined || p2 === undefined || p3 === undefined) {
+            continue;
+          }
           wallSegments.push({
             start: {
-              x: points[i]! * scale + offsetX,
-              y: points[i + 1]! * scale + offsetY,
+              x: p0 * scale + offsetX,
+              y: p1 * scale + offsetY,
             },
             end: {
-              x: points[i + 2]! * scale + offsetX,
-              y: points[i + 3]! * scale + offsetY,
+              x: p2 * scale + offsetX,
+              y: p3 * scale + offsetY,
             },
           });
         }
@@ -379,10 +388,17 @@ function FogOfWarLayer({
               if (region.points.length === 0) {
                 return;
               }
+              const firstPoint = region.points[0];
+              if (!firstPoint) {
+                return;
+              }
               ctx.beginPath();
-              ctx.moveTo(region.points[0]!.x, region.points[0]!.y);
+              ctx.moveTo(firstPoint.x, firstPoint.y);
               for (let i = 1; i < region.points.length; i++) {
-                ctx.lineTo(region.points[i]!.x, region.points[i]!.y);
+                const pt = region.points[i];
+                if (pt) {
+                  ctx.lineTo(pt.x, pt.y);
+                }
               }
               ctx.closePath();
               // Semi-transparent black = partially erases fog = dimmed map shows through
@@ -402,7 +418,7 @@ function FogOfWarLayer({
           const visionRadiusPx = ((token.visionRadius ?? 0) / 5) * gridSize;
 
           // Get cached visibility polygon (no recalculation!)
-          const visibilityPolygon = visibilityCache.get(token.id) || [];
+          const visibilityPolygon = visibilityCache.get(token.id) ?? [];
 
           return (
             <Shape
@@ -411,10 +427,17 @@ function FogOfWarLayer({
                 if (visibilityPolygon.length === 0) {
                   return;
                 }
+                const firstVisionPoint = visibilityPolygon[0];
+                if (!firstVisionPoint) {
+                  return;
+                }
                 ctx.beginPath();
-                ctx.moveTo(visibilityPolygon[0]!.x, visibilityPolygon[0]!.y);
+                ctx.moveTo(firstVisionPoint.x, firstVisionPoint.y);
                 for (let i = 1; i < visibilityPolygon.length; i++) {
-                  ctx.lineTo(visibilityPolygon[i]!.x, visibilityPolygon[i]!.y);
+                  const pt = visibilityPolygon[i];
+                  if (pt) {
+                    ctx.lineTo(pt.x, pt.y);
+                  }
                 }
                 ctx.closePath();
 
@@ -541,6 +564,7 @@ function castRay(
  *
  * @returns Intersection point or null
  */
+// eslint-disable-next-line max-params
 function lineSegmentIntersection(
   x1: number,
   y1: number,

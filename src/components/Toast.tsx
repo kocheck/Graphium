@@ -45,7 +45,7 @@ import { useGameStore } from '../store/gameStore';
 /**
  * Toast component displays notification messages
  */
-function Toast() {
+function Toast(): JSX.Element | null {
   const toast = useGameStore((state) => state.toast);
   const clearToast = useGameStore((state) => state.clearToast);
 
@@ -64,21 +64,26 @@ function Toast() {
     return null;
   }
 
-  const bgColor =
-    toast.type === 'error'
-      ? 'bg-red-600'
-      : toast.type === 'success'
-        ? 'bg-green-600'
-        : 'bg-blue-600';
+  let bgColor = 'bg-blue-600';
+  if (toast.type === 'error') {
+    bgColor = 'bg-red-600';
+  } else if (toast.type === 'success') {
+    bgColor = 'bg-green-600';
+  }
+
+  let icon = 'ℹ️';
+  if (toast.type === 'error') {
+    icon = '⚠️';
+  } else if (toast.type === 'success') {
+    icon = '✓';
+  }
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-slide-down">
       <div
         className={`${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] max-w-[500px]`}
       >
-        <span className="text-lg">
-          {toast.type === 'error' ? '⚠️' : toast.type === 'success' ? '✓' : 'ℹ️'}
-        </span>
+        <span className="text-lg">{icon}</span>
         <span className="flex-1">{toast.message}</span>
         <button
           onClick={clearToast}

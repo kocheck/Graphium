@@ -25,7 +25,7 @@
  * @component
  */
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { type JSX, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
 import { RiEditLine, RiArrowRightSLine } from '@remixicon/react';
 
@@ -52,6 +52,7 @@ type ResultItem =
   | { type: 'asset'; data: ReturnType<typeof fuzzySearch>[number] }
   | { type: 'section'; label: string };
 
+// eslint-disable-next-line max-lines-per-function
 function CommandPalette({
   isOpen,
   onClose,
@@ -60,7 +61,7 @@ function CommandPalette({
   onLaunchWorldView,
   onOpenDungeonGenerator,
   isGamePaused,
-}: CommandPaletteProps) {
+}: CommandPaletteProps): JSX.Element | null {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -135,7 +136,7 @@ function CommandPalette({
    * Uses useCallback to prevent stale closure issues
    */
   const handleSelectItem = useCallback(
-    (index: number) => {
+    (index: number): void => {
       const item = results[index];
       if (!item) {
         return;
@@ -176,7 +177,8 @@ function CommandPalette({
       return;
     }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    // eslint-disable-next-line complexity
+    const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'Enter' && results.length > 0) {
@@ -292,7 +294,7 @@ function CommandPalette({
                     >
                       {/* Icon */}
                       <div className="w-10 h-10 flex items-center justify-center text-2xl bg-neutral-800 rounded">
-                        {cmd.icon || '⚡'}
+                        {cmd.icon ?? '⚡'}
                       </div>
 
                       {/* Metadata */}

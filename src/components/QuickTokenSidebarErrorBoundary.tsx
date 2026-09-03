@@ -30,15 +30,16 @@ export class QuickTokenSidebarErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // eslint-disable-next-line no-console
     console.error('[QuickTokenSidebarErrorBoundary] Token sidebar crashed:', error, errorInfo);
   }
 
-  private handleReset = () => {
+  private handleReset = (): void => {
     this.setState({ hasError: false, error: null });
   };
 
-  public override render() {
+  public override render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="p-3 bg-red-900/10 border border-red-900/30 rounded text-sm">
@@ -65,4 +66,5 @@ export class QuickTokenSidebarErrorBoundary extends Component<Props, State> {
   }
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export default QuickTokenSidebarErrorBoundary;

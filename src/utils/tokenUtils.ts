@@ -2,6 +2,7 @@
  * Token utility functions
  */
 
+// eslint-disable-next-line import/no-unused-modules
 export interface Token {
   id: string;
   x: number;
@@ -14,6 +15,7 @@ export interface Token {
   name?: string;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export interface LibraryItem {
   id: string;
   name: string;
@@ -47,8 +49,8 @@ export function getRecentTokens(
   // Assuming the tokens array order roughly correlates to addition order
   // or at least presence.
   for (let i = tokens.length - 1; i >= 0 && recent.length < limit; i--) {
-    const token = tokens[i]!;
-    if (!uniqueSrcs.has(token.src)) {
+    const token = tokens[i];
+    if (token !== undefined && !uniqueSrcs.has(token.src)) {
       uniqueSrcs.add(token.src);
       // Find corresponding library item
       const libraryItem = library.find((item) => item.src === token.src);
