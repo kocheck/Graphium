@@ -204,7 +204,7 @@ function ErrorDetailView({
  * Floating indicator that shows when there are pending unreported errors.
  * Allows users to review, report, or dismiss stored errors.
  */
-// eslint-disable-next-line import/no-unused-modules
+
 function PendingErrorsIndicator({
   position = 'bottom-right',
 }: PendingErrorsIndicatorProps): React.ReactElement | null {

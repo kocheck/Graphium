@@ -8,7 +8,7 @@ import { DungeonGenerator } from '../utils/DungeonGenerator';
  * DungeonGeneratorDialog is a modal that allows users to configure and
  * generate procedural dungeons on the canvas.
  */
-// eslint-disable-next-line max-lines-per-function, import/no-unused-modules
+// eslint-disable-next-line max-lines-per-function
 export function DungeonGeneratorDialog(): React.ReactElement | null {
   const addDrawing = useGameStore((state) => state.addDrawing);
   const addDoor = useGameStore((state) => state.addDoor);
@@ -44,7 +44,6 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
     return null;
   }
 
-  // eslint-disable-next-line max-lines-per-function
   const handleGenerate = (): void => {
     // Use the current window size for the canvas, with fallbacks to preserve existing behavior
     const canvasWidth = window.innerWidth || 1920;

@@ -291,14 +291,14 @@ export function logErrorWithContext(context: ErrorContext): void {
   console.group(`🚨 Error Boundary: ${context.componentName ?? 'Component'} [${timestamp}]`);
 
   // Error details
-  // eslint-disable-next-line no-console
+
   console.error('Error:', context.error.name, '-', context.error.message);
 
   // Stack traces
   if (context.error.stack) {
     // eslint-disable-next-line no-console
     console.groupCollapsed('JavaScript Stack Trace');
-    // eslint-disable-next-line no-console
+
     console.error(context.error.stack);
     // eslint-disable-next-line no-console
     console.groupEnd();
@@ -307,7 +307,7 @@ export function logErrorWithContext(context: ErrorContext): void {
   if (context.componentStack) {
     // eslint-disable-next-line no-console
     console.groupCollapsed('React Component Stack');
-    // eslint-disable-next-line no-console
+
     console.error(context.componentStack);
     // eslint-disable-next-line no-console
     console.groupEnd();
@@ -389,7 +389,6 @@ export async function exportErrorToClipboard(context: ErrorContext): Promise<boo
     await navigator.clipboard.writeText(report);
     return true;
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.error('Failed to copy error to clipboard:', e);
     return false;
   }

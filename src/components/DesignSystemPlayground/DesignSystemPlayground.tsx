@@ -74,7 +74,6 @@ function PlaygroundContent(): JSX.Element {
         // Simple mapping for demo purposes, actual resolution handles 'system'
         setCurrentTheme(mode === 'light' ? 'light' : 'dark');
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.warn('Failed to load theme preference', e);
       }
     };
@@ -101,7 +100,6 @@ function PlaygroundContent(): JSX.Element {
       setCurrentTheme(newTheme);
       await getStorage().setThemeMode(newTheme);
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error('Failed to toggle theme', e);
       showToast('Failed to switch theme', 'error');
     }
@@ -146,7 +144,6 @@ function PlaygroundContent(): JSX.Element {
       setTimeout(() => setCopiedId(null), 2000);
       showToast('Code copied to clipboard', 'success');
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Failed to copy code:', error);
       showToast('Failed to copy code to clipboard', 'error');
     }

@@ -87,11 +87,10 @@ class DungeonGeneratorErrorBoundary extends Component<Props, State> {
    * @param errorInfo - React error info including component stack
    */
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // eslint-disable-next-line no-console
     console.error('Dungeon generator error:', error);
-    // eslint-disable-next-line no-console
+
     console.error('Error info:', errorInfo);
-    // eslint-disable-next-line no-console
+
     console.error('Component stack:', errorInfo.componentStack);
   }
 

@@ -31,7 +31,6 @@ export class QuickTokenSidebarErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // eslint-disable-next-line no-console
     console.error('[QuickTokenSidebarErrorBoundary] Token sidebar crashed:', error, errorInfo);
   }
 
