@@ -1,9 +1,30 @@
 import { defineConfig, devices } from '@playwright/test';
-import { createRequire } from 'module';
 
-import { getElectronLaunchArgs } from './tests/helpers/electronLaunchArgs';
+const requestedProjects = (): string[] => {
+  const projects: string[] = [];
+  for (let i = 0; i < process.argv.length; i += 1) {
+    const arg = process.argv[i];
+    if (!arg) {
+      continue;
+    }
+    if (arg === '--project') {
+      const name = process.argv[i + 1];
+      if (name) {
+        projects.push(name);
+      }
+      continue;
+    }
+    if (arg.startsWith('--project=')) {
+      projects.push(arg.slice('--project='.length));
+    }
+  }
+  return projects;
+};
 
-const require = createRequire(import.meta.url);
+const projects = requestedProjects();
+const skipWebServer =
+  process.env.SKIP_WEB_SERVER === '1' ||
+  (projects.length > 0 && projects.every((name) => name === 'Electron-App'));
 
 /**
  * Playwright Configuration for Graphium E2E Tests
@@ -18,93 +39,68 @@ const require = createRequire(import.meta.url);
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
-  forbidOnly: !!process.env.CI, // Prevent .only() in CI
-  retries: process.env.CI ? 2 : 0, // Retry flaky tests in CI
-  workers: process.env.CI ? 1 : undefined, // Controlled parallelism in CI
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
 
-  // Global timeout settings
-  timeout: 45000, // 45s per test (accounts for auto-save tests that wait ~31s)
+  timeout: 45000,
   expect: {
-    timeout: 10000, // 10s for assertions
+    timeout: 10000,
   },
 
-  // Reporter configuration
   reporter: [
-    ['html', { open: 'never' }], // HTML report (always generated)
-    ['list'], // Console output during test run
-    ['json', { outputFile: 'test-results/results.json' }], // Machine-readable results
+    ['html', { open: 'never' }],
+    ['list'],
+    ['json', { outputFile: 'test-results/results.json' }],
   ],
 
   use: {
-    // Tracing configuration - only capture on failure/retry
-    trace: 'on-first-retry', // Saves video/DOM/network on retry
-    screenshot: 'only-on-failure', // Screenshots on assertion failures
-
-    // Base URL for web tests
-    baseURL: process.env.CI
-      ? 'http://localhost:4173' // Vite preview (production build)
-      : 'http://localhost:5173', // Vite dev server
-
-    // Viewport settings
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    baseURL: process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173',
     viewport: { width: 1280, height: 720 },
-
-    // Video recording (only on retry to save disk space)
     video: 'retain-on-failure',
   },
 
   projects: [
-    // ===== PROJECT 1: Web-Chromium (Functional Tests) =====
     {
       name: 'Web-Chromium',
       use: {
         ...devices['Desktop Chrome'],
       },
-
-      // Run all web functional tests (excludes Electron-specific)
       testMatch: /.*\.spec\.ts/,
       testIgnore: [/.*\.electron\.spec\.ts/, /tests\/unit\//, /tests\/integration\//],
     },
-
-    // ===== PROJECT 2: Electron-App (Integration Testing) =====
     {
       name: 'Electron-App',
+      timeout: 15000,
+      retries: process.env.CI ? 1 : 0,
+      workers: 1,
+      expect: { timeout: 5000 },
       use: {
-        // Launch actual Electron executable
-        // Note: Requires Electron build to exist (npm run build)
-        // @ts-expect-error - _electron is a valid Playwright context
-        _electron: {
-          executablePath: require('electron'),
-          args: getElectronLaunchArgs(),
-        },
-
-        // Disable web-specific features
         baseURL: undefined,
       },
-
-      // Only run Electron-specific tests
       testMatch: /.*\.electron\.spec\.ts/,
-
-      // Electron tests require build, skip if not available
       grep: process.env.SKIP_ELECTRON ? /never-match/ : /.*/,
     },
   ],
 
-  // Web server for Web-Chromium tests (Electron CI job sets SKIP_WEB_SERVER=1)
-  webServer: process.env.SKIP_WEB_SERVER
+  // Electron loads dist/index.html via loadFile; skip Vite when running Electron-App only.
+  webServer: skipWebServer
     ? undefined
     : process.env.CI
       ? {
-          command: 'npm run preview:web', // Production preview
+          command: 'npm run preview:web',
           port: 4173,
-          reuseExistingServer: false, // Always fresh server in CI
-          timeout: 120000, // 2 minutes startup timeout
+          reuseExistingServer: false,
+          timeout: 120000,
           stdout: 'pipe',
           stderr: 'pipe',
         }
       : {
-          command: 'npm run dev:web', // Dev server locally
+          command: 'npm run dev:web',
           port: 5173,
-          reuseExistingServer: true, // Reuse if already running
+          reuseExistingServer: true,
           timeout: 120000,
         },
 });
