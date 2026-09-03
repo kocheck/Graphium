@@ -34,6 +34,9 @@ import type { ComponentExample, ComponentCategory } from './types';
 // @ts-expect-error - RiTreeLine is used in code example strings
 const _unused = RiTreeLine;
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const noop = (): void => {};
+
 /**
  * Component categories for the playground
  */
@@ -221,7 +224,7 @@ export const componentExamples: ComponentExample[] = [
     name: 'Toggle Switch',
     category: 'toggle',
     description: 'Modern toggle switch component',
-    component: <ToggleSwitch checked onChange={() => {}} label="Enable Feature" />,
+    component: <ToggleSwitch checked onChange={noop} label="Enable Feature" />,
     code: `import ToggleSwitch from './components/ToggleSwitch';
 
 <ToggleSwitch
@@ -239,7 +242,7 @@ export const componentExamples: ComponentExample[] = [
     component: (
       <ToggleSwitch
         checked={false}
-        onChange={() => {}}
+        onChange={noop}
         label="Dark Mode"
         description="Enable dark theme across the application"
       />
@@ -353,7 +356,7 @@ showConfirmDialog(
     description: 'Software update dialog for electron-updater integration',
     component: (() => {
       // Create a wrapper component with state
-      function UpdateManagerDemo() {
+      function UpdateManagerDemo(): JSX.Element {
         const [isOpen, setIsOpen] = useState(false);
         return (
           <>
@@ -630,9 +633,9 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
     category: 'landing-patterns',
     description: 'Cyclical theme toggle (Light → Dark → Auto) with icon indicators',
     component: (() => {
-      function ThemeSwitcherDemo() {
+      function ThemeSwitcherDemo(): JSX.Element {
         const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark');
-        const getIcon = () => {
+        const getIcon = (): JSX.Element => {
           if (theme === 'light') {
             return <RiSunLine className="w-4 h-4" />;
           }
@@ -641,7 +644,7 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
           }
           return <RiComputerLine className="w-4 h-4" />;
         };
-        const getLabel = () => {
+        const getLabel = (): string => {
           if (theme === 'light') {
             return 'Light';
           }
@@ -650,10 +653,13 @@ const [isUpdateManagerOpen, setIsUpdateManagerOpen] = useState(false);
           }
           return 'Auto';
         };
-        const cycleTheme = () => {
+        const cycleTheme = (): void => {
           const themes: Array<typeof theme> = ['light', 'dark', 'system'];
           const currentIndex = themes.indexOf(theme);
-          setTheme(themes[(currentIndex + 1) % themes.length]!);
+          const nextTheme = themes[(currentIndex + 1) % themes.length];
+          if (nextTheme) {
+            setTheme(nextTheme);
+          }
         };
         return (
           <button
@@ -714,7 +720,7 @@ const handleToggleTheme = async () => {
     category: 'landing-patterns',
     description: 'Performance mode toggle that disables animations/effects for low-end devices',
     component: (() => {
-      function LiteModeDemo() {
+      function LiteModeDemo(): JSX.Element {
         const [liteMode, setLiteMode] = useState(false);
         return (
           <button
@@ -790,7 +796,7 @@ const handleToggleLiteMode = () => {
     category: 'landing-patterns',
     description: 'Search input with icon that appears when list has 6+ items',
     component: (() => {
-      function SearchFilterDemo() {
+      function SearchFilterDemo(): JSX.Element {
         const [query, setQuery] = useState('');
         return (
           <div style={{ position: 'relative', marginBottom: '0.75rem', width: '300px' }}>
