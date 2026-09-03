@@ -1,3 +1,5 @@
+import type React from 'react';
+
 import { RiLockLine, RiDoorOpenLine, RiLockUnlockLine } from '@remixicon/react';
 
 import { useGameStore } from '../store/gameStore';
@@ -17,7 +19,7 @@ import { useGameStore } from '../store/gameStore';
  *
  * @component
  */
-function DoorControls() {
+function DoorControls(): React.ReactElement | null {
   const doors = useGameStore((state) => state.doors);
   const updateAllDoorStates = useGameStore((state) => state.updateAllDoorStates);
   const updateAllDoorLocks = useGameStore((state) => state.updateAllDoorLocks);
@@ -27,15 +29,15 @@ function DoorControls() {
   const closedDoorCount = doorCount - openDoorCount;
   const lockedDoorCount = doors.filter((d) => d.isLocked).length;
 
-  const handleOpenAll = () => {
+  const handleOpenAll = (): void => {
     updateAllDoorStates(true);
   };
 
-  const handleCloseAll = () => {
+  const handleCloseAll = (): void => {
     updateAllDoorStates(false);
   };
 
-  const handleUnlockAll = () => {
+  const handleUnlockAll = (): void => {
     updateAllDoorLocks(false);
   };
 

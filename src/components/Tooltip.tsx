@@ -20,7 +20,7 @@ interface TooltipProps {
   offset?: number; // Vertical offset in pixels from element (default: 50)
 }
 
-function Tooltip({ content, children, delay = 100, offset = 50 }: TooltipProps) {
+function Tooltip({ content, children, delay = 100, offset = 50 }: TooltipProps): JSX.Element {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -37,14 +37,14 @@ function Tooltip({ content, children, delay = 100, offset = 50 }: TooltipProps) 
     }
   }, [offset]);
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = (): void => {
     timeoutRef.current = setTimeout(() => {
       updatePosition();
       setIsVisible(true);
     }, delay);
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (): void => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }

@@ -56,6 +56,7 @@ interface MeasurementOverlayProps {
  *
  * Renders the active measurement shape on the canvas
  */
+// eslint-disable-next-line import/no-unused-modules
 export function MeasurementOverlay({
   measurement,
   gridSize,
@@ -72,7 +73,7 @@ export function MeasurementOverlay({
   /**
    * Renders a ruler (line) measurement
    */
-  const renderRuler = (ruler: Extract<Measurement, { type: 'ruler' }>) => {
+  const renderRuler = (ruler: Extract<Measurement, { type: 'ruler' }>): React.ReactElement => {
     const points = [ruler.origin.x, ruler.origin.y, ruler.end.x, ruler.end.y];
     const midX = (ruler.origin.x + ruler.end.x) / 2;
     const midY = (ruler.origin.y + ruler.end.y) / 2;
@@ -106,7 +107,7 @@ export function MeasurementOverlay({
   /**
    * Renders a blast (circle) measurement
    */
-  const renderBlast = (blast: Extract<Measurement, { type: 'blast' }>) => {
+  const renderBlast = (blast: Extract<Measurement, { type: 'blast' }>): React.ReactElement => {
     const text = formatRadius(blast.radiusFeet);
     const textX = blast.origin.x;
     const textY = blast.origin.y - blast.radius - 20;
@@ -149,7 +150,7 @@ export function MeasurementOverlay({
   /**
    * Renders a cone measurement
    */
-  const renderCone = (cone: Extract<Measurement, { type: 'cone' }>) => {
+  const renderCone = (cone: Extract<Measurement, { type: 'cone' }>): React.ReactElement => {
     const [origin, left, right] = cone.vertices;
 
     // Convert vertices to flat points array for Konva Line

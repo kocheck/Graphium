@@ -47,6 +47,7 @@ export const euclideanDistance = (p1: Point, p2: Point): number => {
  * @param gridSize - Size of one grid cell in pixels
  * @returns Distance in grid cells
  */
+// eslint-disable-next-line import/no-unused-modules
 export const dnd5eDistance = (p1: Point, p2: Point, gridSize: number): number => {
   const dx = Math.abs(p2.x - p1.x);
   const dy = Math.abs(p2.y - p1.y);
@@ -104,6 +105,7 @@ export const pixelsToFeet = (
  * @param p2 - Target point
  * @returns Angle in radians
  */
+// eslint-disable-next-line import/no-unused-modules
 export const calculateAngle = (p1: Point, p2: Point): number => {
   return Math.atan2(p2.y - p1.y, p2.x - p1.x);
 };
@@ -115,6 +117,7 @@ export const calculateAngle = (p1: Point, p2: Point): number => {
  * @param p2 - Target point
  * @returns Angle in degrees (0-360)
  */
+// eslint-disable-next-line import/no-unused-modules
 export const calculateAngleDegrees = (p1: Point, p2: Point): number => {
   const radians = calculateAngle(p1, p2);
   const degrees = (radians * 180) / Math.PI;
