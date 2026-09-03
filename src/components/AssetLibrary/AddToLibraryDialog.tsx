@@ -17,6 +17,7 @@
  * @component
  */
 
+import type React from 'react';
 import { useState, useEffect } from 'react';
 
 import { useIsMobile } from '../../hooks/useMediaQuery';
@@ -35,6 +36,7 @@ interface AddToLibraryDialogProps {
 
 const DEFAULT_CATEGORIES = ['PC', 'Monsters', 'NPCs', 'Props', 'Items', 'Custom'];
 
+// eslint-disable-next-line max-lines-per-function
 function AddToLibraryDialog({
   isOpen,
   imageSrc,
@@ -42,8 +44,8 @@ function AddToLibraryDialog({
   suggestedName,
   onClose,
   onConfirm,
-}: AddToLibraryDialogProps) {
-  const [name, setName] = useState(suggestedName || '');
+}: AddToLibraryDialogProps): React.ReactElement | null {
+  const [name, setName] = useState(suggestedName ?? '');
   const [category, setCategory] = useState('Monsters');
   const [tagsInput, setTagsInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -112,7 +114,7 @@ function AddToLibraryDialog({
    * Handle save to library
    * Generates thumbnail, saves via IPC, updates store
    */
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     if (!name.trim()) {
       showToast(rollForMessage('LIBRARY_NAME_REQUIRED'), 'error');
       return;
@@ -168,8 +170,8 @@ function AddToLibraryDialog({
   /**
    * Reset form and close
    */
-  const handleClose = () => {
-    setName(suggestedName || '');
+  const handleClose = (): void => {
+    setName(suggestedName ?? '');
     setCategory('Monsters');
     setTagsInput('');
     setIsLoading(false);
@@ -277,7 +279,9 @@ function AddToLibraryDialog({
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={() => {
+              void handleSave();
+            }}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !name.trim()}
           >

@@ -30,6 +30,7 @@
  * ```
  */
 
+import type React from 'react';
 import { useState, useEffect } from 'react';
 
 import { RiCloseLine } from '@remixicon/react';
@@ -55,7 +56,12 @@ interface TokenMetadataEditorProps {
   onClose: () => void;
 }
 
-function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEditorProps) {
+// eslint-disable-next-line max-lines-per-function
+function TokenMetadataEditor({
+  isOpen,
+  libraryItemId,
+  onClose,
+}: TokenMetadataEditorProps): React.ReactElement | null {
   const isMobile = useIsMobile();
 
   // Get library item and update function from store
@@ -80,13 +86,13 @@ function TokenMetadataEditor({ isOpen, libraryItemId, onClose }: TokenMetadataEd
       setName(libraryItem.name);
       setCategory(libraryItem.category);
       setTags(libraryItem.tags.join(', '));
-      setDefaultScale(libraryItem.defaultScale?.toString() || '');
-      setDefaultVisionRadius(libraryItem.defaultVisionRadius?.toString() || '');
-      setDefaultType(libraryItem.defaultType || '');
+      setDefaultScale(libraryItem.defaultScale?.toString() ?? '');
+      setDefaultVisionRadius(libraryItem.defaultVisionRadius?.toString() ?? '');
+      setDefaultType(libraryItem.defaultType ?? '');
     }
   }, [libraryItem]);
 
-  const handleSave = () => {
+  const handleSave = (): void => {
     if (!libraryItemId) {
       return;
     }

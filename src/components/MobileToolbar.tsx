@@ -25,6 +25,7 @@
  * @param onOpenMenu - Callback to open hamburger menu (for sidebar)
  */
 
+import type React from 'react';
 import { useState, useRef } from 'react';
 
 import {
@@ -53,6 +54,7 @@ interface MobileToolbarProps {
   onPauseToggle: () => void;
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity
 function MobileToolbar({
   tool,
   setTool,
@@ -62,21 +64,21 @@ function MobileToolbar({
   setDoorOrientation,
   isGamePaused,
   onPauseToggle,
-}: MobileToolbarProps) {
+}: MobileToolbarProps): React.ReactElement {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Close menu when clicking outside
-  const handleMoreClick = () => {
+  const handleMoreClick = (): void => {
     setShowMoreMenu(!showMoreMenu);
   };
 
-  const handleDungeonGen = () => {
+  const handleDungeonGen = (): void => {
     useGameStore.getState().showDungeonDialog();
     setShowMoreMenu(false);
   };
 
-  const handleWorldView = () => {
+  const handleWorldView = (): void => {
     const ipcRenderer = window.ipcRenderer;
     if (ipcRenderer) {
       // Electron: Use IPC to create separate window
@@ -89,7 +91,7 @@ function MobileToolbar({
     setShowMoreMenu(false);
   };
 
-  const handleColorPicker = () => {
+  const handleColorPicker = (): void => {
     colorInputRef.current?.click();
     setShowMoreMenu(false);
   };

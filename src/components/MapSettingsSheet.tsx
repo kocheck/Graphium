@@ -29,6 +29,7 @@ interface MapSettingsSheetProps {
   mapId?: string; // Required when mode is EDIT
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity
 function MapSettingsSheet({
   isOpen,
   onClose,
@@ -81,7 +82,7 @@ function MapSettingsSheet({
       const mapNumbers = maps
         .map((m) => {
           const match = /^Map (\d+)$/.exec(m.name);
-          return match ? parseInt(match[1]!, 10) : 0;
+          return match?.[1] ? parseInt(match[1], 10) : 0;
         })
         .filter((n) => n > 0);
       const nextNumber = mapNumbers.length > 0 ? Math.max(...mapNumbers) + 1 : maps.length + 1;
@@ -105,7 +106,7 @@ function MapSettingsSheet({
     };
   }, []);
 
-  const handleMapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMapUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file) {
       return;
@@ -175,7 +176,7 @@ function MapSettingsSheet({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = (): void => {
     const trimmedName = mapName.trim();
 
     if (mode === 'CREATE') {
@@ -215,7 +216,7 @@ function MapSettingsSheet({
     }
   };
 
-  const handleResetMap = () => {
+  const handleResetMap = (): void => {
     showConfirmDialog(
       'Reset map position and scale to default?',
       () => {
@@ -288,7 +289,9 @@ function MapSettingsSheet({
               accept="image/*"
               ref={fileInputRef}
               className="hidden"
-              onChange={handleMapUpload}
+              onChange={(e) => {
+                void handleMapUpload(e);
+              }}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
