@@ -26,6 +26,15 @@ interface FogOfWarLayerProps {
 
 const BLUR_FILTERS = [Konva.Filters.Blur]; // Use Konva.Filters.Blur instead of importing broken constant
 
+const DEBUG_FOG =
+  import.meta.env.DEV && Boolean((window as Window & { DEBUG_FOG?: boolean }).DEBUG_FOG);
+
+const fogLog = (...args: unknown[]): void => {
+  if (DEBUG_FOG) {
+    console.log(...args);
+  }
+};
+
 /**
  * FogOfWarLayer with Performance-Optimized Vision Calculation
  *
@@ -56,8 +65,8 @@ function FogOfWarLayer({
   visibleBounds,
   map,
 }: FogOfWarLayerProps) {
-  console.log('[FogOfWarLayer] COMPONENT RENDERING - Start');
-  console.log('[FogOfWarLayer] Props:', {
+  fogLog('[FogOfWarLayer] COMPONENT RENDERING - Start');
+  fogLog('[FogOfWarLayer] Props:', {
     tokensCount: tokens.length,
     doorsCount: doors.length,
     drawingsCount: drawings.length,
@@ -69,43 +78,43 @@ function FogOfWarLayer({
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
   const setActiveVisionPolygons = useGameStore((state) => state.setActiveVisionPolygons);
 
-  // DIAGNOSTIC REPORT - Only in development mode
-  if (import.meta.env.DEV) {
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔍 VISION SYSTEM DIAGNOSTIC REPORT');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📊 TOKENS:');
+  // DIAGNOSTIC REPORT - only when explicitly enabled
+  if (DEBUG_FOG) {
+    fogLog('═══════════════════════════════════════════════════════');
+    fogLog('🔍 VISION SYSTEM DIAGNOSTIC REPORT');
+    fogLog('═══════════════════════════════════════════════════════');
+    fogLog('📊 TOKENS:');
     tokens.forEach((t) => {
-      console.log(`  - ${t.type} Token "${t.name || t.id.substring(0, 8)}":`, {
+      fogLog(`  - ${t.type} Token "${t.name || t.id.substring(0, 8)}":`, {
         id: t.id,
         position: `(${t.x}, ${t.y})`,
         visionRadius: t.visionRadius || 'NOT SET',
         type: t.type,
       });
     });
-    console.log(`  Total PC tokens: ${tokens.filter((t) => t.type === 'PC').length}`);
-    console.log(
+    fogLog(`  Total PC tokens: ${tokens.filter((t) => t.type === 'PC').length}`);
+    fogLog(
       `  PC tokens with vision: ${tokens.filter((t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0).length}`,
     );
-    console.log('');
-    console.log('🚪 DOORS:');
+    fogLog('');
+    fogLog('🚪 DOORS:');
     if (doors.length === 0) {
-      console.log('  ⚠️ NO DOORS PLACED!');
+      fogLog('  ⚠️ NO DOORS PLACED!');
     } else {
       doors.forEach((d) => {
-        console.log(`  - Door ${d.id.substring(0, 8)}:`, {
+        fogLog(`  - Door ${d.id.substring(0, 8)}:`, {
           position: `(${d.x}, ${d.y})`,
           orientation: d.orientation,
           isOpen: d.isOpen ? '✅ OPEN (vision passes through)' : '🚫 CLOSED (blocks vision)',
           isLocked: d.isLocked,
         });
       });
-      console.log(`  Total doors: ${doors.length}`);
-      console.log(`  Closed doors (blocking): ${doors.filter((d) => !d.isOpen).length}`);
-      console.log(`  Open doors (transparent): ${doors.filter((d) => d.isOpen).length}`);
+      fogLog(`  Total doors: ${doors.length}`);
+      fogLog(`  Closed doors (blocking): ${doors.filter((d) => !d.isOpen).length}`);
+      fogLog(`  Open doors (transparent): ${doors.filter((d) => d.isOpen).length}`);
     }
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('[FogOfWarLayer] Store state:', {
+    fogLog('═══════════════════════════════════════════════════════');
+    fogLog('[FogOfWarLayer] Store state:', {
       exploredRegionsCount: exploredRegions.length,
     });
   }
@@ -117,7 +126,7 @@ function FogOfWarLayer({
   // Extract PC tokens with vision (memoized to prevent unnecessary recalculations)
   const pcTokens = useMemo(() => {
     const pcs = tokens.filter((t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0);
-    console.log(
+    fogLog(
       '[FogOfWarLayer] PC tokens with vision:',
       pcs.length,
       'out of',
@@ -126,9 +135,9 @@ function FogOfWarLayer({
     );
 
     if (pcs.length === 0 && tokens.some((t) => t.type === 'PC')) {
-      console.warn('[FogOfWarLayer] WARNING: PC tokens exist but NONE have vision radius set!');
-      console.warn('[FogOfWarLayer] Set vision radius on PC tokens in TokenInspector (try 60ft)');
-      console.warn('[FogOfWarLayer] Without vision, the entire map will be covered in fog!');
+      fogLog('[FogOfWarLayer] WARNING: PC tokens exist but NONE have vision radius set!');
+      fogLog('[FogOfWarLayer] Set vision radius on PC tokens in TokenInspector (try 60ft)');
+      fogLog('[FogOfWarLayer] Without vision, the entire map will be covered in fog!');
     }
 
     return pcs;
@@ -139,8 +148,8 @@ function FogOfWarLayer({
   // Without this, toggling a door open/closed won't update wall segments!
   const doorsKey = useMemo(() => {
     const key = doors.map((d) => `${d.id}:${d.isOpen}:${d.x}:${d.y}`).join('|');
-    console.log('[FogOfWarLayer] doorsKey recalculated:', key);
-    console.log('[FogOfWarLayer] doors array reference:', doors);
+    fogLog('[FogOfWarLayer] doorsKey recalculated:', key);
+    fogLog('[FogOfWarLayer] doors array reference:', doors);
     return key;
   }, [doors]);
 
@@ -148,7 +157,7 @@ function FogOfWarLayer({
   const walls: WallSegment[] = useMemo(() => {
     const wallSegments: WallSegment[] = [];
 
-    console.log('[FogOfWarLayer] WALLS MEMO RECALCULATING');
+    fogLog('[FogOfWarLayer] WALLS MEMO RECALCULATING');
 
     // Add static walls from drawings
     drawings
@@ -177,13 +186,13 @@ function FogOfWarLayer({
       });
 
     const wallSegmentsFromDrawings = wallSegments.length;
-    console.log('[FogOfWarLayer] Wall segments from drawings:', wallSegmentsFromDrawings);
+    fogLog('[FogOfWarLayer] Wall segments from drawings:', wallSegmentsFromDrawings);
 
     // Add CLOSED doors as blocking walls
     // Open doors allow vision through, closed doors block it
     const closedDoors = doors.filter((door) => !door.isOpen);
-    console.log('[FogOfWarLayer] Total doors:', doors.length, 'Closed doors:', closedDoors.length);
-    doors.forEach((d) => console.log(`  Door ${d.id}: isOpen=${d.isOpen}, x=${d.x}, y=${d.y}`));
+    fogLog('[FogOfWarLayer] Total doors:', doors.length, 'Closed doors:', closedDoors.length);
+    doors.forEach((d) => fogLog(`  Door ${d.id}: isOpen=${d.isOpen}, x=${d.x}, y=${d.y}`));
 
     closedDoors.forEach((door) => {
       const halfSize = door.size / 2;
@@ -194,7 +203,7 @@ function FogOfWarLayer({
           end: { x: door.x + halfSize, y: door.y },
         };
         wallSegments.push(segment);
-        console.log(`  Adding CLOSED horizontal door wall segment:`, segment);
+        fogLog(`  Adding CLOSED horizontal door wall segment:`, segment);
       } else {
         // Vertical door: blocks north-south vision
         const segment = {
@@ -202,13 +211,13 @@ function FogOfWarLayer({
           end: { x: door.x, y: door.y + halfSize },
         };
         wallSegments.push(segment);
-        console.log(`  Adding CLOSED vertical door wall segment:`, segment);
+        fogLog(`  Adding CLOSED vertical door wall segment:`, segment);
       }
     });
 
     const doorSegments = wallSegments.length - wallSegmentsFromDrawings;
-    console.log('[FogOfWarLayer] Wall segments from doors:', doorSegments);
-    console.log('[FogOfWarLayer] Total wall segments:', wallSegments.length);
+    fogLog('[FogOfWarLayer] Wall segments from doors:', doorSegments);
+    fogLog('[FogOfWarLayer] Total wall segments:', wallSegments.length);
 
     return wallSegments;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -287,7 +296,7 @@ function FogOfWarLayer({
 
     // Debug: Log when regions are added
     if (regionsAdded > 0) {
-      console.log(`[FogOfWar] Added ${regionsAdded} explored region(s)`);
+      fogLog(`[FogOfWar] Added ${regionsAdded} explored region(s)`);
     }
 
     lastExploreUpdateRef.current = now;
@@ -315,12 +324,7 @@ function FogOfWarLayer({
     };
   }, [map, visibleBounds]);
 
-  console.log(
-    '[FogOfWarLayer] RENDERING JSX - PC tokens:',
-    pcTokens.length,
-    'Fog bounds:',
-    fogBounds,
-  );
+  fogLog('[FogOfWarLayer] RENDERING JSX - PC tokens:', pcTokens.length, 'Fog bounds:', fogBounds);
 
   return (
     <Group listening={false}>

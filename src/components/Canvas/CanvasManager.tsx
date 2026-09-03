@@ -111,7 +111,7 @@ function CanvasManager({
   doorOrientation = 'horizontal',
   isWorldView = false,
   onSelectionChange,
-  // measurementMode = 'ruler', // Unused currently
+  measurementMode = 'ruler',
 }: CanvasManagerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -130,53 +130,16 @@ function CanvasManager({
   const isDaylightMode = useGameStore((state) => state.isDaylightMode);
   const activeVisionPolygons = useGameStore((state) => state.activeVisionPolygons);
 
-  // DIAGNOSTIC REPORT - Copy/paste this entire block for debugging
-  console.log('═══════════════════════════════════════════════════════');
-  if (import.meta.env.DEV) {
-    console.log('🎮 CANVAS MANAGER DIAGNOSTIC REPORT');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log(
-      '🖥️  VIEW MODE:',
-      isWorldView ? '🌍 WORLD VIEW (Player)' : '🎨 DM VIEW (Architect)',
-    );
-    console.log('☀️  DAYLIGHT MODE:', isDaylightMode ? '✅ ON (no fog)' : '❌ OFF (fog enabled)');
-    console.log('');
-    console.log('📊 COUNTS:');
-    console.log(`  - Total Tokens: ${tokens.length}`);
-    console.log(`  - PC Tokens: ${tokens.filter((t) => t.type === 'PC').length}`);
-    console.log(`  - NPC Tokens: ${tokens.filter((t) => t.type === 'NPC').length}`);
-    console.log(`  - Doors: ${doors.length}`);
-    console.log(`  - Stairs: ${stairs.length}`);
-    console.log(`  - Wall Drawings: ${drawings.filter((d) => d.tool === 'wall').length}`);
-    console.log(`  - Active Vision Polygons: ${activeVisionPolygons.length}`);
-    console.log('');
-    console.log('🔍 VISION SETUP:');
-    const pcTokens = tokens.filter((t) => t.type === 'PC');
-    if (pcTokens.length === 0) {
-      console.log('  ⚠️ NO PC TOKENS! Add a PC token to enable vision.');
-    } else {
-      pcTokens.forEach((t) => {
-        const hasVision = (t.visionRadius ?? 0) > 0;
-        console.log(
-          `  - ${t.name || 'PC'}: Vision = ${t.visionRadius || 'NOT SET'} ${hasVision ? '✅' : '❌ SET VISION RADIUS!'}`,
-        );
-      });
-    }
-    console.log('');
-    console.log('🚪 DOOR STATUS:');
-    if (doors.length === 0) {
-      console.log('  ℹ️  No doors placed yet. Press D to place doors.');
-    } else {
-      console.log(`  - Total: ${doors.length}`);
-      console.log(`  - Closed (blocking): ${doors.filter((d) => !d.isOpen).length}`);
-      console.log(`  - Open (transparent): ${doors.filter((d) => d.isOpen).length}`);
-    }
-    console.log('');
-    console.log(
-      '✅ FOG WILL RENDER:',
-      !isDaylightMode && isWorldView ? 'YES' : `NO (${isDaylightMode ? 'Daylight ON' : 'DM View'})`,
-    );
-    console.log('═══════════════════════════════════════════════════════');
+  if (import.meta.env.DEV && (window as Window & { DEBUG_CANVAS?: boolean }).DEBUG_CANVAS) {
+    console.log('[CanvasManager]', {
+      isWorldView,
+      isDaylightMode,
+      tokens: tokens.length,
+      doors: doors.length,
+      stairs: stairs.length,
+      walls: drawings.filter((d) => d.tool === 'wall').length,
+      visionPolygons: activeVisionPolygons.length,
+    });
   }
 
   // Resolve token data by merging instance properties with library defaults
@@ -219,6 +182,8 @@ function CanvasManager({
 
   const updateDrawingTransform = useGameStore((s) => s.updateDrawingTransform);
   const setActiveMeasurement = useGameStore((s) => s.setActiveMeasurement);
+  const setIsCalibrating = useGameStore((s) => s.setIsCalibrating);
+  const updateMapTransform = useGameStore((s) => s.updateMapTransform);
   const showToast = useGameStore((s) => s.showToast);
 
   // Tools State
@@ -246,6 +211,13 @@ function CanvasManager({
   const [pendingCrop, setPendingCrop] = useState<{ src: string; x: number; y: number } | null>(
     null,
   );
+  const pendingCropUrlRef = useRef<string | null>(null);
+  const revokePendingCropUrl = useCallback(() => {
+    if (pendingCropUrlRef.current) {
+      URL.revokeObjectURL(pendingCropUrlRef.current);
+      pendingCropUrlRef.current = null;
+    }
+  }, []);
 
   // Selection & Drag State
   const selectionStart = useRef<{ x: number; y: number } | null>(null);
@@ -266,7 +238,7 @@ function CanvasManager({
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null);
-  // const [hoveredCell, setHoveredCell] = useState<{ q: number; r: number } | null>(null);
+  const [hoveredCell, setHoveredCell] = useState<{ q: number; r: number } | null>(null);
   const transformerRef = useRef<Konva.Transformer | null>(null);
   const animationFrameRef = useRef<number | null>(null); // RAF handle for throttling
   const drawingAnimationFrameRef = useRef<number | null>(null); // RAF handle for drawing
@@ -359,6 +331,7 @@ function CanvasManager({
 
   const canvasInteraction = useCanvasInteraction({
     tool,
+    measurementMode,
     isSpacePressed,
     isWorldView,
     isCalibrating: !!isCalibrating,
@@ -372,23 +345,30 @@ function CanvasManager({
     currentLine,
     selectionStart,
     selectionRectCoordsRef,
+    selectionRectRef,
+    animationFrameRef,
     setSelectionRect,
     stylusActiveRef,
     lastStylusLiftTimeRef,
     setTempLine,
     tempLineRef,
     drawingAnimationFrameRef,
-    doorPreviewPos,
     setDoorPreviewPos,
     gridType,
     gridSize,
     doorOrientation,
     addDoor,
     calibrationStart,
+    calibrationRect,
     setCalibrationRect,
+    setIsCalibrating,
+    map,
+    updateMapTransform,
     setSelectedIds,
     setActiveMeasurement,
     addDrawing,
+    drawings,
+    setHoveredCell,
   });
 
   // Destructure handlers from canvasInteraction
@@ -406,7 +386,6 @@ function CanvasManager({
     trackStylusRef.current = trackStylusUsage;
   }, [shouldRejectPointerEvent, trackStylusUsage]);
 
-  /**
   /**
    * Determines the appropriate cursor style based on current interaction state.
    * Priority order (highest to lowest):
@@ -894,8 +873,9 @@ function CanvasManager({
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0]!;
-      // Create Object URL for cropping
+      revokePendingCropUrl();
       const objectUrl = URL.createObjectURL(file);
+      pendingCropUrlRef.current = objectUrl;
       setPendingCrop({ src: objectUrl, x, y });
     }
   };
@@ -912,30 +892,34 @@ function CanvasManager({
       return;
     }
 
-    try {
-      // Convert blob to base64 for storage/rendering
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = () => {
-        const base64data = reader.result as string;
+    const { x, y } = pendingCrop;
+    // Unmount cropper first so it doesn't keep a revoked blob: URL around
+    setPendingCrop(null);
+    revokePendingCropUrl();
 
-        // Add as a new token
-        addToken({
-          id: crypto.randomUUID(),
-          x: pendingCrop.x,
-          y: pendingCrop.y,
-          src: base64data,
-          name: 'New Token',
-          type: 'NPC',
-          scale: 1,
-        });
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result !== 'string') {
+        showToast('Failed to save token image', 'error');
+        return;
+      }
 
-        setPendingCrop(null);
-      };
-    } catch (error) {
-      console.error('Error saving cropped image:', error);
+      addToken({
+        id: crypto.randomUUID(),
+        x,
+        y,
+        src: reader.result,
+        name: 'New Token',
+        type: 'NPC',
+        scale: 1,
+      });
+
+      // pendingCrop already cleared above
+    };
+    reader.onerror = () => {
       showToast('Failed to save token image', 'error');
-    }
+    };
+    reader.readAsDataURL(blob);
   };
 
   // Calculate visible bounds in CANVAS coordinates (unscaled)
@@ -997,7 +981,6 @@ function CanvasManager({
   // CRITICAL: Prevents worker leak if component unmounts during processing
   useEffect(() => {
     return () => {
-      // Cancel pending animation frames on unmount
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
@@ -1006,8 +989,9 @@ function CanvasManager({
         cancelAnimationFrame(drawingAnimationFrameRef.current);
         drawingAnimationFrameRef.current = null;
       }
+      revokePendingCropUrl();
     };
-  }, []); // Run only on mount/unmount
+  }, [revokePendingCropUrl]);
 
   const centerOnPCTokens = useCallback(() => {
     const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
@@ -1097,7 +1081,10 @@ function CanvasManager({
           <ImageCropper
             imageSrc={pendingCrop.src}
             onConfirm={handleCropConfirm}
-            onCancel={() => setPendingCrop(null)}
+            onCancel={() => {
+              revokePendingCropUrl();
+              setPendingCrop(null);
+            }}
           />
         </AssetProcessingErrorBoundary>
       )}
@@ -1189,7 +1176,7 @@ function CanvasManager({
             gridSize={gridSize}
             type={gridType}
             stroke={resolvedGridColor}
-            hoveredCell={null}
+            hoveredCell={hoveredCell}
           />
         </Layer>
 

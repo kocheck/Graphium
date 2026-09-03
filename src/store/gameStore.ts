@@ -478,6 +478,7 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: newMap.stairs,
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
+        gridColor: newMap.gridColor || DEFAULT_GRID_COLOR,
         map: newMap.map,
         exploredRegions: newMap.exploredRegions,
         isDaylightMode: newMap.isDaylightMode,
@@ -566,6 +567,7 @@ export const useGameStore = create<GameState>((set, get) => {
         map: newMap.map,
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
+        gridColor: newMap.gridColor || DEFAULT_GRID_COLOR,
         exploredRegions: newMap.exploredRegions,
         isDaylightMode: newMap.isDaylightMode,
       }));
@@ -609,6 +611,7 @@ export const useGameStore = create<GameState>((set, get) => {
             map: nextMap.map,
             gridSize: nextMap.gridSize,
             gridType: nextMap.gridType,
+            gridColor: nextMap.gridColor || DEFAULT_GRID_COLOR,
             exploredRegions: nextMap.exploredRegions,
             isDaylightMode: nextMap.isDaylightMode,
           };
@@ -659,6 +662,7 @@ export const useGameStore = create<GameState>((set, get) => {
         stairs: newMap.stairs || [],
         gridSize: newMap.gridSize,
         gridType: newMap.gridType,
+        gridColor: newMap.gridColor || DEFAULT_GRID_COLOR,
         map: newMap.map,
         exploredRegions: newMap.exploredRegions || [],
         isDaylightMode: newMap.isDaylightMode,

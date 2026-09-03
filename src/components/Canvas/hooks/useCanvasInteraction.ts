@@ -1,29 +1,39 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
+import Konva from 'konva';
+
+import { usePreferencesStore } from '../../../store/preferencesStore';
 import { useTouchSettingsStore } from '../../../store/touchSettingsStore';
 import { snapToGrid } from '../../../utils/grid';
+import { createGridGeometry } from '../../../utils/gridGeometry';
+import {
+  calculateConeVertices,
+  DistanceMode,
+  euclideanDistance,
+  pixelsToFeet,
+} from '../../../utils/measurement';
+import { simplifyPath, snapPointToPaths } from '../../../utils/pathOptimization';
 import { getPointerPosition, getPointerPressure, isMultiTouchGesture } from '../CanvasUtils';
 
-import type { Drawing, Door, GridType } from '../../../store/gameStore';
-import type { Measurement } from '../../../types/measurement';
-import type Konva from 'konva';
+import type { Drawing, Door, GridType, MapConfig } from '../../../store/gameStore';
+import type { GridCell } from '../../../types/grid';
+import type { Measurement, MeasurementMode } from '../../../types/measurement';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 interface UseCanvasInteractionProps {
   tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
+  measurementMode: MeasurementMode;
   isSpacePressed: boolean;
   isWorldView: boolean;
   isCalibrating: boolean;
   color: string;
-  // Callbacks from parent or other hooks
   handleTokenPointerDown: (
     e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>,
     tokenId: string,
   ) => void;
   handleTokenPointerMove: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
   handleTokenPointerUp: (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => void;
-  // Handlers for specific tools
-  setSelectedIds: (ids: string[]) => void;
+  setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>;
   setActiveMeasurement: (m: Measurement | null) => void;
   isMeasuring: React.MutableRefObject<boolean>;
   measurementStart: React.MutableRefObject<{ x: number; y: number } | null>;
@@ -36,6 +46,8 @@ interface UseCanvasInteractionProps {
     width: number;
     height: number;
   }>;
+  selectionRectRef: React.MutableRefObject<Konva.Rect | null>;
+  animationFrameRef: React.MutableRefObject<number | null>;
   setSelectionRect: (rect: {
     x: number;
     y: number;
@@ -43,29 +55,32 @@ interface UseCanvasInteractionProps {
     height: number;
     isVisible: boolean;
   }) => void;
-  // Palm rejection
   stylusActiveRef: React.MutableRefObject<boolean>;
   lastStylusLiftTimeRef: React.MutableRefObject<number>;
   setTempLine: (line: Drawing | null) => void;
   tempLineRef: React.MutableRefObject<Konva.Line | null>;
   drawingAnimationFrameRef: React.MutableRefObject<number | null>;
-  // Door tool
-  doorPreviewPos: { x: number; y: number } | null;
   setDoorPreviewPos: (pos: { x: number; y: number } | null) => void;
   gridType: GridType;
   gridSize: number;
   doorOrientation: 'horizontal' | 'vertical';
   addDoor: (door: Door) => void;
-  // Calibration
   calibrationStart: React.MutableRefObject<{ x: number; y: number } | null>;
+  calibrationRect: { x: number; y: number; width: number; height: number } | null;
   setCalibrationRect: (
     rect: { x: number; y: number; width: number; height: number } | null,
   ) => void;
+  setIsCalibrating: (isCalibrating: boolean) => void;
+  map: MapConfig | null;
+  updateMapTransform: (scale: number, x: number, y: number) => void;
   addDrawing: (drawing: Drawing) => void;
+  drawings: Drawing[];
+  setHoveredCell: (cell: GridCell | null) => void;
 }
 
 export const useCanvasInteraction = ({
   tool,
+  measurementMode,
   isSpacePressed,
   isWorldView,
   isCalibrating,
@@ -80,6 +95,8 @@ export const useCanvasInteraction = ({
   currentLine,
   selectionStart,
   selectionRectCoordsRef,
+  selectionRectRef,
+  animationFrameRef,
   setSelectionRect,
   stylusActiveRef,
   lastStylusLiftTimeRef,
@@ -92,12 +109,49 @@ export const useCanvasInteraction = ({
   doorOrientation,
   addDoor,
   calibrationStart,
+  calibrationRect,
   setCalibrationRect,
+  setIsCalibrating,
+  map,
+  updateMapTransform,
   addDrawing,
+  drawings,
+  setHoveredCell,
 }: UseCanvasInteractionProps) => {
   const touchSettings = useTouchSettingsStore();
+  const wallToolPrefs = usePreferencesStore((s) => s.wallTool);
+  const gridGeometry = useMemo(() => createGridGeometry(gridType), [gridType]);
+  const lastHoveredCellRef = useRef<GridCell | null>(null);
+  const lastDoorPreviewRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Palm Rejection Logic
+  const updateHoveredCell = (cell: GridCell | null) => {
+    const prev = lastHoveredCellRef.current;
+    if (cell === null && prev === null) {
+      return;
+    }
+    if (cell && prev && cell.q === prev.q && cell.r === prev.r) {
+      return;
+    }
+    lastHoveredCellRef.current = cell;
+    setHoveredCell(cell);
+  };
+
+  const updateDoorPreview = (pos: { x: number; y: number } | null) => {
+    const prev = lastDoorPreviewRef.current;
+    if (pos === null) {
+      if (prev !== null) {
+        lastDoorPreviewRef.current = null;
+        setDoorPreviewPos(null);
+      }
+      return;
+    }
+    if (prev && prev.x === pos.x && prev.y === pos.y) {
+      return;
+    }
+    lastDoorPreviewRef.current = pos;
+    setDoorPreviewPos(pos);
+  };
+
   const shouldRejectPointerEvent = useCallback(
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): boolean => {
       const evt = e.evt;
@@ -158,6 +212,7 @@ export const useCanvasInteraction = ({
     if (isMultiTouchGesture(e)) {
       return;
     }
+
     if (tool === 'door') {
       if (isWorldView) {
         return;
@@ -177,20 +232,14 @@ export const useCanvasInteraction = ({
         size: gridSize,
       };
       addDoor(newDoor);
-      setDoorPreviewPos(null);
+      updateDoorPreview(null);
       return;
     }
 
     if (tool !== 'measure' && !isWorldView) {
-      // Logic specific to non-measure tools clearing active measurement?
-      // In original code: if (tool !== 'measure' && activeMeasurement) setActiveMeasurement(null);
-      // We'll trust parent to handle this? Or pass activeMeasurement from parent.
-      // Let's assume parent handles state clearing if needed or we access store.
-      // Actually, since setActiveMeasurement is passed, we can call it.
       setActiveMeasurement(null);
     }
 
-    // Calibration
     if (isCalibrating) {
       if (isWorldView) {
         return;
@@ -204,7 +253,6 @@ export const useCanvasInteraction = ({
       return;
     }
 
-    // Measure
     if (tool === 'measure') {
       if (isWorldView) {
         return;
@@ -218,7 +266,6 @@ export const useCanvasInteraction = ({
       return;
     }
 
-    // Drawing
     if (tool !== 'select') {
       if (isWorldView) {
         return;
@@ -252,7 +299,6 @@ export const useCanvasInteraction = ({
       return;
     }
 
-    // Select Tool
     const clickedOnStage = e.target === e.target.getStage();
     const clickedOnMap = e.target.id() === 'map';
 
@@ -294,14 +340,14 @@ export const useCanvasInteraction = ({
       return;
     }
 
-    if (gridType !== 'HIDDEN' && gridType !== 'DOTS') {
-      const pos = getPointerPosition(e);
-      if (pos) {
-        // TODO: Import geometry logic or pass as prop
-        // For now, we rely on parent or ignore grid highlight in refactor if too complex
-        // Or simply calculate it if we import createGridGeometry?
-        // setHoveredCell({ q: 0, r: 0 }); // Placeholder
+    // Grid cell hover highlight (Architect only; skip DOTS/HIDDEN)
+    if (!isWorldView && gridType !== 'HIDDEN' && gridType !== 'DOTS') {
+      const hoverPos = getPointerPosition(e);
+      if (hoverPos) {
+        updateHoveredCell(gridGeometry.pixelToGrid(hoverPos.x, hoverPos.y, gridSize));
       }
+    } else {
+      updateHoveredCell(null);
     }
 
     if (tool === 'door' && !isWorldView) {
@@ -310,10 +356,10 @@ export const useCanvasInteraction = ({
         return;
       }
       const snapped = snapToGrid(pos.x, pos.y, gridSize, gridType);
-      setDoorPreviewPos({ x: snapped.x, y: snapped.y });
+      updateDoorPreview({ x: snapped.x, y: snapped.y });
       return;
     } else {
-      setDoorPreviewPos(null);
+      updateDoorPreview(null);
     }
 
     handleTokenPointerMove(e);
@@ -325,14 +371,101 @@ export const useCanvasInteraction = ({
       }
       const origin = measurementStart.current;
 
-      // Simple measurement update - full logic would require imported measurement utils
-      // For this refactor, we are trying to clear linter.
-      // Proper fix: Move measurement logic to distinct hook or util.
+      let measurement: Measurement;
+      switch (measurementMode) {
+        case 'ruler': {
+          const distanceFeet = pixelsToFeet(
+            euclideanDistance(origin, pos),
+            gridSize,
+            DistanceMode.EUCLIDEAN,
+          );
+          measurement = {
+            id: 'active',
+            type: 'ruler',
+            origin,
+            end: pos,
+            distanceFeet,
+          };
+          break;
+        }
+        case 'blast': {
+          const radius = euclideanDistance(origin, pos);
+          const radiusFeet = pixelsToFeet(radius, gridSize, DistanceMode.EUCLIDEAN);
+          measurement = {
+            id: 'active',
+            type: 'blast',
+            origin,
+            radius,
+            radiusFeet,
+          };
+          break;
+        }
+        case 'cone': {
+          const vertices = calculateConeVertices(origin, pos);
+          const lengthFeet = pixelsToFeet(
+            euclideanDistance(origin, pos),
+            gridSize,
+            DistanceMode.EUCLIDEAN,
+          );
+          measurement = {
+            id: 'active',
+            type: 'cone',
+            origin,
+            target: pos,
+            lengthFeet,
+            angleDegrees: 53,
+            vertices,
+          };
+          break;
+        }
+        default: {
+          return;
+        }
+      }
 
-      // Placeholder to use 'origin':
-      if (origin.x === pos.x && origin.y === pos.y) {
+      setActiveMeasurement(measurement);
+      return;
+    }
+
+    if (isCalibrating && calibrationStart.current) {
+      const pos = getPointerPosition(e);
+      if (!pos) {
         return;
       }
+      const x = Math.min(pos.x, calibrationStart.current.x);
+      const y = Math.min(pos.y, calibrationStart.current.y);
+      const width = Math.abs(pos.x - calibrationStart.current.x);
+      const height = Math.abs(pos.y - calibrationStart.current.y);
+      setCalibrationRect({ x, y, width, height });
+      return;
+    }
+
+    if (selectionStart.current) {
+      const pos = getPointerPosition(e);
+      if (!pos) {
+        return;
+      }
+      const x = Math.min(pos.x, selectionStart.current.x);
+      const y = Math.min(pos.y, selectionStart.current.y);
+      const width = Math.abs(pos.x - selectionStart.current.x);
+      const height = Math.abs(pos.y - selectionStart.current.y);
+
+      selectionRectCoordsRef.current = { x, y, width, height };
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      animationFrameRef.current = requestAnimationFrame(() => {
+        if (selectionRectRef.current) {
+          selectionRectRef.current.x(x);
+          selectionRectRef.current.y(y);
+          selectionRectRef.current.width(width);
+          selectionRectRef.current.height(height);
+          selectionRectRef.current.getLayer()?.batchDraw();
+        }
+      });
+      return;
     }
 
     if (tool !== 'select') {
@@ -351,42 +484,37 @@ export const useCanvasInteraction = ({
         return;
       }
 
-      // START OF CHANGE: Shift key straight line locking
-      // Checks if Shift is held down and snaps the current point to match the start point's X or Y
       if (e.evt.shiftKey && cur.points.length >= 2) {
         const startX = cur.points[0]!;
         const startY = cur.points[1]!;
         const dx = Math.abs(point.x - startX);
         const dy = Math.abs(point.y - startY);
 
-        // Snap to whichever axis has the greater distance (or default to horizontal if equal)
         if (dx > dy) {
-          // Horizontal line: Lock Y to startY
           point = { x: point.x, y: startY };
         } else {
-          // Vertical line: Lock X to startX
           point = { x: startX, y: point.y };
         }
       }
-      // END OF CHANGE
 
-      // Logic handled in CanvasManager mostly via refs?
-      // This hook extracts the event handling.
+      // Skip consecutive duplicate points
+      const lastIdx = cur.points.length - 2;
+      if (lastIdx >= 0 && cur.points[lastIdx] === point.x && cur.points[lastIdx + 1] === point.y) {
+        return;
+      }
 
-      // Append point to current line
       cur.points.push(point.x, point.y);
       if (cur.pressures) {
         cur.pressures.push(getPointerPressure(e));
       }
 
-      // Since we passed drawingAnimationFrameRef, we should use it.
       if (drawingAnimationFrameRef.current) {
         cancelAnimationFrame(drawingAnimationFrameRef.current);
       }
 
       drawingAnimationFrameRef.current = requestAnimationFrame(() => {
         if (tempLineRef.current) {
-          tempLineRef.current.points(cur.points); // Assuming points updated
+          tempLineRef.current.points(cur.points);
           tempLineRef.current.getLayer()?.batchDraw();
         } else {
           setTempLine({ ...cur });
@@ -397,38 +525,159 @@ export const useCanvasInteraction = ({
 
   const handlePointerUp = (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
     trackStylusUsage(e);
-    // Token Drag End
+
+    if (isMultiTouchGesture(e)) {
+      return;
+    }
+
     handleTokenPointerUp(e);
-    // In CanvasManager, handleTokenPointerUp was separate but called?
-    // No, handleTokenPointerUp is for the tokens themselves.
-    // But global handlePointerUp might be needed to catch drag end if mouse leaves token?
-    // CanvasManager typically has handleStagePointerUp.
-    // Let's assume this is the Stage's pointer up.
 
     if (isMeasuring.current) {
       isMeasuring.current = false;
-      // Finalize measurement
+      measurementStart.current = null;
+      // Keep measurement visible until next click / Esc
+      return;
+    }
+
+    if (isCalibrating && calibrationStart.current && calibrationRect) {
+      if (isWorldView) {
+        return;
+      }
+      if (calibrationRect.width > 5 && calibrationRect.height > 5 && map) {
+        const avgDim = (calibrationRect.width + calibrationRect.height) / 2;
+        const scaleFactor = gridSize / avgDim;
+        const newScale = map.scale * scaleFactor;
+
+        const relX = calibrationRect.x - map.x;
+        const relY = calibrationRect.y - map.y;
+        const newRelX = relX * scaleFactor;
+        const newRelY = relY * scaleFactor;
+
+        const currentProjectedX = map.x + newRelX;
+        const currentProjectedY = map.y + newRelY;
+
+        const targetX = Math.round(currentProjectedX / gridSize) * gridSize;
+        const targetY = Math.round(currentProjectedY / gridSize) * gridSize;
+
+        updateMapTransform(
+          newScale,
+          map.x + (targetX - currentProjectedX),
+          map.y + (targetY - currentProjectedY),
+        );
+      }
+
+      setCalibrationRect(null);
+      calibrationStart.current = null;
+      setIsCalibrating(false);
+      return;
     }
 
     if (isDrawing.current) {
-      isDrawing.current = false;
-      if (currentLine.current) {
-        addDrawing(currentLine.current);
+      if (isWorldView) {
+        return;
       }
-      setTempLine(null);
-      currentLine.current = null;
+      isDrawing.current = false;
+
+      if (drawingAnimationFrameRef.current) {
+        cancelAnimationFrame(drawingAnimationFrameRef.current);
+        drawingAnimationFrameRef.current = null;
+      }
+
+      if (currentLine.current) {
+        let processedLine: Drawing = { ...currentLine.current };
+
+        if (processedLine.tool === 'wall' && wallToolPrefs.enableSmoothing) {
+          const smoothedPoints = simplifyPath(processedLine.points, wallToolPrefs.smoothingEpsilon);
+          if (smoothedPoints.length >= wallToolPrefs.minPoints * 2) {
+            processedLine = { ...processedLine, points: smoothedPoints };
+          }
+        }
+
+        if (processedLine.tool === 'wall' && wallToolPrefs.enableSnapping) {
+          const existingWallPaths = drawings.filter((d) => d.tool === 'wall').map((w) => w.points);
+
+          if (existingWallPaths.length > 0 && processedLine.points.length >= 4) {
+            const points = [...processedLine.points];
+
+            const startPoint = { x: points[0]!, y: points[1]! };
+            const startSnap = snapPointToPaths(
+              startPoint,
+              existingWallPaths,
+              wallToolPrefs.snapThreshold,
+            );
+            if (startSnap.snapped) {
+              points[0] = startSnap.point.x;
+              points[1] = startSnap.point.y;
+            }
+
+            const endIdx = points.length - 2;
+            const endPoint = { x: points[endIdx]!, y: points[endIdx + 1]! };
+            const endSnap = snapPointToPaths(
+              endPoint,
+              existingWallPaths,
+              wallToolPrefs.snapThreshold,
+            );
+            if (endSnap.snapped) {
+              points[endIdx] = endSnap.point.x;
+              points[endIdx + 1] = endSnap.point.y;
+            }
+
+            processedLine = { ...processedLine, points };
+          }
+        }
+
+        addDrawing(processedLine);
+        currentLine.current = null;
+        setTempLine(null);
+      }
+      return;
     }
 
     if (selectionStart.current) {
-      // Finalize selection
-      selectionStart.current = null;
-      setSelectionRect({ ...selectionRectCoordsRef.current, isVisible: false });
-    }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
 
-    // Clear calibration
-    if (isCalibrating && calibrationStart.current) {
-      calibrationStart.current = null;
-      // Update logic...
+      const stage = e.target.getStage();
+      const box = selectionRectCoordsRef.current;
+
+      setSelectionRect({
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        isVisible: false,
+      });
+
+      if (stage && (box.width > 2 || box.height > 2)) {
+        const clientBox = {
+          x: box.x * stage.scaleX() + stage.x(),
+          y: box.y * stage.scaleY() + stage.y(),
+          width: box.width * stage.scaleX(),
+          height: box.height * stage.scaleY(),
+        };
+
+        const shapes = stage.find('.token, .drawing');
+        const selected = shapes.filter((shape) => {
+          if (!shape.id()) {
+            return false;
+          }
+          return Konva.Util.haveIntersection(clientBox, shape.getClientRect());
+        });
+
+        const evt = e.evt;
+        const additive = 'shiftKey' in evt && evt.shiftKey;
+        const newIds = selected.map((n) => n.id());
+
+        if (additive) {
+          setSelectedIds((prev) => Array.from(new Set([...prev, ...newIds])));
+        } else {
+          setSelectedIds(newIds);
+        }
+      }
+
+      selectionStart.current = null;
     }
   };
 

@@ -54,5 +54,131 @@ describe('syncUtils', () => {
         payload: [{ id: 'l1', name: 'Goblin' }],
       });
     });
+
+    it('includes gridColor in GRID_UPDATE', () => {
+      const prev = {
+        gridSize: 50,
+        gridType: 'LINES' as const,
+        gridColor: '#222222',
+        isDaylightMode: false,
+      };
+      const curr = { ...prev, gridColor: '#ff0000' };
+      const changes = detectChanges(prev, curr);
+      expect(changes).toContainEqual({
+        type: 'GRID_UPDATE',
+        payload: {
+          gridSize: 50,
+          gridType: 'LINES',
+          gridColor: '#ff0000',
+          isDaylightMode: false,
+        },
+      });
+    });
+
+    it('emits MEASUREMENT_UPDATE when broadcasting', () => {
+      const measurement = {
+        id: 'active',
+        type: 'ruler' as const,
+        origin: { x: 0, y: 0 },
+        end: { x: 50, y: 0 },
+        distanceFeet: 5,
+      };
+      const prev = { broadcastMeasurement: true, activeMeasurement: null };
+      const curr = { broadcastMeasurement: true, activeMeasurement: measurement };
+      const changes = detectChanges(prev, curr);
+      expect(changes).toContainEqual({
+        type: 'MEASUREMENT_UPDATE',
+        payload: measurement,
+      });
+    });
+
+    it('clears measurement when broadcast is disabled', () => {
+      const measurement = {
+        id: 'active',
+        type: 'ruler' as const,
+        origin: { x: 0, y: 0 },
+        end: { x: 50, y: 0 },
+        distanceFeet: 5,
+      };
+      const prev = { broadcastMeasurement: true, activeMeasurement: measurement };
+      const curr = { broadcastMeasurement: false, activeMeasurement: measurement };
+      const changes = detectChanges(prev, curr);
+      expect(changes).toContainEqual({
+        type: 'MEASUREMENT_UPDATE',
+        payload: null,
+      });
+    });
+
+    it('includes activeMeasurement in FULL_SYNC when broadcasting', () => {
+      const measurement = {
+        id: 'active',
+        type: 'ruler' as const,
+        origin: { x: 0, y: 0 },
+        end: { x: 50, y: 0 },
+        distanceFeet: 5,
+      };
+
+      const curr = {
+        tokens: [],
+        tokenLibrary: [],
+        drawings: [],
+        doors: [],
+        stairs: [],
+        gridSize: 50,
+        gridType: 'LINES' as const,
+        gridColor: '#222222',
+        map: null,
+        exploredRegions: [],
+        isDaylightMode: false,
+        activeMeasurement: measurement,
+        broadcastMeasurement: true,
+      };
+
+      const changes = detectChanges(null as any, curr as any);
+      const fullSync = changes.find((c) => c.type === 'FULL_SYNC');
+      expect(fullSync).toBeTruthy();
+      if (fullSync && fullSync.type === 'FULL_SYNC') {
+        expect(fullSync.payload.activeMeasurement).toEqual(measurement);
+        expect(fullSync.payload.broadcastMeasurement).toBe(true);
+      }
+    });
+
+    it('detects stairs add/remove', () => {
+      const stairs = {
+        id: 's1',
+        x: 0,
+        y: 0,
+        direction: 'north' as const,
+        type: 'up' as const,
+        width: 50,
+        height: 50,
+      };
+      expect(detectChanges({ stairs: [] }, { stairs: [stairs] })).toContainEqual({
+        type: 'STAIRS_ADD',
+        payload: stairs,
+      });
+      expect(detectChanges({ stairs: [stairs] }, { stairs: [] })).toContainEqual({
+        type: 'STAIRS_REMOVE',
+        payload: { id: 's1' },
+      });
+    });
+
+    it('detects explored region updates', () => {
+      const regions = [
+        {
+          points: [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+            { x: 10, y: 10 },
+          ],
+          timestamp: 1,
+        },
+      ];
+      const changes = detectChanges({ exploredRegions: [] }, { exploredRegions: regions });
+      expect(changes).toContainEqual({
+        type: 'EXPLORED_UPDATE',
+        payload: regions,
+      });
+    });
   });
 });

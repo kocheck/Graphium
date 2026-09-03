@@ -123,9 +123,12 @@ export interface SyncableGameState {
   stairs: Stairs[];
   gridSize: number;
   gridType: GridType;
+  gridColor: string;
   map: MapConfig | null;
   exploredRegions: ExploredRegion[];
   isDaylightMode: boolean;
+  activeMeasurement: Measurement | null;
+  broadcastMeasurement: boolean;
 }
 
 export type SyncAction =
@@ -144,11 +147,20 @@ export type SyncAction =
   | { type: 'DOOR_UPDATE'; payload: { id: string; changes: Partial<Door> } }
   | { type: 'DOOR_REMOVE'; payload: { id: string } }
   | { type: 'DOOR_TOGGLE'; payload: { id: string } }
+  | { type: 'STAIRS_ADD'; payload: Stairs }
+  | { type: 'STAIRS_UPDATE'; payload: { id: string; changes: Partial<Stairs> } }
+  | { type: 'STAIRS_REMOVE'; payload: { id: string } }
   | { type: 'MAP_UPDATE'; payload: MapConfig | null }
   | {
       type: 'GRID_UPDATE';
-      payload: { gridSize?: number; gridType?: GridType; isDaylightMode?: boolean };
+      payload: {
+        gridSize?: number;
+        gridType?: GridType;
+        gridColor?: string;
+        isDaylightMode?: boolean;
+      };
     }
+  | { type: 'EXPLORED_UPDATE'; payload: ExploredRegion[] }
   | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null };
 
 /**
@@ -158,8 +170,6 @@ export function detectChanges(
   prevState: Partial<SyncableGameState>,
   currentState: Partial<SyncableGameState>,
 ): SyncAction[] {
-  // FORCE RELOAD
-  console.log('Safe detectChanges loaded', Date.now());
   const actions: SyncAction[] = [];
 
   // If no previous state, send full sync
@@ -174,9 +184,12 @@ export function detectChanges(
         stairs: currentState.stairs || [],
         gridSize: currentState.gridSize,
         gridType: currentState.gridType,
+        gridColor: currentState.gridColor,
         map: currentState.map,
         exploredRegions: currentState.exploredRegions,
         isDaylightMode: currentState.isDaylightMode,
+        activeMeasurement: currentState.activeMeasurement ?? null,
+        broadcastMeasurement: Boolean(currentState.broadcastMeasurement ?? false),
       },
     });
     return actions;
@@ -285,6 +298,7 @@ export function detectChanges(
   if (
     !isEqual(prevState.gridSize, currentState.gridSize) ||
     !isEqual(prevState.gridType, currentState.gridType) ||
+    !isEqual(prevState.gridColor, currentState.gridColor) ||
     !isEqual(prevState.isDaylightMode, currentState.isDaylightMode)
   ) {
     actions.push({
@@ -292,6 +306,7 @@ export function detectChanges(
       payload: {
         gridSize: currentState.gridSize,
         gridType: currentState.gridType,
+        gridColor: currentState.gridColor,
         isDaylightMode: currentState.isDaylightMode,
       },
     });
@@ -299,6 +314,29 @@ export function detectChanges(
 
   if (!isEqual(prevState.map, currentState.map)) {
     actions.push({ type: 'MAP_UPDATE', payload: currentState.map ?? null });
+  }
+
+  // --- EXPLORED REGIONS ---
+  if (!isEqual(prevState.exploredRegions, currentState.exploredRegions)) {
+    actions.push({
+      type: 'EXPLORED_UPDATE',
+      payload: currentState.exploredRegions || [],
+    });
+  }
+
+  // --- MEASUREMENT (broadcast only when enabled) ---
+  const shouldBroadcast = Boolean(currentState.broadcastMeasurement);
+  const prevBroadcast = Boolean(prevState.broadcastMeasurement);
+  if (shouldBroadcast) {
+    if (!isEqual(prevState.activeMeasurement, currentState.activeMeasurement) || !prevBroadcast) {
+      actions.push({
+        type: 'MEASUREMENT_UPDATE',
+        payload: currentState.activeMeasurement ?? null,
+      });
+    }
+  } else if (prevBroadcast) {
+    // Broadcasting turned off — clear World View measurement
+    actions.push({ type: 'MEASUREMENT_UPDATE', payload: null });
   }
 
   // --- DOORS ---
@@ -344,6 +382,50 @@ export function detectChanges(
     prevDoors.forEach((door: Door) => {
       if (door && door.id && !currentDoorMap.has(door.id)) {
         actions.push({ type: 'DOOR_REMOVE', payload: { id: door.id } });
+      }
+    });
+  }
+
+  // --- STAIRS ---
+  const prevStairs = prevState.stairs || [];
+  const currentStairs = currentState.stairs || [];
+
+  if (!isEqual(prevStairs, currentStairs)) {
+    const prevStairsMap = new Map(
+      prevStairs.filter((s: Stairs) => s && s.id).map((s: Stairs) => [s.id, s]),
+    );
+    const currentStairsMap = new Map(
+      currentStairs.filter((s: Stairs) => s && s.id).map((s: Stairs) => [s.id, s]),
+    );
+
+    currentStairs.forEach((stairs: Stairs) => {
+      if (!stairs?.id) {
+        return;
+      }
+
+      if (!prevStairsMap.has(stairs.id)) {
+        actions.push({ type: 'STAIRS_ADD', payload: stairs });
+      } else {
+        const prev = prevStairsMap.get(stairs.id);
+        if (!prev) {
+          return;
+        }
+        const changes: Partial<Stairs> = {};
+        Object.keys(stairs).forEach((key) => {
+          const stairsKey = key as keyof Stairs;
+          if (!isEqual(stairs[stairsKey], prev[stairsKey])) {
+            (changes as Record<string, unknown>)[key] = stairs[stairsKey];
+          }
+        });
+        if (Object.keys(changes).length > 0) {
+          actions.push({ type: 'STAIRS_UPDATE', payload: { id: stairs.id, changes } });
+        }
+      }
+    });
+
+    prevStairs.forEach((stairs: Stairs) => {
+      if (stairs && stairs.id && !currentStairsMap.has(stairs.id)) {
+        actions.push({ type: 'STAIRS_REMOVE', payload: { id: stairs.id } });
       }
     });
   }
