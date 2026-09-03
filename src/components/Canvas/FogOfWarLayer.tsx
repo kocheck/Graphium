@@ -78,8 +78,8 @@ function FogOfWarLayer({
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
   const setActiveVisionPolygons = useGameStore((state) => state.setActiveVisionPolygons);
 
-  // DIAGNOSTIC REPORT - Only in development mode
-  if (import.meta.env.DEV) {
+  // DIAGNOSTIC REPORT - only when explicitly enabled
+  if (DEBUG_FOG) {
     fogLog('═══════════════════════════════════════════════════════');
     fogLog('🔍 VISION SYSTEM DIAGNOSTIC REPORT');
     fogLog('═══════════════════════════════════════════════════════');
@@ -135,9 +135,9 @@ function FogOfWarLayer({
     );
 
     if (pcs.length === 0 && tokens.some((t) => t.type === 'PC')) {
-      console.warn('[FogOfWarLayer] WARNING: PC tokens exist but NONE have vision radius set!');
-      console.warn('[FogOfWarLayer] Set vision radius on PC tokens in TokenInspector (try 60ft)');
-      console.warn('[FogOfWarLayer] Without vision, the entire map will be covered in fog!');
+      fogLog('[FogOfWarLayer] WARNING: PC tokens exist but NONE have vision radius set!');
+      fogLog('[FogOfWarLayer] Set vision radius on PC tokens in TokenInspector (try 60ft)');
+      fogLog('[FogOfWarLayer] Without vision, the entire map will be covered in fog!');
     }
 
     return pcs;

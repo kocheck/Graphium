@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 
-import { useGameStore } from '../store/gameStore';
+import { DEFAULT_GRID_COLOR, useGameStore } from '../store/gameStore';
 import { isEqual, detectChanges } from '../utils/syncUtils';
 
+import type { Token } from '../store/gameStore';
 import type { SyncAction, SyncableGameState } from '../utils/syncUtils';
 
 // Basic throttle implementation to limit IPC frequency
@@ -124,7 +125,7 @@ function SyncManager() {
               stairs: [...(action.payload.stairs || [])],
               gridSize: action.payload.gridSize ?? 50,
               gridType: action.payload.gridType ?? 'LINES',
-              gridColor: action.payload.gridColor ?? '#222222',
+              gridColor: action.payload.gridColor ?? DEFAULT_GRID_COLOR,
               map: action.payload.map ? { ...action.payload.map } : null,
               exploredRegions: action.payload.exploredRegions
                 ? [...action.payload.exploredRegions]
@@ -386,21 +387,24 @@ function SyncManager() {
         }
       };
 
+      const applyArchitectTokenUpdate = (id: string, changes: Partial<Token>) => {
+        const store = useGameStore.getState();
+        if (!store.tokens.some((t) => t.id === id)) {
+          return;
+        }
+        const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
+        useGameStore.setState({ tokens: newTokens });
+        if (prevStateRef.current) {
+          prevStateRef.current.tokens = newTokens;
+        }
+      };
+
       if (isWeb && channel) {
         channel.onmessage = (event) => {
           if (event.data?.type === 'REQUEST_INITIAL_STATE') {
             handleInitialStateRequest(event);
           } else if (event.data?.type === 'TOKEN_UPDATE') {
-            const { id, changes } = event.data.payload;
-            const store = useGameStore.getState();
-            const currentToken = store.tokens.find((t) => t.id === id);
-            if (currentToken) {
-              const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
-              useGameStore.setState({ tokens: newTokens });
-              if (prevStateRef.current) {
-                prevStateRef.current.tokens = [...newTokens];
-              }
-            }
+            applyArchitectTokenUpdate(event.data.payload.id, event.data.payload.changes);
           }
         };
       } else if (isElectron && ipcRenderer) {
@@ -423,6 +427,7 @@ function SyncManager() {
           }
         });
 
+        const prev = prevStateRef.current;
         prevStateRef.current = {
           tokens: [...state.tokens],
           tokenLibrary: [...state.campaign.tokenLibrary],
@@ -433,7 +438,12 @@ function SyncManager() {
           gridType: state.gridType,
           gridColor: state.gridColor,
           map: state.map ? { ...state.map } : null,
-          exploredRegions: state.exploredRegions ? [...state.exploredRegions] : [],
+          exploredRegions:
+            prev?.exploredRegions === state.exploredRegions
+              ? prev.exploredRegions
+              : state.exploredRegions
+                ? [...state.exploredRegions]
+                : [],
           isDaylightMode: state.isDaylightMode,
           activeMeasurement: state.activeMeasurement ?? null,
           broadcastMeasurement: state.broadcastMeasurement ?? false,
@@ -447,16 +457,7 @@ function SyncManager() {
       if (isElectron && ipcRenderer) {
         ipcRenderer.on('SYNC_FROM_WORLD_VIEW', (_event, action) => {
           if (action.type === 'TOKEN_UPDATE') {
-            const { id, changes } = action.payload;
-            const store = useGameStore.getState();
-            const currentToken = store.tokens.find((t) => t.id === id);
-            if (currentToken) {
-              const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
-              useGameStore.setState({ tokens: newTokens });
-              if (prevStateRef.current) {
-                prevStateRef.current.tokens = [...newTokens];
-              }
-            }
+            applyArchitectTokenUpdate(action.payload.id, action.payload.changes);
           }
         });
       }

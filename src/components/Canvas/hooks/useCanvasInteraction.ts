@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import Konva from 'konva';
 
@@ -120,6 +120,37 @@ export const useCanvasInteraction = ({
 }: UseCanvasInteractionProps) => {
   const touchSettings = useTouchSettingsStore();
   const wallToolPrefs = usePreferencesStore((s) => s.wallTool);
+  const gridGeometry = useMemo(() => createGridGeometry(gridType), [gridType]);
+  const lastHoveredCellRef = useRef<GridCell | null>(null);
+  const lastDoorPreviewRef = useRef<{ x: number; y: number } | null>(null);
+
+  const updateHoveredCell = (cell: GridCell | null) => {
+    const prev = lastHoveredCellRef.current;
+    if (cell === null && prev === null) {
+      return;
+    }
+    if (cell && prev && cell.q === prev.q && cell.r === prev.r) {
+      return;
+    }
+    lastHoveredCellRef.current = cell;
+    setHoveredCell(cell);
+  };
+
+  const updateDoorPreview = (pos: { x: number; y: number } | null) => {
+    const prev = lastDoorPreviewRef.current;
+    if (pos === null) {
+      if (prev !== null) {
+        lastDoorPreviewRef.current = null;
+        setDoorPreviewPos(null);
+      }
+      return;
+    }
+    if (prev && prev.x === pos.x && prev.y === pos.y) {
+      return;
+    }
+    lastDoorPreviewRef.current = pos;
+    setDoorPreviewPos(pos);
+  };
 
   const shouldRejectPointerEvent = useCallback(
     (e: KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>): boolean => {
@@ -201,7 +232,7 @@ export const useCanvasInteraction = ({
         size: gridSize,
       };
       addDoor(newDoor);
-      setDoorPreviewPos(null);
+      updateDoorPreview(null);
       return;
     }
 
@@ -313,11 +344,10 @@ export const useCanvasInteraction = ({
     if (!isWorldView && gridType !== 'HIDDEN' && gridType !== 'DOTS') {
       const hoverPos = getPointerPosition(e);
       if (hoverPos) {
-        const geometry = createGridGeometry(gridType);
-        setHoveredCell(geometry.pixelToGrid(hoverPos.x, hoverPos.y, gridSize));
+        updateHoveredCell(gridGeometry.pixelToGrid(hoverPos.x, hoverPos.y, gridSize));
       }
     } else {
-      setHoveredCell(null);
+      updateHoveredCell(null);
     }
 
     if (tool === 'door' && !isWorldView) {
@@ -326,10 +356,10 @@ export const useCanvasInteraction = ({
         return;
       }
       const snapped = snapToGrid(pos.x, pos.y, gridSize, gridType);
-      setDoorPreviewPos({ x: snapped.x, y: snapped.y });
+      updateDoorPreview({ x: snapped.x, y: snapped.y });
       return;
     } else {
-      setDoorPreviewPos(null);
+      updateDoorPreview(null);
     }
 
     handleTokenPointerMove(e);
@@ -636,15 +666,7 @@ export const useCanvasInteraction = ({
           return Konva.Util.haveIntersection(clientBox, shape.getClientRect());
         });
 
-        const evt = e.evt;
-        const additive = 'shiftKey' in evt && evt.shiftKey;
-        const newIds = selected.map((n) => n.id());
-        if (additive) {
-          // Parent already cleared only on non-shift down; merge via setSelectedIds
-          setSelectedIds(newIds);
-        } else {
-          setSelectedIds(newIds);
-        }
+        setSelectedIds(selected.map((n) => n.id()));
       }
 
       selectionStart.current = null;

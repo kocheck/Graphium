@@ -130,7 +130,6 @@ function CanvasManager({
   const isDaylightMode = useGameStore((state) => state.isDaylightMode);
   const activeVisionPolygons = useGameStore((state) => state.activeVisionPolygons);
 
-  // Diagnostic report gated behind DEBUG_CANVAS (dev only)
   if (import.meta.env.DEV && (window as Window & { DEBUG_CANVAS?: boolean }).DEBUG_CANVAS) {
     console.log('[CanvasManager]', {
       isWorldView,
@@ -213,6 +212,12 @@ function CanvasManager({
     null,
   );
   const pendingCropUrlRef = useRef<string | null>(null);
+  const revokePendingCropUrl = useCallback(() => {
+    if (pendingCropUrlRef.current) {
+      URL.revokeObjectURL(pendingCropUrlRef.current);
+      pendingCropUrlRef.current = null;
+    }
+  }, []);
 
   // Selection & Drag State
   const selectionStart = useRef<{ x: number; y: number } | null>(null);
@@ -868,10 +873,7 @@ function CanvasManager({
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0]!;
-      // Create Object URL for cropping
-      if (pendingCropUrlRef.current) {
-        URL.revokeObjectURL(pendingCropUrlRef.current);
-      }
+      revokePendingCropUrl();
       const objectUrl = URL.createObjectURL(file);
       pendingCropUrlRef.current = objectUrl;
       setPendingCrop({ src: objectUrl, x, y });
@@ -885,46 +887,39 @@ function CanvasManager({
     void handleCropSave(blob);
   };
 
-  const revokePendingCropUrl = () => {
-    if (pendingCropUrlRef.current) {
-      URL.revokeObjectURL(pendingCropUrlRef.current);
-      pendingCropUrlRef.current = null;
-    }
-  };
-
   const handleCropSave = (blob: Blob) => {
     if (!pendingCrop) {
       return;
     }
 
-    const cropPos = { x: pendingCrop.x, y: pendingCrop.y };
+    const { x, y } = pendingCrop;
     revokePendingCropUrl();
 
-    try {
-      // Convert blob to base64 for storage/rendering
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = () => {
-        const base64data = reader.result as string;
-
-        // Add as a new token
-        addToken({
-          id: crypto.randomUUID(),
-          x: cropPos.x,
-          y: cropPos.y,
-          src: base64data,
-          name: 'New Token',
-          type: 'NPC',
-          scale: 1,
-        });
-
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result !== 'string') {
+        showToast('Failed to save token image', 'error');
         setPendingCrop(null);
-      };
-    } catch (error) {
-      console.error('Error saving cropped image:', error);
+        return;
+      }
+
+      addToken({
+        id: crypto.randomUUID(),
+        x,
+        y,
+        src: reader.result,
+        name: 'New Token',
+        type: 'NPC',
+        scale: 1,
+      });
+
+      setPendingCrop(null);
+    };
+    reader.onerror = () => {
       showToast('Failed to save token image', 'error');
       setPendingCrop(null);
-    }
+    };
+    reader.readAsDataURL(blob);
   };
 
   // Calculate visible bounds in CANVAS coordinates (unscaled)
@@ -986,7 +981,6 @@ function CanvasManager({
   // CRITICAL: Prevents worker leak if component unmounts during processing
   useEffect(() => {
     return () => {
-      // Cancel pending animation frames on unmount
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
@@ -995,12 +989,9 @@ function CanvasManager({
         cancelAnimationFrame(drawingAnimationFrameRef.current);
         drawingAnimationFrameRef.current = null;
       }
-      if (pendingCropUrlRef.current) {
-        URL.revokeObjectURL(pendingCropUrlRef.current);
-        pendingCropUrlRef.current = null;
-      }
+      revokePendingCropUrl();
     };
-  }, []); // Run only on mount/unmount
+  }, [revokePendingCropUrl]);
 
   const centerOnPCTokens = useCallback(() => {
     const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
