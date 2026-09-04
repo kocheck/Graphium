@@ -451,10 +451,9 @@ function SyncManager(): null {
     }
 
     const handleStoreUpdate = (state: GameState): void => {
-      const syncableState: Partial<SyncableGameState> = {
-        ...state,
-        tokenLibrary: state.campaign.tokenLibrary,
-      };
+      const syncableState = cloneSyncableStateFromGame(state, {
+        prevExploredRegions: prevStateRef.current?.exploredRegions,
+      });
 
       // null prev → FULL_SYNC (first Architect subscribe snapshot after mount).
       const actions = detectChanges(prevStateRef.current, syncableState);

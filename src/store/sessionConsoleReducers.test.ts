@@ -462,6 +462,25 @@ describe('applyCatalogAction', () => {
     expect(merged.sfx.find((item) => item.id === 'horn')?.label).toBe('Horn');
   });
 
+  it('MERGE_CATALOG remaps new SFX ids that collide with image ids', () => {
+    const current = catalogWithPlate();
+    const incoming: SessionConsoleCatalog = {
+      ...emptySessionConsoleCatalog('Incoming'),
+      sfx: [
+        ...emptySessionConsoleCatalog('Incoming').sfx,
+        { id: 'session-3-05', label: 'Plate sting', kind: 'synth', synthType: 'chime' },
+      ],
+    };
+
+    const merged = applyCatalogAction(current, { type: 'MERGE_CATALOG', catalog: incoming });
+    const extra = merged.sfx.find((item) => item.label === 'Plate sting');
+
+    expect(extra).toBeDefined();
+    expect(extra?.id).not.toBe('session-3-05');
+    expect(merged.imageSets[0]?.images.some((image) => image.id === 'session-3-05')).toBe(true);
+    expect(merged.sfx.filter((item) => item.id === 'session-3-05')).toHaveLength(0);
+  });
+
   it('ADD_IMAGE clones the payload so later mutation does not change the catalog', () => {
     const catalogWithSet = applyCatalogAction(emptySessionConsoleCatalog('Ashen Crown'), {
       type: 'ADD_IMAGE_SET',

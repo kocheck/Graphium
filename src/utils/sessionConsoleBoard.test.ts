@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { emptySessionConsoleCatalog, type Track } from '../types/sessionConsole';
 import {
   flattenTracks,
+  folderTitleFromFiles,
   formatSessionConsoleFallbackLinks,
   formatTrackFallbackLine,
 } from './sessionConsoleBoard';
@@ -82,5 +83,17 @@ describe('formatSessionConsoleFallbackLinks', () => {
       '1. Missing id — (local file)',
     );
     expect(formatSessionConsoleFallbackLinks(catalog)).toBe('1. Missing id — (local file)');
+  });
+});
+
+describe('folderTitleFromFiles', () => {
+  it('uses the first webkitRelativePath folder as the set title', () => {
+    const file = new File(['x'], 'keep.png', { type: 'image/png' });
+    Object.defineProperty(file, 'webkitRelativePath', { value: 'Halls/keep.png' });
+    expect(folderTitleFromFiles([file])).toBe('Halls');
+  });
+
+  it('returns undefined when files are not from a folder picker', () => {
+    expect(folderTitleFromFiles([new File(['x'], 'keep.png')])).toBeUndefined();
   });
 });

@@ -38,7 +38,48 @@ describe('readResponseCapped', () => {
       body: null,
     };
 
-    await expect(readResponseCapped(response, PACK_HTTP_MAX_BYTES)).resolves.toBeNull();
+    await expect(readResponseCapped(response, PACK_HTTP_MAX_BYTES)).resolves.toEqual({
+      status: 'too-large',
+    });
+    expect(arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  it('concatenates streamed chunks under the cap', async () => {
+    const response = {
+      ok: true,
+      headers: { get: () => null },
+      body: new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array([1, 2]));
+          controller.enqueue(new Uint8Array([3, 4]));
+          controller.close();
+        },
+      }),
+      arrayBuffer: vi.fn(),
+    };
+
+    const result = await readResponseCapped(response, 16);
+    expect(result).toEqual({ status: 'ok', buffer: expect.any(ArrayBuffer) });
+    expect(result.status === 'ok' ? [...new Uint8Array(result.buffer)] : []).toEqual([1, 2, 3, 4]);
+    expect(response.arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  it('aborts a streamed body that exceeds the cap', async () => {
+    const arrayBuffer = vi.fn();
+    const response = {
+      ok: true,
+      headers: { get: () => null },
+      body: new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array([1, 2, 3]));
+          controller.enqueue(new Uint8Array([4, 5]));
+          controller.close();
+        },
+      }),
+      arrayBuffer,
+    };
+
+    await expect(readResponseCapped(response, 4)).resolves.toEqual({ status: 'too-large' });
     expect(arrayBuffer).not.toHaveBeenCalled();
   });
 });
@@ -301,8 +342,121 @@ describe('materializePack', () => {
     expect(persist).not.toHaveBeenCalled();
     expect(catalog.imageSets[0]?.images).toEqual([]);
     expect(skipped.join(' ')).toMatch(/25\s*MB/i);
+    expect(skipped.join(' ')).not.toMatch(/failed to fetch/i);
     expect(skipped.join(' ')).not.toContain('janedoe');
     expect(skipped.join(' ')).not.toMatch(/\/Users\//);
+  });
+
+  it('skips over-cap HTTP with a 25MB reason when fetch returns too-large', async () => {
+    const pack: SessionConsolePack = {
+      version: 1,
+      kind: 'graphium.sessionConsolePack',
+      stage: { title: 'T', subtitle: '', showFrame: true },
+      defaults: { volume: 45, duckPercent: 27 },
+      imageSets: [
+        {
+          id: 's',
+          title: 'S',
+          note: '',
+          images: [
+            {
+              id: 'remote',
+              name: 'Remote',
+              cue: '',
+              src: 'https://example.com/huge.png',
+              alt: 'art',
+            },
+          ],
+        },
+      ],
+      trackGroups: [],
+    };
+
+    const { skipped } = await materializePack(
+      pack,
+      async () => null,
+      async () => ({
+        status: 'too-large',
+      }),
+    );
+
+    expect(skipped.join(' ')).toMatch(/25\s*MB/i);
+    expect(skipped.join(' ')).not.toMatch(/failed to fetch/i);
+  });
+
+  it('skips failed HTTP fetches without calling them oversized', async () => {
+    const pack: SessionConsolePack = {
+      version: 1,
+      kind: 'graphium.sessionConsolePack',
+      stage: { title: 'T', subtitle: '', showFrame: true },
+      defaults: { volume: 45, duckPercent: 27 },
+      imageSets: [
+        {
+          id: 's',
+          title: 'S',
+          note: '',
+          images: [
+            {
+              id: 'remote',
+              name: 'Remote',
+              cue: '',
+              src: 'https://example.com/missing.png',
+              alt: 'art',
+            },
+          ],
+        },
+      ],
+      trackGroups: [],
+    };
+
+    const { skipped } = await materializePack(
+      pack,
+      async () => null,
+      async () => ({
+        status: 'failed',
+      }),
+    );
+
+    expect(skipped.join(' ')).toMatch(/failed to fetch/i);
+    expect(skipped.join(' ')).not.toMatch(/25\s*MB/i);
+  });
+
+  it('keeps pack image order when HTTP fetches finish out of order', async () => {
+    const pack: SessionConsolePack = {
+      version: 1,
+      kind: 'graphium.sessionConsolePack',
+      stage: { title: 'T', subtitle: '', showFrame: true },
+      defaults: { volume: 45, duckPercent: 27 },
+      imageSets: [
+        {
+          id: 's',
+          title: 'S',
+          note: '',
+          images: [
+            { id: 'a', name: 'A', cue: '', src: 'https://example.com/a.png', alt: 'a' },
+            { id: 'b', name: 'B', cue: '', src: 'https://example.com/b.png', alt: 'b' },
+            { id: 'c', name: 'C', cue: '', src: 'https://example.com/c.png', alt: 'c' },
+          ],
+        },
+      ],
+      trackGroups: [],
+    };
+    const persist = vi.fn(async (_buffer: ArrayBuffer, fileName: string) => `file:///${fileName}`);
+
+    const { catalog, skipped } = await materializePack(
+      pack,
+      async () => null,
+      async (url) => {
+        if (url.endsWith('/a.png')) {
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+        return { status: 'ok', buffer: new Uint8Array([1]).buffer };
+      },
+      persist,
+    );
+
+    expect(skipped).toEqual([]);
+    expect(catalog.imageSets[0]?.images.map((image) => image.id)).toEqual(['a', 'b', 'c']);
   });
 
   it('skips relative local files with an add-on-the-board reason for web ingest', async () => {

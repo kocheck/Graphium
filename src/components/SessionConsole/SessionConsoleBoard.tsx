@@ -6,6 +6,7 @@ import { ImageSetBoard } from './ImageSetBoard';
 import { TrackGroupList } from './TrackGroupList';
 import { useGameStore } from '../../store/gameStore';
 import { addYouTubeFromText, ingestDroppedFiles } from '../../utils/sessionConsoleBoard';
+import { sanitizeSessionConsoleErrorMessage } from '../../utils/syncUtils';
 
 import type { StageImage, Track } from '../../types/sessionConsole';
 
@@ -37,7 +38,7 @@ export function SessionConsoleBoard({
     void ingestDroppedFiles(useGameStore.getState(), filesFromDrop(event)).catch(
       (error: unknown) => {
         const message = error instanceof Error ? error.message : 'Failed to add files';
-        showToast(message, 'error');
+        showToast(sanitizeSessionConsoleErrorMessage(message), 'error');
       },
     );
   };
@@ -71,7 +72,13 @@ export function SessionConsoleBoard({
       />
 
       <input
-        ref={imageInputRef}
+        ref={(node) => {
+          imageInputRef.current = node;
+          if (node) {
+            node.setAttribute('webkitdirectory', '');
+            node.setAttribute('directory', '');
+          }
+        }}
         type="file"
         accept="image/*"
         multiple

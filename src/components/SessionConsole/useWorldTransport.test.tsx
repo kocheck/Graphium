@@ -271,4 +271,51 @@ describe('useWorldTransport', () => {
     );
     expect(player.loadVideoById).toHaveBeenCalledWith(TRACK_A_ID);
   });
+
+  it('starts the current bed after unarm, a mixer change, then re-arm', () => {
+    const player = mockPlayer();
+    const fade = immediateFade();
+    const playing = runtimeWithAudio(playingAudio('track-a', TRACK_A_ID));
+
+    const { rerender } = render(
+      <TransportHarness runtime={playing} fade={fade} player={player} audioEl={mockAudio()} />,
+    );
+    expect(player.loadVideoById).toHaveBeenCalledWith(TRACK_A_ID);
+    (player.loadVideoById as ReturnType<typeof vi.fn>).mockClear();
+
+    rerender(
+      <TransportHarness
+        runtime={runtimeWithAudio(playingAudio('track-a', TRACK_A_ID), { worldArmed: false })}
+        fade={fade}
+        player={player}
+        audioEl={mockAudio()}
+      />,
+    );
+
+    rerender(
+      <TransportHarness
+        runtime={runtimeWithAudio(playingAudio('track-a', TRACK_A_ID), {
+          worldArmed: false,
+          volume: 20,
+        })}
+        fade={fade}
+        player={player}
+        audioEl={mockAudio()}
+      />,
+    );
+    expect(player.loadVideoById).not.toHaveBeenCalled();
+
+    rerender(
+      <TransportHarness
+        runtime={runtimeWithAudio(playingAudio('track-a', TRACK_A_ID), {
+          worldArmed: true,
+          volume: 20,
+        })}
+        fade={fade}
+        player={player}
+        audioEl={mockAudio()}
+      />,
+    );
+    expect(player.loadVideoById).toHaveBeenCalledWith(TRACK_A_ID);
+  });
 });

@@ -5,6 +5,7 @@ import {
   shouldWarnLocalAudioSize,
 } from './localAudioAsset';
 import { toMediaProtocol } from './mediaProtocol';
+import { sanitizeSessionConsoleErrorMessage } from './syncUtils';
 import {
   parseYouTubeVideoId,
   type SessionConsoleCatalog,
@@ -38,7 +39,25 @@ export function formatSessionConsoleFallbackLinks(catalog: SessionConsoleCatalog
     .join('\n');
 }
 
-function ensureImageSet(store: GameState): string {
+export function folderTitleFromFiles(files: File[]): string | undefined {
+  const relative = files.find((file) => file.webkitRelativePath)?.webkitRelativePath ?? '';
+  const folder = relative.split('/')[0];
+  return folder || undefined;
+}
+
+function ensureImageSet(store: GameState, title?: string): string {
+  if (title) {
+    const named = store.sessionConsole.imageSets.find((set) => set.title === title);
+    if (named) {
+      return named.id;
+    }
+    const id = crypto.randomUUID();
+    store.updateSessionConsole({
+      type: 'ADD_IMAGE_SET',
+      set: { id, title, note: '', images: [] },
+    });
+    return id;
+  }
   const existing = store.sessionConsole.imageSets[0];
   if (existing) {
     return existing.id;
@@ -112,9 +131,9 @@ export async function processImportedCatalogPlates(
   return { ...catalog, imageSets };
 }
 
-async function addDroppedImage(store: GameState, file: File): Promise<void> {
+async function addDroppedImage(store: GameState, file: File, setTitle?: string): Promise<void> {
   const { src, thumbnailSrc } = await processPlateSources(file);
-  const setId = ensureImageSet(store);
+  const setId = ensureImageSet(store, setTitle);
   const name = fileNameStem(file.name);
   store.updateSessionConsole({
     type: 'ADD_IMAGE',
@@ -186,16 +205,17 @@ function isAudioFile(file: File): boolean {
 }
 
 export async function ingestDroppedFiles(store: GameState, files: File[]): Promise<void> {
+  const folderTitle = folderTitleFromFiles(files);
   for (const file of files) {
     try {
       if (isImageFile(file)) {
-        await addDroppedImage(store, file);
+        await addDroppedImage(store, file, folderTitle);
       } else if (isAudioFile(file)) {
         await addDroppedAudio(store, file);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to add board file';
-      store.showToast(message, 'error');
+      store.showToast(sanitizeSessionConsoleErrorMessage(message), 'error');
     }
   }
 }

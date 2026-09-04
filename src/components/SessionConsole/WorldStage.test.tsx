@@ -300,6 +300,53 @@ describe('WorldStage', () => {
     );
   });
 
+  it('does not send a local audio error after the bed is no longer local', () => {
+    seedStore({
+      worldArmed: true,
+      audio: {
+        trackId: 'local-1',
+        title: 'Rain',
+        source: 'local',
+        youtubeId: null,
+        src: 'file:///tmp/bed.mp3',
+        status: 'playing',
+        loop: true,
+        restartSeq: 0,
+        volumeOffset: 0,
+      },
+    });
+    render(<WorldStage />);
+
+    mockIpcRenderer.send.mockClear();
+    act(() => {
+      useGameStore.setState({
+        sessionConsoleRuntime: {
+          ...useGameStore.getState().sessionConsoleRuntime,
+          audio: {
+            trackId: 'yt-1',
+            title: 'Tavern',
+            source: 'youtube',
+            youtubeId: 'bLZApMsorjA',
+            src: null,
+            status: 'playing',
+            loop: true,
+            restartSeq: 0,
+            volumeOffset: 0,
+          },
+        },
+      });
+    });
+
+    const audio = document.querySelector('audio');
+    expect(audio).toBeTruthy();
+    fireEvent.error(audio as HTMLAudioElement);
+
+    expect(mockIpcRenderer.send).not.toHaveBeenCalledWith(
+      'SESSION_CONSOLE_WORLD_EVENT',
+      expect.objectContaining({ type: 'error' }),
+    );
+  });
+
   it('reports YouTube embed errors 101/150/153 to Architect', async () => {
     seedStore({ worldArmed: true });
     render(<WorldStage />);
@@ -370,9 +417,12 @@ describe('WorldStage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('img')).toHaveClass('opacity-0');
+      const incoming = screen.getByRole('img', { name: 'The hall' });
+      expect(incoming).toHaveClass('opacity-0');
+      expect(incoming).toHaveClass('transition-opacity');
     });
-    expect(screen.getByRole('img')).toHaveClass('transition-opacity');
+    expect(screen.getByRole('img', { name: 'Dawn over the keep' })).toBeInTheDocument();
+    expect(screen.getAllByRole('img')).toHaveLength(2);
   });
 
   it('shows the plate after a broken image load during fade', async () => {

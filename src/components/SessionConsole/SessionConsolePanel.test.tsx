@@ -398,8 +398,10 @@ describe('SessionConsolePanel', () => {
     expect(outside).toHaveFocus();
 
     const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
-    fireEvent.keyDown(outside, { key: 'd' });
-    fireEvent.keyDown(window, { key: 'd' });
+    act(() => {
+      fireEvent.keyDown(outside, { key: 'd' });
+      fireEvent.keyDown(window, { key: 'd' });
+    });
 
     expect(dispatchSpy).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_DUCKED' }));
     expect(useGameStore.getState().sessionConsoleRuntime.ducked).toBe(false);
@@ -478,8 +480,10 @@ describe('SessionConsolePanel', () => {
     panel.focus();
 
     const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
-    fireEvent.keyDown(panel, { key: 'd' });
-    fireEvent.keyDown(panel, { key: '1' });
+    act(() => {
+      fireEvent.keyDown(panel, { key: 'd' });
+      fireEvent.keyDown(panel, { key: '1' });
+    });
 
     expect(stopSpy).toHaveBeenCalled();
     expect(useGameStore.getState().sessionConsoleRuntime.ducked).toBe(true);

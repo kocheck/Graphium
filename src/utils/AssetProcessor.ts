@@ -1,3 +1,4 @@
+import { maxDimensionForType, type ImageAssetType } from './imageMaxDimensions';
 import { getStorage } from '../services/storage';
 
 /**
@@ -8,38 +9,7 @@ import { getStorage } from '../services/storage';
  * - THUMB: Session Console plate thumbnails (max 256px)
  */
 // eslint-disable-next-line import/no-unused-modules
-export type AssetType = 'MAP' | 'TOKEN' | 'THUMB';
-
-/**
- * Maximum dimension for map images in pixels
- *
- * Set to 4096px to support 4K displays without quality loss while preventing
- * excessive memory usage. Maps larger than this are resized proportionally.
- */
-const MAX_MAP_DIMENSION = 4096;
-
-/**
- * Maximum dimension for token images in pixels
- *
- * Set to 512px as tokens are displayed at grid cell size (typically 50-100px).
- * This provides plenty of quality while keeping file sizes small and rendering fast.
- */
-const MAX_TOKEN_DIMENSION = 512;
-
-/**
- * Maximum dimension for Session Console plate thumbnails in pixels
- */
-const MAX_THUMB_DIMENSION = 256;
-
-function maxDimensionForType(type: AssetType): number {
-  if (type === 'MAP') {
-    return MAX_MAP_DIMENSION;
-  }
-  if (type === 'THUMB') {
-    return MAX_THUMB_DIMENSION;
-  }
-  return MAX_TOKEN_DIMENSION;
-}
+export type AssetType = ImageAssetType;
 
 /**
  * Progress callback for image processing

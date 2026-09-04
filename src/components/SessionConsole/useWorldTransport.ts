@@ -92,9 +92,9 @@ function startBed(args: PlayingArgs, fadeOutFirst: boolean): void {
     if (generation !== refs.generation.current) {
       return;
     }
-    refs.startPending.current = false;
     refs.sourceStarted.current = true;
     startTrack(audio, player, element, liveLevel(refs), fade);
+    refs.startPending.current = false;
   };
   if (fadeOutFirst) {
     fade(0, 300, start);
@@ -152,6 +152,13 @@ export function useWorldTransport(
     const previousHadStarted = refs.sourceStarted.current;
     refs.lastAudio.current = audio;
     if (!worldArmed) {
+      if (previousHadStarted || refs.startPending.current) {
+        stopBed(refs, fade, refs.player.current, refs.audioEl.current);
+      } else {
+        refs.sourceStarted.current = false;
+        refs.startPending.current = false;
+      }
+      recordMixer(refs, volume, ducked, duckPercent, audio.volumeOffset);
       return;
     }
 

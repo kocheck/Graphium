@@ -159,16 +159,7 @@ export class WebStorageService implements IStorageService {
 
       // Generate ZIP blob
       const blob = await zip.generateAsync({ type: 'blob' });
-
-      // Trigger browser download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${campaign.name.replace(/[^a-z0-9]/gi, '_')}.graphium`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${campaign.name.replace(/[^a-z0-9]/gi, '_')}.graphium`);
 
       import.meta.env.DEV && console.log('[WebStorageService] Campaign downloaded successfully');
       return true;
@@ -200,48 +191,33 @@ export class WebStorageService implements IStorageService {
   }
 
   async loadCampaign(): Promise<Campaign | null> {
-    return new Promise((resolve) => {
-      // Create file input
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.graphium';
+    const file = await pickLocalFile('.graphium');
+    if (!file) {
+      return null;
+    }
 
-      input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) {
-          resolve(null);
-          return;
-        }
+    try {
+      import.meta.env.DEV &&
+        console.log('[WebStorageService] Loading campaign from file:', file.name);
 
-        try {
-          import.meta.env.DEV &&
-            console.log('[WebStorageService] Loading campaign from file:', file.name);
+      const zip = await JSZip.loadAsync(file);
+      const manifestStr = await zip.file('manifest.json')?.async('string');
 
-          // Parse ZIP
-          const zip = await JSZip.loadAsync(file);
-          const manifestStr = await zip.file('manifest.json')?.async('string');
+      if (!manifestStr) {
+        throw new Error('Invalid .graphium file: missing manifest.json');
+      }
 
-          if (!manifestStr) {
-            throw new Error('Invalid .graphium file: missing manifest.json');
-          }
+      const campaign = JSON.parse(manifestStr) as Campaign;
+      await this.restoreCampaignAssets(campaign, zip);
 
-          const campaign = JSON.parse(manifestStr) as Campaign;
-
-          // Restore assets from ZIP to Object URLs
-          await this.restoreCampaignAssets(campaign, zip);
-
-          import.meta.env.DEV && console.log('[WebStorageService] Campaign loaded successfully');
-          resolve(campaign);
-        } catch (error) {
-          console.error('[WebStorageService] Load campaign failed:', error);
-          throw new Error(
-            `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          );
-        }
-      };
-
-      input.click();
-    });
+      import.meta.env.DEV && console.log('[WebStorageService] Campaign loaded successfully');
+      return campaign;
+    } catch (error) {
+      console.error('[WebStorageService] Load campaign failed:', error);
+      throw new Error(
+        `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   importSessionConsolePack(): Promise<{
@@ -269,12 +245,20 @@ export class WebStorageService implements IStorageService {
     catalog: SessionConsoleCatalog,
   ): Promise<false | { ok: boolean; skipped: string[] }> {
     try {
+      const skipped: string[] = [];
+      const hasLocalArt = catalog.imageSets.some((set) => set.images.length > 0);
+      const hasLocalAudio = catalog.trackGroups.some((group) =>
+        group.tracks.some((track) => track.source === 'local'),
+      );
+      if (hasLocalArt || hasLocalAudio) {
+        skipped.push('Local files cannot be exported in the browser — add them on the board.');
+      }
       const pack = catalogToSessionConsolePack(youtubeOnlyCatalog(catalog));
       downloadBlob(
         new Blob([`${JSON.stringify(pack, null, 2)}\n`], { type: 'application/json' }),
         'board.json',
       );
-      return Promise.resolve({ ok: true, skipped: [] });
+      return Promise.resolve({ ok: skipped.length === 0, skipped });
     } catch (error) {
       console.error('[WebStorageService] Session Console pack export failed:', error);
       throw new Error(

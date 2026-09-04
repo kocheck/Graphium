@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { contentTypeForAssetFileName } from './assetContentType';
+import { contentTypeForAssetFileName, contentTypeForMediaPath } from './assetContentType';
+
+describe('contentTypeForMediaPath', () => {
+  it('maps audio extensions and leaves images undefined', () => {
+    expect(contentTypeForMediaPath('/tmp/bed.mp3')).toBe('audio/mpeg');
+    expect(contentTypeForMediaPath('C:\\tmp\\bed.m4a')).toBe('audio/mp4');
+    expect(contentTypeForMediaPath('/tmp/token.webp')).toBeUndefined();
+  });
+});
 
 describe('contentTypeForAssetFileName', () => {
   it('maps local audio extensions to playable MIME types', () => {

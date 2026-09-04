@@ -225,7 +225,7 @@ function mergeCatalog(
   const existingSfxIds = new Set(catalog.sfx.map((sfx) => sfx.id));
   const appendedSfx = incoming.sfx
     .filter((sfx) => !existingSfxIds.has(sfx.id))
-    .map((sfx) => ({ ...sfx }));
+    .map((sfx) => ({ ...sfx, id: allocateId(sfx.id, used) }));
 
   return {
     ...catalog,

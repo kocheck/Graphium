@@ -5,6 +5,7 @@ import { useWorldYouTubeArm } from './useWorldYouTubeArm';
 import { fadeToLevel, sendWorldEvent, type YouTubePlayer } from './worldAudioYoutube';
 import { getStageAudioContext, playStageSfx, resolveSynthType } from './worldStageSfx';
 import { useGameStore } from '../../store/gameStore';
+import { toMediaProtocol } from '../../utils/mediaProtocol';
 import { sanitizeSessionConsoleErrorMessage } from '../../utils/syncUtils';
 
 export function WorldAudioEngine(): JSX.Element {
@@ -86,14 +87,22 @@ export function WorldAudioEngine(): JSX.Element {
 
   const handleLocalAudioError = useCallback((): void => {
     const element = audioRef.current;
-    if (!element?.getAttribute('src')) {
+    const expected = runtime.audio.src ? toMediaProtocol(runtime.audio.src) : '';
+    const actualAttr = element?.getAttribute('src') ?? '';
+    if (!element || !expected) {
       return;
     }
-    if (!sourceStartedRef.current || runtime.audio.status === 'stopped') {
+    if (actualAttr !== expected && element.src !== expected) {
+      return;
+    }
+    if (startPendingRef.current || runtime.audio.status === 'stopped') {
+      return;
+    }
+    if (runtime.audio.source !== 'local') {
       return;
     }
     sendWorldEvent('error', sanitizeSessionConsoleErrorMessage('Local audio failed to play.'));
-  }, [runtime.audio.status]);
+  }, [runtime.audio.source, runtime.audio.src, runtime.audio.status]);
 
   useEffect(() => {
     if (runtime.sfxSeq === lastSfxSeqRef.current) {

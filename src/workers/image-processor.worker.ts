@@ -17,8 +17,10 @@
  * 5. Send ArrayBuffer back to main thread (100% progress)
  */
 
+import { maxDimensionForType, type ImageAssetType } from '../utils/imageMaxDimensions';
+
 // eslint-disable-next-line import/no-unused-modules
-export type AssetType = 'MAP' | 'TOKEN' | 'THUMB';
+export type AssetType = ImageAssetType;
 
 interface ProcessImageMessage {
   type: 'PROCESS_IMAGE';
@@ -44,21 +46,6 @@ interface ErrorMessage {
   type: 'ERROR';
   error: string;
   fileName: string;
-}
-
-// Maximum dimensions for different asset types
-const MAX_MAP_DIMENSION = 4096;
-const MAX_TOKEN_DIMENSION = 512;
-const MAX_THUMB_DIMENSION = 256;
-
-function maxDimensionForType(assetType: AssetType): number {
-  if (assetType === 'MAP') {
-    return MAX_MAP_DIMENSION;
-  }
-  if (assetType === 'THUMB') {
-    return MAX_THUMB_DIMENSION;
-  }
-  return MAX_TOKEN_DIMENSION;
 }
 
 /**

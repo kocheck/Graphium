@@ -16,58 +16,61 @@ vi.mock('../utils/systemMessages', () => ({
   rollForMessage: (key: string) => `Mock message for ${key}`,
 }));
 
+function resetGameStore(): void {
+  const initialMap = {
+    id: crypto.randomUUID(),
+    name: 'Map 1',
+    tokens: [],
+    drawings: [],
+    doors: [],
+    stairs: [],
+    map: null,
+    gridSize: 50,
+    gridType: 'LINES' as const,
+    exploredRegions: [],
+    isDaylightMode: false,
+  };
+
+  const initialCampaign: Campaign = {
+    id: crypto.randomUUID(),
+    name: 'New Campaign',
+    maps: { [initialMap.id]: initialMap },
+    activeMapId: initialMap.id,
+    tokenLibrary: [],
+    sessionConsole: emptySessionConsoleCatalog('New Campaign'),
+  };
+
+  useGameStore.setState({
+    tokens: [],
+    tokensById: {},
+    tokenIds: [],
+    drawings: [],
+    doors: [],
+    stairs: [],
+    gridSize: 50,
+    gridType: 'LINES',
+    map: null,
+    exploredRegions: [],
+    isDaylightMode: false,
+    isCalibrating: false,
+    toast: null,
+    confirmDialog: null,
+    showResourceMonitor: false,
+    dungeonDialog: false,
+    isGamePaused: false,
+    isMobileSidebarOpen: false,
+    activeMeasurement: null,
+    broadcastMeasurement: false,
+    dmMeasurement: null,
+    campaign: initialCampaign,
+    sessionConsole: initialCampaign.sessionConsole,
+    sessionConsoleRuntime: emptySessionConsoleRuntime(),
+  });
+}
+
 describe('gameStore', () => {
   beforeEach(() => {
-    // Reset store to initial state before each test
-    const initialMap = {
-      id: crypto.randomUUID(),
-      name: 'Map 1',
-      tokens: [],
-      drawings: [],
-      doors: [],
-      stairs: [],
-      map: null,
-      gridSize: 50,
-      gridType: 'LINES' as const,
-      exploredRegions: [],
-      isDaylightMode: false,
-    };
-
-    const initialCampaign: Campaign = {
-      id: crypto.randomUUID(),
-      name: 'New Campaign',
-      maps: { [initialMap.id]: initialMap },
-      activeMapId: initialMap.id,
-      tokenLibrary: [],
-      sessionConsole: emptySessionConsoleCatalog('New Campaign'),
-    };
-
-    useGameStore.setState({
-      tokens: [],
-      tokensById: {},
-      tokenIds: [],
-      drawings: [],
-      doors: [],
-      stairs: [],
-      gridSize: 50,
-      gridType: 'LINES',
-      map: null,
-      exploredRegions: [],
-      isDaylightMode: false,
-      isCalibrating: false,
-      toast: null,
-      confirmDialog: null,
-      showResourceMonitor: false,
-      dungeonDialog: false,
-      isGamePaused: false,
-      isMobileSidebarOpen: false,
-      activeMeasurement: null,
-      broadcastMeasurement: false,
-      dmMeasurement: null,
-      campaign: initialCampaign,
-      sessionConsole: initialCampaign.sessionConsole,
-      sessionConsoleRuntime: emptySessionConsoleRuntime(),
-    });
+    resetGameStore();
   });
 
   describe('Token Operations', () => {
@@ -1392,7 +1395,30 @@ describe('gameStore', () => {
       expect(state.sessionConsoleRuntime.worldArmed).toBe(true);
     });
 
-    it('does not leak catalog or runtime from the previous case', () => {
+    it('does not leak catalog or runtime after resetGameStore', () => {
+      const store = useGameStore.getState();
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE_SET',
+        set: { id: 'set-leak', title: 'Leaked', note: '', images: [] },
+      });
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE',
+        setId: 'set-leak',
+        image: {
+          id: 'img-leak',
+          name: 'Leak',
+          cue: '',
+          src: 'file://leak.webp',
+          thumbnailSrc: 'file://leak-thumb.webp',
+          alt: 'Leak',
+        },
+      });
+      store.dispatchSessionConsole({ type: 'SHOW_PLATE', imageId: 'img-leak' });
+      store.setSessionConsoleWorldArmed(true);
+      expect(useGameStore.getState().sessionConsoleRuntime.stageVisible).toBe(true);
+
+      resetGameStore();
+
       const state = useGameStore.getState();
       expect(state.campaign.sessionConsole).toBe(state.sessionConsole);
       expect(state.sessionConsole.imageSets).toEqual([]);

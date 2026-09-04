@@ -327,9 +327,8 @@ function buildApplicationMenu(): void {
  * This window is the PRODUCER. All state changes here are broadcast to the
  * World Window via the SYNC_WORLD_STATE IPC channel (see SyncManager.tsx:101-112).
  *
- * **Development mode:**
- * Loads from Vite dev server if VITE_DEV_SERVER_URL is set, otherwise loads
- * from built dist/index.html file.
+ * **Production:** `graphium://app/index.html` (privileged scheme; not `file://`).
+ * **Development:** Vite `VITE_DEV_SERVER_URL` when set.
  */
 function createMainWindow(): void {
   const bounds = store.get('windowBounds');

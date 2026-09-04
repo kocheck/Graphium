@@ -4,7 +4,35 @@ import { WorldAudioEngine } from './WorldAudioEngine';
 import { useGameStore } from '../../store/gameStore';
 import { toMediaProtocol } from '../../utils/mediaProtocol';
 
+import type { SessionConsoleRuntime } from '../../types/sessionConsole';
+
 const PLATE_FADE_MS = 500;
+
+type Plate = NonNullable<SessionConsoleRuntime['activeImage']>;
+
+function PlateImage({
+  plate,
+  opaque,
+  reducedMotion,
+  onReady,
+}: {
+  plate: Plate;
+  opaque: boolean;
+  reducedMotion: boolean;
+  onReady: () => void;
+}): JSX.Element {
+  return (
+    <img
+      src={toMediaProtocol(plate.src)}
+      alt={plate.alt}
+      onLoad={onReady}
+      onError={onReady}
+      className={`absolute inset-0 w-full h-full object-contain ${
+        opaque ? 'opacity-100' : 'opacity-0'
+      } ${reducedMotion ? '' : 'transition-opacity duration-500'}`}
+    />
+  );
+}
 
 export function WorldStage(): JSX.Element {
   const stageVisible = useGameStore((state) => state.sessionConsoleRuntime.stageVisible);
@@ -12,77 +40,81 @@ export function WorldStage(): JSX.Element {
   const stage = useGameStore((state) => state.sessionConsoleRuntime.stage);
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const [displayed, setDisplayed] = useState(activeImage);
-  const [opaque, setOpaque] = useState(true);
+  const [front, setFront] = useState<Plate | null>(activeImage);
+  const [back, setBack] = useState<Plate | null>(null);
+  const [frontOpaque, setFrontOpaque] = useState(true);
   const requestIdRef = useRef(0);
-  const appliedRequestRef = useRef(0);
-  const displayedIdRef = useRef(activeImage?.id ?? null);
+  const frontRef = useRef<Plate | null>(activeImage);
 
   useEffect(() => {
-    displayedIdRef.current = displayed?.id ?? null;
-  }, [displayed]);
+    frontRef.current = front;
+  }, [front]);
 
   useEffect(() => {
     if (!activeImage) {
       requestIdRef.current += 1;
-      setDisplayed(null);
-      setOpaque(true);
+      frontRef.current = null;
+      setFront(null);
+      setBack(null);
+      setFrontOpaque(true);
       return;
     }
 
-    if (displayedIdRef.current === activeImage.id) {
-      setDisplayed(activeImage);
+    const current = frontRef.current;
+    if (current?.id === activeImage.id) {
+      setFront(activeImage);
       return;
     }
 
     const requestId = ++requestIdRef.current;
 
-    const applyImage = (): void => {
-      if (requestId !== requestIdRef.current) {
-        return;
-      }
-      appliedRequestRef.current = requestId;
-      setDisplayed(activeImage);
-      if (reducedMotion) {
-        setOpaque(true);
-      }
-    };
-
-    if (reducedMotion || displayedIdRef.current === null) {
-      applyImage();
-      setOpaque(true);
+    if (reducedMotion || !current) {
+      frontRef.current = activeImage;
+      setBack(null);
+      setFront(activeImage);
+      setFrontOpaque(true);
       return;
     }
 
-    setOpaque(false);
-    const timeoutId = window.setTimeout(applyImage, PLATE_FADE_MS);
+    setBack(current);
+    frontRef.current = activeImage;
+    setFront(activeImage);
+    setFrontOpaque(false);
+    const timeoutId = window.setTimeout(() => {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+      setBack(null);
+    }, PLATE_FADE_MS);
     return () => {
       window.clearTimeout(timeoutId);
     };
   }, [activeImage, reducedMotion]);
 
-  const handleLoad = (): void => {
-    if (appliedRequestRef.current !== requestIdRef.current) {
-      return;
-    }
-    setOpaque(true);
+  const handleFrontReady = (): void => {
+    setFrontOpaque(true);
   };
 
   return (
     <>
-      {stageVisible && displayed ? (
+      {stageVisible && front ? (
         <div
           className="fixed inset-0 z-[9998] flex items-center justify-center bg-black"
           data-testid="world-stage-art"
         >
-          <img
-            src={toMediaProtocol(displayed.src)}
-            alt={displayed.alt}
-            onLoad={handleLoad}
-            onError={handleLoad}
-            className={`absolute inset-0 w-full h-full object-contain ${
-              opaque ? 'opacity-100' : 'opacity-0'
-            } ${reducedMotion ? '' : 'transition-opacity duration-500'}`}
+          {back ? (
+            <PlateImage
+              plate={back}
+              opaque
+              reducedMotion={reducedMotion}
+              onReady={() => undefined}
+            />
+          ) : null}
+          <PlateImage
+            plate={front}
+            opaque={frontOpaque}
+            reducedMotion={reducedMotion}
+            onReady={handleFrontReady}
           />
           <div
             className="absolute inset-0 pointer-events-none"

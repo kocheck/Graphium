@@ -19,6 +19,7 @@ import {
   isPathInsidePackRoot,
   materializePack,
   parseSessionConsolePack,
+  type PackHttpFetchResult,
 } from '../src/utils/sessionConsolePack.js';
 
 import type { SessionConsoleCatalog } from '../src/types/sessionConsole.js';
@@ -39,6 +40,16 @@ function sanitizePackFileName(name: string): string {
     const safe = baseName.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
     return safe || 'asset';
   }
+}
+
+const ensuredTempDirs = new Set<string>();
+
+async function ensureTempAssetsDir(tempAssetsDir: string): Promise<void> {
+  if (ensuredTempDirs.has(tempAssetsDir)) {
+    return;
+  }
+  await fs.mkdir(tempAssetsDir, { recursive: true });
+  ensuredTempDirs.add(tempAssetsDir);
 }
 
 function uniqueTempAssetPath(tempAssetsDir: string, fileName: string): string {
@@ -113,7 +124,7 @@ export async function copyPackAssetToTemp(
     }
   }
 
-  await fs.mkdir(tempAssetsDir, { recursive: true });
+  await ensureTempAssetsDir(tempAssetsDir);
   const destPath = uniqueTempAssetPath(tempAssetsDir, fileName);
   await fs.copyFile(sourcePath, destPath);
   return `file://${destPath}`;
@@ -127,7 +138,7 @@ async function persistBufferToTemp(
   if (isAllowedAudioFileName(fileName) && buffer.byteLength > LOCAL_AUDIO_REJECT_BYTES) {
     return null;
   }
-  await fs.mkdir(tempAssetsDir, { recursive: true });
+  await ensureTempAssetsDir(tempAssetsDir);
   const destPath = uniqueTempAssetPath(tempAssetsDir, fileName);
   await fs.writeFile(destPath, Buffer.from(buffer));
   return `file://${destPath}`;
@@ -139,13 +150,14 @@ async function persistBufferToTemp(
 export async function ingestSessionConsolePackFromBoardPath(
   boardJsonPath: string,
   tempAssetsDir: string,
-  fetchHttp?: (url: string) => Promise<ArrayBuffer | null>,
+  fetchHttp?: (url: string) => Promise<PackHttpFetchResult | ArrayBuffer | null>,
 ): Promise<SessionConsolePackImportResult> {
   const rawText = await fs.readFile(boardJsonPath, 'utf8');
   const json = JSON.parse(rawText) as unknown;
   const { pack, errors } = parseSessionConsolePack(json);
   const packRoot = path.dirname(boardJsonPath);
   const warnings: string[] = [];
+  await ensureTempAssetsDir(tempAssetsDir);
 
   const materialized = await materializePack(
     pack,

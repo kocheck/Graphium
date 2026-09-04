@@ -96,7 +96,15 @@ export interface SessionConsolePack {
   sfx?: SessionConsolePackSfx[];
 }
 
+export const PACK_INGEST_CONCURRENCY = 8;
+
+export type PackHttpFetchResult =
+  | { status: 'ok'; buffer: ArrayBuffer }
+  | { status: 'too-large' }
+  | { status: 'failed' };
+
 type PersistBuffer = (buffer: ArrayBuffer, fileName: string) => Promise<string | null>;
+type FetchHttp = (url: string) => Promise<PackHttpFetchResult | ArrayBuffer | null>;
 
 export interface MaterializePackOptions {
   localFileSkipReason?: string;
@@ -116,13 +124,13 @@ export interface PackHttpResponse {
 export async function readResponseCapped(
   response: PackHttpResponse,
   maxBytes: number,
-): Promise<ArrayBuffer | null> {
+): Promise<PackHttpFetchResult> {
   if (!response.ok) {
-    return null;
+    return { status: 'failed' };
   }
   const declared = Number(response.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > maxBytes) {
-    return null;
+    return { status: 'too-large' };
   }
   if (response.body) {
     const reader = response.body.getReader();
@@ -136,20 +144,18 @@ export async function readResponseCapped(
       total += value.byteLength;
       if (total > maxBytes) {
         await reader.cancel();
-        return null;
+        return { status: 'too-large' };
       }
       chunks.push(value);
     }
-    const out = new Uint8Array(total);
-    let offset = 0;
-    for (const chunk of chunks) {
-      out.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    return out.buffer;
+    const buffer = await new Blob(chunks).arrayBuffer();
+    return { status: 'ok', buffer };
   }
   const buffer = await response.arrayBuffer();
-  return buffer.byteLength > maxBytes ? null : buffer;
+  if (buffer.byteLength > maxBytes) {
+    return { status: 'too-large' };
+  }
+  return { status: 'ok', buffer };
 }
 
 /**
@@ -159,13 +165,48 @@ export async function fetchHttpCapped(
   url: string,
   maxBytes = PACK_HTTP_MAX_BYTES,
   fetchImpl: (input: string) => Promise<PackHttpResponse> = fetch,
-): Promise<ArrayBuffer | null> {
+): Promise<PackHttpFetchResult> {
   try {
     const response = await fetchImpl(url);
     return await readResponseCapped(response, maxBytes);
   } catch {
-    return null;
+    return { status: 'failed' };
   }
+}
+
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) {
+    return [];
+  }
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const index = nextIndex;
+      nextIndex += 1;
+      if (index >= items.length) {
+        return;
+      }
+      results[index] = await mapper(items[index] as T, index);
+    }
+  };
+  const workerCount = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
+function asFetchResult(value: PackHttpFetchResult | ArrayBuffer | null): PackHttpFetchResult {
+  if (value === null) {
+    return { status: 'failed' };
+  }
+  if (value instanceof ArrayBuffer || !('status' in (value as object))) {
+    return { status: 'ok', buffer: value as ArrayBuffer };
+  }
+  return value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -512,7 +553,7 @@ function basenameFromSrc(src: string): string {
 
 interface IngestContext {
   resolveFile: (relativeOrAbsolute: string) => Promise<string | null>;
-  fetchHttp?: (url: string) => Promise<ArrayBuffer | null>;
+  fetchHttp?: FetchHttp;
   persistBuffer?: PersistBuffer;
   skipped: string[];
   warnings: string[];
@@ -548,11 +589,16 @@ async function ingestHttpSrc(
     ctx.skipped.push(`${label}: http src requires fetchHttp`);
     return null;
   }
-  const buffer = await ctx.fetchHttp(url);
-  if (!buffer) {
+  const fetched = asFetchResult(await ctx.fetchHttp(url));
+  if (fetched.status === 'too-large') {
+    ctx.skipped.push(`${label}: remote file is larger than 25MB`);
+    return null;
+  }
+  if (fetched.status !== 'ok') {
     ctx.skipped.push(`${label}: failed to fetch remote file`);
     return null;
   }
+  const buffer = fetched.buffer;
   if (buffer.byteLength > PACK_HTTP_MAX_BYTES) {
     ctx.skipped.push(`${label}: remote file is larger than 25MB`);
     return null;
@@ -619,10 +665,17 @@ async function materializeImageSets(
 ): Promise<SessionConsoleCatalog['imageSets']> {
   const imageSets: SessionConsoleCatalog['imageSets'] = [];
   for (const set of pack.imageSets) {
+    const ingested = await mapWithConcurrency(
+      set.images,
+      PACK_INGEST_CONCURRENCY,
+      async (image) => ({
+        image,
+        src: await ingestSrc(image.src, `Image "${image.id}"`, ctx),
+      }),
+    );
     const images: StageImage[] = [];
-    for (const image of set.images) {
-      const ingested = await ingestSrc(image.src, `Image "${image.id}"`, ctx);
-      if (!ingested) {
+    for (const { image, src } of ingested) {
+      if (!src) {
         continue;
       }
       const id = usedIds.has(image.id) ? slugId(image.id, usedIds) : image.id;
@@ -631,8 +684,8 @@ async function materializeImageSets(
         id,
         name: image.name,
         cue: image.cue,
-        src: ingested,
-        thumbnailSrc: ingested,
+        src,
+        thumbnailSrc: src,
         alt: image.alt,
       });
     }
@@ -650,9 +703,20 @@ async function materializeTrackGroups(
 ): Promise<TrackGroup[]> {
   const trackGroups: TrackGroup[] = [];
   for (const group of pack.trackGroups) {
+    const prepared = await mapWithConcurrency(
+      group.tracks,
+      PACK_INGEST_CONCURRENCY,
+      async (packTrack) => {
+        const classified = classifyPackSrc(packTrack.src);
+        if (classified.kind === 'youtube') {
+          return { packTrack, classified, ingested: null as string | null };
+        }
+        const ingested = await ingestSrc(packTrack.src, `Track "${packTrack.title}"`, ctx);
+        return { packTrack, classified, ingested };
+      },
+    );
     const tracks: Track[] = [];
-    for (const packTrack of group.tracks) {
-      const classified = classifyPackSrc(packTrack.src);
+    for (const { packTrack, classified, ingested } of prepared) {
       const trackId = slugId(packTrack.id ?? packTrack.title, usedIds);
       const recommended = recommendedImageId(packTrack.recommendedImage, imagesById, imagesByName);
       if (classified.kind === 'youtube') {
@@ -667,7 +731,6 @@ async function materializeTrackGroups(
         );
         continue;
       }
-      const ingested = await ingestSrc(packTrack.src, `Track "${packTrack.title}"`, ctx);
       if (!ingested) {
         continue;
       }
@@ -688,8 +751,29 @@ async function materializeSfx(
   packSfx: SessionConsolePackSfx[],
   ctx: IngestContext,
 ): Promise<SfxDefinition[]> {
+  const prepared = await mapWithConcurrency(packSfx, PACK_INGEST_CONCURRENCY, async (sfx) => {
+    if (sfx.kind === 'synth') {
+      return {
+        sfx,
+        ingested: null as string | null,
+        skip: null as string | null,
+      };
+    }
+    if (!sfx.src) {
+      return { sfx, ingested: null, skip: `SFX "${sfx.id}": local clip is missing src` };
+    }
+    return {
+      sfx,
+      ingested: await ingestSrc(sfx.src, `SFX "${sfx.id}"`, ctx),
+      skip: null,
+    };
+  });
   const materialized: SfxDefinition[] = [];
-  for (const sfx of packSfx) {
+  for (const { sfx, ingested, skip } of prepared) {
+    if (skip) {
+      ctx.skipped.push(skip);
+      continue;
+    }
     if (sfx.kind === 'synth') {
       materialized.push({
         id: sfx.id,
@@ -699,11 +783,6 @@ async function materializeSfx(
       });
       continue;
     }
-    if (!sfx.src) {
-      ctx.skipped.push(`SFX "${sfx.id}": local clip is missing src`);
-      continue;
-    }
-    const ingested = await ingestSrc(sfx.src, `SFX "${sfx.id}"`, ctx);
     if (!ingested) {
       continue;
     }
@@ -718,7 +797,7 @@ async function materializeSfx(
 export async function materializePack(
   pack: SessionConsolePack,
   resolveFile: (relativeOrAbsolute: string) => Promise<string | null>,
-  fetchHttp?: (url: string) => Promise<ArrayBuffer | null>,
+  fetchHttp?: FetchHttp,
   persistBuffer?: PersistBuffer,
   options?: MaterializePackOptions,
 ): Promise<{ catalog: SessionConsoleCatalog; skipped: string[]; warnings: string[] }> {
@@ -764,7 +843,7 @@ export async function materializePack(
 export async function ingestSessionConsolePackFromJson(
   json: unknown,
   persistBuffer: PersistBuffer,
-  fetchHttp: (url: string) => Promise<ArrayBuffer | null> = fetchHttpCapped,
+  fetchHttp: FetchHttp = fetchHttpCapped,
 ): Promise<{ catalog: SessionConsoleCatalog; skipped: string[]; warnings: string[] }> {
   const { pack, errors } = parseSessionConsolePack(json);
   const materialized = await materializePack(

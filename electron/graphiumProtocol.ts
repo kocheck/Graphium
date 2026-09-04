@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import { isPathInsideOrEqual } from './pathSecurity.js';
+import { AUDIO_CONTENT_TYPES, contentTypeForMediaPath } from '../src/utils/assetContentType.js';
 
 const GRAPHIUM_SCHEME = 'graphium';
 const GRAPHIUM_HOST = 'app';
@@ -8,15 +9,8 @@ const GRAPHIUM_INDEX_URL = `${GRAPHIUM_SCHEME}://${GRAPHIUM_HOST}/index.html`;
 
 type GraphiumPathResolveResult = { ok: true; filePath: string } | { ok: false; status: 400 | 403 };
 
-const MEDIA_CONTENT_TYPES: Record<string, string> = {
-  '.mp3': 'audio/mpeg',
-  '.ogg': 'audio/ogg',
-  '.wav': 'audio/wav',
-  '.m4a': 'audio/mp4',
-};
-
 const RENDERER_CONTENT_TYPES: Record<string, string> = {
-  ...MEDIA_CONTENT_TYPES,
+  ...AUDIO_CONTENT_TYPES,
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
@@ -44,8 +38,7 @@ export const productionRendererUrl = (search = ''): string => {
   return url.toString();
 };
 
-export const contentTypeForMediaPath = (filePath: string): string | undefined =>
-  MEDIA_CONTENT_TYPES[path.extname(filePath).toLowerCase()];
+export { contentTypeForMediaPath };
 
 export const contentTypeForRendererPath = (filePath: string): string | undefined =>
   RENDERER_CONTENT_TYPES[path.extname(filePath).toLowerCase()];

@@ -53,8 +53,9 @@ describe('saveLocalAudioFile', () => {
     expect(mockSaveAssetTemp).toHaveBeenCalledTimes(1);
     const [buffer, name] = mockSaveAssetTemp.mock.calls[0] as [ArrayBuffer, string];
     expect(name).toBe('bed.mp3');
-    expect(typeof buffer.byteLength).toBe('number');
-    expect(buffer.byteLength).toBeGreaterThan(0);
+    const expected = new TextEncoder().encode('tiny-bed');
+    expect(buffer.byteLength).toBe(expected.byteLength);
+    expect(new Uint8Array(buffer)).toEqual(expected);
   });
 
   it('rejects bed.exe and does not call saveAssetTemp', async () => {
