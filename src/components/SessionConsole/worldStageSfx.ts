@@ -120,12 +120,40 @@ export function resolveSynthType(
   return null;
 }
 
-export async function playLocalSfx(context: AudioContext, src: string): Promise<void> {
-  const response = await fetch(toMediaProtocol(src));
+const decodedSfxBuffers = new WeakMap<AudioContext, Map<string, Promise<AudioBuffer>>>();
+
+function sfxBufferCache(context: AudioContext): Map<string, Promise<AudioBuffer>> {
+  const existing = decodedSfxBuffers.get(context);
+  if (existing) {
+    return existing;
+  }
+  const created = new Map<string, Promise<AudioBuffer>>();
+  decodedSfxBuffers.set(context, created);
+  return created;
+}
+
+async function loadLocalSfxBuffer(context: AudioContext, url: string): Promise<AudioBuffer> {
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Local SFX failed to play.');
   }
-  const decoded = await context.decodeAudioData(await response.arrayBuffer());
+  return context.decodeAudioData(await response.arrayBuffer());
+}
+
+export async function playLocalSfx(context: AudioContext, src: string): Promise<void> {
+  const url = toMediaProtocol(src);
+  const cache = sfxBufferCache(context);
+  let pending = cache.get(url);
+  if (!pending) {
+    pending = loadLocalSfxBuffer(context, url);
+    cache.set(url, pending);
+    pending.catch(() => {
+      if (cache.get(url) === pending) {
+        cache.delete(url);
+      }
+    });
+  }
+  const decoded = await pending;
   const source = context.createBufferSource();
   source.buffer = decoded;
   source.connect(context.destination);

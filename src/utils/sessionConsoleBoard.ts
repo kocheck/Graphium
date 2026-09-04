@@ -87,12 +87,12 @@ function ensureTrackGroup(store: GameState): string {
 
 async function processPlateSources(file: File): Promise<{ src: string; thumbnailSrc: string }> {
   const mapHandle = processImage(file, 'MAP');
-  const src = await mapHandle.promise;
+  const thumbHandle = processImage(file, 'THUMB');
   try {
-    const thumbHandle = processImage(file, 'THUMB');
-    const thumbnailSrc = await thumbHandle.promise;
+    const [src, thumbnailSrc] = await Promise.all([mapHandle.promise, thumbHandle.promise]);
     return { src, thumbnailSrc };
   } catch {
+    const src = await mapHandle.promise;
     return { src, thumbnailSrc: src };
   }
 }
@@ -153,9 +153,6 @@ async function addDroppedImage(store: GameState, file: File, setId: string): Pro
 
 async function addDroppedAudio(store: GameState, file: File, groupId: string): Promise<void> {
   const src = await saveLocalAudioFile(file);
-  if (shouldWarnLocalAudioSize(file.size)) {
-    store.showToast(LOCAL_AUDIO_SIZE_WARN_MESSAGE, 'info');
-  }
   const title = fileNameStem(file.name);
   store.updateSessionConsole({
     type: 'ADD_TRACK',
@@ -205,18 +202,24 @@ function isAudioFile(file: File): boolean {
   return file.type.startsWith('audio/') || AUDIO_EXT_RE.test(file.name);
 }
 
+const INGEST_PROGRESS_INTERVAL_MS = 200;
+
 export async function ingestDroppedFiles(store: GameState, files: File[]): Promise<void> {
   const folderTitle = folderTitleFromFiles(files);
   const imageFiles = files.filter(isImageFile);
   const audioFiles = files.filter(isAudioFile);
   const setId = imageFiles.length > 0 ? ensureImageSet(store, folderTitle) : '';
   const groupId = audioFiles.length > 0 ? ensureTrackGroup(store) : '';
+  if (audioFiles.some((file) => shouldWarnLocalAudioSize(file.size))) {
+    store.showToast(LOCAL_AUDIO_SIZE_WARN_MESSAGE, 'info');
+  }
   const jobs = [
     ...imageFiles.map((file) => async () => addDroppedImage(store, file, setId)),
     ...audioFiles.map((file) => async () => addDroppedAudio(store, file, groupId)),
   ];
   let done = 0;
   const total = jobs.length;
+  let lastProgressAt = 0;
   await runWithConcurrency(
     jobs.map((job) => async () => {
       try {
@@ -226,7 +229,14 @@ export async function ingestDroppedFiles(store: GameState, files: File[]): Promi
         store.showToast(sanitizeSessionConsoleErrorMessage(message), 'error');
       } finally {
         done += 1;
-        if (total > 1) {
+        const now = Date.now();
+        const shouldPublish =
+          total > 1 &&
+          (done === total ||
+            lastProgressAt === 0 ||
+            now - lastProgressAt >= INGEST_PROGRESS_INTERVAL_MS);
+        if (shouldPublish) {
+          lastProgressAt = now;
           store.showToast(`Adding files… ${done}/${total}`, 'info');
         }
       }

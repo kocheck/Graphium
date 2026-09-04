@@ -613,9 +613,69 @@ interface IngestContext {
   skipped: string[];
   warnings: string[];
   localFileSkipReason?: string;
+  srcCache: Map<string, Promise<string | null>>;
+}
+
+function pushUniquePackSrc(
+  jobs: Array<{ src: string; label: string }>,
+  seen: Set<string>,
+  src: string,
+  label: string,
+): void {
+  const key = src.trim();
+  if (!key || seen.has(key)) {
+    return;
+  }
+  if (classifyPackSrc(key).kind === 'youtube') {
+    return;
+  }
+  seen.add(key);
+  jobs.push({ src: key, label });
+}
+
+function collectPackSrcJobs(pack: SessionConsolePack): Array<{ src: string; label: string }> {
+  const jobs: Array<{ src: string; label: string }> = [];
+  const seen = new Set<string>();
+  for (const set of pack.imageSets) {
+    for (const image of set.images) {
+      pushUniquePackSrc(jobs, seen, image.src, `Image "${image.id}"`);
+    }
+  }
+  for (const group of pack.trackGroups) {
+    for (const track of group.tracks) {
+      pushUniquePackSrc(jobs, seen, track.src, `Track "${track.title}"`);
+    }
+  }
+  for (const sfx of pack.sfx ?? []) {
+    if (sfx.kind === 'local' && sfx.src) {
+      pushUniquePackSrc(jobs, seen, sfx.src, `SFX "${sfx.id}"`);
+    }
+  }
+  return jobs;
+}
+
+async function prefetchPackSrcs(pack: SessionConsolePack, ctx: IngestContext): Promise<void> {
+  await mapWithConcurrency(collectPackSrcJobs(pack), PACK_INGEST_CONCURRENCY, (job) =>
+    ingestSrc(job.src, job.label, ctx),
+  );
 }
 
 async function ingestSrc(src: string, label: string, ctx: IngestContext): Promise<string | null> {
+  const key = src.trim();
+  const cached = ctx.srcCache.get(key);
+  if (cached) {
+    return cached;
+  }
+  const pending = ingestSrcUncached(src, label, ctx);
+  ctx.srcCache.set(key, pending);
+  return pending;
+}
+
+async function ingestSrcUncached(
+  src: string,
+  label: string,
+  ctx: IngestContext,
+): Promise<string | null> {
   const classified = classifyPackSrc(src);
   if (classified.kind === 'youtube' || classified.kind === 'invalid') {
     ctx.skipped.push(
@@ -869,7 +929,10 @@ export async function materializePack(
     skipped,
     warnings,
     localFileSkipReason: options?.localFileSkipReason,
+    srcCache: new Map(),
   };
+
+  await prefetchPackSrcs(pack, ctx);
 
   catalog.imageSets = await materializeImageSets(pack, ctx, usedIds);
 

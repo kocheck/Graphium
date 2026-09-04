@@ -1,12 +1,27 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { emptySessionConsoleCatalog, type Track } from '../types/sessionConsole';
+import { useGameStore } from '../store/gameStore';
 import {
   flattenTracks,
   folderTitleFromFiles,
   formatSessionConsoleFallbackLinks,
   formatTrackFallbackLine,
+  ingestDroppedFiles,
+  processImportedCatalogPlates,
 } from './sessionConsoleBoard';
+
+vi.mock('./AssetProcessor', () => ({
+  processImage: vi.fn(),
+}));
+
+vi.mock('./localAudioAsset', () => ({
+  saveLocalAudioFile: vi.fn(async () => 'file://tmp/track.mp3'),
+  shouldWarnLocalAudioSize: vi.fn(() => false),
+  LOCAL_AUDIO_SIZE_WARN_MESSAGE: 'Audio file is larger than 8MB',
+}));
+
+import { processImage } from './AssetProcessor';
 
 function makeTrack(overrides: Partial<Track> & Pick<Track, 'id' | 'title' | 'source'>): Track {
   return {
@@ -95,5 +110,94 @@ describe('folderTitleFromFiles', () => {
 
   it('returns undefined when files are not from a folder picker', () => {
     expect(folderTitleFromFiles([new File(['x'], 'keep.png')])).toBeUndefined();
+  });
+});
+
+describe('processImportedCatalogPlates', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.mocked(processImage).mockReset();
+  });
+
+  it('starts MAP and THUMB processing together', async () => {
+    const started: string[] = [];
+    const resolvers: Array<(src: string) => void> = [];
+    vi.mocked(processImage).mockImplementation((_file, type) => {
+      started.push(type);
+      return {
+        promise: new Promise<string>((resolve) => {
+          resolvers.push((src) => {
+            resolve(src);
+          });
+        }),
+        cancel: () => undefined,
+      };
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        blob: async () => new Blob(['x'], { type: 'image/png' }),
+      })),
+    );
+
+    const catalog = emptySessionConsoleCatalog('Ash Crown');
+    catalog.imageSets = [
+      {
+        id: 's',
+        title: 'S',
+        note: '',
+        images: [
+          {
+            id: 'keep',
+            name: 'Keep',
+            cue: '',
+            src: 'file:///tmp/keep.png',
+            thumbnailSrc: 'file:///tmp/keep.png',
+            alt: 'keep',
+          },
+        ],
+      },
+    ];
+
+    const pending = processImportedCatalogPlates(catalog);
+    await vi.waitFor(() => {
+      expect(started).toEqual(['MAP', 'THUMB']);
+    });
+    for (const resolve of resolvers) {
+      resolve('file:///tmp/out.webp');
+    }
+    await pending;
+  });
+});
+
+describe('ingestDroppedFiles', () => {
+  afterEach(() => {
+    vi.mocked(processImage).mockReset();
+  });
+
+  it('throttles progress toasts to the first and last update when files finish together', async () => {
+    vi.mocked(processImage).mockImplementation((_file, type) => ({
+      promise: Promise.resolve(`file://tmp/${type}.webp`),
+      cancel: () => undefined,
+    }));
+
+    const toasts: string[] = [];
+    useGameStore.setState({
+      sessionConsole: emptySessionConsoleCatalog('Ash Crown'),
+      showToast: (message) => {
+        toasts.push(message);
+      },
+    });
+
+    const files = Array.from({ length: 10 }, (_, index) => {
+      return new File(['x'], `keep-${index}.png`, { type: 'image/png' });
+    });
+    await ingestDroppedFiles(useGameStore.getState(), files);
+
+    const progress = toasts.filter((message) => message.startsWith('Adding files…'));
+    expect(progress[0]).toBe('Adding files… 1/10');
+    expect(progress.at(-1)).toBe('Adding files… 10/10');
+    expect(progress.length).toBeLessThan(10);
   });
 });

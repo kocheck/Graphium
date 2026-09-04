@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
 import {
   RiPlayFill,
@@ -26,7 +26,6 @@ import MobileToolbar from './components/MobileToolbar';
 import { PauseManager } from './components/PauseManager';
 import ResourceMonitor from './components/ResourceMonitor';
 import { SessionConsoleEscapeStop } from './components/SessionConsole/SessionConsoleEscapeStop';
-import { WorldStage } from './components/SessionConsole/WorldStage';
 import Sidebar from './components/Sidebar';
 import SyncManager from './components/SyncManager';
 import { ThemeManager } from './components/ThemeManager';
@@ -43,6 +42,11 @@ import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 import { loadStressFixture, shouldAutoloadStressFixture } from './utils/stressFixture';
 import { rollForMessage } from './utils/systemMessages';
 import { useWindowType } from './utils/useWindowType';
+
+const WorldStage = lazy(async () => {
+  const module = await import('./components/SessionConsole/WorldStage');
+  return { default: module.WorldStage };
+});
 
 /**
  * App is the root component for Graphium's dual-window architecture
@@ -497,7 +501,11 @@ function App(): React.JSX.Element {
 
       {/* Loading Overlay: Only render in World View to block players' view */}
       {isWorldView && <LoadingOverlay />}
-      {isWorldView && <WorldStage />}
+      {isWorldView && (
+        <Suspense fallback={null}>
+          <WorldStage />
+        </Suspense>
+      )}
 
       {/* Auto-save (Architect View only) */}
       {isArchitectView && <SessionConsoleEscapeStop defer={isAboutOpen || isUpdateManagerOpen} />}

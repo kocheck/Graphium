@@ -165,7 +165,79 @@ describe('parseSessionConsolePack', () => {
   });
 });
 
+function packWithLocalAssets(srcs: {
+  image: string;
+  track: string;
+  sfx: string;
+}): SessionConsolePack {
+  return {
+    version: 1,
+    kind: 'graphium.sessionConsolePack',
+    stage: { title: 'T', subtitle: '', showFrame: true },
+    defaults: { volume: 45, duckPercent: 27 },
+    imageSets: [
+      {
+        id: 's',
+        title: 'S',
+        note: '',
+        images: [{ id: 'keep', name: 'Keep', cue: '', src: srcs.image, alt: 'keep' }],
+      },
+    ],
+    trackGroups: [
+      {
+        id: 'g',
+        title: 'Beds',
+        note: '',
+        accent: 'bed',
+        tracks: [{ title: 'Rain', cue: '', tag: 'bed', src: srcs.track }],
+      },
+    ],
+    sfx: [{ id: 'sting', label: 'Sting', kind: 'local', src: srcs.sfx }],
+  };
+}
+
 describe('materializePack', () => {
+  it('resolves a repeated pack src once', async () => {
+    const resolveFile = vi.fn(async () => 'file://ingested/keep.png');
+    const pack = packWithLocalAssets({
+      image: './images/keep.png',
+      track: './images/keep.png',
+      sfx: './images/keep.png',
+    });
+
+    const { catalog } = await materializePack(pack, resolveFile);
+
+    expect(resolveFile).toHaveBeenCalledTimes(1);
+    expect(catalog.imageSets[0]?.images[0]?.src).toBe('file://ingested/keep.png');
+    expect(catalog.trackGroups[0]?.tracks[0]?.src).toBe('file://ingested/keep.png');
+    expect(catalog.sfx.find((item) => item.id === 'sting')?.src).toBe('file://ingested/keep.png');
+  });
+
+  it('ingests plates, tracks, and sfx in one shared pool', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const resolveFile = async (filePath: string): Promise<string> => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => {
+        setTimeout(resolve, 25);
+      });
+      inFlight -= 1;
+      return `file://ingested/${path.basename(filePath)}`;
+    };
+
+    await materializePack(
+      packWithLocalAssets({
+        image: './images/keep.png',
+        track: './audio/rain.mp3',
+        sfx: './audio/sting.mp3',
+      }),
+      resolveFile,
+    );
+
+    expect(maxInFlight).toBeGreaterThan(1);
+  });
+
   it('maps recommendedImage name or id onto recommendedImageId', async () => {
     const { pack } = parseSessionConsolePack(loadExamplePackJson());
     const { catalog } = await materializePack(pack, async () => 'file://tmp/a.webp');
