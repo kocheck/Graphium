@@ -308,4 +308,49 @@ describe('SessionConsolePanel', () => {
       expect(useGameStore.getState().sessionConsole.stage.title).toBe('Imported Board');
     });
   });
+
+  it('plays the first flattened track when 1 is pressed with focus inside the panel', async () => {
+    seedBoard();
+    renderPanel();
+
+    const panel = screen.getByTestId('session-console-panel');
+    panel.focus();
+    expect(panel).toHaveFocus();
+
+    await userEvent.keyboard('1');
+
+    const runtime = useGameStore.getState().sessionConsoleRuntime;
+    expect(runtime.audio.trackId).toBe(bedTrack.id);
+    expect(runtime.audio.status).toBe('playing');
+  });
+
+  it('does not dispatch SET_DUCKED or stopImmediatePropagation when D is pressed outside the panel', () => {
+    seedBoard();
+    render(
+      <>
+        <button type="button">Outside canvas</button>
+        <SessionConsolePanel />
+        <ConfirmDialog />
+      </>,
+    );
+
+    const originalDispatch = useGameStore.getState().dispatchSessionConsole;
+    const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
+      originalDispatch(command),
+    );
+    useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+
+    const outside = screen.getByRole('button', { name: 'Outside canvas' });
+    outside.focus();
+    expect(outside).toHaveFocus();
+
+    const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
+    fireEvent.keyDown(outside, { key: 'd' });
+    fireEvent.keyDown(window, { key: 'd' });
+
+    expect(dispatchSpy).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_DUCKED' }));
+    expect(useGameStore.getState().sessionConsoleRuntime.ducked).toBe(false);
+    expect(stopSpy).not.toHaveBeenCalled();
+    stopSpy.mockRestore();
+  });
 });

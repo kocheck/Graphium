@@ -3,8 +3,23 @@ import { useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { flattenTracks } from '../../utils/sessionConsoleBoard';
 
+const PANEL_SELECTOR = '[data-session-console="panel"], [data-testid="session-console-panel"]';
+
 function isTypingTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+}
+
+function isInsideSessionConsolePanel(node: EventTarget | null): boolean {
+  if (!(node instanceof Element)) {
+    return false;
+  }
+  return node.closest(PANEL_SELECTOR) !== null;
+}
+
+function isSessionConsoleHotkeyFocus(event: KeyboardEvent): boolean {
+  return (
+    isInsideSessionConsolePanel(document.activeElement) || isInsideSessionConsolePanel(event.target)
+  );
 }
 
 export function useSessionConsoleHotkeys(): void {
@@ -12,6 +27,10 @@ export function useSessionConsoleHotkeys(): void {
     const onKeyDown = (event: KeyboardEvent): void => {
       const store = useGameStore.getState();
       if (store.isCommandPaletteOpen || isTypingTarget(event.target)) {
+        return;
+      }
+
+      if (!isSessionConsoleHotkeyFocus(event)) {
         return;
       }
 
@@ -23,7 +42,6 @@ export function useSessionConsoleHotkeys(): void {
 
       if (event.key === 'd' || event.key === 'D') {
         event.preventDefault();
-        event.stopImmediatePropagation();
         store.dispatchSessionConsole({
           type: 'SET_DUCKED',
           ducked: !store.sessionConsoleRuntime.ducked,
@@ -42,9 +60,9 @@ export function useSessionConsoleHotkeys(): void {
       }
     };
 
-    window.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('keydown', onKeyDown);
     return () => {
-      window.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('keydown', onKeyDown);
     };
   }, []);
 }

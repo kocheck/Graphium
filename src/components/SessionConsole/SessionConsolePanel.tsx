@@ -53,7 +53,12 @@ export function SessionConsolePanel(): JSX.Element {
   };
 
   return (
-    <div className="space-y-3">
+    <div
+      className="space-y-3"
+      data-testid="session-console-panel"
+      data-session-console="panel"
+      tabIndex={0}
+    >
       <div className="flex items-center justify-end gap-1">
         <button
           type="button"
