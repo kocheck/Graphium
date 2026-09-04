@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
 
@@ -269,5 +269,38 @@ describe('WorldStage', () => {
       expect(screen.getByRole('img')).toHaveClass('opacity-0');
     });
     expect(screen.getByRole('img')).toHaveClass('transition-opacity');
+  });
+
+  it('shows the plate after a broken image load during fade', async () => {
+    seedStore({
+      worldArmed: true,
+      stageVisible: true,
+      activeImage: plate,
+    });
+    render(<WorldStage />);
+
+    act(() => {
+      useGameStore.setState({
+        sessionConsoleRuntime: {
+          ...useGameStore.getState().sessionConsoleRuntime,
+          activeImage: {
+            id: 'img-broken',
+            src: 'file:///tmp/broken.webp',
+            alt: 'Broken plate',
+            name: 'Broken',
+          },
+        },
+      });
+    });
+
+    const img = await waitFor(() => {
+      const el = screen.getByRole('img', { name: 'Broken plate' });
+      expect(el).toHaveClass('opacity-0');
+      return el;
+    });
+
+    fireEvent.error(img);
+
+    expect(img).toHaveClass('opacity-100');
   });
 });

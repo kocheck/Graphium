@@ -79,6 +79,7 @@ export function WorldStage(): JSX.Element {
             src={toMediaProtocol(displayed.src)}
             alt={displayed.alt}
             onLoad={handleLoad}
+            onError={handleLoad}
             className={`absolute inset-0 w-full h-full object-contain ${
               opaque ? 'opacity-100' : 'opacity-0'
             } ${reducedMotion ? '' : 'transition-opacity duration-500'}`}
