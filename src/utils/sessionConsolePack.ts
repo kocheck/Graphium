@@ -1,4 +1,5 @@
 import { fileExtension } from './assetContentType';
+import { runWithConcurrency } from './campaignAssets';
 import {
   isAllowedAudioFileName,
   pushLocalAudioSizeWarning,
@@ -253,23 +254,13 @@ async function mapWithConcurrency<T, R>(
   limit: number,
   mapper: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
-  if (items.length === 0) {
-    return [];
-  }
   const results: R[] = Array.from({ length: items.length });
-  let nextIndex = 0;
-  const worker = async (): Promise<void> => {
-    for (;;) {
-      const index = nextIndex;
-      nextIndex += 1;
-      if (index >= items.length) {
-        return;
-      }
-      results[index] = await mapper(items[index] as T, index);
-    }
-  };
-  const workerCount = Math.min(limit, items.length);
-  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  await runWithConcurrency(
+    items.map((item, index) => async () => {
+      results[index] = await mapper(item, index);
+    }),
+    limit,
+  );
   return results;
 }
 
@@ -928,7 +919,7 @@ export async function ingestSessionConsolePackFromJson(
 }
 
 function sanitizeExportId(id: string): string {
-  const base = pathBasename(id.replace(/\\/g, '/'));
+  const base = pathBasename(id);
   const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '');
   if (!cleaned || cleaned === '.' || cleaned === '..') {
     return 'asset';

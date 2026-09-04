@@ -4,8 +4,7 @@ function queueCampaignMapAssets(campaign: CampaignAssetHost, queueRewrite: Queue
   if (!campaign.maps) {
     return;
   }
-  for (const mapId of Object.keys(campaign.maps)) {
-    const map = campaign.maps[mapId];
+  for (const map of Object.values(campaign.maps)) {
     if (!map) {
       continue;
     }

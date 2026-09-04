@@ -44,10 +44,7 @@ export function formatSessionConsoleFallbackLinks(catalog: SessionConsoleCatalog
 export function folderTitleFromFiles(files: File[]): string | undefined {
   const relative = files.find((file) => file.webkitRelativePath)?.webkitRelativePath ?? '';
   const folder = relative.split('/')[0];
-  if (folder === undefined || folder === '') {
-    return undefined;
-  }
-  return folder;
+  return folder ? folder : undefined;
 }
 
 function ensureImageSet(store: GameState, title?: string): string {
