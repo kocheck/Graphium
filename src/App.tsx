@@ -25,6 +25,7 @@ import { LoadingOverlay } from './components/LoadingOverlay';
 import MobileToolbar from './components/MobileToolbar';
 import { PauseManager } from './components/PauseManager';
 import ResourceMonitor from './components/ResourceMonitor';
+import { WorldStage } from './components/SessionConsole/WorldStage';
 import Sidebar from './components/Sidebar';
 import SyncManager from './components/SyncManager';
 import { ThemeManager } from './components/ThemeManager';
@@ -495,6 +496,7 @@ function App(): React.JSX.Element {
 
       {/* Loading Overlay: Only render in World View to block players' view */}
       {isWorldView && <LoadingOverlay />}
+      {isWorldView && <WorldStage />}
 
       {/* Auto-save (Architect View only) */}
       {isArchitectView && <AutoSaveManager />}
