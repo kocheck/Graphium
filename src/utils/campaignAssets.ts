@@ -9,6 +9,15 @@ interface CampaignAssetHost {
     }
   >;
   tokenLibrary?: Array<{ src: string; thumbnailSrc?: string }>;
+  sessionConsole?: {
+    imageSets?: Array<{
+      images?: Array<{ src?: string; thumbnailSrc?: string }>;
+    }>;
+    trackGroups?: Array<{
+      tracks?: Array<{ source: 'youtube' | 'local'; src?: string }>;
+    }>;
+    sfx?: Array<{ kind: 'synth' | 'local'; src?: string }>;
+  };
 }
 
 async function runWithConcurrency(
@@ -96,6 +105,42 @@ export async function rewriteCampaignAssetSrcs(
       if (includeThumbnails && item.thumbnailSrc) {
         queueRewrite(item.thumbnailSrc, (next) => {
           item.thumbnailSrc = next;
+        });
+      }
+    }
+  }
+
+  const sessionConsole = campaign.sessionConsole;
+  if (sessionConsole) {
+    for (const imageSet of sessionConsole.imageSets ?? []) {
+      for (const image of imageSet.images ?? []) {
+        if (image.src) {
+          queueRewrite(image.src, (next) => {
+            image.src = next;
+          });
+        }
+        if (includeThumbnails && image.thumbnailSrc) {
+          queueRewrite(image.thumbnailSrc, (next) => {
+            image.thumbnailSrc = next;
+          });
+        }
+      }
+    }
+
+    for (const group of sessionConsole.trackGroups ?? []) {
+      for (const track of group.tracks ?? []) {
+        if (track.source === 'local' && track.src) {
+          queueRewrite(track.src, (next) => {
+            track.src = next;
+          });
+        }
+      }
+    }
+
+    for (const sfx of sessionConsole.sfx ?? []) {
+      if (sfx.kind === 'local' && sfx.src) {
+        queueRewrite(sfx.src, (next) => {
+          sfx.src = next;
         });
       }
     }
