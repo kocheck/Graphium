@@ -15,6 +15,19 @@ describe('isAllowedAudioFileName', () => {
   });
 });
 
+function audioFile(name: string, contents: string, size?: number): File {
+  const file = new File([contents], name, { type: 'audio/mpeg' });
+  const encoded = new TextEncoder().encode(contents);
+  Object.defineProperty(file, 'arrayBuffer', {
+    value: async () =>
+      encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength),
+  });
+  if (size !== undefined) {
+    Object.defineProperty(file, 'size', { value: size });
+  }
+  return file;
+}
+
 describe('saveLocalAudioFile', () => {
   let mockSaveAssetTemp: ReturnType<typeof vi.fn>;
 
@@ -26,10 +39,37 @@ describe('saveLocalAudioFile', () => {
   });
 
   it('rejects files larger than 25MB', async () => {
-    const file = new File(['x'], 'bed.mp3', { type: 'audio/mpeg' });
-    Object.defineProperty(file, 'size', { value: 25 * 1024 * 1024 + 1 });
+    const file = audioFile('bed.mp3', 'x', 25 * 1024 * 1024 + 1);
 
     await expect(saveLocalAudioFile(file)).rejects.toThrow(/25\s*MB/i);
     expect(mockSaveAssetTemp).not.toHaveBeenCalled();
+  });
+
+  it('saves a small bed.mp3 and returns the mocked file URL', async () => {
+    const file = audioFile('bed.mp3', 'tiny-bed');
+    const url = await saveLocalAudioFile(file);
+
+    expect(url).toBe('file:///tmp/bed.mp3');
+    expect(mockSaveAssetTemp).toHaveBeenCalledTimes(1);
+    const [buffer, name] = mockSaveAssetTemp.mock.calls[0] as [ArrayBuffer, string];
+    expect(name).toBe('bed.mp3');
+    expect(typeof buffer.byteLength).toBe('number');
+    expect(buffer.byteLength).toBeGreaterThan(0);
+  });
+
+  it('rejects bed.exe and does not call saveAssetTemp', async () => {
+    const file = audioFile('bed.exe', 'x');
+
+    await expect(saveLocalAudioFile(file)).rejects.toThrow(/unsupported audio file/i);
+    expect(mockSaveAssetTemp).not.toHaveBeenCalled();
+  });
+
+  it('saves a file just over 8MB without throwing', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const file = audioFile('bed.mp3', 'x', 8 * 1024 * 1024 + 1);
+
+    await expect(saveLocalAudioFile(file)).resolves.toBe('file:///tmp/bed.mp3');
+    expect(mockSaveAssetTemp).toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

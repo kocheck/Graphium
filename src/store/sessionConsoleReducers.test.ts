@@ -420,11 +420,111 @@ describe('applyCatalogAction', () => {
     expect(appendedGroup?.tracks[0]?.id).not.toBe('t1');
     expect(appendedGroup?.tracks[0]?.recommendedImageId).toBe(appendedSet?.images[0]?.id);
 
-    const importedChime = merged.sfx.find((item) => item.label === 'Imported Chime');
-    expect(importedChime?.id).not.toBe('chime');
-    expect(importedChime).toBeDefined();
+    expect(merged.sfx.find((item) => item.label === 'Imported Chime')).toBeUndefined();
     expect(merged.sfx.filter((item) => item.id === 'chime')).toHaveLength(1);
+    expect(merged.sfx).toHaveLength(current.sfx.length);
     expect(current.imageSets).toHaveLength(1);
+  });
+
+  it('MERGE_CATALOG skips seeded SFX ids when merging two empty catalogs', () => {
+    const merged = applyCatalogAction(emptySessionConsoleCatalog('B'), {
+      type: 'MERGE_CATALOG',
+      catalog: emptySessionConsoleCatalog('A'),
+    });
+    expect(merged.sfx.map((item) => item.id)).toEqual([
+      'chime',
+      'drone',
+      'snap',
+      'ping',
+      'test-tone',
+    ]);
+    expect(merged.sfx).toHaveLength(5);
+  });
+
+  it('MERGE_CATALOG appends incoming SFX with a new id as a clone', () => {
+    const extra = {
+      id: 'horn',
+      label: 'Horn',
+      kind: 'synth' as const,
+      synthType: 'chime' as const,
+    };
+    const incoming: SessionConsoleCatalog = {
+      ...emptySessionConsoleCatalog('A'),
+      sfx: [...emptySessionConsoleCatalog('A').sfx, extra],
+    };
+    const merged = applyCatalogAction(emptySessionConsoleCatalog('B'), {
+      type: 'MERGE_CATALOG',
+      catalog: incoming,
+    });
+    extra.label = 'MUTATED';
+    expect(merged.sfx.map((item) => item.id)).toContain('horn');
+    expect(merged.sfx).toHaveLength(6);
+    expect(merged.sfx.find((item) => item.id === 'horn')?.label).toBe('Horn');
+  });
+
+  it('ADD_IMAGE clones the payload so later mutation does not change the catalog', () => {
+    const catalogWithSet = applyCatalogAction(emptySessionConsoleCatalog('Ashen Crown'), {
+      type: 'ADD_IMAGE_SET',
+      set: { id: 'set-1', title: 'Reveal', note: '', images: [] },
+    });
+    const image = {
+      id: 'img-new',
+      name: 'A',
+      cue: '',
+      src: 'file://a.webp',
+      thumbnailSrc: 'file://a-t.webp',
+      alt: 'A',
+    };
+    const next = applyCatalogAction(catalogWithSet, { type: 'ADD_IMAGE', setId: 'set-1', image });
+    image.name = 'MUTATED';
+    expect(next.imageSets[0]?.images.find((item) => item.id === 'img-new')?.name).toBe('A');
+  });
+
+  it('ADD_IMAGE_SET clones the payload so later mutation does not change the catalog', () => {
+    const nested = makeImage({ id: 'img-1', name: 'Door' });
+    const set: ImageSet = { id: 'set-new', title: 'Reveal', note: '', images: [nested] };
+    const next = applyCatalogAction(emptySessionConsoleCatalog('Ashen Crown'), {
+      type: 'ADD_IMAGE_SET',
+      set,
+    });
+    set.title = 'MUTATED';
+    nested.name = 'MUTATED';
+    set.images.push(makeImage({ id: 'img-extra', name: 'Extra' }));
+    expect(next.imageSets[0]?.title).toBe('Reveal');
+    expect(next.imageSets[0]?.images).toHaveLength(1);
+    expect(next.imageSets[0]?.images[0]?.name).toBe('Door');
+  });
+
+  it('ADD_TRACK clones the payload so later mutation does not change the catalog', () => {
+    const withGroup = applyCatalogAction(emptySessionConsoleCatalog('Ashen Crown'), {
+      type: 'ADD_TRACK_GROUP',
+      group: { id: 'g1', title: 'Beds', note: '', accent: 'bed', tracks: [] },
+    });
+    const track = makeTrack({ id: 't-new', title: 'Tavern' });
+    const next = applyCatalogAction(withGroup, { type: 'ADD_TRACK', groupId: 'g1', track });
+    track.title = 'MUTATED';
+    expect(next.trackGroups[0]?.tracks.find((item) => item.id === 't-new')?.title).toBe('Tavern');
+  });
+
+  it('ADD_TRACK_GROUP clones the payload so later mutation does not change the catalog', () => {
+    const nested = makeTrack({ id: 't1', title: 'Road' });
+    const group: TrackGroup = {
+      id: 'g-new',
+      title: 'Beds',
+      note: '',
+      accent: 'bed',
+      tracks: [nested],
+    };
+    const next = applyCatalogAction(emptySessionConsoleCatalog('Ashen Crown'), {
+      type: 'ADD_TRACK_GROUP',
+      group,
+    });
+    group.title = 'MUTATED';
+    nested.title = 'MUTATED';
+    group.tracks.push(makeTrack({ id: 't-extra', title: 'Extra' }));
+    expect(next.trackGroups[0]?.title).toBe('Beds');
+    expect(next.trackGroups[0]?.tracks).toHaveLength(1);
+    expect(next.trackGroups[0]?.tracks[0]?.title).toBe('Road');
   });
 
   it('unknown catalog ids are no-ops and return the previous reference', () => {

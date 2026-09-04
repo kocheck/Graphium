@@ -9,7 +9,7 @@ import type {
   MapConfig,
   TokenLibraryItem,
 } from './gameStore';
-import { emptySessionConsoleCatalog } from '../types/sessionConsole';
+import { emptySessionConsoleCatalog, emptySessionConsoleRuntime } from '../types/sessionConsole';
 
 // Mock system messages to avoid dependency on random message selection
 vi.mock('../utils/systemMessages', () => ({
@@ -39,6 +39,7 @@ describe('gameStore', () => {
       maps: { [initialMap.id]: initialMap },
       activeMapId: initialMap.id,
       tokenLibrary: [],
+      sessionConsole: emptySessionConsoleCatalog('New Campaign'),
     };
 
     useGameStore.setState({
@@ -64,6 +65,8 @@ describe('gameStore', () => {
       broadcastMeasurement: false,
       dmMeasurement: null,
       campaign: initialCampaign,
+      sessionConsole: initialCampaign.sessionConsole,
+      sessionConsoleRuntime: emptySessionConsoleRuntime(),
     });
   });
 
@@ -1387,6 +1390,17 @@ describe('gameStore', () => {
       expect(state.sessionConsoleRuntime.volume).toBe(70);
       expect(state.sessionConsoleRuntime.duckPercent).toBe(40);
       expect(state.sessionConsoleRuntime.worldArmed).toBe(true);
+    });
+
+    it('does not leak catalog or runtime from the previous case', () => {
+      const state = useGameStore.getState();
+      expect(state.campaign.sessionConsole).toBe(state.sessionConsole);
+      expect(state.sessionConsole.imageSets).toEqual([]);
+      expect(state.sessionConsole.trackGroups).toEqual([]);
+      expect(state.sessionConsole.stage.title).toBe('New Campaign');
+      expect(state.sessionConsoleRuntime.stageVisible).toBe(false);
+      expect(state.sessionConsoleRuntime.activeImage).toBeNull();
+      expect(state.sessionConsoleRuntime.worldArmed).toBe(false);
     });
   });
 });

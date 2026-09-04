@@ -156,7 +156,7 @@ describe('SessionConsolePanel', () => {
     vi.clearAllMocks();
     mockProcessImage.mockImplementation((_file: File, type: string) => ({
       promise: Promise.resolve(
-        type === 'TOKEN' ? 'file:///thumb/dropped.webp' : 'file:///full/dropped.webp',
+        type === 'THUMB' ? 'file:///thumb/dropped.webp' : 'file:///full/dropped.webp',
       ),
       cancel: vi.fn(),
     }));
@@ -469,7 +469,7 @@ describe('SessionConsolePanel', () => {
       expect(image?.thumbnailSrc).not.toBe(image?.src);
     });
     expect(mockProcessImage).toHaveBeenCalledWith(expect.any(File), 'MAP');
-    expect(mockProcessImage).toHaveBeenCalledWith(expect.any(File), 'TOKEN');
+    expect(mockProcessImage).toHaveBeenCalledWith(expect.any(File), 'THUMB');
     vi.unstubAllGlobals();
   });
 });

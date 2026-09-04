@@ -189,6 +189,28 @@ function remapTrackGroup(
   };
 }
 
+function cloneStageImage(image: StageImage): StageImage {
+  return { ...image };
+}
+
+function cloneImageSet(set: ImageSet): ImageSet {
+  return {
+    ...set,
+    images: set.images.map(cloneStageImage),
+  };
+}
+
+function cloneTrack(track: Track): Track {
+  return { ...track };
+}
+
+function cloneTrackGroup(group: TrackGroup): TrackGroup {
+  return {
+    ...group,
+    tracks: group.tracks.map(cloneTrack),
+  };
+}
+
 function mergeCatalog(
   catalog: SessionConsoleCatalog,
   incoming: SessionConsoleCatalog,
@@ -200,10 +222,10 @@ function mergeCatalog(
   const appendedGroups = incoming.trackGroups.map((group) =>
     remapTrackGroup(group, used, imageIdMap),
   );
-  const appendedSfx = incoming.sfx.map((sfx) => ({
-    ...sfx,
-    id: allocateId(sfx.id, used),
-  }));
+  const existingSfxIds = new Set(catalog.sfx.map((sfx) => sfx.id));
+  const appendedSfx = incoming.sfx
+    .filter((sfx) => !existingSfxIds.has(sfx.id))
+    .map((sfx) => ({ ...sfx }));
 
   return {
     ...catalog,
@@ -218,14 +240,8 @@ function cloneCatalog(catalog: SessionConsoleCatalog): SessionConsoleCatalog {
     ...catalog,
     stage: { ...catalog.stage },
     defaults: { ...catalog.defaults },
-    imageSets: catalog.imageSets.map((set) => ({
-      ...set,
-      images: set.images.map((image) => ({ ...image })),
-    })),
-    trackGroups: catalog.trackGroups.map((group) => ({
-      ...group,
-      tracks: group.tracks.map((track) => ({ ...track })),
-    })),
+    imageSets: catalog.imageSets.map(cloneImageSet),
+    trackGroups: catalog.trackGroups.map(cloneTrackGroup),
     sfx: catalog.sfx.map((sfx) => ({ ...sfx })),
   };
 }
@@ -249,7 +265,7 @@ function applyImageSetAction(
       if (catalog.imageSets.some((set) => set.id === action.set.id)) {
         return catalog;
       }
-      return { ...catalog, imageSets: [...catalog.imageSets, action.set] };
+      return { ...catalog, imageSets: [...catalog.imageSets, cloneImageSet(action.set)] };
     }
     case 'UPDATE_IMAGE_SET': {
       const index = catalog.imageSets.findIndex((set) => set.id === action.setId);
@@ -306,7 +322,7 @@ function applyImageAction(
         ...catalog,
         imageSets: replaceAt(catalog.imageSets, index, {
           ...current,
-          images: [...current.images, action.image],
+          images: [...current.images, cloneStageImage(action.image)],
         }),
       };
     }
@@ -379,7 +395,7 @@ function applyTrackGroupAction(
       if (catalog.trackGroups.some((group) => group.id === action.group.id)) {
         return catalog;
       }
-      return { ...catalog, trackGroups: [...catalog.trackGroups, action.group] };
+      return { ...catalog, trackGroups: [...catalog.trackGroups, cloneTrackGroup(action.group)] };
     }
     case 'UPDATE_TRACK_GROUP': {
       const index = catalog.trackGroups.findIndex((group) => group.id === action.groupId);
@@ -436,7 +452,7 @@ function applyTrackAction(
         ...catalog,
         trackGroups: replaceAt(catalog.trackGroups, index, {
           ...current,
-          tracks: [...current.tracks, action.track],
+          tracks: [...current.tracks, cloneTrack(action.track)],
         }),
       };
     }

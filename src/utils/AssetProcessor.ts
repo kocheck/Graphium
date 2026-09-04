@@ -5,9 +5,10 @@ import { getStorage } from '../services/storage';
  *
  * - MAP: Background map images (max 4096px for 4K display support)
  * - TOKEN: Character/creature tokens (max 512px for performance)
+ * - THUMB: Session Console plate thumbnails (max 256px)
  */
 // eslint-disable-next-line import/no-unused-modules
-export type AssetType = 'MAP' | 'TOKEN';
+export type AssetType = 'MAP' | 'TOKEN' | 'THUMB';
 
 /**
  * Maximum dimension for map images in pixels
@@ -24,6 +25,21 @@ const MAX_MAP_DIMENSION = 4096;
  * This provides plenty of quality while keeping file sizes small and rendering fast.
  */
 const MAX_TOKEN_DIMENSION = 512;
+
+/**
+ * Maximum dimension for Session Console plate thumbnails in pixels
+ */
+const MAX_THUMB_DIMENSION = 256;
+
+function maxDimensionForType(type: AssetType): number {
+  if (type === 'MAP') {
+    return MAX_MAP_DIMENSION;
+  }
+  if (type === 'THUMB') {
+    return MAX_THUMB_DIMENSION;
+  }
+  return MAX_TOKEN_DIMENSION;
+}
 
 /**
  * Progress callback for image processing
@@ -313,7 +329,7 @@ async function processImageMainThread(
     onProgress(20);
   }
 
-  const maxDim = type === 'MAP' ? MAX_MAP_DIMENSION : MAX_TOKEN_DIMENSION;
+  const maxDim = maxDimensionForType(type);
 
   let width = bitmap.width;
   let height = bitmap.height;

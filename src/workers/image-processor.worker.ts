@@ -18,7 +18,7 @@
  */
 
 // eslint-disable-next-line import/no-unused-modules
-export type AssetType = 'MAP' | 'TOKEN';
+export type AssetType = 'MAP' | 'TOKEN' | 'THUMB';
 
 interface ProcessImageMessage {
   type: 'PROCESS_IMAGE';
@@ -49,6 +49,17 @@ interface ErrorMessage {
 // Maximum dimensions for different asset types
 const MAX_MAP_DIMENSION = 4096;
 const MAX_TOKEN_DIMENSION = 512;
+const MAX_THUMB_DIMENSION = 256;
+
+function maxDimensionForType(assetType: AssetType): number {
+  if (assetType === 'MAP') {
+    return MAX_MAP_DIMENSION;
+  }
+  if (assetType === 'THUMB') {
+    return MAX_THUMB_DIMENSION;
+  }
+  return MAX_TOKEN_DIMENSION;
+}
 
 /**
  * Process image in Web Worker (non-blocking)
@@ -72,7 +83,7 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
       fileName,
     } as ProgressMessage);
 
-    const maxDim = assetType === 'MAP' ? MAX_MAP_DIMENSION : MAX_TOKEN_DIMENSION;
+    const maxDim = maxDimensionForType(assetType);
 
     let width = bitmap.width;
     let height = bitmap.height;

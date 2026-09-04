@@ -66,7 +66,7 @@ export async function processPlateSources(
   const mapHandle = processImage(file, 'MAP');
   const src = await mapHandle.promise;
   try {
-    const thumbHandle = processImage(file, 'TOKEN');
+    const thumbHandle = processImage(file, 'THUMB');
     const thumbnailSrc = await thumbHandle.promise;
     return { src, thumbnailSrc };
   } catch {

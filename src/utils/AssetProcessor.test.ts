@@ -89,6 +89,22 @@ describe('AssetProcessor', () => {
     expect(global.OffscreenCanvas).toHaveBeenCalledWith(512, 512); // Max token size
   });
 
+  it('processing handles thumb constraints correctly', async () => {
+    delete (global as Record<string, unknown>).Worker;
+
+    global.createImageBitmap = vi.fn().mockResolvedValue({
+      width: 1000,
+      height: 1000,
+      close: vi.fn(),
+    });
+
+    const file = new File([''], 'plate.png', { type: 'image/png' });
+    const handle = processImage(file, 'THUMB');
+    await handle.promise;
+
+    expect(global.OffscreenCanvas).toHaveBeenCalledWith(256, 256);
+  });
+
   it('converts extension to .webp', async () => {
     delete (global as Record<string, unknown>).Worker;
 
