@@ -26,7 +26,7 @@ export function formatTrackFallbackLine(index: number, track: Track): string {
   return `${index}. ${track.title} — (local file)`;
 }
 
-export function formatAllTrackLinks(catalog: SessionConsoleCatalog): string {
+export function formatSessionConsoleFallbackLinks(catalog: SessionConsoleCatalog): string {
   return flattenTracks(catalog)
     .map((track, index) => formatTrackFallbackLine(index + 1, track))
     .join('\n');

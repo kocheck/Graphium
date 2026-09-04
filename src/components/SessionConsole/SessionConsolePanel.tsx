@@ -10,7 +10,7 @@ import { useSessionConsoleHotkeys } from './useSessionConsoleHotkeys';
 import { useGameStore } from '../../store/gameStore';
 import {
   flattenTracks,
-  formatAllTrackLinks,
+  formatSessionConsoleFallbackLinks,
   formatTrackFallbackLine,
 } from '../../utils/sessionConsoleBoard';
 import { OPEN_SESSION_CONSOLE_SETTINGS_EVENT } from '../../utils/sessionConsoleEvents';
@@ -35,7 +35,7 @@ export function SessionConsolePanel(): JSX.Element {
   }, []);
 
   const handleCopyAll = (): void => {
-    void navigator.clipboard.writeText(formatAllTrackLinks(catalog)).then(
+    void navigator.clipboard.writeText(formatSessionConsoleFallbackLinks(catalog)).then(
       () => showToast('Copied track links', 'success'),
       () => showToast('Failed to copy track links', 'error'),
     );
@@ -45,7 +45,9 @@ export function SessionConsolePanel(): JSX.Element {
     const tracks = flattenTracks(catalog);
     const current = tracks.find((track) => track.id === runtime.audio.trackId);
     const index = current ? tracks.indexOf(current) + 1 : 0;
-    const text = current ? formatTrackFallbackLine(index, current) : formatAllTrackLinks(catalog);
+    const text = current
+      ? formatTrackFallbackLine(index, current)
+      : formatSessionConsoleFallbackLinks(catalog);
     void navigator.clipboard.writeText(text).then(
       () => showToast('Copied current track link', 'success'),
       () => showToast('Failed to copy track link', 'error'),

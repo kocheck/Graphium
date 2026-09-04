@@ -210,6 +210,14 @@ This allows rapid feature development with AI pair programming.
 - Currently: 2 hardcoded example tokens
 - Planned: Persistent library with categories, search, bulk import
 
+**Session Console**
+
+- Architect sidebar board for player-safe plates (artwork) and ambience tracks
+- World View **Stage** shows the current plate over the battlemap and plays YouTube or local audio
+- Catalog is campaign-owned (saved in `.graphium`); runtime (plate + transport) syncs Architect → World
+- Mid-session fallback: copy numbered YouTube watch URLs (local tracks listed as `(local file)`)
+- Built-in voice/video chat is not part of Session Console — use Discord/Zoom separately
+
 ### Technical Terms
 
 **IPC (Inter-Process Communication)**
@@ -637,6 +645,7 @@ Campaign files must be:
 7. Drag-and-drop asset upload
 8. Library tokens (hardcoded examples)
 9. Accessible theme system with light/dark mode (Radix Colors, WCAG AA compliant)
+10. Session Console (Architect board + World View Stage: plates, YouTube/local beds, duck/stop, Discord table setup). Chat/voice remains out of scope.
 
 ### High Priority (Next to Implement) 🔥
 
