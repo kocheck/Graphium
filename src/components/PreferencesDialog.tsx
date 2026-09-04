@@ -68,6 +68,7 @@ function PreferencesDialog({ isOpen, onClose }: PreferencesDialogProps): JSX.Ele
       onClick={onClose}
       role="dialog"
       aria-modal="true"
+      data-esc-owns="true"
       aria-labelledby="preferences-dialog-title"
     >
       <div

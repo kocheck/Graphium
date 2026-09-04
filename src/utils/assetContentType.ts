@@ -43,6 +43,8 @@ const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
     ]),
   ),
   'image/jpeg': '.jpg',
+  'audio/x-m4a': '.m4a',
+  'audio/x-wav': '.wav',
 };
 
 export function extensionForContentType(contentType: string): string {

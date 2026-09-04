@@ -31,9 +31,7 @@ function isSessionConsoleHotkeyFocus(event: KeyboardEvent): boolean {
 }
 
 function isModalEscOwnerOpen(): boolean {
-  return Boolean(
-    document.querySelector('[data-esc-owns="true"], [aria-modal="true"], [role="dialog"]'),
-  );
+  return Boolean(document.querySelector('[data-esc-owns="true"]'));
 }
 
 export function shouldDeferSessionConsoleEscape(

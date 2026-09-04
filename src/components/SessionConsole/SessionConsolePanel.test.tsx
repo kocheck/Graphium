@@ -488,6 +488,33 @@ describe('SessionConsolePanel', () => {
     stopSpy.mockRestore();
   });
 
+  it('still STOPs when a role=dialog nav drawer is open without data-esc-owns', () => {
+    seedBoard(true);
+    render(
+      <>
+        <div role="dialog" aria-modal="true" aria-label="Sidebar">
+          Mobile drawer
+        </div>
+        <SessionConsoleEscapeStop />
+      </>,
+    );
+
+    const originalDispatch = useGameStore.getState().dispatchSessionConsole;
+    const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
+      originalDispatch(command),
+    );
+    act(() => {
+      useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+    });
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'STOP' });
+    expect(useGameStore.getState().sessionConsoleRuntime.audio.status).toBe('stopped');
+  });
+
   it('does not STOP when Escape is pressed while a confirm dialog is open', () => {
     seedBoard(true);
     render(

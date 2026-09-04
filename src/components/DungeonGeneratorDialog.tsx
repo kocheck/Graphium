@@ -88,6 +88,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
       onClick={clearDungeonDialog}
       role="dialog"
       aria-modal="true"
+      data-esc-owns="true"
       aria-labelledby="dungeon-dialog-title"
     >
       <div

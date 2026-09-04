@@ -12,6 +12,16 @@ import {
 } from '../../types/sessionConsole';
 import { WorldStage } from './WorldStage';
 
+const playLocalSfx = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+
+vi.mock('./worldStageSfx', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./worldStageSfx')>();
+  return {
+    ...actual,
+    playLocalSfx,
+  };
+});
+
 interface MockYtPlayer {
   mute: ReturnType<typeof vi.fn>;
   unMute: ReturnType<typeof vi.fn>;
@@ -146,6 +156,8 @@ describe('WorldStage', () => {
     HTMLMediaElement.prototype.pause = vi.fn();
 
     mockIpcRenderer.send.mockClear();
+    playLocalSfx.mockReset();
+    playLocalSfx.mockResolvedValue(undefined);
     seedStore();
   });
 
@@ -260,11 +272,20 @@ describe('WorldStage', () => {
     });
   });
 
-  it('sends unarmed when World Stage unmounts', () => {
+  it('sends unarmed on pagehide, not on React remount', () => {
     seedStore({ worldArmed: true });
     const { unmount } = render(<WorldStage />);
     mockIpcRenderer.send.mockClear();
     unmount();
+    expect(mockIpcRenderer.send).not.toHaveBeenCalledWith('SESSION_CONSOLE_WORLD_EVENT', {
+      type: 'unarmed',
+    });
+
+    render(<WorldStage />);
+    mockIpcRenderer.send.mockClear();
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
     expect(mockIpcRenderer.send).toHaveBeenCalledWith('SESSION_CONSOLE_WORLD_EVENT', {
       type: 'unarmed',
     });
@@ -413,6 +434,52 @@ describe('WorldStage', () => {
         message: expect.stringMatching(/embed|copy links/i),
       }),
     );
+  });
+
+  it('plays local SFX from runtime src without a catalog', async () => {
+    seedStore({ worldArmed: true, sfxSeq: 0, sfxId: null });
+    render(<WorldStage />);
+
+    act(() => {
+      useGameStore.setState({
+        sessionConsoleRuntime: {
+          ...useGameStore.getState().sessionConsoleRuntime,
+          sfxSeq: 1,
+          sfxId: 'sting',
+          sfxKind: 'local',
+          sfxSrc: 'file:///tmp/sting.mp3',
+          sfxSynthType: null,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(playLocalSfx).toHaveBeenCalledWith(expect.anything(), 'file:///tmp/sting.mp3');
+    });
+    expect(createOscillator).not.toHaveBeenCalled();
+  });
+
+  it('plays remapped pack synth from sfxSynthType', async () => {
+    seedStore({ worldArmed: true, sfxSeq: 0, sfxId: null });
+    render(<WorldStage />);
+
+    act(() => {
+      useGameStore.setState({
+        sessionConsoleRuntime: {
+          ...useGameStore.getState().sessionConsoleRuntime,
+          sfxSeq: 1,
+          sfxId: 'horn-2',
+          sfxKind: 'synth',
+          sfxSynthType: 'chime',
+          sfxSrc: null,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(createOscillator).toHaveBeenCalled();
+    });
+    expect(playLocalSfx).not.toHaveBeenCalled();
   });
 
   it('fires synth SFX when sfxSeq increments', async () => {

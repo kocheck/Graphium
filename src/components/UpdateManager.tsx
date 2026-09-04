@@ -535,6 +535,7 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps): React.ReactElem
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        data-esc-owns="true"
         aria-labelledby="update-manager-title"
       >
         <div className="flex justify-between items-center mb-6">

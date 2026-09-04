@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { contentTypeForAssetFileName, contentTypeForMediaPath } from './assetContentType';
+import {
+  contentTypeForAssetFileName,
+  contentTypeForMediaPath,
+  extensionForContentType,
+} from './assetContentType';
 
 describe('contentTypeForMediaPath', () => {
   it('maps audio extensions and leaves images undefined', () => {
@@ -23,5 +27,15 @@ describe('contentTypeForAssetFileName', () => {
     expect(contentTypeForAssetFileName('plate.png')).toBe('image/png');
     expect(contentTypeForAssetFileName('plate.jpg')).toBe('image/jpeg');
     expect(contentTypeForAssetFileName('plate.jpeg')).toBe('image/jpeg');
+  });
+});
+
+describe('extensionForContentType', () => {
+  it('maps standard and browser audio MIME aliases', () => {
+    expect(extensionForContentType('audio/mpeg')).toBe('.mp3');
+    expect(extensionForContentType('audio/mp4')).toBe('.m4a');
+    expect(extensionForContentType('audio/x-m4a')).toBe('.m4a');
+    expect(extensionForContentType('audio/x-wav')).toBe('.wav');
+    expect(extensionForContentType('image/jpeg')).toBe('.jpg');
   });
 });

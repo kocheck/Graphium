@@ -15,15 +15,15 @@ export {
   shouldWarnLocalAudioSize,
 } from './localAudioLimits';
 
+export const LOCAL_AUDIO_UNSUPPORTED_MESSAGE = 'Unsupported audio format (mp3, ogg, wav, m4a)';
+
 /**
  * Copy a local audio file into temp asset storage (no transcode / WebP).
  * Warns above 8MB and rejects above 25MB.
  */
 export async function saveLocalAudioFile(file: File): Promise<string> {
   if (!isAllowedAudioFileName(file.name)) {
-    throw new Error(
-      `Unsupported audio file "${file.name}". Allowed extensions: mp3, ogg, wav, m4a.`,
-    );
+    throw new Error(LOCAL_AUDIO_UNSUPPORTED_MESSAGE);
   }
 
   if (file.size > LOCAL_AUDIO_REJECT_BYTES) {

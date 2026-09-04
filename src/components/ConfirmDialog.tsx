@@ -75,6 +75,7 @@ function ConfirmDialog(): JSX.Element | null {
       onClick={handleCancel}
       role="dialog"
       aria-modal="true"
+      data-esc-owns="true"
       aria-labelledby="confirm-dialog-title"
     >
       <div
