@@ -391,7 +391,9 @@ describe('SessionConsolePanel', () => {
     const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
       originalDispatch(command),
     );
-    useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+    act(() => {
+      useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+    });
 
     const outside = screen.getByRole('button', { name: 'Outside canvas' });
     outside.focus();
@@ -423,7 +425,9 @@ describe('SessionConsolePanel', () => {
     const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
       originalDispatch(command),
     );
-    useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+    act(() => {
+      useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+    });
 
     const outside = screen.getByRole('button', { name: 'Outside canvas' });
     outside.focus();
@@ -460,7 +464,9 @@ describe('SessionConsolePanel', () => {
     const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
       originalDispatch(command),
     );
-    useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+    act(() => {
+      useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+    });
 
     const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
     act(() => {

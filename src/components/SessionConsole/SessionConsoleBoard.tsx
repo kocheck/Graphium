@@ -29,7 +29,7 @@ export function SessionConsoleBoard({
   const updateSessionConsole = useGameStore((state) => state.updateSessionConsole);
   const showToast = useGameStore((state) => state.showToast);
   const [youtubeDraft, setYoutubeDraft] = useState('');
-  const imageInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const allImages = catalog.imageSets.flatMap((set) => set.images);
   const isEmpty = catalog.imageSets.length === 0 && catalog.trackGroups.length === 0;
 

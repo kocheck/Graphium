@@ -55,7 +55,7 @@ describe('saveLocalAudioFile', () => {
     expect(name).toBe('bed.mp3');
     const expected = new TextEncoder().encode('tiny-bed');
     expect(buffer.byteLength).toBe(expected.byteLength);
-    expect(new Uint8Array(buffer)).toEqual(expected);
+    expect(Array.from(new Uint8Array(buffer))).toEqual(Array.from(expected));
   });
 
   it('rejects bed.exe and does not call saveAssetTemp', async () => {

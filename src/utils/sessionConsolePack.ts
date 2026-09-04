@@ -146,10 +146,15 @@ export async function readResponseCapped(
         await reader.cancel();
         return { status: 'too-large' };
       }
-      chunks.push(value);
+      chunks.push(new Uint8Array(value));
     }
-    const buffer = await new Blob(chunks).arrayBuffer();
-    return { status: 'ok', buffer };
+    const merged = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      merged.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return { status: 'ok', buffer: merged.buffer };
   }
   const buffer = await response.arrayBuffer();
   if (buffer.byteLength > maxBytes) {
