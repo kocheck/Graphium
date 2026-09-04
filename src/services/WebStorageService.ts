@@ -210,6 +210,7 @@ export class WebStorageService implements IStorageService {
   importSessionConsolePack(): Promise<{
     catalog: SessionConsoleCatalog;
     skipped: string[];
+    warnings: string[];
   } | null> {
     return new Promise((resolve, reject) => {
       const input = document.createElement('input');

@@ -37,6 +37,9 @@ export function useSessionConsoleHotkeys(): void {
       }
 
       if (event.key === 'Escape') {
+        if (store.confirmDialog) {
+          return;
+        }
         event.preventDefault();
         event.stopImmediatePropagation();
         store.dispatchSessionConsole({ type: 'STOP' });

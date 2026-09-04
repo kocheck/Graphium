@@ -124,6 +124,7 @@ function TransportHarness({
     pauseRequested: { current: false },
     generation: { current: 0 },
     sourceStarted: { current: false },
+    startPending: { current: false },
     lastAudio: { current: emptySessionConsoleRuntime().audio },
     lastMixer: {
       current: {

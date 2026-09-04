@@ -1,21 +1,17 @@
+import {
+  isAllowedAudioFileName,
+  LOCAL_AUDIO_REJECT_BYTES,
+  LOCAL_AUDIO_SIZE_WARN_MESSAGE,
+  LOCAL_AUDIO_WARN_BYTES,
+} from './localAudioLimits';
 import { getStorage } from '../services/storage';
 
-const ALLOWED_AUDIO_EXTENSIONS = new Set(['mp3', 'ogg', 'wav', 'm4a']);
-export const LOCAL_AUDIO_WARN_BYTES = 8 * 1024 * 1024;
-export const LOCAL_AUDIO_REJECT_BYTES = 25 * 1024 * 1024;
-
-/**
- * Returns true when the filename has an allowed local-audio extension.
- * Checks the extension only — not MIME type or contents.
- */
-export function isAllowedAudioFileName(name: string): boolean {
-  const lastDot = name.lastIndexOf('.');
-  if (lastDot < 0 || lastDot === name.length - 1) {
-    return false;
-  }
-  const ext = name.slice(lastDot + 1).toLowerCase();
-  return ALLOWED_AUDIO_EXTENSIONS.has(ext);
-}
+export {
+  isAllowedAudioFileName,
+  LOCAL_AUDIO_REJECT_BYTES,
+  LOCAL_AUDIO_SIZE_WARN_MESSAGE,
+  LOCAL_AUDIO_WARN_BYTES,
+} from './localAudioLimits';
 
 /**
  * Copy a local audio file into temp asset storage (no transcode / WebP).
@@ -33,9 +29,7 @@ export async function saveLocalAudioFile(file: File): Promise<string> {
   }
 
   if (file.size > LOCAL_AUDIO_WARN_BYTES) {
-    console.warn(
-      `Audio file "${file.name}" is larger than 8MB. Large local beds bloat the campaign zip.`,
-    );
+    console.warn(LOCAL_AUDIO_SIZE_WARN_MESSAGE);
   }
 
   const buffer = await file.arrayBuffer();

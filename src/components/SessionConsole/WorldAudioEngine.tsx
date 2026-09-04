@@ -20,6 +20,7 @@ export function WorldAudioEngine(): JSX.Element {
   const pauseRequestedRef = useRef(false);
   const generationRef = useRef(0);
   const sourceStartedRef = useRef(false);
+  const startPendingRef = useRef(false);
   const fadeTimerRef = useRef<number | null>(null);
   const lastSfxSeqRef = useRef(runtime.sfxSeq);
   const lastAudioRef = useRef(runtime.audio);
@@ -38,6 +39,7 @@ export function WorldAudioEngine(): JSX.Element {
     pauseRequested: pauseRequestedRef,
     generation: generationRef,
     sourceStarted: sourceStartedRef,
+    startPending: startPendingRef,
     lastAudio: lastAudioRef,
     lastMixer: lastMixerRef,
   }).current;
@@ -83,8 +85,15 @@ export function WorldAudioEngine(): JSX.Element {
   useWorldTransport(runtime, transportRefs, fade);
 
   const handleLocalAudioError = useCallback((): void => {
+    const element = audioRef.current;
+    if (!element?.getAttribute('src')) {
+      return;
+    }
+    if (!sourceStartedRef.current || runtime.audio.status === 'stopped') {
+      return;
+    }
     sendWorldEvent('error', sanitizeSessionConsoleErrorMessage('Local audio failed to play.'));
-  }, []);
+  }, [runtime.audio.status]);
 
   useEffect(() => {
     if (runtime.sfxSeq === lastSfxSeqRef.current) {

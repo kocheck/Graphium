@@ -9,7 +9,11 @@ import { sanitizeSessionConsoleErrorMessage } from '../../utils/syncUtils';
 
 import type { SessionConsoleCatalog } from '../../types/sessionConsole';
 
-async function importPack(): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] } | null> {
+async function importPack(): Promise<{
+  catalog: SessionConsoleCatalog;
+  skipped: string[];
+  warnings: string[];
+} | null> {
   try {
     return await getStorage().importSessionConsolePack();
   } catch (error) {
@@ -136,7 +140,11 @@ export function SessionConsolePackFields(): JSX.Element {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [importSummary, setImportSummary] = useState<string | null>(null);
 
-  const applySkippedSummary = (skipped: string[]): void => {
+  const applySkippedSummary = (skipped: string[], warnings: string[] = []): void => {
+    const uniqueWarnings = [...new Set(warnings)];
+    for (const warning of uniqueWarnings) {
+      showToast(warning, 'info');
+    }
     const sanitized = skipped.map((item) => sanitizeSessionConsoleErrorMessage(item));
     if (sanitized.length === 0) {
       setImportSummary('Import complete.');
@@ -156,7 +164,7 @@ export function SessionConsolePackFields(): JSX.Element {
         'Replace the current Session Console catalog? This cannot be undone.',
         () => {
           updateSessionConsole({ type: 'REPLACE_CATALOG', catalog });
-          applySkippedSummary(result.skipped);
+          applySkippedSummary(result.skipped, result.warnings);
         },
         'Replace',
       );
@@ -171,7 +179,7 @@ export function SessionConsolePackFields(): JSX.Element {
       }
       const catalog = await processImportedCatalogPlates(result.catalog);
       updateSessionConsole({ type: 'MERGE_CATALOG', catalog });
-      applySkippedSummary(result.skipped);
+      applySkippedSummary(result.skipped, result.warnings);
     })();
   };
 

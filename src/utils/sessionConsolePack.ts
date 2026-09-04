@@ -1,6 +1,11 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  isAllowedAudioFileName,
+  pushLocalAudioSizeWarning,
+  shouldWarnLocalAudioSize,
+} from './localAudioLimits';
 import { emptySessionConsoleCatalog, parseYouTubeVideoId } from '../types/sessionConsole';
 
 import type {
@@ -508,6 +513,7 @@ interface IngestContext {
   fetchHttp?: (url: string) => Promise<ArrayBuffer | null>;
   persistBuffer?: PersistBuffer;
   skipped: string[];
+  warnings: string[];
   localFileSkipReason?: string;
   maxHttpBytes: number;
 }
@@ -549,6 +555,9 @@ async function ingestHttpSrc(
   if (buffer.byteLength > ctx.maxHttpBytes) {
     ctx.skipped.push(`${label}: remote file is larger than 25MB`);
     return null;
+  }
+  if (isAllowedAudioFileName(basenameFromSrc(url)) && shouldWarnLocalAudioSize(buffer.byteLength)) {
+    pushLocalAudioSizeWarning(ctx.warnings);
   }
   if (!ctx.persistBuffer) {
     ctx.skipped.push(`${label}: http src requires persistBuffer`);
@@ -715,17 +724,19 @@ export async function materializePack(
   fetchHttp?: (url: string) => Promise<ArrayBuffer | null>,
   persistBuffer?: PersistBuffer,
   options?: MaterializePackOptions,
-): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] }> {
+): Promise<{ catalog: SessionConsoleCatalog; skipped: string[]; warnings: string[] }> {
   const catalog = emptySessionConsoleCatalog(pack.stage.title);
   catalog.stage = { ...pack.stage };
   catalog.defaults = { ...pack.defaults };
   const skipped: string[] = [];
+  const warnings: string[] = [];
   const usedIds = new Set<string>(catalog.sfx.map((item) => item.id));
   const ctx: IngestContext = {
     resolveFile,
     fetchHttp,
     persistBuffer,
     skipped,
+    warnings,
     localFileSkipReason: options?.localFileSkipReason,
     maxHttpBytes: options?.maxHttpBytes ?? PACK_HTTP_MAX_BYTES,
   };
@@ -748,7 +759,7 @@ export async function materializePack(
     catalog.sfx = unionSfx(catalog.sfx, materialized);
   }
 
-  return { catalog, skipped };
+  return { catalog, skipped, warnings };
 }
 
 /**
@@ -758,7 +769,7 @@ export async function ingestSessionConsolePackFromJson(
   json: unknown,
   persistBuffer: PersistBuffer,
   fetchHttp: (url: string) => Promise<ArrayBuffer | null> = fetchHttpCapped,
-): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] }> {
+): Promise<{ catalog: SessionConsoleCatalog; skipped: string[]; warnings: string[] }> {
   const { pack, errors } = parseSessionConsolePack(json);
   const materialized = await materializePack(
     pack,
@@ -770,7 +781,11 @@ export async function ingestSessionConsolePackFromJson(
         'Local files cannot be imported in the browser — add files on the board.',
     },
   );
-  return { catalog: materialized.catalog, skipped: [...errors, ...materialized.skipped] };
+  return {
+    catalog: materialized.catalog,
+    skipped: [...errors, ...materialized.skipped],
+    warnings: materialized.warnings,
+  };
 }
 
 function sanitizeExportId(id: string): string {

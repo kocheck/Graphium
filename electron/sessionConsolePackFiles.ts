@@ -10,8 +10,9 @@ import {
 import {
   isAllowedAudioFileName,
   LOCAL_AUDIO_REJECT_BYTES,
-  LOCAL_AUDIO_WARN_BYTES,
-} from '../src/utils/localAudioAsset.js';
+  pushLocalAudioSizeWarning,
+  shouldWarnLocalAudioSize,
+} from '../src/utils/localAudioLimits.js';
 import {
   catalogToSessionConsolePack,
   classifyPackSrc,
@@ -27,6 +28,7 @@ import type { SessionConsoleCatalog } from '../src/types/sessionConsole.js';
 export interface SessionConsolePackImportResult {
   catalog: SessionConsoleCatalog;
   skipped: string[];
+  warnings: string[];
 }
 
 function sanitizePackFileName(name: string): string {
@@ -95,6 +97,7 @@ export async function copyPackAssetToTemp(
   sourcePath: string,
   tempAssetsDir: string,
   kind: 'image' | 'audio',
+  warnings: string[] = [],
 ): Promise<string | null> {
   const fileName = path.basename(sourcePath);
   if (kind === 'audio') {
@@ -105,10 +108,8 @@ export async function copyPackAssetToTemp(
     if (stats.size > LOCAL_AUDIO_REJECT_BYTES) {
       return null;
     }
-    if (stats.size > LOCAL_AUDIO_WARN_BYTES) {
-      console.warn(
-        `Audio file "${fileName}" is larger than 8MB. Large local beds bloat the campaign zip.`,
-      );
+    if (shouldWarnLocalAudioSize(stats.size)) {
+      pushLocalAudioSizeWarning(warnings);
     }
   }
 
@@ -122,15 +123,14 @@ async function persistBufferToTemp(
   buffer: ArrayBuffer,
   fileName: string,
   tempAssetsDir: string,
+  warnings: string[] = [],
 ): Promise<string | null> {
   if (isAllowedAudioFileName(fileName)) {
     if (buffer.byteLength > LOCAL_AUDIO_REJECT_BYTES) {
       return null;
     }
-    if (buffer.byteLength > LOCAL_AUDIO_WARN_BYTES) {
-      console.warn(
-        `Audio file "${fileName}" is larger than 8MB. Large local beds bloat the campaign zip.`,
-      );
+    if (shouldWarnLocalAudioSize(buffer.byteLength)) {
+      pushLocalAudioSizeWarning(warnings);
     }
   }
   await fs.mkdir(tempAssetsDir, { recursive: true });
@@ -151,6 +151,7 @@ export async function ingestSessionConsolePackFromBoardPath(
   const json = JSON.parse(rawText) as unknown;
   const { pack, errors } = parseSessionConsolePack(json);
   const packRoot = path.dirname(boardJsonPath);
+  const warnings: string[] = [];
 
   const materialized = await materializePack(
     pack,
@@ -160,15 +161,16 @@ export async function ingestSessionConsolePackFromBoardPath(
         return null;
       }
       const kind = isAllowedAudioFileName(sandboxed) ? 'audio' : 'image';
-      return copyPackAssetToTemp(sandboxed, tempAssetsDir, kind);
+      return copyPackAssetToTemp(sandboxed, tempAssetsDir, kind, warnings);
     },
     fetchHttp,
-    async (buffer, fileName) => persistBufferToTemp(buffer, fileName, tempAssetsDir),
+    async (buffer, fileName) => persistBufferToTemp(buffer, fileName, tempAssetsDir, warnings),
   );
 
   return {
     catalog: materialized.catalog,
     skipped: [...errors, ...materialized.skipped],
+    warnings: [...new Set([...warnings, ...materialized.warnings])],
   };
 }
 

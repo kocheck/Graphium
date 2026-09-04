@@ -69,11 +69,13 @@ export class ElectronStorageService implements IStorageService {
   async importSessionConsolePack(): Promise<{
     catalog: SessionConsoleCatalog;
     skipped: string[];
+    warnings: string[];
   } | null> {
     this.ensureIPC();
     return (await window.ipcRenderer?.invoke('IMPORT_SESSION_CONSOLE_PACK')) as {
       catalog: SessionConsoleCatalog;
       skipped: string[];
+      warnings: string[];
     } | null;
   }
 

@@ -9,6 +9,7 @@ interface TransportRefs {
   pauseRequested: MutableRefObject<boolean>;
   generation: MutableRefObject<number>;
   sourceStarted: MutableRefObject<boolean>;
+  startPending: MutableRefObject<boolean>;
   lastAudio: MutableRefObject<SessionConsoleRuntime['audio']>;
   lastMixer: MutableRefObject<{
     volume: number;
@@ -45,6 +46,7 @@ function stopBed(
   const generation = refs.generation.current;
   refs.pauseRequested.current = false;
   refs.sourceStarted.current = false;
+  refs.startPending.current = false;
   fade(0, 500, () => {
     if (generation !== refs.generation.current) {
       return;
@@ -64,6 +66,7 @@ function pauseBed(
 ): void {
   refs.generation.current += 1;
   refs.pauseRequested.current = true;
+  refs.startPending.current = false;
   player?.pauseVideo();
   element?.pause();
 }
@@ -83,11 +86,13 @@ function startBed(args: PlayingArgs, fadeOutFirst: boolean): void {
   const { refs, audio, fade, player, element } = args;
   refs.generation.current += 1;
   refs.sourceStarted.current = false;
+  refs.startPending.current = true;
   const generation = refs.generation.current;
   const start = (): void => {
     if (generation !== refs.generation.current) {
       return;
     }
+    refs.startPending.current = false;
     refs.sourceStarted.current = true;
     startTrack(audio, player, element, liveLevel(refs), fade);
   };
@@ -100,6 +105,7 @@ function startBed(args: PlayingArgs, fadeOutFirst: boolean): void {
 
 function applyPlayingTransport(args: PlayingArgs): void {
   const { refs, audio, previous, previousHadStarted, mixerChanged, fade, player, element } = args;
+  const startWasPending = refs.startPending.current;
   const sameSource =
     previous.trackId === audio.trackId &&
     previous.youtubeId === audio.youtubeId &&
@@ -123,10 +129,11 @@ function applyPlayingTransport(args: PlayingArgs): void {
     })
   ) {
     refs.sourceStarted.current = true;
+    refs.startPending.current = false;
     return;
   }
 
-  if (sameSource && !previousHadStarted) {
+  if (sameSource && previous.status === 'playing' && !previousHadStarted && startWasPending) {
     return;
   }
 

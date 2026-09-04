@@ -112,7 +112,11 @@ export interface IStorageService {
    *
    * @returns Catalog plus skipped-row messages, or null if the user cancelled
    */
-  importSessionConsolePack(): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] } | null>;
+  importSessionConsolePack(): Promise<{
+    catalog: SessionConsoleCatalog;
+    skipped: string[];
+    warnings: string[];
+  } | null>;
 
   /**
    * Export the current Session Console catalog as a board pack folder.
