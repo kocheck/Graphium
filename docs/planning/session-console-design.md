@@ -13,26 +13,26 @@ Graphium gains a campaign-native **Session Console**: a private Architect board 
 The Ash Crown prototype already solves a real table problem:
 
 - Show the party one plate at a time without leaking spoiler thumbnails or DM cue text.
-- Play long YouTube ambient beds from the *same window* Discord captures.
+- Play long YouTube ambient beds from the _same window_ Discord captures.
 - Keep soundtrack cues independent from image reveals so a combat track cannot flash the statue.
 - Survive Discord/macOS audio flake with duck, test tone, and a “copy all links” fallback.
 
-It does this as a hardcoded HTML file plus a Python server. Graphium already has the right dual-window shape. This feature ports the session-console *workflow* into the campaign file and the existing Architect / World pair.
+It does this as a hardcoded HTML file plus a Python server. Graphium already has the right dual-window shape. This feature ports the session-console _workflow_ into the campaign file and the existing Architect / World pair.
 
 ---
 
 ## Locked decisions
 
-| Decision | Choice |
-| --- | --- |
-| Player surface | **World View Stage mode.** A full-viewport overlay covers the battlemap. One Discord share target. “Return to map” dismisses the plate. |
-| Audio sources | **YouTube and local files** (`mp3` / `ogg` / `wav` / `m4a`). YouTube for long beds; local files for reliability, offline, and one-shots. |
-| Image vs audio | **Independent.** Showing a plate never starts a track. Playing a track never changes the plate. Tracks may *recommend* a plate; the DM still clicks. |
-| Audio when returning to map | **Keep playing.** Dismissing Stage hides art only. `Stop` / `Esc` is the hard cut. |
-| Config | **The board is the editor.** Drop files and paste YouTube links on the sidebar board. Settings is for stage look, defaults, and optional pack import/export — not the place you have to go to add a plate. |
-| Bulk load | **Drop files / add-from-folder first.** JSON board packs are a power-user backup and git workflow, not the default. Import still **ingests** bytes into the campaign. |
-| Scope of catalog | **Campaign-level**, not per-map. Image sets and track groups travel with the campaign the way `tokenLibrary` does. |
-| Voice/chat | Still out of scope. Discord / Zoom remain the voice layer. This feature only produces *ambience and plates* for the shared World window. |
+| Decision                    | Choice                                                                                                                                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Player surface              | **World View Stage mode.** A full-viewport overlay covers the battlemap. One Discord share target. “Return to map” dismisses the plate.                                                                    |
+| Audio sources               | **YouTube and local files** (`mp3` / `ogg` / `wav` / `m4a`). YouTube for long beds; local files for reliability, offline, and one-shots.                                                                   |
+| Image vs audio              | **Independent.** Showing a plate never starts a track. Playing a track never changes the plate. Tracks may _recommend_ a plate; the DM still clicks.                                                       |
+| Audio when returning to map | **Keep playing.** Dismissing Stage hides art only. `Stop` / `Esc` is the hard cut.                                                                                                                         |
+| Config                      | **The board is the editor.** Drop files and paste YouTube links on the sidebar board. Settings is for stage look, defaults, and optional pack import/export — not the place you have to go to add a plate. |
+| Bulk load                   | **Drop files / add-from-folder first.** JSON board packs are a power-user backup and git workflow, not the default. Import still **ingests** bytes into the campaign.                                      |
+| Scope of catalog            | **Campaign-level**, not per-map. Image sets and track groups travel with the campaign the way `tokenLibrary` does.                                                                                         |
+| Voice/chat                  | Still out of scope. Discord / Zoom remain the voice layer. This feature only produces _ambience and plates_ for the shared World window.                                                                   |
 
 ---
 
@@ -45,7 +45,7 @@ These are product rules, not nostalgia:
 3. **Duck (`D`)** drops effective volume to ~27% of the slider for read-alouds.
 4. **Transport:** play, pause, resume, restart, stop, volume, loop beds.
 5. **Crossfade** on track change; fade out on stop; fade image on plate change.
-6. **Number keys 1–9** play the first nine *visible* tracks in current board order. `Esc` stops.
+6. **Number keys 1–9** play the first nine _visible_ tracks in current board order. `Esc` stops.
 7. **Built-in synth SFX + test tone** (no files required) so Discord capture can be verified before players arrive.
 8. **Copy current / copy all YouTube links** for the mid-session fallback: paste into Discord and call the number.
 9. **Staged reveal sets.** Session plates are grouped and ordered. World never receives unused set thumbnails.
@@ -55,18 +55,18 @@ These are product rules, not nostalgia:
 
 ## Improvements over the prototype
 
-| Prototype pain | Graphium version |
-| --- | --- |
-| Hardcoded Skeldra tracks and plates in HTML | Campaign-owned catalog + editor |
-| Third popup + `python -m http.server` | Existing World window; production renderer must not stay on `file://` (YouTube Error 153) |
-| Player View is *only* art | Stage covers the map, then drops away; music can sit under combat |
-| Video IDs only | Paste a watch URL, shorts URL, or ID; store the canonical 11-char ID |
-| One volume for every bed | Per-track volume offset on top of the master slider |
-| Synth SFX only | Synth SFX stay; local audio clips can be one-shots or beds |
-| No persistence | Saved in `.graphium` with other campaign assets |
-| Cue text lives in the button markup | First-class `cue` / `recommendedImageId` fields |
-| File-protocol banner and localhost ritual | Electron origin fix + a short “Arm World View” status in Architect |
-| Editing HTML to add a session’s plates | Drop files, paste a YouTube URL, optional JSON pack |
+| Prototype pain                              | Graphium version                                                                          |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Hardcoded Skeldra tracks and plates in HTML | Campaign-owned catalog + editor                                                           |
+| Third popup + `python -m http.server`       | Existing World window; production renderer must not stay on `file://` (YouTube Error 153) |
+| Player View is _only_ art                   | Stage covers the map, then drops away; music can sit under combat                         |
+| Video IDs only                              | Paste a watch URL, shorts URL, or ID; store the canonical 11-char ID                      |
+| One volume for every bed                    | Per-track volume offset on top of the master slider                                       |
+| Synth SFX only                              | Synth SFX stay; local audio clips can be one-shots or beds                                |
+| No persistence                              | Saved in `.graphium` with other campaign assets                                           |
+| Cue text lives in the button markup         | First-class `cue` / `recommendedImageId` fields                                           |
+| File-protocol banner and localhost ritual   | Electron origin fix + a short “Arm World View” status in Architect                        |
+| Editing HTML to add a session’s plates      | Drop files, paste a YouTube URL, optional JSON pack                                       |
 
 Explicitly **not** in v1: stacked beds, Ken Burns, custom keybindings, auto-bind scenes, waveform UI, scraping `Soundboard.html`, or player-side volume (they already have Discord’s stream slider).
 
@@ -140,7 +140,7 @@ Two state planes:
 - **Catalog** (persisted, Architect-edited): image sets, tracks, groups, SFX ids, stage chrome.
 - **Runtime** (synced Architect → World, not a spoiler dump): whether Stage is up, which plate is showing, what is playing, volume, duck, one-shot ticks.
 
-World never receives the full image-set gallery. It receives the *current* plate payload only.
+World never receives the full image-set gallery. It receives the _current_ plate payload only.
 
 ---
 
@@ -157,17 +157,17 @@ interface Campaign {
 interface SessionConsoleCatalog {
   version: 1;
   stage: {
-    title: string;       // default: campaign.name
-    subtitle: string;    // optional line under the frame mark
-    showFrame: boolean;  // brass frame / wash; default true
+    title: string; // default: campaign.name
+    subtitle: string; // optional line under the frame mark
+    showFrame: boolean; // brass frame / wash; default true
   };
   defaults: {
-    volume: number;      // 0–100, default 45; seeds runtime.volume on load
+    volume: number; // 0–100, default 45; seeds runtime.volume on load
     duckPercent: number; // 1–100, default 27; used by effectiveVolume
   };
   imageSets: ImageSet[];
   trackGroups: TrackGroup[];
-  sfx: SfxDefinition[];  // v1 seeds the four synth types; local clips optional later
+  sfx: SfxDefinition[]; // v1 seeds the four synth types; local clips optional later
 }
 
 interface ImageSet {
@@ -180,10 +180,10 @@ interface ImageSet {
 interface StageImage {
   id: string;
   name: string;
-  cue: string;           // DM-only
-  src: string;           // full plate, file:// then assets/ in the zip
-  thumbnailSrc: string;  // 256px-wide WebP for Architect grids only
-  alt: string;           // player-safe alt text
+  cue: string; // DM-only
+  src: string; // full plate, file:// then assets/ in the zip
+  thumbnailSrc: string; // 256px-wide WebP for Architect grids only
+  alt: string; // player-safe alt text
 }
 
 interface TrackGroup {
@@ -198,12 +198,12 @@ interface Track {
   id: string;
   title: string;
   cue: string;
-  tag: string;                 // short chip: "bed", "skirmish"
+  tag: string; // short chip: "bed", "skirmish"
   source: 'youtube' | 'local';
-  youtubeId?: string;          // 11-char id
-  src?: string;                // local file:// asset
-  volumeOffset: number;        // -30..30 added to master, then clamped 0..100
-  loop: boolean;               // default true for beds
+  youtubeId?: string; // 11-char id
+  src?: string; // local file:// asset
+  volumeOffset: number; // -30..30 added to master, then clamped 0..100
+  loop: boolean; // default true for beds
   recommendedImageId?: string;
 }
 
@@ -231,11 +231,11 @@ interface SessionConsoleRuntime {
     status: 'stopped' | 'playing' | 'paused';
     loop: boolean;
   };
-  volume: number;          // 0–100, default 45
+  volume: number; // 0–100, default 45
   ducked: boolean;
-  sfxSeq: number;          // increment to fire a one-shot
+  sfxSeq: number; // increment to fire a one-shot
   sfxId: string | null;
-  worldArmed: boolean;     // last event from World; Architect status only
+  worldArmed: boolean; // last event from World; Architect status only
 }
 ```
 
@@ -314,13 +314,13 @@ Optional. Same ingest rules, for people who already keep a session folder in git
 
 Each image or track `src` string is classified once:
 
-| String | Result |
-| --- | --- |
-| YouTube watch / shorts / youtu.be / embed / raw 11-char id | Track `source: 'youtube'` |
-| Relative path (`./images/a.png`) | File must resolve **inside the pack folder**. Copied in. |
-| Absolute file path | Allowed as a convenience; still copied in. Rejected if unreadable. |
-| `http(s):` image or audio URL | Fetched once and ingested. Failed fetch skips that item with a toast. |
-| Anything else | Validation error on that row; rest of the pack still imports. |
+| String                                                     | Result                                                                |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| YouTube watch / shorts / youtu.be / embed / raw 11-char id | Track `source: 'youtube'`                                             |
+| Relative path (`./images/a.png`)                           | File must resolve **inside the pack folder**. Copied in.              |
+| Absolute file path                                         | Allowed as a convenience; still copied in. Rejected if unreadable.    |
+| `http(s):` image or audio URL                              | Fetched once and ingested. Failed fetch skips that item with a toast. |
+| Anything else                                              | Validation error on that row; rest of the pack still imports.         |
 
 Relative paths are resolved against the directory that contains `board.json`. After `realpath`, the file must stay inside that directory (no `../.ssh`). Local audio: warn above 8MB, reject above 25MB. Images go through `processImage(..., 'MAP')` plus a 256px thumb.
 

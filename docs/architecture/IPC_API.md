@@ -223,9 +223,9 @@ window.ipcRenderer.on('SYNC_WORLD_STATE', (_event, action: SyncAction) => {
 { type: 'LIBRARY_UPDATE', payload: TokenLibraryItem[] }
 
 // Session Console runtime (catalog is never synced)
-{ type: 'STAGE_UPDATE', payload: { stageVisible: boolean, activeImage: { id, src, alt, name } | null } }
-{ type: 'AUDIO_UPDATE', payload: { audio: SessionConsoleRuntime['audio'], volume: number, ducked: boolean } }
-{ type: 'SFX_FIRE', payload: { seq: number, sfxId: string | null } }
+{ type: 'STAGE_UPDATE', payload: { stageVisible: boolean, activeImage: { id, src, alt, name } | null, stage: { title, subtitle, showFrame } } }
+{ type: 'AUDIO_UPDATE', payload: { audio: SessionConsoleRuntime['audio'], volume: number, ducked: boolean, duckPercent: number } }
+{ type: 'SFX_FIRE', payload: { seq: number, sfxId: string | null, kind: 'synth' | 'local' | null, synthType: string | null, src: string | null } }
 ```
 
 `SyncableGameState` includes `sessionConsoleRuntime` only — **not** `sessionConsole` / campaign catalog.

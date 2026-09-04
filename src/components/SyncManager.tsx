@@ -22,6 +22,7 @@ import {
   isSyncSliceUnchanged,
   parseSessionConsoleWorldEvent,
   sanitizeSessionConsoleErrorMessage,
+  worldFullSyncStatePatch,
 } from '../utils/syncUtils';
 import { throttle } from '../utils/throttle';
 import { patchTokenInIndex } from '../utils/tokenIndex';
@@ -132,13 +133,9 @@ function SyncManager(): null {
             break;
 
           case 'FULL_SYNC': {
-            const {
-              tokenLibrary: fullLib,
-              sessionConsoleRuntime: _runtime,
-              ...restState
-            } = action.payload;
+            const fullLib = action.payload.tokenLibrary;
             store.setState({
-              ...(restState as Partial<SyncableGameState>),
+              ...worldFullSyncStatePatch(action.payload),
               tokens: action.payload.tokens ?? store.tokens,
               sessionConsoleRuntime: applyAction(store.sessionConsoleRuntime, action),
             });

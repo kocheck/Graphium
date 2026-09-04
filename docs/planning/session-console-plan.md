@@ -75,21 +75,19 @@
 ### Task 1: Types, volume math, YouTube URL parser
 
 **Files:**
+
 - Create: `src/types/sessionConsole.ts`
 - Test: `src/types/sessionConsole.test.ts`
 
 **Interfaces:**
+
 - Produces: `SessionConsoleCatalog`, `SessionConsoleRuntime`, `emptySessionConsoleCatalog(campaignName: string)`, `emptySessionConsoleRuntime()`, `parseYouTubeVideoId(input: string): string | null`, `effectiveVolume(volume: number, ducked: boolean, offset?: number, duckPercent?: number): number`, `clampVolume(value: number): number`
 
 - [ ] **Step 1: Write failing tests**
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import {
-  parseYouTubeVideoId,
-  effectiveVolume,
-  emptySessionConsoleCatalog,
-} from './sessionConsole';
+import { parseYouTubeVideoId, effectiveVolume, emptySessionConsoleCatalog } from './sessionConsole';
 
 describe('parseYouTubeVideoId', () => {
   it('accepts a raw 11-char id', () => {
@@ -157,10 +155,12 @@ Run: `npx vitest run src/types/sessionConsole.test.ts`
 ### Task 2: Pure reducers for catalog and runtime
 
 **Files:**
+
 - Create: `src/store/sessionConsoleReducers.ts`
 - Test: `src/store/sessionConsoleReducers.test.ts`
 
 **Interfaces:**
+
 - Consumes: types from Task 1
 - Produces: `applyCatalogAction(catalog, action): SessionConsoleCatalog`, `applyRuntimeCommand(runtime, command, catalog): SessionConsoleRuntime`
 
@@ -173,10 +173,14 @@ Runtime commands: `SHOW_PLATE` (looks up image in catalog, copies `{id,src,alt,n
 ```ts
 it('SHOW_PLATE copies player-safe fields only', () => {
   const catalog = catalogWithPlate();
-  const next = applyRuntimeCommand(emptySessionConsoleRuntime(), {
-    type: 'SHOW_PLATE',
-    imageId: 'session-3-05',
-  }, catalog);
+  const next = applyRuntimeCommand(
+    emptySessionConsoleRuntime(),
+    {
+      type: 'SHOW_PLATE',
+      imageId: 'session-3-05',
+    },
+    catalog,
+  );
   expect(next.stageVisible).toBe(true);
   expect(next.activeImage).toEqual({
     id: 'session-3-05',
@@ -220,11 +224,13 @@ Unknown ids are no-ops (return previous reference).
 ### Task 3: Wire Zustand + legacy migration
 
 **Files:**
+
 - Modify: `src/store/gameStore.ts`
 - Modify: `src/store/gameStore.test.ts`
 - Modify: `electron/main.ts` `migrateLegacyCampaign` if it constructs `Campaign`
 
 **Interfaces:**
+
 - Produces store actions that call the reducers:
 
 ```ts
@@ -239,7 +245,7 @@ setSessionConsoleWorldArmed: (armed: boolean) => void;
 
 - [ ] **Step 1: Tests** — new campaign has empty catalog + seeded SFX; `dispatchSessionConsole({type:'SHOW_PLATE'})` updates runtime immutably; loading a campaign JSON without `sessionConsole` migrates.
 
-- [ ] **Step 2: Implement** — do not put catalog on the active-map proxy. Runtime is top-level game state like `isGamePaused` but *is* synced (pause is a separate IPC).
+- [ ] **Step 2: Implement** — do not put catalog on the active-map proxy. Runtime is top-level game state like `isGamePaused` but _is_ synced (pause is a separate IPC).
 
 - [ ] **Step 3: Commit** `feat: persist session console catalog on the campaign`
 
@@ -248,11 +254,13 @@ setSessionConsoleWorldArmed: (armed: boolean) => void;
 ### Task 4: Asset rewrite + local audio ingest
 
 **Files:**
+
 - Modify: `src/utils/campaignAssets.ts`, `src/utils/campaignAssets.test.ts`
 - Create: `src/utils/localAudioAsset.ts`, `src/utils/localAudioAsset.test.ts`
 - Modify: `src/services/WebStorageService.ts` only if rewrite coverage is not enough (it already calls `rewriteCampaignAssetSrcs`)
 
 **Interfaces:**
+
 - Produces: `isAllowedAudioFileName(name: string): boolean`, `saveLocalAudioFile(file: File): Promise<string>` (uses `getStorage().saveAssetTemp`)
 
 - [ ] **Step 1: Tests**
@@ -270,11 +278,13 @@ setSessionConsoleWorldArmed: (armed: boolean) => void;
 ### Task 4b: Board pack parser + Electron ingest
 
 **Files:**
+
 - Create: `src/utils/sessionConsolePack.ts`, `src/utils/sessionConsolePack.test.ts`
 - Modify: `electron/main.ts`, `electron/preload.ts`, `src/window.d.ts` / storage service
 - Fixture: `docs/planning/session-console-pack.example.json`
 
 **Interfaces:**
+
 - `classifyPackSrc(src: string): { kind: 'youtube'; youtubeId: string } | { kind: 'relative' | 'absolute'; path: string } | { kind: 'http'; url: string } | { kind: 'invalid'; reason: string }`
 - `parseSessionConsolePack(json: unknown): { pack: SessionConsolePack; errors: string[] }`
 - `materializePack(pack, resolveFile: (relativeOrAbsolute: string) => Promise<string | null>, fetchHttp?: (url: string) => Promise<ArrayBuffer | null>): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] }>`
@@ -313,11 +323,13 @@ it('maps recommendedImage name or id onto recommendedImageId', () => {
 ### Task 5: Sync slice
 
 **Files:**
+
 - Modify: `src/utils/syncUtils.ts`, `src/utils/syncUtils.test.ts`
 - Modify: `src/components/SyncManager.tsx`
 - Modify: `docs/architecture/IPC_API.md`
 
 **Interfaces:**
+
 - Add `sessionConsoleRuntime: SessionConsoleRuntime` to `SyncableGameState`
 - Actions: `STAGE_UPDATE`, `AUDIO_UPDATE`, `SFX_FIRE` (payloads = relevant runtime fields)
 - `cloneSyncableStateFromGame` / `FromPayload` / `isSyncSliceUnchanged` / `detectChanges` / `applyAction` all updated
@@ -336,6 +348,7 @@ Optional World → Architect: reuse `SYNC_FROM_WORLD_VIEW` only if we can do it 
 ### Task 6: Production origin for YouTube (Error 153)
 
 **Files:**
+
 - Modify: `electron/main.ts`
 - Test: `tests/electron/startup.electron.spec.ts` (window still loads) and a small unit test if scheme registration is extractable
 
@@ -379,6 +392,7 @@ If `media://` audio has no MIME, map extensions in the existing `media` handler 
 ### Task 7: World audio engine + Stage overlay
 
 **Files:**
+
 - Create: `src/components/SessionConsole/WorldAudioEngine.tsx`
 - Create: `src/components/SessionConsole/WorldStage.tsx`
 - Modify: `src/App.tsx` — `{isWorldView && <WorldStage />}` next to `LoadingOverlay`
@@ -404,6 +418,7 @@ If `media://` audio has no MIME, map extensions in the existing `media` handler 
 ### Task 8: Architect Session Console UI
 
 **Files:**
+
 - Create the `src/components/SessionConsole/*` Architect components listed above
 - Modify: `src/components/Sidebar.tsx`
 - Modify: `src/utils/commandRegistry.ts`
@@ -428,6 +443,7 @@ If `media://` audio has no MIME, map extensions in the existing `media` handler 
 ### Task 9: Fallback, commands, docs, campaign workflow test
 
 **Files:**
+
 - Copy-all helper: `tracks` with `source === 'youtube'` become `N. Title — https://www.youtube.com/watch?v=ID`. Local-only tracks listed as `(local file)` so the fallback still has an index.
 - Commands: `session-console-stop`, `session-console-duck`, `session-console-return-to-map`, `session-console-test-tone`, `session-console-settings`
 - Docs: `docs/context/CONTEXT.md` (add Session Console under implemented features; keep chat/voice not-planned), `docs/index.md`, `docs/guides/TROUBLESHOOTING.md` (Error 153, Discord Krisp, arm audio)

@@ -225,6 +225,38 @@ export function buildFullSyncPayload(
   };
 }
 
+const WORLD_FULL_SYNC_STATE_KEYS = [
+  'tokens',
+  'drawings',
+  'doors',
+  'stairs',
+  'gridSize',
+  'gridType',
+  'gridColor',
+  'map',
+  'exploredRegions',
+  'isDaylightMode',
+  'activeMeasurement',
+  'broadcastMeasurement',
+] as const satisfies ReadonlyArray<keyof SyncableGameState>;
+
+/**
+ * World FULL_SYNC may only write the documented sync slice.
+ * Catalog, campaign, tokenLibrary, and runtime are applied separately.
+ */
+export function worldFullSyncStatePatch(
+  payload: Partial<SyncableGameState>,
+): Partial<SyncableGameState> {
+  const patch: Partial<SyncableGameState> = {};
+  const record = payload as Record<string, unknown>;
+  for (const key of WORLD_FULL_SYNC_STATE_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(record, key) && record[key] !== undefined) {
+      (patch as Record<string, unknown>)[key] = record[key];
+    }
+  }
+  return patch;
+}
+
 /** Clones game store state into a sync snapshot for diffing. */
 export function cloneSyncableStateFromGame(
   state: GameState,

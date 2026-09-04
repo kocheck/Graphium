@@ -113,3 +113,16 @@ export const resolveGraphiumRendererPath = (
     parsed.pathname === '' || parsed.pathname === '/' ? '/index.html' : parsed.pathname;
   return mapRendererRelativePath(pathname, rendererDist);
 };
+
+/** YouTube iframe / API requests from the `graphium://` renderer. */
+export const YOUTUBE_EMBED_URL_FILTER: { urls: string[] } = {
+  urls: ['https://www.youtube.com/*', 'https://www.youtube-nocookie.com/*'],
+};
+
+/**
+ * Custom-scheme origins often omit an HTTP Referer, which triggers Error 153.
+ * Force the official embed Referer on YouTube requests.
+ */
+export function withYouTubeReferer(requestHeaders: Record<string, string>): Record<string, string> {
+  return { ...requestHeaders, Referer: 'https://www.youtube.com/' };
+}

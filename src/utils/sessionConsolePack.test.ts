@@ -109,6 +109,11 @@ describe('classifyPackSrc', () => {
       path: '/tmp/pack/a.png',
     });
   });
+
+  it('rejects UNC and protocol-relative file srcs', () => {
+    expect(classifyPackSrc('\\\\evil\\share\\bed.mp3').kind).toBe('invalid');
+    expect(classifyPackSrc('//evil.example/share/bed.mp3').kind).toBe('invalid');
+  });
 });
 
 describe('isPathInsidePackRoot', () => {

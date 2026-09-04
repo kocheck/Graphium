@@ -13,6 +13,24 @@ import {
 } from './worldAudioYoutube';
 import { getStageAudioContext } from './worldStageSfx';
 
+function shouldRestartLoopingYouTube(
+  eventData: number,
+  loop: {
+    loop: boolean;
+    youtubeId: string | null;
+    status: 'playing' | 'paused' | 'stopped';
+    worldArmed: boolean;
+  },
+): boolean {
+  return (
+    eventData === 0 &&
+    loop.worldArmed &&
+    loop.status === 'playing' &&
+    loop.loop &&
+    Boolean(loop.youtubeId)
+  );
+}
+
 interface ArmArgs {
   ytHostRef: RefObject<HTMLDivElement | null>;
   audioRef: RefObject<HTMLAudioElement | null>;
@@ -21,7 +39,12 @@ interface ArmArgs {
   armPendingRef: MutableRefObject<boolean>;
   finishedArmRef: MutableRefObject<boolean>;
   pauseRequestedRef: MutableRefObject<boolean>;
-  lastLoopRef: MutableRefObject<{ loop: boolean; youtubeId: string | null }>;
+  lastLoopRef: MutableRefObject<{
+    loop: boolean;
+    youtubeId: string | null;
+    status: 'playing' | 'paused' | 'stopped';
+    worldArmed: boolean;
+  }>;
   clearFade: () => void;
   setArmed: (armed: boolean) => void;
 }
@@ -94,7 +117,7 @@ export function useWorldYouTubeArm(args: ArmArgs): {
           playerRef.current?.pauseVideo();
           return;
         }
-        if (event.data === 0 && lastLoopRef.current.loop && lastLoopRef.current.youtubeId) {
+        if (shouldRestartLoopingYouTube(event.data, lastLoopRef.current)) {
           playerRef.current?.seekTo(0);
           playerRef.current?.playVideo();
         }

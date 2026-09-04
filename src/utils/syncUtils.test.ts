@@ -12,6 +12,7 @@ import {
   buildFullSyncPayload,
   cloneSyncableStateFromGame,
   cloneSyncableStateFromPayload,
+  worldFullSyncStatePatch,
   isSyncSliceUnchanged,
   parseSessionConsoleWorldEvent,
   sanitizeSessionConsoleErrorMessage,
@@ -525,6 +526,22 @@ describe('syncUtils', () => {
       } as unknown as GameState;
       expect(isSyncSliceUnchanged(unchanged, previous)).toBe(true);
       expect(isSyncSliceUnchanged(changed, previous)).toBe(false);
+    });
+
+    it('strips catalog and campaign keys from a World FULL_SYNC patch', () => {
+      const patch = worldFullSyncStatePatch({
+        tokens: [],
+        gridSize: 50,
+        sessionConsoleRuntime: runtime(),
+        tokenLibrary: [],
+        sessionConsole: { imageSets: [{ id: 'spoiler' }] },
+        campaign: { name: 'Ash Crown' },
+      } as never);
+      expect(patch).toEqual({ tokens: [], gridSize: 50 });
+      expect(patch).not.toHaveProperty('sessionConsole');
+      expect(patch).not.toHaveProperty('campaign');
+      expect(patch).not.toHaveProperty('sessionConsoleRuntime');
+      expect(patch).not.toHaveProperty('tokenLibrary');
     });
 
     it('includes runtime in buildFullSyncPayload', () => {

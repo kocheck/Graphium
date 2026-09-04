@@ -539,6 +539,41 @@ describe('WorldStage', () => {
     expect(screen.getAllByRole('img')).toHaveLength(2);
   });
 
+  it('does not restart a looping YouTube bed after Stop emits ENDED', async () => {
+    seedStore({
+      worldArmed: true,
+      audio: {
+        trackId: 'yt-1',
+        title: 'Tavern',
+        source: 'youtube',
+        youtubeId: 'bLZApMsorjA',
+        src: null,
+        status: 'playing',
+        loop: true,
+        restartSeq: 0,
+        volumeOffset: 0,
+      },
+    });
+    render(<WorldStage />);
+
+    await waitFor(() => {
+      expect(playerConfig.events?.onStateChange).toBeTypeOf('function');
+    });
+
+    act(() => {
+      useGameStore.getState().dispatchSessionConsole({ type: 'STOP' });
+    });
+    player.playVideo.mockClear();
+    player.seekTo.mockClear();
+
+    act(() => {
+      playerConfig.events?.onStateChange?.({ data: 0 });
+    });
+
+    expect(player.playVideo).not.toHaveBeenCalled();
+    expect(player.seekTo).not.toHaveBeenCalled();
+  });
+
   it('shows the plate after a broken image load during fade', async () => {
     seedStore({
       worldArmed: true,

@@ -77,8 +77,18 @@ export function WorldAudioEngine(): JSX.Element {
     duckPercent: runtime.duckPercent,
     volumeOffset: runtime.audio.volumeOffset,
   });
-  const lastLoopRef = useRef({ loop: runtime.audio.loop, youtubeId: runtime.audio.youtubeId });
-  lastLoopRef.current = { loop: runtime.audio.loop, youtubeId: runtime.audio.youtubeId };
+  const lastLoopRef = useRef({
+    loop: runtime.audio.loop,
+    youtubeId: runtime.audio.youtubeId,
+    status: runtime.audio.status,
+    worldArmed: runtime.worldArmed,
+  });
+  lastLoopRef.current = {
+    loop: runtime.audio.loop,
+    youtubeId: runtime.audio.youtubeId,
+    status: runtime.audio.status,
+    worldArmed: runtime.worldArmed,
+  };
 
   const transportRefs = useRef({
     player: playerRef,

@@ -6,6 +6,7 @@ import {
   contentTypeForMediaPath,
   productionRendererUrl,
   resolveGraphiumRendererPath,
+  withYouTubeReferer,
 } from '../../electron/graphiumProtocol';
 
 const RENDERER_DIST = path.resolve('/tmp/graphium-renderer-dist');
@@ -90,5 +91,14 @@ describe('contentTypeForMediaPath', () => {
 
   it('returns undefined for unknown extensions', () => {
     expect(contentTypeForMediaPath('/tmp/token.webp')).toBeUndefined();
+  });
+});
+
+describe('withYouTubeReferer', () => {
+  it('sets an HTTPS YouTube Referer so custom-scheme embeds can pass Error 153', () => {
+    expect(withYouTubeReferer({ Origin: 'graphium://app' })).toEqual({
+      Origin: 'graphium://app',
+      Referer: 'https://www.youtube.com/',
+    });
   });
 });

@@ -35,6 +35,10 @@ function pathBasename(filePath: string): string {
   return base && base.length > 0 ? base : '';
 }
 
+function isNetworkFilePath(filePath: string): boolean {
+  return /^(?:\\\\|\/\/)/.test(filePath);
+}
+
 function isAbsolutePath(filePath: string): boolean {
   return /^(?:[a-zA-Z]:[\\/]|\/|\\\\)/.test(filePath);
 }
@@ -300,7 +304,11 @@ function emptyPack(title = ''): SessionConsolePack {
 
 function classifyFileUrl(trimmed: string): PackSrcClassification {
   try {
-    return { kind: 'absolute', path: fileUrlToPath(trimmed) };
+    const filePath = fileUrlToPath(trimmed);
+    if (isNetworkFilePath(filePath)) {
+      return { kind: 'invalid', reason: 'network path is not allowed' };
+    }
+    return { kind: 'absolute', path: filePath };
   } catch {
     return { kind: 'invalid', reason: 'invalid file URL' };
   }
@@ -319,6 +327,9 @@ function classifyHttpSrc(trimmed: string): PackSrcClassification {
 }
 
 function classifyFileLikeSrc(trimmed: string): PackSrcClassification {
+  if (isNetworkFilePath(trimmed)) {
+    return { kind: 'invalid', reason: 'network path is not allowed' };
+  }
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) && !/^[a-zA-Z]:[\\/]/.test(trimmed)) {
     return { kind: 'invalid', reason: `unsupported scheme in "${trimmed}"` };
   }

@@ -37,7 +37,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, session, shell } from 'electron';
 import Store from 'electron-store';
 import JSZip from 'jszip';
 
@@ -52,6 +52,8 @@ import {
   contentTypeForRendererPath,
   productionRendererUrl,
   resolveGraphiumRendererPath,
+  withYouTubeReferer,
+  YOUTUBE_EMBED_URL_FILTER,
 } from './graphiumProtocol.js';
 import {
   allocateUniqueZipBasename,
@@ -1113,6 +1115,12 @@ void app.whenReady().then((): void => {
    * - graphium:// — production renderer files from RENDERER_DIST (non-file origin)
    */
   registerCustomProtocols(allowedMediaRoots);
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    YOUTUBE_EMBED_URL_FILTER,
+    (details, callback) => {
+      callback({ requestHeaders: withYouTubeReferer(details.requestHeaders) });
+    },
+  );
 
   // Initialize theme system (must be before window creation)
   initializeThemeManager();
