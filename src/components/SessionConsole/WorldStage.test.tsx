@@ -224,6 +224,42 @@ describe('WorldStage', () => {
     });
   });
 
+  it('reports a sanitized local audio error without file paths', async () => {
+    seedStore({
+      worldArmed: true,
+      audio: {
+        trackId: 'local-1',
+        title: 'Rain',
+        source: 'local',
+        youtubeId: null,
+        src: 'file:///Users/janedoe/Music/bed.mp3',
+        status: 'playing',
+        loop: true,
+        restartSeq: 0,
+        volumeOffset: 0,
+      },
+    });
+    render(<WorldStage />);
+
+    const audio = document.querySelector('audio');
+    expect(audio).toBeTruthy();
+    fireEvent.error(audio as HTMLAudioElement);
+
+    expect(mockIpcRenderer.send).toHaveBeenCalledWith(
+      'SESSION_CONSOLE_WORLD_EVENT',
+      expect.objectContaining({
+        type: 'error',
+        message: expect.stringMatching(/audio/i),
+      }),
+    );
+    const payload = mockIpcRenderer.send.mock.calls.find(
+      (call) => call[0] === 'SESSION_CONSOLE_WORLD_EVENT' && call[1]?.type === 'error',
+    )?.[1] as { message?: string };
+    expect(payload.message).not.toMatch(/file:\/\//);
+    expect(payload.message).not.toContain('janedoe');
+    expect(payload.message).not.toContain('/Users/');
+  });
+
   it('reports YouTube embed errors 101/150/153 to Architect', async () => {
     seedStore({ worldArmed: true });
     render(<WorldStage />);

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { useWorldTransport } from './useWorldTransport';
 import { useWorldYouTubeArm } from './useWorldYouTubeArm';
-import { fadeToLevel, type YouTubePlayer } from './worldAudioYoutube';
+import { fadeToLevel, sendWorldEvent, type YouTubePlayer } from './worldAudioYoutube';
 import { getStageAudioContext, playStageSfx, resolveSynthType } from './worldStageSfx';
 import { useGameStore } from '../../store/gameStore';
+import { sanitizeSessionConsoleErrorMessage } from '../../utils/syncUtils';
 
 export function WorldAudioEngine(): JSX.Element {
   const runtime = useGameStore((state) => state.sessionConsoleRuntime);
@@ -18,6 +19,7 @@ export function WorldAudioEngine(): JSX.Element {
   const finishedArmRef = useRef(false);
   const pauseRequestedRef = useRef(false);
   const generationRef = useRef(0);
+  const sourceStartedRef = useRef(false);
   const fadeTimerRef = useRef<number | null>(null);
   const lastSfxSeqRef = useRef(runtime.sfxSeq);
   const lastAudioRef = useRef(runtime.audio);
@@ -35,6 +37,7 @@ export function WorldAudioEngine(): JSX.Element {
     audioEl: audioRef,
     pauseRequested: pauseRequestedRef,
     generation: generationRef,
+    sourceStarted: sourceStartedRef,
     lastAudio: lastAudioRef,
     lastMixer: lastMixerRef,
   }).current;
@@ -78,6 +81,10 @@ export function WorldAudioEngine(): JSX.Element {
   });
 
   useWorldTransport(runtime, transportRefs, fade);
+
+  const handleLocalAudioError = useCallback((): void => {
+    sendWorldEvent('error', sanitizeSessionConsoleErrorMessage('Local audio failed to play.'));
+  }, []);
 
   useEffect(() => {
     if (runtime.sfxSeq === lastSfxSeqRef.current) {
@@ -133,7 +140,7 @@ export function WorldAudioEngine(): JSX.Element {
         aria-hidden="true"
       >
         <div ref={ytHostRef} id="session-console-yt-player" />
-        <audio ref={audioRef} />
+        <audio ref={audioRef} onError={handleLocalAudioError} />
       </div>
     </>
   );

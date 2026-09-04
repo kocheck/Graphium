@@ -82,7 +82,16 @@ export function sendWorldEvent(
   message?: string,
 ): void {
   const payload = message ? { type, message } : { type };
-  window.ipcRenderer?.send('SESSION_CONSOLE_WORLD_EVENT', payload);
+  if (window.ipcRenderer) {
+    window.ipcRenderer.send('SESSION_CONSOLE_WORLD_EVENT', payload);
+    return;
+  }
+  if (typeof BroadcastChannel === 'undefined') {
+    return;
+  }
+  const channel = new BroadcastChannel('graphium-sync');
+  channel.postMessage({ type: 'SESSION_CONSOLE_WORLD_EVENT', payload });
+  channel.close();
 }
 
 export function youtubeErrorMessage(code: number): string {
