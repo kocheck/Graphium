@@ -737,22 +737,12 @@ function applyMixerCommand(
       if (!sfx) {
         return runtime;
       }
-      const synthType =
-        sfx.synthType ??
-        (sfx.kind === 'synth' &&
-        (sfx.id === 'chime' ||
-          sfx.id === 'drone' ||
-          sfx.id === 'snap' ||
-          sfx.id === 'ping' ||
-          sfx.id === 'test-tone')
-          ? sfx.id
-          : null);
       return {
         ...runtime,
         sfxSeq: runtime.sfxSeq + 1,
         sfxId: sfx.id,
         sfxKind: sfx.kind,
-        sfxSynthType: synthType,
+        sfxSynthType: sfx.synthType ?? null,
         sfxSrc: sfx.src ?? null,
       };
     }

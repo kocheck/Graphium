@@ -147,7 +147,6 @@ export function ensureIframeApi(onReady: () => void, onUnavailable: () => void):
 interface FadeArgs {
   player: YouTubePlayer | null;
   audio: HTMLAudioElement | null;
-  usingYoutube: boolean;
   target: number;
   durationMs: number;
   clearFade: () => void;

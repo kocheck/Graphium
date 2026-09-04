@@ -173,12 +173,9 @@ export function useWorldYouTubeArm(args: ArmArgs): {
       sendWorldEvent('unarmed');
       setArmed(false);
     };
-    const onPageHide = (): void => {
-      disarm();
-    };
-    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pagehide', disarm);
     return () => {
-      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pagehide', disarm);
       disarm();
     };
   }, [setArmed]);

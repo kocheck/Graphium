@@ -39,7 +39,6 @@ describe('fadeToLevel', () => {
     fadeToLevel({
       player: player as never,
       audio,
-      usingYoutube: true,
       target: 0,
       durationMs: 0,
       clearFade: vi.fn(),

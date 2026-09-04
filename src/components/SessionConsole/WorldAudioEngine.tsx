@@ -62,7 +62,6 @@ export function WorldAudioEngine(): JSX.Element {
       fadeToLevel({
         player: playerRef.current,
         audio: audioRef.current,
-        usingYoutube: runtime.audio.source === 'youtube',
         target,
         durationMs,
         clearFade,
@@ -72,7 +71,7 @@ export function WorldAudioEngine(): JSX.Element {
         done,
       });
     },
-    [clearFade, runtime.audio.source],
+    [clearFade],
   );
 
   const { armEnabled, handleArm } = useWorldYouTubeArm({

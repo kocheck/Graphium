@@ -117,20 +117,21 @@ async function processImportedPlate(image: StageImage): Promise<StageImage> {
 export async function processImportedCatalogPlates(
   catalog: SessionConsoleCatalog,
 ): Promise<SessionConsoleCatalog> {
-  const imageSets = [];
-  for (const set of catalog.imageSets) {
-    const images: StageImage[] = set.images.map((image) => image);
-    await runWithConcurrency(
+  const imageSets = catalog.imageSets.map((set) => ({
+    ...set,
+    images: set.images.slice(),
+  }));
+  await runWithConcurrency(
+    imageSets.flatMap((set) =>
       set.images.map((image, index) => async () => {
         try {
-          images[index] = await processImportedPlate(image);
+          set.images[index] = await processImportedPlate(image);
         } catch {
-          images[index] = image;
+          set.images[index] = image;
         }
       }),
-    );
-    imageSets.push({ ...set, images });
-  }
+    ),
+  );
   return { ...catalog, imageSets };
 }
 

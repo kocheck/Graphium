@@ -149,6 +149,17 @@ export function effectiveVolume(
   return Math.round((clamped * (duckPercent ?? DEFAULT_DUCK_PERCENT)) / 100);
 }
 
+export function isYouTubeHostname(hostname: string): boolean {
+  const host = hostname.replace(/^www\./, '');
+  return (
+    host === 'youtu.be' ||
+    host === 'youtube.com' ||
+    host === 'm.youtube.com' ||
+    host === 'music.youtube.com' ||
+    host === 'youtube-nocookie.com'
+  );
+}
+
 /**
  * Extract a canonical 11-char YouTube video id from a raw id or URL.
  * Returns null for invalid input or playlist-only URLs without a video id.
@@ -171,29 +182,23 @@ export function parseYouTubeVideoId(input: string): string | null {
   }
 
   const hostname = url.hostname.replace(/^www\./, '');
+  if (!isYouTubeHostname(url.hostname)) {
+    return null;
+  }
 
   if (hostname === 'youtu.be') {
     const id = url.pathname.slice(1).split('/')[0];
     return id && VIDEO_ID_PATTERN.test(id) ? id : null;
   }
 
-  if (
-    hostname === 'youtube.com' ||
-    hostname === 'm.youtube.com' ||
-    hostname === 'music.youtube.com' ||
-    hostname === 'youtube-nocookie.com'
-  ) {
-    const vParam = url.searchParams.get('v');
-    if (vParam && VIDEO_ID_PATTERN.test(vParam)) {
-      return vParam;
-    }
+  const vParam = url.searchParams.get('v');
+  if (vParam && VIDEO_ID_PATTERN.test(vParam)) {
+    return vParam;
+  }
 
-    const pathMatch = url.pathname.match(/^\/(?:shorts|embed|v)\/([A-Za-z0-9_-]{11})/);
-    if (pathMatch?.[1] && VIDEO_ID_PATTERN.test(pathMatch[1])) {
-      return pathMatch[1];
-    }
-
-    return null;
+  const pathMatch = url.pathname.match(/^\/(?:shorts|embed|v)\/([A-Za-z0-9_-]{11})/);
+  if (pathMatch?.[1] && VIDEO_ID_PATTERN.test(pathMatch[1])) {
+    return pathMatch[1];
   }
 
   return null;

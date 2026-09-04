@@ -2,17 +2,14 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  isRealPathInsideAllowedRoots,
-  mediaUrlToFilePath,
-  sanitizeAssetFileName,
-} from './pathSecurity.js';
+import { isRealPathInsideAllowedRoots, mediaUrlToFilePath } from './pathSecurity.js';
 import {
   isAllowedAudioFileName,
   LOCAL_AUDIO_REJECT_BYTES,
   pushLocalAudioSizeWarning,
   shouldWarnLocalAudioSize,
 } from '../src/utils/localAudioLimits.js';
+import { rewriteSafeAssetFileName } from '../src/utils/safeAssetFileName.js';
 import {
   catalogToSessionConsolePack,
   classifyPackSrc,
@@ -33,16 +30,6 @@ export interface SessionConsolePackImportResult {
   warnings: string[];
 }
 
-function sanitizePackFileName(name: string): string {
-  const baseName = path.basename(name);
-  try {
-    return sanitizeAssetFileName(baseName);
-  } catch {
-    const safe = baseName.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
-    return safe || 'asset';
-  }
-}
-
 const ensuredTempDirs = new Set<string>();
 
 async function ensureTempAssetsDir(tempAssetsDir: string): Promise<void> {
@@ -56,7 +43,7 @@ async function ensureTempAssetsDir(tempAssetsDir: string): Promise<void> {
 function uniqueTempAssetPath(tempAssetsDir: string, fileName: string): string {
   return path.join(
     tempAssetsDir,
-    `${Date.now()}-${randomUUID().slice(0, 8)}-${sanitizePackFileName(fileName)}`,
+    `${Date.now()}-${randomUUID().slice(0, 8)}-${rewriteSafeAssetFileName(fileName)}`,
   );
 }
 
@@ -67,6 +54,7 @@ function uniqueTempAssetPath(tempAssetsDir: string, fileName: string): string {
 export async function resolveSandboxedPackPath(
   packRoot: string,
   requested: string,
+  resolvedPackRoot?: string,
 ): Promise<string | null> {
   const classified = classifyPackSrc(requested);
   let candidate: string;
@@ -74,14 +62,12 @@ export async function resolveSandboxedPackPath(
     candidate = path.resolve(packRoot, classified.path);
   } else if (classified.kind === 'absolute') {
     candidate = classified.path;
-  } else if (!path.isAbsolute(requested)) {
-    candidate = path.resolve(packRoot, requested);
   } else {
-    candidate = requested;
+    return null;
   }
 
   try {
-    const realRoot = await fs.realpath(packRoot);
+    const realRoot = resolvedPackRoot ?? (await fs.realpath(packRoot));
     const realTarget = await fs.realpath(candidate);
     if (!isPathInsidePackRoot(realRoot, realTarget)) {
       return null;
@@ -152,13 +138,14 @@ export async function ingestSessionConsolePackFromBoardPath(
   const json = JSON.parse(rawText) as unknown;
   const { pack, errors } = parseSessionConsolePack(json);
   const packRoot = path.dirname(boardJsonPath);
+  const realRoot = await fs.realpath(packRoot);
   const warnings: string[] = [];
   await ensureTempAssetsDir(tempAssetsDir);
 
   const materialized = await materializePack(
     pack,
     async (relativeOrAbsolute) => {
-      const sandboxed = await resolveSandboxedPackPath(packRoot, relativeOrAbsolute);
+      const sandboxed = await resolveSandboxedPackPath(packRoot, relativeOrAbsolute, realRoot);
       if (!sandboxed) {
         return null;
       }
@@ -210,13 +197,7 @@ export async function resolveSandboxedExportDest(
 ): Promise<string | null> {
   const trimmed = relativeSrc.replace(/^\.\//, '');
   const folder = trimmed.startsWith('audio/') ? 'audio' : 'images';
-  const rawName = path.basename(trimmed);
-  let fileName: string;
-  try {
-    fileName = sanitizeAssetFileName(rawName);
-  } catch {
-    fileName = sanitizePackFileName(rawName);
-  }
+  const fileName = rewriteSafeAssetFileName(path.basename(trimmed));
   if (fileName === '.' || fileName === '..') {
     return null;
   }

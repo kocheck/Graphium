@@ -7,7 +7,7 @@ import type { GameState } from '../../store/gameStore';
 
 const PANEL_SELECTOR = '[data-session-console="panel"], [data-testid="session-console-panel"]';
 
-export function isTypingTarget(target: EventTarget | null): boolean {
+function isTypingTarget(target: EventTarget | null): boolean {
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
     return true;
   }
@@ -60,7 +60,7 @@ export function shouldDeferSessionConsoleEscape(
   );
 }
 
-export function handleSessionConsoleEscape(event: KeyboardEvent, extraDefer = false): boolean {
+function handleSessionConsoleEscape(event: KeyboardEvent, extraDefer = false): boolean {
   if (event.key !== 'Escape') {
     return false;
   }
@@ -90,8 +90,6 @@ export function useSessionConsoleEscapeStop(extraDefer = false): void {
 }
 
 export function useSessionConsoleHotkeys(): void {
-  useSessionConsoleEscapeStop();
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       const store = useGameStore.getState();

@@ -13,6 +13,7 @@ import {
   type Track,
 } from '../../types/sessionConsole';
 import { toMediaProtocol } from '../../utils/mediaProtocol';
+import { SessionConsoleEscapeStop } from './SessionConsoleEscapeStop';
 import { SessionConsolePanel } from './SessionConsolePanel';
 
 const mockProcessImage = vi.fn();
@@ -416,6 +417,7 @@ describe('SessionConsolePanel', () => {
     render(
       <>
         <button type="button">Outside canvas</button>
+        <SessionConsoleEscapeStop />
         <SessionConsolePanel />
         <ConfirmDialog />
       </>,
@@ -444,11 +446,35 @@ describe('SessionConsolePanel', () => {
     stopSpy.mockRestore();
   });
 
+  it('stops playback from SessionConsoleEscapeStop when the panel is not mounted', () => {
+    seedBoard(true);
+    render(<SessionConsoleEscapeStop />);
+
+    const originalDispatch = useGameStore.getState().dispatchSessionConsole;
+    const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
+      originalDispatch(command),
+    );
+    act(() => {
+      useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+    });
+
+    const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'STOP' });
+    expect(useGameStore.getState().sessionConsoleRuntime.audio.status).toBe('stopped');
+    expect(stopSpy).toHaveBeenCalled();
+    stopSpy.mockRestore();
+  });
+
   it('does not swallow Esc when playback is already stopped', () => {
     seedBoard();
     render(
       <>
         <button type="button">Outside canvas</button>
+        <SessionConsoleEscapeStop />
         <SessionConsolePanel />
       </>,
     );
@@ -467,6 +493,7 @@ describe('SessionConsolePanel', () => {
     render(
       <>
         <button type="button">Outside canvas</button>
+        <SessionConsoleEscapeStop />
         <SessionConsolePanel />
         <ConfirmDialog />
       </>,

@@ -10,6 +10,7 @@ import {
   clampVolumeOffset,
   emptySessionConsoleCatalog,
   isTrackAccent,
+  isYouTubeHostname,
   parseYouTubeVideoId,
 } from '../types/sessionConsole';
 
@@ -238,17 +239,6 @@ function emptyPack(title = ''): SessionConsolePack {
   };
 }
 
-function isYoutubeHost(hostname: string): boolean {
-  const host = hostname.replace(/^www\./, '');
-  return (
-    host === 'youtu.be' ||
-    host === 'youtube.com' ||
-    host === 'm.youtube.com' ||
-    host === 'music.youtube.com' ||
-    host === 'youtube-nocookie.com'
-  );
-}
-
 function classifyFileUrl(trimmed: string): PackSrcClassification {
   try {
     return { kind: 'absolute', path: fileURLToPath(trimmed) };
@@ -260,7 +250,7 @@ function classifyFileUrl(trimmed: string): PackSrcClassification {
 function classifyHttpSrc(trimmed: string): PackSrcClassification {
   try {
     const url = new URL(trimmed);
-    if (isYoutubeHost(url.hostname)) {
+    if (isYouTubeHostname(url.hostname)) {
       return { kind: 'invalid', reason: 'youtube URL is missing a video id' };
     }
   } catch {
