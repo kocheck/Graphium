@@ -16,6 +16,7 @@ import type {
 /* eslint-disable import/no-unused-modules */
 
 export const SESSION_CONSOLE_PACK_KIND = 'graphium.sessionConsolePack';
+export const PACK_HTTP_MAX_BYTES = 25 * 1024 * 1024;
 
 const TRACK_ACCENTS = new Set<TrackAccent>(['bed', 'road', 'dread', 'combat', 'arrive']);
 const FILE_NAME_WITH_EXT = /\.[a-zA-Z0-9]{2,5}$/;
@@ -87,6 +88,76 @@ export interface SessionConsolePack {
 }
 
 type PersistBuffer = (buffer: ArrayBuffer, fileName: string) => Promise<string | null>;
+
+export interface MaterializePackOptions {
+  localFileSkipReason?: string;
+  maxHttpBytes?: number;
+}
+
+export interface PackHttpResponse {
+  ok: boolean;
+  headers: { get: (name: string) => string | null };
+  body?: ReadableStream<Uint8Array> | null;
+  arrayBuffer: () => Promise<ArrayBuffer>;
+}
+
+/**
+ * Read a fetch Response up to `maxBytes`, aborting when Content-Length or the
+ * streamed body exceeds the cap.
+ */
+export async function readResponseCapped(
+  response: PackHttpResponse,
+  maxBytes: number,
+): Promise<ArrayBuffer | null> {
+  if (!response.ok) {
+    return null;
+  }
+  const declared = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    return null;
+  }
+  if (response.body) {
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      out.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return out.buffer;
+  }
+  const buffer = await response.arrayBuffer();
+  return buffer.byteLength > maxBytes ? null : buffer;
+}
+
+/**
+ * Fetch a remote pack asset with a hard byte cap.
+ */
+export async function fetchHttpCapped(
+  url: string,
+  maxBytes = PACK_HTTP_MAX_BYTES,
+): Promise<ArrayBuffer | null> {
+  try {
+    const response = await fetch(url);
+    return await readResponseCapped(response, maxBytes);
+  } catch {
+    return null;
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -437,6 +508,8 @@ interface IngestContext {
   fetchHttp?: (url: string) => Promise<ArrayBuffer | null>;
   persistBuffer?: PersistBuffer;
   skipped: string[];
+  localFileSkipReason?: string;
+  maxHttpBytes: number;
 }
 
 async function ingestSrc(src: string, label: string, ctx: IngestContext): Promise<string | null> {
@@ -453,7 +526,7 @@ async function ingestSrc(src: string, label: string, ctx: IngestContext): Promis
 
   const ingested = await ctx.resolveFile(classified.path);
   if (!ingested) {
-    ctx.skipped.push(`${label}: missing or unsandboxed file ${classified.path}`);
+    ctx.skipped.push(ctx.localFileSkipReason ?? `${label}: missing or unsandboxed file`);
     return null;
   }
   return ingested;
@@ -470,7 +543,11 @@ async function ingestHttpSrc(
   }
   const buffer = await ctx.fetchHttp(url);
   if (!buffer) {
-    ctx.skipped.push(`${label}: failed to fetch ${url}`);
+    ctx.skipped.push(`${label}: failed to fetch remote file`);
+    return null;
+  }
+  if (buffer.byteLength > ctx.maxHttpBytes) {
+    ctx.skipped.push(`${label}: remote file is larger than 25MB`);
     return null;
   }
   if (!ctx.persistBuffer) {
@@ -479,10 +556,19 @@ async function ingestHttpSrc(
   }
   const ingested = await ctx.persistBuffer(buffer, basenameFromSrc(url));
   if (!ingested) {
-    ctx.skipped.push(`${label}: failed to ingest ${url}`);
+    ctx.skipped.push(`${label}: failed to ingest remote file`);
     return null;
   }
   return ingested;
+}
+
+function unionSfx(seeded: SfxDefinition[], incoming: SfxDefinition[]): SfxDefinition[] {
+  const incomingById = new Map(incoming.map((item) => [item.id, item]));
+  const seededIds = new Set(seeded.map((item) => item.id));
+  return [
+    ...seeded.map((item) => incomingById.get(item.id) ?? item),
+    ...incoming.filter((item) => !seededIds.has(item.id)),
+  ];
 }
 
 function clampOffset(value: number): number {
@@ -628,13 +714,21 @@ export async function materializePack(
   resolveFile: (relativeOrAbsolute: string) => Promise<string | null>,
   fetchHttp?: (url: string) => Promise<ArrayBuffer | null>,
   persistBuffer?: PersistBuffer,
+  options?: MaterializePackOptions,
 ): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] }> {
   const catalog = emptySessionConsoleCatalog(pack.stage.title);
   catalog.stage = { ...pack.stage };
   catalog.defaults = { ...pack.defaults };
   const skipped: string[] = [];
   const usedIds = new Set<string>(catalog.sfx.map((item) => item.id));
-  const ctx: IngestContext = { resolveFile, fetchHttp, persistBuffer, skipped };
+  const ctx: IngestContext = {
+    resolveFile,
+    fetchHttp,
+    persistBuffer,
+    skipped,
+    localFileSkipReason: options?.localFileSkipReason,
+    maxHttpBytes: options?.maxHttpBytes ?? PACK_HTTP_MAX_BYTES,
+  };
 
   catalog.imageSets = await materializeImageSets(pack, ctx, usedIds);
 
@@ -651,12 +745,32 @@ export async function materializePack(
 
   if (pack.sfx && pack.sfx.length > 0) {
     const materialized = await materializeSfx(pack.sfx, ctx);
-    if (materialized.length > 0) {
-      catalog.sfx = materialized;
-    }
+    catalog.sfx = unionSfx(catalog.sfx, materialized);
   }
 
   return { catalog, skipped };
+}
+
+/**
+ * Web ingest: YouTube + http(s) only. Relative/absolute files are skipped with a board-add reason.
+ */
+export async function ingestSessionConsolePackFromJson(
+  json: unknown,
+  persistBuffer: PersistBuffer,
+  fetchHttp: (url: string) => Promise<ArrayBuffer | null> = fetchHttpCapped,
+): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] }> {
+  const { pack, errors } = parseSessionConsolePack(json);
+  const materialized = await materializePack(
+    pack,
+    () => Promise.resolve(null),
+    fetchHttp,
+    persistBuffer,
+    {
+      localFileSkipReason:
+        'Local files cannot be imported in the browser — add files on the board.',
+    },
+  );
+  return { catalog: materialized.catalog, skipped: [...errors, ...materialized.skipped] };
 }
 
 function sanitizeExportId(id: string): string {
@@ -668,9 +782,13 @@ function sanitizeExportId(id: string): string {
   return cleaned;
 }
 
+function defaultPackExt(folder: 'images' | 'audio'): string {
+  return folder === 'images' ? '.png' : '.mp3';
+}
+
 function exportAssetRelPath(folder: 'images' | 'audio', id: string, src: string): string {
-  const ext = path.extname(src) || (folder === 'images' ? '.png' : '.mp3');
-  const safeExt = /^\.[a-zA-Z0-9]{1,5}$/.test(ext) ? ext : folder === 'images' ? '.png' : '.mp3';
+  const ext = path.extname(src) || defaultPackExt(folder);
+  const safeExt = /^\.[a-zA-Z0-9]{1,5}$/.test(ext) ? ext : defaultPackExt(folder);
   return `./${folder}/${sanitizeExportId(id)}${safeExt}`;
 }
 
@@ -713,6 +831,15 @@ export function catalogToSessionConsolePack(catalog: SessionConsoleCatalog): Ses
         loop: track.loop,
         volumeOffset: track.volumeOffset,
       })),
+    })),
+    sfx: catalog.sfx.map((item) => ({
+      id: item.id,
+      label: item.label,
+      kind: item.kind,
+      ...(item.synthType ? { synthType: item.synthType } : {}),
+      ...(item.kind === 'local' && item.src
+        ? { src: exportAssetRelPath('audio', item.id, item.src) }
+        : {}),
     })),
   };
 }

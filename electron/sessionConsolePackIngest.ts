@@ -4,6 +4,7 @@ import {
   exportSessionConsolePackToDirectory,
   ingestSessionConsolePackFromBoardPath,
 } from './sessionConsolePackFiles.js';
+import { PACK_HTTP_MAX_BYTES, readResponseCapped } from '../src/utils/sessionConsolePack.js';
 
 import type { SessionConsoleCatalog } from '../src/types/sessionConsole.js';
 import type { IpcMainInvokeEvent } from 'electron';
@@ -11,10 +12,7 @@ import type { IpcMainInvokeEvent } from 'electron';
 async function fetchHttpBuffer(url: string): Promise<ArrayBuffer | null> {
   try {
     const response = await net.fetch(url);
-    if (!response.ok) {
-      return null;
-    }
-    return await response.arrayBuffer();
+    return await readResponseCapped(response, PACK_HTTP_MAX_BYTES);
   } catch {
     return null;
   }

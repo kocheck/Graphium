@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { emptySessionConsoleCatalog } from '../types/sessionConsole';
 import {
@@ -9,7 +9,9 @@ import {
   classifyPackSrc,
   isPathInsidePackRoot,
   materializePack,
+  PACK_HTTP_MAX_BYTES,
   parseSessionConsolePack,
+  readResponseCapped,
 } from './sessionConsolePack';
 
 import type { SessionConsolePack } from './sessionConsolePack';
@@ -22,6 +24,24 @@ const EXAMPLE_PACK_PATH = path.resolve(
 function loadExamplePackJson(): unknown {
   return JSON.parse(readFileSync(EXAMPLE_PACK_PATH, 'utf8')) as unknown;
 }
+
+describe('readResponseCapped', () => {
+  it('does not read the body when Content-Length exceeds the cap', async () => {
+    const arrayBuffer = vi.fn();
+    const response = {
+      ok: true,
+      headers: {
+        get: (name: string) =>
+          name.toLowerCase() === 'content-length' ? String(PACK_HTTP_MAX_BYTES + 1) : null,
+      },
+      arrayBuffer,
+      body: null,
+    };
+
+    await expect(readResponseCapped(response, PACK_HTTP_MAX_BYTES)).resolves.toBeNull();
+    expect(arrayBuffer).not.toHaveBeenCalled();
+  });
+});
 
 describe('classifyPackSrc', () => {
   it('classifies youtube, relative, absolute, and http srcs', () => {
@@ -216,6 +236,132 @@ describe('materializePack', () => {
       'test-tone',
     ]);
   });
+
+  it('unions pack sfx onto the seeded five and only replaces matching ids', async () => {
+    const pack: SessionConsolePack = {
+      version: 1,
+      kind: 'graphium.sessionConsolePack',
+      stage: { title: 'T', subtitle: '', showFrame: true },
+      defaults: { volume: 45, duckPercent: 27 },
+      imageSets: [],
+      trackGroups: [],
+      sfx: [
+        { id: 'chime', label: 'Pack Chime', kind: 'synth', synthType: 'chime' },
+        { id: 'horn', label: 'Horn', kind: 'synth', synthType: 'ping' },
+      ],
+    };
+
+    const { catalog } = await materializePack(pack, async () => null);
+    expect(catalog.sfx.map((item) => item.id)).toEqual([
+      'chime',
+      'drone',
+      'snap',
+      'ping',
+      'test-tone',
+      'horn',
+    ]);
+    expect(catalog.sfx[0]?.label).toBe('Pack Chime');
+    expect(catalog.sfx.find((item) => item.id === 'test-tone')).toBeDefined();
+  });
+
+  it('skips http bodies larger than 25MB without persisting a path', async () => {
+    const pack: SessionConsolePack = {
+      version: 1,
+      kind: 'graphium.sessionConsolePack',
+      stage: { title: 'T', subtitle: '', showFrame: true },
+      defaults: { volume: 45, duckPercent: 27 },
+      imageSets: [
+        {
+          id: 's',
+          title: 'S',
+          note: '',
+          images: [
+            {
+              id: 'remote',
+              name: 'Remote',
+              cue: '',
+              src: 'https://example.com/huge.png',
+              alt: 'art',
+            },
+          ],
+        },
+      ],
+      trackGroups: [],
+    };
+    const huge = { byteLength: 25 * 1024 * 1024 + 1 } as ArrayBuffer;
+    const persist = vi.fn(async () => 'file:///Users/janedoe/tmp/huge.png');
+
+    const { catalog, skipped } = await materializePack(
+      pack,
+      async () => null,
+      async () => huge,
+      persist,
+    );
+
+    expect(persist).not.toHaveBeenCalled();
+    expect(catalog.imageSets[0]?.images).toEqual([]);
+    expect(skipped.join(' ')).toMatch(/25\s*MB/i);
+    expect(skipped.join(' ')).not.toContain('janedoe');
+    expect(skipped.join(' ')).not.toMatch(/\/Users\//);
+  });
+
+  it('skips relative local files with an add-on-the-board reason for web ingest', async () => {
+    const pack: SessionConsolePack = {
+      version: 1,
+      kind: 'graphium.sessionConsolePack',
+      stage: { title: 'T', subtitle: '', showFrame: true },
+      defaults: { volume: 45, duckPercent: 27 },
+      imageSets: [
+        {
+          id: 's',
+          title: 'S',
+          note: '',
+          images: [
+            {
+              id: 'local-art',
+              name: 'Local',
+              cue: '',
+              src: './images/keep.png',
+              alt: 'keep',
+            },
+          ],
+        },
+      ],
+      trackGroups: [
+        {
+          id: 'g',
+          title: 'Beds',
+          note: '',
+          accent: 'bed',
+          tracks: [
+            {
+              title: 'Wilderness',
+              cue: '',
+              tag: 'bed',
+              src: 'https://www.youtube.com/watch?v=bLZApMsorjA',
+            },
+          ],
+        },
+      ],
+    };
+
+    const { catalog, skipped } = await materializePack(
+      pack,
+      async () => null,
+      undefined,
+      undefined,
+      {
+        localFileSkipReason:
+          'Local files cannot be imported in the browser — add files on the board.',
+      },
+    );
+
+    expect(catalog.trackGroups[0]?.tracks[0]?.youtubeId).toBe('bLZApMsorjA');
+    expect(catalog.imageSets[0]?.images).toEqual([]);
+    expect(skipped.join(' ')).toMatch(/add files on the board/i);
+    expect(skipped.join(' ')).not.toContain('/tmp/');
+    expect(skipped.join(' ')).not.toContain('./images/keep.png');
+  });
 });
 
 describe('catalogToSessionConsolePack', () => {
@@ -231,6 +377,13 @@ describe('catalogToSessionConsolePack', () => {
     );
     expect(exported.trackGroups[0]?.tracks[1]?.src).toBe('./audio/shelter-from-the-rain.mp3');
     expect(exported.imageSets[0]?.images[0]?.src).toBe('./images/campaign-opener.png');
+    expect(exported.sfx?.map((item) => item.id)).toEqual([
+      'chime',
+      'drone',
+      'snap',
+      'ping',
+      'test-tone',
+    ]);
   });
 
   it('sanitizes ids so a ".." id cannot resolve outside destDir', () => {

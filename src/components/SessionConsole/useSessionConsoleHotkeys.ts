@@ -6,7 +6,13 @@ import { flattenTracks } from '../../utils/sessionConsoleBoard';
 const PANEL_SELECTOR = '[data-session-console="panel"], [data-testid="session-console-panel"]';
 
 function isTypingTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    return true;
+  }
+  if (target instanceof HTMLSelectElement) {
+    return true;
+  }
+  return target instanceof HTMLElement && target.isContentEditable;
 }
 
 function isInsideSessionConsolePanel(node: EventTarget | null): boolean {
@@ -30,14 +36,14 @@ export function useSessionConsoleHotkeys(): void {
         return;
       }
 
-      if (!isSessionConsoleHotkeyFocus(event)) {
-        return;
-      }
-
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopImmediatePropagation();
         store.dispatchSessionConsole({ type: 'STOP' });
+        return;
+      }
+
+      if (!isSessionConsoleHotkeyFocus(event)) {
         return;
       }
 

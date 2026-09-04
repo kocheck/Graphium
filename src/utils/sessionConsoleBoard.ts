@@ -1,5 +1,5 @@
 import { processImage } from './AssetProcessor';
-import { saveLocalAudioFile } from './localAudioAsset';
+import { LOCAL_AUDIO_WARN_BYTES, saveLocalAudioFile } from './localAudioAsset';
 import { toMediaProtocol } from './mediaProtocol';
 import {
   parseYouTubeVideoId,
@@ -128,6 +128,9 @@ async function addDroppedImage(store: GameState, file: File): Promise<void> {
 
 async function addDroppedAudio(store: GameState, file: File): Promise<void> {
   const src = await saveLocalAudioFile(file);
+  if (file.size > LOCAL_AUDIO_WARN_BYTES) {
+    store.showToast('This audio file is larger than 8MB and will bloat the campaign zip.', 'info');
+  }
   const groupId = ensureTrackGroup(store);
   const title = fileNameStem(file.name);
   store.updateSessionConsole({

@@ -108,7 +108,7 @@ export interface IStorageService {
    * Import a Session Console board pack via a native open dialog (`board.json`).
    *
    * **Electron:** Main process sandboxes relative paths and copies files into temp_assets.
-   * **Web:** Not supported (returns null). Use JSON + http(s) ingest from the renderer instead.
+   * **Web:** JSON file picker; materializes YouTube + http(s) srcs. Local files are skipped.
    *
    * @returns Catalog plus skipped-row messages, or null if the user cancelled
    */
@@ -120,7 +120,7 @@ export interface IStorageService {
    * **Electron:** Native directory picker; writes `board.json` plus `images/` and `audio/`.
    * Returns `{ ok, skipped }` after a chosen folder, or `false` if cancelled.
    * `ok` is false when any required copy is rejected.
-   * **Web:** Not supported (returns false).
+   * **Web:** Downloads a YouTube-only `board.json` (no local file copy).
    */
   exportSessionConsolePack(
     catalog: SessionConsoleCatalog,

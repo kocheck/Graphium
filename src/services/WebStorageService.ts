@@ -4,7 +4,12 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
 
+import { contentTypeForAssetFileName } from '../utils/assetContentType';
 import { rewriteCampaignAssetSrcs } from '../utils/campaignAssets';
+import {
+  catalogToSessionConsolePack,
+  ingestSessionConsolePackFromJson,
+} from '../utils/sessionConsolePack';
 
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
 import type { Campaign, TokenLibraryItem } from '../store/gameStore';
@@ -206,13 +211,73 @@ export class WebStorageService implements IStorageService {
     catalog: SessionConsoleCatalog;
     skipped: string[];
   } | null> {
-    return Promise.resolve(null);
+    return new Promise((resolve, reject) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json,.json';
+
+      input.onchange = (): void => {
+        const file = input.files?.[0];
+        if (!file) {
+          resolve(null);
+          return;
+        }
+        void (async () => {
+          try {
+            const json = JSON.parse(await file.text()) as unknown;
+            const result = await ingestSessionConsolePackFromJson(json, async (buffer, fileName) =>
+              this.saveAssetTemp(buffer, fileName),
+            );
+            resolve(result);
+          } catch (error) {
+            console.error('[WebStorageService] Session Console pack import failed:', error);
+            reject(
+              error instanceof Error ? error : new Error('Failed to import Session Console pack'),
+            );
+          }
+        })();
+      };
+
+      input.click();
+    });
   }
 
   exportSessionConsolePack(
-    _catalog: SessionConsoleCatalog,
+    catalog: SessionConsoleCatalog,
   ): Promise<false | { ok: boolean; skipped: string[] }> {
-    return Promise.resolve(false);
+    try {
+      const pack = catalogToSessionConsolePack(catalog);
+      const youtubeOnly = {
+        ...pack,
+        imageSets: [],
+        trackGroups: pack.trackGroups
+          .map((group) => ({
+            ...group,
+            tracks: group.tracks.filter((track) =>
+              track.src.startsWith('https://www.youtube.com/watch?v='),
+            ),
+          }))
+          .filter((group) => group.tracks.length > 0),
+        sfx: pack.sfx?.filter((item) => item.kind === 'synth'),
+      };
+      const blob = new Blob([`${JSON.stringify(youtubeOnly, null, 2)}\n`], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'board.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return Promise.resolve({ ok: true, skipped: [] });
+    } catch (error) {
+      console.error('[WebStorageService] Session Console pack export failed:', error);
+      throw new Error(
+        `Failed to export board pack: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   // ===== ASSET PROCESSING =====
@@ -221,7 +286,7 @@ export class WebStorageService implements IStorageService {
     try {
       // For web, we'll use Object URLs (simple, session-scoped)
       // OPFS requires more complex setup and isn't critical for MVP
-      const blob = new Blob([buffer], { type: 'image/webp' });
+      const blob = new Blob([buffer], { type: contentTypeForAssetFileName(fileName) });
       const url = URL.createObjectURL(blob);
 
       // Track URL for cleanup when saved to campaign or discarded

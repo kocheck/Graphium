@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { act } from 'react';
 
 import ConfirmDialog from '../ConfirmDialog';
 import { useGameStore } from '../../store/gameStore';
@@ -23,9 +24,13 @@ vi.mock('../../utils/AssetProcessor', () => ({
   processImage: (...args: unknown[]) => mockProcessImage(...args),
 }));
 
-vi.mock('../../utils/localAudioAsset', () => ({
-  saveLocalAudioFile: (...args: unknown[]) => mockSaveLocalAudioFile(...args),
-}));
+vi.mock('../../utils/localAudioAsset', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../utils/localAudioAsset')>();
+  return {
+    ...actual,
+    saveLocalAudioFile: (...args: unknown[]) => mockSaveLocalAudioFile(...args),
+  };
+});
 
 vi.mock('../../services/storage', () => ({
   getStorage: () => ({
@@ -333,6 +338,23 @@ describe('SessionConsolePanel', () => {
     expect(runtime.audio.status).toBe('playing');
   });
 
+  it('toasts a generic 8MB warning when a dropped audio file is oversized', async () => {
+    seedEmptyBoard();
+    renderPanel();
+
+    const zone = screen.getByTestId('session-console-dropzone');
+    const file = new File(['x'], 'secret-bed.mp3', { type: 'audio/mpeg' });
+    Object.defineProperty(file, 'size', { value: 8 * 1024 * 1024 + 1 });
+    dropFiles(zone, [file]);
+
+    await waitFor(() => {
+      expect(useGameStore.getState().toast?.type).toBe('info');
+    });
+    expect(useGameStore.getState().toast?.message).toMatch(/8\s*MB/i);
+    expect(useGameStore.getState().toast?.message).not.toContain('secret-bed');
+    expect(mockSaveLocalAudioFile).toHaveBeenCalled();
+  });
+
   it('does not dispatch SET_DUCKED or stopImmediatePropagation when D is pressed outside the panel', () => {
     seedBoard();
     render(
@@ -363,6 +385,37 @@ describe('SessionConsolePanel', () => {
     stopSpy.mockRestore();
   });
 
+  it('stops playback when Escape is pressed outside the panel', () => {
+    seedBoard(true);
+    render(
+      <>
+        <button type="button">Outside canvas</button>
+        <SessionConsolePanel />
+        <ConfirmDialog />
+      </>,
+    );
+
+    const originalDispatch = useGameStore.getState().dispatchSessionConsole;
+    const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
+      originalDispatch(command),
+    );
+    useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+
+    const outside = screen.getByRole('button', { name: 'Outside canvas' });
+    outside.focus();
+    expect(outside).toHaveFocus();
+
+    const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
+    act(() => {
+      fireEvent.keyDown(outside, { key: 'Escape' });
+    });
+
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'STOP' });
+    expect(useGameStore.getState().sessionConsoleRuntime.audio.status).toBe('stopped');
+    expect(stopSpy).toHaveBeenCalled();
+    stopSpy.mockRestore();
+  });
+
   it('stops D and 1-5 from bubbling when handled inside the panel', () => {
     seedBoard();
     renderPanel();
@@ -377,6 +430,53 @@ describe('SessionConsolePanel', () => {
     expect(useGameStore.getState().sessionConsoleRuntime.ducked).toBe(true);
     expect(useGameStore.getState().sessionConsoleRuntime.audio.trackId).toBe(bedTrack.id);
     stopSpy.mockRestore();
+  });
+
+  it('saves recommended plate via UPDATE_TRACK without changing activeImage', async () => {
+    seedBoard();
+    const extraPlate: StageImage = {
+      id: 'img-hall',
+      name: 'Hall',
+      cue: 'secret hall cue',
+      src: 'file:///full/hall.webp',
+      thumbnailSrc: 'file:///thumb/hall.webp',
+      alt: 'The hall',
+    };
+    const catalog = useGameStore.getState().sessionConsole;
+    useGameStore.setState({
+      sessionConsole: {
+        ...catalog,
+        imageSets: [
+          {
+            ...catalog.imageSets[0]!,
+            images: [...catalog.imageSets[0]!.images, extraPlate],
+          },
+        ],
+      },
+    });
+    useGameStore.getState().dispatchSessionConsole({ type: 'SHOW_PLATE', imageId: plate.id });
+    expect(useGameStore.getState().sessionConsoleRuntime.activeImage?.id).toBe(plate.id);
+
+    const originalDispatch = useGameStore.getState().dispatchSessionConsole;
+    const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
+      originalDispatch(command),
+    );
+    useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+
+    renderPanel();
+    await userEvent.click(screen.getByRole('button', { name: `Edit track ${bedTrack.title}` }));
+    expect(screen.getByRole('heading', { name: 'Edit track' })).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('Recommended plate'), extraPlate.id);
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(
+        useGameStore.getState().sessionConsole.trackGroups[0]?.tracks[0]?.recommendedImageId,
+      ).toBe(extraPlate.id);
+    });
+    expect(useGameStore.getState().sessionConsoleRuntime.activeImage?.id).toBe(plate.id);
+    expect(dispatchSpy).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SHOW_PLATE' }));
   });
 
   it('opens the editor sheet from a plate Edit button', async () => {
