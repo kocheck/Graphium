@@ -17,6 +17,8 @@
  * **IPC channels:**
  * - 'create-world-window': Creates World View window
  * - 'SYNC_WORLD_STATE': Broadcasts state changes to World Window
+ * - 'SYNC_FROM_WORLD_VIEW': Relays scoped token-position updates to Architect
+ * - 'SESSION_CONSOLE_WORLD_EVENT': Relays World Session Console status to Architect
  * - 'SAVE_ASSET_TEMP': Saves processed asset to temp directory
  * - 'SAVE_CAMPAIGN': Serializes campaign to .graphium ZIP file
  * - 'LOAD_CAMPAIGN': Deserializes .graphium file and restores assets
@@ -61,9 +63,11 @@ import {
 } from './themeManager.js';
 import { emptySessionConsoleCatalog } from '../src/types/sessionConsole.js';
 import { rewriteCampaignAssetSrcs } from '../src/utils/campaignAssets.js';
+import { parseSessionConsoleWorldEvent } from '../src/utils/syncUtils.js';
 import { sanitizeWorldToArchitectAction } from '../src/utils/worldViewTokenSync.js';
 
 import type { SessionConsoleCatalog } from '../src/types/sessionConsole.js';
+import type { SessionConsoleWorldEvent } from '../src/utils/syncUtils.js';
 import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 
 interface StoreSchema {
@@ -1115,6 +1119,15 @@ void app.whenReady().then((): void => {
       return;
     }
     mainWindow.webContents.send('SYNC_WORLD_STATE', sanitized);
+  });
+
+  // IPC: SESSION_CONSOLE_WORLD_EVENT — World status only (armed/unarmed/ready/error)
+  ipcMain.on('SESSION_CONSOLE_WORLD_EVENT', (_event: IpcMainEvent, raw: unknown) => {
+    const parsed: SessionConsoleWorldEvent | null = parseSessionConsoleWorldEvent(raw);
+    if (!parsed || !mainWindow || mainWindow.isDestroyed()) {
+      return;
+    }
+    mainWindow.webContents.send('SESSION_CONSOLE_WORLD_EVENT', parsed);
   });
 
   // IPC: SYNC_WORLD_STATE — broadcast Architect state to World View

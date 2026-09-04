@@ -12,6 +12,7 @@ import {
   stampTokenPositionsOnSnapshot,
 } from '../utils/syncStamp';
 import {
+  applyAction,
   buildFullSyncPayload,
   cloneSyncableStateFromGame,
   cloneSyncableStateFromPayload,
@@ -19,6 +20,8 @@ import {
   detectChanges,
   detectWorldViewTokenUpdates,
   isSyncSliceUnchanged,
+  parseSessionConsoleWorldEvent,
+  sanitizeSessionConsoleErrorMessage,
 } from '../utils/syncUtils';
 import { throttle } from '../utils/throttle';
 import { patchTokenInIndex } from '../utils/tokenIndex';
@@ -129,10 +132,15 @@ function SyncManager(): null {
             break;
 
           case 'FULL_SYNC': {
-            const { tokenLibrary: fullLib, ...restState } = action.payload;
+            const {
+              tokenLibrary: fullLib,
+              sessionConsoleRuntime: _runtime,
+              ...restState
+            } = action.payload;
             store.setState({
               ...(restState as Partial<SyncableGameState>),
               tokens: action.payload.tokens ?? store.tokens,
+              sessionConsoleRuntime: applyAction(store.sessionConsoleRuntime, action),
             });
 
             const activeMeasurement = action.payload.activeMeasurement ?? null;
@@ -267,6 +275,17 @@ function SyncManager(): null {
             store.setDmMeasurement(action.payload);
             break;
 
+          case 'STAGE_UPDATE':
+          case 'AUDIO_UPDATE':
+          case 'SFX_FIRE': {
+            const nextRuntime = applyAction(store.sessionConsoleRuntime, action);
+            useGameStore.setState({ sessionConsoleRuntime: nextRuntime });
+            if (worldViewPrevStateRef.current) {
+              worldViewPrevStateRef.current.sessionConsoleRuntime = nextRuntime;
+            }
+            break;
+          }
+
           default:
             break;
         }
@@ -346,6 +365,7 @@ function SyncManager(): null {
           isDaylightMode: state.isDaylightMode,
           activeMeasurement: state.activeMeasurement ?? null,
           broadcastMeasurement: state.broadcastMeasurement ?? false,
+          sessionConsoleRuntime: state.sessionConsoleRuntime,
         }),
       });
     };
@@ -388,16 +408,46 @@ function SyncManager(): null {
       }
     };
 
+    const handleSessionConsoleWorldEvent = (raw: unknown): void => {
+      const event = parseSessionConsoleWorldEvent(raw);
+      if (!event) {
+        return;
+      }
+      const store = useGameStore.getState();
+      if (event.type === 'armed') {
+        store.setSessionConsoleWorldArmed(true);
+        return;
+      }
+      if (event.type === 'unarmed') {
+        store.setSessionConsoleWorldArmed(false);
+        return;
+      }
+      if (event.type === 'error') {
+        store.showToast(
+          sanitizeSessionConsoleErrorMessage(event.message ?? 'Session Console error'),
+          'error',
+        );
+      }
+    };
+
     if (isWeb && channel) {
-      channel.onmessage = (event: MessageEvent<{ type: string }>): void => {
+      channel.onmessage = (event: MessageEvent<{ type: string; payload?: unknown }>): void => {
         if (event.data?.type === 'REQUEST_INITIAL_STATE') {
           handleInitialStateRequest(event);
         } else if (event.data?.type === 'TOKEN_UPDATE' || event.data?.type === 'BATCH') {
           applyWorldToArchitectAction(event.data);
+        } else if (event.data?.type === 'SESSION_CONSOLE_WORLD_EVENT') {
+          handleSessionConsoleWorldEvent(event.data.payload);
         }
       };
     } else if (isElectron && ipcRenderer) {
       ipcRenderer.on('REQUEST_INITIAL_STATE', handleInitialStateRequest);
+      ipcRenderer.on(
+        'SESSION_CONSOLE_WORLD_EVENT',
+        (_event: Electron.IpcRendererEvent, raw: unknown) => {
+          handleSessionConsoleWorldEvent(raw);
+        },
+      );
     }
 
     const handleStoreUpdate = (state: GameState): void => {
@@ -451,6 +501,7 @@ function SyncManager(): null {
       if (isElectron && ipcRenderer) {
         ipcRenderer.removeAllListeners('REQUEST_INITIAL_STATE');
         ipcRenderer.removeAllListeners('SYNC_WORLD_STATE');
+        ipcRenderer.removeAllListeners('SESSION_CONSOLE_WORLD_EVENT');
       }
       delete window.graphiumSync;
     };

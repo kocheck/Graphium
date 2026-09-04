@@ -221,16 +221,24 @@ window.ipcRenderer.on('SYNC_WORLD_STATE', (_event, action: SyncAction) => {
 { type: 'EXPLORED_UPDATE', payload: ExploredRegion[] }
 { type: 'MEASUREMENT_UPDATE', payload: Measurement | null }
 { type: 'LIBRARY_UPDATE', payload: TokenLibraryItem[] }
+
+// Session Console runtime (catalog is never synced)
+{ type: 'STAGE_UPDATE', payload: { stageVisible: boolean, activeImage: { id, src, alt, name } | null } }
+{ type: 'AUDIO_UPDATE', payload: { audio: SessionConsoleRuntime['audio'], volume: number, ducked: boolean } }
+{ type: 'SFX_FIRE', payload: { seq: number, sfxId: string | null } }
 ```
+
+`SyncableGameState` includes `sessionConsoleRuntime` only — **not** `sessionConsole` / campaign catalog.
 
 #### Behavior
 
-- **Frequency:** Fires when syncable Architect store fields change (tokens, drawings, doors, stairs, map, grid, library, fog, measurement)
-- **Direction:** Architect is the source of truth for campaign state
-- **World → Architect:** Only scoped token **position** updates via `SYNC_FROM_WORLD_VIEW` (see below)
+- **Frequency:** Fires when syncable Architect store fields change (tokens, drawings, doors, stairs, map, grid, library, fog, measurement, session console runtime)
+- **Direction:** Architect is the source of truth for campaign state and Session Console runtime
+- **World → Architect:** Scoped token **position** updates via `SYNC_FROM_WORLD_VIEW` (see below). Session Console status uses dedicated `SESSION_CONSOLE_WORLD_EVENT` (do not send through the token sanitizer).
 - **Coalescing:** Multiple small deltas become one `BATCH`; 20+ deltas collapse to a single `FULL_SYNC`
 - **Empty snapshots:** Architect skips snapshot cloning when `detectChanges` returns no actions
 - **Real-time Drag:** `TOKEN_DRAG_*` events are throttled (~32ms) for smooth sync
+- **Session Console diffs:** Plate-only changes emit `STAGE_UPDATE`. Play/pause/volume/duck emit `AUDIO_UPDATE` (not `FULL_SYNC`). `RETURN_TO_MAP` hides the plate without stopping audio. SFX increments emit `SFX_FIRE`. World applies these by writing `sessionConsoleRuntime` from the payload — it must not run catalog reducers (`updateSessionConsole`).
 
 #### Related: SYNC_FROM_WORLD_VIEW
 
@@ -246,6 +254,25 @@ window.ipcRenderer.send('SYNC_FROM_WORLD_VIEW', {
 Main validates with `sanitizeWorldToArchitectAction` (strips non-position fields, rejects
 `FULL_SYNC` / entity add-remove) before relaying onto the Architect window as
 `SYNC_WORLD_STATE`. Architect applies the same sanitizer again and merges **only** `x`/`y`.
+
+#### Related: SESSION_CONSOLE_WORLD_EVENT
+
+**Pattern:** Send + Broadcast (World → Main → Architect)  
+**Channel:** `SESSION_CONSOLE_WORLD_EVENT` (whitelisted for send and receive in `electron/preload.ts`)
+
+World View reports player-facing Session Console status without touching `SYNC_FROM_WORLD_VIEW`:
+
+```typescript
+window.ipcRenderer.send('SESSION_CONSOLE_WORLD_EVENT', {
+  type: 'armed' | 'unarmed' | 'ready' | 'error',
+  message?: string,
+});
+```
+
+Main validates with `parseSessionConsoleWorldEvent` and relays the same channel to Architect.
+Architect sets `sessionConsoleRuntime.worldArmed` on `armed` / `unarmed`. On `error`, Architect
+shows a toast; file paths in `message` are sanitized via `errorSanitizer` (`<USER>` in
+`/Users/<USER>/…` paths) before display. `ready` is accepted and currently a no-op.
 
 #### Real-Time Drag Sync
 
