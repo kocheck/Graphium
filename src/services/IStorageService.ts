@@ -1,4 +1,5 @@
 import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { SessionConsoleCatalog } from '../types/sessionConsole';
 
 /**
  * Metadata for a library asset (before URLs are assigned)
@@ -102,6 +103,24 @@ export interface IStorageService {
    * }
    */
   loadCampaign(): Promise<Campaign | null>;
+
+  /**
+   * Import a Session Console board pack via a native open dialog (`board.json`).
+   *
+   * **Electron:** Main process sandboxes relative paths and copies files into temp_assets.
+   * **Web:** Not supported (returns null). Use JSON + http(s) ingest from the renderer instead.
+   *
+   * @returns Catalog plus skipped-row messages, or null if the user cancelled
+   */
+  importSessionConsolePack(): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] } | null>;
+
+  /**
+   * Export the current Session Console catalog as a board pack folder.
+   *
+   * **Electron:** Native directory picker; writes `board.json` plus `images/` and `audio/`.
+   * **Web:** Not supported (returns false).
+   */
+  exportSessionConsolePack(catalog: SessionConsoleCatalog): Promise<boolean>;
 
   // ===== ASSET PROCESSING =====
 

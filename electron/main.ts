@@ -52,6 +52,7 @@ import {
   isValidUuid,
   mediaUrlToFilePath,
 } from './pathSecurity.js';
+import { registerSessionConsolePackHandlers } from './sessionConsolePackIngest.js';
 import {
   initializeThemeManager,
   getThemeState,
@@ -1143,6 +1144,7 @@ void app.whenReady().then((): void => {
 
   registerCampaignHandlers(ctx);
   registerLibraryHandlers(ctx);
+  registerSessionConsolePackHandlers(ctx);
   registerMiscHandlers();
 
   let didRunQuitCleanup = false;

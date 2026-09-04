@@ -8,6 +8,7 @@ import { rewriteCampaignAssetSrcs } from '../utils/campaignAssets';
 
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
 import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { SessionConsoleCatalog } from '../types/sessionConsole';
 
 /**
  * IndexedDB schema version
@@ -199,6 +200,17 @@ export class WebStorageService implements IStorageService {
 
       input.click();
     });
+  }
+
+  importSessionConsolePack(): Promise<{
+    catalog: SessionConsoleCatalog;
+    skipped: string[];
+  } | null> {
+    return Promise.resolve(null);
+  }
+
+  exportSessionConsolePack(_catalog: SessionConsoleCatalog): Promise<boolean> {
+    return Promise.resolve(false);
   }
 
   // ===== ASSET PROCESSING =====

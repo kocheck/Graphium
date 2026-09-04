@@ -64,6 +64,8 @@ const ALLOWED_INVOKE_CHANNELS = [
   'download-update',
   'quit-and-install',
   'get-current-version',
+  'IMPORT_SESSION_CONSOLE_PACK',
+  'EXPORT_SESSION_CONSOLE_PACK',
 ] as const;
 
 /** Channels the renderer may subscribe to */
