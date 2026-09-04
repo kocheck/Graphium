@@ -30,6 +30,8 @@
 - [Theme System](features/theming.md) - Light/dark mode with system preference support
 - [Error Boundaries](features/error-boundaries.md) - Privacy-focused error handling
 - [Accessibility](features/wcag-audit.md) - WCAG AA compliance audit and guidelines
+- [Session Console design](planning/session-console-design.md) - Party plates + YouTube/local ambience (World View Stage)
+- [Session Console implementation plan](planning/session-console-plan.md) - Task-by-task build plan
 
 ### Development Workflows
 
