@@ -260,6 +260,46 @@ describe('WorldStage', () => {
     expect(payload.message).not.toContain('/Users/');
   });
 
+  it('does not send a local audio error when Stop clears the bed src', () => {
+    seedStore({
+      worldArmed: true,
+      audio: {
+        trackId: 'local-1',
+        title: 'Rain',
+        source: 'local',
+        youtubeId: null,
+        src: 'file:///tmp/bed.mp3',
+        status: 'playing',
+        loop: true,
+        restartSeq: 0,
+        volumeOffset: 0,
+      },
+    });
+    render(<WorldStage />);
+
+    mockIpcRenderer.send.mockClear();
+    act(() => {
+      useGameStore.setState({
+        sessionConsoleRuntime: {
+          ...useGameStore.getState().sessionConsoleRuntime,
+          audio: {
+            ...useGameStore.getState().sessionConsoleRuntime.audio,
+            status: 'stopped',
+          },
+        },
+      });
+    });
+
+    const audio = document.querySelector('audio');
+    expect(audio).toBeTruthy();
+    fireEvent.error(audio as HTMLAudioElement);
+
+    expect(mockIpcRenderer.send).not.toHaveBeenCalledWith(
+      'SESSION_CONSOLE_WORLD_EVENT',
+      expect.objectContaining({ type: 'error' }),
+    );
+  });
+
   it('reports YouTube embed errors 101/150/153 to Architect', async () => {
     seedStore({ worldArmed: true });
     render(<WorldStage />);

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 
 import { emptySessionConsoleRuntime, type SessionConsoleRuntime } from '../../types/sessionConsole';
+import { toMediaProtocol } from '../../utils/mediaProtocol';
 import { useWorldTransport } from './useWorldTransport';
 import { type YouTubePlayer } from './worldAudioYoutube';
 
@@ -21,6 +22,26 @@ function playingAudio(trackId: string, youtubeId: string): SessionConsoleRuntime
     restartSeq: 0,
     volumeOffset: 0,
   };
+}
+
+function localPlayingAudio(trackId: string, src: string): SessionConsoleRuntime['audio'] {
+  return {
+    trackId,
+    title: trackId,
+    source: 'local',
+    youtubeId: null,
+    src,
+    status: 'playing',
+    loop: true,
+    restartSeq: 0,
+    volumeOffset: 0,
+  };
+}
+
+function immediateFade(): (target: number, duration: number, done?: () => void) => void {
+  return vi.fn((_target: number, _duration: number, done?: () => void) => {
+    done?.();
+  });
 }
 
 function runtimeWithAudio(
@@ -179,5 +200,74 @@ describe('useWorldTransport', () => {
 
     stopDone?.();
     expect(player.stopVideo).not.toHaveBeenCalled();
+  });
+
+  it('starts the same youtube bed after Stop then Play without bumping restartSeq', () => {
+    const player = mockPlayer();
+    const fade = immediateFade();
+    const playing = runtimeWithAudio(playingAudio('track-a', TRACK_A_ID));
+
+    const { rerender } = render(
+      <TransportHarness runtime={playing} fade={fade} player={player} audioEl={mockAudio()} />,
+    );
+    expect(player.loadVideoById).toHaveBeenCalledWith(TRACK_A_ID);
+    (player.loadVideoById as ReturnType<typeof vi.fn>).mockClear();
+
+    const stopped = runtimeWithAudio({
+      ...playingAudio('track-a', TRACK_A_ID),
+      status: 'stopped',
+    });
+    rerender(
+      <TransportHarness runtime={stopped} fade={fade} player={player} audioEl={mockAudio()} />,
+    );
+
+    const playAgain = runtimeWithAudio(playingAudio('track-a', TRACK_A_ID));
+    rerender(
+      <TransportHarness runtime={playAgain} fade={fade} player={player} audioEl={mockAudio()} />,
+    );
+    expect(player.loadVideoById).toHaveBeenCalledWith(TRACK_A_ID);
+  });
+
+  it('starts the same local bed after Stop then Play without bumping restartSeq', () => {
+    const player = mockPlayer();
+    const audioEl = mockAudio();
+    const fade = immediateFade();
+    const src = 'file:///tmp/bed.mp3';
+    const playing = runtimeWithAudio(localPlayingAudio('local-a', src));
+
+    const { rerender } = render(
+      <TransportHarness runtime={playing} fade={fade} player={player} audioEl={audioEl} />,
+    );
+    expect(audioEl.src).toBe(toMediaProtocol(src));
+    audioEl.src = '';
+
+    const stopped = runtimeWithAudio({
+      ...localPlayingAudio('local-a', src),
+      status: 'stopped',
+    });
+    rerender(<TransportHarness runtime={stopped} fade={fade} player={player} audioEl={audioEl} />);
+
+    const playAgain = runtimeWithAudio(localPlayingAudio('local-a', src));
+    rerender(
+      <TransportHarness runtime={playAgain} fade={fade} player={player} audioEl={audioEl} />,
+    );
+    expect(audioEl.src).toBe(toMediaProtocol(src));
+  });
+
+  it('starts the current bed when World View is armed while already playing', () => {
+    const player = mockPlayer();
+    const fade = immediateFade();
+    const unarmed = runtimeWithAudio(playingAudio('track-a', TRACK_A_ID), { worldArmed: false });
+
+    const { rerender } = render(
+      <TransportHarness runtime={unarmed} fade={fade} player={player} audioEl={mockAudio()} />,
+    );
+    expect(player.loadVideoById).not.toHaveBeenCalled();
+
+    const armed = runtimeWithAudio(playingAudio('track-a', TRACK_A_ID), { worldArmed: true });
+    rerender(
+      <TransportHarness runtime={armed} fade={fade} player={player} audioEl={mockAudio()} />,
+    );
+    expect(player.loadVideoById).toHaveBeenCalledWith(TRACK_A_ID);
   });
 });

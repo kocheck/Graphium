@@ -362,6 +362,48 @@ describe('materializePack', () => {
     expect(skipped.join(' ')).not.toContain('/tmp/');
     expect(skipped.join(' ')).not.toContain('./images/keep.png');
   });
+
+  it('warns generically when ingested HTTP audio is over 8MB and still persists under 25MB', async () => {
+    const pack: SessionConsolePack = {
+      version: 1,
+      kind: 'graphium.sessionConsolePack',
+      stage: { title: 'T', subtitle: '', showFrame: true },
+      defaults: { volume: 45, duckPercent: 27 },
+      imageSets: [],
+      trackGroups: [
+        {
+          id: 'g',
+          title: 'Beds',
+          note: '',
+          accent: 'bed',
+          tracks: [
+            {
+              title: 'Rain',
+              cue: '',
+              tag: 'bed',
+              src: 'https://example.com/secret-bed.mp3',
+            },
+          ],
+        },
+      ],
+    };
+    const large = { byteLength: 8 * 1024 * 1024 + 1 } as ArrayBuffer;
+    const persist = vi.fn(async () => 'file:///tmp/bed.mp3');
+
+    const { catalog, skipped, warnings } = await materializePack(
+      pack,
+      async () => null,
+      async () => large,
+      persist,
+    );
+
+    expect(persist).toHaveBeenCalled();
+    expect(catalog.trackGroups[0]?.tracks[0]?.src).toBe('file:///tmp/bed.mp3');
+    expect(skipped).toEqual([]);
+    expect(warnings.join(' ')).toMatch(/8\s*MB/i);
+    expect(warnings.join(' ')).not.toContain('secret-bed');
+    expect(warnings.join(' ')).not.toContain('example.com');
+  });
 });
 
 describe('catalogToSessionConsolePack', () => {

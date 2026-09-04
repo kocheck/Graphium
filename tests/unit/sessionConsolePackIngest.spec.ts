@@ -64,6 +64,19 @@ describe('copyPackAssetToTemp', () => {
     expect(await fs.readdir(tempAssets)).toEqual([]);
   });
 
+  it('copies 8MB-plus audio and reports a generic warning without the filename', async () => {
+    const packRoot = await makeTempDir('graphium-pack-');
+    const tempAssets = await makeTempDir('graphium-temp-');
+    const audioPath = path.join(packRoot, 'secret-bed.mp3');
+    await fs.writeFile(audioPath, Buffer.alloc(8 * 1024 * 1024 + 1));
+
+    const warnings: string[] = [];
+    const copied = await copyPackAssetToTemp(audioPath, tempAssets, 'audio', warnings);
+    expect(copied).toMatch(/^file:\/\//);
+    expect(warnings.join(' ')).toMatch(/8\s*MB/i);
+    expect(warnings.join(' ')).not.toContain('secret-bed');
+  });
+
   it('copies allowed audio under the size gate', async () => {
     const packRoot = await makeTempDir('graphium-pack-');
     const tempAssets = await makeTempDir('graphium-temp-');

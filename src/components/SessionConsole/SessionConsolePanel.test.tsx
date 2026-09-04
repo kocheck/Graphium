@@ -355,6 +355,28 @@ describe('SessionConsolePanel', () => {
     expect(mockSaveLocalAudioFile).toHaveBeenCalled();
   });
 
+  it('toasts a generic 8MB warning when pack import ingests oversized audio', async () => {
+    seedBoard();
+    const incoming = emptySessionConsoleCatalog('Imported Board');
+    mockImportPack.mockResolvedValue({
+      catalog: incoming,
+      skipped: [],
+      warnings: ['This audio file is larger than 8MB and will bloat the campaign zip.'],
+    });
+
+    renderPanel();
+    await userEvent.click(screen.getByRole('button', { name: 'Session Console settings' }));
+    await userEvent.click(screen.getByRole('button', { name: /Advanced: board pack/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import merge' }));
+
+    await waitFor(() => {
+      expect(useGameStore.getState().toast?.type).toBe('info');
+    });
+    expect(useGameStore.getState().toast?.message).toMatch(/8\s*MB/i);
+    expect(useGameStore.getState().toast?.message).not.toContain('secret-bed');
+    expect(useGameStore.getState().toast?.message).not.toMatch(/\/Users\//);
+  });
+
   it('does not dispatch SET_DUCKED or stopImmediatePropagation when D is pressed outside the panel', () => {
     seedBoard();
     render(
@@ -413,6 +435,39 @@ describe('SessionConsolePanel', () => {
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'STOP' });
     expect(useGameStore.getState().sessionConsoleRuntime.audio.status).toBe('stopped');
     expect(stopSpy).toHaveBeenCalled();
+    stopSpy.mockRestore();
+  });
+
+  it('does not STOP when Escape is pressed while a confirm dialog is open', () => {
+    seedBoard(true);
+    render(
+      <>
+        <button type="button">Outside canvas</button>
+        <SessionConsolePanel />
+        <ConfirmDialog />
+      </>,
+    );
+
+    act(() => {
+      useGameStore.getState().showConfirmDialog('Replace the catalog?', () => undefined);
+    });
+    expect(useGameStore.getState().confirmDialog).not.toBeNull();
+    expect(useGameStore.getState().sessionConsoleRuntime.audio.status).toBe('playing');
+
+    const originalDispatch = useGameStore.getState().dispatchSessionConsole;
+    const dispatchSpy = vi.fn((command: Parameters<typeof originalDispatch>[0]) =>
+      originalDispatch(command),
+    );
+    useGameStore.setState({ dispatchSessionConsole: dispatchSpy });
+
+    const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+
+    expect(dispatchSpy).not.toHaveBeenCalledWith({ type: 'STOP' });
+    expect(useGameStore.getState().sessionConsoleRuntime.audio.status).toBe('playing');
+    expect(useGameStore.getState().confirmDialog).toBeNull();
     stopSpy.mockRestore();
   });
 
