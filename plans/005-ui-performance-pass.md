@@ -181,8 +181,51 @@ harness, `tests/performance/`, `docs/architecture/PERFORMANCE_OPTIMIZATIONS.md`.
 
 ## Working approach
 
-Branch: `claude/ui-redesign-plan-xnyz33`. One commit per step. Every optimisation
+Branch off `main` as `plan/005-ui-performance`. One commit per step. Every optimisation
 commit message must carry its before/after numbers.
+
+### How this plan lands: one PR per plan, targeting `main`
+
+**This is the program-wide rule; it is identical in every plan.** Each plan is
+developed on its own branch off `main` and merged as a **single pull request into
+`main`** before the next plan begins.
+
+That choice exists for one reason: **it is the only way CI runs.** Verified in
+`.github/workflows/`:
+
+| Workflow | Trigger | What it gates |
+|---|---|---|
+| `lint.yml` | `pull_request` → `main` | ESLint + `tsc` |
+| `test.yml` | `pull_request` → `main` | Vitest |
+| `e2e.yml` | `pull_request` → `main` | Playwright, **per project, after the matching build** |
+| `accessibility.yml` | `pull_request` → `main` or `NEXT` | axe WCAG AA |
+| `documentation-check*.yml` | `pull_request` → `main` | doc-drift comment |
+
+Nothing fires on a long-lived feature branch. Under the original "one branch, don't
+open a PR" approach, ~40 commits of work would have been gated only by local
+`npm run` on one machine — which is how the unverified-gate problem this program was
+revised to fix got in.
+
+**Consequences to know before you start:**
+
+- **`e2e.yml` is the reference for how to run Playwright** — it runs
+  `--project=Web-Chromium` after `npm run build:web` and `--project=Electron-App` under
+  `xvfb-run` after `npm run build:electron`. Never bare `npm run test:e2e`.
+- **Merging to `main` auto-deploys the public web build.** `deploy-web.yml` runs on
+  every push to `main`. Intermediate states of the migration will go live on GitHub
+  Pages. That is consistent with the strangler-fig principle that every commit is
+  releasable, but it is a real consequence — if the web demo must stay pinned, say so
+  before starting rather than after.
+- **Local gates still come first.** CI is the enforcement, not the discovery. Run the
+  full local gate before every push; a red PR costs a cycle and reviewer trust.
+- **Keep the PR reviewable.** Push each step as its own commit with a descriptive
+  message so a reviewer can read the plan's steps in the commit history. If a plan's PR
+  grows past roughly 1,500 changed lines, split it at a step boundary named in the plan
+  and land the halves in order.
+- **`build-release.yml` fires on `v*.*.*` tags only** — nothing here triggers a release.
+  Versioning and `CHANGELOG.md` entries are a separate decision, noted in
+  `plans/README.md`.
+
 
 > **On enforcement, honestly**: the "no memo without a number" rule cannot be enforced
 > by a command — an executor could write numbers from imagination. Step 1 is what makes

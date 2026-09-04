@@ -183,11 +183,13 @@ while `README.md` sells touch and pen as first-class.
 `@layer utilities`; unlayered CSS beats any layer regardless of specificity. Two
 consequences:
 
-1. **The pause button is grey today.** `src/App.tsx:564-568` carries `.btn-tool` *and*
-   `bg-red-500`/`bg-green-500`/`text-white`; `.btn-tool` wins, so the pause state never
-   shows. Migrating to a CVA `Button` puts those colours in the same layer and **the
-   pause button starts working**. That is a fix, and it is **expected** — do not treat
-   it as a regression, and do not try to preserve the grey.
+1. **The pause button was grey and plan 001 Step 8 already fixed it.** It carried
+   `.btn-tool` *and* `bg-red-500`/`bg-green-500`, and the unlayered rule won, so the
+   pause state never showed. Plan 001 added `.btn-tool.is-paused` / `.is-running` in
+   `app.css` using `--app-error-solid` / `--app-success-solid`. **So it should already
+   be red/green when you start — preserve that**, and carry the two state classes across
+   as `Button` variants (or a `data-state`). If it is grey when you reach Step 10, plan
+   001 Step 8 did not land: STOP and report.
 2. More generally, wherever a `.btn*` class and a Tailwind colour utility sit on the
    same element, the migration changes which one wins. Screenshot before and after.
 
@@ -252,7 +254,60 @@ most regressions).
 
 ## Working approach
 
-Branch: `claude/ui-redesign-plan-xnyz33`. **One commit per step**, each releasable.
+Branch off `main` as `plan/004-migrate-screens`. **One commit per step**, each releasable.
+
+### How this plan lands: one PR per plan, targeting `main`
+
+**This is the program-wide rule; it is identical in every plan.** Each plan is
+developed on its own branch off `main` and merged as a **single pull request into
+`main`** before the next plan begins.
+
+That choice exists for one reason: **it is the only way CI runs.** Verified in
+`.github/workflows/`:
+
+| Workflow | Trigger | What it gates |
+|---|---|---|
+| `lint.yml` | `pull_request` → `main` | ESLint + `tsc` |
+| `test.yml` | `pull_request` → `main` | Vitest |
+| `e2e.yml` | `pull_request` → `main` | Playwright, **per project, after the matching build** |
+| `accessibility.yml` | `pull_request` → `main` or `NEXT` | axe WCAG AA |
+| `documentation-check*.yml` | `pull_request` → `main` | doc-drift comment |
+
+Nothing fires on a long-lived feature branch. Under the original "one branch, don't
+open a PR" approach, ~40 commits of work would have been gated only by local
+`npm run` on one machine — which is how the unverified-gate problem this program was
+revised to fix got in.
+
+**Consequences to know before you start:**
+
+- **`e2e.yml` is the reference for how to run Playwright** — it runs
+  `--project=Web-Chromium` after `npm run build:web` and `--project=Electron-App` under
+  `xvfb-run` after `npm run build:electron`. Never bare `npm run test:e2e`.
+- **Merging to `main` auto-deploys the public web build.** `deploy-web.yml` runs on
+  every push to `main`. Intermediate states of the migration will go live on GitHub
+  Pages. That is consistent with the strangler-fig principle that every commit is
+  releasable, but it is a real consequence — if the web demo must stay pinned, say so
+  before starting rather than after.
+- **Local gates still come first.** CI is the enforcement, not the discovery. Run the
+  full local gate before every push; a red PR costs a cycle and reviewer trust.
+- **Keep the PR reviewable.** Push each step as its own commit with a descriptive
+  message so a reviewer can read the plan's steps in the commit history. If a plan's PR
+  grows past roughly 1,500 changed lines, split it at a step boundary named in the plan
+  and land the halves in order.
+- **`build-release.yml` fires on `v*.*.*` tags only** — nothing here triggers a release.
+  Versioning and `CHANGELOG.md` entries are a separate decision, noted in
+  `plans/README.md`.
+
+**This plan will not fit in one PR and should not try.** At fifteen steps and ~4,600
+lines it is the clearest candidate for splitting. Suggested boundaries, each a coherent,
+releasable unit: **Steps 0–3** (baseline + adapters + the first Dialog), **Steps 4–6**
+(the overlays with no a11y, plus Session Console, mobile and Asset Library sheets),
+**Steps 7–9** (the three large dialogs), **Steps 10–11** (both toolbars), **Steps 12–14**
+(the `.btn` sweep, deletions, and verification). Land them in order.
+
+Note `documentation-check-simple.yml` comments on every PR touching `src/components/` —
+i.e. all five of these. Plan 000 brings `src/components/README.md` in line with reality
+so that comment is signal rather than noise.
 
 **Migration recipe**, applied identically:
 1. Read the component fully. **Screenshot it** (both themes) and note its behaviour.
@@ -418,13 +473,14 @@ Decide how the `active` state maps — today it is a template-literal class
 (`` `btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}` ``). A boolean prop or
 `data-state` are both fine; pick one and use it consistently.
 
-**Expect the pause button to start showing red/green.** See the cascade note in Context.
-That is a bug fix, not a regression.
+**The pause button must stay red/green** — plan 001 Step 8 fixed it, and it is easy to
+lose here by dropping the `.is-paused` / `.is-running` classes without an equivalent
+variant. Carry them across explicitly and verify both states.
 
 Preserve every `aria-label` and `data-testid`.
 
 **Check**: Per-step gate **plus both E2E projects**. Diff against the Step 0 toolbar
-screenshots in both themes: identical apart from the pause button now working. Every
+screenshots in both themes: identical, pause button still red/green in both states. Every
 tool switches; active state highlights; measurement sub-buttons work; broadcast turns
 green. Keyboard shortcuts V/M/E/W/D/R/I still work. If anything else differs, fix the
 variant in `src/components/ui/button.tsx`, not with a one-off class in `App.tsx`.
@@ -551,7 +607,7 @@ non-trivial and covers every migrated component.
 - [ ] `ConfirmDialog`'s undefined CSS variables fixed; Enter-to-confirm preserved
 - [ ] `AboutModal`'s hand-rolled focus trap deleted
 - [ ] Redundant Escape branches removed from `App.tsx` for **both** `AboutModal` and `UpdateManager`
-- [ ] Desktop **and** mobile toolbars migrated; pause button now shows red/green
+- [ ] Desktop **and** mobile toolbars migrated; pause button still shows red/green (fixed in plan 001, must not regress)
 - [ ] Plan 000's touch-target spec still green
 - [ ] All eleven `.btn` consumers migrated, `DoorControls` included
 - [ ] `btn-secondary`/`btn-ghost`/`btn-destructive` mapped by appearance, not name
@@ -577,8 +633,9 @@ Stop and report back — do not improvise — if:
 - **`ImageCropper` cannot be migrated without editing `CanvasManager.tsx`.**
 - **`react-easy-crop` breaks** after Step 4.
 - **A migrated component differs from its Step 0 screenshot** in a way not documented in
-  Context (the pause button, `ConfirmDialog`'s colours, `btn-ghost` mapping, the tooltip
-  wrapper). Do not accept it silently and do not "improve" it.
+  Context (`ConfirmDialog`'s colours, `btn-ghost` mapping, the tooltip wrapper). Do not
+  accept it silently and do not "improve" it.
+- **The pause button is grey when you reach Step 10** — plan 001 Step 8 did not land.
 - **You need to rename a `data-testid`.**
 - **`npm run test:a11y` regresses.**
 - **A touch target would shrink** below plan 000's recorded minimum.

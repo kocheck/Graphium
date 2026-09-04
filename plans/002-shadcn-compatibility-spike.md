@@ -118,6 +118,22 @@ Reference docs the executor should read before starting:
 - `docs/features/wcag-audit.md` in this repo — the contrast guarantees that must survive.
 - `src/styles/theme.css` — the semantic variable contract.
 
+## Working approach
+
+### How this plan lands
+
+**Program-wide rule**: each plan is developed on its own branch off `main` and merged as
+a **single pull request into `main`** before the next begins, because that is the only
+way CI runs — every workflow in `.github/workflows/` (`lint`, `test`, `e2e`,
+`accessibility`, `documentation-check`) triggers on `pull_request` → `main`, and nothing
+fires on a long-lived feature branch. See plan 001's "How this plan lands" section for
+the full table and consequences.
+
+**This plan is the deliberate exception.** The spike branch is thrown away; the only
+thing that reaches `main` is `docs/planning/shadcn-adoption-decision.md`. Open that as a
+small docs-only PR — CI will pass trivially, which is correct: there is no production
+code to gate. Do **not** open a PR from `spike/shadcn-compat` itself; Step 8 deletes it.
+
 ## Scope
 
 **In scope**: a throwaway branch `spike/shadcn-compat`, and edits to

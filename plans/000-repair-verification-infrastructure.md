@@ -153,7 +153,8 @@ across plans 001–006 is Step 6 of this plan.
 - `src/index.css` — new non-colour token families (Step 5)
 - `src/styles/theme.css` — new non-colour token families (Step 5)
 - `docs/planning/verification-baseline.md` — new
-- `plans/001`–`plans/006` — the `test:e2e` wording fix only (Step 6)
+- `src/components/README.md` — bring it in line with reality (Step 6)
+- `plans/001`–`plans/006` — the `test:e2e` wording verification only (Step 7)
 
 **Out of scope** (do NOT touch, even though they look related):
 - **Any `--app-*` colour value.** This plan adds token *families*; it changes no
@@ -163,16 +164,61 @@ across plans 001–006 is Step 6 of this plan.
   what the component renders is not.
 - **The `canvas` and `[aria-disabled="true"]` axe exclusions.** Both are deliberate.
 - **`src/components/Canvas/**`** — Konva rendering.
-- **The pause-button cascade bug** (`src/App.tsx:564–568`: `.btn-tool` beats
-  `bg-red-500` because `app.css` is unlayered and Tailwind utilities are in
-  `@layer utilities`, so the pause state never shows). Record it in Step 7; it is
-  fixed during the plan 004 toolbar migration, where the fix is attributable.
+- **The pause-button cascade bug** (`src/App.tsx:564–568`). Record the mechanism in
+  Step 8; **plan 001 Step 8 fixes it**, alongside the rest of the `app.css` theming work.
 - **Adding shadcn, primitives, or any dependency.** Later plans.
 
 ## Working approach
 
-Branch: `claude/ui-redesign-plan-xnyz33`. One commit per step. Every commit must
-leave the test suite green — a plan about trustworthy gates cannot ship a red one.
+Branch off `main` as `plan/000-repair-verification`. One commit per step. Every commit
+must leave the test suite green — a plan about trustworthy gates cannot ship a red one.
+
+### How this plan lands: one PR per plan, targeting `main`
+
+**This is the program-wide rule; it is identical in every plan.** Each plan is
+developed on its own branch off `main` and merged as a **single pull request into
+`main`** before the next plan begins.
+
+That choice exists for one reason: **it is the only way CI runs.** Verified in
+`.github/workflows/`:
+
+| Workflow | Trigger | What it gates |
+|---|---|---|
+| `lint.yml` | `pull_request` → `main` | ESLint + `tsc` |
+| `test.yml` | `pull_request` → `main` | Vitest |
+| `e2e.yml` | `pull_request` → `main` | Playwright, **per project, after the matching build** |
+| `accessibility.yml` | `pull_request` → `main` or `NEXT` | axe WCAG AA |
+| `documentation-check*.yml` | `pull_request` → `main` | doc-drift comment |
+
+Nothing fires on a long-lived feature branch. Under the original "one branch, don't
+open a PR" approach, ~40 commits of work would have been gated only by local
+`npm run` on one machine — which is how the unverified-gate problem this program was
+revised to fix got in.
+
+**Consequences to know before you start:**
+
+- **`e2e.yml` is the reference for how to run Playwright** — it runs
+  `--project=Web-Chromium` after `npm run build:web` and `--project=Electron-App` under
+  `xvfb-run` after `npm run build:electron`. Never bare `npm run test:e2e`.
+- **Merging to `main` auto-deploys the public web build.** `deploy-web.yml` runs on
+  every push to `main`. Intermediate states of the migration will go live on GitHub
+  Pages. That is consistent with the strangler-fig principle that every commit is
+  releasable, but it is a real consequence — if the web demo must stay pinned, say so
+  before starting rather than after.
+- **Local gates still come first.** CI is the enforcement, not the discovery. Run the
+  full local gate before every push; a red PR costs a cycle and reviewer trust.
+- **Keep the PR reviewable.** Push each step as its own commit with a descriptive
+  message so a reviewer can read the plan's steps in the commit history. If a plan's PR
+  grows past roughly 1,500 changed lines, split it at a step boundary named in the plan
+  and land the halves in order.
+- **`build-release.yml` fires on `v*.*.*` tags only** — nothing here triggers a release.
+  Versioning and `CHANGELOG.md` entries are a separate decision, noted in
+  `plans/README.md`.
+
+**This plan is the exception worth calling out**: it is the one whose PR CI cannot
+fully vouch for, because it is repairing CI itself. Expect the first PR to surface
+failures that were previously invisible; that is the plan working, not the plan
+breaking. Record each in `docs/planning/verification-baseline.md`.
 
 ## Steps
 
@@ -324,7 +370,37 @@ app before and after in `npm run dev` — **nothing may change**. Then prove the
 are live: temporarily set `--app-radius-lg` to `0`, confirm the toolbar corners
 square off, and revert.
 
-### Step 6: Verify the `test:e2e` correction across plans 001–006
+### Step 6: Bring `src/components/README.md` in line with reality
+
+Now that each plan lands as a PR, `documentation-check-simple.yml` and
+`documentation-check.yml` (both `pull_request` → `main`) comment on **every PR touching
+`src/components/`** — most of them, and all five of plan 004's. That comment points
+reviewers at `src/components/README.md`, which currently describes a different
+application:
+
+| README claims | Actual |
+|---|---|
+| `CanvasManager.tsx` — 245 lines | **1489** |
+| `SyncManager.tsx` — 49 lines | **509** |
+| `Sidebar.tsx` — 37 lines | **477** |
+| `GridOverlay.tsx` — 51 lines | **292** |
+| `ImageCropper.tsx` — 118 lines | **271** |
+| `TokenLayer.tsx` — "Placeholder (11 lines, unused)" | **110 lines, memoised** |
+| Directory structure — six files | ~60 files |
+| `CanvasManagerProps` — `tool?: 'select' \| 'marker' \| 'eraser'` | six-member union (`src/App.tsx:134`) |
+
+Left as-is, that bot comment is noise on ~20 PRs and reviewers will learn to ignore it —
+including on the PRs where it would have caught something real.
+
+Update the file to describe the directory as it actually is. **Do not add line counts
+back** — they are exactly what rotted. Describe each area's responsibility and let the
+code be the source of truth for size. Keep it proportionate: an orientation document,
+not an inventory.
+
+**Check**: Every factual claim is true at `HEAD` — spot-check three named files. No line
+counts remain: `grep -nE '\([0-9]+ lines\)' src/components/README.md` returns nothing.
+
+### Step 7: Verify the `test:e2e` correction across plans 001–006
 
 Bare `npm run test:e2e` fails on a clean machine because `Electron-App` needs
 `npm run build:electron` first, and the plans' STOP conditions would read that
@@ -346,7 +422,7 @@ Add `npx playwright install chromium` to each Inputs table.
 explicitly explain the two-project split. `npm run lint` still passes (markdown is
 not linted, but the pre-commit hook runs Prettier over `*.md`).
 
-### Step 7: Record the deferred findings and verify
+### Step 8: Record the deferred findings and verify
 
 Append to `docs/planning/verification-baseline.md`:
 
@@ -355,10 +431,10 @@ Append to `docs/planning/verification-baseline.md`:
    `src/index.css:4` imports `app.css` unlayered and Tailwind v4 emits utilities in
    `@layer utilities`, the unlayered `.btn-tool { background: rgb(64,64,64); color: rgb(229,229,229) }`
    wins regardless of specificity — so the pause button never shows its red/green
-   state. Note that this makes the plan 004 toolbar migration **non-neutral by
-   design**: moving to a CVA variant puts those colours in the same layer, and the
-   pause state starts working. That is a fix, but plan 004 must expect it rather than
-   treat it as a regression.
+   state. **Plan 001 Step 8 fixes it.** Record the mechanism here anyway, because it
+   explains several other surprises in this codebase — any element carrying both a
+   `.btn*` class and a Tailwind colour utility behaves this way — and because plan 004
+   must preserve the fix rather than reintroduce the grey.
 2. **The `--app-error-solid` contrast finding** from Context (~3.9:1 white-on-red-9).
 3. **The `.btn-tool` missing touch minimum** from Step 4.
 4. **Any spec deleted in Step 3**, with one line on what coverage was lost.
@@ -402,6 +478,8 @@ counts, the a11y triage table, and the four deferred findings.
 - [ ] Non-colour token families exist in `theme.css`, are exposed via `@theme`, and were proven live
 - [ ] Step 5 changed nothing visually
 - [ ] `grep -rn "npm run test:e2e" plans/` returns only explained occurrences
+- [ ] `src/components/README.md` is accurate at `HEAD` and carries no line counts
+- [ ] This plan landed as a PR into `main` with all CI checks green
 - [ ] All four deferred findings are recorded
 - [ ] `npm run lint`, `npm run type-check`, `npm run test:run`, both E2E projects, and `npm run test:a11y` all exit 0
 - [ ] No `--app-*` colour value changed
@@ -435,9 +513,9 @@ Stop and report back — do not improvise — if:
 - **What a reviewer should scrutinise most**: the Step 3 restore/delete decisions.
   Deleting a spec is the easy way to a green suite, and the temptation is strongest
   exactly where coverage matters most (`dm-world-sync` is the only World View test).
-- **Deliberately deferred**: the pause-button cascade bug (plan 004, where it is
-  attributable), the `--app-error-solid` contrast finding and all palette decisions
-  (plan 006), and token *values* for the new families (plan 006).
+- **Deliberately deferred**: the pause-button cascade bug (**plan 001 Step 8**), the
+  `--app-error-solid` contrast finding and all palette decisions (plan 006), and token
+  *values* for the new families (plan 006).
 - **Watch for**: `testIgnore` regrowing. If a spec becomes flaky later, fix or delete
   it. The comment now sitting in `playwright.config.ts` is how a suite quietly stops
   being a suite.

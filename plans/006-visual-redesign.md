@@ -201,6 +201,27 @@ selected in Step 4, `docs/features/wcag-audit.md`, and `docs/features/theming.md
 - **Reintroducing hardcoded colors.** Everything routes through theme tokens. The
   entire point of plans 001–004 was to make that true.
 
+## Working approach
+
+### How this plan lands
+
+**Program-wide rule**: each plan is developed on its own branch off `main` and merged as
+a **single pull request into `main`** before the next begins, because that is the only
+way CI runs — every workflow in `.github/workflows/` (`lint`, `test`, `e2e`,
+`accessibility`, `documentation-check`) triggers on `pull_request` → `main`, and nothing
+fires on a long-lived feature branch. See plan 001's "How this plan lands" section for
+the full table and consequences.
+
+**This plan lands as two PRs, matching its own split.**
+
+- **`plan/006a-design-direction`** — Steps 1–4. Docs, the `[data-direction]` prototypes
+  in the playground, and the rewritten Steps 5+ of this file. It touches no production
+  screen, so it can merge while plan 004 is still in flight — which is the entire point
+  of running it early.
+- **`plan/006b-apply-redesign`** — the rewritten Steps 5+. Branch it off `main` *after*
+  004 has merged. Split further at step boundaries if it grows past ~1,500 lines; the
+  natural seams are the token commit, the primitive variants, and each screen.
+
 ## Steps
 
 ### Step 1: Audit what the interface says today versus what the brand claims

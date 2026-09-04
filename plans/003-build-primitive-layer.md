@@ -169,9 +169,53 @@ primitive-layer one, and it is out of scope for this entire plan set.
 
 ## Working approach
 
-Branch: `claude/ui-redesign-plan-xnyz33`. **Commit at every tranche boundary** so
-the work is releasable at three natural points. Do not open a pull request unless
-explicitly asked.
+Branch off `main` as `plan/003-primitive-layer`. **Commit at every tranche boundary**
+so the work is releasable at three natural points.
+
+### How this plan lands: one PR per plan, targeting `main`
+
+**This is the program-wide rule; it is identical in every plan.** Each plan is
+developed on its own branch off `main` and merged as a **single pull request into
+`main`** before the next plan begins.
+
+That choice exists for one reason: **it is the only way CI runs.** Verified in
+`.github/workflows/`:
+
+| Workflow | Trigger | What it gates |
+|---|---|---|
+| `lint.yml` | `pull_request` → `main` | ESLint + `tsc` |
+| `test.yml` | `pull_request` → `main` | Vitest |
+| `e2e.yml` | `pull_request` → `main` | Playwright, **per project, after the matching build** |
+| `accessibility.yml` | `pull_request` → `main` or `NEXT` | axe WCAG AA |
+| `documentation-check*.yml` | `pull_request` → `main` | doc-drift comment |
+
+Nothing fires on a long-lived feature branch. Under the original "one branch, don't
+open a PR" approach, ~40 commits of work would have been gated only by local
+`npm run` on one machine — which is how the unverified-gate problem this program was
+revised to fix got in.
+
+**Consequences to know before you start:**
+
+- **`e2e.yml` is the reference for how to run Playwright** — it runs
+  `--project=Web-Chromium` after `npm run build:web` and `--project=Electron-App` under
+  `xvfb-run` after `npm run build:electron`. Never bare `npm run test:e2e`.
+- **Merging to `main` auto-deploys the public web build.** `deploy-web.yml` runs on
+  every push to `main`. Intermediate states of the migration will go live on GitHub
+  Pages. That is consistent with the strangler-fig principle that every commit is
+  releasable, but it is a real consequence — if the web demo must stay pinned, say so
+  before starting rather than after.
+- **Local gates still come first.** CI is the enforcement, not the discovery. Run the
+  full local gate before every push; a red PR costs a cycle and reviewer trust.
+- **Keep the PR reviewable.** Push each step as its own commit with a descriptive
+  message so a reviewer can read the plan's steps in the commit history. If a plan's PR
+  grows past roughly 1,500 changed lines, split it at a step boundary named in the plan
+  and land the halves in order.
+- **`build-release.yml` fires on `v*.*.*` tags only** — nothing here triggers a release.
+  Versioning and `CHANGELOG.md` entries are a separate decision, noted in
+  `plans/README.md`.
+
+**Splitting this one is expected.** Three tranches is a natural three-PR split if the
+single PR grows unwieldy — land them in tranche order (A, then B, then C).
 
 Every primitive follows the same lifecycle, and it is not done until all four hold:
 1. Generated/written into `src/components/ui/`.
@@ -295,12 +339,14 @@ not. The same applies to `.btn-broadcast.active`'s `color: white`, which needs a
 **(b) "Pixel-identical" is not achievable by translating classes, and you should not
 promise it.** `src/index.css` imports `app.css` **unlayered**; Tailwind v4 emits
 utilities into `@layer utilities`; unlayered CSS beats any layer regardless of
-specificity. So today `.btn-tool` *overrides* the utilities on the same element —
-which is why the pause button at `src/App.tsx:564-568` renders grey despite carrying
-`bg-red-500`/`bg-green-500`. A CVA `Button` emits its variants as utilities in the
-*same* layer as those classes, so the cascade outcome changes. Aim for **visually
-equivalent in the default state**, and record the pause-button behaviour change
-explicitly — plan 004 is told to expect it rather than treat it as a regression.
+specificity. So `.btn-tool` *overrides* any Tailwind colour utility on the same element.
+(That is why the pause button rendered grey despite carrying `bg-red-500`/`bg-green-500`
+— **plan 001 Step 8 fixed it** by adding `.btn-tool.is-paused` / `.is-running` in
+`app.css`.) A CVA `Button` emits its variants as utilities in the *same* layer as those
+classes, so the cascade outcome changes wherever both are present. Aim for **visually
+equivalent in the default state**, and give `button` variants that carry the
+`.is-paused` / `.is-running` states across, so plan 004 Step 10 can preserve the fix
+rather than reintroduce the grey.
 
 **Check**:
 ```bash

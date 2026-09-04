@@ -80,9 +80,11 @@ checked actually runs.**
 - **The pause button is grey.** `src/App.tsx:564-568` puts `bg-red-500`/`bg-green-500`
   on an element carrying `.btn-tool`; `src/index.css` imports `app.css` **unlayered**
   and Tailwind v4 emits utilities into `@layer utilities`, so the unlayered rule wins and
-  the pause state never shows. A live bug. It also means plan 001 Step 7 is a no-op and
-  plan 004's toolbar migration is **not** neutral — it fixes the button. Both plans now
-  say so.
+  the pause state never shows. A live, user-facing bug in a shipping app — **now fixed in
+  plan 001 Step 8**, rather than deferred to 004 (XL, far out). It also means plan 001
+  Step 7 is a no-op, and plan 004 must *preserve* the fix rather than expect to make it.
+  The same cascade rule applies to any element carrying both a `.btn*` class and a
+  Tailwind colour utility.
 - **`bare npm run test:e2e` cannot pass on a clean machine** — it runs the Electron
   project, which needs `npm run build:electron` first. Every plan's STOP conditions would
   have read that self-inflicted failure as a real coupling problem. All six plans now use
@@ -158,26 +160,46 @@ many of these components that is the only evidence available.
   does not exist; the directory has `Graphium-1..4.png` and `Graphium-show.gif`) and its
   `via.placeholder.com` GIFs. Real, unrelated to UI architecture; noted at the end of 006.
 
+## How the work lands: one PR per plan, into `main`
+
+**Decided 2026-09-04.** Each plan is developed on its own branch off `main` and merged
+as a single PR into `main` before the next begins. Every plan's "How this plan lands"
+section carries the details.
+
+The reason is that this is the only way CI runs. Verified in `.github/workflows/`:
+`lint.yml`, `test.yml` and `e2e.yml` trigger on `pull_request` → `main`;
+`accessibility.yml` on `main` or `NEXT`; both `documentation-check` workflows on `main`.
+**Nothing fires on a long-lived feature branch.** The original approach ("one branch,
+don't open a PR") would have run ~40 commits of work against local `npm run` on one
+machine — which is exactly how the unverified-gate problem got in.
+
+Two exceptions and two consequences:
+
+- **002 is docs-only.** The spike branch is deleted; only
+  `docs/planning/shadcn-adoption-decision.md` reaches `main`, as a small PR.
+- **006 lands as two PRs** — `006a` (Steps 1–4, docs and playground prototypes, mergeable
+  while 004 is still in flight) and `006b` (Steps 5+, after 004).
+- **004 will not fit in one PR** and is pre-split at five step boundaries, each a
+  releasable unit. 003 splits at its three tranche boundaries if needed.
+- **Merging to `main` auto-deploys the public web build** (`deploy-web.yml` runs on every
+  push to `main`). Intermediate migration states will go live on GitHub Pages. That
+  follows from "every commit is releasable" — but if the web demo must stay pinned, say
+  so before starting 001, not after.
+
 ## Known gaps this program does not close
 
 Recorded so they are decisions rather than oversights:
 
-- **CI never runs across this work.** Every workflow in `.github/` is `on: pull_request`
-  to `main`/`NEXT`, and these plans work on one long-lived branch. Every gate is a local
-  `npm run` on one machine. **Decide before starting 001**: land each plan as its own PR
-  (recommended — it turns the gates into enforced CI, and matches the "every commit is
-  releasable" principle), or accept local-only verification.
 - **No changelog or versioning guidance.** The app is at v0.5.3 with a maintained
   `CHANGELOG.md`, `build-release.yml` and an auto-updater. A program that rewrites the UI
-  should produce entries; none of these plans does.
-- **`src/components/README.md` describes a different application** — it lists six files
-  for a ~60-file directory and claims `CanvasManager` is 245 lines (it is 1489),
-  `Sidebar` 37 (it is 477), `TokenLayer` an "unused 11-line placeholder" (it is 110 lines
-  and memoised). A CI workflow points reviewers at this file on every `src/components/`
-  change, i.e. on every commit in plan 004. No plan updates it.
+  should produce entries; none of these plans does. (`build-release.yml` fires on
+  `v*.*.*` tags only, so nothing here triggers a release by accident.)
 - **Docs falsified by this work and unowned**: `docs/architecture/ARCHITECTURE.md`,
   `docs/guides/CONVENTIONS.md` (which prescribes `@components/*` aliases while 002 adds
   `@/*`), `.cursorrules`, `.ai-rules.md`, and `docs/documentation-inventory.md`.
+  (`src/components/README.md` was in this list and is now plan 000 Step 6 — the doc-check
+  bot comments on nearly every PR under the new workflow, so leaving it wrong would train
+  reviewers to ignore it.)
 - **The World View is treated only as a constraint, never as a design surface.** For a
   product whose distinctive feature is the player-facing projection, "completely
   rethought" leaving that half untouched is a scope decision — made explicit as the sixth
