@@ -58,9 +58,11 @@ import {
   setThemeMode,
   type ThemeMode,
 } from './themeManager.js';
+import { emptySessionConsoleCatalog } from '../src/types/sessionConsole.js';
 import { rewriteCampaignAssetSrcs } from '../src/utils/campaignAssets.js';
 import { sanitizeWorldToArchitectAction } from '../src/utils/worldViewTokenSync.js';
 
+import type { SessionConsoleCatalog } from '../src/types/sessionConsole.js';
 import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 
 interface StoreSchema {
@@ -506,6 +508,7 @@ interface SerializableCampaign {
   maps?: Record<string, SerializableMapData>;
   activeMapId?: string;
   tokenLibrary?: SerializableTokenWithSrc[];
+  sessionConsole?: SessionConsoleCatalog;
   [key: string]: unknown;
 }
 
@@ -660,6 +663,7 @@ function migrateLegacyCampaign(legacy: {
     maps: { [mapId]: mapData },
     activeMapId: mapId,
     tokenLibrary: [],
+    sessionConsole: emptySessionConsoleCatalog('Imported Campaign'),
   };
 }
 

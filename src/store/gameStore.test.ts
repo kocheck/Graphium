@@ -9,6 +9,7 @@ import type {
   MapConfig,
   TokenLibraryItem,
 } from './gameStore';
+import { emptySessionConsoleCatalog } from '../types/sessionConsole';
 
 // Mock system messages to avoid dependency on random message selection
 vi.mock('../utils/systemMessages', () => ({
@@ -778,6 +779,7 @@ describe('gameStore', () => {
         maps: { 'map-1': map1 },
         activeMapId: 'map-1',
         tokenLibrary: [],
+        sessionConsole: emptySessionConsoleCatalog('Test Campaign'),
       };
 
       store.loadCampaign(campaign);
@@ -1175,6 +1177,178 @@ describe('gameStore', () => {
 
       const state = useGameStore.getState();
       expect(state.dmMeasurement).toEqual(measurement);
+    });
+  });
+
+  describe('Session Console', () => {
+    const plateImage = {
+      id: 'img-dawn',
+      name: 'Dawn',
+      cue: 'secret-cue-must-not-leak',
+      src: 'dawn.webp',
+      thumbnailSrc: 'dawn-th.webp',
+      alt: 'Dawn over the keep',
+    };
+
+    it('seeds an empty catalog with synth SFX on a new campaign', () => {
+      const store = useGameStore.getState();
+      store.resetToNewCampaign();
+
+      const state = useGameStore.getState();
+      expect(state.sessionConsole).toBe(state.campaign.sessionConsole);
+      expect(state.sessionConsole.imageSets).toEqual([]);
+      expect(state.sessionConsole.trackGroups).toEqual([]);
+      expect(state.sessionConsole.stage.title).toBe(state.campaign.name);
+      expect(state.sessionConsole.sfx.map((item) => item.id)).toEqual([
+        'chime',
+        'drone',
+        'snap',
+        'ping',
+        'test-tone',
+      ]);
+      expect(state.sessionConsoleRuntime.stageVisible).toBe(false);
+      expect(state.sessionConsoleRuntime.activeImage).toBeNull();
+    });
+
+    it('updateSessionConsole writes the same catalog object on GameState and campaign', () => {
+      const store = useGameStore.getState();
+      store.resetToNewCampaign();
+
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE_SET',
+        set: { id: 'set-1', title: 'Plates', note: '', images: [] },
+      });
+
+      const state = useGameStore.getState();
+      expect(state.sessionConsole).toBe(state.campaign.sessionConsole);
+      expect(state.sessionConsole.imageSets).toHaveLength(1);
+      expect(state.sessionConsole.imageSets[0]?.title).toBe('Plates');
+    });
+
+    it('dispatchSessionConsole SHOW_PLATE updates runtime immutably', () => {
+      const store = useGameStore.getState();
+      store.resetToNewCampaign();
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE_SET',
+        set: { id: 'set-1', title: 'Plates', note: '', images: [] },
+      });
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE',
+        setId: 'set-1',
+        image: plateImage,
+      });
+
+      const catalogBefore = useGameStore.getState().sessionConsole;
+      const runtimeBefore = useGameStore.getState().sessionConsoleRuntime;
+
+      store.dispatchSessionConsole({ type: 'SHOW_PLATE', imageId: plateImage.id });
+
+      const state = useGameStore.getState();
+      expect(state.sessionConsole).toBe(catalogBefore);
+      expect(state.sessionConsoleRuntime).not.toBe(runtimeBefore);
+      expect(state.sessionConsoleRuntime.stageVisible).toBe(true);
+      expect(state.sessionConsoleRuntime.activeImage).toEqual({
+        id: plateImage.id,
+        src: plateImage.src,
+        alt: plateImage.alt,
+        name: plateImage.name,
+      });
+      expect(JSON.stringify(state.sessionConsoleRuntime.activeImage)).not.toContain('secret-cue');
+    });
+
+    it('setSessionConsoleWorldArmed updates runtime worldArmed', () => {
+      const store = useGameStore.getState();
+      store.resetToNewCampaign();
+
+      store.setSessionConsoleWorldArmed(true);
+      expect(useGameStore.getState().sessionConsoleRuntime.worldArmed).toBe(true);
+
+      store.setSessionConsoleWorldArmed(false);
+      expect(useGameStore.getState().sessionConsoleRuntime.worldArmed).toBe(false);
+    });
+
+    it('loadCampaign migrates missing sessionConsole without wiping maps and resets runtime', () => {
+      const store = useGameStore.getState();
+      store.resetToNewCampaign();
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE_SET',
+        set: { id: 'set-1', title: 'Plates', note: '', images: [] },
+      });
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE',
+        setId: 'set-1',
+        image: plateImage,
+      });
+      store.dispatchSessionConsole({ type: 'SHOW_PLATE', imageId: plateImage.id });
+      store.setSessionConsoleWorldArmed(true);
+      expect(useGameStore.getState().sessionConsoleRuntime.stageVisible).toBe(true);
+
+      const map1 = {
+        id: 'map-1',
+        name: 'Dungeon Level 1',
+        tokens: [{ id: 'token-1', x: 100, y: 100, src: 'hero.png' }],
+        drawings: [],
+        doors: [],
+        stairs: [],
+        map: { src: 'dungeon1.png', x: 0, y: 0, width: 2000, height: 2000, scale: 1 },
+        gridSize: 50,
+        gridType: 'LINES' as const,
+        exploredRegions: [],
+        isDaylightMode: false,
+      };
+
+      const legacyCampaign = {
+        id: 'legacy-1',
+        name: 'Old Save',
+        maps: { 'map-1': map1 },
+        activeMapId: 'map-1',
+        tokenLibrary: [],
+      } as Campaign;
+
+      store.loadCampaign(legacyCampaign);
+
+      const state = useGameStore.getState();
+      expect(state.campaign.maps['map-1']?.tokens).toEqual(map1.tokens);
+      expect(state.tokens).toEqual(map1.tokens);
+      expect(state.sessionConsole).toBe(state.campaign.sessionConsole);
+      expect(state.sessionConsole).toEqual(emptySessionConsoleCatalog('Old Save'));
+      expect(state.sessionConsoleRuntime.stageVisible).toBe(false);
+      expect(state.sessionConsoleRuntime.activeImage).toBeNull();
+      expect(state.sessionConsoleRuntime.worldArmed).toBe(false);
+    });
+
+    it('loadCampaign keeps an existing catalog and still resets runtime', () => {
+      const store = useGameStore.getState();
+      const catalog = emptySessionConsoleCatalog('Kept Board');
+      catalog.imageSets = [{ id: 'set-1', title: 'Kept', note: '', images: [plateImage] }];
+
+      const map1 = {
+        id: 'map-1',
+        name: 'Kept Map',
+        tokens: [{ id: 'hero', x: 1, y: 2, src: 'hero.png' }],
+        drawings: [],
+        doors: [],
+        stairs: [],
+        map: null,
+        gridSize: 50,
+        gridType: 'LINES' as const,
+        exploredRegions: [],
+        isDaylightMode: false,
+      };
+
+      store.loadCampaign({
+        id: 'kept-1',
+        name: 'Kept Board',
+        maps: { 'map-1': map1 },
+        activeMapId: 'map-1',
+        tokenLibrary: [],
+        sessionConsole: catalog,
+      });
+
+      const state = useGameStore.getState();
+      expect(state.sessionConsole.imageSets[0]?.title).toBe('Kept');
+      expect(state.campaign.maps['map-1']?.tokens[0]?.id).toBe('hero');
+      expect(state.sessionConsoleRuntime.stageVisible).toBe(false);
     });
   });
 });
