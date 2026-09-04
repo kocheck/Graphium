@@ -17,7 +17,7 @@
 - **Priority**: P1
 - **Effort**: S (timebox: 1 working day / ~6 focused hours)
 - **Risk**: LOW (nothing merges to `main` from this plan)
-- **Depends on**: plans/001-stabilize-styling-foundation.md
+- **Depends on**: plans/000-repair-verification-infrastructure.md, plans/001-stabilize-styling-foundation.md
 - **Category**: dx
 - **Grounded at**: `d3d3642` (2026-09-04)
 
@@ -61,9 +61,15 @@ Relevant stack facts, all verified at `d3d3642`:
   `cn()` helper needs the first two; its variant API needs the third.
 - **Strict ESLint** (`.eslintrc.cjs`, 13.5KB) with `--max-warnings 0`, enforced by
   a Husky pre-commit hook. Notable rules that generated code may trip:
-  `complexity` max 15, `max-lines-per-function`, `max-params` 5,
-  `@typescript-eslint/no-magic-numbers`, and enforced import ordering
-  (`eslint-plugin-import`). `.ai-rules.md` bans `any` outright.
+  `complexity` max 15, `max-lines-per-function`, `max-params` 5, and enforced import
+  ordering. (`@typescript-eslint/no-magic-numbers` is `'off'` at `.eslintrc.cjs:362` —
+  ignore it.) **Two rules will definitely fire on generated code and you should
+  expect them, not be surprised by them:** `prettier/prettier` is an *error* via
+  `plugin:prettier/recommended` and shadcn emits double quotes against a
+  `singleQuote: true` config; and `import/no-unused-modules` (`.eslintrc.cjs:244`,
+  `unusedExports: true`) is a *warning*, which `--max-warnings 0` escalates to a
+  failure — every unused export a primitive ships (`DialogClose`, `DialogFooter`,
+  `TooltipProvider`, …) trips it. `.ai-rules.md` bans `any` outright.
 - **Dual-window architecture**: the app renders an Architect View (DM) and a World
   View (player projection) — see `src/App.tsx`. Radix Primitives render overlays
   through **React portals**, which attach to `document.body` by default. Each
@@ -102,6 +108,9 @@ Relevant stack facts, all verified at `d3d3642`:
 | Web build      | `npm run build:web`        | exit 0, writes `dist-web/` |
 | Electron dev   | `npm run dev`              | app + World View launch    |
 | A11y E2E       | `npm run test:a11y`        | all pass                   |
+| Install browsers | `npx playwright install chromium` | exit 0 — **`npm install` does not do this**; without it every Playwright command fails with a missing-executable error that looks like a real defect |
+| Web E2E        | `npm run build:web && npx playwright test --project=Web-Chromium` | all pass |
+| Electron E2E   | `npm run build:electron && npx playwright test --project=Electron-App` | all pass — **never run bare `npm run test:e2e`**; it launches the Electron project without building it first |
 
 Reference docs the executor should read before starting:
 - shadcn/ui installation for **Vite** (not Next.js) — the Vite guide is the correct one.
@@ -140,11 +149,21 @@ du -sh dist-web/
 ls -la dist-web/assets/
 ```
 
-Record the total `dist-web/` size and the individual JS/CSS asset sizes. This is
-the baseline for the bundle-cost answer in Step 6.
+Also establish a **green baseline for every check**, so a later failure is
+attributable:
 
-**Check**: You have written down the baseline byte sizes. `npm run build:web`
-exits 0.
+```bash
+npm run lint; npm run type-check; npm run test:run
+npm run build:web && npx playwright test --project=Web-Chromium
+npm run build:electron && npx playwright test --project=Electron-App
+npm run test:a11y
+```
+
+Record exact byte totals and the pass/fail state of each command.
+
+**Check**: You have written down the baseline byte sizes **and** the pass/fail state
+of all six commands. **Copy these numbers into the decision doc in Step 8** — plan 003
+compares against them, and they are otherwise destroyed with the spike branch.
 
 ### Step 2: Add the path aliases shadcn requires
 
@@ -166,12 +185,19 @@ resolve: {
 
 `path` is already imported in `vite.config.ts` as `import path from 'node:path'`.
 
-**Check**: Create a scratch file that imports something via the alias and confirm
-both the typechecker and the bundler resolve it:
+**Check**: A scratch file that nothing imports is never seen by Rollup, so
+`build:web` would pass whether or not `resolve.alias` was added. Instead, temporarily
+rewrite one **existing** import in `src/App.tsx` to the alias form
+(e.g. `import Sidebar from '@/components/Sidebar'`), then:
 ```bash
 npm run type-check && npm run build:web
 ```
-Both exit 0. Then delete the scratch file.
+Both must exit 0 — that exercises the bundler path for real. Revert the import after.
+
+Also add the alias to **`vitest.config.ts`**: vitest does not read tsconfig `paths`
+unaided, and the spike adds no test that would reveal the gap. Confirm with a
+throwaway test importing via `@/`, then delete it. (Note there is also a duplicate
+`test:` block at `vite.config.ts:48-69`; record which one actually governs.)
 
 Note whether `vitest.config.ts` also needs the alias — it is a separate config
 file. If unit tests fail to resolve `@/`, record that as a required change for
@@ -184,9 +210,15 @@ to Graphium's Radix `slate`) and answer its prompts to match the repo: TypeScrip
 yes, CSS file `src/index.css`, alias `@/components` and `@/lib/utils`.
 
 **Capture, verbatim, in your notes:**
-- The exact command invoked, including any flag needed to get past peer-dependency
-  resolution (e.g. `--legacy-peer-deps`). **If a flag was required, that is a
-  finding** — record which packages demanded it and what they wanted.
+- The exact command invoked, **with the CLI version pinned** (`npx shadcn@<version>`,
+  not `@latest` — `@latest` is a different program by the time plan 003 runs), and any
+  flag needed to get past peer-dependency resolution (e.g. `--legacy-peer-deps`).
+  **If a flag was required, that is a finding** — record which packages demanded it.
+- **The full resulting `components.json`, verbatim.** `init` is interactive; a bare
+  command is not reproducible without the answers. Plan 003 is told to run your
+  sequence *verbatim* and would otherwise be dropped into unanswered prompts.
+- **Whether the CLI offered to create or overwrite `tailwind.config.js` or rewrite
+  `src/index.css`.** Plan 001 deletes that config; if the CLI recreates it, say so.
 - Every file the CLI created or modified (`git status`).
 - Every dependency it added and the resolved version (`git diff package.json`).
 - Anything it wrote into `src/index.css` — particularly whether it added an
@@ -232,6 +264,26 @@ Graphium's source of truth is `--app-bg-surface`, `--app-text-primary`,
 token names *in terms of* Graphium's, in the `@theme` block in `src/index.css`, so
 one theme system feeds the other:
 
+Two things must be right or the bridge silently half-works:
+
+**(a) It must be `@theme inline`, not `@theme`.** Only `inline` resolves `var()`
+references at use time; a plain `@theme` block snapshots the value and the light/dark
+swap stops working. (The Context section's earlier mention of "a `@theme` block" from
+plan 001 refers to that plan's animation block — this one is different.)
+
+**(b) shadcn ships inline `dark:` utilities** (`dark:bg-input/30`, `dark:border-input`)
+and Tailwind's `dark:` defaults to `prefers-color-scheme`, while this app themes via a
+`data-theme` attribute that `ThemeManager` may resolve from a *user* preference. Left
+alone, a user on `data-theme="light"` with a dark-preference OS gets `dark:` styles in
+light mode. Redefine the variant:
+
+```css
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+```
+
+Verify it works — do not assume. Set `data-theme="light"` while emulating a dark OS
+preference and confirm no `dark:` styles apply.
+
 ```css
 @theme inline {
   --color-background: var(--app-bg-base);
@@ -247,11 +299,28 @@ one theme system feeds the other:
   --color-muted: var(--app-bg-subtle);
   --color-muted-foreground: var(--app-text-secondary);
   --color-destructive: var(--app-error-solid);
+  --color-destructive-foreground: white;
+  --color-accent: var(--app-bg-hover);
+  --color-accent-foreground: var(--app-text-primary);
   --color-border: var(--app-border-subtle);
   --color-input: var(--app-border-default);
   --color-ring: var(--app-accent-solid);
+  --radius: 0.25rem;
 }
 ```
+
+> **`accent` is a name collision — read this before mapping it.** In shadcn,
+> `--accent` is the *neutral hover/highlight* for menu and list rows. In Graphium,
+> `--app-accent-*` is the **brand blue**. Mapping `--color-accent: var(--app-accent-bg)`
+> would turn every dropdown and select row blue. It maps to `--app-bg-hover`, as above.
+>
+> **`--radius` has no `--app-*` counterpart.** shadcn defaults to `0.625rem`; `.btn`
+> in `app.css` is `0.25rem`. The value above matches today's app. Plan 000 adds real
+> `--app-radius-*` tokens; if it has landed, bridge to those instead.
+>
+> **`destructive-foreground`**: white on `--app-error-solid` (`--red-9`, `#e5484d`)
+> computes to roughly **3.9:1** — below the 4.5:1 AA floor for normal text. Record it
+> as a finding; the palette fix belongs to plan 006, not here.
 
 Because the `--app-*` variables are already redefined under `[data-theme='dark']`,
 this bridge makes shadcn components theme-aware through Graphium's *existing*
@@ -274,10 +343,19 @@ this purpose. Then, with `npm run dev` running, confirm by eye in **both** theme
 that the Button, Dialog, and Tooltip match the surrounding Graphium UI rather than
 looking like stock shadcn.
 
-Then run the accessibility suite, which is the objective gate:
+Then run the accessibility suite:
 ```bash
 npm run test:a11y
 ```
+
+> **This is only a real gate if plan 000 has landed.** Before it,
+> `tests/accessibility.spec.ts` contains one `page.goto(baseURL)` and scans the home
+> screen only — it never visits `/design-system`, so **axe would never render a single
+> shadcn primitive** and the suite would pass no matter how wrong the bridge was.
+> Check the spec for a `/design-system` scan before trusting this. If plan 000 has not
+> landed, say so in the decision doc and mark Question 2 **unanswered** rather than
+> reporting a green tick that means nothing.
+
 Must pass in both light and dark. If a contrast violation appears, the bridge has
 mapped a token to a variable pair that does not meet AA — record which mapping.
 
@@ -285,11 +363,24 @@ mapped a token to a variable pair that does not meet AA — record which mapping
 
 This is the risk that no amount of reading documentation can settle.
 
-Temporarily mount the spike Dialog somewhere reachable in the running app, then:
+> **The `/design-system` route will not work for this step.** `src/App.tsx:441-448`
+> returns the playground *exclusively* — no Konva canvas, no toolbar, no World View
+> launcher. Items 1, 3 and 4 below all need the real editor.
+>
+> **This step is explicitly authorised to add a temporary scaffold to `src/App.tsx`**
+> — a dev-only button in the editor that opens the spike Dialog. This is a throwaway
+> branch that Step 8 deletes; the "don't migrate a real component" STOP condition is
+> about *replacing* an existing component's implementation, not about adding a
+> scaffold that never merges. Do not convert `AboutModal` or any other real overlay.
+
+Add that scaffold, then:
 
 ```bash
 npm run dev
 ```
+
+(`npm run dev` launches the Architect window only. The World View is created on
+demand from the toolbar button via IPC — get past `HomeScreen` into the editor first.)
 
 1. In the **Architect View**, open the Dialog. Confirm: it renders above the Konva
    canvas; **Escape** closes it; **Tab** cycles focus within it and does not escape
@@ -311,9 +402,14 @@ hand-rolling.
 
 ```bash
 npm run build:web
-du -sh dist-web/
+find dist-web -name '*.js' -o -name '*.css' | xargs wc -c | tail -1   # exact bytes
 ls -la dist-web/assets/
 ```
+
+Use exact byte totals, not `du -sh` — `du` rounds to block-quantised units like
+`3.4M`, in which the 150KB STOP threshold is invisible. Vite's build log also prints
+per-chunk gzip sizes; capture it. Asset filenames are content-hashed, so compare
+totals rather than trying to diff filenames.
 
 Compare against the Step 1 baseline. Record the delta in raw and, if the build
 reports it, gzipped bytes. Note that this is the cost of **three** primitives plus
@@ -323,7 +419,9 @@ a dozen primitives would add, and note that most of the shared cost
 
 Also run the full suite to see if anything unrelated broke:
 ```bash
-npm run lint ; npm run type-check ; npm run test:run ; npm run test:e2e
+npm run lint ; npm run type-check ; npm run test:run
+npm run build:web && npx playwright test --project=Web-Chromium
+npm run build:electron && npx playwright test --project=Electron-App
 ```
 
 **Check**: You have concrete before/after numbers and a full record of which
@@ -333,7 +431,14 @@ existing checks pass and which fail on the spike branch.
 
 Write `docs/planning/shadcn-adoption-decision.md` containing:
 
-1. **The verdict**: GO, GO-WITH-CAVEATS, or NO-GO, in the first line.
+1. **The verdict**: GO, GO-WITH-CAVEATS, or NO-GO, in the first line. Use this
+   rubric — do not improvise one:
+
+   | Verdict | Means |
+   |---|---|
+   | **GO** | All four questions answered yes. Install needs no non-default npm flag. The bridge passes a11y on every surface. Portals behave in both windows. Bundle delta under 150KB raw for three primitives. At most formatting-level lint fixes. |
+   | **GO-WITH-CAVEATS** | shadcn works, but carries a standing cost: a permanent npm flag (e.g. `--legacy-peer-deps`), a scoped ESLint override, a bridge token with no clean `--app-*` counterpart, or a portal quirk needing a workaround. **List each caveat as a required change to plan 003.** |
+   | **NO-GO** | Any of: install impossible on React 18 without upgrading React; the bridge cannot meet WCAG AA in both themes; portals leak into the World View; bundle delta over ~500KB raw. Recommend the "pattern only, no CLI" fallback. |
 2. **Answers to the four questions** from the Context section, each with the
    evidence that settled it.
 3. **The exact, known-good install command sequence** for plan 003 to run —
@@ -350,16 +455,27 @@ must change — the fallback is the "pattern only, no CLI" approach (own primiti
 built directly on Radix Primitives with CVA, no `components.json`), which removes
 the CLI and React-19-assumption risk at the cost of writing the boilerplate by hand.
 
-Then commit the decision doc to the working branch (not the spike branch), and
-delete the spike:
+Then move the decision doc to the working branch and delete the spike.
+
+> **Commit on the spike branch first.** If you `git checkout` away with uncommitted
+> work, git carries every modified and untracked file with it — `tsconfig.json`,
+> `vite.config.ts`, `src/index.css`, `package.json`, `package-lock.json`,
+> `components.json`, `src/lib/`, `src/components/ui/` — straight onto the working
+> branch, which is precisely the "no production code merged" criterion this plan sets.
 
 ```bash
+# on spike/shadcn-compat, with the decision doc written:
+git add -A && git commit -m "spike: shadcn compatibility investigation"
 git checkout claude/ui-redesign-plan-xnyz33
+git status --porcelain          # MUST be empty. If not, STOP — spike files leaked.
 git checkout spike/shadcn-compat -- docs/planning/shadcn-adoption-decision.md
 git add docs/planning/shadcn-adoption-decision.md
 git commit -m "docs: record shadcn/ui compatibility spike findings"
 git branch -D spike/shadcn-compat
 ```
+
+Also update this file's **Outcome** section and the `plans/README.md` status row —
+both on the working branch, after the checkout, so they survive the branch deletion.
 
 **Check**: `docs/planning/shadcn-adoption-decision.md` exists on
 `claude/ui-redesign-plan-xnyz33` and opens with a one-word verdict.
@@ -397,6 +513,12 @@ The deliverable is a decision, so validation is about the decision's quality:
 
 ## STOP conditions
 
+> **Whenever any STOP below fires, write `docs/planning/shadcn-adoption-decision.md`
+> first, then stop.** Record the verdict reached so far, which of the four questions
+> are answered, and what blocked the rest. Plan 003's first instruction is to stop if
+> that file is absent — so stopping *without* writing it deadlocks the program in
+> exactly the case where a NO-GO is most valuable.
+
 Stop and report back — do not improvise — if:
 
 - **The shadcn CLI cannot install on React 18 at all**, even with
@@ -405,6 +527,11 @@ Stop and report back — do not improvise — if:
 - **The theming bridge in Step 5 cannot be made to pass `npm run test:a11y`**
   in both themes. Do not weaken the a11y test or hardcode a color to get past it.
   Report exactly which token mapping fails and by how much.
+- **Plan 000 has not landed** (the a11y spec still only visits `baseURL`). Question 2
+  cannot be answered; say so rather than reporting a vacuous pass.
+- **`npm run lint` fails only on `prettier/prettier` or `import/no-unused-modules`.**
+  Both are expected on generated code — run `npm run lint:fix` and `npm run format`
+  first, then categorise what remains. Only genuinely unfixable rules are findings.
 - **Radix portals misbehave in the World View window** — e.g. a dialog leaks DM
   chrome into the player projection. This is a product-correctness issue, not a
   styling one, and it changes the shape of plan 003.

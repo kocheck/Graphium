@@ -18,15 +18,23 @@
 - **Priority**: P2
 - **Effort**: L
 - **Risk**: MED
-- **Depends on**: plans/003-build-primitive-layer.md, plans/004-migrate-screens-to-primitives.md
+- **Depends on**: plans/000-repair-verification-infrastructure.md, plans/001-stabilize-styling-foundation.md, plans/003-build-primitive-layer.md
+- **Partial dependency**: plans/004 — Steps 1-4 of this plan can and should run *before* 004 completes; only Steps 5+ need it. See the sequencing note below.
 - **Category**: design
 - **Grounded at**: `d3d3642` (2026-09-04) — but see the note below
 
-> **On grounding**: the "current state" facts here are accurate at `d3d3642`, but
-> plans 001–005 will have changed the code substantially before this plan runs.
-> **Re-ground before starting**: re-read `src/styles/theme.css`,
-> `src/components/ui/README.md`, and `src/index.css`, and update this plan's Context
-> section to match what is actually there.
+> **On grounding**: the "current state" facts here are accurate at `d3d3642`, but the
+> earlier plans change the code substantially. **Re-ground before starting**: re-read
+> `src/styles/theme.css`, `src/components/ui/README.md`, `src/index.css`, and
+> `docs/planning/verification-baseline.md`. If `src/components/ui/README.md` does not
+> exist, plan 003 has not landed — **STOP**, do not merely update prose.
+>
+> **Sequencing — this changed after review.** Steps 1–4 (audit, direction, IA, and
+> rewriting Steps 5+) have **no technical dependency on plan 004**. They need 001's
+> token plumbing and 003's primitives, and they prototype on `/design-system`. Running
+> them early is strongly recommended: it gives Kyle something to look at while 004 is
+> still in progress, gives 004 a target instead of a promise, and surfaces token gaps
+> while there is still foundation budget. Steps 5+ wait for 004.
 
 ## Why this matters
 
@@ -56,35 +64,69 @@ follows; add a variant, every button gets it. That is what the foundation was fo
 
 ### What exists after plans 001–005
 
-- **A single source of truth for color**: `src/styles/theme.css` semantic variables,
-  bridged to shadcn token names in `src/index.css`. Changing a token changes every
-  component.
+- **A token layer covering colour *and*, after plan 000 Step 5, radius, elevation,
+  duration, easing and type scale.** Changing a token changes every component that
+  consumes it.
+  > **Verify this before relying on it.** At `d3d3642` all 43 `--app-*` variables were
+  > colours — including `--app-shadow-sm|md|lg`, which are `var(--slate-a3)`/`a6`/`a8`,
+  > *colours* rather than `box-shadow` values. Plan 000 Step 5 adds the non-colour
+  > families. If it did not, Step 5 of this plan cannot "re-skin the entire app" in one
+  > commit for anything but colour, and you must add the missing families before
+  > proceeding — that is plumbing, not a design decision.
+- **~370 hardcoded Tailwind palette classes still in files plan 004 did not touch**
+  (396 at `d3d3642`, across 35 files, with **zero `dark:` variants anywhere**). A
+  palette change will **not** reach them. Plan 004 records the surviving count; treat it
+  as a known limit on how far Step 5 propagates, and decide in Step 3 whether closing
+  the gap is in this plan's scope.
 - **A primitive layer** in `src/components/ui/`, with a documented contribution
   contract in `src/components/ui/README.md`, including Graphium-specific CVA
   variants (`tool`, `mode`, `broadcast` on `button`).
-- **Every screen consuming those primitives**, with no hand-rolled overlays and
-  substantially fewer inline styles.
+- **Most screens consuming those primitives**, with substantially fewer inline styles.
+  Not *all*: plan 004 deliberately excludes `ErrorFallbackUI.tsx` and
+  `UpdateErrorFallbackUI.tsx` (they render when React has already failed, so a
+  portal-based primitive would add a failure mode to the last line of defence), and the
+  `CommandPalette` is out of the roster program-wide. Those stay hand-rolled by design.
 - **A Design System Playground** at `/design-system` where every primitive renders
   in both themes — the natural place to prototype a new visual language before
   touching a single screen.
-- **A behavior safety net**: `data-testid`-based E2E specs that pass, and
-  `npm run test:a11y` enforcing WCAG 2.1 AA in both themes.
+- **A repaired verification suite** (plan 000): `npm run test:a11y` scanning five
+  surfaces in both themes, an E2E suite with `testIgnore` emptied of stale entries, and
+  an executable touch-target baseline. Read `docs/planning/verification-baseline.md` for
+  what covers what — and note whether plan 000 **restored or deleted
+  `tests/visual.spec.ts`**. If restored, it is this plan's single most useful gate and
+  you should rebaseline its screenshots in Step 5. If deleted, this plan has **no
+  visual-regression net** and every visual check falls to eyes and Kyle — say so
+  explicitly rather than discovering it late.
 
 ### Constraints that do not change
 
 - **The World View is sacred.** It is projected to players, often on a TV. It must
-  stay clean, high-contrast, legible at distance, and free of DM chrome. Any
-  redesign decision that makes the Architect View prettier at the World View's
-  expense is wrong.
-- **WCAG 2.1 AA is a hard floor.** `npm run test:a11y` gates both themes.
-  `docs/features/wcag-audit.md` documents the current guarantees. A new palette must
-  meet the same bar — this is a real constraint on how moody the "etched" direction
-  can get, and it should shape the design rather than be discovered at the end.
+  stay clean, high-contrast, legible at distance, and free of new DM chrome. Any
+  redesign decision that makes the Architect View prettier at its expense is wrong.
+  > **It has an objective check — use it.** `src/utils/useWindowType.ts` documents the
+  > `?type=world` query parameter, so `http://localhost:5173/?type=world` renders the
+  > player projection in the web build: axe-scannable, screenshot-diffable, assertable.
+  > An earlier draft asked a human to "ideally" squint at a TV, on the surface it itself
+  > calls sacred and admits nobody remembers to check. Do both — the automated scan every
+  > step that touches shared tokens, the TV once at the end.
+- **WCAG 2.1 AA is a hard floor.** After plan 000, `npm run test:a11y` scans five
+  surfaces in both themes — it is a real gate, not the home-screen-only scan it was.
+  > `docs/features/wcag-audit.md` **cannot serve as the bar for a new palette.** Its
+  > ratios are inherited from Radix ("Steps 11-12 … *guaranteed* WCAG AA"), so the
+  > moment a direction leaves the Radix scales the document is void. Compute real
+  > ratios for the proposed palette, and **update that document in Step 5** — it is
+  > listed in Done criteria.
+  > One known existing failure to fix rather than inherit: `--app-error-solid`
+  > (`--red-9`, `#e5484d`) with white text is ~**3.9:1**, below the 4.5:1 normal-text
+  > floor. Plan 000 recorded it and deferred the fix here.
 - **Both themes must work.** Dark is the likely default for a table-side tool in a
   dim room, but light mode is not optional.
-- **Touch and pen are first-class.** See `TOUCH_SUPPORT_MIGRATION.md` and
-  `DEVICE_COMPATIBILITY.md`. Hit targets have minimum sizes; `src/App.tsx` already
-  uses `minWidth/minHeight: 48px` for the mobile menu button. A redesign that
+- **Touch and pen are first-class.** `TOUCH_SUPPORT_MIGRATION.md` and
+  `DEVICE_COMPATIBILITY.md` describe device capabilities but contain **no pixel
+  minimums** — do not cite them as the baseline. The real minimums are inline and
+  inconsistent (48px at `src/App.tsx:528-529`, 44px in `TokenInspector` and
+  `HomeScreen`, 56px in `MobileToolbar`, and none at all on `.btn-tool`). **Plan 000
+  Step 4 captured them as an executable spec**; that spec is the gate. A redesign that
   shrinks controls for elegance breaks the tablet story the README sells.
 - **The canvas is the product.** Chrome should recede. Graphium is a tool used for
   hours at a time; a UI that demands attention is a worse UI here.
@@ -121,7 +163,8 @@ and inventing them is out of scope for the executor:**
 | Web build      | `npm run build:web`        | exit 0                     |
 | Electron dev   | `npm run dev`              | app + World View launch    |
 | A11y E2E       | `npm run test:a11y`        | all pass                   |
-| Full E2E       | `npm run test:e2e`         | all pass                   |
+| Web E2E        | `npm run build:web && npx playwright test --project=Web-Chromium` | all pass |
+| Electron E2E   | `npm run build:electron && npx playwright test --project=Electron-App` | all pass — **never run bare `npm run test:e2e`**; it launches the Electron project without building it |
 
 ## Suggested toolkit
 
@@ -140,8 +183,10 @@ and inventing them is out of scope for the executor:**
 ## Scope
 
 **In scope**: `src/styles/theme.css`, `src/styles/fonts.css`, `src/index.css`,
-`src/components/ui/**` (variant and style changes), and the screens selected in
-Step 4.
+`src/components/ui/**` (variant and style changes), **`src/App.tsx`** (it holds the
+toolbar, the touch minimums at :528-529, and the default marker colour at :138 — an
+earlier draft omitted it and thereby put most of the work out of scope), the screens
+selected in Step 4, `docs/features/wcag-audit.md`, and `docs/features/theming.md`.
 
 **Out of scope**:
 - **Anything decided in Steps 1–4 without Kyle's sign-off.** This plan's whole
@@ -162,9 +207,19 @@ Step 4.
 
 Before designing anything, articulate the gap precisely.
 
-Take annotated screenshots (both themes) of: the home screen, the editor with the
-toolbar and sidebar, an open dialog, the Session Console, and the World View. For
-each, write what it currently communicates.
+Take annotated screenshots (both themes) of: the home screen; the editor with toolbar
+and sidebar; **`ConfirmDialog`** (named so the choice is not arbitrary — it is
+store-driven and opens deterministically); the Session Console; and the World View. Save
+them under `docs/planning/ui-redesign-audit/`.
+
+Reaching them: use `npm run dev:web`. The World View is at **`?type=world`** (see
+`src/utils/useWindowType.ts` — no second monitor needed). Force the theme with
+`document.documentElement.setAttribute('data-theme', …)`, as `tests/visual.spec.ts:39`
+does; **do not** use `window.themeAPI?.setThemeMode()` from
+`tests/accessibility.spec.ts:50` — it optional-chains to a silent no-op in a browser.
+Plan 004 Step 0 may already have most of these; reuse it.
+
+For each, write what it currently communicates.
 
 Then read `README.md` and extract the brand's explicit claims — "funicular
 friction," "weight over fluff," "permanent etching," "the stylus," "no slippery
@@ -174,9 +229,24 @@ Produce `docs/planning/ui-redesign-audit.md`: a side-by-side of claim versus cur
 delivery, naming the specific gaps. Fold in the deferred ideas from
 `docs/planning/ui-redesign-ideas.md`.
 
-**Check**: The audit exists, covers all five surfaces in both themes, and names at
-least the gaps in typography, color, density, motion, and iconography. Kyle reads it
-and agrees it describes the problem he meant by "stale."
+Ground the audit in measurements, not adjectives: the computed font stack from
+`src/styles/fonts.css`; every `--app-*` token value in play; the actual Tailwind spacing
+and radius values per surface; the surviving hardcoded-palette-class count; and the
+`dark:` variant count (zero at `d3d3642`).
+
+**Check**: The audit exists, covers all five surfaces in both themes, and for each of
+typography, colour, density, motion and iconography states **a measured current value**
+alongside the gap — not an adjective. A reviewer must be able to check any claim against
+the code. Kyle reads it and agrees it describes what he meant by "stale."
+
+> **On the diagnosis this plan opens with**: that the gap between the README's brand
+> language and the delivered interface is what reads as "stale" is a *hypothesis* — well
+> evidenced, but nobody has asked Kyle whether he meant that, or "looks like 2019
+> Bootstrap", or "too many modals". A competing reading is equally supported by the
+> code: 396 hardcoded colours, three separate settings surfaces, an 1792-line home
+> screen — which reads as *inconsistent*, a different problem with a different cure.
+> **Step 1 is where that gets settled.** If the audit points at inconsistency rather
+> than identity, say so and adjust Step 2 accordingly.
 
 ### Step 2: Choose a visual direction
 
@@ -197,17 +267,29 @@ Each direction must specify:
   from soft drop shadows.
 - **Motion** — what "funicular friction" means as an easing curve and duration.
   Probably: fast, decisive, slightly weighted, with no bouncing. Must respect
-  `prefers-reduced-motion`, which `src/styles/theme.css` already honors.
+  `prefers-reduced-motion`.
+  > **This needs its own design decision, not just a nod.** `src/styles/theme.css:303-307`
+  > currently kills *all* transitions and animations under that query with
+  > `!important`. If "funicular friction" is expressed through motion, the
+  > reduced-motion path becomes a **second visual design** that nobody has been asked to
+  > approve. Specify what it looks like as part of the direction.
 - **Iconography** — whether Remixicon stays, and at what weight.
 
-**Prototype each direction on `/design-system`**, not in the real screens. Every
-primitive re-themed, in both themes, in a branch per direction. This is exactly what
-the playground and the token architecture were built for, and it makes the
-comparison honest rather than imagined.
+**Prototype each direction on `/design-system`**, not in the real screens.
 
-**Check**: Two or three directions are viewable at `/design-system`, in both themes.
-Each passes `npm run test:a11y`. **Kyle picks one.** Record the choice and the
-rejected alternatives (with reasons) in `docs/planning/ui-redesign-direction.md`.
+> **Do not use a branch per direction.** You cannot view three branches at one URL from
+> one checkout, so the Check below would be unsatisfiable and genuine side-by-side
+> comparison — the whole point — becomes hardest. Instead scope each direction's tokens
+> under a `[data-direction="a"|"b"|"c"]` selector and add a switcher to the playground.
+> All directions then live in one build and flip instantly.
+
+**Check**: Two or three directions are switchable at `/design-system`, in both themes,
+and genuinely distinct — differing in palette **and** at least one of density,
+elevation or type. Three variations on one palette do not satisfy "a single proposal is
+a decision disguised as an option". Each passes `npm run test:a11y`, which after plan
+000 does scan `/design-system` — confirm that before trusting it. **Kyle picks one.**
+Record the choice and the rejected alternatives with reasons in
+`docs/planning/ui-redesign-direction.md`.
 
 > **STOP here if Kyle has not picked.** Everything downstream depends on this
 > single decision, and building on a guess wastes the entire plan.
@@ -220,20 +302,30 @@ Open questions to put to Kyle, each with the current state:
 - **Toolbar**: currently a floating bar at bottom-center (`src/App.tsx:556`). Right
   position? Right grouping? Should tool options (color, measurement mode, door
   orientation) be inline, or contextual to the active tool?
-- **Sidebar**: currently a left panel holding the token library. Does it earn
-  permanent space, or should it be summonable?
+- **Sidebar**: three components, not one — `Sidebar.tsx` (desktop panel),
+  `QuickTokenSidebar.tsx`, and `MobileSidebarDrawer.tsx`. Does the desktop panel earn
+  permanent space, and should the three converge on one model?
 - **Settings**: currently spread across `PreferencesDialog`, `MapSettingsSheet`, and
   the Session Console's own settings sections. Three surfaces. Should it be one?
-- **Home screen**: 1792 lines, the largest file in the app. Is it doing too much?
+- **Home screen**: does it present the right things at the right level — recent
+  campaigns, templates, new campaign, settings — or is it several screens in one? (Its
+  1792 lines are a code-health fact, not an IA question; that belongs to plan 005.)
 - **Session Console**: a large recent addition (`docs/planning/session-console-design.md`).
   Is it integrated into the IA, or bolted alongside it?
 - **World View**: does it need anything at all, or is "nothing" correct?
 
 For each, Kyle decides: keep, adjust, or restructure.
 
-**Check**: `docs/planning/ui-redesign-ia.md` records a decision for each of the six,
-signed off by Kyle. "Keep as-is" is a legitimate and often correct answer — record it
-explicitly so it is a decision rather than an omission.
+Add a seventh: **do the ~370 hardcoded palette classes in untouched files get fixed
+here?** If not, the palette swap will not reach them and the app stays partly
+theme-invariant. Keep / fix-in-this-plan / defer-to-a-follow-up.
+
+Use one format per question — *Decision: keep | adjust | restructure*, then two to four
+sentences of rationale — so the artefact is a record, not an essay.
+
+**Check**: `docs/planning/ui-redesign-ia.md` records a decision for all seven in that
+format, signed off by Kyle. "Keep as-is" is legitimate and often correct — record it
+explicitly so it reads as a decision rather than an omission.
 
 ### Step 4: Rewrite Steps 5+ of this plan at full resolution
 
@@ -278,14 +370,15 @@ Fully specifiable only after Step 4, but these hold regardless:
 - **`npm run test:a11y` passes in both themes at every commit.** A redesign that
   regresses accessibility has failed, however good it looks. Run it during palette
   selection, not only at the end.
-- **`npm run test:e2e` passes.** Steps 5–7 change appearance, not behavior; only
+- **Both Playwright projects pass** (`--project=Web-Chromium` after `build:web`, `--project=Electron-App` after `build:electron` — never bare `npm run test:e2e`). Steps 5–7 change appearance, not behavior; only
   Step 8 (IA restructuring) legitimately changes flows, and its E2E updates should be
   additive.
-- **The World View is verified separately**, ideally on an actual second display or
-  TV, at realistic viewing distance. It is the surface Kyle's users' *players* see,
-  and it is the one nobody remembers to check.
-- **Touch targets stay at or above their current minimums** — verify on a touch
-  device or emulation, per `DEVICE_COMPATIBILITY.md`.
+- **The World View is verified two ways**: automatically at `?type=world` (axe scan
+  plus screenshot diff) on every step touching shared tokens, and once at the end on a
+  real second display at viewing distance. The automated half is the gate.
+- **Touch targets stay at or above their current minimums** — plan 000 Step 4's spec
+  asserts this and must stay green. Do not rely on `DEVICE_COMPATIBILITY.md`; it
+  contains no pixel minimums.
 - **Kyle is the acceptance authority on every visual judgment.** This plan's Checks
   are deliberately weighted toward "Kyle confirms" in a way plans 001–005 were not,
   because design quality is not a command exit code.
@@ -301,8 +394,15 @@ Fully specifiable only after Step 4, but these hold regardless:
 - [ ] **Steps 5+ of this plan were rewritten at full resolution and reviewed before implementation**
 - [ ] The rewritten steps were executed, each leaving the app shippable
 - [ ] `npm run test:a11y` passes in both themes
-- [ ] `npm run test:e2e` passes; no `data-testid` was renamed
-- [ ] `grep -rnE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(" src/components/ src/styles/app.css` returns nothing outside `theme.css`
+- [ ] Both Playwright projects pass; no `data-testid` was renamed
+- [ ] `grep -rnE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(" src/components/ src/App.tsx src/index.css src/styles/app.css src/styles/fonts.css` returns nothing
+      (the earlier version omitted `src/App.tsx` — which has 4 hits today — and said "outside `theme.css`" while never searching it)
+- [ ] The surviving hardcoded-palette-class count is recorded and matches the Step 3 decision on whether to close that gap
+- [ ] `docs/features/wcag-audit.md` updated with real computed ratios for the chosen palette
+- [ ] `docs/features/theming.md` updated — it documents the superseded token architecture
+- [ ] `--app-error-solid` with white text now meets 4.5:1, or that pairing is no longer used for normal text
+- [ ] `tests/visual.spec.ts` rebaselined if plan 000 restored it; if deleted, the absence of a visual-regression net is recorded
+- [ ] The reduced-motion variant of the chosen direction was specified and reviewed
 - [ ] The World View was verified at projection distance
 - [ ] Touch targets verified at or above current minimums
 - [ ] Before/after screenshots captured for all five surfaces in both themes

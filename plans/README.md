@@ -1,120 +1,184 @@
 # Plans
 
 UI redesign program for Graphium. Developed with the `improve` skill on 2026-09-04,
-grounded at commit `d3d3642`.
+grounded at commit `d3d3642`, then **revised after a seven-reviewer cold audit** — one
+reviewer per plan reading it with no context as the executor would, plus one on the set
+as a whole. Every plan changed; two were rewritten; one (000) was added.
 
-**Read the plan fully before starting it. Honor its STOP conditions. Update your row
+**Read the plan fully before starting it. Honour its STOP conditions. Update your row
 below when done.**
 
 ## The shape of this program
 
-Kyle's ask: the UI is stale and should be completely rethought, with the result being
-more extendible and more performant, probably via shadcn components.
+Kyle's ask: the UI is stale and should be completely rethought, with the result more
+extendible and more performant, probably via shadcn components.
 
 Three framing decisions, made 2026-09-04:
 
-1. **Both layers, sequenced** — rebuild the foundation first (tokens, primitives,
-   performance), then do the visual redesign on top of it.
-2. **Full shadcn adoption** — `components.json`, the CLI, Radix Primitives, CVA, with
-   the source owned in-repo and re-themed onto Graphium's existing Radix Colors
-   variables. Gated on a compatibility spike (plan 002) because shadcn's happy path
-   is React 19 and Graphium is React 18.
-3. **Strangler-fig, always shippable** — the new layer lands alongside the old,
-   screens migrate one at a time, and every commit is releasable.
+1. **Both layers, sequenced** — rebuild the foundation first, then redesign visually.
+2. **Full shadcn adoption** — CLI, `components.json`, Radix Primitives, CVA, source
+   owned in-repo and re-themed onto Graphium's existing Radix Colors variables. Gated on
+   a compatibility spike (002) because shadcn's happy path is React 19 and this is React 18.
+3. **Strangler-fig, always shippable** — the new layer lands alongside the old, screens
+   migrate one at a time, every commit is releasable.
 
-**The value is realized in plan 004, and the goal is plan 006.** Plans 001–003 are
-foundation: real work, but the user sees nothing. Stopping between 003 and 004 is the
-worst outcome available — two component systems, permanently. If the program has to be
-cut short, cut it after 004, not before.
+Those hold. **What the audit changed is the honesty of the verification and the
+sequencing of the visible work.**
+
+## What the audit found
+
+**The systemic defect: every plan built its gates on test infrastructure nobody had
+checked actually runs.**
+
+- `tests/accessibility.spec.ts` contains exactly one navigation — `page.goto(baseURL)` —
+  and scans the **home screen only**. It never reaches the editor, a dialog,
+  `/design-system`, or the World View. Plans 001, 002, 003 and 006 each called it their
+  most important gate, and each changes things it cannot see.
+- `npm run test:e2e` ran **4 of 22 spec files**. `playwright.config.ts` ignored ten
+  functional specs, the performance spec and the visual spec, because they wait on
+  testids — `campaign-title`, `token-*`, `add-token-button`, `tool-marker` — that have
+  **zero occurrences in `src/`**. Plan 004's entire twelve-step design rested on that
+  suite. **Not one of the ~20 files plan 004 migrates contains a `data-testid` at all.**
+- `tests/performance/drawing-performance.spec.ts`, cited by plan 005 as "the existing
+  bar", selected **zero tests** in every project.
+- Plan 005's premise was wrong: a grep that missed `export default memo(...)` produced
+  "all eleven memos are in `Canvas/`". There are **twelve**, and `Sidebar` (memoised,
+  zero props) and `CanvasManager` are among them — so two of that plan's acceptance
+  criteria were respectively already-true and impossible.
+
+**Plan 000 is new and fixes this.** It runs first, and every other plan now depends on it.
+
+**Other things the audit surfaced, now folded into the plans:**
+
+- **Eleven components hand-roll a modal overlay, not nine.** The two worst omissions were
+  the DM's own asset surfaces: `AssetLibrary/LibraryManager.tsx` (442 lines) and
+  `AssetLibrary/TokenMetadataEditor.tsx` (322) — neither with Escape nor `aria-modal`.
+- **The entire mobile surface was invisible.** `MobileToolbar.tsx` (325),
+  `MobileSidebarDrawer.tsx`, `MobileBottomSheet.tsx`. Leaving them would have guaranteed
+  "two component systems" for every touch user — the outcome this program exists to
+  prevent — while the README sells touch and pen as first-class. Now in plan 004.
+- **An undocumented `data-esc-owns="true"` protocol** across nine overlays gates whether
+  Escape stops Session Console audio. Rebuilding on Radix without re-attaching it kills
+  the DM's music mid-session. No plan mentioned it. Now a Done criterion in 004.
+- **396 hardcoded Tailwind palette classes across 35 files, with zero `dark:` variants
+  anywhere.** The hex/rgb greps every plan used catch none of them. This is the bulk of
+  the theme-invariance problem — 400× the single `.toolbar` case plan 001 fixes.
+- **The token layer is colour-only.** All 43 `--app-*` variables are colours, including
+  `--app-shadow-*` which are colours rather than shadows. Plan 006 asked for decisions on
+  spacing, type, elevation and motion, then claimed one token commit re-skins the app.
+  True for colour, false for the rest. Creating the families is plumbing; plan 000 does it.
+- **`PreferencesDialog.tsx` is dead code** — zero importers, and it carries
+  `eslint-disable import/no-unused-modules` at line 677. It also holds 45 of the 286
+  inline styles. Plan 004 no longer migrates it; Kyle decides its fate.
+- **`ConfirmDialog` renders with three undefined CSS variables** (`--app-bg`,
+  `--app-border`, `--app-text` — the real names are `--app-bg-surface` etc.), so it has
+  no surface colour today. "Visually neutral" was undefinable for it; plan 004 now fixes
+  the bug as part of the migration.
+- **`btn-secondary` (18 uses), `btn-ghost` (8), `btn-destructive` (1) are defined in no
+  CSS file.** They all render as bare `.btn` — transparent. Mapping them onto shadcn
+  variants by name would have restyled 27 buttons inside a "neutral" migration.
+- **The pause button is grey.** `src/App.tsx:564-568` puts `bg-red-500`/`bg-green-500`
+  on an element carrying `.btn-tool`; `src/index.css` imports `app.css` **unlayered**
+  and Tailwind v4 emits utilities into `@layer utilities`, so the unlayered rule wins and
+  the pause state never shows. A live bug. It also means plan 001 Step 7 is a no-op and
+  plan 004's toolbar migration is **not** neutral — it fixes the button. Both plans now
+  say so.
+- **`bare npm run test:e2e` cannot pass on a clean machine** — it runs the Electron
+  project, which needs `npm run build:electron` first. Every plan's STOP conditions would
+  have read that self-inflicted failure as a real coupling problem. All six plans now use
+  the two project-scoped commands.
 
 ## Order & status
 
 | Plan | Title | Priority | Effort | Risk | Depends on | Status |
 |------|-------|----------|--------|------|------------|--------|
-| 001 | Make the styling layer have exactly one source of truth | P1 | S | LOW | — | TODO |
-| 002 | Prove shadcn/ui works on this stack before committing to it | P1 | S | LOW | 001 | TODO |
-| 003 | Build the shared UI primitive layer | P1 | L | MED | 001, 002 | TODO |
-| 004 | Migrate every screen onto the primitive layer | P1 | L | MED | 003 | TODO |
-| 005 | Fix the DOM-layer performance drags | P2 | M | MED | 001 | TODO |
-| 006 | Redesign the visual language and information architecture | P2 | L | MED | 003, 004 | TODO |
+| 000 | Make the verification gates actually verify | **P0** | M | LOW | — | TODO |
+| 001 | One source of truth for styling | P1 | S | LOW | 000 | TODO |
+| 002 | Prove shadcn works on this stack | P1 | S | LOW | 000, 001 | TODO |
+| 003 | Build the shared UI primitive layer | P1 | L | MED | 000, 001, 002 | TODO |
+| 006 **Steps 1–4** | Audit, direction, IA, and write 006's real steps | **P1** | M | LOW | 000, 001, 003 | TODO |
+| 004 | Migrate every screen onto the primitive layer | P1 | **XL** | **HIGH** | 000, 003 | TODO |
+| 006 **Steps 5+** | Apply the redesign | P2 | L | MED | 004, 006 Steps 1–4 | TODO |
+| 005 | Fix the DOM-layer performance drags | P2 | M | MED | 000, 001, **004** | TODO |
 
-Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale)
+Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (rationale)
+
+## What changed in the sequencing, and why
+
+**006 Steps 1–4 moved earlier, and split from Steps 5+.** They have no technical
+dependency on 004 — the audit, the prototyped directions, and the IA decisions need only
+001's tokens and 003's primitives, and they prototype on `/design-system`. Under the
+original order, Kyle would have seen nothing visible for months: five fully-specified
+plans that change nothing a user notices, then one unwritten plan carrying all of it.
+Running the design work early gives 004 a target instead of a promise, and forces the
+token gaps into the open while there is still foundation budget.
+
+**005 moved after 004, and is no longer "parallel".** The original note warned that 004
+would invalidate 005's work. The reverse is worse and was unstated: 005 moves tool state
+into a store and adds `lazy()` boundaries around exactly the components and the toolbar
+that 004 rewrites, and 004 has no instruction to preserve either. Running 005 first means
+doing it twice.
+
+**004's effort went L → XL and risk MED → HIGH.** Twenty files, ~4,600 lines, fifteen
+commits, and — now that the E2E claim is corrected — far thinner automated coverage than
+the original plan assumed. Its new Step 0 captures a screenshot baseline, because for
+many of these components that is the only evidence available.
 
 ## Dependency notes
 
-- **002 depends on 001** because the spike installs against the Tailwind v4 CSS
-  config that 001 establishes. Spiking against the broken config would prove nothing.
-- **003 depends on 002** because 003's first step is executing the install sequence
-  that 002 proved. Without the spike's decision doc, 003 improvises — which is exactly
-  what this plan set is built to prevent.
-- **004 depends on 003** and is where the program pays off. Do not let 003 land and 004
-  stall.
-- **005 only hard-depends on 001**, so it *can* run in parallel with 003/004.
-  **Recommended: run it after 004**, because 004 rewrites most of the components 005
-  would optimize. Run it earlier only if a performance problem is actively hurting
-  users now.
-- **006 depends on 004** for two reasons: the token architecture must be in place for
-  a palette change to propagate, and 006's Step 1 consumes
-  `docs/planning/ui-redesign-ideas.md`, written during 004's migration by whoever has
-  just read every UI file in the app.
-
-## What grounds these plans
-
-Verified in the codebase at `d3d3642`, not assumed:
-
-- **Four competing styling systems**: `theme.css` semantic variables, `app.css`
-  hand-rolled utilities (with hardcoded colors), Tailwind classes, and **286 inline
-  `style={{}}` objects across 41 files**. The toolbar at `src/App.tsx:556` declares its
-  background twice, in two systems, and is black in light mode either way.
-- **Tailwind v4 is running a v3 config it silently ignores.** `src/index.css:1` uses
-  v4 syntax; `tailwind.config.js` is v3-style with no `@config` directive. The
-  `slide-down` keyframe it defines is consumed at `Toast.tsx:82` — so the toast
-  animation is very likely dead in the shipped app. *(High confidence, not yet
-  executed — plan 001 Step 1 is the empirical check.)*
-- **Nine components hand-roll a modal overlay; exactly one has a focus trap**
-  (`AboutModal.tsx:279–297`). Three — `MapSettingsSheet`, `AddToLibraryDialog`,
-  `ImageCropper` — have no `role="dialog"` or `aria-modal` at all. Four never handle
-  Escape.
-- **All eleven `React.memo` calls are in `src/components/Canvas/`.** The canvas is
-  well optimized (see `docs/architecture/PERFORMANCE_OPTIMIZATIONS.md`); the DOM chrome
-  layer has zero memoization, one lazy import, and no manual chunking.
-- **A 1274-line internal developer tool** (`playground-registry.tsx`) is statically
-  imported at `src/App.tsx:21` and ships to every user.
-- **A universal-selector CSS transition** at `src/styles/theme.css:291` applies five
-  transitioning properties to every element in a canvas app.
-- **`src/App.css` is dead** — leftover Vite scaffolding, imported by nothing.
-
-Two assets that make this program tractable:
-
-- **E2E selectors are `data-testid`-based, not CSS/DOM-based** (51 uses of
-  `[data-testid^="token-"]` alone). A migration that preserves testids is verifiable
-  at every step. This is why plan 004 can be twelve steps and still be safe.
-- **A Design System Playground already exists** at `/design-system` — a ready-made
-  surface for validating primitives and prototyping the redesign without touching a
-  real screen.
-- **Radix *Colors* is already a dependency** (not Radix Primitives). shadcn is built on
-  Radix Primitives, so the adoption is directionally consistent with where the codebase
-  already is, and the audited WCAG-AA color system survives the move rather than being
-  replaced.
+- **Everything depends on 000.** Plans 001, 002, 003 and 006 name `npm run test:a11y` as
+  their most important gate; 004's design assumes a meaningful E2E suite; 005 cited a
+  spec selecting zero tests. None of those claims was true beforehand.
+- **002 depends on 001** — the spike installs against the Tailwind v4 CSS config 001
+  establishes. Spiking against the broken config proves nothing.
+- **003 depends on 002** and now branches on its verdict: a NO-GO means 003 must be
+  rewritten for the "pattern only, no CLI" fallback, not improvised through.
+- **004 depends on 003**, and 003's `sheet`, `popover` and `dropdown-menu` are now
+  **required, not optional** — 004 Steps 4–5 have no fallback without `sheet`.
+- **006 Steps 5+ depend on 004** for the migrated screens and on 006 Steps 1–4 for the
+  decisions.
 
 ## Considered and set aside
 
 - **Replacing `CommandPalette` with shadcn's `command`.** Graphium has a working
-  420-line palette with its own registry (`src/utils/commandRegistry.ts`). Replacing it
-  is a feature decision, not a primitive-layer one. Out of scope across the whole set.
-- **Upgrading to React 19** to match shadcn's documented happy path. A large
-  independent migration touching Konva, react-konva, and the Electron renderer.
-  Plan 002 explicitly forbids doing it as a means to unblock the spike; if the spike
-  concludes it is required, that is a finding to report, not a change to make.
-- **Sweeping all 286 inline `style={{}}` objects in one pass.** Most read theme
-  variables correctly and are not wrong, just un-reusable. They get resolved for free,
-  per component, during plan 004's migration. A standalone sweep would be a large,
-  risky, low-value diff.
-- **A big-bang UI rewrite behind a feature freeze.** Rejected in favor of
-  strangler-fig: 93 test files and a shipping app at v0.5.3 make a long red branch a bad
-  trade.
-- **Optimizing the canvas / fog-of-war rendering.** Already tuned deliberately —
-  delta IPC, cached visibility polygons, Web Worker image processing. Plan 005 has
-  nothing to add there and is explicitly forbidden from touching it.
-- **Fixing the placeholder `via.placeholder.com` GIFs in `README.md`.** Real, but
-  unrelated to the UI architecture. Noted at the end of plan 006 as a follow-up.
+  420-line palette with its own registry. A feature decision, not a primitive-layer one.
+- **Migrating `ErrorFallbackUI.tsx` / `UpdateErrorFallbackUI.tsx`.** They render when
+  React has already failed; making the last line of defence depend on a portal-based
+  primitive adds a failure mode. Deliberately excluded, recorded in 004.
+- **Upgrading to React 19.** A large independent migration touching Konva, react-konva
+  and the Electron renderer. 002 forbids doing it to unblock the spike.
+- **Sweeping all 286 inline styles, or all 396 hardcoded palette classes, in one pass.**
+  Both are resolved per-component as 004 touches each file. A standalone sweep would be a
+  large, risky, low-value diff. The surviving count is recorded for 006.
+- **A big-bang rewrite behind a feature freeze.** 93 test files and a shipping app at
+  v0.5.3 make a long red branch a bad trade.
+- **Optimising the canvas / fog-of-war.** Already tuned deliberately. 005 is forbidden
+  from touching it.
+- **Fixing `README.md`'s broken hero image** (`public/screenshots/graphium-overview.png`
+  does not exist; the directory has `Graphium-1..4.png` and `Graphium-show.gif`) and its
+  `via.placeholder.com` GIFs. Real, unrelated to UI architecture; noted at the end of 006.
+
+## Known gaps this program does not close
+
+Recorded so they are decisions rather than oversights:
+
+- **CI never runs across this work.** Every workflow in `.github/` is `on: pull_request`
+  to `main`/`NEXT`, and these plans work on one long-lived branch. Every gate is a local
+  `npm run` on one machine. **Decide before starting 001**: land each plan as its own PR
+  (recommended — it turns the gates into enforced CI, and matches the "every commit is
+  releasable" principle), or accept local-only verification.
+- **No changelog or versioning guidance.** The app is at v0.5.3 with a maintained
+  `CHANGELOG.md`, `build-release.yml` and an auto-updater. A program that rewrites the UI
+  should produce entries; none of these plans does.
+- **`src/components/README.md` describes a different application** — it lists six files
+  for a ~60-file directory and claims `CanvasManager` is 245 lines (it is 1489),
+  `Sidebar` 37 (it is 477), `TokenLayer` an "unused 11-line placeholder" (it is 110 lines
+  and memoised). A CI workflow points reviewers at this file on every `src/components/`
+  change, i.e. on every commit in plan 004. No plan updates it.
+- **Docs falsified by this work and unowned**: `docs/architecture/ARCHITECTURE.md`,
+  `docs/guides/CONVENTIONS.md` (which prescribes `@components/*` aliases while 002 adds
+  `@/*`), `.cursorrules`, `.ai-rules.md`, and `docs/documentation-inventory.md`.
+- **The World View is treated only as a constraint, never as a design surface.** For a
+  product whose distinctive feature is the player-facing projection, "completely
+  rethought" leaving that half untouched is a scope decision — made explicit as the sixth
+  question in 006 Step 3, but worth Kyle's attention now.

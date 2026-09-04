@@ -1,13 +1,12 @@
 # Plan 004: Migrate every screen onto the primitive layer
 
 > **Executor instructions**: Follow this plan step by step. Confirm each step's
-> **Check** before moving to the next. **Commit after every step** — each step is
-> designed to be independently shippable. If anything in "STOP conditions" occurs,
-> stop and report — do not improvise. When done, update the status row in
-> `plans/README.md`.
+> **Check** before moving to the next. **Commit after every step.** If anything in
+> "STOP conditions" occurs, stop and report — do not improvise. When done, update the
+> status row in `plans/README.md`.
 >
-> **Read `src/components/ui/README.md` before Step 1.** It is the contribution
-> contract produced by plan 003 and defines how primitives are used and extended.
+> **Read `src/components/ui/README.md` before Step 1** — the contribution contract from
+> plan 003. If it does not exist, plan 003 has not landed: STOP.
 >
 > **Drift check (run first)**:
 > `git diff --stat d3d3642..HEAD -- src/components/ src/App.tsx src/styles/app.css`
@@ -15,512 +14,588 @@
 ## Status
 
 - **Priority**: P1
-- **Effort**: L
-- **Risk**: MED
-- **Depends on**: plans/003-build-primitive-layer.md
+- **Effort**: XL
+- **Risk**: HIGH
+- **Depends on**: plans/000-repair-verification-infrastructure.md, plans/003-build-primitive-layer.md
 - **Category**: migration
 - **Grounded at**: `d3d3642` (2026-09-04)
 
+> **Effort was "L" in an earlier draft. That was wrong.** This plan migrates ~20 files
+> and roughly 4,600 lines, including an 858-line and a 634-line component, across
+> fifteen commits, each gated by six commands. Budget accordingly, and prefer splitting
+> a step over rushing one.
+
 ## Why this matters
 
-Plan 003 built the primitive layer. Until screens actually use it, that layer is
-**pure cost** — a second component system sitting next to the first one, with all
-the maintenance burden and none of the benefit. This plan is where the value is
-realized, and leaving it undone is the worst possible outcome of the entire
-program: two competing systems, permanently.
+Plan 003 built the primitive layer. Until screens use it, that layer is **pure cost** —
+a second component system beside the first. Leaving this undone is the worst outcome of
+the whole program: two systems, permanently.
 
-The concrete win is accessibility. Today, nine components hand-roll a modal
-overlay and **exactly one has a focus trap** (`AboutModal.tsx:279–297`). Three —
-`MapSettingsSheet`, `AddToLibraryDialog`, `ImageCropper` — have no `role="dialog"`
-or `aria-modal` at all. Four never handle Escape. A DM running Graphium with a
-keyboard or a screen reader can currently open a dialog and lose their focus into
-the canvas behind it. Every one of those is fixed for free by swapping in one
-correct primitive.
+The concrete win is accessibility. Across `src/`, **eleven components hand-roll a modal
+overlay and exactly one has a focus trap** (`AboutModal.tsx`, lines 255–297). Four have
+**no Escape handling at all**. Two of the worst are the DM's own asset surfaces —
+`AssetLibrary/LibraryManager.tsx` (442 lines) and `AssetLibrary/TokenMetadataEditor.tsx`
+(322 lines) — which have neither Escape nor `aria-modal`. A DM using a keyboard or a
+screen reader can open a dialog and lose focus into the canvas behind it.
 
-The second win is that this plan **deletes more than it adds**. Nine bespoke
-overlay implementations collapse into consumers of one `Dialog`. The four ad-hoc
-button systems in `src/styles/app.css` collapse into CVA variants. That reduction
-is what makes the next redesign (plan 006) cheap.
+The second win is deletion: eleven bespoke overlays collapse into consumers of one
+`Dialog`.
 
 ## Context the executor needs
 
-### The core principle: behavior-neutral migration
+### The safety net is real but narrow — read this before trusting any Check
 
-**Every step in this plan must be visually and behaviorally neutral except for the
-accessibility improvements.** This is not a redesign — plan 006 is. If a migration
-tempts you to also improve the layout, resist it and note the idea for plan 006.
-Mixing migration with redesign makes it impossible to tell whether a bug came from
-the swap or the new design, and it is the single most common way a strangler-fig
-migration stalls.
+An earlier draft of this plan claimed the E2E suite made every step verifiable, citing
+"51 uses of `[data-testid^="token-"]`". **That was false and it changes how you work.**
+Those selectors live in specs that `playwright.config.ts` ignored, and the testids they
+reference (`campaign-title`, `token-*`, `add-token-button`, `tool-marker`) have **zero
+occurrences in `src/`**.
 
-Plan 003 built the `button` `tool`/`mode`/`broadcast` variants specifically to
-reproduce `src/styles/app.css` exactly, so that this neutrality is provable.
+**Plan 000 repaired this** — it extended the a11y suite to five surfaces in both themes,
+and restored or deleted every ignored spec. Before Step 1, read
+`docs/planning/verification-baseline.md` and establish what actually covers the files
+you are about to change. Then hold two facts in mind:
 
-### The safety net
+1. **Not one of the ~20 files this plan migrates contains a `data-testid` today.** So
+   "preserve every `data-testid`" is a real rule for the *app* but a near-no-op for
+   *these files*. It is not the safety net here.
+2. **The real net for these components is vitest**, and it is patchy. Colocated tests
+   exist for `DungeonGeneratorDialog`, `UpdateManager`, `Sidebar`, `QuickTokenSidebar`,
+   `HomeScreen`, `SessionConsolePanel`, `TokenInspector`. There are **none** for
+   `ConfirmDialog`, `AboutModal`, `MapSettingsSheet`, `AddToLibraryDialog`,
+   `ImageCropper`, `Tooltip`, `ToggleSwitch`, `CollapsibleSection`, `MapNavigator`,
+   `DoorControls`, or the toolbar.
 
-Graphium's E2E suite uses **`data-testid` selectors, not CSS or DOM structure** —
-51 uses of `[data-testid^="token-"]`, 22 of `[data-testid="campaign-title"]`, and so
-on across `tests/functional/`. There are 43 `data-testid` attributes in `src/`.
+**Therefore Step 0 exists**: capture a screenshot and behaviour baseline before any
+migration, because for many of these components it is the only evidence you will have.
 
-**This is the thing that makes this plan safe. Preserve every `data-testid`
-exactly.** A migration that keeps testids intact can be validated by
-`npm run test:e2e` at every single step. A migration that renames one silently
-breaks a test that was your only proof the swap was neutral.
+Note also: `QuickTokenSidebar.test.tsx:519` asserts `toHaveClass('sidebar-token')` and
+lines 315/480/493/506 assert on Tailwind utilities this plan changes. Those assertions
+are among the few that actually run. Updating them is legitimate — but update them to
+assert the *new* correct behaviour, never to silence a real regression.
 
-### Verified consumer map (at `d3d3642`)
+### The overlay inventory — eleven, not nine
 
-**`src/components/Tooltip.tsx`** — consumed by `HomeScreen.tsx`, `Sidebar.tsx`,
-`QuickTokenSidebar.tsx`, `App.tsx`.
+Every component in `src/` with `role="dialog"` or `aria-modal` (non-test), verified:
 
-**`src/components/ToggleSwitch.tsx`** — consumed by
-`SessionConsole/SessionConsoleEditorSheet.tsx`,
-`SessionConsole/sessionConsoleSettingsSections.tsx`, `MapSettingsSheet.tsx`, and
-`DesignSystemPlayground/playground-registry.tsx`.
+| Component | Lines | Escape | Focus trap | Migrate to |
+|---|---|---|---|---|
+| `AboutModal.tsx` | 858 | via `App.tsx:270` | **yes** (255–297) | `dialog` |
+| `PreferencesDialog.tsx` | 678 | yes | no | **see below — dead code** |
+| `UpdateManager.tsx` | 634 | yes + `App.tsx:275` | no | `dialog` |
+| `DungeonGeneratorDialog.tsx` | 217 | yes | no | `dialog` |
+| `ConfirmDialog.tsx` | 116 | yes | no | `dialog` |
+| `MapSettingsSheet.tsx` | 461 | **no** | no | `sheet` |
+| `AssetLibrary/AddToLibraryDialog.tsx` | 297 | **no** | no | `dialog` |
+| `ImageCropper.tsx` | 271 | **no** | no | `dialog` (see mount note) |
+| `SessionConsole/SessionConsoleEditorSheet.tsx` | 298 | yes | no | `sheet` |
+| `SessionConsole/SessionConsoleSettingsSheet.tsx` | 68 | yes | no | `sheet` |
+| `MobileSidebarDrawer.tsx` | 91 | yes | no | `sheet` |
+| `MobileBottomSheet.tsx` | 107 | yes | no | `sheet` |
+| `ErrorFallbackUI.tsx` | 114 | **no** | no | **out of scope** |
+| `UpdateErrorFallbackUI.tsx` | 197 | **no** | no | **out of scope** |
+| `AssetLibrary/LibraryManager.tsx` | 442 | **no** | no | `dialog` |
+| `AssetLibrary/TokenMetadataEditor.tsx` | 322 | **no** | no | `dialog` |
 
-**`src/components/CollapsibleSection.tsx`** — consumed by `Sidebar.tsx` only.
+The two `ErrorFallbackUI` components are excluded deliberately: they render *when React
+has already failed*, and making them depend on a portal-based primitive adds a failure
+mode to the last line of defence. Record that reasoning in
+`src/components/ui/README.md`.
 
-**`src/components/ConfirmDialog.tsx`** — consumed by `App.tsx` and
-`DesignSystemPlayground/DesignSystemPlayground.tsx`. Store-driven via
-`showConfirmDialog` in `src/store/gameStore.ts`.
+### `PreferencesDialog.tsx` is dead code — decide before migrating it
 
-**The nine hand-rolled overlays**, with what each is missing today:
+It has **zero importers anywhere in `src/`**, and the file admits it at line 677 with
+`// eslint-disable-next-line import/no-unused-modules`. It also holds 45 of this plan's
+headline 286 inline styles — 16% of the total, in a file no user can reach.
 
-| Component | Escape | Focus trap | `role="dialog"` / `aria-modal` |
-|-----------|--------|-----------|-------------------------------|
-| `AboutModal.tsx` (858 lines) | no | **yes** (hand-rolled, lines 279–297) | yes |
-| `PreferencesDialog.tsx` (678) | yes | no | yes |
-| `UpdateManager.tsx` (634) | yes | no | yes |
-| `ConfirmDialog.tsx` | yes | no | yes |
-| `DungeonGeneratorDialog.tsx` (217) | yes | no | yes |
-| `SessionConsole/SessionConsoleEditorSheet.tsx` (298) | yes | no | yes |
-| `MapSettingsSheet.tsx` (461) | no | no | **no** |
-| `AssetLibrary/AddToLibraryDialog.tsx` (297) | no | no | **no** |
-| `ImageCropper.tsx` (271) | no | no | **no** |
+**Do not migrate it.** In Step 12, put the question to Kyle: delete it, or wire it up to
+a menu item. Migrating unreachable code is the definition of wasted effort, and its
+Check ("open Preferences, change the theme…") cannot be performed — there is no UI path.
 
-**`.btn` / `.btn-tool` / `.btn-mode` / `.btn-broadcast` consumers**:
-`App.tsx` (the toolbar — the only user of `btn-tool`, `btn-mode`, `btn-broadcast`),
-plus these generic `.btn` users: `SessionConsole/SessionConsoleEditorSheet.tsx`,
-`SessionConsole/SessionConsolePanel.tsx`, `SessionConsole/TrackGroupList.tsx`,
-`SessionConsole/sessionConsoleSettingsSections.tsx`,
-`SessionConsole/SessionConsoleBoard.tsx`, `SessionConsole/ImageSetBoard.tsx`,
-`SessionConsole/SessionConsoleMasterBar.tsx`, `MapSettingsSheet.tsx`,
-`Sidebar.tsx`, `MapNavigator.tsx`.
+### The `data-esc-owns` protocol — do not break the DM's music
 
-**`.sidebar-input` / `.sidebar-token` / `.info-box` consumers**:
-`SessionConsole/SessionConsoleEditorSheet.tsx`,
-`SessionConsole/sessionConsoleSettingsSections.tsx`,
-`SessionConsole/SessionConsoleBoard.tsx`, `MapSettingsSheet.tsx`,
-`QuickTokenSidebar.tsx`.
+`src/components/SessionConsole/useSessionConsoleHotkeys.ts:34`:
+
+```ts
+return Boolean(document.querySelector('[data-esc-owns="true"]'));
+```
+
+The global Escape hotkey STOPs Session Console audio playback **unless** some open
+overlay claims Escape via `data-esc-owns="true"`. Nine components set it:
+`ConfirmDialog:78`, `PreferencesDialog:71`, `AboutModal:334`, `UpdateManager:538`,
+`DungeonGeneratorDialog:91`, `SessionConsoleEditorSheet:245`,
+`SessionConsoleSettingsSheet:45`, `ErrorFallbackUI:47`, `UpdateErrorFallbackUI:134`.
+
+**Re-attach `data-esc-owns="true"` to every migrated overlay's content element.** It is
+not a `data-testid`, so the preservation rule does not cover it; miss it and pressing
+Escape to close a dialog also kills the DM's ambience mid-session.
+`useSessionConsoleHotkeys.test.ts:53` and `SessionConsolePanel.test.tsx:508` cover this —
+run them after every overlay migration.
+
+### `ConfirmDialog` renders with undefined CSS variables today
+
+It styles itself with `var(--app-bg)`, `var(--app-border)` and `var(--app-text)`.
+**None of the three is defined** in `theme.css` (the real names are `--app-bg-surface`,
+`--app-border-default`, `--app-text-primary`). So it currently renders with no surface
+colour — a live bug.
+
+"Visually neutral" is therefore undefinable for this component. **Fix it as part of the
+migration**: use the correct token names, and record the before/after in the commit. Do
+not faithfully reproduce a bug in the name of neutrality.
+
+Two more `ConfirmDialog` specifics: its Escape `useEffect` (lines 46–53) **also
+implements Enter-to-confirm** — Radix provides no such thing, so preserve it explicitly
+rather than deleting the effect wholesale. And `autoFocus` sits on the Confirm button
+(line 105) while Radix auto-focuses the first tabbable node (Cancel) — on a destructive
+dialog that difference matters. Decide deliberately and record it.
+
+### Three button classes that are used but never defined
+
+`btn-secondary` (18 uses), `btn-ghost` (8), `btn-destructive` (1) appear across the
+Session Console, `MapSettingsSheet:449` and `Sidebar:402`. **None is defined in any CSS
+file in `src/`.** So `btn btn-secondary` renders as bare `.btn` — padding, radius,
+font-size and weight, with a **transparent background and inherited colour**.
+
+Do **not** map them onto shadcn variants by name. `variant="secondary"` ships a real
+background; these render transparent. **Map by observed appearance** — all three are
+`ghost` today. Screenshot each before and after.
+
+### The `.btn` consumer list — eleven files, not ten
+
+`SessionConsolePanel`, `TrackGroupList`, `sessionConsoleSettingsSections`,
+`SessionConsoleBoard`, `ImageSetBoard`, `SessionConsoleMasterBar`,
+`SessionConsoleEditorSheet`, `MapSettingsSheet`, `Sidebar`, `MapNavigator`, **and
+`DoorControls.tsx`** (lines 88, 100, 111 — `btn btn-default`). `DoorControls` was
+missing from an earlier draft, has no unit test and no E2E coverage, and Step 12 deletes
+`.btn-default` — miss it and three door-control buttons silently lose their styling.
+
+### The mobile surface
+
+`MobileToolbar.tsx` (325 lines) is a complete second toolbar rendered when
+`isMobile` is true; `MobileSidebarDrawer.tsx` (91) and `MobileBottomSheet.tsx` (107) are
+its overlays. Steps 5 and 11 cover them. Leaving them hand-rolled would guarantee "two
+component systems" for every touch user — the outcome this program exists to prevent —
+while `README.md` sells touch and pen as first-class.
+
+### The cascade-layering behaviour change
+
+`src/index.css` imports `app.css` **unlayered**; Tailwind v4 emits utilities into
+`@layer utilities`; unlayered CSS beats any layer regardless of specificity. Two
+consequences:
+
+1. **The pause button is grey today.** `src/App.tsx:564-568` carries `.btn-tool` *and*
+   `bg-red-500`/`bg-green-500`/`text-white`; `.btn-tool` wins, so the pause state never
+   shows. Migrating to a CVA `Button` puts those colours in the same layer and **the
+   pause button starts working**. That is a fix, and it is **expected** — do not treat
+   it as a regression, and do not try to preserve the grey.
+2. More generally, wherever a `.btn*` class and a Tailwind colour utility sit on the
+   same element, the migration changes which one wins. Screenshot before and after.
 
 ### Other constraints
 
-- **Dual-window architecture**: `src/App.tsx` branches between Architect View (DM)
-  and World View (player projection). No migration may leak DM chrome into the
-  World View. Verify after every step that touches a component rendered in both.
-- **The 286 inline `style={{}}` objects** deferred from plan 001 get resolved here,
-  per component, as each one migrates. Hotspots: `PreferencesDialog.tsx` (45),
-  `AboutModal.tsx` (40), `UpdateManager.tsx` (21), `TokenInspector.tsx` (19).
-  Replace them with primitive props and Tailwind utilities as you migrate that
-  component. Do **not** sweep them globally.
-- **Strict ESLint** with `--max-warnings 0` and a pre-commit hook. `.ai-rules.md` is
-  mandatory. Note `max-lines-per-function` — `AboutModal.tsx` and
-  `PreferencesDialog.tsx` are large and already carry `eslint-disable` comments;
-  migration should shrink them enough to remove some.
+- **Dual-window architecture.** `src/App.tsx:485-500`, under the comment *"Global
+  components (rendered in both Architect and World View)"*, renders `Toast`,
+  `ConfirmDialog`, `DungeonGeneratorDialog`, `AboutModal` and `UpdateManager`.
+  **Dialogs render in the World View by design, today.** Do not "fix" that. The rule is
+  narrower than an earlier draft stated: no *new* DM chrome may appear there, and the
+  World View must not regress.
+- **396 hardcoded Tailwind palette classes across 35 files, with zero `dark:` variants
+  anywhere.** These are the bulk of the theme-invariance problem. Resolve them **in the
+  files this plan touches, as you touch them** — replacing e.g. `bg-neutral-800` with a
+  themed primitive or token. Do not sweep the other files; record the remaining count in
+  Step 14 for plan 006.
+- **`tsconfig.json` excludes `**/*.test.tsx`**, so `npm run type-check` does not
+  typecheck the colocated tests you edit. `npm run test:run` is the only thing that
+  catches a broken test file.
+- **Strict ESLint**, `--max-warnings 0`, Husky pre-commit. `.ai-rules.md` is mandatory.
 
 ## Inputs & resources
 
-| Purpose        | Command                    | Expected on success        |
-|----------------|----------------------------|----------------------------|
-| Lint           | `npm run lint`             | exit 0, zero warnings      |
-| Typecheck      | `npm run type-check`       | exit 0                     |
-| Unit tests     | `npm run test:run`         | all pass                   |
-| Web build      | `npm run build:web`        | exit 0                     |
-| Electron dev   | `npm run dev`              | app + World View launch    |
-| A11y E2E       | `npm run test:a11y`        | all pass                   |
-| Full E2E       | `npm run test:e2e`         | all pass                   |
+| Purpose | Command | Expected |
+|---|---|---|
+| Install browsers | `npx playwright install chromium` | exit 0 |
+| Lint | `npm run lint` | exit 0 |
+| Typecheck | `npm run type-check` | exit 0 |
+| Unit tests | `npm run test:run` | all pass |
+| A11y E2E | `npm run test:a11y` | all pass |
+| Web E2E | `npm run build:web && npx playwright test --project=Web-Chromium` | all pass |
+| Electron E2E | `npm run build:electron && npx playwright test --project=Electron-App` | all pass |
 
-**Read first**: `src/components/ui/README.md`.
-
-**The per-step gate**, run after every single step:
+**The per-step gate**, after every step:
 ```bash
-npm run lint && npm run type-check && npm run test:run && npm run test:e2e && npm run test:a11y
+npm run lint && npm run type-check && npm run test:run && npm run test:a11y \
+  && npm run build:web && npx playwright test --project=Web-Chromium
 ```
+Run the Electron project at Steps 0, 8, 13 and 14 (it is slow; the web project catches
+most regressions).
 
 ## Scope
 
-**In scope**: the components named in the consumer map above, `src/App.tsx`,
-`src/styles/app.css`, and the unit tests colocated with migrated components.
+**In scope**: the sixteen components in the overlay inventory (minus the two
+`ErrorFallbackUI` exclusions and `PreferencesDialog`), the eleven `.btn` consumers, the
+`.sidebar-input`/`.sidebar-token`/`.info-box` consumers, `MobileToolbar.tsx`,
+`src/App.tsx`, `src/styles/app.css`, `src/components/ui/**` (variant fixes),
+`src/components/ui/README.md`, and the colocated unit tests of migrated components.
 
-**Out of scope** (do NOT touch, even though they look related):
-- **Any visual, layout, or information-architecture change.** Plan 006. If you spot
-  a genuine improvement, write it in `docs/planning/ui-redesign-ideas.md` in Step 12
-  instead of making it.
-- **`src/components/Canvas/**`** — Konva rendering, not DOM. Untouched by this plan.
-- **`src/components/AssetLibrary/CommandPalette.tsx`** — explicitly out of the
-  primitive roster per plan 003.
-- **Any `data-testid` value.** Preserving them is what makes this plan verifiable.
-- **Performance refactoring** (memoization, code splitting, state hoisting) — plan
-  005. Migrate the component as-is; don't also restructure it.
-- **`src/store/gameStore.ts`** — unless the toast decision from plan 003 Step 6
-  explicitly requires it, in which case follow that decision exactly.
+**Out of scope**:
+- **Any visual or IA change** beyond the documented, expected consequences above
+  (`ConfirmDialog`'s undefined variables, the pause button, `btn-ghost` mapping). Record
+  ideas in `docs/planning/ui-redesign-ideas.md` instead.
+- **`ErrorFallbackUI.tsx` and `UpdateErrorFallbackUI.tsx`** — see inventory.
+- **`PreferencesDialog.tsx`** — dead code; decision deferred to Step 12.
+- **`src/components/AssetLibrary/CommandPalette.tsx`** — out of the roster entirely.
+- **`src/components/Canvas/**`** — except that `ImageCropper` is *mounted* at
+  `CanvasManager.tsx:1140`; see Step 4's note.
+- **Renaming any `data-testid`.** Adding one is encouraged.
+- **Performance refactoring** — plan 005, which runs after this.
+- **The 396 hardcoded classes in files this plan does not touch.**
 
 ## Working approach
 
-Branch: `claude/ui-redesign-plan-xnyz33`. **One commit per step.** Every commit
-must leave the app fully functional and releasable — that is the entire point of
-the strangler-fig approach Kyle chose.
+Branch: `claude/ui-redesign-plan-xnyz33`. **One commit per step**, each releasable.
 
-**The migration recipe**, applied identically to each component:
-1. Read the component fully. Note its `data-testid` values and its exact current
-   visual result.
-2. Replace the hand-rolled markup with the primitive, preserving every `data-testid`.
-3. Replace that component's inline `style={{}}` objects with primitive props and
-   Tailwind utilities.
-4. Update its colocated unit test if one exists (`*.test.tsx`).
+**Migration recipe**, applied identically:
+1. Read the component fully. **Screenshot it** (both themes) and note its behaviour.
+2. Replace hand-rolled markup with the primitive. Preserve every `data-testid` **and
+   every `data-esc-owns="true"`**.
+3. Replace that component's inline `style={{}}` objects and hardcoded palette classes.
+4. Update its colocated unit test if one exists.
 5. Run the per-step gate.
-6. Manually confirm in `npm run dev` that it looks and behaves the same — plus that
-   Escape and Tab now work correctly.
+6. Compare against the Step 0 screenshot; confirm Escape, Tab and focus restoration.
 7. Commit.
 
 ## Steps
 
+### Step 0: Capture the baseline
+
+For every component in Scope, in both themes, capture a screenshot and a short
+behaviour note (what opens it, what closes it, what focus does). Save under
+`docs/planning/ui-migration-baseline/`.
+
+Also record the starting numbers: `grep -rn "style={{" --include=*.tsx src | wc -l`
+(286 at `d3d3642`), the hardcoded-palette-class count (396), `wc -l src/styles/app.css`,
+and the built CSS byte size from `npm run build:web`.
+
+Run the full gate including both E2E projects and record the result.
+
+**Check**: The baseline directory exists with a screenshot per component per theme.
+**Without this, Steps 8, 12, 13 and 14 have nothing to diff against** — several of these
+components have no automated coverage at all.
+
 ### Step 1: Migrate `Tooltip` — the rehearsal
 
-Lowest-risk migration with real consumers. Do this first to shake out the process.
+Replace `src/components/Tooltip.tsx`'s internals with the `tooltip` primitive, keeping
+its public props API so `HomeScreen`, `Sidebar`, `QuickTokenSidebar` and `App.tsx` need
+no edits.
 
-Replace `src/components/Tooltip.tsx`'s internals with the `tooltip` primitive from
-`src/components/ui/`, **keeping its existing public props API unchanged** so its
-four consumers (`HomeScreen.tsx`, `Sidebar.tsx`, `QuickTokenSidebar.tsx`,
-`App.tsx`) need no edits. This is the adapter pattern — it lets you swap the
-implementation without a fan-out change.
+Three real differences to decide and record, not discover: today's Tooltip wraps
+children in `<div className="inline-flex">` (Radix with `asChild` drops that wrapper — a
+layout change inside a flex toolbar); it fires on `mouseenter` only (Radix also opens on
+focus, which is an a11y improvement); and it positions by hand at `rect.top - offset`
+with no collision detection (Radix flips near edges). **The flip is a behaviour change,
+not a restoration** — an earlier draft asserted it as if it were current behaviour.
 
-If the existing API cannot be preserved (e.g. it takes a `content` string where the
-primitive wants children), adapt inside `Tooltip.tsx`; do not change the call sites.
+Also replace its hardcoded `bg-neutral-900` / `text-white` / `border-neutral-600`.
 
-**Check**: The per-step gate passes. In `npm run dev`, tooltips appear on the
-toolbar buttons, the sidebar, and the home screen, positioned as before. Tooltips
-near the window edge flip rather than clipping. The World View is unaffected.
+**Check**: Per-step gate. Tooltips appear on the toolbar, sidebar and home screen,
+positioned as before. Toolbar layout unchanged versus the Step 0 screenshot. World View
+unaffected.
 
 ### Step 2: Migrate `ToggleSwitch` and `CollapsibleSection`
 
-Same adapter approach. `ToggleSwitch` → `switch` primitive; `CollapsibleSection` →
-`collapsible` primitive. Preserve both public APIs so the five consumer files
-(`SessionConsoleEditorSheet`, `sessionConsoleSettingsSections`, `MapSettingsSheet`,
-`playground-registry`, `Sidebar`) need no changes.
+Adapters again, preserving both public APIs so the five consumers need no changes. Note
+`ToggleSwitch` has a richer API than the `switch` primitive (`checked`, `onChange`,
+`label`, `description`, `disabled`, `id`) — the adapter must recompose `Switch` + `Label`
++ description.
 
-**Check**: Per-step gate passes. In `npm run dev`: toggles in Map Settings and the
-Session Console switch correctly and are keyboard-operable (Space/Enter); the
-Sidebar's collapsible sections still expand and collapse. The playground still
-renders `ToggleSwitch`.
+**Check**: Per-step gate. Toggles in Map Settings and the Session Console work and are
+keyboard-operable. Sidebar sections expand and collapse.
 
-### Step 3: Migrate `ConfirmDialog` — the first real Dialog
+### Step 3: Migrate `ConfirmDialog` — the proof point
 
-`ConfirmDialog` is the smallest of the nine overlays and is store-driven
-(`showConfirmDialog` in `src/store/gameStore.ts`), so its call sites are already
-decoupled. That makes it the right place to prove the `Dialog` primitive on a real
-screen.
+Rebuild on `dialog`. Specifically:
+- **Fix the undefined CSS variables** (`--app-bg` → `--app-bg-surface`, `--app-border` →
+  `--app-border-default`, `--app-text` → `--app-text-primary`). Record before/after.
+- **Preserve Enter-to-confirm** from the effect at lines 46–53.
+- **Re-attach `data-esc-owns="true"`** (currently line 78).
+- **Decide the initial-focus question** (Confirm via `autoFocus` today vs Radix's first
+  tabbable, Cancel) and record the choice. On a destructive dialog, Cancel is the safer
+  default.
 
-Rebuild its internals on the `dialog` primitive, keeping the store API and every
-`data-testid` unchanged. Remove its hand-rolled Escape handler and overlay markup —
-the primitive provides both.
+**Check**: Per-step gate, plus `npm run test:run -- useSessionConsoleHotkeys` and
+`SessionConsolePanel`. In `npm run dev`: File → New Campaign opens it; Escape closes it;
+Tab cycles within; focus restores; Enter confirms; **and with Session Console audio
+playing, Escape closes the dialog without stopping playback.**
 
-**Check**: Per-step gate passes. In `npm run dev`, trigger a confirm dialog
-(File → New Campaign). Confirm: it opens; **Escape closes it**; **Tab cycles
-within it and does not reach the canvas**; focus returns to where it was on close;
-clicking the overlay closes it; both buttons work. Then confirm `/design-system`
-still renders it (`DesignSystemPlayground.tsx` mounts it).
+### Step 4: The three overlays with no a11y at all
 
-**This step is the proof point for the whole plan.** If Dialog works here, the
-remaining eight are mechanical.
+Highest value per unit of effort — no `role="dialog"`, no `aria-modal`, no Escape, no
+focus trap. Three separate commits.
 
-### Step 4: Migrate the three overlays with no a11y at all
+- `MapSettingsSheet.tsx` (461) → **`sheet`**
+- `AssetLibrary/AddToLibraryDialog.tsx` (297) → `dialog`
+- `ImageCropper.tsx` (271) → `dialog`
 
-Highest accessibility value per unit of effort, because these three currently have
-no `role="dialog"`, no `aria-modal`, no Escape, and no focus trap:
+**`ImageCropper` mount note**: it is rendered at `src/components/Canvas/CanvasManager.tsx:1140`
+as `{pendingCrop && <ImageCropper …/>}` with no `isOpen` prop, and `CanvasManager` is out
+of scope. **Contain the Dialog Root entirely inside `ImageCropper`**, defaulting `open`
+to true, so the mount site needs no change. If that proves impossible, STOP — do not
+edit `CanvasManager`. Also verify `react-easy-crop` still works: drag and zoom, not just
+"the dialog opened."
 
-- `src/components/MapSettingsSheet.tsx` (461 lines) — use the **`sheet`** primitive;
-  it is a side panel, not a centered dialog.
-- `src/components/AssetLibrary/AddToLibraryDialog.tsx` (297 lines) — `dialog`.
-- `src/components/ImageCropper.tsx` (271 lines) — `dialog`. Take care: it wraps
-  `react-easy-crop`, which manages its own pointer events. Verify cropping still
-  works by dragging and zooming, not just by the dialog opening.
+**Check**: Per-step gate after each. Each opens, closes on Escape, traps focus, restores
+focus. Compare against Step 0 screenshots. `npm run test:a11y` — these three are the
+most likely to move the axe output; record the change.
 
-Do these as **three separate commits**, gate after each.
+### Step 5: The Session Console and mobile sheets
 
-Replace each one's inline `style={{}}` objects as you go.
+Four commits: `SessionConsole/SessionConsoleEditorSheet.tsx` (298),
+`SessionConsole/SessionConsoleSettingsSheet.tsx` (68), `MobileSidebarDrawer.tsx` (91),
+`MobileBottomSheet.tsx` (107) — all → `sheet`.
 
-**Check**: After each, the per-step gate passes. In `npm run dev`, each opens,
-closes on Escape, traps focus, and restores focus. `npm run test:a11y` must pass —
-these three are the ones most likely to have been generating (or newly fixing) axe
-violations, so note any change in the axe output.
+Re-attach `data-esc-owns="true"` on the first two.
 
-Then confirm `ImageCropper` specifically: drag a map image onto the canvas, crop
-it, and confirm the crop is applied correctly.
+**Check**: Per-step gate after each. Editor sheet: edit a track, confirm it persists.
+Settings sheet: change a setting. Mobile drawers: verify with device emulation at a
+mobile viewport — they only render when `isMobile`.
 
-### Step 5: Migrate `DungeonGeneratorDialog` and `SessionConsoleEditorSheet`
+### Step 6: The Asset Library overlays
 
-- `src/components/DungeonGeneratorDialog.tsx` (217 lines) — `dialog`.
-- `src/components/SessionConsole/SessionConsoleEditorSheet.tsx` (298 lines) —
-  `sheet`.
+Two commits: `AssetLibrary/LibraryManager.tsx` (442) and
+`AssetLibrary/TokenMetadataEditor.tsx` (322) → `dialog`. Neither has Escape or
+`aria-modal` today; both are primary DM surfaces.
 
-Two commits, gate after each. Note that `DungeonGeneratorDialog.tsx` has a
-colocated test (`DungeonGeneratorDialog.test.tsx`) — update it, and confirm
-`DungeonGeneratorErrorBoundary.test.tsx` still passes.
+Both are heavy users of hardcoded palette classes (`LibraryManager` 22,
+`TokenMetadataEditor` 26) — replace them as you go.
 
-**Check**: Per-step gate after each. In `npm run dev`, generate a dungeon end to
-end and confirm the result renders on the canvas. Open the Session Console editor
-sheet, edit a track, and confirm the change persists.
+**Check**: Per-step gate after each. Open the library, add a token, edit its metadata,
+close. Escape works, focus traps and restores.
 
-### Step 6: Migrate `UpdateManager` and `PreferencesDialog`
+### Step 7: `UpdateManager`
 
-- `src/components/UpdateManager.tsx` (634 lines, 21 inline styles) — `dialog`.
-  It has a colocated test and an error boundary with its own test; update both.
-- `src/components/PreferencesDialog.tsx` (678 lines, **45 inline styles** — the
-  largest concentration in the codebase) — `dialog`, plus `tabs` if it hand-rolls
-  tab switching, plus `switch`, `select`, and `slider` for its controls.
+`UpdateManager.tsx` (634 lines, 21 inline styles) → `dialog`. Re-attach
+`data-esc-owns` (line 538). Update its colocated test and the error-boundary test.
 
-Two commits, gate after each. `PreferencesDialog` is the largest single migration
-in the plan; budget accordingly and do not merge it with anything else.
+**Remove the redundant Escape branch at `src/App.tsx:275`** (`isUpdateManagerOpen`) —
+it now races Radix's `onEscapeKeyDown`. An earlier draft flagged this only for
+`AboutModal`; both have it.
 
-After migrating, check whether either file's `eslint-disable max-lines-per-function`
-comment can now be removed. If so, remove it — that is a concrete measure of the
-reduction.
+**Check**: Per-step gate. Update Manager opens, its states render, Escape closes once
+(not twice), focus traps.
 
-**Check**: Per-step gate after each. In `npm run dev`: open Preferences, change the
-theme, change a touch setting, close and reopen, and confirm the settings persisted.
-Open the Update Manager and confirm its states render. Both must trap focus and
-close on Escape.
+### Step 8: `AboutModal`
 
-### Step 7: Migrate `AboutModal`
+`AboutModal.tsx` — 858 lines, 40 inline styles, a 212-line `modalStyles` template
+literal, hand-rolled tabs, and the **only** working focus trap (255–297).
 
-`src/components/AboutModal.tsx` — 858 lines, 40 inline styles, and the **only**
-component with a working hand-rolled focus trap (lines 279–297).
+Replace the overlay with `dialog` and **delete the hand-rolled focus trap**. Use `tabs`
+for the tab strip. Re-attach `data-esc-owns` (line 334). Remove the redundant
+`App.tsx:270` Escape branch.
 
-Replace the overlay with the `dialog` primitive and **delete the hand-rolled focus
-trap** — Radix provides it. This is the largest single deletion in the plan.
+The `modalStyles` template literal defines classes used only inside this file — check
+for class names invisible to any external grep before deleting anything.
 
-If it hand-rolls tab switching, use the `tabs` primitive.
+**Check**: Per-step gate **plus both E2E projects**. `?` opens it; Escape closes once;
+Tab cycles; focus restores; "Check for Updates" opens the Update Manager. Record
+before/after line count. Check whether the `eslint-disable max-lines-per-function` at
+line 237 can now go.
 
-**Check**: Per-step gate passes. In `npm run dev`, press `?` to open the About
-modal. Confirm: it opens; Escape closes it (note: `App.tsx` currently handles
-Escape for this modal in its global keydown handler around `src/App.tsx:265` —
-**check whether that handler is now redundant and conflicting with the primitive's
-own Escape handling**, and if so remove the redundant branch); Tab cycles within;
-focus restores; the "Check for Updates" button still opens the Update Manager.
+### Step 9: `DungeonGeneratorDialog`
 
-Confirm the line count dropped materially — record before/after.
+→ `dialog`. Re-attach `data-esc-owns` (line 91). Update
+`DungeonGeneratorDialog.test.tsx`; confirm `DungeonGeneratorErrorBoundary.test.tsx`
+still passes.
 
-### Step 8: Migrate the toolbar to `button` variants
+**Check**: Per-step gate. Generate a dungeon end to end; the result renders on canvas.
 
-In `src/App.tsx`, replace every `btn btn-tool` / `btn btn-mode` / `btn btn-broadcast`
-usage with the `Button` primitive using the `tool` / `mode` / `broadcast` variants
-plan 003 built for exactly this. `App.tsx` is the **only** consumer of these three
-classes.
+### Step 10: The desktop toolbar
 
-Also replace `.toolbar-divider` (`src/App.tsx:581`, `:648`, `:683`) with the
-`separator` primitive variant.
+In `src/App.tsx`, replace `btn btn-tool` / `btn btn-mode` / `btn btn-broadcast` with the
+`Button` primitive's `tool` / `mode` / `broadcast` variants, and `.toolbar-divider`
+(`:581`, `:648`, `:683`) with `separator`.
 
-Preserve every `aria-label` and every `data-testid`.
+Decide how the `active` state maps — today it is a template-literal class
+(`` `btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}` ``). A boolean prop or
+`data-state` are both fine; pick one and use it consistently.
 
-**Check**: Per-step gate passes. In `npm run dev`, **compare the toolbar
-side-by-side against a screenshot taken before this step**. It must be visually
-identical in both light and dark theme. Every tool button switches tools; the
-active state highlights correctly; the pause button toggles red/green; the
-measurement mode sub-buttons work; the broadcast toggle turns green when active.
-Keyboard shortcuts (V/M/E/W/D/R/I) still switch tools.
+**Expect the pause button to start showing red/green.** See the cascade note in Context.
+That is a bug fix, not a regression.
 
-**This step has the highest chance of a visible regression.** If anything differs,
-fix the `button` variant in `src/components/ui/button.tsx` rather than adding a
-one-off class in `App.tsx`.
+Preserve every `aria-label` and `data-testid`.
 
-### Step 9: Migrate the generic `.btn` consumers
+**Check**: Per-step gate **plus both E2E projects**. Diff against the Step 0 toolbar
+screenshots in both themes: identical apart from the pause button now working. Every
+tool switches; active state highlights; measurement sub-buttons work; broadcast turns
+green. Keyboard shortcuts V/M/E/W/D/R/I still work. If anything else differs, fix the
+variant in `src/components/ui/button.tsx`, not with a one-off class in `App.tsx`.
 
-Ten files use the generic `.btn` classes:
-`SessionConsole/SessionConsolePanel.tsx`, `SessionConsole/TrackGroupList.tsx`,
-`SessionConsole/sessionConsoleSettingsSections.tsx`,
-`SessionConsole/SessionConsoleBoard.tsx`, `SessionConsole/ImageSetBoard.tsx`,
-`SessionConsole/SessionConsoleMasterBar.tsx`, `MapSettingsSheet.tsx`,
-`Sidebar.tsx`, `MapNavigator.tsx`, and `SessionConsoleEditorSheet.tsx` (already
-touched in Step 5 — finish it here).
+### Step 11: `MobileToolbar`
 
-Replace each with the `Button` primitive, choosing the variant that matches its
-current appearance (`default`, `secondary`, `destructive`, …).
+`MobileToolbar.tsx` (325 lines, 14 inline styles) — the touch-surface counterpart to
+Step 10. Migrate to the same `Button` variants.
 
-Then migrate the `.sidebar-input` / `.sidebar-token` / `.info-box` consumers
-(`QuickTokenSidebar.tsx`, `MapSettingsSheet.tsx`, `SessionConsoleBoard.tsx`,
-`sessionConsoleSettingsSections.tsx`, `SessionConsoleEditorSheet.tsx`) to the
-`input` and `label` primitives.
+**Do not shrink any hit target.** Plan 000 recorded the current minimums (48px in
+`App.tsx:528-529`, 44px in `TokenInspector`/`HomeScreen`, 56px in `MobileToolbar`) as an
+asserted baseline — that spec must stay green.
 
-**Do this as at least three commits** — Session Console, sidebar/navigator, and
-inputs — gating after each. Ten files in one commit is not reviewable.
+**Check**: Per-step gate, including plan 000's touch-target spec. Verify at a mobile
+viewport: every tool works, the more-menu opens, hit targets unchanged.
 
-Note `QuickTokenSidebar.test.tsx` and `Sidebar.test.tsx` exist and reference these
-classes; update them.
+### Step 12: The generic `.btn` and input consumers
 
-**Check**: Per-step gate after each commit. In `npm run dev`, exercise the Session
-Console (play a track, adjust the master bar, open the board), the Sidebar (add a
-token, rename it), and the Map Navigator (add a map, switch maps, rename one).
+**At least four commits.** Eleven `.btn` files:
+`SessionConsolePanel`, `TrackGroupList`, `sessionConsoleSettingsSections`,
+`SessionConsoleBoard`, `ImageSetBoard`, `SessionConsoleMasterBar`,
+`SessionConsoleEditorSheet` (finish from Step 5), `MapSettingsSheet`, `Sidebar`,
+`MapNavigator`, **`DoorControls`**.
 
-### Step 10: Delete the dead legacy styles and components
+Map by observed appearance, not by class name — `btn-secondary`, `btn-ghost` and
+`btn-destructive` are **undefined in CSS** and all render as bare `.btn`, i.e. `ghost`.
+Each call site also carries its own sizing (`flex-1 py-1 text-xs`, `w-full py-2 text-sm`,
+`p-1`, …); `tailwind-merge` resolves these against shadcn `size` variants differently
+from how the CSS cascade did. Screenshot each before and after.
 
-Only now, with every consumer migrated, remove the old code.
+Then the `.sidebar-input` / `.sidebar-token` / `.info-box` consumers. Note:
+**`.sidebar-token` is a 64×64 draggable token tile and `.info-box` is a bordered
+callout** — neither is an input or a label, and plan 003's roster has no primitive for
+either. Convert them to themed markup using tokens; do not force them into `input`.
 
-From `src/styles/app.css`, delete: `.btn`, `.btn-default`, `.btn-primary`,
-`.btn-tool` (and its states), `.btn-mode`, `.btn-broadcast`, `.toolbar-divider`,
-`.sidebar-input`, `.sidebar-token`, `.info-box`. Keep `.app-root`, `.toolbar`,
-`.sidebar`, `.sidebar-section`, `.canvas-container`, and `.konvajs-content` unless
-they too have zero consumers.
+`QuickTokenSidebar.test.tsx` asserts on `sidebar-token` and on Tailwind utilities —
+update those assertions to the new correct behaviour.
 
-**Before deleting each rule, prove it has no consumers:**
+**Also in this step**: put the `PreferencesDialog` question to Kyle (delete, or wire up
+to a menu item). Record the answer; do not migrate it either way without one.
+
+**Check**: Per-step gate after each commit. Exercise the Session Console, the Sidebar,
+the Map Navigator, and the door controls.
+
+### Step 13: Delete the dead legacy styles
+
+Only now. From `src/styles/app.css` delete `.btn`, `.btn-default`, `.btn-primary`,
+`.btn-tool` (+states), `.btn-mode`, `.btn-broadcast`, `.toolbar-divider`,
+`.sidebar-input`, `.sidebar-token`, `.info-box`.
+
+Prove each has no consumers — **and read the matches, do not trust counts**:
+
 ```bash
-for c in btn btn-default btn-primary btn-tool btn-mode btn-broadcast toolbar-divider sidebar-input sidebar-token info-box; do
-  printf "%-18s " "$c"; grep -rn "$c" --include=*.tsx src/ | wc -l
+for c in btn-default btn-primary btn-tool btn-mode btn-broadcast \
+         toolbar-divider sidebar-input sidebar-token info-box; do
+  echo "=== $c"; grep -rn "$c" --include=*.tsx --include=*.ts src/
 done
-```
-A non-zero count means a consumer was missed. Inspect each hit before deleting —
-note that short names like `btn` will also match longer ones, so read the matches
-rather than trusting the count alone.
-
-Then, if their internals are now pure adapters with no remaining hand-rolled logic,
-consider whether `src/components/Tooltip.tsx`, `ToggleSwitch.tsx`, and
-`CollapsibleSection.tsx` should be deleted and their consumers pointed directly at
-`src/components/ui/`. **Recommendation: keep the adapters.** They are a few lines
-each, they insulate the app from future shadcn API changes, and deleting them means
-touching every call site for no functional gain. If you keep them, say so in
-`src/components/ui/README.md` so it reads as a decision rather than an oversight.
-
-**Check**: The grep loop above shows no remaining real consumers. Per-step gate
-passes. `npm run build:web` exits 0 and the CSS bundle is smaller than before —
-record the delta.
-
-### Step 11: Verify the accessibility win is real
-
-This is the payoff; measure it rather than assuming it.
-
-For each of the nine formerly-hand-rolled overlays, in `npm run dev`, confirm all
-five behaviors:
-1. Opens from its trigger.
-2. **Escape closes it.**
-3. **Tab cycles within it and never reaches the canvas or the page behind.**
-4. **Focus returns to the trigger on close.**
-5. It has `role="dialog"` and `aria-modal="true"` in the DOM.
-
-Record a 9×5 results table in your report.
-
-Then run the full a11y suite and diff its output against the pre-plan baseline:
-```bash
-npm run test:a11y
+echo "=== bare btn (expect survivors — read every hit)"
+grep -rnE '"[^"]*\bbtn\b[^"]*"' --include=*.tsx src/
 ```
 
-Also verify the **World View** is uncontaminated: open it, and confirm no dialog,
-sheet, popover, or tooltip from the Architect View renders in it.
+**`btn` will never reach zero.** It matches `.about-modal-close-btn` and `.dismiss-btn`
+/ `.quick-action-btn` in `HomeScreen`'s inline `<style>` block — different classes that
+happen to contain the substring. Triage every hit by reading it. Classes defined *and*
+used inside a template literal are invisible to any class-name audit, so check
+`AboutModal`'s `modalStyles` and `HomeScreen`'s `<style>` block by eye.
 
-**Check**: All 45 cells in the table pass. `npm run test:a11y` passes. World View
-is clean.
+Keep the adapters (`Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx`) — a few
+lines each, they insulate against shadcn API changes, and deleting them means touching
+every call site for no functional gain. Record that as a decision in
+`src/components/ui/README.md`.
 
-### Step 12: Record what you deferred, and full verification
+**Check**: Every deleted class has zero real consumers. Per-step gate plus both E2E
+projects. Built CSS smaller than the Step 0 figure — record the delta.
 
-Create `docs/planning/ui-redesign-ideas.md` listing every visual, layout, or IA
-improvement you noticed while migrating but deliberately did not make. Each entry:
-the component, what you'd change, why. **This is the primary input to plan 006** —
-you have just read every UI file in the app closely, which no one else will have
-done, and that knowledge is worth more than the migration itself if it is captured.
+### Step 14: Verify the accessibility win and record what you deferred
 
-Then:
-```bash
-npm run lint
-npm run type-check
-npm run test:run
-npm run build:web
-npm run test:a11y
-npm run test:e2e
-```
+For each migrated overlay, confirm all six behaviours and record a results table:
+1. Opens from its trigger. 2. Escape closes it. 3. Tab cycles within, never reaching the
+canvas. 4. Focus returns to the trigger. 5. `role="dialog"` and `aria-modal="true"` in
+the DOM. 6. **`data-esc-owns="true"` present, and Escape does not stop Session Console
+audio.**
 
-Record: total lines removed vs. added (`git diff --stat` against the plan's start),
-the inline `style={{}}` count now (`grep -rn "style={{" --include=*.tsx src | wc -l`
-— it was 286 at `d3d3642`), and the `dist-web/` size delta.
+Then `npm run test:a11y` and diff against plan 000's baseline. Verify the World View
+still works and shows nothing new.
 
-**Check**: All commands exit 0. The inline style count has dropped substantially.
-`docs/planning/ui-redesign-ideas.md` exists and is non-trivial.
+Create `docs/planning/ui-redesign-ideas.md` — every visual, layout or IA improvement you
+noticed and deliberately did not make, per component, with why. **This is plan 006's
+primary input.** You will have read every UI file closely; nobody else will have.
+
+> Do not leave this to the end in practice: append to it **as you go**, from Step 1.
+> It is the first thing lost if this plan is truncated, and truncation mid-migration is
+> the likeliest failure mode.
+
+Record final numbers: lines added/removed, inline `style={{}}` count (from 286),
+hardcoded palette classes remaining (from 396), `app.css` line count, built CSS bytes.
+
+Then the full sweep, including both E2E projects.
+
+**Check**: All commands exit 0. The behaviour table is complete. The ideas document is
+non-trivial and covers every migrated component.
 
 ## Validation plan
 
-- **The per-step gate is the primary control.** Running the full E2E suite after
-  every step is what makes a twelve-step migration safe; the testid-based selectors
-  make it meaningful. Do not batch steps to save time — the whole design of this
-  plan is that a regression is always attributable to exactly one step.
-- **`npm run test:e2e` is the neutrality proof.** Because this plan changes no
-  testid and no behavior, any E2E failure means the migration was not neutral.
-- **`npm run test:a11y` is the improvement proof.** It should pass throughout and
-  the axe output should get cleaner, particularly after Step 4.
-- **The Step 11 9×5 table is the acceptance artifact.** It is the concrete evidence
-  that the accessibility problem this plan exists to solve is actually solved.
-- **Update colocated unit tests as you go.** `DungeonGeneratorDialog.test.tsx`,
-  `UpdateManager.test.tsx`, `Sidebar.test.tsx`, `QuickTokenSidebar.test.tsx`,
-  `HomeScreen.test.tsx`, and `TokenInspector.test.tsx` all touch migrated
-  components. Follow the patterns already in those files.
-- **Kyle confirms** the toolbar after Step 8 and does a general pass after Step 12,
-  since visual neutrality is ultimately a judgment call.
+- **The Step 0 baseline is the primary control**, because for many of these components
+  it is the only evidence available. The per-step gate is the secondary control.
+- **`npm run test:a11y` is the improvement proof** — meaningful only because plan 000
+  extended it past the home screen.
+- **`npm run test:run -- useSessionConsoleHotkeys` and `SessionConsolePanel`** after
+  every overlay migration — the only automated coverage of the `data-esc-owns` protocol.
+- **The Step 14 behaviour table is the acceptance artefact.**
+- **Kyle confirms** the toolbar (Step 10), the mobile toolbar (Step 11), and a general
+  pass at Step 14 — visual equivalence is ultimately a judgement call, and the automated
+  coverage of these files is thin.
 
 ## Done criteria
 
-- [ ] `Tooltip`, `ToggleSwitch`, and `CollapsibleSection` are backed by primitives; consumers unchanged
-- [ ] All nine overlays use the `dialog` or `sheet` primitive
-- [ ] All nine pass the 5-point behavior check in Step 11 (table recorded)
-- [ ] The hand-rolled focus trap in `AboutModal.tsx` is deleted
-- [ ] The toolbar in `src/App.tsx` uses `Button` variants and is visually identical to before (Kyle confirms)
-- [ ] All ten generic `.btn` consumers migrated
-- [ ] `.sidebar-input` / `.sidebar-token` / `.info-box` consumers migrated
-- [ ] The legacy classes are deleted from `src/styles/app.css`, with the Step 10 grep loop showing no real consumers
-- [ ] **Every `data-testid` value is unchanged** (`git diff` on testids is empty)
-- [ ] The inline `style={{}}` count has dropped substantially from its baseline of 286
-- [ ] `docs/planning/ui-redesign-ideas.md` exists and captures deferred improvements
-- [ ] World View verified free of Architect chrome
-- [ ] `npm run lint`, `npm run type-check`, `npm run test:run`, `npm run build:web`, `npm run test:a11y`, `npm run test:e2e` all exit 0
-- [ ] Every commit in this plan leaves the app releasable
+- [ ] Step 0 baseline exists: screenshot per component per theme, plus starting metrics
+- [ ] All fourteen in-scope overlays use `dialog` or `sheet`
+- [ ] `ErrorFallbackUI` / `UpdateErrorFallbackUI` deliberately excluded, reasoning recorded
+- [ ] `PreferencesDialog` decision made by Kyle and acted on
+- [ ] Every migrated overlay passes the six-point check (table recorded)
+- [ ] **`data-esc-owns="true"` re-attached on all nine components that had it**, verified against Session Console audio
+- [ ] `ConfirmDialog`'s undefined CSS variables fixed; Enter-to-confirm preserved
+- [ ] `AboutModal`'s hand-rolled focus trap deleted
+- [ ] Redundant Escape branches removed from `App.tsx` for **both** `AboutModal` and `UpdateManager`
+- [ ] Desktop **and** mobile toolbars migrated; pause button now shows red/green
+- [ ] Plan 000's touch-target spec still green
+- [ ] All eleven `.btn` consumers migrated, `DoorControls` included
+- [ ] `btn-secondary`/`btn-ghost`/`btn-destructive` mapped by appearance, not name
+- [ ] Legacy classes deleted with every remaining `btn` hit read and triaged
+- [ ] No `data-testid` renamed
+- [ ] Inline style count and hardcoded-palette-class count both recorded against their baselines
+- [ ] `docs/planning/ui-redesign-ideas.md` covers every migrated component
+- [ ] Lint, typecheck, unit tests, a11y, and both E2E projects exit 0
+- [ ] Every commit leaves the app releasable
 - [ ] `plans/README.md` status row updated
 
 ## STOP conditions
 
 Stop and report back — do not improvise — if:
 
-- **Any E2E spec fails after a step.** This plan is behavior-neutral by design, so
-  a failure means the migration changed something it shouldn't have. Report which
-  spec, which assertion. Do not update the test to match the new behavior — that
-  destroys the safety net.
-- **You need to change a `data-testid` to complete a step.** Report it. There is
-  almost always a way to preserve it, and preserving it is more valuable than any
-  structural elegance gained by changing it.
-- **Step 3 (`ConfirmDialog`) does not work cleanly.** It is the simplest of the
-  nine. If the `Dialog` primitive struggles there, it will fail on the other eight —
-  stop and fix the primitive in plan 003's scope rather than working around it
-  eight times.
-- **A migrated component looks different and you cannot make it match** by adjusting
-  the primitive's variants. Report it. Do not accept the difference silently and do
-  not "improve" it — that is plan 006's decision to make.
-- **`npm run test:a11y` regresses** at any step. A migration to accessible
-  primitives making accessibility worse means something is wrong with how the
-  primitive is being used.
-- **A dialog, sheet, popover, or tooltip appears in the World View.** This is a
-  product-correctness bug affecting what players see. Stop immediately.
-- **`ImageCropper` cropping breaks** after Step 4. `react-easy-crop` manages its own
-  pointer events and may conflict with the dialog's event handling.
-- **A step's diff exceeds roughly 800 lines.** The step has grown beyond what is
-  reviewable; split it.
+- **`src/components/ui/README.md` does not exist** — plan 003 has not landed.
+- **Plan 000 has not landed** — check `tests/accessibility.spec.ts` for an editor-route
+  scan. Without it there is no a11y gate on any of this.
+- **The `sheet` primitive does not exist.** Plan 003 was told it is required, not
+  optional; if it was deferred anyway, Steps 4 and 5 cannot proceed.
+- **Escape stops Session Console audio** after an overlay migration — `data-esc-owns`
+  was dropped.
+- **`ImageCropper` cannot be migrated without editing `CanvasManager.tsx`.**
+- **`react-easy-crop` breaks** after Step 4.
+- **A migrated component differs from its Step 0 screenshot** in a way not documented in
+  Context (the pause button, `ConfirmDialog`'s colours, `btn-ghost` mapping, the tooltip
+  wrapper). Do not accept it silently and do not "improve" it.
+- **You need to rename a `data-testid`.**
+- **`npm run test:a11y` regresses.**
+- **A touch target would shrink** below plan 000's recorded minimum.
+- **A step's diff exceeds ~800 lines.** Split it.
+- **You are about to migrate `PreferencesDialog`** without Kyle's answer.
 
 ## Handoff / after it lands
 
-- **This is where the program pays off.** After this plan, adding a new dialog to
-  Graphium is importing one primitive instead of reimplementing modal behavior.
-- **What a reviewer should scrutinize most**: (1) the Step 11 accessibility table —
-  it is the plan's core claim; (2) the toolbar after Step 8 — the highest-visibility
-  surface and the most likely place a "neutral" migration wasn't; (3) that no
-  `data-testid` changed.
-- **Plan 006 depends on `docs/planning/ui-redesign-ideas.md`** from Step 12. Do not
-  skip it — it is the cheapest, highest-value artifact in this plan.
-- **Deliberately deferred**: all visual and IA change (plan 006), all performance
-  work (plan 005), the `CommandPalette` (out of scope entirely), and possibly the
-  toast/`sonner` swap (per plan 003 Step 6).
-- **Watch for**: the adapters (`Tooltip.tsx`, `ToggleSwitch.tsx`,
-  `CollapsibleSection.tsx`) accumulating logic. They should stay thin. If one grows
-  past ~30 lines, it has stopped being an adapter.
+- **This is where the program pays off.** After it, adding a dialog is importing one
+  primitive instead of reimplementing modal behaviour.
+- **What a reviewer should scrutinise most**: (1) the `data-esc-owns` re-attachment —
+  silent, easy to miss, and it breaks the DM's music mid-session; (2) the Step 14
+  behaviour table; (3) the toolbars, the highest-visibility surfaces with the thinnest
+  automated coverage.
+- **Plan 005 runs after this** and depends on the toolbar having been extracted here.
+- **Deliberately deferred**: all visual and IA change (006), performance (005), the
+  `CommandPalette`, the two `ErrorFallbackUI` components, and the ~370 hardcoded palette
+  classes in files this plan does not touch.
+- **Watch for**: the adapters growing past ~30 lines — at that point they have stopped
+  being adapters.

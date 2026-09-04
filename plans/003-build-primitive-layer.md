@@ -18,7 +18,7 @@
 - **Priority**: P1
 - **Effort**: L
 - **Risk**: MED
-- **Depends on**: plans/001-stabilize-styling-foundation.md, plans/002-shadcn-compatibility-spike.md
+- **Depends on**: plans/000-repair-verification-infrastructure.md, plans/001-stabilize-styling-foundation.md, plans/002-shadcn-compatibility-spike.md
 - **Category**: migration
 - **Grounded at**: `d3d3642` (2026-09-04)
 
@@ -95,7 +95,10 @@ three tranches so the plan stays shippable at each boundary.
 | `collapsible` | replaces `src/components/CollapsibleSection.tsx` |
 | `separator` | replaces `.toolbar-divider` and ad-hoc `border-t` dividers |
 
-**Tranche C — the richer surfaces** (nice-to-have; can be deferred without blocking):
+**Tranche C — the richer surfaces.** `sheet`, `popover` and `dropdown-menu` are
+**required, not optional**: Step 7 exercises `popover` and `dropdown-menu`, and plan
+004 Steps 4-5 migrate `MapSettingsSheet` and `SessionConsoleEditorSheet` onto `sheet`
+with no fallback. Only `scroll-area` may be deferred.
 
 | Primitive | Why |
 |-----------|-----|
@@ -117,13 +120,15 @@ primitive-layer one, and it is out of scope for this entire plan set.
 | Purpose        | Command                    | Expected on success        |
 |----------------|----------------------------|----------------------------|
 | Install deps   | `npm install`              | exit 0                     |
+| Install browsers | `npx playwright install chromium` | exit 0 — `npm install` does not fetch them |
 | Lint           | `npm run lint`             | exit 0, zero warnings      |
 | Typecheck      | `npm run type-check`       | exit 0                     |
 | Unit tests     | `npm run test:run`         | all pass                   |
 | Web build      | `npm run build:web`        | exit 0                     |
 | Electron dev   | `npm run dev`              | app + World View launch    |
 | A11y E2E       | `npm run test:a11y`        | all pass                   |
-| Full E2E       | `npm run test:e2e`         | all pass                   |
+| Web E2E        | `npm run build:web && npx playwright test --project=Web-Chromium` | all pass |
+| Electron E2E   | `npm run build:electron && npx playwright test --project=Electron-App` | all pass — **never run bare `npm run test:e2e`**; it launches the Electron project without building it |
 
 ## Scope
 
@@ -132,7 +137,17 @@ primitive-layer one, and it is out of scope for this entire plan set.
 - `src/components/ui/**` (all new primitives)
 - `src/index.css` (theming bridge, from the plan 002 decision doc)
 - `tsconfig.json`, `vite.config.ts`, `vitest.config.ts` (path aliases)
-- `.eslintrc.cjs` (scoped override for `src/components/ui/**`, only if plan 002 found one necessary)
+- `.eslintrc.cjs` — a scoped override for `src/components/ui/**`. **Pre-authorised
+  for exactly two rules**: `import/no-unused-modules` and `prettier/prettier`. This
+  plan's defining premise is that primitives exist with no consumers yet, which
+  *guarantees* unused-export warnings; `--max-warnings 0` turns those into failures.
+  Anything beyond those two needs the plan 002 decision doc to have named it.
+- `src/styles/theme.css` — **new `--app-*` tokens only** (see Step 3's note on
+  `.btn-tool`). You may add tokens; you may not change an existing colour value.
+- `src/components/DesignSystemPlayground/types.ts` — the `category` union is closed
+  (12 members, none of which fit `tooltip`, `select`, `slider`, `tabs`,
+  `collapsible`, `separator`, `sheet`, `popover`, `dropdown-menu`, or `scroll-area`).
+  Extend it; do not shoehorn primitives into wrong categories.
 - `package.json` / lockfile (new dependencies)
 - `src/components/DesignSystemPlayground/playground-registry.tsx` (register each primitive)
 - `docs/architecture/DECISIONS.md` (the ADR in Step 8)
@@ -173,9 +188,23 @@ records, verbatim — including any peer-dependency flag it identified, the
 `tsconfig.json` / `vite.config.ts` / `vitest.config.ts` alias edits, and the
 `@theme inline` bridge block for `src/index.css`.
 
-Do not improvise around it. If a command in that document fails, that is a STOP
-condition, not a prompt to try something else — the environment has drifted since
-the spike and the drift needs to be understood.
+**First, read its verdict line.**
+- **GO** → proceed as written.
+- **GO-WITH-CAVEATS** → the doc lists each caveat as a required change to this plan.
+  Apply them before starting, and note them in `src/components/ui/README.md`.
+- **NO-GO** → **STOP.** This plan is hardwired to the CLI path (`components.json`,
+  "after generation", the Done criteria). The doc's fallback is "pattern only, no
+  CLI" — own primitives built directly on Radix Primitives with CVA. That is a
+  different plan and needs rewriting before execution, not improvising during it.
+
+Do not improvise around the install sequence. If a command in that document fails,
+that is a STOP condition — the environment has drifted since the spike.
+
+**Expect `npm run lint` to fail on first contact** with `prettier/prettier` (shadcn
+emits double quotes; `.prettierrc` sets `singleQuote: true`) and
+`import/no-unused-modules` (every unused primitive export). Run `npm run lint:fix`
+and `npm run format`, then apply the pre-authorised scoped override from Scope for
+whatever remains. This is expected, not drift.
 
 Apply the ESLint override for `src/components/ui/**` **only if** the decision doc
 concluded one was necessary, and only for the specific rules it named. Do not
@@ -193,15 +222,39 @@ exports a `cn` function.
 The bridge maps shadcn's token names onto Graphium's `--app-*` variables. Before
 adding primitives, confirm nothing in it resolves to an undefined variable.
 
-Add a temporary probe element to the playground that renders a swatch for every
-bridged token, then in `npm run dev` with DevTools open, confirm each computed
-background/color resolves to an actual color rather than the empty string.
+Add a temporary probe element to the playground that reads each bridged token
+**as a custom property**, not as a computed colour:
 
-**Check**: Every bridged `--color-*` token resolves to a real value in **both**
-`data-theme="light"` and `data-theme="dark"`. Remove the probe element afterward.
+```js
+getComputedStyle(document.documentElement).getPropertyValue('--color-primary')
+```
+
+> **Do not check `getComputedStyle(el).backgroundColor`.** An undefined custom
+> property makes `background-color: var(--nope)` compute to the *initial* value,
+> `rgba(0, 0, 0, 0)` — a perfectly valid colour string. Every broken token would pass.
+> `getPropertyValue` returns `''` for an undefined property, which is the signal you
+> want.
+
+**Check**: Every bridged `--color-*` token returns a non-empty value in **both**
+`data-theme="light"` and `data-theme="dark"`. Also assert the reverse — that a
+deliberately misspelled token returns `''` — so you know the probe works. Remove the
+probe afterward.
 
 Then: `grep -nE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(|oklch\(" src/index.css` — the only
-acceptable matches are inside `@keyframes` blocks, if any. Report anything else.
+acceptable matches are inside `@keyframes` blocks. shadcn's `init` writes `oklch(...)`
+values and a `.dark` block into this file; delete them, since the bridge supersedes
+both.
+
+> **A literal-colour grep will not tell you whether a primitive is on-theme.** shadcn
+> components contain no colour literals by construction — they are all class names
+> (`bg-blue-500`, `text-white`, `border-neutral-600`). Use this instead, which catches
+> a primitive wired to a raw Tailwind palette rather than to the bridge:
+> ```bash
+> grep -rnE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber)-?[0-9]*\b' src/components/ui/
+> ```
+> That must return nothing. For scale: the same grep over `src/` returns **396 hits
+> across 35 files** today, with **zero `dark:` variants anywhere** — the bulk of the
+> real theme-invariance problem, resolved per-component in plan 004.
 
 ### Step 3: Add Tranche A primitives
 
@@ -210,8 +263,8 @@ Add `button`, `dialog`, `tooltip`, `input`, `label`.
 For each, after generation:
 - Read the generated file and confirm it uses only bridged Tailwind tokens
   (`bg-primary`, `text-foreground`, `border-border`, …) — never a raw color.
-- Confirm it type-checks under this repo's strict settings, including
-  `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
+- Confirm it type-checks under this repo's strict settings. `noUncheckedIndexedAccess`
+  is `true`; `exactOptionalPropertyTypes` is **`false`** — do not chase it.
 - Fix import ordering to satisfy `eslint-plugin-import`.
 
 Then **extend `button` with Graphium's real variants**. `src/styles/app.css`
@@ -225,8 +278,29 @@ cover. Add these as CVA variants so plan 004 can migrate cleanly:
   (today: `.btn-broadcast.active`)
 
 Read `src/styles/app.css` and reproduce the existing padding, font-size, and
-active-state colors exactly. The goal is that a migrated toolbar button is
-**pixel-identical** to today's, so plan 004's migration is provably neutral.
+active-state colours. Two things make this harder than it looks:
+
+**(a) `.btn-tool`'s colours are hardcoded neutrals with no `--app-*` counterpart.**
+`rgb(64,64,64)`, `rgb(229,229,229)`, `rgb(82,82,82)`, `rgb(115,115,115)` — none maps
+to an existing token, and they are theme-*invariant* today because the toolbar sits on
+`#000000`. The rules elsewhere in this plan (no literal colours in a primitive; no
+literals in `index.css`) would leave these values with nowhere legal to live.
+**Resolution: add new semantic tokens to `src/styles/theme.css`** — e.g.
+`--app-toolbar-bg`, `--app-toolbar-fg`, `--app-toolbar-border` — defined per theme,
+seeded with today's values for dark. `theme.css` is in scope for *additions* for
+exactly this reason. Adding a token is right; putting the literal in the component is
+not. The same applies to `.btn-broadcast.active`'s `color: white`, which needs an
+`--app-success-solid-text`.
+
+**(b) "Pixel-identical" is not achievable by translating classes, and you should not
+promise it.** `src/index.css` imports `app.css` **unlayered**; Tailwind v4 emits
+utilities into `@layer utilities`; unlayered CSS beats any layer regardless of
+specificity. So today `.btn-tool` *overrides* the utilities on the same element —
+which is why the pause button at `src/App.tsx:564-568` renders grey despite carrying
+`bg-red-500`/`bg-green-500`. A CVA `Button` emits its variants as utilities in the
+*same* layer as those classes, so the cascade outcome changes. Aim for **visually
+equivalent in the default state**, and record the pause-button behaviour change
+explicitly — plan 004 is told to expect it rather than treat it as a regression.
 
 **Check**:
 ```bash
@@ -269,7 +343,7 @@ For `separator`, reproduce `.toolbar-divider` from `src/styles/app.css` as a var
 so the toolbar migration in plan 004 is a pure swap.
 
 **Check**: Same four commands green. All Tranche B primitives render at
-`/design-system` in both themes. `npm run test:e2e` still passes — nothing has
+`/design-system` in both themes. Both Playwright projects still pass — nothing has
 consumed these yet, so any E2E failure indicates an unexpected global side effect
 (most likely a CSS reset introduced by a primitive) and should be reported.
 
@@ -283,13 +357,20 @@ brings its own renderer and its own portal. Graphium already has a working
 (`src/store/gameStore.ts`), consumed throughout the app and in the World View.
 Swapping it is a behavior change, not a primitive addition.
 
-**Decide, and record the decision, before adding it:**
-- If `sonner` can be driven from the existing `showToast` store action without
-  changing any call site, add it and note the migration path for plan 004.
-- If it cannot, **do not add it**. Keep `Toast.tsx`, and record in
-  `src/components/ui/README.md` that toast is deliberately not a shadcn primitive
-  in Graphium, with the reason. A working, store-integrated toast is worth more
-  than consistency for its own sake.
+**The decision is: do not add `sonner`.** Recording it here rather than leaving it to
+the executor, because the stated criterion ("can be driven from `showToast` without
+changing a call site") is trivially satisfiable by a subscribing `useEffect` and would
+lead two executors to opposite conclusions.
+
+The reasons: `gameStore` models a **single** toast (replaced by newer ones, cleared via
+`clearToast`, on a 5s timer in `Toast.tsx:52-60`), while sonner stacks and owns its own
+timers, positioning and dismissal — a behaviour change, not a primitive addition. And
+`Toast` is mounted **twice** (in `App.tsx` and in the playground shell at
+`DesignSystemPlayground.tsx:44`), so a partial swap ships two toast renderers.
+
+Keep `src/components/Toast.tsx`. Record in `src/components/ui/README.md` that toast is
+deliberately not a shadcn primitive in Graphium, with these reasons, so it reads as a
+decision rather than an oversight.
 
 **Check**: Same four commands green. Tranche C primitives render at
 `/design-system`. The toast decision is written down either way.
@@ -298,19 +379,35 @@ Swapping it is a behavior change, not a primitive addition.
 
 Plan 002 tested one dialog. Now test the layer.
 
-With `npm run dev` running, open the World View alongside the Architect View, then:
+> **`/design-system` cannot host this step.** `src/App.tsx:441-448` returns the
+> playground *exclusively* — no Konva canvas, no toolbar, no World View launcher.
+> **This step is authorised to add a temporary, dev-only scaffold to `src/App.tsx`**
+> that mounts the four primitives inside the real editor. Remove it before the Step 9
+> commit. That is not "migrating a feature component"; do not convert a real overlay.
 
-1. Open a `dialog`, a `popover`, a `dropdown-menu`, and a `tooltip` from the
-   playground in the Architect window. Confirm each renders correctly, traps focus
-   where appropriate, and closes on Escape.
-2. Confirm **none** of them appear in, or affect, the World View window.
-3. With an overlay open in the Architect View, confirm the Konva canvas beneath
-   does not receive pointer events.
-4. Toggle light/dark theme with an overlay open. Confirm the overlay re-themes —
-   this proves portalled content is still inside the `data-theme` scope. **If it
-   does not re-theme, the portal is escaping the themed root**, and the fix is to
-   give Radix an explicit portal container inside the themed element rather than
-   `document.body`. Record whichever applies.
+With `npm run dev` running and the scaffold in place, open the World View alongside
+the Architect View, then:
+
+1. Open a `dialog`, a `popover`, a `dropdown-menu`, and a `tooltip` **in the editor**.
+   Confirm each renders above the Konva canvas, traps focus where appropriate, and
+   closes on Escape.
+2. With an overlay open, confirm the Konva canvas beneath does not receive pointer
+   events — attempt to draw; no stroke may appear.
+3. Confirm the World View window is unaffected and shows none of them.
+   > This one is close to unfailable — each Electron `BrowserWindow` has its own
+   > `document`, and a portal to `document.body` in one cannot render in another. Do
+   > it as a smoke check, but do not treat passing it as evidence of anything.
+4. Toggle light/dark with an overlay open and confirm it re-themes.
+   > Also near-unfailable: `--app-*` are defined on `<html>` and inherit into
+   > `document.body`, so a same-document portal cannot escape the theme scope. **The
+   > mechanism that *will* actually break light/dark is shadcn's inline `dark:`
+   > utilities**, which key off `prefers-color-scheme` rather than this app's
+   > `data-theme` attribute. Test *that* instead: set `data-theme="light"` while
+   > emulating a dark OS preference, and confirm no `dark:` styling applies. If it
+   > does, the `@custom-variant dark` from plan 002 Step 5 is missing or wrong.
+
+**Record the outcome of item 4 in `src/components/ui/README.md`** — it affects how
+every overlay primitive is built, and plan 004 migrates nine of them against it.
 
 **Check**: All four confirmed and recorded. Item 4 is the subtle one — a portal
 that escapes the theme scope will look correct in dark mode (the default) and
@@ -340,12 +437,18 @@ alternatives considered (hand-rolled primitives; pattern-only without the CLI), 
 the existing Radix Colors system is bridged rather than replaced, and a link to
 `docs/planning/shadcn-adoption-decision.md`.
 
-**Check**: Both files exist. A reviewer who has not read this plan can follow
-`src/components/ui/README.md` to add a new primitive correctly. Verify this
-concretely: have someone (or a fresh agent with no context from this work) add a
-`badge` primitive using only that README as guidance. If they produce something
-that satisfies all four lifecycle checks without asking a question, the contract
-works. If they don't, fix the README — that failure is the point of the test.
+**Check**: Both files exist.
+
+The contract is only real if someone without this plan's context can follow it. Verify
+that concretely: **dispatch a subagent with no context from this work**, give it only
+the repo path and `src/components/ui/README.md`, and ask it to add a `badge` primitive.
+If it satisfies all four lifecycle steps without asking a question, the contract works.
+If it stalls, fix the README — that failure *is* the test result.
+
+Practicalities the original framing omitted: `badge` is not in the roster, so **delete
+its output after evaluating** (keep the transcript as evidence); and if no subagent
+mechanism is available, say so and mark this Done-criteria line **not performed**
+rather than silently ticking it.
 
 ### Step 9: Full verification
 
@@ -355,7 +458,8 @@ npm run type-check
 npm run test:run
 npm run build:web
 npm run test:a11y
-npm run test:e2e
+npm run build:web && npx playwright test --project=Web-Chromium
+npm run build:electron && npx playwright test --project=Electron-App
 ```
 
 Record the `dist-web/` size and compare against the pre-plan baseline captured in
@@ -389,7 +493,10 @@ bundled wrongly — investigate before closing the plan.
 - [ ] `components.json` and `src/lib/utils.ts` (exporting `cn`) exist
 - [ ] Path aliases resolve in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`
 - [ ] All Tranche A and Tranche B primitives exist in `src/components/ui/`
-- [ ] Tranche C primitives exist, **or** their deferral is recorded in `src/components/ui/README.md`
+- [ ] `sheet`, `popover` and `dropdown-menu` exist (required by Step 7 and plan 004)
+- [ ] `scroll-area` exists, **or** its deferral is recorded in `src/components/ui/README.md`
+- [ ] `src/components/DesignSystemPlayground/types.ts` `category` union extended for the new primitives
+- [ ] The item-4 finding from Step 7 (the `dark:` variant behaviour) is recorded in `src/components/ui/README.md`
 - [ ] The `button` primitive has working `tool`, `mode`, and `broadcast` variants matching `src/styles/app.css`
 - [ ] `grep -rnE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(" src/components/ui/*.tsx` returns nothing
 - [ ] Every primitive is registered and renders at `/design-system` in both themes
@@ -397,7 +504,7 @@ bundled wrongly — investigate before closing the plan.
 - [ ] `src/components/ui/README.md` exists and passed the Step 8 fresh-reader test
 - [ ] An ADR is recorded in `docs/architecture/DECISIONS.md`
 - [ ] The toast/`sonner` decision is written down
-- [ ] `npm run lint`, `npm run type-check`, `npm run test:run`, `npm run build:web`, `npm run test:a11y`, `npm run test:e2e` all exit 0
+- [ ] `npm run lint`, `npm run type-check`, `npm run test:run`, `npm run build:web`, `npm run test:a11y`, and both Playwright projects (`--project=Web-Chromium` after `build:web`, `--project=Electron-App` after `build:electron`) all exit 0
 - [ ] **No existing feature component was modified** (`git diff --stat` confirms only in-scope paths)
 - [ ] Bundle delta recorded
 - [ ] `plans/README.md` status row updated
