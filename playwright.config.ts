@@ -104,7 +104,7 @@ export default defineConfig({
     },
   ],
 
-  // Electron loads dist/index.html via loadFile; skip Vite when running Electron-App only.
+  // Electron loads dist via graphium:// in production; skip Vite when running Electron-App only.
   webServer: skipWebServer
     ? undefined
     : process.env.CI

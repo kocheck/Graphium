@@ -42,4 +42,11 @@ test.describe('Electron startup', () => {
     );
     expect(hasMediaProtocol).toBe(true);
   });
+
+  test('should register the graphium protocol', async ({ electronApp }) => {
+    const hasGraphiumProtocol = await electronApp.evaluate(({ protocol }) =>
+      protocol.isProtocolHandled('graphium'),
+    );
+    expect(hasGraphiumProtocol).toBe(true);
+  });
 });

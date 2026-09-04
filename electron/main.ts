@@ -5,7 +5,7 @@
  * - Window creation (Architect View and World View)
  * - IPC communication between renderer processes
  * - File I/O operations (save/load campaigns, asset storage)
- * - Custom protocol registration (media:// for local file access)
+ * - Custom protocol registration (media:// for assets, graphium:// for production renderer)
  *
  * **Process architecture:**
  * ```
@@ -35,7 +35,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, shell } from 'electron';
 import Store from 'electron-store';
@@ -47,6 +47,12 @@ import {
   waitForCampaignWritesIdle,
   withCampaignWrite,
 } from './campaignWriteGate.js';
+import {
+  contentTypeForMediaPath,
+  contentTypeForRendererPath,
+  productionRendererUrl,
+  resolveGraphiumRendererPath,
+} from './graphiumProtocol.js';
 import {
   allocateUniqueZipBasename,
   isRealPathInsideAllowedRoots,
@@ -94,6 +100,17 @@ protocol.registerSchemesAsPrivileged([
       secure: true,
       supportFetchAPI: true,
       bypassCSP: true,
+      stream: true,
+    },
+  },
+  {
+    scheme: 'graphium',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
     },
   },
 ]);
@@ -353,11 +370,11 @@ function createMainWindow(): void {
     });
   }
 
-  // Load renderer (dev server in development, static files in production)
+  // Load renderer (Vite in development, graphium:// so YouTube embeds are not file://)
   if (VITE_DEV_SERVER_URL) {
     void mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    void mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
+    void mainWindow.loadURL(productionRendererUrl());
   }
 }
 
@@ -407,9 +424,7 @@ function createWorldWindow(): void {
   if (VITE_DEV_SERVER_URL) {
     void worldWindow.loadURL(`${VITE_DEV_SERVER_URL}?type=world`);
   } else {
-    void worldWindow.loadFile(path.join(RENDERER_DIST, 'index.html'), {
-      query: { type: 'world' },
-    });
+    void worldWindow.loadURL(productionRendererUrl('type=world'));
   }
 }
 
@@ -549,10 +564,71 @@ interface AppContext {
 // IPC handler implementations (extracted for function-length compliance)
 // ---------------------------------------------------------------------------
 
+function responseWithContentType(response: Response, contentType: string | undefined): Response {
+  if (!contentType) {
+    return response;
+  }
+  const headers = new Headers(response.headers);
+  headers.set('Content-Type', contentType);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+async function fetchSandboxedFile(
+  filePath: string,
+  allowedRoots: string[],
+  contentType: string | undefined,
+): Promise<Response> {
+  const isWithinAllowedRoots = await isRealPathInsideAllowedRoots(filePath, allowedRoots);
+  if (!isWithinAllowedRoots) {
+    return new Response('Forbidden', { status: 403 });
+  }
+  const realTargetPath = await fs.realpath(filePath);
+  const response = await net.fetch(pathToFileURL(realTargetPath).toString());
+  return responseWithContentType(response, contentType);
+}
+
 /**
- * Registers all IPC handlers that require file system access.
- * Extracted from app.whenReady() to keep that callback within line limits.
+ * Custom media:// and graphium:// protocol handlers.
+ *
+ * media:// — sandboxed local assets (temp_assets, sessions, library).
+ * graphium:// — production renderer origin (non-file) so YouTube embeds work.
  */
+function registerCustomProtocols(allowedMediaRoots: string[]): void {
+  protocol.handle('media', async (request: Request) => {
+    try {
+      const resolvedTargetPath = mediaUrlToFilePath(request.url);
+      return await fetchSandboxedFile(
+        resolvedTargetPath,
+        allowedMediaRoots,
+        contentTypeForMediaPath(resolvedTargetPath),
+      );
+    } catch {
+      return new Response('Invalid media path', { status: 400 });
+    }
+  });
+
+  protocol.handle('graphium', async (request: Request) => {
+    const resolved = resolveGraphiumRendererPath(request.url, RENDERER_DIST);
+    if (!resolved.ok) {
+      const message = resolved.status === 403 ? 'Forbidden graphium path' : 'Invalid graphium path';
+      return new Response(message, { status: resolved.status });
+    }
+    try {
+      return await fetchSandboxedFile(
+        resolved.filePath,
+        [RENDERER_DIST],
+        contentTypeForRendererPath(resolved.filePath),
+      );
+    } catch {
+      return new Response('Not Found', { status: 404 });
+    }
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Campaign serialization helpers (module-level to avoid closure complexity)
 // ---------------------------------------------------------------------------
@@ -1033,43 +1109,11 @@ void app.whenReady().then((): void => {
   };
 
   /**
-   * Custom protocol handler for media:// URLs
-   *
-   * Translates media:// URLs to file:// URLs in a privileged context. This is
-   * necessary because Electron's security model blocks direct file:// access
-   * from renderer processes (web content).
-   *
-   * **Usage pattern:**
-   * Renderer: <img src="media:///Users/.../temp_assets/token.webp" />
-   * Handler: Translates to file:///Users/.../temp_assets/token.webp
-   * Result: Image loads successfully in Konva canvas
-   *
-   * **Why this is secure:**
-   * - Paths must resolve inside userData temp_assets/, sessions/, or library/
-   * - media:// URLs are normalized to file: before parsing, then sandboxed with realpath + isPathInsideOrEqual
-   * - Symlinks that escape allowed roots are rejected
-   * - Renderer cannot read arbitrary filesystem paths via directory traversal
-   *
-   * See CanvasManager.URLImage component for usage (src/components/Canvas/CanvasManager.tsx:47-52).
+   * Custom protocol handlers:
+   * - media:// — sandboxed local assets (see registerCustomProtocols)
+   * - graphium:// — production renderer files from RENDERER_DIST (non-file origin)
    */
-  protocol.handle('media', async (request: Request) => {
-    try {
-      const resolvedTargetPath = mediaUrlToFilePath(request.url);
-      const isWithinAllowedRoots = await isRealPathInsideAllowedRoots(
-        resolvedTargetPath,
-        allowedMediaRoots,
-      );
-
-      if (!isWithinAllowedRoots) {
-        return new Response('Forbidden media path', { status: 403 });
-      }
-
-      const realTargetPath = await fs.realpath(resolvedTargetPath);
-      return net.fetch(`file://${realTargetPath}`);
-    } catch {
-      return new Response('Invalid media path', { status: 400 });
-    }
-  });
+  registerCustomProtocols(allowedMediaRoots);
 
   // Initialize theme system (must be before window creation)
   initializeThemeManager();
