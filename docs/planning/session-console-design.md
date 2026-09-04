@@ -29,8 +29,8 @@ It does this as a hardcoded HTML file plus a Python server. Graphium already has
 | Audio sources | **YouTube and local files** (`mp3` / `ogg` / `wav` / `m4a`). YouTube for long beds; local files for reliability, offline, and one-shots. |
 | Image vs audio | **Independent.** Showing a plate never starts a track. Playing a track never changes the plate. Tracks may *recommend* a plate; the DM still clicks. |
 | Audio when returning to map | **Keep playing.** Dismissing Stage hides art only. `Stop` / `Esc` is the hard cut. |
-| Config | **Settings sheet + live board.** Session time uses the sidebar board. Prep and bulk load live in a dedicated Session Console Settings space (not the app-wide wall/touch Preferences dialog). |
-| Bulk load | **Board pack:** a `board.json` whose `src` strings are YouTube URLs, relative files, or http(s) files. Import **ingests** bytes into the campaign. We do not keep live links to random disk paths. |
+| Config | **The board is the editor.** Drop files and paste YouTube links on the sidebar board. Settings is for stage look, defaults, and optional pack import/export — not the place you have to go to add a plate. |
+| Bulk load | **Drop files / add-from-folder first.** JSON board packs are a power-user backup and git workflow, not the default. Import still **ingests** bytes into the campaign. |
 | Scope of catalog | **Campaign-level**, not per-map. Image sets and track groups travel with the campaign the way `tokenLibrary` does. |
 | Voice/chat | Still out of scope. Discord / Zoom remain the voice layer. This feature only produces *ambience and plates* for the shared World window. |
 
@@ -66,7 +66,7 @@ These are product rules, not nostalgia:
 | No persistence | Saved in `.graphium` with other campaign assets |
 | Cue text lives in the button markup | First-class `cue` / `recommendedImageId` fields |
 | File-protocol banner and localhost ritual | Electron origin fix + a short “Arm World View” status in Architect |
-| Editing HTML to add a session’s plates | Board pack import/export + Settings sheet |
+| Editing HTML to add a session’s plates | Drop files, paste a YouTube URL, optional JSON pack |
 
 Explicitly **not** in v1: stacked beds, Ken Burns, custom keybindings, auto-bind scenes, waveform UI, scraping `Soundboard.html`, or player-side volume (they already have Discord’s stream slider).
 
@@ -76,23 +76,15 @@ Explicitly **not** in v1: stacked beds, Ken Burns, custom keybindings, auto-bind
 
 ### Prep (Architect only)
 
-**Fast path (recommended for a real session):** keep a folder next to your notes, then import it.
+This has to feel like adding tokens, not like editing a manifest.
 
-```
-session-3-board/
-  board.json
-  images/breakfast.png
-  audio/rain.mp3
-```
+1. Open Session Console in the sidebar.
+2. **Drop images** onto an image set (or onto “New set”). Name and cue are editable on the card. Multi-select / folder add is fine.
+3. **Paste a YouTube URL** into the track field and hit Add. Or drop an mp3 onto a track group.
+4. Drag to reorder. Click Settings only if you want the frame title, default volume, or a pack import.
+5. Save the campaign.
 
-1. Open **Session Console → Settings**.
-2. **Import board pack** and pick `board.json` (Replace or Merge).
-3. Graphium copies listed files into the campaign and turns YouTube strings into ids. Tweak cues in the editor if needed.
-4. Save the campaign. The pack folder can stay in git; the `.graphium` is what you run at the table.
-
-**Slow path:** add one plate or track from the Settings editor (file picker or paste a YouTube URL) without writing JSON.
-
-**Export:** Settings → Export board pack writes a fresh folder (`board.json` + `images/` + `audio/`) so you can edit strings in a text editor and re-import.
+Power users can still keep a `board.json` folder and Import from Settings. That is optional.
 
 ### Session
 
@@ -189,7 +181,8 @@ interface StageImage {
   id: string;
   name: string;
   cue: string;           // DM-only
-  src: string;           // file:// / later assets/ in the zip
+  src: string;           // full plate, file:// then assets/ in the zip
+  thumbnailSrc: string;  // 256px-wide WebP for Architect grids only
   alt: string;           // player-safe alt text
 }
 
@@ -290,15 +283,32 @@ Local files do not need this; `media://` already serves sandboxed bytes.
 
 ---
 
-## Authoring: board pack + Settings space
+## Authoring: drop first, JSON last
 
-The in-app row editor is for tweaks. A 20-track session should start as a **board pack** — the same idea as the Ash Crown HTML, but as data.
+A typical DM will not write `board.json`. If adding a plate takes more than drop → click, we failed.
 
-### Why ingest, not live paths
+### Everyday prep (the actual product)
 
-Keeping `src: "/Users/you/Campaign/art.png"` in the campaign would break on the next machine, escape the `media://` sandbox, and make `.graphium` files non-portable. Import **copies** listed files into `temp_assets/` (then into the zip on save). After import, the catalog only stores campaign asset URLs plus YouTube ids.
+On the **sidebar board** itself:
 
-YouTube is the exception: we store the 11-char id and stream via the IFrame API. We never download YouTube media.
+- Drop one or many images onto a set (or “New set”). Same ingest as maps: resize to WebP, plus a **256px thumbnail** for the grid.
+- “Add from folder” creates a set from every image in that folder, titled from the folder name. No JSON required.
+- Paste a YouTube URL (or id) into a single always-visible field on a track group. Invalid paste toasts and does not add a row.
+- Drop `mp3` / `ogg` / `wav` / `m4a` onto a track group. Long beds belong on YouTube; local files are for short, reliable clips (see Performance).
+- Inline-edit name, cue, tag, recommended plate. Drag to reorder.
+- Empty board copy: “Drop images or paste a YouTube link.” Not “Import a board pack.”
+
+Settings is **not** the add-media dialog. It is stage chrome, playback defaults, Discord help, and advanced import/export.
+
+### Why we still ingest
+
+Keeping `src: "/Users/you/Campaign/art.png"` would break on the next machine, escape the `media://` sandbox, and make `.graphium` files non-portable. Every dropped, folder-added, or pack-imported file is **copied** into `temp_assets/` (then the zip). The catalog only stores campaign asset URLs plus YouTube ids.
+
+YouTube stays an id. We never download YouTube media.
+
+### Advanced: board pack import
+
+Optional. Same ingest rules, for people who already keep a session folder in git. Example: [`session-console-pack.example.json`](./session-console-pack.example.json).
 
 ### `src` resolution on import
 
@@ -312,7 +322,7 @@ Each image or track `src` string is classified once:
 | `http(s):` image or audio URL | Fetched once and ingested. Failed fetch skips that item with a toast. |
 | Anything else | Validation error on that row; rest of the pack still imports. |
 
-Relative paths are resolved against the directory that contains `board.json`. After `realpath`, the file must stay inside that directory (no `../.ssh`). Max audio size: 50MB. Images go through `processImage(..., 'MAP')`.
+Relative paths are resolved against the directory that contains `board.json`. After `realpath`, the file must stay inside that directory (no `../.ssh`). Local audio: warn above 8MB, reject above 25MB. Images go through `processImage(..., 'MAP')` plus a 256px thumb.
 
 `recommendedImage` in the pack may be an image `id` or `name`; import maps it to `recommendedImageId`.
 
@@ -345,15 +355,14 @@ That folder is git-friendly. Re-import after editing strings.
 
 Dedicated drawer, same pattern as [`MapSettingsSheet.tsx`](../../src/components/MapSettingsSheet.tsx). Do **not** dump this into [`PreferencesDialog.tsx`](../../src/components/PreferencesDialog.tsx) — those prefs are app-wide (walls, touch) and live in localStorage. Session Console config is campaign data.
 
-Sections:
+Sections, in this order:
 
-1. **Board pack** — Import (Replace / Merge), Export, last-import summary (N plates, N tracks, N skipped).
-2. **Stage** — title, subtitle, show frame.
-3. **Playback defaults** — default volume, duck percent.
-4. **Edit catalog** — add/reorder/delete sets, plates, groups, tracks (file picker or paste URL). This is the slow path.
-5. **Table setup** — Discord checklist + keyboard legend.
+1. **Stage** — title, subtitle, show frame.
+2. **Playback defaults** — default volume, duck percent.
+3. **Table setup** — Discord checklist + keyboard legend.
+4. **Advanced: board pack** — Import (Replace / Merge), Export, last-import summary. Collapsed by default.
 
-The sidebar stays the **live board** (play, reveal, duck). Settings is where you load and shape the board.
+Adding media stays on the live board. Settings does not grow a second catalog editor.
 
 ---
 
@@ -377,7 +386,8 @@ Board:
 - Image sets as thumbnail grids (active plate highlighted). Click = `showPlate`.
 - Track groups as lists. Active track highlighted. Recommended plate shown as DM-only brass text, not applied.
 - SFX grid.
-- Empty state points at Settings → Import board pack.
+- Drop targets and a YouTube paste field on the board.
+- Empty state: “Drop images or paste a YouTube link.”
 
 Keyboard: 1–9, `D`, `Esc` when focus is not in an input. Register matching commands in [`commandRegistry.ts`](../../src/utils/commandRegistry.ts).
 
@@ -395,11 +405,39 @@ Pause still covers Stage. Players should not see mid-prep plate swaps.
 
 ---
 
+## Performance
+
+This feature sits next to a live Konva battlemap. It must not hitch the canvas or balloon World View memory.
+
+**Images**
+
+- Architect grids render `thumbnailSrc` only (256px-wide WebP, lazy `loading="lazy"`). Never put 4096px plates in the sidebar.
+- World Stage loads **one** full plate. Latest-request gate cancels stale decodes. Crossfade uses at most two `<img>` nodes, then drops the old one.
+- World never receives unused plates. Catalog thumbs stay in Architect.
+- Ingest uses the existing image worker (`processImage` + a thumb pass). Folder add / pack import runs with the same concurrency cap as `rewriteCampaignAssetSrcs` (8) and shows a progress toast. Do not block the main process with sync reads of the whole folder.
+
+**Audio**
+
+- **One** YouTube IFrame player, reused. Never N hidden iframes.
+- **One** `<audio>` element for local files. Do not decode the file into a memory buffer for playback.
+- Hour-long beds stay on YouTube (an id in JSON). Local files are short clips: warn at 8MB, reject at 25MB. A 10-hour mp3 in the zip is a product bug.
+- Crossfade timers must clear on the next command. No stacked fade intervals.
+- Architect does not load YouTube or local audio at all.
+
+**Sync**
+
+- Catalog is **not** on `SyncableGameState`. Volume slider uses the existing ~32ms Architect subscription; do not emit `FULL_SYNC` for volume/duck.
+- `STAGE_UPDATE` / `AUDIO_UPDATE` / `SFX_FIRE` are small snapshots. `detectChanges` compares runtime by reference; runtime updates replace the object immutably.
+
+**Save**
+
+- Rewrite plate `src`, `thumbnailSrc`, and local `track.src` only. YouTube ids are not fetched at save time.
+
 ## Assets and save/load
 
-- Plates: `processImage(file, 'MAP')` (4096px WebP). Rewrite `sessionConsole.imageSets[].images[].src` in [`rewriteCampaignAssetSrcs`](../../src/utils/campaignAssets.ts).
-- Local audio: **do not** run `AssetProcessor`. Read the file as `ArrayBuffer` and `SAVE_ASSET_TEMP` with the original extension. Allow `mp3|ogg|wav|m4a` only. Rewrite `track.src` / local SFX `src` the same way.
-- `media://` already `net.fetch`s the file; confirm audio MIME comes through. If Chromium sniffs wrong, set `Content-Type` from extension in the protocol handler.
+- Plates: `processImage(file, 'MAP')` (4096px WebP) plus a 256px `thumbnailSrc`. Rewrite both in [`rewriteCampaignAssetSrcs`](../../src/utils/campaignAssets.ts).
+- Local audio: **do not** run `AssetProcessor`. Stream/copy via `SAVE_ASSET_TEMP` with the original extension. Allow `mp3|ogg|wav|m4a` only. Warn > 8MB, reject > 25MB.
+- `media://` already `net.fetch`s the file; set `Content-Type` from extension if Chromium mis-sniffs audio.
 - Allowed roots stay `temp_assets/`, `sessions/`, `library/`.
 
 ---
@@ -422,8 +460,8 @@ Same React UI. YouTube works on GitHub Pages / localhost. Local audio uses the e
 
 A DM can, without editing HTML:
 
-1. Import a board pack (`board.json` + relative files / YouTube URLs) from Settings, or add a single plate/track by hand.
-2. Export that board back out as a folder, edit a URL in the JSON, and merge it again.
+1. Drop images onto the board and paste a YouTube URL without opening Settings or writing JSON.
+2. Optionally import/export a board pack from Advanced settings.
 3. Arm World View, share that window, and have a player hear the test tone while seeing only the current plate.
 4. Reveal plates in order without music changing the picture.
 5. Drop Stage and keep the bed under the battlemap.

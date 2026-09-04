@@ -20,8 +20,12 @@
 - Follow existing immutable Zustand updates, preload channel whitelist, and `rewriteCampaignAssetSrcs` patterns.
 - Do not add npm audio libraries unless HTMLAudio + Web Audio prove insufficient.
 - PII-sanitize file paths in any user-visible playback error.
+- Everyday add is drop / paste / add-from-folder on the sidebar board. JSON pack import is Advanced-only.
 - Board pack import **ingests** files into the campaign. Do not persist original absolute disk paths in `manifest.json`.
 - Pack relative paths must `realpath` inside the folder that contains `board.json`.
+- Architect grids use `thumbnailSrc` only. World Stage loads one full plate. One YouTube player, one `<audio>` element.
+- Local audio: warn > 8MB, reject > 25MB. Do not put hour-long files in the zip.
+- Do not put `sessionConsole` catalog on the sync slice. Do not `FULL_SYNC` for volume/duck.
 
 ---
 
@@ -120,6 +124,7 @@ describe('emptySessionConsoleCatalog', () => {
     const catalog = emptySessionConsoleCatalog('Ashen Crown');
     expect(catalog.version).toBe(1);
     expect(catalog.stage.title).toBe('Ashen Crown');
+    expect(catalog.defaults).toEqual({ volume: 45, duckPercent: 27 });
     expect(catalog.sfx.map((item) => item.id)).toEqual([
       'chime',
       'drone',
@@ -252,7 +257,7 @@ setSessionConsoleWorldArmed: (armed: boolean) => void;
 
 - [ ] **Step 1: Tests**
 
-`rewriteCampaignAssetSrcs` visits every `image.src`, `track.src` when `source === 'local'`, and local SFX `src`. YouTube tracks are not rewritten.
+`rewriteCampaignAssetSrcs` visits every `image.src`, `image.thumbnailSrc`, `track.src` when `source === 'local'`, and local SFX `src`. YouTube tracks are not rewritten.
 
 `isAllowedAudioFileName` accepts `bed.mp3`, rejects `bed.exe`, `bed.webp`.
 
@@ -406,15 +411,15 @@ If `media://` audio has no MIME, map extensions in the existing `media` handler 
 
 **UI rules:**
 
-- Sidebar is the **live board** only. A Settings button opens `SessionConsoleSettingsSheet` (do not add this to `PreferencesDialog`).
-- Settings sections: Board pack (Import Replace/Merge, Export, skipped-item summary) → Stage chrome → Playback defaults → Catalog editor → Table setup (Discord + keys).
-- Empty sidebar state: “Import a board pack from Settings, or add a plate.”
-- Catalog editor: image (file → `processImage(..., 'MAP')` + `ADD_IMAGE`) or track (URL → `parseYouTubeVideoId` or file → `saveLocalAudioFile`).
+- Sidebar **is** the editor: drop images, add-from-folder, paste YouTube, drop audio, drag reorder. A Settings button opens `SessionConsoleSettingsSheet` (do not add this to `PreferencesDialog`).
+- Settings sections: Stage chrome → Playback defaults → Table setup → Advanced board pack (collapsed). No second catalog editor in Settings.
+- Empty sidebar state: “Drop images or paste a YouTube link.”
+- Dropped image: `processImage(..., 'MAP')` + 256px thumb + `ADD_IMAGE`. Pasted URL: `parseYouTubeVideoId` + `ADD_TRACK`. Dropped audio: `saveLocalAudioFile` with the 8MB/25MB gates.
 - Show recommended plate as brass DM text on the track row. Clicking the track does not show it.
 - Keyboard in Architect when target is not `INPUT`/`TEXTAREA`: `1`–`9` click the flattened track list, `d` ducks, `Escape` stops. Do not steal keys when the command palette is open.
 - Status dot: World closed / connected / armed (from `worldArmed` + whether World has requested state).
 
-- [ ] **Step 1: RTL tests** — clicking a plate calls `SHOW_PLATE`; clicking a track calls `PLAY_TRACK` without changing the plate; Return to map keeps `audio.status`; invalid YouTube paste shows a toast and does not add a track; Settings import Replace confirms before `REPLACE_CATALOG`.
+- [ ] **Step 1: RTL tests** — drop/paste adds to the board without opening Settings; clicking a plate calls `SHOW_PLATE`; clicking a track calls `PLAY_TRACK` without changing the plate; Return to map keeps `audio.status`; invalid YouTube paste shows a toast and does not add a track; grid `<img>` uses `thumbnailSrc` not `src`; Settings import Replace confirms before `REPLACE_CATALOG`.
 - [ ] **Step 2: Implement**
 - [ ] **Step 3: Commit** `feat: add Architect session console editor and transport`
 
@@ -424,7 +429,7 @@ If `media://` audio has no MIME, map extensions in the existing `media` handler 
 
 **Files:**
 - Copy-all helper: `tracks` with `source === 'youtube'` become `N. Title — https://www.youtube.com/watch?v=ID`. Local-only tracks listed as `(local file)` so the fallback still has an index.
-- Commands: `session-console-stop`, `session-console-duck`, `session-console-return-to-map`, `session-console-test-tone`
+- Commands: `session-console-stop`, `session-console-duck`, `session-console-return-to-map`, `session-console-test-tone`, `session-console-settings`
 - Docs: `docs/context/CONTEXT.md` (add Session Console under implemented features; keep chat/voice not-planned), `docs/index.md`, `docs/guides/TROUBLESHOOTING.md` (Error 153, Discord Krisp, arm audio)
 - Test: `tests/functional` or a focused store/sync integration that: create catalog → show plate → play youtube track → return to map → assert runtime; plus `rewriteCampaignAssetSrcs` round-trip
 
@@ -443,7 +448,8 @@ Cannot be fully replaced by RTL. After Tasks 1–9:
 3. Save / load `.graphium` — plates and local audio survive; YouTube ids survive without being fetched at save time.
 4. Web two-tab: BroadcastChannel carries Stage + audio commands.
 5. Spoiler check: World DOM has no cue strings from hidden plates.
-6. Settings: import `session-console-pack.example.json` with a temp folder of files; confirm assets land in `temp_assets` and catalog srcs are not the original paths. Export and re-import Merge.
+6. Drop two plates and paste a YouTube URL on the sidebar with Settings closed. Confirm World only ever has one full-res image in the DOM. Confirm the YouTube host is a single iframe.
+7. Advanced: import `session-console-pack.example.json` with a temp folder of files; confirm assets land in `temp_assets` and catalog srcs are not the original paths.
 
 If YouTube is blocked in CI, keep CI on parser + reducers + sync + Stage render with mocked engine.
 
