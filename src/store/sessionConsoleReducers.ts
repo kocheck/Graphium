@@ -669,6 +669,7 @@ function applyTransportCommand(
         status: 'playing',
         loop: track.loop,
         restartSeq: runtime.audio.restartSeq,
+        volumeOffset: track.volumeOffset,
       });
     }
     case 'PAUSE':

@@ -1315,12 +1315,18 @@ describe('gameStore', () => {
       expect(state.sessionConsoleRuntime.stageVisible).toBe(false);
       expect(state.sessionConsoleRuntime.activeImage).toBeNull();
       expect(state.sessionConsoleRuntime.worldArmed).toBe(false);
+      expect(state.sessionConsoleRuntime.stage.title).toBe('Old Save');
+      expect(state.sessionConsoleRuntime.volume).toBe(state.sessionConsole.defaults.volume);
+      expect(state.sessionConsoleRuntime.duckPercent).toBe(
+        state.sessionConsole.defaults.duckPercent,
+      );
     });
 
     it('loadCampaign keeps an existing catalog and still resets runtime', () => {
       const store = useGameStore.getState();
       const catalog = emptySessionConsoleCatalog('Kept Board');
       catalog.imageSets = [{ id: 'set-1', title: 'Kept', note: '', images: [plateImage] }];
+      catalog.defaults = { volume: 70, duckPercent: 40 };
 
       const map1 = {
         id: 'map-1',
@@ -1349,6 +1355,38 @@ describe('gameStore', () => {
       expect(state.sessionConsole.imageSets[0]?.title).toBe('Kept');
       expect(state.campaign.maps['map-1']?.tokens[0]?.id).toBe('hero');
       expect(state.sessionConsoleRuntime.stageVisible).toBe(false);
+      expect(state.sessionConsoleRuntime.volume).toBe(70);
+      expect(state.sessionConsoleRuntime.duckPercent).toBe(40);
+      expect(state.sessionConsoleRuntime.stage.title).toBe('Kept Board');
+    });
+
+    it('REPLACE_CATALOG resets runtime chrome from the new catalog and preserves worldArmed', () => {
+      const store = useGameStore.getState();
+      store.resetToNewCampaign();
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE_SET',
+        set: { id: 'set-1', title: 'Plates', note: '', images: [] },
+      });
+      store.updateSessionConsole({
+        type: 'ADD_IMAGE',
+        setId: 'set-1',
+        image: plateImage,
+      });
+      store.dispatchSessionConsole({ type: 'SHOW_PLATE', imageId: plateImage.id });
+      store.setSessionConsoleWorldArmed(true);
+
+      const replacement = emptySessionConsoleCatalog('New Board');
+      replacement.defaults = { volume: 70, duckPercent: 40 };
+      store.updateSessionConsole({ type: 'REPLACE_CATALOG', catalog: replacement });
+
+      const state = useGameStore.getState();
+      expect(state.sessionConsole.stage.title).toBe('New Board');
+      expect(state.sessionConsoleRuntime.activeImage).toBeNull();
+      expect(state.sessionConsoleRuntime.audio.status).toBe('stopped');
+      expect(state.sessionConsoleRuntime.stage.title).toBe('New Board');
+      expect(state.sessionConsoleRuntime.volume).toBe(70);
+      expect(state.sessionConsoleRuntime.duckPercent).toBe(40);
+      expect(state.sessionConsoleRuntime.worldArmed).toBe(true);
     });
   });
 });

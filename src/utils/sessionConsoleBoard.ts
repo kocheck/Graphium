@@ -1,8 +1,10 @@
 import { processImage } from './AssetProcessor';
 import { saveLocalAudioFile } from './localAudioAsset';
+import { toMediaProtocol } from './mediaProtocol';
 import {
   parseYouTubeVideoId,
   type SessionConsoleCatalog,
+  type StageImage,
   type Track,
 } from '../types/sessionConsole';
 
@@ -58,7 +60,9 @@ function ensureTrackGroup(store: GameState): string {
   return id;
 }
 
-async function processPlateSources(file: File): Promise<{ src: string; thumbnailSrc: string }> {
+export async function processPlateSources(
+  file: File,
+): Promise<{ src: string; thumbnailSrc: string }> {
   const mapHandle = processImage(file, 'MAP');
   const src = await mapHandle.promise;
   try {
@@ -68,6 +72,40 @@ async function processPlateSources(file: File): Promise<{ src: string; thumbnail
   } catch {
     return { src, thumbnailSrc: src };
   }
+}
+
+async function fileFromImageSrc(src: string, name: string): Promise<File> {
+  const response = await fetch(toMediaProtocol(src));
+  if (!response.ok) {
+    throw new Error('Failed to read plate image');
+  }
+  const blob = await response.blob();
+  const filename = /\.[^.]+$/.test(name) ? name : `${name}.webp`;
+  return new File([blob], filename, { type: blob.type || 'image/webp' });
+}
+
+async function processImportedPlate(image: StageImage): Promise<StageImage> {
+  const file = await fileFromImageSrc(image.src, image.name);
+  const { src, thumbnailSrc } = await processPlateSources(file);
+  return { ...image, src, thumbnailSrc };
+}
+
+export async function processImportedCatalogPlates(
+  catalog: SessionConsoleCatalog,
+): Promise<SessionConsoleCatalog> {
+  const imageSets = [];
+  for (const set of catalog.imageSets) {
+    const images: StageImage[] = [];
+    for (const image of set.images) {
+      try {
+        images.push(await processImportedPlate(image));
+      } catch {
+        images.push(image);
+      }
+    }
+    imageSets.push({ ...set, images });
+  }
+  return { ...catalog, imageSets };
 }
 
 async function addDroppedImage(store: GameState, file: File): Promise<void> {

@@ -9,7 +9,7 @@ const PLATE_FADE_MS = 500;
 export function WorldStage(): JSX.Element {
   const stageVisible = useGameStore((state) => state.sessionConsoleRuntime.stageVisible);
   const activeImage = useGameStore((state) => state.sessionConsoleRuntime.activeImage);
-  const stage = useGameStore((state) => state.campaign.sessionConsole.stage);
+  const stage = useGameStore((state) => state.sessionConsoleRuntime.stage);
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const [displayed, setDisplayed] = useState(activeImage);

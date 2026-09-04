@@ -36,12 +36,14 @@ export function useSessionConsoleHotkeys(): void {
 
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopImmediatePropagation();
         store.dispatchSessionConsole({ type: 'STOP' });
         return;
       }
 
       if (event.key === 'd' || event.key === 'D') {
         event.preventDefault();
+        event.stopImmediatePropagation();
         store.dispatchSessionConsole({
           type: 'SET_DUCKED',
           ducked: !store.sessionConsoleRuntime.ducked,
@@ -56,13 +58,14 @@ export function useSessionConsoleHotkeys(): void {
       const track = flattenTracks(store.sessionConsole)[Number(event.key) - 1];
       if (track) {
         event.preventDefault();
+        event.stopImmediatePropagation();
         store.dispatchSessionConsole({ type: 'PLAY_TRACK', trackId: track.id });
       }
     };
 
-    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown, true);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onKeyDown, true);
     };
   }, []);
 }

@@ -1,4 +1,3 @@
-import { useGameStore } from '../../store/gameStore';
 import { effectiveVolume, type SessionConsoleRuntime } from '../../types/sessionConsole';
 import { toMediaProtocol } from '../../utils/mediaProtocol';
 
@@ -97,27 +96,13 @@ export function youtubeErrorMessage(code: number): string {
   return `YouTube error ${code}`;
 }
 
-function trackVolumeOffset(trackId: string | null): number {
-  if (!trackId) {
-    return 0;
-  }
-  const catalog = useGameStore.getState().campaign.sessionConsole;
-  for (const group of catalog.trackGroups) {
-    const track = group.tracks.find((item) => item.id === trackId);
-    if (track) {
-      return track.volumeOffset;
-    }
-  }
-  return 0;
-}
-
-export function currentLevel(volume: number, ducked: boolean, trackId: string | null): number {
-  return effectiveVolume(
-    volume,
-    ducked,
-    trackVolumeOffset(trackId),
-    useGameStore.getState().campaign.sessionConsole.defaults.duckPercent,
-  );
+export function currentLevel(
+  volume: number,
+  ducked: boolean,
+  offset: number,
+  duckPercent: number,
+): number {
+  return effectiveVolume(volume, ducked, offset, duckPercent);
 }
 
 export function ensureIframeApi(onReady: () => void, onUnavailable: () => void): () => void {

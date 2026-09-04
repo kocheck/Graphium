@@ -7,6 +7,7 @@ interface ImageSetBoardProps {
   images: StageImage[];
   activeImageId: string | null;
   onShowPlate: (imageId: string) => void;
+  onEdit: (image: StageImage) => void;
   onReorder: (orderedIds: string[]) => void;
 }
 
@@ -15,6 +16,7 @@ export function ImageSetBoard({
   images,
   activeImageId,
   onShowPlate,
+  onEdit,
   onReorder,
 }: ImageSetBoardProps): JSX.Element {
   const handleDropOn = (targetId: string, draggedId: string): void => {
@@ -44,7 +46,7 @@ export function ImageSetBoard({
         {images.map((image) => {
           const isActive = image.id === activeImageId;
           return (
-            <li key={image.id}>
+            <li key={image.id} className="space-y-1">
               <button
                 type="button"
                 draggable
@@ -76,6 +78,14 @@ export function ImageSetBoard({
                 <span className="block text-xs font-medium truncate" title={image.name}>
                   {image.name}
                 </span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost w-full py-0.5 text-[11px]"
+                aria-label={`Edit plate ${image.name}`}
+                onClick={() => onEdit(image)}
+              >
+                Edit
               </button>
             </li>
           );

@@ -117,6 +117,7 @@ function seedBoard(runtimePlaying = false): void {
               status: 'playing' as const,
               loop: true,
               restartSeq: 0,
+              volumeOffset: 0,
             },
           }
         : {}),
@@ -287,7 +288,9 @@ describe('SessionConsolePanel', () => {
   });
 
   it('Settings import Replace confirms before REPLACE_CATALOG', async () => {
-    seedBoard();
+    seedBoard(true);
+    useGameStore.getState().dispatchSessionConsole({ type: 'SHOW_PLATE', imageId: plate.id });
+    useGameStore.getState().setSessionConsoleWorldArmed(true);
     const incoming = emptySessionConsoleCatalog('Imported Board');
     incoming.stage.title = 'Imported Board';
     mockImportPack.mockResolvedValue({ catalog: incoming, skipped: [] });
@@ -307,6 +310,12 @@ describe('SessionConsolePanel', () => {
     await waitFor(() => {
       expect(useGameStore.getState().sessionConsole.stage.title).toBe('Imported Board');
     });
+    const runtime = useGameStore.getState().sessionConsoleRuntime;
+    expect(runtime.activeImage).toBeNull();
+    expect(runtime.audio.status).toBe('stopped');
+    expect(runtime.audio.trackId).toBeNull();
+    expect(runtime.stage.title).toBe('Imported Board');
+    expect(runtime.worldArmed).toBe(true);
   });
 
   it('plays the first flattened track when 1 is pressed with focus inside the panel', async () => {
@@ -352,5 +361,115 @@ describe('SessionConsolePanel', () => {
     expect(useGameStore.getState().sessionConsoleRuntime.ducked).toBe(false);
     expect(stopSpy).not.toHaveBeenCalled();
     stopSpy.mockRestore();
+  });
+
+  it('stops D and 1-5 from bubbling when handled inside the panel', () => {
+    seedBoard();
+    renderPanel();
+    const panel = screen.getByTestId('session-console-panel');
+    panel.focus();
+
+    const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
+    fireEvent.keyDown(panel, { key: 'd' });
+    fireEvent.keyDown(panel, { key: '1' });
+
+    expect(stopSpy).toHaveBeenCalled();
+    expect(useGameStore.getState().sessionConsoleRuntime.ducked).toBe(true);
+    expect(useGameStore.getState().sessionConsoleRuntime.audio.trackId).toBe(bedTrack.id);
+    stopSpy.mockRestore();
+  });
+
+  it('opens the editor sheet from a plate Edit button', async () => {
+    seedBoard();
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('button', { name: `Edit plate ${plate.name}` }));
+    expect(screen.getByRole('heading', { name: 'Edit plate' })).toBeInTheDocument();
+
+    const nameInput = screen.getByLabelText('Name');
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, 'Renamed keep');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(useGameStore.getState().sessionConsole.imageSets[0]?.images[0]?.name).toBe(
+        'Renamed keep',
+      );
+    });
+  });
+
+  it('sanitizes skipped pack paths in the import summary', async () => {
+    seedBoard();
+    const incoming = emptySessionConsoleCatalog('Imported Board');
+    mockImportPack.mockResolvedValue({
+      catalog: incoming,
+      skipped: ['Failed /Users/janedoe/Music/bed.mp3'],
+    });
+
+    renderPanel();
+    await userEvent.click(screen.getByRole('button', { name: 'Session Console settings' }));
+    await userEvent.click(screen.getByRole('button', { name: /Advanced: board pack/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import replace' }));
+
+    await waitFor(() => {
+      expect(useGameStore.getState().confirmDialog).not.toBeNull();
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Replace' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Skipped 1:/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Skipped 1:/).textContent).not.toContain('janedoe');
+    expect(screen.getByText(/Skipped 1:/).textContent).toContain('<USER>');
+  });
+
+  it('processes imported pack plates through MAP+thumb before REPLACE', async () => {
+    seedBoard();
+    const incoming = emptySessionConsoleCatalog('Imported Board');
+    incoming.imageSets = [
+      {
+        id: 'set-import',
+        title: 'Imported',
+        note: '',
+        images: [
+          {
+            id: 'img-4k',
+            name: 'Hall',
+            cue: 'secret',
+            src: 'file:///full/4k.webp',
+            thumbnailSrc: 'file:///full/4k.webp',
+            alt: 'Hall',
+          },
+        ],
+      },
+    ];
+    mockImportPack.mockResolvedValue({ catalog: incoming, skipped: [] });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(['img'], { type: 'image/webp' }),
+      }),
+    );
+
+    renderPanel();
+    await userEvent.click(screen.getByRole('button', { name: 'Session Console settings' }));
+    await userEvent.click(screen.getByRole('button', { name: /Advanced: board pack/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import replace' }));
+
+    await waitFor(() => {
+      expect(useGameStore.getState().confirmDialog).not.toBeNull();
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Replace' }));
+
+    await waitFor(() => {
+      const image = useGameStore.getState().sessionConsole.imageSets[0]?.images[0];
+      expect(image?.src).toBe('file:///full/dropped.webp');
+      expect(image?.thumbnailSrc).toBe('file:///thumb/dropped.webp');
+      expect(image?.thumbnailSrc).not.toBe(image?.src);
+    });
+    expect(mockProcessImage).toHaveBeenCalledWith(expect.any(File), 'MAP');
+    expect(mockProcessImage).toHaveBeenCalledWith(expect.any(File), 'TOKEN');
+    vi.unstubAllGlobals();
   });
 });

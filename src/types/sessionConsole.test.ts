@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { parseYouTubeVideoId, effectiveVolume, emptySessionConsoleCatalog } from './sessionConsole';
+import {
+  parseYouTubeVideoId,
+  effectiveVolume,
+  emptySessionConsoleCatalog,
+  emptySessionConsoleRuntime,
+} from './sessionConsole';
 
 describe('parseYouTubeVideoId', () => {
   it('accepts a raw 11-char id', () => {
@@ -42,5 +47,16 @@ describe('emptySessionConsoleCatalog', () => {
       'ping',
       'test-tone',
     ]);
+  });
+});
+
+describe('emptySessionConsoleRuntime', () => {
+  it('seeds player-safe chrome, duckPercent, and audio.volumeOffset', () => {
+    const runtime = emptySessionConsoleRuntime();
+    expect(runtime.stage).toEqual({ title: '', subtitle: '', showFrame: true });
+    expect(runtime.duckPercent).toBe(27);
+    expect(runtime.audio.volumeOffset).toBe(0);
+    expect(runtime).not.toHaveProperty('imageSets');
+    expect(JSON.stringify(runtime)).not.toMatch(/cue|thumbnailSrc/i);
   });
 });

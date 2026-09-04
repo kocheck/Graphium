@@ -21,7 +21,12 @@ export function WorldAudioEngine(): JSX.Element {
   const fadeTimerRef = useRef<number | null>(null);
   const lastSfxSeqRef = useRef(runtime.sfxSeq);
   const lastAudioRef = useRef(runtime.audio);
-  const lastMixerRef = useRef({ volume: runtime.volume, ducked: runtime.ducked });
+  const lastMixerRef = useRef({
+    volume: runtime.volume,
+    ducked: runtime.ducked,
+    duckPercent: runtime.duckPercent,
+    volumeOffset: runtime.audio.volumeOffset,
+  });
   const lastLoopRef = useRef({ loop: runtime.audio.loop, youtubeId: runtime.audio.youtubeId });
   lastLoopRef.current = { loop: runtime.audio.loop, youtubeId: runtime.audio.youtubeId };
 

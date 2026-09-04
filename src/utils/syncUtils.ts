@@ -96,10 +96,17 @@ function cloneSessionConsoleRuntime(
   runtime: SessionConsoleRuntime | undefined | null,
 ): SessionConsoleRuntime {
   const source = runtime ?? emptySessionConsoleRuntime();
+  const empty = emptySessionConsoleRuntime();
   return {
     ...source,
+    stage: { ...(source.stage ?? empty.stage) },
+    duckPercent: source.duckPercent ?? empty.duckPercent,
     activeImage: source.activeImage ? { ...source.activeImage } : null,
-    audio: { ...source.audio, restartSeq: source.audio.restartSeq ?? 0 },
+    audio: {
+      ...source.audio,
+      restartSeq: source.audio.restartSeq ?? 0,
+      volumeOffset: source.audio.volumeOffset ?? 0,
+    },
   };
 }
 
@@ -163,11 +170,20 @@ export type SyncAction =
   | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null }
   | {
       type: 'STAGE_UPDATE';
-      payload: { stageVisible: boolean; activeImage: SessionConsoleRuntime['activeImage'] };
+      payload: {
+        stageVisible: boolean;
+        activeImage: SessionConsoleRuntime['activeImage'];
+        stage: SessionConsoleRuntime['stage'];
+      };
     }
   | {
       type: 'AUDIO_UPDATE';
-      payload: { audio: SessionConsoleRuntime['audio']; volume: number; ducked: boolean };
+      payload: {
+        audio: SessionConsoleRuntime['audio'];
+        volume: number;
+        ducked: boolean;
+        duckPercent: number;
+      };
     }
   | { type: 'SFX_FIRE'; payload: { seq: number; sfxId: string | null } };
 
@@ -440,18 +456,24 @@ function detectSessionConsoleActions(
 
   if (
     previous.stageVisible !== currRt.stageVisible ||
-    !isEqual(previous.activeImage, currRt.activeImage)
+    !isEqual(previous.activeImage, currRt.activeImage) ||
+    !isEqual(previous.stage, currRt.stage)
   ) {
     actions.push({
       type: 'STAGE_UPDATE',
-      payload: { stageVisible: currRt.stageVisible, activeImage: currRt.activeImage },
+      payload: {
+        stageVisible: currRt.stageVisible,
+        activeImage: currRt.activeImage,
+        stage: currRt.stage,
+      },
     });
   }
 
   if (
     !isEqual(previous.audio, currRt.audio) ||
     previous.volume !== currRt.volume ||
-    previous.ducked !== currRt.ducked
+    previous.ducked !== currRt.ducked ||
+    previous.duckPercent !== currRt.duckPercent
   ) {
     actions.push({
       type: 'AUDIO_UPDATE',
@@ -459,6 +481,7 @@ function detectSessionConsoleActions(
         audio: currRt.audio,
         volume: currRt.volume,
         ducked: currRt.ducked,
+        duckPercent: currRt.duckPercent,
       },
     });
   }
@@ -576,13 +599,19 @@ export function applyAction(
         ...runtime,
         stageVisible: action.payload.stageVisible,
         activeImage: action.payload.activeImage,
+        stage: action.payload.stage ? { ...action.payload.stage } : runtime.stage,
       };
     case 'AUDIO_UPDATE':
       return {
         ...runtime,
-        audio: { ...action.payload.audio, restartSeq: action.payload.audio.restartSeq ?? 0 },
+        audio: {
+          ...action.payload.audio,
+          restartSeq: action.payload.audio.restartSeq ?? 0,
+          volumeOffset: action.payload.audio.volumeOffset ?? 0,
+        },
         volume: action.payload.volume,
         ducked: action.payload.ducked,
+        duckPercent: action.payload.duckPercent ?? runtime.duckPercent,
       };
     case 'SFX_FIRE':
       return {

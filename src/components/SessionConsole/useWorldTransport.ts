@@ -9,7 +9,12 @@ interface TransportRefs {
   pauseRequested: MutableRefObject<boolean>;
   generation: MutableRefObject<number>;
   lastAudio: MutableRefObject<SessionConsoleRuntime['audio']>;
-  lastMixer: MutableRefObject<{ volume: number; ducked: boolean }>;
+  lastMixer: MutableRefObject<{
+    volume: number;
+    ducked: boolean;
+    duckPercent: number;
+    volumeOffset: number;
+  }>;
 }
 
 export function useWorldTransport(
@@ -17,7 +22,7 @@ export function useWorldTransport(
   refs: TransportRefs,
   fade: (target: number, duration: number, done?: () => void) => void,
 ): void {
-  const { audio, volume, ducked, worldArmed } = runtime;
+  const { audio, volume, ducked, duckPercent, worldArmed } = runtime;
 
   useEffect(() => {
     const previous = refs.lastAudio.current;
@@ -26,7 +31,7 @@ export function useWorldTransport(
       return;
     }
 
-    const level = currentLevel(volume, ducked, audio.trackId);
+    const level = currentLevel(volume, ducked, audio.volumeOffset, duckPercent);
     const player = refs.player.current;
     const element = refs.audioEl.current;
 
@@ -40,7 +45,7 @@ export function useWorldTransport(
           element.removeAttribute('src');
         }
       });
-      refs.lastMixer.current = { volume, ducked };
+      refs.lastMixer.current = { volume, ducked, duckPercent, volumeOffset: audio.volumeOffset };
       return;
     }
 
@@ -48,7 +53,7 @@ export function useWorldTransport(
       refs.pauseRequested.current = true;
       player?.pauseVideo();
       element?.pause();
-      refs.lastMixer.current = { volume, ducked };
+      refs.lastMixer.current = { volume, ducked, duckPercent, volumeOffset: audio.volumeOffset };
       return;
     }
 
@@ -58,8 +63,11 @@ export function useWorldTransport(
       previous.youtubeId === audio.youtubeId &&
       previous.src === audio.src;
     const mixerChanged =
-      refs.lastMixer.current.volume !== volume || refs.lastMixer.current.ducked !== ducked;
-    refs.lastMixer.current = { volume, ducked };
+      refs.lastMixer.current.volume !== volume ||
+      refs.lastMixer.current.ducked !== ducked ||
+      refs.lastMixer.current.duckPercent !== duckPercent ||
+      refs.lastMixer.current.volumeOffset !== audio.volumeOffset;
+    refs.lastMixer.current = { volume, ducked, duckPercent, volumeOffset: audio.volumeOffset };
 
     if (sameSource && previous.status === 'playing' && mixerChanged) {
       fade(level, 250);
@@ -95,5 +103,5 @@ export function useWorldTransport(
     } else {
       start();
     }
-  }, [audio, ducked, fade, refs, volume, worldArmed]);
+  }, [audio, ducked, duckPercent, fade, refs, volume, worldArmed]);
 }

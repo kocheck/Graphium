@@ -24,6 +24,7 @@ function runtime(overrides: Partial<SessionConsoleRuntime> = {}): SessionConsole
   return {
     ...base,
     ...overrides,
+    stage: { ...base.stage, ...overrides.stage },
     audio: { ...base.audio, ...overrides.audio },
     activeImage: overrides.activeImage === undefined ? base.activeImage : overrides.activeImage,
   };
@@ -45,6 +46,7 @@ const playingAudio: SessionConsoleRuntime['audio'] = {
   status: 'playing',
   loop: true,
   restartSeq: 0,
+  volumeOffset: 0,
 };
 
 describe('syncUtils', () => {
@@ -286,7 +288,7 @@ describe('syncUtils', () => {
       expect(changes).toEqual([
         {
           type: 'STAGE_UPDATE',
-          payload: { stageVisible: true, activeImage: plateImage },
+          payload: { stageVisible: true, activeImage: plateImage, stage: currRt.stage },
         },
       ]);
     });
@@ -302,7 +304,7 @@ describe('syncUtils', () => {
       expect(changes).toEqual([
         {
           type: 'AUDIO_UPDATE',
-          payload: { audio, volume: currRt.volume, ducked: false },
+          payload: { audio, volume: currRt.volume, ducked: false, duckPercent: currRt.duckPercent },
         },
       ]);
       expect(changes[0]?.type === 'AUDIO_UPDATE' && changes[0].payload.audio.restartSeq).toBe(1);
@@ -322,7 +324,12 @@ describe('syncUtils', () => {
       expect(changes).toEqual([
         {
           type: 'AUDIO_UPDATE',
-          payload: { audio: playingAudio, volume: currRt.volume, ducked: false },
+          payload: {
+            audio: playingAudio,
+            volume: currRt.volume,
+            ducked: false,
+            duckPercent: currRt.duckPercent,
+          },
         },
       ]);
     });
@@ -346,7 +353,7 @@ describe('syncUtils', () => {
       expect(changes).toEqual([
         {
           type: 'STAGE_UPDATE',
-          payload: { stageVisible: false, activeImage: plateImage },
+          payload: { stageVisible: false, activeImage: plateImage, stage: currRt.stage },
         },
       ]);
       expect(changes.some((action) => action.type === 'AUDIO_UPDATE')).toBe(false);
@@ -364,7 +371,7 @@ describe('syncUtils', () => {
         { sessionConsoleRuntime: volumeRt },
       );
       expect(volumeChanges).toEqual([
-        { type: 'AUDIO_UPDATE', payload: { audio, volume: 70, ducked: false } },
+        { type: 'AUDIO_UPDATE', payload: { audio, volume: 70, ducked: false, duckPercent: 27 } },
       ]);
       expect(volumeChanges[0]?.type).not.toBe('FULL_SYNC');
 
@@ -373,7 +380,7 @@ describe('syncUtils', () => {
         { sessionConsoleRuntime: duckRt },
       );
       expect(duckChanges).toEqual([
-        { type: 'AUDIO_UPDATE', payload: { audio, volume: 70, ducked: true } },
+        { type: 'AUDIO_UPDATE', payload: { audio, volume: 70, ducked: true, duckPercent: 27 } },
       ]);
       expect(coalesceSyncActions(duckChanges, { sessionConsoleRuntime: duckRt })[0]?.type).toBe(
         'AUDIO_UPDATE',
@@ -396,8 +403,14 @@ describe('syncUtils', () => {
       ).toEqual([]);
     });
 
-    it('includes sessionConsoleRuntime in FULL_SYNC and omits catalog', () => {
-      const currRt = runtime({ stageVisible: true, activeImage: plateImage, audio: playingAudio });
+    it('includes sessionConsoleRuntime chrome in FULL_SYNC and omits catalog imageSets', () => {
+      const currRt = runtime({
+        stageVisible: true,
+        activeImage: plateImage,
+        audio: playingAudio,
+        stage: { title: 'Skeldra', subtitle: 'Session 3', showFrame: false },
+        duckPercent: 40,
+      });
       const changes = detectChanges(null, {
         sessionConsoleRuntime: currRt,
         tokens: [],
@@ -406,31 +419,41 @@ describe('syncUtils', () => {
       expect(changes[0]?.type).toBe('FULL_SYNC');
       if (changes[0]?.type === 'FULL_SYNC') {
         expect(changes[0].payload.sessionConsoleRuntime).toEqual(currRt);
+        expect(changes[0].payload.sessionConsoleRuntime?.stage.title).toBe('Skeldra');
+        expect(changes[0].payload.sessionConsoleRuntime?.duckPercent).toBe(40);
+        expect(changes[0].payload.sessionConsoleRuntime?.audio.volumeOffset).toBe(0);
         expect(changes[0].payload).not.toHaveProperty('sessionConsole');
         expect(changes[0].payload).not.toHaveProperty('campaign');
+        expect(changes[0].payload).not.toHaveProperty('imageSets');
+        expect(JSON.stringify(changes[0].payload.sessionConsoleRuntime)).not.toMatch(
+          /cue|thumbnailSrc|imageSets/i,
+        );
       }
     });
   });
 
   describe('applyAction', () => {
     it('applies STAGE_UPDATE on a consumer runtime without a catalog', () => {
+      const stage = { title: 'Keep', subtitle: '', showFrame: true };
       const next = applyAction(runtime(), {
         type: 'STAGE_UPDATE',
-        payload: { stageVisible: true, activeImage: plateImage },
+        payload: { stageVisible: true, activeImage: plateImage, stage },
       });
       expect(next.stageVisible).toBe(true);
       expect(next.activeImage).toEqual(plateImage);
+      expect(next.stage).toEqual(stage);
       expect(next.audio.status).toBe('stopped');
     });
 
     it('merges AUDIO_UPDATE and SFX_FIRE into runtime without catalog reducers', () => {
       const afterAudio = applyAction(runtime(), {
         type: 'AUDIO_UPDATE',
-        payload: { audio: playingAudio, volume: 12, ducked: true },
+        payload: { audio: playingAudio, volume: 12, ducked: true, duckPercent: 40 },
       });
       expect(afterAudio.audio).toEqual(playingAudio);
       expect(afterAudio.volume).toBe(12);
       expect(afterAudio.ducked).toBe(true);
+      expect(afterAudio.duckPercent).toBe(40);
 
       const afterSfx = applyAction(afterAudio, {
         type: 'SFX_FIRE',

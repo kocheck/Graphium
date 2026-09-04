@@ -89,6 +89,7 @@ function runtimePlaying(): SessionConsoleRuntime {
       status: 'playing',
       loop: true,
       restartSeq: 0,
+      volumeOffset: 0,
     },
   };
 }
@@ -123,12 +124,19 @@ describe('applyRuntimeCommand', () => {
     expect(next.audio.status).toBe('playing');
   });
 
-  it('PLAY_TRACK does not change activeImage', () => {
+  it('PLAY_TRACK copies player-safe fields and volumeOffset onto runtime.audio', () => {
     const withPlate = applyRuntimeCommand(empty, { type: 'SHOW_PLATE', imageId: 'a' }, catalog);
-    const next = applyRuntimeCommand(withPlate, { type: 'PLAY_TRACK', trackId: 't1' }, catalog);
+    const loudCatalog = applyCatalogAction(catalog, {
+      type: 'UPDATE_TRACK',
+      trackId: 't1',
+      patch: { volumeOffset: -8 },
+    });
+    const next = applyRuntimeCommand(withPlate, { type: 'PLAY_TRACK', trackId: 't1' }, loudCatalog);
     expect(next.activeImage?.id).toBe('a');
     expect(next.audio.trackId).toBe('t1');
     expect(next.audio.status).toBe('playing');
+    expect(next.audio.volumeOffset).toBe(-8);
+    expect(JSON.stringify(next.audio)).not.toMatch(/cue|recommended/i);
   });
 
   it('FIRE_SFX increments seq', () => {

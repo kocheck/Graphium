@@ -8,7 +8,8 @@ import {
 } from './sessionConsoleReducers';
 import {
   emptySessionConsoleCatalog,
-  emptySessionConsoleRuntime,
+  sessionConsoleRuntimeFromCatalog,
+  copySessionConsoleChrome,
   type SessionConsoleCatalog,
   type SessionConsoleRuntime,
 } from '../types/sessionConsole';
@@ -482,7 +483,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     campaign: initialCampaign,
     sessionConsole: initialCampaign.sessionConsole,
-    sessionConsoleRuntime: emptySessionConsoleRuntime(),
+    sessionConsoleRuntime: sessionConsoleRuntimeFromCatalog(initialCampaign.sessionConsole),
 
     // --- Campaign Actions ---
 
@@ -501,7 +502,7 @@ export const useGameStore = create<GameState>((set, get) => {
       set({
         campaign: ensured,
         sessionConsole: ensured.sessionConsole,
-        sessionConsoleRuntime: emptySessionConsoleRuntime(),
+        sessionConsoleRuntime: sessionConsoleRuntimeFromCatalog(ensured.sessionConsole),
         // Hydrate active map state
         ...withTokenIndex(activeMap.tokens || []),
         drawings: activeMap.drawings || [],
@@ -524,7 +525,7 @@ export const useGameStore = create<GameState>((set, get) => {
       set({
         campaign: newCampaign,
         sessionConsole: newCampaign.sessionConsole,
-        sessionConsoleRuntime: emptySessionConsoleRuntime(),
+        sessionConsoleRuntime: sessionConsoleRuntimeFromCatalog(newCampaign.sessionConsole),
         // Reset active map state
         ...withTokenIndex(newMap.tokens),
         drawings: newMap.drawings,
@@ -880,12 +881,27 @@ export const useGameStore = create<GameState>((set, get) => {
         if (nextCatalog === state.sessionConsole) {
           return {};
         }
+
+        let nextRuntime = state.sessionConsoleRuntime;
+        if (action.type === 'REPLACE_CATALOG') {
+          nextRuntime = sessionConsoleRuntimeFromCatalog(nextCatalog, {
+            worldArmed: state.sessionConsoleRuntime.worldArmed,
+          });
+        } else if (
+          action.type === 'UPDATE_STAGE_CHROME' ||
+          action.type === 'UPDATE_DEFAULTS' ||
+          action.type === 'MERGE_CATALOG'
+        ) {
+          nextRuntime = copySessionConsoleChrome(state.sessionConsoleRuntime, nextCatalog);
+        }
+
         return {
           sessionConsole: nextCatalog,
           campaign: {
             ...state.campaign,
             sessionConsole: nextCatalog,
           },
+          sessionConsoleRuntime: nextRuntime,
         };
       }),
     dispatchSessionConsole: (command: SessionConsoleRuntimeCommand) =>

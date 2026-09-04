@@ -7,11 +7,21 @@ import { TrackGroupList } from './TrackGroupList';
 import { useGameStore } from '../../store/gameStore';
 import { addYouTubeFromText, ingestDroppedFiles } from '../../utils/sessionConsoleBoard';
 
+import type { StageImage, Track } from '../../types/sessionConsole';
+
 function filesFromDrop(event: DragEvent): File[] {
   return Array.from(event.dataTransfer?.files ?? []);
 }
 
-export function SessionConsoleBoard(): JSX.Element {
+interface SessionConsoleBoardProps {
+  onEditImage: (image: StageImage) => void;
+  onEditTrack: (track: Track) => void;
+}
+
+export function SessionConsoleBoard({
+  onEditImage,
+  onEditTrack,
+}: SessionConsoleBoardProps): JSX.Element {
   const catalog = useGameStore((state) => state.sessionConsole);
   const runtime = useGameStore((state) => state.sessionConsoleRuntime);
   const dispatchSessionConsole = useGameStore((state) => state.dispatchSessionConsole);
@@ -87,6 +97,7 @@ export function SessionConsoleBoard(): JSX.Element {
           images={set.images}
           activeImageId={runtime.activeImage?.id ?? null}
           onShowPlate={(imageId) => dispatchSessionConsole({ type: 'SHOW_PLATE', imageId })}
+          onEdit={onEditImage}
           onReorder={(orderedIds) =>
             updateSessionConsole({ type: 'REORDER_IMAGES', setId: set.id, orderedIds })
           }
@@ -100,6 +111,7 @@ export function SessionConsoleBoard(): JSX.Element {
           images={allImages}
           activeTrackId={runtime.audio.trackId}
           onPlayTrack={(trackId) => dispatchSessionConsole({ type: 'PLAY_TRACK', trackId })}
+          onEdit={onEditTrack}
           onReorder={(orderedIds) =>
             updateSessionConsole({ type: 'REORDER_TRACKS', groupId: group.id, orderedIds })
           }

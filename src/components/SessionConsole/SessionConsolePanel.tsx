@@ -15,12 +15,17 @@ import {
 } from '../../utils/sessionConsoleBoard';
 import { OPEN_SESSION_CONSOLE_SETTINGS_EVENT } from '../../utils/sessionConsoleEvents';
 
+import type { StageImage, Track } from '../../types/sessionConsole';
+
+type EditorTarget = { image: StageImage } | { track: Track };
+
 export function SessionConsolePanel(): JSX.Element {
   const catalog = useGameStore((state) => state.sessionConsole);
   const runtime = useGameStore((state) => state.sessionConsoleRuntime);
   const dispatchSessionConsole = useGameStore((state) => state.dispatchSessionConsole);
   const showToast = useGameStore((state) => state.showToast);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [editor, setEditor] = useState<EditorTarget | null>(null);
 
   useSessionConsoleHotkeys();
 
@@ -91,7 +96,10 @@ export function SessionConsolePanel(): JSX.Element {
         </button>
       </div>
 
-      <SessionConsoleBoard />
+      <SessionConsoleBoard
+        onEditImage={(image) => setEditor({ image })}
+        onEditTrack={(track) => setEditor({ track })}
+      />
 
       <div className="flex flex-wrap gap-1">
         {catalog.sfx.map((sfx) => (
@@ -107,7 +115,12 @@ export function SessionConsolePanel(): JSX.Element {
       </div>
 
       <SessionConsoleSettingsSheet isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <SessionConsoleEditorSheet isOpen={false} onClose={() => undefined} />
+      <SessionConsoleEditorSheet
+        isOpen={editor !== null}
+        onClose={() => setEditor(null)}
+        image={editor && 'image' in editor ? editor.image : null}
+        track={editor && 'track' in editor ? editor.track : null}
+      />
     </div>
   );
 }

@@ -70,9 +70,16 @@ export interface SessionConsoleCatalog {
   sfx: SfxDefinition[];
 }
 
+export interface SessionConsoleRuntimeStage {
+  title: string;
+  subtitle: string;
+  showFrame: boolean;
+}
+
 export interface SessionConsoleRuntime {
   stageVisible: boolean;
   activeImage: { id: string; src: string; alt: string; name: string } | null;
+  stage: SessionConsoleRuntimeStage;
   audio: {
     trackId: string | null;
     title: string;
@@ -82,9 +89,11 @@ export interface SessionConsoleRuntime {
     status: 'stopped' | 'playing' | 'paused';
     loop: boolean;
     restartSeq: number;
+    volumeOffset: number;
   };
   volume: number;
   ducked: boolean;
+  duckPercent: number;
   sfxSeq: number;
   sfxId: string | null;
   worldArmed: boolean;
@@ -203,6 +212,11 @@ export function emptySessionConsoleRuntime(): SessionConsoleRuntime {
   return {
     stageVisible: false,
     activeImage: null,
+    stage: {
+      title: '',
+      subtitle: '',
+      showFrame: true,
+    },
     audio: {
       trackId: null,
       title: '',
@@ -212,11 +226,43 @@ export function emptySessionConsoleRuntime(): SessionConsoleRuntime {
       status: 'stopped',
       loop: true,
       restartSeq: 0,
+      volumeOffset: 0,
     },
     volume: DEFAULT_VOLUME,
     ducked: false,
+    duckPercent: DEFAULT_DUCK_PERCENT,
     sfxSeq: 0,
     sfxId: null,
     worldArmed: false,
+  };
+}
+
+/**
+ * Copy player-safe stage chrome and duck percent from a catalog onto runtime.
+ */
+export function copySessionConsoleChrome(
+  runtime: SessionConsoleRuntime,
+  catalog: SessionConsoleCatalog,
+): SessionConsoleRuntime {
+  return {
+    ...runtime,
+    stage: { ...catalog.stage },
+    duckPercent: catalog.defaults.duckPercent,
+  };
+}
+
+/**
+ * Fresh runtime seeded from catalog chrome, duck percent, and default volume.
+ */
+export function sessionConsoleRuntimeFromCatalog(
+  catalog: SessionConsoleCatalog,
+  options: { worldArmed?: boolean } = {},
+): SessionConsoleRuntime {
+  return {
+    ...emptySessionConsoleRuntime(),
+    worldArmed: options.worldArmed ?? false,
+    volume: catalog.defaults.volume,
+    duckPercent: catalog.defaults.duckPercent,
+    stage: { ...catalog.stage },
   };
 }

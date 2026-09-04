@@ -4,6 +4,8 @@ import ToggleSwitch from '../ToggleSwitch';
 import { DiscordSetupHelp } from './DiscordSetupHelp';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
+import { processImportedCatalogPlates } from '../../utils/sessionConsoleBoard';
+import { sanitizeSessionConsoleErrorMessage } from '../../utils/syncUtils';
 
 import type { SessionConsoleCatalog } from '../../types/sessionConsole';
 
@@ -12,7 +14,7 @@ async function importPack(): Promise<{ catalog: SessionConsoleCatalog; skipped: 
     return await getStorage().importSessionConsolePack();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Pack import failed';
-    useGameStore.getState().showToast(message, 'error');
+    useGameStore.getState().showToast(sanitizeSessionConsoleErrorMessage(message), 'error');
     return null;
   }
 }
@@ -135,11 +137,12 @@ export function SessionConsolePackFields(): JSX.Element {
   const [importSummary, setImportSummary] = useState<string | null>(null);
 
   const applySkippedSummary = (skipped: string[]): void => {
-    if (skipped.length === 0) {
+    const sanitized = skipped.map((item) => sanitizeSessionConsoleErrorMessage(item));
+    if (sanitized.length === 0) {
       setImportSummary('Import complete.');
       return;
     }
-    setImportSummary(`Skipped ${skipped.length}: ${skipped.join('; ')}`);
+    setImportSummary(`Skipped ${sanitized.length}: ${sanitized.join('; ')}`);
   };
 
   const handleImportReplace = (): void => {
@@ -148,10 +151,11 @@ export function SessionConsolePackFields(): JSX.Element {
       if (!result) {
         return;
       }
+      const catalog = await processImportedCatalogPlates(result.catalog);
       showConfirmDialog(
         'Replace the current Session Console catalog? This cannot be undone.',
         () => {
-          updateSessionConsole({ type: 'REPLACE_CATALOG', catalog: result.catalog });
+          updateSessionConsole({ type: 'REPLACE_CATALOG', catalog });
           applySkippedSummary(result.skipped);
         },
         'Replace',
@@ -165,7 +169,8 @@ export function SessionConsolePackFields(): JSX.Element {
       if (!result) {
         return;
       }
-      updateSessionConsole({ type: 'MERGE_CATALOG', catalog: result.catalog });
+      const catalog = await processImportedCatalogPlates(result.catalog);
+      updateSessionConsole({ type: 'MERGE_CATALOG', catalog });
       applySkippedSummary(result.skipped);
     })();
   };
@@ -184,7 +189,7 @@ export function SessionConsolePackFields(): JSX.Element {
         showToast('Board pack exported', 'success');
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Pack export failed';
-        showToast(message, 'error');
+        showToast(sanitizeSessionConsoleErrorMessage(message), 'error');
       }
     })();
   };

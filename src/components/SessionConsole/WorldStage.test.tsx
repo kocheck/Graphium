@@ -49,7 +49,12 @@ function seedStore(partial: Partial<SessionConsoleRuntime> = {}): void {
       name: 'Ash Crown',
       sessionConsole: catalog,
     },
-    sessionConsoleRuntime: runtime(partial),
+    sessionConsoleRuntime: runtime({
+      stage: catalog.stage,
+      duckPercent: catalog.defaults.duckPercent,
+      volume: catalog.defaults.volume,
+      ...partial,
+    }),
   });
 }
 
@@ -174,6 +179,29 @@ describe('WorldStage', () => {
 
     expect(screen.getByRole('img', { name: 'Dawn over the keep' })).toBeInTheDocument();
     expect(screen.getByRole('img')).toHaveAttribute('src', 'media:///tmp/keep.webp');
+  });
+
+  it('renders stage chrome from runtime, not campaign.sessionConsole', () => {
+    const catalog = emptySessionConsoleCatalog('Ash Crown');
+    catalog.stage = { title: 'Catalog secret title', subtitle: 'do not show', showFrame: false };
+    useGameStore.setState({
+      sessionConsole: catalog,
+      campaign: {
+        ...useGameStore.getState().campaign,
+        sessionConsole: catalog,
+      },
+      sessionConsoleRuntime: runtime({
+        worldArmed: true,
+        stageVisible: true,
+        activeImage: plate,
+        stage: { title: 'Player keep', subtitle: 'Dawn watch', showFrame: true },
+      }),
+    });
+    render(<WorldStage />);
+
+    expect(screen.getByText('Player keep')).toBeInTheDocument();
+    expect(screen.getByText('Dawn watch')).toBeInTheDocument();
+    expect(screen.queryByText('Catalog secret title')).not.toBeInTheDocument();
   });
 
   it('arms locally and sends SESSION_CONSOLE_WORLD_EVENT armed', async () => {

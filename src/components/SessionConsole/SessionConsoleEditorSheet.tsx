@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useGameStore } from '../../store/gameStore';
 
@@ -21,6 +21,12 @@ export function SessionConsoleEditorSheet({
   const [name, setName] = useState(image?.name ?? track?.title ?? '');
   const [cue, setCue] = useState(image?.cue ?? track?.cue ?? '');
   const [alt, setAlt] = useState(image?.alt ?? '');
+
+  useEffect(() => {
+    setName(image?.name ?? track?.title ?? '');
+    setCue(image?.cue ?? track?.cue ?? '');
+    setAlt(image?.alt ?? '');
+  }, [image, track, isOpen]);
 
   if (!isOpen || (!image && !track)) {
     return null;

@@ -5,6 +5,7 @@ interface TrackGroupListProps {
   images: StageImage[];
   activeTrackId: string | null;
   onPlayTrack: (trackId: string) => void;
+  onEdit: (track: Track) => void;
   onReorder: (orderedIds: string[]) => void;
 }
 
@@ -21,6 +22,7 @@ export function TrackGroupList({
   images,
   activeTrackId,
   onPlayTrack,
+  onEdit,
   onReorder,
 }: TrackGroupListProps): JSX.Element {
   const handleDropOn = (targetId: string, draggedId: string): void => {
@@ -51,7 +53,7 @@ export function TrackGroupList({
           const isActive = track.id === activeTrackId;
           const recommended = recommendedLabel(track, images);
           return (
-            <li key={track.id}>
+            <li key={track.id} className="space-y-1">
               <button
                 type="button"
                 draggable
@@ -80,6 +82,14 @@ export function TrackGroupList({
                     {recommended}
                   </span>
                 )}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost w-full py-0.5 text-[11px]"
+                aria-label={`Edit track ${track.title}`}
+                onClick={() => onEdit(track)}
+              >
+                Edit
               </button>
             </li>
           );
