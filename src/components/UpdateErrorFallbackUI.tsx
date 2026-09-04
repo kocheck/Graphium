@@ -131,6 +131,7 @@ export function UpdateErrorFallbackUI({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        data-esc-owns="true"
         aria-labelledby="update-error-dialog-title"
       >
         <div className="flex items-start gap-3 mb-4">

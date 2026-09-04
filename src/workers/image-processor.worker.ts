@@ -17,8 +17,10 @@
  * 5. Send ArrayBuffer back to main thread (100% progress)
  */
 
+import { maxDimensionForType, type ImageAssetType } from '../utils/imageMaxDimensions';
+
 // eslint-disable-next-line import/no-unused-modules
-export type AssetType = 'MAP' | 'TOKEN';
+export type AssetType = ImageAssetType;
 
 interface ProcessImageMessage {
   type: 'PROCESS_IMAGE';
@@ -46,10 +48,6 @@ interface ErrorMessage {
   fileName: string;
 }
 
-// Maximum dimensions for different asset types
-const MAX_MAP_DIMENSION = 4096;
-const MAX_TOKEN_DIMENSION = 512;
-
 /**
  * Process image in Web Worker (non-blocking)
  */
@@ -72,7 +70,7 @@ self.onmessage = async (event: MessageEvent<ProcessImageMessage>) => {
       fileName,
     } as ProgressMessage);
 
-    const maxDim = assetType === 'MAP' ? MAX_MAP_DIMENSION : MAX_TOKEN_DIMENSION;
+    const maxDim = maxDimensionForType(assetType);
 
     let width = bitmap.width;
     let height = bitmap.height;

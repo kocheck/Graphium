@@ -12,6 +12,7 @@ This guide helps diagnose and fix common issues in Graphium. Issues are organize
 6. [Performance Issues](#performance-issues)
 7. [Development Issues](#development-issues)
 8. [Platform-Specific Issues](#platform-specific-issues)
+9. [Session Console Issues](#session-console-issues)
 
 ---
 
@@ -769,19 +770,70 @@ sudo apt-get install libx11-dev libxkbfile-dev libsecret-1-dev
 
 ---
 
+## Session Console Issues
+
+Session Console plays YouTube/local audio in **World View** (what Discord captures). Architect is the editor and transport only — it does not play campaign audio.
+
+### Issue: YouTube Error 153 (video unavailable / embedder)
+
+**Symptoms:**
+
+- World View arm or play shows YouTube error **153**
+- Beds work in `npm run dev` (localhost) but fail in a packaged build
+
+**Causes & Solutions:**
+
+**Cause: World View is loaded from `file://`**
+
+YouTube’s embedder check rejects `file://`. Production must load the renderer from a non-file origin (`graphium://app/index.html?...` or equivalent). Dev already uses `http://localhost:5173`, so YouTube works there.
+
+1. Confirm the World window URL is not `file://`
+2. After a plate/track play failure, use **Copy all links** and paste the numbered watch URLs into Discord as a fallback (`N. Title — https://www.youtube.com/watch?v=ID`; local tracks appear as `(local file)`)
+
+### Issue: Discord captures World View video but no Session Console audio
+
+**Symptoms:**
+
+- Players see the plate or map, hear nothing
+- Test tone is silent in Discord even though Architect transport looks active
+
+**Causes & Solutions:**
+
+**Cause 1: World audio is not armed**
+
+Browsers block autoplay until the World window has a user gesture.
+
+1. Focus World View
+2. Click **Arm audio** (status in Architect should move from connected → armed)
+3. Fire **Test Tone** from Session Console, then play a bed
+
+**Cause 2: Discord Krisp / attenuation / share settings**
+
+Use the Session Console **Table setup** checklist:
+
+1. Turn **Krisp** off (it treats game audio as noise)
+2. Set Discord attenuation to **0%** so other apps do not duck the share
+3. Share **World View** (not Architect) and enable **include audio**
+4. Confirm with the built-in test tone before players arrive
+
+Chat/voice is not built into Graphium — keep using Discord/Zoom.
+
+---
+
 ## Error Message Reference
 
 ### Common Error Messages
 
-| Error                                 | Cause                            | Solution                                       |
-| ------------------------------------- | -------------------------------- | ---------------------------------------------- |
-| `net::ERR_UNKNOWN_URL_SCHEME`         | media:// protocol not registered | Check `protocol.registerSchemesAsPrivileged()` |
-| `window.ipcRenderer is undefined`     | Preload script not loaded        | Verify `webPreferences.preload` path           |
-| `ENOENT: no such file or directory`   | Asset file doesn't exist         | Re-upload token or check path                  |
-| `Invalid Graphium file`               | Missing manifest.json in ZIP     | Check ZIP structure                            |
-| `EACCES: permission denied`           | No write permissions             | Check folder permissions                       |
-| `ENOSPC: no space left on device`     | Disk full                        | Free up space                                  |
-| `Can't find end of central directory` | Corrupted ZIP                    | Use backup .graphium file                      |
+| Error                                 | Cause                            | Solution                                                      |
+| ------------------------------------- | -------------------------------- | ------------------------------------------------------------- |
+| `net::ERR_UNKNOWN_URL_SCHEME`         | media:// protocol not registered | Check `protocol.registerSchemesAsPrivileged()`                |
+| `window.ipcRenderer is undefined`     | Preload script not loaded        | Verify `webPreferences.preload` path                          |
+| `ENOENT: no such file or directory`   | Asset file doesn't exist         | Re-upload token or check path                                 |
+| `Invalid Graphium file`               | Missing manifest.json in ZIP     | Check ZIP structure                                           |
+| `EACCES: permission denied`           | No write permissions             | Check folder permissions                                      |
+| `ENOSPC: no space left on device`     | Disk full                        | Free up space                                                 |
+| `Can't find end of central directory` | Corrupted ZIP                    | Use backup .graphium file                                     |
+| YouTube **Error 153**                 | World View origin is `file://`   | Load `graphium://` (or localhost in dev); copy links fallback |
 
 ---
 

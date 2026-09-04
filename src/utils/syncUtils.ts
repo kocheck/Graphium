@@ -1,3 +1,6 @@
+import { sanitizeStack } from './errorSanitizer';
+import { emptySessionConsoleRuntime } from '../types/sessionConsole';
+
 import type {
   Token,
   Drawing,
@@ -10,6 +13,7 @@ import type {
   GameState,
 } from '../store/gameStore';
 import type { Measurement } from '../types/measurement';
+import type { SessionConsoleRuntime } from '../types/sessionConsole';
 
 function isEqualDate(obj1: unknown, obj2: unknown): boolean | undefined {
   if (obj1 instanceof Date && obj2 instanceof Date) {
@@ -88,6 +92,24 @@ export function isEqual(obj1: unknown, obj2: unknown): boolean {
   return isEqualObject(obj1, obj2);
 }
 
+function cloneSessionConsoleRuntime(
+  runtime: SessionConsoleRuntime | undefined | null,
+): SessionConsoleRuntime {
+  const source = runtime ?? emptySessionConsoleRuntime();
+  const empty = emptySessionConsoleRuntime();
+  return {
+    ...source,
+    stage: { ...(source.stage ?? empty.stage) },
+    duckPercent: source.duckPercent ?? empty.duckPercent,
+    activeImage: source.activeImage ? { ...source.activeImage } : null,
+    audio: {
+      ...source.audio,
+      restartSeq: source.audio.restartSeq ?? 0,
+      volumeOffset: source.audio.volumeOffset ?? 0,
+    },
+  };
+}
+
 export interface SyncableGameState {
   tokens: Token[];
   tokenLibrary: TokenLibraryItem[];
@@ -102,7 +124,13 @@ export interface SyncableGameState {
   isDaylightMode: boolean;
   activeMeasurement: Measurement | null;
   broadcastMeasurement: boolean;
+  sessionConsoleRuntime: SessionConsoleRuntime;
 }
+
+export type SessionConsoleWorldEvent = {
+  type: 'armed' | 'unarmed' | 'ready' | 'error';
+  message?: string;
+};
 
 // eslint-disable-next-line import/no-unused-modules -- covered by syncUtils unit tests
 export const FULL_SYNC_ACTION_THRESHOLD = 20;
@@ -139,7 +167,34 @@ export type SyncAction =
       };
     }
   | { type: 'EXPLORED_UPDATE'; payload: ExploredRegion[] }
-  | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null };
+  | { type: 'MEASUREMENT_UPDATE'; payload: Measurement | null }
+  | {
+      type: 'STAGE_UPDATE';
+      payload: {
+        stageVisible: boolean;
+        activeImage: SessionConsoleRuntime['activeImage'];
+        stage: SessionConsoleRuntime['stage'];
+      };
+    }
+  | {
+      type: 'AUDIO_UPDATE';
+      payload: {
+        audio: SessionConsoleRuntime['audio'];
+        volume: number;
+        ducked: boolean;
+        duckPercent: number;
+      };
+    }
+  | {
+      type: 'SFX_FIRE';
+      payload: {
+        seq: number;
+        sfxId: string | null;
+        kind: SessionConsoleRuntime['sfxKind'];
+        synthType: SessionConsoleRuntime['sfxSynthType'];
+        src: string | null;
+      };
+    };
 
 function buildFullSync(currentState: Partial<SyncableGameState>): SyncAction {
   return {
@@ -166,7 +221,40 @@ export function buildFullSyncPayload(
     isDaylightMode: state.isDaylightMode,
     activeMeasurement: state.activeMeasurement ?? null,
     broadcastMeasurement: Boolean(state.broadcastMeasurement ?? false),
+    sessionConsoleRuntime: cloneSessionConsoleRuntime(state.sessionConsoleRuntime),
   };
+}
+
+const WORLD_FULL_SYNC_STATE_KEYS = [
+  'tokens',
+  'drawings',
+  'doors',
+  'stairs',
+  'gridSize',
+  'gridType',
+  'gridColor',
+  'map',
+  'exploredRegions',
+  'isDaylightMode',
+  'activeMeasurement',
+  'broadcastMeasurement',
+] as const satisfies ReadonlyArray<keyof SyncableGameState>;
+
+/**
+ * World FULL_SYNC may only write the documented sync slice.
+ * Catalog, campaign, tokenLibrary, and runtime are applied separately.
+ */
+export function worldFullSyncStatePatch(
+  payload: Partial<SyncableGameState>,
+): Partial<SyncableGameState> {
+  const patch: Partial<SyncableGameState> = {};
+  const record = payload as Record<string, unknown>;
+  for (const key of WORLD_FULL_SYNC_STATE_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(record, key) && record[key] !== undefined) {
+      (patch as Record<string, unknown>)[key] = record[key];
+    }
+  }
+  return patch;
 }
 
 /** Clones game store state into a sync snapshot for diffing. */
@@ -199,6 +287,7 @@ export function cloneSyncableStateFromGame(
     isDaylightMode: state.isDaylightMode,
     activeMeasurement: state.activeMeasurement ?? null,
     broadcastMeasurement: state.broadcastMeasurement ?? false,
+    sessionConsoleRuntime: cloneSessionConsoleRuntime(state.sessionConsoleRuntime),
   };
 }
 
@@ -221,6 +310,7 @@ export function cloneSyncableStateFromPayload(
     isDaylightMode: payload.isDaylightMode ?? false,
     activeMeasurement: payload.activeMeasurement ?? null,
     broadcastMeasurement: payload.broadcastMeasurement ?? false,
+    sessionConsoleRuntime: cloneSessionConsoleRuntime(payload.sessionConsoleRuntime),
   };
 }
 
@@ -254,7 +344,8 @@ export function isSyncSliceUnchanged(current: GameState, previous: GameState): b
     current.isDaylightMode === previous.isDaylightMode &&
     current.activeMeasurement === previous.activeMeasurement &&
     current.broadcastMeasurement === previous.broadcastMeasurement &&
-    current.campaign.tokenLibrary === previous.campaign.tokenLibrary
+    current.campaign.tokenLibrary === previous.campaign.tokenLibrary &&
+    current.sessionConsoleRuntime === previous.sessionConsoleRuntime
   );
 }
 
@@ -391,6 +482,88 @@ function detectMeasurementActions(
   return actions;
 }
 
+function sessionConsoleStageChanged(
+  previous: SessionConsoleRuntime,
+  current: SessionConsoleRuntime,
+): boolean {
+  return (
+    previous.stageVisible !== current.stageVisible ||
+    !isEqual(previous.activeImage, current.activeImage) ||
+    !isEqual(previous.stage, current.stage)
+  );
+}
+
+function sessionConsoleAudioChanged(
+  previous: SessionConsoleRuntime,
+  current: SessionConsoleRuntime,
+): boolean {
+  return (
+    !isEqual(previous.audio, current.audio) ||
+    previous.volume !== current.volume ||
+    previous.ducked !== current.ducked ||
+    previous.duckPercent !== current.duckPercent
+  );
+}
+
+function sessionConsoleSfxChanged(
+  previous: SessionConsoleRuntime,
+  current: SessionConsoleRuntime,
+): boolean {
+  return previous.sfxSeq !== current.sfxSeq || previous.sfxId !== current.sfxId;
+}
+
+function detectSessionConsoleActions(
+  prevState: Partial<SyncableGameState>,
+  currentState: Partial<SyncableGameState>,
+): SyncAction[] {
+  const prevRt = prevState.sessionConsoleRuntime;
+  const currRt = currentState.sessionConsoleRuntime;
+  if (prevRt === currRt || !currRt) {
+    return [];
+  }
+
+  const previous = prevRt ?? emptySessionConsoleRuntime();
+  const actions: SyncAction[] = [];
+
+  if (sessionConsoleStageChanged(previous, currRt)) {
+    actions.push({
+      type: 'STAGE_UPDATE',
+      payload: {
+        stageVisible: currRt.stageVisible,
+        activeImage: currRt.activeImage,
+        stage: currRt.stage,
+      },
+    });
+  }
+
+  if (sessionConsoleAudioChanged(previous, currRt)) {
+    actions.push({
+      type: 'AUDIO_UPDATE',
+      payload: {
+        audio: currRt.audio,
+        volume: currRt.volume,
+        ducked: currRt.ducked,
+        duckPercent: currRt.duckPercent,
+      },
+    });
+  }
+
+  if (sessionConsoleSfxChanged(previous, currRt)) {
+    actions.push({
+      type: 'SFX_FIRE',
+      payload: {
+        seq: currRt.sfxSeq,
+        sfxId: currRt.sfxId,
+        kind: currRt.sfxKind ?? null,
+        synthType: currRt.sfxSynthType ?? null,
+        src: currRt.sfxSrc ?? null,
+      },
+    });
+  }
+
+  return actions;
+}
+
 /**
  * Detects changes between previous and current state, returns delta actions.
  * A null previous state produces a single FULL_SYNC (first Architect→World
@@ -471,6 +644,93 @@ export function detectChanges(
       remove: 'STAIRS_REMOVE',
     }),
   );
+  actions.push(...detectSessionConsoleActions(prevState, currentState));
 
   return actions;
+}
+
+/** Applies Architect→World session console actions onto a consumer runtime (no catalog). */
+export function applyAction(
+  runtime: SessionConsoleRuntime,
+  action: SyncAction,
+): SessionConsoleRuntime {
+  switch (action.type) {
+    case 'BATCH': {
+      let next = runtime;
+      for (const inner of action.payload) {
+        next = applyAction(next, inner);
+      }
+      return next;
+    }
+    case 'STAGE_UPDATE':
+      return {
+        ...runtime,
+        stageVisible: action.payload.stageVisible,
+        activeImage: action.payload.activeImage,
+        stage: action.payload.stage ? { ...action.payload.stage } : runtime.stage,
+      };
+    case 'AUDIO_UPDATE':
+      return {
+        ...runtime,
+        audio: {
+          ...action.payload.audio,
+          restartSeq: action.payload.audio.restartSeq ?? 0,
+          volumeOffset: action.payload.audio.volumeOffset ?? 0,
+        },
+        volume: action.payload.volume,
+        ducked: action.payload.ducked,
+        duckPercent: action.payload.duckPercent ?? runtime.duckPercent,
+      };
+    case 'SFX_FIRE':
+      return {
+        ...runtime,
+        sfxSeq: action.payload.seq,
+        sfxId: action.payload.sfxId,
+        sfxKind: action.payload.kind ?? null,
+        sfxSynthType: action.payload.synthType ?? null,
+        sfxSrc: action.payload.src ?? null,
+      };
+    case 'FULL_SYNC': {
+      const incoming = action.payload.sessionConsoleRuntime;
+      if (!incoming) {
+        return runtime;
+      }
+      return { ...cloneSessionConsoleRuntime(incoming), worldArmed: runtime.worldArmed };
+    }
+    default:
+      return runtime;
+  }
+}
+
+const WORLD_EVENT_TYPES = new Set(['armed', 'unarmed', 'ready', 'error']);
+
+/** Validates World → Architect Session Console status events. */
+export function parseSessionConsoleWorldEvent(raw: unknown): SessionConsoleWorldEvent | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const candidate = raw as { type?: unknown; message?: unknown };
+  if (typeof candidate.type !== 'string' || !WORLD_EVENT_TYPES.has(candidate.type)) {
+    return null;
+  }
+  const event: SessionConsoleWorldEvent = {
+    type: candidate.type as SessionConsoleWorldEvent['type'],
+  };
+  if (typeof candidate.message === 'string' && candidate.message.length > 0) {
+    event.message = candidate.message;
+  }
+  return event;
+}
+
+/** Strips usernames from paths then runs existing PII sanitization. */
+export function sanitizeSessionConsoleErrorMessage(message: string): string {
+  const withPaths = message
+    .replace(/(\/(?:Users|home)\/)[^/\\]+/gi, '$1<USER>')
+    .replace(/([A-Za-z]:[/\\](?:Users|Documents and Settings)[/\\])[^/\\]+/gi, '$1<USER>')
+    .replace(/file:\/\/[^\s;]+/gi, '<FILE>')
+    .replace(/https?:\/\/[^\s;]+/gi, '<URL>')
+    .replace(/\/(?:Users|home)\/<USER>\/[^\s;]+/gi, '<PATH>')
+    .replace(/[A-Za-z]:[/\\](?:Users|Documents and Settings)[/\\]<USER>[^\s;]*/gi, '<PATH>')
+    .replace(/(?:^|[\s:])(\/(?:tmp|var|opt|private)\/[^\s;]+)/gi, ' <PATH>');
+  return sanitizeStack(new Error(withPaths), '').message;
 }

@@ -44,6 +44,7 @@ export function ErrorFallbackUI({ error, onReset }: ErrorFallbackUIProps): JSX.E
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
       role="dialog"
       aria-modal="true"
+      data-esc-owns="true"
       aria-labelledby="error-dialog-title"
     >
       <div

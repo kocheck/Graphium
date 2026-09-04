@@ -1,4 +1,5 @@
 import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { SessionConsoleCatalog } from '../types/sessionConsole';
 
 /**
  * Metadata for a library asset (before URLs are assigned)
@@ -102,6 +103,32 @@ export interface IStorageService {
    * }
    */
   loadCampaign(): Promise<Campaign | null>;
+
+  /**
+   * Import a Session Console board pack via a native open dialog (`board.json`).
+   *
+   * **Electron:** Main process sandboxes relative paths and copies files into temp_assets.
+   * **Web:** JSON file picker; materializes YouTube + http(s) srcs. Local files are skipped.
+   *
+   * @returns Catalog plus skipped-row messages, or null if the user cancelled
+   */
+  importSessionConsolePack(): Promise<{
+    catalog: SessionConsoleCatalog;
+    skipped: string[];
+    warnings: string[];
+  } | null>;
+
+  /**
+   * Export the current Session Console catalog as a board pack folder.
+   *
+   * **Electron:** Native directory picker; writes `board.json` plus `images/` and `audio/`.
+   * Returns `{ ok, skipped }` after a chosen folder, or `false` if cancelled.
+   * `ok` is false when any required copy is rejected.
+   * **Web:** Downloads a YouTube-only `board.json` (no local file copy).
+   */
+  exportSessionConsolePack(
+    catalog: SessionConsoleCatalog,
+  ): Promise<false | { ok: boolean; skipped: string[] }>;
 
   // ===== ASSET PROCESSING =====
 

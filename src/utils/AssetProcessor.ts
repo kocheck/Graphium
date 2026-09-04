@@ -1,3 +1,4 @@
+import { maxDimensionForType, type ImageAssetType } from './imageMaxDimensions';
 import { getStorage } from '../services/storage';
 
 /**
@@ -5,25 +6,10 @@ import { getStorage } from '../services/storage';
  *
  * - MAP: Background map images (max 4096px for 4K display support)
  * - TOKEN: Character/creature tokens (max 512px for performance)
+ * - THUMB: Session Console plate thumbnails (max 256px)
  */
 // eslint-disable-next-line import/no-unused-modules
-export type AssetType = 'MAP' | 'TOKEN';
-
-/**
- * Maximum dimension for map images in pixels
- *
- * Set to 4096px to support 4K displays without quality loss while preventing
- * excessive memory usage. Maps larger than this are resized proportionally.
- */
-const MAX_MAP_DIMENSION = 4096;
-
-/**
- * Maximum dimension for token images in pixels
- *
- * Set to 512px as tokens are displayed at grid cell size (typically 50-100px).
- * This provides plenty of quality while keeping file sizes small and rendering fast.
- */
-const MAX_TOKEN_DIMENSION = 512;
+export type AssetType = ImageAssetType;
 
 /**
  * Progress callback for image processing
@@ -313,7 +299,7 @@ async function processImageMainThread(
     onProgress(20);
   }
 
-  const maxDim = type === 'MAP' ? MAX_MAP_DIMENSION : MAX_TOKEN_DIMENSION;
+  const maxDim = maxDimensionForType(type);
 
   let width = bitmap.width;
   let height = bitmap.height;

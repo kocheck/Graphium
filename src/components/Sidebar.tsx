@@ -80,6 +80,7 @@ import MapSettingsSheet from './MapSettingsSheet';
 import MobileSidebarDrawer from './MobileSidebarDrawer';
 import QuickTokenSidebar from './QuickTokenSidebar';
 import { QuickTokenSidebarErrorBoundary } from './QuickTokenSidebarErrorBoundary';
+import { SessionConsolePanel } from './SessionConsole/SessionConsolePanel';
 import Tooltip from './Tooltip';
 import { useCommandPalette } from '../hooks/useCommandPalette';
 import { useIsMobile } from '../hooks/useMediaQuery';
@@ -414,6 +415,12 @@ function Sidebar(): JSX.Element {
                 onDragStart={handleDragStart}
               />
             </QuickTokenSidebarErrorBoundary>
+          </CollapsibleSection>
+
+          <div className="w-full h-px bg-[var(--app-border-default)] my-6"></div>
+
+          <CollapsibleSection title="SESSION CONSOLE">
+            <SessionConsolePanel />
           </CollapsibleSection>
         </>
       )}

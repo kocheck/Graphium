@@ -22,6 +22,38 @@ describe('rewriteCampaignAssetSrcs', () => {
     expect(campaign.tokenLibrary[0]?.thumbnailSrc).toBe('assets/thumb.webp');
   });
 
+  it('rewrites session console images, local tracks, and local sfx, but not youtube tracks', async () => {
+    const youtubeSrc = 'file://should-not-rewrite.mp3';
+    const campaign = {
+      sessionConsole: {
+        imageSets: [
+          {
+            images: [{ src: 'file://plate.webp', thumbnailSrc: 'file://plate-thumb.webp' }],
+          },
+        ],
+        trackGroups: [
+          {
+            tracks: [
+              { source: 'local' as const, src: 'file://bed.mp3' },
+              { source: 'youtube' as const, youtubeId: 'dQw4w9wgwcQ', src: youtubeSrc },
+            ],
+          },
+        ],
+        sfx: [{ kind: 'local' as const, src: 'file://snap.wav' }, { kind: 'synth' as const }],
+      },
+    };
+
+    await rewriteCampaignAssetSrcs(campaign, async (src) => src.replace('file://', 'assets/'));
+
+    expect(campaign.sessionConsole.imageSets[0]?.images[0]?.src).toBe('assets/plate.webp');
+    expect(campaign.sessionConsole.imageSets[0]?.images[0]?.thumbnailSrc).toBe(
+      'assets/plate-thumb.webp',
+    );
+    expect(campaign.sessionConsole.trackGroups[0]?.tracks[0]?.src).toBe('assets/bed.mp3');
+    expect(campaign.sessionConsole.trackGroups[0]?.tracks[1]?.src).toBe(youtubeSrc);
+    expect(campaign.sessionConsole.sfx[0]?.src).toBe('assets/snap.wav');
+  });
+
   it('dedupes identical srcs so rewrite runs once', async () => {
     let calls = 0;
     const campaign = {

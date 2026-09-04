@@ -19,6 +19,14 @@ This document provides a complete overview of Graphium's documentation, organize
 
 **Total: ~7,240 lines of core documentation**
 
+### Planning Documents
+
+| File                                                                                       | Purpose                                        | Target Audience           |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------------------- |
+| [`planning/session-console-design.md`](planning/session-console-design.md)                 | Party plates + ambience Session Console design | Developers, AI assistants |
+| [`planning/session-console-plan.md`](planning/session-console-plan.md)                     | Task-by-task implementation plan               | Developers, AI assistants |
+| [`planning/session-console-pack.example.json`](planning/session-console-pack.example.json) | Board pack schema example                      | DMs, developers           |
+
 ### Directory-Level READMEs (6 files)
 
 | File                                                                       | Purpose                     | Lines |

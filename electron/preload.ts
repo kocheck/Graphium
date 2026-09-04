@@ -38,6 +38,7 @@ const ALLOWED_SEND_CHANNELS = [
   'create-world-window',
   'SYNC_WORLD_STATE',
   'SYNC_FROM_WORLD_VIEW',
+  'SESSION_CONSOLE_WORLD_EVENT',
   'REQUEST_INITIAL_STATE',
   'LOG_TO_TERMINAL',
 ] as const;
@@ -64,6 +65,8 @@ const ALLOWED_INVOKE_CHANNELS = [
   'download-update',
   'quit-and-install',
   'get-current-version',
+  'IMPORT_SESSION_CONSOLE_PACK',
+  'EXPORT_SESSION_CONSOLE_PACK',
 ] as const;
 
 /** Channels the renderer may subscribe to */
@@ -71,6 +74,7 @@ const ALLOWED_RECEIVE_CHANNELS = [
   'SYNC_WORLD_STATE',
   'REQUEST_INITIAL_STATE',
   'SYNC_FROM_WORLD_VIEW',
+  'SESSION_CONSOLE_WORLD_EVENT',
   'PAUSE_STATE_CHANGED',
   'MENU_SAVE_CAMPAIGN',
   'MENU_LOAD_CAMPAIGN',

@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { emptySessionConsoleRuntime } from '../types/sessionConsole';
+import { sanitizeStack } from './errorSanitizer';
 import {
   isEqual,
   detectChanges,
@@ -6,7 +8,47 @@ import {
   detectWorldViewTokenUpdates,
   isTokenDragAction,
   FULL_SYNC_ACTION_THRESHOLD,
+  applyAction,
+  buildFullSyncPayload,
+  cloneSyncableStateFromGame,
+  cloneSyncableStateFromPayload,
+  worldFullSyncStatePatch,
+  isSyncSliceUnchanged,
+  parseSessionConsoleWorldEvent,
+  sanitizeSessionConsoleErrorMessage,
 } from './syncUtils';
+import type { SessionConsoleRuntime } from '../types/sessionConsole';
+import type { GameState } from '../store/gameStore';
+
+function runtime(overrides: Partial<SessionConsoleRuntime> = {}): SessionConsoleRuntime {
+  const base = emptySessionConsoleRuntime();
+  return {
+    ...base,
+    ...overrides,
+    stage: { ...base.stage, ...overrides.stage },
+    audio: { ...base.audio, ...overrides.audio },
+    activeImage: overrides.activeImage === undefined ? base.activeImage : overrides.activeImage,
+  };
+}
+
+const plateImage = {
+  id: 'img-1',
+  src: 'file:///tmp/plate.webp',
+  alt: 'A forest path',
+  name: 'Forest',
+};
+
+const playingAudio: SessionConsoleRuntime['audio'] = {
+  trackId: 'track-1',
+  title: 'Road bed',
+  source: 'local',
+  youtubeId: null,
+  src: 'file:///tmp/bed.mp3',
+  status: 'playing',
+  loop: true,
+  restartSeq: 0,
+  volumeOffset: 0,
+};
 
 describe('syncUtils', () => {
   describe('isTokenDragAction', () => {
@@ -232,6 +274,304 @@ describe('syncUtils', () => {
       expect(detectChanges(prev, curr)).toEqual([
         { type: 'TOKEN_UPDATE', payload: { id: 't2', changes: { x: 5, y: 5 } } },
       ]);
+    });
+
+    it('emits STAGE_UPDATE when only the plate changes', () => {
+      const prevRt = runtime();
+      const currRt = runtime({
+        stageVisible: true,
+        activeImage: plateImage,
+      });
+      const changes = detectChanges(
+        { sessionConsoleRuntime: prevRt },
+        { sessionConsoleRuntime: currRt },
+      );
+      expect(changes).toEqual([
+        {
+          type: 'STAGE_UPDATE',
+          payload: { stageVisible: true, activeImage: plateImage, stage: currRt.stage },
+        },
+      ]);
+    });
+
+    it('emits AUDIO_UPDATE including restartSeq when it increments', () => {
+      const prevRt = runtime({ audio: playingAudio });
+      const audio = { ...playingAudio, restartSeq: 1 };
+      const currRt = runtime({ audio });
+      const changes = detectChanges(
+        { sessionConsoleRuntime: prevRt },
+        { sessionConsoleRuntime: currRt },
+      );
+      expect(changes).toEqual([
+        {
+          type: 'AUDIO_UPDATE',
+          payload: { audio, volume: currRt.volume, ducked: false, duckPercent: currRt.duckPercent },
+        },
+      ]);
+      expect(changes[0]?.type === 'AUDIO_UPDATE' && changes[0].payload.audio.restartSeq).toBe(1);
+    });
+
+    it('emits AUDIO_UPDATE when a track starts playing', () => {
+      const prevRt = runtime({ stageVisible: true, activeImage: plateImage });
+      const currRt = runtime({
+        stageVisible: true,
+        activeImage: plateImage,
+        audio: playingAudio,
+      });
+      const changes = detectChanges(
+        { sessionConsoleRuntime: prevRt },
+        { sessionConsoleRuntime: currRt },
+      );
+      expect(changes).toEqual([
+        {
+          type: 'AUDIO_UPDATE',
+          payload: {
+            audio: playingAudio,
+            volume: currRt.volume,
+            ducked: false,
+            duckPercent: currRt.duckPercent,
+          },
+        },
+      ]);
+    });
+
+    it('does not emit audio stop on RETURN_TO_MAP while audio is still playing', () => {
+      const audio = { ...playingAudio };
+      const prevRt = runtime({
+        stageVisible: true,
+        activeImage: plateImage,
+        audio,
+      });
+      const currRt = runtime({
+        stageVisible: false,
+        activeImage: plateImage,
+        audio,
+      });
+      const changes = detectChanges(
+        { sessionConsoleRuntime: prevRt },
+        { sessionConsoleRuntime: currRt },
+      );
+      expect(changes).toEqual([
+        {
+          type: 'STAGE_UPDATE',
+          payload: { stageVisible: false, activeImage: plateImage, stage: currRt.stage },
+        },
+      ]);
+      expect(changes.some((action) => action.type === 'AUDIO_UPDATE')).toBe(false);
+      expect(currRt.audio.status).toBe('playing');
+    });
+
+    it('emits AUDIO_UPDATE (not FULL_SYNC) for volume and duck changes', () => {
+      const audio = { ...playingAudio };
+      const prevRt = runtime({ audio, volume: 45, ducked: false });
+      const volumeRt = runtime({ audio, volume: 70, ducked: false });
+      const duckRt = runtime({ audio, volume: 70, ducked: true });
+
+      const volumeChanges = detectChanges(
+        { sessionConsoleRuntime: prevRt },
+        { sessionConsoleRuntime: volumeRt },
+      );
+      expect(volumeChanges).toEqual([
+        { type: 'AUDIO_UPDATE', payload: { audio, volume: 70, ducked: false, duckPercent: 27 } },
+      ]);
+      expect(volumeChanges[0]?.type).not.toBe('FULL_SYNC');
+
+      const duckChanges = detectChanges(
+        { sessionConsoleRuntime: volumeRt },
+        { sessionConsoleRuntime: duckRt },
+      );
+      expect(duckChanges).toEqual([
+        { type: 'AUDIO_UPDATE', payload: { audio, volume: 70, ducked: true, duckPercent: 27 } },
+      ]);
+      expect(coalesceSyncActions(duckChanges, { sessionConsoleRuntime: duckRt })[0]?.type).toBe(
+        'AUDIO_UPDATE',
+      );
+    });
+
+    it('emits SFX_FIRE when sfx seq advances', () => {
+      const prevRt = runtime({ sfxSeq: 2, sfxId: 'chime' });
+      const currRt = runtime({ sfxSeq: 3, sfxId: 'snap' });
+      expect(
+        detectChanges({ sessionConsoleRuntime: prevRt }, { sessionConsoleRuntime: currRt }),
+      ).toEqual([
+        {
+          type: 'SFX_FIRE',
+          payload: { seq: 3, sfxId: 'snap', kind: null, synthType: null, src: null },
+        },
+      ]);
+    });
+
+    it('does not emit session console actions when only worldArmed changes', () => {
+      const prevRt = runtime({ worldArmed: false });
+      const currRt = runtime({ worldArmed: true });
+      expect(
+        detectChanges({ sessionConsoleRuntime: prevRt }, { sessionConsoleRuntime: currRt }),
+      ).toEqual([]);
+    });
+
+    it('includes sessionConsoleRuntime chrome in FULL_SYNC and omits catalog imageSets', () => {
+      const currRt = runtime({
+        stageVisible: true,
+        activeImage: plateImage,
+        audio: playingAudio,
+        stage: { title: 'Skeldra', subtitle: 'Session 3', showFrame: false },
+        duckPercent: 40,
+      });
+      const changes = detectChanges(null, {
+        sessionConsoleRuntime: currRt,
+        tokens: [],
+      });
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.type).toBe('FULL_SYNC');
+      if (changes[0]?.type === 'FULL_SYNC') {
+        expect(changes[0].payload.sessionConsoleRuntime).toEqual(currRt);
+        expect(changes[0].payload.sessionConsoleRuntime?.stage.title).toBe('Skeldra');
+        expect(changes[0].payload.sessionConsoleRuntime?.duckPercent).toBe(40);
+        expect(changes[0].payload.sessionConsoleRuntime?.audio.volumeOffset).toBe(0);
+        expect(changes[0].payload).not.toHaveProperty('sessionConsole');
+        expect(changes[0].payload).not.toHaveProperty('campaign');
+        expect(changes[0].payload).not.toHaveProperty('imageSets');
+        expect(JSON.stringify(changes[0].payload.sessionConsoleRuntime)).not.toMatch(
+          /cue|thumbnailSrc|imageSets/i,
+        );
+      }
+    });
+  });
+
+  describe('applyAction', () => {
+    it('applies STAGE_UPDATE on a consumer runtime without a catalog', () => {
+      const stage = { title: 'Keep', subtitle: '', showFrame: true };
+      const next = applyAction(runtime(), {
+        type: 'STAGE_UPDATE',
+        payload: { stageVisible: true, activeImage: plateImage, stage },
+      });
+      expect(next.stageVisible).toBe(true);
+      expect(next.activeImage).toEqual(plateImage);
+      expect(next.stage).toEqual(stage);
+      expect(next.audio.status).toBe('stopped');
+    });
+
+    it('merges AUDIO_UPDATE and SFX_FIRE into runtime without catalog reducers', () => {
+      const afterAudio = applyAction(runtime(), {
+        type: 'AUDIO_UPDATE',
+        payload: { audio: playingAudio, volume: 12, ducked: true, duckPercent: 40 },
+      });
+      expect(afterAudio.audio).toEqual(playingAudio);
+      expect(afterAudio.volume).toBe(12);
+      expect(afterAudio.ducked).toBe(true);
+      expect(afterAudio.duckPercent).toBe(40);
+
+      const afterSfx = applyAction(afterAudio, {
+        type: 'SFX_FIRE',
+        payload: { seq: 4, sfxId: 'ping', kind: 'synth', synthType: 'ping', src: null },
+      });
+      expect(afterSfx.sfxSeq).toBe(4);
+      expect(afterSfx.sfxId).toBe('ping');
+      expect(afterSfx.sfxKind).toBe('synth');
+      expect(afterSfx.sfxSynthType).toBe('ping');
+      expect(afterSfx.audio.status).toBe('playing');
+    });
+
+    it('applies FULL_SYNC runtime while preserving consumer worldArmed', () => {
+      const incoming = runtime({ stageVisible: true, activeImage: plateImage, worldArmed: false });
+      const next = applyAction(runtime({ worldArmed: true }), {
+        type: 'FULL_SYNC',
+        payload: { sessionConsoleRuntime: incoming },
+      });
+      expect(next.stageVisible).toBe(true);
+      expect(next.activeImage).toEqual(plateImage);
+      expect(next.worldArmed).toBe(true);
+    });
+  });
+
+  describe('clone and slice helpers', () => {
+    it('clones sessionConsoleRuntime from game and payload without catalog', () => {
+      const rt = runtime({ stageVisible: true, activeImage: plateImage });
+      const fromGame = cloneSyncableStateFromGame({
+        tokens: [],
+        drawings: [],
+        doors: [],
+        stairs: [],
+        gridSize: 50,
+        gridType: 'LINES',
+        gridColor: '#222',
+        map: null,
+        exploredRegions: [],
+        isDaylightMode: false,
+        activeMeasurement: null,
+        broadcastMeasurement: false,
+        campaign: { tokenLibrary: [] },
+        sessionConsoleRuntime: rt,
+      } as unknown as GameState);
+
+      expect(fromGame.sessionConsoleRuntime).toEqual(rt);
+      expect(fromGame.sessionConsoleRuntime).not.toBe(rt);
+      expect(fromGame).not.toHaveProperty('sessionConsole');
+
+      const fromPayload = cloneSyncableStateFromPayload(
+        { sessionConsoleRuntime: rt },
+        { gridColor: '#222' },
+      );
+      expect(fromPayload.sessionConsoleRuntime).toEqual(rt);
+    });
+
+    it('treats sessionConsoleRuntime as part of the Architect sync slice', () => {
+      const shared = runtime();
+      const campaign = { tokenLibrary: [] };
+      const previous = { sessionConsoleRuntime: shared, campaign } as unknown as GameState;
+      const unchanged = { sessionConsoleRuntime: shared, campaign } as unknown as GameState;
+      const changed = {
+        sessionConsoleRuntime: runtime({ volume: 10 }),
+        campaign,
+      } as unknown as GameState;
+      expect(isSyncSliceUnchanged(unchanged, previous)).toBe(true);
+      expect(isSyncSliceUnchanged(changed, previous)).toBe(false);
+    });
+
+    it('strips catalog and campaign keys from a World FULL_SYNC patch', () => {
+      const patch = worldFullSyncStatePatch({
+        tokens: [],
+        gridSize: 50,
+        sessionConsoleRuntime: runtime(),
+        tokenLibrary: [],
+        sessionConsole: { imageSets: [{ id: 'spoiler' }] },
+        campaign: { name: 'Ash Crown' },
+      } as never);
+      expect(patch).toEqual({ tokens: [], gridSize: 50 });
+      expect(patch).not.toHaveProperty('sessionConsole');
+      expect(patch).not.toHaveProperty('campaign');
+      expect(patch).not.toHaveProperty('sessionConsoleRuntime');
+      expect(patch).not.toHaveProperty('tokenLibrary');
+    });
+
+    it('includes runtime in buildFullSyncPayload', () => {
+      const rt = runtime({ ducked: true });
+      const payload = buildFullSyncPayload({ sessionConsoleRuntime: rt });
+      expect(payload.sessionConsoleRuntime).toEqual(rt);
+    });
+  });
+
+  describe('SESSION_CONSOLE_WORLD_EVENT', () => {
+    it('parses armed/unarmed/ready/error and rejects unknown payloads', () => {
+      expect(parseSessionConsoleWorldEvent({ type: 'armed' })).toEqual({ type: 'armed' });
+      expect(parseSessionConsoleWorldEvent({ type: 'unarmed' })).toEqual({ type: 'unarmed' });
+      expect(parseSessionConsoleWorldEvent({ type: 'ready' })).toEqual({ type: 'ready' });
+      expect(parseSessionConsoleWorldEvent({ type: 'error', message: 'fail' })).toEqual({
+        type: 'error',
+        message: 'fail',
+      });
+      expect(parseSessionConsoleWorldEvent({ type: 'TOKEN_UPDATE' })).toBeNull();
+      expect(parseSessionConsoleWorldEvent(null)).toBeNull();
+    });
+
+    it('sanitizes file paths in World error messages via errorSanitizer', () => {
+      const raw = 'Failed to load /Users/janedoe/Music/bed.mp3';
+      const sanitized = sanitizeSessionConsoleErrorMessage(raw);
+      expect(sanitized).not.toContain('janedoe');
+      expect(sanitized).not.toContain('/Users/');
+      expect(sanitized).not.toContain('Music/bed');
+      expect(sanitized).toMatch(/Failed to load/);
+      expect(sanitizeStack(new Error(sanitized), 'janedoe').message).not.toContain('janedoe');
     });
   });
 

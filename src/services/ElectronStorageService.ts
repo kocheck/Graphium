@@ -1,5 +1,6 @@
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
 import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { SessionConsoleCatalog } from '../types/sessionConsole';
 
 /**
  * Storage service for Electron environment
@@ -12,6 +13,8 @@ import type { Campaign, TokenLibraryItem } from '../store/gameStore';
  * - saveCampaign() → 'SAVE_CAMPAIGN'
  * - autoSaveCampaign() → 'AUTO_SAVE'
  * - loadCampaign() → 'LOAD_CAMPAIGN'
+ * - importSessionConsolePack() → 'IMPORT_SESSION_CONSOLE_PACK'
+ * - exportSessionConsolePack() → 'EXPORT_SESSION_CONSOLE_PACK'
  * - saveAssetTemp() → 'SAVE_ASSET_TEMP'
  * - saveAssetToLibrary() → 'SAVE_ASSET_TO_LIBRARY'
  * - loadLibraryIndex() → 'LOAD_LIBRARY_INDEX'
@@ -61,6 +64,28 @@ export class ElectronStorageService implements IStorageService {
   async loadCampaign(): Promise<Campaign | null> {
     this.ensureIPC();
     return (await window.ipcRenderer?.invoke('LOAD_CAMPAIGN')) as Campaign | null;
+  }
+
+  async importSessionConsolePack(): Promise<{
+    catalog: SessionConsoleCatalog;
+    skipped: string[];
+    warnings: string[];
+  } | null> {
+    this.ensureIPC();
+    return (await window.ipcRenderer?.invoke('IMPORT_SESSION_CONSOLE_PACK')) as {
+      catalog: SessionConsoleCatalog;
+      skipped: string[];
+      warnings: string[];
+    } | null;
+  }
+
+  async exportSessionConsolePack(
+    catalog: SessionConsoleCatalog,
+  ): Promise<false | { ok: boolean; skipped: string[] }> {
+    this.ensureIPC();
+    return (await window.ipcRenderer?.invoke('EXPORT_SESSION_CONSOLE_PACK', catalog)) as
+      | false
+      | { ok: boolean; skipped: string[] };
   }
 
   // ===== ASSET PROCESSING =====

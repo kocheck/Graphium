@@ -31,6 +31,8 @@ export const mediaUrlToFilePath = (url: string): string => {
   return path.resolve(fileURLToPath(fileUrl));
 };
 
+/** @public Electron filename gate — covered by tests/unit/pathSecurity.spec.ts */
+// eslint-disable-next-line import/no-unused-modules -- tests import this; production callers use rewriteSafeAssetFileName
 export const sanitizeAssetFileName = (name: string): string => {
   const baseName = path.basename(name);
   if (!SAFE_FILE_NAME_PATTERN.test(baseName)) {

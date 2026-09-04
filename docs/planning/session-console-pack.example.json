@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "kind": "graphium.sessionConsolePack",
+  "stage": {
+    "title": "Beneath the Ashen Crown",
+    "subtitle": "Skeldra expedition",
+    "showFrame": true
+  },
+  "defaults": {
+    "volume": 45,
+    "duckPercent": 27
+  },
+  "imageSets": [
+    {
+      "id": "campaign",
+      "title": "Campaign plates",
+      "note": "Safe establishing art. Reuse these whenever a reveal would say too much.",
+      "images": [
+        {
+          "id": "campaign-opener",
+          "name": "Campaign opener",
+          "cue": "Pre-game, recap, or a clean reset between scenes.",
+          "src": "./images/campaign-opener.png",
+          "alt": "The Shield Wall cracking above three ships at dusk"
+        },
+        {
+          "id": "skeldra-overview",
+          "name": "Skeldra overview",
+          "cue": "Travel planning or when the party asks where they are headed.",
+          "src": "./images/skeldra-island-overview.png",
+          "alt": "The Isle of Skeldra in a cold slate sea"
+        }
+      ]
+    },
+    {
+      "id": "session-3",
+      "title": "Session 3 · staged reveals",
+      "note": "Use in order. Never skip ahead on the shared screen.",
+      "images": [
+        {
+          "id": "session-3-01",
+          "name": "Lusty Lizard breakfast",
+          "cue": "Reveal when breakfast begins and the Verdure tells appear.",
+          "src": "./images/session-3-01-breakfast.png",
+          "alt": "Breakfast at the Lusty Lizard"
+        }
+      ]
+    }
+  ],
+  "trackGroups": [
+    {
+      "id": "road",
+      "title": "The Road",
+      "note": "Beats 0–3",
+      "accent": "road",
+      "tracks": [
+        {
+          "title": "Wilderness Travel",
+          "cue": "Default bed. Every uninterrupted leg.",
+          "tag": "bed",
+          "src": "https://www.youtube.com/watch?v=bLZApMsorjA",
+          "recommendedImage": "skeldra-overview",
+          "loop": true,
+          "volumeOffset": 0
+        },
+        {
+          "title": "Shelter From The Rain",
+          "cue": "Sap-rain weather, and camp before the set-piece.",
+          "tag": "camp",
+          "src": "./audio/shelter-rain.mp3",
+          "loop": true,
+          "volumeOffset": -8
+        }
+      ]
+    }
+  ]
+}

@@ -1,3 +1,106 @@
+type QueueRewrite = (current: string, set: (next: string) => void) => void;
+
+function queueCampaignMapAssets(campaign: CampaignAssetHost, queueRewrite: QueueRewrite): void {
+  if (!campaign.maps) {
+    return;
+  }
+  for (const map of Object.values(campaign.maps)) {
+    if (!map) {
+      continue;
+    }
+    const background = map.map;
+    const backgroundSrc = background?.src;
+    if (background && backgroundSrc) {
+      queueRewrite(backgroundSrc, (next) => {
+        background.src = next;
+      });
+    }
+    if (map.tokens) {
+      for (const token of map.tokens) {
+        queueRewrite(token.src, (next) => {
+          token.src = next;
+        });
+      }
+    }
+  }
+}
+
+function queueTokenLibraryAssets(
+  campaign: CampaignAssetHost,
+  includeThumbnails: boolean,
+  queueRewrite: QueueRewrite,
+): void {
+  if (!campaign.tokenLibrary) {
+    return;
+  }
+  for (const item of campaign.tokenLibrary) {
+    queueRewrite(item.src, (next) => {
+      item.src = next;
+    });
+    if (includeThumbnails && item.thumbnailSrc) {
+      queueRewrite(item.thumbnailSrc, (next) => {
+        item.thumbnailSrc = next;
+      });
+    }
+  }
+}
+
+function queueSessionConsoleAssets(
+  campaign: CampaignAssetHost,
+  includeThumbnails: boolean,
+  queueRewrite: QueueRewrite,
+): void {
+  const sessionConsole = campaign.sessionConsole;
+  if (!sessionConsole) {
+    return;
+  }
+  queueSessionConsolePlates(sessionConsole, includeThumbnails, queueRewrite);
+  queueSessionConsoleAudio(sessionConsole, queueRewrite);
+}
+
+function queueSessionConsolePlates(
+  sessionConsole: NonNullable<CampaignAssetHost['sessionConsole']>,
+  includeThumbnails: boolean,
+  queueRewrite: QueueRewrite,
+): void {
+  for (const imageSet of sessionConsole.imageSets ?? []) {
+    for (const image of imageSet.images ?? []) {
+      if (image.src) {
+        queueRewrite(image.src, (next) => {
+          image.src = next;
+        });
+      }
+      if (includeThumbnails && image.thumbnailSrc) {
+        queueRewrite(image.thumbnailSrc, (next) => {
+          image.thumbnailSrc = next;
+        });
+      }
+    }
+  }
+}
+
+function queueSessionConsoleAudio(
+  sessionConsole: NonNullable<CampaignAssetHost['sessionConsole']>,
+  queueRewrite: QueueRewrite,
+): void {
+  for (const group of sessionConsole.trackGroups ?? []) {
+    for (const track of group.tracks ?? []) {
+      if (track.source === 'local' && track.src) {
+        queueRewrite(track.src, (next) => {
+          track.src = next;
+        });
+      }
+    }
+  }
+  for (const sfx of sessionConsole.sfx ?? []) {
+    if (sfx.kind === 'local' && sfx.src) {
+      queueRewrite(sfx.src, (next) => {
+        sfx.src = next;
+      });
+    }
+  }
+}
+
 const DEFAULT_ASSET_IO_CONCURRENCY = 8;
 
 interface CampaignAssetHost {
@@ -9,9 +112,18 @@ interface CampaignAssetHost {
     }
   >;
   tokenLibrary?: Array<{ src: string; thumbnailSrc?: string }>;
+  sessionConsole?: {
+    imageSets?: Array<{
+      images?: Array<{ src?: string; thumbnailSrc?: string }>;
+    }>;
+    trackGroups?: Array<{
+      tracks?: Array<{ source: 'youtube' | 'local'; src?: string }>;
+    }>;
+    sfx?: Array<{ kind: 'synth' | 'local'; src?: string }>;
+  };
 }
 
-async function runWithConcurrency(
+export async function runWithConcurrency(
   jobs: Array<() => Promise<void>>,
   concurrency = DEFAULT_ASSET_IO_CONCURRENCY,
 ): Promise<void> {
@@ -65,41 +177,9 @@ export async function rewriteCampaignAssetSrcs(
     });
   };
 
-  if (campaign.maps) {
-    for (const mapId of Object.keys(campaign.maps)) {
-      const map = campaign.maps[mapId];
-      if (!map) {
-        continue;
-      }
-      const background = map.map;
-      const backgroundSrc = background?.src;
-      if (background && backgroundSrc) {
-        queueRewrite(backgroundSrc, (next) => {
-          background.src = next;
-        });
-      }
-      if (map.tokens) {
-        for (const token of map.tokens) {
-          queueRewrite(token.src, (next) => {
-            token.src = next;
-          });
-        }
-      }
-    }
-  }
-
-  if (campaign.tokenLibrary) {
-    for (const item of campaign.tokenLibrary) {
-      queueRewrite(item.src, (next) => {
-        item.src = next;
-      });
-      if (includeThumbnails && item.thumbnailSrc) {
-        queueRewrite(item.thumbnailSrc, (next) => {
-          item.thumbnailSrc = next;
-        });
-      }
-    }
-  }
+  queueCampaignMapAssets(campaign, queueRewrite);
+  queueTokenLibraryAssets(campaign, includeThumbnails, queueRewrite);
+  queueSessionConsoleAssets(campaign, includeThumbnails, queueRewrite);
 
   await runWithConcurrency(jobs);
 }

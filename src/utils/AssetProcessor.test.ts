@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { processImage } from './AssetProcessor';
 import { getStorage } from '../services/storage';
+import { maxDimensionForType } from './imageMaxDimensions';
 
 // Mock getStorage
 vi.mock('../services/storage', () => ({
@@ -69,7 +70,7 @@ describe('AssetProcessor', () => {
     const result = await handle.promise;
 
     expect(result).toBe('file:///tmp/asset.webp');
-    expect(global.OffscreenCanvas).toHaveBeenCalledWith(4096, 2048); // Scaled down
+    expect(global.OffscreenCanvas).toHaveBeenCalledWith(maxDimensionForType('MAP'), 2048);
     expect(mockSaveAssetTemp).toHaveBeenCalled();
   });
 
@@ -86,7 +87,29 @@ describe('AssetProcessor', () => {
     const handle = processImage(file, 'TOKEN');
     await handle.promise;
 
-    expect(global.OffscreenCanvas).toHaveBeenCalledWith(512, 512); // Max token size
+    expect(global.OffscreenCanvas).toHaveBeenCalledWith(
+      maxDimensionForType('TOKEN'),
+      maxDimensionForType('TOKEN'),
+    );
+  });
+
+  it('processing handles thumb constraints correctly', async () => {
+    delete (global as Record<string, unknown>).Worker;
+
+    global.createImageBitmap = vi.fn().mockResolvedValue({
+      width: 1000,
+      height: 1000,
+      close: vi.fn(),
+    });
+
+    const file = new File([''], 'plate.png', { type: 'image/png' });
+    const handle = processImage(file, 'THUMB');
+    await handle.promise;
+
+    expect(global.OffscreenCanvas).toHaveBeenCalledWith(
+      maxDimensionForType('THUMB'),
+      maxDimensionForType('THUMB'),
+    );
   });
 
   it('converts extension to .webp', async () => {

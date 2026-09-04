@@ -329,6 +329,9 @@ export function AboutModal({
       >
         <div
           ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          data-esc-owns="true"
           className="about-modal-content"
           style={{
             background: 'var(--app-bg-surface)',

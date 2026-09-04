@@ -30,6 +30,12 @@
 - [Theme System](features/theming.md) - Light/dark mode with system preference support
 - [Error Boundaries](features/error-boundaries.md) - Privacy-focused error handling
 - [Accessibility](features/wcag-audit.md) - WCAG AA compliance audit and guidelines
+- [Session Console design](planning/session-console-design.md) - Party plates + YouTube/local ambience (World View Stage)
+- [Session Console implementation plan](planning/session-console-plan.md) - Task-by-task build plan
+- [Session Console board pack example](planning/session-console-pack.example.json) - JSON + relative file authoring format
+- [Session Console in context](context/CONTEXT.md#currently-implemented-) - Implemented feature (chat/voice still not planned)
+- [Session Console troubleshooting](guides/TROUBLESHOOTING.md#session-console-issues) - Error 153, Discord Krisp, arm audio
+- [Session Console sync](architecture/IPC_API.md) - Architect → World runtime diffs; catalog is not synced
 
 ### Development Workflows
 

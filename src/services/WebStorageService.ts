@@ -4,10 +4,57 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
 
+import {
+  contentTypeForAssetFileName,
+  extensionForContentType,
+  fileExtension,
+} from '../utils/assetContentType';
 import { rewriteCampaignAssetSrcs } from '../utils/campaignAssets';
+import {
+  catalogToSessionConsolePack,
+  ingestSessionConsolePackFromJson,
+} from '../utils/sessionConsolePack';
 
 import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageService';
 import type { Campaign, TokenLibraryItem } from '../store/gameStore';
+import type { SessionConsoleCatalog } from '../types/sessionConsole';
+
+function pickLocalFile(accept: string): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.onchange = (): void => {
+      resolve(input.files?.[0] ?? null);
+    };
+    input.click();
+  });
+}
+
+function downloadBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function youtubeOnlyCatalog(catalog: SessionConsoleCatalog): SessionConsoleCatalog {
+  return {
+    ...catalog,
+    imageSets: [],
+    trackGroups: catalog.trackGroups
+      .map((group) => ({
+        ...group,
+        tracks: group.tracks.filter((track) => track.source === 'youtube'),
+      }))
+      .filter((group) => group.tracks.length > 0),
+    sfx: catalog.sfx.filter((item) => item.kind === 'synth'),
+  };
+}
 
 /**
  * IndexedDB schema version
@@ -116,16 +163,7 @@ export class WebStorageService implements IStorageService {
 
       // Generate ZIP blob
       const blob = await zip.generateAsync({ type: 'blob' });
-
-      // Trigger browser download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${campaign.name.replace(/[^a-z0-9]/gi, '_')}.graphium`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${campaign.name.replace(/[^a-z0-9]/gi, '_')}.graphium`);
 
       import.meta.env.DEV && console.log('[WebStorageService] Campaign downloaded successfully');
       return true;
@@ -157,48 +195,80 @@ export class WebStorageService implements IStorageService {
   }
 
   async loadCampaign(): Promise<Campaign | null> {
-    return new Promise((resolve) => {
-      // Create file input
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.graphium';
+    const file = await pickLocalFile('.graphium');
+    if (!file) {
+      return null;
+    }
 
-      input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) {
-          resolve(null);
-          return;
-        }
+    try {
+      import.meta.env.DEV &&
+        console.log('[WebStorageService] Loading campaign from file:', file.name);
 
-        try {
-          import.meta.env.DEV &&
-            console.log('[WebStorageService] Loading campaign from file:', file.name);
+      const zip = await JSZip.loadAsync(file);
+      const manifestStr = await zip.file('manifest.json')?.async('string');
 
-          // Parse ZIP
-          const zip = await JSZip.loadAsync(file);
-          const manifestStr = await zip.file('manifest.json')?.async('string');
+      if (!manifestStr) {
+        throw new Error('Invalid .graphium file: missing manifest.json');
+      }
 
-          if (!manifestStr) {
-            throw new Error('Invalid .graphium file: missing manifest.json');
-          }
+      const campaign = JSON.parse(manifestStr) as Campaign;
+      await this.restoreCampaignAssets(campaign, zip);
 
-          const campaign = JSON.parse(manifestStr) as Campaign;
+      import.meta.env.DEV && console.log('[WebStorageService] Campaign loaded successfully');
+      return campaign;
+    } catch (error) {
+      console.error('[WebStorageService] Load campaign failed:', error);
+      throw new Error(
+        `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
 
-          // Restore assets from ZIP to Object URLs
-          await this.restoreCampaignAssets(campaign, zip);
-
-          import.meta.env.DEV && console.log('[WebStorageService] Campaign loaded successfully');
-          resolve(campaign);
-        } catch (error) {
-          console.error('[WebStorageService] Load campaign failed:', error);
-          throw new Error(
-            `Failed to load campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          );
-        }
-      };
-
-      input.click();
+  importSessionConsolePack(): Promise<{
+    catalog: SessionConsoleCatalog;
+    skipped: string[];
+    warnings: string[];
+  } | null> {
+    return pickLocalFile('application/json,.json').then(async (file) => {
+      if (!file) {
+        return null;
+      }
+      try {
+        const json = JSON.parse(await file.text()) as unknown;
+        return await ingestSessionConsolePackFromJson(json, async (buffer, fileName) =>
+          this.saveAssetTemp(buffer, fileName),
+        );
+      } catch (error) {
+        console.error('[WebStorageService] Session Console pack import failed:', error);
+        throw error instanceof Error ? error : new Error('Failed to import Session Console pack');
+      }
     });
+  }
+
+  exportSessionConsolePack(
+    catalog: SessionConsoleCatalog,
+  ): Promise<false | { ok: boolean; skipped: string[] }> {
+    try {
+      const skipped: string[] = [];
+      const hasLocalArt = catalog.imageSets.some((set) => set.images.length > 0);
+      const hasLocalAudio = catalog.trackGroups.some((group) =>
+        group.tracks.some((track) => track.source === 'local'),
+      );
+      if (hasLocalArt || hasLocalAudio) {
+        skipped.push('Local files cannot be exported in the browser — add them on the board.');
+      }
+      const pack = catalogToSessionConsolePack(youtubeOnlyCatalog(catalog));
+      downloadBlob(
+        new Blob([`${JSON.stringify(pack, null, 2)}\n`], { type: 'application/json' }),
+        'board.json',
+      );
+      return Promise.resolve({ ok: skipped.length === 0, skipped });
+    } catch (error) {
+      console.error('[WebStorageService] Session Console pack export failed:', error);
+      throw new Error(
+        `Failed to export board pack: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   // ===== ASSET PROCESSING =====
@@ -207,7 +277,7 @@ export class WebStorageService implements IStorageService {
     try {
       // For web, we'll use Object URLs (simple, session-scoped)
       // OPFS requires more complex setup and isn't critical for MVP
-      const blob = new Blob([buffer], { type: 'image/webp' });
+      const blob = new Blob([buffer], { type: contentTypeForAssetFileName(fileName) });
       const url = URL.createObjectURL(blob);
 
       // Track URL for cleanup when saved to campaign or discarded
@@ -505,7 +575,8 @@ export class WebStorageService implements IStorageService {
         const buffer = await blob.arrayBuffer();
 
         // Generate unique filename (timestamp + counter for guaranteed uniqueness)
-        const filename = `asset-${Date.now()}-${assetCounter++}-${Math.random().toString(36).slice(2)}.webp`;
+        const ext = fileExtension(src) || extensionForContentType(blob.type) || '.webp';
+        const filename = `asset-${Date.now()}-${assetCounter++}-${Math.random().toString(36).slice(2)}${ext}`;
         assetsFolder.file(filename, buffer);
 
         const relativePath = `assets/${filename}`;
@@ -541,7 +612,7 @@ export class WebStorageService implements IStorageService {
       const fileData = await assets.file(filename)?.async('arraybuffer');
 
       if (fileData) {
-        const blob = new Blob([fileData], { type: 'image/webp' });
+        const blob = new Blob([fileData], { type: contentTypeForAssetFileName(filename) });
         return URL.createObjectURL(blob);
       }
 
@@ -549,32 +620,6 @@ export class WebStorageService implements IStorageService {
       return src; // Keep original if not found
     };
 
-    // Restore all map backgrounds and tokens
-    for (const mapId in campaign.maps) {
-      const map = campaign.maps[mapId];
-      if (!map) {
-        continue;
-      }
-
-      // Map background
-      if (map.map?.src) {
-        map.map.src = await restoreAsset(map.map.src);
-      }
-
-      // Tokens
-      if (map.tokens) {
-        for (const token of map.tokens) {
-          token.src = await restoreAsset(token.src);
-        }
-      }
-    }
-
-    // Restore campaign token library
-    if (campaign.tokenLibrary) {
-      for (const item of campaign.tokenLibrary) {
-        item.src = await restoreAsset(item.src);
-        item.thumbnailSrc = await restoreAsset(item.thumbnailSrc);
-      }
-    }
+    await rewriteCampaignAssetSrcs(campaign, restoreAsset, { includeThumbnails: true });
   }
 }

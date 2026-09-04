@@ -1,5 +1,18 @@
 import { create } from 'zustand';
 
+import {
+  applyCatalogAction,
+  applyRuntimeCommand,
+  type SessionConsoleCatalogAction,
+  type SessionConsoleRuntimeCommand,
+} from './sessionConsoleReducers';
+import {
+  emptySessionConsoleCatalog,
+  sessionConsoleRuntimeFromCatalog,
+  copySessionConsoleChrome,
+  type SessionConsoleCatalog,
+  type SessionConsoleRuntime,
+} from '../types/sessionConsole';
 import { rollForMessage } from '../utils/systemMessages';
 import {
   buildTokenIndex,
@@ -152,6 +165,7 @@ export interface Campaign {
   maps: Record<string, MapData>;
   activeMapId: string;
   tokenLibrary: TokenLibraryItem[];
+  sessionConsole: SessionConsoleCatalog;
 }
 
 /**
@@ -268,14 +282,29 @@ const createDefaultMap = (name: string = 'New Map'): MapData => ({
  */
 const createDefaultCampaign = (firstMap?: MapData): Campaign => {
   const map = firstMap ?? createDefaultMap('Default Map');
+  const name = 'New Campaign';
   return {
     id: crypto.randomUUID(),
-    name: 'New Campaign',
+    name,
     maps: { [map.id]: map },
     activeMapId: map.id,
     tokenLibrary: [],
+    sessionConsole: emptySessionConsoleCatalog(name),
   };
 };
+
+/**
+ * Fill a missing session console catalog without replacing maps or other campaign fields.
+ */
+function ensureSessionConsole(campaign: Campaign): Campaign {
+  if (campaign.sessionConsole) {
+    return campaign;
+  }
+  return {
+    ...campaign,
+    sessionConsole: emptySessionConsoleCatalog(campaign.name),
+  };
+}
 
 /**
  * GameState is the central state interface for Graphium
@@ -311,6 +340,10 @@ export interface GameState {
   isGamePaused: boolean;
   isMobileSidebarOpen: boolean;
   isCommandPaletteOpen: boolean;
+
+  // --- Session Console (catalog persisted on campaign; runtime is session-only) ---
+  sessionConsole: SessionConsoleCatalog;
+  sessionConsoleRuntime: SessionConsoleRuntime;
 
   // --- Measurement State (Temporary, not persisted) ---
   activeMeasurement: Measurement | null;
@@ -402,6 +435,10 @@ export interface GameState {
   setMobileSidebarOpen: (isOpen: boolean) => void;
   setCommandPaletteOpen: (isOpen: boolean) => void;
 
+  updateSessionConsole: (action: SessionConsoleCatalogAction) => void;
+  dispatchSessionConsole: (command: SessionConsoleRuntimeCommand) => void;
+  setSessionConsoleWorldArmed: (armed: boolean) => void;
+
   // Measurement Actions
   setActiveMeasurement: (measurement: Measurement | null) => void;
   setBroadcastMeasurement: (broadcast: boolean) => void;
@@ -445,6 +482,8 @@ export const useGameStore = create<GameState>((set, get) => {
     isCommandPaletteOpen: false,
 
     campaign: initialCampaign,
+    sessionConsole: initialCampaign.sessionConsole,
+    sessionConsoleRuntime: sessionConsoleRuntimeFromCatalog(initialCampaign.sessionConsole),
 
     // --- Campaign Actions ---
 
@@ -455,11 +494,15 @@ export const useGameStore = create<GameState>((set, get) => {
         return;
       }
 
+      const ensured = ensureSessionConsole(campaign);
+
       // Safe: guarded by !campaign.maps[campaign.activeMapId] check above
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const activeMap = campaign.maps[campaign.activeMapId]!;
+      const activeMap = ensured.maps[ensured.activeMapId]!;
       set({
-        campaign,
+        campaign: ensured,
+        sessionConsole: ensured.sessionConsole,
+        sessionConsoleRuntime: sessionConsoleRuntimeFromCatalog(ensured.sessionConsole),
         // Hydrate active map state
         ...withTokenIndex(activeMap.tokens || []),
         drawings: activeMap.drawings || [],
@@ -481,6 +524,8 @@ export const useGameStore = create<GameState>((set, get) => {
 
       set({
         campaign: newCampaign,
+        sessionConsole: newCampaign.sessionConsole,
+        sessionConsoleRuntime: sessionConsoleRuntimeFromCatalog(newCampaign.sessionConsole),
         // Reset active map state
         ...withTokenIndex(newMap.tokens),
         drawings: newMap.drawings,
@@ -829,6 +874,57 @@ export const useGameStore = create<GameState>((set, get) => {
     setIsGamePaused: (isPaused: boolean) => set({ isGamePaused: isPaused }),
     setMobileSidebarOpen: (isOpen: boolean) => set({ isMobileSidebarOpen: isOpen }),
     setCommandPaletteOpen: (isOpen: boolean) => set({ isCommandPaletteOpen: isOpen }),
+
+    updateSessionConsole: (action: SessionConsoleCatalogAction) =>
+      set((state) => {
+        const nextCatalog = applyCatalogAction(state.sessionConsole, action);
+        if (nextCatalog === state.sessionConsole) {
+          return {};
+        }
+
+        let nextRuntime = state.sessionConsoleRuntime;
+        if (action.type === 'REPLACE_CATALOG') {
+          nextRuntime = sessionConsoleRuntimeFromCatalog(nextCatalog, {
+            worldArmed: state.sessionConsoleRuntime.worldArmed,
+          });
+        } else if (
+          action.type === 'UPDATE_STAGE_CHROME' ||
+          action.type === 'UPDATE_DEFAULTS' ||
+          action.type === 'MERGE_CATALOG'
+        ) {
+          nextRuntime = copySessionConsoleChrome(state.sessionConsoleRuntime, nextCatalog);
+        }
+
+        return {
+          sessionConsole: nextCatalog,
+          campaign: {
+            ...state.campaign,
+            sessionConsole: nextCatalog,
+          },
+          sessionConsoleRuntime: nextRuntime,
+        };
+      }),
+    dispatchSessionConsole: (command: SessionConsoleRuntimeCommand) =>
+      set((state) => {
+        const nextRuntime = applyRuntimeCommand(
+          state.sessionConsoleRuntime,
+          command,
+          state.sessionConsole,
+        );
+        if (nextRuntime === state.sessionConsoleRuntime) {
+          return {};
+        }
+        return { sessionConsoleRuntime: nextRuntime };
+      }),
+    setSessionConsoleWorldArmed: (armed: boolean) =>
+      set((state) => {
+        if (state.sessionConsoleRuntime.worldArmed === armed) {
+          return {};
+        }
+        return {
+          sessionConsoleRuntime: { ...state.sessionConsoleRuntime, worldArmed: armed },
+        };
+      }),
 
     // --- Measurement Actions ---
     setActiveMeasurement: (measurement: Measurement | null) =>
