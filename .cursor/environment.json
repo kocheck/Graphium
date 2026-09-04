@@ -1,0 +1,17 @@
+{
+  "name": "Graphium",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "dev:web",
+      "command": "npm run dev:web",
+      "description": "Vite dev server for the browser build of Graphium (Architect + World view). Serves the app at http://localhost:5173."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web dev server",
+      "port": 5173
+    }
+  ]
+}
