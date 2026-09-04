@@ -76,7 +76,7 @@ export interface SessionConsoleCatalog {
   sfx: SfxDefinition[];
 }
 
-export interface SessionConsoleRuntimeStage {
+interface SessionConsoleRuntimeStage {
   title: string;
   subtitle: string;
   showFrame: boolean;

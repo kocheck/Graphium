@@ -1,11 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { getStorage } from '../services/storage';
-import {
-  isAllowedAudioFileName,
-  LOCAL_AUDIO_UNSUPPORTED_MESSAGE,
-  saveLocalAudioFile,
-} from './localAudioAsset';
+import { isAllowedAudioFileName } from './localAudioLimits';
+import { saveLocalAudioFile } from './localAudioAsset';
 
 vi.mock('../services/storage', () => ({
   getStorage: vi.fn(),
@@ -72,8 +69,9 @@ describe('saveLocalAudioFile', () => {
   it('rejects bed.exe and does not call saveAssetTemp', async () => {
     const file = audioFile('bed.exe', 'x');
 
-    await expect(saveLocalAudioFile(file)).rejects.toThrow(LOCAL_AUDIO_UNSUPPORTED_MESSAGE);
-    expect(LOCAL_AUDIO_UNSUPPORTED_MESSAGE).not.toMatch(/bed\.exe/i);
+    await expect(saveLocalAudioFile(file)).rejects.toMatchObject({
+      message: 'Unsupported audio format (mp3, ogg, wav, m4a)',
+    });
     expect(mockSaveAssetTemp).not.toHaveBeenCalled();
   });
 

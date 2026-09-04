@@ -1,6 +1,4 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
+import { fileExtension } from './assetContentType';
 import {
   isAllowedAudioFileName,
   pushLocalAudioSizeWarning,
@@ -30,6 +28,76 @@ export const SESSION_CONSOLE_PACK_KIND = 'graphium.sessionConsolePack';
 export const PACK_HTTP_MAX_BYTES = 25 * 1024 * 1024;
 
 const FILE_NAME_WITH_EXT = /\.[a-zA-Z0-9]{2,5}$/;
+
+function pathBasename(filePath: string): string {
+  const base = filePath.replace(/\\/g, '/').split('/').pop();
+  return base && base.length > 0 ? base : '';
+}
+
+function isAbsolutePath(filePath: string): boolean {
+  return /^(?:[a-zA-Z]:[\\/]|\/|\\\\)/.test(filePath);
+}
+
+function fileUrlToPath(fileUrl: string): string {
+  const url = new URL(fileUrl);
+  if (url.protocol !== 'file:') {
+    throw new TypeError('Invalid URL');
+  }
+  let pathname = decodeURIComponent(url.pathname);
+  if (/^\/[a-zA-Z]:/.test(pathname)) {
+    pathname = pathname.slice(1);
+  }
+  return pathname;
+}
+
+function normalizePath(input: string): string {
+  const replaced = input.replace(/\\/g, '/');
+  const driveMatch = replaced.match(/^([a-zA-Z]:)(\/.*)?$/);
+  const isAbs = replaced.startsWith('/') || Boolean(driveMatch);
+  const body = driveMatch ? (driveMatch[2] ?? '/') : replaced;
+  const segments: string[] = [];
+  for (const part of body.split('/')) {
+    if (part === '' || part === '.') {
+      continue;
+    }
+    if (part === '..') {
+      if (segments.length > 0) {
+        segments.pop();
+      } else if (!isAbs) {
+        segments.push('..');
+      }
+    } else {
+      segments.push(part);
+    }
+  }
+  if (driveMatch?.[1]) {
+    return `${driveMatch[1]}/${segments.join('/')}`;
+  }
+  if (replaced.startsWith('/')) {
+    return `/${segments.join('/')}`;
+  }
+  return segments.join('/') || '.';
+}
+
+function pathRelative(from: string, to: string): string {
+  const fromNorm = normalizePath(from);
+  const toNorm = normalizePath(to);
+  if (fromNorm === toNorm) {
+    return '';
+  }
+  const fromParts = fromNorm.split('/').filter((part) => part !== '' && part !== '.');
+  const toParts = toNorm.split('/').filter((part) => part !== '' && part !== '.');
+  let shared = 0;
+  while (
+    shared < fromParts.length &&
+    shared < toParts.length &&
+    fromParts[shared] === toParts[shared]
+  ) {
+    shared += 1;
+  }
+  const ups = fromParts.slice(shared).map(() => '..');
+  return [...ups, ...toParts.slice(shared)].join('/');
+}
 
 export type PackSrcClassification =
   | { kind: 'youtube'; youtubeId: string }
@@ -188,7 +256,7 @@ async function mapWithConcurrency<T, R>(
   if (items.length === 0) {
     return [];
   }
-  const results: R[] = new Array(items.length);
+  const results: R[] = Array.from({ length: items.length });
   let nextIndex = 0;
   const worker = async (): Promise<void> => {
     for (;;) {
@@ -241,7 +309,7 @@ function emptyPack(title = ''): SessionConsolePack {
 
 function classifyFileUrl(trimmed: string): PackSrcClassification {
   try {
-    return { kind: 'absolute', path: fileURLToPath(trimmed) };
+    return { kind: 'absolute', path: fileUrlToPath(trimmed) };
   } catch {
     return { kind: 'invalid', reason: 'invalid file URL' };
   }
@@ -263,7 +331,7 @@ function classifyFileLikeSrc(trimmed: string): PackSrcClassification {
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) && !/^[a-zA-Z]:[\\/]/.test(trimmed)) {
     return { kind: 'invalid', reason: `unsupported scheme in "${trimmed}"` };
   }
-  if (path.isAbsolute(trimmed)) {
+  if (isAbsolutePath(trimmed)) {
     return { kind: 'absolute', path: trimmed };
   }
   const looksRelative =
@@ -304,10 +372,10 @@ export function classifyPackSrc(src: string): PackSrcClassification {
  * True when `candidate` resolves inside `packRoot` (or is the root itself).
  */
 export function isPathInsidePackRoot(packRoot: string, candidate: string): boolean {
-  const root = path.resolve(packRoot);
-  const target = path.resolve(candidate);
-  const relativePath = path.relative(root, target);
-  return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+  const root = normalizePath(packRoot);
+  const target = normalizePath(candidate);
+  const relativePath = pathRelative(root, target);
+  return relativePath === '' || (!relativePath.startsWith('..') && !isAbsolutePath(relativePath));
 }
 
 function parseImage(
@@ -539,12 +607,12 @@ function slugId(value: string, used: Set<string>): string {
 function basenameFromSrc(src: string): string {
   try {
     if (/^https?:\/\//i.test(src)) {
-      return path.basename(new URL(src).pathname) || 'asset';
+      return pathBasename(new URL(src).pathname) || 'asset';
     }
   } catch {
     return 'asset';
   }
-  return path.basename(src) || 'asset';
+  return pathBasename(src) || 'asset';
 }
 
 interface IngestContext {
@@ -860,7 +928,7 @@ export async function ingestSessionConsolePackFromJson(
 }
 
 function sanitizeExportId(id: string): string {
-  const base = path.basename(id.replace(/\\/g, '/'));
+  const base = pathBasename(id.replace(/\\/g, '/'));
   const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '');
   if (!cleaned || cleaned === '.' || cleaned === '..') {
     return 'asset';
@@ -873,7 +941,7 @@ function defaultPackExt(folder: 'images' | 'audio'): string {
 }
 
 function exportAssetRelPath(folder: 'images' | 'audio', id: string, src: string): string {
-  const ext = path.extname(src) || defaultPackExt(folder);
+  const ext = fileExtension(src) || defaultPackExt(folder);
   const safeExt = /^\.[a-zA-Z0-9]{1,5}$/.test(ext) ? ext : defaultPackExt(folder);
   return `./${folder}/${sanitizeExportId(id)}${safeExt}`;
 }

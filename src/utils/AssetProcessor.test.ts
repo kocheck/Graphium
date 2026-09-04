@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { processImage } from './AssetProcessor';
 import { getStorage } from '../services/storage';
-import { MAX_MAP_DIMENSION, MAX_THUMB_DIMENSION, MAX_TOKEN_DIMENSION } from './imageMaxDimensions';
 
 // Mock getStorage
 vi.mock('../services/storage', () => ({
@@ -70,7 +69,7 @@ describe('AssetProcessor', () => {
     const result = await handle.promise;
 
     expect(result).toBe('file:///tmp/asset.webp');
-    expect(global.OffscreenCanvas).toHaveBeenCalledWith(MAX_MAP_DIMENSION, 2048);
+    expect(global.OffscreenCanvas).toHaveBeenCalledWith(4096, 2048);
     expect(mockSaveAssetTemp).toHaveBeenCalled();
   });
 
@@ -87,7 +86,7 @@ describe('AssetProcessor', () => {
     const handle = processImage(file, 'TOKEN');
     await handle.promise;
 
-    expect(global.OffscreenCanvas).toHaveBeenCalledWith(MAX_TOKEN_DIMENSION, MAX_TOKEN_DIMENSION);
+    expect(global.OffscreenCanvas).toHaveBeenCalledWith(512, 512);
   });
 
   it('processing handles thumb constraints correctly', async () => {
@@ -103,7 +102,7 @@ describe('AssetProcessor', () => {
     const handle = processImage(file, 'THUMB');
     await handle.promise;
 
-    expect(global.OffscreenCanvas).toHaveBeenCalledWith(MAX_THUMB_DIMENSION, MAX_THUMB_DIMENSION);
+    expect(global.OffscreenCanvas).toHaveBeenCalledWith(256, 256);
   });
 
   it('converts extension to .webp', async () => {

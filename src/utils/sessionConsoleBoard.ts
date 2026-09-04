@@ -40,10 +40,14 @@ export function formatSessionConsoleFallbackLinks(catalog: SessionConsoleCatalog
     .join('\n');
 }
 
+// eslint-disable-next-line import/no-unused-modules -- unit tests import this helper
 export function folderTitleFromFiles(files: File[]): string | undefined {
   const relative = files.find((file) => file.webkitRelativePath)?.webkitRelativePath ?? '';
   const folder = relative.split('/')[0];
-  return folder || undefined;
+  if (folder === undefined || folder === '') {
+    return undefined;
+  }
+  return folder;
 }
 
 function ensureImageSet(store: GameState, title?: string): string {
@@ -84,9 +88,7 @@ function ensureTrackGroup(store: GameState): string {
   return id;
 }
 
-export async function processPlateSources(
-  file: File,
-): Promise<{ src: string; thumbnailSrc: string }> {
+async function processPlateSources(file: File): Promise<{ src: string; thumbnailSrc: string }> {
   const mapHandle = processImage(file, 'MAP');
   const src = await mapHandle.promise;
   try {

@@ -34,6 +34,7 @@ function isModalEscOwnerOpen(): boolean {
   return Boolean(document.querySelector('[data-esc-owns="true"]'));
 }
 
+// eslint-disable-next-line import/no-unused-modules -- unit tests import this helper
 export function shouldDeferSessionConsoleEscape(
   store: Pick<
     GameState,

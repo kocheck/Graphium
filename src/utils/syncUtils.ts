@@ -450,6 +450,36 @@ function detectMeasurementActions(
   return actions;
 }
 
+function sessionConsoleStageChanged(
+  previous: SessionConsoleRuntime,
+  current: SessionConsoleRuntime,
+): boolean {
+  return (
+    previous.stageVisible !== current.stageVisible ||
+    !isEqual(previous.activeImage, current.activeImage) ||
+    !isEqual(previous.stage, current.stage)
+  );
+}
+
+function sessionConsoleAudioChanged(
+  previous: SessionConsoleRuntime,
+  current: SessionConsoleRuntime,
+): boolean {
+  return (
+    !isEqual(previous.audio, current.audio) ||
+    previous.volume !== current.volume ||
+    previous.ducked !== current.ducked ||
+    previous.duckPercent !== current.duckPercent
+  );
+}
+
+function sessionConsoleSfxChanged(
+  previous: SessionConsoleRuntime,
+  current: SessionConsoleRuntime,
+): boolean {
+  return previous.sfxSeq !== current.sfxSeq || previous.sfxId !== current.sfxId;
+}
+
 function detectSessionConsoleActions(
   prevState: Partial<SyncableGameState>,
   currentState: Partial<SyncableGameState>,
@@ -463,11 +493,7 @@ function detectSessionConsoleActions(
   const previous = prevRt ?? emptySessionConsoleRuntime();
   const actions: SyncAction[] = [];
 
-  if (
-    previous.stageVisible !== currRt.stageVisible ||
-    !isEqual(previous.activeImage, currRt.activeImage) ||
-    !isEqual(previous.stage, currRt.stage)
-  ) {
+  if (sessionConsoleStageChanged(previous, currRt)) {
     actions.push({
       type: 'STAGE_UPDATE',
       payload: {
@@ -478,12 +504,7 @@ function detectSessionConsoleActions(
     });
   }
 
-  if (
-    !isEqual(previous.audio, currRt.audio) ||
-    previous.volume !== currRt.volume ||
-    previous.ducked !== currRt.ducked ||
-    previous.duckPercent !== currRt.duckPercent
-  ) {
+  if (sessionConsoleAudioChanged(previous, currRt)) {
     actions.push({
       type: 'AUDIO_UPDATE',
       payload: {
@@ -495,7 +516,7 @@ function detectSessionConsoleActions(
     });
   }
 
-  if (previous.sfxSeq !== currRt.sfxSeq || previous.sfxId !== currRt.sfxId) {
+  if (sessionConsoleSfxChanged(previous, currRt)) {
     actions.push({
       type: 'SFX_FIRE',
       payload: {

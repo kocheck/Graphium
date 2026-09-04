@@ -122,11 +122,28 @@ function EditorTextField({
   );
 }
 
+interface EditorDraft {
+  name: string;
+  setName: (value: string) => void;
+  cue: string;
+  setCue: (value: string) => void;
+  alt: string;
+  setAlt: (value: string) => void;
+  tag: string;
+  setTag: (value: string) => void;
+  loop: boolean;
+  setLoop: (value: boolean) => void;
+  volumeOffset: number;
+  setVolumeOffset: (value: number) => void;
+  recommendedImageId: string;
+  setRecommendedImageId: (value: string) => void;
+}
+
 function useEditorDraft(
   image: StageImage | null | undefined,
   track: Track | null | undefined,
   isOpen: boolean,
-) {
+): EditorDraft {
   const [name, setName] = useState(image?.name ?? track?.title ?? '');
   const [cue, setCue] = useState(image?.cue ?? track?.cue ?? '');
   const [alt, setAlt] = useState(image?.alt ?? '');

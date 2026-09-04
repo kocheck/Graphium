@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { emptySessionConsoleCatalog } from '../../src/types/sessionConsole';
-import { LOCAL_AUDIO_REJECT_BYTES } from '../../src/utils/localAudioAsset';
+import { LOCAL_AUDIO_REJECT_BYTES } from '../../src/utils/localAudioLimits';
 import { isPathInsidePackRoot, parseSessionConsolePack } from '../../src/utils/sessionConsolePack';
 import {
   copyPackAssetToTemp,

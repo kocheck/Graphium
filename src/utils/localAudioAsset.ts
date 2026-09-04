@@ -7,15 +7,9 @@ import {
 import { rewriteSafeAssetFileName } from './safeAssetFileName';
 import { getStorage } from '../services/storage';
 
-export {
-  isAllowedAudioFileName,
-  LOCAL_AUDIO_REJECT_BYTES,
-  LOCAL_AUDIO_SIZE_WARN_MESSAGE,
-  LOCAL_AUDIO_WARN_BYTES,
-  shouldWarnLocalAudioSize,
-} from './localAudioLimits';
+export { LOCAL_AUDIO_SIZE_WARN_MESSAGE, shouldWarnLocalAudioSize } from './localAudioLimits';
 
-export const LOCAL_AUDIO_UNSUPPORTED_MESSAGE = 'Unsupported audio format (mp3, ogg, wav, m4a)';
+const LOCAL_AUDIO_UNSUPPORTED_MESSAGE = 'Unsupported audio format (mp3, ogg, wav, m4a)';
 
 /**
  * Copy a local audio file into temp asset storage (no transcode / WebP).

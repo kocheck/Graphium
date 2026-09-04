@@ -1,6 +1,6 @@
 const ALLOWED_AUDIO_EXTENSIONS = new Set(['mp3', 'ogg', 'wav', 'm4a']);
 
-export const LOCAL_AUDIO_WARN_BYTES = 8 * 1024 * 1024;
+const LOCAL_AUDIO_WARN_BYTES = 8 * 1024 * 1024;
 export const LOCAL_AUDIO_REJECT_BYTES = 25 * 1024 * 1024;
 export const LOCAL_AUDIO_SIZE_WARN_MESSAGE =
   'This audio file is larger than 8MB and will bloat the campaign zip.';
