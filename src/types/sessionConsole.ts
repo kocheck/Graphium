@@ -23,6 +23,12 @@ export interface ImageSet {
 
 export type TrackAccent = 'bed' | 'road' | 'dread' | 'combat' | 'arrive';
 
+export const TRACK_ACCENTS: readonly TrackAccent[] = ['bed', 'road', 'dread', 'combat', 'arrive'];
+
+export function isTrackAccent(value: string): value is TrackAccent {
+  return TRACK_ACCENTS.some((accent) => accent === value);
+}
+
 export interface Track {
   id: string;
   title: string;
@@ -117,6 +123,11 @@ const SYNTH_SFX: SfxDefinition[] = [
  */
 export function clampVolume(value: number): number {
   return Math.min(100, Math.max(0, value));
+}
+
+/** Clamp a track volume offset to ±30. */
+export function clampVolumeOffset(value: number): number {
+  return Math.min(30, Math.max(-30, value));
 }
 
 /**

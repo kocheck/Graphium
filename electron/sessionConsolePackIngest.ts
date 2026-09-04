@@ -4,19 +4,10 @@ import {
   exportSessionConsolePackToDirectory,
   ingestSessionConsolePackFromBoardPath,
 } from './sessionConsolePackFiles.js';
-import { PACK_HTTP_MAX_BYTES, readResponseCapped } from '../src/utils/sessionConsolePack.js';
+import { fetchHttpCapped, PACK_HTTP_MAX_BYTES } from '../src/utils/sessionConsolePack.js';
 
 import type { SessionConsoleCatalog } from '../src/types/sessionConsole.js';
 import type { IpcMainInvokeEvent } from 'electron';
-
-async function fetchHttpBuffer(url: string): Promise<ArrayBuffer | null> {
-  try {
-    const response = await net.fetch(url);
-    return await readResponseCapped(response, PACK_HTTP_MAX_BYTES);
-  } catch {
-    return null;
-  }
-}
 
 export function registerSessionConsolePackHandlers(ctx: {
   tempAssetsDir: string;
@@ -32,7 +23,9 @@ export function registerSessionConsolePackHandlers(ctx: {
     if (canceled || !boardPath) {
       return null;
     }
-    return ingestSessionConsolePackFromBoardPath(boardPath, ctx.tempAssetsDir, fetchHttpBuffer);
+    return ingestSessionConsolePackFromBoardPath(boardPath, ctx.tempAssetsDir, (url) =>
+      fetchHttpCapped(url, PACK_HTTP_MAX_BYTES, (href) => net.fetch(href)),
+    );
   });
 
   ipcMain.handle(

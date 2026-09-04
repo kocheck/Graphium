@@ -6,7 +6,12 @@ import {
   pushLocalAudioSizeWarning,
   shouldWarnLocalAudioSize,
 } from './localAudioLimits';
-import { emptySessionConsoleCatalog, parseYouTubeVideoId } from '../types/sessionConsole';
+import {
+  clampVolumeOffset,
+  emptySessionConsoleCatalog,
+  isTrackAccent,
+  parseYouTubeVideoId,
+} from '../types/sessionConsole';
 
 import type {
   SessionConsoleCatalog,
@@ -23,7 +28,6 @@ import type {
 export const SESSION_CONSOLE_PACK_KIND = 'graphium.sessionConsolePack';
 export const PACK_HTTP_MAX_BYTES = 25 * 1024 * 1024;
 
-const TRACK_ACCENTS = new Set<TrackAccent>(['bed', 'road', 'dread', 'combat', 'arrive']);
 const FILE_NAME_WITH_EXT = /\.[a-zA-Z0-9]{2,5}$/;
 
 export type PackSrcClassification =
@@ -96,7 +100,6 @@ type PersistBuffer = (buffer: ArrayBuffer, fileName: string) => Promise<string |
 
 export interface MaterializePackOptions {
   localFileSkipReason?: string;
-  maxHttpBytes?: number;
 }
 
 export interface PackHttpResponse {
@@ -155,9 +158,10 @@ export async function readResponseCapped(
 export async function fetchHttpCapped(
   url: string,
   maxBytes = PACK_HTTP_MAX_BYTES,
+  fetchImpl: (input: string) => Promise<PackHttpResponse> = fetch,
 ): Promise<ArrayBuffer | null> {
   try {
-    const response = await fetch(url);
+    const response = await fetchImpl(url);
     return await readResponseCapped(response, maxBytes);
   } catch {
     return null;
@@ -375,10 +379,8 @@ function parseTrackGroup(
   }
   const id = asString(raw['id']) || `track-group-${index + 1}`;
   const accentRaw = asString(raw['accent'], 'bed');
-  const accent: TrackAccent = TRACK_ACCENTS.has(accentRaw as TrackAccent)
-    ? (accentRaw as TrackAccent)
-    : 'bed';
-  if (accentRaw && !TRACK_ACCENTS.has(accentRaw as TrackAccent)) {
+  const accent: TrackAccent = isTrackAccent(accentRaw) ? accentRaw : 'bed';
+  if (accentRaw && !isTrackAccent(accentRaw)) {
     errors.push(`Track group "${id}" has invalid accent "${accentRaw}"; using bed`);
   }
   const tracks: SessionConsolePackTrack[] = [];
@@ -515,7 +517,6 @@ interface IngestContext {
   skipped: string[];
   warnings: string[];
   localFileSkipReason?: string;
-  maxHttpBytes: number;
 }
 
 async function ingestSrc(src: string, label: string, ctx: IngestContext): Promise<string | null> {
@@ -552,7 +553,7 @@ async function ingestHttpSrc(
     ctx.skipped.push(`${label}: failed to fetch remote file`);
     return null;
   }
-  if (buffer.byteLength > ctx.maxHttpBytes) {
+  if (buffer.byteLength > PACK_HTTP_MAX_BYTES) {
     ctx.skipped.push(`${label}: remote file is larger than 25MB`);
     return null;
   }
@@ -580,10 +581,6 @@ function unionSfx(seeded: SfxDefinition[], incoming: SfxDefinition[]): SfxDefini
   ];
 }
 
-function clampOffset(value: number): number {
-  return Math.min(30, Math.max(-30, value));
-}
-
 function recommendedImageId(
   recommendedImage: string | undefined,
   imagesById: Map<string, string>,
@@ -609,7 +606,7 @@ function buildTrack(
     tag: packTrack.tag,
     source,
     ...extra,
-    volumeOffset: clampOffset(packTrack.volumeOffset ?? 0),
+    volumeOffset: clampVolumeOffset(packTrack.volumeOffset ?? 0),
     loop: packTrack.loop ?? true,
     ...(recommended ? { recommendedImageId: recommended } : {}),
   };
@@ -738,7 +735,6 @@ export async function materializePack(
     skipped,
     warnings,
     localFileSkipReason: options?.localFileSkipReason,
-    maxHttpBytes: options?.maxHttpBytes ?? PACK_HTTP_MAX_BYTES,
   };
 
   catalog.imageSets = await materializeImageSets(pack, ctx, usedIds);

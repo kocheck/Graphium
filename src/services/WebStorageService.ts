@@ -15,6 +15,43 @@ import type { IStorageService, LibraryMetadata, ThemeMode } from './IStorageServ
 import type { Campaign, TokenLibraryItem } from '../store/gameStore';
 import type { SessionConsoleCatalog } from '../types/sessionConsole';
 
+function pickLocalFile(accept: string): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.onchange = (): void => {
+      resolve(input.files?.[0] ?? null);
+    };
+    input.click();
+  });
+}
+
+function downloadBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function youtubeOnlyCatalog(catalog: SessionConsoleCatalog): SessionConsoleCatalog {
+  return {
+    ...catalog,
+    imageSets: [],
+    trackGroups: catalog.trackGroups
+      .map((group) => ({
+        ...group,
+        tracks: group.tracks.filter((track) => track.source === 'youtube'),
+      }))
+      .filter((group) => group.tracks.length > 0),
+    sfx: catalog.sfx.filter((item) => item.kind === 'synth'),
+  };
+}
+
 /**
  * IndexedDB schema version
  * Increment this when schema changes to trigger upgrade
@@ -212,34 +249,19 @@ export class WebStorageService implements IStorageService {
     skipped: string[];
     warnings: string[];
   } | null> {
-    return new Promise((resolve, reject) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'application/json,.json';
-
-      input.onchange = (): void => {
-        const file = input.files?.[0];
-        if (!file) {
-          resolve(null);
-          return;
-        }
-        void (async () => {
-          try {
-            const json = JSON.parse(await file.text()) as unknown;
-            const result = await ingestSessionConsolePackFromJson(json, async (buffer, fileName) =>
-              this.saveAssetTemp(buffer, fileName),
-            );
-            resolve(result);
-          } catch (error) {
-            console.error('[WebStorageService] Session Console pack import failed:', error);
-            reject(
-              error instanceof Error ? error : new Error('Failed to import Session Console pack'),
-            );
-          }
-        })();
-      };
-
-      input.click();
+    return pickLocalFile('application/json,.json').then(async (file) => {
+      if (!file) {
+        return null;
+      }
+      try {
+        const json = JSON.parse(await file.text()) as unknown;
+        return await ingestSessionConsolePackFromJson(json, async (buffer, fileName) =>
+          this.saveAssetTemp(buffer, fileName),
+        );
+      } catch (error) {
+        console.error('[WebStorageService] Session Console pack import failed:', error);
+        throw error instanceof Error ? error : new Error('Failed to import Session Console pack');
+      }
     });
   }
 
@@ -247,31 +269,11 @@ export class WebStorageService implements IStorageService {
     catalog: SessionConsoleCatalog,
   ): Promise<false | { ok: boolean; skipped: string[] }> {
     try {
-      const pack = catalogToSessionConsolePack(catalog);
-      const youtubeOnly = {
-        ...pack,
-        imageSets: [],
-        trackGroups: pack.trackGroups
-          .map((group) => ({
-            ...group,
-            tracks: group.tracks.filter((track) =>
-              track.src.startsWith('https://www.youtube.com/watch?v='),
-            ),
-          }))
-          .filter((group) => group.tracks.length > 0),
-        sfx: pack.sfx?.filter((item) => item.kind === 'synth'),
-      };
-      const blob = new Blob([`${JSON.stringify(youtubeOnly, null, 2)}\n`], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'board.json';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const pack = catalogToSessionConsolePack(youtubeOnlyCatalog(catalog));
+      downloadBlob(
+        new Blob([`${JSON.stringify(pack, null, 2)}\n`], { type: 'application/json' }),
+        'board.json',
+      );
       return Promise.resolve({ ok: true, skipped: [] });
     } catch (error) {
       console.error('[WebStorageService] Session Console pack export failed:', error);

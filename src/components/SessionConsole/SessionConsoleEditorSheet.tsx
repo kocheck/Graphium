@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 
 import { useGameStore } from '../../store/gameStore';
+import {
+  TRACK_ACCENTS,
+  clampVolumeOffset,
+  type StageImage,
+  type Track,
+} from '../../types/sessionConsole';
 import ToggleSwitch from '../ToggleSwitch';
-
-import type { StageImage, Track, TrackAccent } from '../../types/sessionConsole';
-
-const TRACK_TAGS: TrackAccent[] = ['bed', 'road', 'dread', 'combat', 'arrive'];
 
 interface SessionConsoleEditorSheetProps {
   isOpen: boolean;
@@ -26,10 +28,6 @@ interface TrackFieldsProps {
   onRecommendedImageId: (value: string) => void;
 }
 
-function clampOffset(value: number): number {
-  return Math.min(30, Math.max(-30, value));
-}
-
 function TrackFields({
   tag,
   loop,
@@ -41,7 +39,9 @@ function TrackFields({
   onVolumeOffset,
   onRecommendedImageId,
 }: TrackFieldsProps): JSX.Element {
-  const tagOptions = TRACK_TAGS.includes(tag as TrackAccent) ? TRACK_TAGS : [tag, ...TRACK_TAGS];
+  const tagOptions = TRACK_ACCENTS.some((option) => option === tag)
+    ? TRACK_ACCENTS
+    : [tag, ...TRACK_ACCENTS];
   return (
     <>
       <label
@@ -122,63 +122,11 @@ function EditorTextField({
   );
 }
 
-function saveEditor(args: {
-  image?: StageImage | null;
-  track?: Track | null;
-  name: string;
-  cue: string;
-  alt: string;
-  tag: string;
-  loop: boolean;
-  volumeOffset: number;
-  recommendedImageId: string;
-}): void {
-  const { updateSessionConsole } = useGameStore.getState();
-  if (args.image) {
-    updateSessionConsole({
-      type: 'UPDATE_IMAGE',
-      imageId: args.image.id,
-      patch: { name: args.name, cue: args.cue, alt: args.alt },
-    });
-  }
-  if (args.track) {
-    updateSessionConsole({
-      type: 'UPDATE_TRACK',
-      trackId: args.track.id,
-      patch: {
-        title: args.name,
-        cue: args.cue,
-        tag: args.tag,
-        loop: args.loop,
-        volumeOffset: clampOffset(args.volumeOffset),
-        recommendedImageId: args.recommendedImageId || undefined,
-      },
-    });
-  }
-}
-
-interface EditorDraft {
-  name: string;
-  setName: (value: string) => void;
-  cue: string;
-  setCue: (value: string) => void;
-  alt: string;
-  setAlt: (value: string) => void;
-  tag: string;
-  setTag: (value: string) => void;
-  loop: boolean;
-  setLoop: (value: boolean) => void;
-  volumeOffset: number;
-  setVolumeOffset: (value: number) => void;
-  recommendedImageId: string;
-  setRecommendedImageId: (value: string) => void;
-}
-
 function useEditorDraft(
   image: StageImage | null | undefined,
   track: Track | null | undefined,
   isOpen: boolean,
-): EditorDraft {
+) {
   const [name, setName] = useState(image?.name ?? track?.title ?? '');
   const [cue, setCue] = useState(image?.cue ?? track?.cue ?? '');
   const [alt, setAlt] = useState(image?.alt ?? '');
@@ -230,17 +178,28 @@ export function SessionConsoleEditorSheet({
   }
 
   const handleSave = (): void => {
-    saveEditor({
-      image,
-      track,
-      name: draft.name,
-      cue: draft.cue,
-      alt: draft.alt,
-      tag: draft.tag,
-      loop: draft.loop,
-      volumeOffset: draft.volumeOffset,
-      recommendedImageId: draft.recommendedImageId,
-    });
+    const { updateSessionConsole } = useGameStore.getState();
+    if (image) {
+      updateSessionConsole({
+        type: 'UPDATE_IMAGE',
+        imageId: image.id,
+        patch: { name: draft.name, cue: draft.cue, alt: draft.alt },
+      });
+    }
+    if (track) {
+      updateSessionConsole({
+        type: 'UPDATE_TRACK',
+        trackId: track.id,
+        patch: {
+          title: draft.name,
+          cue: draft.cue,
+          tag: draft.tag,
+          loop: draft.loop,
+          volumeOffset: clampVolumeOffset(draft.volumeOffset),
+          recommendedImageId: draft.recommendedImageId || undefined,
+        },
+      });
+    }
     onClose();
   };
 

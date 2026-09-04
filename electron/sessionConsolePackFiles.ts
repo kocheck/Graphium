@@ -123,15 +123,9 @@ async function persistBufferToTemp(
   buffer: ArrayBuffer,
   fileName: string,
   tempAssetsDir: string,
-  warnings: string[] = [],
 ): Promise<string | null> {
-  if (isAllowedAudioFileName(fileName)) {
-    if (buffer.byteLength > LOCAL_AUDIO_REJECT_BYTES) {
-      return null;
-    }
-    if (shouldWarnLocalAudioSize(buffer.byteLength)) {
-      pushLocalAudioSizeWarning(warnings);
-    }
+  if (isAllowedAudioFileName(fileName) && buffer.byteLength > LOCAL_AUDIO_REJECT_BYTES) {
+    return null;
   }
   await fs.mkdir(tempAssetsDir, { recursive: true });
   const destPath = uniqueTempAssetPath(tempAssetsDir, fileName);
@@ -164,7 +158,7 @@ export async function ingestSessionConsolePackFromBoardPath(
       return copyPackAssetToTemp(sandboxed, tempAssetsDir, kind, warnings);
     },
     fetchHttp,
-    async (buffer, fileName) => persistBufferToTemp(buffer, fileName, tempAssetsDir, warnings),
+    async (buffer, fileName) => persistBufferToTemp(buffer, fileName, tempAssetsDir),
   );
 
   return {

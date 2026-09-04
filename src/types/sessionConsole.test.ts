@@ -4,6 +4,8 @@ import {
   effectiveVolume,
   emptySessionConsoleCatalog,
   emptySessionConsoleRuntime,
+  clampVolumeOffset,
+  isTrackAccent,
 } from './sessionConsole';
 
 describe('parseYouTubeVideoId', () => {
@@ -21,6 +23,21 @@ describe('parseYouTubeVideoId', () => {
   it('returns null for garbage', () => {
     expect(parseYouTubeVideoId('https://example.com')).toBeNull();
     expect(parseYouTubeVideoId('')).toBeNull();
+  });
+});
+
+describe('clampVolumeOffset', () => {
+  it('clamps to ±30', () => {
+    expect(clampVolumeOffset(-40)).toBe(-30);
+    expect(clampVolumeOffset(12)).toBe(12);
+    expect(clampVolumeOffset(40)).toBe(30);
+  });
+});
+
+describe('isTrackAccent', () => {
+  it('accepts known accents', () => {
+    expect(isTrackAccent('bed')).toBe(true);
+    expect(isTrackAccent('fog')).toBe(false);
   });
 });
 

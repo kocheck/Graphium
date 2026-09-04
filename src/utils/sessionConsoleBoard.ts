@@ -1,8 +1,8 @@
 import { processImage } from './AssetProcessor';
 import {
   LOCAL_AUDIO_SIZE_WARN_MESSAGE,
-  LOCAL_AUDIO_WARN_BYTES,
   saveLocalAudioFile,
+  shouldWarnLocalAudioSize,
 } from './localAudioAsset';
 import { toMediaProtocol } from './mediaProtocol';
 import {
@@ -132,7 +132,7 @@ async function addDroppedImage(store: GameState, file: File): Promise<void> {
 
 async function addDroppedAudio(store: GameState, file: File): Promise<void> {
   const src = await saveLocalAudioFile(file);
-  if (file.size > LOCAL_AUDIO_WARN_BYTES) {
+  if (shouldWarnLocalAudioSize(file.size)) {
     store.showToast(LOCAL_AUDIO_SIZE_WARN_MESSAGE, 'info');
   }
   const groupId = ensureTrackGroup(store);

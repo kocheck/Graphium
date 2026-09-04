@@ -143,7 +143,7 @@ export function SessionConsolePackFields(): JSX.Element {
   const applySkippedSummary = (skipped: string[], warnings: string[] = []): void => {
     const uniqueWarnings = [...new Set(warnings)];
     for (const warning of uniqueWarnings) {
-      showToast(warning, 'info');
+      showToast(sanitizeSessionConsoleErrorMessage(warning), 'info');
     }
     const sanitized = skipped.map((item) => sanitizeSessionConsoleErrorMessage(item));
     if (sanitized.length === 0) {

@@ -2,7 +2,7 @@ import {
   isAllowedAudioFileName,
   LOCAL_AUDIO_REJECT_BYTES,
   LOCAL_AUDIO_SIZE_WARN_MESSAGE,
-  LOCAL_AUDIO_WARN_BYTES,
+  shouldWarnLocalAudioSize,
 } from './localAudioLimits';
 import { getStorage } from '../services/storage';
 
@@ -11,6 +11,7 @@ export {
   LOCAL_AUDIO_REJECT_BYTES,
   LOCAL_AUDIO_SIZE_WARN_MESSAGE,
   LOCAL_AUDIO_WARN_BYTES,
+  shouldWarnLocalAudioSize,
 } from './localAudioLimits';
 
 /**
@@ -28,7 +29,7 @@ export async function saveLocalAudioFile(file: File): Promise<string> {
     throw new Error(`Audio file is larger than 25MB and cannot be added to the campaign.`);
   }
 
-  if (file.size > LOCAL_AUDIO_WARN_BYTES) {
+  if (shouldWarnLocalAudioSize(file.size)) {
     console.warn(LOCAL_AUDIO_SIZE_WARN_MESSAGE);
   }
 
