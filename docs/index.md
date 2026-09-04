@@ -32,6 +32,7 @@
 - [Accessibility](features/wcag-audit.md) - WCAG AA compliance audit and guidelines
 - [Session Console design](planning/session-console-design.md) - Party plates + YouTube/local ambience (World View Stage)
 - [Session Console implementation plan](planning/session-console-plan.md) - Task-by-task build plan
+- [Session Console board pack example](planning/session-console-pack.example.json) - JSON + relative file authoring format
 
 ### Development Workflows
 

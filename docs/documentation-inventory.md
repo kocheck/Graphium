@@ -25,6 +25,7 @@ This document provides a complete overview of Graphium's documentation, organize
 | --- | --- | --- |
 | [`planning/session-console-design.md`](planning/session-console-design.md) | Party plates + ambience Session Console design | Developers, AI assistants |
 | [`planning/session-console-plan.md`](planning/session-console-plan.md) | Task-by-task implementation plan | Developers, AI assistants |
+| [`planning/session-console-pack.example.json`](planning/session-console-pack.example.json) | Board pack schema example | DMs, developers |
 
 ### Directory-Level READMEs (6 files)
 

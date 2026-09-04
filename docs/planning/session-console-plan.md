@@ -20,6 +20,8 @@
 - Follow existing immutable Zustand updates, preload channel whitelist, and `rewriteCampaignAssetSrcs` patterns.
 - Do not add npm audio libraries unless HTMLAudio + Web Audio prove insufficient.
 - PII-sanitize file paths in any user-visible playback error.
+- Board pack import **ingests** files into the campaign. Do not persist original absolute disk paths in `manifest.json`.
+- Pack relative paths must `realpath` inside the folder that contains `board.json`.
 
 ---
 
@@ -41,6 +43,10 @@
 - `src/components/SessionConsole/WorldAudioEngine.test.ts` — volume / command application (pure bits)
 - `src/utils/localAudioAsset.ts` — validate + `SAVE_ASSET_TEMP` for audio
 - `src/utils/localAudioAsset.test.ts`
+- `src/utils/sessionConsolePack.ts` — parse pack JSON, classify `src`, map recommended images
+- `src/utils/sessionConsolePack.test.ts`
+- `src/components/SessionConsole/SessionConsoleSettingsSheet.tsx` — pack import/export, stage, defaults, catalog editor
+- `docs/planning/session-console-pack.example.json` — checked-in pack schema example
 
 **Modify**
 
@@ -52,8 +58,9 @@
 - `electron/main.ts` — production `graphium://` origin; optional audio MIME on `media://`
 - `electron/preload.ts` — whitelist `SESSION_CONSOLE_WORLD_EVENT` if used as its own channel
 - `src/App.tsx` — mount `WorldStage` in World View
-- `src/components/Sidebar.tsx` — Session Console section
-- `src/utils/commandRegistry.ts` — open console, return to map, stop, duck
+- `src/components/Sidebar.tsx` — Session Console section + Settings button
+- `src/utils/commandRegistry.ts` — open console, open settings, return to map, stop, duck
+- `electron/preload.ts` — whitelist `IMPORT_SESSION_CONSOLE_PACK` / `EXPORT_SESSION_CONSOLE_PACK`
 - `docs/architecture/IPC_API.md` — new sync actions + World event
 - `docs/context/CONTEXT.md` — feature is planned/implemented; still no voice chat
 - `docs/index.md` — link this plan and the design
@@ -68,7 +75,7 @@
 - Test: `src/types/sessionConsole.test.ts`
 
 **Interfaces:**
-- Produces: `SessionConsoleCatalog`, `SessionConsoleRuntime`, `emptySessionConsoleCatalog(campaignName: string)`, `emptySessionConsoleRuntime()`, `parseYouTubeVideoId(input: string): string | null`, `effectiveVolume(volume: number, ducked: boolean, offset?: number): number`, `clampVolume(value: number): number`
+- Produces: `SessionConsoleCatalog`, `SessionConsoleRuntime`, `emptySessionConsoleCatalog(campaignName: string)`, `emptySessionConsoleRuntime()`, `parseYouTubeVideoId(input: string): string | null`, `effectiveVolume(volume: number, ducked: boolean, offset?: number, duckPercent?: number): number`, `clampVolume(value: number): number`
 
 - [ ] **Step 1: Write failing tests**
 
@@ -99,10 +106,11 @@ describe('parseYouTubeVideoId', () => {
 });
 
 describe('effectiveVolume', () => {
-  it('applies offset then duck (27%) and clamps', () => {
+  it('applies offset then duck percent and clamps', () => {
     expect(effectiveVolume(45, false, 0)).toBe(45);
     expect(effectiveVolume(45, false, 10)).toBe(55);
-    expect(effectiveVolume(45, true, 0)).toBe(12); // round(45 * 0.27)
+    expect(effectiveVolume(45, true, 0)).toBe(12); // round(45 * 27 / 100)
+    expect(effectiveVolume(45, true, 0, 50)).toBe(23);
     expect(effectiveVolume(200, false, 0)).toBe(100);
   });
 });
@@ -131,9 +139,9 @@ Run: `npx vitest run src/types/sessionConsole.test.ts`
 
 `parseYouTubeVideoId` must accept only `[A-Za-z0-9_-]{11}` after extracting `v=`, path tail, or raw input. Reject playlists-only URLs with no video id.
 
-`effectiveVolume`: `clampVolume(volume + (offset ?? 0))`, then if ducked `Math.round(clamped * 0.27)`.
+`effectiveVolume`: `clampVolume(volume + (offset ?? 0))`, then if ducked `Math.round(clamped * (duckPercent ?? 27) / 100)`.
 
-`emptySessionConsoleCatalog` returns empty `imageSets` / `trackGroups`, `showFrame: true`, and the five synth SFX (`test-tone` included so the button shares the SFX pipeline).
+`emptySessionConsoleCatalog` returns empty `imageSets` / `trackGroups`, `showFrame: true`, `defaults: { volume: 45, duckPercent: 27 }`, and the five synth SFX (`test-tone` included so the button shares the SFX pipeline).
 
 - [ ] **Step 4: Run tests — expect PASS**
 
@@ -151,7 +159,7 @@ Run: `npx vitest run src/types/sessionConsole.test.ts`
 - Consumes: types from Task 1
 - Produces: `applyCatalogAction(catalog, action): SessionConsoleCatalog`, `applyRuntimeCommand(runtime, command, catalog): SessionConsoleRuntime`
 
-Catalog actions (all immutable): `ADD_IMAGE_SET`, `UPDATE_IMAGE_SET`, `REMOVE_IMAGE_SET`, `REORDER_IMAGE_SETS`, `ADD_IMAGE`, `UPDATE_IMAGE`, `REMOVE_IMAGE`, `REORDER_IMAGES`, `ADD_TRACK_GROUP`, `UPDATE_TRACK_GROUP`, `REMOVE_TRACK_GROUP`, `REORDER_TRACK_GROUPS`, `ADD_TRACK`, `UPDATE_TRACK`, `REMOVE_TRACK`, `REORDER_TRACKS`, `UPDATE_STAGE_CHROME`.
+Catalog actions (all immutable): `ADD_IMAGE_SET`, `UPDATE_IMAGE_SET`, `REMOVE_IMAGE_SET`, `REORDER_IMAGE_SETS`, `ADD_IMAGE`, `UPDATE_IMAGE`, `REMOVE_IMAGE`, `REORDER_IMAGES`, `ADD_TRACK_GROUP`, `UPDATE_TRACK_GROUP`, `REMOVE_TRACK_GROUP`, `REORDER_TRACK_GROUPS`, `ADD_TRACK`, `UPDATE_TRACK`, `REMOVE_TRACK`, `REORDER_TRACKS`, `UPDATE_STAGE_CHROME`, `UPDATE_DEFAULTS`, `REPLACE_CATALOG`, `MERGE_CATALOG`.
 
 Runtime commands: `SHOW_PLATE` (looks up image in catalog, copies `{id,src,alt,name}`, sets `stageVisible: true`), `RETURN_TO_MAP` (`stageVisible: false`, leave `activeImage` as last plate for preview), `PLAY_TRACK`, `PAUSE`, `RESUME`, `RESTART` (status playing; engine seeks), `STOP`, `SET_VOLUME`, `SET_DUCKED`, `FIRE_SFX`.
 
@@ -251,6 +259,49 @@ setSessionConsoleWorldArmed: (armed: boolean) => void;
 - [ ] **Step 2: Implement walk** of `campaign.sessionConsole` inside `rewriteCampaignAssetSrcs`. Extend `CampaignAssetHost` with an optional `sessionConsole` shape.
 
 - [ ] **Step 3: Commit** `feat: include session console assets in campaign zip rewrite`
+
+---
+
+### Task 4b: Board pack parser + Electron ingest
+
+**Files:**
+- Create: `src/utils/sessionConsolePack.ts`, `src/utils/sessionConsolePack.test.ts`
+- Modify: `electron/main.ts`, `electron/preload.ts`, `src/window.d.ts` / storage service
+- Fixture: `docs/planning/session-console-pack.example.json`
+
+**Interfaces:**
+- `classifyPackSrc(src: string): { kind: 'youtube'; youtubeId: string } | { kind: 'relative' | 'absolute'; path: string } | { kind: 'http'; url: string } | { kind: 'invalid'; reason: string }`
+- `parseSessionConsolePack(json: unknown): { pack: SessionConsolePack; errors: string[] }`
+- `materializePack(pack, resolveFile: (relativeOrAbsolute: string) => Promise<string | null>, fetchHttp?: (url: string) => Promise<ArrayBuffer | null>): Promise<{ catalog: SessionConsoleCatalog; skipped: string[] }>`
+- IPC `IMPORT_SESSION_CONSOLE_PACK`: native open dialog for `board.json`. Main reads JSON, sandboxes every relative path under `dirname(board.json)`, writes copies into `temp_assets`, returns `{ catalog, skipped }`.
+- IPC `EXPORT_SESSION_CONSOLE_PACK`: native save folder; writes `board.json` (YouTube as watch URLs, files as `./images/` / `./audio/`) and copies ingested assets out.
+
+- [ ] **Step 1: Parser tests** using the example JSON
+
+```ts
+it('classifies youtube, relative, absolute, and http srcs', () => {
+  expect(classifyPackSrc('https://youtu.be/bLZApMsorjA')).toEqual({
+    kind: 'youtube',
+    youtubeId: 'bLZApMsorjA',
+  });
+  expect(classifyPackSrc('./images/a.png').kind).toBe('relative');
+  expect(classifyPackSrc('https://example.com/a.png').kind).toBe('http');
+  expect(classifyPackSrc('not-a-src').kind).toBe('invalid');
+});
+
+it('rejects relative paths that escape the pack root', () => {
+  expect(isPathInsidePackRoot('/pack', '/pack/images/a.png')).toBe(true);
+  expect(isPathInsidePackRoot('/pack', '/etc/passwd')).toBe(false);
+});
+
+it('maps recommendedImage name or id onto recommendedImageId', () => {
+  const { catalog } = await materializePack(examplePack, async () => 'file://tmp/a.webp');
+  expect(catalog.trackGroups[0].tracks[0].recommendedImageId).toBe('skeldra-overview');
+});
+```
+
+- [ ] **Step 2: Implement parser + IPC. Renderer must not get a generic filesystem read API.**
+- [ ] **Step 3: Commit** `feat: import and export session console board packs`
 
 ---
 
@@ -355,14 +406,15 @@ If `media://` audio has no MIME, map extensions in the existing `media` handler 
 
 **UI rules:**
 
-- Master bar + Discord disclosure at top of the sidebar section.
-- Image board and track groups under it. Empty state: “Add a plate or a track to start the board.”
-- Editor sheet: image (file → `processImage(..., 'MAP')` + `ADD_IMAGE`) or track (URL → `parseYouTubeVideoId` or file → `saveLocalAudioFile`).
+- Sidebar is the **live board** only. A Settings button opens `SessionConsoleSettingsSheet` (do not add this to `PreferencesDialog`).
+- Settings sections: Board pack (Import Replace/Merge, Export, skipped-item summary) → Stage chrome → Playback defaults → Catalog editor → Table setup (Discord + keys).
+- Empty sidebar state: “Import a board pack from Settings, or add a plate.”
+- Catalog editor: image (file → `processImage(..., 'MAP')` + `ADD_IMAGE`) or track (URL → `parseYouTubeVideoId` or file → `saveLocalAudioFile`).
 - Show recommended plate as brass DM text on the track row. Clicking the track does not show it.
 - Keyboard in Architect when target is not `INPUT`/`TEXTAREA`: `1`–`9` click the flattened track list, `d` ducks, `Escape` stops. Do not steal keys when the command palette is open.
 - Status dot: World closed / connected / armed (from `worldArmed` + whether World has requested state).
 
-- [ ] **Step 1: RTL tests** — clicking a plate calls `SHOW_PLATE`; clicking a track calls `PLAY_TRACK` without changing the plate; Return to map keeps `audio.status`; invalid YouTube paste shows a toast and does not add a track.
+- [ ] **Step 1: RTL tests** — clicking a plate calls `SHOW_PLATE`; clicking a track calls `PLAY_TRACK` without changing the plate; Return to map keeps `audio.status`; invalid YouTube paste shows a toast and does not add a track; Settings import Replace confirms before `REPLACE_CATALOG`.
 - [ ] **Step 2: Implement**
 - [ ] **Step 3: Commit** `feat: add Architect session console editor and transport`
 
@@ -391,6 +443,7 @@ Cannot be fully replaced by RTL. After Tasks 1–9:
 3. Save / load `.graphium` — plates and local audio survive; YouTube ids survive without being fetched at save time.
 4. Web two-tab: BroadcastChannel carries Stage + audio commands.
 5. Spoiler check: World DOM has no cue strings from hidden plates.
+6. Settings: import `session-console-pack.example.json` with a temp folder of files; confirm assets land in `temp_assets` and catalog srcs are not the original paths. Export and re-import Merge.
 
 If YouTube is blocked in CI, keep CI on parser + reducers + sync + Stage render with mocked engine.
 
@@ -399,7 +452,7 @@ If YouTube is blocked in CI, keep CI on parser + reducers + sync + Stage render 
 ## Out of scope (do not implement in this plan)
 
 - Architect headphone preview
-- Import from Ash Crown HTML
+- Import from Ash Crown HTML (hand-written board pack is the path)
 - Layered / simultaneous beds
 - Custom keybinding UI
 - Auto-switching plates with tracks
