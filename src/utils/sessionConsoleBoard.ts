@@ -47,42 +47,75 @@ export function folderTitleFromFiles(files: File[]): string | undefined {
   return folder ? folder : undefined;
 }
 
+function nextBoardTitle(existing: Array<{ title: string }>, base: string): string {
+  if (!existing.some((item) => item.title === base)) {
+    return base;
+  }
+  let suffix = 2;
+  while (existing.some((item) => item.title === `${base} ${suffix}`)) {
+    suffix += 1;
+  }
+  return `${base} ${suffix}`;
+}
+
+function addImageSet(store: GameState, title: string): string {
+  const id = crypto.randomUUID();
+  store.updateSessionConsole({
+    type: 'ADD_IMAGE_SET',
+    set: { id, title, note: '', images: [] },
+  });
+  return id;
+}
+
+function addTrackGroup(store: GameState, title: string): string {
+  const id = crypto.randomUUID();
+  store.updateSessionConsole({
+    type: 'ADD_TRACK_GROUP',
+    group: { id, title, note: '', accent: 'bed', tracks: [] },
+  });
+  return id;
+}
+
 function ensureImageSet(store: GameState, title?: string): string {
   if (title) {
     const named = store.sessionConsole.imageSets.find((set) => set.title === title);
     if (named) {
       return named.id;
     }
-    const id = crypto.randomUUID();
-    store.updateSessionConsole({
-      type: 'ADD_IMAGE_SET',
-      set: { id, title, note: '', images: [] },
-    });
-    return id;
+    return addImageSet(store, title);
   }
-  const existing = store.sessionConsole.imageSets[0];
-  if (existing) {
-    return existing.id;
+  const last = store.sessionConsole.imageSets.at(-1);
+  if (last) {
+    return last.id;
   }
-  const id = crypto.randomUUID();
-  store.updateSessionConsole({
-    type: 'ADD_IMAGE_SET',
-    set: { id, title: 'Plates', note: '', images: [] },
-  });
-  return id;
+  return addImageSet(store, 'Plates');
 }
 
-function ensureTrackGroup(store: GameState): string {
-  const existing = store.sessionConsole.trackGroups[0];
-  if (existing) {
-    return existing.id;
+function ensureTrackGroup(store: GameState, groupId?: string): string {
+  if (groupId) {
+    const named = store.sessionConsole.trackGroups.find((group) => group.id === groupId);
+    if (named) {
+      return named.id;
+    }
   }
-  const id = crypto.randomUUID();
-  store.updateSessionConsole({
-    type: 'ADD_TRACK_GROUP',
-    group: { id, title: 'Tracks', note: '', accent: 'bed', tracks: [] },
-  });
-  return id;
+  const last = store.sessionConsole.trackGroups.at(-1);
+  if (last) {
+    return last.id;
+  }
+  return addTrackGroup(store, 'Tracks');
+}
+
+export function addNewImageSet(store: GameState): string {
+  return addImageSet(store, nextBoardTitle(store.sessionConsole.imageSets, 'Plates'));
+}
+
+export function addNewTrackGroup(store: GameState): string {
+  return addTrackGroup(store, nextBoardTitle(store.sessionConsole.trackGroups, 'Tracks'));
+}
+
+interface BoardDropTarget {
+  setId?: string;
+  groupId?: string;
 }
 
 async function processPlateSources(file: File): Promise<{ src: string; thumbnailSrc: string }> {
@@ -170,13 +203,17 @@ async function addDroppedAudio(store: GameState, file: File, groupId: string): P
   });
 }
 
-export function addYouTubeFromText(store: GameState, raw: string): boolean {
+export function addYouTubeFromText(
+  store: GameState,
+  raw: string,
+  target: BoardDropTarget = {},
+): boolean {
   const youtubeId = parseYouTubeVideoId(raw);
   if (!youtubeId) {
     store.showToast('Invalid YouTube link', 'error');
     return false;
   }
-  const groupId = ensureTrackGroup(store);
+  const groupId = ensureTrackGroup(store, target.groupId);
   store.updateSessionConsole({
     type: 'ADD_TRACK',
     groupId,
@@ -204,12 +241,28 @@ function isAudioFile(file: File): boolean {
 
 const INGEST_PROGRESS_INTERVAL_MS = 200;
 
-export async function ingestDroppedFiles(store: GameState, files: File[]): Promise<void> {
+function resolveDropImageSetId(
+  store: GameState,
+  folderTitle: string | undefined,
+  setId?: string,
+): string {
+  if (setId && store.sessionConsole.imageSets.some((set) => set.id === setId)) {
+    return setId;
+  }
+  return ensureImageSet(store, folderTitle);
+}
+
+export async function ingestDroppedFiles(
+  store: GameState,
+  files: File[],
+  target: BoardDropTarget = {},
+): Promise<void> {
   const folderTitle = folderTitleFromFiles(files);
   const imageFiles = files.filter(isImageFile);
   const audioFiles = files.filter(isAudioFile);
-  const setId = imageFiles.length > 0 ? ensureImageSet(store, folderTitle) : '';
-  const groupId = audioFiles.length > 0 ? ensureTrackGroup(store) : '';
+  const setId =
+    imageFiles.length > 0 ? resolveDropImageSetId(store, folderTitle, target.setId) : '';
+  const groupId = audioFiles.length > 0 ? ensureTrackGroup(store, target.groupId) : '';
   if (audioFiles.some((file) => shouldWarnLocalAudioSize(file.size))) {
     store.showToast(LOCAL_AUDIO_SIZE_WARN_MESSAGE, 'info');
   }

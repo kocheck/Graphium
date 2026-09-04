@@ -1208,7 +1208,11 @@ void app.whenReady().then((): void => {
 
   registerCampaignHandlers(ctx);
   registerLibraryHandlers(ctx);
-  registerSessionConsolePackHandlers(ctx);
+  registerSessionConsolePackHandlers({
+    ...ctx,
+    getArchitectWebContentsId: () =>
+      mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents.id : null,
+  });
   registerMiscHandlers();
 
   let didRunQuitCleanup = false;

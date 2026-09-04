@@ -134,6 +134,7 @@ export function WorldAudioEngine(): JSX.Element {
     finishedArmRef,
     pauseRequestedRef,
     lastLoopRef,
+    youtubeNeeded: runtime.audio.source === 'youtube',
     clearFade,
     setArmed,
   });

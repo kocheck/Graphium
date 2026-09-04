@@ -202,6 +202,23 @@ describe('SessionConsolePanel', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('adds a dropped image to the targeted plate set, not the first set', async () => {
+    seedEmptyBoard();
+    renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'New plate set' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New plate set' }));
+
+    const sets = screen.getAllByTestId('session-console-image-set');
+    expect(sets).toHaveLength(2);
+    dropFiles(sets[1] as HTMLElement, [new File(['img'], 'keep.png', { type: 'image/png' })]);
+
+    await waitFor(() => {
+      const imageSets = useGameStore.getState().sessionConsole.imageSets;
+      expect(imageSets[0]?.images).toHaveLength(0);
+      expect(imageSets[1]?.images).toHaveLength(1);
+    });
+  });
+
   it('adds a pasted YouTube URL as a track without opening Settings', async () => {
     seedEmptyBoard();
     renderPanel();
@@ -656,8 +673,12 @@ describe('SessionConsolePanel', () => {
     await waitFor(() => {
       expect(screen.getByText(/Skipped 1:/)).toBeInTheDocument();
     });
-    expect(screen.getByText(/Skipped 1:/).textContent).not.toContain('janedoe');
-    expect(screen.getByText(/Skipped 1:/).textContent).toContain('<USER>');
+    const summary = screen.getByText(/Skipped 1:/).textContent ?? '';
+    expect(summary).toContain('Failed');
+    expect(summary).toContain('<PATH>');
+    expect(summary).not.toContain('janedoe');
+    expect(summary).not.toContain('/Users/');
+    expect(summary).not.toContain('Music/bed');
   });
 
   it('processes imported pack plates through MAP+thumb before REPLACE', async () => {

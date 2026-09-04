@@ -568,8 +568,10 @@ describe('syncUtils', () => {
       const raw = 'Failed to load /Users/janedoe/Music/bed.mp3';
       const sanitized = sanitizeSessionConsoleErrorMessage(raw);
       expect(sanitized).not.toContain('janedoe');
-      expect(sanitized).toContain('<USER>');
-      expect(sanitizeStack(new Error(sanitized), 'janedoe').message).toContain('<USER>');
+      expect(sanitized).not.toContain('/Users/');
+      expect(sanitized).not.toContain('Music/bed');
+      expect(sanitized).toMatch(/Failed to load/);
+      expect(sanitizeStack(new Error(sanitized), 'janedoe').message).not.toContain('janedoe');
     });
   });
 

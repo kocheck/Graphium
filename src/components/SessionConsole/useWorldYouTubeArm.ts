@@ -45,15 +45,49 @@ interface ArmArgs {
     status: 'playing' | 'paused' | 'stopped';
     worldArmed: boolean;
   }>;
+  youtubeNeeded: boolean;
   clearFade: () => void;
   setArmed: (armed: boolean) => void;
+}
+
+function watchYouTubeApi(args: {
+  youtubeNeeded: boolean;
+  createPlayer: () => void;
+  setArmEnabled: (enabled: boolean) => void;
+  clearFade: () => void;
+  playerRef: MutableRefObject<YouTubePlayer | null>;
+}): (() => void) | undefined {
+  if (!args.youtubeNeeded) {
+    args.setArmEnabled(true);
+    return undefined;
+  }
+  let cancelled = false;
+  const cleanupApi = ensureIframeApi(
+    () => {
+      if (!cancelled) {
+        args.createPlayer();
+      }
+    },
+    () => {
+      if (!cancelled) {
+        args.setArmEnabled(true);
+      }
+    },
+  );
+  return () => {
+    cancelled = true;
+    cleanupApi();
+    args.clearFade();
+    args.playerRef.current?.destroy?.();
+    args.playerRef.current = null;
+  };
 }
 
 export function useWorldYouTubeArm(args: ArmArgs): {
   armEnabled: boolean;
   handleArm: () => Promise<void>;
 } {
-  const [armEnabled, setArmEnabled] = useState(false);
+  const [armEnabled, setArmEnabled] = useState(!args.youtubeNeeded);
   const {
     ytHostRef,
     audioRef,
@@ -63,6 +97,7 @@ export function useWorldYouTubeArm(args: ArmArgs): {
     finishedArmRef,
     pauseRequestedRef,
     lastLoopRef,
+    youtubeNeeded,
     clearFade,
     setArmed,
   } = args;
@@ -139,28 +174,17 @@ export function useWorldYouTubeArm(args: ArmArgs): {
     ytHostRef,
   ]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const cleanupApi = ensureIframeApi(
-      () => {
-        if (!cancelled) {
-          createPlayer();
-        }
-      },
-      () => {
-        if (!cancelled) {
-          setArmEnabled(true);
-        }
-      },
-    );
-    return () => {
-      cancelled = true;
-      cleanupApi();
-      clearFade();
-      playerRef.current?.destroy?.();
-      playerRef.current = null;
-    };
-  }, [clearFade, createPlayer, playerRef]);
+  useEffect(
+    () =>
+      watchYouTubeApi({
+        youtubeNeeded,
+        createPlayer,
+        setArmEnabled,
+        clearFade,
+        playerRef,
+      }),
+    [clearFade, createPlayer, playerRef, youtubeNeeded],
+  );
 
   const handleArm = async (): Promise<void> => {
     if (armPendingRef.current || finishedArmRef.current) {

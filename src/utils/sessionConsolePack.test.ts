@@ -8,6 +8,7 @@ import {
   catalogToSessionConsolePack,
   classifyPackSrc,
   isPathInsidePackRoot,
+  isSafePackHttpUrl,
   materializePack,
   PACK_HTTP_MAX_BYTES,
   parseSessionConsolePack,
@@ -113,6 +114,22 @@ describe('classifyPackSrc', () => {
   it('rejects UNC and protocol-relative file srcs', () => {
     expect(classifyPackSrc('\\\\evil\\share\\bed.mp3').kind).toBe('invalid');
     expect(classifyPackSrc('//evil.example/share/bed.mp3').kind).toBe('invalid');
+  });
+
+  it('rejects loopback and plain-http remote srcs', () => {
+    expect(classifyPackSrc('http://example.com/art.png').kind).toBe('invalid');
+    expect(classifyPackSrc('https://127.0.0.1/art.png').kind).toBe('invalid');
+    expect(classifyPackSrc('https://192.168.1.9/art.png').kind).toBe('invalid');
+  });
+});
+
+describe('isSafePackHttpUrl', () => {
+  it('allows public https and rejects private or non-https hosts', () => {
+    expect(isSafePackHttpUrl('https://example.com/art.png')).toBe(true);
+    expect(isSafePackHttpUrl('http://example.com/art.png')).toBe(false);
+    expect(isSafePackHttpUrl('https://localhost/art.png')).toBe(false);
+    expect(isSafePackHttpUrl('https://10.0.0.5/art.png')).toBe(false);
+    expect(isSafePackHttpUrl('https://169.254.1.1/art.png')).toBe(false);
   });
 });
 

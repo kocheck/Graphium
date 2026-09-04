@@ -115,33 +115,50 @@ export function currentLevel(
 }
 
 export function ensureIframeApi(onReady: () => void, onUnavailable: () => void): () => void {
+  let cancelled = false;
   const existing = getYouTubeApi();
   if (existing?.Player) {
     onReady();
-    return () => undefined;
+    return () => {
+      cancelled = true;
+    };
   }
 
   if (!navigator.onLine) {
     onUnavailable();
-    return () => undefined;
+    return () => {
+      cancelled = true;
+    };
   }
 
   const win = window as unknown as { onYouTubeIframeAPIReady?: () => void };
   const previous = win.onYouTubeIframeAPIReady;
-  win.onYouTubeIframeAPIReady = () => {
+  const wrapped = (): void => {
     previous?.();
-    onReady();
+    if (!cancelled) {
+      onReady();
+    }
   };
+  win.onYouTubeIframeAPIReady = wrapped;
 
   let script = document.querySelector<HTMLScriptElement>(`script[src="${IFRAME_API_SRC}"]`);
   if (!script) {
     script = document.createElement('script');
     script.src = IFRAME_API_SRC;
-    script.onerror = () => onUnavailable();
+    script.onerror = () => {
+      if (!cancelled) {
+        onUnavailable();
+      }
+    };
     document.head.appendChild(script);
   }
 
-  return () => undefined;
+  return () => {
+    cancelled = true;
+    if (win.onYouTubeIframeAPIReady === wrapped) {
+      win.onYouTubeIframeAPIReady = previous;
+    }
+  };
 }
 
 interface FadeArgs {

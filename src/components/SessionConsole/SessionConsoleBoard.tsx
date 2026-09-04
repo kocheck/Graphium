@@ -5,7 +5,12 @@ import { RiAddLine } from '@remixicon/react';
 import { ImageSetBoard } from './ImageSetBoard';
 import { TrackGroupList } from './TrackGroupList';
 import { useGameStore } from '../../store/gameStore';
-import { addYouTubeFromText, ingestDroppedFiles } from '../../utils/sessionConsoleBoard';
+import {
+  addNewImageSet,
+  addNewTrackGroup,
+  addYouTubeFromText,
+  ingestDroppedFiles,
+} from '../../utils/sessionConsoleBoard';
 import { sanitizeSessionConsoleErrorMessage } from '../../utils/syncUtils';
 
 import type { StageImage, Track } from '../../types/sessionConsole';
@@ -102,13 +107,29 @@ export function SessionConsoleBoard({
           void ingestDroppedFiles(useGameStore.getState(), files);
         }}
       />
-      <button
-        type="button"
-        className="btn btn-secondary w-full py-1 text-xs flex items-center justify-center gap-1"
-        onClick={() => imageInputRef.current?.click()}
-      >
-        <RiAddLine className="w-4 h-4" /> Add from folder
-      </button>
+      <div className="flex flex-wrap gap-1">
+        <button
+          type="button"
+          className="btn btn-secondary flex-1 py-1 text-xs flex items-center justify-center gap-1"
+          onClick={() => imageInputRef.current?.click()}
+        >
+          <RiAddLine className="w-4 h-4" /> Add from folder
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost py-1 text-xs"
+          onClick={() => addNewImageSet(useGameStore.getState())}
+        >
+          New plate set
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost py-1 text-xs"
+          onClick={() => addNewTrackGroup(useGameStore.getState())}
+        >
+          New track group
+        </button>
+      </div>
 
       {catalog.imageSets.map((set) => (
         <ImageSetBoard
@@ -121,6 +142,9 @@ export function SessionConsoleBoard({
           onReorder={(orderedIds) =>
             updateSessionConsole({ type: 'REORDER_IMAGES', setId: set.id, orderedIds })
           }
+          onDropFiles={(files) => {
+            void ingestDroppedFiles(useGameStore.getState(), files, { setId: set.id });
+          }}
         />
       ))}
 
@@ -135,6 +159,9 @@ export function SessionConsoleBoard({
           onReorder={(orderedIds) =>
             updateSessionConsole({ type: 'REORDER_TRACKS', groupId: group.id, orderedIds })
           }
+          onDropFiles={(files) => {
+            void ingestDroppedFiles(useGameStore.getState(), files, { groupId: group.id });
+          }}
         />
       ))}
     </div>

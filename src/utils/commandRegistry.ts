@@ -155,7 +155,7 @@ export function createCommandRegistry(handlers: {
       label: 'Session Console: Duck',
       category: 'World View',
       keywords: ['session', 'console', 'duck', 'volume'],
-      shortcut: 'D',
+      shortcut: 'D (Console)',
       icon: '🦆',
       execute: () => {
         const store = useGameStore.getState();

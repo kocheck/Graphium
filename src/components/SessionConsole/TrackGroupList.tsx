@@ -7,6 +7,7 @@ interface TrackGroupListProps {
   onPlayTrack: (trackId: string) => void;
   onEdit: (track: Track) => void;
   onReorder: (orderedIds: string[]) => void;
+  onDropFiles?: (files: File[]) => void;
 }
 
 function recommendedLabel(track: Track, images: StageImage[]): string | null {
@@ -24,6 +25,7 @@ export function TrackGroupList({
   onPlayTrack,
   onEdit,
   onReorder,
+  onDropFiles,
 }: TrackGroupListProps): JSX.Element {
   const handleDropOn = (targetId: string, draggedId: string): void => {
     if (draggedId === targetId) {
@@ -40,8 +42,33 @@ export function TrackGroupList({
     onReorder(ids);
   };
 
+  const acceptFileDrop = (event: {
+    preventDefault: () => void;
+    stopPropagation: () => void;
+    dataTransfer: DataTransfer;
+  }): boolean => {
+    if (event.dataTransfer.files.length === 0) {
+      return false;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    onDropFiles?.(Array.from(event.dataTransfer.files));
+    return true;
+  };
+
   return (
-    <div className="space-y-2">
+    <div
+      className="space-y-2"
+      data-testid="session-console-track-group"
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes('Files')) {
+          event.preventDefault();
+        }
+      }}
+      onDrop={(event) => {
+        acceptFileDrop(event);
+      }}
+    >
       <h4
         className="text-xs uppercase font-semibold"
         style={{ color: 'var(--app-text-secondary)' }}
@@ -64,6 +91,9 @@ export function TrackGroupList({
                   event.preventDefault();
                 }}
                 onDrop={(event) => {
+                  if (acceptFileDrop(event)) {
+                    return;
+                  }
                   event.preventDefault();
                   handleDropOn(track.id, event.dataTransfer.getData('text/plain'));
                 }}

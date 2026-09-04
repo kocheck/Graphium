@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockIpcRenderer } from '../../test/setup';
-import { fadeToLevel, sendWorldEvent } from './worldAudioYoutube';
+import { ensureIframeApi, fadeToLevel, sendWorldEvent } from './worldAudioYoutube';
 
 describe('sendWorldEvent', () => {
   afterEach(() => {
@@ -29,6 +29,23 @@ describe('sendWorldEvent', () => {
       payload: { type: 'error', message: 'Local audio failed to play.' },
     });
     expect(close).toHaveBeenCalled();
+  });
+});
+
+describe('ensureIframeApi', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.head.innerHTML = '';
+    delete (window as unknown as { onYouTubeIframeAPIReady?: () => void }).onYouTubeIframeAPIReady;
+  });
+
+  it('does not fire onReady after cleanup', () => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, value: true });
+    const onReady = vi.fn();
+    const cleanup = ensureIframeApi(onReady, vi.fn());
+    cleanup();
+    (window as unknown as { onYouTubeIframeAPIReady?: () => void }).onYouTubeIframeAPIReady?.();
+    expect(onReady).not.toHaveBeenCalled();
   });
 });
 

@@ -33,6 +33,15 @@ describe('createCommandRegistry session console commands', () => {
     useGameStore.getState().resetToNewCampaign();
   });
 
+  it('does not reuse the Door Tool D shortcut for Duck', () => {
+    const commands = createCommandRegistry(handlers());
+    const door = commands.find((command) => command.id === 'tool-door');
+    const duck = commands.find((command) => command.id === 'session-console-duck');
+    expect(door?.shortcut).toBe('D');
+    expect(duck?.shortcut).toBe('D (Console)');
+    expect(duck?.shortcut).not.toBe(door?.shortcut);
+  });
+
   it('registers the five session console command ids', () => {
     const commands = createCommandRegistry(handlers());
     const ids = commands.map((command) => command.id);

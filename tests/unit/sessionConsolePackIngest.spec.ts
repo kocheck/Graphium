@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { emptySessionConsoleCatalog } from '../../src/types/sessionConsole';
 import { LOCAL_AUDIO_REJECT_BYTES } from '../../src/utils/localAudioLimits';
 import { isPathInsidePackRoot, parseSessionConsolePack } from '../../src/utils/sessionConsolePack';
+import { isArchitectPackSender } from '../../src/utils/sessionConsolePackIpc';
 import {
   copyPackAssetToTemp,
   exportSessionConsolePackToDirectory,
@@ -25,6 +26,14 @@ async function makeTempDir(prefix: string): Promise<string> {
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
+});
+
+describe('isArchitectPackSender', () => {
+  it('accepts only the Architect webContents id', () => {
+    expect(isArchitectPackSender(3, 3)).toBe(true);
+    expect(isArchitectPackSender(9, 3)).toBe(false);
+    expect(isArchitectPackSender(3, null)).toBe(false);
+  });
 });
 
 describe('resolveSandboxedPackPath', () => {
@@ -138,6 +147,44 @@ describe('ingestSessionConsolePackFromBoardPath', () => {
     expect(result.catalog.trackGroups[0]?.tracks[0]?.youtubeId).toBe('bLZApMsorjA');
     expect(result.catalog.imageSets[0]?.images[0]?.src).toMatch(/^file:\/\//);
     expect(result.catalog.trackGroups[0]?.tracks[1]?.src).toMatch(/^file:\/\//);
+  });
+
+  it('skips oversized local pack audio with a 25MB reason', async () => {
+    const packRoot = await makeTempDir('graphium-pack-');
+    const tempAssets = await makeTempDir('graphium-temp-');
+    await fs.mkdir(path.join(packRoot, 'audio'), { recursive: true });
+    await fs.writeFile(
+      path.join(packRoot, 'audio', 'huge.mp3'),
+      Buffer.alloc(LOCAL_AUDIO_REJECT_BYTES + 1),
+    );
+    await fs.writeFile(
+      path.join(packRoot, 'board.json'),
+      JSON.stringify({
+        version: 1,
+        kind: 'graphium.sessionConsolePack',
+        stage: { title: 'T', subtitle: '', showFrame: true },
+        defaults: { volume: 45, duckPercent: 27 },
+        imageSets: [],
+        trackGroups: [
+          {
+            id: 'g',
+            title: 'Beds',
+            note: '',
+            accent: 'bed',
+            tracks: [{ title: 'Huge', cue: '', tag: 'bed', src: './audio/huge.mp3' }],
+          },
+        ],
+      }),
+    );
+
+    const result = await ingestSessionConsolePackFromBoardPath(
+      path.join(packRoot, 'board.json'),
+      tempAssets,
+    );
+    expect(result.catalog.trackGroups[0]?.tracks).toEqual([]);
+    expect(result.skipped.join(' ')).toMatch(/25\s*MB/i);
+    expect(result.skipped.join(' ')).not.toMatch(/unsandboxed/i);
+    expect(result.skipped.join(' ')).not.toContain('huge.mp3');
   });
 });
 

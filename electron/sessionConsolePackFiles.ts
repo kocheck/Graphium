@@ -150,6 +150,11 @@ export async function ingestSessionConsolePackFromBoardPath(
         return null;
       }
       const kind = isAllowedAudioFileName(sandboxed) ? 'audio' : 'image';
+      const stats = await fs.stat(sandboxed);
+      const limit = kind === 'audio' ? LOCAL_AUDIO_REJECT_BYTES : PACK_HTTP_MAX_BYTES;
+      if (stats.size > limit) {
+        return { skip: 'file is larger than 25MB' };
+      }
       return copyPackAssetToTemp(sandboxed, tempAssetsDir, kind, warnings);
     },
     fetchHttp,

@@ -179,6 +179,8 @@ export type PackHttpFetchResult =
 
 type PersistBuffer = (buffer: ArrayBuffer, fileName: string) => Promise<string | null>;
 type FetchHttp = (url: string) => Promise<PackHttpFetchResult | ArrayBuffer | null>;
+type PackFileResolveResult = string | null | { skip: string };
+type ResolvePackFile = (relativeOrAbsolute: string) => Promise<PackFileResolveResult>;
 
 export interface MaterializePackOptions {
   localFileSkipReason?: string;
@@ -240,11 +242,63 @@ export async function readResponseCapped(
 /**
  * Fetch a remote pack asset with a hard byte cap.
  */
+function isPrivateOrLocalIpv4(host: string): boolean {
+  const parts = host.split('.').map((part) => Number(part));
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
+    return false;
+  }
+  const first = parts[0] ?? -1;
+  const second = parts[1] ?? -1;
+  return (
+    first === 0 ||
+    first === 10 ||
+    first === 127 ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
+}
+
+/** Remote pack assets must be public https — no loopback, link-local, or private LAN. */
+export function isSafePackHttpUrl(raw: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'https:') {
+    return false;
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (
+    host === 'localhost' ||
+    host === 'metadata.google.internal' ||
+    host === '0.0.0.0' ||
+    host === '::1' ||
+    host.startsWith('fe80:') ||
+    host.startsWith('fc') ||
+    host.startsWith('fd')
+  ) {
+    return false;
+  }
+  if (isPrivateOrLocalIpv4(host)) {
+    return false;
+  }
+  return true;
+}
+
 export async function fetchHttpCapped(
   url: string,
   maxBytes = PACK_HTTP_MAX_BYTES,
   fetchImpl: (input: string) => Promise<PackHttpResponse> = fetch,
 ): Promise<PackHttpFetchResult> {
+  if (!isSafePackHttpUrl(url)) {
+    return { status: 'failed' };
+  }
   try {
     const response = await fetchImpl(url);
     return await readResponseCapped(response, maxBytes);
@@ -322,6 +376,9 @@ function classifyHttpSrc(trimmed: string): PackSrcClassification {
     }
   } catch {
     return { kind: 'invalid', reason: 'invalid http URL' };
+  }
+  if (!isSafePackHttpUrl(trimmed)) {
+    return { kind: 'invalid', reason: 'remote file host is not allowed' };
   }
   return { kind: 'http', url: trimmed };
 }
@@ -618,7 +675,7 @@ function basenameFromSrc(src: string): string {
 }
 
 interface IngestContext {
-  resolveFile: (relativeOrAbsolute: string) => Promise<string | null>;
+  resolveFile: ResolvePackFile;
   fetchHttp?: FetchHttp;
   persistBuffer?: PersistBuffer;
   skipped: string[];
@@ -699,6 +756,10 @@ async function ingestSrcUncached(
   }
 
   const ingested = await ctx.resolveFile(classified.path);
+  if (ingested && typeof ingested === 'object') {
+    ctx.skipped.push(`${label}: ${ingested.skip}`);
+    return null;
+  }
   if (!ingested) {
     ctx.skipped.push(ctx.localFileSkipReason ?? `${label}: missing or unsandboxed file`);
     return null;
@@ -922,7 +983,7 @@ async function materializeSfx(
  */
 export async function materializePack(
   pack: SessionConsolePack,
-  resolveFile: (relativeOrAbsolute: string) => Promise<string | null>,
+  resolveFile: ResolvePackFile,
   fetchHttp?: FetchHttp,
   persistBuffer?: PersistBuffer,
   options?: MaterializePackOptions,

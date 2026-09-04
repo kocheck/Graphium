@@ -9,6 +9,7 @@ interface ImageSetBoardProps {
   onShowPlate: (imageId: string) => void;
   onEdit: (image: StageImage) => void;
   onReorder: (orderedIds: string[]) => void;
+  onDropFiles?: (files: File[]) => void;
 }
 
 export function ImageSetBoard({
@@ -18,6 +19,7 @@ export function ImageSetBoard({
   onShowPlate,
   onEdit,
   onReorder,
+  onDropFiles,
 }: ImageSetBoardProps): JSX.Element {
   const handleDropOn = (targetId: string, draggedId: string): void => {
     if (draggedId === targetId) {
@@ -34,8 +36,33 @@ export function ImageSetBoard({
     onReorder(ids);
   };
 
+  const acceptFileDrop = (event: {
+    preventDefault: () => void;
+    stopPropagation: () => void;
+    dataTransfer: DataTransfer;
+  }): boolean => {
+    if (event.dataTransfer.files.length === 0) {
+      return false;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    onDropFiles?.(Array.from(event.dataTransfer.files));
+    return true;
+  };
+
   return (
-    <div className="space-y-2">
+    <div
+      className="space-y-2"
+      data-testid="session-console-image-set"
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes('Files')) {
+          event.preventDefault();
+        }
+      }}
+      onDrop={(event) => {
+        acceptFileDrop(event);
+      }}
+    >
       <h4
         className="text-xs uppercase font-semibold"
         style={{ color: 'var(--app-text-secondary)' }}
@@ -57,6 +84,9 @@ export function ImageSetBoard({
                   event.preventDefault();
                 }}
                 onDrop={(event) => {
+                  if (acceptFileDrop(event)) {
+                    return;
+                  }
                   event.preventDefault();
                   handleDropOn(image.id, event.dataTransfer.getData('text/plain'));
                 }}

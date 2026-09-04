@@ -726,6 +726,11 @@ export function parseSessionConsoleWorldEvent(raw: unknown): SessionConsoleWorld
 export function sanitizeSessionConsoleErrorMessage(message: string): string {
   const withPaths = message
     .replace(/(\/(?:Users|home)\/)[^/\\]+/gi, '$1<USER>')
-    .replace(/([A-Za-z]:[/\\](?:Users|Documents and Settings)[/\\])[^/\\]+/gi, '$1<USER>');
+    .replace(/([A-Za-z]:[/\\](?:Users|Documents and Settings)[/\\])[^/\\]+/gi, '$1<USER>')
+    .replace(/file:\/\/[^\s;]+/gi, '<FILE>')
+    .replace(/https?:\/\/[^\s;]+/gi, '<URL>')
+    .replace(/\/(?:Users|home)\/<USER>\/[^\s;]+/gi, '<PATH>')
+    .replace(/[A-Za-z]:[/\\](?:Users|Documents and Settings)[/\\]<USER>[^\s;]*/gi, '<PATH>')
+    .replace(/(?:^|[\s:])(\/(?:tmp|var|opt|private)\/[^\s;]+)/gi, ' <PATH>');
   return sanitizeStack(new Error(withPaths), '').message;
 }

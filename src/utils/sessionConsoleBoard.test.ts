@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { emptySessionConsoleCatalog, type Track } from '../types/sessionConsole';
 import { useGameStore } from '../store/gameStore';
 import {
+  addNewImageSet,
+  addNewTrackGroup,
   flattenTracks,
   folderTitleFromFiles,
   formatSessionConsoleFallbackLinks,
@@ -171,6 +173,29 @@ describe('processImportedCatalogPlates', () => {
   });
 });
 
+describe('addNewImageSet', () => {
+  it('creates uniquely titled plate sets instead of always using the first set', () => {
+    useGameStore.setState({ sessionConsole: emptySessionConsoleCatalog('Ash Crown') });
+    const first = addNewImageSet(useGameStore.getState());
+    const second = addNewImageSet(useGameStore.getState());
+    const sets = useGameStore.getState().sessionConsole.imageSets;
+    expect(sets.map((set) => set.id)).toEqual([first, second]);
+    expect(sets.map((set) => set.title)).toEqual(['Plates', 'Plates 2']);
+  });
+});
+
+describe('addNewTrackGroup', () => {
+  it('creates uniquely titled track groups', () => {
+    useGameStore.setState({ sessionConsole: emptySessionConsoleCatalog('Ash Crown') });
+    addNewTrackGroup(useGameStore.getState());
+    addNewTrackGroup(useGameStore.getState());
+    expect(useGameStore.getState().sessionConsole.trackGroups.map((group) => group.title)).toEqual([
+      'Tracks',
+      'Tracks 2',
+    ]);
+  });
+});
+
 describe('ingestDroppedFiles', () => {
   afterEach(() => {
     vi.mocked(processImage).mockReset();
@@ -199,5 +224,28 @@ describe('ingestDroppedFiles', () => {
     expect(progress[0]).toBe('Adding files… 1/10');
     expect(progress.at(-1)).toBe('Adding files… 10/10');
     expect(progress.length).toBeLessThan(10);
+  });
+
+  it('adds a targeted drop to the chosen plate set, not the first set', async () => {
+    vi.mocked(processImage).mockImplementation((_file, type) => ({
+      promise: Promise.resolve(`file://tmp/${type}.webp`),
+      cancel: () => undefined,
+    }));
+    const catalog = emptySessionConsoleCatalog('Ash Crown');
+    catalog.imageSets = [
+      { id: 'first', title: 'Opener', note: '', images: [] },
+      { id: 'second', title: 'Halls', note: '', images: [] },
+    ];
+    useGameStore.setState({ sessionConsole: catalog });
+
+    await ingestDroppedFiles(
+      useGameStore.getState(),
+      [new File(['x'], 'keep.png', { type: 'image/png' })],
+      { setId: 'second' },
+    );
+
+    const sets = useGameStore.getState().sessionConsole.imageSets;
+    expect(sets[0]?.images).toHaveLength(0);
+    expect(sets[1]?.images).toHaveLength(1);
   });
 });

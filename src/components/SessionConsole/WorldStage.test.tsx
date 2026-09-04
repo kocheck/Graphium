@@ -416,7 +416,20 @@ describe('WorldStage', () => {
   });
 
   it('reports YouTube embed errors 101/150/153 to Architect', async () => {
-    seedStore({ worldArmed: true });
+    seedStore({
+      worldArmed: true,
+      audio: {
+        trackId: 'yt-1',
+        title: 'Tavern',
+        source: 'youtube',
+        youtubeId: 'bLZApMsorjA',
+        src: null,
+        status: 'playing',
+        loop: true,
+        restartSeq: 0,
+        volumeOffset: 0,
+      },
+    });
     render(<WorldStage />);
 
     await waitFor(() => {
@@ -486,10 +499,6 @@ describe('WorldStage', () => {
     seedStore({ worldArmed: true, sfxSeq: 0, sfxId: null });
     render(<WorldStage />);
 
-    await waitFor(() => {
-      expect(playerConfig.events?.onReady).toBeTypeOf('function');
-    });
-
     act(() => {
       useGameStore.setState({
         sessionConsoleRuntime: {
@@ -503,6 +512,7 @@ describe('WorldStage', () => {
     await waitFor(() => {
       expect(createOscillator).toHaveBeenCalled();
     });
+    expect(playerConfig.events?.onReady).toBeUndefined();
   });
 
   it('fades the plate on activeImage.id change', async () => {
