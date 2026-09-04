@@ -172,6 +172,11 @@ export async function ingestSessionConsolePackFromBoardPath(
   };
 }
 
+export interface SessionConsolePackExportResult {
+  ok: boolean;
+  skipped: string[];
+}
+
 async function copyCatalogAssetOut(
   src: string,
   destPath: string,
@@ -193,13 +198,46 @@ async function copyCatalogAssetOut(
 }
 
 /**
+ * Resolve an export destination under destDir. Ids are basenames only; dest must stay inside destDir.
+ */
+export async function resolveSandboxedExportDest(
+  destDir: string,
+  relativeSrc: string,
+): Promise<string | null> {
+  const trimmed = relativeSrc.replace(/^\.\//, '');
+  const folder = trimmed.startsWith('audio/') ? 'audio' : 'images';
+  const rawName = path.basename(trimmed);
+  let fileName: string;
+  try {
+    fileName = sanitizeAssetFileName(rawName);
+  } catch {
+    fileName = sanitizePackFileName(rawName);
+  }
+  if (fileName === '.' || fileName === '..') {
+    return null;
+  }
+
+  const destPath = path.resolve(destDir, folder, fileName);
+  let realDestDir: string;
+  try {
+    realDestDir = await fs.realpath(destDir);
+  } catch {
+    realDestDir = path.resolve(destDir);
+  }
+  if (!isPathInsidePackRoot(realDestDir, destPath) || destPath === realDestDir) {
+    return null;
+  }
+  return destPath;
+}
+
+/**
  * Write board.json plus copied image/audio files into destDir.
  */
 export async function exportSessionConsolePackToDirectory(
   catalog: SessionConsoleCatalog,
   destDir: string,
   allowedRoots: string[],
-): Promise<{ skipped: string[] }> {
+): Promise<SessionConsolePackExportResult> {
   const pack = catalogToSessionConsolePack(catalog);
   const skipped: string[] = [];
 
@@ -214,7 +252,11 @@ export async function exportSessionConsolePackToDirectory(
       if (!rel) {
         continue;
       }
-      const destPath = path.join(destDir, rel.replace(/^\.\//, ''));
+      const destPath = await resolveSandboxedExportDest(destDir, rel);
+      if (!destPath) {
+        skipped.push(`Refusing to export image "${image.id}" outside destination folder`);
+        continue;
+      }
       const error = await copyCatalogAssetOut(image.src, destPath, allowedRoots);
       if (error) {
         skipped.push(error);
@@ -233,7 +275,11 @@ export async function exportSessionConsolePackToDirectory(
       if (!rel) {
         continue;
       }
-      const destPath = path.join(destDir, rel.replace(/^\.\//, ''));
+      const destPath = await resolveSandboxedExportDest(destDir, rel);
+      if (!destPath) {
+        skipped.push(`Refusing to export track "${track.id}" outside destination folder`);
+        continue;
+      }
       const error = await copyCatalogAssetOut(track.src, destPath, allowedRoots);
       if (error) {
         skipped.push(error);
@@ -246,5 +292,5 @@ export async function exportSessionConsolePackToDirectory(
     `${JSON.stringify(pack, null, 2)}\n`,
     'utf8',
   );
-  return { skipped };
+  return { ok: skipped.length === 0, skipped };
 }

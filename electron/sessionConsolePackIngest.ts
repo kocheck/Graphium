@@ -48,8 +48,7 @@ export function registerSessionConsolePackHandlers(ctx: {
       if (canceled || !destDir) {
         return false;
       }
-      await exportSessionConsolePackToDirectory(catalog, destDir, ctx.allowedMediaRoots);
-      return true;
+      return exportSessionConsolePackToDirectory(catalog, destDir, ctx.allowedMediaRoots);
     },
   );
 }

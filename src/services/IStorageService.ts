@@ -118,9 +118,13 @@ export interface IStorageService {
    * Export the current Session Console catalog as a board pack folder.
    *
    * **Electron:** Native directory picker; writes `board.json` plus `images/` and `audio/`.
+   * Returns `{ ok, skipped }` after a chosen folder, or `false` if cancelled.
+   * `ok` is false when any required copy is rejected.
    * **Web:** Not supported (returns false).
    */
-  exportSessionConsolePack(catalog: SessionConsoleCatalog): Promise<boolean>;
+  exportSessionConsolePack(
+    catalog: SessionConsoleCatalog,
+  ): Promise<false | { ok: boolean; skipped: string[] }>;
 
   // ===== ASSET PROCESSING =====
 

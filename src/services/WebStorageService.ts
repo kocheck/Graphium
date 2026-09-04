@@ -209,7 +209,9 @@ export class WebStorageService implements IStorageService {
     return Promise.resolve(null);
   }
 
-  exportSessionConsolePack(_catalog: SessionConsoleCatalog): Promise<boolean> {
+  exportSessionConsolePack(
+    _catalog: SessionConsoleCatalog,
+  ): Promise<false | { ok: boolean; skipped: string[] }> {
     return Promise.resolve(false);
   }
 

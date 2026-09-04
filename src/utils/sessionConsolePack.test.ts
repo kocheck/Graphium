@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { emptySessionConsoleCatalog } from '../types/sessionConsole';
 import {
   catalogToSessionConsolePack,
   classifyPackSrc,
@@ -230,5 +231,35 @@ describe('catalogToSessionConsolePack', () => {
     );
     expect(exported.trackGroups[0]?.tracks[1]?.src).toBe('./audio/shelter-from-the-rain.mp3');
     expect(exported.imageSets[0]?.images[0]?.src).toBe('./images/campaign-opener.png');
+  });
+
+  it('sanitizes ids so a ".." id cannot resolve outside destDir', () => {
+    const catalog = emptySessionConsoleCatalog('Escape');
+    catalog.imageSets = [
+      {
+        id: 's',
+        title: 'S',
+        note: '',
+        images: [
+          {
+            id: '../../outside-escape',
+            name: 'Evil',
+            cue: '',
+            src: 'file:///tmp/art.png',
+            thumbnailSrc: 'file:///tmp/art.png',
+            alt: '',
+          },
+        ],
+      },
+    ];
+    const exported = catalogToSessionConsolePack(catalog);
+    const rel = exported.imageSets[0]?.images[0]?.src ?? '';
+    expect(rel).toBe('./images/outside-escape.png');
+    expect(rel.includes('..')).toBe(false);
+
+    const destDir = '/chosen/export';
+    const destPath = path.resolve(destDir, rel.replace(/^\.\//, ''));
+    expect(isPathInsidePackRoot(destDir, destPath)).toBe(true);
+    expect(destPath.startsWith(path.resolve(destDir) + path.sep)).toBe(true);
   });
 });

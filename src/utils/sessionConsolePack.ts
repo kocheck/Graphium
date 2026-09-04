@@ -659,9 +659,19 @@ export async function materializePack(
   return { catalog, skipped };
 }
 
+function sanitizeExportId(id: string): string {
+  const base = path.basename(id.replace(/\\/g, '/'));
+  const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '');
+  if (!cleaned || cleaned === '.' || cleaned === '..') {
+    return 'asset';
+  }
+  return cleaned;
+}
+
 function exportAssetRelPath(folder: 'images' | 'audio', id: string, src: string): string {
   const ext = path.extname(src) || (folder === 'images' ? '.png' : '.mp3');
-  return `./${folder}/${id}${ext}`;
+  const safeExt = /^\.[a-zA-Z0-9]{1,5}$/.test(ext) ? ext : folder === 'images' ? '.png' : '.mp3';
+  return `./${folder}/${sanitizeExportId(id)}${safeExt}`;
 }
 
 /**

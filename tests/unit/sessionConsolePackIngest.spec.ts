@@ -4,12 +4,14 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { emptySessionConsoleCatalog } from '../../src/types/sessionConsole';
 import { LOCAL_AUDIO_REJECT_BYTES } from '../../src/utils/localAudioAsset';
-import { parseSessionConsolePack } from '../../src/utils/sessionConsolePack';
+import { isPathInsidePackRoot, parseSessionConsolePack } from '../../src/utils/sessionConsolePack';
 import {
   copyPackAssetToTemp,
   exportSessionConsolePackToDirectory,
   ingestSessionConsolePackFromBoardPath,
+  resolveSandboxedExportDest,
   resolveSandboxedPackPath,
 } from '../../electron/sessionConsolePackFiles';
 
@@ -127,7 +129,10 @@ describe('exportSessionConsolePackToDirectory', () => {
       path.join(packRoot, 'board.json'),
       tempAssets,
     );
-    const { skipped } = await exportSessionConsolePackToDirectory(catalog, exportDir, [tempAssets]);
+    const { ok, skipped } = await exportSessionConsolePackToDirectory(catalog, exportDir, [
+      tempAssets,
+    ]);
+    expect(ok).toBe(true);
     expect(skipped).toEqual([]);
 
     const written = JSON.parse(
@@ -142,5 +147,83 @@ describe('exportSessionConsolePackToDirectory', () => {
     expect(
       await fs.readFile(path.join(exportDir, 'audio', 'shelter-from-the-rain.mp3'), 'utf8'),
     ).toBe('rain');
+  });
+
+  it('does not write outside destDir when an image id contains ".."', async () => {
+    const tempAssets = await makeTempDir('graphium-temp-');
+    const parent = await makeTempDir('graphium-export-parent-');
+    const exportDir = path.join(parent, 'dest');
+    await fs.mkdir(exportDir);
+    const sourcePath = path.join(tempAssets, 'art.png');
+    await fs.writeFile(sourcePath, 'plate');
+
+    const catalog = emptySessionConsoleCatalog('Escape');
+    catalog.imageSets = [
+      {
+        id: 's',
+        title: 'S',
+        note: '',
+        images: [
+          {
+            id: '../../outside-escape',
+            name: 'Evil',
+            cue: '',
+            src: `file://${sourcePath}`,
+            thumbnailSrc: `file://${sourcePath}`,
+            alt: '',
+          },
+        ],
+      },
+    ];
+
+    const result = await exportSessionConsolePackToDirectory(catalog, exportDir, [tempAssets]);
+    expect(result.ok).toBe(true);
+    expect(result.skipped).toEqual([]);
+
+    const escaped = path.join(parent, 'outside-escape.png');
+    await expect(fs.stat(escaped)).rejects.toThrow();
+    expect(await fs.readFile(path.join(exportDir, 'images', 'outside-escape.png'), 'utf8')).toBe(
+      'plate',
+    );
+
+    const destReal = await fs.realpath(exportDir);
+    const sandboxed = await resolveSandboxedExportDest(
+      exportDir,
+      './images/../../outside-escape.png',
+    );
+    expect(sandboxed).not.toBeNull();
+    expect(isPathInsidePackRoot(destReal, sandboxed ?? '')).toBe(true);
+  });
+
+  it('returns skipped and ok false when a required copy is rejected', async () => {
+    const allowed = await makeTempDir('graphium-allowed-');
+    const outside = await makeTempDir('graphium-outside-');
+    const exportDir = await makeTempDir('graphium-export-');
+    const sourcePath = path.join(outside, 'art.png');
+    await fs.writeFile(sourcePath, 'secret');
+
+    const catalog = emptySessionConsoleCatalog('Reject');
+    catalog.imageSets = [
+      {
+        id: 's',
+        title: 'S',
+        note: '',
+        images: [
+          {
+            id: 'blocked',
+            name: 'Blocked',
+            cue: '',
+            src: `file://${sourcePath}`,
+            thumbnailSrc: `file://${sourcePath}`,
+            alt: '',
+          },
+        ],
+      },
+    ];
+
+    const result = await exportSessionConsolePackToDirectory(catalog, exportDir, [allowed]);
+    expect(result.ok).toBe(false);
+    expect(result.skipped.length).toBeGreaterThan(0);
+    await expect(fs.stat(path.join(exportDir, 'images', 'blocked.png'))).rejects.toThrow();
   });
 });

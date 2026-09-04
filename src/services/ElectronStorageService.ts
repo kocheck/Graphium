@@ -77,9 +77,13 @@ export class ElectronStorageService implements IStorageService {
     } | null;
   }
 
-  async exportSessionConsolePack(catalog: SessionConsoleCatalog): Promise<boolean> {
+  async exportSessionConsolePack(
+    catalog: SessionConsoleCatalog,
+  ): Promise<false | { ok: boolean; skipped: string[] }> {
     this.ensureIPC();
-    return (await window.ipcRenderer?.invoke('EXPORT_SESSION_CONSOLE_PACK', catalog)) as boolean;
+    return (await window.ipcRenderer?.invoke('EXPORT_SESSION_CONSOLE_PACK', catalog)) as
+      | false
+      | { ok: boolean; skipped: string[] };
   }
 
   // ===== ASSET PROCESSING =====
