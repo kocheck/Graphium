@@ -239,4 +239,35 @@ describe('WorldStage', () => {
       expect(createOscillator).toHaveBeenCalled();
     });
   });
+
+  it('fades the plate on activeImage.id change', async () => {
+    seedStore({
+      worldArmed: true,
+      stageVisible: true,
+      activeImage: plate,
+    });
+    render(<WorldStage />);
+
+    const img = screen.getByRole('img', { name: 'Dawn over the keep' });
+    expect(img).toHaveClass('opacity-100');
+
+    act(() => {
+      useGameStore.setState({
+        sessionConsoleRuntime: {
+          ...useGameStore.getState().sessionConsoleRuntime,
+          activeImage: {
+            id: 'img-hall',
+            src: 'file:///tmp/hall.webp',
+            alt: 'The hall',
+            name: 'Hall',
+          },
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('img')).toHaveClass('opacity-0');
+    });
+    expect(screen.getByRole('img')).toHaveClass('transition-opacity');
+  });
 });

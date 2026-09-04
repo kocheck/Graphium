@@ -71,6 +71,7 @@ export function useWorldTransport(
       resumeOrRestart({
         audio,
         previousStatus: previous.status,
+        previousRestartSeq: previous.restartSeq,
         player,
         element,
         level,

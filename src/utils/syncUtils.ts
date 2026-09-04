@@ -99,7 +99,7 @@ function cloneSessionConsoleRuntime(
   return {
     ...source,
     activeImage: source.activeImage ? { ...source.activeImage } : null,
-    audio: { ...source.audio },
+    audio: { ...source.audio, restartSeq: source.audio.restartSeq ?? 0 },
   };
 }
 
@@ -580,7 +580,7 @@ export function applyAction(
     case 'AUDIO_UPDATE':
       return {
         ...runtime,
-        audio: action.payload.audio,
+        audio: { ...action.payload.audio, restartSeq: action.payload.audio.restartSeq ?? 0 },
         volume: action.payload.volume,
         ducked: action.payload.ducked,
       };

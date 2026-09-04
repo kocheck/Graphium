@@ -81,6 +81,7 @@ export interface SessionConsoleRuntime {
     src: string | null;
     status: 'stopped' | 'playing' | 'paused';
     loop: boolean;
+    restartSeq: number;
   };
   volume: number;
   ducked: boolean;
@@ -210,6 +211,7 @@ export function emptySessionConsoleRuntime(): SessionConsoleRuntime {
       src: null,
       status: 'stopped',
       loop: true,
+      restartSeq: 0,
     },
     volume: DEFAULT_VOLUME,
     ducked: false,

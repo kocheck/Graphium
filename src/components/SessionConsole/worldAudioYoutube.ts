@@ -224,6 +224,7 @@ export function startTrack(
 interface ResumeArgs {
   audio: SessionConsoleRuntime['audio'];
   previousStatus: SessionConsoleRuntime['audio']['status'];
+  previousRestartSeq: number;
   player: YouTubePlayer | null;
   element: HTMLAudioElement | null;
   level: number;
@@ -231,23 +232,23 @@ interface ResumeArgs {
 }
 
 export function resumeOrRestart(args: ResumeArgs): boolean {
-  const { audio, previousStatus, player, element, level, fade } = args;
-  if (previousStatus === 'paused') {
-    if (audio.source === 'youtube') {
-      player?.playVideo();
-    } else {
-      void element?.play();
-    }
-    fade(level, 250);
-    return true;
-  }
-  if (previousStatus === 'playing') {
+  const { audio, previousStatus, previousRestartSeq, player, element, level, fade } = args;
+  if ((audio.restartSeq ?? 0) !== (previousRestartSeq ?? 0)) {
     if (audio.source === 'youtube') {
       player?.seekTo(0, true);
       player?.playVideo();
     } else if (element) {
       element.currentTime = 0;
       void element.play();
+    }
+    fade(level, 250);
+    return true;
+  }
+  if (previousStatus === 'paused') {
+    if (audio.source === 'youtube') {
+      player?.playVideo();
+    } else {
+      void element?.play();
     }
     fade(level, 250);
     return true;

@@ -668,6 +668,7 @@ function applyTransportCommand(
         src: track.src ?? null,
         status: 'playing',
         loop: track.loop,
+        restartSeq: runtime.audio.restartSeq,
       });
     }
     case 'PAUSE':
@@ -684,7 +685,11 @@ function applyTransportCommand(
       if (!runtime.audio.trackId) {
         return runtime;
       }
-      return withAudio(runtime, { ...runtime.audio, status: 'playing' });
+      return withAudio(runtime, {
+        ...runtime.audio,
+        status: 'playing',
+        restartSeq: runtime.audio.restartSeq + 1,
+      });
     case 'STOP':
       if (runtime.audio.status === 'stopped') {
         return runtime;

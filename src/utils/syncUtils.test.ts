@@ -44,6 +44,7 @@ const playingAudio: SessionConsoleRuntime['audio'] = {
   src: 'file:///tmp/bed.mp3',
   status: 'playing',
   loop: true,
+  restartSeq: 0,
 };
 
 describe('syncUtils', () => {
@@ -288,6 +289,23 @@ describe('syncUtils', () => {
           payload: { stageVisible: true, activeImage: plateImage },
         },
       ]);
+    });
+
+    it('emits AUDIO_UPDATE including restartSeq when it increments', () => {
+      const prevRt = runtime({ audio: playingAudio });
+      const audio = { ...playingAudio, restartSeq: 1 };
+      const currRt = runtime({ audio });
+      const changes = detectChanges(
+        { sessionConsoleRuntime: prevRt },
+        { sessionConsoleRuntime: currRt },
+      );
+      expect(changes).toEqual([
+        {
+          type: 'AUDIO_UPDATE',
+          payload: { audio, volume: currRt.volume, ducked: false },
+        },
+      ]);
+      expect(changes[0]?.type === 'AUDIO_UPDATE' && changes[0].payload.audio.restartSeq).toBe(1);
     });
 
     it('emits AUDIO_UPDATE when a track starts playing', () => {

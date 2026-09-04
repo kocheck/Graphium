@@ -88,6 +88,7 @@ function runtimePlaying(): SessionConsoleRuntime {
       src: null,
       status: 'playing',
       loop: true,
+      restartSeq: 0,
     },
   };
 }
@@ -158,6 +159,7 @@ describe('applyRuntimeCommand', () => {
     const restarted = applyRuntimeCommand(paused, { type: 'RESTART' }, catalog);
     expect(restarted.audio.status).toBe('playing');
     expect(restarted.audio.trackId).toBe('t1');
+    expect(restarted.audio.restartSeq).toBe(1);
 
     const stopped = applyRuntimeCommand(playing, { type: 'STOP' }, catalog);
     expect(stopped.audio.status).toBe('stopped');
@@ -173,6 +175,18 @@ describe('applyRuntimeCommand', () => {
     const ducked = applyRuntimeCommand(loud, { type: 'SET_DUCKED', ducked: true }, catalog);
     expect(ducked.ducked).toBe(true);
     expect(ducked.activeImage?.id).toBe('a');
+  });
+
+  it('RESTART increments restartSeq while already playing', () => {
+    const playing = runtimePlaying();
+    const next = applyRuntimeCommand(playing, { type: 'RESTART' }, catalog);
+    expect(next.audio.status).toBe('playing');
+    expect(next.audio.restartSeq).toBe(1);
+    expect(next.audio.trackId).toBe('t1');
+    expect(playing.audio.restartSeq).toBe(0);
+
+    const again = applyRuntimeCommand(next, { type: 'RESTART' }, catalog);
+    expect(again.audio.restartSeq).toBe(2);
   });
 });
 
