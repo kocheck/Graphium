@@ -25,6 +25,7 @@ import { LoadingOverlay } from './components/LoadingOverlay';
 import MobileToolbar from './components/MobileToolbar';
 import { PauseManager } from './components/PauseManager';
 import ResourceMonitor from './components/ResourceMonitor';
+import { SessionConsoleEscapeStop } from './components/SessionConsole/SessionConsoleEscapeStop';
 import { WorldStage } from './components/SessionConsole/WorldStage';
 import Sidebar from './components/Sidebar';
 import SyncManager from './components/SyncManager';
@@ -499,6 +500,7 @@ function App(): React.JSX.Element {
       {isWorldView && <WorldStage />}
 
       {/* Auto-save (Architect View only) */}
+      {isArchitectView && <SessionConsoleEscapeStop defer={isAboutOpen || isUpdateManagerOpen} />}
       {isArchitectView && <AutoSaveManager />}
 
       {/* Sidebar: Only render in Architect View (DM's token library) */}

@@ -18,6 +18,9 @@ describe('parseYouTubeVideoId', () => {
     expect(parseYouTubeVideoId('https://youtu.be/bLZApMsorjA')).toBe('bLZApMsorjA');
     expect(parseYouTubeVideoId('https://www.youtube.com/shorts/bLZApMsorjA')).toBe('bLZApMsorjA');
     expect(parseYouTubeVideoId('https://www.youtube.com/embed/bLZApMsorjA')).toBe('bLZApMsorjA');
+    expect(parseYouTubeVideoId('https://www.youtube-nocookie.com/embed/bLZApMsorjA')).toBe(
+      'bLZApMsorjA',
+    );
   });
 
   it('returns null for garbage', () => {

@@ -50,9 +50,32 @@ describe('resolveSandboxedPackPath', () => {
 
     await expect(resolveSandboxedPackPath(packRoot, './escape.png')).resolves.toBeNull();
   });
+
+  it('rejects absolute paths outside the pack root', async () => {
+    const packRoot = await makeTempDir('graphium-pack-');
+    const outside = await makeTempDir('graphium-out-');
+    const secret = path.join(outside, 'id_rsa');
+    await fs.writeFile(secret, 'secret');
+
+    await expect(resolveSandboxedPackPath(packRoot, secret)).resolves.toBeNull();
+    await expect(
+      resolveSandboxedPackPath(packRoot, path.join(packRoot, 'missing.png')),
+    ).resolves.toBeNull();
+  });
 });
 
 describe('copyPackAssetToTemp', () => {
+  it('skips oversized local images', async () => {
+    const packRoot = await makeTempDir('graphium-pack-');
+    const tempAssets = await makeTempDir('graphium-temp-');
+    const imagePath = path.join(packRoot, 'huge.png');
+    await fs.writeFile(imagePath, Buffer.alloc(25 * 1024 * 1024 + 1));
+
+    const copied = await copyPackAssetToTemp(imagePath, tempAssets, 'image');
+    expect(copied).toBeNull();
+    expect(await fs.readdir(tempAssets)).toEqual([]);
+  });
+
   it('skips oversized local audio the same way as localAudioAsset', async () => {
     const packRoot = await makeTempDir('graphium-pack-');
     const tempAssets = await makeTempDir('graphium-temp-');

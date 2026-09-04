@@ -155,32 +155,41 @@ interface FadeArgs {
   done?: () => void;
 }
 
+function applyFadeLevel(
+  player: YouTubePlayer | null,
+  audio: HTMLAudioElement | null,
+  playerLevel: number,
+  audioLevel: number,
+): void {
+  player?.setVolume(playerLevel);
+  if (audio) {
+    audio.volume = Math.min(1, Math.max(0, audioLevel / 100));
+  }
+}
+
 export function fadeToLevel(args: FadeArgs): void {
-  const { player, audio, usingYoutube, target, durationMs, clearFade, setTimer, done } = args;
+  const { player, audio, target, durationMs, clearFade, setTimer, done } = args;
   clearFade();
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced || durationMs <= 0) {
-    player?.setVolume(target);
-    if (audio) {
-      audio.volume = Math.min(1, Math.max(0, target / 100));
-    }
+    applyFadeLevel(player, audio, target, target);
     done?.();
     return;
   }
   const startPlayer = player?.getVolume() ?? 0;
   const startAudio = audio ? audio.volume * 100 : 0;
-  const start = usingYoutube ? startPlayer : startAudio;
   const steps = Math.max(1, Math.round(durationMs / 40));
   let step = 0;
   setTimer(
     window.setInterval(() => {
       step += 1;
-      const next = Math.round(start + (target - start) * (step / steps));
-      if (usingYoutube) {
-        player?.setVolume(next);
-      } else if (audio) {
-        audio.volume = Math.min(1, Math.max(0, next / 100));
-      }
+      const progress = step / steps;
+      applyFadeLevel(
+        player,
+        audio,
+        Math.round(startPlayer + (target - startPlayer) * progress),
+        Math.round(startAudio + (target - startAudio) * progress),
+      );
       if (step >= steps) {
         clearFade();
         done?.();

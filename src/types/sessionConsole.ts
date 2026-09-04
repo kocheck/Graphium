@@ -102,6 +102,9 @@ export interface SessionConsoleRuntime {
   duckPercent: number;
   sfxSeq: number;
   sfxId: string | null;
+  sfxKind: SfxDefinition['kind'] | null;
+  sfxSynthType: SynthType | null;
+  sfxSrc: string | null;
   worldArmed: boolean;
 }
 
@@ -177,7 +180,8 @@ export function parseYouTubeVideoId(input: string): string | null {
   if (
     hostname === 'youtube.com' ||
     hostname === 'm.youtube.com' ||
-    hostname === 'music.youtube.com'
+    hostname === 'music.youtube.com' ||
+    hostname === 'youtube-nocookie.com'
   ) {
     const vParam = url.searchParams.get('v');
     if (vParam && VIDEO_ID_PATTERN.test(vParam)) {
@@ -244,6 +248,9 @@ export function emptySessionConsoleRuntime(): SessionConsoleRuntime {
     duckPercent: DEFAULT_DUCK_PERCENT,
     sfxSeq: 0,
     sfxId: null,
+    sfxKind: null,
+    sfxSynthType: null,
+    sfxSrc: null,
     worldArmed: false,
   };
 }

@@ -4,6 +4,7 @@ import {
   LOCAL_AUDIO_SIZE_WARN_MESSAGE,
   shouldWarnLocalAudioSize,
 } from './localAudioLimits';
+import { rewriteSafeAssetFileName } from './safeAssetFileName';
 import { getStorage } from '../services/storage';
 
 export {
@@ -34,5 +35,5 @@ export async function saveLocalAudioFile(file: File): Promise<string> {
   }
 
   const buffer = await file.arrayBuffer();
-  return getStorage().saveAssetTemp(buffer, file.name);
+  return getStorage().saveAssetTemp(buffer, rewriteSafeAssetFileName(file.name));
 }

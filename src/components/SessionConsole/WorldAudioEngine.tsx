@@ -3,7 +3,12 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useWorldTransport } from './useWorldTransport';
 import { useWorldYouTubeArm } from './useWorldYouTubeArm';
 import { fadeToLevel, sendWorldEvent, type YouTubePlayer } from './worldAudioYoutube';
-import { getStageAudioContext, playStageSfx, resolveSynthType } from './worldStageSfx';
+import {
+  getStageAudioContext,
+  playLocalSfx,
+  playStageSfx,
+  resolveSynthType,
+} from './worldStageSfx';
 import { useGameStore } from '../../store/gameStore';
 import { toMediaProtocol } from '../../utils/mediaProtocol';
 import { sanitizeSessionConsoleErrorMessage } from '../../utils/syncUtils';
@@ -112,17 +117,30 @@ export function WorldAudioEngine(): JSX.Element {
     if (!runtime.worldArmed || runtime.sfxSeq <= 0) {
       return;
     }
-    const synth = resolveSynthType(runtime.sfxId);
-    if (!synth) {
-      return;
-    }
     const context = getStageAudioContext(audioContextRef.current);
     if (!context) {
       return;
     }
     audioContextRef.current = context;
+    if (runtime.sfxKind === 'local' && runtime.sfxSrc) {
+      void playLocalSfx(context, runtime.sfxSrc).catch(() => {
+        sendWorldEvent('error', sanitizeSessionConsoleErrorMessage('Local SFX failed to play.'));
+      });
+      return;
+    }
+    const synth = resolveSynthType(runtime.sfxId, runtime.sfxSynthType);
+    if (!synth) {
+      return;
+    }
     playStageSfx(context, synth);
-  }, [runtime.sfxId, runtime.sfxSeq, runtime.worldArmed]);
+  }, [
+    runtime.sfxId,
+    runtime.sfxKind,
+    runtime.sfxSeq,
+    runtime.sfxSrc,
+    runtime.sfxSynthType,
+    runtime.worldArmed,
+  ]);
 
   return (
     <>

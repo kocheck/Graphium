@@ -20,7 +20,7 @@ interface CampaignAssetHost {
   };
 }
 
-async function runWithConcurrency(
+export async function runWithConcurrency(
   jobs: Array<() => Promise<void>>,
   concurrency = DEFAULT_ASSET_IO_CONCURRENCY,
 ): Promise<void> {

@@ -18,6 +18,9 @@ export function useWorldLinkStatus(): WorldLinkStatus {
       if (parsed?.type === 'ready' || parsed?.type === 'armed') {
         markConnected();
       }
+      if (parsed?.type === 'unarmed') {
+        setWorldConnected(false);
+      }
     };
 
     window.ipcRenderer?.on('REQUEST_INITIAL_STATE', markConnected);

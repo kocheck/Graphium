@@ -185,7 +185,16 @@ export type SyncAction =
         duckPercent: number;
       };
     }
-  | { type: 'SFX_FIRE'; payload: { seq: number; sfxId: string | null } };
+  | {
+      type: 'SFX_FIRE';
+      payload: {
+        seq: number;
+        sfxId: string | null;
+        kind: SessionConsoleRuntime['sfxKind'];
+        synthType: SessionConsoleRuntime['sfxSynthType'];
+        src: string | null;
+      };
+    };
 
 function buildFullSync(currentState: Partial<SyncableGameState>): SyncAction {
   return {
@@ -489,7 +498,13 @@ function detectSessionConsoleActions(
   if (previous.sfxSeq !== currRt.sfxSeq || previous.sfxId !== currRt.sfxId) {
     actions.push({
       type: 'SFX_FIRE',
-      payload: { seq: currRt.sfxSeq, sfxId: currRt.sfxId },
+      payload: {
+        seq: currRt.sfxSeq,
+        sfxId: currRt.sfxId,
+        kind: currRt.sfxKind ?? null,
+        synthType: currRt.sfxSynthType ?? null,
+        src: currRt.sfxSrc ?? null,
+      },
     });
   }
 
@@ -618,6 +633,9 @@ export function applyAction(
         ...runtime,
         sfxSeq: action.payload.seq,
         sfxId: action.payload.sfxId,
+        sfxKind: action.payload.kind ?? null,
+        sfxSynthType: action.payload.synthType ?? null,
+        sfxSrc: action.payload.src ?? null,
       };
     case 'FULL_SYNC': {
       const incoming = action.payload.sessionConsoleRuntime;

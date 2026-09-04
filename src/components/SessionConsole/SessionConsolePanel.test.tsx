@@ -444,6 +444,24 @@ describe('SessionConsolePanel', () => {
     stopSpy.mockRestore();
   });
 
+  it('does not swallow Esc when playback is already stopped', () => {
+    seedBoard();
+    render(
+      <>
+        <button type="button">Outside canvas</button>
+        <SessionConsolePanel />
+      </>,
+    );
+    expect(useGameStore.getState().sessionConsoleRuntime.audio.status).toBe('stopped');
+
+    const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+    expect(stopSpy).not.toHaveBeenCalled();
+    stopSpy.mockRestore();
+  });
+
   it('does not STOP when Escape is pressed while a confirm dialog is open', () => {
     seedBoard(true);
     render(

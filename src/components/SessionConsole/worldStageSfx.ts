@@ -1,5 +1,5 @@
-import { useGameStore } from '../../store/gameStore';
 import { type SynthType } from '../../types/sessionConsole';
+import { toMediaProtocol } from '../../utils/mediaProtocol';
 
 const SYNTH_IDS: ReadonlySet<string> = new Set(['chime', 'drone', 'snap', 'ping', 'test-tone']);
 
@@ -107,14 +107,27 @@ export function playStageSfx(context: AudioContext, type: SynthType): void {
   oscillator.stop(now + 1.3);
 }
 
-export function resolveSynthType(sfxId: string | null): SynthType | null {
+export function resolveSynthType(
+  sfxId: string | null,
+  synthType?: SynthType | null,
+): SynthType | null {
+  if (synthType) {
+    return synthType;
+  }
   if (sfxId && SYNTH_IDS.has(sfxId)) {
     return sfxId as SynthType;
   }
-  const catalog = useGameStore.getState().campaign.sessionConsole;
-  const definition = catalog.sfx.find((item) => item.id === sfxId);
-  if (definition?.kind === 'synth' && definition.synthType) {
-    return definition.synthType;
-  }
   return null;
+}
+
+export async function playLocalSfx(context: AudioContext, src: string): Promise<void> {
+  const response = await fetch(toMediaProtocol(src));
+  if (!response.ok) {
+    throw new Error('Local SFX failed to play.');
+  }
+  const decoded = await context.decodeAudioData(await response.arrayBuffer());
+  const source = context.createBufferSource();
+  source.buffer = decoded;
+  source.connect(context.destination);
+  source.start();
 }

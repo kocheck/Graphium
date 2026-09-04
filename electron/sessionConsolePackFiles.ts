@@ -18,6 +18,7 @@ import {
   classifyPackSrc,
   isPathInsidePackRoot,
   materializePack,
+  PACK_HTTP_MAX_BYTES,
   parseSessionConsolePack,
   type PackHttpFetchResult,
 } from '../src/utils/sessionConsolePack.js';
@@ -60,8 +61,8 @@ function uniqueTempAssetPath(tempAssetsDir: string, fileName: string): string {
 }
 
 /**
- * Resolve a relative pack path with realpath and require it to stay inside packRoot.
- * Absolute paths are allowed as a convenience and only need to exist.
+ * Resolve a pack path with realpath and require it to stay inside packRoot.
+ * Absolute and file: srcs are accepted only when they resolve under the pack folder.
  */
 export async function resolveSandboxedPackPath(
   packRoot: string,
@@ -79,23 +80,13 @@ export async function resolveSandboxedPackPath(
     candidate = requested;
   }
 
-  const mustStayInPack =
-    classified.kind === 'relative' || !path.isAbsolute(path.resolve(candidate));
-  if (classified.kind === 'relative' || (mustStayInPack && classified.kind !== 'absolute')) {
-    try {
-      const realRoot = await fs.realpath(packRoot);
-      const realTarget = await fs.realpath(candidate);
-      if (!isPathInsidePackRoot(realRoot, realTarget)) {
-        return null;
-      }
-      return realTarget;
-    } catch {
+  try {
+    const realRoot = await fs.realpath(packRoot);
+    const realTarget = await fs.realpath(candidate);
+    if (!isPathInsidePackRoot(realRoot, realTarget)) {
       return null;
     }
-  }
-
-  try {
-    return await fs.realpath(candidate);
+    return realTarget;
   } catch {
     return null;
   }
@@ -111,17 +102,19 @@ export async function copyPackAssetToTemp(
   warnings: string[] = [],
 ): Promise<string | null> {
   const fileName = path.basename(sourcePath);
+  const stats = await fs.stat(sourcePath);
   if (kind === 'audio') {
     if (!isAllowedAudioFileName(fileName)) {
       return null;
     }
-    const stats = await fs.stat(sourcePath);
     if (stats.size > LOCAL_AUDIO_REJECT_BYTES) {
       return null;
     }
     if (shouldWarnLocalAudioSize(stats.size)) {
       pushLocalAudioSizeWarning(warnings);
     }
+  } else if (stats.size > PACK_HTTP_MAX_BYTES) {
+    return null;
   }
 
   await ensureTempAssetsDir(tempAssetsDir);
@@ -136,6 +129,9 @@ async function persistBufferToTemp(
   tempAssetsDir: string,
 ): Promise<string | null> {
   if (isAllowedAudioFileName(fileName) && buffer.byteLength > LOCAL_AUDIO_REJECT_BYTES) {
+    return null;
+  }
+  if (!isAllowedAudioFileName(fileName) && buffer.byteLength > PACK_HTTP_MAX_BYTES) {
     return null;
   }
   await ensureTempAssetsDir(tempAssetsDir);

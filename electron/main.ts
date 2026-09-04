@@ -56,7 +56,6 @@ import {
 import {
   allocateUniqueZipBasename,
   isRealPathInsideAllowedRoots,
-  sanitizeAssetFileName,
   isValidUuid,
   mediaUrlToFilePath,
 } from './pathSecurity.js';
@@ -69,6 +68,7 @@ import {
 } from './themeManager.js';
 import { emptySessionConsoleCatalog } from '../src/types/sessionConsole.js';
 import { rewriteCampaignAssetSrcs } from '../src/utils/campaignAssets.js';
+import { rewriteSafeAssetFileName } from '../src/utils/safeAssetFileName.js';
 import { parseSessionConsoleWorldEvent } from '../src/utils/syncUtils.js';
 import { sanitizeWorldToArchitectAction } from '../src/utils/worldViewTokenSync.js';
 
@@ -804,7 +804,7 @@ function registerCampaignHandlers(ctx: AppContext): void {
     'SAVE_ASSET_TEMP',
     async (_event: IpcMainInvokeEvent, buffer: ArrayBuffer, name: string) => {
       await fs.mkdir(tempAssetsDir, { recursive: true });
-      const safeName = sanitizeAssetFileName(name);
+      const safeName = rewriteSafeAssetFileName(name);
       const fileName = `${Date.now()}-${safeName}`;
       const filePath = path.join(tempAssetsDir, fileName);
       await fs.writeFile(filePath, Buffer.from(buffer));

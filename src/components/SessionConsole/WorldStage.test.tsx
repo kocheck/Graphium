@@ -204,6 +204,42 @@ describe('WorldStage', () => {
     expect(screen.queryByText('Catalog secret title')).not.toBeInTheDocument();
   });
 
+  it('does not show catalog cue text on the World Stage', () => {
+    const catalog = emptySessionConsoleCatalog('Ash Crown');
+    catalog.imageSets = [
+      {
+        id: 'set-1',
+        title: 'Secret',
+        note: '',
+        images: [
+          {
+            id: plate.id,
+            name: plate.name,
+            cue: 'DM-only statue cue',
+            src: plate.src,
+            thumbnailSrc: plate.src,
+            alt: plate.alt,
+          },
+        ],
+      },
+    ];
+    useGameStore.setState({
+      sessionConsole: catalog,
+      campaign: {
+        ...useGameStore.getState().campaign,
+        sessionConsole: catalog,
+      },
+      sessionConsoleRuntime: runtime({
+        worldArmed: true,
+        stageVisible: true,
+        activeImage: plate,
+      }),
+    });
+    render(<WorldStage />);
+    expect(screen.getByRole('img', { name: plate.alt })).toBeInTheDocument();
+    expect(screen.queryByText('DM-only statue cue')).not.toBeInTheDocument();
+  });
+
   it('arms locally and sends SESSION_CONSOLE_WORLD_EVENT armed', async () => {
     const user = userEvent.setup();
     seedStore({ worldArmed: false });
@@ -222,6 +258,17 @@ describe('WorldStage', () => {
     expect(mockIpcRenderer.send).toHaveBeenCalledWith('SESSION_CONSOLE_WORLD_EVENT', {
       type: 'armed',
     });
+  });
+
+  it('sends unarmed when World Stage unmounts', () => {
+    seedStore({ worldArmed: true });
+    const { unmount } = render(<WorldStage />);
+    mockIpcRenderer.send.mockClear();
+    unmount();
+    expect(mockIpcRenderer.send).toHaveBeenCalledWith('SESSION_CONSOLE_WORLD_EVENT', {
+      type: 'unarmed',
+    });
+    expect(useGameStore.getState().sessionConsoleRuntime.worldArmed).toBe(false);
   });
 
   it('reports a sanitized local audio error without file paths', async () => {

@@ -392,7 +392,12 @@ describe('syncUtils', () => {
       const currRt = runtime({ sfxSeq: 3, sfxId: 'snap' });
       expect(
         detectChanges({ sessionConsoleRuntime: prevRt }, { sessionConsoleRuntime: currRt }),
-      ).toEqual([{ type: 'SFX_FIRE', payload: { seq: 3, sfxId: 'snap' } }]);
+      ).toEqual([
+        {
+          type: 'SFX_FIRE',
+          payload: { seq: 3, sfxId: 'snap', kind: null, synthType: null, src: null },
+        },
+      ]);
     });
 
     it('does not emit session console actions when only worldArmed changes', () => {
@@ -457,10 +462,12 @@ describe('syncUtils', () => {
 
       const afterSfx = applyAction(afterAudio, {
         type: 'SFX_FIRE',
-        payload: { seq: 4, sfxId: 'ping' },
+        payload: { seq: 4, sfxId: 'ping', kind: 'synth', synthType: 'ping', src: null },
       });
       expect(afterSfx.sfxSeq).toBe(4);
       expect(afterSfx.sfxId).toBe('ping');
+      expect(afterSfx.sfxKind).toBe('synth');
+      expect(afterSfx.sfxSynthType).toBe('ping');
       expect(afterSfx.audio.status).toBe('playing');
     });
 

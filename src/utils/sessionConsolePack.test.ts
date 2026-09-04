@@ -90,6 +90,10 @@ describe('classifyPackSrc', () => {
       kind: 'youtube',
       youtubeId: 'bLZApMsorjA',
     });
+    expect(classifyPackSrc('https://www.youtube-nocookie.com/embed/bLZApMsorjA')).toEqual({
+      kind: 'youtube',
+      youtubeId: 'bLZApMsorjA',
+    });
     expect(classifyPackSrc('./images/a.png').kind).toBe('relative');
     expect(classifyPackSrc('https://example.com/a.png').kind).toBe('http');
     expect(classifyPackSrc('not-a-src').kind).toBe('invalid');

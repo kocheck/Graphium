@@ -94,7 +94,7 @@ export function SessionConsolePlaybackFields(): JSX.Element {
         className="block text-xs uppercase font-semibold"
         style={{ color: 'var(--app-text-secondary)' }}
       >
-        Volume
+        Default volume on load
         <input
           type="range"
           min={0}
@@ -154,21 +154,21 @@ export function SessionConsolePackFields(): JSX.Element {
   };
 
   const handleImportReplace = (): void => {
-    void (async () => {
-      const result = await importPack();
-      if (!result) {
-        return;
-      }
-      const catalog = await processImportedCatalogPlates(result.catalog);
-      showConfirmDialog(
-        'Replace the current Session Console catalog? This cannot be undone.',
-        () => {
-          updateSessionConsole({ type: 'REPLACE_CATALOG', catalog });
+    showConfirmDialog(
+      'Replace the current Session Console catalog? This cannot be undone.',
+      () => {
+        void (async () => {
+          const result = await importPack();
+          if (!result) {
+            return;
+          }
+          const imported = await processImportedCatalogPlates(result.catalog);
+          updateSessionConsole({ type: 'REPLACE_CATALOG', catalog: imported });
           applySkippedSummary(result.skipped, result.warnings);
-        },
-        'Replace',
-      );
-    })();
+        })();
+      },
+      'Replace',
+    );
   };
 
   const handleImportMerge = (): void => {

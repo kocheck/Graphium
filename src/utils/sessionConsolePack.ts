@@ -244,7 +244,8 @@ function isYoutubeHost(hostname: string): boolean {
     host === 'youtu.be' ||
     host === 'youtube.com' ||
     host === 'm.youtube.com' ||
-    host === 'music.youtube.com'
+    host === 'music.youtube.com' ||
+    host === 'youtube-nocookie.com'
   );
 }
 

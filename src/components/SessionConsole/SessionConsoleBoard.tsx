@@ -1,4 +1,4 @@
-import { useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
+import { useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
 
 import { RiAddLine } from '@remixicon/react';
 
@@ -45,8 +45,20 @@ export function SessionConsoleBoard({
 
   const handleYoutubePaste = (event: ClipboardEvent<HTMLInputElement>): void => {
     const text = event.clipboardData.getData('text') || event.clipboardData.getData('text/plain');
-    addYouTubeFromText(useGameStore.getState(), text);
-    setYoutubeDraft('');
+    if (addYouTubeFromText(useGameStore.getState(), text)) {
+      event.preventDefault();
+      setYoutubeDraft('');
+    }
+  };
+
+  const handleYoutubeKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    if (addYouTubeFromText(useGameStore.getState(), youtubeDraft)) {
+      setYoutubeDraft('');
+    }
   };
 
   return (
@@ -68,6 +80,7 @@ export function SessionConsoleBoard({
         value={youtubeDraft}
         onChange={(event) => setYoutubeDraft(event.target.value)}
         onPaste={handleYoutubePaste}
+        onKeyDown={handleYoutubeKeyDown}
         className="sidebar-input w-full rounded px-2 py-1 text-sm"
       />
 

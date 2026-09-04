@@ -168,5 +168,20 @@ export function useWorldYouTubeArm(args: ArmArgs): {
     }
   };
 
+  useEffect(() => {
+    const disarm = (): void => {
+      sendWorldEvent('unarmed');
+      setArmed(false);
+    };
+    const onPageHide = (): void => {
+      disarm();
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      disarm();
+    };
+  }, [setArmed]);
+
   return { armEnabled, handleArm };
 }

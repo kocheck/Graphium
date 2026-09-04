@@ -34,3 +34,29 @@ export function contentTypeForAssetFileName(fileName: string): string {
   const ext = fileExtension(fileName);
   return AUDIO_CONTENT_TYPES[ext] ?? IMAGE_CONTENT_TYPES[ext] ?? 'image/webp';
 }
+
+export function extensionForContentType(contentType: string): string {
+  const normalized = contentType.split(';')[0]?.trim().toLowerCase() ?? '';
+  if (normalized === 'audio/mpeg') {
+    return '.mp3';
+  }
+  if (normalized === 'audio/ogg') {
+    return '.ogg';
+  }
+  if (normalized === 'audio/wav') {
+    return '.wav';
+  }
+  if (normalized === 'audio/mp4') {
+    return '.m4a';
+  }
+  if (normalized === 'image/png') {
+    return '.png';
+  }
+  if (normalized === 'image/jpeg') {
+    return '.jpg';
+  }
+  if (normalized === 'image/webp') {
+    return '.webp';
+  }
+  return '';
+}

@@ -78,6 +78,15 @@ export function ImageSetBoard({
                 <span className="block text-xs font-medium truncate" title={image.name}>
                   {image.name}
                 </span>
+                {image.cue ? (
+                  <span
+                    className="block text-[11px] truncate"
+                    style={{ color: 'var(--app-text-secondary)' }}
+                    title={image.cue}
+                  >
+                    {image.cue}
+                  </span>
+                ) : null}
               </button>
               <button
                 type="button"

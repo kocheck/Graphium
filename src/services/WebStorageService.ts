@@ -4,7 +4,11 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import JSZip from 'jszip';
 
-import { contentTypeForAssetFileName } from '../utils/assetContentType';
+import {
+  contentTypeForAssetFileName,
+  extensionForContentType,
+  fileExtension,
+} from '../utils/assetContentType';
 import { rewriteCampaignAssetSrcs } from '../utils/campaignAssets';
 import {
   catalogToSessionConsolePack,
@@ -571,7 +575,8 @@ export class WebStorageService implements IStorageService {
         const buffer = await blob.arrayBuffer();
 
         // Generate unique filename (timestamp + counter for guaranteed uniqueness)
-        const filename = `asset-${Date.now()}-${assetCounter++}-${Math.random().toString(36).slice(2)}.webp`;
+        const ext = fileExtension(src) || extensionForContentType(blob.type) || '.webp';
+        const filename = `asset-${Date.now()}-${assetCounter++}-${Math.random().toString(36).slice(2)}${ext}`;
         assetsFolder.file(filename, buffer);
 
         const relativePath = `assets/${filename}`;
@@ -607,7 +612,7 @@ export class WebStorageService implements IStorageService {
       const fileData = await assets.file(filename)?.async('arraybuffer');
 
       if (fileData) {
-        const blob = new Blob([fileData], { type: 'image/webp' });
+        const blob = new Blob([fileData], { type: contentTypeForAssetFileName(filename) });
         return URL.createObjectURL(blob);
       }
 
@@ -615,32 +620,6 @@ export class WebStorageService implements IStorageService {
       return src; // Keep original if not found
     };
 
-    // Restore all map backgrounds and tokens
-    for (const mapId in campaign.maps) {
-      const map = campaign.maps[mapId];
-      if (!map) {
-        continue;
-      }
-
-      // Map background
-      if (map.map?.src) {
-        map.map.src = await restoreAsset(map.map.src);
-      }
-
-      // Tokens
-      if (map.tokens) {
-        for (const token of map.tokens) {
-          token.src = await restoreAsset(token.src);
-        }
-      }
-    }
-
-    // Restore campaign token library
-    if (campaign.tokenLibrary) {
-      for (const item of campaign.tokenLibrary) {
-        item.src = await restoreAsset(item.src);
-        item.thumbnailSrc = await restoreAsset(item.thumbnailSrc);
-      }
-    }
+    await rewriteCampaignAssetSrcs(campaign, restoreAsset, { includeThumbnails: true });
   }
 }

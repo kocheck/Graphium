@@ -732,11 +732,30 @@ function applyMixerCommand(
     }
     case 'SET_DUCKED':
       return command.ducked === runtime.ducked ? runtime : { ...runtime, ducked: command.ducked };
-    case 'FIRE_SFX':
-      if (!findSfx(catalog, command.sfxId)) {
+    case 'FIRE_SFX': {
+      const sfx = findSfx(catalog, command.sfxId);
+      if (!sfx) {
         return runtime;
       }
-      return { ...runtime, sfxSeq: runtime.sfxSeq + 1, sfxId: command.sfxId };
+      const synthType =
+        sfx.synthType ??
+        (sfx.kind === 'synth' &&
+        (sfx.id === 'chime' ||
+          sfx.id === 'drone' ||
+          sfx.id === 'snap' ||
+          sfx.id === 'ping' ||
+          sfx.id === 'test-tone')
+          ? sfx.id
+          : null);
+      return {
+        ...runtime,
+        sfxSeq: runtime.sfxSeq + 1,
+        sfxId: sfx.id,
+        sfxKind: sfx.kind,
+        sfxSynthType: synthType,
+        sfxSrc: sfx.src ?? null,
+      };
+    }
     default:
       return runtime;
   }

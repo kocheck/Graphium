@@ -58,6 +58,13 @@ describe('saveLocalAudioFile', () => {
     expect(Array.from(new Uint8Array(buffer))).toEqual(Array.from(expected));
   });
 
+  it('rewrites spaces and parentheses before saveAssetTemp', async () => {
+    const file = audioFile('tavern theme (1).mp3', 'tiny-bed');
+    await expect(saveLocalAudioFile(file)).resolves.toBe('file:///tmp/bed.mp3');
+    const name = mockSaveAssetTemp.mock.calls[0]?.[1];
+    expect(name).toBe('tavern-theme-1.mp3');
+  });
+
   it('rejects bed.exe and does not call saveAssetTemp', async () => {
     const file = audioFile('bed.exe', 'x');
 

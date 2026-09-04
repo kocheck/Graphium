@@ -1,4 +1,5 @@
 import { processImage } from './AssetProcessor';
+import { runWithConcurrency } from './campaignAssets';
 import {
   LOCAL_AUDIO_SIZE_WARN_MESSAGE,
   saveLocalAudioFile,
@@ -118,22 +119,23 @@ export async function processImportedCatalogPlates(
 ): Promise<SessionConsoleCatalog> {
   const imageSets = [];
   for (const set of catalog.imageSets) {
-    const images: StageImage[] = [];
-    for (const image of set.images) {
-      try {
-        images.push(await processImportedPlate(image));
-      } catch {
-        images.push(image);
-      }
-    }
+    const images: StageImage[] = set.images.map((image) => image);
+    await runWithConcurrency(
+      set.images.map((image, index) => async () => {
+        try {
+          images[index] = await processImportedPlate(image);
+        } catch {
+          images[index] = image;
+        }
+      }),
+    );
     imageSets.push({ ...set, images });
   }
   return { ...catalog, imageSets };
 }
 
-async function addDroppedImage(store: GameState, file: File, setTitle?: string): Promise<void> {
+async function addDroppedImage(store: GameState, file: File, setId: string): Promise<void> {
   const { src, thumbnailSrc } = await processPlateSources(file);
-  const setId = ensureImageSet(store, setTitle);
   const name = fileNameStem(file.name);
   store.updateSessionConsole({
     type: 'ADD_IMAGE',
@@ -149,12 +151,11 @@ async function addDroppedImage(store: GameState, file: File, setTitle?: string):
   });
 }
 
-async function addDroppedAudio(store: GameState, file: File): Promise<void> {
+async function addDroppedAudio(store: GameState, file: File, groupId: string): Promise<void> {
   const src = await saveLocalAudioFile(file);
   if (shouldWarnLocalAudioSize(file.size)) {
     store.showToast(LOCAL_AUDIO_SIZE_WARN_MESSAGE, 'info');
   }
-  const groupId = ensureTrackGroup(store);
   const title = fileNameStem(file.name);
   store.updateSessionConsole({
     type: 'ADD_TRACK',
@@ -206,16 +207,29 @@ function isAudioFile(file: File): boolean {
 
 export async function ingestDroppedFiles(store: GameState, files: File[]): Promise<void> {
   const folderTitle = folderTitleFromFiles(files);
-  for (const file of files) {
-    try {
-      if (isImageFile(file)) {
-        await addDroppedImage(store, file, folderTitle);
-      } else if (isAudioFile(file)) {
-        await addDroppedAudio(store, file);
+  const imageFiles = files.filter(isImageFile);
+  const audioFiles = files.filter(isAudioFile);
+  const setId = imageFiles.length > 0 ? ensureImageSet(store, folderTitle) : '';
+  const groupId = audioFiles.length > 0 ? ensureTrackGroup(store) : '';
+  const jobs = [
+    ...imageFiles.map((file) => async () => addDroppedImage(store, file, setId)),
+    ...audioFiles.map((file) => async () => addDroppedAudio(store, file, groupId)),
+  ];
+  let done = 0;
+  const total = jobs.length;
+  await runWithConcurrency(
+    jobs.map((job) => async () => {
+      try {
+        await job();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to add board file';
+        store.showToast(sanitizeSessionConsoleErrorMessage(message), 'error');
+      } finally {
+        done += 1;
+        if (total > 1) {
+          store.showToast(`Adding files… ${done}/${total}`, 'info');
+        }
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to add board file';
-      store.showToast(sanitizeSessionConsoleErrorMessage(message), 'error');
-    }
-  }
+    }),
+  );
 }

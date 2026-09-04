@@ -143,6 +143,26 @@ describe('applyRuntimeCommand', () => {
     const next = applyRuntimeCommand(empty, { type: 'FIRE_SFX', sfxId: 'chime' }, catalog);
     expect(next.sfxSeq).toBe(1);
     expect(next.sfxId).toBe('chime');
+    expect(next.sfxKind).toBe('synth');
+    expect(next.sfxSynthType).toBe('chime');
+    expect(next.sfxSrc).toBeNull();
+  });
+
+  it('FIRE_SFX copies remapped synthType and local src onto runtime', () => {
+    const withLocal = {
+      ...catalog,
+      sfx: [
+        ...catalog.sfx,
+        { id: 'horn-2', label: 'Horn', kind: 'synth' as const, synthType: 'chime' as const },
+        { id: 'sting', label: 'Sting', kind: 'local' as const, src: 'file:///tmp/sting.mp3' },
+      ],
+    };
+    const synth = applyRuntimeCommand(empty, { type: 'FIRE_SFX', sfxId: 'horn-2' }, withLocal);
+    expect(synth.sfxId).toBe('horn-2');
+    expect(synth.sfxSynthType).toBe('chime');
+    const local = applyRuntimeCommand(empty, { type: 'FIRE_SFX', sfxId: 'sting' }, withLocal);
+    expect(local.sfxKind).toBe('local');
+    expect(local.sfxSrc).toBe('file:///tmp/sting.mp3');
   });
 
   it('unknown ids are no-ops and return the previous reference', () => {
