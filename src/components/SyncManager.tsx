@@ -1,6 +1,16 @@
 import { useEffect, useRef } from 'react';
 
 import { DEFAULT_GRID_COLOR, useGameStore } from '../store/gameStore';
+import { usePointerOverlayStore } from '../store/pointerOverlayStore';
+import { recordIpcAction } from '../utils/perfCounters';
+import { queueSyncAction, setRafSyncSender } from '../utils/rafSync';
+import {
+  beginInboundApply,
+  endInboundApply,
+  isInboundApply,
+  registerArchitectPrevStamper,
+  stampTokenPositionsOnSnapshot,
+} from '../utils/syncStamp';
 import {
   buildFullSyncPayload,
   cloneSyncableStateFromGame,
@@ -11,6 +21,8 @@ import {
   isSyncSliceUnchanged,
 } from '../utils/syncUtils';
 import { throttle } from '../utils/throttle';
+import { patchTokenInIndex } from '../utils/tokenIndex';
+import { applyTokenNodePositions } from '../utils/tokenNodeRegistry';
 import {
   pickTokenPositionChanges,
   sanitizeWorldToArchitectAction,
@@ -39,12 +51,15 @@ function SyncManager(): null {
     let channel: BroadcastChannel | null = null;
 
     const sendSyncAction = (action: SyncAction): void => {
+      recordIpcAction(action.type);
       if (isWeb && channel) {
         channel.postMessage(action);
       } else if (isElectron && ipcRenderer) {
         ipcRenderer.send('SYNC_WORLD_STATE', action);
       }
     };
+
+    setRafSyncSender(sendSyncAction);
 
     const sendCoalescedActions = (
       actions: SyncAction[],
@@ -56,7 +71,7 @@ function SyncManager(): null {
     };
 
     if (!isWorldView) {
-      window.graphiumSync = sendSyncAction;
+      window.graphiumSync = queueSyncAction;
     }
 
     if (isWeb && typeof BroadcastChannel !== 'undefined') {
@@ -64,8 +79,41 @@ function SyncManager(): null {
     }
 
     if (isWorldView) {
-      // eslint-disable-next-line complexity
+      const applyDragPositions = (
+        positions: Array<{ id: string; x: number; y: number }>,
+        commit: boolean,
+      ): void => {
+        applyTokenNodePositions(positions);
+        if (!commit) {
+          usePointerOverlayStore.getState().setLivePositions(positions);
+          return;
+        }
+        beginInboundApply();
+        try {
+          useGameStore.getState().updateTokenPositions(positions);
+          if (worldViewPrevStateRef.current) {
+            stampTokenPositionsOnSnapshot(worldViewPrevStateRef.current, positions);
+          }
+        } finally {
+          endInboundApply();
+          usePointerOverlayStore.getState().clearLivePositions();
+        }
+      };
+
       const handleSyncAction = (
+        _event: Electron.IpcRendererEvent | null,
+        action: SyncAction,
+      ): void => {
+        beginInboundApply();
+        try {
+          applySyncAction(_event, action);
+        } finally {
+          endInboundApply();
+        }
+      };
+
+      // eslint-disable-next-line complexity
+      const applySyncAction = (
         _event: Electron.IpcRendererEvent | null,
         action: SyncAction,
       ): void => {
@@ -75,14 +123,17 @@ function SyncManager(): null {
           case 'BATCH':
             for (const inner of action.payload) {
               if (inner.type !== 'BATCH') {
-                handleSyncAction(_event, inner);
+                applySyncAction(_event, inner);
               }
             }
             break;
 
           case 'FULL_SYNC': {
             const { tokenLibrary: fullLib, ...restState } = action.payload;
-            useGameStore.setState(restState as Partial<SyncableGameState>);
+            store.setState({
+              ...(restState as Partial<SyncableGameState>),
+              tokens: action.payload.tokens ?? store.tokens,
+            });
 
             const activeMeasurement = action.payload.activeMeasurement ?? null;
             const broadcastMeasurement = Boolean(action.payload.broadcastMeasurement ?? false);
@@ -115,12 +166,16 @@ function SyncManager(): null {
 
           case 'TOKEN_UPDATE': {
             const { id, changes } = action.payload;
-            const currentToken = store.tokens.find((t) => t.id === id);
-            if (currentToken) {
-              const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...changes } : t));
-              useGameStore.setState({ tokens: newTokens });
-              if (worldViewPrevStateRef.current) {
-                worldViewPrevStateRef.current.tokens = [...newTokens];
+            const patched = patchTokenInIndex(store.tokens, store.tokensById, id, changes);
+            if (patched) {
+              beginInboundApply();
+              try {
+                useGameStore.setState(patched);
+                if (worldViewPrevStateRef.current) {
+                  worldViewPrevStateRef.current.tokens = [...patched.tokens];
+                }
+              } finally {
+                endInboundApply();
               }
             }
             break;
@@ -131,28 +186,16 @@ function SyncManager(): null {
             break;
 
           case 'TOKEN_DRAG_START':
-          case 'TOKEN_DRAG_MOVE': {
-            const { id: dId, x: dX, y: dY } = action.payload;
-            const dToken = store.tokens.find((t) => t.id === dId);
-            if (dToken) {
-              const newTokens = store.tokens.map((t) =>
-                t.id === dId ? { ...t, x: dX, y: dY } : t,
-              );
-              useGameStore.setState({ tokens: newTokens });
-              if (worldViewPrevStateRef.current) {
-                worldViewPrevStateRef.current.tokens = [...newTokens];
-              }
-            }
+          case 'TOKEN_DRAG_MOVE':
+            applyDragPositions([action.payload], false);
             break;
-          }
+
+          case 'TOKEN_DRAG_MOVE_BATCH':
+            applyDragPositions(action.payload, false);
+            break;
 
           case 'TOKEN_DRAG_END': {
-            const { id: eId, x: eX, y: eY } = action.payload;
-            store.updateTokenPosition(eId, eX, eY);
-            if (worldViewPrevStateRef.current) {
-              const { tokens: updatedTokens } = useGameStore.getState();
-              worldViewPrevStateRef.current.tokens = [...updatedTokens];
-            }
+            applyDragPositions([action.payload], true);
             break;
           }
 
@@ -264,13 +307,14 @@ function SyncManager(): null {
 
       const throttledWorldViewSync = throttle(handleWorldViewUpdate, 32);
       const unsubWorldView = useGameStore.subscribe((state: GameState, previous: GameState) => {
-        if (state.tokens === previous.tokens) {
+        if (isInboundApply() || state.tokens === previous.tokens) {
           return;
         }
         throttledWorldViewSync(state);
       });
 
       return (): void => {
+        setRafSyncSender(null);
         throttledWorldViewSync.cancel();
         unsubWorldView();
         if (channel) {
@@ -308,23 +352,18 @@ function SyncManager(): null {
 
     const applyArchitectTokenUpdate = (id: string, changes: Partial<Token>): void => {
       const positionOnly = pickTokenPositionChanges(changes);
-      if (positionOnly.x === undefined && positionOnly.y === undefined) {
-        return;
-      }
-
       const store = useGameStore.getState();
-      if (!store.tokens.some((t) => t.id === id)) {
+      const existing = store.tokensById[id];
+      if (!existing) {
         return;
       }
-      const newTokens = store.tokens.map((t) => (t.id === id ? { ...t, ...positionOnly } : t));
-      useGameStore.setState({ tokens: newTokens });
-      if (prevStateRef.current) {
-        // Copy so prev snapshot does not alias the live store array reference.
-        prevStateRef.current = {
-          ...prevStateRef.current,
-          tokens: newTokens.map((token) => ({ ...token })),
-        };
+      const x = positionOnly.x ?? existing.x;
+      const y = positionOnly.y ?? existing.y;
+      if (x === existing.x && y === existing.y) {
+        return;
       }
+      store.updateTokenPosition(id, x, y);
+      stampTokenPositionsOnSnapshot(prevStateRef.current, [{ id, x, y }]);
     };
 
     const applyWorldToArchitectAction = (rawAction: unknown): void => {
@@ -380,9 +419,13 @@ function SyncManager(): null {
       });
     };
 
+    registerArchitectPrevStamper((id, x, y) => {
+      stampTokenPositionsOnSnapshot(prevStateRef.current, [{ id, x, y }]);
+    });
+
     const throttledSync = throttle(handleStoreUpdate, 32);
     const unsub = useGameStore.subscribe((state: GameState, previous: GameState) => {
-      if (isSyncSliceUnchanged(state, previous)) {
+      if (isInboundApply() || isSyncSliceUnchanged(state, previous)) {
         return;
       }
       throttledSync(state);
@@ -398,6 +441,8 @@ function SyncManager(): null {
     }
 
     return (): void => {
+      registerArchitectPrevStamper(null);
+      setRafSyncSender(null);
       throttledSync.cancel();
       unsub();
       if (channel) {

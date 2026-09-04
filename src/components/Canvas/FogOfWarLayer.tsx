@@ -1,18 +1,28 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { memo, useMemo, useEffect, useRef } from 'react';
 
-import Konva from 'konva';
 import { Shape, Group } from 'react-konva';
+import { useShallow } from 'zustand/shallow';
 
-import URLImage from './URLImage';
+import {
+  indexTokenLibrary,
+  peekTokenScale,
+  peekTokenType,
+  peekVisionRadius,
+} from '../../hooks/useTokenData';
 import { useGameStore } from '../../store/gameStore';
+import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
+import { useVisionStore } from '../../store/visionStore';
+import {
+  applyLiveTokenPositions,
+  computeHiddenNpcIds,
+  getFogBounds,
+} from '../../utils/fogVisibility';
+import { recordFowRecalc } from '../../utils/perfCounters';
 
-import type { ResolvedTokenData } from '../../hooks/useTokenData';
-import type { Drawing, Door, MapConfig } from '../../store/gameStore';
+import type { Door, MapConfig } from '../../store/gameStore';
 import type { Point, WallSegment } from '../../types/geometry';
 
 interface FogOfWarLayerProps {
-  tokens: ResolvedTokenData[];
-  drawings: Drawing[];
   doors: Door[];
   gridSize: number;
   visibleBounds: {
@@ -24,7 +34,57 @@ interface FogOfWarLayerProps {
   map: MapConfig | null;
 }
 
-const BLUR_FILTERS = [Konva.Filters.Blur]; // Use Konva.Filters.Blur instead of importing broken constant
+function rayCountForVision(radiusPx: number, zoom: number): number {
+  const apparent = radiusPx * zoom;
+  if (apparent < 200) {
+    return 90;
+  }
+  if (apparent < 600) {
+    return 180;
+  }
+  return 360;
+}
+
+function stampExploredRegions(
+  canvas: HTMLCanvasElement,
+  regions: Array<{ points: Point[] }>,
+  fromIndex: number,
+  bounds: { x: number; y: number },
+): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return;
+  }
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+  for (let i = fromIndex; i < regions.length; i++) {
+    const region = regions[i];
+    if (!region || region.points.length === 0) {
+      continue;
+    }
+    const first = region.points[0];
+    if (!first) {
+      continue;
+    }
+    ctx.beginPath();
+    ctx.moveTo(first.x - bounds.x, first.y - bounds.y);
+    for (let j = 1; j < region.points.length; j++) {
+      const pt = region.points[j];
+      if (!pt) {
+        continue;
+      }
+      ctx.lineTo(pt.x - bounds.x, pt.y - bounds.y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function sizeFallbackZoom(visibleWidth: number): number {
+  if (visibleWidth <= 0) {
+    return 1;
+  }
+  return Math.max(0.1, Math.min(5, 1200 / visibleWidth));
+}
 
 const DEBUG_FOG =
   import.meta.env.DEV && Boolean((window as Window & { DEBUG_FOG?: boolean }).DEBUG_FOG);
@@ -59,26 +119,31 @@ const fogLog = (...args: unknown[]): void => {
  * - CPU usage: ~80% → ~15% (static scenes)
  */
 // eslint-disable-next-line max-lines-per-function
-function FogOfWarLayer({
-  tokens,
-  drawings,
-  doors,
-  gridSize,
-  visibleBounds,
-  map,
-}: FogOfWarLayerProps): JSX.Element {
+function FogOfWarLayer({ doors, gridSize, visibleBounds, map }: FogOfWarLayerProps): JSX.Element {
+  const storeTokens = useGameStore((s) => s.tokens);
+  const livePositions = usePointerOverlayStore((s) => s.livePositions);
+  const tokens = useMemo(
+    () => applyLiveTokenPositions(storeTokens, livePositions),
+    [storeTokens, livePositions],
+  );
+  const tokenLibrary = useGameStore((s) => s.campaign.tokenLibrary);
+  const wallDrawings = useGameStore(
+    useShallow((s) => s.drawings.filter((drawing) => drawing.tool === 'wall')),
+  );
+  const libraryById = useMemo(() => indexTokenLibrary(tokenLibrary), [tokenLibrary]);
+
   fogLog('[FogOfWarLayer] COMPONENT RENDERING - Start');
   fogLog('[FogOfWarLayer] Props:', {
     tokensCount: tokens.length,
     doorsCount: doors.length,
-    drawingsCount: drawings.length,
+    drawingsCount: wallDrawings.length,
     hasMap: !!map,
   });
 
   // Get explored regions and actions from store
   const exploredRegions = useGameStore((state) => state.exploredRegions);
   const addExploredRegion = useGameStore((state) => state.addExploredRegion);
-  const setActiveVisionPolygons = useGameStore((state) => state.setActiveVisionPolygons);
+  const setVision = useVisionStore((state) => state.setVision);
 
   // DIAGNOSTIC REPORT - only when explicitly enabled
   if (DEBUG_FOG) {
@@ -87,16 +152,18 @@ function FogOfWarLayer({
     fogLog('═══════════════════════════════════════════════════════');
     fogLog('📊 TOKENS:');
     tokens.forEach((t) => {
-      fogLog(`  - ${t.type} Token "${t.name ?? t.id.substring(0, 8)}":`, {
+      fogLog(`  - ${peekTokenType(t, libraryById)} Token "${t.name ?? t.id.substring(0, 8)}":`, {
         id: t.id,
         position: `(${t.x}, ${t.y})`,
-        visionRadius: t.visionRadius ?? 'NOT SET',
-        type: t.type,
+        visionRadius: peekVisionRadius(t, libraryById) ?? 'NOT SET',
+        type: peekTokenType(t, libraryById),
       });
     });
-    fogLog(`  Total PC tokens: ${tokens.filter((t) => t.type === 'PC').length}`);
     fogLog(
-      `  PC tokens with vision: ${tokens.filter((t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0).length}`,
+      `  Total PC tokens: ${tokens.filter((t) => peekTokenType(t, libraryById) === 'PC').length}`,
+    );
+    fogLog(
+      `  PC tokens with vision: ${tokens.filter((t) => peekTokenType(t, libraryById) === 'PC' && (peekVisionRadius(t, libraryById) ?? 0) > 0).length}`,
     );
     fogLog('');
     fogLog('🚪 DOORS:');
@@ -124,10 +191,37 @@ function FogOfWarLayer({
   // Track last update time for throttling exploration tracking
   const lastExploreUpdateRef = useRef<number>(0);
   const EXPLORE_UPDATE_INTERVAL = 1000; // Update explored regions every 1 second
+  const exploredMaskRef = useRef<{
+    canvas: HTMLCanvasElement;
+    count: number;
+    boundsKey: string;
+  } | null>(null);
 
-  // Extract PC tokens with vision (memoized to prevent unnecessary recalculations)
+  // Extract PC tokens with vision (resolve only PCs — skip the NPC majority)
   const pcTokens = useMemo(() => {
-    const pcs = tokens.filter((t) => t.type === 'PC' && (t.visionRadius ?? 0) > 0);
+    const pcs: Array<{
+      id: string;
+      x: number;
+      y: number;
+      scale: number;
+      visionRadius: number;
+    }> = [];
+    for (const token of tokens) {
+      if (peekTokenType(token, libraryById) !== 'PC') {
+        continue;
+      }
+      const visionRadius = peekVisionRadius(token, libraryById) ?? 0;
+      if (visionRadius <= 0) {
+        continue;
+      }
+      pcs.push({
+        id: token.id,
+        x: token.x,
+        y: token.y,
+        scale: peekTokenScale(token, libraryById),
+        visionRadius,
+      });
+    }
     fogLog(
       '[FogOfWarLayer] PC tokens with vision:',
       pcs.length,
@@ -136,14 +230,14 @@ function FogOfWarLayer({
       'total tokens',
     );
 
-    if (pcs.length === 0 && tokens.some((t) => t.type === 'PC')) {
+    if (pcs.length === 0 && tokens.some((t) => peekTokenType(t, libraryById) === 'PC')) {
       fogLog('[FogOfWarLayer] WARNING: PC tokens exist but NONE have vision radius set!');
       fogLog('[FogOfWarLayer] Set vision radius on PC tokens in TokenInspector (try 60ft)');
       fogLog('[FogOfWarLayer] Without vision, the entire map will be covered in fog!');
     }
 
     return pcs;
-  }, [tokens]);
+  }, [tokens, libraryById]);
 
   // CRITICAL FIX: Serialize doors to detect when door states change (isOpen toggle)
   // React's useMemo doesn't detect changes inside objects in arrays
@@ -162,37 +256,35 @@ function FogOfWarLayer({
     fogLog('[FogOfWarLayer] WALLS MEMO RECALCULATING');
 
     // Add static walls from drawings
-    drawings
-      .filter((d) => d.tool === 'wall')
-      .forEach((wall) => {
-        // Convert points array [x1, y1, x2, y2, x3, y3, ...] to segments
-        // CRITICAL FIX: Apply drawing transform (x, y, scale) to points
-        // Otherwise visual wall (transformed) and logical wall (raw points) mismatch
-        const points = wall.points;
-        const offsetX = wall.x ?? 0;
-        const offsetY = wall.y ?? 0;
-        const scale = wall.scale ?? 1;
+    wallDrawings.forEach((wall) => {
+      // Convert points array [x1, y1, x2, y2, x3, y3, ...] to segments
+      // CRITICAL FIX: Apply drawing transform (x, y, scale) to points
+      // Otherwise visual wall (transformed) and logical wall (raw points) mismatch
+      const points = wall.points;
+      const offsetX = wall.x ?? 0;
+      const offsetY = wall.y ?? 0;
+      const scale = wall.scale ?? 1;
 
-        for (let i = 0; i < points.length - 2; i += 2) {
-          const p0 = points[i];
-          const p1 = points[i + 1];
-          const p2 = points[i + 2];
-          const p3 = points[i + 3];
-          if (p0 === undefined || p1 === undefined || p2 === undefined || p3 === undefined) {
-            continue;
-          }
-          wallSegments.push({
-            start: {
-              x: p0 * scale + offsetX,
-              y: p1 * scale + offsetY,
-            },
-            end: {
-              x: p2 * scale + offsetX,
-              y: p3 * scale + offsetY,
-            },
-          });
+      for (let i = 0; i < points.length - 2; i += 2) {
+        const p0 = points[i];
+        const p1 = points[i + 1];
+        const p2 = points[i + 2];
+        const p3 = points[i + 3];
+        if (p0 === undefined || p1 === undefined || p2 === undefined || p3 === undefined) {
+          continue;
         }
-      });
+        wallSegments.push({
+          start: {
+            x: p0 * scale + offsetX,
+            y: p1 * scale + offsetY,
+          },
+          end: {
+            x: p2 * scale + offsetX,
+            y: p3 * scale + offsetY,
+          },
+        });
+      }
+    });
 
     const wallSegmentsFromDrawings = wallSegments.length;
     fogLog('[FogOfWarLayer] Wall segments from drawings:', wallSegmentsFromDrawings);
@@ -230,52 +322,75 @@ function FogOfWarLayer({
 
     return wallSegments;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawings, doorsKey]); // CRITICAL: Use doorsKey instead of doors for proper change detection
+  }, [wallDrawings, doorsKey]);
 
-  // Serialize PC token properties for change detection
-  // This allows useMemo to detect changes in token positions/vision even when array reference is stable
-  const pcTokensKey = useMemo(
-    () => pcTokens.map((t) => `${t.id}:${t.x}:${t.y}:${t.visionRadius}:${t.scale}`).join('|'),
+  const tokenKeys = useMemo(
+    () =>
+      Object.fromEntries(
+        pcTokens.map((t) => [t.id, `${t.x}:${t.y}:${t.visionRadius}:${t.scale}`] as const),
+      ),
     [pcTokens],
   );
 
-  /**
-   * Cache visibility polygons per token
-   * Dependencies: token position (x, y), visionRadius, walls
-   * This prevents expensive raycasting when nothing changed
-   */
-  const visibilityCache = useMemo(() => {
-    const cache = new Map<string, Point[]>();
+  const lastTokenKeysRef = useRef<Record<string, string>>({});
+  const polygonCacheRef = useRef<Map<string, Point[]>>(new Map());
+  const lastWallsRef = useRef(walls);
+  const lastGridRef = useRef(gridSize);
 
+  const visibilityCache = useMemo(() => {
+    const cache = polygonCacheRef.current;
+    const wallsChanged = lastWallsRef.current !== walls || lastGridRef.current !== gridSize;
+    lastWallsRef.current = walls;
+    lastGridRef.current = gridSize;
+
+    const nextIds = new Set(pcTokens.map((token) => token.id));
+    for (const id of Array.from(cache.keys())) {
+      if (!nextIds.has(id)) {
+        cache.delete(id);
+        delete lastTokenKeysRef.current[id];
+      }
+    }
+
+    let recals = 0;
     pcTokens.forEach((token) => {
+      const key = tokenKeys[token.id];
+      if (!wallsChanged && lastTokenKeysRef.current[token.id] === key && cache.has(token.id)) {
+        return;
+      }
       const tokenCenterX = token.x + (gridSize * token.scale) / 2;
       const tokenCenterY = token.y + (gridSize * token.scale) / 2;
       const visionRadiusPx = ((token.visionRadius ?? 0) / 5) * gridSize;
-
-      // Calculate visibility polygon (expensive operation)
-      const polygon = calculateVisibilityPolygon(tokenCenterX, tokenCenterY, visionRadiusPx, walls);
-
-      cache.set(token.id, polygon);
+      const zoom = sizeFallbackZoom(visibleBounds.width);
+      cache.set(
+        token.id,
+        calculateVisibilityPolygon(
+          tokenCenterX,
+          tokenCenterY,
+          visionRadiusPx,
+          walls,
+          rayCountForVision(visionRadiusPx, zoom),
+        ),
+      );
+      lastTokenKeysRef.current[token.id] = key ?? '';
+      recals += 1;
     });
 
+    if (recals > 0) {
+      recordFowRecalc(recals);
+    }
     return cache;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    // Only recalculate when these dependencies change:
-    pcTokensKey, // Serialized token properties (id, position, vision, scale)
-    walls,
-    gridSize,
-    // Note: pcTokens is intentionally omitted - pcTokensKey already captures all relevant
-    // properties (id, x, y, visionRadius, scale). Using pcTokensKey instead of pcTokens
-    // prevents unnecessary recalculations when unrelated token properties change.
-  ]);
+  }, [pcTokens, tokenKeys, walls, gridSize, visibleBounds.width]);
 
-  // Update active vision polygons in store for token visibility checking
-  // This allows tokens to be hidden in explored (but not currently visible) areas
   useEffect(() => {
-    const activePolygons = Array.from(visibilityCache.values());
-    setActiveVisionPolygons(activePolygons);
-  }, [visibilityCache, setActiveVisionPolygons]);
+    const polygons = Array.from(visibilityCache.values());
+    setVision(polygons, computeHiddenNpcIds(tokens, libraryById, polygons, gridSize));
+  }, [visibilityCache, tokenKeys, tokens, libraryById, gridSize, walls, setVision]);
+
+  useEffect(() => {
+    return () => {
+      useVisionStore.getState().setVision([], new Set());
+    };
+  }, []);
 
   // Save current vision to explored regions periodically
   // Triggers when token positions change (not just when pcTokens array reference changes)
@@ -309,29 +424,26 @@ function FogOfWarLayer({
     }
 
     lastExploreUpdateRef.current = now;
-  }, [tokens, pcTokens, visibilityCache, addExploredRegion]);
+  }, [pcTokens, visibilityCache, addExploredRegion]);
 
-  // Calculate fog coverage area
-  // If map exists, use map bounds; otherwise use a large area covering the canvas
-  const fogBounds = useMemo(() => {
-    if (map) {
-      return {
-        x: map.x,
-        y: map.y,
-        width: map.width * map.scale,
-        height: map.height * map.scale,
-      };
+  const fogBounds = useMemo(() => getFogBounds(map), [map]);
+
+  const exploredMask = useMemo(() => {
+    const boundsKey = `${fogBounds.x}:${fogBounds.y}:${fogBounds.width}:${fogBounds.height}`;
+    let entry = exploredMaskRef.current;
+    if (!entry || entry.boundsKey !== boundsKey || exploredRegions.length < entry.count) {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.ceil(fogBounds.width));
+      canvas.height = Math.max(1, Math.ceil(fogBounds.height));
+      entry = { canvas, count: 0, boundsKey };
+      exploredMaskRef.current = entry;
     }
-    // No map: cover a large area (10,000x10,000) centered around visible area
-    // This ensures fog covers hand-drawn maps and tokens
-    const padding = 5000;
-    return {
-      x: visibleBounds.x - padding,
-      y: visibleBounds.y - padding,
-      width: visibleBounds.width + padding * 2,
-      height: visibleBounds.height + padding * 2,
-    };
-  }, [map, visibleBounds]);
+    if (exploredRegions.length > entry.count) {
+      stampExploredRegions(entry.canvas, exploredRegions, entry.count, fogBounds);
+      entry.count = exploredRegions.length;
+    }
+    return entry.canvas;
+  }, [exploredRegions, fogBounds]);
 
   fogLog('[FogOfWarLayer] RENDERING JSX - PC tokens:', pcTokens.length, 'Fog bounds:', fogBounds);
 
@@ -349,67 +461,24 @@ function FogOfWarLayer({
         - Current Vision: Clear map (fully visible)
       */}
       <Group>
-        {/* Layer 1: Full Fog (Unexplored Areas) */}
-        {map ? (
-          // With map: Use blurred/darkened map image
-          <URLImage
-            key="bg-map-unexplored"
-            name="map-image-unexplored"
-            id="map-unexplored"
-            src={map.src}
-            x={map.x}
-            y={map.y}
-            width={map.width}
-            height={map.height}
-            scaleX={map.scale}
-            scaleY={map.scale}
-            draggable={false}
-            listening={false}
-            filters={BLUR_FILTERS}
-            blurRadius={20}
-            brightness={-0.94}
-          />
-        ) : (
-          // No map: Render solid dark fog overlay
-          <Shape
-            key="fog-overlay-no-map"
-            sceneFunc={(ctx) => {
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.94)'; // Very dark, similar to blurred map brightness
-              ctx.fillRect(fogBounds.x, fogBounds.y, fogBounds.width, fogBounds.height);
-            }}
-            listening={false}
-          />
-        )}
-        {/* Layer 2: Explored Areas (Partial Erase for Dimmed Effect) */}
-        {exploredRegions.map((region, index) => (
-          <Shape
-            key={`explored-${index}`}
-            sceneFunc={(ctx) => {
-              if (region.points.length === 0) {
-                return;
-              }
-              const firstPoint = region.points[0];
-              if (!firstPoint) {
-                return;
-              }
-              ctx.beginPath();
-              ctx.moveTo(firstPoint.x, firstPoint.y);
-              for (let i = 1; i < region.points.length; i++) {
-                const pt = region.points[i];
-                if (pt) {
-                  ctx.lineTo(pt.x, pt.y);
-                }
-              }
-              ctx.closePath();
-              // Semi-transparent black = partially erases fog = dimmed map shows through
-              // Higher alpha = more fog erased = lighter/more visible
-              // 0.8 = erases 80% of fog, leaves 20% = nicely dimmed effect
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-              ctx.fill();
-            }}
-            globalCompositeOperation="destination-out"
-          />
-        ))}
+        <Shape
+          key="fog-overlay"
+          sceneFunc={(ctx) => {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.94)';
+            ctx.fillRect(fogBounds.x, fogBounds.y, fogBounds.width, fogBounds.height);
+          }}
+          listening={false}
+          perfectDrawEnabled={false}
+        />
+        <Shape
+          key="explored-union"
+          sceneFunc={(ctx) => {
+            ctx.drawImage(exploredMask, fogBounds.x, fogBounds.y);
+          }}
+          listening={false}
+          perfectDrawEnabled={false}
+          globalCompositeOperation="destination-out"
+        />
 
         {/* Layer 3: Current Vision (Full Erase for Clear Map) */}
         {pcTokens.map((token) => {
@@ -492,9 +561,9 @@ function calculateVisibilityPolygon(
   originY: number,
   maxRange: number,
   walls: WallSegment[],
+  rayCount = 360,
 ): Point[] {
   const polygon: Point[] = [];
-  const rayCount = 360; // 1-degree resolution
   const angleStep = (Math.PI * 2) / rayCount;
 
   for (let i = 0; i < rayCount; i++) {
@@ -596,4 +665,7 @@ function lineSegmentIntersection(
   return null;
 }
 
-export default FogOfWarLayer;
+const MemoFogOfWarLayer = memo(FogOfWarLayer);
+MemoFogOfWarLayer.displayName = 'FogOfWarLayer';
+
+export default MemoFogOfWarLayer;

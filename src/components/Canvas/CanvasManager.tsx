@@ -1,34 +1,31 @@
 import { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react';
 import type React from 'react';
 
-import { Stage, Layer, Line, Rect, Transformer, Group, Text, Circle } from 'react-konva';
+import { Stage, Layer, Transformer } from 'react-konva';
 import { useShallow } from 'zustand/shallow';
 
-import GridOverlay from './GridOverlay';
+import ConnectedMinimap from './ConnectedMinimap';
+import DrawingLayer from './DrawingLayer';
+import { IsolatedGridOverlay } from './GridOverlay';
+import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
 import ImageCropper from '../ImageCropper';
 import CanvasOverlayErrorBoundary from './CanvasOverlayErrorBoundary';
 import DoorLayer from './DoorLayer';
+import FogOfWarLayer from './FogOfWarLayer';
 import { useCanvasInteraction } from './hooks/useCanvasInteraction';
 import { useTokenDrag } from './hooks/useTokenDrag';
-// eslint-disable-next-line import/no-named-as-default
-import MeasurementOverlay from './MeasurementOverlay';
-import Minimap from './Minimap';
-import MinimapErrorBoundary from './MinimapErrorBoundary';
-import MovementRangeOverlay from './MovementRangeOverlay';
+import OverlayLayer from './OverlayLayer';
 import PaperNoiseOverlay from './PaperNoiseOverlay';
-import PressureSensitiveLine from './PressureSensitiveLine';
-import StairsLayer from './StairsLayer';
-import TokenErrorBoundary from './TokenErrorBoundary';
+import TokenLayer from './TokenLayer';
 import URLImage from './URLImage';
-import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
-import AssetProcessingErrorBoundary from '../AssetProcessingErrorBoundary';
-import FogOfWarLayer from './FogOfWarLayer';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import { resolveTokenData, DEFAULT_MOVEMENT_SPEED } from '../../hooks/useTokenData';
+import { getResolvedPcTokens, getResolvedToken } from '../../hooks/useTokenData';
+import { useGameStore, DEFAULT_GRID_COLOR } from '../../store/gameStore';
+import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { useTouchSettingsStore } from '../../store/touchSettingsStore';
-import { isRectInAnyPolygon } from '../../types/geometry';
 import { snapToGrid } from '../../utils/grid';
-import { createGridGeometry } from '../../utils/gridGeometry';
+import { recordCanvasCommit } from '../../utils/perfCounters';
+import { registerTokenLayer } from '../../utils/tokenNodeRegistry';
 
 import type { Drawing } from '../../store/gameStore';
 import type Konva from 'konva';
@@ -40,6 +37,12 @@ const MAX_SCALE = 5;
 const ZOOM_SCALE_BY = 1.1;
 const MIN_PINCH_DISTANCE = 0.001; // Guard against near-zero division or very small distances that could cause extreme scale changes
 const VIEWPORT_CLAMP_PADDING = 1000; // Padding around map bounds for viewport constraints
+
+const PRESSURE_RANGES = {
+  light: { min: 0.2, max: 2.0 },
+  heavy: { min: 0.4, max: 1.2 },
+  normal: { min: 0.3, max: 1.5 },
+} as const;
 
 // Helper functions for touch/pinch calculations
 const calculatePinchDistance = (touch1: Touch, touch2: Touch): number => {
@@ -107,7 +110,7 @@ interface CanvasManagerProps {
  * @see {@link file://../../utils/useWindowType.ts useWindowType} for window detection
  * @see {@link file://../../App.tsx App.tsx} for UI sanitization
  */
-// eslint-disable-next-line max-lines-per-function, complexity
+// eslint-disable-next-line max-lines-per-function
 function CanvasManager({
   tool = 'select',
   color = '#df4b26',
@@ -121,7 +124,6 @@ function CanvasManager({
 
   // Atomic selectors to prevent infinite re-render loops and avoid useShallow crashes
   const map = useGameStore((s) => s.map);
-  const tokens = useGameStore((s) => s.tokens);
   const tokenLibrary = useGameStore(useShallow((s) => s.campaign.tokenLibrary));
   const drawings = useGameStore((s) => s.drawings);
   const doors = useGameStore((s) => s.doors);
@@ -131,36 +133,12 @@ function CanvasManager({
   const gridColor = useGameStore((state) => state.gridColor);
   const isCalibrating = useGameStore((s) => s.isCalibrating);
   const isDaylightMode = useGameStore((state) => state.isDaylightMode);
-  const activeVisionPolygons = useGameStore((state) => state.activeVisionPolygons);
-
-  if (import.meta.env.DEV && (window as Window & { DEBUG_CANVAS?: boolean }).DEBUG_CANVAS) {
-    // eslint-disable-next-line no-console
-    console.log('[CanvasManager]', {
-      isWorldView,
-      isDaylightMode,
-      tokens: tokens.length,
-      doors: doors.length,
-      stairs: stairs.length,
-      walls: drawings.filter((d) => d.tool === 'wall').length,
-      visionPolygons: activeVisionPolygons.length,
-    });
-  }
-
-  // Resolve token data by merging instance properties with library defaults
-  // This implements the Prototype/Instance pattern where tokens can inherit
-  // properties (scale, type, visionRadius, name) from their library prototypes
-  const resolvedTokens = useMemo(() => {
-    const mapped = tokens.map((token) => resolveTokenData(token, tokenLibrary));
-    // For Isometric grid, sort by Y (depth) so lower tokens render on top of higher ones
-    if (gridType === 'ISOMETRIC') {
-      return mapped.sort((a, b) => a.y - b.y);
-    }
-    return mapped;
-  }, [tokens, tokenLibrary, gridType]);
 
   // Preferences
 
-  const touchSettings = useTouchSettingsStore();
+  const pinchDistanceThreshold = useTouchSettingsStore((s) => s.pinchDistanceThreshold);
+  const pressureCurve = useTouchSettingsStore((s) => s.pressureCurve);
+  const pressureRange = PRESSURE_RANGES[pressureCurve];
 
   // Touch/Stylus tracking for palm rejection
   const stylusActiveRef = useRef(false); // Track if stylus is currently being used
@@ -196,8 +174,7 @@ function CanvasManager({
   const [tempLine, setTempLine] = useState<Drawing | null>(null);
   const tempLineRef = useRef<Konva.Line | null>(null);
 
-  // Door Tool
-  const [doorPreviewPos, setDoorPreviewPos] = useState<{ x: number; y: number } | null>(null);
+  const setDoorPreviewPos = usePointerOverlayStore((s) => s.setDoorPreviewPos);
 
   // Measurement
   const isMeasuring = useRef(false);
@@ -241,8 +218,8 @@ function CanvasManager({
   });
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null);
-  const [hoveredCell, setHoveredCell] = useState<{ q: number; r: number } | null>(null);
+  const setHoveredCell = usePointerOverlayStore((s) => s.setHoveredCell);
+  const setHoveredTokenId = usePointerOverlayStore((s) => s.setHoveredTokenId);
   const transformerRef = useRef<Konva.Transformer | null>(null);
   const animationFrameRef = useRef<number | null>(null); // RAF handle for throttling
   const drawingAnimationFrameRef = useRef<number | null>(null); // RAF handle for drawing
@@ -282,6 +259,43 @@ function CanvasManager({
   const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const stageRef = useRef<Konva.Stage>(null);
+  const liveScaleRef = useRef(1);
+  const livePosRef = useRef({ x: 0, y: 0 });
+  const cameraCommitTimerRef = useRef<number | null>(null);
+  const cameraGestureRef = useRef(false);
+
+  const applyCameraToStage = useCallback((pos: { x: number; y: number }, nextScale: number) => {
+    const stage = stageRef.current;
+    if (stage) {
+      stage.x(pos.x);
+      stage.y(pos.y);
+      stage.scale({ x: nextScale, y: nextScale });
+      stage.batchDraw();
+    }
+    livePosRef.current = pos;
+    liveScaleRef.current = nextScale;
+  }, []);
+
+  const commitCameraReact = useCallback((immediate: boolean) => {
+    const flush = (): void => {
+      cameraCommitTimerRef.current = null;
+      setScale(liveScaleRef.current);
+      setPosition(livePosRef.current);
+    };
+    if (immediate) {
+      if (cameraCommitTimerRef.current !== null) {
+        window.clearTimeout(cameraCommitTimerRef.current);
+        cameraCommitTimerRef.current = null;
+      }
+      flush();
+      return;
+    }
+    if (cameraCommitTimerRef.current !== null) {
+      return;
+    }
+    cameraCommitTimerRef.current = window.setTimeout(flush, 100);
+  }, []);
 
   // Theme-aware text color for contrast
   const textColor = useThemeColor('--app-text-primary');
@@ -297,7 +311,7 @@ function CanvasManager({
 
   // Use pinch distance threshold from settings (user-configurable)
   // Clamp to reasonable range (5-50 pixels) to prevent gesture detection issues
-  const PINCH_DISTANCE_THRESHOLD = Math.min(Math.max(touchSettings.pinchDistanceThreshold, 5), 50);
+  const PINCH_DISTANCE_THRESHOLD = Math.min(Math.max(pinchDistanceThreshold, 5), 50);
 
   // --- Refactored Hooks ---
 
@@ -315,11 +329,9 @@ function CanvasManager({
     handleTokenPointerMove: internalHandleTokenPointerMove,
     handleTokenPointerUp,
     dragPositionsRef,
-    tokenNodesRef, // Keep relevant refs
     draggingTokenIds,
     itemsForDuplication,
     setItemsForDuplication,
-    snapPreviewPositionsRef,
     tokenLayerRef,
     isDragging: isDraggingToken,
   } = useTokenDrag({
@@ -330,7 +342,6 @@ function CanvasManager({
     gridType,
     selectedIds,
     setSelectedIds,
-    resolvedTokens,
     shouldRejectPointerEvent: (e) => shouldRejectRef.current(e),
     trackStylusUsage: (e) => trackStylusRef.current(e),
   });
@@ -445,8 +456,7 @@ function CanvasManager({
         };
       }
 
-      // Expand bounds to include PC tokens (so we can always navigate to party)
-      const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
+      const pcTokens = getResolvedPcTokens();
       if (pcTokens.length > 0) {
         pcTokens.forEach((token) => {
           const tokenSize = gridSize * token.scale;
@@ -477,7 +487,7 @@ function CanvasManager({
         y: -(clampedCenterY * newScale - size.height / 2),
       };
     },
-    [map, gridSize, size.width, size.height, resolvedTokens],
+    [map, gridSize, size.width, size.height],
   );
 
   // Reusable zoom function
@@ -505,10 +515,11 @@ function CanvasManager({
       // Clamp position to prevent getting lost in the void
       const clampedPos = clampPosition(newPos, constrainedScale);
 
-      setScale(constrainedScale);
-      setPosition(clampedPos);
+      applyCameraToStage(clampedPos, constrainedScale);
+      cameraGestureRef.current = true;
+      commitCameraReact(false);
     },
-    [clampPosition],
+    [clampPosition, applyCameraToStage, commitCameraReact],
   );
 
   // Keyboard zoom (centered on viewport)
@@ -776,7 +787,9 @@ function CanvasManager({
 
           // Clamp to valid bounds and update position
           const clampedPos = clampPosition(newPos, scale);
-          setPosition(clampedPos);
+          applyCameraToStage(clampedPos, scale);
+          cameraGestureRef.current = true;
+          commitCameraReact(false);
 
           lastPanCenter.current = center;
         } else {
@@ -799,6 +812,10 @@ function CanvasManager({
       lastPinchDistance.current = null;
       lastPinchCenter.current = null;
       lastPanCenter.current = null;
+      if (cameraGestureRef.current) {
+        cameraGestureRef.current = false;
+        commitCameraReact(true);
+      }
     }
     // Single-touch events are handled by handlePointerUp
   };
@@ -981,10 +998,30 @@ function CanvasManager({
         x: stage.x() - e.evt.deltaX,
         y: stage.y() - e.evt.deltaY,
       };
-      const clampedPos = clampPosition(rawNewPos, scale);
-      setPosition(clampedPos);
+      const clampedPos = clampPosition(rawNewPos, oldScale);
+      applyCameraToStage(clampedPos, oldScale);
+      cameraGestureRef.current = true;
+      commitCameraReact(false);
     }
   };
+
+  useEffect(() => {
+    if (!useGameStore.getState().showResourceMonitor) {
+      return;
+    }
+    const start = performance.now();
+    const frame = requestAnimationFrame(() => {
+      recordCanvasCommit(performance.now() - start);
+    });
+    return () => cancelAnimationFrame(frame);
+  });
+
+  useEffect(() => {
+    if (!cameraGestureRef.current || !stageRef.current) {
+      return;
+    }
+    applyCameraToStage(livePosRef.current, liveScaleRef.current);
+  });
 
   // Update Transformer nodes
   useEffect(() => {
@@ -1015,7 +1052,7 @@ function CanvasManager({
   }, [revokePendingCropUrl]);
 
   const centerOnPCTokens = useCallback(() => {
-    const pcTokens = resolvedTokens.filter((t) => t.type === 'PC');
+    const pcTokens = getResolvedPcTokens();
     if (pcTokens.length === 0) {
       return;
     }
@@ -1066,9 +1103,9 @@ function CanvasManager({
     // We'll apply a modified clamp that considers both map and token positions.
     const clampedPos = clampPosition({ x: newX, y: newY }, newScale);
 
-    setScale(newScale);
-    setPosition(clampedPos);
-  }, [resolvedTokens, gridSize, size, clampPosition]);
+    applyCameraToStage(clampedPos, newScale);
+    commitCameraReact(true);
+  }, [gridSize, size, clampPosition, applyCameraToStage, commitCameraReact]);
 
   // Navigate to a specific world coordinate (used by minimap)
   const navigateToWorldPosition = useCallback(
@@ -1079,9 +1116,10 @@ function CanvasManager({
 
       // Clamp to valid bounds
       const clampedPos = clampPosition({ x: newX, y: newY }, scale);
-      setPosition(clampedPos);
+      applyCameraToStage(clampedPos, scale);
+      commitCameraReact(true);
     },
-    [scale, size, clampPosition],
+    [scale, size, clampPosition, applyCameraToStage, commitCameraReact],
   );
 
   return (
@@ -1111,6 +1149,7 @@ function CanvasManager({
       )}
 
       <Stage
+        ref={stageRef}
         width={size.width}
         height={size.height}
         draggable={isSpacePressed}
@@ -1140,9 +1179,9 @@ function CanvasManager({
             // Or does it?
             // We typically need to sync state onDragEnd.
             const rawPos = { x: e.target.x(), y: e.target.y() };
-            const clamped = clampPosition(rawPos, scale);
-            // If clamped is different, we snap back
-            setPosition(clamped);
+            const clamped = clampPosition(rawPos, liveScaleRef.current);
+            applyCameraToStage(clamped, liveScaleRef.current);
+            commitCameraReact(true);
             setIsDragging(false);
           }
         }}
@@ -1192,12 +1231,11 @@ function CanvasManager({
             />
           </CanvasOverlayErrorBoundary>
 
-          <GridOverlay
+          <IsolatedGridOverlay
             visibleBounds={visibleBounds}
             gridSize={gridSize}
             type={gridType}
             stroke={resolvedGridColor}
-            hoveredCell={hoveredCell}
           />
         </Layer>
 
@@ -1205,167 +1243,47 @@ function CanvasManager({
 
         {/* Layer 2: Drawings (Separate layer so Eraser doesn't erase map) */}
         <Layer>
-          {isAltPressed &&
-            drawings
-              .filter((d) => itemsForDuplication.includes(d.id))
-              .map((ghostLine) => (
-                <Line
-                  key={`ghost-${ghostLine.id}`}
-                  id={`ghost-${ghostLine.id}`}
-                  name="ghost-drawing"
-                  points={ghostLine.points}
-                  stroke={ghostLine.color}
-                  strokeWidth={ghostLine.size}
-                  tension={0.5}
-                  lineCap="round"
-                  dash={ghostLine.tool === 'wall' ? [10, 5] : undefined}
-                  opacity={
-                    ghostLine.tool === 'wall' && isWorldView
-                      ? 1 // Always visible
-                      : 0.5
+          <DrawingLayer
+            drawings={drawings}
+            stairs={stairs}
+            tool={tool}
+            selectedIds={selectedIds}
+            isWorldView={isWorldView}
+            isAltPressed={isAltPressed}
+            itemsForDuplication={itemsForDuplication}
+            tempLine={tempLine}
+            tempLineRef={tempLineRef}
+            pressureRange={pressureRange}
+            onSelectIds={setSelectedIds}
+            onDragStart={(id) => {
+              setItemsForDuplication(selectedIds.includes(id) ? selectedIds : [id]);
+            }}
+            onDragEnd={(id, x, y) => {
+              const drawing = drawings.find((d) => d.id === id);
+              if (isAltPressed && !isWorldView && drawing) {
+                const idsToDuplicate = selectedIds.includes(id) ? selectedIds : [id];
+                idsToDuplicate.forEach((dupId) => {
+                  const source = drawings.find((d) => d.id === dupId);
+                  if (source) {
+                    const dx = x - (source.x ?? 0);
+                    const dy = y - (source.y ?? 0);
+                    const newPoints = source.points.map((val, idx) =>
+                      idx % 2 === 0 ? val + dx : val + dy,
+                    );
+                    addDrawing({
+                      ...source,
+                      id: crypto.randomUUID(),
+                      points: newPoints,
+                      x: 0,
+                      y: 0,
+                    });
                   }
-                  listening={false}
-                />
-              ))}
-
-          {drawings.map((line) => {
-            // Common props shared by both component types
-            const commonProps = {
-              id: line.id,
-              name: 'drawing' as const,
-              points: line.points,
-              x: line.x ?? 0,
-              y: line.y ?? 0,
-              // Apply uniform scaling (line.scale is a single number applied to both axes)
-              scaleX: line.scale ?? 1,
-              scaleY: line.scale ?? 1,
-              stroke: line.tool === 'wall' && isWorldView ? '#000000' : line.color,
-              strokeWidth:
-                line.tool === 'wall' && isWorldView
-                  ? 6 // Fixed thickness for World View
-                  : line.size,
-              lineCap: 'round' as const,
-              // Always visible in World View (unless fog covers it)
-              opacity: 1,
-              globalCompositeOperation:
-                line.tool === 'eraser' ? ('destination-out' as const) : ('source-over' as const),
-              draggable: tool === 'select' && line.tool !== 'wall',
-            };
-
-            // Event handlers (shared by both component types)
-            const eventHandlers = {
-              onClick: (e: KonvaEventObject<MouseEvent>) => {
-                if (tool === 'select' && line.tool !== 'wall') {
-                  e.evt.stopPropagation();
-                  if (e.evt.shiftKey) {
-                    if (selectedIds.includes(line.id)) {
-                      setSelectedIds(selectedIds.filter((id) => id !== line.id));
-                    } else {
-                      setSelectedIds([...selectedIds, line.id]);
-                    }
-                  } else {
-                    setSelectedIds([line.id]);
-                  }
-                }
-              },
-              onDragStart: () => {
-                if (selectedIds.includes(line.id)) {
-                  setItemsForDuplication(selectedIds);
-                } else {
-                  setItemsForDuplication([line.id]);
-                }
-              },
-              onDragEnd: (e: KonvaEventObject<MouseEvent>) => {
-                const node = e.target;
-                const x = node.x();
-                const y = node.y();
-
-                // Duplication Logic (Option/Alt + Drag)
-                // BLOCKED in World View (players cannot duplicate drawings)
-                // Use isAltPressed state for consistency instead of e.evt.altKey
-                if (isAltPressed && !isWorldView) {
-                  const idsToDuplicate = selectedIds.includes(line.id) ? selectedIds : [line.id];
-                  idsToDuplicate.forEach((id) => {
-                    // Only duplicate drawings here; tokens are handled in their own handler.
-                    const drawing = drawings.find((d) => d.id === id);
-                    if (drawing) {
-                      // Calculate drag offset and apply to all points
-                      // Points array format: [x1, y1, x2, y2, ...] (alternating x,y coordinates)
-                      const points = drawing.points;
-                      const dx = x - (drawing.x ?? 0);
-                      const dy = y - (drawing.y ?? 0);
-                      // Offset all points by (dx, dy)
-                      const newPoints = points.map(
-                        (val, idx) => (idx % 2 === 0 ? val + dx : val + dy), // Even indices are X, odd are Y
-                      );
-                      addDrawing({
-                        ...drawing,
-                        id: crypto.randomUUID(),
-                        points: newPoints,
-                        x: 0,
-                        y: 0,
-                      });
-                    }
-                  });
-                }
-
-                // Update Position (Transform)
-                // Drawings utilize `points` but usually we just move the node (x,y).
-                // However, for persistence we should probably update the `points` OR store x,y offset.
-                // But `Line` points are absolute.
-                // If we move the Node, Konva applies a transform (x,y).
-                // We should use `updateDrawingTransform`.
-                updateDrawingTransform(line.id, x, y, line.scale ?? 1);
-
-                setItemsForDuplication([]);
-              },
-            };
-
-            // Use pressure-sensitive rendering if pressure data is available
-            const hasPressureData = line.pressures && line.pressures.length > 0;
-
-            // Render pressure-sensitive line or regular line with type-safe props
-            if (hasPressureData) {
-              return (
-                <PressureSensitiveLine
-                  key={line.id}
-                  {...commonProps}
-                  {...eventHandlers}
-                  pressures={line.pressures}
-                  pressureRange={touchSettings.getPressureRange()}
-                />
-              );
-            } else {
-              return (
-                <Line
-                  key={line.id}
-                  {...commonProps}
-                  {...eventHandlers}
-                  tension={0.5}
-                  dash={line.tool === 'wall' ? [10, 5] : undefined}
-                />
-              );
-            }
-          })}
-          {/* Temp Line */}
-          {tempLine && (
-            <Line
-              ref={tempLineRef}
-              points={tempLine.points}
-              stroke={tempLine.color}
-              strokeWidth={tempLine.size}
-              tension={0.5}
-              lineCap="round"
-              dash={tempLine.tool === 'wall' ? [10, 5] : undefined}
-              opacity={1}
-              globalCompositeOperation={
-                tempLine.tool === 'eraser' ? 'destination-out' : 'source-over'
+                });
               }
-            />
-          )}
-
-          {/* Stairs (Architectural elements, rendered with drawings) */}
-          <StairsLayer stairs={stairs} isWorldView={isWorldView} />
+              updateDrawingTransform(id, x, y, drawing?.scale ?? 1);
+              setItemsForDuplication([]);
+            }}
+          />
         </Layer>
 
         {/* Fog of War Layer (World View only) - Renders Overlay */}
@@ -1375,8 +1293,6 @@ function CanvasManager({
           return shouldRenderFog ? (
             <Layer listening={false}>
               <FogOfWarLayer
-                tokens={resolvedTokens}
-                drawings={drawings}
                 doors={doors}
                 gridSize={gridSize}
                 visibleBounds={visibleBounds}
@@ -1389,355 +1305,54 @@ function CanvasManager({
         {/* Layer 3: Tokens, Doors & UI
           NOTE: tokenLayerRef is used for low-level performance optimizations during
           token drag updates via direct Konva batchDraw() calls instead of full React re-renders */}
-        <Layer ref={tokenLayerRef}>
-          {/* Doors (Rendered after fog layer so they're visible on top of fog) */}
-          {(() => {
-            if (import.meta.env.DEV) {
-              // eslint-disable-next-line no-console
-              console.log('[CanvasManager] About to render DoorLayer with', doors.length, 'doors');
-            }
-            return (
-              <DoorLayer
-                doors={doors}
-                isWorldView={isWorldView}
-                tool={tool}
-                selectedIds={selectedIds}
-                onToggleDoor={toggleDoor}
-                onDeleteDoor={removeDoor}
-                onDoorContextMenu={handleDoorContextMenu}
-              />
-            );
-          })()}
+        <Layer
+          ref={(layer) => {
+            tokenLayerRef.current = layer;
+            registerTokenLayer(layer);
+          }}
+        >
+          <DoorLayer
+            doors={doors}
+            isWorldView={isWorldView}
+            tool={tool}
+            selectedIds={selectedIds}
+            onToggleDoor={toggleDoor}
+            onDeleteDoor={removeDoor}
+            onDoorContextMenu={handleDoorContextMenu}
+          />
 
-          {/* Door Preview - Show preview when hovering with door tool */}
-          {doorPreviewPos && tool === 'door' && !isWorldView && (
-            <Rect
-              x={doorPreviewPos.x - gridSize / 2}
-              y={doorPreviewPos.y - gridSize / 2}
-              width={doorOrientation === 'horizontal' ? gridSize : gridSize / 5}
-              height={doorOrientation === 'horizontal' ? gridSize / 5 : gridSize}
-              fill="rgba(255, 255, 255, 0.5)"
-              stroke="white"
-              strokeWidth={2}
-              listening={false}
-            />
-          )}
+          <TokenLayer
+            tokenLibrary={tokenLibrary}
+            gridSize={gridSize}
+            gridType={gridType}
+            tool={tool}
+            selectedIds={selectedIds}
+            draggingTokenIds={draggingTokenIds}
+            dragPositions={dragPositionsRef.current}
+            ghostTokenIds={itemsForDuplication}
+            showGhosts={isAltPressed}
+            textColor={textColor}
+            visibleBounds={visibleBounds}
+            onSelect={handleTokenPointerDown}
+            onHover={setHoveredTokenId}
+            onShowToast={showToast}
+          />
 
-          {/* Snap Preview - Show where tokens will snap when released */}
-          {isDraggingToken &&
-            Array.from(snapPreviewPositionsRef.current.entries()).map(([tokenId, snapPos]) => {
-              const token = resolvedTokens.find((t) => t.id === tokenId);
-              if (!token) {
-                return null;
-              }
-
-              const size = gridSize * token.scale;
-
-              // Get the grid cell that the token will snap to
-              const geometry = createGridGeometry(gridType);
-              const snapCell = geometry.pixelToGrid(
-                snapPos.x + size / 2,
-                snapPos.y + size / 2,
-                gridSize,
-              );
-
-              // Get the vertices of the grid cell for the snap preview
-              const cellVertices = geometry.getCellVertices(snapCell, gridSize);
-              const cellPoints = cellVertices.flatMap((v) => [v.x, v.y]);
-
-              return (
-                <Group key={`snap-preview-${tokenId}`}>
-                  {/* Outer ring - actual grid cell shape */}
-                  <Line
-                    points={cellPoints}
-                    stroke="rgba(37, 99, 235, 0.6)" // Blue accent color
-                    strokeWidth={2}
-                    listening={false}
-                    dash={[8, 4]}
-                    closed
-                  />
-                  {/* Inner fill - actual grid cell shape */}
-                  <Line
-                    points={cellPoints}
-                    fill="rgba(37, 99, 235, 0.1)"
-                    listening={false}
-                    closed
-                  />
-                </Group>
-              );
-            })}
-
-          {isAltPressed &&
-            resolvedTokens
-              .filter((t) => itemsForDuplication.includes(t.id))
-              .map((ghostToken) => (
-                <URLImage
-                  key={`ghost-${ghostToken.id}`}
-                  id={`ghost-${ghostToken.id}`} // Unique ID
-                  src={ghostToken.src}
-                  x={ghostToken.x}
-                  y={ghostToken.y}
-                  width={gridSize * ghostToken.scale}
-                  height={gridSize * ghostToken.scale}
-                  scaleX={1}
-                  scaleY={1}
-                  draggable={false}
-                  listening={false}
-                  opacity={0.5}
-                  name="ghost-token"
-                  // No-op handlers
-                  onSelect={emptyDragHandler}
-                />
-              ))}
-
-          {/* Movement Range Overlay - Shows reachable cells for selected token (Hold M key) */}
-          {isMKeyPressed &&
-            !isWorldView &&
-            selectedIds.length === 1 &&
-            (() => {
-              const selectedToken = resolvedTokens.find((t) => t.id === selectedIds[0]);
-              if (!selectedToken) {
-                return null;
-              }
-
-              // Use drag position if token is being dragged
-              const dragPos = dragPositionsRef.current.get(selectedToken.id);
-              const tokenPos = dragPos ?? { x: selectedToken.x, y: selectedToken.y };
-
-              // Movement speed is resolved from token data
-              const movementSpeed = selectedToken.movementSpeed ?? DEFAULT_MOVEMENT_SPEED;
-
-              return (
-                <CanvasOverlayErrorBoundary overlayName="MovementRangeOverlay">
-                  <MovementRangeOverlay
-                    tokenPosition={tokenPos}
-                    movementSpeed={movementSpeed}
-                    gridSize={gridSize}
-                    gridType={gridType}
-                  />
-                </CanvasOverlayErrorBoundary>
-              );
-            })()}
-
-          {resolvedTokens.map((token) => {
-            // Use drag position if available (for real-time visual feedback)
-            const dragPos = dragPositionsRef.current.get(token.id);
-            const displayX = dragPos ? dragPos.x : token.x;
-            const displayY = dragPos ? dragPos.y : token.y;
-            const isDragging = draggingTokenIds.has(token.id);
-            const isSelected = selectedIds.includes(token.id);
-            const isHovered = hoveredTokenId === token.id && tool === 'select' && !isDragging;
-
-            // Check if token should be visible based on Fog of War rules
-            // In World View with Fog of War enabled:
-            // - PC tokens: Always visible (players need to see their own characters)
-            // - NPC tokens: Only visible in active vision areas (hidden in explored-but-not-visible areas)
-            // In DM mode (Architect View) or Daylight mode: All tokens always visible
-            let isVisible = true;
-            if (isWorldView && !isDaylightMode) {
-              if (token.type === 'NPC') {
-                // NPCs only visible in active vision
-                isVisible = isRectInAnyPolygon(
-                  displayX,
-                  displayY,
-                  gridSize * token.scale,
-                  gridSize * token.scale,
-                  activeVisionPolygons,
-                );
-              }
-              // PC tokens always visible (type === 'PC' or undefined)
-            }
-
-            // Don't render tokens that aren't visible
-            if (!isVisible) {
-              return null;
-            }
-
-            /**
-             * Visual Effects & Performance
-             *
-             * Tokens render with dynamic shadows and scaling for visual feedback:
-             * - Hover state: Enhanced shadow (12px blur) + 2% scale increase
-             * - Dragging state: Strong shadow (20px blur) + 5% scale + opacity change
-             *
-             * Performance optimizations:
-             * - shadowForStrokeEnabled=false (only shadow fills, not strokes)
-             * - RAF-throttled batchDraw() during drag (limited to browser refresh rate, typically 60fps)
-             * - Konva-level caching for complex visual effects
-             * - Resting state has no shadow to reduce continuous rendering cost
-             */
-            const getVisualProps = (): Record<string, unknown> => {
-              // Common performance optimization: disable shadow for strokes
-              const baseShadowProps = {
-                shadowForStrokeEnabled: false, // Performance: Only shadow fill, not stroke
-              };
-
-              if (isDragging) {
-                return {
-                  ...baseShadowProps,
-                  opacity: 0.5,
-                  scaleX: 1.05,
-                  scaleY: 1.05,
-                  shadowColor: 'rgba(0, 0, 0, 0.6)',
-                  shadowBlur: 20,
-                  shadowOffsetX: 5,
-                  shadowOffsetY: 5,
-                };
-              }
-              if (isHovered) {
-                return {
-                  ...baseShadowProps,
-                  scaleX: 1.02,
-                  scaleY: 1.02,
-                  shadowColor: 'rgba(0, 0, 0, 0.4)',
-                  shadowBlur: 12,
-                  shadowOffsetX: 2,
-                  shadowOffsetY: 2,
-                };
-              }
-              // Resting state - no shadow for better performance
-              return {
-                ...baseShadowProps,
-                scaleX: 1,
-                scaleY: 1,
-              };
-            };
-
-            const visualProps = getVisualProps();
-            const safeScale = token.scale ?? 1;
-            const tokenHeight = gridSize * safeScale;
-
-            /**
-             * Isometric "Standing" Offset
-             *
-             * Visual goal:
-             * - In ISOMETRIC view we want tokens to appear as if they are standing upright on
-             *   the diamond-shaped tile, with their "feet" anchored to the tile center, rather
-             *   than lying flat in the middle of the cell.
-             *
-             * Geometry:
-             * - Our token image is rendered centered on (displayX, displayY).
-             * - tokenHeight represents the rendered token height in pixels for this grid cell:
-             *       tokenHeight = gridSize * safeScale
-             *   so any change to token.scale or gridSize automatically affects this value.
-             * - By shifting the image up by half its rendered height (tokenHeight / 2), we move
-             *   the bottom edge of the token image down to where the center of the isometric
-             *   tile is drawn, creating the illusion that the token is standing on that point.
-             *
-             * Scaling behavior:
-             * - Because the offset is derived from tokenHeight (which already includes safeScale),
-             *   larger tokens are moved proportionally further up, keeping their feet aligned
-             *   with the same ground plane as smaller tokens.
-             *
-             * If the isometric anchoring convention changes (e.g., using a different vertical
-             * anchor point or a non-centered token sprite), this offset calculation should be
-             * updated accordingly.
-             */
-            const displayYOffset = gridType === 'ISOMETRIC' ? -(tokenHeight / 2) : 0;
-            const finalDisplayY = displayY + displayYOffset;
-
-            return (
-              <Group key={token.id}>
-                <TokenErrorBoundary tokenId={token.id} onShowToast={showToast}>
-                  <URLImage
-                    ref={(node) => {
-                      if (node) {
-                        tokenNodesRef.current.set(token.id, node);
-                      } else {
-                        tokenNodesRef.current.delete(token.id);
-                      }
-                    }}
-                    name="token"
-                    id={token.id}
-                    src={token.src}
-                    x={displayX}
-                    y={finalDisplayY}
-                    width={gridSize * safeScale}
-                    height={tokenHeight}
-                    draggable={false}
-                    // Visual props (scaleX, scaleY, opacity, shadow) are transformation properties
-                    // that multiply with base dimensions to create hover/drag feedback effects
-                    {...visualProps}
-                    onSelect={(e) => handleTokenPointerDown(e, token.id)}
-                    onMouseEnter={() => tool === 'select' && setHoveredTokenId(token.id)}
-                    onMouseLeave={() => tool === 'select' && setHoveredTokenId(null)}
-                    onDragStart={emptyDragHandler}
-                    onDragMove={emptyDragHandler}
-                    onDragEnd={emptyDragHandler}
-                  />
-                  {/* Selection border - enhanced with glow effect */}
-                  {/* Hide when dragging to prevent double-circle visual clutter (selection + snap preview) */}
-                  {isSelected && !isDragging && (
-                    <Circle
-                      x={displayX + (gridSize * safeScale) / 2}
-                      y={finalDisplayY + (gridSize * safeScale) / 2}
-                      radius={(gridSize * safeScale) / 2 + 2}
-                      stroke="#2563eb"
-                      strokeWidth={3}
-                      shadowColor="#2563eb"
-                      shadowBlur={8}
-                      shadowEnabled
-                      listening={false}
-                      dash={[8, 4]}
-                    />
-                  )}
-                </TokenErrorBoundary>
-
-                {/* Token Nameplate - Rendered outside ErrorBoundary to prevent nesting issues */}
-                {token.name && (
-                  <Text
-                    text={token.name}
-                    fontSize={12}
-                    fontFamily="IBM Plex Sans, sans-serif"
-                    fill={textColor}
-                    fontStyle="bold"
-                    align="center"
-                    verticalAlign="middle"
-                    width={gridSize * safeScale * 2}
-                    x={displayX - (gridSize * safeScale) / 2}
-                    y={displayY + gridSize * safeScale + 8}
-                    listening={false}
-                  />
-                )}
-              </Group>
-            );
-          })}
-
-          {/* Selection Rect */}
-          {selectionRect.isVisible && (
-            <Rect
-              ref={selectionRectRef}
-              x={selectionRect.x}
-              y={selectionRect.y}
-              width={selectionRect.width}
-              height={selectionRect.height}
-              fill="rgba(37, 99, 235, 0.3)"
-              stroke="#2563eb"
-              listening={false}
-            />
-          )}
-
-          {/* Calibration Overlay */}
-          {isCalibrating && calibrationRect && (
-            <Rect
-              x={calibrationRect.x}
-              y={calibrationRect.y}
-              width={calibrationRect.width}
-              height={calibrationRect.height}
-              fill="rgba(255, 0, 0, 0.2)"
-              stroke="red"
-              dash={[5, 5]}
-              listening={false}
-            />
-          )}
-
-          {/* Measurement Overlay - Shows active measurement (Architect View) or DM's broadcast (World View) */}
-          <CanvasOverlayErrorBoundary overlayName="MeasurementOverlay">
-            <MeasurementOverlay
-              measurement={isWorldView ? dmMeasurement : activeMeasurement}
-              gridSize={gridSize}
-            />
-          </CanvasOverlayErrorBoundary>
+          <OverlayLayer
+            tool={tool}
+            isWorldView={isWorldView}
+            doorOrientation={doorOrientation}
+            gridSize={gridSize}
+            gridType={gridType}
+            selectedIds={selectedIds}
+            isMKeyPressed={isMKeyPressed}
+            dragPositionsRef={dragPositionsRef}
+            selectionRect={selectionRect}
+            selectionRectRef={selectionRectRef}
+            isCalibrating={!!isCalibrating}
+            calibrationRect={calibrationRect}
+            measurement={isWorldView ? dmMeasurement : activeMeasurement}
+          />
 
           {/* Transformer: BLOCKED in World View (players cannot scale/rotate) */}
           {!isWorldView && (
@@ -1752,7 +1367,7 @@ function CanvasManager({
                 if (node.name() === 'token') {
                   // Use average of scaleX and scaleY for uniform scaling
                   const transformScale = (scaleX + scaleY) / 2;
-                  const token = resolvedTokens.find((t) => t.id === node.id());
+                  const token = getResolvedToken(node.id());
                   if (token) {
                     // Multiply current scale by transformation scale
                     const newScale = token.scale * transformScale;
@@ -1810,16 +1425,12 @@ function CanvasManager({
           </div>
 
           {/* Minimap for Navigation */}
-          <MinimapErrorBoundary>
-            <Minimap
-              position={position}
-              scale={scale}
-              viewportSize={size}
-              map={map}
-              tokens={resolvedTokens}
-              onNavigate={navigateToWorldPosition}
-            />
-          </MinimapErrorBoundary>
+          <ConnectedMinimap
+            position={position}
+            scale={scale}
+            viewportSize={size}
+            onNavigate={navigateToWorldPosition}
+          />
         </>
       )}
 

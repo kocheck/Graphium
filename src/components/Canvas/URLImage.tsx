@@ -8,7 +8,6 @@ import { toMediaProtocol } from '../../utils/mediaProtocol';
 import type Konva from 'konva';
 import type { KonvaEventObject, Filter } from 'konva/lib/Node';
 
-// eslint-disable-next-line import/no-unused-modules
 export interface URLImageProps {
   name?: string;
   src: string;
@@ -36,6 +35,7 @@ export interface URLImageProps {
   shadowOffsetX?: number;
   shadowOffsetY?: number;
   shadowForStrokeEnabled?: boolean;
+  perfectDrawEnabled?: boolean;
 }
 
 const URLImage = forwardRef<Konva.Image, URLImageProps>(
@@ -67,6 +67,7 @@ const URLImage = forwardRef<Konva.Image, URLImageProps>(
       shadowOffsetX,
       shadowOffsetY,
       shadowForStrokeEnabled,
+      perfectDrawEnabled,
     },
     ref,
   ) => {
@@ -122,6 +123,7 @@ const URLImage = forwardRef<Konva.Image, URLImageProps>(
         shadowOffsetX={shadowOffsetX}
         shadowOffsetY={shadowOffsetY}
         shadowForStrokeEnabled={shadowForStrokeEnabled}
+        perfectDrawEnabled={perfectDrawEnabled}
       />
     );
   },

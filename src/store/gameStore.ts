@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 
 import { rollForMessage } from '../utils/systemMessages';
+import {
+  buildTokenIndex,
+  patchTokenInIndex,
+  patchTokenPositions,
+  withTokenIndex,
+} from '../utils/tokenIndex';
 
 import type { Measurement } from '../types/measurement';
 
@@ -284,6 +290,8 @@ const createDefaultCampaign = (firstMap?: MapData): Campaign => {
 export interface GameState {
   // --- Active Map State (Proxied for Component Compatibility) ---
   tokens: Token[];
+  tokensById: Record<string, Token>;
+  tokenIds: string[];
   drawings: Drawing[];
   doors: Door[];
   stairs: Stairs[];
@@ -303,10 +311,6 @@ export interface GameState {
   isGamePaused: boolean;
   isMobileSidebarOpen: boolean;
   isCommandPaletteOpen: boolean;
-
-  // --- Vision State (Computed, not persisted) ---
-  /** Active vision polygons for current PC tokens (used for token visibility) */
-  activeVisionPolygons: Array<Array<{ x: number; y: number }>>;
 
   // --- Measurement State (Temporary, not persisted) ---
   activeMeasurement: Measurement | null;
@@ -339,6 +343,7 @@ export interface GameState {
   removeToken: (id: string) => void;
   removeTokens: (ids: string[]) => void;
   updateTokenPosition: (id: string, x: number, y: number) => void;
+  updateTokenPositions: (updates: Array<{ id: string; x: number; y: number }>) => void;
   updateTokenTransform: (id: string, x: number, y: number, scale: number) => void;
   updateTokenProperties: (
     id: string,
@@ -381,9 +386,6 @@ export interface GameState {
   addExploredRegion: (region: ExploredRegion) => void;
   clearExploredRegions: () => void;
 
-  // Vision Actions
-  setActiveVisionPolygons: (polygons: Array<Array<{ x: number; y: number }>>) => void;
-
   // System Actions
   setIsCalibrating: (isCalibrating: boolean) => void;
   setDaylightMode: (enabled: boolean) => void;
@@ -415,6 +417,8 @@ export const useGameStore = create<GameState>((set, get) => {
   return {
     // --- Initial State (Active Map) ---
     tokens: initialMap.tokens,
+    tokensById: buildTokenIndex(initialMap.tokens),
+    tokenIds: initialMap.tokens.map((token) => token.id),
     drawings: initialMap.drawings,
     doors: initialMap.doors,
     stairs: initialMap.stairs,
@@ -433,7 +437,6 @@ export const useGameStore = create<GameState>((set, get) => {
     dungeonDialog: false,
     isGamePaused: false,
     isMobileSidebarOpen: false,
-    activeVisionPolygons: [],
 
     // --- Initial State (Measurement) ---
     activeMeasurement: null,
@@ -458,7 +461,7 @@ export const useGameStore = create<GameState>((set, get) => {
       set({
         campaign,
         // Hydrate active map state
-        tokens: activeMap.tokens || [],
+        ...withTokenIndex(activeMap.tokens || []),
         drawings: activeMap.drawings || [],
         doors: activeMap.doors ?? [],
         stairs: activeMap.stairs ?? [],
@@ -479,7 +482,7 @@ export const useGameStore = create<GameState>((set, get) => {
       set({
         campaign: newCampaign,
         // Reset active map state
-        tokens: newMap.tokens,
+        ...withTokenIndex(newMap.tokens),
         drawings: newMap.drawings,
         doors: newMap.doors,
         stairs: newMap.stairs,
@@ -568,7 +571,7 @@ export const useGameStore = create<GameState>((set, get) => {
           activeMapId: newMap.id,
         },
         // Switch to new map immediately
-        tokens: newMap.tokens,
+        ...withTokenIndex(newMap.tokens),
         drawings: newMap.drawings,
         doors: newMap.doors,
         stairs: newMap.stairs,
@@ -613,7 +616,7 @@ export const useGameStore = create<GameState>((set, get) => {
               ...currentState.campaign,
               activeMapId: nextActiveId,
             },
-            tokens: nextMap.tokens,
+            ...withTokenIndex(nextMap.tokens),
             drawings: nextMap.drawings,
             doors: nextMap.doors || [],
             stairs: nextMap.stairs || [],
@@ -666,7 +669,7 @@ export const useGameStore = create<GameState>((set, get) => {
           activeMapId: mapId,
         },
         // Hydrate active map state
-        tokens: newMap.tokens || [],
+        ...withTokenIndex(newMap.tokens || []),
         drawings: newMap.drawings || [],
         doors: newMap.doors || [],
         stairs: newMap.stairs || [],
@@ -701,26 +704,23 @@ export const useGameStore = create<GameState>((set, get) => {
     },
 
     // --- Token Actions (Modifies Active State) ---
-    addToken: (token: Token) => set((state) => ({ tokens: [...state.tokens, token] })),
+    addToken: (token: Token) => set((state) => withTokenIndex([...state.tokens, token])),
     removeToken: (id: string) =>
-      set((state) => ({ tokens: state.tokens.filter((t) => t.id !== id) })),
+      set((state) => withTokenIndex(state.tokens.filter((t) => t.id !== id))),
     removeTokens: (ids: string[]) =>
-      set((state) => ({ tokens: state.tokens.filter((t) => !ids.includes(t.id)) })),
+      set((state) => withTokenIndex(state.tokens.filter((t) => !ids.includes(t.id)))),
     updateTokenPosition: (id: string, x: number, y: number) =>
-      set((state) => ({
-        tokens: state.tokens.map((t) => (t.id === id ? { ...t, x, y } : t)),
-      })),
+      set((state) => patchTokenInIndex(state.tokens, state.tokensById, id, { x, y }) ?? state),
+    updateTokenPositions: (updates) =>
+      set((state) => patchTokenPositions(state.tokens, state.tokensById, updates) ?? state),
     updateTokenTransform: (id: string, x: number, y: number, scale: number) =>
-      set((state) => ({
-        tokens: state.tokens.map((t) => (t.id === id ? { ...t, x, y, scale } : t)),
-      })),
+      set(
+        (state) => patchTokenInIndex(state.tokens, state.tokensById, id, { x, y, scale }) ?? state,
+      ),
     updateTokenProperties: (
       id: string,
       properties: Partial<Pick<Token, 'type' | 'visionRadius' | 'name'>>,
-    ) =>
-      set((state) => ({
-        tokens: state.tokens.map((t) => (t.id === id ? { ...t, ...properties } : t)),
-      })),
+    ) => set((state) => patchTokenInIndex(state.tokens, state.tokensById, id, properties) ?? state),
 
     // --- Drawing Actions ---
     addDrawing: (drawing: Drawing) => set((state) => ({ drawings: [...state.drawings, drawing] })),
@@ -813,11 +813,10 @@ export const useGameStore = create<GameState>((set, get) => {
         return { exploredRegions: newRegions };
       }),
     clearExploredRegions: () => set({ exploredRegions: [] }),
-    setActiveVisionPolygons: (polygons: Array<Array<{ x: number; y: number }>>) =>
-      set({ activeVisionPolygons: polygons }),
     setDaylightMode: (enabled: boolean) => set({ isDaylightMode: enabled }),
-    setTokens: (tokens: Token[]) => set({ tokens }),
-    setState: (state: Partial<GameState>) => set(state),
+    setTokens: (tokens: Token[]) => set(withTokenIndex(tokens)),
+    setState: (state: Partial<GameState>) =>
+      set(state.tokens ? { ...state, ...withTokenIndex(state.tokens) } : state),
     showToast: (message: string, type: 'error' | 'success' | 'info') =>
       set({ toast: { message, type } }),
     clearToast: () => set({ toast: null }),

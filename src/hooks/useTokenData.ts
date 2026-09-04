@@ -11,6 +11,7 @@ import type { Token, TokenLibraryItem } from '../store/gameStore';
  * All optional properties from Token are now required, as they've been resolved
  * to either the instance value, library default, or system default.
  */
+// eslint-disable-next-line import/no-unused-modules
 export interface ResolvedTokenData {
   id: string;
   x: number;
@@ -61,7 +62,6 @@ export function useTokenData(token: Token): ResolvedTokenData {
 /**
  * Default values for token properties
  */
-// eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_SCALE = 1;
 // eslint-disable-next-line import/no-unused-modules
 export const DEFAULT_NAME = 'Token';
@@ -117,4 +117,69 @@ export function resolveTokenData(
         token.movementSpeed === undefined && libraryItem?.defaultMovementSpeed !== undefined,
     },
   };
+}
+
+/** Resolve a token from the live store by id (event handlers / overlays). */
+export function getResolvedToken(tokenId: string): ResolvedTokenData | undefined {
+  const state = useGameStore.getState();
+  const token = state.tokensById[tokenId];
+  return token ? resolveTokenData(token, state.campaign.tokenLibrary) : undefined;
+}
+
+export function indexTokenLibrary(library: TokenLibraryItem[]): Map<string, TokenLibraryItem> {
+  const byId = new Map<string, TokenLibraryItem>();
+  for (const item of library) {
+    byId.set(item.id, item);
+  }
+  return byId;
+}
+
+export function peekTokenType(
+  token: Token,
+  libraryById: Map<string, TokenLibraryItem>,
+): 'PC' | 'NPC' | undefined {
+  if (token.type) {
+    return token.type;
+  }
+  const libraryItem = token.libraryItemId ? libraryById.get(token.libraryItemId) : undefined;
+  if (libraryItem?.defaultType) {
+    return libraryItem.defaultType;
+  }
+  if (libraryItem?.category === 'PC') {
+    return 'PC';
+  }
+  return undefined;
+}
+
+export function peekTokenScale(token: Token, libraryById: Map<string, TokenLibraryItem>): number {
+  if (token.scale !== undefined) {
+    return token.scale;
+  }
+  const libraryItem = token.libraryItemId ? libraryById.get(token.libraryItemId) : undefined;
+  return libraryItem?.defaultScale ?? DEFAULT_SCALE;
+}
+
+export function peekVisionRadius(
+  token: Token,
+  libraryById: Map<string, TokenLibraryItem>,
+): number | undefined {
+  if (token.visionRadius !== undefined) {
+    return token.visionRadius;
+  }
+  const libraryItem = token.libraryItemId ? libraryById.get(token.libraryItemId) : undefined;
+  return libraryItem?.defaultVisionRadius;
+}
+
+/** All PC tokens with library defaults applied. */
+export function getResolvedPcTokens(): ResolvedTokenData[] {
+  const state = useGameStore.getState();
+  const libraryById = indexTokenLibrary(state.campaign.tokenLibrary);
+  const resolved: ResolvedTokenData[] = [];
+  for (const token of state.tokens) {
+    if (peekTokenType(token, libraryById) !== 'PC') {
+      continue;
+    }
+    resolved.push(resolveTokenData(token, state.campaign.tokenLibrary));
+  }
+  return resolved;
 }

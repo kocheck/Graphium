@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import {
   RiPlayFill,
@@ -11,6 +11,7 @@ import {
   RiRulerLine,
 } from '@remixicon/react';
 import { Agentation } from 'agentation';
+import { useShallow } from 'zustand/shallow';
 
 import { AboutModal } from './components/AboutModal';
 import CommandPalette from './components/AssetLibrary/CommandPalette';
@@ -37,6 +38,7 @@ import { useIsMobile } from './hooks/useMediaQuery';
 import { getStorage } from './services/storage';
 import { useGameStore } from './store/gameStore';
 import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
+import { loadStressFixture, shouldAutoloadStressFixture } from './utils/stressFixture';
 import { rollForMessage } from './utils/systemMessages';
 import { useWindowType } from './utils/useWindowType';
 
@@ -184,11 +186,9 @@ function App(): React.JSX.Element {
     }
   };
 
-  // Filter selected IDs to only include tokens (not drawings)
-  const tokens = useGameStore((s) => s.tokens);
-  const selectedTokensOnly = useMemo(
-    () => selectedTokenIds.filter((id) => tokens.some((t) => t.id === id)),
-    [selectedTokenIds, tokens],
+  // Filter selected IDs against the id map so App does not subscribe to the tokens array
+  const selectedTokensOnly = useGameStore(
+    useShallow((s) => selectedTokenIds.filter((id) => Boolean(s.tokensById[id]))),
   );
 
   // Load library index on startup (Architect View only)
@@ -233,6 +233,12 @@ function App(): React.JSX.Element {
 
     void loadLibrary();
   }, [isArchitectView]);
+
+  useEffect(() => {
+    if (shouldAutoloadStressFixture()) {
+      loadStressFixture();
+    }
+  }, []);
 
   // Clear active measurement when measurement mode changes to prevent confusion
   useEffect(() => {

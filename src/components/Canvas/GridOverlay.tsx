@@ -36,10 +36,11 @@
  */
 
 import type React from 'react';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import { Group, Line, Circle } from 'react-konva';
 
+import { usePointerOverlayStore } from '../../store/pointerOverlayStore';
 import { createGridGeometry } from '../../utils/gridGeometry';
 
 import type { GridType } from '../../store/gameStore';
@@ -90,181 +91,181 @@ const verticesToPoints = (vertices: Array<{ x: number; y: number }>): number[] =
   return points;
 };
 
-/**
- * GridOverlay renders a grid on the canvas with viewport culling
- * Only renders grid elements within visible bounds for performance
- */
+type GridBounds = { x: number; y: number; width: number; height: number };
+
+function renderDotElements(
+  bounds: GridBounds,
+  gridSize: number,
+  stroke: string,
+  opacity: number,
+): React.ReactElement[] {
+  const { x, y, width, height } = bounds;
+  const elements: React.ReactElement[] = [];
+  const startX = Math.floor(x / gridSize) * gridSize;
+  const endX = Math.ceil((x + width) / gridSize) * gridSize;
+  const startY = Math.floor(y / gridSize) * gridSize;
+  const endY = Math.ceil((y + height) / gridSize) * gridSize;
+  const totalDots =
+    (Math.ceil((endX - startX) / gridSize) + 1) * (Math.ceil((endY - startY) / gridSize) + 1);
+
+  let step = gridSize;
+  if (totalDots > MAX_DOTS_THRESHOLD) {
+    const minMultiplier = Math.ceil(Math.sqrt(totalDots / MAX_DOTS_THRESHOLD));
+    const powerOf2Multiplier = Math.pow(2, Math.ceil(Math.log2(minMultiplier)));
+    step = gridSize * powerOf2Multiplier;
+    if (!hasWarnedAboutDensity) {
+      console.warn(
+        `Grid too dense for DOTS mode (${totalDots} dots > ${MAX_DOTS_THRESHOLD}), rendering subset with step size ${step}px (multiplier: ${powerOf2Multiplier})`,
+      );
+      hasWarnedAboutDensity = true;
+    }
+  } else {
+    hasWarnedAboutDensity = false;
+  }
+
+  for (let ix = startX; ix <= endX; ix += step) {
+    for (let iy = startY; iy <= endY; iy += step) {
+      elements.push(
+        <Circle
+          key={`dot-${ix}-${iy}`}
+          x={ix}
+          y={iy}
+          radius={2}
+          fill={stroke}
+          opacity={opacity}
+          listening={false}
+          perfectDrawEnabled={false}
+        />,
+      );
+    }
+  }
+  return elements;
+}
+
+function renderSquareLineElements(
+  bounds: GridBounds,
+  gridSize: number,
+  stroke: string,
+  opacity: number,
+): React.ReactElement[] {
+  const { x, y, width, height } = bounds;
+  const elements: React.ReactElement[] = [];
+  const startX = Math.floor(x / gridSize) * gridSize;
+  const endX = Math.ceil((x + width) / gridSize) * gridSize;
+  const startY = Math.floor(y / gridSize) * gridSize;
+  const endY = Math.ceil((y + height) / gridSize) * gridSize;
+
+  for (let ix = startX; ix <= endX; ix += gridSize) {
+    elements.push(
+      <Line
+        key={`v-${ix}`}
+        points={[ix, y, ix, y + height]}
+        stroke={stroke}
+        strokeWidth={1}
+        opacity={opacity}
+        listening={false}
+        perfectDrawEnabled={false}
+      />,
+    );
+  }
+  for (let iy = startY; iy <= endY; iy += gridSize) {
+    elements.push(
+      <Line
+        key={`h-${iy}`}
+        points={[x, iy, x + width, iy]}
+        stroke={stroke}
+        strokeWidth={1}
+        opacity={opacity}
+        listening={false}
+        perfectDrawEnabled={false}
+      />,
+    );
+  }
+  return elements;
+}
+
+function renderGeometryElements(
+  type: GridType,
+  bounds: GridBounds,
+  gridSize: number,
+  stroke: string,
+  opacity: number,
+): React.ReactElement[] {
+  const geometry = createGridGeometry(type);
+  return geometry.getVisibleCells(bounds, gridSize).map((cell) => {
+    const points = verticesToPoints(geometry.getCellVertices(cell, gridSize));
+    return (
+      <Line
+        key={`cell-${cell.q}-${cell.r}`}
+        points={points}
+        stroke={stroke}
+        strokeWidth={1}
+        opacity={opacity}
+        closed
+        listening={false}
+        perfectDrawEnabled={false}
+      />
+    );
+  });
+}
+
+function renderHoverHighlight(
+  hoveredCell: { q: number; r: number },
+  type: GridType,
+  gridSize: number,
+): React.ReactElement {
+  const geometry = createGridGeometry(type);
+  const points = verticesToPoints(geometry.getCellVertices(hoveredCell, gridSize));
+  return (
+    <Line
+      key="hover-highlight"
+      points={points}
+      fill="rgba(255, 255, 255, 0.1)"
+      stroke="rgba(255, 255, 255, 0.5)"
+      strokeWidth={2}
+      opacity={1}
+      closed
+      listening={false}
+      perfectDrawEnabled={false}
+    />
+  );
+}
+
 function GridOverlay({
   visibleBounds,
   gridSize,
   stroke = '#222',
-  opacity = 0.5, // THEME ADJUSTMENT: Modify this value to change grid visibility (0.0 = invisible, 1.0 = fully opaque)
+  opacity = 0.5,
   type = 'LINES',
   hoveredCell = null,
 }: GridOverlayProps): React.ReactElement | null {
   const { x, y, width, height } = visibleBounds || { x: 0, y: 0, width: 0, height: 0 };
+  const bounds = { x, y, width, height };
 
-  // Render DOTS mode (square grid only)
-  const dotElements = useMemo(() => {
-    if (type !== 'DOTS') {
-      return null;
-    }
-
-    const elements = [];
-
-    // Calculate start and end grid numbers based on visible bounds
-    const startX = Math.floor(x / gridSize) * gridSize;
-    const endX = Math.ceil((x + width) / gridSize) * gridSize;
-    const startY = Math.floor(y / gridSize) * gridSize;
-    const endY = Math.ceil((y + height) / gridSize) * gridSize;
-
-    const dotsX = Math.ceil((endX - startX) / gridSize) + 1;
-    const dotsY = Math.ceil((endY - startY) / gridSize) + 1;
-    const totalDots = dotsX * dotsY;
-
-    // If there would be too many dots, fall back to a simpler grid or skip
-    if (totalDots > MAX_DOTS_THRESHOLD) {
-      // Use a power-of-2 step multiplier to maintain grid alignment and predictable iteration
-      const minMultiplier = Math.ceil(Math.sqrt(totalDots / MAX_DOTS_THRESHOLD));
-      // Find the next power of 2 greater than or equal to minMultiplier
-      const powerOf2Multiplier = Math.pow(2, Math.ceil(Math.log2(minMultiplier)));
-      const step = gridSize * powerOf2Multiplier;
-      if (!hasWarnedAboutDensity) {
-        console.warn(
-          `Grid too dense for DOTS mode (${totalDots} dots > ${MAX_DOTS_THRESHOLD}), rendering subset with step size ${step}px (multiplier: ${powerOf2Multiplier})`,
-        );
-        hasWarnedAboutDensity = true;
-      }
-      // Render a subset by increasing step size
-      for (let ix = startX; ix <= endX; ix += step) {
-        for (let iy = startY; iy <= endY; iy += step) {
-          elements.push(
-            <Circle
-              key={`dot-${ix}-${iy}`}
-              x={ix}
-              y={iy}
-              radius={2}
-              fill={stroke}
-              opacity={opacity}
-            />,
-          );
-        }
-      }
-    } else {
-      // Normal rendering - reset warning flag when back under threshold
-      hasWarnedAboutDensity = false;
-      for (let ix = startX; ix <= endX; ix += gridSize) {
-        for (let iy = startY; iy <= endY; iy += gridSize) {
-          elements.push(
-            <Circle
-              key={`dot-${ix}-${iy}`}
-              x={ix}
-              y={iy}
-              radius={2}
-              fill={stroke}
-              opacity={opacity}
-            />,
-          );
-        }
-      }
-    }
-
-    return elements;
-  }, [type, x, y, width, height, gridSize, stroke, opacity]);
-
-  // Render LINES mode (square grid only - legacy performance optimization)
-  const squareLineElements = useMemo(() => {
-    if (type !== 'LINES') {
-      return null;
-    }
-
-    const elements = [];
-
-    // Calculate start and end grid numbers based on visible bounds
-    const startX = Math.floor(x / gridSize) * gridSize;
-    const endX = Math.ceil((x + width) / gridSize) * gridSize;
-    const startY = Math.floor(y / gridSize) * gridSize;
-    const endY = Math.ceil((y + height) / gridSize) * gridSize;
-
-    // Vertical lines
-    for (let ix = startX; ix <= endX; ix += gridSize) {
-      elements.push(
-        <Line
-          key={`v-${ix}`}
-          points={[ix, y, ix, y + height]} // Draw from top of view to bottom
-          stroke={stroke}
-          strokeWidth={1}
-          opacity={opacity}
-        />,
-      );
-    }
-
-    // Horizontal lines
-    for (let iy = startY; iy <= endY; iy += gridSize) {
-      elements.push(
-        <Line
-          key={`h-${iy}`}
-          points={[x, iy, x + width, iy]}
-          stroke={stroke}
-          strokeWidth={1}
-          opacity={opacity}
-        />,
-      );
-    }
-
-    return elements;
-  }, [type, x, y, width, height, gridSize, stroke, opacity]);
-
-  // Render HEXAGONAL or ISOMETRIC grids using geometry abstraction
-  const geometryElements = useMemo(() => {
-    if (type !== 'HEXAGONAL' && type !== 'ISOMETRIC') {
-      return null;
-    }
-
-    const geometry = createGridGeometry(type);
-    const visibleCells = geometry.getVisibleCells({ x, y, width, height }, gridSize);
-
-    return visibleCells.map((cell) => {
-      const vertices = geometry.getCellVertices(cell, gridSize);
-      const points = verticesToPoints(vertices);
-
-      return (
-        <Line
-          key={`cell-${cell.q}-${cell.r}`}
-          points={points}
-          stroke={stroke}
-          strokeWidth={1}
-          opacity={opacity}
-          closed
-        />
-      );
-    });
-  }, [type, x, y, width, height, gridSize, stroke, opacity]);
-
-  // Render hover highlight for hovered cell
-  const hoverHighlight = useMemo(() => {
-    // DOTS mode deliberately skips hover highlight to avoid extra per-frame geometry work
-    // on already dense dot grids (similar to why DOTS is restricted to square grids).
-    if (!hoveredCell || type === 'DOTS') {
-      return null;
-    }
-
-    const geometry = createGridGeometry(type);
-    const vertices = geometry.getCellVertices(hoveredCell, gridSize);
-    const points = verticesToPoints(vertices);
-
-    return (
-      <Line
-        key="hover-highlight"
-        points={points}
-        fill="rgba(255, 255, 255, 0.1)"
-        stroke="rgba(255, 255, 255, 0.5)"
-        strokeWidth={2}
-        opacity={1}
-        closed
-      />
-    );
-  }, [hoveredCell, type, gridSize]);
+  const dotElements = useMemo(
+    () => (type === 'DOTS' ? renderDotElements(bounds, gridSize, stroke, opacity) : null),
+    // Primitive bounds fields — avoid depending on a new object each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [type, x, y, width, height, gridSize, stroke, opacity],
+  );
+  const squareLineElements = useMemo(
+    () => (type === 'LINES' ? renderSquareLineElements(bounds, gridSize, stroke, opacity) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [type, x, y, width, height, gridSize, stroke, opacity],
+  );
+  const geometryElements = useMemo(
+    () =>
+      type === 'HEXAGONAL' || type === 'ISOMETRIC'
+        ? renderGeometryElements(type, bounds, gridSize, stroke, opacity)
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [type, x, y, width, height, gridSize, stroke, opacity],
+  );
+  const hoverHighlight = useMemo(
+    () =>
+      hoveredCell && type !== 'DOTS' ? renderHoverHighlight(hoveredCell, type, gridSize) : null,
+    [hoveredCell, type, gridSize],
+  );
 
   if (type === 'HIDDEN') {
     return null;
@@ -280,4 +281,12 @@ function GridOverlay({
   );
 }
 
-export default GridOverlay;
+const MemoGridOverlay = memo(GridOverlay);
+MemoGridOverlay.displayName = 'GridOverlay';
+
+export function IsolatedGridOverlay(
+  props: Omit<GridOverlayProps, 'hoveredCell'>,
+): React.ReactElement | null {
+  const hoveredCell = usePointerOverlayStore((s) => s.hoveredCell);
+  return <MemoGridOverlay {...props} hoveredCell={hoveredCell} />;
+}
