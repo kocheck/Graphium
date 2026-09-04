@@ -1,0 +1,311 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import ConfirmDialog from '../ConfirmDialog';
+import { useGameStore } from '../../store/gameStore';
+import {
+  emptySessionConsoleCatalog,
+  emptySessionConsoleRuntime,
+  type SessionConsoleCatalog,
+  type StageImage,
+  type Track,
+} from '../../types/sessionConsole';
+import { toMediaProtocol } from '../../utils/mediaProtocol';
+import { SessionConsolePanel } from './SessionConsolePanel';
+
+const mockProcessImage = vi.fn();
+const mockSaveLocalAudioFile = vi.fn();
+const mockImportPack = vi.fn();
+const mockExportPack = vi.fn();
+
+vi.mock('../../utils/AssetProcessor', () => ({
+  processImage: (...args: unknown[]) => mockProcessImage(...args),
+}));
+
+vi.mock('../../utils/localAudioAsset', () => ({
+  saveLocalAudioFile: (...args: unknown[]) => mockSaveLocalAudioFile(...args),
+}));
+
+vi.mock('../../services/storage', () => ({
+  getStorage: () => ({
+    importSessionConsolePack: () => mockImportPack(),
+    exportSessionConsolePack: (...args: unknown[]) => mockExportPack(...args),
+  }),
+}));
+
+const plate: StageImage = {
+  id: 'img-keep',
+  name: 'Keep dawn',
+  cue: 'DM-only statue cue',
+  src: 'file:///full/keep.webp',
+  thumbnailSrc: 'file:///thumb/keep.webp',
+  alt: 'Dawn over the keep',
+};
+
+const bedTrack: Track = {
+  id: 'track-tavern',
+  title: 'Tavern bed',
+  cue: 'after the riddle',
+  tag: 'bed',
+  source: 'youtube',
+  youtubeId: 'bLZApMsorjA',
+  volumeOffset: 0,
+  loop: true,
+  recommendedImageId: 'img-keep',
+};
+
+function catalogWithBoard(): SessionConsoleCatalog {
+  const catalog = emptySessionConsoleCatalog('Ash Crown');
+  return {
+    ...catalog,
+    imageSets: [
+      {
+        id: 'set-1',
+        title: 'Session 3',
+        note: '',
+        images: [plate],
+      },
+    ],
+    trackGroups: [
+      {
+        id: 'g1',
+        title: 'Beds',
+        note: '',
+        accent: 'bed',
+        tracks: [bedTrack],
+      },
+    ],
+  };
+}
+
+function seedEmptyBoard(): void {
+  const catalog = emptySessionConsoleCatalog('Ash Crown');
+  useGameStore.setState({
+    sessionConsole: catalog,
+    campaign: {
+      ...useGameStore.getState().campaign,
+      name: 'Ash Crown',
+      sessionConsole: catalog,
+    },
+    sessionConsoleRuntime: emptySessionConsoleRuntime(),
+    toast: null,
+    confirmDialog: null,
+    isCommandPaletteOpen: false,
+  });
+}
+
+function seedBoard(runtimePlaying = false): void {
+  const catalog = catalogWithBoard();
+  useGameStore.setState({
+    sessionConsole: catalog,
+    campaign: {
+      ...useGameStore.getState().campaign,
+      name: 'Ash Crown',
+      sessionConsole: catalog,
+    },
+    sessionConsoleRuntime: {
+      ...emptySessionConsoleRuntime(),
+      ...(runtimePlaying
+        ? {
+            audio: {
+              trackId: bedTrack.id,
+              title: bedTrack.title,
+              source: 'youtube',
+              youtubeId: bedTrack.youtubeId ?? null,
+              src: null,
+              status: 'playing' as const,
+              loop: true,
+              restartSeq: 0,
+            },
+          }
+        : {}),
+    },
+    toast: null,
+    confirmDialog: null,
+    isCommandPaletteOpen: false,
+  });
+}
+
+function renderPanel(): void {
+  render(
+    <>
+      <SessionConsolePanel />
+      <ConfirmDialog />
+    </>,
+  );
+}
+
+function dropFiles(target: Element, files: File[]): void {
+  fireEvent.drop(target, {
+    dataTransfer: {
+      files,
+      items: files.map((file) => ({
+        kind: 'file',
+        type: file.type,
+        getAsFile: () => file,
+      })),
+      types: ['Files'],
+    },
+  });
+}
+
+describe('SessionConsolePanel', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockProcessImage.mockImplementation((_file: File, type: string) => ({
+      promise: Promise.resolve(
+        type === 'TOKEN' ? 'file:///thumb/dropped.webp' : 'file:///full/dropped.webp',
+      ),
+      cancel: vi.fn(),
+    }));
+    mockSaveLocalAudioFile.mockResolvedValue('file:///audio/bed.mp3');
+    mockImportPack.mockResolvedValue(null);
+    mockExportPack.mockResolvedValue({ ok: true, skipped: [] });
+  });
+
+  it('shows empty board copy without opening Settings', () => {
+    seedEmptyBoard();
+    renderPanel();
+
+    expect(screen.getByText('Drop images or paste a YouTube link.')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Session Console settings' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('adds a dropped image to the board without opening Settings', async () => {
+    seedEmptyBoard();
+    renderPanel();
+
+    const zone = screen.getByTestId('session-console-dropzone');
+    const file = new File(['img'], 'keep.png', { type: 'image/png' });
+    dropFiles(zone, [file]);
+
+    await waitFor(() => {
+      const images = useGameStore.getState().sessionConsole.imageSets.flatMap((set) => set.images);
+      expect(images).toHaveLength(1);
+      expect(images[0]?.src).toBe('file:///full/dropped.webp');
+      expect(images[0]?.thumbnailSrc).toBe('file:///thumb/dropped.webp');
+    });
+
+    expect(mockProcessImage).toHaveBeenCalledWith(file, 'MAP');
+    expect(
+      screen.queryByRole('heading', { name: 'Session Console settings' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('adds a pasted YouTube URL as a track without opening Settings', async () => {
+    seedEmptyBoard();
+    renderPanel();
+
+    const input = screen.getByLabelText('Paste YouTube URL');
+    fireEvent.paste(input, {
+      clipboardData: {
+        getData: () => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      },
+    });
+
+    await waitFor(() => {
+      const tracks = useGameStore.getState().sessionConsole.trackGroups.flatMap((g) => g.tracks);
+      expect(tracks).toHaveLength(1);
+      expect(tracks[0]?.youtubeId).toBe('dQw4w9WgXcQ');
+      expect(tracks[0]?.source).toBe('youtube');
+    });
+
+    expect(
+      screen.queryByRole('heading', { name: 'Session Console settings' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a toast and does not add a track for an invalid YouTube paste', async () => {
+    seedEmptyBoard();
+    renderPanel();
+
+    fireEvent.paste(screen.getByLabelText('Paste YouTube URL'), {
+      clipboardData: {
+        getData: () => 'https://example.com/not-youtube',
+      },
+    });
+
+    await waitFor(() => {
+      expect(useGameStore.getState().toast?.type).toBe('error');
+    });
+    expect(useGameStore.getState().sessionConsole.trackGroups).toHaveLength(0);
+  });
+
+  it('renders grid images from thumbnailSrc not the full plate src', () => {
+    seedBoard();
+    renderPanel();
+
+    const img = screen.getByRole('img', { name: plate.alt });
+    expect(img).toHaveAttribute('src', toMediaProtocol(plate.thumbnailSrc));
+    expect(img.getAttribute('src')).not.toBe(plate.src);
+    expect(img.getAttribute('src')).not.toBe(toMediaProtocol(plate.src));
+  });
+
+  it('clicking a plate shows it without changing audio', async () => {
+    seedBoard(true);
+    const audioBefore = useGameStore.getState().sessionConsoleRuntime.audio;
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('button', { name: `Show plate ${plate.name}` }));
+
+    const runtime = useGameStore.getState().sessionConsoleRuntime;
+    expect(runtime.activeImage?.id).toBe(plate.id);
+    expect(runtime.stageVisible).toBe(true);
+    expect(runtime.audio.status).toBe(audioBefore.status);
+    expect(runtime.audio.trackId).toBe(audioBefore.trackId);
+  });
+
+  it('clicking a track plays it without showing the recommended plate', async () => {
+    seedBoard();
+    renderPanel();
+
+    expect(screen.getByText(`Recommended: ${plate.name}`)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: `Play ${bedTrack.title}` }));
+
+    const runtime = useGameStore.getState().sessionConsoleRuntime;
+    expect(runtime.audio.trackId).toBe(bedTrack.id);
+    expect(runtime.audio.status).toBe('playing');
+    expect(runtime.stageVisible).toBe(false);
+    expect(runtime.activeImage).toBeNull();
+  });
+
+  it('Return to map keeps audio status', async () => {
+    seedBoard(true);
+    useGameStore.getState().dispatchSessionConsole({ type: 'SHOW_PLATE', imageId: plate.id });
+    expect(useGameStore.getState().sessionConsoleRuntime.stageVisible).toBe(true);
+
+    renderPanel();
+    await userEvent.click(screen.getByRole('button', { name: 'Return to map' }));
+
+    const runtime = useGameStore.getState().sessionConsoleRuntime;
+    expect(runtime.stageVisible).toBe(false);
+    expect(runtime.audio.status).toBe('playing');
+    expect(runtime.audio.trackId).toBe(bedTrack.id);
+  });
+
+  it('Settings import Replace confirms before REPLACE_CATALOG', async () => {
+    seedBoard();
+    const incoming = emptySessionConsoleCatalog('Imported Board');
+    incoming.stage.title = 'Imported Board';
+    mockImportPack.mockResolvedValue({ catalog: incoming, skipped: [] });
+
+    renderPanel();
+    await userEvent.click(screen.getByRole('button', { name: 'Session Console settings' }));
+    await userEvent.click(screen.getByRole('button', { name: /Advanced: board pack/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import replace' }));
+
+    await waitFor(() => {
+      expect(useGameStore.getState().confirmDialog).not.toBeNull();
+    });
+    expect(useGameStore.getState().sessionConsole.stage.title).toBe('Ash Crown');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Replace' }));
+
+    await waitFor(() => {
+      expect(useGameStore.getState().sessionConsole.stage.title).toBe('Imported Board');
+    });
+  });
+});

@@ -11,6 +11,9 @@
  * - System: Save, Load, other system actions
  */
 
+import { openSessionConsoleSettings } from './sessionConsoleEvents';
+import { useGameStore } from '../store/gameStore';
+
 // eslint-disable-next-line import/no-unused-modules
 export type CommandCategory = 'Tool' | 'World View' | 'Generation' | 'System';
 
@@ -136,6 +139,56 @@ export function createCommandRegistry(handlers: {
       keywords: ['dungeon', 'generator', 'generate', 'random', 'map', 'create'],
       icon: '🏰',
       execute: handlers.openDungeonGenerator,
+    },
+
+    {
+      id: 'session-console-stop',
+      label: 'Session Console: Stop',
+      category: 'World View',
+      keywords: ['session', 'console', 'stop', 'audio', 'escape'],
+      shortcut: 'Esc',
+      icon: '⏹️',
+      execute: () => useGameStore.getState().dispatchSessionConsole({ type: 'STOP' }),
+    },
+    {
+      id: 'session-console-duck',
+      label: 'Session Console: Duck',
+      category: 'World View',
+      keywords: ['session', 'console', 'duck', 'volume'],
+      shortcut: 'D',
+      icon: '🦆',
+      execute: () => {
+        const store = useGameStore.getState();
+        store.dispatchSessionConsole({
+          type: 'SET_DUCKED',
+          ducked: !store.sessionConsoleRuntime.ducked,
+        });
+      },
+    },
+    {
+      id: 'session-console-return-to-map',
+      label: 'Session Console: Return to Map',
+      category: 'World View',
+      keywords: ['session', 'console', 'map', 'plate', 'stage'],
+      icon: '🗺️',
+      execute: () => useGameStore.getState().dispatchSessionConsole({ type: 'RETURN_TO_MAP' }),
+    },
+    {
+      id: 'session-console-test-tone',
+      label: 'Session Console: Test Tone',
+      category: 'World View',
+      keywords: ['session', 'console', 'test', 'tone', 'sfx'],
+      icon: '🔔',
+      execute: () =>
+        useGameStore.getState().dispatchSessionConsole({ type: 'FIRE_SFX', sfxId: 'test-tone' }),
+    },
+    {
+      id: 'session-console-settings',
+      label: 'Session Console: Settings',
+      category: 'World View',
+      keywords: ['session', 'console', 'settings', 'pack', 'stage'],
+      icon: '⚙️',
+      execute: openSessionConsoleSettings,
     },
   ];
 }

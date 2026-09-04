@@ -1,0 +1,156 @@
+import { processImage } from './AssetProcessor';
+import { saveLocalAudioFile } from './localAudioAsset';
+import {
+  parseYouTubeVideoId,
+  type SessionConsoleCatalog,
+  type Track,
+} from '../types/sessionConsole';
+
+import type { GameState } from '../store/gameStore';
+
+const IMAGE_FILE_RE = /^image\//;
+const AUDIO_EXT_RE = /\.(mp3|ogg|wav|m4a)$/i;
+
+function fileNameStem(name: string): string {
+  return name.replace(/\.[^.]+$/, '') || 'Untitled';
+}
+
+export function flattenTracks(catalog: SessionConsoleCatalog): Track[] {
+  return catalog.trackGroups.flatMap((group) => group.tracks);
+}
+
+export function formatTrackFallbackLine(index: number, track: Track): string {
+  if (track.source === 'youtube' && track.youtubeId) {
+    return `${index}. ${track.title} — https://www.youtube.com/watch?v=${track.youtubeId}`;
+  }
+  return `${index}. ${track.title} — (local file)`;
+}
+
+export function formatAllTrackLinks(catalog: SessionConsoleCatalog): string {
+  return flattenTracks(catalog)
+    .map((track, index) => formatTrackFallbackLine(index + 1, track))
+    .join('\n');
+}
+
+function ensureImageSet(store: GameState): string {
+  const existing = store.sessionConsole.imageSets[0];
+  if (existing) {
+    return existing.id;
+  }
+  const id = crypto.randomUUID();
+  store.updateSessionConsole({
+    type: 'ADD_IMAGE_SET',
+    set: { id, title: 'Plates', note: '', images: [] },
+  });
+  return id;
+}
+
+function ensureTrackGroup(store: GameState): string {
+  const existing = store.sessionConsole.trackGroups[0];
+  if (existing) {
+    return existing.id;
+  }
+  const id = crypto.randomUUID();
+  store.updateSessionConsole({
+    type: 'ADD_TRACK_GROUP',
+    group: { id, title: 'Tracks', note: '', accent: 'bed', tracks: [] },
+  });
+  return id;
+}
+
+async function processPlateSources(file: File): Promise<{ src: string; thumbnailSrc: string }> {
+  const mapHandle = processImage(file, 'MAP');
+  const src = await mapHandle.promise;
+  try {
+    const thumbHandle = processImage(file, 'TOKEN');
+    const thumbnailSrc = await thumbHandle.promise;
+    return { src, thumbnailSrc };
+  } catch {
+    return { src, thumbnailSrc: src };
+  }
+}
+
+async function addDroppedImage(store: GameState, file: File): Promise<void> {
+  const { src, thumbnailSrc } = await processPlateSources(file);
+  const setId = ensureImageSet(store);
+  const name = fileNameStem(file.name);
+  store.updateSessionConsole({
+    type: 'ADD_IMAGE',
+    setId,
+    image: {
+      id: crypto.randomUUID(),
+      name,
+      cue: '',
+      src,
+      thumbnailSrc,
+      alt: name,
+    },
+  });
+}
+
+async function addDroppedAudio(store: GameState, file: File): Promise<void> {
+  const src = await saveLocalAudioFile(file);
+  const groupId = ensureTrackGroup(store);
+  const title = fileNameStem(file.name);
+  store.updateSessionConsole({
+    type: 'ADD_TRACK',
+    groupId,
+    track: {
+      id: crypto.randomUUID(),
+      title,
+      cue: '',
+      tag: 'bed',
+      source: 'local',
+      src,
+      volumeOffset: 0,
+      loop: true,
+    },
+  });
+}
+
+export function addYouTubeFromText(store: GameState, raw: string): boolean {
+  const youtubeId = parseYouTubeVideoId(raw);
+  if (!youtubeId) {
+    store.showToast('Invalid YouTube link', 'error');
+    return false;
+  }
+  const groupId = ensureTrackGroup(store);
+  store.updateSessionConsole({
+    type: 'ADD_TRACK',
+    groupId,
+    track: {
+      id: crypto.randomUUID(),
+      title: `YouTube ${youtubeId}`,
+      cue: '',
+      tag: 'bed',
+      source: 'youtube',
+      youtubeId,
+      volumeOffset: 0,
+      loop: true,
+    },
+  });
+  return true;
+}
+
+function isImageFile(file: File): boolean {
+  return IMAGE_FILE_RE.test(file.type) || /\.(png|jpe?g|webp|gif|avif)$/i.test(file.name);
+}
+
+function isAudioFile(file: File): boolean {
+  return file.type.startsWith('audio/') || AUDIO_EXT_RE.test(file.name);
+}
+
+export async function ingestDroppedFiles(store: GameState, files: File[]): Promise<void> {
+  for (const file of files) {
+    try {
+      if (isImageFile(file)) {
+        await addDroppedImage(store, file);
+      } else if (isAudioFile(file)) {
+        await addDroppedAudio(store, file);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add board file';
+      store.showToast(message, 'error');
+    }
+  }
+}
