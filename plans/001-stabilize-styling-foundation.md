@@ -1,15 +1,40 @@
 # Plan 001: Make the styling layer have exactly one source of truth
 
-> **Executor instructions**: Follow this plan step by step. Confirm each step's
-> **Check** before moving to the next. If anything in "STOP conditions" occurs,
-> stop and report — do not improvise. When done, update the status row for this
-> plan in `plans/README.md`.
->
-> **Drift check (run first)**:
-> `git diff --stat d3d3642..HEAD -- src/index.css src/App.css src/styles/ tailwind.config.js postcss.config.js src/App.tsx src/components/ThemeManager.tsx src/components/Toast.tsx package.json`
-> (Ignore commits this plan itself made — compare against the state at the step you are on, not blindly against `d3d3642`.)
-> If any of these files have changed since `d3d3642`, re-read them and confirm the
-> "Current state" excerpts below still match. On a mismatch, treat it as a STOP condition.
+> **Executor instructions**: Read `plans/CONVENTIONS.md` first. Run the pre-flight (§3), then
+> the Drift check below. Follow the steps in order; each step's **Check** must hold before the
+> next. If any **If it fails** or STOP condition fires, follow CONVENTIONS §10. Finish with the
+> report in §11.
+
+### Drift check
+
+```bash
+git fetch origin main
+git diff --stat <grounded-at>..origin/main -- src/index.css src/App.css src/styles/ \
+  tailwind.config.js postcss.config.js vite.config.ts package.json src/App.tsx \
+  src/components/ThemeManager.tsx src/components/HomeScreen.tsx src/components/Toast.tsx \
+  tests/ docs/features/theming.md docs/guides/CONVENTIONS.md \
+  docs/architecture/ARCHITECTURE.md                                  # Expected: empty
+```
+
+**Citation re-check** (run each; the hit count must match):
+
+| Anchor (grep)                                                            | File                             | Expected hits                       |
+| ------------------------------------------------------------------------ | -------------------------------- | ----------------------------------- |
+| `grep -c "^@import 'tailwindcss';" src/index.css`                        | `src/index.css`                  | 1                                   |
+| `grep -c '^@theme' src/index.css`                                        | `src/index.css`                  | 1 (0 at d3d3642; plan 000 adds it)  |
+| `grep -c 'rgb(' src/styles/app.css`                                      | `src/styles/app.css`             | 6                                   |
+| `grep -c '#000000' src/styles/app.css`                                   | `src/styles/app.css`             | 1                                   |
+| `grep -c '^\* {' src/styles/theme.css`                                   | `src/styles/theme.css`           | 1                                   |
+| `grep -c '^  transition:$' src/styles/theme.css` (the `body` rule)       | `src/styles/theme.css`           | 1                                   |
+| `grep -c 'bg-red-500' src/App.tsx`                                       | `src/App.tsx`                    | 1                                   |
+| `grep -c 'bg-black' src/App.tsx`                                         | `src/App.tsx`                    | 1                                   |
+| `grep -c "setAttribute('data-theme'" src/components/HomeScreen.tsx`      | `src/components/HomeScreen.tsx`  | 1                                   |
+| `grep -c '^function applyTheme' src/components/ThemeManager.tsx`         | `src/components/ThemeManager.tsx`| 1                                   |
+| `grep -c 'animate-slide-down' src/components/Toast.tsx`                  | `src/components/Toast.tsx`       | 1                                   |
+| `test -f tailwind.config.js && test -f src/App.css; echo $?`             | repo root                        | prints `0`                          |
+| `grep -rn 'App.css' src/ index.html electron/; echo $?`                  | repo                             | prints `1` (no consumers)           |
+
+If any row differs: STOP.
 
 ## Status
 
@@ -18,340 +43,234 @@
 - **Risk**: LOW
 - **Depends on**: plans/000-repair-verification-infrastructure.md
 - **Category**: tech-debt
-- **Grounded at**: `d3d3642` (2026-09-04) — "Session Console: party plates + YouTube/local ambience (#259)"
+- **Requires**: `scripts/preflight.sh`; the `verify:static`, `verify:web`, `verify:electron`,
+  `verify` and `shots` scripts in `package.json`; one `@theme` block in `src/index.css`
+  (all from plan 000); `plans/002-shadcn-compatibility-spike.md`.
+- **Grounded at**: ‹merge SHA of plan 000, written there by its final step› (citations verified
+  at d3d3642)
 
 ## Why this matters
 
-Graphium's UI styling currently runs through four competing systems at once:
-semantic CSS variables (`src/styles/theme.css`), hand-rolled utility classes
-(`src/styles/app.css`), Tailwind utility classes, and 286 inline `style={{}}`
-objects spread across 41 files. They disagree with each other, and one of them is
-silently not running at all — Tailwind v4 is installed but is being fed a v3-style
-config file it never reads, so the `slide-down` keyframe that `Toast.tsx` depends on
-is almost certainly dead in the shipped app.
-
-Nothing else in this program is safe until this is fixed. Every later plan
-(the primitive layer, the dialog migration, the visual redesign) assumes that
-setting a design token in one place changes the UI everywhere. Right now it
-doesn't, and an executor building new components on this foundation would be
-building on sand. This plan is deliberately small, self-contained, and shippable
-on its own.
-
-**It is not, however, visually neutral, and two changes need calling out up front:**
-
-1. **Step 5 makes ~32 hover states snap instead of fade.** The universal `*` rule is
-   the *only* transition source for them: 90 `className` strings in `src/` contain a
-   `hover:` utility and only 58 of those also carry a `transition` utility, plus the
-   `:hover` rules in `app.css` declare none of their own. Scoping the rule to theme
-   switching is correct, but it is a real, user-visible behaviour change across the app.
-2. **Step 8 fixes a live bug: the pause button.** It carries `.btn-tool` *and*
-   `bg-red-500`/`bg-green-500`, and because `app.css` is imported unlayered it beats
-   Tailwind's `@layer utilities` — so the DM's pause control has never shown whether the
-   game is paused. It will be red/green after this plan.
-3. **Step 2 turns on an animation that has never run.** `animate-slide-down` is also
-   used at `DesignSystemPlayground.tsx:357` on a *non-centred* collapsible panel, and
-   the keyframe animates `translate(-50%, -100%) → translate(-50%, 0)`. Making the
-   utility real will make that panel slide in from 50% to the left. See Step 2's Check.
+Graphium styles through four systems at once: semantic tokens (`src/styles/theme.css`),
+hand-rolled classes (`src/styles/app.css`), Tailwind utilities in TSX, and 286 inline
+`style={{}}` objects in 41 files. They disagree, and one of them is not running: Tailwind v4
+is installed but `tailwind.config.js` is a v3 config that v4 never reads, so the
+`animate-slide-down` utility `Toast.tsx` relies on is not generated. Every later plan assumes
+that setting a token in one place changes the UI everywhere; today it does not. This plan is
+small and ships on its own. It is not pixel-neutral: 32 `hover:` utilities lose their fade
+(Step 5), the toolbar becomes theme-aware (Step 6), the toast animation starts working
+(Step 2), and the pause button shows red/green for the first time (Step 8).
 
 ## Context the executor needs
 
-Graphium is a local-first Electron virtual-tabletop app (React 18 + Vite 6 +
-TypeScript + Zustand + Konva). It has a **dual-window architecture**: an
-"Architect View" (the DM's full control panel) and a "World View" (a sanitized,
-canvas-only window projected to players). Any styling change must not leak DM
-chrome into the World View. See `src/App.tsx` for how the two views branch.
+Graphium is a local-first Electron virtual-tabletop app (React 18 + Vite 6 + TypeScript +
+Zustand + Konva) with an Architect View and a World View (CONVENTIONS §1). `.ai-rules.md` is
+mandatory reading before any `src/` change.
 
-The repo enforces strict linting and type checking via ESLint + Husky pre-commit
-hooks. `.ai-rules.md` at the repo root defines mandatory code-generation rules
-(no `any`, enforced import ordering, complexity limits). Follow them.
+**The four systems, as they are today**
 
-### Current state — the four systems
+1. `src/styles/theme.css` defines `--app-*` tokens under `[data-theme='light']`
+   (`grep -n "^\[data-theme='light'\]" src/styles/theme.css`, line 142) and
+   `[data-theme='dark']` (line 211). A third `[data-theme='dark']` block at line 58 only
+   copies the raw Radix dark scale; never edit that one. Its header says: never hardcode hex
+   values. Keep this file as the source of truth.
+2. `src/styles/app.css` (165 lines: `wc -l src/styles/app.css`) mostly consumes tokens but
+   has 8 literal colours (`grep -nE "#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|\b(white|black)\b"
+   src/styles/app.css`): `.toolbar` is `#000000` on `rgb(82, 82, 82)`, `.btn-tool` and its
+   `:hover` use four `rgb()` greys, and `.btn-broadcast.active` uses `white`. The toolbar is
+   pure black in light mode.
+3. Tailwind utilities in TSX. The toolbar div (`grep -n 'className="toolbar' src/App.tsx`,
+   line 556) also says `bg-black border-2 border-neutral-600`, duplicating `.toolbar`.
+   `src/index.css` imports `app.css` unlayered and Tailwind v4 emits utilities in
+   `@layer utilities`, so unlayered `app.css` always wins. That is why the pause button
+   (`grep -n 'bg-red-500' src/App.tsx`, line 566) has never shown its red/green state.
+4. Inline styles: `grep -rhoE 'style=\{\{' src --include=*.tsx | wc -l` → 286, in
+   `grep -rlE 'style=\{\{' src --include=*.tsx | wc -l` → 41 files. Out of scope (plan 004).
 
-**1. `src/styles/theme.css`** — the good one. Defines semantic CSS variables
-(`--app-bg-surface`, `--app-text-primary`, `--app-accent-solid`, …) built on
-Radix Colors scales, with `[data-theme='light']` / `[data-theme='dark']` blocks.
-Its own header comment states the rule: *"NEVER use raw Radix scale names directly
-in components"* and *"Always use these semantic variables. Never hardcode hex values."*
-This file is the intended source of truth. Keep it.
+**The universal transition.** `src/styles/theme.css` (`grep -n '^\* {' src/styles/theme.css`,
+line 291) puts a five-property transition on every element, and `body` (line 280) carries
+its own. Both exist to smooth theme switches; they cost a style recalculation on every class
+change in a large DOM. `.theme-loading * { transition: none !important; }` and the
+`@media (prefers-reduced-motion: reduce)` block below them must stay untouched. `.btn` has its
+own `transition: background-color 0.2s ease` (`grep -n transition src/styles/app.css`), so
+`.btn*` hovers keep fading; only TSX `hover:` utilities without a `transition` utility snap:
+`grep -rhoE 'className=(\{`|")[^`"]*' src --include=*.tsx | grep -cE 'hover:'` → 90, of which
+`… | grep -E 'hover:' | grep -vcE 'transition'` → 32 have no transition.
 
-**2. `src/styles/app.css`** — hand-rolled utility classes (`.btn`, `.btn-tool`,
-`.sidebar`, `.toolbar`) that *mostly* consume the theme variables but violate the
-rule in several places. At `src/styles/app.css:15`:
+**Theme switching paths.** `ThemeManager.tsx` `applyTheme` (`grep -n 'function applyTheme'
+src/components/ThemeManager.tsx`, line 36) sets `data-theme` on `<html>`. In the web build the
+home-screen toggle (`grep -n "setAttribute('data-theme'" src/components/HomeScreen.tsx`,
+line 366) sets the attribute itself and broadcasts over `BroadcastChannel`, which never
+delivers to the posting tab, so `ThemeManager` does not run for the user's own click. The
+`setAttribute('data-theme'` in `playground-registry.tsx` (line 705) is inside a `code:`
+template string shown as sample text; it never executes and is not touched.
 
-```css
-.toolbar {
-  background: #000000;
-  border: 2px solid rgb(82, 82, 82); /* neutral-600 */
-}
-```
-
-`.btn-tool` (same file) likewise hardcodes `rgb(64,64,64)`, `rgb(229,229,229)`,
-`rgb(82,82,82)`, `rgb(115,115,115)`. These are theme-invariant: the main toolbar
-is pure black in light mode.
-
-**3. Tailwind utilities**, applied directly in TSX. At `src/App.tsx:556` the main
-toolbar carries *both* systems, saying the same thing twice:
-
-```tsx
-<div className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50 bg-black border-2 border-neutral-600">
-```
-
-**4. Inline `style={{}}` objects** — 286 of them across 41 files. Hotspots:
-`PreferencesDialog.tsx` (45), `AboutModal.tsx` (40), `ResourceMonitor.tsx` (22),
-`UpdateManager.tsx` (21), `TokenInspector.tsx` (19). Most read theme variables
-correctly (`backgroundColor: 'var(--app-bg-surface)'`), so they are not *wrong* —
-they are just un-reusable and invisible to any future variant system. **This plan
-does not migrate them.** They are addressed in plan 004 as each component moves.
-
-### Current state — the Tailwind v4 / v3 config mismatch
-
-`src/index.css:1` is Tailwind v4 syntax:
-
-```css
-@import 'tailwindcss';
-```
-
-`package.json` has `tailwindcss ^4.1.18` and `@tailwindcss/postcss ^4.1.18`, and
-`postcss.config.js` uses the v4 plugin. But `tailwind.config.js` is a **v3-style
-JS config**:
-
-```js
-export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  theme: { extend: { animation: { 'slide-down': 'slideDown 0.3s ease-out' },
-    keyframes: { slideDown: { /* … */ } } } },
-  plugins: [],
-};
-```
-
-Tailwind v4 does **not** auto-load `tailwind.config.js`. It requires an explicit
-`@config` directive in the CSS entrypoint. There is no `@config`, `@theme`, or
-`@plugin` directive anywhere in `src/index.css` or `src/styles/*.css` (verified by
-grep at `d3d3642`).
-
-Consequence: the `animate-slide-down` class is consumed at
-`src/components/Toast.tsx:82` and
-`src/components/DesignSystemPlayground/DesignSystemPlayground.tsx:357`, but the
-utility that backs it is very likely never generated. **Step 1 verifies this
-empirically before anything is changed** — do not assume it, prove it.
-
-`autoprefixer` is also still in `postcss.config.js`. Tailwind v4 handles vendor
-prefixing internally via Lightning CSS; running autoprefixer after it is redundant.
-
-### Current state — the universal transition
-
-`src/styles/theme.css:291`:
-
-```css
-* {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 0.2s;
-  transition-timing-function: ease;
-}
-```
-
-This attaches a five-property transition to **every element in the document**. In a
-canvas application with a large DOM (sidebar, token library, session console,
-toolbars) this inflates style recalculation on any class or attribute change, not
-just theme switches. Its actual purpose is narrow: to make light/dark theme
-switching smooth. It should be scoped to that.
-
-Note the guards that already exist immediately below it and must be preserved:
-`.theme-loading * { transition: none !important; }` (prevents animation on initial
-render) and a `@media (prefers-reduced-motion: reduce)` block that kills all
-transitions and animations — the E2E accessibility suite depends on the latter for
-stable screenshots.
-
-### Current state — dead file
-
-`src/App.css` is leftover Vite scaffolding (`.logo`, `logo-spin`, `.read-the-docs`,
-and a `#root { max-width: 1280px; padding: 2rem; text-align: center; }` rule that
-would break the full-viewport layout if it were ever loaded). Verified: it is
-imported by nothing in `src/` or `index.html`. It is dead weight and an active
-trap for anyone who imports it by autocomplete.
+**Dead file.** `src/App.css` is Vite scaffolding with a `#root { max-width: 1280px; … }` rule
+that would break the full-viewport layout if imported. Nothing imports it.
 
 ## Inputs & resources
 
-Run `npm install` first — the repo has no `node_modules` checked in.
+Gates: `plans/CONVENTIONS.md` §4. Commands specific to this plan:
 
-| Purpose            | Command                  | Expected on success              |
-|--------------------|--------------------------|----------------------------------|
-| Install deps       | `npm install`            | exit 0                           |
-| Install browsers   | `npx playwright install chromium` | exit 0 — `npm install` does not fetch them |
-| Lint               | `npm run lint`           | exit 0, zero warnings            |
-| Typecheck          | `npm run type-check`     | exit 0                           |
-| Unit tests         | `npm run test:run`       | all pass                         |
-| Web build          | `npm run build:web`      | exit 0, writes `dist-web/`       |
-| A11y E2E           | `npm run test:a11y`      | all pass                         |
-| Web E2E        | `npm run build:web && npx playwright test --project=Web-Chromium` | all pass |
-| Electron E2E   | `npm run build:electron && npx playwright test --project=Electron-App` | all pass — **never run bare `npm run test:e2e`**; it launches the Electron project without building it |
-| Dev server         | `npm run dev`            | app launches                     |
+| Purpose                              | Command                                                              |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| Inspect built CSS                    | `npm run build:web` then `grep … dist-web/assets/*.css`              |
+| Run one new Playwright spec          | `npx playwright test tests/<name>.spec.ts --project=Web-Chromium`    |
+| Run the two new vitest guards        | `npx vitest run src/styles`                                          |
+
+`grep -c` prints `0` with exit status 1. Wherever **Expected** says `0` for a `grep -c`, that
+exit status is the pass, not a failure.
 
 ## Scope
 
-**In scope** (the only things you may change):
-- `tailwind.config.js` — delete, after migrating its content to CSS
-- `src/index.css` — add v4 `@theme` block
-- `postcss.config.js` — drop redundant autoprefixer
-- `package.json` — drop the `autoprefixer` devDependency
-- `src/App.css` — delete (dead file)
-- `src/styles/theme.css` — scope the universal transition
-- `src/styles/app.css` — replace hardcoded colors with theme variables
-- `src/App.tsx` — remove only the duplicated Tailwind color classes on the toolbar div at line 556
-- `src/components/ThemeManager.tsx` — add the `theme-transitioning` class (Step 5)
-- `src/styles/theme.css` — **new `--app-*` tokens only** (Steps 6 and 8). You may add
-  tokens; you may not change an existing colour value. Palette changes are plan 006's.
-- `package-lock.json` — regenerated by the `autoprefixer` removal (Step 3)
-- `plans/README.md` — the status row for this plan
+**In scope** (the only paths you may change):
 
-**Out of scope** (do NOT touch, even though they look related):
-- **The 286 inline `style={{}}` objects.** They mostly read theme variables and are
-  functionally correct. Migrating them is plan 004's job, done per-component as each
-  moves to the primitive layer. Touching them here turns a small safe change into a
-  huge risky one.
-- **Any component's markup, layout, or behavior**, beyond the single className edit
-  at `src/App.tsx:556`. This plan must be visually neutral except for the toolbar
-  now respecting light theme.
-- **`src/components/Canvas/**`** — Konva canvas rendering does not use CSS theming.
-  Do not touch it.
-- **Adding shadcn, Radix Primitives, CVA, `cn()`, or `components.json`.** That is
-  plan 003. Adding it here couples a low-risk cleanup to a high-risk dependency change.
-- **The Radix Colors imports** at the top of `theme.css`. They work; leave them.
+- `tailwind.config.js` — delete (Step 2)
+- `src/index.css` — one `--animate-*` line in the existing `@theme` block, one `@keyframes`
+- `postcss.config.js`, `package.json`, `package-lock.json` — drop `autoprefixer` (Step 3)
+- `src/App.css` — delete (Step 4)
+- `src/styles/theme.css` — scope the transition (Step 5); add new tokens only (Step 6). Never
+  change an existing `--app-*` value.
+- `src/components/ThemeManager.tsx`, `src/components/HomeScreen.tsx` — Step 5 only
+- `src/styles/app.css` — tokens for literals (Step 6); pause state classes (Step 8)
+- `src/App.tsx` — two `className` edits (Steps 7, 8)
+- `tests/toast-animation.spec.ts`, `tests/theme-transition.spec.ts`,
+  `tests/pause-button.spec.ts`, `src/styles/app-css-purity.test.ts`,
+  `src/styles/palette-classes.test.ts` — new
+- `docs/features/theming.md`, `docs/guides/CONVENTIONS.md`,
+  `docs/architecture/ARCHITECTURE.md`, `vite.config.ts` — `tailwind.config.js` references
+- `docs/planning/screenshots/001-final/`, `plans/reports/001.md`, `CHANGELOG.md`,
+  `plans/README.md`, `plans/002-shadcn-compatibility-spike.md` — Steps 9–10
 
-## Working approach
+**Out of scope** (do NOT touch, even though they look related): the 286 inline styles; the
+hardcoded Tailwind palette classes in TSX (401 at d3d3642, command in Step 6); any component
+markup beyond the edits named above; `src/components/Canvas/**`; `Toast.tsx` colours;
+`PauseManager.tsx`; shadcn, Radix Primitives, CVA, `cn()`, `components.json` (plan 003); the
+Radix Colors `@import`s in `theme.css`.
 
-Branch off `main` as `plan/001-styling-foundation`. Commit each step separately with a
-descriptive message so any single step can be reverted independently.
+## Landing
 
-### How this plan lands: one PR per plan, targeting `main`
-
-**This is the program-wide rule; it is identical in every plan.** Each plan is
-developed on its own branch off `main` and merged as a **single pull request into
-`main`** before the next plan begins.
-
-That choice exists for one reason: **it is the only way CI runs.** Verified in
-`.github/workflows/`:
-
-| Workflow | Trigger | What it gates |
-|---|---|---|
-| `lint.yml` | `pull_request` → `main` | ESLint + `tsc` |
-| `test.yml` | `pull_request` → `main` | Vitest |
-| `e2e.yml` | `pull_request` → `main` | Playwright, **per project, after the matching build** |
-| `accessibility.yml` | `pull_request` → `main` or `NEXT` | axe WCAG AA |
-| `documentation-check*.yml` | `pull_request` → `main` | doc-drift comment |
-
-Nothing fires on a long-lived feature branch. Under the original "one branch, don't
-open a PR" approach, ~40 commits of work would have been gated only by local
-`npm run` on one machine — which is how the unverified-gate problem this program was
-revised to fix got in.
-
-**Consequences to know before you start:**
-
-- **`e2e.yml` is the reference for how to run Playwright** — it runs
-  `--project=Web-Chromium` after `npm run build:web` and `--project=Electron-App` under
-  `xvfb-run` after `npm run build:electron`. Never bare `npm run test:e2e`.
-- **Merging to `main` auto-deploys the public web build.** `deploy-web.yml` runs on
-  every push to `main`. Intermediate states of the migration will go live on GitHub
-  Pages. That is consistent with the strangler-fig principle that every commit is
-  releasable, but it is a real consequence — if the web demo must stay pinned, say so
-  before starting rather than after.
-- **Local gates still come first.** CI is the enforcement, not the discovery. Run the
-  full local gate before every push; a red PR costs a cycle and reviewer trust.
-- **Keep the PR reviewable.** Push each step as its own commit with a descriptive
-  message so a reviewer can read the plan's steps in the commit history. If a plan's PR
-  grows past roughly 1,500 changed lines, split it at a step boundary named in the plan
-  and land the halves in order.
-- **`build-release.yml` fires on `v*.*.*` tags only** — nothing here triggers a release.
-  Versioning and `CHANGELOG.md` entries are a separate decision, noted in
-  `plans/README.md`.
-
+Branch, commits, PR, CI and rollback: `plans/CONVENTIONS.md` §7. Branch name:
+`plan/001-styling-foundation`.
 
 ## Steps
 
-### Step 1: Prove or disprove that the Tailwind config is being ignored
+### Step 1: Prove the JS Tailwind config is ignored
 
-Do not change anything yet. Build the app and inspect the generated CSS for the
-`animate-slide-down` utility.
+**Files**: none.
+**Do**: Change nothing. Build the web bundle and look for the `animate-slide-down` utility.
+**Do NOT**: edit any file; grep for the bare substring `slide-down` (it would also match a
+declaration and prove nothing).
+**Commands**:
 
 ```bash
-npm install
 npm run build:web
-grep -r "slide-down\|slideDown" dist-web/assets/*.css
+grep -oE '\.animate-slide-down\{[^}]*\}' dist-web/assets/*.css; echo "exit=$?"
+grep -c -- '--app-bg-surface' dist-web/assets/*.css
 ```
 
-**Check**: Record the result verbatim in your report.
-- **No match** → the config is being ignored, as this plan predicts. Continue to Step 2.
-- **Match found** → the config *is* somehow being loaded. **STOP and report.** The
-  premise of Steps 2–3 is wrong and the plan needs revising before you proceed.
+**Expected**: build exits 0; the second command prints nothing then `exit=1`; the third prints
+a non-zero count (proves you grepped the real bundle).
+**Check**: the line `exit=1`.
+**If it fails**: a rule is printed → STOP: "the v3 config is being loaded; Steps 2–3 premise is
+wrong".
+**Commit**: none (no files change).
 
-### Step 2: Move the Tailwind theme extension into the v4 CSS config
+### Step 2: Move the toast animation into the v4 CSS config and guard it with a spec
 
-Tailwind v4 configures through CSS, not JS.
-
-> **Do not paste the block below over the whole file.** `src/index.css` also contains
-> `html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden }` and
-> `#root { width:100%; height:100% }` after the imports. Deleting those breaks the
-> full-viewport layout — the exact failure this plan cites as the reason `App.css` is
-> dangerous. Keep everything below the imports untouched.
-
-Add a `@theme` block to `src/index.css`, expressing the same animation the JS config
-intended. **`@import` rules must come first** — write it in this order:
+**Files**: `src/index.css`, `tailwind.config.js` (delete), `tests/toast-animation.spec.ts` (new).
+**Do**: Plan 000 already put one `@theme` block in `src/index.css`. Add exactly one declaration
+to it, as its last line, and add the `@keyframes` after the block. Do not create a second
+`@theme`. After the edit the head of the file reads as follows, where the comment line stands
+for plan 000's declarations, which stay byte-for-byte (do not type the comment):
 
 ```css
 @import 'tailwindcss';
+@import './styles/fonts.css';
+@import './styles/theme.css';
+@import './styles/app.css';
 
 @theme {
+  /* …plan 000's declarations, unchanged… */
   --animate-slide-down: slideDown 0.3s ease-out;
 }
 
 @keyframes slideDown {
-  0% {
-    transform: translate(-50%, -100%);
+  from {
+    transform: translateY(-100%);
     opacity: 0;
   }
-  100% {
-    transform: translate(-50%, 0);
+  to {
+    transform: translateY(0);
     opacity: 1;
   }
 }
 
-@import './styles/fonts.css';
-@import './styles/theme.css';
-@import './styles/app.css';
+/* Ensure html, body, and root fill viewport */
+html,
+body {
 ```
 
-Note: in Tailwind v4 a `--animate-*` theme variable generates the corresponding
-`animate-*` utility, so `--animate-slide-down` produces `animate-slide-down` — the
-exact class name already used at `Toast.tsx:82`. No component change is needed.
+The old config animated `translate(-50%, …)`. Tailwind v4's `-translate-x-1/2` sets the
+`translate` property, so that would double-shift X for 300 ms; `translateY` only is correct
+for both `Toast.tsx` and the Playground panel. A `--animate-*` theme variable generates the
+`animate-slide-down` utility, so no component changes. Then `git rm tailwind.config.js`.
 
-**Do not "try it and see whether the bundler rejects it."** A misplaced `@import` may
-be silently dropped rather than erroring, which would make `theme.css` and `app.css`
-never load — and no other check in this plan would catch that. Always put all four
-`@import` lines first, then the `@theme` and `@keyframes` blocks.
+Create `tests/toast-animation.spec.ts` (the permanent guard against the config silently
+dropping again):
 
-Confirm the imports actually resolved: after `npm run build:web`, the built CSS must
-contain `--app-bg-surface` (proving `theme.css` loaded) and `.toolbar` (proving
-`app.css` loaded). If either is absent, STOP and report.
+```ts
+import { expect, test } from '@playwright/test';
 
-Then delete `tailwind.config.js`. Tailwind v4 discovers content by automatic source
-detection from the CSS entrypoint, so the `content` array is no longer needed.
+/**
+ * Guards the Tailwind v4 CSS config: `animate-slide-down` exists only because
+ * `--animate-slide-down` and `@keyframes slideDown` are declared in src/index.css.
+ */
+test('toast animates with the slideDown keyframes', async ({ page }) => {
+  await page.goto('/design-system');
+  await page.waitForSelector('#root:visible', { timeout: 60000 });
 
-**Check**:
+  await page.getByRole('button', { name: 'Show Success' }).click();
+
+  const toast = page.locator('.animate-slide-down');
+  await expect(toast).toBeVisible();
+  await expect(toast).toContainText('Operation completed successfully');
+
+  const animationName = await toast.evaluate((el) => getComputedStyle(el).animationName);
+  expect(animationName).toBe('slideDown');
+});
+```
+
+**Do NOT**: touch `Toast.tsx` (its `bg-blue-600`/`bg-red-600`/`bg-green-600` are plan 004's);
+move or reorder the four `@import` lines; delete the `html, body` / `#root` rules; emulate
+`reducedMotion` in the spec (the reduced-motion block would set `animationName` to `none`).
+**Commands**:
+
 ```bash
+grep -c '^@theme' src/index.css
 npm run build:web
 grep -oE '\.animate-slide-down\{[^}]*\}' dist-web/assets/*.css
 grep -c -- '--app-bg-surface' dist-web/assets/*.css
 grep -c -- '\.toolbar' dist-web/assets/*.css
+npx playwright test tests/toast-animation.spec.ts --project=Web-Chromium
+npm run verify:static
 ```
-The first must return an actual CSS rule. A bare substring grep for `slide-down`
-would also match the `--animate-slide-down` declaration and prove nothing. The other
-two must be non-zero. Then `npm run dev`, trigger any toast (e.g.
-save a campaign with `Cmd+S`), and confirm the toast visibly slides down from the
-top rather than appearing instantly.
+
+**Expected**: `1`; exit 0; one rule such as
+`.animate-slide-down{animation:var(--animate-slide-down)}`; non-zero; non-zero; `1 passed`;
+exit 0.
+**Check**: the spec passes.
+**If it fails**: if either count is `0`, STOP: "`@import`s were dropped; theme.css/app.css not
+loading". Otherwise re-read the head of `src/index.css` against the block above, fix once,
+rerun; then STOP.
+**Commit**: `plan-001 step-2: move slide-down animation into the Tailwind v4 CSS config`
 
 ### Step 3: Remove the redundant autoprefixer
 
-Tailwind v4 handles vendor prefixing via Lightning CSS. Edit `postcss.config.js` to:
+**Files**: `postcss.config.js`, `package.json`, `package-lock.json`.
+**Do**: Tailwind v4 prefixes through Lightning CSS. First save the current built CSS (asset
+names are content-hashed and `emptyOutDir` wipes them; `cat` because there may be more than one
+file). Then make `postcss.config.js` exactly:
 
 ```js
 export default {
@@ -361,219 +280,418 @@ export default {
 };
 ```
 
-Then remove `autoprefixer` from `devDependencies` in `package.json` and run
-`npm install` to update the lockfile.
-
-**Check**: `emptyOutDir: true` destroys the previous build and asset filenames are
-content-hashed, so **copy Step 2's CSS aside before rebuilding**:
+Delete the line `"autoprefixer": "^10.4.22",` from `devDependencies` in `package.json`
+(`grep -n '"autoprefixer"' package.json`, line 69). Run `npm install` to update the lockfile.
+**Do NOT**: remove any other devDependency; touch `vite.config.ts`; run `npm update`.
+**Commands**:
 
 ```bash
-cp dist-web/assets/*.css /tmp/before-autoprefixer.css   # BEFORE making the edit
-# ...make the edit...
+cat dist-web/assets/*.css > /tmp/plan-001-before.css        # BEFORE editing
+# …make the two edits…
+npm install
+git diff package-lock.json | grep -cE '^\+\s+"node_modules/'
 npm run build:web
-grep -oE '\.animate-slide-down\{[^}]*\}' dist-web/assets/*.css   # still present
-grep -c -- '--app-bg-surface' dist-web/assets/*.css                # still non-zero
+cat dist-web/assets/*.css > /tmp/plan-001-after.css
+diff <(tr ';{}' '\n\n\n' < /tmp/plan-001-before.css | sort -u) \
+     <(tr ';{}' '\n\n\n' < /tmp/plan-001-after.css | sort -u) \
+  | grep -E '^[<>]' | grep -vcE -- '-(webkit|moz|ms|o)-'
+grep -oE '\.animate-slide-down\{[^}]*\}' dist-web/assets/*.css
+npm run verify:static
 ```
-(`grep -c ""` counts lines; on minified single-line CSS it tells you nothing.)
-Then `npm run test:a11y` passes.
+
+**Expected**: `0` (the lockfile only removes packages, never adds one); exit 0; `0` — every
+declaration that differs carries a vendor prefix (this `grep -c` prints `0` and exits 1; that
+is the pass); the rule is still printed; exit 0.
+**Check**: both `0` lines.
+**If it fails**: a lockfile `+` line → STOP: "autoprefixer removal pulled in a new package".
+A non-prefix declaration differs → STOP with the diff excerpt.
+**Commit**: `plan-001 step-3: remove autoprefixer (Tailwind v4 prefixes via Lightning CSS)`
 
 ### Step 4: Delete the dead `src/App.css`
 
-Confirm it is still unreferenced, then remove it:
+**Files**: `src/App.css` (delete).
+**Do**: Confirm nothing imports it, then remove it.
+**Do NOT**: delete or edit `src/index.css`; touch `src/styles/`.
+**Commands**:
 
 ```bash
-grep -rn "App.css" src/ index.html electron/ && echo "FOUND CONSUMERS — STOP" || git rm src/App.css
+grep -rn "App.css" src/ index.html electron/; echo "exit=$?"
+git rm src/App.css
+npm run verify:static
+npm run build:web
 ```
 
-**Check**: The grep returns no matches (exit 1) before deletion. After deletion,
-`npm run build:web` exits 0 and `npm run type-check` exits 0.
+**Expected**: nothing then `exit=1`; file removed; exit 0; exit 0.
+**Check**: `test -f src/App.css; echo $?` prints `1`.
+**If it fails**: the first grep prints a consumer → STOP: "App.css has an importer".
+**Commit**: `plan-001 step-4: delete dead src/App.css`
 
-### Step 5: Scope the universal transition to theme switching only
+### Step 5: Scope the universal transition to theme switches
 
-In `src/styles/theme.css`, replace the `* { … }` block at line 291 with a
-transition that applies only while a theme change is in flight, driven by a class
-on the root element.
+**Files**: `src/styles/theme.css`, `src/components/ThemeManager.tsx`,
+`src/components/HomeScreen.tsx`, `tests/theme-transition.spec.ts` (new).
+**Do**:
 
-Replace:
+1. In `src/styles/theme.css`, the `body` rule (`grep -n '^body {' src/styles/theme.css`,
+   line 280) becomes:
 
-```css
-* {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 0.2s;
-  transition-timing-function: ease;
-}
-```
+   ```css
+   body {
+     background-color: var(--app-bg-base);
+     color: var(--app-text-primary);
+   }
+   ```
 
-with:
+   and the `* { … }` rule with its comment (lines 290–295) becomes:
 
-```css
-/* Theme-change transition: applied only while `.theme-transitioning` is present
-   on <html>, so the cost is paid during a theme switch rather than on every
-   style recalculation in the app. See ThemeManager.tsx. */
-.theme-transitioning * {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 0.2s;
-  transition-timing-function: ease;
-}
-```
+   ```css
+   /* Theme-change transition: applied only while `.theme-transitioning` is on <html>
+      (ThemeManager.applyTheme), so the cost is paid during a theme switch instead of on
+      every style recalculation in the app. Covers <body> too. */
+   .theme-transitioning * {
+     transition-property: background-color, border-color, color, fill, stroke;
+     transition-duration: 0.2s;
+     transition-timing-function: ease;
+   }
+   ```
 
-Leave the `.theme-loading * { transition: none !important; }` rule and the
-`@media (prefers-reduced-motion: reduce)` block exactly as they are.
+2. In `src/components/ThemeManager.tsx`, replace lines 28–38 (the `applyTheme` docblock and
+   function) with:
 
-Then update `src/components/ThemeManager.tsx` (`applyTheme`, around line 36) to add
-`theme-transitioning` **to `document.documentElement`** — the same element that
-carries `data-theme` at line 37, and the element the CSS comment above names.
+   ```ts
+   /** How long `.theme-transitioning` stays on <html>: the 0.2 s transition plus margin. */
+   const THEME_TRANSITION_MS = 300;
 
-> Note the file also puts a `theme-loading` **class** on `document.body` (lines 137,
-> 143), as does `index.html:28`. Ignore that precedent: put this class on
-> `documentElement` so the class and the attribute travel together, and so the
-> Check below is meaningful.
+   let transitionTimer: number | undefined;
 
-**Ordering matters.** If you add the class and flip `data-theme` in the same tick,
-there is no prior computed style carrying `transition-property`, so the browser
-snaps rather than transitions. Add the class, then flip the attribute on the next
-frame (`requestAnimationFrame`). Clear any pending removal timeout on unmount and on
-re-entry so rapid toggling cannot leak a timer or strand the class.
+   /**
+    * Apply theme to DOM
+    *
+    * Sets data-theme on <html> inside the `theme-transitioning` class, so theme.css
+    * transitions only the switch. No-op when the theme is already applied. While <body>
+    * still carries `theme-loading` (first paint) the attribute is set synchronously with no
+    * class, so page load never animates.
+    *
+    * @param theme - 'light' or 'dark'
+    */
+   export function applyTheme(theme: 'light' | 'dark'): void {
+     const root = document.documentElement;
+     if (root.getAttribute('data-theme') === theme) {
+       return;
+     }
+     if (document.body.classList.contains('theme-loading')) {
+       root.setAttribute('data-theme', theme);
+       return;
+     }
+     if (transitionTimer !== undefined) {
+       window.clearTimeout(transitionTimer);
+       transitionTimer = undefined;
+     }
+     // Add the class first and flip the attribute on the next frame: a transition only
+     // runs if the computed style before the change already had transition-property.
+     root.classList.add('theme-transitioning');
+     window.requestAnimationFrame(() => {
+       root.setAttribute('data-theme', theme);
+       transitionTimer = window.setTimeout(() => {
+         root.classList.remove('theme-transitioning');
+         transitionTimer = undefined;
+       }, THEME_TRANSITION_MS);
+     });
+   }
+   ```
 
-**Two other call sites set `data-theme` directly and will not get the transition:**
-`src/components/HomeScreen.tsx:366` and
-`src/components/DesignSystemPlayground/playground-registry.tsx:705`. In the web build
-`HomeScreen`'s toggle is the *primary* path — it sets the attribute in its own window
-and broadcasts via `BroadcastChannel`, which does not deliver to the posting window,
-so `ThemeManager.applyTheme` never runs for the user's own click. **Do not fix that
-here** — `HomeScreen.tsx` is out of scope. Record it as a known gap; it is resolved
-when `HomeScreen` migrates in plan 004.
+   and replace the effect's cleanup (`grep -n 'cleanup?.();' src/components/ThemeManager.tsx`,
+   line 151, with its surrounding `return () => { … };`) with:
 
-**Check**:
+   ```ts
+       return () => {
+         cleanup?.();
+         if (transitionTimer !== undefined) {
+           window.clearTimeout(transitionTimer);
+           transitionTimer = undefined;
+           document.documentElement.classList.remove('theme-transitioning');
+         }
+       };
+   ```
+
+3. In `src/components/HomeScreen.tsx`, three one-line edits:
+   - after `import { LogoLockup } from './LogoLockup';` (line 26) add
+     `import { applyTheme } from './ThemeManager';`
+   - `let effectiveTheme: string;` (line 358) → `let effectiveTheme: 'light' | 'dark';`
+   - `document.documentElement.setAttribute('data-theme', effectiveTheme);` (line 366) →
+     `applyTheme(effectiveTheme);`
+
+4. Create `tests/theme-transition.spec.ts`:
+
+   ```ts
+   import { expect, test } from '@playwright/test';
+
+   /**
+    * The home-screen toggle is the primary theme path in the web build. It must go through
+    * ThemeManager.applyTheme, which wraps the switch in `.theme-transitioning` on <html>.
+    */
+   test('theme toggle wraps the switch in .theme-transitioning', async ({ page }) => {
+     await page.emulateMedia({ colorScheme: 'light' });
+     await page.addInitScript(() => {
+       window.localStorage.setItem('graphium-theme', 'light');
+     });
+     await page.goto('/');
+     await page.waitForSelector('#root:visible', { timeout: 60000 });
+
+     const html = page.locator('html');
+     const toggle = page.getByRole('button', { name: /Click to cycle themes/ });
+     await expect(toggle).toHaveAttribute('aria-label', /Current theme: Light/);
+     await expect(html).toHaveAttribute('data-theme', 'light');
+
+     // Record whether the class ever appears; it lives for only ~300 ms.
+     await page.evaluate(() => {
+       const root = document.documentElement;
+       new MutationObserver(() => {
+         if (root.classList.contains('theme-transitioning')) {
+           root.dataset.transitionSeen = 'true';
+         }
+       }).observe(root, { attributes: true, attributeFilter: ['class'] });
+     });
+
+     await toggle.click();
+
+     await expect(html).toHaveAttribute('data-theme', 'dark');
+     await expect(html).toHaveAttribute('data-transition-seen', 'true');
+     await expect(html).not.toHaveClass(/theme-transitioning/, { timeout: 1000 });
+   });
+   ```
+
+Expected behaviour change: the 32 `hover:` utilities without a `transition` utility now snap.
+That is intended; it is not a failure.
+**Do NOT**: edit `.theme-loading *` or the `@media (prefers-reduced-motion: reduce)` block;
+add a transition to any component; touch `playground-registry.tsx`; change anything else in
+`HomeScreen.tsx`; put the class on `document.body`.
+**Commands**:
+
 ```bash
-npm run lint && npm run type-check && npm run test:run
+grep -c '^\* {' src/styles/theme.css
+grep -c '^\.theme-transitioning \* {' src/styles/theme.css
+grep -n '^body {' -A4 src/styles/theme.css | grep -c transition
+grep -c "setAttribute('data-theme'" src/components/HomeScreen.tsx
+grep -c '^export function applyTheme' src/components/ThemeManager.tsx
+npm run verify:static
+npx playwright test tests/theme-transition.spec.ts --project=Web-Chromium
+npm run verify:web
 ```
-All exit 0. Then `npm run dev` and toggle the theme.
 
-> **`PreferencesDialog.tsx` has no theme control** — it contains zero occurrences of
-> "theme". The toggle lives at `src/components/HomeScreen.tsx:673` (a "Click to cycle
-> themes" button) and in the Electron **View → Theme** menu (`electron/main.ts:246`).
-> Use the View menu, since that path goes through `ThemeManager`.
+**Expected**: `0`; `1`; `0`; `0`; `1`; exit 0; `1 passed`; exit 0.
+**Check**: `verify:web` exits 0 with the new spec included.
+**If it fails**: re-read the three code blocks against the files once and rerun; then STOP with
+the failing assertion. If a non-hover animation (not a hover fade) broke, STOP and name it; do
+not revert the step.
+**Commit**: `plan-001 step-5: scope theme transition to .theme-transitioning`
 
-The transition must still be visibly smooth. Then confirm the class does not
-persist — with DevTools open, toggle the theme and verify
-`document.documentElement.className` no longer contains `theme-transitioning` one
-second later.
+### Step 6: Replace `app.css` literals with tokens and add the two regression guards
 
-### Step 6: Replace the hardcoded colors in `app.css` with theme variables
+**Files**: `src/styles/app.css`, `src/styles/theme.css`, `src/styles/app-css-purity.test.ts`
+(new), `src/styles/palette-classes.test.ts` (new).
+**Do**:
 
-In `src/styles/app.css`, replace every literal color with the semantic variable
-that matches its role. Specifically:
+1. Add two tokens to `src/styles/theme.css`, in the `[data-theme='light']` block (line 142)
+   and the second `[data-theme='dark']` block (line 211) — never the first `[data-theme='dark']`
+   at line 58. Light block: after `--app-error-solid-hover: var(--red-10); /* Solid error
+   hover */` (line 179) add `--app-error-solid-text: white; /* Text/icon colour on solid
+   error */`; after `--app-success-solid-hover: var(--green-10); /* Solid success hover */`
+   (line 195) add `--app-success-solid-text: white; /* Text/icon colour on solid success */`.
+   Dark block: after `--app-error-solid-hover: var(--red-10);` (line 248) add
+   `--app-error-solid-text: white;`; after `--app-success-solid-hover: var(--green-10);`
+   (line 264) add `--app-success-solid-text: white;`. `white` matches the existing
+   `--app-accent-solid-text` and today's rendering.
 
-- `.toolbar` — `background: #000000` → `var(--app-bg-surface)`;
-  `border: 2px solid rgb(82, 82, 82)` → `2px solid var(--app-border-default)`
-- `.btn-tool` — `background: rgb(64,64,64)` → `var(--app-bg-active)`;
-  `color: rgb(229,229,229)` → `var(--app-text-primary)`;
-  `border: 1px solid rgb(82,82,82)` → `1px solid var(--app-border-default)`
-- `.btn-tool:hover` — `background: rgb(82,82,82)` → `var(--app-bg-hover)`;
-  `border-color: rgb(115,115,115)` → `var(--app-border-hover)`
-- `.btn-broadcast.active` — `color: white` → **leave it as `white` for now.** Its
-  background is `var(--app-success-solid)`, and there is no `--app-success-solid-text`
-  token. Substituting `--app-accent-solid-text` would put the *accent* button's text
-  token on a *success* button — same value today, wrong semantics, and exactly the
-  drift this plan exists to stop. Adding the missing token is fine (`theme.css` is
-  reachable via plan 000's token work); inventing a mapping is not. If you do add
-  `--app-success-solid-text`, define it in `theme.css` under both themes and use it.
+2. In `src/styles/app.css` make these four rules exactly:
 
-Then scan the rest of the file and apply the same substitution to any remaining
-hex or `rgb()` literal.
+   ```css
+   .toolbar {
+     background: var(--app-bg-surface);
+     border: 2px solid var(--app-border-default);
+   }
+   ```
 
-> **Scope note:** this makes `app.css` clean, which is 165 lines. It does **not**
-> touch the **396 hardcoded Tailwind palette classes** (`text-white`, `bg-neutral-800`,
-> `border-neutral-600`, …) across 35 `.tsx` files, none of which have a `dark:`
-> variant — there are zero `dark:` variants in the entire codebase. Those are the
-> bulk of the real theme-invariance problem and they are resolved per-component in
-> plan 004. Do not sweep them here.
+   ```css
+   .btn-tool {
+     background: var(--app-bg-active);
+     color: var(--app-text-primary);
+     border: 1px solid var(--app-border-default);
+   }
 
-**Check**:
+   .btn-tool:hover {
+     background: var(--app-bg-hover);
+     border-color: var(--app-border-hover);
+   }
+   ```
+
+   ```css
+   .btn-broadcast.active {
+     background: var(--app-success-solid);
+     color: var(--app-success-solid-text);
+   }
+   ```
+
+   Dark theme: the toolbar goes from `#000000` to `--app-bg-surface` (`#212225`) and
+   `.btn-tool` from `rgb(64, 64, 64)` to `--app-bg-active` (`#2e3135`). Light theme: it stops
+   being a black slab. Both are intended.
+
+3. Create `src/styles/app-css-purity.test.ts`:
+
+   ```ts
+   import { readFileSync } from 'node:fs';
+   import path from 'node:path';
+
+   import { describe, expect, it } from 'vitest';
+
+   const APP_CSS_PATH = path.resolve(process.cwd(), 'src/styles/app.css');
+
+   /** Colours written as literals instead of `--app-*` tokens (see theme.css header). */
+   const LITERAL_COLOUR = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|\b(?:white|black)\b/g;
+
+   describe('src/styles/app.css', () => {
+     it('contains no literal colours; every colour comes from a --app-* token', () => {
+       const css = readFileSync(APP_CSS_PATH, 'utf8');
+       expect(css.match(LITERAL_COLOUR) ?? []).toEqual([]);
+     });
+   });
+   ```
+
+4. Create `src/styles/palette-classes.test.ts`. Set `BASELINE` to the number the count command
+   below prints (397 expected; see **Expected**):
+
+   ```ts
+   import { readdirSync, readFileSync, statSync } from 'node:fs';
+   import path from 'node:path';
+
+   import { describe, expect, it } from 'vitest';
+
+   /**
+    * Ratchet: hardcoded Tailwind palette classes in src/**\/*.tsx may only go down.
+    * Plan 004 lowers BASELINE as each component moves onto --app-* tokens.
+    * Same count as: grep -rhoE '<PALETTE_CLASS>' src --include=*.tsx | wc -l
+    */
+   const BASELINE = 397;
+
+   const PALETTE_CLASS =
+     /\b(?:bg|text|border|ring|divide|placeholder|outline|from|to|via|fill|stroke)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b|\b(?:bg|text|border)-(?:white|black)\b/g;
+
+   function listTsxFiles(dir: string): string[] {
+     const files: string[] = [];
+     for (const entry of readdirSync(dir)) {
+       const full = path.join(dir, entry);
+       if (statSync(full).isDirectory()) {
+         files.push(...listTsxFiles(full));
+       } else if (full.endsWith('.tsx')) {
+         files.push(full);
+       }
+     }
+     return files;
+   }
+
+   describe('hardcoded Tailwind palette classes in src/**/*.tsx', () => {
+     it(`do not exceed the ratchet baseline (${BASELINE})`, () => {
+       const count = listTsxFiles(path.resolve(process.cwd(), 'src')).reduce(
+         (sum, file) => sum + (readFileSync(file, 'utf8').match(PALETTE_CLASS) ?? []).length,
+         0,
+       );
+       expect(count, `palette-class count is ${count}`).toBeLessThanOrEqual(BASELINE);
+     });
+   });
+   ```
+
+   Both files are matched by `vitest.config.ts` `include` (`grep -n 'src/\*\*' vitest.config.ts`)
+   and excluded from `tsc` by `tsconfig.json` (`**/*.test.ts`), so only `npm run test:run`
+   checks them — exactly as CONVENTIONS §12 says.
+
+**Do NOT**: change any palette class in a `.tsx` file (`dark:` variants: `grep -rhoE '\bdark:'
+src --include=*.tsx | wc -l` → 0; plan 004 owns all of it); change any existing `--app-*`
+value; edit `.btn-tool.active` (already tokens); reformat `app.css`.
+**Commands**:
+
 ```bash
-grep -nE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(|\bwhite\b|\bblack\b" src/styles/app.css
+grep -nE "#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|\b(white|black)\b" src/styles/app.css; echo "exit=$?"
+grep -c 'solid-text: white' src/styles/theme.css
+grep -rhoE '\b(bg|text|border|ring|divide|placeholder|outline|from|to|via|fill|stroke)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b|\b(bg|text|border)-(white|black)\b' src --include=*.tsx | wc -l
+npx vitest run src/styles
+npm run verify:static
+npm run verify:web
 ```
-Must return no matches. Then `npm run test:a11y` passes in **both** themes — this
-is the gate that proves the substituted variables still meet WCAG AA contrast.
-The suite covers light and dark separately (`tests/accessibility.spec.ts:47` and
-`:81`); both must pass.
+
+**Expected**: nothing then `exit=1`; `6` (accent, error, success × two themes); `397` — the
+count was 401 at d3d3642 and `PreferencesDialog.tsx` held 4 of them, which plan 000 deleted
+(if the number differs, use the printed number as `BASELINE` and record both numbers under
+Deviations in the report); `2 passed`; exit 0; exit 0 — `verify:web` runs the a11y suite over
+the seven surfaces of CONVENTIONS §1 in both themes (14 scans), which is the contrast gate for
+the substituted colours.
+**Check**: `verify:web` exits 0.
+**If it fails**: an axe colour-contrast violation → STOP with the violation and element; never
+reintroduce a literal colour. `palette-classes.test.ts` failing with a count above `BASELINE`
+→ STOP with both numbers.
+**Commit**: `plan-001 step-6: replace app.css literal colours with tokens; add css guards`
 
 ### Step 7: Remove the duplicated Tailwind classes from the toolbar
 
-At `src/App.tsx:556`, the toolbar div declares its background and border twice.
-
-> **This step is a visual no-op, and that is expected.** Tailwind v4 emits utilities
-> inside `@layer utilities`; `src/index.css` imports `app.css` **unlayered**, and
-> unlayered CSS beats any cascade layer regardless of specificity. So `.toolbar`
-> already wins over `bg-black` / `border-neutral-600` — it did before Step 6 and it
-> does after. The visual change to the toolbar is produced entirely by **Step 6**.
-> This step removes dead, misleading markup. Do not go looking for a rendering
-> difference caused by it; there won't be one.
->
-> The same cascade rule has a live consequence: at `src/App.tsx:564-568` the **pause
-> button** carries `.btn-tool` *and* `bg-red-500`/`bg-green-500`/`text-white`.
-> `.btn-tool` wins, so **the pause button never shows its red/green state today.**
-> That is a real, user-facing bug in a shipping app, and **Step 8 fixes it** — it is
-> cheap here and plan 004 is XL and far out. Plan 004 is told to expect the button to
-> already work.
-
-Remove **only** `bg-black`, `border-2`, and `border-neutral-600`, keeping every
-layout and positioning class:
+**Files**: `src/App.tsx`.
+**Do**: On the toolbar div (`grep -n 'className="toolbar' src/App.tsx`, line 556) remove only
+`bg-black`, `border-2` and `border-neutral-600`, so it reads:
 
 ```tsx
 <div className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50">
 ```
 
-Do not change anything else in `App.tsx`.
+This changes no pixels: unlayered `.toolbar` already beat these utilities before and after
+Step 6. The visual change belongs to Step 6.
+**Do NOT**: touch any other class on that div; edit anything else in `App.tsx`; look for a
+rendering difference.
+**Commands**:
 
-**Check**: `npm run lint && npm run type-check && npm run test:run` all exit 0.
-Then `npm run dev` and confirm the rendering is **byte-for-byte what it was at the
-end of Step 6** — this step changes no pixels (see the note above).
+```bash
+grep -cE 'bg-black|border-neutral-600' src/App.tsx
+grep -c 'className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50"' src/App.tsx
+npm run verify:static
+```
 
-The visual change belongs to Step 6, and it is larger than "essentially the same":
-in **dark** theme the toolbar goes from pure black `#000000` to
-`var(--app-bg-surface)` = `#212225`, and `.btn-tool` from `rgb(64,64,64)` to
-`var(--app-bg-active)` = `#2e3135`. In **light** theme it stops being a black slab
-entirely. Confirm the tool buttons remain legible in both themes, and expect a
-reviewer to notice the dark-mode shift — it is intended.
+**Expected**: `0`; `1`; exit 0.
+**Check**: the `0`.
+**If it fails**: re-read the line once; then STOP.
+**Commit**: `plan-001 step-7: drop duplicated toolbar colour utilities`
 
 ### Step 8: Fix the pause button
 
-A live bug, fixed here because the cause is the cascade issue this plan exists to
-untangle and the fix is four lines. The DM's pause control has never shown whether the
-game is paused.
-
-Add two state classes to `src/styles/app.css`, alongside the other `.btn-tool` rules so
-they live in the same unlayered file and therefore win the same way:
+**Files**: `src/styles/app.css`, `src/App.tsx`, `tests/pause-button.spec.ts` (new).
+**Do**: The DM's pause control has never shown whether the game is paused (cascade, see
+Context). In `src/styles/app.css`, directly after the `.btn-tool.active:hover { … }` rule
+(`grep -n '.btn-tool.active:hover' src/styles/app.css`, line 71) add:
 
 ```css
+/* Pause button state (App.tsx). Lives in this unlayered file so it beats Tailwind's
+   @layer utilities the same way .btn-tool does. */
 .btn-tool.is-paused {
   background: var(--app-error-solid);
   color: var(--app-error-solid-text);
   border-color: var(--app-error-solid);
 }
+
 .btn-tool.is-paused:hover {
   background: var(--app-error-solid-hover);
   border-color: var(--app-error-solid-hover);
 }
+
 .btn-tool.is-running {
   background: var(--app-success-solid);
   color: var(--app-success-solid-text);
   border-color: var(--app-success-solid);
 }
+
 .btn-tool.is-running:hover {
   background: var(--app-success-solid-hover);
   border-color: var(--app-success-solid-hover);
 }
 ```
 
-`--app-error-solid-text` and `--app-success-solid-text` do not exist yet. **Add them to
-`src/styles/theme.css` under both themes** (`white` matches today's intent and the
-existing `--app-accent-solid-text`). This also supplies the token Step 6 left open for
-`.btn-broadcast.active` — go back and use it there rather than leaving a bare `white`.
-
-Then at `src/App.tsx:564-568`, replace the Tailwind colour classes with the state class:
+In `src/App.tsx` replace the pause button's `className` (`grep -n 'bg-red-500' src/App.tsx`,
+lines 564–568) with:
 
 ```tsx
 className={`btn btn-tool flex items-center justify-center font-semibold ${
@@ -581,113 +699,217 @@ className={`btn btn-tool flex items-center justify-center font-semibold ${
 }`}
 ```
 
-**Check**: `npm run dev`, enter the editor, and toggle pause. The button must now be
-**red when paused and green when running**, in both themes, with a visible hover
-change — it is grey in both states today. Confirm the icon still swaps
-(`RiPlayFill`/`RiPauseFill`) and the `aria-label` still flips.
+Create `tests/pause-button.spec.ts`. In the web build `handlePauseToggle` only calls
+`ipcRenderer.invoke('TOGGLE_PAUSE')` and `PauseManager` learns the state from
+`PAUSE_STATE_CHANGED`, so the spec installs an IPC mock that owns the state after storage has
+already initialised as the web service:
 
-Then `npm run test:a11y`. The icon is a graphical object needing 3:1, not text needing
-4.5:1, so white-on-`--app-error-solid` (~3.9:1) is compliant here — but if axe flags it,
-report rather than reverting to grey; the palette decision belongs to plan 006.
+```ts
+import { expect, test } from '@playwright/test';
 
-### Step 9: Full verification and commit
+import type { Page } from '@playwright/test';
 
-```bash
-npm run lint
-npm run type-check
-npm run test:run
-npm run build:web && npx playwright test --project=Web-Chromium
-npm run build:electron && npx playwright test --project=Electron-App
-npm run test:a11y
+/** Computed colour of a token via a probe element, comparable with getComputedStyle output. */
+async function tokenColor(page: Page, token: string): Promise<string> {
+  return page.evaluate((name) => {
+    const probe = document.createElement('div');
+    probe.style.backgroundColor = `var(${name})`;
+    document.body.appendChild(probe);
+    const value = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return value;
+  }, token);
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.waitForSelector('#root:visible', { timeout: 60000 });
+
+  // Storage is already the web service. This mock owns the pause state the way
+  // electron/main.ts does, so the real path runs: button -> TOGGLE_PAUSE ->
+  // PAUSE_STATE_CHANGED -> PauseManager -> store -> className.
+  await page.evaluate(() => {
+    type Listener = (event: unknown, ...args: unknown[]) => void;
+    const listeners = new Map<string, Listener[]>();
+    let paused = false;
+    window.ipcRenderer = {
+      on: (channel: string, listener: Listener) => {
+        listeners.set(channel, [...(listeners.get(channel) ?? []), listener]);
+      },
+      off: (channel: string, listener: Listener) => {
+        listeners.set(channel, (listeners.get(channel) ?? []).filter((l) => l !== listener));
+      },
+      removeAllListeners: (channel: string) => {
+        listeners.delete(channel);
+      },
+      send: () => {},
+      invoke: (channel: string) => {
+        if (channel === 'TOGGLE_PAUSE') {
+          paused = !paused;
+          for (const listener of listeners.get('PAUSE_STATE_CHANGED') ?? []) {
+            listener({}, paused);
+          }
+          return Promise.resolve(paused);
+        }
+        if (channel === 'GET_PAUSE_STATE') {
+          return Promise.resolve(paused);
+        }
+        return Promise.resolve({});
+      },
+    };
+  });
+
+  await page.getByTestId('new-campaign-button').click();
+  await expect(page.getByTestId('editor-view')).toBeVisible();
+});
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`pause button is green when running and red when paused (${theme})`, async ({ page }) => {
+    await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+    const button = page.getByRole('button', { name: /^(Pause|Resume) game$/ });
+
+    await expect(button).toHaveClass(/is-running/);
+    await expect(button).toHaveCSS('background-color', await tokenColor(page, '--app-success-solid'));
+
+    await button.click();
+    await expect(button).toHaveClass(/is-paused/);
+    await expect(button).toHaveCSS('background-color', await tokenColor(page, '--app-error-solid'));
+
+    await button.click();
+    await expect(button).toHaveClass(/is-running/);
+  });
+}
 ```
 
-> **Do not run bare `npm run test:e2e`.** It runs both Playwright projects, and
-> `Electron-App` launches the packaged main process (`dist-electron/main.js`), which
-> does not exist until `npm run build:electron` has run. `.github/workflows/e2e.yml`
-> never invokes it bare for this reason. A failure there is a missing build, not a
-> coupling problem — and this plan's STOP conditions would misread it as one.
+Contrast, for the report: white on `--app-success-solid` (`--green-9`, `#30a46c`) is ≈3.1:1
+and on `--app-error-solid` (`--red-9`, `#e5484d`) ≈3.9:1. The button is icon-only, a
+graphical object needing 3:1, and axe's colour-contrast rule does not evaluate icon-only
+buttons, so do not expect an axe flag either way. Record the ratios; palette is plan 006b's.
+**Do NOT**: restyle or reorder the toolbar; add a `data-testid` (the `aria-label` is the
+selector); touch `PauseManager.tsx` or `handlePauseToggle`; change the `RiPlayFill` /
+`RiPauseFill` swap or the `aria-label`.
+**Commands**:
 
-**Check**: Every command exits 0. If a spec fails, capture which spec and assertion
-before doing anything else.
+```bash
+grep -cE 'bg-red-500|bg-green-500' src/App.tsx
+grep -c 'is-paused' src/App.tsx src/styles/app.css
+npx playwright test tests/pause-button.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+```
 
-## Validation plan
+**Expected**: `0`; `src/App.tsx:1` and `src/styles/app.css:2`; `2 passed`; exit 0; exit 0.
+**Check**: the spec passes in both themes.
+**If it fails**: if the button never gains `is-paused`, the IPC mock was installed before
+storage initialised or after the editor mounted; re-read the spec once, rerun, then STOP.
+**Commit**: `plan-001 step-8: pause button shows paused/running state`
 
-- **Automated**: the full command sequence in Step 8. The accessibility suite is the
-  most important gate for Step 6, because that step substitutes colour values.
-  **This only holds if plan 000 has landed.** Before plan 000,
-  `tests/accessibility.spec.ts` contains a single `page.goto(baseURL)` and scans the
-  **home screen only** — it never enters the editor, so `.toolbar`, `.btn-tool` and
-  `.btn-broadcast` (all editor-only, gated behind `viewState === 'EDITOR'` at
-  `src/App.tsx:451`) are never in the DOM when axe runs. Every colour Step 6 changes
-  would be invisible to it, and the gate would pass no matter what you did. Plan 000
-  extends the suite to the editor, a dialog, `/design-system` and the World View;
-  confirm that landed before trusting this step's Check.
-- **Manual, in `npm run dev`**, confirming this plan is visually neutral apart from
-  the intended toolbar fix:
-  1. Toast slides down (Step 2 regression fix).
-  2. Theme toggle is still smooth (Step 5).
-  3. Toolbar is legible in light *and* dark (Steps 6–7).
-  4. Open the World View (player window) and confirm it is unchanged and still
-     contains no DM chrome.
-  5. Visit `/design-system` and confirm the playground still renders.
-- **No new tests are required.** This plan changes styling infrastructure, not
-  behavior; the existing suites are the correct gate.
+### Step 9: Update docs and the coverage glob, take screenshots, run the full gate
+
+**Files**: `docs/features/theming.md`, `docs/guides/CONVENTIONS.md`,
+`docs/architecture/ARCHITECTURE.md`, `vite.config.ts`, `docs/planning/screenshots/001-final/`.
+**Do**:
+
+- `docs/features/theming.md` (`grep -n 'tailwind.config' docs/features/theming.md`, line 150):
+  replace the sentence and the `js` block that follows it (through its closing fence, line 165)
+  with:
+
+  ````markdown
+  Tailwind v4 is configured in CSS. To expose a semantic variable as a utility, add it to the
+  `@theme` block in `src/index.css`:
+
+  ```css
+  @theme {
+    --color-bg-surface: var(--app-bg-surface);
+    /* generates bg-bg-surface, text-bg-surface, … */
+  }
+  ```
+  ````
+
+- `docs/guides/CONVENTIONS.md` (line 80): delete the `tailwind.config.js` line from the list.
+- `docs/architecture/ARCHITECTURE.md` (line 1401): replace the line with
+  `├── postcss.config.js           # PostCSS (Tailwind theme: src/index.css @theme)`.
+- `vite.config.ts` (`grep -n 'tailwind.config' vite.config.ts`, line 66): delete the
+  `'**/tailwind.config.js',` entry.
+- Screenshots: `SHOTS_OUT=docs/planning/screenshots/001-final npm run shots`.
+
+**Do NOT**: rewrite other parts of those docs; touch `postcss.config.js` again; edit the
+Playwright config.
+**Commands**:
+
+```bash
+grep -rn "tailwind.config" docs/ vite.config.ts src/ README.md; echo "exit=$?"
+SHOTS_OUT=docs/planning/screenshots/001-final npm run shots
+ls docs/planning/screenshots/001-final | wc -l
+npm run verify
+```
+
+**Expected**: nothing then `exit=1`; exit 0; `14`; exit 0.
+**Check**: `npm run verify` exits 0.
+**If it fails**: STOP with the failing command's output.
+**Commit**: `plan-001 step-9: docs and coverage glob follow the CSS config; screenshots`
+
+### Step 10: Report, changelog, PR, handoff
+
+**Files**: `plans/reports/001.md`, `CHANGELOG.md`, `plans/README.md`,
+`plans/002-shadcn-compatibility-spike.md`.
+**Do**: Write the report (`plans/reports/001.md`, CONVENTIONS §11). Its **Numbers** section
+records: Step 1's grep output, the hover counts (90 / 32), the palette count and `BASELINE`,
+the lockfile packages removed, and the two contrast ratios. Its **Screenshots** section lists
+every file in `docs/planning/screenshots/001-final/` and names the expected differences for
+Kyle: toolbar surface and button colours in both themes, pause button green, 32 snapped
+hovers. Add three bullets under `## [Unreleased]` in `CHANGELOG.md` (create a `### Fixed`
+heading under it if there is none): toast slide-down animation now runs; main toolbar follows
+the light/dark theme; pause button shows red when paused and green when running. Push and
+open the PR (CONVENTIONS §7) with the report as its body. After merge: set this plan's row in
+`plans/README.md` to `DONE <merge sha>` and write the merge SHA into the `Grounded at` line of
+`plans/002-shadcn-compatibility-spike.md`.
+**Do NOT**: squash-merge; edit any other plan; write under a decision file's "Kyle's answer".
+**Commands**:
+
+```bash
+npm run verify
+git push -u origin plan/001-styling-foundation
+```
+
+**Expected**: exit 0; push accepted.
+**Check**: the PR exists with the report as its body and CI green.
+**If it fails**: CI red → fix at the step whose commit is implicated, rerun `npm run verify`,
+push once more; then STOP.
+**Commit**: `plan-001 step-10: report and changelog`
 
 ## Done criteria
 
-- [ ] `grep -r "slide-down" dist-web/assets/*.css` returns a match after `npm run build:web`
-- [ ] `tailwind.config.js` no longer exists; `src/index.css` carries a `@theme` block
-- [ ] `src/App.css` no longer exists
+- [ ] `grep -oE '\.animate-slide-down\{[^}]*\}' dist-web/assets/*.css` prints a rule after
+      `npm run build:web`; `tests/toast-animation.spec.ts` passes
+- [ ] `tailwind.config.js` and `src/App.css` no longer exist; `src/index.css` has one `@theme`
 - [ ] `autoprefixer` is absent from `package.json` and `postcss.config.js`
-- [ ] `grep -nE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(|\bwhite\b|\bblack\b" src/styles/app.css` returns nothing
-- [ ] `src/styles/theme.css` has no bare `* { transition… }` rule; it is scoped to `.theme-transitioning`
-- [ ] `npm run lint`, `npm run type-check`, `npm run test:run`, `npm run build:web`, `npm run test:a11y`, and both Playwright projects (`--project=Web-Chromium` after `build:web`, `--project=Electron-App` after `build:electron`) all exit 0
-- [ ] Toolbar is legible in both light and dark theme (confirmed by Kyle or a reviewer)
-- [ ] **The pause button shows red when paused and green when running**, in both themes
-- [ ] `--app-error-solid-text` and `--app-success-solid-text` exist in `theme.css` under both themes, and `.btn-broadcast.active` uses the success one instead of a bare `white`
-- [ ] The plan landed as a PR into `main` with all CI checks green
-- [ ] No files outside the in-scope list were changed (`git diff --stat` confirms)
-- [ ] `plans/README.md` status row updated
+- [ ] `src/styles/app-css-purity.test.ts` and `src/styles/palette-classes.test.ts` pass
+- [ ] `grep -c '^\* {' src/styles/theme.css` is `0`; `tests/theme-transition.spec.ts` passes
+- [ ] `--app-error-solid-text` and `--app-success-solid-text` exist under both theme blocks
+- [ ] `tests/pause-button.spec.ts` passes in both themes
+- [ ] `grep -rn "tailwind.config" docs/ vite.config.ts src/` prints nothing
+- [ ] `npm run verify` exits 0; `docs/planning/screenshots/001-final/` holds 14 files
+- [ ] PR merged (merge commit), `plans/reports/001.md` committed, README row `DONE <sha>`,
+      002's `Grounded at` filled
 
 ## STOP conditions
 
-Stop and report back — do not improvise — if:
+CONVENTIONS §10 owns the generic ones. Specific to this plan:
 
-- **Step 1 finds `slide-down` already in the built CSS.** The plan's core premise
-  is wrong; Steps 2–3 need rethinking before you touch anything.
-- **`npm run test:a11y` fails after Step 6.** A semantic variable substitution has
-  broken WCAG AA contrast. Report the exact axe violation and the element. Do not
-  "fix" it by reintroducing a hardcoded color — that recreates the problem this
-  plan exists to solve.
-- **Any E2E spec fails after `npm run build:electron` has been run.** (A failure
-  *without* that build is a missing artefact, not a finding — see Step 8.)
-- **Plan 000 has not landed.** Check `tests/accessibility.spec.ts` for a scan of the
-  editor route. If it still only visits `baseURL`, Step 6 has no working gate — STOP
-  and report rather than proceeding on a check that cannot fail.
-- **The built CSS is missing `--app-bg-surface` or `.toolbar`** after Step 2. The
-  `@import`s were silently dropped and `theme.css`/`app.css` are not loading at all.
-- **Removing `autoprefixer` churns the lockfile** beyond that one entry — this is
-  *expected* (it drops `browserslist`, `caniuse-lite`, `fraction.js`,
-  `normalize-range`, `postcss-value-parser`). Only stop if unrelated packages move.
-- **Step 5 breaks something other than a hover fade.** The ~32 snapping hover states
-  are *expected* and documented in "Why this matters" — do not stop for those. Stop
-  if an actual animation (not a hover transition) breaks; report which, and do not
-  revert the whole step.
-- **You find yourself needing to edit a component's inline `style={{}}` objects**
-  to complete any step. That is out of scope and signals the step has grown.
-- **`npm install` fails or the lockfile churns beyond the autoprefixer removal.**
+- Step 1 prints an `.animate-slide-down` rule: the config is being loaded; premise wrong.
+- The built CSS lacks `--app-bg-surface` or `.toolbar` after Step 2 or 3: the `@import`s were
+  dropped and neither `theme.css` nor `app.css` is loading.
+- An axe colour-contrast violation after Step 6: report it; never reintroduce a literal.
+- `package-lock.json` gains a package in Step 3.
+- Step 5 breaks an animation that is not a hover fade (the 32 snapped hovers are expected).
 
 ## Handoff / after it lands
 
-- **Plan 003 depends on this.** The primitive layer's `@theme` tokens and CVA
-  variants both assume the v4 CSS config from Step 2 exists and works.
-- **What a reviewer should scrutinize most**: Step 6. Substituting a semantic
-  variable for a hardcoded color is where an accessibility regression would hide,
-  and the `.toolbar` change is the one place users will notice a difference.
-- **Deliberately deferred**: the 286 inline `style={{}}` objects. They are not
-  wrong, just un-reusable, and they get resolved for free as each component moves
-  to the primitive layer in plan 004. Attacking them as a standalone sweep would be
-  a large, risky, low-value diff.
-- **Watch for**: `.theme-transitioning` becoming a dumping ground. It exists for
-  theme switching only. If a future component wants a transition, it should declare
-  its own, not rely on the global.
+- **Plan 002 depends on this**: the shadcn spike installs against the v4 CSS config.
+- **Reviewer focus**: Step 6 (colour substitution) and the `001-final` screenshots.
+- **Plan 004** lowers `BASELINE` in `src/styles/palette-classes.test.ts` as it migrates each
+  component, and resolves the 286 inline styles per component.
+- **Watch for** `.theme-transitioning` becoming a dumping ground: it is for theme switching
+  only. A component that wants a transition declares its own.

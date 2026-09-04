@@ -93,7 +93,7 @@ contents.
 | `npm run verify:web`       | `build:web`, then Playwright `Web-Chromium` project, then `test:a11y`                         | After every step that touches `src/` or `tests/`    |
 | `npm run verify:electron`  | `build:electron`, then Playwright `Electron-App` under `xvfb-run -a`                          | Where the plan says so (it is slow)                 |
 | `npm run verify`           | All three, in that order                                                                      | Before every push                                   |
-| `npm run shots -- --out D` | Screenshots every surface in both themes into directory `D`                                   | Where the plan says so                              |
+| `SHOTS_OUT=D npm run shots` | Screenshots every surface in both themes into directory `D` (Playwright cannot take custom flags, so the output directory is an environment variable) | Where the plan says so |
 
 Until plan 000 lands, the equivalents are:
 
@@ -184,7 +184,8 @@ not listed, STOP.
   `font-weight`.
 - Decision files: `docs/planning/decisions/NNN-<topic>.md` (section 9).
 - Reports: `plans/reports/NNN.md` (section 11). Plan 004 writes `004-pr1.md` … `004-pr5.md`.
-- Screenshot sets: `docs/planning/screenshots/<plan>-<step>/<surface>-<theme>.png`.
+- Screenshot sets: `docs/planning/screenshots/<plan>-<step>/<surface>-<theme>.png`, or
+  `<plan>-baseline` / `<plan>-final` for a plan's opening and closing sets.
 
 ## 9. Decisions that belong to Kyle
 
