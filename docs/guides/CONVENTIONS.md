@@ -77,7 +77,6 @@ imageUtils.ts
 vite.config.ts
 electron-builder.json5
 tsconfig.json
-tailwind.config.js
 ```
 
 **Rules:**

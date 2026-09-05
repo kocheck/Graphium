@@ -147,21 +147,14 @@ When migrating existing Tailwind classes, replace hardcoded colors:
 <div className="bg-surface text-primary">
 ```
 
-To extend Tailwind with semantic variables, update `tailwind.config.js`:
+Tailwind v4 is configured in CSS. To expose a semantic variable as a utility, add it to the
+`@theme inline` block in `src/index.css`:
 
-```js
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        'bg-base': 'var(--app-bg-base)',
-        'bg-surface': 'var(--app-bg-surface)',
-        'text-primary': 'var(--app-text-primary)',
-        // ... add all semantic variables
-      },
-    },
-  },
-};
+```css
+@theme inline {
+  --color-bg-surface: var(--app-bg-surface);
+  /* generates bg-bg-surface, text-bg-surface, … */
+}
 ```
 
 ---

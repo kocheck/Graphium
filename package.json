@@ -71,7 +71,6 @@
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^4.0.18",
     "agentation": "^2.2.0",
-    "autoprefixer": "^10.4.22",
     "axe-core": "^4.11.0",
     "electron": "^35.7.5",
     "electron-builder": "^26.7.0",

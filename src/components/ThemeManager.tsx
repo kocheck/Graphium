@@ -25,16 +25,45 @@ import { getStorage } from '../services/storage';
 
 // Note: window.themeAPI types are defined in vite-env.d.ts
 
+/** How long `.theme-transitioning` stays on <html>: the 0.2 s transition plus margin. */
+const THEME_TRANSITION_MS = 300;
+
+let transitionTimer: number | undefined;
+
 /**
  * Apply theme to DOM
  *
- * Sets data-theme attribute on <html> element.
- * This triggers CSS variable switching in theme.css.
+ * Sets data-theme on <html> inside the `theme-transitioning` class, so theme.css
+ * transitions only the switch. No-op when the theme is already applied. While <body>
+ * still carries `theme-loading` (first paint) the attribute is set synchronously with no
+ * class, so page load never animates.
  *
  * @param theme - 'light' or 'dark'
  */
-function applyTheme(theme: 'light' | 'dark'): void {
-  document.documentElement.setAttribute('data-theme', theme);
+// eslint-disable-next-line react-refresh/only-export-components -- shared theme API for HomeScreen
+export function applyTheme(theme: 'light' | 'dark'): void {
+  const root = document.documentElement;
+  if (root.getAttribute('data-theme') === theme) {
+    return;
+  }
+  if (document.body.classList.contains('theme-loading')) {
+    root.setAttribute('data-theme', theme);
+    return;
+  }
+  if (transitionTimer !== undefined) {
+    window.clearTimeout(transitionTimer);
+    transitionTimer = undefined;
+  }
+  // Add the class first and flip the attribute on the next frame: a transition only
+  // runs if the computed style before the change already had transition-property.
+  root.classList.add('theme-transitioning');
+  window.requestAnimationFrame(() => {
+    root.setAttribute('data-theme', theme);
+    transitionTimer = window.setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+      transitionTimer = undefined;
+    }, THEME_TRANSITION_MS);
+  });
 }
 
 /**
@@ -149,6 +178,11 @@ export function ThemeManager(): null {
     // Cleanup: unsubscribe from theme changes
     return () => {
       cleanup?.();
+      if (transitionTimer !== undefined) {
+        window.clearTimeout(transitionTimer);
+        transitionTimer = undefined;
+        document.documentElement.classList.remove('theme-transitioning');
+      }
     };
   }, []); // Run once on mount
 
