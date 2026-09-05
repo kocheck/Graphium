@@ -53,7 +53,26 @@ drawing-performance.spec.ts
 grep -rnoE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\b' src --include=*.tsx | wc -l
 ```
 
-Count at `d3d3642` / before plan 000: `400`.
+Count at `d3d3642` / before plan 000: `400`. After Step 10 (`PreferencesDialog` deleted): `396`.
+
+## After
+
+| Project      | `CI=1 npx playwright test --project=<P> --list \| tail -1` |
+| ------------ | ---------------------------------------------------------- |
+| Web-Chromium | `Total: 73 tests in 10 files`                              |
+| Electron-App | `Total: 7 tests in 2 files`                                |
+
+## Inline styles
+
+`grep -rn "style={{" --include=*.tsx src | wc -l`: `286` before → `241` after Step 10.
+
+## Test ids added
+
+Steps 2 and 5 added 24 ids:
+
+`toolbar-root`, `toolbar-pause`, `toolbar-tool-select`, `toolbar-tool-marker`, `toolbar-tool-eraser`, `toolbar-tool-wall`, `toolbar-tool-door`, `toolbar-tool-measure`, `toolbar-mobile-root`, `toolbar-mobile-more`, `toolbar-mobile-more-menu`, `dialog-confirm-root`, `dialog-dungeon-generator-root`, `dialog-about-root`, `dialog-update-manager-root`, `sheet-map-settings-root`, `sheet-mobile-sidebar-root`, `sheet-mobile-bottom-root`, `dialog-add-to-library-root`, `dialog-library-manager-root`, `dialog-token-metadata-root`, `dialog-image-cropper-root`, `sheet-session-console-editor-root`, `sheet-session-console-settings-root`.
+
+`grep -rhoE 'data-testid="[^"]+"' src/ | sort -u | wc -l` after Steps 2, 5 and 11: `47` (22 before + 24 added + the `dialog-<x>-root` example in `src/components/README.md`).
 
 ## Deleted tests
 
@@ -123,3 +142,10 @@ Families added (theme-independent, values unchanged): `--app-radius-*`, `--app-e
 ## Touch targets
 
 Desktop `.btn-tool` measured 46 × 30 px (no CSS minimum). Mobile menu is ≥ 48 × 48; mobile toolbar buttons are ≥ 56 tall. `TokenInspector`'s 44 px buttons and HomeScreen's ≤ 480 px rules are unasserted (they need a selected token / a 480 px viewport).
+
+## Deferred findings
+
+- **Pause-button cascade** (plan 001): `src/index.css` imports `app.css` unlayered, so `.btn-tool { background: rgb(64,64,64) }` wins over `bg-red-500`/`bg-green-500` on the pause button.
+- **`--app-error-solid` contrast** (plan 006): white on `--red-9` (`#e5484d`) is ≈ 3.9:1. Users: `src/components/MobileToolbar.tsx` and `src/components/DesignSystemPlayground/playground-registry.tsx`.
+- **`.btn-tool` has no touch minimum**: measured 46 × 30 px (Step 8).
+- **`door-sync.spec.ts` asserts URLs only** — real World View sync coverage is `gotoSurface('world')`'s `FULL_SYNC` wait.
