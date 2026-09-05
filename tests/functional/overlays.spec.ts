@@ -94,11 +94,11 @@ const OVERLAYS: OverlayCase[] = [
     open: async (page) => {
       await page.locator('[aria-label="Manage library"]').click();
     },
-    hasRole: false,
-    hasAriaModal: false,
-    escOwns: false,
-    escapeCloses: false,
-    trapsFocus: false,
+    hasRole: true,
+    hasAriaModal: true,
+    escOwns: true,
+    escapeCloses: true,
+    trapsFocus: true,
   },
   {
     name: 'SessionConsoleSettingsSheet',
@@ -111,7 +111,7 @@ const OVERLAYS: OverlayCase[] = [
     hasAriaModal: true,
     escOwns: true,
     escapeCloses: true,
-    trapsFocus: false,
+    trapsFocus: true,
   },
   {
     name: 'MobileSidebarDrawer',
@@ -124,7 +124,7 @@ const OVERLAYS: OverlayCase[] = [
     hasAriaModal: true,
     escOwns: false,
     escapeCloses: true,
-    trapsFocus: false,
+    trapsFocus: true,
   },
   // Not openable from a fresh campaign without a token, a library item, an image or a track.
   {
@@ -136,7 +136,7 @@ const OVERLAYS: OverlayCase[] = [
     hasAriaModal: true,
     escOwns: false,
     escapeCloses: true,
-    trapsFocus: false,
+    trapsFocus: true,
   },
   {
     name: 'AddToLibraryDialog',
@@ -154,11 +154,11 @@ const OVERLAYS: OverlayCase[] = [
     surface: 'editor',
     root: '[data-testid="dialog-token-metadata-root"]',
     open: null,
-    hasRole: false,
-    hasAriaModal: false,
-    escOwns: false,
-    escapeCloses: false,
-    trapsFocus: false,
+    hasRole: true,
+    hasAriaModal: true,
+    escOwns: true,
+    escapeCloses: true,
+    trapsFocus: true,
   },
   {
     name: 'ImageCropper',
@@ -180,7 +180,7 @@ const OVERLAYS: OverlayCase[] = [
     hasAriaModal: true,
     escOwns: true,
     escapeCloses: true,
-    trapsFocus: false,
+    trapsFocus: true,
   },
 ];
 

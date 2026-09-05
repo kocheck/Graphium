@@ -27,3 +27,22 @@
 - Title is `sr-only` ("Crop image"); a visible header would make the modal feel like the other dialogs.
 - Zoom is a native range input; a Slider primitive would match the rest of the chrome.
 - Cropping itself has no automated coverage (jsdom cannot drive `react-easy-crop`).
+
+### SessionConsoleEditorSheet
+
+- Tag and Recommended plate stay native `<select>`s (not `Input`); a shared Select primitive would match the rest of the sheet.
+- Volume offset is still a native range; a Slider primitive would match.
+- The sheet still early-returns when closed, so Radix never mounts a closed instance.
+
+### LibraryManager
+
+- Category filter is still a native `<select>` next to the search `Input`.
+- Nested AddToLibraryDialog and TokenMetadataEditor stay inside this dialog; a stacked-dialog IA or a route would be clearer.
+- Mobile uses `h-full max-w-none rounded-none`; a dedicated sheet would match the other mobile drawers.
+- Card drag affordance is a scale/opacity class, not a preview ghost.
+
+### TokenMetadataEditor
+
+- Category and Default Type stay native `<select>`s next to `Input` fields.
+- Vision radius is a raw number field; a Slider with feet marks would match the rest of the chrome.
+- The editor is also mounted from CommandPalette; a shared sheet on mobile would match LibraryManager.

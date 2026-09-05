@@ -476,6 +476,12 @@ module.exports = {
         'src/components/MapSettingsSheet.tsx',
         'src/components/AssetLibrary/AddToLibraryDialog.tsx',
         'src/components/ImageCropper.tsx',
+        'src/components/SessionConsole/SessionConsoleEditorSheet.tsx',
+        'src/components/SessionConsole/SessionConsoleSettingsSheet.tsx',
+        'src/components/MobileSidebarDrawer.tsx',
+        'src/components/MobileBottomSheet.tsx',
+        'src/components/AssetLibrary/LibraryManager.tsx',
+        'src/components/AssetLibrary/TokenMetadataEditor.tsx',
       ],
       rules: {
         'no-restricted-syntax': [

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+
 import { useGameStore } from '../../store/gameStore';
 import {
   TRACK_ACCENTS,
@@ -44,16 +48,9 @@ function TrackFields({
     : [tag, ...TRACK_ACCENTS];
   return (
     <>
-      <label
-        className="block text-xs uppercase font-semibold"
-        style={{ color: 'var(--app-text-secondary)' }}
-      >
+      <label className="block text-xs uppercase font-semibold text-[var(--app-text-secondary)]">
         Tag
-        <select
-          value={tag}
-          onChange={(event) => onTag(event.target.value)}
-          className="sidebar-input mt-2 w-full rounded px-3 py-2 text-sm"
-        >
+        <select value={tag} onChange={(event) => onTag(event.target.value)} className="mt-2 w-full">
           {tagOptions.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -62,10 +59,7 @@ function TrackFields({
         </select>
       </label>
       <ToggleSwitch checked={loop} onChange={onLoop} label="Loop" />
-      <label
-        className="block text-xs uppercase font-semibold"
-        style={{ color: 'var(--app-text-secondary)' }}
-      >
+      <label className="block text-xs uppercase font-semibold text-[var(--app-text-secondary)]">
         Volume offset
         <input
           type="range"
@@ -76,15 +70,12 @@ function TrackFields({
           className="w-full mt-2"
         />
       </label>
-      <label
-        className="block text-xs uppercase font-semibold"
-        style={{ color: 'var(--app-text-secondary)' }}
-      >
+      <label className="block text-xs uppercase font-semibold text-[var(--app-text-secondary)]">
         Recommended plate
         <select
           value={recommendedImageId}
           onChange={(event) => onRecommendedImageId(event.target.value)}
-          className="sidebar-input mt-2 w-full rounded px-3 py-2 text-sm"
+          className="mt-2 w-full"
         >
           <option value="">None</option>
           {plates.map((plate) => (
@@ -108,15 +99,12 @@ function EditorTextField({
   onChange: (value: string) => void;
 }): JSX.Element {
   return (
-    <label
-      className="block text-xs uppercase font-semibold"
-      style={{ color: 'var(--app-text-secondary)' }}
-    >
+    <label className="block text-xs uppercase font-semibold text-[var(--app-text-secondary)]">
       {label}
-      <input
+      <Input
+        className="mt-2 w-full"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="sidebar-input mt-2 w-full rounded px-3 py-2 text-sm"
       />
     </label>
   );
@@ -190,22 +178,6 @@ export function SessionConsoleEditorSheet({
   const catalogImages = imageSets.flatMap((set) => set.images);
   const draft = useEditorDraft(image, track, isOpen);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isOpen, onClose]);
-
   if (!isOpen || (!image && !track)) {
     return null;
   }
@@ -237,26 +209,24 @@ export function SessionConsoleEditorSheet({
   };
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        data-esc-owns="true"
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      <SheetContent
+        side="right"
+        className="w-full sm:w-96 sm:max-w-none p-0 overflow-y-auto"
         data-testid="sheet-session-console-editor-root"
-        className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-[var(--app-bg-surface)] shadow-2xl z-50 overflow-y-auto"
       >
-        <div className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">{image ? 'Edit plate' : 'Edit track'}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 hover:bg-[var(--app-bg-subtle)] rounded transition"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+        <SheetHeader className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4">
+          <SheetTitle className="text-lg font-bold">
+            {image ? 'Edit plate' : 'Edit track'}
+          </SheetTitle>
+        </SheetHeader>
         <div className="p-4 space-y-4">
           <EditorTextField
             label={image ? 'Name' : 'Title'}
@@ -281,19 +251,15 @@ export function SessionConsoleEditorSheet({
             />
           ) : null}
         </div>
-        <div className="sticky bottom-0 bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)] p-4 flex gap-2">
-          <button type="button" onClick={onClose} className="btn btn-ghost flex-1 py-2 rounded">
+        <SheetFooter className="sticky bottom-0 bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)] p-4 flex flex-row gap-2">
+          <Button type="button" variant="ghost" className="flex-1 py-2" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="btn btn-primary flex-1 py-2 rounded"
-          >
+          </Button>
+          <Button type="button" variant="default" className="flex-1 py-2" onClick={handleSave}>
             Save
-          </button>
-        </div>
-      </div>
-    </>
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
