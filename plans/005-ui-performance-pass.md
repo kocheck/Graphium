@@ -110,7 +110,9 @@ so the gains cannot silently regress.
   line 147). Tokens 0–4 are PCs. The fixture loads at App mount while the home screen is showing;
   `new-campaign-button` only calls `onStartEditor()` (`grep -n 'const handleNewCampaign' src/components/HomeScreen.tsx`,
   line 159) and does not reset the store, so the fixture survives into the editor.
-- **Keyboard**: `v/m/e/w/d/r/i` switch tools (`grep -n "case 'v':" src/App.tsx`, line 299); the
+- **Keyboard**: `v/m/e/w/d` and `r` call `setTool` (`grep -n "case 'v':" src/App.tsx`, line 299;
+  `r` rotates a door instead when the door tool is active, line 314); `i` opens the colour
+  input, not a tool (line 325); the
   handler ignores events whose target is an input or textarea (line 258).
 - **`vite.config.ts` has a `build` block only for the web mode** (`grep -n 'isWeb && {' vite.config.ts`,
   line 43). Manual chunking is web-only; Electron loads from `graphium://` with no HTTP cache.
@@ -124,7 +126,9 @@ so the gains cannot silently regress.
   every export must have an importer; `react-refresh/only-export-components` means a `.tsx` file
   exports components only. Test files (`*.test.tsx`) are exempt from type-aware rules and from
   `tsc` (`tsconfig.json` excludes them); only `npm run test:run` catches a broken test file.
-- **Vitest** collects `src/**/*.test.tsx` (`vitest.config.ts`); Playwright collects every
+- **Vitest** collects `src/**/*.{test,spec}.{ts,tsx,js,…}` plus `tests/unit/**` and
+  `tests/integration/**` (`vitest.config.ts` `include`), so nothing under `tests/performance/`
+  is a Vitest test; Playwright collects every
   `tests/**/*.spec.ts` for `Web-Chromium` (`testMatch: /.*\.spec\.ts/`), so the profiling spec is
   selected in CI and must skip itself unless `PERF=1`.
 
@@ -635,8 +639,10 @@ process.exit(failed ? 1 : 0);
 EOF
 ```
 
-In `.github/workflows/e2e.yml`, directly after the `Build web app` step of the `test-web` job
-(`grep -n 'Build web app' .github/workflows/e2e.yml`), insert:
+In `.github/workflows/e2e.yml`, directly after the `Report web bundle size` step that plan 000
+added to the `test-web` job (`grep -n 'Report web bundle size' .github/workflows/e2e.yml`),
+insert these two lines with the same indentation as the `- name: Build web app` line (six
+spaces before `-`, eight before `run:`):
 
 ```yaml
 - name: Check bundle budget
@@ -644,12 +650,12 @@ In `.github/workflows/e2e.yml`, directly after the `Build web app` step of the `
 ```
 
 Run the commands below, then write `docs/planning/ui-perf-baseline.md` from this skeleton, filling
-every `‹›` from the command output (copy numbers; do not round):
+every `<…>` placeholder from the command output (copy numbers; do not round):
 
 ```markdown
 # UI performance baseline (plan 005, before any optimisation)
 
-Grounded at: ‹git rev-parse --short HEAD›. Dumps: `docs/planning/perf/*-before.json`.
+Grounded at: <sha from git rev-parse --short HEAD>. Dumps: `docs/planning/perf/*-before.json`.
 Dev-server numbers come from React in development mode under StrictMode: counts are commits with
 `phase !== 'mount'`; durations are not comparable to production. The stress fixture is 200 tokens
 and no map — lighter than the 500-token scenario in `docs/architecture/PERFORMANCE_OPTIMIZATIONS.md`.
@@ -658,17 +664,17 @@ and no map — lighter than the 500-token scenario in `docs/architecture/PERFORM
 
 | Scenario        | Dump                          | Counts (from perf-counts) |
 | --------------- | ----------------------------- | ------------------------- |
-| tool switch     | `tool-switch-before.json`     | ‹JSON line›               |
-| token selection | `token-selection-before.json` | ‹JSON line›               |
-| token move      | `token-move-before.json`      | ‹JSON line›               |
+| tool switch     | `tool-switch-before.json`     | <JSON line>               |
+| token selection | `token-selection-before.json` | <JSON line>               |
+| token move      | `token-move-before.json`      | <JSON line>               |
 
-## Frame rate (dev server, rAF count, 3 s each): idle ‹n› fps, dragging ‹n› fps (`fps-before.json`)
+## Frame rate (dev server, rAF count, 3 s each): idle <n> fps, dragging <n> fps (`fps-before.json`)
 
-## Modal open, warm (dev server): About ‹n› ms, Dungeon Generator ‹n› ms (`modal-open-before.json`)
+## Modal open, warm (dev server): About <n> ms, Dungeon Generator <n> ms (`modal-open-before.json`)
 
-## Initial load (built app via `preview:web`, median of 5): home ‹n› ms, editor ‹n› ms (`load-before.json`)
+## Initial load (built app via `preview:web`, median of 5): home <n> ms, editor <n> ms (`load-before.json`)
 
-## Bundle (`npm run build:web`): main ‹bytes› (`‹file›`), total JS+CSS ‹bytes›; `agentation` in production chunks: ‹0 or n›
+## Bundle (`npm run build:web`): main <bytes> (`<file>`), total JS+CSS <bytes>; `agentation` in production chunks: <0 or n>
 ```
 
 **Do NOT**: change any `src/` file in this step; round any number; skip a scenario because it is
@@ -693,8 +699,8 @@ npm run verify:static
 main=… total=…` then `wrote`; two numbers; either file names (record them) or `no agentation in
 production`; six `-before.json` files; formatted; exit 0.
 **Check**: all three `perf-counts` calls exit 0 (in particular `Sidebar` is 0 on tool switch and
-selection, and ≥ 1 on token move) and `docs/planning/ui-perf-baseline.md` has no `‹` left
-(`grep -c '‹' docs/planning/ui-perf-baseline.md` prints `0`).
+selection, and ≥ 1 on token move) and `docs/planning/ui-perf-baseline.md` has no placeholder left
+(`grep -cE '<(n|bytes|file|sha|JSON|0 or n)[^>]*>' docs/planning/ui-perf-baseline.md` prints `0`).
 **If it fails**: `Sidebar` ≥ 1 on tool switch or selection → the plan's model of the code is
 wrong: STOP with the JSON line. A spec test fails on a selector → STOP naming the selector.
 **Commit**: `plan-005 step-2: baseline dumps, bundle budget and CI check`
@@ -742,7 +748,7 @@ npm run verify:web
 ```
 
 **Expected**: exit 0; `1` (or `2` if Vite also emits a CSS chunk for it); `no agentation in
-production`; the `main:` line shows a negative delta (record it in the commit message); `wrote`;
+production`; the `main:` line shows a negative delta (copy it under **Numbers** in the report); `wrote`;
 exit 0; exit 0.
 **Check**: a `DesignSystemPlayground-*.js` chunk exists and the `main:` delta printed by
 `bundle-budget.sh` is negative.
@@ -769,7 +775,9 @@ Replace `<HomeScreen onStartEditor={handleStartEditor} />` with
 Then run the commands. The decision rule is mechanical: if the home-ready median of the built app
 is more than 100 ms slower than the baseline, revert this step's `src/App.tsx` change with
 `git checkout -- src/App.tsx`, delete `docs/planning/perf/load-step4.json`, and record
-"HomeScreen kept static: home ready before ‹n› ms, lazy ‹n› ms" in the commit message of Step 5.
+"HomeScreen kept static: home ready before <n> ms, lazy <n> ms" (both medians copied) under
+**Deviations** in `plans/reports/005.md`; in Step 10's before/after table write `n/a (reverted)`
+in the After column of the home-ready cell.
 **Do NOT**: add a spinner or any visible fallback; lazy-load anything else here; run the load
 scenario on the dev server (it must be `CI=1` so `preview:web` serves the built output).
 **Commands**:
@@ -793,8 +801,8 @@ formatted; exit 0; exit 0.
 **If it fails**: the comparison (command 2) exits 1 → this is the revert rule, not a STOP: stop the
 command list there, revert as described, run `npm run build:web && bash scripts/bundle-budget.sh`
 (expected exit 0), skip this step's commit, and continue to Step 5. Any other failure → STOP.
-**Commit**: `plan-005 step-4: lazy-load HomeScreen (home ready ‹before› ms → ‹after› ms)` with the
-two medians filled in.
+**Commit**: `plan-005 step-4: lazy-load HomeScreen` (the two medians go under **Numbers** in the
+report, not in the commit message).
 
 ### Step 5: Gate and lazy-load `AboutModal` and `DungeonGeneratorDialog`
 
@@ -947,6 +955,7 @@ groups; change `base`, `outDir` or `emptyOutDir`.
 
 ```bash
 npm run build:web
+npm run build:web 2>&1 | grep -ci circular
 ls dist-web/assets/ | grep -c '^vendor-'
 bash scripts/bundle-budget.sh || true
 bash scripts/bundle-budget.sh --write
@@ -956,13 +965,12 @@ npm run verify:web
 npm run verify:electron
 ```
 
-**Expected**: exit 0 with no "circular" warning in the output; `3`; the `total:` line shows a delta
-between −2.00 % and +2.00 % (`main:` shrinks a lot — expected); `wrote`; exit 0; exit 0; exit 0;
-exit 0.
+**Expected**: exit 0; `0`; `3`; the `total:` line shows a delta between −2.00 % and +2.00 %
+(`main:` shrinks a lot — expected); `wrote`; exit 0; exit 0; exit 0; exit 0.
 **Check**: three `vendor-*` chunks exist and the `total:` delta is within ±2 %.
 **If it fails**: `total:` grows more than 2 % → a module is in two chunks: STOP with the
-`bundle-budget:` lines and `ls -la dist-web/assets/`. Rollup prints a circular-chunk warning →
-STOP with the warning text.
+`bundle-budget:` lines and `ls -la dist-web/assets/`. Command 2 prints anything but `0` (Rollup warned about a circular
+chunk) → STOP with the warning text from command 1's output.
 **Commit**: `plan-005 step-6: vendor-react, vendor-konva and vendor-icons chunks (web build)`
 
 ### Step 7: Move tool state into `uiStore` and take it out of `App`
@@ -971,8 +979,7 @@ STOP with the warning text.
 `src/components/Toolbar.tsx`, `src/components/MobileToolbar.tsx`,
 `src/components/AssetLibrary/CommandPalette.tsx`, `src/components/CanvasHost.tsx` (new),
 `src/components/TokenInspectorGate.tsx` (new), `src/components/README.md`,
-`docs/planning/perf/tool-switch-step7.json`, `docs/planning/perf/token-selection-step7.json`
-(written by the spec).
+`docs/planning/perf/*-step7.json` (written by the spec).
 **Do**: Create `src/store/uiStore.ts` exactly:
 
 ```ts
@@ -1105,8 +1112,7 @@ describe('uiStore', () => {
 });
 ```
 
-Create `src/components/CanvasHost.tsx` exactly (it renders the profiled wrapper; Step 10 swaps
-it for the plain `CanvasManager`):
+Create `src/components/CanvasHost.tsx` exactly:
 
 ```tsx
 import { useShallow } from 'zustand/shallow';
@@ -1330,7 +1336,9 @@ const maps = useGameStore(
 Delete the old `const maps = Object.values(campaign.maps).sort(…)` line
 (`grep -n 'Object.values(campaign.maps)' src/components/Sidebar.tsx`) and replace the two
 `campaign.name` reads (`grep -n 'campaign.name' src/components/Sidebar.tsx`) with `campaignName`.
-Then `grep -n 'campaign\.' src/components/Sidebar.tsx` must print nothing.
+Then `grep -c 'const campaign = useGameStore' src/components/Sidebar.tsx` must print `0`
+(children may still read `campaign.*` through their own subscriptions; only Sidebar's own
+whole-campaign subscription must be gone).
 **Do NOT**: memoise anything; change JSX, classes, testids or behaviour; touch child components
 (if a child still re-renders on a token move that is its own subscription and out of scope —
 record it).
@@ -1338,7 +1346,7 @@ record it).
 
 ```bash
 grep -c 'useShallow' src/components/Sidebar.tsx
-grep -c 'campaign\.' src/components/Sidebar.tsx
+grep -c 'const campaign = useGameStore' src/components/Sidebar.tsx
 PERF=1 PERF_TAG=step8 npx playwright test tests/performance/profile.spec.ts --project=Web-Chromium --workers=1 -g '\[dev\] token move'
 node scripts/perf-counts.mjs docs/planning/perf/token-move-step8.json +CanvasManager Sidebar
 npx prettier --write docs/planning/perf/
@@ -1439,8 +1447,7 @@ merge them into the single `useShallow` selector from Step 7 and retry once. Any
 
 ### Step 10: Final numbers, production check, docs, recipes, report and handoff
 
-**Files**: `src/components/CanvasHost.tsx`, `docs/planning/perf/*-after.json` (written by the
-spec), `bundle-budget.json`, `docs/planning/screenshots/005-final/` (new),
+**Files**: `docs/planning/perf/*-after.json` (written by the spec), `bundle-budget.json`, `docs/planning/screenshots/005-final/` (new),
 `docs/architecture/PERFORMANCE_OPTIMIZATIONS.md`, `docs/guides/UI_RECIPES.md`, `CHANGELOG.md`,
 `plans/reports/005.md` (new), `plans/README.md`, `plans/006-visual-redesign.md`.
 **Do**: The harness stays: it is dev-only, every wrapper is a plain passthrough in production, and
@@ -1479,12 +1486,12 @@ and all vendor code in one chunk.
 
 | Scenario / metric               | Before    | After     |
 | ------------------------------- | --------- | --------- |
-| tool switch: unmemoised commits | ‹n›       | 0         |
-| token selection: unmemoised     | ‹n›       | 0         |
-| token move: Sidebar commits     | ‹n›       | 0         |
-| idle / drag fps                 | ‹n› / ‹n› | ‹n› / ‹n› |
-| home / editor ready (ms)        | ‹n› / ‹n› | ‹n› / ‹n› |
-| main chunk / total bytes        | ‹n› / ‹n› | ‹n› / ‹n› |
+| tool switch: unmemoised commits | <n>       | 0         |
+| token selection: unmemoised     | <n>       | 0         |
+| token move: Sidebar commits     | <n>       | 0         |
+| idle / drag fps                 | <n> / <n> | <n> / <n> |
+| home / editor ready (ms)        | <n> / <n> | <n> / <n> |
+| main chunk / total bytes        | <n> / <n> | <n> / <n> |
 
 ### How to re-measure
 
@@ -1526,8 +1533,10 @@ dialog, Dungeon Generator and Design System Playground load on demand; vendor co
 separately. About and Dungeon Generator now reset when reopened." Write `plans/reports/005.md`
 (CONVENTIONS §11) with every number from Step 2 and this step under **Numbers**, and list
 `docs/planning/screenshots/005-final/` under **Screenshots** ("expected identical to
-`004-final`"). After merge: set this plan's row in `plans/README.md` to `DONE <merge sha>` and
-write the merge SHA into the `Grounded at` line of `plans/006-visual-redesign.md`.
+`004-final`"). After merge, the post-merge run (CONVENTIONS §5; branch `plan/005-post-merge`, commit
+`plan-005 post-merge: record merge sha`) sets this plan's row in `plans/README.md` to
+`DONE <merge sha>` and writes the merge SHA into the `**Grounded at (006b)**` line of
+`plans/006-visual-redesign.md` (the `**Grounded at**` line above it belongs to 006a; leave it).
 **Do NOT**: delete `src/perf/profiler.tsx` or the `ProfiledBoundary` wrappers; add a
 `--exclude`-free `Profiler` grep as a gate (the harness legitimately contains it); edit
 `plans/CONVENTIONS.md`; fill any other recipe.
@@ -1543,13 +1552,16 @@ node -e "const b=require('./docs/planning/perf/fps-before.json'),a=require('./do
 bash scripts/bundle-budget.sh --write
 SHOTS_OUT=docs/planning/screenshots/005-final npm run shots
 npx prettier --write docs/planning/perf/ bundle-budget.json
+grep -cE '<(n|bytes|file|sha)[^>]*>' docs/architecture/PERFORMANCE_OPTIMIZATIONS.md docs/guides/UI_RECIPES.md plans/reports/005.md
 npm run verify
 ```
 
 **Expected**: `5 passed`; `1 passed`; `harness absent from production`; `Profiler only in the
 harness`; JSON line then exit 0; two objects then exit 0; `wrote`; exit 0 with one PNG per
-surface and theme; formatted; exit 0.
-**Check**: commands 3, 4, 5 and 6 print their success line / exit 0, and `npm run verify` exits 0.
+surface and theme; formatted; three `:0` lines (no placeholder left in the docs or report);
+exit 0.
+**Check**: commands 3, 4, 5, 6 and 10 print their success line / `:0` / exit 0, and
+`npm run verify` exits 0.
 **If it fails**: command 3 prints a file → a `ProfiledBoundary` is not behind
 `import.meta.env.DEV`: fix `src/perf/profiler.tsx` and retry once. Command 6 exits 1 → fps
 regressed more than 5: STOP with both objects. Anything else → STOP.
@@ -1566,7 +1578,7 @@ regressed more than 5: STOP with both objects. Anything else → STOP.
 - [ ] `src/store/uiStore.ts` is not persisted and has `uiStore.test.ts`
 - [ ] `Toolbar.render-count.test.tsx` passes; `scripts/bundle-budget.sh` runs in `e2e.yml`
 - [ ] `PERFORMANCE_OPTIMIZATIONS.md` has Bottleneck #4 with real numbers; both `UI_RECIPES.md` sections filled
-- [ ] `plans/reports/005.md` written; `plans/README.md` row `DONE <merge sha>`; plan 006's `Grounded at` filled
+- [ ] `plans/reports/005.md` written; `plans/README.md` row `DONE <merge sha>`; plan 006's `**Grounded at (006b)**` line filled by the post-merge run
 
 ## STOP conditions
 
