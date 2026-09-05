@@ -2,11 +2,10 @@ import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
 import { useShallow } from 'zustand/shallow';
 
-import { AboutModal } from './components/AboutModal';
 import CommandPalette from './components/AssetLibrary/CommandPalette';
 import AutoSaveManager from './components/AutoSaveManager';
 import ConfirmDialog from './components/ConfirmDialog';
-import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog';
+import DungeonGeneratorDialogGate from './components/DungeonGeneratorDialogGate';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import MobileToolbar from './components/MobileToolbar';
 import { PauseManager } from './components/PauseManager';
@@ -47,6 +46,11 @@ const DesignSystemPlayground = lazy(async () => {
 const HomeScreen = lazy(async () => {
   const module = await import('./components/HomeScreen');
   return { default: module.HomeScreen };
+});
+
+const AboutModal = lazy(async () => {
+  const module = await import('./components/AboutModal');
+  return { default: module.AboutModal };
 });
 
 // Dev-only feedback toolbar. The ternary lets the production build drop the import entirely.
@@ -462,16 +466,20 @@ function App(): React.JSX.Element {
         <ProfiledBoundary id="ConfirmDialog">
           <ConfirmDialog />
         </ProfiledBoundary>
-        <ProfiledBoundary id="AboutModal">
-          <AboutModal
-            isOpen={isAboutOpen}
-            onClose={() => setIsAboutOpen(false)}
-            onCheckForUpdates={() => {
-              setIsAboutOpen(false);
-              setIsUpdateManagerOpen(true);
-            }}
-          />
-        </ProfiledBoundary>
+        {isAboutOpen && (
+          <ProfiledBoundary id="AboutModal">
+            <Suspense fallback={null}>
+              <AboutModal
+                isOpen={isAboutOpen}
+                onClose={() => setIsAboutOpen(false)}
+                onCheckForUpdates={() => {
+                  setIsAboutOpen(false);
+                  setIsUpdateManagerOpen(true);
+                }}
+              />
+            </Suspense>
+          </ProfiledBoundary>
+        )}
         <UpdateManagerErrorBoundary>
           <ProfiledBoundary id="UpdateManager">
             <UpdateManager
@@ -514,18 +522,22 @@ function App(): React.JSX.Element {
         <ConfirmDialog />
       </ProfiledBoundary>
       <ProfiledBoundary id="DungeonGeneratorDialog">
-        <DungeonGeneratorDialog />
+        <DungeonGeneratorDialogGate />
       </ProfiledBoundary>
-      <ProfiledBoundary id="AboutModal">
-        <AboutModal
-          isOpen={isAboutOpen}
-          onClose={() => setIsAboutOpen(false)}
-          onCheckForUpdates={() => {
-            setIsAboutOpen(false);
-            setIsUpdateManagerOpen(true);
-          }}
-        />
-      </ProfiledBoundary>
+      {isAboutOpen && (
+        <ProfiledBoundary id="AboutModal">
+          <Suspense fallback={null}>
+            <AboutModal
+              isOpen={isAboutOpen}
+              onClose={() => setIsAboutOpen(false)}
+              onCheckForUpdates={() => {
+                setIsAboutOpen(false);
+                setIsUpdateManagerOpen(true);
+              }}
+            />
+          </Suspense>
+        </ProfiledBoundary>
+      )}
       <UpdateManagerErrorBoundary>
         <ProfiledBoundary id="UpdateManager">
           <UpdateManager

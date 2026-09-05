@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
 import {
   RiDownloadCloudLine,
@@ -22,7 +22,6 @@ import {
   RiSwordLine,
 } from '@remixicon/react';
 
-import { AboutModal, type AboutModalTab } from './AboutModal';
 import { LogoLockup } from './LogoLockup';
 import { applyTheme } from './ThemeManager';
 import Tooltip from './Tooltip';
@@ -36,7 +35,13 @@ import {
 } from '../utils/recentCampaigns';
 import { rollForMessage } from '../utils/systemMessages';
 
+import type { AboutModalTab } from './AboutModal';
 import type { ThemeMode } from '../services/IStorageService';
+
+const AboutModal = lazy(async () => {
+  const module = await import('./AboutModal');
+  return { default: module.AboutModal };
+});
 
 interface HomeScreenProps {
   onStartEditor: () => void;
@@ -703,11 +708,15 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
       </footer>
 
       {/* About Modal */}
-      <AboutModal
-        isOpen={isAboutOpen}
-        onClose={() => setIsAboutOpen(false)}
-        initialTab={aboutInitialTab}
-      />
+      {isAboutOpen && (
+        <Suspense fallback={null}>
+          <AboutModal
+            isOpen={isAboutOpen}
+            onClose={() => setIsAboutOpen(false)}
+            initialTab={aboutInitialTab}
+          />
+        </Suspense>
+      )}
 
       {/* Templates Modal */}
       {showTemplates && (
