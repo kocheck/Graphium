@@ -267,12 +267,6 @@ function App(): React.JSX.Element {
         return;
       }
 
-      // Escape to close About modal
-      if (e.key === 'Escape' && isAboutOpen) {
-        setIsAboutOpen(false);
-        return;
-      }
-
       // Prevent tool switching in World View (player mode)
       if (!isArchitectView) {
         return;

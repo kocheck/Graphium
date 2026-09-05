@@ -52,3 +52,12 @@
 - Restart & Install was a success-green fill; it is now `variant="default"` like the other actions.
 - Download percent still sets width in a ref (runtime value; no static class).
 - Opened from About via "Consult the Archives"; a dedicated menu item would avoid stacking two dialogs.
+
+### AboutModal
+
+- Close is still the hand-rolled × (`about-modal-close-btn`); the primitive X would match other dialogs.
+- Title is `sr-only` ("About Graphium"); a visible header would match ConfirmDialog.
+- Tab strip uses `Tabs` with the old underline look gone; a custom Tabs trigger style would restore the previous active underline.
+- The shortcuts tab still repeats the tutorial feature/showcase blocks; one shared section would drop the duplicate.
+- Consult the Archives is still a raw `<button>` (only `text-white` was swapped).
+- Large `modalStyles` block still styles feature cards and showcase; tokens-in-Tailwind would retire the `<style>` tag.

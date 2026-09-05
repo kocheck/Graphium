@@ -483,6 +483,7 @@ module.exports = {
         'src/components/AssetLibrary/LibraryManager.tsx',
         'src/components/AssetLibrary/TokenMetadataEditor.tsx',
         'src/components/UpdateManager.tsx',
+        'src/components/AboutModal.tsx',
       ],
       rules: {
         'no-restricted-syntax': [
