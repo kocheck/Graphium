@@ -19,29 +19,50 @@ invents.
 - **Risk**: LOW (006a), MED (006b)
 - **Depends on**: 006a: plans 000, 001, 003. 006b: plans 004, 005, 006a.
 - **Category**: design
-- **Requires** (006a, before Step 0): `scripts/preflight.sh`, `src/components/ui/README.md`,
-  `docs/planning/verification-baseline.md`, `tests/helpers/surfaces.ts`, `tests/shots.spec.ts`,
-  `tests/touch-targets.spec.ts`, `docs/planning/ui-redesign-brief.md`.
-- **Requires** (006b, before Step 5): `docs/planning/ui-redesign-ideas.md`,
+- **Requires**: `scripts/preflight.sh`, `src/components/ui/README.md`, `docs/planning/verification-baseline.md`, `tests/helpers/surfaces.ts`, `tests/shots.spec.ts`, `tests/touch-targets.spec.ts`, `docs/planning/ui-redesign-brief.md` (006a, before Step 0; kept on one line because `preflight.sh` reads only the first `**Requires**` line)
+- **Requires (006b, before Step 5)**: `docs/planning/ui-redesign-ideas.md`,
   `docs/planning/decisions/006-direction.md` with `Status: DECIDED`,
   `docs/planning/decisions/006-ia.md` with `Status: DECIDED`, `tests/performance/profile.spec.ts`
   (plan 005), and a line `Reviewed-by: Kyle <date>` as the first line after
-  `<!-- steps-5-plus:start -->` in this file.
-- **Grounded at** (006a): ‹merge SHA of plan 003, written there by its final step› (citations
-  verified at d3d3642)
-- **Grounded at** (006b): ‹merge SHA of plan 005, written there by its final step› (citations
-  re-verified by 006a Step 4)
+  `<!-- steps-5-plus:start -->` in this file. `preflight.sh` cannot read this line; the 006b
+  drift block below checks each item by hand.
+- **Grounded at**: ‹merge SHA of plan 003, written here by plan 003's post-merge run› (006a;
+  citations verified at d3d3642)
+- **Grounded at (006b)**: ‹merge SHA of plan 005, written here by plan 005's post-merge run›
+  (citations re-verified by 006a Step 4)
 
 ## Drift check
+
+006a, before Step 0 (reads the first `**Grounded at**` line; the `(006b)` line does not match
+this grep):
 
 ```bash
 git fetch origin main
 G=$(grep -oE 'Grounded at\*\*: `[0-9a-f]{7,40}' plans/006-visual-redesign.md | grep -oE '[0-9a-f]{7,40}$')
 git diff --stat "$G"..origin/main -- src/styles/theme.css src/styles/fonts.css \
   src/index.css src/components/DesignSystemPlayground tests/accessibility.spec.ts \
-  tests/helpers/surfaces.ts docs/features/wcag-audit.md docs/planning/ui-redesign-brief.md \
-  docs/planning/decisions     # Expected: empty
+  tests/helpers/surfaces.ts docs/features/wcag-audit.md     # Expected: empty
 ```
+
+The brief (`docs/planning/ui-redesign-brief.md`) and `docs/planning/decisions/` are **not**
+in the diff on purpose: Kyle edits the brief's `Status:` line and answers after plan 003
+merges, and that is expected, not drift.
+
+006b, before Step 5 (reads the `**Grounded at (006b)**` line and checks the 006b Requires
+by hand, since `preflight.sh` only reads the first Requires line):
+
+```bash
+git fetch origin main
+G=$(grep -oE 'Grounded at \(006b\)\*\*: `[0-9a-f]{7,40}' plans/006-visual-redesign.md | grep -oE '[0-9a-f]{7,40}$')
+git diff --stat "$G"..origin/main -- src/styles src/index.css src/components/ui \
+  src/components/DesignSystemPlayground tests/accessibility.spec.ts \
+  tests/helpers/surfaces.ts docs/features/wcag-audit.md     # Expected: empty
+test -f docs/planning/ui-redesign-ideas.md && test -f tests/performance/profile.spec.ts && echo files-ok
+grep -c '^Status: DECIDED' docs/planning/decisions/006-direction.md docs/planning/decisions/006-ia.md   # Expected: 1 each
+grep -A2 'steps-5-plus:start' plans/006-visual-redesign.md | grep -c '^Reviewed-by: Kyle'        # Expected: 1
+```
+
+If `$G` is empty, `files-ok` is not printed, or a count is not as expected: STOP.
 
 Plan 004's PRs may merge into `main` while 006a runs; they do not touch the paths above. Any
 difference is drift: STOP.
@@ -88,8 +109,10 @@ this plan spends that.
   `grep -rc "dark:" src --include=*.tsx | awk -F: '{s+=$2} END {print s}'` → 0. Literal colours:
   `grep -rnE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(" src/components/ src/App.tsx src/index.css src/styles/app.css src/styles/fonts.css | wc -l`
   → 151 at d3d3642 (`.btn-tool` in `src/styles/app.css` line 54 is `rgb(64, 64, 64)`).
-- **Playground.** `/design-system` renders `src/components/DesignSystemPlayground/` (one registry
-  file `playground-registry.tsx`, 12 categories in `types.ts`). Reached only in the web build.
+- **Playground.** `/design-system` renders `src/components/DesignSystemPlayground/`. Since plan
+  003 Step 3, `playground-registry.tsx` is a one-line re-export of `registry/index.ts`, which
+  owns the `categories` and `componentExamples` arrays (legacy entries spread in from
+  `registry/legacy.tsx`); categories are typed in `types.ts`. Reached only in the web build.
 - **Surfaces.** `tests/helpers/surfaces.ts` (plan 000) navigates to `home`, `editor`,
   `editor-mobile`, `confirm-dialog`, `world`, `world-dialog`, `design-system` and sets the theme.
   The `world` surfaces are broadcast-fed, so screenshots of them are not blank.
@@ -156,7 +179,9 @@ Branch, commits, PR, CI and rollback: `plans/CONVENTIONS.md` §7. Branch names:
 
 006a lands as one PR that is opened at the first STOP (end of Step 2b, BLOCKED on
 `006-direction`) and updated by later runs: run 2 executes Step 3 (BLOCKED on `006-ia`), run 3
-executes Step 4. Each run writes its own `## Run N` section into `plans/reports/006a.md`. 006b
+executes Step 4. `scripts/plan-lint.sh` is created by Step 4, so the CONVENTIONS §4
+"before opening a PR" lint applies to the 006a PR from run 3 onward, not at the first push.
+Each run writes its own `## Run N` section into `plans/reports/006a.md`. 006b
 branches from `main` after plan 005 merges and may be split into further PRs at the seams Step 4
 marks (`PR boundary` lines).
 
@@ -179,7 +204,7 @@ Status: PENDING
 
 Plan 006a renders the brief and cannot start until every line under "## 11. Kyle's answers" is
 filled and the Status line reads `CONFIRMED <date>`. Which lines are still blank is listed here:
-<paste `grep -n "____" docs/planning/ui-redesign-brief.md`>.
+<paste `grep -nE '(\\_){4}|_{4}' docs/planning/ui-redesign-brief.md`>.
 
 ## Options
 
@@ -197,12 +222,15 @@ Option 1; the brief was drafted for confirmation, not for redesign.
 **Commands**:
 
 ```bash
-grep -c "____" docs/planning/ui-redesign-brief.md
+grep -cE '(\\_){4}|_{4}' docs/planning/ui-redesign-brief.md
 grep -n "^Status: CONFIRMED" docs/planning/ui-redesign-brief.md
 ```
 
+The blanks in the brief are written `\_\_\_\_` (backslash-escaped underscores), so a plain
+`grep "____"` finds nothing even when every answer is blank; the pattern above matches both
+the escaped and the plain form.
 **Expected**: `0` (exit 1, because grep -c prints 0 and exits 1 on no match), then one line.
-**Check**: `grep -c "____" docs/planning/ui-redesign-brief.md` prints `0` and
+**Check**: `grep -cE '(\\_){4}|_{4}' docs/planning/ui-redesign-brief.md` prints `0` and
 `grep -c "^Status: CONFIRMED" docs/planning/ui-redesign-brief.md` prints `1`.
 **If it fails**: Create the decision file, commit it, STOP (CONVENTIONS §9).
 **Commit**: `plan-006a step-0: confirm the brief` (only when the decision file was created)
@@ -211,8 +239,7 @@ grep -n "^Status: CONFIRMED" docs/planning/ui-redesign-brief.md
 
 **Files**: `tests/audit-measure.spec.ts`, `docs/planning/ui-redesign-audit.json`,
 `docs/planning/ui-redesign-audit.md`, `docs/planning/screenshots/006a-baseline/**`,
-`docs/planning/ui-redesign-ideas.md` (create only if absent),
-`docs/planning/decisions/006-reference-shots.md` (only if reference shots are missing)
+`docs/planning/ui-redesign-ideas.md` (create only if absent), `plans/reports/006a.md`
 **Do**:
 
 1. Screenshots: `SHOTS_OUT=docs/planning/screenshots/006a-baseline npm run shots` (seven surfaces
@@ -221,10 +248,10 @@ grep -n "^Status: CONFIRMED" docs/planning/ui-redesign-brief.md
    `docs/planning/screenshots/006a-baseline/reference/` before this step: `foundry-landing.png`,
    `foundry-editor.png`, `foundry-player.png`, `owlbear-landing.png`, `owlbear-editor.png`,
    `owlbear-player.png`, `roll20-landing.png`, `roll20-editor.png`, `roll20-player.png`,
-   `op1-grid.png`, `amber-crt.png`. If any is missing, write the audit without it and create
-   `docs/planning/decisions/006-reference-shots.md` (CONVENTIONS §9 shape; Question: "Which of
-   the eleven reference files are still needed?"; Options: 1. Kyle adds them, 2. Kyle waives them;
-   Recommendation: 1). Do not STOP for this.
+   `op1-grid.png`, `amber-crt.png`. If any is missing, write the audit without it and list the
+   missing filenames under **Deviations** in `plans/reports/006a.md` (`## Run 1`) and under a
+   `## For Kyle` heading in the PR body. This is informational: do **not** create a decision
+   file, do not set the README row `BLOCKED`, and do not STOP for this.
 3. Create `tests/audit-measure.spec.ts` exactly:
 
 ```ts
@@ -297,8 +324,8 @@ test('audit: measure every surface in both themes', async ({ page }) => {
   const samples: SurfaceSample[] = [];
   for (const surface of SURFACES) {
     for (const theme of THEMES) {
-      await gotoSurface(page, surface, theme);
-      const sample = await page.evaluate(
+      const target = await gotoSurface(page, surface, theme);
+      const sample = await target.evaluate(
         ({ names, selectors, props }) => {
           const root = getComputedStyle(document.documentElement);
           const tokens: Record<string, string> = {};
@@ -381,7 +408,7 @@ once.
 
 **Files**: `src/styles/directions.css`, `src/styles/directions.test.ts`,
 `src/styles/theme.css`, `src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`,
-`src/components/DesignSystemPlayground/playground-registry.tsx`,
+`src/components/DesignSystemPlayground/registry/index.ts`,
 `src/components/DesignSystemPlayground/types.ts`
 **Do**:
 
@@ -391,8 +418,9 @@ once.
 grep -oE "^\s*--app-(radius|elevation|duration|ease)-[a-z0-9-]+" src/styles/theme.css | tr -d ' ' | sort -u
 ```
 
-2. Create `src/styles/directions.css`. The direction-A block below is copy-exact; B and C are
-   derived from it by the rules that follow. Values are **seeded** from the brief §10 table (Radix
+2. Create `src/styles/directions.css`. The direction-A block below is copy-exact **plus the
+   non-colour lines added in sub-step 2.1**; B and C are derived from it by the rules that
+   follow. Values are **seeded** from the brief §10 table (Radix
    `amber-9` `#ffc53d`, `tomato-9` `#e54d2e`, `orange-9` `#f76b15`, slate steps); Step 2b's
    contrast script validates every pair and is the authority.
 
@@ -448,20 +476,30 @@ grep -oE "^\s*--app-(radius|elevation|duration|ease)-[a-z0-9-]+" src/styles/them
   --app-font-family-readout: 'IBM Plex Mono', ui-monospace, monospace;
   --app-font-size-readout: 13px;
   --app-font-weight-readout: 500;
-  /* NON-COLOUR: add one line per name printed by the grep in Do 1 —
-     --app-radius-*: 4px   (skip names whose base value is 9999px or 50%)
-     --app-elevation-*: 0 0 0 1px var(--slate-6)   (except --app-elevation-active above) */
 }
 
 [data-theme='dark'][data-direction='a'] {
   --app-accent-solid-text: var(--slate-1);
 }
 
-/* Shared by every direction (brief §2.5): fast, decisive, no overshoot. Add one line per
-   --app-duration-* name (120ms) and per --app-ease-* name (cubic-bezier(0.2, 0, 0, 1)). */
+/* Shared by every direction (brief §2.5): fast, decisive, no overshoot. */
 [data-direction] {
 }
 ```
+
+2.1. Fill the two blocks that the grep in Do 1 drives (the file is not complete until this is
+done; a block left empty or without these lines fails `directions.test.ts`):
+
+- Inside `[data-direction='a'] {`, after the `--app-font-weight-readout: 500;` line, add one
+  line per name the grep printed: for every `--app-radius-<x>` whose value in `theme.css` is
+  not `9999px` or `50%`, the line `--app-radius-<x>: 4px;`; for every `--app-elevation-<x>`
+  except `--app-elevation-active` (already set above), the line
+  `--app-elevation-<x>: 0 0 0 1px var(--slate-6);`.
+- Inside `[data-direction] {`, add one line per `--app-duration-<x>` name: `--app-duration-<x>: 120ms;`
+  and one per `--app-ease-<x>` name: `--app-ease-<x>: cubic-bezier(0.2, 0, 0, 1);`.
+- Check: `grep -c "^  --app-radius-\|^  --app-elevation-\|^  --app-duration-\|^  --app-ease-" src/styles/directions.css`
+  prints the number of names the Do 1 grep printed minus the radius names skipped, plus 1 for
+  `--app-elevation-active`; and `grep -c "^\[data-direction\] {$" src/styles/directions.css` prints `1`.
 
 Then append, in this order:
 
@@ -479,8 +517,9 @@ var(--slate-7);`. Type: `--app-font-family-readout: 'IBM Plex Sans', system-ui, 
 - `[data-direction='c']` and `[data-theme='dark'][data-direction='c']` — **C · Cartographer's
   desk**: copy the A blocks, change every `amber` to `orange` and every `slate` to `sand` (warm
   greys; the light theme becomes paper stock). Depth is flat with a pressed state:
-  `--app-elevation-active: inset 0 1px 0 0 var(--sand-7);` and no `--app-elevation-*` or
-  `--app-radius-*` lines (base values stay). Type: `--app-font-family-title: 'IBM Plex Serif',
+  `--app-elevation-active: inset 0 1px 0 0 var(--sand-7);`, and delete the `--app-radius-*`
+  lines and every `--app-elevation-*` line other than `--app-elevation-active` (base values
+  stay). Type: `--app-font-family-title: 'IBM Plex Serif',
 Georgia, serif;`.
 - Dark values for the three new scales (Radix's `.dark` selector never matches; see Context):
 
@@ -497,9 +536,12 @@ grep -c "^\[data-theme='dark'\] {" src/styles/directions.css   # Expected: 3
    from the grep in Do 1 to `0ms`. Keep the `* { transition: none !important; … }` rule; 006b
    removes it once no literal duration remains.
 4. `types.ts`: add `| 'motion'` after `| 'performance'` in the `category` union.
-5. `playground-registry.tsx`: append `{ id: 'motion', name: 'Motion', description: 'Duration and
-easing tokens, with the reduced-motion twin' }` to `categories`, and append two examples to
-   `componentExamples` (the `code` string of each is the same JSX as a template literal):
+5. `registry/index.ts` (not `playground-registry.tsx`, which is a one-line re-export since plan
+   003): append `{ id: 'motion', name: 'Motion', description: 'Duration and easing tokens, with
+the reduced-motion twin' }` as the last element of the `categories` array, and append the two
+   examples below as the last elements of `componentExamples` (the `code` string of each is the
+   same JSX as a template literal). Plan 003's `registry.test.ts` fails if an example's category
+   is not in `categories`, so add the category first:
 
 ```tsx
   {
@@ -550,8 +592,8 @@ easing tokens, with the reduced-motion twin' }` to `categories`, and append two 
 The tile names `--app-duration-fast` and `--app-ease-standard`. If the grep in Do 1 does not
 print those exact names, replace them (in both the `style` and the `code` string) with the
 first `--app-duration-*` and first `--app-ease-*` names it prints. `types.ts` imports
-`React` as a type already; the registry needs `import type React from 'react';` added to its
-type imports for `React.CSSProperties`. 6. `DesignSystemPlayground.tsx`: add `import '../../styles/directions.css';` as the last
+`React` as a type already; `registry/index.ts` needs `import type React from 'react';` added to
+its type imports for `React.CSSProperties`. 6. `DesignSystemPlayground.tsx`: add `import '../../styles/directions.css';` as the last
 non-type import; add the constants and helper below the existing imports (before
 `PlaygroundShell`), the state and effect inside `PlaygroundContent` after the
 `handleToggleTheme` function, and the button row immediately before the `{/* Theme Toggle */}`
@@ -592,28 +634,31 @@ useEffect(() => {
 }, [direction]);
 ```
 
+The button row is a JSX fragment; paste it whole, `<>` and `</>` included (a fragment is valid
+anywhere a child is):
+
 ```tsx
-{
-  /* Direction switcher (plan 006a): prototypes from docs/planning/ui-redesign-brief.md §10 */
-}
-<div className="flex items-center gap-1" role="group" aria-label="Design direction">
-  {DIRECTIONS.map((d) => (
-    <button
-      key={d}
-      type="button"
-      data-testid={`playground-direction-${d}`}
-      aria-pressed={direction === d}
-      onClick={() => setDirection(d)}
-      className={`px-2 py-1 text-xs font-mono uppercase rounded border border-[var(--app-border-subtle)] ${
-        direction === d
-          ? 'bg-[var(--app-accent-solid)] text-[var(--app-accent-solid-text)]'
-          : 'bg-[var(--app-bg-surface)] text-[var(--app-text-secondary)]'
-      }`}
-    >
-      {d}
-    </button>
-  ))}
-</div>;
+<>
+  {/* Direction switcher (plan 006a): prototypes from docs/planning/ui-redesign-brief.md §10 */}
+  <div className="flex items-center gap-1" role="group" aria-label="Design direction">
+    {DIRECTIONS.map((d) => (
+      <button
+        key={d}
+        type="button"
+        data-testid={`playground-direction-${d}`}
+        aria-pressed={direction === d}
+        onClick={() => setDirection(d)}
+        className={`px-2 py-1 text-xs font-mono uppercase rounded border border-[var(--app-border-subtle)] ${
+          direction === d
+            ? 'bg-[var(--app-accent-solid)] text-[var(--app-accent-solid-text)]'
+            : 'bg-[var(--app-bg-surface)] text-[var(--app-text-secondary)]'
+        }`}
+      >
+        {d}
+      </button>
+    ))}
+  </div>
+</>
 ```
 
 7. Create `src/styles/directions.test.ts` exactly (the brief §10 distinctness rule as a test):
@@ -674,14 +719,15 @@ the playground. Use a branch per direction.
 ```bash
 ls node_modules/@ibm/plex/IBM-Plex-Serif/fonts/complete/woff2/IBMPlexSerif-SemiBold.woff2
 grep -c "^\[data-direction='[abc]'\] {" src/styles/directions.css
-grep -rln "directions.css" src
+grep -rln "styles/directions.css'" src --include=*.tsx
 npm run verify:static && npm run verify:web
 ```
 
 **Expected**: the path; `3`; exactly
 `src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`; exit 0.
 **Check**: `npx vitest run src/styles/directions.test.ts` exits 0 and
-`grep -rln "directions.css" src` prints exactly one path.
+`grep -rln "styles/directions.css'" src --include=*.tsx` prints exactly one path (the test
+file and the CSS comment also mention the name; the `--include` and the quote exclude them).
 **If it fails**: If the Plex Serif file is missing, STOP with the `ls` output (the `@ibm/plex`
 version differs from d3d3642). Otherwise fix and retry once.
 **Commit**: `plan-006a step-2a: render the three directions on the playground`
@@ -873,16 +919,22 @@ process.exit(failed ? 1 : 0);
   { "fg": "white", "bg": "app-error-solid", "min": 4.5, "deferred": "006b" },
   { "fg": "white", "bg": "app-success-solid", "min": 4.5, "deferred": "006b" },
   { "fg": "white", "bg": "app-warning-solid", "min": 4.5, "deferred": "006b" },
-  { "fg": "app-border-default", "bg": "app-bg-base", "min": 3 }
+  { "fg": "app-border-default", "bg": "app-bg-base", "min": 3, "deferred": "006b" }
 ]
 ```
+
+The border pair is deferred on purpose: `--app-border-default` is `slate-7` today (about
+1.7:1 on the dark base; `grep -n 'app-border-default' src/styles/theme.css`) and direction A
+seeds it at `slate-6`. Radix step 7 is a "subtle border" by design; 006b Step 5 decides the
+step that meets 3:1 for the chosen direction.
 
 3. `package.json`: add `"contrast": "node scripts/contrast.mjs"` to `scripts`, directly after
    `"test:a11y"`.
 4. `docs/features/wcag-audit.md`: insert a line `<!-- contrast:start -->` immediately before
    `#### Text on Background Combinations` (line 30) and a line `<!-- contrast:end -->`
-   immediately before `#### Borders & Dividers` (line 50). Move the paragraph starting
-   `**Note:** \`--app-text-disabled\``to directly after the end marker. Run`npm run contrast -- --write`; the two hand-written tables between the markers are replaced
+   immediately before `#### Borders & Dividers` (line 50). Move the paragraph that starts with
+   `**Note:**` and mentions `--app-text-disabled` to directly after the end marker. Run
+   `npm run contrast -- --write`; the two hand-written tables between the markers are replaced
    by the generated one.
 5. Append to `tests/accessibility.spec.ts` (the file already imports `AxeBuilder`, `test` and
    `expect`; add nothing else at the top):
@@ -1065,7 +1117,9 @@ Current: three components — `src/components/Sidebar.tsx` (<n> lines), `QuickTo
 
 Current: two surfaces — `src/components/MapSettingsSheet.tsx` (<n> lines) and
 `src/components/SessionConsole/SessionConsoleSettingsSheet.tsx` with
-`sessionConsoleSettingsSections.tsx` (<n> sections: `grep -c "id: '" src/components/SessionConsole/sessionConsoleSettingsSections.tsx`).
+`sessionConsoleSettingsSections.tsx` (<n> exported field groups:
+`grep -c '^export function SessionConsole' src/components/SessionConsole/sessionConsoleSettingsSections.tsx`,
+`4` at d3d3642).
 
 ### Q4 Home screen
 
@@ -1180,8 +1234,10 @@ exit "$fail"
    Kyle edits the steps then adds the line; Recommendation: 1).
 5. Write `plans/reports/006a.md` `## Run 3` (CONVENTIONS §11); add one bullet under
    `## [Unreleased]` in `CHANGELOG.md`: "Design System Playground: direction switcher and motion
-   tile (prototype)". After merge, set the `006a` row in `plans/README.md` to `DONE <merge sha>`;
-   006b's `Grounded at` is plan 005's merge SHA (already written there by plan 005's final step).
+   tile (prototype)". After merge, the post-merge run (CONVENTIONS §5; branch
+   `plan/006a-post-merge`, commit `plan-006a post-merge: record merge sha`) sets the `006a` row
+   in `plans/README.md` to `DONE <merge sha>`. It writes no Grounded-at line: 006b's
+   `**Grounded at (006b)**` line is plan 005's merge SHA, written by plan 005's post-merge run.
    The next plan file is this one (006b, Steps 5+).
 
 **Do NOT**: Implement anything from Steps 5+. Change Steps 0–3. Write the `Reviewed-by` line
@@ -1229,7 +1285,9 @@ lines and the `[data-theme='dark']` scale copy that direction needs; move any `@
 `fonts.css`. Add `--app-error-solid-text`, `--app-success-solid-text`, `--app-warning-solid-text`
 (the ink or `white`, whichever `npm run contrast` passes; if neither passes at step 9, move the
 solid to step 10 then 11 and rerun) and remove every `"deferred"` key from
-`scripts/contrast-pairs.json`, replacing `"fg": "white"` with the new token names; set
+`scripts/contrast-pairs.json`, replacing `"fg": "white"` with the new token names and setting
+`--app-border-default` to the first Radix step of the chosen grey at which the border pair
+passes 3:1 (`8` or higher; keep `--app-border-subtle` where it is); set
 `--app-text-muted` to `var(--slate-11)` (or the chosen grey's step 11). Delete `directions.css`,
 `directions.test.ts`, `direction-shots.spec.ts`, the switcher, `readDirection`, the `DIRECTIONS`
 constants and the `directions.css` import from the playground, and the "Design directions" describe
@@ -1319,7 +1377,9 @@ npm run verify:static && npm run verify:web && npm run verify:electron
 
 ### Step 9: Gate the World View against the brief §8 rules
 
-**Files**: `tests/world-legibility.spec.ts`, ‹World View files only if the spec fails and Q6 permits›
+**Files**: `tests/world-legibility.spec.ts`, `src/styles/theme.css` (a `[data-view="world"]` block
+only, and only if Q6 gives the World View its own tokens), ‹World View files only if the spec
+fails and Q6 permits›
 **Do**: Implements `006-ia.md` line: ‹quote Q6 answer›. Create the spec exactly:
 
 ```ts
@@ -1366,6 +1426,9 @@ async function sampleText(page: Page): Promise<Sample[]> {
     const out: Sample[] = [];
     for (const el of Array.from(document.body.querySelectorAll('*'))) {
       if (el.tagName === 'CANVAS' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') continue;
+      // The `world-dialog` surface opens plan 003's ConfirmDialog on the World page. It is
+      // DM-facing chrome gated by plan 000's a11y scan, not projected overlay text: exempt.
+      if (el.closest('[role="dialog"]')) continue;
       const text = Array.from(el.childNodes)
         .filter((n) => n.nodeType === Node.TEXT_NODE)
         .map((n) => n.textContent?.trim() ?? '')
@@ -1399,11 +1462,11 @@ async function sampleText(page: Page): Promise<Sample[]> {
 
 for (const surface of ['world', 'world-dialog'] as const) {
   test(`${surface}: brief §8 rules hold at 1920×1080`, async ({ page }) => {
-    await gotoSurface(page, surface, 'dark');
-    await expect(page.locator('[data-testid^="toolbar-"], [data-testid^="sidebar-"]')).toHaveCount(
-      0,
-    );
-    const samples = await sampleText(page);
+    const target = await gotoSurface(page, surface, 'dark');
+    await expect(
+      target.locator('[data-testid^="toolbar-"], [data-testid^="sidebar-"]'),
+    ).toHaveCount(0);
+    const samples = await sampleText(target);
     const small = samples.filter((s) => s.fontSize < MIN_FONT_PX);
     const thin = samples.filter((s) => s.strokes.some((w) => w < MIN_STROKE_PX));
     const faint = samples.filter((s) => s.ratio < MIN_RATIO);
@@ -1448,8 +1511,9 @@ then rerun without the flag. `npm run contrast -- --write`; update `docs/feature
 §9 table). Write `plans/reports/006b.md` (CONVENTIONS §11), including the note for Kyle that the
 World View was gated by `tests/world-legibility.spec.ts` and a look on a real second display is
 his to do at review; add one bullet under `## [Unreleased]` in `CHANGELOG.md` for the redesign;
-after merge set the `006b` row in `plans/README.md` to `DONE <merge sha>`. This is the last plan of
-the program; there is no next `Grounded at` to write.
+after merge, the post-merge run (CONVENTIONS §5; branch `plan/006b-post-merge`, commit
+`plan-006b post-merge: record merge sha`) sets the `006b` row in `plans/README.md` to
+`DONE <merge sha>`. This is the last plan of the program; there is no next `Grounded at` to write.
 **Do NOT**: Edit README prose. Change any token. Restore `deploy-web.yml` before every other step
 is committed.
 **Commands**:
@@ -1496,7 +1560,7 @@ npm run verify
 006b:
 
 - [ ] `grep -rn "data-direction" src tests` prints nothing
-- [ ] `npm run contrast` exits 0 with no `DEFER` row (white-on-`--app-error-solid` fixed)
+- [ ] `npm run contrast` exits 0 with no `DEFER` row (white-on-`--app-error-solid` and the border pair fixed)
 - [ ] `CONTRAST_DEFERRED` in `tests/accessibility.spec.ts` is empty
 - [ ] `tests/world-legibility.spec.ts` passes; no `data-testid` renamed
       (`git diff <006b grounded-at> -- src | grep "^-.*data-testid" | wc -l` → 0)
@@ -1509,7 +1573,7 @@ npm run verify
 
 ## STOP conditions (specific to this plan)
 
-- The brief still has a `____` line or is not `CONFIRMED` (Step 0).
+- The brief still has a blank (`\_\_\_\_`) answer line or is not `CONFIRMED` (Step 0).
 - A decision file is `PENDING` when a step needs it `DECIDED` (Steps 3, 4, 5).
 - A direction's contrast pair still fails after the Step 2b Do 7 rule was applied twice.
 - `tests/world-legibility.spec.ts` fails and Q6 is `keep`.

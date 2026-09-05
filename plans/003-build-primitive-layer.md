@@ -1880,8 +1880,9 @@ prints `5`; `grep -c 'Adopt shadcn/ui primitives' docs/architecture/DECISIONS.md
    change ships: add no `CHANGELOG.md` bullet unless a gate forced a `src/` change outside
    `src/components/ui/` and the playground; then add one under `## [Unreleased]`. After merge:
    set this plan's row in `plans/README.md` to `DONE <merge sha>`; write the merge SHA into the
-   `Grounded at` line of `plans/004-migrate-screens-to-primitives.md` and of
-   `plans/006-visual-redesign.md` (006a starts after this plan merges).
+   `**Grounded at**` line of `plans/004-migrate-screens-to-primitives.md` and into the first
+   `**Grounded at**` line of `plans/006-visual-redesign.md` (the 006a one; leave the
+   `**Grounded at (006b)**` line for plan 005). 006a starts after this plan merges.
 
 **Do NOT**: keep `aspect-ratio.tsx`; commit `test-results/`; edit `tests/visual.spec.ts` snapshots;
 squash-merge.
