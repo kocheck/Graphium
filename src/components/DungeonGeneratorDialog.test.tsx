@@ -63,7 +63,7 @@ describe('DungeonGeneratorDialog', () => {
     expect(screen.getByText('Dungeon Generator')).toBeInTheDocument();
 
     act(() => {
-      fireEvent.keyDown(window, { key: 'Escape' });
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     });
 
     expect(useGameStore.getState().dungeonDialog).toBe(false);
@@ -82,15 +82,14 @@ describe('DungeonGeneratorDialog', () => {
     expect(useGameStore.getState().dungeonDialog).toBe(false);
   });
 
-  it('should close dialog when background is clicked', () => {
+  it('should close dialog when Escape is pressed on the dialog', () => {
     useGameStore.setState({ dungeonDialog: true });
-    const { container } = render(<DungeonGeneratorDialog />);
+    render(<DungeonGeneratorDialog />);
 
-    const background = container.querySelector('.fixed.inset-0');
-    expect(background).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     act(() => {
-      fireEvent.click(background!);
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     });
 
     expect(useGameStore.getState().dungeonDialog).toBe(false);

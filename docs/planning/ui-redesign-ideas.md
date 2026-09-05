@@ -61,3 +61,10 @@
 - The shortcuts tab still repeats the tutorial feature/showcase blocks; one shared section would drop the duplicate.
 - Consult the Archives is still a raw `<button>` (only `text-white` was swapped).
 - Large `modalStyles` block still styles feature cards and showcase; tokens-in-Tailwind would retire the `<style>` tag.
+
+### DungeonGeneratorDialog
+
+- Room-count and size controls stay native range inputs; a Slider primitive would match ImageCropper and the rest of the chrome.
+- Clear-canvas is a native checkbox next to labelled ranges; a shared Switch would match ToggleSwitch.
+- Generate is `variant="default"` (accent) rather than a distinct create treatment.
+- The dialog still early-returns when closed, so Radix never mounts a closed instance.
