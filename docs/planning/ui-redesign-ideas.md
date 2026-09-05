@@ -129,3 +129,8 @@
 
 - Unlock All keeps `bg-orange-600/20 hover:bg-orange-600/30` and the locked count keeps `text-orange-400` (no token; not on the ratchet). Plan 006b decides the orange.
 - Open All / Close All are `secondary` (old `btn-default`); a quieter ghost set would match the Session Console transport.
+
+### QuickTokenSidebar
+
+- Tiles are token-background `div`s with `data-testid="sidebar-token-tile"`, not `Button`s (they are drag sources). A shared token-tile primitive would match Library cards.
+- The generic tile still overrides the token background with an inline `style` (`--app-bg-subtle` + dashed border).
