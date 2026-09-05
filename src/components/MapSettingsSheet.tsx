@@ -242,7 +242,10 @@ function MapSettingsSheet({
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-[var(--app-bg-surface)] shadow-2xl z-50 overflow-y-auto">
+      <div
+        className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-[var(--app-bg-surface)] shadow-2xl z-50 overflow-y-auto"
+        data-testid="sheet-map-settings-root"
+      >
         {/* Header */}
         <div className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4 flex items-center justify-between">
           <h2 className="text-lg font-bold">{mode === 'CREATE' ? 'New Map' : 'Edit Map'}</h2>

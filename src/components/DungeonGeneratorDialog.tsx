@@ -90,6 +90,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
       aria-modal="true"
       data-esc-owns="true"
       aria-labelledby="dungeon-dialog-title"
+      data-testid="dialog-dungeon-generator-root"
     >
       <div
         className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 min-w-[400px] max-w-md mx-4"

@@ -312,6 +312,7 @@ export function AboutModal({
       <style>{modalStyles}</style>
       <div
         className="about-modal-backdrop"
+        data-testid="dialog-about-root"
         style={{
           position: 'fixed',
           top: 0,
