@@ -275,6 +275,46 @@
 }
 
 /* ============================================
+   NON-COLOUR TOKENS (theme-independent)
+   Values are exactly what the code used before these names existed.
+   Plan 006 may change values; plan 000 only names them.
+   --app-shadow-sm|md|lg above are COLOURS; elevation tokens are real box-shadows.
+   ============================================ */
+:root {
+  /* Radius: .btn is 0.25rem (app.css); the toolbar is rounded-lg (0.5rem) */
+  --app-radius-sm: 0.25rem;
+  --app-radius-md: 0.375rem;
+  --app-radius-lg: 0.5rem;
+
+  /* Elevation: Tailwind v4 shadow-sm / shadow-lg / shadow-2xl */
+  --app-elevation-low: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --app-elevation-medium: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --app-elevation-high: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+  /* Motion: theme.css and .btn use 0.2s ease; duration-300 / slide-down use 0.3s */
+  --app-duration-fast: 0.2s;
+  --app-duration-base: 0.3s;
+  --app-duration-slow: 0.5s;
+  --app-ease-standard: ease;
+  --app-ease-decelerate: cubic-bezier(0, 0, 0.2, 1); /* Tailwind ease-out */
+
+  /* Spacing: every Tailwind spacing utility is a multiple of this unit */
+  --app-space-unit: 0.25rem;
+
+  /* Type: Tailwind v4 sizes (text-xs … text-2xl are the sizes in use); fonts.css weights */
+  --app-font-size-xs: 0.75rem;
+  --app-font-size-sm: 0.875rem;
+  --app-font-size-base: 1rem;
+  --app-font-size-lg: 1.125rem;
+  --app-font-size-xl: 1.25rem;
+  --app-font-size-2xl: 1.5rem;
+  --app-font-weight-normal: 400;
+  --app-font-weight-medium: 500;
+  --app-font-weight-semibold: 600;
+  --app-font-weight-bold: 700;
+}
+
+/* ============================================
    BASE APPLICATION STYLES
    ============================================ */
 body {
@@ -283,15 +323,15 @@ body {
 
   /* Prevent flash of wrong theme on load */
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    background-color var(--app-duration-fast) var(--app-ease-standard),
+    color var(--app-duration-fast) var(--app-ease-standard);
 }
 
 /* Ensure smooth theme transitions across all themed elements */
 * {
   transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 0.2s;
-  transition-timing-function: ease;
+  transition-duration: var(--app-duration-fast);
+  transition-timing-function: var(--app-ease-standard);
 }
 
 /* Disable transitions on page load to prevent animation on initial render */

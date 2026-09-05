@@ -116,6 +116,10 @@ Unreachable from a fresh campaign (`open: null`): MobileBottomSheet, AddToLibrar
 
 No `trapsFocus` flips: AboutModal is the only overlay that traps focus; every other exercised row matches the source-read `trapsFocus: false`.
 
+## Tokens
+
+Families added (theme-independent, values unchanged): `--app-radius-*`, `--app-elevation-*`, `--app-duration-*`, `--app-ease-*`, `--app-space-unit` (the only spacing token; the code implies Tailwind's 0.25 rem scale and nothing else), `--app-font-size-*`, `--app-font-weight-*`. `--app-duration-*` have no Tailwind namespace to alias (v4 `duration-*` takes numbers). Seed values match `node_modules/tailwindcss/theme.css`.
+
 ## Touch targets
 
 Desktop `.btn-tool` measured 46 × 30 px (no CSS minimum). Mobile menu is ≥ 48 × 48; mobile toolbar buttons are ≥ 56 tall. `TokenInspector`'s 44 px buttons and HomeScreen's ≤ 480 px rules are unasserted (they need a selected token / a 480 px viewport).
