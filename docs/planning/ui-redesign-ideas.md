@@ -10,3 +10,9 @@
 - Primitive popover surface and title weight are new; the old shell used undefined `--app-bg` / `--app-border` / `--app-text` and looked unstyled. Keep or refine once a direction is picked.
 - `AlertDialog` (role="alertdialog") would be a better primitive for a destructive confirm than `Dialog`.
 - `variant="destructive"` is white on `--app-error-solid` (`#e5484d`, 3.91:1). The old `bg-red-600` button passed AA; the token does not. 006b should darken the solid error colour or pick a passing pair.
+
+### MapSettingsSheet
+
+- Danger Zone "Reset Map Position & Scale" is now `ghost` (old `btn-destructive` was an undefined class and rendered as a bare `.btn`). A real danger treatment belongs here.
+- Native `<select>` for grid type and the color `<input>` are still unstyled vs the rest of the sheet.
+- Calibration draws on the canvas behind a non-modal sheet; the sheet stays open and can cover the map on small widths.

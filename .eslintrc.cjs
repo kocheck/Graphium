@@ -473,6 +473,7 @@ module.exports = {
         'src/components/ToggleSwitch.tsx',
         'src/components/CollapsibleSection.tsx',
         'src/components/ConfirmDialog.tsx',
+        'src/components/MapSettingsSheet.tsx',
       ],
       rules: {
         'no-restricted-syntax': [

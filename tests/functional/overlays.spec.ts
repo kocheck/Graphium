@@ -81,11 +81,11 @@ const OVERLAYS: OverlayCase[] = [
     open: async (page) => {
       await page.getByRole('button', { name: 'New Map' }).click();
     },
-    hasRole: false,
-    hasAriaModal: false,
-    escOwns: false,
-    escapeCloses: false,
-    trapsFocus: false,
+    hasRole: true,
+    hasAriaModal: true,
+    escOwns: true,
+    escapeCloses: true,
+    trapsFocus: true,
   },
   {
     name: 'LibraryManager',
