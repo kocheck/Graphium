@@ -458,9 +458,10 @@ hook rejects the commit, paste its output into §4 and treat the rule it names t
 1. Edit `src/index.css` so its head reads exactly as follows. Line 2 (`tw-animate-css`) is
    present **only if** `grep -c tw-animate-css package.json` prints `1`. The comment line inside
    `@theme` stands for plans 000/001's declarations, which stay byte-for-byte (do not type the
-   comment). `@custom-variant` replaces the CLI's `.dark`-class variant; `@theme inline` is a
-   **second, separate** block (plain `@theme` snapshots values and would break the light/dark
-   swap). Do not add `--radius`, `--radius-*`, `--chart-*` or `--sidebar-*`: plan 000's `@theme`
+   comment). `@custom-variant` replaces the CLI's `.dark`-class variant. The bridge is a
+   **second** `@theme inline` block (Tailwind merges multiple `@theme` blocks; both must be
+   `inline`, because plain `@theme` snapshots values and would break the light/dark swap). Do
+   not add `--radius`, `--radius-*`, `--chart-*` or `--sidebar-*`: plan 000's `@theme`
    already aliases `--radius-*` to `--app-radius-*`.
 
    ```css
@@ -472,7 +473,7 @@ hook rejects the commit, paste its output into §4 and treat the rule it names t
 
    @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
-   @theme {
+   @theme inline {
      /* …plan 000's token aliases and plan 001's --animate-slide-down, unchanged… */
    }
 
@@ -646,7 +647,7 @@ npm run verify:static
 git add -A && git commit -m "plan-002 step-5: theming bridge, dark variant, playground registration"
 ```
 
-**Expected**: `2` (one `@theme`, one `@theme inline`); `1`; nothing (every bridge value is a
+**Expected**: `2` (plan 000's `@theme inline` block and the bridge block); `1`; nothing (every bridge value is a
 `var()`); nothing / a radius list; `3.91`; `Total: N tests in 1 file`; `N passed`; exit 0.
 **Check**: `npm run test:a11y` exits 0 with the same `N` that `--list` printed.
 **If it fails**: an axe `color-contrast` violation names an element; find its Tailwind class,

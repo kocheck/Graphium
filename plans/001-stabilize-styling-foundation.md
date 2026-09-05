@@ -143,7 +143,7 @@ exit status is the pass, not a failure.
   `plans/README.md`, `plans/002-shadcn-compatibility-spike.md` — Steps 9–10
 
 **Out of scope** (do NOT touch, even though they look related): the 286 inline styles; the
-hardcoded Tailwind palette classes in TSX (401 at d3d3642, command in Step 6); any component
+hardcoded Tailwind palette classes in TSX (400 at d3d3642, command in Step 6); any component
 markup beyond the edits named above; `src/components/Canvas/**`; `Toast.tsx` colours;
 `PauseManager.tsx`; shadcn, Radix Primitives, CVA, `cn()`, `components.json` (plan 003); the
 Radix Colors `@import`s in `theme.css`.
@@ -190,7 +190,7 @@ for plan 000's declarations, which stay byte-for-byte (do not type the comment):
 @import './styles/theme.css';
 @import './styles/app.css';
 
-@theme {
+@theme inline {
   /* …plan 000's declarations, unchanged… */
   --animate-slide-down: slideDown 0.3s ease-out;
 }
@@ -558,7 +558,7 @@ not revert the step.
    ```
 
 4. Create `src/styles/palette-classes.test.ts`. Set `BASELINE` to the number the count command
-   below prints (397 expected; see **Expected**):
+   below prints (396 expected; see **Expected**):
 
    ```ts
    import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -571,7 +571,7 @@ not revert the step.
     * Plan 004 lowers BASELINE as each component moves onto --app-* tokens.
     * Same count as: grep -rhoE '<PALETTE_CLASS>' src --include=*.tsx | wc -l
     */
-   const BASELINE = 397;
+   const BASELINE = 396;
 
    const PALETTE_CLASS =
      /\b(?:bg|text|border|ring|divide|placeholder|outline|from|to|via|fill|stroke)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b|\b(?:bg|text|border)-(?:white|black)\b/g;
@@ -618,8 +618,8 @@ npm run verify:static
 npm run verify:web
 ```
 
-**Expected**: nothing then `exit=1`; `6` (accent, error, success × two themes); `397` — the
-count was 401 at d3d3642 and `PreferencesDialog.tsx` held 4 of them, which plan 000 deleted
+**Expected**: nothing then `exit=1`; `6` (accent, error, success × two themes); `396` — the
+count was 400 at d3d3642 and `PreferencesDialog.tsx` held 4 of them, which plan 000 deleted
 (if the number differs, use the printed number as `BASELINE` and record both numbers under
 Deviations in the report); `2 passed`; exit 0; exit 0 — `verify:web` runs the a11y suite over
 the seven surfaces of CONVENTIONS §1 in both themes (14 scans), which is the contrast gate for
@@ -817,10 +817,10 @@ storage initialised or after the editor mounted; re-read the spec once, rerun, t
 
   ````markdown
   Tailwind v4 is configured in CSS. To expose a semantic variable as a utility, add it to the
-  `@theme` block in `src/index.css`:
+  `@theme inline` block in `src/index.css`:
 
   ```css
-  @theme {
+  @theme inline {
     --color-bg-surface: var(--app-bg-surface);
     /* generates bg-bg-surface, text-bg-surface, … */
   }

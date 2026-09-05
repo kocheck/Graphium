@@ -24,7 +24,7 @@ should not improvise. When a step is unclear, the correct action is always to ST
 | **`data-esc-owns`**      | An attribute (`data-esc-owns="true"`) on an open overlay's content element. While any element carrying it is in the DOM, the global Escape key does **not** stop Session Console audio. Drop it from a dialog and Escape kills the DM's music. |
 | **Session Console**      | The audio/ambience panel inside the sidebar (`src/components/SessionConsole/`).                                                                                                                                       |
 | **Primitive**            | A component in `src/components/ui/` (shadcn-generated, Radix-based). Not a feature component.                                                                                                                         |
-| **Bridge**               | The `@theme inline` block in `src/index.css` that defines shadcn's token names (`--color-primary`, …) in terms of Graphium's `--app-*` variables.                                                                    |
+| **Bridge**               | The `--color-*` declarations (plan 002/003) inside the single `@theme inline` block in `src/index.css` (created by plan 000) that define shadcn's token names (`--color-primary`, …) in terms of Graphium's `--app-*` variables. Plan 000's alias block and plan 002's bridge block are both `@theme inline`; there are never more than these two `@theme` blocks. |
 | **Adapter**              | A thin existing component (`Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx`) whose internals are replaced by a primitive while its props API stays unchanged.                                              |
 | **Tranche**              | A group of primitives added and committed together in plan 003.                                                                                                                                                       |
 | **Surface**              | One of the named screens the test helpers can navigate to: `home`, `editor`, `editor-mobile`, `confirm-dialog`, `world`, `world-dialog`, `design-system`. Defined in `tests/helpers/surfaces.ts` after plan 000.       |
@@ -69,7 +69,8 @@ After plan 000 lands, run:
 bash scripts/preflight.sh NNN     # NNN = your plan number, e.g. 001
 ```
 
-It exits 0 only when: the previous plan's row in `plans/README.md` is `DONE`, every
+It exits 0 only when: every plan in your plan's **Depends on** line has a `DONE` row in
+`plans/README.md`, every
 artefact your plan lists under **Requires** exists, `node_modules/` and the Playwright
 Chromium binary are installed, and you are on the branch your plan names. On non-zero
 exit it prints the reason; STOP and report that reason.
@@ -94,6 +95,10 @@ contents.
 | `npm run verify:electron`  | `build:electron`, then Playwright `Electron-App` under `xvfb-run -a`                          | Where the plan says so (it is slow)                 |
 | `npm run verify`           | All three, in that order                                                                      | Before every push                                   |
 | `SHOTS_OUT=D npm run shots` | Screenshots every surface in both themes into directory `D` (Playwright cannot take custom flags, so the output directory is an environment variable) | Where the plan says so |
+
+`verify:web` and `shots` run with `CI=1`, so Playwright serves the **built** output on port 4173
+(`preview:web`), matching CI; `shots` builds first. Running a single spec by hand therefore needs
+`npm run build:web` first. `test:a11y` runs the `Web-Chromium` project only.
 
 Until plan 000 lands, the equivalents are:
 
@@ -229,7 +234,7 @@ Decisions already made on 2026-09-04 (do not re-ask):
 | `PreferencesDialog.tsx`                     | Delete it (plan 000). It has zero importers. Git history keeps it.                          |
 | Web deploy on merge to `main`               | Pin `deploy-web.yml` to manual dispatch for the program (plan 000); restore in plan 006b.   |
 | Executor environment                        | Headless only. Every visual check is a Playwright screenshot Kyle reviews in the PR.        |
-| Ignored functional specs                    | Delete the nine that need UI that does not exist; keep the three that need no test ids; write small new ones (plan 000). |
+| Ignored functional specs                    | Delete the nine that need UI that does not exist plus `campaign-workflow.spec.ts` (8 of 9 tests skipped); keep `door-sync` and `dm-world-sync`; rewrite `visual.spec.ts` on the surface helper; add small smoke specs (plan 000). |
 | Design brief for plan 006                   | Written: `docs/planning/ui-redesign-brief.md`. Plan 006 executes against it.               |
 | Sign-off mechanism                          | Decision files (this section) plus PR review.                                               |
 | `ConfirmDialog` initial focus               | Cancel (the safe action on a destructive dialog).                                           |
