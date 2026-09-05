@@ -495,6 +495,7 @@ module.exports = {
         'src/components/SessionConsole/SessionConsoleMasterBar.tsx',
         'src/components/Sidebar.tsx',
         'src/components/MapNavigator.tsx',
+        'src/components/QuickTokenSidebar.tsx',
       ],
       rules: {
         'no-restricted-syntax': [
