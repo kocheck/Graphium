@@ -47,8 +47,7 @@ If any row differs: STOP.
   `src/components/DesignSystemPlayground/types.ts`,
   `src/components/SessionConsole/useSessionConsoleHotkeys.ts`, `src/index.css` containing exactly
   one `@theme` block, `plans/README.md` row 001 = `DONE`
-- **Grounded at**: ‹merge SHA of plan 001, written there by its final step› (citations verified at
-  d3d3642)
+- **Grounded at**: `aedd359` (citations verified at d3d3642)
 
 ## Why this matters
 
