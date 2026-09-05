@@ -31,6 +31,7 @@ export function SessionConsoleMasterBar(): JSX.Element {
       <div className="flex items-center gap-2">
         <span
           data-testid="session-console-status"
+          role="img"
           aria-label={STATUS_LABEL[status]}
           className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
           style={{ backgroundColor: STATUS_COLOR[status] }}

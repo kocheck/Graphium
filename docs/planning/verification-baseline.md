@@ -54,3 +54,20 @@ grep -rnoE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|re
 ```
 
 Count at `d3d3642` / before plan 000: `400`.
+
+## Deleted tests
+
+Replaced by the 14-scan surface × theme matrix in `tests/accessibility.spec.ts` (plan 000 Step 4):
+
+- `System theme syncs with OS preference`
+- `Specific contrast checks - primary text on background`
+
+## Accessibility triage
+
+| surface        | theme | rule                 | selector                                                                      | ratio                         | disposition                   |
+| -------------- | ----- | -------------------- | ----------------------------------------------------------------------------- | ----------------------------- | ----------------------------- |
+| editor         | light | aria-prohibited-attr | `[data-testid="session-console-status"]`                                      | n/a                           | (a) fixed: added `role="img"` |
+| editor         | dark  | aria-prohibited-attr | `[data-testid="session-console-status"]`                                      | n/a                           | (a) fixed: added `role="img"` |
+| confirm-dialog | light | aria-prohibited-attr | `[data-testid="session-console-status"]`                                      | n/a                           | (a) fixed: added `role="img"` |
+| confirm-dialog | dark  | aria-prohibited-attr | `[data-testid="session-console-status"]`                                      | n/a                           | (a) fixed: added `role="img"` |
+| editor-mobile  | dark  | color-contrast       | `.flex-col.justify-center.py-2:nth-child(1) > span` (mobile toolbar "Select") | 2.89 (`#0070c1` on `#0d2847`) | (b) deferred to plan 006      |
