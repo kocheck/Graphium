@@ -49,7 +49,7 @@ If any row differs: STOP.
 - **Requires**: `scripts/preflight.sh`; `tests/helpers/surfaces.ts`;
   `docs/planning/verification-baseline.md`; `src/components/Toolbar.tsx`;
   `docs/guides/UI_RECIPES.md`; `docs/planning/screenshots/004-final/`
-- **Grounded at**: ‹merge SHA of plan 004's last PR, written there by its final step› (citations
+- **Grounded at**: `0b66664` (citations
   verified at d3d3642)
 
 Branch, commits, PR, CI and rollback: `plans/CONVENTIONS.md` §7. Branch name:
