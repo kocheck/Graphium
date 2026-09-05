@@ -1,6 +1,6 @@
 # Decision 004-confirm-dialog-destructive-contrast: How should ConfirmDialog pass the a11y gate?
 
-Status: PENDING
+Status: DECIDED
 
 ## Question
 
@@ -18,3 +18,5 @@ Plan 004 Step 3 requires the confirm button to use `variant="destructive"` and f
 Option 1 — the only violation is color-contrast, already the documented 006 bucket, and the primitive is doing what Step 3 asked.
 
 ## Kyle's answer
+
+1 — add `confirm-dialog` and `world-dialog` to `CONTRAST_DEFERRED` until 006b.
