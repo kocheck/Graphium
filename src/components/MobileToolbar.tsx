@@ -41,6 +41,8 @@ import {
   RiMoreLine,
 } from '@remixicon/react';
 
+import { Button } from '@/components/ui/button';
+
 import { useGameStore } from '../store/gameStore';
 
 interface MobileToolbarProps {
@@ -102,62 +104,51 @@ function MobileToolbar({
       {showMoreMenu && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setShowMoreMenu(false)} />
+          <div
+            className="fixed inset-0 bg-[var(--app-overlay)] z-40"
+            onClick={() => setShowMoreMenu(false)}
+          />
 
           {/* Menu */}
           <div
-            className="fixed bottom-16 right-0 left-0 mx-4 mb-2 rounded-lg shadow-xl z-50 overflow-hidden"
+            className="fixed bottom-16 right-0 left-0 mx-4 mb-2 rounded-lg shadow-xl z-50 overflow-hidden bg-[var(--app-bg-surface)] border border-[var(--app-border-default)]"
             data-testid="toolbar-mobile-more-menu"
-            style={{
-              backgroundColor: 'var(--app-bg-surface)',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'var(--app-border-default)',
-            }}
           >
             {/* Play/Pause Button */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 onPauseToggle();
                 setShowMoreMenu(false);
               }}
-              className="w-full px-4 py-4 text-left flex items-center gap-3 min-h-[56px]"
-              style={{
-                backgroundColor: isGamePaused
-                  ? 'var(--app-error-solid)'
-                  : 'var(--app-success-solid)',
-                color: 'white',
-                borderBottomWidth: '1px',
-                borderBottomStyle: 'solid',
-                borderBottomColor: 'var(--app-border-subtle)',
-              }}
+              className={`w-full px-4 py-4 text-left flex items-center gap-3 min-h-[56px] ${
+                isGamePaused
+                  ? 'bg-[var(--app-error-solid)] text-[var(--app-error-solid-text)]'
+                  : 'bg-[var(--app-success-solid)] text-[var(--app-success-solid-text)]'
+              } border-b border-[var(--app-border-subtle)]`}
             >
               {isGamePaused ? (
-                <RiPlayFill className="w-5 h-5" />
+                <RiPlayFill className="size-5" />
               ) : (
-                <RiPauseFill className="w-5 h-5" />
+                <RiPauseFill className="size-5" />
               )}
               <span className="font-semibold">
                 {isGamePaused ? 'PAUSED - Click to Resume' : 'PLAYING - Click to Pause'}
               </span>
-            </button>
+            </Button>
 
             {/* Door Tool */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 setTool('door');
                 setShowMoreMenu(false);
               }}
-              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px]"
-              style={{
-                color: 'var(--app-text-primary)',
-                backgroundColor: tool === 'door' ? 'var(--app-accent-bg)' : 'transparent',
-                borderBottomWidth: '1px',
-                borderBottomStyle: 'solid',
-                borderBottomColor: 'var(--app-border-subtle)',
-              }}
+              className={`w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px] text-[var(--app-text-primary)] border-b border-[var(--app-border-subtle)] ${
+                tool === 'door' ? 'bg-[var(--app-accent-bg)]' : 'bg-[var(--app-bg-surface)]'
+              }`}
             >
-              <RiDoorOpenLine className="w-6 h-6" />
+              <RiDoorOpenLine className="size-6" />
               <div className="flex-1">
                 <span>Place Door</span>
                 {tool === 'door' && (
@@ -167,40 +158,31 @@ function MobileToolbar({
                 )}
               </div>
               {tool === 'door' && setDoorOrientation && (
-                <button
+                <Button
+                  variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
                     setDoorOrientation(
                       doorOrientation === 'horizontal' ? 'vertical' : 'horizontal',
                     );
                   }}
-                  className="px-3 py-1 rounded text-sm"
-                  style={{
-                    backgroundColor: 'var(--app-accent-solid)',
-                    color: 'white',
-                  }}
+                  className="px-3 py-1 rounded text-sm bg-[var(--app-accent-solid)] text-[var(--app-accent-solid-text)]"
                 >
                   Rotate
-                </button>
+                </Button>
               )}
-            </button>
+            </Button>
 
             {/* Color Picker */}
-            <button
+            <Button
+              variant="ghost"
               onClick={handleColorPicker}
-              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px]"
-              style={{
-                color: 'var(--app-text-primary)',
-                borderBottomWidth: '1px',
-                borderBottomStyle: 'solid',
-                borderBottomColor: 'var(--app-border-subtle)',
-              }}
+              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px] text-[var(--app-text-primary)] bg-[var(--app-bg-surface)] border-b border-[var(--app-border-subtle)]"
             >
               <div
-                className="w-6 h-6 rounded border-2"
+                className="w-6 h-6 rounded border-2 border-[var(--app-border-default)]"
                 style={{
                   backgroundColor: color,
-                  borderColor: 'var(--app-border-default)',
                 }}
               />
               <span>Change Marker Color</span>
@@ -211,115 +193,106 @@ function MobileToolbar({
                 onChange={(e) => setColor(e.target.value)}
                 className="hidden"
               />
-            </button>
+            </Button>
 
             {/* Dungeon Generator */}
-            <button
+            <Button
+              variant="ghost"
               onClick={handleDungeonGen}
-              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px]"
-              style={{
-                color: 'var(--app-text-primary)',
-                borderBottomWidth: '1px',
-                borderBottomStyle: 'solid',
-                borderBottomColor: 'var(--app-border-subtle)',
-              }}
+              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px] text-[var(--app-text-primary)] bg-[var(--app-bg-surface)] border-b border-[var(--app-border-subtle)]"
             >
-              <RiBuildingLine className="w-6 h-6" />
+              <RiBuildingLine className="size-6" />
               <span>Generate Random Dungeon</span>
-            </button>
+            </Button>
 
             {/* World View */}
-            <button
+            <Button
+              variant="ghost"
               onClick={handleWorldView}
-              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px]"
-              style={{
-                color: 'var(--app-text-primary)',
-              }}
+              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors min-h-[56px] text-[var(--app-text-primary)] bg-[var(--app-bg-surface)]"
             >
-              <RiGlobalLine className="w-6 h-6" />
+              <RiGlobalLine className="size-6" />
               <span>Open World View (Player Display)</span>
-            </button>
+            </Button>
           </div>
         </>
       )}
 
       {/* Bottom Navigation Bar */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
+        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-[var(--app-bg-surface)] border-t border-[var(--app-border-subtle)] pb-[env(safe-area-inset-bottom,0px)]"
         data-testid="toolbar-mobile-root"
-        style={{
-          backgroundColor: 'var(--app-bg-surface)',
-          borderTopWidth: '1px',
-          borderTopStyle: 'solid',
-          borderTopColor: 'var(--app-border-subtle)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)', // iOS safe area
-        }}
       >
         {/* Select Tool */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setTool('select')}
-          className="flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors"
-          style={{
-            color: tool === 'select' ? 'var(--app-accent-solid)' : 'var(--app-text-secondary)',
-            backgroundColor: tool === 'select' ? 'var(--app-accent-bg)' : 'transparent',
-          }}
+          className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
+            tool === 'select'
+              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              : 'text-[var(--app-text-secondary)] bg-transparent'
+          }`}
         >
-          <RiCursorLine className="w-6 h-6" />
+          <RiCursorLine className="size-6" />
           <span className="text-xs mt-1">Select</span>
-        </button>
+        </Button>
 
         {/* Marker Tool */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setTool('marker')}
-          className="flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors"
-          style={{
-            color: tool === 'marker' ? 'var(--app-accent-solid)' : 'var(--app-text-secondary)',
-            backgroundColor: tool === 'marker' ? 'var(--app-accent-bg)' : 'transparent',
-          }}
+          className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
+            tool === 'marker'
+              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              : 'text-[var(--app-text-secondary)] bg-transparent'
+          }`}
         >
-          <RiPencilLine className="w-6 h-6" />
+          <RiPencilLine className="size-6" />
           <span className="text-xs mt-1">Marker</span>
-        </button>
+        </Button>
 
         {/* Eraser Tool */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setTool('eraser')}
-          className="flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors"
-          style={{
-            color: tool === 'eraser' ? 'var(--app-accent-solid)' : 'var(--app-text-secondary)',
-            backgroundColor: tool === 'eraser' ? 'var(--app-accent-bg)' : 'transparent',
-          }}
+          className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
+            tool === 'eraser'
+              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              : 'text-[var(--app-text-secondary)] bg-transparent'
+          }`}
         >
-          <RiEraserLine className="w-6 h-6" />
+          <RiEraserLine className="size-6" />
           <span className="text-xs mt-1">Eraser</span>
-        </button>
+        </Button>
 
         {/* Wall Tool */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setTool('wall')}
-          className="flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors"
-          style={{
-            color: tool === 'wall' ? 'var(--app-accent-solid)' : 'var(--app-text-secondary)',
-            backgroundColor: tool === 'wall' ? 'var(--app-accent-bg)' : 'transparent',
-          }}
+          className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
+            tool === 'wall'
+              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              : 'text-[var(--app-text-secondary)] bg-transparent'
+          }`}
         >
-          <RiLayoutMasonryLine className="w-6 h-6" />
+          <RiLayoutMasonryLine className="size-6" />
           <span className="text-xs mt-1">Wall</span>
-        </button>
+        </Button>
 
         {/* More Menu */}
-        <button
+        <Button
+          variant="ghost"
           onClick={handleMoreClick}
           data-testid="toolbar-mobile-more"
-          className="flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors"
-          style={{
-            color: showMoreMenu ? 'var(--app-accent-solid)' : 'var(--app-text-secondary)',
-            backgroundColor: showMoreMenu ? 'var(--app-accent-bg)' : 'transparent',
-          }}
+          className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
+            showMoreMenu
+              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              : 'text-[var(--app-text-secondary)] bg-transparent'
+          }`}
         >
-          <RiMoreLine className="w-6 h-6" />
+          <RiMoreLine className="size-6" />
           <span className="text-xs mt-1">More</span>
-        </button>
+        </Button>
       </div>
     </>
   );

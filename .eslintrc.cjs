@@ -486,6 +486,7 @@ module.exports = {
         'src/components/AboutModal.tsx',
         'src/components/DungeonGeneratorDialog.tsx',
         'src/components/Toolbar.tsx',
+        'src/components/MobileToolbar.tsx',
       ],
       rules: {
         'no-restricted-syntax': [

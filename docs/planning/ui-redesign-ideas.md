@@ -76,3 +76,9 @@
 - Door-orientation and measure-mode controls only appear when those tools are active; a persistent strip would make the modes discoverable.
 - Broadcast is a labelled button; a Switch next to the measure modes would match ToggleSwitch.
 - The floating colour palette stayed in `App.tsx`; grouping it with the toolbar would keep marker chrome in one place.
+
+### MobileToolbar
+
+- Active bar buttons use accent-bg + accent text, not `variant="tool"` (solid accent). Unifying with the desktop toolbar would change the mobile active treatment.
+- The more-menu is a hand-rolled sheet (backdrop + list); a Sheet primitive would match the other drawers.
+- Rotate is still a nested button inside the Place Door row.
