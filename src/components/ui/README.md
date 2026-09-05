@@ -30,7 +30,11 @@ feature aliases).
 ## Add a primitive
 
 1. `npx shadcn@4.21.0 add <name> -y` → exit 0, `src/components/ui/<name>.tsx` exists.
-2. `npm run format` → exit 0.
+   If the CLI asks to overwrite `button.tsx`, answer `n`.
+2. `npm run format` → exit 0. The generated file often uses `React.ComponentProps` with no
+   React import: add `import type * as React from 'react'` (or a value `import * as React`
+   if the file uses hooks / `forwardRef`) so `tsc` and
+   `@typescript-eslint/consistent-type-imports` pass.
 3. If it renders an overlay `Content`: add the `ownsEscape` prop (three edits, as in
    `dialog.tsx`; `grep -n 'ownsEscape' src/components/ui/dialog.tsx`).
 4. Register it: add an entry with `id: 'ui-<name>'` to the matching
@@ -118,4 +122,17 @@ stay inside `<html>` so theme scope is never escaped. Proven by
 
 ## Bundle
 
-_Filled by plan 003 Step 10._
+Measured after `npm run build:web` with:
+
+```
+find dist-web/assets -type f \( -name '*.js' -o -name '*.css' \) -print0 | xargs -0 wc -c | tail -1
+```
+
+| Label                           | Bytes   |
+| ------------------------------- | ------- |
+| Plan 002 before (web assets)    | 1188167 |
+| Plan 003 today (web assets)     | 1434788 |
+| Bundle delta                    | 246621  |
+| Extrapolated 12-primitive delta | 269106  |
+
+Bundle delta: 246621
