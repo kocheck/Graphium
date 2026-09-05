@@ -21,3 +21,9 @@
 
 - Category is still a native `<select>` next to `Input` fields; a shared Select primitive would match.
 - Mobile full-height (`h-full max-w-none rounded-none`) is a layout hack; a dedicated mobile sheet would read more clearly.
+
+### ImageCropper
+
+- Title is `sr-only` ("Crop image"); a visible header would make the modal feel like the other dialogs.
+- Zoom is a native range input; a Slider primitive would match the rest of the chrome.
+- Cropping itself has no automated coverage (jsdom cannot drive `react-easy-crop`).
