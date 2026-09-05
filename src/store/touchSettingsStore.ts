@@ -7,7 +7,7 @@ import { persist } from 'zustand/middleware';
  * - normal: Balanced sensitivity (0.3-1.5x width range, default)
  * - heavy: Requires more pressure for thick strokes (0.4-1.2x width range)
  */
-export type PressureCurve = 'light' | 'normal' | 'heavy';
+type PressureCurve = 'light' | 'normal' | 'heavy';
 
 /**
  * Palm rejection strategy determines how to filter out accidental palm touches
@@ -16,7 +16,7 @@ export type PressureCurve = 'light' | 'normal' | 'heavy';
  * - stylusOnly: When stylus is detected, ignore all touch input
  * - smartDelay: Ignore touches for brief period after stylus lift
  */
-export type PalmRejectionMode = 'off' | 'touchSize' | 'stylusOnly' | 'smartDelay';
+type PalmRejectionMode = 'off' | 'touchSize' | 'stylusOnly' | 'smartDelay';
 
 /**
  * TouchSettings manages user preferences for touch and stylus input

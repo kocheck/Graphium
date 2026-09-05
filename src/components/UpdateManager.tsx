@@ -528,6 +528,7 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps): React.ReactElem
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
+      data-testid="dialog-update-manager-root"
       onClick={onClose}
     >
       <div

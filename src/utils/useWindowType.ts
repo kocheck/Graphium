@@ -7,7 +7,7 @@
  * - **World View** (Player Window): Sanitized display for projection/screen sharing
  *
  * Window type is determined by the `?type=world` URL query parameter, which is set
- * by the main process when creating the World Window (see electron/main.ts:259).
+ * by the main process when creating the World Window (see electron/main.ts, grep "type=world").
  *
  * **Usage Pattern:**
  * ```typescript
@@ -58,7 +58,7 @@
  * @see {@link file://./src/components/SyncManager.tsx SyncManager.tsx} for state sync usage
  * @see {@link file://./src/App.tsx App.tsx} for UI sanitization usage
  * @see {@link file://./src/components/Canvas/CanvasManager.tsx CanvasManager.tsx} for interaction restrictions
- * @see {@link file://../electron/main.ts electron/main.ts:243-263} for World Window creation
+ * @see {@link file://../electron/main.ts electron/main.ts (the loadURL calls carrying ?type=world)} for World Window creation
  */
 export const useWindowType = (): { isWorldView: boolean; isArchitectView: boolean } => {
   const params = new URLSearchParams(window.location.search);

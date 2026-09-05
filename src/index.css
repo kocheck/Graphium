@@ -3,6 +3,33 @@
 @import './styles/theme.css';
 @import './styles/app.css';
 
+/*
+ * Tailwind namespace aliases → Graphium tokens. `rounded-lg`, `shadow-2xl`, `ease-out`,
+ * `font-semibold`, `text-sm` and every spacing utility now resolve to `--app-*` variables
+ * from styles/theme.css. Values are unchanged; only the indirection is new. Bare `rounded`
+ * (0.25rem) is a literal in Tailwind v4 and is not covered.
+ */
+@theme inline {
+  --radius-sm: var(--app-radius-sm);
+  --radius-md: var(--app-radius-md);
+  --radius-lg: var(--app-radius-lg);
+  --shadow-sm: var(--app-elevation-low);
+  --shadow-lg: var(--app-elevation-medium);
+  --shadow-2xl: var(--app-elevation-high);
+  --ease-out: var(--app-ease-decelerate);
+  --spacing: var(--app-space-unit);
+  --text-xs: var(--app-font-size-xs);
+  --text-sm: var(--app-font-size-sm);
+  --text-base: var(--app-font-size-base);
+  --text-lg: var(--app-font-size-lg);
+  --text-xl: var(--app-font-size-xl);
+  --text-2xl: var(--app-font-size-2xl);
+  --font-weight-normal: var(--app-font-weight-normal);
+  --font-weight-medium: var(--app-font-weight-medium);
+  --font-weight-semibold: var(--app-font-weight-semibold);
+  --font-weight-bold: var(--app-font-weight-bold);
+}
+
 /* Ensure html, body, and root fill viewport */
 html,
 body {

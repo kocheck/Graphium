@@ -2,27 +2,14 @@ import type { Page } from '@playwright/test';
 import type { Campaign } from '../../src/store/gameStore';
 
 /**
- * Bypass Landing Page and Inject Test State
+ * Legacy Electron-mocked editor entry for door-sync and dm-world-sync.
  *
- * This helper bypasses the "Download Landing Page" gateway by:
- * 1. Mocking Electron APIs (for web mode compatibility)
- * 2. Injecting pre-configured IndexedDB state
- * 3. Setting localStorage flags to simulate returning user
+ * New tests should use `gotoSurface` from `tests/helpers/surfaces.ts` instead.
+ * This helper injects `window.ipcRenderer`, which makes SyncManager skip
+ * BroadcastChannel — so it cannot drive the World View in the web build.
  *
- * **Why this is needed:**
- * The production web build shows a landing page before the main app.
- * For functional tests, we want to skip directly to the app to test behavior,
- * not landing page UX.
- *
- * **Usage:**
- * ```typescript
- * test.beforeEach(async ({ page }) => {
- *   await bypassLandingPageAndInjectState(page);
- * });
- * ```
- *
- * @param page - Playwright Page object
- * @param campaignData - Optional initial campaign data to inject
+ * Flow: mock Electron APIs, seed IndexedDB, open `/?e2e=1`, click New Campaign,
+ * wait for `editor-view`.
  */
 export async function bypassLandingPageAndInjectState(
   page: Page,
@@ -100,20 +87,16 @@ export async function bypassLandingPageAndInjectState(
     localStorage.setItem('graphium-theme', 'light'); // Use light theme for tests
   });
 
-  // 4. Navigate to app (landing page logic will detect "returning user" and skip)
-  await page.goto('/');
+  // 4. Navigate with ?e2e=1 so window.__GAME_STORE__ is exposed in every build
+  await page.goto('/?e2e=1');
 
-  // 5. Wait for main app to render
-  // Note: The app uses data-testid="editor-view" on the editor root div (when in EDITOR state)
-  await page
-    .waitForSelector('[data-testid="editor-view"]', {
-      timeout: 10000,
-      state: 'visible',
-    })
-    .catch(async () => {
-      // Fallback: If editor-view doesn't exist, wait for root to be visible
-      await page.waitForSelector('#root:visible', { timeout: 10000 });
-    });
+  // 5. Enter the editor. Nothing auto-enters EDITOR; New Campaign is the only path.
+  await page.waitForSelector('[data-testid="new-campaign-button"]', {
+    timeout: 10000,
+    state: 'visible',
+  });
+  await page.click('[data-testid="new-campaign-button"]');
+  await page.waitForSelector('[data-testid="editor-view"]', { timeout: 10000, state: 'visible' });
 
   // Wait for any initial animations/loading to complete
   await page.waitForLoadState('networkidle');

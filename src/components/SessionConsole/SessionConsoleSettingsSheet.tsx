@@ -43,6 +43,7 @@ export function SessionConsoleSettingsSheet({
         role="dialog"
         aria-modal="true"
         data-esc-owns="true"
+        data-testid="sheet-session-console-settings-root"
         className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-[var(--app-bg-surface)] shadow-2xl z-50 overflow-y-auto"
       >
         <div className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4 flex items-center justify-between">

@@ -201,6 +201,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      data-testid="dialog-library-manager-root"
       onClick={onClose}
     >
       {/* Modal container: Full-screen on mobile, centered on desktop */}

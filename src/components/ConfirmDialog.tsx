@@ -77,6 +77,7 @@ function ConfirmDialog(): JSX.Element | null {
       aria-modal="true"
       data-esc-owns="true"
       aria-labelledby="confirm-dialog-title"
+      data-testid="dialog-confirm-root"
     >
       <div
         className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 max-w-md w-full mx-4"

@@ -1,9 +1,10 @@
 name: Deploy Web App to GitHub Pages
 
 on:
-  push:
-    branches:
-      - main # Deploy when pushing to main branch
+  # Pinned to manual dispatch for the UI redesign program (plan 000). Plan 006b restores:
+  #   push:
+  #     branches:
+  #       - main
   workflow_dispatch: # Allow manual deployment
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

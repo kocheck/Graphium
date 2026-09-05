@@ -934,8 +934,14 @@ export const useGameStore = create<GameState>((set, get) => {
   };
 });
 
-// Expose store to window for E2E testing
-if (typeof window !== 'undefined' && (import.meta.env.DEV || import.meta.env.MODE === 'test')) {
+const exposeStoreForE2E =
+  typeof window !== 'undefined' &&
+  (import.meta.env.DEV ||
+    import.meta.env.MODE === 'test' ||
+    new URLSearchParams(window.location.search).has('e2e'));
+
+// Expose store to window for E2E testing: dev, vitest, or any build opened with ?e2e=1
+if (exposeStoreForE2E) {
   interface GameStoreWindow extends Window {
     __GAME_STORE__?: typeof useGameStore;
   }

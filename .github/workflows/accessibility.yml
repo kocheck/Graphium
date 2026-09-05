@@ -47,7 +47,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: accessibility-report
-          path: playwright-report/
+          path: |
+            playwright-report/
+            accessibility-violations*.json
           retention-days: 30
 
       - name: Comment PR with results
@@ -56,18 +58,20 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const reportPath = 'accessibility-violations.json';
-
+            const files = fs.readdirSync('.').filter((f) => /^accessibility-violations.*\.json$/.test(f));
             let violations = [];
-            if (fs.existsSync(reportPath)) {
-              violations = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            for (const file of files) {
+              const surface = file.replace(/^accessibility-violations-?/, '').replace(/\.json$/, '');
+              for (const v of JSON.parse(fs.readFileSync(file, 'utf8'))) {
+                violations.push({ ...v, surface });
+              }
             }
 
             const comment = `## ❌ Accessibility Audit Failed
 
             This pull request introduces WCAG AA contrast violations. Please fix the following issues before merging:
 
-            ${violations.length > 0 ? violations.map(v => `- **${v.id}**: ${v.description}\n  - Impact: ${v.impact}\n  - Affected elements: ${v.nodes.length}`).join('\n') : 'See uploaded report for details.'}
+            ${violations.length > 0 ? violations.map(v => `- **${v.id}** (${v.surface}): ${v.description}\n  - Impact: ${v.impact}\n  - Affected elements: ${v.nodes.length}`).join('\n') : 'See uploaded report for details.'}
 
             ### Resources
             - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)

@@ -186,6 +186,7 @@ function AddToLibraryDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      data-testid="dialog-add-to-library-root"
       onClick={handleClose}
     >
       <div

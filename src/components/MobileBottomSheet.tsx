@@ -88,6 +88,7 @@ function MobileBottomSheet({
         role="dialog"
         aria-modal="true"
         aria-label="Bottom sheet"
+        data-testid="sheet-mobile-bottom-root"
       >
         {/* Drag Handle */}
         <div className="flex justify-center pt-3 pb-2">

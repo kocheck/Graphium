@@ -81,6 +81,7 @@ function MobileSidebarDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
+        data-testid="sheet-mobile-sidebar-root"
       >
         {children}
       </div>
