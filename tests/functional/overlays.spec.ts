@@ -94,11 +94,11 @@ const OVERLAYS: OverlayCase[] = [
     open: async (page) => {
       await page.locator('[aria-label="Manage library"]').click();
     },
-    hasRole: false,
-    hasAriaModal: false,
-    escOwns: false,
-    escapeCloses: false,
-    trapsFocus: false,
+    hasRole: true,
+    hasAriaModal: true,
+    escOwns: true,
+    escapeCloses: true,
+    trapsFocus: true,
   },
   {
     name: 'SessionConsoleSettingsSheet',

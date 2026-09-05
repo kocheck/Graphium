@@ -24,6 +24,11 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 
 import { RiUploadLine, RiCloseLine, RiEditLine, RiDeleteBinLine } from '@remixicon/react';
 
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+
 import AddToLibraryDialog from './AddToLibraryDialog';
 import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
 import TokenMetadataEditor from './TokenMetadataEditor';
@@ -199,25 +204,29 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      data-testid="dialog-library-manager-root"
-      onClick={onClose}
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
     >
-      {/* Modal container: Full-screen on mobile, centered on desktop */}
-      <div
-        className={`w-full flex flex-col overflow-hidden shadow-2xl ${
-          isMobile ? 'h-full' : 'max-w-6xl h-[80vh] rounded-lg'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: 'var(--app-bg-base)',
-        }}
+      <DialogContent
+        className={
+          isMobile
+            ? 'h-full max-w-none rounded-none p-0 flex flex-col'
+            : 'max-w-6xl h-[80vh] p-0 flex flex-col'
+        }
+        data-testid="dialog-library-manager-root"
+        showCloseButton={false}
       >
         {/* Header */}
-        <div className="p-4 border-b border-neutral-700 bg-neutral-800">
+        <div className="p-4 border-b border-[var(--app-border-default)] bg-[var(--app-bg-surface)]">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">Token Library</h2>
+            <DialogTitle className="text-xl font-bold text-[var(--app-text-primary)]">
+              Token Library
+            </DialogTitle>
             <div className="flex gap-2">
               <input
                 type="file"
@@ -228,38 +237,31 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
                   void handleUpload(e);
                 }}
               />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium flex items-center gap-2"
-              >
-                <RiUploadLine className="w-5 h-5" />
+              <Button variant="default" onClick={() => fileInputRef.current?.click()}>
+                <RiUploadLine className="size-5" />
                 Upload
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-neutral-700 rounded text-white"
-                aria-label="Close"
-              >
-                <RiCloseLine className="w-6 h-6" />
-              </button>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+                <RiCloseLine className="size-6" />
+              </Button>
             </div>
           </div>
 
           {/* Search and filter */}
           <div className="flex gap-3">
-            <input
+            <Input
               aria-label="Search library assets"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search assets..."
-              className="flex-1 bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none text-base"
+              className="flex-1 bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none text-base"
             />
             <select
               aria-label="Filter by category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none text-base"
+              className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none text-base"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -273,7 +275,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
         {/* Asset grid */}
         <div className="flex-1 overflow-y-auto p-6">
           {filteredItems.length === 0 ? (
-            <div className="text-center py-16 text-neutral-500">
+            <div className="text-center py-16 text-[var(--app-text-muted)]">
               {tokenLibrary.length === 0 ? (
                 <>
                   <p className="text-lg mb-2">Library is empty</p>
@@ -298,20 +300,14 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
                     draggable
                     onDragStart={(e) => handleDragStart(e, item)}
                     onDragEnd={handleDragEnd}
-                    className="group bg-neutral-800 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all cursor-grab active:cursor-grabbing"
-                    style={
-                      isDragging
-                        ? {
-                            opacity: 0.5,
-                            transform: 'scale(1.05)',
-                            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6)',
-                            zIndex: 1000,
-                          }
-                        : {}
-                    }
+                    className={cn(
+                      'group rounded-lg overflow-hidden hover:ring-2 hover:ring-[var(--app-accent-solid)] transition-all cursor-grab active:cursor-grabbing bg-[var(--app-bg-surface)]',
+                      isDragging &&
+                        'opacity-50 scale-105 z-[1000] shadow-[0_10px_30px_rgba(0,0,0,0.6)]',
+                    )}
                   >
                     {/* Thumbnail */}
-                    <div className="aspect-square bg-neutral-700 relative">
+                    <div className="aspect-square bg-[var(--app-bg-active)] relative">
                       <img
                         src={toMediaProtocol(item.thumbnailSrc)}
                         alt={item.name}
@@ -320,54 +316,61 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
                       {/* Action buttons (show on hover) */}
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {/* Edit button */}
-                        <button
+                        <Button
+                          variant="default"
+                          size="icon-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingItemId(item.id);
                             setIsMetadataEditorOpen(true);
                           }}
-                          className="p-1.5 bg-blue-600 hover:bg-blue-500 rounded"
                           aria-label={`Edit ${item.name}`}
                         >
-                          <RiEditLine className="w-4 h-4 text-white" />
-                        </button>
+                          <RiEditLine className="size-4" />
+                        </Button>
                         {/* Delete button */}
-                        <button
+                        <Button
+                          variant="destructive"
+                          size="icon-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             void handleDelete(item.id, item.name);
                           }}
-                          className="p-1.5 bg-red-600 hover:bg-red-500 rounded"
                           aria-label={`Delete ${item.name}`}
                         >
-                          <RiDeleteBinLine className="w-4 h-4 text-white" />
-                        </button>
+                          <RiDeleteBinLine className="size-4" />
+                        </Button>
                       </div>
                     </div>
 
                     {/* Metadata */}
                     <div className="p-3">
-                      <h3 className="text-white font-medium text-sm truncate mb-1">{item.name}</h3>
-                      <p className="text-neutral-400 text-xs truncate">{item.category}</p>
+                      <h3 className="text-[var(--app-text-primary)] font-medium text-sm truncate mb-1">
+                        {item.name}
+                      </h3>
+                      <p className="text-[var(--app-text-secondary)] text-xs truncate">
+                        {item.category}
+                      </p>
                       {item.tags.length > 0 && (
                         <div className="flex gap-1 mt-2 flex-wrap">
                           {item.tags.slice(0, 2).map((tag, idx) => (
                             <span
                               key={idx}
-                              className="text-xs bg-neutral-700 text-neutral-300 px-2 py-0.5 rounded"
+                              className="text-xs bg-[var(--app-bg-active)] text-[var(--app-text-secondary)] px-2 py-0.5 rounded"
                             >
                               {tag}
                             </span>
                           ))}
                           {item.tags.length > 2 && (
-                            <span className="text-xs text-neutral-500">
+                            <span className="text-xs text-[var(--app-text-muted)]">
                               +{item.tags.length - 2}
                             </span>
                           )}
                         </div>
                       )}
                       {/* Keyboard-accessible add button */}
-                      <button
+                      <Button
+                        variant="default"
                         onClick={() => {
                           addLibraryTokenToMap(item, addToken, map);
                           showToast(
@@ -375,11 +378,11 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
                             'success',
                           );
                         }}
-                        className="w-full mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs font-medium"
+                        className="w-full mt-2 text-xs"
                         aria-label={`Add ${item.name} to map`}
                       >
                         Add to Map
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );
@@ -389,54 +392,51 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-neutral-700 bg-neutral-800 flex justify-between items-center">
-          <span className="text-neutral-400 text-sm">
+        <div className="p-4 border-t border-[var(--app-border-default)] bg-[var(--app-bg-surface)] flex justify-between items-center">
+          <span className="text-[var(--app-text-secondary)] text-sm">
             {filteredItems.length} of {tokenLibrary.length} assets
           </span>
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white font-medium"
-            >
+            <Button variant="secondary" onClick={onClose}>
               Close
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Add to Library Dialog */}
-      <AddToLibraryDialog
-        isOpen={isAddDialogOpen}
-        imageSrc={pendingImage?.src ?? null}
-        imageBlob={pendingImage?.blob ?? null}
-        suggestedName={pendingImage?.name}
-        onClose={() => {
-          setIsAddDialogOpen(false);
-          setPendingImage(null);
-        }}
-        onConfirm={() => {
-          setIsAddDialogOpen(false);
-          setPendingImage(null);
-        }}
-      />
+        {/* Add to Library Dialog */}
+        <AddToLibraryDialog
+          isOpen={isAddDialogOpen}
+          imageSrc={pendingImage?.src ?? null}
+          imageBlob={pendingImage?.blob ?? null}
+          suggestedName={pendingImage?.name}
+          onClose={() => {
+            setIsAddDialogOpen(false);
+            setPendingImage(null);
+          }}
+          onConfirm={() => {
+            setIsAddDialogOpen(false);
+            setPendingImage(null);
+          }}
+        />
 
-      {/* Token Metadata Editor */}
-      <LibraryModalErrorBoundary
-        onClose={() => {
-          setIsMetadataEditorOpen(false);
-          setEditingItemId(null);
-        }}
-      >
-        <TokenMetadataEditor
-          isOpen={isMetadataEditorOpen}
-          libraryItemId={editingItemId}
+        {/* Token Metadata Editor */}
+        <LibraryModalErrorBoundary
           onClose={() => {
             setIsMetadataEditorOpen(false);
             setEditingItemId(null);
           }}
-        />
-      </LibraryModalErrorBoundary>
-    </div>
+        >
+          <TokenMetadataEditor
+            isOpen={isMetadataEditorOpen}
+            libraryItemId={editingItemId}
+            onClose={() => {
+              setIsMetadataEditorOpen(false);
+              setEditingItemId(null);
+            }}
+          />
+        </LibraryModalErrorBoundary>
+      </DialogContent>
+    </Dialog>
   );
 }
 

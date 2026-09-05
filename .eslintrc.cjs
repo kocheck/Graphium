@@ -480,6 +480,7 @@ module.exports = {
         'src/components/SessionConsole/SessionConsoleSettingsSheet.tsx',
         'src/components/MobileSidebarDrawer.tsx',
         'src/components/MobileBottomSheet.tsx',
+        'src/components/AssetLibrary/LibraryManager.tsx',
       ],
       rules: {
         'no-restricted-syntax': [
