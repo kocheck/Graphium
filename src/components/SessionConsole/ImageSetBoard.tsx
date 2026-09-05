@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button';
+
 import { toMediaProtocol } from '../../utils/mediaProtocol';
 
 import type { StageImage } from '../../types/sessionConsole';
@@ -118,14 +120,15 @@ export function ImageSetBoard({
                   </span>
                 ) : null}
               </button>
-              <button
+              <Button
                 type="button"
-                className="btn btn-ghost w-full py-0.5 text-[11px]"
+                variant="ghost"
+                className="w-full py-0.5 text-[11px]"
                 aria-label={`Edit plate ${image.name}`}
                 onClick={() => onEdit(image)}
               >
                 Edit
-              </button>
+              </Button>
             </li>
           );
         })}

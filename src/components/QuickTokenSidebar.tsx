@@ -97,7 +97,8 @@ function QuickTokenSidebar({
             {recentTokens.map((token) => (
               <Tooltip key={token.id} content={token.name}>
                 <div
-                  className="sidebar-token w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
+                  className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
+                  data-testid="sidebar-token-tile"
                   draggable
                   onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
                 >
@@ -125,7 +126,8 @@ function QuickTokenSidebar({
           {/* Generic Token (Always first slot) */}
           <Tooltip content="Generic Token">
             <div
-              className="sidebar-token w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group border-2 border-dashed"
+              className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group border-2 border-dashed"
+              data-testid="sidebar-token-tile"
               style={{
                 backgroundColor: 'var(--app-bg-subtle)',
                 borderColor: 'var(--app-border-default)',
@@ -144,7 +146,8 @@ function QuickTokenSidebar({
           {playerTokens.map((token) => (
             <Tooltip key={token.id} content={token.name}>
               <div
-                className="sidebar-token w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
+                className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
+                data-testid="sidebar-token-tile"
                 draggable
                 onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
               >

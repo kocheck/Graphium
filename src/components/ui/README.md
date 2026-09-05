@@ -106,6 +106,12 @@ format` is the source of truth after add.
 - `@typescript-eslint/explicit-function-return-type` — generated signatures omit them.
 - `no-restricted-imports` — **on**, not off: primitives cannot import feature code.
 
+## Kept adapters and excluded components
+
+`Tooltip.tsx`, `ToggleSwitch.tsx`, and `CollapsibleSection.tsx` stay as adapters: they
+insulate call sites from primitive API changes. `ErrorFallbackUI.tsx` and
+`UpdateErrorFallbackUI.tsx` are never migrated; they render after React has failed.
+
 ## Decisions
 
 - **Toast:** keep `src/components/Toast.tsx`; do not add `sonner`. `gameStore` models one toast

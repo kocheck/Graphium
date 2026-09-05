@@ -82,3 +82,55 @@
 - Active bar buttons use accent-bg + accent text, not `variant="tool"` (solid accent). Unifying with the desktop toolbar would change the mobile active treatment.
 - The more-menu is a hand-rolled sheet (backdrop + list); a Sheet primitive would match the other drawers.
 - Rotate is still a nested button inside the Place Door row.
+
+### SessionConsolePanel
+
+- Copy current / Copy all / SFX chips were `btn-secondary` and now map to `ghost` (undefined class, same as bare `.btn`). A real secondary treatment would separate them from the settings icon.
+- Settings is a lone icon with no text; a labelled control or a sheet trigger would match the other Session Console sheets.
+
+### TrackGroupList
+
+- Play-row buttons stay raw `<button>`s (not `.btn`); only Edit moved onto the primitive. A shared track-row treatment would unify play vs edit.
+- Recommended-plate copy still uses hardcoded `#c4a35a`; a warning/accent token would match the rest of the chrome.
+
+### SessionConsoleSettingsSections
+
+- Stage title/subtitle now use `Input`; volume and duck remain native ranges. A Slider primitive would match.
+- Advanced pack accordion is a raw `<button>` + `aria-expanded`, not `Collapsible`. Switching would match CollapsibleSection.
+- Import replace is a destructive confirm but the trigger is `ghost`; a danger treatment belongs here.
+
+### SessionConsoleBoard
+
+- YouTube field and Add/New actions are now primitives; the hidden folder file input is still a native control (by design this step).
+- Empty-state copy and the dashed dropzone are unchanged; a dedicated empty illustration or Dropzone primitive would make the ingest path clearer.
+
+### ImageSetBoard
+
+- Plate tiles stay raw `<button>`s; only Edit moved onto the primitive. Same split as TrackGroupList.
+- Thumbnails are a fixed `h-16` crop; a square token tile would match QuickTokenSidebar.
+
+### SessionConsoleMasterBar
+
+- Transport buttons were `btn-secondary` and now map to `ghost`. A compact `size="sm"` or a real toolbar group would distinguish Duck/Pause/Stop from text actions.
+- World-link status still uses hex (`#6b7280` / `#d97706` / `#22c55e`); tokens would survive a theme pass.
+- Volume is still a native range.
+
+### Sidebar
+
+- New Map / Place / Add were `btn-secondary` and now map to `ghost`. A real secondary (or outline dashed) treatment would keep New Map distinct from Place/Add.
+- Dashed-border New Map styling was kept as leftover classes on `Button`; a dedicated dashed variant would not fight the primitive's default padding.
+
+### MapNavigator
+
+- Delete hover was `hover:text-red-500` and is now `--app-error-text`. Rename still uses an emoji button; an icon + token would match Sidebar's settings control.
+- New Map is the same dashed `ghost` as Sidebar; one shared "create map" control would remove the duplicate.
+
+### DoorControls
+
+- Unlock All keeps `bg-orange-600/20 hover:bg-orange-600/30` and the locked count keeps `text-orange-400` (no token; not on the ratchet). Plan 006b decides the orange.
+- Open All / Close All are `secondary` (old `btn-default`); a quieter ghost set would match the Session Console transport.
+
+### QuickTokenSidebar
+
+- Tiles are token-background `div`s with `data-testid="sidebar-token-tile"`, not `Button`s (they are drag sources). A shared token-tile primitive would match Library cards.
+- The generic tile still overrides the token background with an inline `style` (`--app-bg-subtle` + dashed border).

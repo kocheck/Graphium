@@ -6,6 +6,8 @@ import {
   RiVolumeMuteLine,
 } from '@remixicon/react';
 
+import { Button } from '@/components/ui/button';
+
 import { useWorldLinkStatus } from './useWorldLinkStatus';
 import { useGameStore } from '../../store/gameStore';
 
@@ -55,56 +57,63 @@ export function SessionConsoleMasterBar(): JSX.Element {
         />
       </label>
       <div className="flex flex-wrap gap-1">
-        <button
+        <Button
           type="button"
-          className="btn btn-secondary px-2 py-1 text-xs"
+          variant="ghost"
+          className="px-2 py-1 text-xs"
           aria-pressed={runtime.ducked}
           onClick={() => dispatchSessionConsole({ type: 'SET_DUCKED', ducked: !runtime.ducked })}
         >
           <RiVolumeMuteLine className="w-3.5 h-3.5 inline" /> Duck
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-secondary px-2 py-1 text-xs"
+          variant="ghost"
+          className="px-2 py-1 text-xs"
           onClick={() => dispatchSessionConsole({ type: 'PAUSE' })}
         >
           <RiPauseLine className="w-3.5 h-3.5 inline" /> Pause
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-secondary px-2 py-1 text-xs"
+          variant="ghost"
+          className="px-2 py-1 text-xs"
           onClick={() => dispatchSessionConsole({ type: 'RESUME' })}
         >
           <RiPlayLine className="w-3.5 h-3.5 inline" /> Resume
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-secondary px-2 py-1 text-xs"
+          variant="ghost"
+          className="px-2 py-1 text-xs"
           onClick={() => dispatchSessionConsole({ type: 'RESTART' })}
         >
           <RiRestartLine className="w-3.5 h-3.5 inline" /> Restart
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-secondary px-2 py-1 text-xs"
+          variant="ghost"
+          className="px-2 py-1 text-xs"
           onClick={() => dispatchSessionConsole({ type: 'STOP' })}
         >
           <RiStopLine className="w-3.5 h-3.5 inline" /> Stop
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-secondary px-2 py-1 text-xs"
+          variant="ghost"
+          className="px-2 py-1 text-xs"
           onClick={() => dispatchSessionConsole({ type: 'RETURN_TO_MAP' })}
         >
           Return to map
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-secondary px-2 py-1 text-xs"
+          variant="ghost"
+          className="px-2 py-1 text-xs"
           onClick={() => dispatchSessionConsole({ type: 'FIRE_SFX', sfxId: 'test-tone' })}
         >
           Test tone
-        </button>
+        </Button>
       </div>
     </div>
   );

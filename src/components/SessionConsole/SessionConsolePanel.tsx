@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 
 import { RiFileCopyLine, RiSettings4Line } from '@remixicon/react';
 
+import { Button } from '@/components/ui/button';
+
 import { SessionConsoleBoard } from './SessionConsoleBoard';
 import { SessionConsoleEditorSheet } from './SessionConsoleEditorSheet';
 import { SessionConsoleMasterBar } from './SessionConsoleMasterBar';
@@ -67,33 +69,36 @@ export function SessionConsolePanel(): JSX.Element {
       tabIndex={0}
     >
       <div className="flex items-center justify-end gap-1">
-        <button
+        <Button
           type="button"
-          className="btn btn-ghost p-1"
+          variant="ghost"
+          className="p-1"
           aria-label="Session Console settings"
           onClick={() => setSettingsOpen(true)}
         >
           <RiSettings4Line className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
 
       <SessionConsoleMasterBar />
 
       <div className="flex gap-1">
-        <button
+        <Button
           type="button"
-          className="btn btn-secondary flex-1 py-1 text-xs"
+          variant="ghost"
+          className="flex-1 py-1 text-xs"
           onClick={handleCopyCurrent}
         >
           <RiFileCopyLine className="w-3.5 h-3.5 inline" /> Copy current
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-secondary flex-1 py-1 text-xs"
+          variant="ghost"
+          className="flex-1 py-1 text-xs"
           onClick={handleCopyAll}
         >
           Copy all links
-        </button>
+        </Button>
       </div>
 
       <SessionConsoleBoard
@@ -103,14 +108,15 @@ export function SessionConsolePanel(): JSX.Element {
 
       <div className="flex flex-wrap gap-1">
         {catalog.sfx.map((sfx) => (
-          <button
+          <Button
             key={sfx.id}
             type="button"
-            className="btn btn-secondary px-2 py-1 text-xs"
+            variant="ghost"
+            className="px-2 py-1 text-xs"
             onClick={() => dispatchSessionConsole({ type: 'FIRE_SFX', sfxId: sfx.id })}
           >
             {sfx.label}
-          </button>
+          </Button>
         ))}
       </div>
 

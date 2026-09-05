@@ -1,6 +1,8 @@
 import type React from 'react';
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+
 import { useGameStore } from '../store/gameStore';
 import { rollForMessage } from '../utils/systemMessages';
 
@@ -10,6 +12,7 @@ import { rollForMessage } from '../utils/systemMessages';
  * Provides UI for managing maps within the current campaign.
  * Allows switching active map, creating new maps, and deleting maps.
  */
+// eslint-disable-next-line max-lines-per-function -- required variant="ghost" line
 function MapNavigator(): React.ReactElement | null {
   const campaign = useGameStore((state) => state.campaign);
   const addMap = useGameStore((state) => state.addMap);
@@ -144,7 +147,7 @@ function MapNavigator(): React.ReactElement | null {
                 </button>
                 <button
                   onClick={(e) => handleDelete(e, map.id, map.name)}
-                  className="p-1 hover:text-red-500"
+                  className="p-1 hover:text-[var(--app-error-text)]"
                   title="Delete"
                   aria-label={`Delete ${map.name}`}
                   disabled={maps.length <= 1}
@@ -157,7 +160,8 @@ function MapNavigator(): React.ReactElement | null {
         })}
       </ul>
 
-      <button
+      <Button
+        variant="ghost"
         onClick={() => {
           const mapNumbers = maps
             .map((m) => {
@@ -168,10 +172,10 @@ function MapNavigator(): React.ReactElement | null {
           const nextNumber = mapNumbers.length > 0 ? Math.max(...mapNumbers) + 1 : maps.length + 1;
           addMap(`Map ${nextNumber}`);
         }}
-        className="btn btn-secondary w-full py-2 text-sm flex items-center justify-center gap-2 border-dashed border-2"
+        className="w-full py-2 text-sm flex items-center justify-center gap-2 border-dashed border-2"
       >
         <span>➕</span> New Map
-      </button>
+      </Button>
     </div>
   );
 }

@@ -516,7 +516,7 @@ describe('QuickTokenSidebar', () => {
       );
 
       const dragonToken = screen.getByAltText('Dragon').closest('div');
-      expect(dragonToken).toHaveClass('sidebar-token');
+      expect(dragonToken).toHaveAttribute('data-testid', 'sidebar-token-tile');
     });
   });
 

@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button';
+
 import type { StageImage, Track, TrackGroup } from '../../types/sessionConsole';
 
 interface TrackGroupListProps {
@@ -113,14 +115,15 @@ export function TrackGroupList({
                   </span>
                 )}
               </button>
-              <button
+              <Button
                 type="button"
-                className="btn btn-ghost w-full py-0.5 text-[11px]"
+                variant="ghost"
+                className="w-full py-0.5 text-[11px]"
                 aria-label={`Edit track ${track.title}`}
                 onClick={() => onEdit(track)}
               >
                 Edit
-              </button>
+              </Button>
             </li>
           );
         })}

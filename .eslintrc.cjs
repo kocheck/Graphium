@@ -487,6 +487,15 @@ module.exports = {
         'src/components/DungeonGeneratorDialog.tsx',
         'src/components/Toolbar.tsx',
         'src/components/MobileToolbar.tsx',
+        'src/components/SessionConsole/SessionConsolePanel.tsx',
+        'src/components/SessionConsole/TrackGroupList.tsx',
+        'src/components/SessionConsole/sessionConsoleSettingsSections.tsx',
+        'src/components/SessionConsole/SessionConsoleBoard.tsx',
+        'src/components/SessionConsole/ImageSetBoard.tsx',
+        'src/components/SessionConsole/SessionConsoleMasterBar.tsx',
+        'src/components/Sidebar.tsx',
+        'src/components/MapNavigator.tsx',
+        'src/components/QuickTokenSidebar.tsx',
       ],
       rules: {
         'no-restricted-syntax': [
