@@ -26,9 +26,12 @@
  */
 
 import type React from 'react';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 import { RiSearchLine, RiDownloadLine, RiRefreshLine } from '@remixicon/react';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 import { throttle } from '../utils/throttle';
 
@@ -229,88 +232,72 @@ function StatusContent({
     <>
       {!isElectron && (
         <div className="text-center py-4">
-          <p className="mb-2" style={{ color: 'var(--app-text)' }}>
-            {messages.nonElectronTitle}
-          </p>
-          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
-            {messages.nonElectronSubtitle}
-          </p>
+          <p className="mb-2 text-[var(--app-text)]">{messages.nonElectronTitle}</p>
+          <p className="text-sm text-[var(--app-text-muted)]">{messages.nonElectronSubtitle}</p>
         </div>
       )}
       {isElectron && status === 'idle' && (
         <div className="text-center py-4">
-          <p className="mb-4" style={{ color: 'var(--app-text-muted)' }}>
-            {messages.idle}
-          </p>
+          <p className="mb-4 text-[var(--app-text-muted)]">{messages.idle}</p>
         </div>
       )}
       {status === 'checking' && (
         <div className="text-center py-4">
-          <div className="animate-pulse mb-2" style={{ color: 'var(--app-text)' }}>
-            {messages.checking}
-          </div>
+          <div className="animate-pulse mb-2 text-[var(--app-text)]">{messages.checking}</div>
         </div>
       )}
       {status === 'no-update' && (
         <div className="text-center py-4">
-          <p className="mb-2" style={{ color: 'var(--app-text)' }}>
-            {messages.noUpdateTitle}
-          </p>
-          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
-            {messages.noUpdateSubtitle}
-          </p>
+          <p className="mb-2 text-[var(--app-text)]">{messages.noUpdateTitle}</p>
+          <p className="text-sm text-[var(--app-text-muted)]">{messages.noUpdateSubtitle}</p>
         </div>
       )}
       {status === 'update-available' && updateInfo && (
         <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
-          <p className="mb-2 font-medium" style={{ color: 'var(--app-text)' }}>
+          <p className="mb-2 font-medium text-[var(--app-text)]">
             {formatMessage(messages.updateAvailableTitle, updateInfo.version)}
           </p>
-          <p className="text-sm mb-4" style={{ color: 'var(--app-text-muted)' }}>
+          <p className="text-sm mb-4 text-[var(--app-text-muted)]">
             {messages.updateAvailableSubtitle}
           </p>
         </div>
       )}
       {status === 'downloading' && downloadProgress && (
         <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
-          <p className="mb-3 font-medium" style={{ color: 'var(--app-text)' }}>
-            {messages.downloading}
-          </p>
+          <p className="mb-3 font-medium text-[var(--app-text)]">{messages.downloading}</p>
           <div className="mb-2 bg-[var(--app-bg)] rounded-full h-2 overflow-hidden">
             <div
               className="h-full bg-[var(--app-accent-solid)] transition-all duration-300"
-              style={{ width: `${downloadProgress.percent}%` }}
+              ref={(el) => {
+                if (el) {
+                  el.style.width = `${downloadProgress.percent}%`;
+                }
+              }}
             />
           </div>
-          <div className="flex justify-between text-sm" style={{ color: 'var(--app-text-muted)' }}>
+          <div className="flex justify-between text-sm text-[var(--app-text-muted)]">
             <span>{downloadProgress.percent.toFixed(1)}%</span>
             <span>
               {formatBytes(downloadProgress.transferred)} / {formatBytes(downloadProgress.total)}
             </span>
           </div>
-          <div className="text-sm text-center mt-2" style={{ color: 'var(--app-text-muted)' }}>
+          <div className="text-sm text-center mt-2 text-[var(--app-text-muted)]">
             {formatSpeed(downloadProgress.bytesPerSecond)}
           </div>
         </div>
       )}
       {status === 'downloaded' && updateInfo && (
         <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
-          <p className="mb-2 font-medium" style={{ color: 'var(--app-text)' }}>
-            {messages.downloadedTitle}
-          </p>
-          <p className="text-sm mb-2" style={{ color: 'var(--app-text-muted)' }}>
+          <p className="mb-2 font-medium text-[var(--app-text)]">{messages.downloadedTitle}</p>
+          <p className="text-sm mb-2 text-[var(--app-text-muted)]">
             {formatMessage(messages.downloadedSubtitle, updateInfo.version)}
           </p>
-          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
-            {messages.downloadedInstruction}
-          </p>
+          <p className="text-sm text-[var(--app-text-muted)]">{messages.downloadedInstruction}</p>
         </div>
       )}
       {status === 'error' && (
         <div className="p-4 bg-[var(--app-error-bg)] border border-[var(--app-error-border)] rounded">
-          <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
-            {errorMessage || messages.error}
-          </p>
+          <p className="text-sm text-[var(--app-text-muted)]">{errorMessage || messages.error}</p>
         </div>
       )}
     </>
@@ -501,69 +488,48 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps): React.ReactElem
     error: rollForMessage(updateMessages.error),
   }).current;
 
-  // Handle keyboard events
-  // Note: Using useCallback to stabilize onClose reference and prevent duplicate listeners
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose],
-  );
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleKeyDown]);
-
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
-      data-testid="dialog-update-manager-root"
-      onClick={onClose}
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
     >
-      <div
-        className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 max-w-md w-full mx-4"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        data-esc-owns="true"
-        aria-labelledby="update-manager-title"
+      <DialogContent
+        className="max-w-md"
+        data-testid="dialog-update-manager-root"
+        showCloseButton={false}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2
+          <DialogTitle
             id="update-manager-title"
-            className="text-xl font-semibold"
-            style={{ color: 'var(--app-text)' }}
+            className="text-xl font-semibold text-[var(--app-text)]"
           >
             Software Update
-          </h2>
-          <button
+          </DialogTitle>
+          <Button
+            variant="ghost"
             onClick={onClose}
-            className="text-2xl leading-none hover:opacity-70 transition"
-            style={{ color: 'var(--app-text-muted)' }}
+            className="text-2xl leading-none text-[var(--app-text-muted)]"
             aria-label="Close update manager"
           >
             ×
-          </button>
+          </Button>
         </div>
 
         {/* Current Version */}
         <div className="mb-6 p-4 bg-[var(--app-bg-subtle)] rounded">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium" style={{ color: 'var(--app-text-muted)' }}>
+            <span className="text-sm font-medium text-[var(--app-text-muted)]">
               Current Version
             </span>
-            <span className="font-mono text-sm" style={{ color: 'var(--app-text)' }}>
+            <span className="font-mono text-sm text-[var(--app-text)]">
               {currentVersion || 'Unknown'}
             </span>
           </div>
@@ -584,51 +550,50 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps): React.ReactElem
         {/* Action Buttons */}
         <div className="flex gap-3">
           {isElectron && (status === 'idle' || status === 'no-update' || status === 'error') && (
-            <button
+            <Button
+              variant="default"
+              className="flex-1"
               onClick={() => {
                 void handleCheckForUpdates();
               }}
-              className="flex-1 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
-              <RiSearchLine className="w-5 h-5" />
+              <RiSearchLine className="size-5" />
               Consult the Archives
-            </button>
+            </Button>
           )}
 
           {status === 'update-available' && (
-            <button
+            <Button
+              variant="default"
+              className="flex-1"
               onClick={() => {
                 void handleDownload();
               }}
-              className="flex-1 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
-              <RiDownloadLine className="w-5 h-5" />
+              <RiDownloadLine className="size-5" />
               Summon the Artifact
-            </button>
+            </Button>
           )}
 
           {status === 'downloaded' && (
-            <button
+            <Button
+              variant="default"
+              className="flex-1"
               onClick={() => {
                 void handleInstall();
               }}
-              className="flex-1 px-4 py-2 bg-[var(--app-success-solid)] hover:bg-[var(--app-success-solid-hover)] text-white rounded font-medium transition flex items-center justify-center gap-2"
             >
-              <RiRefreshLine className="w-5 h-5" />
+              <RiRefreshLine className="size-5" />
               Restart & Install
-            </button>
+            </Button>
           )}
 
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-[var(--app-border)] hover:bg-[var(--app-bg-subtle)] rounded font-medium transition"
-            style={{ color: 'var(--app-text)' }}
-          >
+          <Button variant="secondary" onClick={onClose}>
             {status === 'downloaded' ? 'Later' : 'Close'}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -1,8 +1,22 @@
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 
 import { useGameStore } from '../store/gameStore';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
+
+/** Radix focuses the first tabbable element on open; we want Generate instead. */
+function focusGenerateButton(event: Event): void {
+  event.preventDefault();
+  const root = event.currentTarget;
+  if (root instanceof HTMLElement) {
+    root
+      .querySelector<HTMLButtonElement>('[data-testid="dialog-dungeon-generator-generate"]')
+      ?.focus();
+  }
+}
 
 /**
  * DungeonGeneratorDialog is a modal that allows users to configure and
@@ -23,22 +37,6 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
   const [minRoomSize, setMinRoomSize] = useState(3);
   const [maxRoomSize, setMaxRoomSize] = useState(8);
   const [clearCanvas, setClearCanvas] = useState(false);
-
-  // Handle keyboard events
-  useEffect(() => {
-    if (!dungeonDialog) {
-      return;
-    }
-
-    const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        clearDungeonDialog();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dungeonDialog, clearDungeonDialog]);
 
   if (!dungeonDialog) {
     return null;
@@ -82,27 +80,26 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
     clearDungeonDialog();
   };
 
+  const handleOpenChange = (open: boolean): void => {
+    if (!open) {
+      clearDungeonDialog();
+    }
+  };
+
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
-      onClick={clearDungeonDialog}
-      role="dialog"
-      aria-modal="true"
-      data-esc-owns="true"
-      aria-labelledby="dungeon-dialog-title"
-      data-testid="dialog-dungeon-generator-root"
-    >
-      <div
-        className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 min-w-[400px] max-w-md mx-4"
-        onClick={(e) => e.stopPropagation()}
+    <Dialog open onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="max-w-md"
+        data-testid="dialog-dungeon-generator-root"
+        showCloseButton={false}
+        onOpenAutoFocus={focusGenerateButton}
       >
-        <h2
+        <DialogTitle
           id="dungeon-dialog-title"
-          className="text-xl font-bold mb-4"
-          style={{ color: 'var(--app-text)' }}
+          className="text-xl font-bold mb-4 text-[var(--app-text)]"
         >
           Dungeon Generator
-        </h2>
+        </DialogTitle>
 
         <div className="space-y-4">
           {/* Number of Rooms */}
@@ -116,10 +113,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
               onChange={(e) => setNumRooms(parseInt(e.target.value))}
               className="w-full"
             />
-            <div
-              className="flex justify-between text-xs"
-              style={{ color: 'var(--app-text-muted)' }}
-            >
+            <div className="flex justify-between text-xs text-[var(--app-text-muted)]">
               <span>3</span>
               <span>15</span>
             </div>
@@ -138,10 +132,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
               onChange={(e) => setMinRoomSize(parseInt(e.target.value))}
               className="w-full"
             />
-            <div
-              className="flex justify-between text-xs"
-              style={{ color: 'var(--app-text-muted)' }}
-            >
+            <div className="flex justify-between text-xs text-[var(--app-text-muted)]">
               <span>2</span>
               <span>6</span>
             </div>
@@ -160,10 +151,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
               onChange={(e) => setMaxRoomSize(parseInt(e.target.value))}
               className="w-full"
             />
-            <div
-              className="flex justify-between text-xs"
-              style={{ color: 'var(--app-text-muted)' }}
-            >
+            <div className="flex justify-between text-xs text-[var(--app-text-muted)]">
               <span>4</span>
               <span>12</span>
             </div>
@@ -184,10 +172,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
           </div>
 
           {/* Info Text */}
-          <div
-            className="text-xs p-3 rounded"
-            style={{ color: 'var(--app-text-muted)', backgroundColor: 'var(--app-bg-subtle)' }}
-          >
+          <div className="text-xs p-3 rounded text-[var(--app-text-muted)] bg-[var(--app-bg-subtle)]">
             <p>
               <strong>Note:</strong> The dungeon will be drawn using the Wall tool and will be fully
               interactive. You can modify the generated walls manually after creation.
@@ -195,24 +180,19 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={clearDungeonDialog}
-            className="px-4 py-2 rounded bg-[var(--app-bg-subtle)] hover:bg-[var(--app-bg-hover)] transition"
-            style={{ color: 'var(--app-text)' }}
-          >
+        <DialogFooter>
+          <Button variant="secondary" onClick={clearDungeonDialog}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="default"
             onClick={handleGenerate}
-            className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white transition"
-            autoFocus
+            data-testid="dialog-dungeon-generator-generate"
           >
             Generate Dungeon
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

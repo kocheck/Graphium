@@ -46,3 +46,25 @@
 - Category and Default Type stay native `<select>`s next to `Input` fields.
 - Vision radius is a raw number field; a Slider with feet marks would match the rest of the chrome.
 - The editor is also mounted from CommandPalette; a shared sheet on mobile would match LibraryManager.
+
+### UpdateManager
+
+- Restart & Install was a success-green fill; it is now `variant="default"` like the other actions.
+- Download percent still sets width in a ref (runtime value; no static class).
+- Opened from About via "Consult the Archives"; a dedicated menu item would avoid stacking two dialogs.
+
+### AboutModal
+
+- Close is still the hand-rolled × (`about-modal-close-btn`); the primitive X would match other dialogs.
+- Title is `sr-only` ("About Graphium"); a visible header would match ConfirmDialog.
+- Tab strip uses `Tabs` with the old underline look gone; a custom Tabs trigger style would restore the previous active underline.
+- The shortcuts tab still repeats the tutorial feature/showcase blocks; one shared section would drop the duplicate.
+- Consult the Archives is still a raw `<button>` (only `text-white` was swapped).
+- Large `modalStyles` block still styles feature cards and showcase; tokens-in-Tailwind would retire the `<style>` tag.
+
+### DungeonGeneratorDialog
+
+- Room-count and size controls stay native range inputs; a Slider primitive would match ImageCropper and the rest of the chrome.
+- Clear-canvas is a native checkbox next to labelled ranges; a shared Switch would match ToggleSwitch.
+- Generate is `variant="default"` (accent) rather than a distinct create treatment.
+- The dialog still early-returns when closed, so Radix never mounts a closed instance.
