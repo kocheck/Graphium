@@ -9,7 +9,8 @@
 
 ```bash
 git fetch origin main
-git diff --stat <grounded-at>..origin/main -- src/index.css src/styles/ src/components/DesignSystemPlayground/ src/components/ui/ src/test/setup.ts .eslintrc.cjs tsconfig.json vite.config.ts vitest.config.ts package.json tests/   # Expected: empty
+G=$(grep -oE 'Grounded at\*\*: `[0-9a-f]{7,40}' plans/003-build-primitive-layer.md | grep -oE '[0-9a-f]{7,40}$')
+git diff --stat "$G"..origin/main -- src/index.css src/styles/ src/components/DesignSystemPlayground/ src/components/ui/ src/test/setup.ts .eslintrc.cjs tsconfig.json vite.config.ts vitest.config.ts package.json tests/   # Expected: empty
 ```
 
 **Citation re-check** (each command must print exactly the expected number; line numbers in this

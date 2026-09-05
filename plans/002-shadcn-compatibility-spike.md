@@ -9,7 +9,8 @@
 
 ```bash
 git fetch origin main
-git diff --stat <grounded-at>..origin/main -- package.json package-lock.json tsconfig.json \
+G=$(grep -oE 'Grounded at\*\*: `[0-9a-f]{7,40}' plans/002-shadcn-compatibility-spike.md | grep -oE '[0-9a-f]{7,40}$')
+git diff --stat "$G"..origin/main -- package.json package-lock.json tsconfig.json \
   vite.config.ts vitest.config.ts .eslintrc.cjs src/index.css src/styles/ src/App.tsx \
   src/test/setup.ts src/components/DesignSystemPlayground/ src/components/SessionConsole/ \
   tests/helpers/ tests/accessibility.spec.ts     # Expected: empty

@@ -9,7 +9,8 @@
 
 ```bash
 git fetch origin main
-git diff --stat <grounded-at>..origin/main -- src/index.css src/App.css src/styles/ \
+G=$(grep -oE 'Grounded at\*\*: `[0-9a-f]{7,40}' plans/001-stabilize-styling-foundation.md | grep -oE '[0-9a-f]{7,40}$')
+git diff --stat "$G"..origin/main -- src/index.css src/App.css src/styles/ \
   tailwind.config.js postcss.config.js vite.config.ts package.json src/App.tsx \
   src/components/ThemeManager.tsx src/components/HomeScreen.tsx src/components/Toast.tsx \
   tests/ docs/features/theming.md docs/guides/CONVENTIONS.md \
@@ -94,7 +95,9 @@ change in a large DOM. `.theme-loading * { transition: none !important; }` and t
 `@media (prefers-reduced-motion: reduce)` block below them must stay untouched. `.btn` has its
 own `transition: background-color 0.2s ease` (`grep -n transition src/styles/app.css`), so
 `.btn*` hovers keep fading; only TSX `hover:` utilities without a `transition` utility snap:
-`grep -rhoE 'className=(\{`|")[^`"]_' src --include=_.tsx | grep -cE 'hover:'`→ 90, of which`… | grep -E 'hover:' | grep -vcE 'transition'` → 32 have no transition.
+`grep -rhoE 'className=(\{`|")[^`"]*' src --include='*.tsx' | grep -cE 'hover:'` prints 90, and
+`grep -rhoE 'className=(\{`|")[^`"]*' src --include='*.tsx' | grep -E 'hover:' | grep -vcE 'transition'`
+prints 32: those 32 have no transition and will snap.
 
 **Theme switching paths.** `ThemeManager.tsx` `applyTheme` (`grep -n 'function applyTheme'
 src/components/ThemeManager.tsx`, line 36) sets `data-theme` on `<html>`. In the web build the
@@ -173,15 +176,17 @@ a non-zero count (proves you grepped the real bundle).
 **Check**: the line `exit=1`.
 **If it fails**: a rule is printed → STOP: "the v3 config is being loaded; Steps 2–3 premise is
 wrong".
-**Commit**: none (no files change).
+**Commit**: none — this step changes no files, so it is exempt from CONVENTIONS §7's
+one-commit-per-step rule.
 
 ### Step 2: Move the toast animation into the v4 CSS config and guard it with a spec
 
 **Files**: `src/index.css`, `tailwind.config.js` (delete), `tests/toast-animation.spec.ts` (new).
-**Do**: Plan 000 already put one `@theme` block in `src/index.css`. Add exactly one declaration
-to it, as its last line, and add the `@keyframes` after the block. Do not create a second
-`@theme`. After the edit the head of the file reads as follows, where the comment line stands
-for plan 000's declarations, which stay byte-for-byte (do not type the comment):
+**Do**: Plan 000 already put one `@theme inline` block in `src/index.css`. Add exactly one
+declaration to it, as the last line inside its braces, wherever the block sits in the file, and
+add the `@keyframes` immediately after the block's closing `}`. Do not move the block and do not
+create a second `@theme`. The relevant part of the file then reads as follows, where the comment
+line stands for plan 000's declarations, which stay byte-for-byte (do not type the comment):
 
 ```css
 @import 'tailwindcss';
@@ -204,10 +209,6 @@ for plan 000's declarations, which stay byte-for-byte (do not type the comment):
     opacity: 1;
   }
 }
-
-/* Ensure html, body, and root fill viewport */
-html,
-body {
 ```
 
 The old config animated `translate(-50%, …)`. Tailwind v4's `-translate-x-1/2` sets the
@@ -247,6 +248,7 @@ move or reorder the four `@import` lines; delete the `html, body` / `#root` rule
 
 ```bash
 grep -c '^@theme' src/index.css
+git rm -q tailwind.config.js; test ! -e tailwind.config.js; echo "removed=$?"
 npm run build:web
 grep -oE '\.animate-slide-down\{[^}]*\}' dist-web/assets/*.css
 grep -c -- '--app-bg-surface' dist-web/assets/*.css
@@ -255,9 +257,9 @@ npx playwright test tests/toast-animation.spec.ts --project=Web-Chromium
 npm run verify:static
 ```
 
-**Expected**: `1`; exit 0; one rule such as
-`.animate-slide-down{animation:var(--animate-slide-down)}`; non-zero; non-zero; `1 passed`;
-exit 0.
+**Expected**: `1`; `removed=0`; exit 0; exactly one line is printed (its body is not compared:
+with `@theme inline` Tailwind inlines the value, so `animation:slideDown .3s ease-out` and
+`animation:var(--animate-slide-down)` are both correct); non-zero; non-zero; `1 passed`; exit 0.
 **Check**: the spec passes.
 **If it fails**: if either count is `0`, STOP: "`@import`s were dropped; theme.css/app.css not
 loading". Otherwise re-read the head of `src/index.css` against the block above, fix once,
@@ -573,7 +575,7 @@ error */`; after `--app-success-solid-hover: var(--green-10); /* Solid success h
    const BASELINE = 396;
 
    const PALETTE_CLASS =
-     /\b(?:bg|text|border|ring|divide|placeholder|outline|from|to|via|fill|stroke)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b|\b(?:bg|text|border)-(?:white|black)\b/g;
+     /\b(?:bg|text|border|ring)-(?:white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(?:-[0-9]{2,3})?\b/g;
 
    function listTsxFiles(dir: string): string[] {
      const files: string[] = [];
@@ -611,7 +613,7 @@ value; edit `.btn-tool.active` (already tokens); reformat `app.css`.
 ```bash
 grep -nE "#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|\b(white|black)\b" src/styles/app.css; echo "exit=$?"
 grep -c 'solid-text: white' src/styles/theme.css
-grep -rhoE '\b(bg|text|border|ring|divide|placeholder|outline|from|to|via|fill|stroke)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b|\b(bg|text|border)-(white|black)\b' src --include=*.tsx | wc -l
+grep -rhoE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\b' src --include=*.tsx | wc -l
 npx vitest run src/styles
 npm run verify:static
 npm run verify:web
@@ -636,8 +638,14 @@ reintroduce a literal colour. `palette-classes.test.ts` failing with a count abo
 `bg-black`, `border-2` and `border-neutral-600`, so it reads:
 
 ```tsx
-<div className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50">
+<div
+  data-testid="toolbar-root"
+  className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50"
+>
 ```
+
+Change only the three class tokens inside the `className` string. Every other attribute on the
+element (plan 000's `data-testid="toolbar-root"` included) stays exactly as it is.
 
 This changes no pixels: unlayered `.toolbar` already beat these utilities before and after
 Step 6. The visual change belongs to Step 6.
@@ -757,7 +765,9 @@ test.beforeEach(async ({ page }) => {
         if (channel === 'GET_PAUSE_STATE') {
           return Promise.resolve(paused);
         }
-        return Promise.resolve({});
+        // Every other channel resolves to undefined, the same value the web build gets from
+        // `window.ipcRenderer?.invoke(...)` when ipcRenderer is absent.
+        return Promise.resolve(undefined);
       },
     };
   });
@@ -791,8 +801,8 @@ Contrast, for the report: white on `--app-success-solid` (`--green-9`, `#30a46c`
 and on `--app-error-solid` (`--red-9`, `#e5484d`) ≈3.9:1. The button is icon-only, a
 graphical object needing 3:1, and axe's colour-contrast rule does not evaluate icon-only
 buttons, so do not expect an axe flag either way. Record the ratios; palette is plan 006b's.
-**Do NOT**: restyle or reorder the toolbar; add a `data-testid` (the `aria-label` is the
-selector); touch `PauseManager.tsx` or `handlePauseToggle`; change the `RiPlayFill` /
+**Do NOT**: restyle or reorder the toolbar; remove or rename plan 000's `data-testid="toolbar-pause"`
+(the spec selects by `aria-label` and the id stays); touch `PauseManager.tsx` or `handlePauseToggle`; change the `RiPlayFill` /
 `RiPauseFill` swap or the `aria-label`.
 **Commands**:
 
@@ -864,12 +874,12 @@ records: Step 1's grep output, the hover counts (90 / 32), the palette count and
 the lockfile packages removed, and the two contrast ratios. Its **Screenshots** section lists
 every file in `docs/planning/screenshots/001-final/` and names the expected differences for
 Kyle: toolbar surface and button colours in both themes, pause button green, 32 snapped
-hovers. Add three bullets under `## [Unreleased]` in `CHANGELOG.md` (create a `### Fixed`
-heading under it if there is none): toast slide-down animation now runs; main toolbar follows
+hovers. Add three bullets under `## [Unreleased]` in `CHANGELOG.md` (the `### Fixed` heading that
+sits between `## [Unreleased]` and the next `## [` line; if there is none there, insert one
+directly under `## [Unreleased]` — never under a released version): toast slide-down animation now runs; main toolbar follows
 the light/dark theme; pause button shows red when paused and green when running. Push and
-open the PR (CONVENTIONS §7) with the report as its body. After merge: set this plan's row in
-`plans/README.md` to `DONE <merge sha>` and write the merge SHA into the `Grounded at` line of
-`plans/002-shadcn-compatibility-spike.md`.
+open the PR (CONVENTIONS §7) with the report as its body. The two edits below happen in a
+**separate post-merge run**, not in this commit.
 **Do NOT**: squash-merge; edit any other plan; write under a decision file's "Kyle's answer".
 **Commands**:
 
@@ -879,9 +889,16 @@ git push -u origin plan/001-styling-foundation
 ```
 
 **Expected**: exit 0; push accepted.
-**Check**: the PR exists with the report as its body and CI green.
+**Check**: `test -f plans/reports/001.md && git diff --quiet origin/plan/001-styling-foundation && echo synced`
+prints `synced`, and the PR's checks are green (a red check is handled by If it fails).
 **If it fails**: CI red → fix at the step whose commit is implicated, rerun `npm run verify`,
 push once more; then STOP.
+
+**Post-merge run** (a later run, after Kyle merges the PR; one commit
+`plan-001 post-merge: record merge sha`, on a fresh branch `plan/001-post-merge` off
+`origin/main`, landed as a docs-only PR): set this plan's row in `plans/README.md` to
+`DONE <merge sha>` and write the merge SHA into the `Grounded at` line of
+`plans/002-shadcn-compatibility-spike.md`. Check: `grep -c "DONE" plans/README.md` grew by one.
 **Commit**: `plan-001 step-10: report and changelog`
 
 ## Done criteria

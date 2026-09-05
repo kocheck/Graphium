@@ -127,9 +127,19 @@ the Grounded-at commit and lists the differences the previous plans are **expect
 have made. Any difference not on that list is drift: STOP and report it with the diff
 excerpt.
 
-When you finish a plan, the last step tells you to write the merge commit's SHA into the
-**next** plan's Grounded-at line and into `plans/README.md`. Do it; the next executor's
-drift check depends on it.
+When you finish a plan, its last step tells you to write the merge commit's SHA into the
+**next** plan's Grounded-at line and into `plans/README.md`. You cannot do that inside the
+plan's own PR (the SHA does not exist until Kyle merges), so it happens in a **post-merge
+run**: a later run on a fresh branch `plan/NNN-post-merge` off `origin/main`, one commit
+`plan-NNN post-merge: record merge sha`, landed as a docs-only PR. The next executor's
+drift check depends on it. The drift check reads the SHA from the plan's own Status block:
+
+```bash
+G=$(grep -oE 'Grounded at\*\*: `[0-9a-f]{7,40}' plans/NNN-<slug>.md | grep -oE '[0-9a-f]{7,40}$')
+git diff --stat "$G"..origin/main -- <in-scope paths>     # Expected: empty
+```
+
+If `$G` is empty the previous plan's post-merge run has not happened: STOP.
 
 ## 6. Step format
 

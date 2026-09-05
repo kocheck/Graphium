@@ -25,7 +25,8 @@
 
 ```bash
 git fetch origin main
-git diff --stat <grounded-at>..origin/main -- src/ tests/ scripts/ .eslintrc.cjs docs/guides/UI_RECIPES.md   # Expected: empty
+G=$(grep -oE 'Grounded at\*\*: `[0-9a-f]{7,40}' plans/004-migrate-screens-to-primitives.md | grep -oE '[0-9a-f]{7,40}$')
+git diff --stat "$G"..origin/main -- src/ tests/ scripts/ .eslintrc.cjs docs/guides/UI_RECIPES.md   # Expected: empty
 ```
 
 Plan 006a may merge between plan 003 and this plan; it touches only `docs/planning/`, which is

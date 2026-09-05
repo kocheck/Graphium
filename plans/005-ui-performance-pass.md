@@ -9,7 +9,8 @@
 
 ```bash
 git fetch origin main
-git diff --stat <grounded-at>..origin/main -- src/ tests/ scripts/ vite.config.ts .github/workflows/e2e.yml docs/architecture/PERFORMANCE_OPTIMIZATIONS.md docs/guides/UI_RECIPES.md     # Expected: empty
+G=$(grep -oE 'Grounded at\*\*: `[0-9a-f]{7,40}' plans/005-ui-performance-pass.md | grep -oE '[0-9a-f]{7,40}$')
+git diff --stat "$G"..origin/main -- src/ tests/ scripts/ vite.config.ts .github/workflows/e2e.yml docs/architecture/PERFORMANCE_OPTIMIZATIONS.md docs/guides/UI_RECIPES.md     # Expected: empty
 ```
 
 **Citation re-check** (each row is the exact command; "hits" is `grep -c` output). Rows marked

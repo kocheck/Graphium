@@ -36,7 +36,8 @@ invents.
 
 ```bash
 git fetch origin main
-git diff --stat <grounded-at>..origin/main -- src/styles/theme.css src/styles/fonts.css \
+G=$(grep -oE 'Grounded at\*\*: `[0-9a-f]{7,40}' plans/006-visual-redesign.md | grep -oE '[0-9a-f]{7,40}$')
+git diff --stat "$G"..origin/main -- src/styles/theme.css src/styles/fonts.css \
   src/index.css src/components/DesignSystemPlayground tests/accessibility.spec.ts \
   tests/helpers/surfaces.ts docs/features/wcag-audit.md docs/planning/ui-redesign-brief.md \
   docs/planning/decisions     # Expected: empty
