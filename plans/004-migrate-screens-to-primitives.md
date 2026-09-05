@@ -1,658 +1,1620 @@
 # Plan 004: Migrate every screen onto the primitive layer
 
-> **Executor instructions**: Follow this plan step by step. Confirm each step's
-> **Check** before moving to the next. **Commit after every step.** If anything in
-> "STOP conditions" occurs, stop and report — do not improvise. When done, update the
-> status row in `plans/README.md`.
->
-> **Read `src/components/ui/README.md` before Step 1** — the contribution contract from
-> plan 003. If it does not exist, plan 003 has not landed: STOP.
->
-> **Drift check (run first)**:
-> `git diff --stat d3d3642..HEAD -- src/components/ src/App.tsx src/styles/app.css`
+> **Executor instructions**: Read `plans/CONVENTIONS.md` first. Run the pre-flight (§3), then the
+> Drift check below. Follow the steps in order; each step's **Check** must hold before the next.
+> If any **If it fails** or STOP condition fires, follow CONVENTIONS §10. Finish with the report
+> in §11.
 
 ## Status
 
 - **Priority**: P1
-- **Effort**: XL
+- **Effort**: XL (23 commits across six sequential PRs; the two largest files are 858 and 634 lines)
 - **Risk**: HIGH
 - **Depends on**: plans/000-repair-verification-infrastructure.md, plans/003-build-primitive-layer.md
 - **Category**: migration
-- **Grounded at**: `d3d3642` (2026-09-04)
+- **Requires**: `scripts/preflight.sh`; `src/components/ui/README.md`;
+  `src/components/ui/{button,dialog,sheet,tooltip,switch,label,input,collapsible,tabs,separator}.tsx`;
+  `src/lib/utils.ts`; `tests/helpers/surfaces.ts`; `tests/shots.spec.ts`; `tests/visual.spec.ts`
+  with committed snapshots; `tests/functional/overlays.spec.ts`; `tests/touch-targets.spec.ts`;
+  `tests/pause-button.spec.ts`; `src/styles/palette-classes.test.ts`;
+  `docs/planning/verification-baseline.md`; `docs/guides/UI_RECIPES.md`
+- **Grounded at**: ‹merge SHA of plan 003, written there by its final step› (citations verified
+  at d3d3642)
 
-> **Effort was "L" in an earlier draft. That was wrong.** This plan migrates ~20 files
-> and roughly 4,600 lines, including an 858-line and a 634-line component, across
-> fifteen commits, each gated by six commands. Budget accordingly, and prefer splitting
-> a step over rushing one.
+## Drift check
+
+```bash
+git fetch origin main
+git diff --stat <grounded-at>..origin/main -- src/ tests/ scripts/ .eslintrc.cjs docs/guides/UI_RECIPES.md   # Expected: empty
+```
+
+Plan 006a may merge between plan 003 and this plan; it touches only `docs/planning/`, which is
+why the paths above exclude it. For PR 2–6 of this plan, `<grounded-at>` is the merge SHA of the
+previous PR, recorded under **Handoff** in `plans/reports/004-pr<k-1>.md`.
+
+**Citation re-check** (line numbers are hints at d3d3642; the grep is authoritative):
+
+| Anchor (grep)                                                                                  | File                                     | Expected hits |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------- |
+| `grep -n 'className="toolbar' src/App.tsx`                                                     | `src/App.tsx`                            | 1 (line 556)  |
+| `grep -n "e.key === 'Escape' && is" src/App.tsx`                                               | `src/App.tsx`                            | 2 (271, 277)  |
+| `grep -n "e.key === 'Enter'" src/components/ConfirmDialog.tsx`                                 | `src/components/ConfirmDialog.tsx`       | 1 (line 49)   |
+| `grep -rc 'data-esc-owns="true"' src/components --include=*.tsx \| grep -v ':0' \| wc -l`      | `src/components/**`                      | 8 (see cards) |
+| `grep -c 'data-esc-owns' src/components/ui/dialog.tsx src/components/ui/sheet.tsx`             | primitives                               | ≥ 1 each      |
+| `grep -c 'paused' src/components/ui/button.tsx`                                                | `src/components/ui/button.tsx`           | ≥ 1           |
+| `grep -rlE 'data-testid="(dialog\|sheet)-[a-z-]+-root"' src/components \| wc -l`               | `src/components/**`                      | 13            |
+| `grep -n 'const BASELINE' src/styles/palette-classes.test.ts`                                  | `src/styles/palette-classes.test.ts`     | 1             |
+| `grep -n 'showCloseButton' src/components/ui/dialog.tsx`                                       | `src/components/ui/dialog.tsx`           | see rule below|
+| `grep -n '"@/\*"' tsconfig.json`                                                               | `tsconfig.json`                          | 1             |
+
+If any row differs: STOP.
+
+**Dialog close-button rule** (decided once, here): if the `showCloseButton` row returned ≥ 1,
+every `DialogContent` in this plan carries `showCloseButton={false}` and the component keeps its
+own close button. If it returned 0, delete the `showCloseButton={false}` line from every code
+block in Steps 3–9, delete the component's own close button (the primitive's X, accessible name
+`Close`, replaces it), change test selectors that named the old button to
+`screen.getByRole('button', { name: 'Close' })`, and record "primitive X button present" as an
+expected difference in every dialog step.
 
 ## Why this matters
 
-Plan 003 built the primitive layer. Until screens use it, that layer is **pure cost** —
-a second component system beside the first. Leaving this undone is the worst outcome of
-the whole program: two systems, permanently.
+Plan 003 built the primitive layer; until screens use it, the app carries two component systems.
+Thirteen components hand-roll a modal overlay and exactly one (`AboutModal.tsx`) has a focus trap;
+five have no `role="dialog"`, no `aria-modal` and no Escape handling at all, including the DM's
+own asset surfaces `LibraryManager.tsx` and `TokenMetadataEditor.tsx`. A keyboard or screen-reader
+user can open one of those and lose focus into the canvas behind it. After this plan every overlay
+is a consumer of one `Dialog` or `Sheet`, the `data-esc-owns` protocol comes from the primitive
+instead of being re-typed per file, and the `.btn` class family in `src/styles/app.css` is deleted.
 
-The concrete win is accessibility. Across `src/`, **eleven components hand-roll a modal
-overlay and exactly one has a focus trap** (`AboutModal.tsx`, lines 255–297). Four have
-**no Escape handling at all**. Two of the worst are the DM's own asset surfaces —
-`AssetLibrary/LibraryManager.tsx` (442 lines) and `AssetLibrary/TokenMetadataEditor.tsx`
-(322 lines) — which have neither Escape nor `aria-modal`. A DM using a keyboard or a
-screen reader can open a dialog and lose focus into the canvas behind it.
+## Migration cards
 
-The second win is deletion: eleven bespoke overlays collapse into consumers of one
-`Dialog`.
+One row per file. **Before** each step run `bash scripts/migration-card.sh <file>` and paste the
+row into the PR report; **after** the step run it again. The after-row must show
+`ui-imports≥1`, `role=0`, `aria-modal=0`, `Escape=0`, `esc-owns=0` (or `1` for a row whose
+"after" column says `no`, because that row passes `ownsEscape={false}`), `palette=0`, `inline=0`
+(a data-driven colour swatch may survive; the card says so), `btn=0`, `legacy=0`. The runtime
+contract (role, aria-modal, Escape, focus trap, esc-owns in the DOM) is asserted by
+`tests/functional/overlays.spec.ts`, not by the script.
 
-## Context the executor needs
+Counts below were produced at d3d3642 by the script's own commands: `wc -l`,
+`grep -c 'role="dialog"'`, `grep -c Escape`, `grep -c data-esc-owns`, `ls <file>.test.tsx`,
+`grep -oE '<PALETTE>' <file> | wc -l` with
+`PALETTE='\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\b'`,
+and `grep -c 'style={{'`. Root test ids are the CONVENTIONS §8 names plan 000 added; read the
+real value with `grep -o 'data-testid="[^"]*"' <file>` before relying on it.
 
-### The safety net is real but narrow — read this before trusting any Check
+### Overlays (13)
 
-An earlier draft of this plan claimed the E2E suite made every step verifiable, citing
-"51 uses of `[data-testid^="token-"]`". **That was false and it changes how you work.**
-Those selectors live in specs that `playwright.config.ts` ignored, and the testids they
-reference (`campaign-title`, `token-*`, `add-token-button`, `tool-marker`) have **zero
-occurrences in `src/`**.
+| File | Lines | Primitive | Root testid | role/aria-modal today | Escape today | esc-owns today → after | Test | Palette | Inline | Mount quirk | PR |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `src/components/AboutModal.tsx` | 858 | `dialog` + `tabs` | `dialog-about-root` | yes/yes | in `App.tsx` only | 1 → yes | no | 1 | 40 | 212-line `modalStyles` literal; hand-rolled focus trap; `App.tsx` Escape branch | 4 |
+| `src/components/UpdateManager.tsx` | 634 | `dialog` | `dialog-update-manager-root` | yes/yes | yes + `App.tsx` | 1 → yes | yes | 4 | 21 | opened from AboutModal's "Check for Updates"; second Escape branch in `App.tsx` | 4 |
+| `src/components/DungeonGeneratorDialog.tsx` | 217 | `dialog` | `dialog-dungeon-generator-root` | yes/yes | yes | 1 → yes | yes | 4 | 6 | store-driven (`dungeonDialog`); `autoFocus` on Generate | 4 |
+| `src/components/ConfirmDialog.tsx` | 116 | `dialog` | `dialog-confirm-root` | yes/yes | yes (+ Enter) | 1 → yes | no → new | 4 | 3 | store-driven; undefined `--app-bg/--app-border/--app-text`; renders in World View | 1 |
+| `src/components/MapSettingsSheet.tsx` | 461 | `sheet` `side="right"` | `sheet-map-settings-root` | no/no | no | 0 → yes | no | 1 | 7 | calibration needs the canvas clickable: `modal={!isCalibrating}`; 6 `.btn`, 3 legacy classes | 2 |
+| `src/components/AssetLibrary/AddToLibraryDialog.tsx` | 297 | `dialog` | `dialog-add-to-library-root` | no/no | no | 0 → yes | no | 27 | 1 | mounted by `Sidebar.tsx` and `LibraryManager.tsx`; `isMobile` → full height | 2 |
+| `src/components/ImageCropper.tsx` | 271 | `dialog` | `dialog-image-cropper-root` | no/no | no | 0 → yes | no → new | 11 | 0 | no `isOpen` prop; `CanvasManager.tsx` mount untouched; `react-easy-crop` | 2 |
+| `src/components/SessionConsole/SessionConsoleEditorSheet.tsx` | 298 | `sheet` `side="right"` | `sheet-session-console-editor-root` | yes/yes | yes | 1 → yes | no | 1 | 4 | 2 `.btn`, 3 `.sidebar-input`; uses `ToggleSwitch` | 3 |
+| `src/components/SessionConsole/SessionConsoleSettingsSheet.tsx` | 68 | `sheet` `side="right"` | `sheet-session-console-settings-root` | yes/yes | yes | 1 → yes | no | 1 | 0 | — | 3 |
+| `src/components/MobileSidebarDrawer.tsx` | 91 | `sheet` `side="left"` | `sheet-mobile-sidebar-root` | yes/yes | yes | 0 → **no** (`ownsEscape={false}`) | no | 1 | 0 | body scroll-lock effect → Radix does it | 3 |
+| `src/components/MobileBottomSheet.tsx` | 107 | `sheet` `side="bottom"` | `sheet-mobile-bottom-root` | yes/yes | yes | 0 → **no** (`ownsEscape={false}`) | no | 1 | 2 | `TokenInspector.tsx` mounts it with `isOpen` always true | 3 |
+| `src/components/AssetLibrary/LibraryManager.tsx` | 442 | `dialog` | `dialog-library-manager-root` | no/no | no | 0 → yes | no | 41 | 1 | nests `AddToLibraryDialog` and `TokenMetadataEditor` inside its content | 3 |
+| `src/components/AssetLibrary/TokenMetadataEditor.tsx` | 322 | `dialog` | `dialog-token-metadata-root` | no/no | no | 0 → yes | yes (`closest('.fixed')`) | 51 | 1 | also mounted by `CommandPalette.tsx` (untouched) | 3 |
 
-**Plan 000 repaired this** — it extended the a11y suite to five surfaces in both themes,
-and restored or deleted every ignored spec. Before Step 1, read
-`docs/planning/verification-baseline.md` and establish what actually covers the files
-you are about to change. Then hold two facts in mind:
+Esc-owns re-attach sites today: **6** (`ConfirmDialog`, `AboutModal`, `UpdateManager`,
+`DungeonGeneratorDialog`, `SessionConsoleEditorSheet`, `SessionConsoleSettingsSheet`); the other
+two files carrying the attribute (`ErrorFallbackUI.tsx`, `UpdateErrorFallbackUI.tsx`) are excluded.
+The five overlays with no attribute today gain it from the primitive default; the two mobile
+sheets do not (CONVENTIONS §9).
 
-1. **Not one of the ~20 files this plan migrates contains a `data-testid` today.** So
-   "preserve every `data-testid`" is a real rule for the *app* but a near-no-op for
-   *these files*. It is not the safety net here.
-2. **The real net for these components is vitest**, and it is patchy. Colocated tests
-   exist for `DungeonGeneratorDialog`, `UpdateManager`, `Sidebar`, `QuickTokenSidebar`,
-   `HomeScreen`, `SessionConsolePanel`, `TokenInspector`. There are **none** for
-   `ConfirmDialog`, `AboutModal`, `MapSettingsSheet`, `AddToLibraryDialog`,
-   `ImageCropper`, `Tooltip`, `ToggleSwitch`, `CollapsibleSection`, `MapNavigator`,
-   `DoorControls`, or the toolbar.
+### Adapters and toolbars (5)
 
-**Therefore Step 0 exists**: capture a screenshot and behaviour baseline before any
-migration, because for many of these components it is the only evidence you will have.
+| File | Lines | Primitive | Test | Palette | Inline | Quirk | PR |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `src/components/Tooltip.tsx` | 95 | `tooltip` | no | 5 | 1 | keep the `inline-flex` wrapper; `HomeScreen.tsx` passes `offset={20}` (4 sites) | 1 |
+| `src/components/ToggleSwitch.tsx` | 107 | `switch` + `label` | no | 1 | 4 | `Math.random` id → `useId` | 1 |
+| `src/components/CollapsibleSection.tsx` | 52 | `collapsible` | no | 0 | 2 | — | 1 |
+| `src/components/MobileToolbar.tsx` | 325 | `button` | no | 1 | 14 | 10 × `min-h-[56px]` must survive; 1 colour swatch keeps `style` | 5 |
+| `src/components/Toolbar.tsx` (new, from `src/App.tsx` lines 555–702) | ~150 | `button` + `separator` | `tests/pause-button.spec.ts` | 10 in `App.tsx` at d3d3642 (2 after plan 001) | 0 | keyboard handling stays in `App.tsx` | 5 |
 
-Note also: `QuickTokenSidebar.test.tsx:519` asserts `toHaveClass('sidebar-token')` and
-lines 315/480/493/506 assert on Tailwind utilities this plan changes. Those assertions
-are among the few that actually run. Updating them is legitimate — but update them to
-assert the *new* correct behaviour, never to silence a real regression.
+Adapter importers (`grep -rln "from '.*ToggleSwitch'" src --include=*.tsx | grep -v test` → 4;
+same for `CollapsibleSection` → 1; `Tooltip` → 4): `MapSettingsSheet`, `SessionConsoleEditorSheet`,
+`sessionConsoleSettingsSections`, the playground registry (`registry/legacy.tsx` after plan 003);
+`Sidebar`; `App`, `HomeScreen`, `Sidebar`, `QuickTokenSidebar`. None needs an edit.
 
-### The overlay inventory — eleven, not nine
+### `.btn` and legacy-class consumers not already covered above (9)
 
-Every component in `src/` with `role="dialog"` or `aria-modal` (non-test), verified:
+| File | `btn` hits | legacy hits | Test | PR |
+| --- | --- | --- | --- | --- |
+| `src/components/SessionConsole/SessionConsolePanel.tsx` | 4 | 0 | yes | 6 |
+| `src/components/SessionConsole/TrackGroupList.tsx` | 1 | 0 | no | 6 |
+| `src/components/SessionConsole/sessionConsoleSettingsSections.tsx` | 3 | 2 | no | 6 |
+| `src/components/SessionConsole/SessionConsoleBoard.tsx` | 3 | 1 | no | 6 |
+| `src/components/SessionConsole/ImageSetBoard.tsx` | 1 | 0 | no | 6 |
+| `src/components/SessionConsole/SessionConsoleMasterBar.tsx` | 7 | 0 | no | 6 |
+| `src/components/Sidebar.tsx` | 4 | 0 | yes | 6 |
+| `src/components/MapNavigator.tsx` | 1 | 0 | no | 6 |
+| `src/components/DoorControls.tsx` | 3 | 0 | no | 6 |
+| `src/components/QuickTokenSidebar.tsx` | 0 | 3 (`sidebar-token`) | yes (asserts the class) | 6 |
 
-| Component | Lines | Escape | Focus trap | Migrate to |
-|---|---|---|---|---|
-| `AboutModal.tsx` | 858 | via `App.tsx:270` | **yes** (255–297) | `dialog` |
-| `PreferencesDialog.tsx` | 678 | yes | no | **see below — dead code** |
-| `UpdateManager.tsx` | 634 | yes + `App.tsx:275` | no | `dialog` |
-| `DungeonGeneratorDialog.tsx` | 217 | yes | no | `dialog` |
-| `ConfirmDialog.tsx` | 116 | yes | no | `dialog` |
-| `MapSettingsSheet.tsx` | 461 | **no** | no | `sheet` |
-| `AssetLibrary/AddToLibraryDialog.tsx` | 297 | **no** | no | `dialog` |
-| `ImageCropper.tsx` | 271 | **no** | no | `dialog` (see mount note) |
-| `SessionConsole/SessionConsoleEditorSheet.tsx` | 298 | yes | no | `sheet` |
-| `SessionConsole/SessionConsoleSettingsSheet.tsx` | 68 | yes | no | `sheet` |
-| `MobileSidebarDrawer.tsx` | 91 | yes | no | `sheet` |
-| `MobileBottomSheet.tsx` | 107 | yes | no | `sheet` |
-| `ErrorFallbackUI.tsx` | 114 | **no** | no | **out of scope** |
-| `UpdateErrorFallbackUI.tsx` | 197 | **no** | no | **out of scope** |
-| `AssetLibrary/LibraryManager.tsx` | 442 | **no** | no | `dialog` |
-| `AssetLibrary/TokenMetadataEditor.tsx` | 322 | **no** | no | `dialog` |
+### Excluded rows
 
-The two `ErrorFallbackUI` components are excluded deliberately: they render *when React
-has already failed*, and making them depend on a portal-based primitive adds a failure
-mode to the last line of defence. Record that reasoning in
-`src/components/ui/README.md`.
+- `src/components/ErrorFallbackUI.tsx`, `src/components/UpdateErrorFallbackUI.tsx`: render when
+  React has already failed; a portal-based primitive adds a failure mode to the last line of
+  defence. Step 14 records this in `src/components/ui/README.md`.
+- `src/components/AssetLibrary/CommandPalette.tsx`: out of scope for the program (CONVENTIONS §9).
+- `src/components/HomeScreen.tsx`, `src/components/AboutModal.tsx` inline `<style>` blocks:
+  `dismiss-btn`, `quick-action-btn`, `about-modal-close-btn` are different classes that contain
+  the substring `btn`; they are not `.btn` consumers.
+- Playground legacy examples (`ToggleSwitch`, `ConfirmDialog` via `showConfirmDialog`,
+  `UpdateManager` in `src/components/DesignSystemPlayground/registry/legacy.tsx`, and
+  `<ConfirmDialog />` mounted in `DesignSystemPlayground.tsx`): no change expected; they keep
+  working through the adapters and `DesignSystemPlayground.test.tsx` must keep passing.
 
-### `PreferencesDialog.tsx` is dead code — decide before migrating it
+## `scripts/migration-card.sh`
 
-It has **zero importers anywhere in `src/`**, and the file admits it at line 677 with
-`// eslint-disable-next-line import/no-unused-modules`. It also holds 45 of this plan's
-headline 286 inline styles — 16% of the total, in a file no user can reach.
+Created in Step 0, exactly:
 
-**Do not migrate it.** In Step 12, put the question to Kyle: delete it, or wire it up to
-a menu item. Migrating unreachable code is the definition of wasted effort, and its
-Check ("open Preferences, change the theme…") cannot be performed — there is no UI path.
-
-### The `data-esc-owns` protocol — do not break the DM's music
-
-`src/components/SessionConsole/useSessionConsoleHotkeys.ts:34`:
-
-```ts
-return Boolean(document.querySelector('[data-esc-owns="true"]'));
+```bash
+#!/usr/bin/env bash
+# Prints one migration-card row (Markdown) for a component file.
+# Usage: bash scripts/migration-card.sh src/components/ConfirmDialog.tsx
+set -euo pipefail
+f="${1:?usage: scripts/migration-card.sh <file.tsx>}"
+PALETTE='\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\b'
+count() { grep -cE "$1" "$f" || true; }
+lines=$(wc -l < "$f" | tr -d ' ')
+ui=$(count "from '@/components/ui/")
+role=$(count 'role="dialog"')
+modal=$(count 'aria-modal')
+esc=$(count 'Escape')
+owns=$(count 'data-esc-owns')
+if [ -f "${f%.tsx}.test.tsx" ]; then test=yes; else test=no; fi
+palette=$(grep -oE "$PALETTE" "$f" | wc -l | tr -d ' ')
+inline=$(count 'style=\{\{')
+btn=$(count '\bbtn\b')
+legacy=$(count 'sidebar-input|sidebar-token|info-box')
+testids=$(grep -oE 'data-testid="[^"]+"' "$f" | sort -u | tr '\n' ' ')
+echo "| \`$f\` | lines=$lines | ui-imports=$ui | role=$role aria-modal=$modal | Escape=$esc | esc-owns=$owns | test=$test | palette=$palette | inline=$inline | btn=$btn legacy=$legacy | ${testids:-none} |"
 ```
 
-The global Escape hotkey STOPs Session Console audio playback **unless** some open
-overlay claims Escape via `data-esc-owns="true"`. Nine components set it:
-`ConfirmDialog:78`, `PreferencesDialog:71`, `AboutModal:334`, `UpdateManager:538`,
-`DungeonGeneratorDialog:91`, `SessionConsoleEditorSheet:245`,
-`SessionConsoleSettingsSheet:45`, `ErrorFallbackUI:47`, `UpdateErrorFallbackUI:134`.
+## Shared procedures
 
-**Re-attach `data-esc-owns="true"` to every migrated overlay's content element.** It is
-not a `data-testid`, so the preservation rule does not cover it; miss it and pressing
-Escape to close a dialog also kills the DM's ambience mid-session.
-`useSessionConsoleHotkeys.test.ts:53` and `SessionConsolePanel.test.tsx:508` cover this —
-run them after every overlay migration.
+Steps refer to these by letter. Each is a fixed sequence; do not vary it.
 
-### `ConfirmDialog` renders with undefined CSS variables today
+**(R) Ratchet** — after every step that changes a non-test `.tsx` under `src/`:
 
-It styles itself with `var(--app-bg)`, `var(--app-border)` and `var(--app-text)`.
-**None of the three is defined** in `theme.css` (the real names are `--app-bg-surface`,
-`--app-border-default`, `--app-text-primary`). So it currently renders with no surface
-colour — a live bug.
+1. In `.eslintrc.cjs`, append each migrated file's path (repo-relative, quoted) to the `files`
+   array of the override whose comment reads `plan 004 palette ratchet` (Step 1 creates it).
+2. `npm run lint:strict` → exit 0. A hit names the line still carrying a palette class.
+3. `COUNT=$(grep -rhoE '\b(bg|text|border|ring|divide|placeholder|outline|from|to|via|fill|stroke)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b|\b(bg|text|border)-(white|black)\b' src --include=*.tsx | wc -l); echo "$COUNT"`
+   (the command in the header comment of `src/styles/palette-classes.test.ts`), then set
+   `const BASELINE = <COUNT>;` in that file. Expected: `COUNT` ≤ the previous `BASELINE`.
+4. `npx vitest run src/styles/palette-classes.test.ts` → `1 passed`.
 
-"Visually neutral" is therefore undefinable for this component. **Fix it as part of the
-migration**: use the correct token names, and record the before/after in the commit. Do
-not faithfully reproduce a bug in the name of neutrality.
+The override added in Step 1, exactly (inside the existing `overrides: [` array, after the
+config-files entry; `grep -n "overrides: \[" .eslintrc.cjs`):
 
-Two more `ConfirmDialog` specifics: its Escape `useEffect` (lines 46–53) **also
-implements Enter-to-confirm** — Radix provides no such thing, so preserve it explicitly
-rather than deleting the effect wholesale. And `autoFocus` sits on the Confirm button
-(line 105) while Radix auto-focuses the first tabbable node (Cancel) — on a destructive
-dialog that difference matters. Decide deliberately and record it.
+```js
+    // plan 004 palette ratchet: every file migrated onto the primitives is appended here and
+    // may never regain a raw Tailwind palette class. Plan 006b extends it to the whole tree.
+    {
+      files: [],
+      rules: {
+        'no-restricted-syntax': [
+          'error',
+          {
+            selector:
+              'Literal[value=/\\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\\b/]',
+            message: 'Hardcoded Tailwind palette class; use an --app-* token or a primitive.',
+          },
+          {
+            selector:
+              'TemplateElement[value.raw=/\\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\\b/]',
+            message: 'Hardcoded Tailwind palette class; use an --app-* token or a primitive.',
+          },
+        ],
+      },
+    },
+```
 
-### Three button classes that are used but never defined
+**(S) Screenshots** — where a step names it:
 
-`btn-secondary` (18 uses), `btn-ghost` (8), `btn-destructive` (1) appear across the
-Session Console, `MapSettingsSheet:449` and `Sidebar:402`. **None is defined in any CSS
-file in `src/`.** So `btn btn-secondary` renders as bare `.btn` — padding, radius,
-font-size and weight, with a **transparent background and inherited colour**.
+1. `SHOTS_OUT=docs/planning/screenshots/004-<step> npm run shots` → 14 files.
+2. For each surface listed under the step's **Expected differences** only:
+   `npx playwright test tests/visual.spec.ts --project=Web-Chromium --update-snapshots -g <surface>`
+   and commit the updated files under `tests/visual.spec.ts-snapshots/`, listing them in the
+   report (test titles contain the surface name: `npx playwright test tests/visual.spec.ts --list`).
+3. `npm run verify:web` → exit 0. If `tests/visual.spec.ts` fails on any surface **not** listed:
+   STOP, create `docs/planning/decisions/004-<component>-visual-delta.md` (CONVENTIONS §9) with
+   the two screenshots' paths under Question.
 
-Do **not** map them onto shadcn variants by name. `variant="secondary"` ships a real
-background; these render transparent. **Map by observed appearance** — all three are
-`ghost` today. Screenshot each before and after.
+**(O) Overlay row flip** — in `tests/functional/overlays.spec.ts`, in the row whose `name` is the
+component being migrated: set every boolean that encodes today's missing behaviour (role/aria-modal,
+Escape, focus trap) to `true`, set the esc-owns boolean to the card's "after" value, and leave
+`open` and `root` unchanged (the root test id moves onto `DialogContent`/`SheetContent`). Then
+`npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium` → passes.
 
-### The `.btn` consumer list — eleven files, not ten
+**(I) Ideas** — append to `docs/planning/ui-redesign-ideas.md` under `## From plan 004`, a
+`### <Component>` heading with bullets for every visual or IA improvement noticed and not made.
+If the heading already exists, append below it. Never overwrite the file (plan 006a may own it).
 
-`SessionConsolePanel`, `TrackGroupList`, `sessionConsoleSettingsSections`,
-`SessionConsoleBoard`, `ImageSetBoard`, `SessionConsoleMasterBar`,
-`SessionConsoleEditorSheet`, `MapSettingsSheet`, `Sidebar`, `MapNavigator`, **and
-`DoorControls.tsx`** (lines 88, 100, 111 — `btn btn-default`). `DoorControls` was
-missing from an earlier draft, has no unit test and no E2E coverage, and Step 12 deletes
-`.btn-default` — miss it and three door-control buttons silently lose their styling.
+**(P) PR boundary** — at the end of Steps 3, 4c, 6b, 9, 11 and 14:
 
-### The mobile surface
+1. Write `plans/reports/004-pr<k>.md` (CONVENTIONS §11; Numbers = every card row before/after and
+   the ratchet counts; Screenshots = every `004-*` directory this PR added). Commit it with the
+   step's commit.
+2. `npm run verify` → exit 0. `git push -u origin <branch>`. Open the PR
+   `Plan 004 (PR <k>/6): <title>` with the report as body. Set this plan's row in
+   `plans/README.md` to `IN PROGRESS (PR <k>/6 open)`.
+3. End the run. The next run (after merge) starts by writing the merge SHA under **Handoff** in
+   `plans/reports/004-pr<k>.md`, creating the next branch from `origin/main`, and running the
+   Drift check against that SHA. Merge method: merge commit (CONVENTIONS §7).
 
-`MobileToolbar.tsx` (325 lines) is a complete second toolbar rendered when
-`isMobile` is true; `MobileSidebarDrawer.tsx` (91) and `MobileBottomSheet.tsx` (107) are
-its overlays. Steps 5 and 11 cover them. Leaving them hand-rolled would guarantee "two
-component systems" for every touch user — the outcome this program exists to prevent —
-while `README.md` sells touch and pen as first-class.
-
-### The cascade-layering behaviour change
-
-`src/index.css` imports `app.css` **unlayered**; Tailwind v4 emits utilities into
-`@layer utilities`; unlayered CSS beats any layer regardless of specificity. Two
-consequences:
-
-1. **The pause button was grey and plan 001 Step 8 already fixed it.** It carried
-   `.btn-tool` *and* `bg-red-500`/`bg-green-500`, and the unlayered rule won, so the
-   pause state never showed. Plan 001 added `.btn-tool.is-paused` / `.is-running` in
-   `app.css` using `--app-error-solid` / `--app-success-solid`. **So it should already
-   be red/green when you start — preserve that**, and carry the two state classes across
-   as `Button` variants (or a `data-state`). If it is grey when you reach Step 10, plan
-   001 Step 8 did not land: STOP and report.
-2. More generally, wherever a `.btn*` class and a Tailwind colour utility sit on the
-   same element, the migration changes which one wins. Screenshot before and after.
-
-### Other constraints
-
-- **Dual-window architecture.** `src/App.tsx:485-500`, under the comment *"Global
-  components (rendered in both Architect and World View)"*, renders `Toast`,
-  `ConfirmDialog`, `DungeonGeneratorDialog`, `AboutModal` and `UpdateManager`.
-  **Dialogs render in the World View by design, today.** Do not "fix" that. The rule is
-  narrower than an earlier draft stated: no *new* DM chrome may appear there, and the
-  World View must not regress.
-- **396 hardcoded Tailwind palette classes across 35 files, with zero `dark:` variants
-  anywhere.** These are the bulk of the theme-invariance problem. Resolve them **in the
-  files this plan touches, as you touch them** — replacing e.g. `bg-neutral-800` with a
-  themed primitive or token. Do not sweep the other files; record the remaining count in
-  Step 14 for plan 006.
-- **`tsconfig.json` excludes `**/*.test.tsx`**, so `npm run type-check` does not
-  typecheck the colocated tests you edit. `npm run test:run` is the only thing that
-  catches a broken test file.
-- **Strict ESLint**, `--max-warnings 0`, Husky pre-commit. `.ai-rules.md` is mandatory.
+**Dialog recipe** — Step 3's `ConfirmDialog` is the pattern; every later overlay step lists only
+its deltas. Rules that apply to all of them: keep every `data-testid` and every `aria-label`; the
+root test id goes on `DialogContent`/`SheetContent`; delete the hand-rolled backdrop, the
+`role`/`aria-modal`/`data-esc-owns` attributes and the Escape `useEffect` (the primitive supplies
+all three); never pass `ref` to a primitive wrapper (React 18 does not forward it) — for initial
+focus use `onOpenAutoFocus` with `e.currentTarget.querySelector(...)`; inside a `Button`, write
+icon sizes as `size-N` instead of `w-N h-N` (the primitive's svg rule only exempts `size-*`);
+keep `type="button"` where present; replace `w-N h-N` only inside `Button`; replace
+`style={{ color: 'var(--x)' }}` with `text-[var(--x)]`, `backgroundColor` with `bg-[var(--x)]`,
+`borderColor` with `border-[var(--x)]`, `marginBottom: '1.5rem'` with `mb-6`, `padding: '1rem'`
+with `p-4`, `borderRadius: '6px'` with `rounded-md`, `fontSize: '1.3rem'` with `text-[1.3rem]`,
+`lineHeight: '1.7'` with `leading-[1.7]`, `fontFamily: 'monospace'` with `font-mono`. Keyboard
+tests: fire Escape on the dialog element (`screen.getByRole('dialog')`), never on `window` — Radix
+listens on `document`, and an event dispatched on `window` never reaches it.
 
 ## Inputs & resources
 
-| Purpose | Command | Expected |
-|---|---|---|
-| Install browsers | `npx playwright install chromium` | exit 0 |
-| Lint | `npm run lint` | exit 0 |
-| Typecheck | `npm run type-check` | exit 0 |
-| Unit tests | `npm run test:run` | all pass |
-| A11y E2E | `npm run test:a11y` | all pass |
-| Web E2E | `npm run build:web && npx playwright test --project=Web-Chromium` | all pass |
-| Electron E2E | `npm run build:electron && npx playwright test --project=Electron-App` | all pass |
+Gates: `plans/CONVENTIONS.md` §4.
 
-**The per-step gate**, after every step:
-```bash
-npm run lint && npm run type-check && npm run test:run && npm run test:a11y \
-  && npm run build:web && npx playwright test --project=Web-Chromium
-```
-Run the Electron project at Steps 0, 8, 13 and 14 (it is slow; the web project catches
-most regressions).
+| Purpose | Command | Expected |
+| --- | --- | --- |
+| One card row | `bash scripts/migration-card.sh <file>` | one Markdown row |
+| Overlay contract only | `npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium` | exit 0 |
+| Pause button only | `npx playwright test tests/pause-button.spec.ts --project=Web-Chromium` | `2 passed` |
+| Touch targets only | `npx playwright test tests/touch-targets.spec.ts --project=Web-Chromium` | exit 0 |
+| Esc-owns protocol | `npx vitest run src/components/SessionConsole/useSessionConsoleHotkeys.test.ts src/components/SessionConsole/SessionConsolePanel.test.tsx` | all pass |
+| Built CSS bytes | `find dist-web/assets -name '*.css' \| xargs wc -c \| tail -1` | a number |
 
 ## Scope
 
-**In scope**: the sixteen components in the overlay inventory (minus the two
-`ErrorFallbackUI` exclusions and `PreferencesDialog`), the eleven `.btn` consumers, the
-`.sidebar-input`/`.sidebar-token`/`.info-box` consumers, `MobileToolbar.tsx`,
-`src/App.tsx`, `src/styles/app.css`, `src/components/ui/**` (variant fixes),
-`src/components/ui/README.md`, and the colocated unit tests of migrated components.
+**In scope**: the 13 overlay files, the 3 adapters, `src/components/MobileToolbar.tsx`,
+`src/components/Toolbar.tsx` (new), `src/App.tsx`, the 10 `.btn`/legacy-class consumer files,
+the colocated tests of migrated components (`ConfirmDialog.test.tsx` and `ImageCropper.test.tsx`
+new), `src/styles/app.css` (deletions only, Step 13), `src/styles/palette-classes.test.ts`
+(`BASELINE` only), `.eslintrc.cjs` (the ratchet override only), `tests/functional/overlays.spec.ts`
+(row flips only), `tests/pause-button.spec.ts`, `tests/touch-targets.spec.ts` and
+`tests/functional/editor-smoke.spec.ts` (selector updates only, Step 10),
+`tests/visual.spec.ts-snapshots/`, `src/components/ui/README.md`, `src/components/README.md`
+(one line, Step 10), `docs/guides/UI_RECIPES.md`, `docs/planning/ui-redesign-ideas.md`,
+`docs/planning/screenshots/004-*/`, `scripts/migration-card.sh`, `plans/reports/004-pr*.md`,
+`CHANGELOG.md`, `plans/README.md`, `plans/005-ui-performance-pass.md` (Grounded-at line only).
 
-**Out of scope**:
-- **Any visual or IA change** beyond the documented, expected consequences above
-  (`ConfirmDialog`'s undefined variables, the pause button, `btn-ghost` mapping). Record
-  ideas in `docs/planning/ui-redesign-ideas.md` instead.
-- **`ErrorFallbackUI.tsx` and `UpdateErrorFallbackUI.tsx`** — see inventory.
-- **`PreferencesDialog.tsx`** — dead code; decision deferred to Step 12.
-- **`src/components/AssetLibrary/CommandPalette.tsx`** — out of the roster entirely.
-- **`src/components/Canvas/**`** — except that `ImageCropper` is *mounted* at
-  `CanvasManager.tsx:1140`; see Step 4's note.
-- **Renaming any `data-testid`.** Adding one is encouraged.
-- **Performance refactoring** — plan 005, which runs after this.
-- **The 396 hardcoded classes in files this plan does not touch.**
+**Out of scope**: any visual or IA change beyond the expected differences each step lists;
+`ErrorFallbackUI.tsx`, `UpdateErrorFallbackUI.tsx`, `CommandPalette.tsx`; `src/components/Canvas/**`
+(`ImageCropper` is mounted at `CanvasManager.tsx` line 1140, `grep -n '<ImageCropper' src/components/Canvas/CanvasManager.tsx`);
+renaming a `data-testid`; `src/components/ui/*.tsx` except a variant fix a step names; any
+`--app-*` value; performance work (plan 005); moving toolbar state into a store (plan 005);
+palette classes in files this plan does not touch (recorded in Step 14 for plan 006b).
 
-## Working approach
+## Landing
 
-Branch off `main` as `plan/004-migrate-screens`. **One commit per step**, each releasable.
+Branch, commits, PR, CI and rollback: `plans/CONVENTIONS.md` §7. This plan lands as **six
+sequential PRs**, each from a fresh branch off `origin/main`, each releasable, each under ~1,500
+changed lines; revert newest-first.
 
-### How this plan lands: one PR per plan, targeting `main`
-
-**This is the program-wide rule; it is identical in every plan.** Each plan is
-developed on its own branch off `main` and merged as a **single pull request into
-`main`** before the next plan begins.
-
-That choice exists for one reason: **it is the only way CI runs.** Verified in
-`.github/workflows/`:
-
-| Workflow | Trigger | What it gates |
-|---|---|---|
-| `lint.yml` | `pull_request` → `main` | ESLint + `tsc` |
-| `test.yml` | `pull_request` → `main` | Vitest |
-| `e2e.yml` | `pull_request` → `main` | Playwright, **per project, after the matching build** |
-| `accessibility.yml` | `pull_request` → `main` or `NEXT` | axe WCAG AA |
-| `documentation-check*.yml` | `pull_request` → `main` | doc-drift comment |
-
-Nothing fires on a long-lived feature branch. Under the original "one branch, don't
-open a PR" approach, ~40 commits of work would have been gated only by local
-`npm run` on one machine — which is how the unverified-gate problem this program was
-revised to fix got in.
-
-**Consequences to know before you start:**
-
-- **`e2e.yml` is the reference for how to run Playwright** — it runs
-  `--project=Web-Chromium` after `npm run build:web` and `--project=Electron-App` under
-  `xvfb-run` after `npm run build:electron`. Never bare `npm run test:e2e`.
-- **Merging to `main` auto-deploys the public web build.** `deploy-web.yml` runs on
-  every push to `main`. Intermediate states of the migration will go live on GitHub
-  Pages. That is consistent with the strangler-fig principle that every commit is
-  releasable, but it is a real consequence — if the web demo must stay pinned, say so
-  before starting rather than after.
-- **Local gates still come first.** CI is the enforcement, not the discovery. Run the
-  full local gate before every push; a red PR costs a cycle and reviewer trust.
-- **Keep the PR reviewable.** Push each step as its own commit with a descriptive
-  message so a reviewer can read the plan's steps in the commit history. If a plan's PR
-  grows past roughly 1,500 changed lines, split it at a step boundary named in the plan
-  and land the halves in order.
-- **`build-release.yml` fires on `v*.*.*` tags only** — nothing here triggers a release.
-  Versioning and `CHANGELOG.md` entries are a separate decision, noted in
-  `plans/README.md`.
-
-**This plan will not fit in one PR and should not try.** At fifteen steps and ~4,600
-lines it is the clearest candidate for splitting. Suggested boundaries, each a coherent,
-releasable unit: **Steps 0–3** (baseline + adapters + the first Dialog), **Steps 4–6**
-(the overlays with no a11y, plus Session Console, mobile and Asset Library sheets),
-**Steps 7–9** (the three large dialogs), **Steps 10–11** (both toolbars), **Steps 12–14**
-(the `.btn` sweep, deletions, and verification). Land them in order.
-
-Note `documentation-check-simple.yml` comments on every PR touching `src/components/` —
-i.e. all five of these. Plan 000 brings `src/components/README.md` in line with reality
-so that comment is signal rather than noise.
-
-**Migration recipe**, applied identically:
-1. Read the component fully. **Screenshot it** (both themes) and note its behaviour.
-2. Replace hand-rolled markup with the primitive. Preserve every `data-testid` **and
-   every `data-esc-owns="true"`**.
-3. Replace that component's inline `style={{}}` objects and hardcoded palette classes.
-4. Update its colocated unit test if one exists.
-5. Run the per-step gate.
-6. Compare against the Step 0 screenshot; confirm Escape, Tab and focus restoration.
-7. Commit.
+| PR | Branch | Steps | Report |
+| --- | --- | --- | --- |
+| 1 | `plan/004-pr1-adapters-and-confirm` | 0–3 | `plans/reports/004-pr1.md` |
+| 2 | `plan/004-pr2-no-a11y-overlays` | 4a–4c | `plans/reports/004-pr2.md` |
+| 3 | `plan/004-pr3-sheets-and-library` | 5a–6b | `plans/reports/004-pr3.md` |
+| 4 | `plan/004-pr4-large-dialogs` | 7–9 | `plans/reports/004-pr4.md` |
+| 5 | `plan/004-pr5-toolbars` | 10–11 | `plans/reports/004-pr5.md` |
+| 6 | `plan/004-pr6-btn-sweep-and-deletions` | 12a–14 | `plans/reports/004-pr6.md` |
 
 ## Steps
 
-### Step 0: Capture the baseline
+### Step 0: Baseline
 
-For every component in Scope, in both themes, capture a screenshot and a short
-behaviour note (what opens it, what closes it, what focus does). Save under
-`docs/planning/ui-migration-baseline/`.
+**Files**: `scripts/migration-card.sh` (new), `docs/planning/screenshots/004-baseline/` (new),
+`docs/planning/ui-redesign-ideas.md`, `plans/reports/004-pr1.md` (new).
+**Do**: Create the branch and run the pre-flight. Create `scripts/migration-card.sh` with the
+content above and `chmod +x` it. Run it for every file in the three card tables and paste the
+rows under **Numbers** in `plans/reports/004-pr1.md`, together with the four global numbers from
+**Commands**. Create `docs/planning/ui-redesign-ideas.md` with a `## From plan 004` heading if the
+file is absent; if it exists, append that heading. Take the baseline screenshot set.
+**Do NOT**: edit any component; take screenshots by any means other than `npm run shots`; delete
+or edit anything in `docs/planning/ui-redesign-ideas.md` that is already there.
+**Commands**:
 
-Also record the starting numbers: `grep -rn "style={{" --include=*.tsx src | wc -l`
-(286 at `d3d3642`), the hardcoded-palette-class count (396), `wc -l src/styles/app.css`,
-and the built CSS byte size from `npm run build:web`.
+```bash
+git fetch origin main && git checkout -b plan/004-pr1-adapters-and-confirm origin/main
+bash scripts/preflight.sh 004
+grep -rhoE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\b' src --include=*.tsx | wc -l
+grep -rn "style={{" --include=*.tsx src | wc -l
+wc -l src/styles/app.css
+npm run build:web && find dist-web/assets -name '*.css' | xargs wc -c | tail -1
+SHOTS_OUT=docs/planning/screenshots/004-baseline npm run shots
+ls docs/planning/screenshots/004-baseline | wc -l
+npm run verify
+```
 
-Run the full gate including both E2E projects and record the result.
+**Expected**: exit 0; exit 0; a number (400 at d3d3642, 396 once plan 000 deleted
+`PreferencesDialog.tsx`; record the printed value); a number (286 at d3d3642, 241 without
+`PreferencesDialog.tsx`); a number (165 at d3d3642; plan 001 changed it); a byte count; exit 0;
+`14`; exit 0.
+**Check**: `ls docs/planning/screenshots/004-baseline | wc -l` prints `14` and the report holds
+one card row per file.
+**If it fails**: `npm run verify` red before any change is drift → STOP with the failing command.
+**Commit**: `plan-004 step-0: baseline cards, screenshots and migration-card script`
 
-**Check**: The baseline directory exists with a screenshot per component per theme.
-**Without this, Steps 8, 12, 13 and 14 have nothing to diff against** — several of these
-components have no automated coverage at all.
+### Step 1: Migrate `Tooltip` and create the ratchet override
 
-### Step 1: Migrate `Tooltip` — the rehearsal
+**Files**: `src/components/Tooltip.tsx`, `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`.
+**Do**: Replace the whole of `src/components/Tooltip.tsx` with:
 
-Replace `src/components/Tooltip.tsx`'s internals with the `tooltip` primitive, keeping
-its public props API so `HomeScreen`, `Sidebar`, `QuickTokenSidebar` and `App.tsx` need
-no edits.
+```tsx
+/**
+ * Tooltip adapter — same props API as before, rendered on the `tooltip` primitive.
+ * Keeps the `inline-flex` wrapper so flex toolbars lay out exactly as they did; opening on
+ * focus and flipping at viewport edges are accepted improvements (CONVENTIONS §9).
+ */
 
-Three real differences to decide and record, not discover: today's Tooltip wraps
-children in `<div className="inline-flex">` (Radix with `asChild` drops that wrapper — a
-layout change inside a flex toolbar); it fires on `mouseenter` only (Radix also opens on
-focus, which is an a11y improvement); and it positions by hand at `rect.top - offset`
-with no collision detection (Radix flips near edges). **The flip is a behaviour change,
-not a restoration** — an earlier draft asserted it as if it were current behaviour.
+import type { JSX, ReactNode } from 'react';
 
-Also replace its hardcoded `bg-neutral-900` / `text-white` / `border-neutral-600`.
+import {
+  Tooltip as TooltipRoot,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
-**Check**: Per-step gate. Tooltips appear on the toolbar, sidebar and home screen,
-positioned as before. Toolbar layout unchanged versus the Step 0 screenshot. World View
-unaffected.
+interface TooltipProps {
+  content: string;
+  children: ReactNode;
+  delay?: number; // Delay in milliseconds before showing tooltip
+  offset?: number; // Distance in pixels from the top of the element to the top of the tooltip
+}
+
+/** The old tooltip box was ~36px tall; sideOffset is the visible gap, so subtract it. */
+const OLD_BOX_HEIGHT = 36;
+const MIN_GAP = 4;
+
+function Tooltip({ content, children, delay = 100, offset = 50 }: TooltipProps): JSX.Element {
+  return (
+    <TooltipProvider delayDuration={delay}>
+      <TooltipRoot>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{children}</span>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={Math.max(MIN_GAP, offset - OLD_BOX_HEIGHT)}>
+          {content}
+        </TooltipContent>
+      </TooltipRoot>
+    </TooltipProvider>
+  );
+}
+
+export default Tooltip;
+```
+
+Add the ratchet override to `.eslintrc.cjs` (Shared procedures, R) with
+`files: ['src/components/Tooltip.tsx']`. Prove the rule fires once: add ` bg-red-500` inside the
+`className="inline-flex"` string, run `npx eslint src/components/Tooltip.tsx`, confirm one error,
+remove the text. Then run (R).
+**Do NOT**: put `asChild` on the children themselves (nested buttons); change `TooltipProps`;
+edit any Tooltip consumer; delete the `offset`/`delay` props (`HomeScreen.tsx` passes `offset`).
+**Commands**:
+
+```bash
+npx eslint src/components/Tooltip.tsx        # with bg-red-500 temporarily inserted
+grep -c "inline-flex" src/components/Tooltip.tsx
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: 1 error naming `no-restricted-syntax`; `1`; exit 0; exit 0.
+**Check**: `verify:web` exits 0 with the temporary text removed.
+**If it fails**: if `verify:static` fails inside `QuickTokenSidebar.test.tsx`, `Sidebar.test.tsx`
+or `HomeScreen.test.tsx`, the failure is a jsdom API the primitive needs (`ResizeObserver`,
+`hasPointerCapture`): STOP and report the message; plan 003 owns `src/test/setup.ts`.
+**Commit**: `plan-004 step-1: Tooltip on the tooltip primitive; palette ratchet override`
 
 ### Step 2: Migrate `ToggleSwitch` and `CollapsibleSection`
 
-Adapters again, preserving both public APIs so the five consumers need no changes. Note
-`ToggleSwitch` has a richer API than the `switch` primitive (`checked`, `onChange`,
-`label`, `description`, `disabled`, `id`) — the adapter must recompose `Switch` + `Label`
-+ description.
+**Files**: `src/components/ToggleSwitch.tsx`, `src/components/CollapsibleSection.tsx`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`.
+**Do**: Replace `src/components/ToggleSwitch.tsx` with:
 
-**Check**: Per-step gate. Toggles in Map Settings and the Session Console work and are
-keyboard-operable. Sidebar sections expand and collapse.
+```tsx
+/**
+ * ToggleSwitch adapter — same props API, rendered on the `switch` and `label` primitives.
+ */
 
-### Step 3: Migrate `ConfirmDialog` — the proof point
+import type { JSX } from 'react';
+import { useId } from 'react';
 
-Rebuild on `dialog`. Specifically:
-- **Fix the undefined CSS variables** (`--app-bg` → `--app-bg-surface`, `--app-border` →
-  `--app-border-default`, `--app-text` → `--app-text-primary`). Record before/after.
-- **Preserve Enter-to-confirm** from the effect at lines 46–53.
-- **Re-attach `data-esc-owns="true"`** (currently line 78).
-- **Decide the initial-focus question** (Confirm via `autoFocus` today vs Radix's first
-  tabbable, Cancel) and record the choice. On a destructive dialog, Cancel is the safer
-  default.
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
-**Check**: Per-step gate, plus `npm run test:run -- useSessionConsoleHotkeys` and
-`SessionConsolePanel`. In `npm run dev`: File → New Campaign opens it; Escape closes it;
-Tab cycles within; focus restores; Enter confirms; **and with Session Console audio
-playing, Escape closes the dialog without stopping playback.**
+interface ToggleSwitchProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  description?: string;
+  disabled?: boolean;
+  id?: string;
+}
 
-### Step 4: The three overlays with no a11y at all
+function ToggleSwitch({
+  checked,
+  onChange,
+  label,
+  description,
+  disabled = false,
+  id,
+}: ToggleSwitchProps): JSX.Element {
+  const generatedId = useId();
+  const toggleId = id ?? generatedId;
 
-Highest value per unit of effort — no `role="dialog"`, no `aria-modal`, no Escape, no
-focus trap. Three separate commits.
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        {label && (
+          <Label
+            htmlFor={toggleId}
+            className="text-xs uppercase font-semibold cursor-pointer text-[var(--app-text-secondary)]"
+          >
+            {label}
+          </Label>
+        )}
+        <Switch
+          id={toggleId}
+          checked={checked}
+          onCheckedChange={onChange}
+          disabled={disabled}
+          aria-disabled={disabled}
+        />
+      </div>
+      {description && (
+        <p className="text-xs mt-1 text-[var(--app-text-muted)]">{description}</p>
+      )}
+    </div>
+  );
+}
 
-- `MapSettingsSheet.tsx` (461) → **`sheet`**
-- `AssetLibrary/AddToLibraryDialog.tsx` (297) → `dialog`
-- `ImageCropper.tsx` (271) → `dialog`
+export default ToggleSwitch;
+```
 
-**`ImageCropper` mount note**: it is rendered at `src/components/Canvas/CanvasManager.tsx:1140`
-as `{pendingCrop && <ImageCropper …/>}` with no `isOpen` prop, and `CanvasManager` is out
-of scope. **Contain the Dialog Root entirely inside `ImageCropper`**, defaulting `open`
-to true, so the mount site needs no change. If that proves impossible, STOP — do not
-edit `CanvasManager`. Also verify `react-easy-crop` still works: drag and zoom, not just
-"the dialog opened."
+Replace `src/components/CollapsibleSection.tsx` with:
 
-**Check**: Per-step gate after each. Each opens, closes on Escape, traps focus, restores
-focus. Compare against Step 0 screenshots. `npm run test:a11y` — these three are the
-most likely to move the axe output; record the change.
+```tsx
+/**
+ * CollapsibleSection adapter — same props API, rendered on the `collapsible` primitive.
+ */
 
-### Step 5: The Session Console and mobile sheets
+import type { JSX, ReactNode } from 'react';
+import { useState } from 'react';
 
-Four commits: `SessionConsole/SessionConsoleEditorSheet.tsx` (298),
-`SessionConsole/SessionConsoleSettingsSheet.tsx` (68), `MobileSidebarDrawer.tsx` (91),
-`MobileBottomSheet.tsx` (107) — all → `sheet`.
+import { RiArrowRightSLine } from '@remixicon/react';
 
-Re-attach `data-esc-owns="true"` on the first two.
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-**Check**: Per-step gate after each. Editor sheet: edit a track, confirm it persists.
-Settings sheet: change a setting. Mobile drawers: verify with device emulation at a
-mobile viewport — they only render when `isMobile`.
+interface CollapsibleSectionProps {
+  title: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}
 
-### Step 6: The Asset Library overlays
+function CollapsibleSection({
+  title,
+  children,
+  defaultOpen = true,
+}: CollapsibleSectionProps): JSX.Element {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
 
-Two commits: `AssetLibrary/LibraryManager.tsx` (442) and
-`AssetLibrary/TokenMetadataEditor.tsx` (322) → `dialog`. Neither has Escape or
-`aria-modal` today; both are primary DM surfaces.
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
+      <CollapsibleTrigger className="w-full flex items-center justify-between mb-3 hover:opacity-80 transition">
+        <h3 className="text-sm uppercase font-bold tracking-wider text-[var(--app-text-secondary)]">
+          {title}
+        </h3>
+        <RiArrowRightSLine
+          className={`w-4 h-4 transition-transform text-[var(--app-text-secondary)] ${isOpen ? 'rotate-90' : ''}`}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-2">{children}</CollapsibleContent>
+    </Collapsible>
+  );
+}
 
-Both are heavy users of hardcoded palette classes (`LibraryManager` 22,
-`TokenMetadataEditor` 26) — replace them as you go.
+export default CollapsibleSection;
+```
 
-**Check**: Per-step gate after each. Open the library, add a token, edit its metadata,
-close. Escape works, focus traps and restores.
+Then (R) with both files.
+**Do NOT**: edit any consumer (`grep -rln "ToggleSwitch\|CollapsibleSection" src --include=*.tsx`
+lists them); change the `role="switch"` semantics (the primitive provides them); restyle the
+section header.
+**Commands**:
 
-### Step 7: `UpdateManager`
+```bash
+grep -c "Math.random" src/components/ToggleSwitch.tsx
+npm run verify:static
+npm run verify:web
+```
 
-`UpdateManager.tsx` (634 lines, 21 inline styles) → `dialog`. Re-attach
-`data-esc-owns` (line 538). Update its colocated test and the error-boundary test.
+**Expected**: `0`; exit 0; exit 0.
+**Check**: `verify:web` exits 0.
+**If it fails**: `SessionConsolePanel.test.tsx` failing on a toggle → re-read the `Switch` props in
+`src/components/ui/switch.tsx` once (`onCheckedChange`, not `onChange`); then STOP.
+**Commit**: `plan-004 step-2: ToggleSwitch and CollapsibleSection adapters`
 
-**Remove the redundant Escape branch at `src/App.tsx:275`** (`isUpdateManagerOpen`) —
-it now races Radix's `onEscapeKeyDown`. An earlier draft flagged this only for
-`AboutModal`; both have it.
+### Step 3: Migrate `ConfirmDialog` — the worked example
 
-**Check**: Per-step gate. Update Manager opens, its states render, Escape closes once
-(not twice), focus traps.
+**Files**: `src/components/ConfirmDialog.tsx`, `src/components/ConfirmDialog.test.tsx` (new),
+`tests/functional/overlays.spec.ts`, `tests/visual.spec.ts-snapshots/`,
+`docs/planning/screenshots/004-step3/` (new), `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`,
+`docs/planning/ui-redesign-ideas.md`, `plans/reports/004-pr1.md`, `plans/README.md`.
+**Do**: Store wiring stays exactly as today (`grep -n "confirmDialog\|showConfirmDialog\|clearConfirmDialog" src/store/gameStore.ts`,
+lines 337, 429–430, 868–870); Enter-to-confirm stays (today lines 46–53); initial focus moves to
+Cancel (CONVENTIONS §9); the confirm button becomes `variant="destructive"` (today `bg-red-600`,
+line 104); the undefined `--app-bg`/`--app-border`/`--app-text` variables (lines 84, 89) disappear
+with the hand-rolled shell. Replace the whole file with:
 
-### Step 8: `AboutModal`
+```tsx
+/**
+ * Confirmation Dialog Component
+ *
+ * Store-driven confirmation dialog on the `dialog` primitive. Triggered via
+ * `showConfirmDialog(message, onConfirm, confirmText?)` in gameStore and cleared via
+ * `clearConfirmDialog()`. Enter confirms from anywhere inside the dialog, Escape cancels, and the
+ * Cancel button receives initial focus (the safe action on a destructive dialog).
+ *
+ * @component
+ */
 
-`AboutModal.tsx` — 858 lines, 40 inline styles, a 212-line `modalStyles` template
-literal, hand-rolled tabs, and the **only** working focus trap (255–297).
+import { type JSX, useEffect } from 'react';
 
-Replace the overlay with `dialog` and **delete the hand-rolled focus trap**. Use `tabs`
-for the tab strip. Re-attach `data-esc-owns` (line 334). Remove the redundant
-`App.tsx:270` Escape branch.
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
-The `modalStyles` template literal defines classes used only inside this file — check
-for class names invisible to any external grep before deleting anything.
+import { useGameStore } from '../store/gameStore';
 
-**Check**: Per-step gate **plus both E2E projects**. `?` opens it; Escape closes once;
-Tab cycles; focus restores; "Check for Updates" opens the Update Manager. Record
-before/after line count. Check whether the `eslint-disable max-lines-per-function` at
-line 237 can now go.
+/** Radix focuses the first tabbable element on open; we want Cancel instead. */
+function focusCancelButton(event: Event): void {
+  event.preventDefault();
+  const root = event.currentTarget;
+  if (root instanceof HTMLElement) {
+    root.querySelector<HTMLButtonElement>('[data-testid="dialog-confirm-cancel"]')?.focus();
+  }
+}
 
-### Step 9: `DungeonGeneratorDialog`
+function ConfirmDialog(): JSX.Element | null {
+  const confirmDialog = useGameStore((state) => state.confirmDialog);
+  const clearConfirmDialog = useGameStore((state) => state.clearConfirmDialog);
 
-→ `dialog`. Re-attach `data-esc-owns` (line 91). Update
-`DungeonGeneratorDialog.test.tsx`; confirm `DungeonGeneratorErrorBoundary.test.tsx`
-still passes.
+  // Enter confirms (Radix supplies Escape, not Enter)
+  useEffect(() => {
+    if (!confirmDialog) {
+      return;
+    }
 
-**Check**: Per-step gate. Generate a dungeon end to end; the result renders on canvas.
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmDialog.onConfirm();
+        clearConfirmDialog();
+      }
+    };
 
-### Step 10: The desktop toolbar
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [confirmDialog, clearConfirmDialog]);
 
-In `src/App.tsx`, replace `btn btn-tool` / `btn btn-mode` / `btn btn-broadcast` with the
-`Button` primitive's `tool` / `mode` / `broadcast` variants, and `.toolbar-divider`
-(`:581`, `:648`, `:683`) with `separator`.
+  if (!confirmDialog) {
+    return null;
+  }
 
-Decide how the `active` state maps — today it is a template-literal class
-(`` `btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}` ``). A boolean prop or
-`data-state` are both fine; pick one and use it consistently.
+  const handleConfirm = (): void => {
+    confirmDialog.onConfirm();
+    clearConfirmDialog();
+  };
 
-**The pause button must stay red/green** — plan 001 Step 8 fixed it, and it is easy to
-lose here by dropping the `.is-paused` / `.is-running` classes without an equivalent
-variant. Carry them across explicitly and verify both states.
+  const handleOpenChange = (open: boolean): void => {
+    if (!open) {
+      clearConfirmDialog();
+    }
+  };
 
-Preserve every `aria-label` and `data-testid`.
+  return (
+    <Dialog open onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="max-w-md"
+        data-testid="dialog-confirm-root"
+        showCloseButton={false}
+        onOpenAutoFocus={focusCancelButton}
+      >
+        <DialogHeader>
+          <DialogTitle>Confirm Action</DialogTitle>
+          <DialogDescription>{confirmDialog.message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="secondary"
+            onClick={clearConfirmDialog}
+            data-testid="dialog-confirm-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleConfirm}
+            data-testid="dialog-confirm-confirm"
+          >
+            {confirmDialog.confirmText ?? 'Confirm'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-**Check**: Per-step gate **plus both E2E projects**. Diff against the Step 0 toolbar
-screenshots in both themes: identical, pause button still red/green in both states. Every
-tool switches; active state highlights; measurement sub-buttons work; broadcast turns
-green. Keyboard shortcuts V/M/E/W/D/R/I still work. If anything else differs, fix the
-variant in `src/components/ui/button.tsx`, not with a one-off class in `App.tsx`.
+export default ConfirmDialog;
+```
 
-### Step 11: `MobileToolbar`
+Create `src/components/ConfirmDialog.test.tsx`:
 
-`MobileToolbar.tsx` (325 lines, 14 inline styles) — the touch-surface counterpart to
-Step 10. Migrate to the same `Button` variants.
+```tsx
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-**Do not shrink any hit target.** Plan 000 recorded the current minimums (48px in
-`App.tsx:528-529`, 44px in `TokenInspector`/`HomeScreen`, 56px in `MobileToolbar`) as an
-asserted baseline — that spec must stay green.
+import ConfirmDialog from './ConfirmDialog';
+import { useGameStore } from '../store/gameStore';
 
-**Check**: Per-step gate, including plan 000's touch-target spec. Verify at a mobile
-viewport: every tool works, the more-menu opens, hit targets unchanged.
+describe('ConfirmDialog', () => {
+  beforeEach(() => {
+    useGameStore.getState().clearConfirmDialog();
+  });
 
-### Step 12: The generic `.btn` and input consumers
+  it('renders nothing when no confirmation is pending', () => {
+    render(<ConfirmDialog />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 
-**At least four commits.** Eleven `.btn` files:
-`SessionConsolePanel`, `TrackGroupList`, `sessionConsoleSettingsSections`,
-`SessionConsoleBoard`, `ImageSetBoard`, `SessionConsoleMasterBar`,
-`SessionConsoleEditorSheet` (finish from Step 5), `MapSettingsSheet`, `Sidebar`,
-`MapNavigator`, **`DoorControls`**.
+  it('renders the message, owns Escape and focuses Cancel first', () => {
+    act(() => {
+      useGameStore.getState().showConfirmDialog('Delete this map?', () => {}, 'Delete');
+    });
+    render(<ConfirmDialog />);
 
-Map by observed appearance, not by class name — `btn-secondary`, `btn-ghost` and
-`btn-destructive` are **undefined in CSS** and all render as bare `.btn`, i.e. `ghost`.
-Each call site also carries its own sizing (`flex-1 py-1 text-xs`, `w-full py-2 text-sm`,
-`p-1`, …); `tailwind-merge` resolves these against shadcn `size` variants differently
-from how the CSS cascade did. Screenshot each before and after.
+    const root = screen.getByTestId('dialog-confirm-root');
+    expect(root).toHaveAttribute('role', 'dialog');
+    expect(root).toHaveAttribute('aria-modal', 'true');
+    expect(root).toHaveAttribute('data-esc-owns', 'true');
+    expect(screen.getByText('Delete this map?')).toBeInTheDocument();
+    expect(screen.getByTestId('dialog-confirm-confirm')).toHaveTextContent('Delete');
+    expect(screen.getByTestId('dialog-confirm-cancel')).toHaveFocus();
+  });
 
-Then the `.sidebar-input` / `.sidebar-token` / `.info-box` consumers. Note:
-**`.sidebar-token` is a 64×64 draggable token tile and `.info-box` is a bordered
-callout** — neither is an input or a label, and plan 003's roster has no primitive for
-either. Convert them to themed markup using tokens; do not force them into `input`.
+  it('Enter confirms and closes', () => {
+    const onConfirm = vi.fn();
+    act(() => {
+      useGameStore.getState().showConfirmDialog('Sure?', onConfirm);
+    });
+    render(<ConfirmDialog />);
 
-`QuickTokenSidebar.test.tsx` asserts on `sidebar-token` and on Tailwind utilities —
-update those assertions to the new correct behaviour.
+    act(() => {
+      fireEvent.keyDown(screen.getByTestId('dialog-confirm-root'), { key: 'Enter' });
+    });
 
-**Also in this step**: put the `PreferencesDialog` question to Kyle (delete, or wire up
-to a menu item). Record the answer; do not migrate it either way without one.
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(useGameStore.getState().confirmDialog).toBeNull();
+  });
 
-**Check**: Per-step gate after each commit. Exercise the Session Console, the Sidebar,
-the Map Navigator, and the door controls.
+  it('Escape closes without confirming', () => {
+    const onConfirm = vi.fn();
+    act(() => {
+      useGameStore.getState().showConfirmDialog('Sure?', onConfirm);
+    });
+    render(<ConfirmDialog />);
+
+    act(() => {
+      fireEvent.keyDown(screen.getByTestId('dialog-confirm-root'), { key: 'Escape' });
+    });
+
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(useGameStore.getState().confirmDialog).toBeNull();
+  });
+});
+```
+
+The audio protocol is proven mechanically by the chain: this test asserts the attribute is on the
+dialog; `useSessionConsoleHotkeys.test.ts` (`grep -n "esc-owns" src/components/SessionConsole/useSessionConsoleHotkeys.test.ts`,
+line 53) asserts the attribute defers the STOP. Then (O) for `ConfirmDialog`, (R), (S) with
+step `004-step3`, (I), and (P) for PR 1.
+**Expected differences** (S): `confirm-dialog` and `world-dialog` — the dialog now has a surface
+colour, border and title styling from the primitive (it had none: the variables were undefined),
+and the Cancel button is `secondary`. No other surface may change.
+**Do NOT**: change `gameStore.ts`; keep an Escape branch in the effect (Radix owns Escape; two
+handlers close it twice); apply any class other than `variant="destructive"` to the confirm
+button; add a `DialogTrigger` (the store opens it); edit the mount sites in `src/App.tsx`
+(lines 457, 488) or `DesignSystemPlayground.tsx`.
+**Commands**:
+
+```bash
+npx vitest run src/components/ConfirmDialog.test.tsx
+npx vitest run src/components/SessionConsole/useSessionConsoleHotkeys.test.ts src/components/SessionConsole/SessionConsolePanel.test.tsx
+bash scripts/migration-card.sh src/components/ConfirmDialog.tsx
+npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+npm run verify
+```
+
+**Expected**: `4 passed`; all pass; a row with `ui-imports=2 role=0 aria-modal=0 Escape=0 esc-owns=0 test=yes palette=0 inline=0`;
+exit 0; exit 0; exit 0; exit 0.
+**Check**: the card row above and `verify` exit 0.
+**If it fails**: `toHaveFocus` failing → `DialogContent` did not pass `onOpenAutoFocus` through;
+STOP naming `src/components/ui/dialog.tsx`. `data-esc-owns` missing → plan 003's default is
+absent; STOP.
+**Commit**: `plan-004 step-3: ConfirmDialog on the dialog primitive`
+
+### Step 4a: Migrate `MapSettingsSheet` to `sheet`
+
+**Files**: `src/components/MapSettingsSheet.tsx`, `tests/functional/overlays.spec.ts`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`.
+**Do**: Follow the Dialog recipe with `Sheet`. Deltas: the shell (backdrop lines 236–242, drawer
+line 245, header 247–256, footer 448–455; `grep -n 'fixed right-0' src/components/MapSettingsSheet.tsx`)
+becomes:
+
+```tsx
+<Sheet open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); } }} modal={!isCalibrating}>
+  <SheetContent
+    side="right"
+    className="w-full sm:w-96 sm:max-w-none p-0 overflow-y-auto"
+    data-testid="sheet-map-settings-root"
+  >
+    <SheetHeader className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4">
+      <SheetTitle className="text-lg font-bold">{mode === 'CREATE' ? 'New Map' : 'Edit Map'}</SheetTitle>
+    </SheetHeader>
+    {/* the existing <div className="p-4 space-y-6"> … </div> content block, unchanged */}
+    <SheetFooter className="sticky bottom-0 bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)] p-4 flex flex-row gap-2">
+      <Button variant="ghost" className="flex-1 py-2" onClick={onClose}>Cancel</Button>
+      <Button variant="default" className="flex-1 py-2" onClick={handleSave}>
+        {mode === 'CREATE' ? 'Create Map' : 'Save Changes'}
+      </Button>
+    </SheetFooter>
+  </SheetContent>
+</Sheet>
+```
+
+`modal={!isCalibrating}` reproduces today's calibration behaviour (backdrop transparent and
+click-through, lines 238–241). Delete the hand-rolled `✕` button (line 250; the primitive's X
+replaces it). Convert the six `.btn` hits per the Step 12 table (lines 298 `default`,
+328 `secondary`, 336 `secondary`, 439 `ghost`, 449 `ghost`, 452 `default`), the two
+`.sidebar-input` inputs (lines 274, 369) to `<Input className="w-full" …/>` with all other props
+unchanged, and the `.info-box` div (line 321) to
+`className="rounded p-3 mb-3 text-xs bg-[var(--app-accent-bg)] border border-[var(--app-accent-solid)] text-[var(--app-accent-text-contrast)]"`.
+Keep the `eslint-disable-next-line max-lines-per-function, complexity` at line 32 only if
+`npm run lint` still needs it. Then (O), (R), (I).
+**Do NOT**: change any form field, label text or store call; wire `isCalibrating` to anything but
+`modal`; convert `btn-destructive` to `destructive` (it renders as bare `.btn` today → `ghost`;
+record the Danger Zone as an idea).
+**Commands**:
+
+```bash
+bash scripts/migration-card.sh src/components/MapSettingsSheet.tsx
+npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium
+npm run lint
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `… role=0 aria-modal=0 Escape=0 esc-owns=0 … palette=0 inline=0 btn=0 legacy=0`;
+exit 0; exit 0; exit 0; exit 0.
+**Check**: the overlays spec passes with the `MapSettingsSheet` row flipped.
+**If it fails**: `npm run lint` reporting an unused disable directive → delete the directive.
+Otherwise STOP.
+**Commit**: `plan-004 step-4a: MapSettingsSheet on the sheet primitive`
+
+### Step 4b: Migrate `AddToLibraryDialog`
+
+**Files**: `src/components/AssetLibrary/AddToLibraryDialog.tsx`, `tests/functional/overlays.spec.ts`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`.
+**Do**: Follow the Dialog recipe. Deltas: `open={isOpen}`, `onOpenChange` → `handleClose`
+(line 179); `DialogContent className={isMobile ? 'h-full max-w-none rounded-none' : 'max-w-md'}`
+with `data-testid="dialog-add-to-library-root"` and `showCloseButton={false}`; `<h2>` (line 200)
+becomes `DialogTitle`; the three fields (lines 227, 244, 266) become `<Input>` / a plain
+`<select>` with `className="w-full px-3 py-2 rounded bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"`;
+labels `text-neutral-300` → `text-[var(--app-text-secondary)]`; hint `text-neutral-500` →
+`text-[var(--app-text-muted)]`; preview `bg-neutral-800` → `bg-[var(--app-bg-subtle)]`; borders
+`border-neutral-700` → `border-[var(--app-border-default)]`; footer buttons → `Button variant="secondary"`
+(Cancel) and `variant="default"` (Add to Library) keeping `disabled` props. Then (O), (R), (I).
+**Do NOT**: change the form markup, field order, `DEFAULT_CATEGORIES`, the save flow, or the two
+mount sites (`Sidebar.tsx` line 459, `LibraryManager.tsx` line 407).
+**Commands**:
+
+```bash
+bash scripts/migration-card.sh src/components/AssetLibrary/AddToLibraryDialog.tsx
+npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `… role=0 aria-modal=0 Escape=0 esc-owns=0 … palette=0 inline=0`; exit 0; exit 0;
+exit 0.
+**Check**: the overlays spec passes with the `AddToLibraryDialog` row flipped.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-4b: AddToLibraryDialog on the dialog primitive`
+
+### Step 4c: Migrate `ImageCropper`
+
+**Files**: `src/components/ImageCropper.tsx`, `src/components/ImageCropper.test.tsx` (new),
+`tests/functional/overlays.spec.ts`, `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`,
+`docs/planning/ui-redesign-ideas.md`, `plans/reports/004-pr2.md` (new), `plans/README.md`.
+**Do**: Follow the Dialog recipe. Deltas: the component has no `isOpen` prop, so the root is
+`<Dialog open onOpenChange={(open) => { if (!open) { onCancel(); } }}>` — `CanvasManager.tsx`
+keeps rendering `{pendingCrop && <ImageCropper …/>}` unchanged. `DialogContent` gets
+`className="w-[90vw] max-w-none h-[80vh] p-0 flex flex-col overflow-hidden"`,
+`data-testid="dialog-image-cropper-root"`, `showCloseButton={false}`, an
+`<DialogTitle className="sr-only">Crop image</DialogTitle>` as its first child, and the existing
+inner layout (line 151 onward) with: `bg-neutral-800` → `bg-[var(--app-bg-surface)]`, the
+`bg-black` cropper stage → `bg-[var(--app-bg-base)]`, `bg-neutral-900` → `bg-[var(--app-bg-subtle)]`,
+`border-neutral-700` → `border-[var(--app-border-default)]`, `text-white` → `text-[var(--app-text-primary)]`,
+and the two buttons → `Button variant="ghost"` (Cancel) and `variant="default"` (Crop & Import).
+Create `src/components/ImageCropper.test.tsx`:
+
+```tsx
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
+import ImageCropper from './ImageCropper';
+
+// react-easy-crop measures its container with getBoundingClientRect, which is all zeros in
+// jsdom, so the real cropper cannot be driven here. This file covers the dialog shell only;
+// cropping itself has no automated coverage (recorded in plans/reports/004-pr2.md).
+vi.mock('react-easy-crop', () => ({
+  default: () => <div data-testid="cropper-stub" />,
+}));
+
+describe('ImageCropper', () => {
+  it('renders a modal dialog with the cropper and both actions', () => {
+    render(<ImageCropper imageSrc="blob:test" onConfirm={vi.fn()} onCancel={vi.fn()} />);
+
+    const root = screen.getByRole('dialog');
+    expect(root).toHaveAttribute('aria-modal', 'true');
+    expect(root).toHaveAttribute('data-esc-owns', 'true');
+    expect(screen.getByTestId('cropper-stub')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Crop & Import' })).toBeInTheDocument();
+  });
+
+  it('Cancel and Escape both call onCancel', () => {
+    const onCancel = vi.fn();
+    render(<ImageCropper imageSrc="blob:test" onConfirm={vi.fn()} onCancel={onCancel} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+    expect(onCancel).toHaveBeenCalledTimes(2);
+  });
+});
+```
+
+Then (O) for `ImageCropper` (its row stays `open: null` if plan 000 recorded it so; flip only the
+booleans), (R), (I), and (P) for PR 2.
+**Do NOT**: edit `src/components/Canvas/CanvasManager.tsx`; add an `isOpen` prop; change
+`getCroppedImg`, `createImage`, the `aspect={1}` or the zoom range.
+**Commands**:
+
+```bash
+grep -c "ImageCropper" src/components/Canvas/CanvasManager.tsx
+npx vitest run src/components/ImageCropper.test.tsx
+bash scripts/migration-card.sh src/components/ImageCropper.tsx
+npm run verify:static
+npm run verify:web
+npm run verify
+```
+
+**Expected**: `2` (import + mount, unchanged); `2 passed`; `… palette=0 inline=0`; exit 0;
+exit 0; exit 0.
+**Check**: `git diff --stat origin/main -- src/components/Canvas/` is empty and `verify` exits 0.
+**If it fails**: if the Dialog root cannot be contained inside `ImageCropper` without touching
+`CanvasManager.tsx`: STOP with the reason.
+**Commit**: `plan-004 step-4c: ImageCropper on the dialog primitive`
+
+### Step 5a: Migrate `SessionConsoleEditorSheet`
+
+**Files**: `src/components/SessionConsole/SessionConsoleEditorSheet.tsx`,
+`tests/functional/overlays.spec.ts`, `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`,
+`docs/planning/ui-redesign-ideas.md`.
+**Do**: Follow Step 4a's `Sheet` shape (`side="right"`, same header/footer classes;
+`data-testid="sheet-session-console-editor-root"`; title `{image ? 'Edit plate' : 'Edit track'}`
+as `SheetTitle` so `SessionConsolePanel.test.tsx` still finds the heading; no `modal` prop).
+Delete the backdrop and `✕` (lines 241–256); footer buttons (lines 284, 290) → `Button variant="ghost"`
+/ `variant="default"` with `type="button"` kept; the three `.sidebar-input` inputs (lines 55, 87, 119)
+→ `<Input className="mt-2 w-full" …/>`. Then (O), (R), (I).
+**Do NOT**: touch `TrackFields`, `EditorTextField` logic, the `draft` state, or
+`SessionConsolePanel.tsx`.
+**Commands**:
+
+```bash
+bash scripts/migration-card.sh src/components/SessionConsole/SessionConsoleEditorSheet.tsx
+npx vitest run src/components/SessionConsole/SessionConsolePanel.test.tsx
+npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `… role=0 aria-modal=0 Escape=0 esc-owns=0 … palette=0 inline=0 btn=0 legacy=0`;
+all pass; exit 0; exit 0; exit 0.
+**Check**: the overlays spec passes with the row flipped.
+**If it fails**: a heading query failing in `SessionConsolePanel.test.tsx` → the title must be a
+`SheetTitle` (renders `h2`); fix once, then STOP.
+**Commit**: `plan-004 step-5a: SessionConsoleEditorSheet on the sheet primitive`
+
+### Step 5b: Migrate `SessionConsoleSettingsSheet`
+
+**Files**: `src/components/SessionConsole/SessionConsoleSettingsSheet.tsx`,
+`tests/functional/overlays.spec.ts`, `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`.
+**Do**: Same shape as Step 5a; `data-testid="sheet-session-console-settings-root"`; `SheetTitle`
+text `Session Console settings`; delete the Escape effect (lines 18–31), backdrop and `✕`
+(lines 41–56); keep the four section components as the content. Then (O), (R).
+**Do NOT**: edit `sessionConsoleSettingsSections.tsx` (Step 12a).
+**Commands**:
+
+```bash
+bash scripts/migration-card.sh src/components/SessionConsole/SessionConsoleSettingsSheet.tsx
+npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `… Escape=0 esc-owns=0 … palette=0 inline=0`; exit 0; exit 0; exit 0.
+**Check**: the overlays spec passes with the row flipped.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-5b: SessionConsoleSettingsSheet on the sheet primitive`
+
+### Step 5c: Migrate `MobileSidebarDrawer`
+
+**Files**: `src/components/MobileSidebarDrawer.tsx`, `tests/functional/overlays.spec.ts`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`.
+**Do**: Replace lines 35–86 (both effects and the JSX) with a `Sheet` `side="left"`,
+`SheetContent className="w-[85vw] max-w-xs p-0" ownsEscape={false} aria-label="Navigation menu" data-testid="sheet-mobile-sidebar-root"`
+containing `<SheetTitle className="sr-only">Navigation menu</SheetTitle>` and `{children}`. Keep
+the `if (!isOpen) return null;` guard so the drawer is not mounted when closed. Radix locks body
+scroll itself; the `document.body.style.overflow` effect goes. Then (O) with esc-owns `false`,
+(R).
+**Do NOT**: claim Escape (`ownsEscape={false}` is decided: `SessionConsolePanel.test.tsx` line
+508 encodes it); edit `Sidebar.tsx`.
+**Commands**:
+
+```bash
+grep -c "ownsEscape={false}" src/components/MobileSidebarDrawer.tsx
+npx vitest run src/components/SessionConsole/SessionConsolePanel.test.tsx
+npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `1`; all pass; exit 0; exit 0; exit 0.
+**Check**: the overlays spec passes with the row flipped and its esc-owns expectation `false`.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-5c: MobileSidebarDrawer on the sheet primitive`
+
+### Step 5d: Migrate `MobileBottomSheet`
+
+**Files**: `src/components/MobileBottomSheet.tsx`, `tests/functional/overlays.spec.ts`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`.
+**Do**: As Step 5c with `side="bottom"`,
+`className="max-h-[70vh] rounded-t-xl p-0 overflow-y-auto bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)]"`,
+`ownsEscape={false}`, `aria-label="Bottom sheet"`, `data-testid="sheet-mobile-bottom-root"`, an
+sr-only `SheetTitle`, the drag handle (lines 92–97, `style` → `bg-[var(--app-border-default)]`)
+and the `px-4 pb-4` content wrapper. Then (O), (R).
+**Do NOT**: edit `TokenInspector.tsx` (it mounts with `isOpen` always true, line 458) or its test
+(it mocks this component).
+**Commands**:
+
+```bash
+bash scripts/migration-card.sh src/components/MobileBottomSheet.tsx
+npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `… Escape=0 esc-owns=1 … palette=0 inline=0`; exit 0; exit 0; exit 0.
+**Check**: the overlays spec passes with the row flipped.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-5d: MobileBottomSheet on the sheet primitive`
+
+### Step 6a: Migrate `LibraryManager`
+
+**Files**: `src/components/AssetLibrary/LibraryManager.tsx`, `tests/functional/overlays.spec.ts`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`.
+**Do**: Follow the Dialog recipe. Deltas: `open={isOpen}`; `DialogContent
+className={isMobile ? 'h-full max-w-none rounded-none p-0 flex flex-col' : 'max-w-6xl h-[80vh] p-0 flex flex-col'}`,
+`data-testid="dialog-library-manager-root"`, `showCloseButton={false}`; `<h2>` (line 219) →
+`DialogTitle`; keep the nested `<AddToLibraryDialog>` and `<TokenMetadataEditor>` (lines 407–437)
+inside `DialogContent` exactly where they are (Radix stacks nested dialogs). Palette mapping:
+`bg-neutral-800` → `bg-[var(--app-bg-surface)]`, `bg-neutral-700`/`hover:bg-neutral-700` →
+`bg-[var(--app-bg-active)]`/`hover:bg-[var(--app-bg-hover)]`, `border-neutral-700/600` →
+`border-[var(--app-border-default)]`, `text-white` → `text-[var(--app-text-primary)]`,
+`text-neutral-400/300` → `text-[var(--app-text-secondary)]`, `text-neutral-500` →
+`text-[var(--app-text-muted)]`, `bg-blue-600 hover:bg-blue-500` buttons → `Button variant="default"`,
+`bg-neutral-700` buttons → `Button variant="secondary"`, `bg-red-*` → `variant="destructive"`,
+`focus:border-blue-500` → `focus:border-[var(--app-accent-solid)]`. Then (O), (R), (I).
+**Do NOT**: change search, filter, upload, delete or drag logic; move the nested dialogs.
+**Commands**:
+
+```bash
+bash scripts/migration-card.sh src/components/AssetLibrary/LibraryManager.tsx
+npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `… role=0 aria-modal=0 Escape=0 esc-owns=0 … palette=0 inline=0`; exit 0; exit 0;
+exit 0.
+**Check**: the overlays spec passes with the row flipped.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-6a: LibraryManager on the dialog primitive`
+
+### Step 6b: Migrate `TokenMetadataEditor`
+
+**Files**: `src/components/AssetLibrary/TokenMetadataEditor.tsx`,
+`src/components/AssetLibrary/TokenMetadataEditor.test.tsx`, `tests/functional/overlays.spec.ts`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`,
+`plans/reports/004-pr3.md` (new), `plans/README.md`.
+**Do**: As Step 6a (`data-testid="dialog-token-metadata-root"`, mobile/desktop classes from line
+165, same palette mapping, `<h2>` line 177 → `DialogTitle`). In the test, replace the backdrop
+test (`grep -n "closest" src/components/AssetLibrary/TokenMetadataEditor.test.tsx`, lines 116–122)
+with:
+
+```tsx
+  it('should close modal on Escape', () => {
+    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(mockOnClose).toHaveBeenCalled();
+  });
+```
+
+and leave the "clicking inside" test (lines 124–131) as it is. Then (O), (R), (I), (P) for PR 3.
+**Do NOT**: edit `CommandPalette.tsx` (second mount site, line 407); wrap the new test in an `if`.
+**Commands**:
+
+```bash
+npx vitest run src/components/AssetLibrary/TokenMetadataEditor.test.tsx
+bash scripts/migration-card.sh src/components/AssetLibrary/TokenMetadataEditor.tsx
+npm run verify:static
+npm run verify:web
+npm run verify
+```
+
+**Expected**: all pass; `… palette=0 inline=0`; exit 0; exit 0; exit 0.
+**Check**: `verify` exits 0 with the overlays spec row flipped.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-6b: TokenMetadataEditor on the dialog primitive`
+
+### Step 7: Migrate `UpdateManager`
+
+**Files**: `src/components/UpdateManager.tsx`, `src/components/UpdateManager.test.tsx`,
+`src/App.tsx`, `tests/functional/overlays.spec.ts`, `.eslintrc.cjs`,
+`src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`.
+**Do**: Follow the Dialog recipe. Deltas: delete the `handleKeyDown` `useCallback` and its effect
+(`grep -n "Handle keyboard events" src/components/UpdateManager.tsx`); shell lines 530–539 →
+`Dialog open={isOpen} onOpenChange` → `onClose`, `DialogContent className="max-w-md" data-testid="dialog-update-manager-root" showCloseButton={false}`;
+`<h2>` (line 543) → `DialogTitle`; keep the `Close update manager` button; the 21 `style={{}}`
+props and 4 palette classes → recipe mapping; action buttons → `Button variant="default"` /
+`"secondary"`. In `src/App.tsx` delete the `isUpdateManagerOpen` Escape branch (line 277–280,
+`grep -n "e.key === 'Escape' && isUpdateManagerOpen" src/App.tsx`) and remove
+`isUpdateManagerOpen` from that effect's dependency array (line 335). In the test: change
+`fireEvent.keyDown(window, { key: 'Escape' })` (line 149) to
+`fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })`, and delete the backdrop test
+(lines 113–122; backdrop dismissal is the primitive's, covered by plan 003's keyboard tests — record
+the deleted test in the report). Then (O), (R), (I).
+**Do NOT**: touch `useAutoUpdater`, `StatusContent`, the `messages` ref, the
+`SessionConsoleEscapeStop defer=` prop (line 511) or `UpdateManagerErrorBoundary`.
+**Commands**:
+
+```bash
+grep -c "Escape" src/App.tsx
+npx vitest run src/components/UpdateManager.test.tsx src/components/UpdateManagerErrorBoundary.test.tsx
+bash scripts/migration-card.sh src/components/UpdateManager.tsx
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: one less than before the step (6 → 5 at d3d3642 numbering); all pass;
+`… Escape=0 esc-owns=0 … palette=0 inline=0`; exit 0; exit 0.
+**Check**: the overlays spec passes with the row flipped.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-7: UpdateManager on the dialog primitive`
+
+### Step 8: Migrate `AboutModal`
+
+**Files**: `src/components/AboutModal.tsx`, `src/App.tsx`, `tests/functional/overlays.spec.ts`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`.
+**Do**: Follow the Dialog recipe. Deltas: delete the focus-trap effect
+(`grep -n "Focus trap implementation" src/components/AboutModal.tsx`, lines 258–304) and
+`modalRef`; the backdrop/content shell (lines 313–347) → `Dialog open={isOpen}` / `DialogContent
+className="max-w-[700px] max-h-[85vh] flex flex-col p-0" data-testid="dialog-about-root" showCloseButton={false}`;
+keep the `Close About dialog` button; the tab strip (lines 365–385) becomes:
+
+```tsx
+<Tabs value={activeTab} onValueChange={(value) => setActiveTab(toAboutModalTab(value))}>
+  <TabsList className="flex gap-2 mt-4">
+    <TabsTrigger value="about">About</TabsTrigger>
+    <TabsTrigger value="tutorial">Tutorial</TabsTrigger>
+    <TabsTrigger value="shortcuts">Shortcuts</TabsTrigger>
+  </TabsList>
+</Tabs>
+```
+
+with, above the component, `function toAboutModalTab(value: string): AboutModalTab { return value === 'tutorial' || value === 'shortcuts' ? value : 'about'; }`,
+and the three `{activeTab === 'x' && (…)}` blocks unchanged. Convert every `style={{}}` (40) with
+the recipe mapping. Delete from `modalStyles` every class no longer referenced
+(`for c in $(grep -oE '^\s+\.[a-z-]+' src/components/AboutModal.tsx | tr -d ' .' | sort -u); do echo "$c $(grep -c "$c" src/components/AboutModal.tsx)"; done`
+— a count of 1 means only the definition remains: delete it). If the literal ends up empty, delete
+it and the `<style>` element. Remove the `eslint-disable-next-line max-lines-per-function` at
+line 237 if `npm run lint` reports it unused. In `src/App.tsx` delete the `isAboutOpen` Escape
+branch (lines 271–274; the `?` branch stays). Then (O), (R), (I).
+**Do NOT**: restyle the tabs beyond `Tabs`; edit any About/Tutorial/Shortcuts copy; touch the
+`onCheckForUpdates` button (lines 447–450).
+**Commands**:
+
+```bash
+grep -c "Escape" src/App.tsx
+npm run lint
+bash scripts/migration-card.sh src/components/AboutModal.tsx
+wc -l src/components/AboutModal.tsx
+npm run verify:static
+npm run verify:web
+npm run verify:electron
+```
+
+**Expected**: one less than after Step 7; exit 0 (no unused disable directive); `… role=0 aria-modal=0 esc-owns=0 … palette=0 inline=0`;
+a number below 858 (record it); exit 0; exit 0; exit 0.
+**Check**: `npm run lint` and `verify:electron` both exit 0 with the row flipped.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-8: AboutModal on the dialog and tabs primitives`
+
+### Step 9: Migrate `DungeonGeneratorDialog`
+
+**Files**: `src/components/DungeonGeneratorDialog.tsx`, `src/components/DungeonGeneratorDialog.test.tsx`,
+`tests/functional/overlays.spec.ts`, `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`,
+`docs/planning/ui-redesign-ideas.md`, `plans/reports/004-pr4.md` (new), `plans/README.md`.
+**Do**: Follow the ConfirmDialog pattern exactly (store-driven: `open` while `dungeonDialog`,
+`onOpenChange` → `clearDungeonDialog`, `data-testid="dialog-dungeon-generator-root"`,
+`showCloseButton={false}`). Initial focus stays on Generate (today `autoFocus`, line 210): give the
+button `data-testid="dialog-dungeon-generator-generate"` and use `onOpenAutoFocus` with the same
+helper shape as `focusCancelButton`. Delete the Escape effect (lines 28–41). Buttons → `Button
+variant="secondary"` (Cancel) / `variant="default"` (Generate). The six `style={{}}` and four
+palette classes → recipe mapping. In the test, replace the background-click test (lines 85–97)
+with an Escape test that fires on `screen.getByRole('dialog')` and change line 66's
+`fireEvent.keyDown(window, …)` to fire on `screen.getByRole('dialog')`. Then (O), (R), (I), (P)
+for PR 4.
+**Do NOT**: change `handleGenerate`, the slider ranges, or `DungeonGeneratorErrorBoundary`.
+**Commands**:
+
+```bash
+npx vitest run src/components/DungeonGeneratorDialog.test.tsx src/components/DungeonGeneratorErrorBoundary.test.tsx
+bash scripts/migration-card.sh src/components/DungeonGeneratorDialog.tsx
+npm run verify:static
+npm run verify:web
+npm run verify
+```
+
+**Expected**: all pass; `… Escape=0 esc-owns=0 … palette=0 inline=0`; exit 0; exit 0; exit 0.
+**Check**: `verify` exits 0 with the row flipped.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-9: DungeonGeneratorDialog on the dialog primitive`
+
+### Step 10: Extract `Toolbar.tsx` onto the button and separator primitives
+
+**Files**: `src/components/Toolbar.tsx` (new), `src/App.tsx`, `src/components/README.md`,
+`tests/pause-button.spec.ts`, `tests/touch-targets.spec.ts`, `tests/functional/editor-smoke.spec.ts`,
+`docs/planning/screenshots/004-step10/` (new), `tests/visual.spec.ts-snapshots/`, `.eslintrc.cjs`,
+`src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`.
+**Do**: Record `BEFORE_IDS=$(grep -c 'data-testid="toolbar-' src/App.tsx)` and
+`BEFORE_LABELS=$(sed -n 555,702p src/App.tsx | grep -c aria-label)` first (the toolbar block is
+`grep -n 'className="toolbar' src/App.tsx` through the `</div>` that closes it, lines 555–702 at
+d3d3642). Create `src/components/Toolbar.tsx` with this header, then the toolbar JSX moved verbatim
+from `App.tsx` and rewritten only by the substitution table:
+
+```tsx
+/**
+ * Toolbar — the desktop tool strip (Architect View, non-mobile). Extracted from App.tsx in plan
+ * 004; every value still lives in App and arrives as a prop (plan 005 moves them to a store).
+ */
+
+import type { JSX, RefObject } from 'react';
+
+import {
+  RiCursorLine,
+  RiDoorOpenLine,
+  RiEraserLine,
+  RiLayoutMasonryLine,
+  RiPauseFill,
+  RiPencilLine,
+  RiPlayFill,
+  RiRulerLine,
+} from '@remixicon/react';
+
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+
+import Tooltip from './Tooltip';
+
+export type ToolbarTool = 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
+export type MeasurementMode = 'ruler' | 'blast' | 'cone';
+export type DoorOrientation = 'horizontal' | 'vertical';
+
+export interface ToolbarProps {
+  tool: ToolbarTool;
+  setTool: (tool: ToolbarTool) => void;
+  color: string;
+  onColorChange: (color: string) => void;
+  colorInputRef: RefObject<HTMLInputElement>;
+  doorOrientation: DoorOrientation;
+  onToggleDoorOrientation: () => void;
+  measurementMode: MeasurementMode;
+  setMeasurementMode: (mode: MeasurementMode) => void;
+  broadcastMeasurement: boolean;
+  setBroadcastMeasurement: (value: boolean) => void;
+  isGamePaused: boolean;
+  onPauseToggle: () => void;
+}
+
+// eslint-disable-next-line max-lines-per-function
+function Toolbar(props: ToolbarProps): JSX.Element {
+  // destructure every prop here, then the moved JSX
+}
+
+export default Toolbar;
+```
+
+Substitution table (apply to the moved JSX, nothing else):
+
+| Today (`App.tsx`) | In `Toolbar.tsx` |
+| --- | --- |
+| `<div className="toolbar fixed …">` (line 556) | same classes plus `data-testid="toolbar-root"` |
+| pause `<button className={\`btn btn-tool … ${isGamePaused ? 'is-paused' : 'is-running'}\`}>` | `<Button variant="tool" state={isGamePaused ? 'paused' : 'running'} data-state={isGamePaused ? 'paused' : 'running'} className="flex items-center justify-center font-semibold" …>` |
+| tool `<button className={\`btn btn-tool p-2 ${tool === 'x' ? 'active' : ''}\`}>` | `<Button variant="tool" active={tool === 'x'} aria-pressed={tool === 'x'} className="p-2" …>` |
+| door-orientation `<button className="btn btn-tool text-lg px-2">` | `<Button variant="tool" className="text-lg px-2" …>` |
+| mode `<button className={\`btn btn-mode ${measurementMode === 'x' ? 'active' : ''}\`}>` | `<Button variant="mode" active={measurementMode === 'x'} aria-pressed={measurementMode === 'x'} …>` |
+| broadcast `<button className={\`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}\`}>` | `<Button variant="broadcast" active={broadcastMeasurement} aria-pressed={broadcastMeasurement} …>` |
+| `<div className="toolbar-divider w-px mx-1"></div>` (lines 581, 648) | `<Separator variant="toolbar" />` |
+| `<div className="toolbar-divider w-px mx-1 h-6"></div>` (line 683) | `<Separator variant="toolbar" className="h-6" />` |
+| `setDoorOrientation((prev) => …)` | `onToggleDoorOrientation()` |
+| `handlePauseToggle()` | `onPauseToggle()` |
+| `handleColorChange(e.target.value)` | `onColorChange(e.target.value)` |
+| icon `className="w-5 h-5"` | `className="size-5"` |
+
+Every `data-testid`, `aria-label`, `title` and `Tooltip content` moves unchanged. In `App.tsx`
+replace lines 555–702 with:
+
+```tsx
+{isArchitectView && !isMobile && (
+  <Toolbar
+    tool={tool}
+    setTool={setTool}
+    color={color}
+    onColorChange={handleColorChange}
+    colorInputRef={colorInputRef}
+    doorOrientation={doorOrientation}
+    onToggleDoorOrientation={() =>
+      setDoorOrientation((prev) => (prev === 'horizontal' ? 'vertical' : 'horizontal'))
+    }
+    measurementMode={measurementMode}
+    setMeasurementMode={setMeasurementMode}
+    broadcastMeasurement={broadcastMeasurement}
+    setBroadcastMeasurement={setBroadcastMeasurement}
+    isGamePaused={isGamePaused}
+    onPauseToggle={(): void => {
+      void handlePauseToggle();
+    }}
+  />
+)}
+```
+
+add `import Toolbar from './components/Toolbar';` (alphabetical, after `Toast`) and delete the
+eight now-unused `@remixicon/react` imports (lines 3–12). The floating colour palette
+(lines 706–735) and the keyboard handler (lines 255–335) stay in `App.tsx` untouched. Tests:
+in `tests/pause-button.spec.ts` change each `toHaveClass(/is-running/)` to
+`toHaveAttribute('data-state', 'running')` and `toHaveClass(/is-paused/)` to
+`toHaveAttribute('data-state', 'paused')` (`grep -n "is-running\|is-paused" tests/pause-button.spec.ts`);
+in `tests/touch-targets.spec.ts` and `tests/functional/editor-smoke.spec.ts`, if
+`grep -n "btn-tool\|'active'\|/active/" <file>` hits, change that selector to
+`[data-testid^="toolbar-tool-"]` and that class assertion to `toHaveAttribute('aria-pressed', 'true')`;
+keep every asserted pixel value. Add one line naming `Toolbar.tsx` to `src/components/README.md`
+next to the line that names `MobileToolbar.tsx` (`grep -n MobileToolbar src/components/README.md`).
+Then (R) with `src/components/Toolbar.tsx`, (S) with step `004-step10`, (I).
+**Expected differences** (S): none. The toolbar must match `004-baseline/editor-*.png`.
+**Do NOT**: move state into a store or reduce the prop list (plan 005); change any shortcut;
+touch `MobileToolbar.tsx` (Step 11); fix a variant with a one-off class in `Toolbar.tsx` — fix it
+in `src/components/ui/button.tsx` and record the fix.
+**Commands**:
+
+```bash
+npx playwright test tests/pause-button.spec.ts --project=Web-Chromium   # before editing: proves plan 001 landed
+grep -c 'data-testid="toolbar-' src/App.tsx src/components/Toolbar.tsx
+grep -c 'aria-label' src/components/Toolbar.tsx
+grep -cE 'btn btn-|toolbar-divider' src/App.tsx src/components/Toolbar.tsx
+npx playwright test tests/pause-button.spec.ts tests/touch-targets.spec.ts tests/functional/editor-smoke.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `2 passed`; `src/App.tsx:0` and `src/components/Toolbar.tsx:$BEFORE_IDS`;
+`$BEFORE_LABELS`; `0` for both files; all pass; exit 0; exit 0.
+**Check**: the four specs pass and both counts equal their `BEFORE_` values.
+**If it fails**: the first command red before any edit → plan 001 Step 8 did not land: STOP.
+`tests/visual.spec.ts` red on `editor` → STOP with decision file `004-toolbar-visual-delta.md`.
+**Commit**: `plan-004 step-10: extract Toolbar.tsx onto the button and separator primitives`
+
+### Step 11: Migrate `MobileToolbar`
+
+**Files**: `src/components/MobileToolbar.tsx`, `docs/planning/screenshots/004-step11/` (new),
+`tests/visual.spec.ts-snapshots/`, `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`,
+`docs/planning/ui-redesign-ideas.md`, `plans/reports/004-pr5.md` (new), `plans/README.md`.
+**Do**: Replace every `<button>` with `<Button variant="ghost" …>` keeping its `className`
+verbatim (each bar button keeps `flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors`),
+and move its `style={{}}` colours into classes: active bar button →
+`text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]`, inactive →
+`text-[var(--app-text-secondary)] bg-transparent`; menu items → `bg-[var(--app-bg-surface)]`,
+`border-b border-[var(--app-border-subtle)]`; the pause item →
+`bg-[var(--app-error-solid)] text-[var(--app-error-solid-text)]` when paused and
+`bg-[var(--app-success-solid)] text-[var(--app-success-solid-text)]` when running; the menu
+backdrop `bg-black/30` (line 105) → `bg-[var(--app-overlay)]`; the bar container's `style`
+(lines 248–254) → `bg-[var(--app-bg-surface)] border-t border-[var(--app-border-subtle)] pb-[env(safe-area-inset-bottom,0px)]`;
+icons `w-6 h-6` → `size-6`. The colour swatch (`style={{ backgroundColor: color }}`, line 200)
+keeps its `style` — it shows the user's colour. Keep `data-testid="toolbar-mobile-root"` and every
+`min-h-[56px]`. Then (R), (S) with step `004-step11`, (I), (P) for PR 5.
+**Expected differences** (S): none on `editor-mobile` (the more-menu is closed in the shot).
+**Do NOT**: use `variant="tool"` here (the mobile active style is accent-bg + accent text, not
+solid accent; record the unification as an idea); shrink any target; change the menu items' order.
+**Commands**:
+
+```bash
+grep -c 'min-h-\[56px\]' src/components/MobileToolbar.tsx
+grep -c 'style={{' src/components/MobileToolbar.tsx
+bash scripts/migration-card.sh src/components/MobileToolbar.tsx
+npx playwright test tests/touch-targets.spec.ts tests/functional/mobile-smoke.spec.ts --project=Web-Chromium
+npm run verify:static
+npm run verify:web
+npm run verify
+```
+
+**Expected**: `10`; `1`; `… palette=0 inline=1`; all pass; exit 0; exit 0; exit 0.
+**Check**: `verify` exits 0 and the `min-h-[56px]` count is `10`.
+**If it fails**: `touch-targets.spec.ts` red → a target shrank: STOP.
+**Commit**: `plan-004 step-11: MobileToolbar on the button primitive`
+
+### Step 12a: Sweep `.btn` and `.sidebar-input` in the Session Console
+
+**Files**: `src/components/SessionConsole/SessionConsolePanel.tsx`,
+`src/components/SessionConsole/TrackGroupList.tsx`,
+`src/components/SessionConsole/sessionConsoleSettingsSections.tsx`,
+`src/components/SessionConsole/SessionConsoleBoard.tsx`,
+`src/components/SessionConsole/ImageSetBoard.tsx`,
+`src/components/SessionConsole/SessionConsoleMasterBar.tsx`, `.eslintrc.cjs`,
+`src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`.
+**Do**: Every `<button className="btn <kind> <rest>">` becomes `<Button variant=<mapped> className="<rest>">`
+with all other props (`type="button"`, `aria-label`, `aria-pressed`, `onClick`, `disabled`, `key`)
+unchanged. Mapping: `btn-primary` → `default`; `btn-default` → `secondary`; `btn-secondary`,
+`btn-ghost`, `btn-destructive` (undefined in CSS, render as bare `.btn`) and bare `btn` → `ghost`.
+Pre-listed hits (`grep -nE '\bbtn\b' <file>` at d3d3642):
+
+| File | Lines → variant |
+| --- | --- |
+| `SessionConsolePanel.tsx` | 72 `ghost`; 85, 92, 109 `ghost` (`btn-secondary`) |
+| `TrackGroupList.tsx` | 118 `ghost` |
+| `sessionConsoleSettingsSections.tsx` | 224, 231, 238 `ghost` |
+| `SessionConsoleBoard.tsx` | 113 `ghost`; 120, 127 `ghost` |
+| `ImageSetBoard.tsx` | 123 `ghost` |
+| `SessionConsoleMasterBar.tsx` | 59, 67, 74, 81, 88, 95, 102 `ghost` |
+
+`.sidebar-input` inputs (`sessionConsoleSettingsSections.tsx` 51, 67; `SessionConsoleBoard.tsx` 89)
+→ `<Input className="<rest>" …/>` with every other prop (`value`, `onChange`, `onPaste`,
+`onKeyDown`, `aria-label`, `placeholder`) unchanged. Then (R), (I).
+**Do NOT**: change sizes or spacing ("cleanups"); change `aria-pressed` on Duck; touch the hidden
+file input in `SessionConsoleBoard.tsx`.
+**Commands**:
+
+```bash
+grep -rcE '\bbtn\b|sidebar-input' src/components/SessionConsole/*.tsx | grep -v ':0'
+npx vitest run src/components/SessionConsole
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: nothing (every count 0); all pass; exit 0; exit 0.
+**Check**: the first command prints nothing.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-12a: Session Console buttons and inputs on the primitives`
+
+### Step 12b: Sweep `.btn` in `Sidebar`, `MapNavigator` and `DoorControls`
+
+**Files**: `src/components/Sidebar.tsx`, `src/components/MapNavigator.tsx`,
+`src/components/DoorControls.tsx`, `docs/planning/screenshots/004-step12b/` (new),
+`tests/visual.spec.ts-snapshots/`, `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`,
+`docs/planning/ui-redesign-ideas.md`.
+**Do**: Same mapping as Step 12a. Hits: `Sidebar.tsx` 357, 375, 393 `ghost` (`btn-secondary`),
+402 `ghost`; `MapNavigator.tsx` 171 `ghost`; `DoorControls.tsx` 88, 100 `secondary`
+(`btn-default`), 111 `secondary` **keeping `bg-orange-600/20 hover:bg-orange-600/30`** on the
+Unlock All button (a colour with no token; plan 006b decides it — do not add `DoorControls.tsx`
+to the ratchet `files` list and record it) and `text-orange-400` (line 74) likewise. Then (R)
+for `Sidebar.tsx` and `MapNavigator.tsx` only, (S) with step `004-step12b`, (I).
+**Expected differences** (S): none on `editor`.
+**Do NOT**: change the dashed-border "New Map" styling; edit `Sidebar.test.tsx`.
+**Commands**:
+
+```bash
+grep -cE '\bbtn\b' src/components/Sidebar.tsx src/components/MapNavigator.tsx src/components/DoorControls.tsx
+npx vitest run src/components/Sidebar.test.tsx
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `0` for all three; all pass; exit 0; exit 0.
+**Check**: `verify:web` exits 0 with no snapshot updated.
+**If it fails**: `tests/visual.spec.ts` red on `editor` → STOP with decision file
+`004-btn-visual-delta.md`.
+**Commit**: `plan-004 step-12b: Sidebar, MapNavigator and DoorControls buttons on the primitive`
+
+### Step 12c: Replace `.sidebar-token` in `QuickTokenSidebar`
+
+**Files**: `src/components/QuickTokenSidebar.tsx`, `src/components/QuickTokenSidebar.test.tsx`,
+`.eslintrc.cjs`, `src/styles/palette-classes.test.ts`.
+**Do**: `.sidebar-token` is a 64×64 draggable tile (`app.css`: `background: var(--app-bg-active); color: var(--app-text-primary)`,
+hover `--app-bg-hover`), not an input. On each of the three tiles (lines 100, 128, 147) replace
+the `sidebar-token` class with
+`bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)]` and add
+`data-testid="sidebar-token-tile"`; the generic tile keeps its inline `style` (it is a different
+background by design). In the test replace the `sidebar-token` assertion (line 519) with
+`expect(dragonToken).toHaveAttribute('data-testid', 'sidebar-token-tile');` and leave lines 315,
+465, 480, 493, 506 and 552 as they are (those utilities are unchanged). Then (R).
+**Do NOT**: convert the tiles to `Button` (they are drag sources, not buttons); change `w-16 h-16`.
+**Commands**:
+
+```bash
+grep -c "sidebar-token-tile" src/components/QuickTokenSidebar.tsx
+npx vitest run src/components/QuickTokenSidebar.test.tsx
+npm run verify:static
+npm run verify:web
+```
+
+**Expected**: `3`; all pass; exit 0; exit 0.
+**Check**: `verify:web` exits 0.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-12c: QuickTokenSidebar tiles on tokens`
 
 ### Step 13: Delete the dead legacy styles
 
-Only now. From `src/styles/app.css` delete `.btn`, `.btn-default`, `.btn-primary`,
-`.btn-tool` (+states), `.btn-mode`, `.btn-broadcast`, `.toolbar-divider`,
-`.sidebar-input`, `.sidebar-token`, `.info-box`.
-
-Prove each has no consumers — **and read the matches, do not trust counts**:
+**Files**: `src/styles/app.css`, `src/components/ui/README.md`.
+**Do**: Delete from `src/styles/app.css` the rules `.btn`, `.btn-default` (+`:hover`),
+`.btn-primary` (+`:hover`), `.btn-tool` (+`:hover`, `.active`, `.active:hover`, `.is-paused`,
+`.is-paused:hover`, `.is-running`, `.is-running:hover`), `.btn-mode` (+states), `.btn-broadcast`
+(+states), `.toolbar-divider`, `.sidebar-input` (+`:focus`), `.sidebar-token` (+`:hover`),
+`.info-box`. Keep `.toolbar`, `.sidebar`, `.sidebar-section`, `.app-root`, `.canvas-container`,
+`.konvajs-content`. Read every hit of the survivors command before deleting: the only allowed hits
+are `HomeScreen.tsx` (`dismiss-btn`, `quick-action-btn` — definition and use inside its `<style>`
+block) and `AboutModal.tsx` (`about-modal-close-btn`, if the close-button rule kept it). Add to
+`src/components/ui/README.md` a short section "Kept adapters and excluded components":
+`Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx` stay as adapters (they insulate call
+sites from primitive API changes); `ErrorFallbackUI.tsx` and `UpdateErrorFallbackUI.tsx` are never
+migrated (they render after React has failed).
+**Do NOT**: delete `.toolbar`; edit any `.tsx`; touch `theme.css`.
+**Commands**:
 
 ```bash
-for c in btn-default btn-primary btn-tool btn-mode btn-broadcast \
-         toolbar-divider sidebar-input sidebar-token info-box; do
-  echo "=== $c"; grep -rn "$c" --include=*.tsx --include=*.ts src/
-done
-echo "=== bare btn (expect survivors — read every hit)"
+for c in btn-default btn-primary btn-tool btn-mode btn-broadcast toolbar-divider sidebar-input sidebar-token info-box is-paused is-running; do echo "=== $c"; grep -rn "$c" --include=*.tsx --include=*.ts src/; done
 grep -rnE '"[^"]*\bbtn\b[^"]*"' --include=*.tsx src/
+grep -cE '^\.(btn|toolbar-divider|sidebar-input|sidebar-token|info-box)' src/styles/app.css
+npx vitest run src/styles
+npm run build:web && find dist-web/assets -name '*.css' | xargs wc -c | tail -1
+npm run verify:static
+npm run verify:web
+npm run verify:electron
 ```
 
-**`btn` will never reach zero.** It matches `.about-modal-close-btn` and `.dismiss-btn`
-/ `.quick-action-btn` in `HomeScreen`'s inline `<style>` block — different classes that
-happen to contain the substring. Triage every hit by reading it. Classes defined *and*
-used inside a template literal are invisible to any class-name audit, so check
-`AboutModal`'s `modalStyles` and `HomeScreen`'s `<style>` block by eye.
+**Expected**: only `===` headers (no hits); only the `HomeScreen.tsx` (and possibly
+`AboutModal.tsx`) lines named above; `0`; all pass; a byte count smaller than Step 0's (record
+both); exit 0; exit 0; exit 0.
+**Check**: the third command prints `0` and the survivors list matches the allowed list exactly.
+**If it fails**: a real consumer still exists → do not delete that rule; STOP naming the file.
+**Commit**: `plan-004 step-13: delete the legacy button and sidebar classes`
 
-Keep the adapters (`Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx`) — a few
-lines each, they insulate against shadcn API changes, and deleting them means touching
-every call site for no functional gain. Record that as a decision in
-`src/components/ui/README.md`.
+### Step 14: Final verification, recipes, numbers, report and handoff
 
-**Check**: Every deleted class has zero real consumers. Per-step gate plus both E2E
-projects. Built CSS smaller than the Step 0 figure — record the delta.
+**Files**: `docs/guides/UI_RECIPES.md`, `docs/planning/screenshots/004-final/` (new),
+`docs/planning/ui-redesign-ideas.md`, `plans/reports/004-pr6.md` (new), `CHANGELOG.md`,
+`plans/README.md`, `plans/005-ui-performance-pass.md`.
+**Do**: Fill the "Add a dialog" and "Add a sheet" sections of `docs/guides/UI_RECIPES.md`
+(≤ 30 lines each): the Step 3 `ConfirmDialog` shape (store-driven `open`, `onOpenChange`,
+`DialogContent` with `data-testid`, `DialogTitle`/`DialogDescription`, `DialogFooter` with
+`Button`s, `onOpenAutoFocus` for non-default initial focus, the `data-esc-owns` default and
+`ownsEscape={false}` for non-modal navigation) and the Step 4a `MapSettingsSheet` shape
+(`side`, `modal`, sticky header/footer, `ownsEscape`). Record final numbers with the Step 0
+commands, the surviving palette-class count per file
+(`grep -rcE '<PALETTE>' src --include=*.tsx | grep -v ':0' | sort -t: -k2 -nr`), the final
+`BASELINE`, the ratchet `files` list length (`grep -c "src/components/" .eslintrc.cjs`), and the
+before/after card rows for every file. Take `SHOTS_OUT=docs/planning/screenshots/004-final npm run shots`.
+Add one bullet under `## [Unreleased]` in `CHANGELOG.md`: every dialog and sheet now traps focus,
+closes on Escape and exposes `role="dialog"`; the pause and tool buttons are unchanged. Write the
+report (`plans/reports/004-pr6.md`, CONVENTIONS §11), then (P) for PR 6. After merge: set this
+plan's row in `plans/README.md` to `DONE <merge sha>` and write the merge SHA into the
+`Grounded at` line of `plans/005-ui-performance-pass.md`.
+**Do NOT**: fill "Add a toolbar tool" or "Add a surface to the test harness" (plan 005); change
+any file under `src/`.
+**Commands**:
 
-### Step 14: Verify the accessibility win and record what you deferred
+```bash
+grep -rcE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\b' src --include=*.tsx | grep -v ':0' | sort -t: -k2 -nr
+grep -rn "style={{" --include=*.tsx src | wc -l
+grep -c "^### " docs/planning/ui-redesign-ideas.md
+SHOTS_OUT=docs/planning/screenshots/004-final npm run shots && ls docs/planning/screenshots/004-final | wc -l
+npm run verify
+```
 
-For each migrated overlay, confirm all six behaviours and record a results table:
-1. Opens from its trigger. 2. Escape closes it. 3. Tab cycles within, never reaching the
-canvas. 4. Focus returns to the trigger. 5. `role="dialog"` and `aria-modal="true"` in
-the DOM. 6. **`data-esc-owns="true"` present, and Escape does not stop Session Console
-audio.**
-
-Then `npm run test:a11y` and diff against plan 000's baseline. Verify the World View
-still works and shows nothing new.
-
-Create `docs/planning/ui-redesign-ideas.md` — every visual, layout or IA improvement you
-noticed and deliberately did not make, per component, with why. **This is plan 006's
-primary input.** You will have read every UI file closely; nobody else will have.
-
-> Do not leave this to the end in practice: append to it **as you go**, from Step 1.
-> It is the first thing lost if this plan is truncated, and truncation mid-migration is
-> the likeliest failure mode.
-
-Record final numbers: lines added/removed, inline `style={{}}` count (from 286),
-hardcoded palette classes remaining (from 396), `app.css` line count, built CSS bytes.
-
-Then the full sweep, including both E2E projects.
-
-**Check**: All commands exit 0. The behaviour table is complete. The ideas document is
-non-trivial and covers every migrated component.
-
-## Validation plan
-
-- **The Step 0 baseline is the primary control**, because for many of these components
-  it is the only evidence available. The per-step gate is the secondary control.
-- **`npm run test:a11y` is the improvement proof** — meaningful only because plan 000
-  extended it past the home screen.
-- **`npm run test:run -- useSessionConsoleHotkeys` and `SessionConsolePanel`** after
-  every overlay migration — the only automated coverage of the `data-esc-owns` protocol.
-- **The Step 14 behaviour table is the acceptance artefact.**
-- **Kyle confirms** the toolbar (Step 10), the mobile toolbar (Step 11), and a general
-  pass at Step 14 — visual equivalence is ultimately a judgement call, and the automated
-  coverage of these files is thin.
+**Expected**: a list with none of this plan's migrated files in it (the survivors are files this
+plan did not touch plus `DoorControls.tsx`; record the total for plan 006b); a number below
+Step 0's; ≥ 20 (one heading per migrated component); `14`; exit 0.
+**Check**: `npm run verify` exits 0 and the report's Numbers section holds every before/after row.
+**If it fails**: STOP.
+**Commit**: `plan-004 step-14: recipes, final numbers, report and handoff`
 
 ## Done criteria
 
-- [ ] Step 0 baseline exists: screenshot per component per theme, plus starting metrics
-- [ ] All fourteen in-scope overlays use `dialog` or `sheet`
-- [ ] `ErrorFallbackUI` / `UpdateErrorFallbackUI` deliberately excluded, reasoning recorded
-- [ ] `PreferencesDialog` decision made by Kyle and acted on
-- [ ] Every migrated overlay passes the six-point check (table recorded)
-- [ ] **`data-esc-owns="true"` re-attached on all nine components that had it**, verified against Session Console audio
-- [ ] `ConfirmDialog`'s undefined CSS variables fixed; Enter-to-confirm preserved
-- [ ] `AboutModal`'s hand-rolled focus trap deleted
-- [ ] Redundant Escape branches removed from `App.tsx` for **both** `AboutModal` and `UpdateManager`
-- [ ] Desktop **and** mobile toolbars migrated; pause button still shows red/green (fixed in plan 001, must not regress)
-- [ ] Plan 000's touch-target spec still green
-- [ ] All eleven `.btn` consumers migrated, `DoorControls` included
-- [ ] `btn-secondary`/`btn-ghost`/`btn-destructive` mapped by appearance, not name
-- [ ] Legacy classes deleted with every remaining `btn` hit read and triaged
-- [ ] No `data-testid` renamed
-- [ ] Inline style count and hardcoded-palette-class count both recorded against their baselines
-- [ ] `docs/planning/ui-redesign-ideas.md` covers every migrated component
-- [ ] Lint, typecheck, unit tests, a11y, and both E2E projects exit 0
-- [ ] Every commit leaves the app releasable
-- [ ] `plans/README.md` status row updated
+- [ ] `docs/planning/screenshots/004-baseline/` and `004-final/` hold 14 files each
+- [ ] All 13 in-scope overlays import from `@/components/ui/`; `tests/functional/overlays.spec.ts` has every row flipped (mobile sheets with esc-owns `false`) and passes
+- [ ] `ErrorFallbackUI` / `UpdateErrorFallbackUI` exclusion and the kept adapters recorded in `src/components/ui/README.md`
+- [ ] `src/components/ConfirmDialog.test.tsx` and `src/components/ImageCropper.test.tsx` exist and pass
+- [ ] Both `App.tsx` Escape branches removed; `grep -c "e.key === 'Escape' && is" src/App.tsx` → `0`
+- [ ] `src/components/Toolbar.tsx` exists; `tests/pause-button.spec.ts` passes on `data-state`
+- [ ] `tests/touch-targets.spec.ts` green; `MobileToolbar.tsx` keeps 10 × `min-h-[56px]`
+- [ ] `grep -rnE '\bbtn\b' --include=*.tsx src/` returns only the `HomeScreen.tsx`/`AboutModal.tsx` inline-style classes
+- [ ] The legacy rules are gone from `src/styles/app.css` and the built CSS is smaller than at Step 0
+- [ ] Every migrated file is in the ratchet override; `BASELINE` equals the final count
+- [ ] No `data-testid` renamed (`git diff <grounded-at> -- src | grep '^-.*data-testid'` shows only lines re-added unchanged)
+- [ ] `docs/planning/ui-redesign-ideas.md` has a heading per migrated component; `UI_RECIPES.md` dialog and sheet sections filled
+- [ ] Six PRs merged with merge commits; `plans/reports/004-pr1.md` … `004-pr6.md` written
+- [ ] `plans/README.md` row `DONE <merge sha>`; plan 005's `Grounded at` filled
 
 ## STOP conditions
 
-Stop and report back — do not improvise — if:
-
-- **`src/components/ui/README.md` does not exist** — plan 003 has not landed.
-- **Plan 000 has not landed** — check `tests/accessibility.spec.ts` for an editor-route
-  scan. Without it there is no a11y gate on any of this.
-- **The `sheet` primitive does not exist.** Plan 003 was told it is required, not
-  optional; if it was deferred anyway, Steps 4 and 5 cannot proceed.
-- **Escape stops Session Console audio** after an overlay migration — `data-esc-owns`
-  was dropped.
-- **`ImageCropper` cannot be migrated without editing `CanvasManager.tsx`.**
-- **`react-easy-crop` breaks** after Step 4.
-- **A migrated component differs from its Step 0 screenshot** in a way not documented in
-  Context (`ConfirmDialog`'s colours, `btn-ghost` mapping, the tooltip wrapper). Do not
-  accept it silently and do not "improve" it.
-- **The pause button is grey when you reach Step 10** — plan 001 Step 8 did not land.
-- **You need to rename a `data-testid`.**
-- **`npm run test:a11y` regresses.**
-- **A touch target would shrink** below plan 000's recorded minimum.
-- **A step's diff exceeds ~800 lines.** Split it.
-- **You are about to migrate `PreferencesDialog`** without Kyle's answer.
+- `ImageCropper` cannot contain its Dialog root without editing `CanvasManager.tsx` (Step 4c).
+- `tests/pause-button.spec.ts` is red before Step 10 touches anything (plan 001 Step 8 missing).
+- `tests/visual.spec.ts` fails on a surface not listed under a step's **Expected differences**
+  → decision file `docs/planning/decisions/004-<component>-visual-delta.md`.
+- `useSessionConsoleHotkeys.test.ts` or `SessionConsolePanel.test.tsx` goes red after any overlay
+  step (the esc-owns protocol broke).
+- `tests/touch-targets.spec.ts` goes red (a target shrank).
+- `npm run test:a11y` reports a violation that was not in `docs/planning/verification-baseline.md`.
+- A step's diff exceeds ~800 lines (`git diff --stat HEAD~1 | tail -1`).
+- The Dialog close-button rule cannot be applied because `DialogContent` neither accepts
+  `showCloseButton` nor renders an X (re-read `src/components/ui/dialog.tsx` once, then STOP).
 
 ## Handoff / after it lands
 
-- **This is where the program pays off.** After it, adding a dialog is importing one
-  primitive instead of reimplementing modal behaviour.
-- **What a reviewer should scrutinise most**: (1) the `data-esc-owns` re-attachment —
-  silent, easy to miss, and it breaks the DM's music mid-session; (2) the Step 14
-  behaviour table; (3) the toolbars, the highest-visibility surfaces with the thinnest
-  automated coverage.
-- **Plan 005 runs after this** and depends on the toolbar having been extracted here.
-- **Deliberately deferred**: all visual and IA change (006), performance (005), the
-  `CommandPalette`, the two `ErrorFallbackUI` components, and the ~370 hardcoded palette
-  classes in files this plan does not touch.
-- **Watch for**: the adapters growing past ~30 lines — at that point they have stopped
-  being adapters.
+- Adding a dialog is now importing one primitive; the recipe is in `docs/guides/UI_RECIPES.md`.
+- Reviewer focus: (1) the `esc-owns` column of every card versus the overlays spec; (2) the
+  `004-step10`/`004-step11` screenshots against `004-baseline`; (3) the survivors list in Step 13.
+- Plan 005 depends on `src/components/Toolbar.tsx` and its prop list above; it moves those props
+  into a store and must not be run in parallel.
+- Deferred: palette classes in untouched files and `DoorControls.tsx`'s orange (006b), the mobile
+  toolbar's active style unification (006b), cropping coverage for `react-easy-crop` (no test),
+  the two `ErrorFallbackUI` components, `CommandPalette`.
+- Watch for: an adapter growing past ~30 lines, and any new `role="dialog"` typed by hand.
