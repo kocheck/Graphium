@@ -56,7 +56,6 @@ function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         data-slot="dropdown-menu-content"
         data-esc-owns={ownsEscape ? 'true' : undefined}
-        aria-modal="true"
         sideOffset={sideOffset}
         align={align}
         className={cn(

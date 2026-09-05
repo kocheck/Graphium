@@ -5,6 +5,81 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import type { ComponentExample } from '../types';
 
+/** One row per bridge token: the shadcn utility and the --app-* value it must equal. */
+const BRIDGE_PROBES: ReadonlyArray<{ token: string; utility: string; expected: string }> = [
+  { token: 'background', utility: 'bg-background', expected: 'bg-[var(--app-bg-base)]' },
+  { token: 'foreground', utility: 'bg-foreground', expected: 'bg-[var(--app-text-primary)]' },
+  { token: 'card', utility: 'bg-card', expected: 'bg-[var(--app-bg-surface)]' },
+  {
+    token: 'card-foreground',
+    utility: 'bg-card-foreground',
+    expected: 'bg-[var(--app-text-primary)]',
+  },
+  { token: 'popover', utility: 'bg-popover', expected: 'bg-[var(--app-bg-surface)]' },
+  {
+    token: 'popover-foreground',
+    utility: 'bg-popover-foreground',
+    expected: 'bg-[var(--app-text-primary)]',
+  },
+  { token: 'primary', utility: 'bg-primary', expected: 'bg-[var(--app-accent-solid)]' },
+  {
+    token: 'primary-foreground',
+    utility: 'bg-primary-foreground',
+    expected: 'bg-[var(--app-accent-solid-text)]',
+  },
+  { token: 'secondary', utility: 'bg-secondary', expected: 'bg-[var(--app-bg-active)]' },
+  {
+    token: 'secondary-foreground',
+    utility: 'bg-secondary-foreground',
+    expected: 'bg-[var(--app-text-primary)]',
+  },
+  { token: 'muted', utility: 'bg-muted', expected: 'bg-[var(--app-bg-subtle)]' },
+  {
+    token: 'muted-foreground',
+    utility: 'bg-muted-foreground',
+    expected: 'bg-[var(--app-text-secondary)]',
+  },
+  { token: 'accent', utility: 'bg-accent', expected: 'bg-[var(--app-bg-hover)]' },
+  {
+    token: 'accent-foreground',
+    utility: 'bg-accent-foreground',
+    expected: 'bg-[var(--app-text-primary)]',
+  },
+  { token: 'destructive', utility: 'bg-destructive', expected: 'bg-[var(--app-error-solid)]' },
+  {
+    token: 'destructive-foreground',
+    utility: 'bg-destructive-foreground',
+    expected: 'bg-[var(--app-accent-solid-text)]',
+  },
+  { token: 'border', utility: 'bg-border', expected: 'bg-[var(--app-border-subtle)]' },
+  { token: 'input', utility: 'bg-input', expected: 'bg-[var(--app-border-default)]' },
+  { token: 'ring', utility: 'bg-ring', expected: 'bg-[var(--app-accent-solid)]' },
+];
+
+const bridgeProbe = (
+  <div className="flex flex-wrap gap-2" data-testid="bridge-probe">
+    {BRIDGE_PROBES.map((p) => (
+      <div key={p.token} className="flex items-center gap-1" title={p.token}>
+        <div
+          data-testid={`bridge-swatch-${p.token}`}
+          className={`size-4 rounded-sm ${p.utility}`}
+        />
+        <div
+          data-testid={`bridge-expected-${p.token}`}
+          className={`size-4 rounded-sm ${p.expected}`}
+        />
+      </div>
+    ))}
+    <div data-testid="bridge-swatch-none" className="size-4 bg-[var(--color-does-not-exist)]" />
+    <div
+      data-testid="bridge-dark-probe"
+      className="size-4 bg-[var(--app-bg-base)] dark:bg-[var(--app-accent-solid)]"
+    />
+    <div data-testid="bridge-dark-ref-light" className="size-4 bg-[var(--app-bg-base)]" />
+    <div data-testid="bridge-dark-ref-dark" className="size-4 bg-[var(--app-accent-solid)]" />
+  </div>
+);
+
 export const layoutExamples: ComponentExample[] = [
   {
     id: 'ui-tabs',
@@ -68,5 +143,14 @@ export const layoutExamples: ComponentExample[] = [
     ),
     code: `<Separator />
 <Separator variant="toolbar" className="h-6" />`,
+  },
+  {
+    id: 'ui-bridge-probe',
+    name: 'Theme bridge probe (ui)',
+    category: 'layout',
+    description:
+      'Each bridged shadcn utility next to the --app-* value it must equal (tests/theme-bridge.spec.ts)',
+    component: bridgeProbe,
+    code: `// bg-primary === bg-[var(--app-accent-solid)] in both themes`,
   },
 ];
