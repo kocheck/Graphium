@@ -28,6 +28,18 @@
   --font-weight-medium: var(--app-font-weight-medium);
   --font-weight-semibold: var(--app-font-weight-semibold);
   --font-weight-bold: var(--app-font-weight-bold);
+  --animate-slide-down: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Ensure html, body, and root fill viewport */
