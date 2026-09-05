@@ -43,8 +43,7 @@ If any row differs: STOP.
 - **Category**: migration
 - **Requires**: `docs/planning/shadcn-adoption-decision.md`, `docs/planning/shadcn-spike.patch`,
   `docs/planning/verification-baseline.md`, `scripts/preflight.sh`, `tests/helpers/surfaces.ts`
-- **Grounded at**: ‹merge SHA of plan 002, written there by its final step› (citations verified
-  at d3d3642)
+- **Grounded at**: `0fae465` (citations verified at d3d3642)
 
 ## Why this matters
 
