@@ -67,7 +67,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
     const button = page.getByRole('button', { name: /^(Pause|Resume) game$/ });
 
-    await expect(button).toHaveClass(/is-running/);
+    await expect(button).toHaveAttribute('data-state', 'running');
     await expect(button).toHaveCSS(
       'background-color',
       await tokenColor(page, '--app-success-solid'),
@@ -75,11 +75,11 @@ for (const theme of ['light', 'dark'] as const) {
 
     await button.click();
     await page.mouse.move(0, 0);
-    await expect(button).toHaveClass(/is-paused/);
+    await expect(button).toHaveAttribute('data-state', 'paused');
     await expect(button).toHaveCSS('background-color', await tokenColor(page, '--app-error-solid'));
 
     await button.click();
     await page.mouse.move(0, 0);
-    await expect(button).toHaveClass(/is-running/);
+    await expect(button).toHaveAttribute('data-state', 'running');
   });
 }

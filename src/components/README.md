@@ -21,6 +21,10 @@ you are about to change is the source of truth; read it.
 | Adapters                  | `Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx` — thin components whose props stay stable while their internals change.                                                                                                |
 | Brand                     | `LogoIcon.tsx`, `LogoLockup.tsx`.                                                                                                                                                                                                  |
 
+**Layout components**
+
+- `Toolbar.tsx` — desktop Architect View tool strip (extracted from `App.tsx` in plan 004).
+
 ## Conventions that matter here
 
 - Colours come from `--app-*` variables in `src/styles/theme.css`; never raw palette values

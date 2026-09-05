@@ -34,8 +34,9 @@ const buttonVariants = cva(
         icon: 'size-9',
         /** close-button size used by generated dialog.tsx until Step 5 */
         'icon-sm': 'size-7',
-        /** .btn padding/font; pair with variant="tool" */
-        tool: 'px-3 py-1 text-sm',
+        /** .btn padding/font; pair with variant="tool". Important so leftover `p-2` from the
+         * old toolbar markup cannot override (unlayered `.btn` used to win that fight). */
+        tool: 'px-3! py-1! text-sm',
         /** .btn-mode / .btn-broadcast padding/font; pair with variant="mode" | "broadcast" */
         mode: 'px-2 py-0.5 text-xs',
       },

@@ -68,3 +68,11 @@
 - Clear-canvas is a native checkbox next to labelled ranges; a shared Switch would match ToggleSwitch.
 - Generate is `variant="default"` (accent) rather than a distinct create treatment.
 - The dialog still early-returns when closed, so Radix never mounts a closed instance.
+
+### Toolbar
+
+- `size="tool"` uses `px-3! py-1!` so leftover `p-2` on tool buttons cannot inflate the 46×30 hit target (old unlayered `.btn` won that cascade).
+- State still lives in `App.tsx` as a long prop list; plan 005 should move it to a store.
+- Door-orientation and measure-mode controls only appear when those tools are active; a persistent strip would make the modes discoverable.
+- Broadcast is a labelled button; a Switch next to the measure modes would match ToggleSwitch.
+- The floating colour palette stayed in `App.tsx`; grouping it with the toolbar would keep marker chrome in one place.

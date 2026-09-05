@@ -1,15 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
-import {
-  RiPlayFill,
-  RiPauseFill,
-  RiCursorLine,
-  RiPencilLine,
-  RiEraserLine,
-  RiLayoutMasonryLine,
-  RiDoorOpenLine,
-  RiRulerLine,
-} from '@remixicon/react';
 import { Agentation } from 'agentation';
 import { useShallow } from 'zustand/shallow';
 
@@ -31,6 +21,11 @@ import SyncManager from './components/SyncManager';
 import { ThemeManager } from './components/ThemeManager';
 import Toast from './components/Toast';
 import TokenInspector from './components/TokenInspector';
+import Toolbar, {
+  type DoorOrientation,
+  type MeasurementMode,
+  type ToolbarTool,
+} from './components/Toolbar';
 import Tooltip from './components/Tooltip';
 import UpdateManager from './components/UpdateManager';
 import UpdateManagerErrorBoundary from './components/UpdateManagerErrorBoundary';
@@ -132,9 +127,7 @@ function App(): React.JSX.Element {
 
   // Active tool state (controls CanvasManager behavior)
   // Only used in Architect View; World View always uses 'select' with restricted interactions
-  const [tool, setTool] = useState<'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure'>(
-    'select',
-  );
+  const [tool, setTool] = useState<ToolbarTool>('select');
   const [color, setColor] = useState('#df4b26');
   const [recentColors, setRecentColors] = useState<string[]>(['#df4b26', '#3b82f6', '#22c55e']);
   const colorInputRef = useRef<HTMLInputElement>(null);
@@ -150,10 +143,10 @@ function App(): React.JSX.Element {
   };
 
   // Door tool state
-  const [doorOrientation, setDoorOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [doorOrientation, setDoorOrientation] = useState<DoorOrientation>('horizontal');
 
   // Measurement tool state
-  const [measurementMode, setMeasurementMode] = useState<'ruler' | 'blast' | 'cone'>('ruler');
+  const [measurementMode, setMeasurementMode] = useState<MeasurementMode>('ruler');
   const broadcastMeasurement = useGameStore((state) => state.broadcastMeasurement);
   const setBroadcastMeasurement = useGameStore((state) => state.setBroadcastMeasurement);
   const setActiveMeasurement = useGameStore((state) => state.setActiveMeasurement);
@@ -541,161 +534,25 @@ function App(): React.JSX.Element {
 
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
         {isArchitectView && !isMobile && (
-          <div
-            className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50"
-            data-testid="toolbar-root"
-          >
-            {/* Play/Pause Button */}
-            <Tooltip
-              content={
-                isGamePaused ? 'Resume - Players will see the map' : 'Pause - Hide map from players'
-              }
-            >
-              <button
-                className={`btn btn-tool flex items-center justify-center font-semibold ${
-                  isGamePaused ? 'is-paused' : 'is-running'
-                }`}
-                onClick={(): void => {
-                  void handlePauseToggle();
-                }}
-                aria-label={isGamePaused ? 'Resume game' : 'Pause game'}
-                data-testid="toolbar-pause"
-              >
-                {isGamePaused ? (
-                  <RiPlayFill className="w-5 h-5" />
-                ) : (
-                  <RiPauseFill className="w-5 h-5" />
-                )}
-              </button>
-            </Tooltip>
-            <div className="toolbar-divider w-px mx-1"></div>
-            {/* Select Tool */}
-            <Tooltip content="Select (V)">
-              <button
-                className={`btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}`}
-                onClick={() => setTool('select')}
-                aria-label="Select tool"
-                data-testid="toolbar-tool-select"
-              >
-                <RiCursorLine className="w-5 h-5" />
-              </button>
-            </Tooltip>
-            {/* Marker Tool */}
-            <Tooltip content="Marker (M)">
-              <button
-                className={`btn btn-tool p-2 ${tool === 'marker' ? 'active' : ''}`}
-                onClick={() => setTool('marker')}
-                aria-label="Marker tool"
-                data-testid="toolbar-tool-marker"
-              >
-                <RiPencilLine className="w-5 h-5" />
-              </button>
-            </Tooltip>
-            {/* Eraser Tool */}
-            <Tooltip content="Eraser (E)">
-              <button
-                className={`btn btn-tool p-2 ${tool === 'eraser' ? 'active' : ''}`}
-                onClick={() => setTool('eraser')}
-                aria-label="Eraser tool"
-                data-testid="toolbar-tool-eraser"
-              >
-                <RiEraserLine className="w-5 h-5" />
-              </button>
-            </Tooltip>
-            {/* Wall Tool */}
-            <Tooltip content="Wall (W)">
-              <button
-                className={`btn btn-tool p-2 ${tool === 'wall' ? 'active' : ''}`}
-                onClick={() => setTool('wall')}
-                aria-label="Wall tool"
-                data-testid="toolbar-tool-wall"
-              >
-                <RiLayoutMasonryLine className="w-5 h-5" />
-              </button>
-            </Tooltip>
-            {/* Door Tool */}
-            <Tooltip content="Door (D) - Arrow keys or R to rotate">
-              <button
-                className={`btn btn-tool p-2 ${tool === 'door' ? 'active' : ''}`}
-                onClick={() => setTool('door')}
-                aria-label="Door tool"
-                data-testid="toolbar-tool-door"
-              >
-                <RiDoorOpenLine className="w-5 h-5" />
-              </button>
-            </Tooltip>
-            {/* Door Orientation Toggle (only visible when door tool active) */}
-            {tool === 'door' && (
-              <Tooltip content="Toggle orientation (R)">
-                <button
-                  className="btn btn-tool text-lg px-2"
-                  onClick={() =>
-                    setDoorOrientation((prev) =>
-                      prev === 'horizontal' ? 'vertical' : 'horizontal',
-                    )
-                  }
-                  aria-label="Toggle door orientation"
-                >
-                  {doorOrientation === 'horizontal' ? '↔' : '↕'}
-                </button>
-              </Tooltip>
-            )}
-            <div className="toolbar-divider w-px mx-1"></div>
-            {/* Measurement Tool with Mode Selector */}
-            <div className="flex gap-1 items-center">
-              <Tooltip content="Measure (R) - Distance, Blast, Cone">
-                <button
-                  className={`btn btn-tool p-2 ${tool === 'measure' ? 'active' : ''}`}
-                  onClick={() => setTool('measure')}
-                  aria-label="Measure tool"
-                  data-testid="toolbar-tool-measure"
-                >
-                  <RiRulerLine className="w-5 h-5" />
-                </button>
-              </Tooltip>
-              {tool === 'measure' && (
-                <div className="flex gap-1 ml-1 items-center">
-                  <button
-                    className={`btn btn-mode ${measurementMode === 'ruler' ? 'active' : ''}`}
-                    onClick={() => setMeasurementMode('ruler')}
-                    title="Ruler: Measure distance between two points"
-                  >
-                    Ruler
-                  </button>
-                  <button
-                    className={`btn btn-mode ${measurementMode === 'blast' ? 'active' : ''}`}
-                    onClick={() => setMeasurementMode('blast')}
-                    title="Blast: Circular AoE (e.g., Fireball)"
-                  >
-                    Blast
-                  </button>
-                  <button
-                    className={`btn btn-mode ${measurementMode === 'cone' ? 'active' : ''}`}
-                    onClick={() => setMeasurementMode('cone')}
-                    title="Cone: 53° cone AoE (e.g., Burning Hands)"
-                  >
-                    Cone
-                  </button>
-                  <div className="toolbar-divider w-px mx-1 h-6"></div>
-                  <button
-                    className={`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}`}
-                    onClick={() => setBroadcastMeasurement(!broadcastMeasurement)}
-                    title="Broadcast measurements to players in World View"
-                  >
-                    {broadcastMeasurement ? '📡 Broadcasting' : '📡 Local Only'}
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* Hidden color picker input (triggered by clicking main color circle) */}
-            <input
-              ref={colorInputRef}
-              type="color"
-              value={color}
-              onChange={(e) => handleColorChange(e.target.value)}
-              className="hidden"
-            />
-          </div>
+          <Toolbar
+            tool={tool}
+            setTool={setTool}
+            color={color}
+            onColorChange={handleColorChange}
+            colorInputRef={colorInputRef}
+            doorOrientation={doorOrientation}
+            onToggleDoorOrientation={() =>
+              setDoorOrientation((prev) => (prev === 'horizontal' ? 'vertical' : 'horizontal'))
+            }
+            measurementMode={measurementMode}
+            setMeasurementMode={setMeasurementMode}
+            broadcastMeasurement={broadcastMeasurement}
+            setBroadcastMeasurement={setBroadcastMeasurement}
+            isGamePaused={isGamePaused}
+            onPauseToggle={(): void => {
+              void handlePauseToggle();
+            }}
+          />
         )}
 
         {/* Floating Color Palette (appears above marker tool when active) */}
