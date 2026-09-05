@@ -1,0 +1,58 @@
+{
+  "scenario": "tool-switch",
+  "tag": "after",
+  "updateCounts": {
+    "CanvasManager": 4,
+    "Toolbar": 4
+  },
+  "entries": [
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.4000000022351742,
+      "timestamp": 1864
+    },
+    {
+      "id": "Toolbar",
+      "phase": "update",
+      "actualDuration": 2.4999999962747097,
+      "timestamp": 1864
+    },
+    {
+      "id": "Toolbar",
+      "phase": "nested-update",
+      "actualDuration": 0.8000000007450581,
+      "timestamp": 1865.0999999977648
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.5,
+      "timestamp": 1876.5
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.5,
+      "timestamp": 1896.199999999255
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.20000000298023224,
+      "timestamp": 1923.199999999255
+    },
+    {
+      "id": "Toolbar",
+      "phase": "update",
+      "actualDuration": 1.7999999970197678,
+      "timestamp": 1923.199999999255
+    },
+    {
+      "id": "Toolbar",
+      "phase": "nested-update",
+      "actualDuration": 0,
+      "timestamp": 1923.3999999985099
+    }
+  ]
+}

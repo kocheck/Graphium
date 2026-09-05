@@ -252,6 +252,48 @@ If Web Workers unavailable (old browsers, testing), falls back to main thread pr
 | Batch import (5 files) | 2.5s sequential | 0.5s parallel | **80% faster** |
 | Main thread blocked | Yes | No | ✅ |
 
+## 🚨 Bottleneck #4: DOM chrome re-renders on every tool switch (MEDIUM)
+
+### The Problem
+
+**Location:** `src/App.tsx`
+
+Tool, colour, door orientation, measurement mode and the selection were `useState` in `App`, so
+every tool switch and selection re-rendered App's whole tree. Memoised components bailed out; the
+unmemoised global components did not. The web bundle also shipped the playground, the home screen
+and all vendor code in one chunk.
+
+### The Solution: `uiStore`, gates and code splitting
+
+**Files Modified:** `src/store/uiStore.ts`, `src/components/{Toolbar,MobileToolbar,CanvasHost,TokenInspectorGate,DungeonGeneratorDialogGate}.tsx`, `src/components/Sidebar.tsx`, `vite.config.ts`
+
+- Tool state lives in `useUiStore` (not persisted, not broadcast); `Toolbar`, `MobileToolbar`,
+  `CommandPalette` and `CanvasHost` read it directly, so `App` no longer subscribes to it.
+- `AboutModal` and `DungeonGeneratorDialog` mount only while open and load lazily.
+- `Sidebar` selects `recentTokens`, `maps` and `campaign.name` instead of `tokens` and `campaign`.
+- Web build: `vendor-react`, `vendor-konva`, `vendor-icons` chunks; `bundle-budget.json` is
+  enforced in `e2e.yml` (±2 %).
+
+**Results** (dev-server commit counts, `?stress=1`; see `docs/planning/perf/*-before.json` and
+`*-after.json`):
+
+| Scenario / metric               | Before                                | After                                  |
+| ------------------------------- | ------------------------------------- | -------------------------------------- |
+| tool switch: unmemoised commits | 25                                    | 0                                      |
+| token selection: unmemoised     | 40                                    | 0                                      |
+| token move: Sidebar commits     | 2                                     | 0                                      |
+| idle / drag fps                 | 60 / 60                               | 60 / 60                                |
+| home / editor ready (ms)        | 39.19999999925494 / 984.1999999992549 | 39.100000001490116 / 992.4000000022352 |
+| main chunk / total bytes        | 1177378 / 1424122                     | 437669 / 1355144                       |
+
+### How to re-measure
+
+`src/perf/profiler.tsx` (dev-only) records every commit of the wrapped components into
+`window.__profile`. `PERF=1 PERF_TAG=<tag> npx playwright test tests/performance/profile.spec.ts --project=Web-Chromium --workers=1 -g '\[dev\]'`
+drives the scenarios and writes `docs/planning/perf/<scenario>-<tag>.json`;
+`node scripts/perf-counts.mjs [file] [+Id ...] [Id ...]` reads them. Add `CI=1` and
+`-g '\[built\]'` for load times against the production build.
+
 ---
 
 ## Performance Benchmark Summary
