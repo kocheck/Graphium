@@ -30,23 +30,25 @@ git diff --stat "$G"..origin/main -- src/ tests/ scripts/ .eslintrc.cjs docs/gui
 ```
 
 Plan 006a may merge between plan 003 and this plan; it touches only `docs/planning/`, which is
-why the paths above exclude it. For PR 2–6 of this plan, `<grounded-at>` is the merge SHA of the
-previous PR, recorded under **Handoff** in `plans/reports/004-pr<k-1>.md`.
+why the paths above exclude it. For PR 2–6 of this plan the Status block carries one extra line
+per landed PR, `**Grounded at (PR k)**: <sha>`, written by (P) step 3; the drift command's
+`grep` picks the **last** `Grounded at` line in the block, so add `| tail -1` after the first
+`grep` when any `(PR k)` line exists. This plan file is in scope for those lines only.
 
 **Citation re-check** (line numbers are hints at d3d3642; the grep is authoritative):
 
-| Anchor (grep)                                                                             | File                                 | Expected hits  |
-| ----------------------------------------------------------------------------------------- | ------------------------------------ | -------------- |
-| `grep -n 'className="toolbar' src/App.tsx`                                                | `src/App.tsx`                        | 1 (line 556)   |
-| `grep -n "e.key === 'Escape' && is" src/App.tsx`                                          | `src/App.tsx`                        | 2 (271, 277)   |
-| `grep -n "e.key === 'Enter'" src/components/ConfirmDialog.tsx`                            | `src/components/ConfirmDialog.tsx`   | 1 (line 49)    |
-| `grep -rc 'data-esc-owns="true"' src/components --include=*.tsx \| grep -v ':0' \| wc -l` | `src/components/**`                  | 8 (see cards)  |
-| `grep -c 'data-esc-owns' src/components/ui/dialog.tsx src/components/ui/sheet.tsx`        | primitives                           | ≥ 1 each       |
-| `grep -c 'paused' src/components/ui/button.tsx`                                           | `src/components/ui/button.tsx`       | ≥ 1            |
-| `grep -rlE 'data-testid="(dialog\|sheet)-[a-z-]+-root"' src/components \| wc -l`          | `src/components/**`                  | 13             |
-| `grep -n 'const BASELINE' src/styles/palette-classes.test.ts`                             | `src/styles/palette-classes.test.ts` | 1              |
-| `grep -n 'showCloseButton' src/components/ui/dialog.tsx`                                  | `src/components/ui/dialog.tsx`       | see rule below |
-| `grep -n '"@/\*"' tsconfig.json`                                                          | `tsconfig.json`                      | 1              |
+| Anchor (grep)                                                                                                         | File                                                                             | Expected hits  |
+| --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------- |
+| `grep -n 'className="toolbar' src/App.tsx`                                                                            | `src/App.tsx`                                                                    | 1 (line 556)   |
+| `grep -n "e.key === 'Escape' && is" src/App.tsx`                                                                      | `src/App.tsx`                                                                    | 2 (271, 277)   |
+| `grep -n "e.key === 'Enter'" src/components/ConfirmDialog.tsx`                                                        | `src/components/ConfirmDialog.tsx`                                               | 1 (line 49)    |
+| `grep -rc 'data-esc-owns="true"' src/components --include=*.tsx \| grep -v ':0' \| wc -l`                             | `src/components/**`                                                              | 8 (see cards)  |
+| `grep -c 'data-esc-owns' src/components/ui/dialog.tsx src/components/ui/sheet.tsx`                                    | primitives                                                                       | ≥ 1 each       |
+| `grep -c 'paused' src/components/ui/button.tsx`                                                                       | `src/components/ui/button.tsx`                                                   | ≥ 1            |
+| `grep -rlE 'data-testid="(dialog\|sheet)-[a-z-]+-root"' src/components --exclude-dir=DesignSystemPlayground \| wc -l` | `src/components/**` (playground excluded: plan 003 adds two example roots there) | 13             |
+| `grep -n 'const BASELINE' src/styles/palette-classes.test.ts`                                                         | `src/styles/palette-classes.test.ts`                                             | 1              |
+| `grep -n 'showCloseButton' src/components/ui/dialog.tsx`                                                              | `src/components/ui/dialog.tsx`                                                   | see rule below |
+| `grep -n '"@/\*"' tsconfig.json`                                                                                      | `tsconfig.json`                                                                  | 1              |
 
 If any row differs: STOP.
 
@@ -72,9 +74,12 @@ instead of being re-typed per file, and the `.btn` class family in `src/styles/a
 
 One row per file. **Before** each step run `bash scripts/migration-card.sh <file>` and paste the
 row into the PR report; **after** the step run it again. The after-row must show
-`ui-imports≥1`, `role=0`, `aria-modal=0`, `Escape=0`, `esc-owns=0` (or `1` for a row whose
-"after" column says `no`, because that row passes `ownsEscape={false}`), `palette=0`, `inline=0`
-(a data-driven colour swatch may survive; the card says so), `btn=0`, `legacy=0`. The runtime
+`ui-imports≥1`, `role=0`, `aria-modal=0`, `Escape=0`, `esc-owns=0` (the script counts the literal
+`data-esc-owns`, which the primitive now renders; a row whose "after" column says `no` passes
+`ownsEscape={false}`, which also prints `esc-owns=0`), `palette=0`, `inline=0`
+(a data-driven colour swatch may survive; the card says so), `btn=0` (`AboutModal.tsx` is the one
+exception: its `about-modal-close-btn` class matches the script's `\bbtn\b` pattern, so its
+after-row prints `btn=3`), `legacy=0`. The runtime
 contract (role, aria-modal, Escape, focus trap, esc-owns in the DOM) is asserted by
 `tests/functional/overlays.spec.ts`, not by the script.
 
@@ -189,8 +194,9 @@ Steps refer to these by letter. Each is a fixed sequence; do not vary it.
 1. In `.eslintrc.cjs`, append each migrated file's path (repo-relative, quoted) to the `files`
    array of the override whose comment reads `plan 004 palette ratchet` (Step 1 creates it).
 2. `npm run lint:strict` → exit 0. A hit names the line still carrying a palette class.
-3. `COUNT=$(grep -rhoE '\b(bg|text|border|ring|divide|placeholder|outline|from|to|via|fill|stroke)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b|\b(bg|text|border)-(white|black)\b' src --include=*.tsx | wc -l); echo "$COUNT"`
-   (the command in the header comment of `src/styles/palette-classes.test.ts`), then set
+3. `COUNT=$(grep -rhoE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\b' src --include=*.tsx | wc -l); echo "$COUNT"`
+   (the same regex as `PALETTE_CLASS` in `src/styles/palette-classes.test.ts`; 396 after plan
+   000), then set
    `const BASELINE = <COUNT>;` in that file. Expected: `COUNT` ≤ the previous `BASELINE`.
 4. `npx vitest run src/styles/palette-classes.test.ts` → `1 passed`.
 
@@ -249,9 +255,12 @@ If the heading already exists, append below it. Never overwrite the file (plan 0
 2. `npm run verify` → exit 0. `git push -u origin <branch>`. Open the PR
    `Plan 004 (PR <k>/6): <title>` with the report as body. Set this plan's row in
    `plans/README.md` to `IN PROGRESS (PR <k>/6 open)`.
-3. End the run. The next run (after merge) starts by writing the merge SHA under **Handoff** in
-   `plans/reports/004-pr<k>.md`, creating the next branch from `origin/main`, and running the
-   Drift check against that SHA. Merge method: merge commit (CONVENTIONS §7).
+3. End the run. The next run (after merge) is a **post-merge run** (CONVENTIONS §5): on a
+   branch `plan/004-pr<k>-post-merge` off `origin/main`, one commit
+   `plan-004 post-merge pr<k>: record merge sha`, write the merge SHA under **Handoff** in
+   `plans/reports/004-pr<k>.md` and as a new line `- **Grounded at (PR <k>)**: <sha>` at the end
+   of this plan's Status block; land it as a docs-only PR. Then create the next PR's branch from
+   `origin/main` and run the Drift check against that SHA. Merge method: merge commit (CONVENTIONS §7).
 
 **Dialog recipe** — Step 3's `ConfirmDialog` is the pattern; every later overlay step lists only
 its deltas. Rules that apply to all of them: keep every `data-testid` and every `aria-label`; the
@@ -1044,7 +1053,7 @@ npm run verify:static
 npm run verify:web
 ```
 
-**Expected**: `… Escape=0 esc-owns=1 … palette=0 inline=0`; exit 0; exit 0; exit 0.
+**Expected**: `… Escape=0 esc-owns=0 … palette=0 inline=0`; exit 0; exit 0; exit 0.
 **Check**: the overlays spec passes with the row flipped.
 **If it fails**: STOP.
 **Commit**: `plan-004 step-5d: MobileBottomSheet on the sheet primitive`
@@ -1127,7 +1136,9 @@ npm run verify
 (`grep -n "Handle keyboard events" src/components/UpdateManager.tsx`); shell lines 530–539 →
 `Dialog open={isOpen} onOpenChange` → `onClose`, `DialogContent className="max-w-md" data-testid="dialog-update-manager-root" showCloseButton={false}`;
 `<h2>` (line 543) → `DialogTitle`; keep the `Close update manager` button; the 21 `style={{}}`
-props and 4 palette classes → recipe mapping; action buttons → `Button variant="default"` /
+props → recipe mapping; the 4 palette classes: `text-white` (lines 590, 602, 614) →
+`text-[var(--app-accent-solid-text)]`, the `bg-black/60` backdrop is deleted with the hand-rolled
+overlay; action buttons → `Button variant="default"` /
 `"secondary"`. In `src/App.tsx` delete the `isUpdateManagerOpen` Escape branch (line 277–280,
 `grep -n "e.key === 'Escape' && isUpdateManagerOpen" src/App.tsx`) and remove
 `isUpdateManagerOpen` from that effect's dependency array (line 335). In the test: change
@@ -1181,8 +1192,9 @@ the recipe mapping. Delete from `modalStyles` every class no longer referenced
 it and the `<style>` element. Remove the `eslint-disable-next-line max-lines-per-function` at
 line 237 if `npm run lint` reports it unused. In `src/App.tsx` delete the `isAboutOpen` Escape
 branch (lines 271–274; the `?` branch stays). Then (O), (R), (I).
-**Do NOT**: restyle the tabs beyond `Tabs`; edit any About/Tutorial/Shortcuts copy; touch the
-`onCheckForUpdates` button (lines 447–450).
+**Do NOT**: restyle the tabs beyond `Tabs`; edit any About/Tutorial/Shortcuts copy; change the
+`onCheckForUpdates` button (lines 447–450) beyond replacing its `text-white` with
+`text-[var(--app-accent-solid-text)]`.
 **Commands**:
 
 ```bash
@@ -1239,9 +1251,9 @@ npm run verify
 `docs/planning/screenshots/004-step10/` (new), `tests/visual.spec.ts-snapshots/`, `.eslintrc.cjs`,
 `src/styles/palette-classes.test.ts`, `docs/planning/ui-redesign-ideas.md`.
 **Do**: Record `BEFORE_IDS=$(grep -c 'data-testid="toolbar-' src/App.tsx)` and
-`BEFORE_LABELS=$(sed -n 555,702p src/App.tsx | grep -c aria-label)` first (the toolbar block is
-`grep -n 'className="toolbar' src/App.tsx` through the `</div>` that closes it, lines 555–702 at
-d3d3642). Create `src/components/Toolbar.tsx` with this header, then the toolbar JSX moved verbatim
+`S=$(grep -n 'data-testid="toolbar-root"' src/App.tsx | cut -d: -f1); E=$(awk -v s="$S" 'NR>s && /^        <\/div>$/ {print NR; exit}' src/App.tsx); BEFORE_LABELS=$(sed -n "${S},${E}p" src/App.tsx | grep -c aria-label)`
+first (the toolbar block runs from the `toolbar-root` div to the first `</div>` at its
+indentation; lines 555–702 at d3d3642, hints only). Create `src/components/Toolbar.tsx` with this header, then the toolbar JSX moved verbatim
 from `App.tsx` and rewritten only by the substitution table:
 
 ```tsx
@@ -1289,8 +1301,22 @@ export interface ToolbarProps {
 }
 
 // eslint-disable-next-line max-lines-per-function
-function Toolbar(props: ToolbarProps): JSX.Element {
-  // destructure every prop here, then the moved JSX
+function Toolbar({
+  tool,
+  setTool,
+  color,
+  onColorChange,
+  colorInputRef,
+  doorOrientation,
+  onToggleDoorOrientation,
+  measurementMode,
+  setMeasurementMode,
+  broadcastMeasurement,
+  setBroadcastMeasurement,
+  isGamePaused,
+  onPauseToggle,
+}: ToolbarProps): JSX.Element {
+  return <>{/* the moved toolbar JSX, with the substitutions from the table below */}</>;
 }
 
 export default Toolbar;
@@ -1298,20 +1324,20 @@ export default Toolbar;
 
 Substitution table (apply to the moved JSX, nothing else):
 
-| Today (`App.tsx`)                                                                              | In `Toolbar.tsx`                                                                                                                                                                    |
-| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<div className="toolbar fixed …">` (line 556)                                                 | same classes plus `data-testid="toolbar-root"`                                                                                                                                      |
-| pause `<button className={\`btn btn-tool … ${isGamePaused ? 'is-paused' : 'is-running'}\`}>`   | `<Button variant="tool" state={isGamePaused ? 'paused' : 'running'} data-state={isGamePaused ? 'paused' : 'running'} className="flex items-center justify-center font-semibold" …>` |
-| tool `<button className={\`btn btn-tool p-2 ${tool === 'x' ? 'active' : ''}\`}>`               | `<Button variant="tool" active={tool === 'x'} aria-pressed={tool === 'x'} className="p-2" …>`                                                                                       |
-| door-orientation `<button className="btn btn-tool text-lg px-2">`                              | `<Button variant="tool" className="text-lg px-2" …>`                                                                                                                                |
-| mode `<button className={\`btn btn-mode ${measurementMode === 'x' ? 'active' : ''}\`}>`        | `<Button variant="mode" active={measurementMode === 'x'} aria-pressed={measurementMode === 'x'} …>`                                                                                 |
-| broadcast `<button className={\`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}\`}>` | `<Button variant="broadcast" active={broadcastMeasurement} aria-pressed={broadcastMeasurement} …>`                                                                                  |
-| `<div className="toolbar-divider w-px mx-1"></div>` (lines 581, 648)                           | `<Separator variant="toolbar" />`                                                                                                                                                   |
-| `<div className="toolbar-divider w-px mx-1 h-6"></div>` (line 683)                             | `<Separator variant="toolbar" className="h-6" />`                                                                                                                                   |
-| `setDoorOrientation((prev) => …)`                                                              | `onToggleDoorOrientation()`                                                                                                                                                         |
-| `handlePauseToggle()`                                                                          | `onPauseToggle()`                                                                                                                                                                   |
-| `handleColorChange(e.target.value)`                                                            | `onColorChange(e.target.value)`                                                                                                                                                     |
-| icon `className="w-5 h-5"`                                                                     | `className="size-5"`                                                                                                                                                                |
+| Today (`App.tsx`)                                                                              | In `Toolbar.tsx`                                                                                                                                                                                |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<div className="toolbar fixed …">` (line 556)                                                 | same classes; keep the existing `data-testid="toolbar-root"` (plan 000 added it; do not add a second)                                                                                           |
+| pause `<button className={\`btn btn-tool … ${isGamePaused ? 'is-paused' : 'is-running'}\`}>`   | `<Button variant="tool" size="tool" state={isGamePaused ? 'paused' : 'running'} data-state={isGamePaused ? 'paused' : 'running'} className="flex items-center justify-center font-semibold" …>` |
+| tool `<button className={\`btn btn-tool p-2 ${tool === 'x' ? 'active' : ''}\`}>`               | `<Button variant="tool" size="tool" active={tool === 'x'} aria-pressed={tool === 'x'} className="p-2" …>`                                                                                       |
+| door-orientation `<button className="btn btn-tool text-lg px-2">`                              | `<Button variant="tool" size="tool" className="text-lg px-2" …>`                                                                                                                                |
+| mode `<button className={\`btn btn-mode ${measurementMode === 'x' ? 'active' : ''}\`}>`        | `<Button variant="mode" size="mode" active={measurementMode === 'x'} aria-pressed={measurementMode === 'x'} …>`                                                                                 |
+| broadcast `<button className={\`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}\`}>` | `<Button variant="broadcast" size="mode" active={broadcastMeasurement} aria-pressed={broadcastMeasurement} …>`                                                                                  |
+| `<div className="toolbar-divider w-px mx-1"></div>` (lines 581, 648)                           | `<Separator variant="toolbar" />`                                                                                                                                                               |
+| `<div className="toolbar-divider w-px mx-1 h-6"></div>` (line 683)                             | `<Separator variant="toolbar" className="h-6" />`                                                                                                                                               |
+| `setDoorOrientation((prev) => …)`                                                              | `onToggleDoorOrientation()`                                                                                                                                                                     |
+| `handlePauseToggle()`                                                                          | `onPauseToggle()`                                                                                                                                                                               |
+| `handleColorChange(e.target.value)`                                                            | `onColorChange(e.target.value)`                                                                                                                                                                 |
+| icon `className="w-5 h-5"`                                                                     | `className="size-5"`                                                                                                                                                                            |
 
 Every `data-testid`, `aria-label`, `title` and `Tooltip content` moves unchanged. In `App.tsx`
 replace lines 555–702 with:
@@ -1342,17 +1368,20 @@ replace lines 555–702 with:
 }
 ```
 
+(No semicolon and no statement braces: this is a JSX expression container.)
+
 add `import Toolbar from './components/Toolbar';` (alphabetical, after `Toast`) and delete the
 eight now-unused `@remixicon/react` imports (lines 3–12). The floating colour palette
 (lines 706–735) and the keyboard handler (lines 255–335) stay in `App.tsx` untouched. Tests:
 in `tests/pause-button.spec.ts` change each `toHaveClass(/is-running/)` to
 `toHaveAttribute('data-state', 'running')` and `toHaveClass(/is-paused/)` to
 `toHaveAttribute('data-state', 'paused')` (`grep -n "is-running\|is-paused" tests/pause-button.spec.ts`);
-in `tests/touch-targets.spec.ts` and `tests/functional/editor-smoke.spec.ts`, if
-`grep -n "btn-tool\|'active'\|/active/" <file>` hits, change that selector to
-`[data-testid^="toolbar-tool-"]` and that class assertion to `toHaveAttribute('aria-pressed', 'true')`;
+in `tests/touch-targets.spec.ts` and `tests/functional/editor-smoke.spec.ts`, for every hit of
+`grep -n "btn-tool\|active" <file>` (plan 000's smoke spec asserts `toHaveClass(/\bactive\b/)`
+three times), change that selector to `[data-testid^="toolbar-tool-"]` and that class assertion to
+`toHaveAttribute('aria-pressed', 'true')` (the `active` CVA variant emits no `active` class);
 keep every asserted pixel value. Add one line naming `Toolbar.tsx` to `src/components/README.md`
-next to the line that names `MobileToolbar.tsx` (`grep -n MobileToolbar src/components/README.md`).
+under the `**Layout components**` bullet (`grep -n 'Layout components' src/components/README.md`).
 Then (R) with `src/components/Toolbar.tsx`, (S) with step `004-step10`, (I).
 **Expected differences** (S): none. The toolbar must match `004-baseline/editor-*.png`.
 **Do NOT**: move state into a store or reduce the prop list (plan 005); change any shortcut;
@@ -1465,7 +1494,8 @@ npm run verify:web
 `tests/visual.spec.ts-snapshots/`, `.eslintrc.cjs`, `src/styles/palette-classes.test.ts`,
 `docs/planning/ui-redesign-ideas.md`.
 **Do**: Same mapping as Step 12a. Hits: `Sidebar.tsx` 357, 375, 393 `ghost` (`btn-secondary`),
-402 `ghost`; `MapNavigator.tsx` 171 `ghost`; `DoorControls.tsx` 88, 100 `secondary`
+402 `ghost`; `MapNavigator.tsx` 171 `ghost` and line 147 `hover:text-red-500` →
+`hover:text-[var(--app-error-text)]` (`grep -n -- '--app-error-text' src/styles/theme.css`); `DoorControls.tsx` 88, 100 `secondary`
 (`btn-default`), 111 `secondary` **keeping `bg-orange-600/20 hover:bg-orange-600/30`** on the
 Unlock All button (a colour with no token; plan 006b decides it — do not add `DoorControls.tsx`
 to the ratchet `files` list and record it) and `text-orange-400` (line 74) likewise. Then (R)
@@ -1533,7 +1563,7 @@ migrated (they render after React has failed).
 **Commands**:
 
 ```bash
-for c in btn-default btn-primary btn-tool btn-mode btn-broadcast toolbar-divider sidebar-input sidebar-token info-box is-paused is-running; do echo "=== $c"; grep -rn "$c" --include=*.tsx --include=*.ts src/; done
+for c in btn-default btn-primary btn-tool btn-mode btn-broadcast toolbar-divider sidebar-input 'sidebar-token[^-]' info-box is-paused is-running; do echo "=== $c"; grep -rnE "$c" --include=*.tsx --include=*.ts src/; done
 grep -rnE '"[^"]*\bbtn\b[^"]*"' --include=*.tsx src/
 grep -cE '^\.(btn|toolbar-divider|sidebar-input|sidebar-token|info-box)' src/styles/app.css
 npx vitest run src/styles
@@ -1543,7 +1573,7 @@ npm run verify:web
 npm run verify:electron
 ```
 
-**Expected**: only `===` headers (no hits); only the `HomeScreen.tsx` (and possibly
+**Expected**: only `===` headers (no hits; `sidebar-token-tile` is excluded by the pattern); only the `HomeScreen.tsx` (and possibly
 `AboutModal.tsx`) lines named above; `0`; all pass; a byte count smaller than Step 0's (record
 both); exit 0; exit 0; exit 0.
 **Check**: the third command prints `0` and the survivors list matches the allowed list exactly.
@@ -1567,9 +1597,10 @@ commands, the surviving palette-class count per file
 before/after card rows for every file. Take `SHOTS_OUT=docs/planning/screenshots/004-final npm run shots`.
 Add one bullet under `## [Unreleased]` in `CHANGELOG.md`: every dialog and sheet now traps focus,
 closes on Escape and exposes `role="dialog"`; the pause and tool buttons are unchanged. Write the
-report (`plans/reports/004-pr6.md`, CONVENTIONS §11), then (P) for PR 6. After merge: set this
-plan's row in `plans/README.md` to `DONE <merge sha>` and write the merge SHA into the
-`Grounded at` line of `plans/005-ui-performance-pass.md`.
+report (`plans/reports/004-pr6.md`, CONVENTIONS §11), then (P) for PR 6. The PR 6 post-merge
+run (CONVENTIONS §5; branch `plan/004-post-merge`, commit `plan-004 post-merge: record merge
+sha`) sets this plan's row in `plans/README.md` to `DONE <merge sha>` and writes the merge SHA
+into the `Grounded at` line of `plans/005-ui-performance-pass.md`.
 **Do NOT**: fill "Add a toolbar tool" or "Add a surface to the test harness" (plan 005); change
 any file under `src/`.
 **Commands**:
@@ -1584,7 +1615,7 @@ npm run verify
 
 **Expected**: a list with none of this plan's migrated files in it (the survivors are files this
 plan did not touch plus `DoorControls.tsx`; record the total for plan 006b); a number below
-Step 0's; ≥ 20 (one heading per migrated component); `14`; exit 0.
+Step 0's; ≥ 14 (one heading per step that ran (I)); `14`; exit 0.
 **Check**: `npm run verify` exits 0 and the report's Numbers section holds every before/after row.
 **If it fails**: STOP.
 **Commit**: `plan-004 step-14: recipes, final numbers, report and handoff`
@@ -1616,7 +1647,8 @@ Step 0's; ≥ 20 (one heading per migrated component); `14`; exit 0.
   step (the esc-owns protocol broke).
 - `tests/touch-targets.spec.ts` goes red (a target shrank).
 - `npm run test:a11y` reports a violation that was not in `docs/planning/verification-baseline.md`.
-- A step's diff exceeds ~800 lines (`git diff --stat HEAD~1 | tail -1`).
+- A step's diff exceeds ~800 lines (`git diff --stat HEAD~1 | tail -1`), except Step 8: `AboutModal.tsx`
+  is 858 lines and its rewrite is expected to exceed that; Step 8 is exempt.
 - The Dialog close-button rule cannot be applied because `DialogContent` neither accepts
   `showCloseButton` nor renders an X (re-read `src/components/ui/dialog.tsx` once, then STOP).
 

@@ -111,6 +111,10 @@ program; CONVENTIONS §9).
 
 Gates: `plans/CONVENTIONS.md` §4.
 
+The packages the pinned CLI installs for the primitives a step names (`radix-ui` or
+`@radix-ui/react-*`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`,
+`tw-animate-css`) count as named by this plan for CONVENTIONS §2's dependency rule.
+
 | Purpose                 | Command                                                                             | Expected                               |
 | ----------------------- | ----------------------------------------------------------------------------------- | -------------------------------------- |
 | Generate a primitive    | `npx shadcn@4.21.0 add <name> -y` (version pinned by plan 002)                      | exit 0, `src/components/ui/<name>.tsx` |
@@ -152,7 +156,7 @@ after its closing `},`):
     // Plan 003: shadcn-generated primitives. They have no consumers until plan 004 (unused
     // exports), export non-component helpers (buttonVariants), and omit return types.
     {
-      files: ['src/components/ui/**/*.tsx'],
+      files: ['src/components/ui/**/*.tsx', 'src/lib/utils.ts'],
       excludedFiles: ['src/components/ui/**/*.test.tsx'],
       rules: {
         'import/no-unused-modules': 'off',
@@ -207,9 +211,14 @@ comma and retry once; otherwise STOP with the ESLint output.
    - `GO` → continue at 2.
    - `GO-WITH-CAVEATS` → continue at 2; item 3 applies the numbered required changes.
    - `NO-GO` → STOP: "plan 003 assumes the shadcn CLI path; decision doc says NO-GO".
-2. Apply the spike (the bridge is already in `src/index.css`, so exclude that file):
+2. Apply the spike. The bridge is already in `src/index.css`; the spike's own ESLint override
+   is superseded by Step 1; its scaffold, `App.tsx` edit and throwaway alias test never merge.
+   All five are excluded:
    ```bash
-   git apply --3way --exclude=src/index.css docs/planning/shadcn-spike.patch
+   git fetch --unshallow origin main 2>/dev/null || true
+   git apply --3way --exclude=src/index.css --exclude=.eslintrc.cjs --exclude=src/App.tsx \
+     --exclude='src/components/SpikeScaffold.tsx' --exclude='src/spike-alias.test.ts' \
+     docs/planning/shadcn-spike.patch
    npm install
    ```
 3. Apply, in order, every entry of the decision doc's numbered "required changes" list
@@ -244,7 +253,7 @@ in Step 1, STOP with the rule name. Otherwise fix once and retry.
 `src/components/DesignSystemPlayground/registry/layout.tsx`
 **Do**:
 
-1. `git mv src/components/DesignSystemPlayground/playground-registry.tsx src/components/DesignSystemPlayground/registry/legacy.tsx`.
+1. `mkdir -p src/components/DesignSystemPlayground/registry && git mv src/components/DesignSystemPlayground/playground-registry.tsx src/components/DesignSystemPlayground/registry/legacy.tsx`.
 2. In `registry/legacy.tsx`: fix the relative imports
    (`../../store/gameStore` → `../../../store/gameStore`,
    `../ToggleSwitch` → `../../ToggleSwitch`, `../UpdateManager` → `../../UpdateManager`,
@@ -576,8 +585,13 @@ once and retry.
    ```
 
    (a) add `ownsEscape?: boolean` to the props type, (b) destructure `ownsEscape = true`,
-   (c) add `data-esc-owns={ownsEscape ? 'true' : undefined}` on `DialogPrimitive.Content`. Keep
-   every other generated line. If the generated file uses `React.forwardRef` instead, make the
+   (c) add `data-esc-owns={ownsEscape ? 'true' : undefined}` on `DialogPrimitive.Content`,
+   (e) add `aria-modal="true"` next to `data-esc-owns` on the same element (Radix sets
+   `role="dialog"` but not `aria-modal`; plan 004's overlay spec asserts it),
+   (d) in `DialogOverlay`, replace the generated `bg-black/50` with
+   `bg-[var(--app-overlay)]` (`--app-overlay` is `var(--slate-a11)` in both themes:
+   `grep -n -- '--app-overlay' src/styles/theme.css`); the purity test in Step 8 rejects
+   `bg-black`. Keep every other generated line. If the generated file uses `React.forwardRef` instead, make the
    same three edits inside it. `data-testid` already passes through `...props`
    (plan 004 passes `dialog-<x>-root`).
 
@@ -773,18 +787,26 @@ output.
 ### Step 6: Tranche B — switch, select, slider, tabs, collapsible, separator
 
 **Files**: `src/components/ui/switch.tsx`, `src/components/ui/select.tsx`,
-`src/components/ui/slider.tsx`, `src/components/ui/tabs.tsx`, `src/components/ui/collapsible.tsx`,
+`src/components/ui/slider.tsx` (plus the `thumbLabel` edit below), `src/components/ui/tabs.tsx`, `src/components/ui/collapsible.tsx`,
 `src/components/ui/separator.tsx`, `package.json`, `package-lock.json`,
 `src/components/DesignSystemPlayground/registry/forms.tsx`,
 `src/components/DesignSystemPlayground/registry/layout.tsx`
 **Do**:
 
 1. `npx shadcn@4.21.0 add switch select slider tabs collapsible separator -y && npm run format`.
+   Then, in `slider.tsx`: add `thumbLabel: string` to the props type (required), destructure it,
+   and pass `aria-label={thumbLabel}` to every `<SliderPrimitive.Thumb`. The generated thumb has
+   no accessible name, and axe's `aria-input-field-name` rule fails the `design-system` surface
+   without it.
 2. Overwrite `src/components/ui/separator.tsx` with the file below. `.toolbar-divider` sets only
    `background: var(--app-border-subtle)` (`grep -n 'toolbar-divider' -A2 src/styles/app.css`,
    line 20 at d3d3642) = `bg-border`; the call sites add `w-px mx-1` and, once, `h-6`
    (`grep -n 'toolbar-divider' src/App.tsx`, lines 581, 648, 683). The `toolbar` variant carries
    `w-px mx-1`; callers keep passing `h-6` via `className` where they do today.
+
+   Keep the import lines the CLI generated (shadcn 4.x emits `import { Separator as
+SeparatorPrimitive } from 'radix-ui'`); replace only the rest of the file with the block
+   below, whose first two lines show the older `@radix-ui/react-separator` form for reference.
 
    ```tsx
    import * as SeparatorPrimitive from '@radix-ui/react-separator';
@@ -881,7 +903,7 @@ output.
        name: 'Slider (ui)',
        category: 'form',
        description: 'Radix slider for grid size, opacity, audio volume',
-       component: <Slider defaultValue={[50]} max={100} step={1} className="w-64" aria-label="Opacity" />,
+       component: <Slider defaultValue={[50]} max={100} step={1} className="w-64" thumbLabel="Opacity" />,
        code: `<Slider value={[opacity]} onValueChange={([v]) => setOpacity(v)} max={100} />`,
      },
    ```
@@ -988,7 +1010,8 @@ fix once and retry.
 
 1. `npx shadcn@4.21.0 add sheet popover dropdown-menu -y && npm run format`.
 2. Make the Step 5 item 2 edits (props type `ownsEscape?: boolean`, destructure
-   `ownsEscape = true`, attribute `data-esc-owns={ownsEscape ? 'true' : undefined}`) in:
+   `ownsEscape = true`, attribute `data-esc-owns={ownsEscape ? 'true' : undefined}`,
+   `aria-modal="true"`, and `bg-black/50` → `bg-[var(--app-overlay)]` on `SheetOverlay`) in:
    - `sheet.tsx`, on `<SheetPrimitive.Content` inside `SheetContent`
      (`grep -n 'SheetPrimitive.Content' src/components/ui/sheet.tsx`);
    - `popover.tsx`, on `<PopoverPrimitive.Content` inside `PopoverContent`;
@@ -1446,7 +1469,7 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
          </SelectContent>
        </Select>,
      ],
-     ['slider', <Slider key="sl" defaultValue={[50]} aria-label="Opacity" />],
+     ['slider', <Slider key="sl" defaultValue={[50]} thumbLabel="Opacity" />],
      [
        'tabs',
        <Tabs key="ta" defaultValue="one">
@@ -1590,7 +1613,7 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
        screen.getByRole('button', { name: 'Menu' }).focus();
        await user.keyboard('{Enter}');
        await screen.findByRole('menu');
-       await user.keyboard('{ArrowDown}');
+       // Radix focuses the first item itself when the menu opens from the keyboard.
        expect(screen.getByRole('menuitem', { name: 'First' })).toHaveFocus();
        await user.keyboard('{ArrowDown}');
        expect(screen.getByRole('menuitem', { name: 'Second' })).toHaveFocus();
@@ -1791,7 +1814,8 @@ violation id and primitive; do not disable the rule.
    `src/components/ui/README.md` § "Add a primitive".
 3. ADR: append to `docs/architecture/DECISIONS.md`, immediately before `## Summary Table`
    (`grep -n '^## Summary Table' docs/architecture/DECISIONS.md`), a section numbered one higher
-   than `grep -oE '^## [0-9]+\.' docs/architecture/DECISIONS.md | tail -1` (14 at d3d3642), in
+   than `grep -oE '^## [0-9]+\.' docs/architecture/DECISIONS.md | tail -1` (prints `## 13.` at
+   d3d3642, so the new section is `## 14.`), in
    the file's format (`## N. Title` / `### Context` / `### Alternatives Considered` /
    `### Decision: …`; `grep -n '^## \|^### ' docs/architecture/DECISIONS.md | head -12`):
    title `Adopt shadcn/ui primitives bridged onto the --app-* theme`; alternatives: hand-rolled
@@ -1832,11 +1856,12 @@ prints `5`; `grep -c 'Adopt shadcn/ui primitives' docs/architecture/DECISIONS.md
 `plans/006-visual-redesign.md`, `CHANGELOG.md`
 **Do**:
 
-1. README dry-run with a throwaway primitive, following `## Add a primitive` literally: `badge`
-   (register it in `registry/layout.tsx` with `id: 'ui-badge'`, add it to `a11y.test.tsx`
+1. README dry-run with a throwaway primitive, following `## Add a primitive` literally:
+   `aspect-ratio` (it contains no palette class, so the purity gate can pass; `badge` would not)
+   (register it in `registry/layout.tsx` with `id: 'ui-aspect-ratio'`, add it to `a11y.test.tsx`
    `cases`). Run `npm run verify:static`. Record exit code and any step of the README that was
    ambiguous in the report; fix the README wording if so. Then discard the throwaway:
-   `git checkout -- src/components/DesignSystemPlayground/registry/layout.tsx src/components/ui/a11y.test.tsx package.json package-lock.json && rm -f src/components/ui/badge.tsx`
+   `git checkout -- src/components/DesignSystemPlayground/registry/layout.tsx src/components/ui/a11y.test.tsx package.json package-lock.json && rm -f src/components/ui/aspect-ratio.tsx`
    and confirm `git status --porcelain` lists only `src/components/ui/README.md` (if edited).
 2. Bundle: `npm run build:web`, then run the byte-count command recorded next to the
    `Extrapolated 12-primitive delta` field in `docs/planning/shadcn-adoption-decision.md`
@@ -1858,13 +1883,14 @@ prints `5`; `grep -c 'Adopt shadcn/ui primitives' docs/architecture/DECISIONS.md
    `Grounded at` line of `plans/004-migrate-screens-to-primitives.md` and of
    `plans/006-visual-redesign.md` (006a starts after this plan merges).
 
-**Do NOT**: keep `badge.tsx`; commit `test-results/`; edit `tests/visual.spec.ts` snapshots;
+**Do NOT**: keep `aspect-ratio.tsx`; commit `test-results/`; edit `tests/visual.spec.ts` snapshots;
 squash-merge.
 **Commands**: `npm run verify` then `SHOTS_OUT=docs/planning/screenshots/003-final npm run shots`
 **Expected**: both exit 0.
-**Check**: `git status --porcelain | grep -c badge` prints `0`;
-`ls docs/planning/screenshots/003-final/design-system-*.png | wc -l` prints `2`; the bundle delta
-in `src/components/ui/README.md` is ≤ 2 × the `Extrapolated 12-primitive delta` value.
+**Check**: `git status --porcelain | grep -c aspect-ratio` prints `0`;
+`ls docs/planning/screenshots/003-final/design-system-*.png | wc -l` prints `2`;
+`D=$(grep -oE 'Bundle delta: [0-9]+' src/components/ui/README.md | grep -oE '[0-9]+$'); E=$(grep -oE 'Extrapolated 12-primitive delta: [0-9]+' docs/planning/shadcn-adoption-decision.md | grep -oE '[0-9]+$'); test "$D" -le $((2 * E)) && echo bundle-ok`
+prints `bundle-ok` (both lines are written as `<label>: <bytes>`).
 **If it fails**: bundle delta > 2× → STOP with both numbers (something is bundled twice, e.g.
 two Radix versions: `npm ls @radix-ui/react-dialog`). Otherwise STOP with the gate output.
 **Commit**: `plan-003 step-10: bundle record, screenshots, report`
