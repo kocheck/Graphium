@@ -4,6 +4,29 @@ import electron from 'vite-plugin-electron/simple';
 import react from '@vitejs/plugin-react';
 import pkg from './package.json';
 
+/**
+ * Web build only (plan 005): split stable vendor code into its own chunks so repeat visitors to
+ * the GitHub Pages build keep them cached across releases. Electron loads from graphium:// with
+ * no HTTP cache and is unaffected. react-dom imports scheduler and react-reconciler, so those
+ * sit with react (putting reconciler with konva created a vendor-react↔vendor-konva cycle);
+ * react-konva sits with konva.
+ */
+function manualChunks(id: string): string | undefined {
+  if (!id.includes('/node_modules/')) {
+    return undefined;
+  }
+  if (/\/node_modules\/(react|react-dom|scheduler|react-reconciler)\//.test(id)) {
+    return 'vendor-react';
+  }
+  if (/\/node_modules\/(konva|react-konva)\//.test(id)) {
+    return 'vendor-konva';
+  }
+  if (id.includes('/node_modules/@remixicon/react/')) {
+    return 'vendor-icons';
+  }
+  return undefined;
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Detect build target: 'web' mode skips Electron plugin
@@ -47,6 +70,9 @@ export default defineConfig(({ mode }) => {
       build: {
         outDir: 'dist-web',
         emptyOutDir: true,
+        rollupOptions: {
+          output: { manualChunks },
+        },
       },
     }),
     test: {

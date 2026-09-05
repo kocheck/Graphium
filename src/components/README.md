@@ -6,24 +6,25 @@ you are about to change is the source of truth; read it.
 
 ## Areas
 
-| Area                      | What lives there                                                                                                                                                                                                                   |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/App.tsx`             | Picks Architect vs World View (`?type=world`), HOME vs EDITOR, renders the desktop toolbar and the global overlays.                                                                                                                |
-| `Canvas/`                 | The Konva stage: `CanvasManager.tsx`, `GridOverlay.tsx`, `TokenLayer.tsx`, `DrawingLayer.tsx`, `DoorLayer.tsx`, `StairsLayer.tsx`, `FogOfWarLayer.tsx`, `MeasurementOverlay.tsx`, `Minimap.tsx`, `hooks/`. See `Canvas/README.md`. |
-| `AssetLibrary/`           | Token library: `LibraryManager.tsx`, `AddToLibraryDialog.tsx`, `TokenMetadataEditor.tsx`, `CommandPalette.tsx`.                                                                                                                    |
-| `SessionConsole/`         | Audio/ambience panel and the player-facing stage: `SessionConsolePanel.tsx`, the editor and settings sheets, `WorldStage.tsx`, `WorldAudioEngine.tsx`, hotkeys.                                                                    |
-| `DesignSystemPlayground/` | The `/design-system` route (`playground-registry.tsx` lists every example).                                                                                                                                                        |
-| Sidebar and navigation    | `Sidebar.tsx`, `MapNavigator.tsx`, `CollapsibleSection.tsx`, `MobileSidebarDrawer.tsx`, `MobileToolbar.tsx`, `MobileBottomSheet.tsx`.                                                                                              |
-| Overlays                  | `ConfirmDialog.tsx`, `DungeonGeneratorDialog.tsx`, `AboutModal.tsx`, `UpdateManager.tsx`, `MapSettingsSheet.tsx`, `ImageCropper.tsx`, `Toast.tsx`, `LoadingOverlay.tsx`.                                                           |
-| Inspectors and panels     | `TokenInspector.tsx`, `QuickTokenSidebar.tsx`, `DoorControls.tsx`, `ResourceMonitor.tsx`.                                                                                                                                          |
-| System (no UI)            | `SyncManager.tsx` (Architect ↔ World state over IPC in Electron, `BroadcastChannel` on the web), `ThemeManager.tsx`, `AutoSaveManager.tsx`, `PauseManager.tsx`.                                                                    |
-| Error handling            | `GlobalErrorBoundary.tsx`, `PrivacyErrorBoundary.tsx`, `ErrorFallbackUI.tsx`, `UpdateErrorFallbackUI.tsx`, `PendingErrorsIndicator.tsx`, and a `*ErrorBoundary.tsx` next to each feature it wraps.                                 |
-| Adapters                  | `Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx` — thin components whose props stay stable while their internals change.                                                                                                |
-| Brand                     | `LogoIcon.tsx`, `LogoLockup.tsx`.                                                                                                                                                                                                  |
+| Area                      | What lives there                                                                                                                                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/App.tsx`             | Picks Architect vs World View (`?type=world`), HOME vs EDITOR, renders the desktop toolbar and the global overlays.                                                                                                                                     |
+| `Canvas/`                 | The Konva stage: `CanvasManager.tsx`, `GridOverlay.tsx`, `TokenLayer.tsx`, `DrawingLayer.tsx`, `DoorLayer.tsx`, `StairsLayer.tsx`, `FogOfWarLayer.tsx`, `MeasurementOverlay.tsx`, `Minimap.tsx`, `hooks/`. See `Canvas/README.md`.                      |
+| `AssetLibrary/`           | Token library: `LibraryManager.tsx`, `AddToLibraryDialog.tsx`, `TokenMetadataEditor.tsx`, `CommandPalette.tsx`.                                                                                                                                         |
+| `SessionConsole/`         | Audio/ambience panel and the player-facing stage: `SessionConsolePanel.tsx`, the editor and settings sheets, `WorldStage.tsx`, `WorldAudioEngine.tsx`, hotkeys.                                                                                         |
+| `DesignSystemPlayground/` | The `/design-system` route (`playground-registry.tsx` lists every example).                                                                                                                                                                             |
+| Sidebar and navigation    | `Sidebar.tsx`, `MapNavigator.tsx`, `CollapsibleSection.tsx`, `MobileSidebarDrawer.tsx`, `MobileToolbar.tsx`, `MobileBottomSheet.tsx`.                                                                                                                   |
+| Overlays                  | `ConfirmDialog.tsx`, `DungeonGeneratorDialog.tsx`, `AboutModal.tsx`, `UpdateManager.tsx`, `MapSettingsSheet.tsx`, `ImageCropper.tsx`, `Toast.tsx`, `LoadingOverlay.tsx`. — `DungeonGeneratorDialogGate` mounts the generator only while open (plan 005) |
+| Inspectors and panels     | `TokenInspector.tsx`, `QuickTokenSidebar.tsx`, `DoorControls.tsx`, `ResourceMonitor.tsx`.                                                                                                                                                               |
+| System (no UI)            | `SyncManager.tsx` (Architect ↔ World state over IPC in Electron, `BroadcastChannel` on the web), `ThemeManager.tsx`, `AutoSaveManager.tsx`, `PauseManager.tsx`.                                                                                         |
+| Error handling            | `GlobalErrorBoundary.tsx`, `PrivacyErrorBoundary.tsx`, `ErrorFallbackUI.tsx`, `UpdateErrorFallbackUI.tsx`, `PendingErrorsIndicator.tsx`, and a `*ErrorBoundary.tsx` next to each feature it wraps.                                                      |
+| Adapters                  | `Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx` — thin components whose props stay stable while their internals change.                                                                                                                     |
+| Brand                     | `LogoIcon.tsx`, `LogoLockup.tsx`.                                                                                                                                                                                                                       |
 
 **Layout components**
 
 - `Toolbar.tsx` — desktop Architect View tool strip (extracted from `App.tsx` in plan 004).
+- `CanvasHost` and `TokenInspectorGate` feed `CanvasManager` and `TokenInspector` from `uiStore` (plan 005).
 
 ## Conventions that matter here
 

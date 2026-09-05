@@ -1,38 +1,28 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
-import { Agentation } from 'agentation';
-import { useShallow } from 'zustand/shallow';
-
-import { AboutModal } from './components/AboutModal';
 import CommandPalette from './components/AssetLibrary/CommandPalette';
 import AutoSaveManager from './components/AutoSaveManager';
-import CanvasManager from './components/Canvas/CanvasManager';
+import CanvasHost from './components/CanvasHost';
 import ConfirmDialog from './components/ConfirmDialog';
-import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
-import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog';
-import { HomeScreen } from './components/HomeScreen';
+import DungeonGeneratorDialogGate from './components/DungeonGeneratorDialogGate';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import MobileToolbar from './components/MobileToolbar';
 import { PauseManager } from './components/PauseManager';
 import ResourceMonitor from './components/ResourceMonitor';
 import { SessionConsoleEscapeStop } from './components/SessionConsole/SessionConsoleEscapeStop';
-import Sidebar from './components/Sidebar';
 import SyncManager from './components/SyncManager';
 import { ThemeManager } from './components/ThemeManager';
 import Toast from './components/Toast';
-import TokenInspector from './components/TokenInspector';
-import Toolbar, {
-  type DoorOrientation,
-  type MeasurementMode,
-  type ToolbarTool,
-} from './components/Toolbar';
-import Tooltip from './components/Tooltip';
+import TokenInspectorGate from './components/TokenInspectorGate';
+import Toolbar from './components/Toolbar';
 import UpdateManager from './components/UpdateManager';
 import UpdateManagerErrorBoundary from './components/UpdateManagerErrorBoundary';
 import { useCommandPalette } from './hooks/useCommandPalette';
 import { useIsMobile } from './hooks/useMediaQuery';
+import { ProfiledBoundary, ProfiledSidebar } from './perf/profiler';
 import { getStorage } from './services/storage';
 import { useGameStore } from './store/gameStore';
+import { useUiStore } from './store/uiStore';
 import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
 import { loadStressFixture, shouldAutoloadStressFixture } from './utils/stressFixture';
 import { rollForMessage } from './utils/systemMessages';
@@ -42,6 +32,29 @@ const WorldStage = lazy(async () => {
   const module = await import('./components/SessionConsole/WorldStage');
   return { default: module.WorldStage };
 });
+
+const DesignSystemPlayground = lazy(async () => {
+  const module = await import('./components/DesignSystemPlayground/DesignSystemPlayground');
+  return { default: module.DesignSystemPlayground };
+});
+
+const HomeScreen = lazy(async () => {
+  const module = await import('./components/HomeScreen');
+  return { default: module.HomeScreen };
+});
+
+const AboutModal = lazy(async () => {
+  const module = await import('./components/AboutModal');
+  return { default: module.AboutModal };
+});
+
+// Dev-only feedback toolbar. The ternary lets the production build drop the import entirely.
+const Agentation = import.meta.env.DEV
+  ? lazy(async () => {
+      const module = await import('agentation');
+      return { default: module.Agentation };
+    })
+  : (): null => null;
 
 /**
  * App is the root component for Graphium's dual-window architecture
@@ -125,34 +138,10 @@ function App(): React.JSX.Element {
   const isMobile = useIsMobile();
   const setMobileSidebarOpen = useGameStore((state) => state.setMobileSidebarOpen);
 
-  // Active tool state (controls CanvasManager behavior)
-  // Only used in Architect View; World View always uses 'select' with restricted interactions
-  const [tool, setTool] = useState<ToolbarTool>('select');
-  const [color, setColor] = useState('#df4b26');
-  const [recentColors, setRecentColors] = useState<string[]>(['#df4b26', '#3b82f6', '#22c55e']);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
-  // Update recent colors when color changes
-  const handleColorChange = (newColor: string): void => {
-    setColor(newColor);
-    setRecentColors((prev) => {
-      // Remove duplicates and add new color at the start
-      const filtered = prev.filter((c) => c.toLowerCase() !== newColor.toLowerCase());
-      return [newColor, ...filtered].slice(0, 3);
-    });
-  };
-
-  // Door tool state
-  const [doorOrientation, setDoorOrientation] = useState<DoorOrientation>('horizontal');
-
-  // Measurement tool state
-  const [measurementMode, setMeasurementMode] = useState<MeasurementMode>('ruler');
   const broadcastMeasurement = useGameStore((state) => state.broadcastMeasurement);
   const setBroadcastMeasurement = useGameStore((state) => state.setBroadcastMeasurement);
-  const setActiveMeasurement = useGameStore((state) => state.setActiveMeasurement);
-
-  // Selected tokens state (for TokenInspector)
-  const [selectedTokenIds, setSelectedTokenIds] = useState<string[]>([]);
 
   // Command Palette state (Cmd+P)
   const [isPaletteOpen, setPaletteOpen] = useCommandPalette();
@@ -184,11 +173,6 @@ function App(): React.JSX.Element {
       showToast(rollForMessage('PAUSE_TOGGLE_FAILED'), 'error');
     }
   };
-
-  // Filter selected IDs against the id map so App does not subscribe to the tokens array
-  const selectedTokensOnly = useGameStore(
-    useShallow((s) => selectedTokenIds.filter((id) => Boolean(s.tokensById[id]))),
-  );
 
   // Load library index on startup (Architect View only)
   useEffect(() => {
@@ -239,14 +223,10 @@ function App(): React.JSX.Element {
     }
   }, []);
 
-  // Clear active measurement when measurement mode changes to prevent confusion
-  useEffect(() => {
-    setActiveMeasurement(null);
-  }, [measurementMode, setActiveMeasurement]);
-
   useEffect(() => {
     // eslint-disable-next-line complexity
     const handleKeyDown = (e: KeyboardEvent): void => {
+      const ui = useUiStore.getState();
       // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
@@ -267,40 +247,36 @@ function App(): React.JSX.Element {
 
       // Handle arrow keys separately (they don't need toLowerCase)
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-        if (tool === 'door') {
+        if (ui.tool === 'door') {
           e.preventDefault(); // Prevent page scrolling
-          setDoorOrientation((prev) => {
-            return prev === 'horizontal' ? 'vertical' : 'horizontal';
-          });
+          ui.toggleDoorOrientation();
         }
         return;
       }
 
       switch (e.key.toLowerCase()) {
         case 'v':
-          setTool('select');
+          ui.setTool('select');
           break;
         case 'm':
-          setTool('marker');
+          ui.setTool('marker');
           break;
         case 'e':
-          setTool('eraser');
+          ui.setTool('eraser');
           break;
         case 'w':
-          setTool('wall');
+          ui.setTool('wall');
           break;
         case 'd':
-          setTool('door');
+          ui.setTool('door');
           break;
         case 'r':
           // If door tool is active, rotate door orientation
           // Otherwise, switch to measure tool
-          if (tool === 'door') {
-            setDoorOrientation((prev) => {
-              return prev === 'horizontal' ? 'vertical' : 'horizontal';
-            });
+          if (ui.tool === 'door') {
+            ui.toggleDoorOrientation();
           } else {
-            setTool('measure');
+            ui.setTool('measure');
           }
           break;
         case 'i':
@@ -313,7 +289,7 @@ function App(): React.JSX.Element {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isArchitectView, tool, isAboutOpen]);
+  }, [isArchitectView, isAboutOpen, isUpdateManagerOpen]);
 
   // Handle Menu Commands (Electron IPC)
   useEffect(() => {
@@ -422,8 +398,14 @@ function App(): React.JSX.Element {
   if (isDesignSystemPlayground) {
     return (
       <>
-        <DesignSystemPlayground />
-        {import.meta.env.DEV && <Agentation />}
+        <Suspense fallback={null}>
+          <DesignSystemPlayground />
+        </Suspense>
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            <Agentation />
+          </Suspense>
+        )}
       </>
     );
   }
@@ -433,27 +415,47 @@ function App(): React.JSX.Element {
     return (
       <>
         {/* Global components */}
-        <ThemeManager />
-        <Toast />
-        <ConfirmDialog />
-        <AboutModal
-          isOpen={isAboutOpen}
-          onClose={() => setIsAboutOpen(false)}
-          onCheckForUpdates={() => {
-            setIsAboutOpen(false);
-            setIsUpdateManagerOpen(true);
-          }}
-        />
+        <ProfiledBoundary id="ThemeManager">
+          <ThemeManager />
+        </ProfiledBoundary>
+        <ProfiledBoundary id="Toast">
+          <Toast />
+        </ProfiledBoundary>
+        <ProfiledBoundary id="ConfirmDialog">
+          <ConfirmDialog />
+        </ProfiledBoundary>
+        {isAboutOpen && (
+          <ProfiledBoundary id="AboutModal">
+            <Suspense fallback={null}>
+              <AboutModal
+                isOpen={isAboutOpen}
+                onClose={() => setIsAboutOpen(false)}
+                onCheckForUpdates={() => {
+                  setIsAboutOpen(false);
+                  setIsUpdateManagerOpen(true);
+                }}
+              />
+            </Suspense>
+          </ProfiledBoundary>
+        )}
         <UpdateManagerErrorBoundary>
-          <UpdateManager
-            isOpen={isUpdateManagerOpen}
-            onClose={() => setIsUpdateManagerOpen(false)}
-          />
+          <ProfiledBoundary id="UpdateManager">
+            <UpdateManager
+              isOpen={isUpdateManagerOpen}
+              onClose={() => setIsUpdateManagerOpen(false)}
+            />
+          </ProfiledBoundary>
         </UpdateManagerErrorBoundary>
 
         {/* Home/Splash Screen */}
-        <HomeScreen onStartEditor={handleStartEditor} />
-        {import.meta.env.DEV && <Agentation />}
+        <Suspense fallback={null}>
+          <HomeScreen onStartEditor={handleStartEditor} />
+        </Suspense>
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            <Agentation />
+          </Suspense>
+        )}
       </>
     );
   }
@@ -462,22 +464,45 @@ function App(): React.JSX.Element {
   return (
     <div className="app-root w-full h-screen flex overflow-hidden" data-testid="editor-view">
       {/* Global components (rendered in both Architect and World View) */}
-      <ThemeManager />
-      <SyncManager />
-      <PauseManager />
-      <Toast />
-      <ConfirmDialog />
-      <DungeonGeneratorDialog />
-      <AboutModal
-        isOpen={isAboutOpen}
-        onClose={() => setIsAboutOpen(false)}
-        onCheckForUpdates={() => {
-          setIsAboutOpen(false);
-          setIsUpdateManagerOpen(true);
-        }}
-      />
+      <ProfiledBoundary id="ThemeManager">
+        <ThemeManager />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="SyncManager">
+        <SyncManager />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="PauseManager">
+        <PauseManager />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="Toast">
+        <Toast />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="ConfirmDialog">
+        <ConfirmDialog />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="DungeonGeneratorDialog">
+        <DungeonGeneratorDialogGate />
+      </ProfiledBoundary>
+      {isAboutOpen && (
+        <ProfiledBoundary id="AboutModal">
+          <Suspense fallback={null}>
+            <AboutModal
+              isOpen={isAboutOpen}
+              onClose={() => setIsAboutOpen(false)}
+              onCheckForUpdates={() => {
+                setIsAboutOpen(false);
+                setIsUpdateManagerOpen(true);
+              }}
+            />
+          </Suspense>
+        </ProfiledBoundary>
+      )}
       <UpdateManagerErrorBoundary>
-        <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+        <ProfiledBoundary id="UpdateManager">
+          <UpdateManager
+            isOpen={isUpdateManagerOpen}
+            onClose={() => setIsUpdateManagerOpen(false)}
+          />
+        </ProfiledBoundary>
       </UpdateManagerErrorBoundary>
 
       {/* Loading Overlay: Only render in World View to block players' view */}
@@ -489,11 +514,19 @@ function App(): React.JSX.Element {
       )}
 
       {/* Auto-save (Architect View only) */}
-      {isArchitectView && <SessionConsoleEscapeStop defer={isAboutOpen || isUpdateManagerOpen} />}
-      {isArchitectView && <AutoSaveManager />}
+      {isArchitectView && (
+        <ProfiledBoundary id="SessionConsoleEscapeStop">
+          <SessionConsoleEscapeStop defer={isAboutOpen || isUpdateManagerOpen} />
+        </ProfiledBoundary>
+      )}
+      {isArchitectView && (
+        <ProfiledBoundary id="AutoSaveManager">
+          <AutoSaveManager />
+        </ProfiledBoundary>
+      )}
 
       {/* Sidebar: Only render in Architect View (DM's token library) */}
-      {isArchitectView && <Sidebar />}
+      {isArchitectView && <ProfiledSidebar />}
 
       <div className="flex-1 relative h-full transition-all duration-300">
         {/* Mobile Hamburger Menu Button (top-left, Architect View only) */}
@@ -523,110 +556,60 @@ function App(): React.JSX.Element {
         )}
 
         {/* CanvasManager: Rendered in both views, but with different interaction modes */}
-        <CanvasManager
-          tool={tool}
-          color={color}
-          doorOrientation={doorOrientation}
-          isWorldView={isWorldView}
-          onSelectionChange={setSelectedTokenIds}
-          measurementMode={measurementMode}
-        />
+        <CanvasHost isWorldView={isWorldView} />
 
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
         {isArchitectView && !isMobile && (
-          <Toolbar
-            tool={tool}
-            setTool={setTool}
-            color={color}
-            onColorChange={handleColorChange}
-            colorInputRef={colorInputRef}
-            doorOrientation={doorOrientation}
-            onToggleDoorOrientation={() =>
-              setDoorOrientation((prev) => (prev === 'horizontal' ? 'vertical' : 'horizontal'))
-            }
-            measurementMode={measurementMode}
-            setMeasurementMode={setMeasurementMode}
-            broadcastMeasurement={broadcastMeasurement}
-            setBroadcastMeasurement={setBroadcastMeasurement}
-            isGamePaused={isGamePaused}
-            onPauseToggle={(): void => {
-              void handlePauseToggle();
-            }}
-          />
-        )}
-
-        {/* Floating Color Palette (appears above marker tool when active) */}
-        {isArchitectView && !isMobile && tool === 'marker' && (
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2">
-            {/* Current color - Large circle */}
-            <Tooltip content="Change marker color (I)">
-              <button
-                onClick={() => colorInputRef.current?.click()}
-                className="w-12 h-12 rounded-full border-2 border-white shadow-lg hover:scale-110 transition-transform cursor-pointer"
-                style={{ backgroundColor: color }}
-                aria-label="Change marker color"
-              />
-            </Tooltip>
-
-            {/* Recent colors - Smaller circles */}
-            <div className="flex gap-1.5">
-              {recentColors.map((recentColor) => (
-                <Tooltip key={recentColor} content={`Use color ${recentColor}`}>
-                  <button
-                    onClick={() => handleColorChange(recentColor)}
-                    className="w-8 h-8 rounded-full border-2 border-neutral-600 shadow-md hover:scale-110 transition-transform cursor-pointer"
-                    style={{ backgroundColor: recentColor }}
-                    aria-label={`Switch to color ${recentColor}`}
-                  />
-                </Tooltip>
-              ))}
-            </div>
-          </div>
+          <ProfiledBoundary id="Toolbar">
+            <Toolbar
+              colorInputRef={colorInputRef}
+              broadcastMeasurement={broadcastMeasurement}
+              setBroadcastMeasurement={setBroadcastMeasurement}
+              isGamePaused={isGamePaused}
+              onPauseToggle={(): void => {
+                void handlePauseToggle();
+              }}
+            />
+          </ProfiledBoundary>
         )}
 
         {/* Resource Monitor: Performance diagnostics overlay (Architect View only) */}
         {isArchitectView && showResourceMonitor && <ResourceMonitor />}
 
         {/* Token Inspector (only show in Architect View when tokens selected) */}
-        {isArchitectView && selectedTokensOnly.length > 0 && (
-          <TokenInspector
-            selectedTokenIds={selectedTokensOnly}
-            onClose={() => setSelectedTokenIds([])}
-          />
+        {isArchitectView && (
+          <ProfiledBoundary id="TokenInspector">
+            <TokenInspectorGate />
+          </ProfiledBoundary>
         )}
 
         {/* Command Palette: Quick actions & asset search (Cmd+P, Architect View only) */}
         {isArchitectView && (
-          <CommandPalette
-            isOpen={isPaletteOpen}
-            onClose={() => setPaletteOpen(false)}
-            onSetTool={setTool}
-            onTogglePause={(): void => {
-              void handlePauseToggle();
-            }}
-            onLaunchWorldView={() => {
-              const ipcRenderer = window.ipcRenderer;
-              if (ipcRenderer) {
-                ipcRenderer.send('create-world-window');
-              } else {
-                const baseUrl = window.location.origin + window.location.pathname;
-                window.open(`${baseUrl}?type=world`, '_blank');
-              }
-            }}
-            onOpenDungeonGenerator={() => useGameStore.getState().showDungeonDialog()}
-            isGamePaused={isGamePaused}
-          />
+          <ProfiledBoundary id="CommandPalette">
+            <CommandPalette
+              isOpen={isPaletteOpen}
+              onClose={() => setPaletteOpen(false)}
+              onTogglePause={(): void => {
+                void handlePauseToggle();
+              }}
+              onLaunchWorldView={() => {
+                const ipcRenderer = window.ipcRenderer;
+                if (ipcRenderer) {
+                  ipcRenderer.send('create-world-window');
+                } else {
+                  const baseUrl = window.location.origin + window.location.pathname;
+                  window.open(`${baseUrl}?type=world`, '_blank');
+                }
+              }}
+              onOpenDungeonGenerator={() => useGameStore.getState().showDungeonDialog()}
+              isGamePaused={isGamePaused}
+            />
+          </ProfiledBoundary>
         )}
 
         {/* Mobile Toolbar: Bottom navigation bar (Architect View only, mobile only) */}
         {isArchitectView && isMobile && (
           <MobileToolbar
-            tool={tool}
-            setTool={setTool}
-            color={color}
-            setColor={setColor}
-            doorOrientation={doorOrientation}
-            setDoorOrientation={setDoorOrientation}
             isGamePaused={isGamePaused}
             onPauseToggle={(): void => {
               void handlePauseToggle();
@@ -634,7 +617,11 @@ function App(): React.JSX.Element {
           />
         )}
       </div>
-      {import.meta.env.DEV && <Agentation />}
+      {import.meta.env.DEV && (
+        <Suspense fallback={null}>
+          <Agentation />
+        </Suspense>
+      )}
     </div>
   );
 }

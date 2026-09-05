@@ -32,6 +32,7 @@ import { RiEditLine, RiArrowRightSLine } from '@remixicon/react';
 import LibraryModalErrorBoundary from './LibraryModalErrorBoundary';
 import TokenMetadataEditor from './TokenMetadataEditor';
 import { useGameStore } from '../../store/gameStore';
+import { useUiStore } from '../../store/uiStore';
 import { createCommandRegistry, searchCommands, type Command } from '../../utils/commandRegistry';
 import { fuzzySearch } from '../../utils/fuzzySearch';
 import { toMediaProtocol } from '../../utils/mediaProtocol';
@@ -41,7 +42,6 @@ interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   // Command handlers
-  onSetTool: (tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure') => void;
   onTogglePause: () => void;
   onLaunchWorldView: () => void;
   onOpenDungeonGenerator: () => void;
@@ -57,7 +57,6 @@ type ResultItem =
 function CommandPalette({
   isOpen,
   onClose,
-  onSetTool,
   onTogglePause,
   onLaunchWorldView,
   onOpenDungeonGenerator,
@@ -79,18 +78,18 @@ function CommandPalette({
   const commandRegistry = useMemo(
     () =>
       createCommandRegistry({
-        setToolSelect: () => onSetTool('select'),
-        setToolMarker: () => onSetTool('marker'),
-        setToolEraser: () => onSetTool('eraser'),
-        setToolWall: () => onSetTool('wall'),
-        setToolDoor: () => onSetTool('door'),
-        setToolMeasure: () => onSetTool('measure'),
+        setToolSelect: () => useUiStore.getState().setTool('select'),
+        setToolMarker: () => useUiStore.getState().setTool('marker'),
+        setToolEraser: () => useUiStore.getState().setTool('eraser'),
+        setToolWall: () => useUiStore.getState().setTool('wall'),
+        setToolDoor: () => useUiStore.getState().setTool('door'),
+        setToolMeasure: () => useUiStore.getState().setTool('measure'),
         togglePause: onTogglePause,
         launchWorldView: onLaunchWorldView,
         openDungeonGenerator: onOpenDungeonGenerator,
         isGamePaused,
       }),
-    [onSetTool, onTogglePause, onLaunchWorldView, onOpenDungeonGenerator, isGamePaused],
+    [onTogglePause, onLaunchWorldView, onOpenDungeonGenerator, isGamePaused],
   );
 
   // Search both commands and assets

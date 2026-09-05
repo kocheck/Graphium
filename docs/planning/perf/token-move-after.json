@@ -1,0 +1,46 @@
+{
+  "scenario": "token-move",
+  "tag": "after",
+  "updateCounts": {
+    "CanvasManager": 3,
+    "TokenInspector": 3
+  },
+  "entries": [
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.3999999985098839,
+      "timestamp": 1480.2000000029802
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.3999999985098839,
+      "timestamp": 1519.9000000022352
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.6999999992549419,
+      "timestamp": 1521.6000000014901
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.19999999925494194,
+      "timestamp": 1522.1000000014901
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.4000000022351742,
+      "timestamp": 1661.4000000022352
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.09999999776482582,
+      "timestamp": 1661.4000000022352
+    }
+  ]
+}

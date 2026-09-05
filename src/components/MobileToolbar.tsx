@@ -40,33 +40,30 @@ import {
   RiLayoutMasonryLine,
   RiMoreLine,
 } from '@remixicon/react';
+import { useShallow } from 'zustand/shallow';
 
 import { Button } from '@/components/ui/button';
 
 import { useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 
 interface MobileToolbarProps {
-  tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure';
-  setTool: (tool: 'select' | 'marker' | 'eraser' | 'wall' | 'door' | 'measure') => void;
-  color: string;
-  setColor: (color: string) => void;
-  doorOrientation?: 'horizontal' | 'vertical';
-  setDoorOrientation?: (orientation: 'horizontal' | 'vertical') => void;
   isGamePaused: boolean;
   onPauseToggle: () => void;
 }
 
 // eslint-disable-next-line max-lines-per-function, complexity
-function MobileToolbar({
-  tool,
-  setTool,
-  color,
-  setColor,
-  doorOrientation = 'horizontal',
-  setDoorOrientation,
-  isGamePaused,
-  onPauseToggle,
-}: MobileToolbarProps): React.ReactElement {
+function MobileToolbar({ isGamePaused, onPauseToggle }: MobileToolbarProps): React.ReactElement {
+  const { tool, setTool, color, setColor, doorOrientation, toggleDoorOrientation } = useUiStore(
+    useShallow((state) => ({
+      tool: state.tool,
+      setTool: state.setTool,
+      color: state.color,
+      setColor: state.setColor,
+      doorOrientation: state.doorOrientation,
+      toggleDoorOrientation: state.toggleDoorOrientation,
+    })),
+  );
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -157,14 +154,12 @@ function MobileToolbar({
                   </div>
                 )}
               </div>
-              {tool === 'door' && setDoorOrientation && (
+              {tool === 'door' && (
                 <Button
                   variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setDoorOrientation(
-                      doorOrientation === 'horizontal' ? 'vertical' : 'horizontal',
-                    );
+                    toggleDoorOrientation();
                   }}
                   className="px-3 py-1 rounded text-sm bg-[var(--app-accent-solid)] text-[var(--app-accent-solid-text)]"
                 >

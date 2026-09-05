@@ -1,0 +1,143 @@
+{
+  "scenario": "token-move",
+  "tag": "before",
+  "updateCounts": {
+    "CanvasManager": 3,
+    "ThemeManager": 1,
+    "SyncManager": 1,
+    "PauseManager": 1,
+    "Toast": 1,
+    "ConfirmDialog": 1,
+    "DungeonGeneratorDialog": 1,
+    "AboutModal": 1,
+    "UpdateManager": 1,
+    "SessionConsoleEscapeStop": 1,
+    "AutoSaveManager": 1,
+    "Toolbar": 1,
+    "CommandPalette": 1,
+    "TokenInspector": 2,
+    "Sidebar": 2
+  },
+  "entries": [
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.3999999985098839,
+      "timestamp": 1449.5999999977648
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.5,
+      "timestamp": 1490.199999999255
+    },
+    {
+      "id": "ThemeManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "SyncManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "PauseManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "Toast",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "ConfirmDialog",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "DungeonGeneratorDialog",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "AboutModal",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "UpdateManager",
+      "phase": "update",
+      "actualDuration": 0.09999999776482582,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "SessionConsoleEscapeStop",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "AutoSaveManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "Toolbar",
+      "phase": "update",
+      "actualDuration": 2,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "mount",
+      "actualDuration": 0.7000000029802322,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "CommandPalette",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1496.3999999985099
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.09999999776482582,
+      "timestamp": 1505.0999999977648
+    },
+    {
+      "id": "Sidebar",
+      "phase": "update",
+      "actualDuration": 3.5,
+      "timestamp": 1641.8999999985099
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.5,
+      "timestamp": 1651.3999999985099
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1651.3999999985099
+    },
+    {
+      "id": "Sidebar",
+      "phase": "update",
+      "actualDuration": 0.09999999776482582,
+      "timestamp": 1658.699999999255
+    }
+  ]
+}

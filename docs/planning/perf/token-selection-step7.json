@@ -1,0 +1,94 @@
+{
+  "scenario": "token-selection",
+  "tag": "step7",
+  "updateCounts": {
+    "CanvasManager": 8,
+    "TokenInspector": 6
+  },
+  "entries": [
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.4000000022351742,
+      "timestamp": 1483.300000000745
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.3999999985098839,
+      "timestamp": 1494.1000000014901
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "nested-update",
+      "actualDuration": 0.5999999977648258,
+      "timestamp": 1495.699999999255
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.19999999925494194,
+      "timestamp": 1508.800000000745
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.3999999985098839,
+      "timestamp": 1522.4000000022352
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.30000000074505806,
+      "timestamp": 1532.699999999255
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "nested-update",
+      "actualDuration": 0.19999999925494194,
+      "timestamp": 1533.5
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.20000000298023224,
+      "timestamp": 1556.699999999255
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.30000000074505806,
+      "timestamp": 1568
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "nested-update",
+      "actualDuration": 0.19999999925494194,
+      "timestamp": 1568.800000000745
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.30000000074505806,
+      "timestamp": 1588.6000000014901
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.10000000149011612,
+      "timestamp": 1596.5
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "nested-update",
+      "actualDuration": 0.19999999925494194,
+      "timestamp": 1597.199999999255
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.10000000149011612,
+      "timestamp": 1607.800000000745
+    }
+  ]
+}

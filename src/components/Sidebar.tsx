@@ -69,6 +69,7 @@ import {
   RiSearchLine,
   RiBookLine,
 } from '@remixicon/react';
+import { useShallow } from 'zustand/shallow';
 
 import { Button } from '@/components/ui/button';
 
@@ -98,17 +99,22 @@ import type { ProcessingHandle } from '../utils/AssetProcessor';
 // eslint-disable-next-line max-lines-per-function
 function Sidebar(): JSX.Element {
   // Store selectors
-  const campaign = useGameStore((state) => state.campaign);
   const activeMapId = useGameStore((state) => state.campaign.activeMapId);
   const switchMap = useGameStore((state) => state.switchMap);
   const tokenLibrary = useGameStore((state) => state.campaign.tokenLibrary);
   const showToast = useGameStore((state) => state.showToast);
-  const tokens = useGameStore((state) => state.tokens);
+  const campaignName = useGameStore((state) => state.campaign.name);
+  const maps = useGameStore(
+    useShallow((state) =>
+      Object.values(state.campaign.maps).sort((a, b) => a.name.localeCompare(b.name)),
+    ),
+  );
 
-  // Get recent tokens (last 3 unique tokens placed on the map)
-  const recentTokens = useMemo(() => {
-    return getRecentTokens(tokens, tokenLibrary);
-  }, [tokens, tokenLibrary]);
+  // Selected inside the store so a token move (new `tokens` array, same library items) does
+  // not re-render the Sidebar: useShallow compares the resulting LibraryItem[] element-wise.
+  const recentTokens = useGameStore(
+    useShallow((state) => getRecentTokens(state.tokens, state.campaign.tokenLibrary)),
+  );
 
   // Get player tokens from library (up to 5)
   const playerTokens = useMemo(() => {
@@ -245,8 +251,6 @@ function Sidebar(): JSX.Element {
     }
   };
 
-  const maps = Object.values(campaign.maps).sort((a, b) => a.name.localeCompare(b.name));
-
   let sidebarWidthClass: string;
   if (isMobile) {
     sidebarWidthClass = 'w-full h-full';
@@ -273,8 +277,8 @@ function Sidebar(): JSX.Element {
             >
               Campaign
             </h2>
-            <p className="text-sm font-medium truncate" title={campaign.name}>
-              {campaign.name}
+            <p className="text-sm font-medium truncate" title={campaignName}>
+              {campaignName}
             </p>
           </div>
           {!isMobile && (

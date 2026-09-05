@@ -1,0 +1,195 @@
+{
+  "scenario": "tool-switch",
+  "tag": "before",
+  "updateCounts": {
+    "ThemeManager": 2,
+    "SyncManager": 2,
+    "PauseManager": 2,
+    "Toast": 2,
+    "ConfirmDialog": 2,
+    "DungeonGeneratorDialog": 2,
+    "AboutModal": 2,
+    "UpdateManager": 2,
+    "SessionConsoleEscapeStop": 2,
+    "AutoSaveManager": 2,
+    "CanvasManager": 4,
+    "Toolbar": 2,
+    "CommandPalette": 3
+  },
+  "entries": [
+    {
+      "id": "ThemeManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "SyncManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "PauseManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "Toast",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "ConfirmDialog",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "DungeonGeneratorDialog",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "AboutModal",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "UpdateManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "SessionConsoleEscapeStop",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "AutoSaveManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2510.199999999255
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.5,
+      "timestamp": 2519.400000002235
+    },
+    {
+      "id": "Toolbar",
+      "phase": "update",
+      "actualDuration": 1.7000000029802322,
+      "timestamp": 2519.400000002235
+    },
+    {
+      "id": "CommandPalette",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2519.5
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.3999999985098839,
+      "timestamp": 2528.699999999255
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.5,
+      "timestamp": 2542.60000000149
+    },
+    {
+      "id": "ThemeManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "SyncManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "PauseManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "Toast",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "ConfirmDialog",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "DungeonGeneratorDialog",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "AboutModal",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "UpdateManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "SessionConsoleEscapeStop",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "AutoSaveManager",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2556.900000002235
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.30000000074505806,
+      "timestamp": 2565.60000000149
+    },
+    {
+      "id": "Toolbar",
+      "phase": "update",
+      "actualDuration": 1.5999999940395355,
+      "timestamp": 2565.699999999255
+    },
+    {
+      "id": "CommandPalette",
+      "phase": "update",
+      "actualDuration": 0.10000000149011612,
+      "timestamp": 2565.699999999255
+    },
+    {
+      "id": "CommandPalette",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 2573.199999999255
+    }
+  ]
+}
