@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- `PreferencesDialog` component (unreferenced; kept in git history).
+
+### Changed
+
+- Web deploy workflow runs on manual dispatch only for the duration of the UI redesign program.
+
 ### Added
 
 #### Hexagonal and Isometric Grid Support
