@@ -156,7 +156,7 @@ not listed, STOP.
 - One commit per step, message exactly as the step's **Commit** line. The commit history
   is the reviewer's map of the plan.
 - Push with `git push -u origin plan/NNN-<slug>` after `npm run verify` exits 0.
-- Open one pull request into `main` per plan (plan 004 opens five, plan 006 opens two,
+- Open one pull request into `main` per plan (plan 004 opens six, plan 006 opens two,
   as their text says). PR title: `Plan NNN: <plan title>`. PR body: the **Report**
   (section 11) pasted in full.
 - CI runs only on pull requests into `main` (`lint.yml`, `test.yml`, `e2e.yml`,
@@ -183,7 +183,7 @@ not listed, STOP.
   (real box-shadows), `radius`, `duration`, `ease`, `space`, `font-size`,
   `font-weight`.
 - Decision files: `docs/planning/decisions/NNN-<topic>.md` (section 9).
-- Reports: `plans/reports/NNN.md` (section 11). Plan 004 writes `004-pr1.md` … `004-pr5.md`.
+- Reports: `plans/reports/NNN.md` (section 11). Plan 004 writes `004-pr1.md` … `004-pr6.md`.
 - Screenshot sets: `docs/planning/screenshots/<plan>-<step>/<surface>-<theme>.png`, or
   `<plan>-baseline` / `<plan>-final` for a plan's opening and closing sets.
 
