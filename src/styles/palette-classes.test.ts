@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
  * Plan 004 lowers BASELINE as each component moves onto --app-* tokens.
  * Same count as: grep -rhoE '<PALETTE_CLASS>' src --include=*.tsx | wc -l
  */
-const BASELINE = 294;
+const BASELINE = 243;
 
 const PALETTE_CLASS =
   /\b(?:bg|text|border|ring)-(?:white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(?:-[0-9]{2,3})?\b/g;

@@ -40,3 +40,9 @@
 - Nested AddToLibraryDialog and TokenMetadataEditor stay inside this dialog; a stacked-dialog IA or a route would be clearer.
 - Mobile uses `h-full max-w-none rounded-none`; a dedicated sheet would match the other mobile drawers.
 - Card drag affordance is a scale/opacity class, not a preview ghost.
+
+### TokenMetadataEditor
+
+- Category and Default Type stay native `<select>`s next to `Input` fields.
+- Vision radius is a raw number field; a Slider with feet marks would match the rest of the chrome.
+- The editor is also mounted from CommandPalette; a shared sheet on mobile would match LibraryManager.

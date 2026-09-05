@@ -35,6 +35,10 @@ import { useState, useEffect } from 'react';
 
 import { RiCloseLine } from '@remixicon/react';
 
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
@@ -158,68 +162,73 @@ function TokenMetadataEditor({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      data-testid="dialog-token-metadata-root"
-      onClick={onClose}
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
     >
-      <div
-        className={`flex flex-col overflow-hidden shadow-2xl ${
-          isMobile ? 'w-full h-full' : 'max-w-2xl w-full rounded-lg'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: 'var(--app-bg-base)',
-        }}
+      <DialogContent
+        className={
+          isMobile
+            ? 'w-full h-full max-w-none rounded-none p-0 flex flex-col'
+            : 'max-w-2xl w-full rounded-lg p-0 flex flex-col'
+        }
+        data-testid="dialog-token-metadata-root"
+        showCloseButton={false}
       >
         {/* Header */}
-        <div className="p-4 border-b border-neutral-700 bg-neutral-800">
+        <div className="p-4 border-b border-[var(--app-border-default)] bg-[var(--app-bg-surface)]">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Edit Token Metadata</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-neutral-700 rounded text-white"
-              aria-label="Close"
-            >
-              <RiCloseLine className="w-6 h-6" />
-            </button>
+            <DialogTitle className="text-xl font-bold text-[var(--app-text-primary)]">
+              Edit Token Metadata
+            </DialogTitle>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+              <RiCloseLine className="size-6" />
+            </Button>
           </div>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* Preview */}
-          <div className="flex items-center gap-4 p-4 bg-neutral-800 rounded-lg">
+          <div className="flex items-center gap-4 p-4 bg-[var(--app-bg-surface)] rounded-lg">
             <img
               src={toMediaProtocol(libraryItem.thumbnailSrc)}
               alt={libraryItem.name}
               className="w-20 h-20 object-cover rounded"
             />
             <div className="flex-1">
-              <p className="text-white font-medium">{libraryItem.name}</p>
-              <p className="text-neutral-400 text-sm">{libraryItem.category}</p>
+              <p className="text-[var(--app-text-primary)] font-medium">{libraryItem.name}</p>
+              <p className="text-[var(--app-text-secondary)] text-sm">{libraryItem.category}</p>
             </div>
           </div>
 
           {/* Name */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Name *</label>
-            <input
+            <label className="block text-[var(--app-text-primary)] text-sm font-medium mb-2">
+              Name *
+            </label>
+            <Input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
               placeholder="Token name"
             />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Category</label>
+            <label className="block text-[var(--app-text-primary)] text-sm font-medium mb-2">
+              Category
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
             >
               <option value="PC">PC (Player Character)</option>
               <option value="Monsters">Monsters</option>
@@ -231,69 +240,75 @@ function TokenMetadataEditor({
 
           {/* Tags */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
+            <label className="block text-[var(--app-text-primary)] text-sm font-medium mb-2">
               Tags (comma-separated)
             </label>
-            <input
+            <Input
               type="text"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
               placeholder="e.g., dragon, red, large"
             />
-            <p className="text-neutral-500 text-xs mt-1">
+            <p className="text-[var(--app-text-muted)] text-xs mt-1">
               Used for search. Separate tags with commas.
             </p>
           </div>
 
           {/* Default Scale */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Default Scale</label>
-            <input
+            <label className="block text-[var(--app-text-primary)] text-sm font-medium mb-2">
+              Default Scale
+            </label>
+            <Input
               type="number"
               step="0.1"
               min="0.1"
               value={defaultScale}
               onChange={(e) => setDefaultScale(e.target.value)}
-              className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
               placeholder="1.0"
             />
-            <p className="text-neutral-500 text-xs mt-1">
+            <p className="text-[var(--app-text-muted)] text-xs mt-1">
               Size multiplier when placed on map (e.g., 1.0 = 1 grid square, 2.0 = 2 grid squares)
             </p>
           </div>
 
           {/* Default Type */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Default Type</label>
+            <label className="block text-[var(--app-text-primary)] text-sm font-medium mb-2">
+              Default Type
+            </label>
             <select
               value={defaultType}
               onChange={(e) => setDefaultType(e.target.value as 'PC' | 'NPC' | '')}
-              className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
             >
               <option value="">None</option>
               <option value="PC">PC (Player Character)</option>
               <option value="NPC">NPC (Non-Player Character)</option>
             </select>
-            <p className="text-neutral-500 text-xs mt-1">PC tokens emit vision in Fog of War</p>
+            <p className="text-[var(--app-text-muted)] text-xs mt-1">
+              PC tokens emit vision in Fog of War
+            </p>
           </div>
 
           {/* Default Vision Radius */}
           {defaultType === 'PC' && (
             <div>
-              <label className="block text-white text-sm font-medium mb-2">
+              <label className="block text-[var(--app-text-primary)] text-sm font-medium mb-2">
                 Default Vision Radius (feet)
               </label>
-              <input
+              <Input
                 type="number"
                 step="5"
                 min="0"
                 value={defaultVisionRadius}
                 onChange={(e) => setDefaultVisionRadius(e.target.value)}
-                className="w-full bg-neutral-700 text-white px-4 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+                className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
                 placeholder="60"
               />
-              <p className="text-neutral-500 text-xs mt-1">
+              <p className="text-[var(--app-text-muted)] text-xs mt-1">
                 How far this token can see in feet (e.g., 60 for darkvision)
               </p>
             </div>
@@ -301,22 +316,16 @@ function TokenMetadataEditor({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-neutral-700 bg-neutral-800 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white font-medium"
-          >
+        <div className="p-4 border-t border-[var(--app-border-default)] bg-[var(--app-bg-surface)] flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium"
-          >
+          </Button>
+          <Button variant="default" onClick={handleSave}>
             Save Changes
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -110,14 +110,11 @@ describe('TokenMetadataEditor', () => {
     expect(img).toHaveAttribute('src', 'media:///path/to/thumb.png');
   });
 
-  it('should close modal when clicking backdrop', async () => {
+  it('should close modal on Escape', () => {
     render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
-    const backdrop = screen.getByText('Edit Token Metadata').closest('.fixed');
-    if (backdrop) {
-      fireEvent.click(backdrop);
-      expect(mockOnClose).toHaveBeenCalled();
-    }
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(mockOnClose).toHaveBeenCalled();
   });
 
   it('should not close modal when clicking inside modal content', async () => {

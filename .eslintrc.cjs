@@ -481,6 +481,7 @@ module.exports = {
         'src/components/MobileSidebarDrawer.tsx',
         'src/components/MobileBottomSheet.tsx',
         'src/components/AssetLibrary/LibraryManager.tsx',
+        'src/components/AssetLibrary/TokenMetadataEditor.tsx',
       ],
       rules: {
         'no-restricted-syntax': [
