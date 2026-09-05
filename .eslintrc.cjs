@@ -479,6 +479,7 @@ module.exports = {
         'src/components/SessionConsole/SessionConsoleEditorSheet.tsx',
         'src/components/SessionConsole/SessionConsoleSettingsSheet.tsx',
         'src/components/MobileSidebarDrawer.tsx',
+        'src/components/MobileBottomSheet.tsx',
       ],
       rules: {
         'no-restricted-syntax': [

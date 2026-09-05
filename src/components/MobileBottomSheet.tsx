@@ -9,7 +9,6 @@
  * - Semi-transparent backdrop
  * - Drag handle for visual affordance
  * - Close on backdrop click
- * - Escape key to close
  * - Proper focus management
  * - Max height 70vh to avoid covering entire screen
  *
@@ -18,7 +17,7 @@
  * @param children - Content to render inside bottom sheet
  */
 
-import { useEffect, useRef } from 'react';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 interface MobileBottomSheetProps {
   isOpen: boolean;
@@ -31,77 +30,33 @@ function MobileBottomSheet({
   onClose,
   children,
 }: MobileBottomSheetProps): JSX.Element | null {
-  const sheetRef = useRef<HTMLDivElement>(null);
-
-  // Close on Escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
-
-  // Prevent body scroll when sheet is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  // Don't render anything if not open
   if (!isOpen) {
     return null;
   }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
-        onClick={(e) => {
-          e.stopPropagation();
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
           onClose();
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Bottom Sheet */}
-      <div
-        ref={sheetRef}
-        className="fixed inset-x-0 bottom-0 z-50 max-h-[70vh] rounded-t-xl shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto"
-        style={{
-          backgroundColor: 'var(--app-bg-surface)',
-          borderTopWidth: '1px',
-          borderTopStyle: 'solid',
-          borderTopColor: 'var(--app-border-default)',
-        }}
-        role="dialog"
-        aria-modal="true"
+        }
+      }}
+    >
+      <SheetContent
+        side="bottom"
+        className="max-h-[70vh] rounded-t-xl p-0 overflow-y-auto bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)]"
+        ownsEscape={false}
         aria-label="Bottom sheet"
         data-testid="sheet-mobile-bottom-root"
       >
-        {/* Drag Handle */}
+        <SheetTitle className="sr-only">Bottom sheet</SheetTitle>
         <div className="flex justify-center pt-3 pb-2">
-          <div
-            className="w-12 h-1 rounded-full"
-            style={{ backgroundColor: 'var(--app-border-default)' }}
-          />
+          <div className="w-12 h-1 rounded-full bg-[var(--app-border-default)]" />
         </div>
-
-        {/* Content */}
         <div className="px-4 pb-4">{children}</div>
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }
 

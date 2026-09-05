@@ -136,7 +136,7 @@ const OVERLAYS: OverlayCase[] = [
     hasAriaModal: true,
     escOwns: false,
     escapeCloses: true,
-    trapsFocus: false,
+    trapsFocus: true,
   },
   {
     name: 'AddToLibraryDialog',
