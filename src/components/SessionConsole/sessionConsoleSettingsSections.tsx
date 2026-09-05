@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
 import ToggleSwitch from '../ToggleSwitch';
 import { DiscordSetupHelp } from './DiscordSetupHelp';
 import { getStorage } from '../../services/storage';
@@ -40,7 +43,7 @@ export function SessionConsoleStageFields(): JSX.Element {
         style={{ color: 'var(--app-text-secondary)' }}
       >
         Title
-        <input
+        <Input
           value={catalog.stage.title}
           onChange={(event) =>
             updateSessionConsole({
@@ -48,7 +51,7 @@ export function SessionConsoleStageFields(): JSX.Element {
               patch: { title: event.target.value },
             })
           }
-          className="sidebar-input mt-2 w-full rounded px-3 py-2 text-sm"
+          className="mt-2 w-full rounded px-3 py-2 text-sm"
         />
       </label>
       <label
@@ -56,7 +59,7 @@ export function SessionConsoleStageFields(): JSX.Element {
         style={{ color: 'var(--app-text-secondary)' }}
       >
         Subtitle
-        <input
+        <Input
           value={catalog.stage.subtitle}
           onChange={(event) =>
             updateSessionConsole({
@@ -64,7 +67,7 @@ export function SessionConsoleStageFields(): JSX.Element {
               patch: { subtitle: event.target.value },
             })
           }
-          className="sidebar-input mt-2 w-full rounded px-3 py-2 text-sm"
+          className="mt-2 w-full rounded px-3 py-2 text-sm"
         />
       </label>
       <ToggleSwitch
@@ -219,27 +222,30 @@ export function SessionConsolePackFields(): JSX.Element {
       </button>
       {advancedOpen && (
         <div className="space-y-2">
-          <button
+          <Button
             type="button"
-            className="btn btn-secondary w-full py-2 text-sm"
+            variant="ghost"
+            className="w-full py-2 text-sm"
             onClick={handleImportReplace}
           >
             Import replace
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn btn-secondary w-full py-2 text-sm"
+            variant="ghost"
+            className="w-full py-2 text-sm"
             onClick={handleImportMerge}
           >
             Import merge
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn btn-secondary w-full py-2 text-sm"
+            variant="ghost"
+            className="w-full py-2 text-sm"
             onClick={handleExport}
           >
             Export pack
-          </button>
+          </Button>
           {importSummary && (
             <p className="text-xs" style={{ color: 'var(--app-text-secondary)' }}>
               {importSummary}

@@ -2,6 +2,9 @@ import { useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEve
 
 import { RiAddLine } from '@remixicon/react';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
 import { ImageSetBoard } from './ImageSetBoard';
 import { TrackGroupList } from './TrackGroupList';
 import { useGameStore } from '../../store/gameStore';
@@ -79,14 +82,14 @@ export function SessionConsoleBoard({
         </p>
       )}
 
-      <input
+      <Input
         aria-label="Paste YouTube URL"
         placeholder="Paste a YouTube link"
         value={youtubeDraft}
         onChange={(event) => setYoutubeDraft(event.target.value)}
         onPaste={handleYoutubePaste}
         onKeyDown={handleYoutubeKeyDown}
-        className="sidebar-input w-full rounded px-2 py-1 text-sm"
+        className="w-full rounded px-2 py-1 text-sm"
       />
 
       <input
@@ -108,27 +111,30 @@ export function SessionConsoleBoard({
         }}
       />
       <div className="flex flex-wrap gap-1">
-        <button
+        <Button
           type="button"
-          className="btn btn-secondary flex-1 py-1 text-xs flex items-center justify-center gap-1"
+          variant="ghost"
+          className="flex-1 py-1 text-xs flex items-center justify-center gap-1"
           onClick={() => imageInputRef.current?.click()}
         >
           <RiAddLine className="w-4 h-4" /> Add from folder
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-ghost py-1 text-xs"
+          variant="ghost"
+          className="py-1 text-xs"
           onClick={() => addNewImageSet(useGameStore.getState())}
         >
           New plate set
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-ghost py-1 text-xs"
+          variant="ghost"
+          className="py-1 text-xs"
           onClick={() => addNewTrackGroup(useGameStore.getState())}
         >
           New track group
-        </button>
+        </Button>
       </div>
 
       {catalog.imageSets.map((set) => (
