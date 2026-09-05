@@ -1,13 +1,11 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
-import { Agentation } from 'agentation';
 import { useShallow } from 'zustand/shallow';
 
 import { AboutModal } from './components/AboutModal';
 import CommandPalette from './components/AssetLibrary/CommandPalette';
 import AutoSaveManager from './components/AutoSaveManager';
 import ConfirmDialog from './components/ConfirmDialog';
-import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
 import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog';
 import { HomeScreen } from './components/HomeScreen';
 import { LoadingOverlay } from './components/LoadingOverlay';
@@ -41,6 +39,19 @@ const WorldStage = lazy(async () => {
   const module = await import('./components/SessionConsole/WorldStage');
   return { default: module.WorldStage };
 });
+
+const DesignSystemPlayground = lazy(async () => {
+  const module = await import('./components/DesignSystemPlayground/DesignSystemPlayground');
+  return { default: module.DesignSystemPlayground };
+});
+
+// Dev-only feedback toolbar. The ternary lets the production build drop the import entirely.
+const Agentation = import.meta.env.DEV
+  ? lazy(async () => {
+      const module = await import('agentation');
+      return { default: module.Agentation };
+    })
+  : (): null => null;
 
 /**
  * App is the root component for Graphium's dual-window architecture
@@ -421,8 +432,14 @@ function App(): React.JSX.Element {
   if (isDesignSystemPlayground) {
     return (
       <>
-        <DesignSystemPlayground />
-        {import.meta.env.DEV && <Agentation />}
+        <Suspense fallback={null}>
+          <DesignSystemPlayground />
+        </Suspense>
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            <Agentation />
+          </Suspense>
+        )}
       </>
     );
   }
@@ -462,7 +479,11 @@ function App(): React.JSX.Element {
 
         {/* Home/Splash Screen */}
         <HomeScreen onStartEditor={handleStartEditor} />
-        {import.meta.env.DEV && <Agentation />}
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            <Agentation />
+          </Suspense>
+        )}
       </>
     );
   }
@@ -676,7 +697,11 @@ function App(): React.JSX.Element {
           />
         )}
       </div>
-      {import.meta.env.DEV && <Agentation />}
+      {import.meta.env.DEV && (
+        <Suspense fallback={null}>
+          <Agentation />
+        </Suspense>
+      )}
     </div>
   );
 }
