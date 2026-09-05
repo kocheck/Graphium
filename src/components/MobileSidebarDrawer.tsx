@@ -9,7 +9,6 @@
  * - Semi-transparent backdrop
  * - Close on backdrop click
  * - 85% width on mobile (leaving edge visible for context)
- * - Escape key to close
  * - Proper focus management
  *
  * @param isOpen - Controls drawer visibility
@@ -17,7 +16,7 @@
  * @param children - Sidebar content to render inside drawer
  */
 
-import { useEffect, useRef } from 'react';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 interface MobileSidebarDrawerProps {
   isOpen: boolean;
@@ -30,62 +29,30 @@ function MobileSidebarDrawer({
   onClose,
   children,
 }: MobileSidebarDrawerProps): JSX.Element | null {
-  const drawerRef = useRef<HTMLDivElement>(null);
-
-  // Close on Escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
-
-  // Prevent body scroll when drawer is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  // Don't render anything if not open (for performance)
   if (!isOpen) {
     return null;
   }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
-        onClick={(e) => {
-          e.stopPropagation();
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
           onClose();
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Drawer */}
-      <div
-        ref={drawerRef}
-        className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-xs transform transition-transform duration-300 ease-in-out"
-        role="dialog"
-        aria-modal="true"
+        }
+      }}
+    >
+      <SheetContent
+        side="left"
+        className="w-[85vw] max-w-xs p-0"
+        ownsEscape={false}
         aria-label="Navigation menu"
         data-testid="sheet-mobile-sidebar-root"
       >
+        <SheetTitle className="sr-only">Navigation menu</SheetTitle>
         {children}
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }
 

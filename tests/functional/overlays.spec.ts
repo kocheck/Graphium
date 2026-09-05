@@ -124,7 +124,7 @@ const OVERLAYS: OverlayCase[] = [
     hasAriaModal: true,
     escOwns: false,
     escapeCloses: true,
-    trapsFocus: false,
+    trapsFocus: true,
   },
   // Not openable from a fresh campaign without a token, a library item, an image or a track.
   {
