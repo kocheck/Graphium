@@ -21,6 +21,7 @@
 - **Grounded at**: `e8cc678` (citations verified at d3d3642)
 - **Grounded at (PR 1)**: `f53ef0a`
 - **Grounded at (PR 2)**: `071e7d9`
+- **Grounded at (PR 3)**: `3631972`
 
 ## Drift check
 
