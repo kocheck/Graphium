@@ -14,23 +14,23 @@ should not improvise. When a step is unclear, the correct action is always to ST
 
 ## 1. Glossary
 
-| Term                     | Meaning                                                                                                                                                                                                                |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Architect View**       | The DM's full control window: home screen, editor, toolbar, sidebar, dialogs. Rendered when the URL has no `?type=world`.                                                                                              |
-| **World View**           | The player-facing projection window: canvas only, no DM chrome. Rendered when the URL has `?type=world`. In the web build it is `http://localhost:5173/?type=world`. It only shows content when an Architect tab in the same browser is broadcasting (BroadcastChannel). |
-| **Playground**           | The Design System Playground at `/design-system` (`src/components/DesignSystemPlayground/`). The place every new primitive is rendered and screenshotted. Not reachable in the packaged Electron app.                     |
-| **Stress fixture**       | 200 tokens and no map, loaded when the URL has `?stress=1` (`src/utils/stressFixture.ts`). Also loadable from a button in the Resource Monitor.                                                                          |
-| **Resource Monitor**     | `src/components/ResourceMonitor.tsx`. In Electron it is the **View → Performance Monitor** menu item (`Cmd/Ctrl+Shift+M`).                                                                                             |
-| **`data-esc-owns`**      | An attribute (`data-esc-owns="true"`) on an open overlay's content element. While any element carrying it is in the DOM, the global Escape key does **not** stop Session Console audio. Drop it from a dialog and Escape kills the DM's music. |
-| **Session Console**      | The audio/ambience panel inside the sidebar (`src/components/SessionConsole/`).                                                                                                                                       |
-| **Primitive**            | A component in `src/components/ui/` (shadcn-generated, Radix-based). Not a feature component.                                                                                                                         |
-| **Bridge**               | The second `@theme inline` block in `src/index.css` (added by plan 002) whose `--color-*` declarations define shadcn's token names (`--color-primary`, …) in terms of Graphium's `--app-*` variables. Plan 000's alias block is the first `@theme inline` block; there are never more than these two `@theme` blocks. |
-| **Adapter**              | A thin existing component (`Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx`) whose internals are replaced by a primitive while its props API stays unchanged.                                              |
-| **Tranche**              | A group of primitives added and committed together in plan 003.                                                                                                                                                       |
-| **Surface**              | One of the named screens the test helpers can navigate to: `home`, `editor`, `editor-mobile`, `confirm-dialog`, `world`, `world-dialog`, `design-system`. Defined in `tests/helpers/surfaces.ts` after plan 000.       |
-| **Gate**                 | A command whose exit code decides whether a step is done. See section 4.                                                                                                                                              |
-| **Grounded at**          | The commit a plan's file/line citations were checked against. See section 5.                                                                                                                                          |
-| **Kyle**                 | The repository owner and the only person who makes design and product decisions. You cannot talk to Kyle during a run. See section 9.                                                                                 |
+| Term                 | Meaning                                                                                                                                                                                                                                                                                                               |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Architect View**   | The DM's full control window: home screen, editor, toolbar, sidebar, dialogs. Rendered when the URL has no `?type=world`.                                                                                                                                                                                             |
+| **World View**       | The player-facing projection window: canvas only, no DM chrome. Rendered when the URL has `?type=world`. In the web build it is `http://localhost:5173/?type=world`. It only shows content when an Architect tab in the same browser is broadcasting (BroadcastChannel).                                              |
+| **Playground**       | The Design System Playground at `/design-system` (`src/components/DesignSystemPlayground/`). The place every new primitive is rendered and screenshotted. Not reachable in the packaged Electron app.                                                                                                                 |
+| **Stress fixture**   | 200 tokens and no map, loaded when the URL has `?stress=1` (`src/utils/stressFixture.ts`). Also loadable from a button in the Resource Monitor.                                                                                                                                                                       |
+| **Resource Monitor** | `src/components/ResourceMonitor.tsx`. In Electron it is the **View → Performance Monitor** menu item (`Cmd/Ctrl+Shift+M`).                                                                                                                                                                                            |
+| **`data-esc-owns`**  | An attribute (`data-esc-owns="true"`) on an open overlay's content element. While any element carrying it is in the DOM, the global Escape key does **not** stop Session Console audio. Drop it from a dialog and Escape kills the DM's music.                                                                        |
+| **Session Console**  | The audio/ambience panel inside the sidebar (`src/components/SessionConsole/`).                                                                                                                                                                                                                                       |
+| **Primitive**        | A component in `src/components/ui/` (shadcn-generated, Radix-based). Not a feature component.                                                                                                                                                                                                                         |
+| **Bridge**           | The second `@theme inline` block in `src/index.css` (added by plan 002) whose `--color-*` declarations define shadcn's token names (`--color-primary`, …) in terms of Graphium's `--app-*` variables. Plan 000's alias block is the first `@theme inline` block; there are never more than these two `@theme` blocks. |
+| **Adapter**          | A thin existing component (`Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx`) whose internals are replaced by a primitive while its props API stays unchanged.                                                                                                                                              |
+| **Tranche**          | A group of primitives added and committed together in plan 003.                                                                                                                                                                                                                                                       |
+| **Surface**          | One of the named screens the test helpers can navigate to: `home`, `editor`, `editor-mobile`, `confirm-dialog`, `world`, `world-dialog`, `design-system`. Defined in `tests/helpers/surfaces.ts` after plan 000.                                                                                                      |
+| **Gate**             | A command whose exit code decides whether a step is done. See section 4.                                                                                                                                                                                                                                              |
+| **Grounded at**      | The commit a plan's file/line citations were checked against. See section 5.                                                                                                                                                                                                                                          |
+| **Kyle**             | The repository owner and the only person who makes design and product decisions. You cannot talk to Kyle during a run. See section 9.                                                                                                                                                                                 |
 
 ## 2. What you may and may not do
 
@@ -46,7 +46,7 @@ should not improvise. When a step is unclear, the correct action is always to ST
 **Forbidden, always**
 
 - `git push --force`, `git rebase` of shared history, `git commit --no-verify`, `git
-  commit --amend` on a pushed commit.
+commit --amend` on a pushed commit.
 - Editing `playwright.config.ts` `testIgnore`, any `test.skip` / `test.fixme`, or any
   axe `exclude()` to make a gate pass. A gate that fails is information; report it.
 - Touching any path outside your plan's **In scope** list. If a step seems to need it,
@@ -88,14 +88,14 @@ git branch --show-current            # must be the branch your plan names
 Plan 000 adds these scripts to `package.json`. Use them by name; do not paste their
 contents.
 
-| Script                     | Runs                                                                                          | When                                                |
-| -------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `npm run verify:static`    | `lint:strict`, `type-check`, `format:check`, `test:run`                                       | After every step                                    |
-| `npm run verify:web`       | `build:web`, then Playwright `Web-Chromium` project, then `test:a11y`                         | After every step that touches `src/` or `tests/`    |
-| `npm run verify:electron`  | `build:electron`, then Playwright `Electron-App` under `xvfb-run -a`                          | Where the plan says so (it is slow)                 |
-| `npm run verify`           | All three, in that order                                                                      | Before every push                                   |
-| `bash scripts/plan-lint.sh plans/NNN-*.md` | Structural lint of a plan file (eight fields per step, mechanical Check on its first line, no `‹…›` after the first step). Created by plan 006a Step 4; any plan may run it. | Before editing a plan; before opening a PR |
-| `SHOTS_OUT=D npm run shots` | Screenshots every surface in both themes into directory `D` (Playwright cannot take custom flags, so the output directory is an environment variable) | Where the plan says so |
+| Script                                     | Runs                                                                                                                                                                         | When                                             |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `npm run verify:static`                    | `lint:strict`, `type-check`, `format:check`, `test:run`                                                                                                                      | After every step                                 |
+| `npm run verify:web`                       | `build:web`, then Playwright `Web-Chromium` project, then `test:a11y`                                                                                                        | After every step that touches `src/` or `tests/` |
+| `npm run verify:electron`                  | `build:electron`, then Playwright `Electron-App` under `xvfb-run -a`                                                                                                         | Where the plan says so (it is slow)              |
+| `npm run verify`                           | All three, in that order                                                                                                                                                     | Before every push                                |
+| `bash scripts/plan-lint.sh plans/NNN-*.md` | Structural lint of a plan file (eight fields per step, mechanical Check on its first line, no `‹…›` after the first step). Created by plan 006a Step 4; any plan may run it. | Before editing a plan; before opening a PR       |
+| `SHOTS_OUT=D npm run shots`                | Screenshots every surface in both themes into directory `D` (Playwright cannot take custom flags, so the output directory is an environment variable)                        | Where the plan says so                           |
 
 `verify:web` and `shots` run with `CI=1`, so Playwright serves the **built** output on port 4173
 (`preview:web`), matching CI; `shots` builds first. Running a single spec by hand therefore needs
@@ -232,23 +232,23 @@ change is acceptable). You cannot ask Kyle during a run. The protocol:
 
 Decisions already made on 2026-09-04 (do not re-ask):
 
-| Topic                                       | Decision                                                                                    |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `PreferencesDialog.tsx`                     | Delete it (plan 000). It has zero importers. Git history keeps it.                          |
-| Web deploy on merge to `main`               | Pin `deploy-web.yml` to manual dispatch for the program (plan 000); restore in plan 006b.   |
-| Executor environment                        | Headless only. Every visual check is a Playwright screenshot Kyle reviews in the PR.        |
-| Ignored functional specs                    | Delete the nine that need UI that does not exist plus `campaign-workflow.spec.ts` (8 of 9 tests skipped); keep `door-sync` and `dm-world-sync`; rewrite `visual.spec.ts` on the surface helper; add small smoke specs (plan 000). |
-| Design brief for plan 006                   | Written: `docs/planning/ui-redesign-brief.md`. Plan 006 executes against it.               |
-| Sign-off mechanism                          | Decision files (this section) plus PR review.                                               |
-| `ConfirmDialog` initial focus               | Cancel (the safe action on a destructive dialog).                                           |
-| Tooltip adapter                             | Keep the `inline-flex` wrapper; accept opening on focus and edge flipping as improvements.  |
-| Mobile sheets and `data-esc-owns`           | `MobileSidebarDrawer` and `MobileBottomSheet` do **not** claim Escape (matches existing tests). |
-| Toolbar extraction                          | Plan 004 Step 10 extracts `src/components/Toolbar.tsx`; plan 005 depends on it.             |
-| Toast                                       | Keep `src/components/Toast.tsx`; do not add `sonner`.                                       |
-| `command` palette                           | Out of scope for the whole program.                                                         |
-| Reduced motion                              | The `* { transition: none !important }` rule in `theme.css` stays until plan 006b Step 6; 006a only adds token zeroing beside it. |
-| New Radix scales for 006 directions         | `tomato`, `orange`, `sand` are imported in `theme.css` with a `[data-theme='dark']` copy of each (006a Step 2a). |
-| `docs/planning/ui-redesign-ideas.md`        | Created by whichever of 006a Step 1 or 004 Step 14 runs first; the other appends under its own heading. |
+| Topic                                | Decision                                                                                                                                                                                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PreferencesDialog.tsx`              | Delete it (plan 000). It has zero importers. Git history keeps it.                                                                                                                                                                |
+| Web deploy on merge to `main`        | Pin `deploy-web.yml` to manual dispatch for the program (plan 000); restore in plan 006b.                                                                                                                                         |
+| Executor environment                 | Headless only. Every visual check is a Playwright screenshot Kyle reviews in the PR.                                                                                                                                              |
+| Ignored functional specs             | Delete the nine that need UI that does not exist plus `campaign-workflow.spec.ts` (8 of 9 tests skipped); keep `door-sync` and `dm-world-sync`; rewrite `visual.spec.ts` on the surface helper; add small smoke specs (plan 000). |
+| Design brief for plan 006            | Written: `docs/planning/ui-redesign-brief.md`. Plan 006 executes against it.                                                                                                                                                      |
+| Sign-off mechanism                   | Decision files (this section) plus PR review.                                                                                                                                                                                     |
+| `ConfirmDialog` initial focus        | Cancel (the safe action on a destructive dialog).                                                                                                                                                                                 |
+| Tooltip adapter                      | Keep the `inline-flex` wrapper; accept opening on focus and edge flipping as improvements.                                                                                                                                        |
+| Mobile sheets and `data-esc-owns`    | `MobileSidebarDrawer` and `MobileBottomSheet` do **not** claim Escape (matches existing tests).                                                                                                                                   |
+| Toolbar extraction                   | Plan 004 Step 10 extracts `src/components/Toolbar.tsx`; plan 005 depends on it.                                                                                                                                                   |
+| Toast                                | Keep `src/components/Toast.tsx`; do not add `sonner`.                                                                                                                                                                             |
+| `command` palette                    | Out of scope for the whole program.                                                                                                                                                                                               |
+| Reduced motion                       | The `* { transition: none !important }` rule in `theme.css` stays until plan 006b Step 6; 006a only adds token zeroing beside it.                                                                                                 |
+| New Radix scales for 006 directions  | `tomato`, `orange`, `sand` are imported in `theme.css` with a `[data-theme='dark']` copy of each (006a Step 2a).                                                                                                                  |
+| `docs/planning/ui-redesign-ideas.md` | Created by whichever of 006a Step 1 or 004 Step 14 runs first; the other appends under its own heading.                                                                                                                           |
 
 ## 10. How to STOP
 
@@ -322,9 +322,9 @@ what changed and why it was expected>
 
 - Node 20 or newer, npm 10 or newer. CI uses Node 20.
 - `npm install` does **not** install Playwright browsers; `npx playwright install
-  chromium` does.
+chromium` does.
 - Playwright's `Web-Chromium` project starts `npm run dev:web` locally and `npm run
-  preview:web` when `CI=1`. To test the built output locally, set `CI=1`.
+preview:web` when `CI=1`. To test the built output locally, set `CI=1`.
 - The Electron project needs `npm run build:electron` first and `xvfb-run -a` on Linux.
 - `tsconfig.json` excludes `**/*.test.tsx`; only `npm run test:run` catches a broken
   test file.

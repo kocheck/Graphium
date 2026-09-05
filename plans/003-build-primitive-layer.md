@@ -15,20 +15,20 @@ git diff --stat <grounded-at>..origin/main -- src/index.css src/styles/ src/comp
 **Citation re-check** (each command must print exactly the expected number; line numbers in this
 plan are hints, the greps are authoritative):
 
-| Anchor (grep)                                                                                   | File                                                          | Expected hits |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------- |
-| `grep -c '^@theme' src/index.css`                                                               | `src/index.css`                                               | 2             |
-| `grep -c '^@custom-variant dark' src/index.css`                                                 | `src/index.css`                                               | 1             |
-| `grep -c 'overrides: \[' .eslintrc.cjs`                                                         | `.eslintrc.cjs`                                               | 1             |
-| `grep -c '^export const categories' src/components/DesignSystemPlayground/playground-registry.tsx` | `playground-registry.tsx`                                  | 1             |
-| `grep -c "from './playground-registry'" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx` | `DesignSystemPlayground.tsx`                        | 1             |
-| `grep -c 'data-esc-owns' src/components/SessionConsole/useSessionConsoleHotkeys.ts`             | `useSessionConsoleHotkeys.ts`                                 | 1             |
-| `grep -c '^\.btn-tool\.is-paused' src/styles/app.css`                                           | `src/styles/app.css` (added by plan 001)                      | 1             |
-| `grep -c -- '--app-success-solid-text' src/styles/theme.css`                                    | `src/styles/theme.css` (added by plan 001, one per theme)     | 2             |
-| `grep -c 'Extrapolated 12-primitive delta' docs/planning/shadcn-adoption-decision.md`           | decision doc (plan 002)                                       | 1             |
-| `grep -c '^export async function gotoSurface' tests/helpers/surfaces.ts`                        | `tests/helpers/surfaces.ts` (plan 000)                        | 1             |
-| `grep -c 'Mock matchMedia' src/test/setup.ts`                                                   | `src/test/setup.ts`                                           | 1             |
-| `ls src/components/ui 2>/dev/null \| wc -l`                                                     | `src/components/ui/` must not exist yet                       | 0             |
+| Anchor (grep)                                                                                             | File                                                      | Expected hits |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------- |
+| `grep -c '^@theme' src/index.css`                                                                         | `src/index.css`                                           | 2             |
+| `grep -c '^@custom-variant dark' src/index.css`                                                           | `src/index.css`                                           | 1             |
+| `grep -c 'overrides: \[' .eslintrc.cjs`                                                                   | `.eslintrc.cjs`                                           | 1             |
+| `grep -c '^export const categories' src/components/DesignSystemPlayground/playground-registry.tsx`        | `playground-registry.tsx`                                 | 1             |
+| `grep -c "from './playground-registry'" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx` | `DesignSystemPlayground.tsx`                              | 1             |
+| `grep -c 'data-esc-owns' src/components/SessionConsole/useSessionConsoleHotkeys.ts`                       | `useSessionConsoleHotkeys.ts`                             | 1             |
+| `grep -c '^\.btn-tool\.is-paused' src/styles/app.css`                                                     | `src/styles/app.css` (added by plan 001)                  | 1             |
+| `grep -c -- '--app-success-solid-text' src/styles/theme.css`                                              | `src/styles/theme.css` (added by plan 001, one per theme) | 2             |
+| `grep -c 'Extrapolated 12-primitive delta' docs/planning/shadcn-adoption-decision.md`                     | decision doc (plan 002)                                   | 1             |
+| `grep -c '^export async function gotoSurface' tests/helpers/surfaces.ts`                                  | `tests/helpers/surfaces.ts` (plan 000)                    | 1             |
+| `grep -c 'Mock matchMedia' src/test/setup.ts`                                                             | `src/test/setup.ts`                                       | 1             |
+| `ls src/components/ui 2>/dev/null \| wc -l`                                                               | `src/components/ui/` must not exist yet                   | 0             |
 
 If any row differs: STOP.
 
@@ -96,11 +96,11 @@ a playground example and automated tests. It migrates **no** existing screen; th
 
 ### The primitive roster (all required except `scroll-area`)
 
-| Tranche | Primitives                                                        | Why                                                                                   |
-| ------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| A       | `button`, `dialog`, `tooltip`, `input`, `label`                   | `.btn*` classes; eleven hand-rolled overlays; `Tooltip.tsx`; inline field styles      |
-| B       | `switch`, `select`, `slider`, `tabs`, `collapsible`, `separator`  | `ToggleSwitch.tsx`; `<select` in `MapSettingsSheet.tsx` (`grep -n '<select' src/components/MapSettingsSheet.tsx`, line 361); `.tab-button` in `AboutModal.tsx` (`grep -n 'tab-button' src/components/AboutModal.tsx`); `CollapsibleSection.tsx`; `.toolbar-divider` |
-| C       | `sheet`, `popover`, `dropdown-menu`                               | `MapSettingsSheet`/`SessionConsoleEditorSheet` are side panels; token quick-actions; context menus |
+| Tranche | Primitives                                                       | Why                                                                                                                                                                                                                                                                 |
+| ------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A       | `button`, `dialog`, `tooltip`, `input`, `label`                  | `.btn*` classes; eleven hand-rolled overlays; `Tooltip.tsx`; inline field styles                                                                                                                                                                                    |
+| B       | `switch`, `select`, `slider`, `tabs`, `collapsible`, `separator` | `ToggleSwitch.tsx`; `<select` in `MapSettingsSheet.tsx` (`grep -n '<select' src/components/MapSettingsSheet.tsx`, line 361); `.tab-button` in `AboutModal.tsx` (`grep -n 'tab-button' src/components/AboutModal.tsx`); `CollapsibleSection.tsx`; `.toolbar-divider` |
+| C       | `sheet`, `popover`, `dropdown-menu`                              | `MapSettingsSheet`/`SessionConsoleEditorSheet` are side panels; token quick-actions; context menus                                                                                                                                                                  |
 
 **Deferred**: `scroll-area` (recorded in `ui/README.md`, Step 9). **Not primitives here**: toast
 (keep `Toast.tsx`, do not add `sonner`; CONVENTIONS §9) and `command` (out of scope for the
@@ -110,12 +110,12 @@ program; CONVENTIONS §9).
 
 Gates: `plans/CONVENTIONS.md` §4.
 
-| Purpose                     | Command                                                     | Expected                       |
-| --------------------------- | ----------------------------------------------------------- | ------------------------------ |
-| Generate a primitive        | `npx shadcn@1.1.23 add <name> -y` (version pinned by plan 002) | exit 0, `src/components/ui/<name>.tsx` |
-| Run one vitest file         | `npx vitest run src/components/ui/<file>`                   | exit 0                         |
-| Run one Playwright spec     | `npm run build:web && CI=1 npx playwright test tests/<file> --project=Web-Chromium` | exit 0 |
-| Screenshot set              | `SHOTS_OUT=docs/planning/screenshots/003-final npm run shots` | exit 0                       |
+| Purpose                 | Command                                                                             | Expected                               |
+| ----------------------- | ----------------------------------------------------------------------------------- | -------------------------------------- |
+| Generate a primitive    | `npx shadcn@1.1.23 add <name> -y` (version pinned by plan 002)                      | exit 0, `src/components/ui/<name>.tsx` |
+| Run one vitest file     | `npx vitest run src/components/ui/<file>`                                           | exit 0                                 |
+| Run one Playwright spec | `npm run build:web && CI=1 npx playwright test tests/<file> --project=Web-Chromium` | exit 0                                 |
+| Screenshot set          | `SHOTS_OUT=docs/planning/screenshots/003-final npm run shots`                       | exit 0                                 |
 
 ## Scope
 
@@ -253,14 +253,18 @@ in Step 1, STOP with the rule name. Otherwise fix once and retry.
    `export const categories` → `export const legacyCategories`,
    `export const componentExamples` → `export const legacyExamples`. Change nothing else.
 3. Create the four tranche files with this exact content (each will be filled in later steps):
+
    ```ts
    import type { ComponentExample } from '../types';
 
    export const buttonExamples: ComponentExample[] = [];
    ```
+
    (`overlays.tsx` exports `overlayExamples`, `forms.tsx` exports `formExamples`, `layout.tsx`
    exports `layoutExamples`.)
+
 4. Create `registry/index.ts`:
+
    ```ts
    import type { ComponentCategory, ComponentExample } from '../types';
    import { buttonExamples } from './buttons';
@@ -272,9 +276,21 @@ in Step 1, STOP with the rule name. Otherwise fix once and retry.
    /** New categories for src/components/ui primitives. Legacy categories stay first. */
    export const categories: ComponentCategory[] = [
      ...legacyCategories,
-     { id: 'overlay', name: 'Overlays (ui)', description: 'Dialog, sheet, popover, dropdown menu, tooltip' },
-     { id: 'form', name: 'Form controls (ui)', description: 'Input, label, switch, select, slider' },
-     { id: 'layout', name: 'Layout (ui)', description: 'Tabs, collapsible, separator, theme bridge probe' },
+     {
+       id: 'overlay',
+       name: 'Overlays (ui)',
+       description: 'Dialog, sheet, popover, dropdown menu, tooltip',
+     },
+     {
+       id: 'form',
+       name: 'Form controls (ui)',
+       description: 'Input, label, switch, select, slider',
+     },
+     {
+       id: 'layout',
+       name: 'Layout (ui)',
+       description: 'Tabs, collapsible, separator, theme bridge probe',
+     },
    ];
 
    export const componentExamples: ComponentExample[] = [
@@ -285,6 +301,7 @@ in Step 1, STOP with the rule name. Otherwise fix once and retry.
      ...layoutExamples,
    ];
    ```
+
 5. Create the new `playground-registry.tsx` with exactly one line:
    `export { categories, componentExamples } from './registry';`
 6. In `types.ts`, extend the `category` union with `| 'overlay' | 'form' | 'layout'` after
@@ -446,14 +463,30 @@ item 2 or 5 is wrong; fix once and retry. Otherwise STOP.
    function ToolbarButtonsExample(): JSX.Element {
      return (
        <div className="flex flex-wrap items-center gap-2">
-         <Button variant="tool" size="tool">Tool</Button>
-         <Button variant="tool" size="tool" active>Tool active</Button>
-         <Button variant="tool" size="tool" state="paused">Paused</Button>
-         <Button variant="tool" size="tool" state="running">Running</Button>
-         <Button variant="mode" size="mode">Mode</Button>
-         <Button variant="mode" size="mode" active>Mode active</Button>
-         <Button variant="broadcast" size="mode">Broadcast</Button>
-         <Button variant="broadcast" size="mode" active>Broadcasting</Button>
+         <Button variant="tool" size="tool">
+           Tool
+         </Button>
+         <Button variant="tool" size="tool" active>
+           Tool active
+         </Button>
+         <Button variant="tool" size="tool" state="paused">
+           Paused
+         </Button>
+         <Button variant="tool" size="tool" state="running">
+           Running
+         </Button>
+         <Button variant="mode" size="mode">
+           Mode
+         </Button>
+         <Button variant="mode" size="mode" active>
+           Mode active
+         </Button>
+         <Button variant="broadcast" size="mode">
+           Broadcast
+         </Button>
+         <Button variant="broadcast" size="mode" active>
+           Broadcasting
+         </Button>
        </div>
      );
    }
@@ -463,7 +496,8 @@ item 2 or 5 is wrong; fix once and retry. Otherwise STOP.
        id: 'ui-button',
        name: 'Button (ui)',
        category: 'button',
-       description: 'shadcn Button: default (.btn-primary), secondary (.btn-default), ghost (.btn), destructive, outline, link',
+       description:
+         'shadcn Button: default (.btn-primary), secondary (.btn-default), ghost (.btn), destructive, outline, link',
        component: (
          <div className="flex flex-wrap items-center gap-2">
            <Button>Default</Button>
@@ -476,7 +510,7 @@ item 2 or 5 is wrong; fix once and retry. Otherwise STOP.
          </div>
        ),
        code: `import { Button } from '@/components/ui/button';
-
+   
    <Button>Default</Button>
    <Button variant="secondary">Secondary</Button>`,
      },
@@ -484,7 +518,8 @@ item 2 or 5 is wrong; fix once and retry. Otherwise STOP.
        id: 'ui-button-toolbar',
        name: 'Button toolbar variants (ui)',
        category: 'button',
-       description: 'tool / mode / broadcast variants with active and state, matching .btn-tool, .btn-mode, .btn-broadcast',
+       description:
+         'tool / mode / broadcast variants with active and state, matching .btn-tool, .btn-mode, .btn-broadcast',
        component: <ToolbarButtonsExample />,
        code: `<Button variant="tool" size="tool" active>Tool</Button>
    <Button variant="tool" size="tool" state="paused">Paused</Button>
@@ -544,6 +579,7 @@ once and retry.
    every other generated line. If the generated file uses `React.forwardRef` instead, make the
    same three edits inside it. `data-testid` already passes through `...props`
    (plan 004 passes `dialog-<x>-root`).
+
 3. Append to `src/test/setup.ts`, directly after the `// Mock matchMedia` block
    (`grep -n 'Mock matchMedia' src/test/setup.ts`):
 
@@ -561,6 +597,7 @@ once and retry.
    Element.prototype.releasePointerCapture = vi.fn();
    Element.prototype.scrollIntoView = vi.fn();
    ```
+
 4. Replace `registry/overlays.tsx` with (sheet/popover/dropdown examples are appended in Step 7):
 
    ```tsx
@@ -574,7 +611,12 @@ once and retry.
      DialogTitle,
      DialogTrigger,
    } from '@/components/ui/dialog';
-   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+   import {
+     Tooltip,
+     TooltipContent,
+     TooltipProvider,
+     TooltipTrigger,
+   } from '@/components/ui/tooltip';
 
    import type { ComponentExample } from '../types';
 
@@ -646,6 +688,7 @@ once and retry.
      },
    ];
    ```
+
 5. Replace `registry/forms.tsx` with (switch/select/slider appended in Step 6):
 
    ```tsx
@@ -679,6 +722,7 @@ once and retry.
      },
    ];
    ```
+
 6. Create `src/components/DesignSystemPlayground/registry.test.ts`:
 
    ```ts
@@ -784,7 +828,13 @@ output.
    file, alphabetical, keeping the blank line before `import type`):
 
    ```tsx
-   import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+   import {
+     Select,
+     SelectContent,
+     SelectItem,
+     SelectTrigger,
+     SelectValue,
+   } from '@/components/ui/select';
    import { Slider } from '@/components/ui/slider';
    import { Switch } from '@/components/ui/switch';
    ```
@@ -839,7 +889,11 @@ output.
 
    ```tsx
    import { Button } from '@/components/ui/button';
-   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+   import {
+     Collapsible,
+     CollapsibleContent,
+     CollapsibleTrigger,
+   } from '@/components/ui/collapsible';
    import { Separator } from '@/components/ui/separator';
    import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -939,7 +993,7 @@ fix once and retry.
    - `popover.tsx`, on `<PopoverPrimitive.Content` inside `PopoverContent`;
    - `dropdown-menu.tsx`, on `<DropdownMenuPrimitive.Content` inside `DropdownMenuContent`
      (not on `SubContent`).
-   `sheet.tsx` diff, for reference (the other two are identical in shape):
+     `sheet.tsx` diff, for reference (the other two are identical in shape):
 
    ```diff
     function SheetContent({
@@ -1078,7 +1132,12 @@ fix once and retry.
    import { describe, expect, it } from 'vitest';
 
    import { Dialog, DialogContent, DialogTitle } from './dialog';
-   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
+   import {
+     DropdownMenu,
+     DropdownMenuContent,
+     DropdownMenuItem,
+     DropdownMenuTrigger,
+   } from './dropdown-menu';
    import { Popover, PopoverContent, PopoverTrigger } from './popover';
    import { Sheet, SheetContent, SheetTitle } from './sheet';
 
@@ -1171,19 +1230,47 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
      { token: 'background', utility: 'bg-background', expected: 'bg-[var(--app-bg-base)]' },
      { token: 'foreground', utility: 'bg-foreground', expected: 'bg-[var(--app-text-primary)]' },
      { token: 'card', utility: 'bg-card', expected: 'bg-[var(--app-bg-surface)]' },
-     { token: 'card-foreground', utility: 'bg-card-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     {
+       token: 'card-foreground',
+       utility: 'bg-card-foreground',
+       expected: 'bg-[var(--app-text-primary)]',
+     },
      { token: 'popover', utility: 'bg-popover', expected: 'bg-[var(--app-bg-surface)]' },
-     { token: 'popover-foreground', utility: 'bg-popover-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     {
+       token: 'popover-foreground',
+       utility: 'bg-popover-foreground',
+       expected: 'bg-[var(--app-text-primary)]',
+     },
      { token: 'primary', utility: 'bg-primary', expected: 'bg-[var(--app-accent-solid)]' },
-     { token: 'primary-foreground', utility: 'bg-primary-foreground', expected: 'bg-[var(--app-accent-solid-text)]' },
+     {
+       token: 'primary-foreground',
+       utility: 'bg-primary-foreground',
+       expected: 'bg-[var(--app-accent-solid-text)]',
+     },
      { token: 'secondary', utility: 'bg-secondary', expected: 'bg-[var(--app-bg-active)]' },
-     { token: 'secondary-foreground', utility: 'bg-secondary-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     {
+       token: 'secondary-foreground',
+       utility: 'bg-secondary-foreground',
+       expected: 'bg-[var(--app-text-primary)]',
+     },
      { token: 'muted', utility: 'bg-muted', expected: 'bg-[var(--app-bg-subtle)]' },
-     { token: 'muted-foreground', utility: 'bg-muted-foreground', expected: 'bg-[var(--app-text-secondary)]' },
+     {
+       token: 'muted-foreground',
+       utility: 'bg-muted-foreground',
+       expected: 'bg-[var(--app-text-secondary)]',
+     },
      { token: 'accent', utility: 'bg-accent', expected: 'bg-[var(--app-bg-hover)]' },
-     { token: 'accent-foreground', utility: 'bg-accent-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     {
+       token: 'accent-foreground',
+       utility: 'bg-accent-foreground',
+       expected: 'bg-[var(--app-text-primary)]',
+     },
      { token: 'destructive', utility: 'bg-destructive', expected: 'bg-[var(--app-error-solid)]' },
-     { token: 'destructive-foreground', utility: 'bg-destructive-foreground', expected: 'bg-[var(--app-accent-solid-text)]' },
+     {
+       token: 'destructive-foreground',
+       utility: 'bg-destructive-foreground',
+       expected: 'bg-[var(--app-accent-solid-text)]',
+     },
      { token: 'border', utility: 'bg-border', expected: 'bg-[var(--app-border-subtle)]' },
      { token: 'input', utility: 'bg-input', expected: 'bg-[var(--app-border-default)]' },
      { token: 'ring', utility: 'bg-ring', expected: 'bg-[var(--app-accent-solid)]' },
@@ -1194,11 +1281,20 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
        <div className="flex flex-wrap gap-2" data-testid="bridge-probe">
          {BRIDGE_PROBES.map((p) => (
            <div key={p.token} className="flex items-center gap-1" title={p.token}>
-             <div data-testid={`bridge-swatch-${p.token}`} className={`size-4 rounded-sm ${p.utility}`} />
-             <div data-testid={`bridge-expected-${p.token}`} className={`size-4 rounded-sm ${p.expected}`} />
+             <div
+               data-testid={`bridge-swatch-${p.token}`}
+               className={`size-4 rounded-sm ${p.utility}`}
+             />
+             <div
+               data-testid={`bridge-expected-${p.token}`}
+               className={`size-4 rounded-sm ${p.expected}`}
+             />
            </div>
          ))}
-         <div data-testid="bridge-swatch-none" className="size-4 bg-[var(--color-does-not-exist)]" />
+         <div
+           data-testid="bridge-swatch-none"
+           className="size-4 bg-[var(--color-does-not-exist)]"
+         />
          <div
            data-testid="bridge-dark-probe"
            className="size-4 bg-[var(--app-bg-base)] dark:bg-[var(--app-accent-solid)]"
@@ -1236,7 +1332,11 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
      /\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange)(-[0-9]{2,3})?\b/g;
    const LITERAL_COLOUR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\boklch\(/g;
 
-   const sources = import.meta.glob<string>('./*.tsx', { query: '?raw', import: 'default', eager: true });
+   const sources = import.meta.glob<string>('./*.tsx', {
+     query: '?raw',
+     import: 'default',
+     eager: true,
+   });
 
    describe('src/components/ui purity', () => {
      const files = Object.entries(sources).filter(([file]) => !file.endsWith('.test.tsx'));
@@ -1267,7 +1367,12 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
    import { Button } from './button';
    import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './collapsible';
    import { Dialog, DialogContent, DialogDescription, DialogTitle } from './dialog';
-   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
+   import {
+     DropdownMenu,
+     DropdownMenuContent,
+     DropdownMenuItem,
+     DropdownMenuTrigger,
+   } from './dropdown-menu';
    import { Input } from './input';
    import { Label } from './label';
    import { Popover, PopoverContent, PopoverTrigger } from './popover';
@@ -1393,17 +1498,20 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
      ],
    ];
 
-   describe.each(cases)('%s has no axe violations (WCAG 2.1 AA, contrast excluded)', (_name, element) => {
-     it('passes', async () => {
-       const view = render(element);
-       const results = await axe.run(document.body, {
-         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
-         rules: { 'color-contrast': { enabled: false } },
+   describe.each(cases)(
+     '%s has no axe violations (WCAG 2.1 AA, contrast excluded)',
+     (_name, element) => {
+       it('passes', async () => {
+         const view = render(element);
+         const results = await axe.run(document.body, {
+           runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+           rules: { 'color-contrast': { enabled: false } },
+         });
+         expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+         view.unmount();
        });
-       expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
-       view.unmount();
-     });
-   });
+     },
+   );
    ```
 
 4. Create `src/components/ui/keyboard.test.tsx` (`@testing-library/user-event` is installed:
@@ -1416,7 +1524,12 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
 
    import { Button } from './button';
    import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from './dialog';
-   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
+   import {
+     DropdownMenu,
+     DropdownMenuContent,
+     DropdownMenuItem,
+     DropdownMenuTrigger,
+   } from './dropdown-menu';
    import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 
    function DialogFixture(): JSX.Element {
@@ -1511,10 +1624,25 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
    import { gotoSurface } from './helpers/surfaces';
 
    const TOKENS = [
-     'background', 'foreground', 'card', 'card-foreground', 'popover', 'popover-foreground',
-     'primary', 'primary-foreground', 'secondary', 'secondary-foreground', 'muted',
-     'muted-foreground', 'accent', 'accent-foreground', 'destructive', 'destructive-foreground',
-     'border', 'input', 'ring',
+     'background',
+     'foreground',
+     'card',
+     'card-foreground',
+     'popover',
+     'popover-foreground',
+     'primary',
+     'primary-foreground',
+     'secondary',
+     'secondary-foreground',
+     'muted',
+     'muted-foreground',
+     'accent',
+     'accent-foreground',
+     'destructive',
+     'destructive-foreground',
+     'border',
+     'input',
+     'ring',
    ] as const;
    const TRANSPARENT = 'rgba(0, 0, 0, 0)';
 
@@ -1553,7 +1681,9 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
    }
 
    for (const name of OVERLAYS) {
-     test(`${name}: opens, claims Escape, re-themes while open, closes, restores focus`, async ({ page }) => {
+     test(`${name}: opens, claims Escape, re-themes while open, closes, restores focus`, async ({
+       page,
+     }) => {
        await gotoSurface(page, 'design-system', 'light');
        const trigger = page.getByTestId(`playground-open-${name}`);
        await trigger.scrollIntoViewIfNeeded();
@@ -1591,9 +1721,9 @@ item 3 was not applied; fix once and retry. Otherwise STOP with the vitest outpu
      expect(await bgOf(page, 'bridge-dark-probe')).toBe(await bgOf(page, 'bridge-dark-ref-light'));
 
      await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
-     await expect.poll(() => bgOf(page, 'bridge-dark-probe')).toBe(
-       await bgOf(page, 'bridge-dark-ref-dark'),
-     );
+     await expect
+       .poll(() => bgOf(page, 'bridge-dark-probe'))
+       .toBe(await bgOf(page, 'bridge-dark-ref-dark'));
    });
    ```
 
@@ -1642,7 +1772,7 @@ violation id and primitive; do not disable the rule.
      6. `npm run verify:static && npm run verify:web` → exit 0 (`registry.test.ts` fails until 4
         is done; `purity.test.ts` fails on any palette class).
    - `## Add a Graphium variant` — the CVA pattern, using `button.tsx` `tool`/`mode`/`broadcast`
-     + `active` + `state` as the worked example (copy the `compoundVariants` block).
+     - `active` + `state` as the worked example (copy the `compoundVariants` block).
    - `## Button class mapping (plan 004)` — the table from "Context the executor needs".
    - `## ESLint rules relaxed here` — the four rules and why, plus `no-restricted-imports`.
    - `## Decisions` — toast: keep `Toast.tsx`, no `sonner` (`gameStore` models one toast on a

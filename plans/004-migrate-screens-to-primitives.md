@@ -34,18 +34,18 @@ previous PR, recorded under **Handoff** in `plans/reports/004-pr<k-1>.md`.
 
 **Citation re-check** (line numbers are hints at d3d3642; the grep is authoritative):
 
-| Anchor (grep)                                                                                  | File                                     | Expected hits |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------- |
-| `grep -n 'className="toolbar' src/App.tsx`                                                     | `src/App.tsx`                            | 1 (line 556)  |
-| `grep -n "e.key === 'Escape' && is" src/App.tsx`                                               | `src/App.tsx`                            | 2 (271, 277)  |
-| `grep -n "e.key === 'Enter'" src/components/ConfirmDialog.tsx`                                 | `src/components/ConfirmDialog.tsx`       | 1 (line 49)   |
-| `grep -rc 'data-esc-owns="true"' src/components --include=*.tsx \| grep -v ':0' \| wc -l`      | `src/components/**`                      | 8 (see cards) |
-| `grep -c 'data-esc-owns' src/components/ui/dialog.tsx src/components/ui/sheet.tsx`             | primitives                               | ≥ 1 each      |
-| `grep -c 'paused' src/components/ui/button.tsx`                                                | `src/components/ui/button.tsx`           | ≥ 1           |
-| `grep -rlE 'data-testid="(dialog\|sheet)-[a-z-]+-root"' src/components \| wc -l`               | `src/components/**`                      | 13            |
-| `grep -n 'const BASELINE' src/styles/palette-classes.test.ts`                                  | `src/styles/palette-classes.test.ts`     | 1             |
-| `grep -n 'showCloseButton' src/components/ui/dialog.tsx`                                       | `src/components/ui/dialog.tsx`           | see rule below|
-| `grep -n '"@/\*"' tsconfig.json`                                                               | `tsconfig.json`                          | 1             |
+| Anchor (grep)                                                                             | File                                 | Expected hits  |
+| ----------------------------------------------------------------------------------------- | ------------------------------------ | -------------- |
+| `grep -n 'className="toolbar' src/App.tsx`                                                | `src/App.tsx`                        | 1 (line 556)   |
+| `grep -n "e.key === 'Escape' && is" src/App.tsx`                                          | `src/App.tsx`                        | 2 (271, 277)   |
+| `grep -n "e.key === 'Enter'" src/components/ConfirmDialog.tsx`                            | `src/components/ConfirmDialog.tsx`   | 1 (line 49)    |
+| `grep -rc 'data-esc-owns="true"' src/components --include=*.tsx \| grep -v ':0' \| wc -l` | `src/components/**`                  | 8 (see cards)  |
+| `grep -c 'data-esc-owns' src/components/ui/dialog.tsx src/components/ui/sheet.tsx`        | primitives                           | ≥ 1 each       |
+| `grep -c 'paused' src/components/ui/button.tsx`                                           | `src/components/ui/button.tsx`       | ≥ 1            |
+| `grep -rlE 'data-testid="(dialog\|sheet)-[a-z-]+-root"' src/components \| wc -l`          | `src/components/**`                  | 13             |
+| `grep -n 'const BASELINE' src/styles/palette-classes.test.ts`                             | `src/styles/palette-classes.test.ts` | 1              |
+| `grep -n 'showCloseButton' src/components/ui/dialog.tsx`                                  | `src/components/ui/dialog.tsx`       | see rule below |
+| `grep -n '"@/\*"' tsconfig.json`                                                          | `tsconfig.json`                      | 1              |
 
 If any row differs: STOP.
 
@@ -86,21 +86,21 @@ real value with `grep -o 'data-testid="[^"]*"' <file>` before relying on it.
 
 ### Overlays (13)
 
-| File | Lines | Primitive | Root testid | role/aria-modal today | Escape today | esc-owns today → after | Test | Palette | Inline | Mount quirk | PR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `src/components/AboutModal.tsx` | 858 | `dialog` + `tabs` | `dialog-about-root` | yes/yes | in `App.tsx` only | 1 → yes | no | 1 | 40 | 212-line `modalStyles` literal; hand-rolled focus trap; `App.tsx` Escape branch | 4 |
-| `src/components/UpdateManager.tsx` | 634 | `dialog` | `dialog-update-manager-root` | yes/yes | yes + `App.tsx` | 1 → yes | yes | 4 | 21 | opened from AboutModal's "Check for Updates"; second Escape branch in `App.tsx` | 4 |
-| `src/components/DungeonGeneratorDialog.tsx` | 217 | `dialog` | `dialog-dungeon-generator-root` | yes/yes | yes | 1 → yes | yes | 4 | 6 | store-driven (`dungeonDialog`); `autoFocus` on Generate | 4 |
-| `src/components/ConfirmDialog.tsx` | 116 | `dialog` | `dialog-confirm-root` | yes/yes | yes (+ Enter) | 1 → yes | no → new | 4 | 3 | store-driven; undefined `--app-bg/--app-border/--app-text`; renders in World View | 1 |
-| `src/components/MapSettingsSheet.tsx` | 461 | `sheet` `side="right"` | `sheet-map-settings-root` | no/no | no | 0 → yes | no | 1 | 7 | calibration needs the canvas clickable: `modal={!isCalibrating}`; 6 `.btn`, 3 legacy classes | 2 |
-| `src/components/AssetLibrary/AddToLibraryDialog.tsx` | 297 | `dialog` | `dialog-add-to-library-root` | no/no | no | 0 → yes | no | 27 | 1 | mounted by `Sidebar.tsx` and `LibraryManager.tsx`; `isMobile` → full height | 2 |
-| `src/components/ImageCropper.tsx` | 271 | `dialog` | `dialog-image-cropper-root` | no/no | no | 0 → yes | no → new | 11 | 0 | no `isOpen` prop; `CanvasManager.tsx` mount untouched; `react-easy-crop` | 2 |
-| `src/components/SessionConsole/SessionConsoleEditorSheet.tsx` | 298 | `sheet` `side="right"` | `sheet-session-console-editor-root` | yes/yes | yes | 1 → yes | no | 1 | 4 | 2 `.btn`, 3 `.sidebar-input`; uses `ToggleSwitch` | 3 |
-| `src/components/SessionConsole/SessionConsoleSettingsSheet.tsx` | 68 | `sheet` `side="right"` | `sheet-session-console-settings-root` | yes/yes | yes | 1 → yes | no | 1 | 0 | — | 3 |
-| `src/components/MobileSidebarDrawer.tsx` | 91 | `sheet` `side="left"` | `sheet-mobile-sidebar-root` | yes/yes | yes | 0 → **no** (`ownsEscape={false}`) | no | 1 | 0 | body scroll-lock effect → Radix does it | 3 |
-| `src/components/MobileBottomSheet.tsx` | 107 | `sheet` `side="bottom"` | `sheet-mobile-bottom-root` | yes/yes | yes | 0 → **no** (`ownsEscape={false}`) | no | 1 | 2 | `TokenInspector.tsx` mounts it with `isOpen` always true | 3 |
-| `src/components/AssetLibrary/LibraryManager.tsx` | 442 | `dialog` | `dialog-library-manager-root` | no/no | no | 0 → yes | no | 41 | 1 | nests `AddToLibraryDialog` and `TokenMetadataEditor` inside its content | 3 |
-| `src/components/AssetLibrary/TokenMetadataEditor.tsx` | 322 | `dialog` | `dialog-token-metadata-root` | no/no | no | 0 → yes | yes (`closest('.fixed')`) | 51 | 1 | also mounted by `CommandPalette.tsx` (untouched) | 3 |
+| File                                                            | Lines | Primitive               | Root testid                           | role/aria-modal today | Escape today      | esc-owns today → after            | Test                      | Palette | Inline | Mount quirk                                                                                  | PR  |
+| --------------------------------------------------------------- | ----- | ----------------------- | ------------------------------------- | --------------------- | ----------------- | --------------------------------- | ------------------------- | ------- | ------ | -------------------------------------------------------------------------------------------- | --- |
+| `src/components/AboutModal.tsx`                                 | 858   | `dialog` + `tabs`       | `dialog-about-root`                   | yes/yes               | in `App.tsx` only | 1 → yes                           | no                        | 1       | 40     | 212-line `modalStyles` literal; hand-rolled focus trap; `App.tsx` Escape branch              | 4   |
+| `src/components/UpdateManager.tsx`                              | 634   | `dialog`                | `dialog-update-manager-root`          | yes/yes               | yes + `App.tsx`   | 1 → yes                           | yes                       | 4       | 21     | opened from AboutModal's "Check for Updates"; second Escape branch in `App.tsx`              | 4   |
+| `src/components/DungeonGeneratorDialog.tsx`                     | 217   | `dialog`                | `dialog-dungeon-generator-root`       | yes/yes               | yes               | 1 → yes                           | yes                       | 4       | 6      | store-driven (`dungeonDialog`); `autoFocus` on Generate                                      | 4   |
+| `src/components/ConfirmDialog.tsx`                              | 116   | `dialog`                | `dialog-confirm-root`                 | yes/yes               | yes (+ Enter)     | 1 → yes                           | no → new                  | 4       | 3      | store-driven; undefined `--app-bg/--app-border/--app-text`; renders in World View            | 1   |
+| `src/components/MapSettingsSheet.tsx`                           | 461   | `sheet` `side="right"`  | `sheet-map-settings-root`             | no/no                 | no                | 0 → yes                           | no                        | 1       | 7      | calibration needs the canvas clickable: `modal={!isCalibrating}`; 6 `.btn`, 3 legacy classes | 2   |
+| `src/components/AssetLibrary/AddToLibraryDialog.tsx`            | 297   | `dialog`                | `dialog-add-to-library-root`          | no/no                 | no                | 0 → yes                           | no                        | 27      | 1      | mounted by `Sidebar.tsx` and `LibraryManager.tsx`; `isMobile` → full height                  | 2   |
+| `src/components/ImageCropper.tsx`                               | 271   | `dialog`                | `dialog-image-cropper-root`           | no/no                 | no                | 0 → yes                           | no → new                  | 11      | 0      | no `isOpen` prop; `CanvasManager.tsx` mount untouched; `react-easy-crop`                     | 2   |
+| `src/components/SessionConsole/SessionConsoleEditorSheet.tsx`   | 298   | `sheet` `side="right"`  | `sheet-session-console-editor-root`   | yes/yes               | yes               | 1 → yes                           | no                        | 1       | 4      | 2 `.btn`, 3 `.sidebar-input`; uses `ToggleSwitch`                                            | 3   |
+| `src/components/SessionConsole/SessionConsoleSettingsSheet.tsx` | 68    | `sheet` `side="right"`  | `sheet-session-console-settings-root` | yes/yes               | yes               | 1 → yes                           | no                        | 1       | 0      | —                                                                                            | 3   |
+| `src/components/MobileSidebarDrawer.tsx`                        | 91    | `sheet` `side="left"`   | `sheet-mobile-sidebar-root`           | yes/yes               | yes               | 0 → **no** (`ownsEscape={false}`) | no                        | 1       | 0      | body scroll-lock effect → Radix does it                                                      | 3   |
+| `src/components/MobileBottomSheet.tsx`                          | 107   | `sheet` `side="bottom"` | `sheet-mobile-bottom-root`            | yes/yes               | yes               | 0 → **no** (`ownsEscape={false}`) | no                        | 1       | 2      | `TokenInspector.tsx` mounts it with `isOpen` always true                                     | 3   |
+| `src/components/AssetLibrary/LibraryManager.tsx`                | 442   | `dialog`                | `dialog-library-manager-root`         | no/no                 | no                | 0 → yes                           | no                        | 41      | 1      | nests `AddToLibraryDialog` and `TokenMetadataEditor` inside its content                      | 3   |
+| `src/components/AssetLibrary/TokenMetadataEditor.tsx`           | 322   | `dialog`                | `dialog-token-metadata-root`          | no/no                 | no                | 0 → yes                           | yes (`closest('.fixed')`) | 51      | 1      | also mounted by `CommandPalette.tsx` (untouched)                                             | 3   |
 
 Esc-owns re-attach sites today: **6** (`ConfirmDialog`, `AboutModal`, `UpdateManager`,
 `DungeonGeneratorDialog`, `SessionConsoleEditorSheet`, `SessionConsoleSettingsSheet`); the other
@@ -110,13 +110,13 @@ sheets do not (CONVENTIONS §9).
 
 ### Adapters and toolbars (5)
 
-| File | Lines | Primitive | Test | Palette | Inline | Quirk | PR |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `src/components/Tooltip.tsx` | 95 | `tooltip` | no | 5 | 1 | keep the `inline-flex` wrapper; `HomeScreen.tsx` passes `offset={20}` (4 sites) | 1 |
-| `src/components/ToggleSwitch.tsx` | 107 | `switch` + `label` | no | 1 | 4 | `Math.random` id → `useId` | 1 |
-| `src/components/CollapsibleSection.tsx` | 52 | `collapsible` | no | 0 | 2 | — | 1 |
-| `src/components/MobileToolbar.tsx` | 325 | `button` | no | 1 | 14 | 10 × `min-h-[56px]` must survive; 1 colour swatch keeps `style` | 5 |
-| `src/components/Toolbar.tsx` (new, from `src/App.tsx` lines 555–702) | ~150 | `button` + `separator` | `tests/pause-button.spec.ts` | 10 in `App.tsx` at d3d3642 (2 after plan 001) | 0 | keyboard handling stays in `App.tsx` | 5 |
+| File                                                                 | Lines | Primitive              | Test                         | Palette                                       | Inline | Quirk                                                                           | PR  |
+| -------------------------------------------------------------------- | ----- | ---------------------- | ---------------------------- | --------------------------------------------- | ------ | ------------------------------------------------------------------------------- | --- |
+| `src/components/Tooltip.tsx`                                         | 95    | `tooltip`              | no                           | 5                                             | 1      | keep the `inline-flex` wrapper; `HomeScreen.tsx` passes `offset={20}` (4 sites) | 1   |
+| `src/components/ToggleSwitch.tsx`                                    | 107   | `switch` + `label`     | no                           | 1                                             | 4      | `Math.random` id → `useId`                                                      | 1   |
+| `src/components/CollapsibleSection.tsx`                              | 52    | `collapsible`          | no                           | 0                                             | 2      | —                                                                               | 1   |
+| `src/components/MobileToolbar.tsx`                                   | 325   | `button`               | no                           | 1                                             | 14     | 10 × `min-h-[56px]` must survive; 1 colour swatch keeps `style`                 | 5   |
+| `src/components/Toolbar.tsx` (new, from `src/App.tsx` lines 555–702) | ~150  | `button` + `separator` | `tests/pause-button.spec.ts` | 10 in `App.tsx` at d3d3642 (2 after plan 001) | 0      | keyboard handling stays in `App.tsx`                                            | 5   |
 
 Adapter importers (`grep -rln "from '.*ToggleSwitch'" src --include=*.tsx | grep -v test` → 4;
 same for `CollapsibleSection` → 1; `Tooltip` → 4): `MapSettingsSheet`, `SessionConsoleEditorSheet`,
@@ -125,18 +125,18 @@ same for `CollapsibleSection` → 1; `Tooltip` → 4): `MapSettingsSheet`, `Sess
 
 ### `.btn` and legacy-class consumers not already covered above (9)
 
-| File | `btn` hits | legacy hits | Test | PR |
-| --- | --- | --- | --- | --- |
-| `src/components/SessionConsole/SessionConsolePanel.tsx` | 4 | 0 | yes | 6 |
-| `src/components/SessionConsole/TrackGroupList.tsx` | 1 | 0 | no | 6 |
-| `src/components/SessionConsole/sessionConsoleSettingsSections.tsx` | 3 | 2 | no | 6 |
-| `src/components/SessionConsole/SessionConsoleBoard.tsx` | 3 | 1 | no | 6 |
-| `src/components/SessionConsole/ImageSetBoard.tsx` | 1 | 0 | no | 6 |
-| `src/components/SessionConsole/SessionConsoleMasterBar.tsx` | 7 | 0 | no | 6 |
-| `src/components/Sidebar.tsx` | 4 | 0 | yes | 6 |
-| `src/components/MapNavigator.tsx` | 1 | 0 | no | 6 |
-| `src/components/DoorControls.tsx` | 3 | 0 | no | 6 |
-| `src/components/QuickTokenSidebar.tsx` | 0 | 3 (`sidebar-token`) | yes (asserts the class) | 6 |
+| File                                                               | `btn` hits | legacy hits         | Test                    | PR  |
+| ------------------------------------------------------------------ | ---------- | ------------------- | ----------------------- | --- |
+| `src/components/SessionConsole/SessionConsolePanel.tsx`            | 4          | 0                   | yes                     | 6   |
+| `src/components/SessionConsole/TrackGroupList.tsx`                 | 1          | 0                   | no                      | 6   |
+| `src/components/SessionConsole/sessionConsoleSettingsSections.tsx` | 3          | 2                   | no                      | 6   |
+| `src/components/SessionConsole/SessionConsoleBoard.tsx`            | 3          | 1                   | no                      | 6   |
+| `src/components/SessionConsole/ImageSetBoard.tsx`                  | 1          | 0                   | no                      | 6   |
+| `src/components/SessionConsole/SessionConsoleMasterBar.tsx`        | 7          | 0                   | no                      | 6   |
+| `src/components/Sidebar.tsx`                                       | 4          | 0                   | yes                     | 6   |
+| `src/components/MapNavigator.tsx`                                  | 1          | 0                   | no                      | 6   |
+| `src/components/DoorControls.tsx`                                  | 3          | 0                   | no                      | 6   |
+| `src/components/QuickTokenSidebar.tsx`                             | 0          | 3 (`sidebar-token`) | yes (asserts the class) | 6   |
 
 ### Excluded rows
 
@@ -271,14 +271,14 @@ listens on `document`, and an event dispatched on `window` never reaches it.
 
 Gates: `plans/CONVENTIONS.md` §4.
 
-| Purpose | Command | Expected |
-| --- | --- | --- |
-| One card row | `bash scripts/migration-card.sh <file>` | one Markdown row |
-| Overlay contract only | `npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium` | exit 0 |
-| Pause button only | `npx playwright test tests/pause-button.spec.ts --project=Web-Chromium` | `2 passed` |
-| Touch targets only | `npx playwright test tests/touch-targets.spec.ts --project=Web-Chromium` | exit 0 |
-| Esc-owns protocol | `npx vitest run src/components/SessionConsole/useSessionConsoleHotkeys.test.ts src/components/SessionConsole/SessionConsolePanel.test.tsx` | all pass |
-| Built CSS bytes | `find dist-web/assets -name '*.css' \| xargs wc -c \| tail -1` | a number |
+| Purpose               | Command                                                                                                                                    | Expected         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| One card row          | `bash scripts/migration-card.sh <file>`                                                                                                    | one Markdown row |
+| Overlay contract only | `npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium`                                                             | exit 0           |
+| Pause button only     | `npx playwright test tests/pause-button.spec.ts --project=Web-Chromium`                                                                    | `2 passed`       |
+| Touch targets only    | `npx playwright test tests/touch-targets.spec.ts --project=Web-Chromium`                                                                   | exit 0           |
+| Esc-owns protocol     | `npx vitest run src/components/SessionConsole/useSessionConsoleHotkeys.test.ts src/components/SessionConsole/SessionConsolePanel.test.tsx` | all pass         |
+| Built CSS bytes       | `find dist-web/assets -name '*.css' \| xargs wc -c \| tail -1`                                                                             | a number         |
 
 ## Scope
 
@@ -307,14 +307,14 @@ Branch, commits, PR, CI and rollback: `plans/CONVENTIONS.md` §7. This plan land
 sequential PRs**, each from a fresh branch off `origin/main`, each releasable, each under ~1,500
 changed lines; revert newest-first.
 
-| PR | Branch | Steps | Report |
-| --- | --- | --- | --- |
-| 1 | `plan/004-pr1-adapters-and-confirm` | 0–3 | `plans/reports/004-pr1.md` |
-| 2 | `plan/004-pr2-no-a11y-overlays` | 4a–4c | `plans/reports/004-pr2.md` |
-| 3 | `plan/004-pr3-sheets-and-library` | 5a–6b | `plans/reports/004-pr3.md` |
-| 4 | `plan/004-pr4-large-dialogs` | 7–9 | `plans/reports/004-pr4.md` |
-| 5 | `plan/004-pr5-toolbars` | 10–11 | `plans/reports/004-pr5.md` |
-| 6 | `plan/004-pr6-btn-sweep-and-deletions` | 12a–14 | `plans/reports/004-pr6.md` |
+| PR  | Branch                                 | Steps  | Report                     |
+| --- | -------------------------------------- | ------ | -------------------------- |
+| 1   | `plan/004-pr1-adapters-and-confirm`    | 0–3    | `plans/reports/004-pr1.md` |
+| 2   | `plan/004-pr2-no-a11y-overlays`        | 4a–4c  | `plans/reports/004-pr2.md` |
+| 3   | `plan/004-pr3-sheets-and-library`      | 5a–6b  | `plans/reports/004-pr3.md` |
+| 4   | `plan/004-pr4-large-dialogs`           | 7–9    | `plans/reports/004-pr4.md` |
+| 5   | `plan/004-pr5-toolbars`                | 10–11  | `plans/reports/004-pr5.md` |
+| 6   | `plan/004-pr6-btn-sweep-and-deletions` | 12a–14 | `plans/reports/004-pr6.md` |
 
 ## Steps
 
@@ -480,9 +480,7 @@ function ToggleSwitch({
           aria-disabled={disabled}
         />
       </div>
-      {description && (
-        <p className="text-xs mt-1 text-[var(--app-text-muted)]">{description}</p>
-      )}
+      {description && <p className="text-xs mt-1 text-[var(--app-text-muted)]">{description}</p>}
     </div>
   );
 }
@@ -779,18 +777,30 @@ line 245, header 247–256, footer 448–455; `grep -n 'fixed right-0' src/compo
 becomes:
 
 ```tsx
-<Sheet open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); } }} modal={!isCalibrating}>
+<Sheet
+  open={isOpen}
+  onOpenChange={(open) => {
+    if (!open) {
+      onClose();
+    }
+  }}
+  modal={!isCalibrating}
+>
   <SheetContent
     side="right"
     className="w-full sm:w-96 sm:max-w-none p-0 overflow-y-auto"
     data-testid="sheet-map-settings-root"
   >
     <SheetHeader className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4">
-      <SheetTitle className="text-lg font-bold">{mode === 'CREATE' ? 'New Map' : 'Edit Map'}</SheetTitle>
+      <SheetTitle className="text-lg font-bold">
+        {mode === 'CREATE' ? 'New Map' : 'Edit Map'}
+      </SheetTitle>
     </SheetHeader>
     {/* the existing <div className="p-4 space-y-6"> … </div> content block, unchanged */}
     <SheetFooter className="sticky bottom-0 bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)] p-4 flex flex-row gap-2">
-      <Button variant="ghost" className="flex-1 py-2" onClick={onClose}>Cancel</Button>
+      <Button variant="ghost" className="flex-1 py-2" onClick={onClose}>
+        Cancel
+      </Button>
       <Button variant="default" className="flex-1 py-2" onClick={handleSave}>
         {mode === 'CREATE' ? 'Create Map' : 'Save Changes'}
       </Button>
@@ -1082,12 +1092,12 @@ test (`grep -n "closest" src/components/AssetLibrary/TokenMetadataEditor.test.ts
 with:
 
 ```tsx
-  it('should close modal on Escape', () => {
-    render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
+it('should close modal on Escape', () => {
+  render(<TokenMetadataEditor isOpen={true} libraryItemId="lib-1" onClose={mockOnClose} />);
 
-    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-    expect(mockOnClose).toHaveBeenCalled();
-  });
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  expect(mockOnClose).toHaveBeenCalled();
+});
 ```
 
 and leave the "clicking inside" test (lines 124–131) as it is. Then (O), (R), (I), (P) for PR 3.
@@ -1287,46 +1297,48 @@ export default Toolbar;
 
 Substitution table (apply to the moved JSX, nothing else):
 
-| Today (`App.tsx`) | In `Toolbar.tsx` |
-| --- | --- |
-| `<div className="toolbar fixed …">` (line 556) | same classes plus `data-testid="toolbar-root"` |
-| pause `<button className={\`btn btn-tool … ${isGamePaused ? 'is-paused' : 'is-running'}\`}>` | `<Button variant="tool" state={isGamePaused ? 'paused' : 'running'} data-state={isGamePaused ? 'paused' : 'running'} className="flex items-center justify-center font-semibold" …>` |
-| tool `<button className={\`btn btn-tool p-2 ${tool === 'x' ? 'active' : ''}\`}>` | `<Button variant="tool" active={tool === 'x'} aria-pressed={tool === 'x'} className="p-2" …>` |
-| door-orientation `<button className="btn btn-tool text-lg px-2">` | `<Button variant="tool" className="text-lg px-2" …>` |
-| mode `<button className={\`btn btn-mode ${measurementMode === 'x' ? 'active' : ''}\`}>` | `<Button variant="mode" active={measurementMode === 'x'} aria-pressed={measurementMode === 'x'} …>` |
-| broadcast `<button className={\`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}\`}>` | `<Button variant="broadcast" active={broadcastMeasurement} aria-pressed={broadcastMeasurement} …>` |
-| `<div className="toolbar-divider w-px mx-1"></div>` (lines 581, 648) | `<Separator variant="toolbar" />` |
-| `<div className="toolbar-divider w-px mx-1 h-6"></div>` (line 683) | `<Separator variant="toolbar" className="h-6" />` |
-| `setDoorOrientation((prev) => …)` | `onToggleDoorOrientation()` |
-| `handlePauseToggle()` | `onPauseToggle()` |
-| `handleColorChange(e.target.value)` | `onColorChange(e.target.value)` |
-| icon `className="w-5 h-5"` | `className="size-5"` |
+| Today (`App.tsx`)                                                                              | In `Toolbar.tsx`                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<div className="toolbar fixed …">` (line 556)                                                 | same classes plus `data-testid="toolbar-root"`                                                                                                                                      |
+| pause `<button className={\`btn btn-tool … ${isGamePaused ? 'is-paused' : 'is-running'}\`}>`   | `<Button variant="tool" state={isGamePaused ? 'paused' : 'running'} data-state={isGamePaused ? 'paused' : 'running'} className="flex items-center justify-center font-semibold" …>` |
+| tool `<button className={\`btn btn-tool p-2 ${tool === 'x' ? 'active' : ''}\`}>`               | `<Button variant="tool" active={tool === 'x'} aria-pressed={tool === 'x'} className="p-2" …>`                                                                                       |
+| door-orientation `<button className="btn btn-tool text-lg px-2">`                              | `<Button variant="tool" className="text-lg px-2" …>`                                                                                                                                |
+| mode `<button className={\`btn btn-mode ${measurementMode === 'x' ? 'active' : ''}\`}>`        | `<Button variant="mode" active={measurementMode === 'x'} aria-pressed={measurementMode === 'x'} …>`                                                                                 |
+| broadcast `<button className={\`btn btn-broadcast ${broadcastMeasurement ? 'active' : ''}\`}>` | `<Button variant="broadcast" active={broadcastMeasurement} aria-pressed={broadcastMeasurement} …>`                                                                                  |
+| `<div className="toolbar-divider w-px mx-1"></div>` (lines 581, 648)                           | `<Separator variant="toolbar" />`                                                                                                                                                   |
+| `<div className="toolbar-divider w-px mx-1 h-6"></div>` (line 683)                             | `<Separator variant="toolbar" className="h-6" />`                                                                                                                                   |
+| `setDoorOrientation((prev) => …)`                                                              | `onToggleDoorOrientation()`                                                                                                                                                         |
+| `handlePauseToggle()`                                                                          | `onPauseToggle()`                                                                                                                                                                   |
+| `handleColorChange(e.target.value)`                                                            | `onColorChange(e.target.value)`                                                                                                                                                     |
+| icon `className="w-5 h-5"`                                                                     | `className="size-5"`                                                                                                                                                                |
 
 Every `data-testid`, `aria-label`, `title` and `Tooltip content` moves unchanged. In `App.tsx`
 replace lines 555–702 with:
 
 ```tsx
-{isArchitectView && !isMobile && (
-  <Toolbar
-    tool={tool}
-    setTool={setTool}
-    color={color}
-    onColorChange={handleColorChange}
-    colorInputRef={colorInputRef}
-    doorOrientation={doorOrientation}
-    onToggleDoorOrientation={() =>
-      setDoorOrientation((prev) => (prev === 'horizontal' ? 'vertical' : 'horizontal'))
-    }
-    measurementMode={measurementMode}
-    setMeasurementMode={setMeasurementMode}
-    broadcastMeasurement={broadcastMeasurement}
-    setBroadcastMeasurement={setBroadcastMeasurement}
-    isGamePaused={isGamePaused}
-    onPauseToggle={(): void => {
-      void handlePauseToggle();
-    }}
-  />
-)}
+{
+  isArchitectView && !isMobile && (
+    <Toolbar
+      tool={tool}
+      setTool={setTool}
+      color={color}
+      onColorChange={handleColorChange}
+      colorInputRef={colorInputRef}
+      doorOrientation={doorOrientation}
+      onToggleDoorOrientation={() =>
+        setDoorOrientation((prev) => (prev === 'horizontal' ? 'vertical' : 'horizontal'))
+      }
+      measurementMode={measurementMode}
+      setMeasurementMode={setMeasurementMode}
+      broadcastMeasurement={broadcastMeasurement}
+      setBroadcastMeasurement={setBroadcastMeasurement}
+      isGamePaused={isGamePaused}
+      onPauseToggle={(): void => {
+        void handlePauseToggle();
+      }}
+    />
+  );
+}
 ```
 
 add `import Toolbar from './components/Toolbar';` (alphabetical, after `Toast`) and delete the
@@ -1417,14 +1429,14 @@ unchanged. Mapping: `btn-primary` → `default`; `btn-default` → `secondary`; 
 `btn-ghost`, `btn-destructive` (undefined in CSS, render as bare `.btn`) and bare `btn` → `ghost`.
 Pre-listed hits (`grep -nE '\bbtn\b' <file>` at d3d3642):
 
-| File | Lines → variant |
-| --- | --- |
-| `SessionConsolePanel.tsx` | 72 `ghost`; 85, 92, 109 `ghost` (`btn-secondary`) |
-| `TrackGroupList.tsx` | 118 `ghost` |
-| `sessionConsoleSettingsSections.tsx` | 224, 231, 238 `ghost` |
-| `SessionConsoleBoard.tsx` | 113 `ghost`; 120, 127 `ghost` |
-| `ImageSetBoard.tsx` | 123 `ghost` |
-| `SessionConsoleMasterBar.tsx` | 59, 67, 74, 81, 88, 95, 102 `ghost` |
+| File                                 | Lines → variant                                   |
+| ------------------------------------ | ------------------------------------------------- |
+| `SessionConsolePanel.tsx`            | 72 `ghost`; 85, 92, 109 `ghost` (`btn-secondary`) |
+| `TrackGroupList.tsx`                 | 118 `ghost`                                       |
+| `sessionConsoleSettingsSections.tsx` | 224, 231, 238 `ghost`                             |
+| `SessionConsoleBoard.tsx`            | 113 `ghost`; 120, 127 `ghost`                     |
+| `ImageSetBoard.tsx`                  | 123 `ghost`                                       |
+| `SessionConsoleMasterBar.tsx`        | 59, 67, 74, 81, 88, 95, 102 `ghost`               |
 
 `.sidebar-input` inputs (`sessionConsoleSettingsSections.tsx` 51, 67; `SessionConsoleBoard.tsx` 89)
 → `<Input className="<rest>" …/>` with every other prop (`value`, `onChange`, `onPaste`,

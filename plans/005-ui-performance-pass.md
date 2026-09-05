@@ -15,25 +15,25 @@ git diff --stat <grounded-at>..origin/main -- src/ tests/ scripts/ vite.config.t
 **Citation re-check** (each row is the exact command; "hits" is `grep -c` output). Rows marked
 "after 004" describe what plan 004 left behind and could not be verified at `d3d3642`.
 
-| Anchor (grep)                                                                         | File                                        | Expected hits                    |
-| ------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------- |
-| `grep -c 'export default memo(Sidebar)'`                                              | `src/components/Sidebar.tsx`                | 1                                |
-| `grep -c '^function Sidebar()'`                                                       | `src/components/Sidebar.tsx`                | 1                                |
-| `grep -c 'export default memo(CanvasManager)'`                                        | `src/components/Canvas/CanvasManager.tsx`   | 1                                |
-| `grep -c 'useState<string\[\]>(\[\])'`                                                | `src/components/Canvas/CanvasManager.tsx`   | 1                                |
-| `grep -c 'Global components'`                                                         | `src/App.tsx`                               | 2                                |
-| `grep -c '<AboutModal$'`                                                              | `src/App.tsx`                               | 2                                |
-| `grep -c '<AboutModal$'`                                                              | `src/components/HomeScreen.tsx`             | 1                                |
-| `grep -c 'onSelectionChange={setSelectedTokenIds}'`                                   | `src/App.tsx`                               | 1                                |
-| `grep -c '<Toolbar$'` (after 004)                                                     | `src/App.tsx`                               | 1                                |
-| `grep -c 'export interface ToolbarProps'` (after 004)                                 | `src/components/Toolbar.tsx`                | 1                                |
-| `grep -c 'dialog-about-root'` (after 004)                                             | `src/components/AboutModal.tsx`             | ≥ 1                              |
-| `grep -c 'dialog-dungeon-generator-root'` (after 004)                                 | `src/components/DungeonGeneratorDialog.tsx` | ≥ 1                              |
-| `grep -c 'isWeb && {'`                                                                | `vite.config.ts`                            | 1                                |
-| `grep -c 'new-campaign-button'`                                                       | `src/components/HomeScreen.tsx`             | 1                                |
-| `grep -c '__GAME_STORE__ = useGameStore'`                                             | `src/store/gameStore.ts`                    | 1                                |
-| `grep -c 'Build web app'`                                                             | `.github/workflows/e2e.yml`                 | 1                                |
-| `ls tests/performance/`                                                               | —                                           | empty, or "No such file"         |
+| Anchor (grep)                                         | File                                        | Expected hits            |
+| ----------------------------------------------------- | ------------------------------------------- | ------------------------ |
+| `grep -c 'export default memo(Sidebar)'`              | `src/components/Sidebar.tsx`                | 1                        |
+| `grep -c '^function Sidebar()'`                       | `src/components/Sidebar.tsx`                | 1                        |
+| `grep -c 'export default memo(CanvasManager)'`        | `src/components/Canvas/CanvasManager.tsx`   | 1                        |
+| `grep -c 'useState<string\[\]>(\[\])'`                | `src/components/Canvas/CanvasManager.tsx`   | 1                        |
+| `grep -c 'Global components'`                         | `src/App.tsx`                               | 2                        |
+| `grep -c '<AboutModal$'`                              | `src/App.tsx`                               | 2                        |
+| `grep -c '<AboutModal$'`                              | `src/components/HomeScreen.tsx`             | 1                        |
+| `grep -c 'onSelectionChange={setSelectedTokenIds}'`   | `src/App.tsx`                               | 1                        |
+| `grep -c '<Toolbar$'` (after 004)                     | `src/App.tsx`                               | 1                        |
+| `grep -c 'export interface ToolbarProps'` (after 004) | `src/components/Toolbar.tsx`                | 1                        |
+| `grep -c 'dialog-about-root'` (after 004)             | `src/components/AboutModal.tsx`             | ≥ 1                      |
+| `grep -c 'dialog-dungeon-generator-root'` (after 004) | `src/components/DungeonGeneratorDialog.tsx` | ≥ 1                      |
+| `grep -c 'isWeb && {'`                                | `vite.config.ts`                            | 1                        |
+| `grep -c 'new-campaign-button'`                       | `src/components/HomeScreen.tsx`             | 1                        |
+| `grep -c '__GAME_STORE__ = useGameStore'`             | `src/store/gameStore.ts`                    | 1                        |
+| `grep -c 'Build web app'`                             | `.github/workflows/e2e.yml`                 | 1                        |
+| `ls tests/performance/`                               | —                                           | empty, or "No such file" |
 
 If any row differs: STOP.
 
@@ -74,13 +74,13 @@ so the gains cannot silently regress.
 
 - **`Sidebar` is memoised and prop-less**: `grep -n 'export default memo(Sidebar)' src/components/Sidebar.tsx`
   (line 477), `grep -n '^function Sidebar()' src/components/Sidebar.tsx` (line 97). It cannot
-  re-render because App did. It *does* re-render on a token move because it subscribes to the
+  re-render because App did. It _does_ re-render on a token move because it subscribes to the
   whole `tokens` array and the whole `campaign` object
   (`grep -n 'state.tokens)\|state.campaign)' src/components/Sidebar.tsx`, lines 99 and 104).
 - **`CanvasManager` is memoised but owns the selection**: `grep -n 'export default memo(CanvasManager)'`
   (line 1489) and `grep -n 'useState<string\[\]>(\[\])' src/components/Canvas/CanvasManager.tsx`
   (line 220, `selectedIds`). A click sets that state, so CanvasManager renders itself on a
-  selection *before* calling `onSelectionChange` (`grep -n 'onSelectionChange(selectedIds)'`,
+  selection _before_ calling `onSelectionChange` (`grep -n 'onSelectionChange(selectedIds)'`,
   line 434). It also takes `tool` as a prop, so it renders on a tool switch. Both are expected and
   are not this plan's target.
 - **A `<Profiler>` fires whenever its own element re-renders**, even if the memoised child inside
@@ -131,12 +131,12 @@ so the gains cannot silently regress.
 
 Gates: `plans/CONVENTIONS.md` §4. Commands specific to this plan:
 
-| Purpose                                  | Command                                                                                                        |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Profile on the dev server (harness live) | `PERF=1 PERF_TAG=<tag> npx playwright test tests/performance/profile.spec.ts --project=Web-Chromium --workers=1 -g '\[dev\]'` |
+| Purpose                                  | Command                                                                                                                                                   |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Profile on the dev server (harness live) | `PERF=1 PERF_TAG=<tag> npx playwright test tests/performance/profile.spec.ts --project=Web-Chromium --workers=1 -g '\[dev\]'`                             |
 | Time the built app                       | `npm run build:web && CI=1 PERF=1 PERF_TAG=<tag> npx playwright test tests/performance/profile.spec.ts --project=Web-Chromium --workers=1 -g '\[built\]'` |
-| Read a dump                              | `node scripts/perf-counts.mjs docs/planning/perf/<scenario>-<tag>.json [+MustBePositive ...] [MustBeZero ...]` |
-| Bundle numbers                           | `bash scripts/bundle-budget.sh` (check) / `bash scripts/bundle-budget.sh --write` (rebaseline)               |
+| Read a dump                              | `node scripts/perf-counts.mjs docs/planning/perf/<scenario>-<tag>.json [+MustBePositive ...] [MustBeZero ...]`                                            |
+| Bundle numbers                           | `bash scripts/bundle-budget.sh` (check) / `bash scripts/bundle-budget.sh --write` (rebaseline)                                                            |
 
 `<tag>` names the dump files: `before`, then `step1`, `step4`, `step7`, `step8`, `after`.
 Read first: `.ai-rules.md`, `docs/architecture/PERFORMANCE_OPTIMIZATIONS.md`,
@@ -270,21 +270,21 @@ condition: `{isArchitectView && (<ProfiledBoundary id="X"><X /></ProfiledBoundar
 `UpdateManager`, wrap the `<UpdateManager …/>` element inside its existing
 `UpdateManagerErrorBoundary`, not the boundary itself.
 
-| id                         | Element                            | Sites                |
-| -------------------------- | ---------------------------------- | -------------------- |
-| `ThemeManager`             | `<ThemeManager />`                 | HOME, EDITOR         |
-| `Toast`                    | `<Toast />`                        | HOME, EDITOR         |
-| `ConfirmDialog`            | `<ConfirmDialog />`                | HOME, EDITOR         |
-| `AboutModal`               | `<AboutModal … />`                 | HOME, EDITOR         |
-| `UpdateManager`            | `<UpdateManager … />`              | HOME, EDITOR         |
-| `SyncManager`              | `<SyncManager />`                  | EDITOR               |
-| `PauseManager`             | `<PauseManager />`                 | EDITOR               |
-| `DungeonGeneratorDialog`   | `<DungeonGeneratorDialog />`       | EDITOR               |
-| `SessionConsoleEscapeStop` | `<SessionConsoleEscapeStop … />`   | EDITOR (conditional) |
-| `AutoSaveManager`          | `<AutoSaveManager />`              | EDITOR (conditional) |
-| `Toolbar`                  | `<Toolbar … />` (plan 004)         | EDITOR (conditional) |
-| `TokenInspector`           | `<TokenInspector … />`             | EDITOR (conditional) |
-| `CommandPalette`           | `<CommandPalette … />`             | EDITOR (conditional) |
+| id                         | Element                          | Sites                |
+| -------------------------- | -------------------------------- | -------------------- |
+| `ThemeManager`             | `<ThemeManager />`               | HOME, EDITOR         |
+| `Toast`                    | `<Toast />`                      | HOME, EDITOR         |
+| `ConfirmDialog`            | `<ConfirmDialog />`              | HOME, EDITOR         |
+| `AboutModal`               | `<AboutModal … />`               | HOME, EDITOR         |
+| `UpdateManager`            | `<UpdateManager … />`            | HOME, EDITOR         |
+| `SyncManager`              | `<SyncManager />`                | EDITOR               |
+| `PauseManager`             | `<PauseManager />`               | EDITOR               |
+| `DungeonGeneratorDialog`   | `<DungeonGeneratorDialog />`     | EDITOR               |
+| `SessionConsoleEscapeStop` | `<SessionConsoleEscapeStop … />` | EDITOR (conditional) |
+| `AutoSaveManager`          | `<AutoSaveManager />`            | EDITOR (conditional) |
+| `Toolbar`                  | `<Toolbar … />` (plan 004)       | EDITOR (conditional) |
+| `TokenInspector`           | `<TokenInspector … />`           | EDITOR (conditional) |
+| `CommandPalette`           | `<CommandPalette … />`           | EDITOR (conditional) |
 
 Create `scripts/perf-counts.mjs` exactly:
 
@@ -638,8 +638,8 @@ In `.github/workflows/e2e.yml`, directly after the `Build web app` step of the `
 (`grep -n 'Build web app' .github/workflows/e2e.yml`), insert:
 
 ```yaml
-      - name: Check bundle budget
-        run: bash scripts/bundle-budget.sh
+- name: Check bundle budget
+  run: bash scripts/bundle-budget.sh
 ```
 
 Run the commands below, then write `docs/planning/ui-perf-baseline.md` from this skeleton, filling
@@ -655,11 +655,11 @@ and no map — lighter than the 500-token scenario in `docs/architecture/PERFORM
 
 ## Render counts (dev server, `?stress=1`)
 
-| Scenario        | Dump                        | Counts (from perf-counts) |
-| --------------- | --------------------------- | ------------------------- |
-| tool switch     | `tool-switch-before.json`   | ‹JSON line›               |
-| token selection | `token-selection-before.json` | ‹JSON line›             |
-| token move      | `token-move-before.json`    | ‹JSON line›               |
+| Scenario        | Dump                          | Counts (from perf-counts) |
+| --------------- | ----------------------------- | ------------------------- |
+| tool switch     | `tool-switch-before.json`     | ‹JSON line›               |
+| token selection | `token-selection-before.json` | ‹JSON line›               |
+| token move      | `token-move-before.json`      | ‹JSON line›               |
 
 ## Frame rate (dev server, rAF count, 3 s each): idle ‹n› fps, dragging ‹n› fps (`fps-before.json`)
 
@@ -868,7 +868,7 @@ imports, and wrap the render site (`grep -n '<AboutModal$' src/components/HomeSc
 `{isAboutOpen && (<Suspense fallback={null}><AboutModal …unchanged props… /></Suspense>)}`.
 Add to the "Modal components" bullet of `src/components/README.md`
 (`grep -n 'Modal components' src/components/README.md`) the text
-` — `DungeonGeneratorDialogGate` mounts the generator only while open (plan 005)`.
+`—`DungeonGeneratorDialogGate` mounts the generator only while open (plan 005)`.
 **Do NOT**: gate or lazy-load `UpdateManager` (it holds download state across close/reopen);
 touch `ImageCropper` (under `Canvas/`); change any modal's props, testids or `data-esc-owns`;
 subscribe App to `dungeonDialog`.
@@ -1206,29 +1206,29 @@ above; add `import { useShallow } from 'zustand/shallow';` (external group) and
 `import { useUiStore } from '../store/uiStore';`; as the first statement of `Toolbar` add:
 
 ```tsx
-  const {
-    tool,
-    setTool,
-    color,
-    setColor,
-    recentColors,
-    doorOrientation,
-    toggleDoorOrientation,
-    measurementMode,
-    setMeasurementMode,
-  } = useUiStore(
-    useShallow((state) => ({
-      tool: state.tool,
-      setTool: state.setTool,
-      color: state.color,
-      setColor: state.setColor,
-      recentColors: state.recentColors,
-      doorOrientation: state.doorOrientation,
-      toggleDoorOrientation: state.toggleDoorOrientation,
-      measurementMode: state.measurementMode,
-      setMeasurementMode: state.setMeasurementMode,
-    })),
-  );
+const {
+  tool,
+  setTool,
+  color,
+  setColor,
+  recentColors,
+  doorOrientation,
+  toggleDoorOrientation,
+  measurementMode,
+  setMeasurementMode,
+} = useUiStore(
+  useShallow((state) => ({
+    tool: state.tool,
+    setTool: state.setTool,
+    color: state.color,
+    setColor: state.setColor,
+    recentColors: state.recentColors,
+    doorOrientation: state.doorOrientation,
+    toggleDoorOrientation: state.toggleDoorOrientation,
+    measurementMode: state.measurementMode,
+    setMeasurementMode: state.setMeasurementMode,
+  })),
+);
 ```
 
 then in its JSX replace `onColorChange(` with `setColor(` and `onToggleDoorOrientation()` with
@@ -1242,16 +1242,16 @@ where `handleColorChange(recentColor)` becomes `setColor(recentColor)`.
 destructuring; add the `useShallow` and `useUiStore` imports; as the first statement add:
 
 ```tsx
-  const { tool, setTool, color, setColor, doorOrientation, toggleDoorOrientation } = useUiStore(
-    useShallow((state) => ({
-      tool: state.tool,
-      setTool: state.setTool,
-      color: state.color,
-      setColor: state.setColor,
-      doorOrientation: state.doorOrientation,
-      toggleDoorOrientation: state.toggleDoorOrientation,
-    })),
-  );
+const { tool, setTool, color, setColor, doorOrientation, toggleDoorOrientation } = useUiStore(
+  useShallow((state) => ({
+    tool: state.tool,
+    setTool: state.setTool,
+    color: state.color,
+    setColor: state.setColor,
+    doorOrientation: state.doorOrientation,
+    toggleDoorOrientation: state.toggleDoorOrientation,
+  })),
+);
 ```
 
 replace `{tool === 'door' && setDoorOrientation && (` with `{tool === 'door' && (` and the
@@ -1308,22 +1308,22 @@ lines 99, 104 and 107–109 at d3d3642) as follows: delete
 block with
 
 ```tsx
-  // Selected inside the store so a token move (new `tokens` array, same library items) does
-  // not re-render the Sidebar: useShallow compares the resulting LibraryItem[] element-wise.
-  const recentTokens = useGameStore(
-    useShallow((state) => getRecentTokens(state.tokens, state.campaign.tokenLibrary)),
-  );
+// Selected inside the store so a token move (new `tokens` array, same library items) does
+// not re-render the Sidebar: useShallow compares the resulting LibraryItem[] element-wise.
+const recentTokens = useGameStore(
+  useShallow((state) => getRecentTokens(state.tokens, state.campaign.tokenLibrary)),
+);
 ```
 
 and add next to the remaining selectors:
 
 ```tsx
-  const campaignName = useGameStore((state) => state.campaign.name);
-  const maps = useGameStore(
-    useShallow((state) =>
-      Object.values(state.campaign.maps).sort((a, b) => a.name.localeCompare(b.name)),
-    ),
-  );
+const campaignName = useGameStore((state) => state.campaign.name);
+const maps = useGameStore(
+  useShallow((state) =>
+    Object.values(state.campaign.maps).sort((a, b) => a.name.localeCompare(b.name)),
+  ),
+);
 ```
 
 Delete the old `const maps = Object.values(campaign.maps).sort(…)` line
@@ -1476,14 +1476,14 @@ and all vendor code in one chunk.
 **Results** (dev-server commit counts, `?stress=1`; see `docs/planning/perf/*-before.json` and
 `*-after.json`):
 
-| Scenario / metric              | Before        | After         |
-| ------------------------------ | ------------- | ------------- |
-| tool switch: unmemoised commits | ‹n›          | 0             |
-| token selection: unmemoised    | ‹n›           | 0             |
-| token move: Sidebar commits    | ‹n›           | 0             |
-| idle / drag fps                | ‹n› / ‹n›     | ‹n› / ‹n›     |
-| home / editor ready (ms)       | ‹n› / ‹n›     | ‹n› / ‹n›     |
-| main chunk / total bytes       | ‹n› / ‹n›     | ‹n› / ‹n›     |
+| Scenario / metric               | Before    | After     |
+| ------------------------------- | --------- | --------- |
+| tool switch: unmemoised commits | ‹n›       | 0         |
+| token selection: unmemoised     | ‹n›       | 0         |
+| token move: Sidebar commits     | ‹n›       | 0         |
+| idle / drag fps                 | ‹n› / ‹n› | ‹n› / ‹n› |
+| home / editor ready (ms)        | ‹n› / ‹n› | ‹n› / ‹n› |
+| main chunk / total bytes        | ‹n› / ‹n› | ‹n› / ‹n› |
 
 ### How to re-measure
 

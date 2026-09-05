@@ -14,19 +14,19 @@ git diff --stat d3d3642..origin/main -- src tests playwright.config.ts package.j
 
 **Citation re-check** (each command must return exactly the listed hits):
 
-| Anchor (grep)                                                                                        | File                                   | Expected hits                                   |
-| ---------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------------------------------------- |
-| `grep -n 'data-testid="editor-view"' src/App.tsx`                                                    | `src/App.tsx`                          | 1 (line 482)                                    |
-| `grep -n 'data-testid="new-campaign-button"' src/components/HomeScreen.tsx`                          | `src/components/HomeScreen.tsx`        | 1 (line 494)                                    |
-| `grep -c 'btn btn-tool' src/App.tsx`                                                                 | `src/App.tsx`                          | `8`                                             |
-| `grep -n "import.meta.env.MODE === 'test'" src/store/gameStore.ts`                                   | `src/store/gameStore.ts`               | 1 (line 938)                                    |
-| `grep -n 'const isElectron = typeof window' src/services/storage.ts`                                 | `src/services/storage.ts`              | 1 (line 38)                                     |
-| `grep -n 'const isWeb = !isElectron' src/components/SyncManager.tsx`                                 | `src/components/SyncManager.tsx`       | 1 (line 48)                                     |
-| `grep -c 'min-h-\[56px\]' src/components/MobileToolbar.tsx`                                          | `src/components/MobileToolbar.tsx`     | `10`                                            |
-| `grep -cE '^\s+/.*/,$' playwright.config.ts`                                                         | `playwright.config.ts`                 | `15` (testIgnore regexes)                       |
-| `grep -c '@theme' src/index.css`                                                                     | `src/index.css`                        | `0`                                             |
-| `grep -cE '^\s*push:' .github/workflows/deploy-web.yml`                                              | `.github/workflows/deploy-web.yml`     | `1`                                             |
-| `grep -rl 'PreferencesDialog' src`                                                                   | `src/`                                 | only `src/components/PreferencesDialog.tsx`     |
+| Anchor (grep)                                                               | File                               | Expected hits                               |
+| --------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------- |
+| `grep -n 'data-testid="editor-view"' src/App.tsx`                           | `src/App.tsx`                      | 1 (line 482)                                |
+| `grep -n 'data-testid="new-campaign-button"' src/components/HomeScreen.tsx` | `src/components/HomeScreen.tsx`    | 1 (line 494)                                |
+| `grep -c 'btn btn-tool' src/App.tsx`                                        | `src/App.tsx`                      | `8`                                         |
+| `grep -n "import.meta.env.MODE === 'test'" src/store/gameStore.ts`          | `src/store/gameStore.ts`           | 1 (line 938)                                |
+| `grep -n 'const isElectron = typeof window' src/services/storage.ts`        | `src/services/storage.ts`          | 1 (line 38)                                 |
+| `grep -n 'const isWeb = !isElectron' src/components/SyncManager.tsx`        | `src/components/SyncManager.tsx`   | 1 (line 48)                                 |
+| `grep -c 'min-h-\[56px\]' src/components/MobileToolbar.tsx`                 | `src/components/MobileToolbar.tsx` | `10`                                        |
+| `grep -cE '^\s+/.*/,$' playwright.config.ts`                                | `playwright.config.ts`             | `15` (testIgnore regexes)                   |
+| `grep -c '@theme' src/index.css`                                            | `src/index.css`                    | `0`                                         |
+| `grep -cE '^\s*push:' .github/workflows/deploy-web.yml`                     | `.github/workflows/deploy-web.yml` | `1`                                         |
+| `grep -rl 'PreferencesDialog' src`                                          | `src/`                             | only `src/components/PreferencesDialog.tsx` |
 
 If any row differs: STOP.
 
@@ -100,17 +100,17 @@ here changes a colour or a component's rendered output.
   rule makes `.btn { font-weight: 500 }` beat `font-semibold`. Plan 001 fixes it; record here.
 - **Touch targets** (the only minimums that exist; none is documented):
 
-  | Location                                                                          | Minimum       |
-  | --------------------------------------------------------------------------------- | ------------- |
-  | `src/App.tsx` mobile menu button (`grep -n "minHeight: '48px'" src/App.tsx`)      | 48 × 48 px    |
-  | `src/components/MobileToolbar.tsx` (`grep -c 'min-h-\[56px\]'` → 10)              | 56 px tall    |
-  | `src/components/TokenInspector.tsx` (`grep -c 'min-h-\[44px\]'` → 4)              | 44 px tall    |
+  | Location                                                                                          | Minimum    |
+  | ------------------------------------------------------------------------------------------------- | ---------- |
+  | `src/App.tsx` mobile menu button (`grep -n "minHeight: '48px'" src/App.tsx`)                      | 48 × 48 px |
+  | `src/components/MobileToolbar.tsx` (`grep -c 'min-h-\[56px\]'` → 10)                              | 56 px tall |
+  | `src/components/TokenInspector.tsx` (`grep -c 'min-h-\[44px\]'` → 4)                              | 44 px tall |
   | `src/components/HomeScreen.tsx` `.action-card`, `.quick-action-btn`, `.recent-button` at ≤ 480 px | 44 px tall |
-  | `.btn-tool` (`src/styles/app.css`)                                                | none          |
+  | `.btn-tool` (`src/styles/app.css`)                                                                | none       |
 
-- **ESLint ignores `tests/**`** (`.eslintrc.cjs` `ignorePatterns`) and `tsconfig.json` includes
-  only `src` and `electron`. Spec files are only syntax-checked by Playwright; vitest
-  compiles `tests/unit/**`. `.ai-rules.md` is mandatory reading for any `src/` change.
+- **ESLint ignores `tests/**`** (`.eslintrc.cjs` `ignorePatterns`) and `tsconfig.json`includes
+only`src`and`electron`. Spec files are only syntax-checked by Playwright; vitest
+compiles `tests/unit/\*\*`. `.ai-rules.md`is mandatory reading for any`src/` change.
 
 ## Inputs & resources
 
@@ -119,12 +119,12 @@ use the equivalents in §4. `verify:web` runs the web project and the a11y suite
 (built output, preview server on 4173, no dev-only components), so a single spec is run the
 same way:
 
-| Purpose                                  | Command                                                                                                        |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| One web spec, same conditions as the gate | `npm run build:web && CI=1 npx playwright test <spec> --project=Web-Chromium`                                 |
-| Count selected tests                     | `CI=1 npx playwright test --project=Web-Chromium --list \| tail -1` (prints `Total: N tests in M files`)       |
+| Purpose                                   | Command                                                                                                        |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| One web spec, same conditions as the gate | `npm run build:web && CI=1 npx playwright test <spec> --project=Web-Chromium`                                  |
+| Count selected tests                      | `CI=1 npx playwright test --project=Web-Chromium --list \| tail -1` (prints `Total: N tests in M files`)       |
 | Regenerate visual baselines (Step 3 only) | `npm run build:web && CI=1 npx playwright test tests/visual.spec.ts --project=Web-Chromium --update-snapshots` |
-| Pre-flight for this plan                 | `bash scripts/preflight.sh 000` (exists after Step 1)                                                          |
+| Pre-flight for this plan                  | `bash scripts/preflight.sh 000` (exists after Step 1)                                                          |
 
 ## Scope
 
@@ -186,6 +186,7 @@ plus any file `npm run format` rewrites (commit those too).
    `## Palette-class regex` — later plans cite this command and this number.
    If `prettier --check` exits non-zero, run `npm run format`, record
    `git status --porcelain | wc -l` as "files reformatted", and include them in this commit.
+
 2. In `package.json` `scripts`, replace the `test:a11y` and `test:e2e` lines and add the
    five new ones, exactly:
 
@@ -202,6 +203,7 @@ plus any file `npm run format` rewrites (commit those too).
    Bare `test:e2e` is made safe by delegating to the two `verify:*` scripts, which build
    first. There is deliberately no `pretest:e2e:electron` hook: it would double-build inside
    `verify:electron`.
+
 3. Create `scripts/preflight.sh`:
 
    ```bash
@@ -307,18 +309,19 @@ run `npm run test:e2e`.
    ```
 
    Delete the old comment line `// Expose store to window for E2E testing` above it.
+
 2. `src/App.tsx` — add one attribute per row, on the line after the anchor:
 
-   | Anchor (`grep -n … src/App.tsx`, exactly 1 hit each)                 | Add                                          |
-   | -------------------------------------------------------------------- | -------------------------------------------- |
-   | `className="toolbar fixed bottom-4`                                  | `data-testid="toolbar-root"` (on that `div`) |
-   | `aria-label={isGamePaused ? 'Resume game' : 'Pause game'}`           | `data-testid="toolbar-pause"`                |
-   | `aria-label="Select tool"`                                           | `data-testid="toolbar-tool-select"`          |
-   | `aria-label="Marker tool"`                                           | `data-testid="toolbar-tool-marker"`          |
-   | `aria-label="Eraser tool"`                                           | `data-testid="toolbar-tool-eraser"`          |
-   | `aria-label="Wall tool"`                                             | `data-testid="toolbar-tool-wall"`            |
-   | `aria-label="Door tool"`                                             | `data-testid="toolbar-tool-door"`            |
-   | `aria-label="Measure tool"`                                          | `data-testid="toolbar-tool-measure"`         |
+   | Anchor (`grep -n … src/App.tsx`, exactly 1 hit each)       | Add                                          |
+   | ---------------------------------------------------------- | -------------------------------------------- |
+   | `className="toolbar fixed bottom-4`                        | `data-testid="toolbar-root"` (on that `div`) |
+   | `aria-label={isGamePaused ? 'Resume game' : 'Pause game'}` | `data-testid="toolbar-pause"`                |
+   | `aria-label="Select tool"`                                 | `data-testid="toolbar-tool-select"`          |
+   | `aria-label="Marker tool"`                                 | `data-testid="toolbar-tool-marker"`          |
+   | `aria-label="Eraser tool"`                                 | `data-testid="toolbar-tool-eraser"`          |
+   | `aria-label="Wall tool"`                                   | `data-testid="toolbar-tool-wall"`            |
+   | `aria-label="Door tool"`                                   | `data-testid="toolbar-tool-door"`            |
+   | `aria-label="Measure tool"`                                | `data-testid="toolbar-tool-measure"`         |
 
 3. `src/components/MobileToolbar.tsx`: add `data-testid="toolbar-mobile-root"` to the `<div`
    that follows the comment `{/* Bottom Navigation Bar */}`; `data-testid="toolbar-mobile-more"`
@@ -330,19 +333,20 @@ run `npm run test:e2e`.
    `// 4. Navigate to app` through the `.catch(...)` block's closing `});` (lines 103–116) with:
 
    ```ts
-     // 4. Navigate with ?e2e=1 so window.__GAME_STORE__ is exposed in every build
-     await page.goto('/?e2e=1');
+   // 4. Navigate with ?e2e=1 so window.__GAME_STORE__ is exposed in every build
+   await page.goto('/?e2e=1');
 
-     // 5. Enter the editor. Nothing auto-enters EDITOR; New Campaign is the only path.
-     await page.waitForSelector('[data-testid="new-campaign-button"]', {
-       timeout: 10000,
-       state: 'visible',
-     });
-     await page.click('[data-testid="new-campaign-button"]');
-     await page.waitForSelector('[data-testid="editor-view"]', { timeout: 10000, state: 'visible' });
+   // 5. Enter the editor. Nothing auto-enters EDITOR; New Campaign is the only path.
+   await page.waitForSelector('[data-testid="new-campaign-button"]', {
+     timeout: 10000,
+     state: 'visible',
+   });
+   await page.click('[data-testid="new-campaign-button"]');
+   await page.waitForSelector('[data-testid="editor-view"]', { timeout: 10000, state: 'visible' });
    ```
 
    Keep the following `waitForLoadState('networkidle')` and the rest of the file.
+
 6. Create `tests/helpers/surfaces.ts`:
 
    ```ts
@@ -660,6 +664,7 @@ for category (a) fixes, any `src/components/**/*.tsx` file named in a violation'
 
    The old "System theme syncs with OS preference" test (CI-skipped) and the
    "variables are defined" test are dropped; record both under `## Deleted tests`.
+
 2. Run `npm run build:web && CI=1 npm run test:a11y`. For every failing scan open its
    `accessibility-violations-<surface>-<theme>.json` and classify each violation `id`:
    - **(b) `color-contrast`** — add the surface to `CONTRAST_DEFERRED`; add a row to the
@@ -694,20 +699,20 @@ branch; put a surface in `CONTRAST_DEFERRED` that has a non-contrast violation; 
 **Do**: add the attribute to the element whose opening tag contains the anchor (each anchor
 has exactly one hit in its file; verify with `grep -c`):
 
-| File                                  | Anchor                                          | Attribute                                              |
-| ------------------------------------- | ----------------------------------------------- | ------------------------------------------------------ |
-| `DungeonGeneratorDialog.tsx`          | `aria-labelledby="dungeon-dialog-title"`        | `data-testid="dialog-dungeon-generator-root"`          |
-| `AboutModal.tsx`                      | `className="about-modal-backdrop"`              | `data-testid="dialog-about-root"`                      |
-| `UpdateManager.tsx`                   | `className="fixed inset-0 z-[200]`              | `data-testid="dialog-update-manager-root"`             |
-| `MapSettingsSheet.tsx`                | `className="fixed right-0 top-0 bottom-0`       | `data-testid="sheet-map-settings-root"`                |
-| `MobileSidebarDrawer.tsx`             | `aria-label="Navigation menu"`                  | `data-testid="sheet-mobile-sidebar-root"`              |
-| `MobileBottomSheet.tsx`               | `aria-label="Bottom sheet"`                     | `data-testid="sheet-mobile-bottom-root"`               |
-| `AssetLibrary/AddToLibraryDialog.tsx` | `className="fixed inset-0 z-50`                 | `data-testid="dialog-add-to-library-root"`             |
-| `AssetLibrary/LibraryManager.tsx`     | `className="fixed inset-0 z-50`                 | `data-testid="dialog-library-manager-root"`            |
-| `AssetLibrary/TokenMetadataEditor.tsx`| `className="fixed inset-0 z-50`                 | `data-testid="dialog-token-metadata-root"`             |
-| `ImageCropper.tsx`                    | `className="fixed inset-0 z-50`                 | `data-testid="dialog-image-cropper-root"`              |
-| `SessionConsoleEditorSheet.tsx`       | `data-esc-owns="true"`                          | `data-testid="sheet-session-console-editor-root"`      |
-| `SessionConsoleSettingsSheet.tsx`     | `data-esc-owns="true"`                          | `data-testid="sheet-session-console-settings-root"`    |
+| File                                   | Anchor                                    | Attribute                                           |
+| -------------------------------------- | ----------------------------------------- | --------------------------------------------------- |
+| `DungeonGeneratorDialog.tsx`           | `aria-labelledby="dungeon-dialog-title"`  | `data-testid="dialog-dungeon-generator-root"`       |
+| `AboutModal.tsx`                       | `className="about-modal-backdrop"`        | `data-testid="dialog-about-root"`                   |
+| `UpdateManager.tsx`                    | `className="fixed inset-0 z-[200]`        | `data-testid="dialog-update-manager-root"`          |
+| `MapSettingsSheet.tsx`                 | `className="fixed right-0 top-0 bottom-0` | `data-testid="sheet-map-settings-root"`             |
+| `MobileSidebarDrawer.tsx`              | `aria-label="Navigation menu"`            | `data-testid="sheet-mobile-sidebar-root"`           |
+| `MobileBottomSheet.tsx`                | `aria-label="Bottom sheet"`               | `data-testid="sheet-mobile-bottom-root"`            |
+| `AssetLibrary/AddToLibraryDialog.tsx`  | `className="fixed inset-0 z-50`           | `data-testid="dialog-add-to-library-root"`          |
+| `AssetLibrary/LibraryManager.tsx`      | `className="fixed inset-0 z-50`           | `data-testid="dialog-library-manager-root"`         |
+| `AssetLibrary/TokenMetadataEditor.tsx` | `className="fixed inset-0 z-50`           | `data-testid="dialog-token-metadata-root"`          |
+| `ImageCropper.tsx`                     | `className="fixed inset-0 z-50`           | `data-testid="dialog-image-cropper-root"`           |
+| `SessionConsoleEditorSheet.tsx`        | `data-esc-owns="true"`                    | `data-testid="sheet-session-console-editor-root"`   |
+| `SessionConsoleSettingsSheet.tsx`      | `data-esc-owns="true"`                    | `data-testid="sheet-session-console-settings-root"` |
 
 **Do NOT**: add `role`, `aria-modal` or `data-esc-owns` anywhere (Step 6 records their
 absence; plan 004 adds them); move the attribute to an inner element; touch `ConfirmDialog.tsx`
@@ -939,8 +944,7 @@ test.describe('Overlay contract', () => {
       await expect(root).toBeVisible();
 
       const has = async (selector: string): Promise<boolean> =>
-        (await page.locator(`${overlay.root}${selector}, ${overlay.root} ${selector}`).count()) >
-        0;
+        (await page.locator(`${overlay.root}${selector}, ${overlay.root} ${selector}`).count()) > 0;
       expect(await has('[role="dialog"]'), 'role="dialog"').toBe(overlay.hasRole);
       expect(await has('[aria-modal="true"]'), 'aria-modal="true"').toBe(overlay.hasAriaModal);
       expect(await has('[data-esc-owns="true"]'), 'data-esc-owns="true"').toBe(overlay.escOwns);
@@ -1011,6 +1015,7 @@ edit `tests/functional/dm-world-sync.spec.ts`, `playwright.config.ts`,
    **Files**. `campaign-workflow.spec.ts` goes too: 5 of its 9 tests are `test.skip` and 3 sit
    in a `test.describe.skip`; its one live test (new campaign opens the editor) is covered by
    `editor-smoke.spec.ts`. Write one line of lost coverage per deleted file.
+
 2. `tests/functional/dm-world-sync.spec.ts`: delete every line matching `createNewCampaign`
    (`grep -n createNewCampaign` — the import and one call per test; the bypass helper now
    lands in the editor). Nothing else changes; its `window.ipcRenderer` assertion depends on
@@ -1022,6 +1027,7 @@ edit `tests/functional/dm-world-sync.spec.ts`, `playwright.config.ts`,
    ```
 
    and delete the three comment lines that explained the stale entries.
+
 4. Create `tests/functional/editor-smoke.spec.ts`:
 
    ```ts
@@ -1211,9 +1217,10 @@ test.describe('Touch targets', () => {
     await gotoSurface(page, 'editor', 'light');
     const box = await page.locator('[data-testid="toolbar-tool-select"]').boundingBox();
     expect(box).not.toBeNull();
-    expect({ width: Math.round(box?.width ?? 0), height: Math.round(box?.height ?? 0) }).toEqual(
-      { width: BTN_TOOL_WIDTH, height: BTN_TOOL_HEIGHT },
-    );
+    expect({ width: Math.round(box?.width ?? 0), height: Math.round(box?.height ?? 0) }).toEqual({
+      width: BTN_TOOL_WIDTH,
+      height: BTN_TOOL_HEIGHT,
+    });
   });
 });
 ```
@@ -1295,6 +1302,7 @@ targets.
    (`grep -n '0.2s' src/styles/theme.css` → lines 286, 287, 293): `body` becomes
    `transition: background-color var(--app-duration-fast) var(--app-ease-standard), color var(--app-duration-fast) var(--app-ease-standard);`
    and the `*` rule becomes `transition-duration: var(--app-duration-fast); transition-timing-function: var(--app-ease-standard);`.
+
 3. Append to `src/index.css` (after the four `@import` lines; this is the program's single
    `@theme` block for token aliases — plan 001 appends `--animate-slide-down` to it; plan 002
    adds a second `@theme inline` block for the shadcn `--color-*` bridge):
@@ -1402,9 +1410,9 @@ add a second `@theme` block; write `@theme` without `inline`; change any seed va
    `path: playwright-report/` with
 
    ```yaml
-             path: |
-               playwright-report/
-               accessibility-violations*.json
+   path: |
+     playwright-report/
+     accessibility-violations*.json
    ```
 
    and in the "Comment PR with results" script replace the seven lines from
@@ -1412,22 +1420,23 @@ add a second `@theme` block; write `@theme` without `inline`; change any seed va
    `if (fs.existsSync(reportPath))` block with:
 
    ```js
-               const files = fs.readdirSync('.').filter((f) => /^accessibility-violations.*\.json$/.test(f));
-               let violations = [];
-               for (const file of files) {
-                 const surface = file.replace(/^accessibility-violations-?/, '').replace(/\.json$/, '');
-                 for (const v of JSON.parse(fs.readFileSync(file, 'utf8'))) {
-                   violations.push({ ...v, surface });
-                 }
-               }
+   const files = fs.readdirSync('.').filter((f) => /^accessibility-violations.*\.json$/.test(f));
+   let violations = [];
+   for (const file of files) {
+     const surface = file.replace(/^accessibility-violations-?/, '').replace(/\.json$/, '');
+     for (const v of JSON.parse(fs.readFileSync(file, 'utf8'))) {
+       violations.push({ ...v, surface });
+     }
+   }
    ```
 
    and change `- **${v.id}**: ${v.description}` to `- **${v.id}** (${v.surface}): ${v.description}`.
+
 4. `.github/workflows/e2e.yml`: after the `Build web app` step of the `test-web` job add:
 
    ```yaml
-         - name: Report web bundle size (bytes; plan 005 adds the budget)
-           run: find dist-web/assets \( -name '*.js' -o -name '*.css' \) -print0 | xargs -0 wc -c | tail -1
+   - name: Report web bundle size (bytes; plan 005 adds the budget)
+     run: find dist-web/assets \( -name '*.js' -o -name '*.css' \) -print0 | xargs -0 wc -c | tail -1
    ```
 
 5. `CHANGELOG.md`, under `## [Unreleased]`, add before `### Added`:
@@ -1471,20 +1480,20 @@ or `build-release.yml`; remove the `NEXT` branch from `accessibility.yml` (harml
 
    ## Areas
 
-   | Area                     | What lives there                                                                                                                                                                                                                                                                                       |
-   | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-   | `src/App.tsx`            | Picks Architect vs World View (`?type=world`), HOME vs EDITOR, renders the desktop toolbar and the global overlays.                                                                                                                                                                                     |
-   | `Canvas/`                | The Konva stage: `CanvasManager.tsx`, `GridOverlay.tsx`, `TokenLayer.tsx`, `DrawingLayer.tsx`, `DoorLayer.tsx`, `StairsLayer.tsx`, `FogOfWarLayer.tsx`, `MeasurementOverlay.tsx`, `Minimap.tsx`, `hooks/`. See `Canvas/README.md`.                                                                     |
-   | `AssetLibrary/`          | Token library: `LibraryManager.tsx`, `AddToLibraryDialog.tsx`, `TokenMetadataEditor.tsx`, `CommandPalette.tsx`.                                                                                                                                                                                         |
-   | `SessionConsole/`        | Audio/ambience panel and the player-facing stage: `SessionConsolePanel.tsx`, the editor and settings sheets, `WorldStage.tsx`, `WorldAudioEngine.tsx`, hotkeys.                                                                                                                                         |
-   | `DesignSystemPlayground/`| The `/design-system` route (`playground-registry.tsx` lists every example).                                                                                                                                                                                                                             |
-   | Sidebar and navigation   | `Sidebar.tsx`, `MapNavigator.tsx`, `CollapsibleSection.tsx`, `MobileSidebarDrawer.tsx`, `MobileToolbar.tsx`, `MobileBottomSheet.tsx`.                                                                                                                                                                  |
-   | Overlays                 | `ConfirmDialog.tsx`, `DungeonGeneratorDialog.tsx`, `AboutModal.tsx`, `UpdateManager.tsx`, `MapSettingsSheet.tsx`, `ImageCropper.tsx`, `Toast.tsx`, `LoadingOverlay.tsx`.                                                                                                                               |
-   | Inspectors and panels    | `TokenInspector.tsx`, `QuickTokenSidebar.tsx`, `DoorControls.tsx`, `ResourceMonitor.tsx`.                                                                                                                                                                                                              |
-   | System (no UI)           | `SyncManager.tsx` (Architect ↔ World state over IPC in Electron, `BroadcastChannel` on the web), `ThemeManager.tsx`, `AutoSaveManager.tsx`, `PauseManager.tsx`.                                                                                                                                         |
-   | Error handling           | `GlobalErrorBoundary.tsx`, `PrivacyErrorBoundary.tsx`, `ErrorFallbackUI.tsx`, `UpdateErrorFallbackUI.tsx`, `PendingErrorsIndicator.tsx`, and a `*ErrorBoundary.tsx` next to each feature it wraps.                                                                                                     |
-   | Adapters                 | `Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx` — thin components whose props stay stable while their internals change.                                                                                                                                                                   |
-   | Brand                    | `LogoIcon.tsx`, `LogoLockup.tsx`.                                                                                                                                                                                                                                                                       |
+   | Area                      | What lives there                                                                                                                                                                                                                   |
+   | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `src/App.tsx`             | Picks Architect vs World View (`?type=world`), HOME vs EDITOR, renders the desktop toolbar and the global overlays.                                                                                                                |
+   | `Canvas/`                 | The Konva stage: `CanvasManager.tsx`, `GridOverlay.tsx`, `TokenLayer.tsx`, `DrawingLayer.tsx`, `DoorLayer.tsx`, `StairsLayer.tsx`, `FogOfWarLayer.tsx`, `MeasurementOverlay.tsx`, `Minimap.tsx`, `hooks/`. See `Canvas/README.md`. |
+   | `AssetLibrary/`           | Token library: `LibraryManager.tsx`, `AddToLibraryDialog.tsx`, `TokenMetadataEditor.tsx`, `CommandPalette.tsx`.                                                                                                                    |
+   | `SessionConsole/`         | Audio/ambience panel and the player-facing stage: `SessionConsolePanel.tsx`, the editor and settings sheets, `WorldStage.tsx`, `WorldAudioEngine.tsx`, hotkeys.                                                                    |
+   | `DesignSystemPlayground/` | The `/design-system` route (`playground-registry.tsx` lists every example).                                                                                                                                                        |
+   | Sidebar and navigation    | `Sidebar.tsx`, `MapNavigator.tsx`, `CollapsibleSection.tsx`, `MobileSidebarDrawer.tsx`, `MobileToolbar.tsx`, `MobileBottomSheet.tsx`.                                                                                              |
+   | Overlays                  | `ConfirmDialog.tsx`, `DungeonGeneratorDialog.tsx`, `AboutModal.tsx`, `UpdateManager.tsx`, `MapSettingsSheet.tsx`, `ImageCropper.tsx`, `Toast.tsx`, `LoadingOverlay.tsx`.                                                           |
+   | Inspectors and panels     | `TokenInspector.tsx`, `QuickTokenSidebar.tsx`, `DoorControls.tsx`, `ResourceMonitor.tsx`.                                                                                                                                          |
+   | System (no UI)            | `SyncManager.tsx` (Architect ↔ World state over IPC in Electron, `BroadcastChannel` on the web), `ThemeManager.tsx`, `AutoSaveManager.tsx`, `PauseManager.tsx`.                                                                    |
+   | Error handling            | `GlobalErrorBoundary.tsx`, `PrivacyErrorBoundary.tsx`, `ErrorFallbackUI.tsx`, `UpdateErrorFallbackUI.tsx`, `PendingErrorsIndicator.tsx`, and a `*ErrorBoundary.tsx` next to each feature it wraps.                                 |
+   | Adapters                  | `Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx` — thin components whose props stay stable while their internals change.                                                                                                |
+   | Brand                     | `LogoIcon.tsx`, `LogoLockup.tsx`.                                                                                                                                                                                                  |
 
    ## Conventions that matter here
 
@@ -1566,15 +1575,15 @@ or `build-release.yml`; remove the `NEXT` branch from `accessibility.yml` (harml
 
    ## Surfaces
 
-   | Surface          | What it is                                                                 |
-   | ---------------- | -------------------------------------------------------------------------- |
-   | `home`           | HomeScreen at 1280×720                                                     |
-   | `editor`         | New campaign → editor with the desktop toolbar and sidebar                 |
-   | `editor-mobile`  | The editor at 390×844 (mobile toolbar, hamburger)                          |
-   | `confirm-dialog` | `editor` with `ConfirmDialog` open via the store                           |
-   | `world`          | `?type=world` in a second tab, after `FULL_SYNC` from the editor tab       |
-   | `world-dialog`   | `world` with `ConfirmDialog` open in the World tab                         |
-   | `design-system`  | `/design-system`                                                           |
+   | Surface          | What it is                                                           |
+   | ---------------- | -------------------------------------------------------------------- |
+   | `home`           | HomeScreen at 1280×720                                               |
+   | `editor`         | New campaign → editor with the desktop toolbar and sidebar           |
+   | `editor-mobile`  | The editor at 390×844 (mobile toolbar, hamburger)                    |
+   | `confirm-dialog` | `editor` with `ConfirmDialog` open via the store                     |
+   | `world`          | `?type=world` in a second tab, after `FULL_SYNC` from the editor tab |
+   | `world-dialog`   | `world` with `ConfirmDialog` open in the World tab                   |
+   | `design-system`  | `/design-system`                                                     |
 
    ## Rules
 
@@ -1603,6 +1612,7 @@ or `build-release.yml`; remove the `NEXT` branch from `accessibility.yml` (harml
    ```
 
    `docs/ENABLE_CI_TESTING.md` (branch protection settings) does not contradict the gates; leave it.
+
 5. `src/utils/useWindowType.ts` JSDoc: change `(see electron/main.ts:259)` to
    `(see electron/main.ts, grep "type=world")` and `electron/main.ts:243-263` to
    `electron/main.ts (the loadURL calls carrying ?type=world)`.

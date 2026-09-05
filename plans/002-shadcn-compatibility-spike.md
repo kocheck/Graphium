@@ -17,19 +17,19 @@ git diff --stat <grounded-at>..origin/main -- package.json package-lock.json tsc
 
 **Citation re-check** (line numbers are hints at `d3d3642`; the grep is authoritative):
 
-| Anchor (grep)                                                                                  | File                                                        | Expected hits                       |
-| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------- |
-| `grep -c '^@theme' src/index.css`                                                              | `src/index.css`                                             | 1 (0 at d3d3642; plans 000/001 add) |
-| `grep -c '"paths"' tsconfig.json`                                                              | `tsconfig.json`                                             | 0                                   |
-| `grep -c '^\s*resolve:' vite.config.ts`                                                        | `vite.config.ts`                                            | 0                                   |
-| `grep -n "import path from 'node:path'" vite.config.ts`                                        | `vite.config.ts`                                            | 1 hit (line 2)                      |
-| `grep -n "test:" vite.config.ts`                                                               | `vite.config.ts`                                            | 1 hit (line 49)                     |
-| `grep -n "const \[tool, setTool\]" src/App.tsx`                                                | `src/App.tsx`                                               | 1 hit (line 135)                    |
-| `grep -n "<UpdateManager isOpen={isUpdateManagerOpen} onClose" src/App.tsx`                    | `src/App.tsx`                                               | 1 hit (line 499)                    |
-| `grep -n "dispatchSessionConsole({ type: 'STOP' })" src/components/SessionConsole/useSessionConsoleHotkeys.ts` | `useSessionConsoleHotkeys.ts`                   | 1 hit (line 75)                     |
-| `grep -n "^export const componentExamples" src/components/DesignSystemPlayground/playground-registry.tsx` | `playground-registry.tsx`                        | 1 hit (line 110)                    |
-| `grep -n "pattern: '@/\*\*'" .eslintrc.cjs`                                                    | `.eslintrc.cjs`                                             | 1 hit (line 227)                    |
-| `grep -c "ResizeObserver" src/test/setup.ts`                                                   | `src/test/setup.ts`                                         | 0                                   |
+| Anchor (grep)                                                                                                  | File                          | Expected hits                       |
+| -------------------------------------------------------------------------------------------------------------- | ----------------------------- | ----------------------------------- |
+| `grep -c '^@theme' src/index.css`                                                                              | `src/index.css`               | 1 (0 at d3d3642; plans 000/001 add) |
+| `grep -c '"paths"' tsconfig.json`                                                                              | `tsconfig.json`               | 0                                   |
+| `grep -c '^\s*resolve:' vite.config.ts`                                                                        | `vite.config.ts`              | 0                                   |
+| `grep -n "import path from 'node:path'" vite.config.ts`                                                        | `vite.config.ts`              | 1 hit (line 2)                      |
+| `grep -n "test:" vite.config.ts`                                                                               | `vite.config.ts`              | 1 hit (line 49)                     |
+| `grep -n "const \[tool, setTool\]" src/App.tsx`                                                                | `src/App.tsx`                 | 1 hit (line 135)                    |
+| `grep -n "<UpdateManager isOpen={isUpdateManagerOpen} onClose" src/App.tsx`                                    | `src/App.tsx`                 | 1 hit (line 499)                    |
+| `grep -n "dispatchSessionConsole({ type: 'STOP' })" src/components/SessionConsole/useSessionConsoleHotkeys.ts` | `useSessionConsoleHotkeys.ts` | 1 hit (line 75)                     |
+| `grep -n "^export const componentExamples" src/components/DesignSystemPlayground/playground-registry.tsx`      | `playground-registry.tsx`     | 1 hit (line 110)                    |
+| `grep -n "pattern: '@/\*\*'" .eslintrc.cjs`                                                                    | `.eslintrc.cjs`               | 1 hit (line 227)                    |
+| `grep -c "ResizeObserver" src/test/setup.ts`                                                                   | `src/test/setup.ts`           | 0                                   |
 
 If any row differs: STOP.
 
@@ -118,15 +118,15 @@ All verified at `d3d3642`:
 
 Gates: `plans/CONVENTIONS.md` §4.
 
-| Purpose                     | Command                                                                              | Expected                     |
-| --------------------------- | ------------------------------------------------------------------------------------ | ---------------------------- |
-| shadcn init (pinned)        | `npx shadcn@1.1.23 init -y -d --base-color neutral`                                  | exit 0, `components.json`    |
-| shadcn add (pinned)         | `npx shadcn@1.1.23 add button dialog tooltip -y`                                     | exit 0, three files          |
-| Spike portal spec           | `npx playwright test tests/spike-portals.spec.ts --project=Web-Chromium --reporter=list` | `8 passed`               |
-| Web bytes                   | `find dist-web/assets -type f \( -name '*.js' -o -name '*.css' \) -print0 \| xargs -0 wc -c \| tail -1` | `<n> total`   |
-| Electron bytes              | `find dist dist-electron -type f -print0 \| xargs -0 wc -c \| tail -1`               | `<n> total`                  |
-| Dependency count            | `npm ls --depth=0 \| wc -l`                                                          | `<n>`                        |
-| Lint rules in generated code | see Step 4 (`lint-rules.txt`)                                                       | list of rule ids             |
+| Purpose                      | Command                                                                                                 | Expected                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------- |
+| shadcn init (pinned)         | `npx shadcn@1.1.23 init -y -d --base-color neutral`                                                     | exit 0, `components.json` |
+| shadcn add (pinned)          | `npx shadcn@1.1.23 add button dialog tooltip -y`                                                        | exit 0, three files       |
+| Spike portal spec            | `npx playwright test tests/spike-portals.spec.ts --project=Web-Chromium --reporter=list`                | `8 passed`                |
+| Web bytes                    | `find dist-web/assets -type f \( -name '*.js' -o -name '*.css' \) -print0 \| xargs -0 wc -c \| tail -1` | `<n> total`               |
+| Electron bytes               | `find dist dist-electron -type f -print0 \| xargs -0 wc -c \| tail -1`                                  | `<n> total`               |
+| Dependency count             | `npm ls --depth=0 \| wc -l`                                                                             | `<n>`                     |
+| Lint rules in generated code | see Step 4 (`lint-rules.txt`)                                                                           | list of rule ids          |
 
 ## Scope
 
@@ -175,22 +175,22 @@ Verdict: PENDING
 
 ## 1. Environment
 
-| Item                | Value                                                        |
-| ------------------- | ------------------------------------------------------------ |
-| Node                | <`node --version`>                                           |
-| npm                 | <`npm --version`>                                            |
-| react (lockfile)    | <`grep -n '"node_modules/react"' -A2 package-lock.json`>     |
-| shadcn CLI          | 1.1.23                                                       |
-| origin/main         | <`git rev-parse --short origin/main`>                        |
+| Item             | Value                                                    |
+| ---------------- | -------------------------------------------------------- |
+| Node             | <`node --version`>                                       |
+| npm              | <`npm --version`>                                        |
+| react (lockfile) | <`grep -n '"node_modules/react"' -A2 package-lock.json`> |
+| shadcn CLI       | 1.1.23                                                   |
+| origin/main      | <`git rev-parse --short origin/main`>                    |
 
 ## 2. Baseline (origin/main)
 
-| Measure           | Command                                              | Value |
-| ----------------- | ---------------------------------------------------- | ----- |
-| web bytes         | find dist-web/assets … wc -c                         | <n>   |
-| electron bytes    | find dist dist-electron … wc -c                      | <n>   |
-| dependency count  | npm ls --depth=0 \| wc -l                            | <n>   |
-| npm run verify    | exit code                                            | <n>   |
+| Measure          | Command                         | Value |
+| ---------------- | ------------------------------- | ----- |
+| web bytes        | find dist-web/assets … wc -c    | <n>   |
+| electron bytes   | find dist dist-electron … wc -c | <n>   |
+| dependency count | npm ls --depth=0 \| wc -l       | <n>   |
+| npm run verify   | exit code                       | <n>   |
 
 ## 3. What the CLI did (init, add)
 
@@ -556,7 +556,12 @@ hook rejects the commit, paste its output into §4 and treat the rule it names t
      DialogTitle,
      DialogTrigger,
    } from '@/components/ui/dialog';
-   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+   import {
+     Tooltip,
+     TooltipContent,
+     TooltipProvider,
+     TooltipTrigger,
+   } from '@/components/ui/tooltip';
    ```
 
    Append to the `categories` array, after the `id: 'performance'` object
@@ -678,7 +683,12 @@ hardcode a colour or exclude the element.
      DialogTitle,
      DialogTrigger,
    } from '@/components/ui/dialog';
-   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+   import {
+     Tooltip,
+     TooltipContent,
+     TooltipProvider,
+     TooltipTrigger,
+   } from '@/components/ui/tooltip';
    import { useGameStore } from '@/store/gameStore';
 
    interface SpikeScaffoldProps {
@@ -703,7 +713,10 @@ hardcode a colour or exclude the element.
      }
      return (
        <TooltipProvider>
-         <div data-testid="spike-root" style={{ position: 'fixed', top: 8, right: 8, zIndex: 1000 }}>
+         <div
+           data-testid="spike-root"
+           style={{ position: 'fixed', top: 8, right: 8, zIndex: 1000 }}
+         >
            <span data-testid="spike-audio-status">{audioStatus}</span>
            <span data-testid="spike-drawing-count">{drawingCount}</span>
            <button type="button" data-testid="spike-fake-play" onClick={fakePlay}>
@@ -767,9 +780,11 @@ hardcode a colour or exclude the element.
    occurrence):
 
    ```tsx
-         {import.meta.env.DEV && isArchitectView && (
-           <SpikeScaffold onSelectMarker={() => setTool('marker')} />
-         )}
+   {
+     import.meta.env.DEV && isArchitectView && (
+       <SpikeScaffold onSelectMarker={() => setTool('marker')} />
+     );
+   }
    ```
 
 3. Create `tests/spike-portals.spec.ts`:
@@ -805,7 +820,9 @@ hardcode a colour or exclude the element.
        await openArchitect(page);
      });
 
-     test('portal: dialog renders under body, Escape closes it, focus returns', async ({ page }) => {
+     test('portal: dialog renders under body, Escape closes it, focus returns', async ({
+       page,
+     }) => {
        const trigger = page.getByTestId('spike-dialog-trigger');
        const content = page.getByTestId('spike-dialog-content');
        await trigger.click();
@@ -839,7 +856,9 @@ hardcode a colour or exclude the element.
        await page.getByTestId('spike-select-marker').click();
        await page.getByTestId('spike-dialog-trigger').click();
        await expect(page.getByTestId('spike-dialog-content')).toBeVisible();
-       expect(await page.evaluate(() => getComputedStyle(document.body).pointerEvents)).toBe('none');
+       expect(await page.evaluate(() => getComputedStyle(document.body).pointerEvents)).toBe(
+         'none',
+       );
        const box = await page.locator('.konvajs-content').first().boundingBox();
        if (!box) {
          throw new Error('Konva stage not found');
@@ -989,13 +1008,13 @@ describe('plan 002 jsdom probe', () => {
 Stubs, keyed by the error text in the run output; paste the matching line(s) into the MOCKS
 block:
 
-| Output contains                            | Add to MOCKS                                                                                                   |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `ResizeObserver is not defined`            | `window.ResizeObserver = vi.fn(() => ({ observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() })) as unknown as typeof ResizeObserver;` |
-| `hasPointerCapture is not a function`      | `Element.prototype.hasPointerCapture = vi.fn(() => false);` plus `Element.prototype.setPointerCapture = vi.fn();` and `Element.prototype.releasePointerCapture = vi.fn();` |
-| `scrollIntoView is not a function`         | `Element.prototype.scrollIntoView = vi.fn();`                                                                  |
-| `PointerEvent is not defined`              | record in §7 as a caveat; jsdom 24.1.3 is expected to have it                                                   |
-| anything else                              | record verbatim in §7                                                                                          |
+| Output contains                       | Add to MOCKS                                                                                                                                                               |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ResizeObserver is not defined`       | `window.ResizeObserver = vi.fn(() => ({ observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() })) as unknown as typeof ResizeObserver;`                                |
+| `hasPointerCapture is not a function` | `Element.prototype.hasPointerCapture = vi.fn(() => false);` plus `Element.prototype.setPointerCapture = vi.fn();` and `Element.prototype.releasePointerCapture = vi.fn();` |
+| `scrollIntoView is not a function`    | `Element.prototype.scrollIntoView = vi.fn();`                                                                                                                              |
+| `PointerEvent is not defined`         | record in §7 as a caveat; jsdom 24.1.3 is expected to have it                                                                                                              |
+| anything else                         | record verbatim in §7                                                                                                                                                      |
 
 Record in §7: the first run's error lines, the final MOCKS block, and the number of iterations.
 **Do NOT**: edit `src/test/setup.ts` (plan 003 does that, using §7); mock React or Radix
@@ -1053,21 +1072,21 @@ retry, twice is a STOP.
 **Do**: Fill §9–§12, then replace `Verdict: PENDING` with the first row that matches, top to
 bottom. Every row is a fact already in the doc; do not weigh them.
 
-| Row | Observable (where in the doc)                                                                                     | If true → verdict   |
-| --- | ----------------------------------------------------------------------------------------------------------------- | ------------------- |
-| A1  | init/add could not install on React 18.3.1 even with `--legacy-peer-deps` (§3)                                   | **NO-GO**           |
-| A2  | `npm run test:a11y` fails on a correctly transcribed bridge (§5)                                                  | **NO-GO**           |
-| A3  | spec test `world view: …` failed (§6)                                                                             | **NO-GO**           |
-| A4  | spike web bytes − baseline web bytes > 500000 (§8)                                                                | **NO-GO**           |
-| B1  | `--legacy-peer-deps` or an `overrides` entry was needed (§3)                                                      | GO-WITH-CAVEATS     |
-| B2  | §4 rule list has any id outside {`import/no-unused-modules`, `react-refresh/only-export-components`, `@typescript-eslint/explicit-function-return-type`} (`prettier/prettier` and `import/order` are auto-fixed and never count) | GO-WITH-CAVEATS |
-| B3  | the coverage command in Step 5 printed a `MISSING` line, or `grep -nE "^\s*--color-[a-z-]+: [^v]" src/index.css` prints anything (§5) | GO-WITH-CAVEATS |
-| B4  | any spec test other than `world view: …` failed (§6)                                                              | GO-WITH-CAVEATS     |
-| B5  | the CLI added a dependency outside {`clsx`, `tailwind-merge`, `class-variance-authority`, `tw-animate-css`, `@radix-ui/*`} — e.g. `lucide-react` (§3, §4) | GO-WITH-CAVEATS |
-| B6  | white on `--color-destructive` < 4.50 (§5; known `3.91`)                                                          | GO-WITH-CAVEATS     |
-| B7  | the jsdom probe needed one or more stubs, or was deleted (§7)                                                     | GO-WITH-CAVEATS     |
-| B8  | web delta > 150000 bytes (§8)                                                                                     | GO-WITH-CAVEATS     |
-| —   | none of the above                                                                                                 | **GO**              |
+| Row | Observable (where in the doc)                                                                                                                                                                                                    | If true → verdict |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| A1  | init/add could not install on React 18.3.1 even with `--legacy-peer-deps` (§3)                                                                                                                                                   | **NO-GO**         |
+| A2  | `npm run test:a11y` fails on a correctly transcribed bridge (§5)                                                                                                                                                                 | **NO-GO**         |
+| A3  | spec test `world view: …` failed (§6)                                                                                                                                                                                            | **NO-GO**         |
+| A4  | spike web bytes − baseline web bytes > 500000 (§8)                                                                                                                                                                               | **NO-GO**         |
+| B1  | `--legacy-peer-deps` or an `overrides` entry was needed (§3)                                                                                                                                                                     | GO-WITH-CAVEATS   |
+| B2  | §4 rule list has any id outside {`import/no-unused-modules`, `react-refresh/only-export-components`, `@typescript-eslint/explicit-function-return-type`} (`prettier/prettier` and `import/order` are auto-fixed and never count) | GO-WITH-CAVEATS   |
+| B3  | the coverage command in Step 5 printed a `MISSING` line, or `grep -nE "^\s*--color-[a-z-]+: [^v]" src/index.css` prints anything (§5)                                                                                            | GO-WITH-CAVEATS   |
+| B4  | any spec test other than `world view: …` failed (§6)                                                                                                                                                                             | GO-WITH-CAVEATS   |
+| B5  | the CLI added a dependency outside {`clsx`, `tailwind-merge`, `class-variance-authority`, `tw-animate-css`, `@radix-ui/*`} — e.g. `lucide-react` (§3, §4)                                                                        | GO-WITH-CAVEATS   |
+| B6  | white on `--color-destructive` < 4.50 (§5; known `3.91`)                                                                                                                                                                         | GO-WITH-CAVEATS   |
+| B7  | the jsdom probe needed one or more stubs, or was deleted (§7)                                                                                                                                                                    | GO-WITH-CAVEATS   |
+| B8  | web delta > 150000 bytes (§8)                                                                                                                                                                                                    | GO-WITH-CAVEATS   |
+| —   | none of the above                                                                                                                                                                                                                | **GO**            |
 
 For every B row that is true, write one numbered entry in §10 "Required changes to plan 003"
 with the exact edit, using these templates:
@@ -1099,10 +1118,10 @@ universal `border-border`/`outline-ring/50` rules were dropped; do not reintrodu
 1. `git apply --3way docs/planning/shadcn-spike.patch`
 2. `npm install` (add `--legacy-peer-deps` only if §10 says so)
 3. `npm run verify:static && npm run build:web`
-The patch contains: package.json/lock, tsconfig, vite and vitest aliases, components.json,
-.eslintrc.cjs override, src/index.css bridge, src/lib/utils.ts, src/components/ui/{button,dialog,tooltip}.tsx,
-playground registration. It does NOT contain the scaffold, the spike spec, the jsdom probe or
-screenshots. Re-run `npx shadcn@1.1.23 add <name> -y` only for new primitives.
+   The patch contains: package.json/lock, tsconfig, vite and vitest aliases, components.json,
+   .eslintrc.cjs override, src/index.css bridge, src/lib/utils.ts, src/components/ui/{button,dialog,tooltip}.tsx,
+   playground registration. It does NOT contain the scaffold, the spike spec, the jsdom probe or
+   screenshots. Re-run `npx shadcn@1.1.23 add <name> -y` only for new primitives.
 ```
 
 §9 answers each of the four questions in one sentence citing the doc section. Then write the

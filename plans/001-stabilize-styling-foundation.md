@@ -18,21 +18,21 @@ git diff --stat <grounded-at>..origin/main -- src/index.css src/App.css src/styl
 
 **Citation re-check** (run each; the hit count must match):
 
-| Anchor (grep)                                                            | File                             | Expected hits                       |
-| ------------------------------------------------------------------------ | -------------------------------- | ----------------------------------- |
-| `grep -c "^@import 'tailwindcss';" src/index.css`                        | `src/index.css`                  | 1                                   |
-| `grep -c '^@theme' src/index.css`                                        | `src/index.css`                  | 1 (0 at d3d3642; plan 000 adds it)  |
-| `grep -c 'rgb(' src/styles/app.css`                                      | `src/styles/app.css`             | 6                                   |
-| `grep -c '#000000' src/styles/app.css`                                   | `src/styles/app.css`             | 1                                   |
-| `grep -c '^\* {' src/styles/theme.css`                                   | `src/styles/theme.css`           | 1                                   |
-| `grep -c '^  transition:$' src/styles/theme.css` (the `body` rule)       | `src/styles/theme.css`           | 1                                   |
-| `grep -c 'bg-red-500' src/App.tsx`                                       | `src/App.tsx`                    | 1                                   |
-| `grep -c 'bg-black' src/App.tsx`                                         | `src/App.tsx`                    | 1                                   |
-| `grep -c "setAttribute('data-theme'" src/components/HomeScreen.tsx`      | `src/components/HomeScreen.tsx`  | 1                                   |
-| `grep -c '^function applyTheme' src/components/ThemeManager.tsx`         | `src/components/ThemeManager.tsx`| 1                                   |
-| `grep -c 'animate-slide-down' src/components/Toast.tsx`                  | `src/components/Toast.tsx`       | 1                                   |
-| `test -f tailwind.config.js && test -f src/App.css; echo $?`             | repo root                        | prints `0`                          |
-| `grep -rn 'App.css' src/ index.html electron/; echo $?`                  | repo                             | prints `1` (no consumers)           |
+| Anchor (grep)                                                       | File                              | Expected hits                      |
+| ------------------------------------------------------------------- | --------------------------------- | ---------------------------------- |
+| `grep -c "^@import 'tailwindcss';" src/index.css`                   | `src/index.css`                   | 1                                  |
+| `grep -c '^@theme' src/index.css`                                   | `src/index.css`                   | 1 (0 at d3d3642; plan 000 adds it) |
+| `grep -c 'rgb(' src/styles/app.css`                                 | `src/styles/app.css`              | 6                                  |
+| `grep -c '#000000' src/styles/app.css`                              | `src/styles/app.css`              | 1                                  |
+| `grep -c '^\* {' src/styles/theme.css`                              | `src/styles/theme.css`            | 1                                  |
+| `grep -c '^  transition:$' src/styles/theme.css` (the `body` rule)  | `src/styles/theme.css`            | 1                                  |
+| `grep -c 'bg-red-500' src/App.tsx`                                  | `src/App.tsx`                     | 1                                  |
+| `grep -c 'bg-black' src/App.tsx`                                    | `src/App.tsx`                     | 1                                  |
+| `grep -c "setAttribute('data-theme'" src/components/HomeScreen.tsx` | `src/components/HomeScreen.tsx`   | 1                                  |
+| `grep -c '^function applyTheme' src/components/ThemeManager.tsx`    | `src/components/ThemeManager.tsx` | 1                                  |
+| `grep -c 'animate-slide-down' src/components/Toast.tsx`             | `src/components/Toast.tsx`        | 1                                  |
+| `test -f tailwind.config.js && test -f src/App.css; echo $?`        | repo root                         | prints `0`                         |
+| `grep -rn 'App.css' src/ index.html electron/; echo $?`             | repo                              | prints `1` (no consumers)          |
 
 If any row differs: STOP.
 
@@ -76,7 +76,7 @@ mandatory reading before any `src/` change.
    values. Keep this file as the source of truth.
 2. `src/styles/app.css` (165 lines: `wc -l src/styles/app.css`) mostly consumes tokens but
    has 8 literal colours (`grep -nE "#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|\b(white|black)\b"
-   src/styles/app.css`): `.toolbar` is `#000000` on `rgb(82, 82, 82)`, `.btn-tool` and its
+src/styles/app.css`): `.toolbar` is `#000000` on `rgb(82, 82, 82)`, `.btn-tool` and its
    `:hover` use four `rgb()` greys, and `.btn-broadcast.active` uses `white`. The toolbar is
    pure black in light mode.
 3. Tailwind utilities in TSX. The toolbar div (`grep -n 'className="toolbar' src/App.tsx`,
@@ -94,8 +94,7 @@ change in a large DOM. `.theme-loading * { transition: none !important; }` and t
 `@media (prefers-reduced-motion: reduce)` block below them must stay untouched. `.btn` has its
 own `transition: background-color 0.2s ease` (`grep -n transition src/styles/app.css`), so
 `.btn*` hovers keep fading; only TSX `hover:` utilities without a `transition` utility snap:
-`grep -rhoE 'className=(\{`|")[^`"]*' src --include=*.tsx | grep -cE 'hover:'` → 90, of which
-`… | grep -E 'hover:' | grep -vcE 'transition'` → 32 have no transition.
+`grep -rhoE 'className=(\{`|")[^`"]_' src --include=_.tsx | grep -cE 'hover:'`→ 90, of which`… | grep -E 'hover:' | grep -vcE 'transition'` → 32 have no transition.
 
 **Theme switching paths.** `ThemeManager.tsx` `applyTheme` (`grep -n 'function applyTheme'
 src/components/ThemeManager.tsx`, line 36) sets `data-theme` on `<html>`. In the web build the
@@ -112,11 +111,11 @@ that would break the full-viewport layout if imported. Nothing imports it.
 
 Gates: `plans/CONVENTIONS.md` §4. Commands specific to this plan:
 
-| Purpose                              | Command                                                              |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| Inspect built CSS                    | `npm run build:web` then `grep … dist-web/assets/*.css`              |
-| Run one new Playwright spec          | `npx playwright test tests/<name>.spec.ts --project=Web-Chromium`    |
-| Run the two new vitest guards        | `npx vitest run src/styles`                                          |
+| Purpose                       | Command                                                           |
+| ----------------------------- | ----------------------------------------------------------------- |
+| Inspect built CSS             | `npm run build:web` then `grep … dist-web/assets/*.css`           |
+| Run one new Playwright spec   | `npx playwright test tests/<name>.spec.ts --project=Web-Chromium` |
+| Run the two new vitest guards | `npx vitest run src/styles`                                       |
 
 `grep -c` prints `0` with exit status 1. Wherever **Expected** says `0` for a `grep -c`, that
 exit status is the pass, not a failure.
@@ -404,14 +403,14 @@ npm run build:web
    line 151, with its surrounding `return () => { … };`) with:
 
    ```ts
-       return () => {
-         cleanup?.();
-         if (transitionTimer !== undefined) {
-           window.clearTimeout(transitionTimer);
-           transitionTimer = undefined;
-           document.documentElement.classList.remove('theme-transitioning');
-         }
-       };
+   return () => {
+     cleanup?.();
+     if (transitionTimer !== undefined) {
+       window.clearTimeout(transitionTimer);
+       transitionTimer = undefined;
+       document.documentElement.classList.remove('theme-transitioning');
+     }
+   };
    ```
 
 3. In `src/components/HomeScreen.tsx`, three one-line edits:
@@ -495,8 +494,8 @@ not revert the step.
 1. Add two tokens to `src/styles/theme.css`, in the `[data-theme='light']` block (line 142)
    and the second `[data-theme='dark']` block (line 211) — never the first `[data-theme='dark']`
    at line 58. Light block: after `--app-error-solid-hover: var(--red-10); /* Solid error
-   hover */` (line 179) add `--app-error-solid-text: white; /* Text/icon colour on solid
-   error */`; after `--app-success-solid-hover: var(--green-10); /* Solid success hover */`
+hover */` (line 179) add `--app-error-solid-text: white; /* Text/icon colour on solid
+error */`; after `--app-success-solid-hover: var(--green-10); /* Solid success hover */`
    (line 195) add `--app-success-solid-text: white; /* Text/icon colour on solid success */`.
    Dark block: after `--app-error-solid-hover: var(--red-10);` (line 248) add
    `--app-error-solid-text: white;`; after `--app-success-solid-hover: var(--green-10);`
@@ -738,7 +737,10 @@ test.beforeEach(async ({ page }) => {
         listeners.set(channel, [...(listeners.get(channel) ?? []), listener]);
       },
       off: (channel: string, listener: Listener) => {
-        listeners.set(channel, (listeners.get(channel) ?? []).filter((l) => l !== listener));
+        listeners.set(
+          channel,
+          (listeners.get(channel) ?? []).filter((l) => l !== listener),
+        );
       },
       removeAllListeners: (channel: string) => {
         listeners.delete(channel);
@@ -770,7 +772,10 @@ for (const theme of ['light', 'dark'] as const) {
     const button = page.getByRole('button', { name: /^(Pause|Resume) game$/ });
 
     await expect(button).toHaveClass(/is-running/);
-    await expect(button).toHaveCSS('background-color', await tokenColor(page, '--app-success-solid'));
+    await expect(button).toHaveCSS(
+      'background-color',
+      await tokenColor(page, '--app-success-solid'),
+    );
 
     await button.click();
     await expect(button).toHaveClass(/is-paused/);

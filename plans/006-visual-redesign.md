@@ -47,18 +47,18 @@ difference is drift: STOP.
 
 **Citation re-check** (run each; "If any row differs: STOP."):
 
-| Anchor (grep)                                                                                                  | File                                                            | Expected hits |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------- |
-| `grep -n "prefers-reduced-motion" src/styles/theme.css`                                                        | `src/styles/theme.css`                                          | 1 (line 303)  |
-| `grep -c "^@import '@radix-ui/colors/" src/styles/theme.css`                                                   | `src/styles/theme.css`                                          | 14            |
-| `grep -c "app-accent-solid-text" src/styles/theme.css`                                                         | `src/styles/theme.css`                                          | 2             |
-| `grep -n "import { componentExamples, categories } from './playground-registry'" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx` | `DesignSystemPlayground.tsx` | 1 (line 30)   |
-| `grep -n "{/\* Theme Toggle \*/}" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`          | `DesignSystemPlayground.tsx`                                    | 1 (line 173)  |
-| `grep -n "'/design-system'" src/App.tsx`                                                                       | `src/App.tsx`                                                   | 1 (line 123)  |
-| `grep -n "'performance';" src/components/DesignSystemPlayground/types.ts`                                      | `types.ts`                                                      | 1 (line 22)   |
-| `grep -n "#### Text on Background Combinations" docs/features/wcag-audit.md`                                   | `docs/features/wcag-audit.md`                                   | 1 (line 30)   |
-| `grep -c "^export async function gotoSurface" tests/helpers/surfaces.ts`                                       | `tests/helpers/surfaces.ts` (plan 000)                          | 1             |
-| `grep -c "import AxeBuilder from '@axe-core/playwright'" tests/accessibility.spec.ts`                          | `tests/accessibility.spec.ts`                                   | 1             |
+| Anchor (grep)                                                                                                                                      | File                                   | Expected hits |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------- |
+| `grep -n "prefers-reduced-motion" src/styles/theme.css`                                                                                            | `src/styles/theme.css`                 | 1 (line 303)  |
+| `grep -c "^@import '@radix-ui/colors/" src/styles/theme.css`                                                                                       | `src/styles/theme.css`                 | 14            |
+| `grep -c "app-accent-solid-text" src/styles/theme.css`                                                                                             | `src/styles/theme.css`                 | 2             |
+| `grep -n "import { componentExamples, categories } from './playground-registry'" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx` | `DesignSystemPlayground.tsx`           | 1 (line 30)   |
+| `grep -n "{/\* Theme Toggle \*/}" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`                                                | `DesignSystemPlayground.tsx`           | 1 (line 173)  |
+| `grep -n "'/design-system'" src/App.tsx`                                                                                                           | `src/App.tsx`                          | 1 (line 123)  |
+| `grep -n "'performance';" src/components/DesignSystemPlayground/types.ts`                                                                          | `types.ts`                             | 1 (line 22)   |
+| `grep -n "#### Text on Background Combinations" docs/features/wcag-audit.md`                                                                       | `docs/features/wcag-audit.md`          | 1 (line 30)   |
+| `grep -c "^export async function gotoSurface" tests/helpers/surfaces.ts`                                                                           | `tests/helpers/surfaces.ts` (plan 000) | 1             |
+| `grep -c "import AxeBuilder from '@axe-core/playwright'" tests/accessibility.spec.ts`                                                              | `tests/accessibility.spec.ts`          | 1             |
 
 ## Why this matters
 
@@ -74,7 +74,7 @@ this plan spends that.
 
 - **Tokens.** At d3d3642 `src/styles/theme.css` (308 lines) defines 43 `--app-*` colour tokens
   (`grep -oE "^\s*--app-[a-z0-9-]+" src/styles/theme.css | sort -u | wc -l` → 43), all colours,
-  including `--app-shadow-sm|md|lg` which are shadow *colours*. Plan 000 adds the `radius`,
+  including `--app-shadow-sm|md|lg` which are shadow _colours_. Plan 000 adds the `radius`,
   `elevation`, `duration`, `ease`, `space`, `font-size` and `font-weight` families; their exact
   role names are read with a grep in Step 2a, never assumed.
 - **Radix scales in the browser.** `theme.css` imports 14 Radix CSS files (slate, blue, red, amber,
@@ -102,10 +102,9 @@ this plan spends that.
   `sessionConsoleSettingsSections.tsx`). `PreferencesDialog.tsx` is deleted by plan 000.
 - **Sidebars are three**: `Sidebar.tsx` (477 lines), `QuickTokenSidebar.tsx` (165),
   `MobileSidebarDrawer.tsx` (91). Home screen: `HomeScreen.tsx`, 1,792 lines (`wc -l`).
-- **Toolbar** is `src/App.tsx` (`grep -n 'className="toolbar fixed bottom-4' src/App.tsx`, line
-  556) until plan 004 Step 10 extracts `src/components/Toolbar.tsx`; grep both.
+- **Toolbar** is `src/App.tsx` (`grep -n 'className="toolbar fixed bottom-4' src/App.tsx`, line 556) until plan 004 Step 10 extracts `src/components/Toolbar.tsx`; grep both.
 - **Reduced motion**: `theme.css` lines 303–308 set `transition: none !important; animation: none
-  !important` on `*`. Step 2a adds token zeroing beside it; only 006b may remove the `*` rule.
+!important` on `*`. Step 2a adds token zeroing beside it; only 006b may remove the `*` rule.
 - **World View** is `?type=world` (`grep -n "type=world" src/utils/useWindowType.ts`, line 9).
 - **Fonts**: `src/styles/fonts.css` (139 lines) declares IBM Plex Sans 400–700 and Plex Mono from
   `@ibm/plex`. No Plex Serif face exists; direction C adds one in `directions.css`.
@@ -117,14 +116,14 @@ Read first: the brief, `README.md` lines 16–56, `src/components/ui/README.md`,
 
 Gates: `plans/CONVENTIONS.md` §4. Commands specific to this plan:
 
-| Purpose                     | Command                                                                                                 |
-| --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Contrast, base theme        | `npm run contrast` (Step 2b adds it)                                                                    |
-| Contrast, one direction     | `npm run contrast -- --direction a`                                                                     |
-| Regenerate wcag-audit table | `npm run contrast -- --write`                                                                           |
-| Audit measurements          | `npm run build:web && AUDIT_OUT=docs/planning/ui-redesign-audit.json CI=1 npx playwright test tests/audit-measure.spec.ts --project=Web-Chromium` |
+| Purpose                     | Command                                                                                                                                             |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contrast, base theme        | `npm run contrast` (Step 2b adds it)                                                                                                                |
+| Contrast, one direction     | `npm run contrast -- --direction a`                                                                                                                 |
+| Regenerate wcag-audit table | `npm run contrast -- --write`                                                                                                                       |
+| Audit measurements          | `npm run build:web && AUDIT_OUT=docs/planning/ui-redesign-audit.json CI=1 npx playwright test tests/audit-measure.spec.ts --project=Web-Chromium`   |
 | Direction screenshots       | `npm run build:web && SHOTS_OUT=docs/planning/screenshots/006a-step2 CI=1 npx playwright test tests/direction-shots.spec.ts --project=Web-Chromium` |
-| Plan lint                   | `bash scripts/plan-lint.sh plans/006-visual-redesign.md`                                                |
+| Plan lint                   | `bash scripts/plan-lint.sh plans/006-visual-redesign.md`                                                                                            |
 
 ## Scope
 
@@ -145,7 +144,7 @@ baselines, `tests/accessibility.spec.ts`, `scripts/contrast-pairs.json`,
 `public/screenshots/`, `.github/workflows/deploy-web.yml`, `CHANGELOG.md`, `plans/reports/`.
 
 **Out of scope**: new features; renaming or removing any `data-testid`; `src/components/Canvas/**`
-rendering logic (grid *colour* via `--app-grid-color` is in scope); the `CommandPalette`;
+rendering logic (grid _colour_ via `--app-grid-color` is in scope); the `CommandPalette`;
 `ErrorFallbackUI.tsx` and `UpdateErrorFallbackUI.tsx` (hand-rolled by design); any new World View
 chrome without a decision file; any Figma or MCP tooling (the executor is headless).
 
@@ -191,7 +190,6 @@ filled and the Status line reads `CONFIRMED <date>`. Which lines are still blank
 Option 1; the brief was drafted for confirmation, not for redesign.
 
 ## Kyle's answer
-
 ```
 
 **Do NOT**: Edit the brief. Fill any blank yourself. Start Step 1 with a `DRAFTED` brief.
@@ -309,7 +307,8 @@ test('audit: measure every surface in both themes', async ({ page }) => {
             const styles: Record<string, string> = {};
             if (el) {
               const cs = getComputedStyle(el);
-              for (const prop of props) styles[prop] = cs[prop as keyof CSSStyleDeclaration] as string;
+              for (const prop of props)
+                styles[prop] = cs[prop as keyof CSSStyleDeclaration] as string;
             }
             return { selector, found: el !== null, styles };
           });
@@ -321,7 +320,10 @@ test('audit: measure every surface in both themes', async ({ page }) => {
     }
   }
   mkdirSync(path.dirname(out as string), { recursive: true });
-  writeFileSync(out as string, JSON.stringify({ generatedAt: new Date().toISOString(), samples }, null, 2));
+  writeFileSync(
+    out as string,
+    JSON.stringify({ generatedAt: new Date().toISOString(), samples }, null, 2),
+  );
 });
 ```
 
@@ -333,7 +335,7 @@ test('audit: measure every surface in both themes', async ({ page }) => {
    palette-class count, the `dark:` count and the literal-colour count, each with the exact command
    from "Context the executor needs" and its output; then **seven** sections (one per surface,
    heading `## Surface: <name>`), each containing one line `Nearest: <reference>. Move toward:
-   <reference>.` (references are brief §4/§6 names; for surfaces with no reference shot write
+<reference>.` (references are brief §4/§6 names; for surfaces with no reference shot write
    `Nearest: none.`) and one table with exactly these columns and exactly six rows (`Typography`,
    `Colour`, `Density`, `Motion`, `Iconography`, `Depth`):
 
@@ -460,26 +462,26 @@ grep -oE "^\s*--app-(radius|elevation|duration|ease)-[a-z0-9-]+" src/styles/them
 }
 ```
 
-   Then append, in this order:
+Then append, in this order:
 
-   - `[data-direction='b']` and `[data-theme='dark'][data-direction='b']` — **B · Etched plate**:
-     copy the A blocks, change every `amber` to `tomato`; in the light block set
-     `--app-accent-solid: var(--tomato-11); --app-accent-solid-hover: var(--tomato-12);
-     --app-accent-solid-text: white;` (white on `tomato-9` is below 4.5:1); in the dark block set
-     `--app-accent-solid: var(--tomato-9); --app-accent-solid-hover: var(--tomato-10);
-     --app-accent-solid-text: var(--slate-1);`. Surfaces are continuous dark stock:
-     `--app-bg-surface: var(--slate-2); --app-bg-hover: var(--slate-3); --app-bg-active:
-     var(--slate-4); --app-border-subtle: var(--slate-4); --app-border-default: var(--slate-5);`.
-     Depth is engraved: `--app-elevation-active: inset 0 1px 0 0 var(--slate-1), inset 0 -1px 0 0
-     var(--slate-7);`. Type: `--app-font-family-readout: 'IBM Plex Sans', system-ui, sans-serif;
-     --app-font-size-readout: 15px; --app-font-weight-readout: 600;`. Radius lines: `2px`.
-   - `[data-direction='c']` and `[data-theme='dark'][data-direction='c']` — **C · Cartographer's
-     desk**: copy the A blocks, change every `amber` to `orange` and every `slate` to `sand` (warm
-     greys; the light theme becomes paper stock). Depth is flat with a pressed state:
-     `--app-elevation-active: inset 0 1px 0 0 var(--sand-7);` and no `--app-elevation-*` or
-     `--app-radius-*` lines (base values stay). Type: `--app-font-family-title: 'IBM Plex Serif',
-     Georgia, serif;`.
-   - Dark values for the three new scales (Radix's `.dark` selector never matches; see Context):
+- `[data-direction='b']` and `[data-theme='dark'][data-direction='b']` — **B · Etched plate**:
+  copy the A blocks, change every `amber` to `tomato`; in the light block set
+  `--app-accent-solid: var(--tomato-11); --app-accent-solid-hover: var(--tomato-12);
+--app-accent-solid-text: white;` (white on `tomato-9` is below 4.5:1); in the dark block set
+  `--app-accent-solid: var(--tomato-9); --app-accent-solid-hover: var(--tomato-10);
+--app-accent-solid-text: var(--slate-1);`. Surfaces are continuous dark stock:
+  `--app-bg-surface: var(--slate-2); --app-bg-hover: var(--slate-3); --app-bg-active:
+var(--slate-4); --app-border-subtle: var(--slate-4); --app-border-default: var(--slate-5);`.
+  Depth is engraved: `--app-elevation-active: inset 0 1px 0 0 var(--slate-1), inset 0 -1px 0 0
+var(--slate-7);`. Type: `--app-font-family-readout: 'IBM Plex Sans', system-ui, sans-serif;
+--app-font-size-readout: 15px; --app-font-weight-readout: 600;`. Radius lines: `2px`.
+- `[data-direction='c']` and `[data-theme='dark'][data-direction='c']` — **C · Cartographer's
+  desk**: copy the A blocks, change every `amber` to `orange` and every `slate` to `sand` (warm
+  greys; the light theme becomes paper stock). Depth is flat with a pressed state:
+  `--app-elevation-active: inset 0 1px 0 0 var(--sand-7);` and no `--app-elevation-*` or
+  `--app-radius-*` lines (base values stay). Type: `--app-font-family-title: 'IBM Plex Serif',
+Georgia, serif;`.
+- Dark values for the three new scales (Radix's `.dark` selector never matches; see Context):
 
 ```bash
 for s in tomato orange sand; do
@@ -495,7 +497,7 @@ grep -c "^\[data-theme='dark'\] {" src/styles/directions.css   # Expected: 3
    removes it once no literal duration remains.
 4. `types.ts`: add `| 'motion'` after `| 'performance'` in the `category` union.
 5. `playground-registry.tsx`: append `{ id: 'motion', name: 'Motion', description: 'Duration and
-   easing tokens, with the reduced-motion twin' }` to `categories`, and append two examples to
+easing tokens, with the reduced-motion twin' }` to `categories`, and append two examples to
    `componentExamples` (the `code` string of each is the same JSX as a template literal):
 
 ```tsx
@@ -544,16 +546,15 @@ grep -c "^\[data-theme='dark'\] {" src/styles/directions.css   # Expected: 3
   },
 ```
 
-   The tile names `--app-duration-fast` and `--app-ease-standard`. If the grep in Do 1 does not
-   print those exact names, replace them (in both the `style` and the `code` string) with the
-   first `--app-duration-*` and first `--app-ease-*` names it prints. `types.ts` imports
-   `React` as a type already; the registry needs `import type React from 'react';` added to its
-   type imports for `React.CSSProperties`.
-6. `DesignSystemPlayground.tsx`: add `import '../../styles/directions.css';` as the last
-   non-type import; add the constants and helper below the existing imports (before
-   `PlaygroundShell`), the state and effect inside `PlaygroundContent` after the
-   `handleToggleTheme` function, and the button row immediately before the `{/* Theme Toggle */}`
-   comment (line 173):
+The tile names `--app-duration-fast` and `--app-ease-standard`. If the grep in Do 1 does not
+print those exact names, replace them (in both the `style` and the `code` string) with the
+first `--app-duration-*` and first `--app-ease-*` names it prints. `types.ts` imports
+`React` as a type already; the registry needs `import type React from 'react';` added to its
+type imports for `React.CSSProperties`. 6. `DesignSystemPlayground.tsx`: add `import '../../styles/directions.css';` as the last
+non-type import; add the constants and helper below the existing imports (before
+`PlaygroundShell`), the state and effect inside `PlaygroundContent` after the
+`handleToggleTheme` function, and the button row immediately before the `{/* Theme Toggle */}`
+comment (line 173):
 
 ```tsx
 const DIRECTIONS = ['none', 'a', 'b', 'c'] as const;
@@ -571,45 +572,47 @@ function readDirection(): Direction {
 ```
 
 ```tsx
-  const [direction, setDirection] = useState<Direction>(readDirection);
+const [direction, setDirection] = useState<Direction>(readDirection);
 
-  useEffect(() => {
-    if (direction === 'none') {
-      delete document.documentElement.dataset.direction;
-    } else {
-      document.documentElement.dataset.direction = direction;
-    }
-    try {
-      window.localStorage.setItem(DIRECTION_KEY, direction);
-    } catch {
-      // Storage may be unavailable (private mode); the attribute still applies.
-    }
-    return () => {
-      delete document.documentElement.dataset.direction;
-    };
-  }, [direction]);
+useEffect(() => {
+  if (direction === 'none') {
+    delete document.documentElement.dataset.direction;
+  } else {
+    document.documentElement.dataset.direction = direction;
+  }
+  try {
+    window.localStorage.setItem(DIRECTION_KEY, direction);
+  } catch {
+    // Storage may be unavailable (private mode); the attribute still applies.
+  }
+  return () => {
+    delete document.documentElement.dataset.direction;
+  };
+}, [direction]);
 ```
 
 ```tsx
-              {/* Direction switcher (plan 006a): prototypes from docs/planning/ui-redesign-brief.md §10 */}
-              <div className="flex items-center gap-1" role="group" aria-label="Design direction">
-                {DIRECTIONS.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    data-testid={`playground-direction-${d}`}
-                    aria-pressed={direction === d}
-                    onClick={() => setDirection(d)}
-                    className={`px-2 py-1 text-xs font-mono uppercase rounded border border-[var(--app-border-subtle)] ${
-                      direction === d
-                        ? 'bg-[var(--app-accent-solid)] text-[var(--app-accent-solid-text)]'
-                        : 'bg-[var(--app-bg-surface)] text-[var(--app-text-secondary)]'
-                    }`}
-                  >
-                    {d}
-                  </button>
-                ))}
-              </div>
+{
+  /* Direction switcher (plan 006a): prototypes from docs/planning/ui-redesign-brief.md §10 */
+}
+<div className="flex items-center gap-1" role="group" aria-label="Design direction">
+  {DIRECTIONS.map((d) => (
+    <button
+      key={d}
+      type="button"
+      data-testid={`playground-direction-${d}`}
+      aria-pressed={direction === d}
+      onClick={() => setDirection(d)}
+      className={`px-2 py-1 text-xs font-mono uppercase rounded border border-[var(--app-border-subtle)] ${
+        direction === d
+          ? 'bg-[var(--app-accent-solid)] text-[var(--app-accent-solid-text)]'
+          : 'bg-[var(--app-bg-surface)] text-[var(--app-text-secondary)]'
+      }`}
+    >
+      {d}
+    </button>
+  ))}
+</div>;
 ```
 
 7. Create `src/styles/directions.test.ts` exactly (the brief §10 distinctness rule as a test):
@@ -830,7 +833,10 @@ for (const theme of ['light', 'dark']) {
 }
 for (const theme of ['light', 'dark']) {
   const bg = resolve('var(--app-bg-surface)', theme === 'light' ? light : dark);
-  if (bg) lines.push(`| ${theme} | luminance | \`app-bg-surface\` | ${bg} |  | ${(luminance(bg) * 100).toFixed(1)}% | ≤12% dark | brief §9 row 1 |`);
+  if (bg)
+    lines.push(
+      `| ${theme} | luminance | \`app-bg-surface\` | ${bg} |  | ${(luminance(bg) * 100).toFixed(1)}% | ≤12% dark | brief §9 row 1 |`,
+    );
 }
 const table = lines.join('\n');
 console.log(`Contrast (${direction ? `direction ${direction}` : 'base theme'})\n${table}`);
@@ -875,8 +881,7 @@ process.exit(failed ? 1 : 0);
 4. `docs/features/wcag-audit.md`: insert a line `<!-- contrast:start -->` immediately before
    `#### Text on Background Combinations` (line 30) and a line `<!-- contrast:end -->`
    immediately before `#### Borders & Dividers` (line 50). Move the paragraph starting
-   `**Note:** \`--app-text-disabled\`` to directly after the end marker. Run
-   `npm run contrast -- --write`; the two hand-written tables between the markers are replaced
+   `**Note:** \`--app-text-disabled\``to directly after the end marker. Run`npm run contrast -- --write`; the two hand-written tables between the markers are replaced
    by the generated one.
 5. Append to `tests/accessibility.spec.ts` (the file already imports `AxeBuilder`, `test` and
    `expect`; add nothing else at the top):
@@ -976,15 +981,15 @@ and `npm run contrast -- --direction <x>`, and are screenshotted under
 
 ## Rubric (brief §9; rows 1–6 scored from measurements, row 7 is Kyle's)
 
-| Row | Heuristic                     | Source                                                              | A | B | C |
-| --- | ----------------------------- | ------------------------------------------------------------------- | - | - | - |
-| 1   | Chrome must not glow          | `npm run contrast -- --direction <x>`: luminance line, dark ≤ 12 % |   |   |   |
-| 2   | Glance-readable at 2 m        | `directions.test.ts` readout size/weight + 7:1 pair                 |   |   |   |
-| 3   | One-handed / pen              | n/a here: directions set no size token; `tests/touch-targets.spec.ts` gates 006b | n/a | n/a | n/a |
-| 4   | Four-hour fatigue             | `directions.test.ts` grey-scale chrome test                         |   |   |   |
-| 5   | State without colour          | `grep -c "elevation-active: inset" src/styles/directions.css` per direction ≥ 1 |   |   |   |
-| 6   | Projector-safe World View     | pass by construction: `[data-direction]` never applies to `?type=world` | pass | pass | pass |
-| 7   | Hell-yes test                 | Kyle, per screenshot                                                |   |   |   |
+| Row | Heuristic                 | Source                                                                           | A    | B    | C    |
+| --- | ------------------------- | -------------------------------------------------------------------------------- | ---- | ---- | ---- |
+| 1   | Chrome must not glow      | `npm run contrast -- --direction <x>`: luminance line, dark ≤ 12 %               |      |      |      |
+| 2   | Glance-readable at 2 m    | `directions.test.ts` readout size/weight + 7:1 pair                              |      |      |      |
+| 3   | One-handed / pen          | n/a here: directions set no size token; `tests/touch-targets.spec.ts` gates 006b | n/a  | n/a  | n/a  |
+| 4   | Four-hour fatigue         | `directions.test.ts` grey-scale chrome test                                      |      |      |      |
+| 5   | State without colour      | `grep -c "elevation-active: inset" src/styles/directions.css` per direction ≥ 1  |      |      |      |
+| 6   | Projector-safe World View | pass by construction: `[data-direction]` never applies to `?type=world`          | pass | pass | pass |
+| 7   | Hell-yes test             | Kyle, per screenshot                                                             |      |      |      |
 
 ## Contrast
 
@@ -997,12 +1002,11 @@ and list every seed value changed by the rule in Step 2b Do 7>
 `app-accent-solid-text` / `app-accent-solid` dark ratio is highest> — one sentence.
 
 ## Kyle's answer
-
 ```
 
-   Fill every `<…>` placeholder from real outputs before committing. Then set the README row
-   `006a` to `BLOCKED (decision 006-direction)`, write `plans/reports/006a.md` (`## Run 1`), push,
-   and open the 006a PR (CONVENTIONS §7; the PR body is the report). STOP.
+Fill every `<…>` placeholder from real outputs before committing. Then set the README row
+`006a` to `BLOCKED (decision 006-direction)`, write `plans/reports/006a.md` (`## Run 1`), push,
+and open the 006a PR (CONVENTIONS §7; the PR body is the report). STOP.
 
 **Do NOT**: Edit `tests/accessibility.spec.ts` above its last line. Add an axe `exclude()` to make
 a direction pass. Change a Radix scale value (change which step a token points at). Write under
@@ -1098,7 +1102,6 @@ citing the audit row that motivates it. If the audit conclusion is `inconsistenc
 `fix-in-006b` for Q7.
 
 ## Kyle's answer
-
 ```
 
 Set the README row `006a` to `BLOCKED (decision 006-ia)`, append `## Run 2` to
@@ -1373,10 +1376,21 @@ async function sampleText(page: Page): Promise<Sample[]> {
       const fg = lum(cs.color) ?? 0;
       const bg = bgLum(el);
       const [hi, lo] = fg > bg ? [fg, bg] : [bg, fg];
-      const strokes = [cs.borderTopWidth, cs.borderRightWidth, cs.borderBottomWidth, cs.borderLeftWidth]
+      const strokes = [
+        cs.borderTopWidth,
+        cs.borderRightWidth,
+        cs.borderBottomWidth,
+        cs.borderLeftWidth,
+      ]
         .map((w) => parseFloat(w))
         .filter((w) => w > 0);
-      out.push({ tag: el.tagName, text: text.slice(0, 40), fontSize: parseFloat(cs.fontSize), strokes, ratio: (hi + 0.05) / (lo + 0.05) });
+      out.push({
+        tag: el.tagName,
+        text: text.slice(0, 40),
+        fontSize: parseFloat(cs.fontSize),
+        strokes,
+        ratio: (hi + 0.05) / (lo + 0.05),
+      });
     }
     return out;
   });
@@ -1385,7 +1399,9 @@ async function sampleText(page: Page): Promise<Sample[]> {
 for (const surface of ['world', 'world-dialog'] as const) {
   test(`${surface}: brief §8 rules hold at 1920×1080`, async ({ page }) => {
     await gotoSurface(page, surface, 'dark');
-    await expect(page.locator('[data-testid^="toolbar-"], [data-testid^="sidebar-"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid^="toolbar-"], [data-testid^="sidebar-"]')).toHaveCount(
+      0,
+    );
     const samples = await sampleText(page);
     const small = samples.filter((s) => s.fontSize < MIN_FONT_PX);
     const thin = samples.filter((s) => s.strokes.some((w) => w < MIN_STROKE_PX));
