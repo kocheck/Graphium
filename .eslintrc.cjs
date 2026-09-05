@@ -474,6 +474,7 @@ module.exports = {
         'src/components/CollapsibleSection.tsx',
         'src/components/ConfirmDialog.tsx',
         'src/components/MapSettingsSheet.tsx',
+        'src/components/AssetLibrary/AddToLibraryDialog.tsx',
       ],
       rules: {
         'no-restricted-syntax': [

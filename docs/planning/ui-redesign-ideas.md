@@ -16,3 +16,8 @@
 - Danger Zone "Reset Map Position & Scale" is now `ghost` (old `btn-destructive` was an undefined class and rendered as a bare `.btn`). A real danger treatment belongs here.
 - Native `<select>` for grid type and the color `<input>` are still unstyled vs the rest of the sheet.
 - Calibration draws on the canvas behind a non-modal sheet; the sheet stays open and can cover the map on small widths.
+
+### AddToLibraryDialog
+
+- Category is still a native `<select>` next to `Input` fields; a shared Select primitive would match.
+- Mobile full-height (`h-full max-w-none rounded-none`) is a layout hack; a dedicated mobile sheet would read more clearly.
