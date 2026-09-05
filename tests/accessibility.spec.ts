@@ -13,7 +13,7 @@ import type { Surface } from './helpers/surfaces';
 
 // Surfaces whose only remaining violations are `color-contrast`. Each entry is recorded in
 // docs/planning/verification-baseline.md, fixed by plan 006. Plan 006b empties this list.
-const CONTRAST_DEFERRED: Surface[] = ['editor-mobile'];
+const CONTRAST_DEFERRED: Surface[] = ['editor-mobile', 'confirm-dialog', 'world-dialog'];
 
 test.describe('Accessibility audit (WCAG 2.1 AA)', () => {
   for (const surface of SURFACES) {

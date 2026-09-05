@@ -1,94 +1,41 @@
 /**
- * Tooltip Component - Custom tooltip with fast show timing and high contrast
- *
- * Provides a better alternative to browser-native title tooltips with:
- * - Faster show timing (100ms vs ~700ms default)
- * - High contrast styling for better readability
- * - Consistent appearance across browsers
- *
- * @component
+ * Tooltip adapter — same props API as before, rendered on the `tooltip` primitive.
+ * Keeps the `inline-flex` wrapper so flex toolbars lay out exactly as they did; opening on
+ * focus and flipping at viewport edges are accepted improvements (CONVENTIONS §9).
  */
 
-import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 
-import { createPortal } from 'react-dom';
+import {
+  Tooltip as TooltipRoot,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface TooltipProps {
   content: string;
   children: ReactNode;
   delay?: number; // Delay in milliseconds before showing tooltip
-  offset?: number; // Vertical offset in pixels from element (default: 50)
+  offset?: number; // Distance in pixels from the top of the element to the top of the tooltip
 }
 
+/** The old tooltip box was ~36px tall; sideOffset is the visible gap, so subtract it. */
+const OLD_BOX_HEIGHT = 36;
+const MIN_GAP = 4;
+
 function Tooltip({ content, children, delay = 100, offset = 50 }: TooltipProps): JSX.Element {
-  const [isVisible, setIsVisible] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const updatePosition = useCallback(() => {
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const newPosition = {
-        top: rect.top - offset, // Position above the element with configurable offset
-        left: rect.left + rect.width / 2, // Center horizontally
-      };
-      setPosition(newPosition);
-    }
-  }, [offset]);
-
-  const handleMouseEnter = (): void => {
-    timeoutRef.current = setTimeout(() => {
-      updatePosition();
-      setIsVisible(true);
-    }, delay);
-  };
-
-  const handleMouseLeave = (): void => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    setIsVisible(false);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
   return (
-    <>
-      <div
-        ref={containerRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className="inline-flex"
-      >
-        {children}
-      </div>
-
-      {isVisible &&
-        createPortal(
-          <div
-            className="fixed z-[9999] pointer-events-none"
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-              transform: 'translateX(-50%)',
-            }}
-          >
-            <div className="relative px-3 py-1.5 pb-3 rounded-md shadow-lg text-sm font-medium whitespace-nowrap bg-neutral-900 text-white border border-neutral-600">
-              {content}
-              {/* Tooltip arrow */}
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 w-2 h-2 rotate-45 bg-neutral-900 border-r border-b border-neutral-600" />
-            </div>
-          </div>,
-          document.body,
-        )}
-    </>
+    <TooltipProvider delayDuration={delay}>
+      <TooltipRoot>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{children}</span>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={Math.max(MIN_GAP, offset - OLD_BOX_HEIGHT)}>
+          {content}
+        </TooltipContent>
+      </TooltipRoot>
+    </TooltipProvider>
   );
 }
 

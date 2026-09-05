@@ -465,6 +465,31 @@ module.exports = {
         '@typescript-eslint/no-unsafe-call': 'off',
       },
     },
+    // plan 004 palette ratchet: every file migrated onto the primitives is appended here and
+    // may never regain a raw Tailwind palette class. Plan 006b extends it to the whole tree.
+    {
+      files: [
+        'src/components/Tooltip.tsx',
+        'src/components/ToggleSwitch.tsx',
+        'src/components/CollapsibleSection.tsx',
+        'src/components/ConfirmDialog.tsx',
+      ],
+      rules: {
+        'no-restricted-syntax': [
+          'error',
+          {
+            selector:
+              'Literal[value=/\\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\\b/]',
+            message: 'Hardcoded Tailwind palette class; use an --app-* token or a primitive.',
+          },
+          {
+            selector:
+              'TemplateElement[value.raw=/\\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\\b/]',
+            message: 'Hardcoded Tailwind palette class; use an --app-* token or a primitive.',
+          },
+        ],
+      },
+    },
     // Main entry points can have console
     {
       files: ['electron/main.ts', 'electron/preload.ts'],

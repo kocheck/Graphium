@@ -1,20 +1,17 @@
 /**
- * CollapsibleSection Component - Accordion Section
- *
- * A collapsible section with a header and toggleable content.
- * Used for organizing sidebar content into collapsible groups.
- *
- * @component
+ * CollapsibleSection adapter — same props API, rendered on the `collapsible` primitive.
  */
 
-import type React from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 
 import { RiArrowRightSLine } from '@remixicon/react';
 
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
 interface CollapsibleSectionProps {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   defaultOpen?: boolean;
 }
 
@@ -22,30 +19,21 @@ function CollapsibleSection({
   title,
   children,
   defaultOpen = true,
-}: CollapsibleSectionProps): React.ReactElement {
+}: CollapsibleSectionProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="mb-6">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between mb-3 hover:opacity-80 transition"
-        aria-expanded={isOpen}
-      >
-        <h3
-          className="text-sm uppercase font-bold tracking-wider"
-          style={{ color: 'var(--app-text-secondary)' }}
-        >
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
+      <CollapsibleTrigger className="w-full flex items-center justify-between mb-3 hover:opacity-80 transition">
+        <h3 className="text-sm uppercase font-bold tracking-wider text-[var(--app-text-secondary)]">
           {title}
         </h3>
         <RiArrowRightSLine
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-          style={{ color: 'var(--app-text-secondary)' }}
+          className={`w-4 h-4 transition-transform text-[var(--app-text-secondary)] ${isOpen ? 'rotate-90' : ''}`}
         />
-      </button>
-
-      {isOpen && <div className="space-y-2">{children}</div>}
-    </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-2">{children}</CollapsibleContent>
+    </Collapsible>
   );
 }
 

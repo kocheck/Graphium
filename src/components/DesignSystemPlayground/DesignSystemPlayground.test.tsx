@@ -11,19 +11,30 @@ vi.mock('../../services/storage', () => ({
   })),
 }));
 
-// Mock useGameStore
-const mockShowToast = vi.fn();
-const mockShowConfirmDialog = vi.fn();
-
-vi.mock('../../store/gameStore', () => ({
-  useGameStore: vi.fn(() => ({
+// Mock useGameStore. Selector calls must return the selected field — ConfirmDialog
+// uses `useGameStore((state) => state.confirmDialog)`, and a truthy object here
+// would keep that dialog open and steal focus from the playground search box.
+const { mockShowToast, mockShowConfirmDialog, mockUseGameStore } = vi.hoisted(() => {
+  const mockShowToast = vi.fn();
+  const mockShowConfirmDialog = vi.fn();
+  const state = {
     toast: null,
     confirmDialog: null,
     clearToast: vi.fn(),
     clearConfirmDialog: vi.fn(),
     showToast: mockShowToast,
     showConfirmDialog: mockShowConfirmDialog,
-  })),
+  };
+  const mockUseGameStore = Object.assign(
+    (selector?: (store: typeof state) => unknown) =>
+      typeof selector === 'function' ? selector(state) : state,
+    { getState: () => state },
+  );
+  return { mockShowToast, mockShowConfirmDialog, mockUseGameStore };
+});
+
+vi.mock('../../store/gameStore', () => ({
+  useGameStore: mockUseGameStore,
 }));
 
 describe('DesignSystemPlayground', () => {
