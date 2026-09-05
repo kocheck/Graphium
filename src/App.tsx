@@ -554,7 +554,7 @@ function App(): React.JSX.Element {
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
         {isArchitectView && !isMobile && (
           <div
-            className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50 bg-black border-2 border-neutral-600"
+            className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50"
             data-testid="toolbar-root"
           >
             {/* Play/Pause Button */}
