@@ -38,7 +38,7 @@ If any row differs: STOP.
   failures that were invisible before)
 - **Depends on**: none
 - **Category**: tests / infrastructure
-- **Requires**: none (a clone of `origin/main`, Node 20+, npm 10+)
+- **Requires**: none (a fresh clone of the default branch, Node 20 or newer, npm 10 or newer)
 - **Grounded at**: `d3d3642` (2026-09-04)
 
 ## Why this matters
@@ -598,9 +598,9 @@ nothing and retry once; otherwise STOP with the failing test's output.
 **Do NOT**: remove any other `testIgnore` entry (Step 7 does); change `maxDiffPixelRatio`;
 mask or hide elements; commit snapshots generated without `CI=1`.
 
-**Commands**: `npm run build:web && CI=1 npx playwright test tests/visual.spec.ts --project=Web-Chromium`; `npm run verify:static`
+**Commands**: `npm run build:web && CI=1 npx playwright test tests/visual.spec.ts --project=Web-Chromium --retries=0`; `npm run verify:static`
 **Expected**: `14 passed`, exit 0; exit 0.
-**Check**: `ls tests/visual.spec.ts-snapshots/*.png | wc -l` prints `14`.
+**Check**: `ls tests/visual.spec.ts-snapshots/*.png | wc -l` prints `14` and the run's output does not contain the word `flaky`.
 **If it fails**: run the spec a second time without `--update-snapshots`; if any surface differs from its own fresh baseline, that surface is non-deterministic — STOP with the diff image path.
 **Commit**: `plan-000 step-3: visual spec on surfaces with baselines`
 
@@ -662,8 +662,11 @@ for category (a) fixes, any `src/components/**/*.tsx` file named in a violation'
    });
    ```
 
-   The old "System theme syncs with OS preference" test (CI-skipped) and the
-   "variables are defined" test are dropped; record both under `## Deleted tests`.
+   The file's four existing tests (`Light theme - no WCAG AA violations`,
+   `Dark theme - no WCAG AA violations`, `System theme syncs with OS preference`,
+   `Specific contrast checks - primary text on background`) are all replaced: the first two by
+   the 14-scan matrix, the last two dropped. Record the two dropped names under
+   `## Deleted tests` in `docs/planning/verification-baseline.md` (create that heading now).
 
 2. Run `npm run build:web && CI=1 npm run test:a11y`. For every failing scan open its
    `accessibility-violations-<surface>-<theme>.json` and classify each violation `id`:
@@ -682,7 +685,7 @@ branch; put a surface in `CONTRAST_DEFERRED` that has a non-contrast violation; 
 **Commands**: `npm run verify:static`; `npm run verify:web`;
 `CI=1 npm run test:a11y -- --list | tail -1`
 **Expected**: exit 0; exit 0; `Total: 14 tests in 1 file`.
-**Check**: `CI=1 npm run test:a11y` exits 0 **and** every surface named in `CONTRAST_DEFERRED` has at least one row in the triage table.
+**Check**: `CI=1 npm run test:a11y -- --retries=0` exits 0 **and** `for s in $(sed -n "s/^const CONTRAST_DEFERRED: Surface\[\] = \[\(.*\)\];/\1/p" tests/accessibility.spec.ts | tr -d "', "); do grep -q "^| $s " docs/planning/verification-baseline.md || exit 1; done; echo rows-ok` prints `rows-ok`.
 **If it fails**: a scan still failing after one attribute fix is a STOP; attach the JSON.
 **Commit**: `plan-000 step-4: a11y audit on every surface`
 
@@ -976,7 +979,7 @@ line under `## Overlay contract` in the baseline doc naming the row and the flip
 row pass; delete a row; change a value other than `trapsFocus`; use `test.skip` for the
 `open: null` rows.
 
-**Commands**: `npm run build:web && CI=1 npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium`; `npm run verify:static`
+**Commands**: `npm run build:web && CI=1 npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium --retries=0`; `npm run verify:static`
 **Expected**: `9 passed`, exit 0; exit 0.
 **Check**: `CI=1 npx playwright test tests/functional/overlays.spec.ts --project=Web-Chromium --list | tail -1` prints `Total: 9 tests in 1 file` and the run above exits 0.
 **If it fails**: a failure on `toBeVisible()` right after `open` means the open path is wrong — STOP with the row name; a failure on a source-read field means drift — STOP.
@@ -1157,8 +1160,9 @@ edit `tests/functional/dm-world-sync.spec.ts`, `playwright.config.ts`,
    ```
 
 7. Run `npm run verify:web`. If a test in `door-sync.spec.ts` or `dm-world-sync.spec.ts` fails
-   twice for a reason other than a missing helper, delete **that test only**, record it under
-   `## Deleted tests` with the failure's first line, and re-run. If a file ends up with no
+   twice for a reason other than a missing helper, delete **that test only**, record it as a
+   new bullet under the existing `## Deleted tests` heading (created in Step 4; do not add a
+   second heading) with the failure's first line, and re-run. If a file ends up with no
    tests, delete the file and record it.
 
 **Do NOT**: delete or edit `door-sync.spec.ts` beyond step 7 above; edit `tests/helpers/campaignHelpers.ts`
@@ -1168,7 +1172,7 @@ entry; add `test.skip` anywhere.
 **Commands**: `npm run verify:static`; `npm run verify:web`;
 `CI=1 npx playwright test --project=Web-Chromium --list | tail -1`;
 `grep -rnE '\b(test|describe|testInfo)\.(skip|fixme)\(' tests/ | grep -vF "test.skip(!process.env.PERF, 'set PERF=1 to profile')"`
-**Expected**: exit 0; exit 0; `Total: N tests in 8 files` (record N; 75 if no legacy test was deleted); no output.
+**Expected**: exit 0; exit 0; `Total: N tests in 8 files` (record N; 74 if no legacy test was deleted); no output.
 **Check**: `grep -cE '^\s+/.*/,$' playwright.config.ts` prints `0` and the `--list` line says `in 8 files`.
 **If it fails**: if `tests/unit/playwrightConfig.test.ts` cannot import `playwright.config.ts` under vitest, replace the first `it` with a text check — read the file, take the substring between `testIgnore: [` and the next `]`, split on `,`, and expect three non-blank regex literals — then retry once; anything else: STOP.
 **Commit**: `plan-000 step-7: spec triage, smoke specs, config guard`
@@ -1236,7 +1240,7 @@ restore `48`, run (passes).
 **Do NOT**: invent a `.btn-tool` minimum; edit any `src/` file; assert `TokenInspector`
 targets.
 
-**Commands**: `npm run build:web && CI=1 npx playwright test tests/touch-targets.spec.ts --project=Web-Chromium` (three runs as described); `npm run verify:static`
+**Commands**: `npm run build:web && CI=1 npx playwright test tests/touch-targets.spec.ts --project=Web-Chromium --retries=0` (four runs as described); `npm run verify:static`
 **Expected**: run 1 exit 1 with `Expected: … "width": -1` in the output; run 2 exit 0; the `1000` run exit 1; final run exit 0; `verify:static` exit 0.
 **Check**: `grep -E 'BTN_TOOL_(WIDTH|HEIGHT) = [0-9]+;' tests/touch-targets.spec.ts | wc -l` prints `2` and the final run printed `3 passed`.
 **If it fails**: if run 1 fails on a mobile test, the `editor-mobile` surface is broken — STOP.
@@ -1253,8 +1257,10 @@ targets.
    pixel-inert):
    `grep -E '^\s*--(radius-(sm|md|lg)|shadow-(sm|lg|2xl)|ease-out|text-(xs|sm|base|lg|xl|2xl)|font-weight-(normal|medium|semibold|bold)|spacing):' node_modules/tailwindcss/theme.css`.
    If a value differs from the block below, use the file's value and note it in the baseline doc.
-2. Append to `src/styles/theme.css` (after the `[data-theme='dark']` block, before
-   `BASE APPLICATION STYLES`):
+2. Append to `src/styles/theme.css` immediately before the comment block that contains the
+   words `BASE APPLICATION STYLES` (`grep -n 'BASE APPLICATION STYLES' src/styles/theme.css`,
+   line 278 at d3d3642; note the file has two `[data-theme='dark']` blocks, so do not anchor
+   on those):
 
    ```css
    /* ============================================
@@ -1379,8 +1385,8 @@ add a second `@theme` block; write `@theme` without `inline`; change any seed va
 "nicer" one.
 
 **Commands**: `npm run verify:static`; `npm run verify:web`;
-`grep -c -- '--app-radius-lg' dist-web/assets/*.css`
-**Expected**: exit 0; exit 0 (`tests/visual.spec.ts` passing against the Step 3 baselines proves no pixel changed); a count ≥ 1.
+`test $(grep -ho -- '--app-radius-lg' dist-web/assets/*.css | wc -l) -ge 1; echo "alias=$?"`
+**Expected**: exit 0; exit 0 (`tests/visual.spec.ts` passing against the Step 3 baselines proves no pixel changed); `alias=0`.
 **Check**: `grep -c '@theme inline' src/index.css` prints `1` **and** `verify:web` exited 0.
 **If it fails**: if `build:web` fails or `visual.spec.ts` reports a diff, remove the `--spacing` alias line, re-run; if it still fails remove the six `--text-*` alias lines, re-run; record every removal under `## Tokens`; still failing → STOP.
 **Commit**: `plan-000 step-9: non-colour token families and Tailwind aliases`
@@ -1629,7 +1635,7 @@ or `build-release.yml`; remove the `NEXT` branch from `accessibility.yml` (harml
 ### Step 12: Finish the baseline document, verify everything, write the report
 
 **Files**: `docs/planning/verification-baseline.md`, `plans/reports/000.md`, `plans/README.md`,
-`plans/001-stabilize-styling-foundation.md` (Grounded-at line only, after merge)
+`plans/001-stabilize-styling-foundation.md` (Grounded-at line only, in the post-merge run)
 
 **Do**:
 
@@ -1649,8 +1655,13 @@ or `build-release.yml`; remove the `NEXT` branch from `accessibility.yml` (harml
 3. Write the report (`plans/reports/000.md`, CONVENTIONS §11); add one bullet under
    `## [Unreleased]` in `CHANGELOG.md` for any user-visible change (Step 10 already added
    two; add none unless a category (a) a11y fix changed visible text); set this plan's row in
-   `plans/README.md` to `DONE <merge sha>` after merge; write the merge SHA into
-   `plans/001-stabilize-styling-foundation.md`'s `Grounded at` line.
+   `plans/README.md` to `IN PROGRESS (PR open)`; push and open the PR (CONVENTIONS §7) with the
+   report as its body.
+4. **Post-merge run** (a later run, after Kyle merges; branch `plan/000-post-merge` off
+   `origin/main`, one commit `plan-000 post-merge: record merge sha`, docs-only PR): set this
+   plan's row in `plans/README.md` to `DONE <merge sha>` and write the merge SHA into the
+   `Grounded at` line of `plans/001-stabilize-styling-foundation.md`. Check:
+   `grep -c "DONE" plans/README.md` prints `1`.
 
 **Do NOT**: edit `plans/CONVENTIONS.md`; touch any plan other than the 001 `Grounded at` line;
 open the PR before `npm run verify` exits 0.

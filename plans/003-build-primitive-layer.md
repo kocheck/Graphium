@@ -113,7 +113,7 @@ Gates: `plans/CONVENTIONS.md` §4.
 
 | Purpose                 | Command                                                                             | Expected                               |
 | ----------------------- | ----------------------------------------------------------------------------------- | -------------------------------------- |
-| Generate a primitive    | `npx shadcn@1.1.23 add <name> -y` (version pinned by plan 002)                      | exit 0, `src/components/ui/<name>.tsx` |
+| Generate a primitive    | `npx shadcn@4.21.0 add <name> -y` (version pinned by plan 002)                      | exit 0, `src/components/ui/<name>.tsx` |
 | Run one vitest file     | `npx vitest run src/components/ui/<file>`                                           | exit 0                                 |
 | Run one Playwright spec | `npm run build:web && CI=1 npx playwright test tests/<file> --project=Web-Chromium` | exit 0                                 |
 | Screenshot set          | `SHOTS_OUT=docs/planning/screenshots/003-final npm run shots`                       | exit 0                                 |
@@ -550,7 +550,7 @@ once and retry.
 `src/components/DesignSystemPlayground/registry.test.ts`, `src/test/setup.ts`
 **Do**:
 
-1. `npx shadcn@1.1.23 add input label -y && npm run format`.
+1. `npx shadcn@4.21.0 add input label -y && npm run format`.
 2. `ownsEscape` on `DialogContent`. In `dialog.tsx` find the component that renders
    `<DialogPrimitive.Content` (`grep -n 'DialogPrimitive.Content' src/components/ui/dialog.tsx`)
    and make these three edits — the result, in shadcn's current function form, is:
@@ -779,7 +779,7 @@ output.
 `src/components/DesignSystemPlayground/registry/layout.tsx`
 **Do**:
 
-1. `npx shadcn@1.1.23 add switch select slider tabs collapsible separator -y && npm run format`.
+1. `npx shadcn@4.21.0 add switch select slider tabs collapsible separator -y && npm run format`.
 2. Overwrite `src/components/ui/separator.tsx` with the file below. `.toolbar-divider` sets only
    `background: var(--app-border-subtle)` (`grep -n 'toolbar-divider' -A2 src/styles/app.css`,
    line 20 at d3d3642) = `bg-border`; the call sites add `w-px mx-1` and, once, `h-6`
@@ -986,7 +986,7 @@ fix once and retry.
 `package-lock.json`, `src/components/DesignSystemPlayground/registry/overlays.tsx`
 **Do**:
 
-1. `npx shadcn@1.1.23 add sheet popover dropdown-menu -y && npm run format`.
+1. `npx shadcn@4.21.0 add sheet popover dropdown-menu -y && npm run format`.
 2. Make the Step 5 item 2 edits (props type `ownsEscape?: boolean`, destructure
    `ownsEscape = true`, attribute `data-esc-owns={ownsEscape ? 'true' : undefined}`) in:
    - `sheet.tsx`, on `<SheetPrimitive.Content` inside `SheetContent`
@@ -1761,7 +1761,7 @@ violation id and primitive; do not disable the rule.
      override in `.eslintrc.cjs`.
    - `## Add a primitive` — this exact ordered list, one command per line, with its expected
      output:
-     1. `npx shadcn@1.1.23 add <name> -y` → exit 0, `src/components/ui/<name>.tsx` exists.
+     1. `npx shadcn@4.21.0 add <name> -y` → exit 0, `src/components/ui/<name>.tsx` exists.
      2. `npm run format` → exit 0.
      3. If it renders an overlay `Content`: add the `ownsEscape` prop (three edits, as in
         `dialog.tsx`; `grep -n 'ownsEscape' src/components/ui/dialog.tsx`).

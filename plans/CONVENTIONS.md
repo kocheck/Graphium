@@ -97,6 +97,11 @@ contents.
 | `bash scripts/plan-lint.sh plans/NNN-*.md` | Structural lint of a plan file (eight fields per step, mechanical Check on its first line, no `‹…›` after the first step). Created by plan 006a Step 4; any plan may run it. | Before editing a plan; before opening a PR       |
 | `SHOTS_OUT=D npm run shots`                | Screenshots every surface in both themes into directory `D` (Playwright cannot take custom flags, so the output directory is an environment variable)                        | Where the plan says so                           |
 
+Hand-pasted code is not always byte-exact Prettier or `import/order` output. If
+`verify:static` fails **only** on `format:check`, `prettier/prettier` or `import/order`, run
+`npm run format && npm run lint:fix` and retry once; that is not a STOP and needs no report
+entry. Any other lint failure follows the step's **If it fails**.
+
 `verify:web` and `shots` run with `CI=1`, so Playwright serves the **built** output on port 4173
 (`preview:web`), matching CI; `shots` builds first. Running a single spec by hand therefore needs
 `npm run build:web` first. `test:a11y` runs the `Web-Chromium` project only.
@@ -143,7 +148,7 @@ If `$G` is empty the previous plan's post-merge run has not happened: STOP.
 
 ## 6. Step format
 
-Every step in every plan has the same seven fields. If a step is missing one, the plan
+Every step in every plan has the same eight fields. If a step is missing one, the plan
 is defective: STOP and say which step and which field.
 
 ```

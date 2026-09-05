@@ -19,7 +19,7 @@ extendible and more performant, probably via shadcn components.
 Three framing decisions, made 2026-09-04:
 
 1. **Both layers, sequenced** — rebuild the foundation first, then redesign visually.
-2. **Full shadcn adoption** — CLI (pinned to `shadcn@1.1.23`), `components.json`, Radix
+2. **Full shadcn adoption** — CLI (pinned to `shadcn@4.21.0`), `components.json`, Radix
    Primitives, CVA, source owned in-repo and re-themed onto Graphium's existing Radix
    Colors variables. Gated on a compatibility spike (002) because shadcn's happy path is
    React 19 and this is React 18.

@@ -95,8 +95,7 @@ change in a large DOM. `.theme-loading * { transition: none !important; }` and t
 `@media (prefers-reduced-motion: reduce)` block below them must stay untouched. `.btn` has its
 own `transition: background-color 0.2s ease` (`grep -n transition src/styles/app.css`), so
 `.btn*` hovers keep fading; only TSX `hover:` utilities without a `transition` utility snap:
-`grep -rhoE 'className=(\{`|")[^`"]*' src --include='*.tsx' | grep -cE 'hover:'` prints 90, and
-`grep -rhoE 'className=(\{`|")[^`"]*' src --include='*.tsx' | grep -E 'hover:' | grep -vcE 'transition'`
+`grep -rhoE 'className=(\{`|")[^`"]_' src --include='_.tsx' | grep -cE 'hover:'`prints 90, and`grep -rhoE 'className=(\{`|")[^`"]_' src --include='_.tsx' | grep -E 'hover:' | grep -vcE 'transition'`
 prints 32: those 32 have no transition and will snap.
 
 **Theme switching paths.** `ThemeManager.tsx` `applyTheme` (`grep -n 'function applyTheme'

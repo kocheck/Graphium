@@ -100,12 +100,12 @@ All verified at `d3d3642`:
   75). When it does stop audio it also calls `stopImmediatePropagation()`, so a Radix dialog
   without `data-esc-owns` would lose its Escape.
 - Playwright `Web-Chromium` starts `npm run dev:web` (no `CI`) or `npm run preview:web`
-  (`CI=1`). The spike scaffold is `import.meta.env.DEV`-only, so **never** run the spike spec with
-  `CI=1`.
+  (`CI=1`). The spike scaffold is gated only by the `graphium-spike=1` `localStorage` flag the
+  spec sets, so it renders in both modes and `npm run verify` can run the spike spec.
 
 ### The four questions this spike answers
 
-1. Does `shadcn@1.1.23` install and generate working components on React 18.3.1 without a
+1. Does `shadcn@4.21.0` install and generate working components on React 18.3.1 without a
    peer-dependency flag?
 2. Can the components be re-themed onto `--app-*` through an `@theme inline` bridge and pass
    `npm run test:a11y` in both themes?
@@ -121,8 +121,8 @@ Gates: `plans/CONVENTIONS.md` §4.
 
 | Purpose                      | Command                                                                                                 | Expected                  |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------- |
-| shadcn init (pinned)         | `npx shadcn@1.1.23 init -y -d --base-color neutral`                                                     | exit 0, `components.json` |
-| shadcn add (pinned)          | `npx shadcn@1.1.23 add button dialog tooltip -y`                                                        | exit 0, three files       |
+| shadcn init (pinned)         | `npx shadcn@4.21.0 init -y -d --base-color neutral`                                                     | exit 0, `components.json` |
+| shadcn add (pinned)          | `npx shadcn@4.21.0 add button dialog tooltip -y`                                                        | exit 0, three files       |
 | Spike portal spec            | `npx playwright test tests/spike-portals.spec.ts --project=Web-Chromium --reporter=list`                | `8 passed`                |
 | Web bytes                    | `find dist-web/assets -type f \( -name '*.js' -o -name '*.css' \) -print0 \| xargs -0 wc -c \| tail -1` | `<n> total`               |
 | Electron bytes               | `find dist dist-electron -type f -print0 \| xargs -0 wc -c \| tail -1`                                  | `<n> total`               |
@@ -181,7 +181,7 @@ Verdict: PENDING
 | Node             | <`node --version`>                                       |
 | npm              | <`npm --version`>                                        |
 | react (lockfile) | <`grep -n '"node_modules/react"' -A2 package-lock.json`> |
-| shadcn CLI       | 1.1.23                                                   |
+| shadcn CLI       | 4.21.0                                                   |
 | origin/main      | <`git rev-parse --short origin/main`>                    |
 
 ## 2. Baseline (origin/main)
@@ -240,8 +240,8 @@ git add docs/planning/shadcn-adoption-decision.md && git commit -m "plan-002 ste
 
 **Expected**: `git checkout` prints `Switched to a new branch 'spike/shadcn-compat'`; version
 lines; a count; `npm run verify` exit 0; two `<n> total` lines; commit succeeds.
-**Check**: `grep -c '<n>' docs/planning/shadcn-adoption-decision.md` prints `0` for sections 1–2
-(every placeholder in §1 and §2 replaced by a real value).
+**Check**: `sed -n '/^## 1/,/^## 3/p' docs/planning/shadcn-adoption-decision.md | grep -c '<'`
+prints `0` (every placeholder in §1 and §2 replaced by a real value).
 **If it fails**: `npm run verify` non-zero on a clean `origin/main` is drift in the previous plan:
 STOP with the failing command's output.
 **Commit**: `plan-002 step-1: spike branch and baseline`
@@ -345,7 +345,7 @@ nothing.
 `docs/planning/shadcn-adoption-decision.md`
 **Do**: Run the init, then capture and clean up:
 
-1. `npx shadcn@1.1.23 init -y -d --base-color neutral`.
+1. `npx shadcn@4.21.0 init -y -d --base-color neutral`.
 2. Paste into decision doc §3: the exact command, the full `components.json`,
    `git status --porcelain`, `git diff package.json`, and `git diff src/index.css` **verbatim**
    (this is the record of the OKLCH `:root`/`.dark` blocks, `@custom-variant dark (&:is(.dark *))`,
@@ -369,33 +369,35 @@ nothing.
 **Commands**:
 
 ```bash
-npx shadcn@1.1.23 init -y -d --base-color neutral
+npx shadcn@4.21.0 init -y -d --base-color neutral
 git status --porcelain
 git diff package.json src/index.css tsconfig.json vite.config.ts
 git checkout origin/main -- src/index.css
 test -f tailwind.config.js && git rm -f tailwind.config.js; true
 npm run type-check && npm run build:web
 grep -c '^@theme' src/index.css
-git add -A && git commit -m "plan-002 step-3: shadcn init (pinned 1.1.23), index.css restored"
+git add -A && git commit -m "plan-002 step-3: shadcn init (pinned 4.21.0), index.css restored"
 ```
 
 **Expected**: init exit 0; a status list containing `components.json` and `src/lib/utils.ts`;
 diffs; exit 0; exit 0; `1`.
 **Check**: `test -f components.json && grep -c "export function cn" src/lib/utils.ts` prints `1`
 and `npm run type-check` exits 0.
-**If it fails**: if the CLI rejects a flag, run `npx shadcn@1.1.23 init --help`, paste the output
+**If it fails**: if the CLI rejects a flag, run `npx shadcn@4.21.0 init --help`, paste the output
 into §3, use the equivalent flag and retry once; if it is interactive with no non-interactive
 path, answer as in **Do NOT** and record every answer verbatim in §3. If npm fails with
 `ERESOLVE`, retry once as `npm install --legacy-peer-deps` and record it in §3 (rubric row B1).
-If it still fails, or the CLI demands React 19: STOP (rubric row A1; do not upgrade React).
-**Commit**: `plan-002 step-3: shadcn init (pinned 1.1.23), index.css restored`
+If it still fails, or the CLI demands React 19: write `Verdict: NO-GO` on line 3 of the decision
+doc (rubric row A1), then STOP; do not upgrade React.
+**Commit**: `plan-002 step-3: shadcn init (pinned 4.21.0), index.css restored`
 
 ### Step 4: Add the three primitives and pin down the ESLint findings
 
 **Files**: `src/components/ui/button.tsx`, `src/components/ui/dialog.tsx`,
 `src/components/ui/tooltip.tsx` (new), `package.json`, `package-lock.json`, `.eslintrc.cjs`,
+`lint-rules.txt` (created and deleted inside this step),
 `docs/planning/shadcn-adoption-decision.md`
-**Do**: `npx shadcn@1.1.23 add button dialog tooltip -y`. Then:
+**Do**: `npx shadcn@4.21.0 add button dialog tooltip -y`. Then:
 
 1. `npm run lint:fix` (fixes `prettier/prettier` and `import/order`).
 2. Produce the list of rules still firing in generated code:
@@ -432,11 +434,13 @@ If it still fails, or the CLI demands React 19: STOP (rubric row A1; do not upgr
 **Commands**:
 
 ```bash
-npx shadcn@1.1.23 add button dialog tooltip -y
+npx shadcn@4.21.0 add button dialog tooltip -y
 ls src/components/ui/
 npm run lint:fix; true
-# (the JSON listing command from item 2)
-# (edit .eslintrc.cjs per item 3)
+npx eslint src/components/ui src/lib --ext ts,tsx --max-warnings 0 --format json \
+  | node -e 'const r=JSON.parse(require("fs").readFileSync(0,"utf8"));const s=new Set();for(const f of r)for(const m of f.messages)s.add(m.ruleId);console.log([...s].sort().join("\n"))' \
+  | tee lint-rules.txt
+# now edit .eslintrc.cjs exactly as item 3 shows and paste lint-rules.txt into decision doc §4
 rm lint-rules.txt
 npm run verify:static
 npm run build:web
@@ -444,7 +448,7 @@ git add -A && git commit -m "plan-002 step-4: add button, dialog, tooltip; scope
 ```
 
 **Expected**: exit 0; `button.tsx dialog.tsx tooltip.tsx`; a list of rule ids; exit 0; exit 0.
-**Check**: `npm run verify:static` exits 0 and decision doc §4 contains the rule list.
+**Check**: `npm run verify:static` exits 0 and `sed -n '/^## 4/,/^## 5/p' docs/planning/shadcn-adoption-decision.md | grep -c '/'` prints a number ≥ 1 (rule ids contain `/`).
 **If it fails**: if `npm run lint` still fails inside `src/components/ui/` after the override,
 re-run the listing command, add the missing ids, retry once; twice is a STOP. If the pre-commit
 hook rejects the commit, paste its output into §4 and treat the rule it names the same way.
@@ -646,7 +650,11 @@ playground; edit `tests/accessibility.spec.ts` or any axe `exclude()`.
 grep -c '^@theme' src/index.css
 grep -c '^@custom-variant dark' src/index.css
 grep -nE "^\s*--color-[a-z-]+: [^v]" src/index.css
-# (coverage and contrast commands from items 2–3)
+grep -ohE "(bg|text|border|ring|outline|fill|stroke)-(background|foreground|card|popover|primary|secondary|muted|accent|destructive|border|input|ring|white)(-foreground)?(/[0-9]+)?" src/components/ui/*.tsx \
+  | sed -E 's#^[a-z]+-##; s#/[0-9]+$##' | sort -u | grep -v '^white$' \
+  | while read -r t; do grep -q -- "--color-$t:" src/index.css || echo "MISSING --color-$t"; done
+grep -ohE "rounded-(sm|md|lg|xl|2xl|full)" src/components/ui/*.tsx | sort -u
+node -e 'const L=h=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4);return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]};console.log(((L("#ffffff")+0.05)/(L("#e5484d")+0.05)).toFixed(2))'
 npx playwright test accessibility.spec.ts --project=Web-Chromium --list | tail -1
 npm run test:a11y
 npm run verify:static
@@ -658,7 +666,8 @@ git add -A && git commit -m "plan-002 step-5: theming bridge, dark variant, play
 **Check**: `npm run test:a11y` exits 0 with the same `N` that `--list` printed.
 **If it fails**: an axe `color-contrast` violation names an element; find its Tailwind class,
 map it back through the bridge, record the pair in §5 and retry once after correcting a typo
-in the block above. If a correctly transcribed bridge still fails: STOP (rubric row A2). Never
+in the block above. If a correctly transcribed bridge still fails: write `Verdict: NO-GO` on
+line 3 of the decision doc (rubric row A2), then STOP. Never
 hardcode a colour or exclude the element.
 **Commit**: `plan-002 step-5: theming bridge, dark variant, playground registration`
 
@@ -670,8 +679,8 @@ hardcode a colour or exclude the element.
 `docs/planning/shadcn-adoption-decision.md`
 **Do**:
 
-1. Create `src/components/SpikeScaffold.tsx` (spike branch only; renders only in DEV, in the
-   Architect page, when `localStorage` has `graphium-spike=1`):
+1. Create `src/components/SpikeScaffold.tsx` (spike branch only; renders in the Architect page
+   only when `localStorage` has `graphium-spike=1`, which only the spike spec sets):
 
    ```tsx
    import { useState } from 'react';
@@ -782,9 +791,7 @@ hardcode a colour or exclude the element.
 
    ```tsx
    {
-     import.meta.env.DEV && isArchitectView && (
-       <SpikeScaffold onSelectMarker={() => setTool('marker')} />
-     );
+     isArchitectView && <SpikeScaffold onSelectMarker={() => setTool('marker')} />;
    }
    ```
 
@@ -920,23 +927,23 @@ hardcode a colour or exclude the element.
    });
    ```
 
-4. Run the spec (dev server; **no** `CI=1`). Paste the full `--reporter=list` output into
+4. Run the spec against the built output. Paste the full `--reporter=list` output into
    decision doc §6, verbatim, including any failure and its message.
 
-**Do NOT**: convert `AboutModal` or any real overlay; run with `CI=1`; edit
+**Do NOT**: convert `AboutModal` or any real overlay; edit
 `playwright.config.ts`; add `test.skip`; put the scaffold anywhere but the editor branch.
 **Commands**:
 
 ```bash
 npm run type-check
-npx playwright test tests/spike-portals.spec.ts --project=Web-Chromium --reporter=list
+npm run build:web && CI=1 npx playwright test tests/spike-portals.spec.ts --project=Web-Chromium --reporter=list --retries=0
 ls docs/planning/screenshots/002-final/
 npm run verify:static
 git add -A && git commit -m "plan-002 step-6: spike scaffold and portal spec"
 ```
 
 **Expected**: exit 0; `8 passed`; `spike-dialog-dark.png  spike-dialog-light.png`; exit 0.
-**Check**: decision doc §6 contains the reporter output and both PNGs exist.
+**Check**: `sed -n '/^## 6/,/^## 7/p' docs/planning/shadcn-adoption-decision.md | grep -cE '[0-9]+ (passed|failed)'` prints `1` and `ls docs/planning/screenshots/002-final | wc -l` prints `2`.
 **If it fails**: a failing test is a **finding, not a defect of this plan**: re-run once to rule
 out flake; if it fails again, record it in §6 as-is and continue (rubric rows A3/B4 read it).
 The step's Check still holds. If the spec cannot reach `spike-root` at all (scaffold not
@@ -1024,14 +1031,14 @@ modules; leave the probe red.
 
 ```bash
 npx vitest run src/components/ui/spike-jsdom.test.tsx 2>&1 | tail -40
-# (add stubs per the table; repeat at most three times)
+# edit src/test/setup.ts per the table, then re-run the vitest line above; at most three rounds
 npm run verify:static
 git add -A && git commit -m "plan-002 step-7: jsdom probe"
 ```
 
 **Expected**: first run: errors naming missing globals (or `2 passed`); final run: `2 passed`;
 exit 0.
-**Check**: `npm run verify:static` exits 0 and §7 lists the stubs.
+**Check**: `npm run verify:static` exits 0 and `sed -n '/^## 7/,/^## 8/p' docs/planning/shadcn-adoption-decision.md | grep -cE 'ResizeObserver|PointerCapture|scrollIntoView|none'` prints a number ≥ 1.
 **If it fails**: still red after three iterations: `git rm -f src/components/ui/spike-jsdom.test.tsx`,
 paste the final output into §7, and continue (rubric row B7 = caveat with that output).
 **Commit**: `plan-002 step-7: jsdom probe`
@@ -1063,8 +1070,8 @@ git add -A && git commit -m "plan-002 step-8: measure the cost"
 `<n> total` ×2; a count; one matching line.
 **Check**: the `grep` prints exactly one line with a number.
 **If it fails**: if `npm run verify` fails in a project unrelated to the spike files, paste the
-failing test names into §11 and continue; if it fails inside `src/components/ui/`, fix once and
-retry, twice is a STOP.
+failing test names into §11 and continue; if it fails inside `src/components/ui/`, do not edit
+those files (Step 4's rule): record the failing names in §8 and §11 and continue.
 **Commit**: `plan-002 step-8: measure the cost`
 
 ### Step 9: Compute the verdict mechanically, write the patch, finish the doc
@@ -1084,10 +1091,13 @@ bottom. Every row is a fact already in the doc; do not weigh them.
 | B3  | the coverage command in Step 5 printed a `MISSING` line, or `grep -nE "^\s*--color-[a-z-]+: [^v]" src/index.css` prints anything (§5)                                                                                            | GO-WITH-CAVEATS   |
 | B4  | any spec test other than `world view: …` failed (§6)                                                                                                                                                                             | GO-WITH-CAVEATS   |
 | B5  | the CLI added a dependency outside {`clsx`, `tailwind-merge`, `class-variance-authority`, `tw-animate-css`, `@radix-ui/*`} — e.g. `lucide-react` (§3, §4)                                                                        | GO-WITH-CAVEATS   |
-| B6  | white on `--color-destructive` < 4.50 (§5; known `3.91`)                                                                                                                                                                         | GO-WITH-CAVEATS   |
 | B7  | the jsdom probe needed one or more stubs, or was deleted (§7)                                                                                                                                                                    | GO-WITH-CAVEATS   |
 | B8  | web delta > 150000 bytes (§8)                                                                                                                                                                                                    | GO-WITH-CAVEATS   |
 | —   | none of the above                                                                                                                                                                                                                | **GO**            |
+
+White on `--color-destructive` is ≈3.91:1 on every run (it is computed from `--app-error-solid`,
+which this plan may not change), so it is **not** a verdict row: always record it in §10 as a
+required change to plan 003 ("never render normal text on `destructive`"), whatever the verdict.
 
 For every B row that is true, write one numbered entry in §10 "Required changes to plan 003"
 with the exact edit, using these templates:
@@ -1122,7 +1132,7 @@ universal `border-border`/`outline-ring/50` rules were dropped; do not reintrodu
    The patch contains: package.json/lock, tsconfig, vite and vitest aliases, components.json,
    .eslintrc.cjs override, src/index.css bridge, src/lib/utils.ts, src/components/ui/{button,dialog,tooltip}.tsx,
    playground registration. It does NOT contain the scaffold, the spike spec, the jsdom probe or
-   screenshots. Re-run `npx shadcn@1.1.23 add <name> -y` only for new primitives.
+   screenshots. Re-run `npx shadcn@4.21.0 add <name> -y` only for new primitives.
 ```
 
 §9 answers each of the four questions in one sentence citing the doc section. Then write the
@@ -1171,21 +1181,20 @@ outside `docs/planning`; delete the spike branch before the docs commit; squash.
 
 ```bash
 git status --porcelain                                   # on spike/shadcn-compat
-git fetch origin main && git checkout -b plan/002-shadcn-decision origin/main
+git checkout plan/002-shadcn-decision                    # created by pre-flight; exists already
 git status --porcelain
 git checkout spike/shadcn-compat -- docs/planning/shadcn-adoption-decision.md \
   docs/planning/shadcn-spike.patch docs/planning/screenshots/002-final
 git apply --check docs/planning/shadcn-spike.patch
-git add docs/planning && git commit -m "plan-002 step-10: land the shadcn decision, patch and screenshots"
-# write plans/reports/002.md; set plans/README.md row 002 to IN PROGRESS → (after merge) DONE
-git add plans/reports/002.md plans/README.md && git commit -m "plan-002 step-10: report"
+# write plans/reports/002.md (CONVENTIONS §11); set plans/README.md row 002 to "IN PROGRESS (PR open)"
+git add docs/planning plans/reports/002.md plans/README.md && git commit -m "plan-002 step-10: land the shadcn decision, patch, screenshots and report"
 npm run verify
 git push -u origin plan/002-shadcn-decision
 git branch -D spike/shadcn-compat
 ```
 
-**Expected**: empty; `Switched to a new branch 'plan/002-shadcn-decision'`; **empty** (if not,
-spike files leaked: STOP); three paths restored; exit 0; commit; commit; exit 0; push output;
+**Expected**: empty; `Switched to branch 'plan/002-shadcn-decision'`; **empty** (if not,
+spike files leaked: STOP); three paths restored; exit 0; commit; exit 0; push output;
 `Deleted branch spike/shadcn-compat`.
 **Check**: `git ls-files docs/planning/shadcn-adoption-decision.md docs/planning/shadcn-spike.patch docs/planning/screenshots/002-final | wc -l`
 prints `4` on `plan/002-shadcn-decision`, and `git branch --list spike/shadcn-compat` prints
@@ -1193,7 +1202,12 @@ nothing.
 **If it fails**: `git apply --check` non-zero means the patch was cut against the wrong base:
 `git checkout spike/shadcn-compat`, re-run Step 9's diff command against a fresh
 `git fetch origin main`, recommit, and retry once; twice is a STOP.
-**Commit**: `plan-002 step-10: land the shadcn decision, patch and screenshots`
+**Commit**: `plan-002 step-10: land the shadcn decision, patch, screenshots and report`
+
+**Post-merge run** (a later run, after Kyle merges; branch `plan/002-post-merge` off
+`origin/main`, one commit `plan-002 post-merge: record merge sha`, docs-only PR): set row 002 in
+`plans/README.md` to `DONE <merge sha>` and write the merge SHA into the `Grounded at` line of
+`plans/003-build-primitive-layer.md`.
 
 ## Validation
 
