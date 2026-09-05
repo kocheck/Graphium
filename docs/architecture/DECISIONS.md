@@ -17,6 +17,7 @@ This document records significant architectural and technical decisions made dur
 11. [Image Cropping Workflow](#11-image-cropping-workflow)
 12. [Session-Based Asset Storage](#12-session-based-asset-storage)
 13. [World View Sanitization](#13-world-view-sanitization)
+14. [shadcn/ui primitive layer on the --app-\* theme](#14-adopt-shadcnui-primitives-bridged-onto-the---app--theme)
 
 ---
 
@@ -820,6 +821,34 @@ const handleDrop = (e: React.DragEvent) => {
 - Separate routing: Overkill for two modes of same component tree
 - IPC flag: Adds async complexity and IPC overhead
 - CSS-only: Doesn't prevent interactions
+
+---
+
+## 14. Adopt shadcn/ui primitives bridged onto the --app-\* theme
+
+**Decision:** CLI-generated shadcn/ui primitives live in `src/components/ui/`, themed through the `@theme inline` bridge onto Graphium's existing `--app-*` / Radix Colors variables.
+
+### Context
+
+Graphium had no shared component layer. Overlays were hand-rolled (incomplete focus traps, missing `role="dialog"`, no shared Escape contract with Session Console). Plan 002 proved shadcn/ui 4.21.0 works on this React 18 / Tailwind v4 stack (verdict GO-WITH-CAVEATS). Plan 003 lands the primitive roster without migrating existing screens.
+
+### Alternatives Considered
+
+1. **Hand-rolled primitives**
+   - Pros: No CLI, no extra Radix surface, full control of markup
+   - Cons: Rebuilds modal/focus/a11y per dialog; the current eleven overlays already diverge
+
+2. **Radix + CVA without the CLI**
+   - Pros: Avoids shadcn defaults (`oklch`, `.dark`, generated `bg-white`)
+   - Cons: Reimplements the contribution path; loses `npx shadcn add` as the one way to grow the set
+
+### Decision: CLI-generated primitives, Radix Colors kept and bridged
+
+- Source owned in-repo under `src/components/ui/`; add via `npx shadcn@4.21.0 add <name> -y`.
+- Colour comes from the second `@theme inline` block in `src/index.css` (bridge tokens → `--app-*`). Never `oklch(`, never a raw palette class.
+- Overlay `Content` renders `data-esc-owns="true"` by default (`ownsEscape` opt-out).
+- Contribution contract: `src/components/ui/README.md`.
+- Full spike record: `docs/planning/shadcn-adoption-decision.md`.
 
 ---
 

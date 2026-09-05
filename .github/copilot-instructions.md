@@ -132,7 +132,7 @@ export default Component;
 - **Primary Actions**: `bg-blue-600` + `hover:bg-blue-500`
 - **Danger**: `bg-red-600` + `hover:bg-red-500`
 
-**No inline styles** - use Tailwind classes only.
+**No inline styles** — use Tailwind classes; in `src/components/ui/` compose them with `cva()` and `cn()`.
 
 ### Icons (Remix Icon)
 
@@ -226,7 +226,7 @@ npm run build
 ❌ Block main process with sync file operations (use async)
 ❌ Create overlapping error boundaries
 ❌ Use `any` without explicit TODO/justification
-❌ Add inline styles (use Tailwind only)
+❌ Add inline styles — use Tailwind classes; in `src/components/ui/` compose them with `cva()` and `cn()`
 ❌ Use emoji or inline SVG for UI icons (use Remix Icon components)
 
 ## Best Practices (DO THIS)

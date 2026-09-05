@@ -19,7 +19,10 @@ export interface ComponentExample {
     | 'badge'
     | 'icon'
     | 'landing-patterns'
-    | 'performance';
+    | 'performance'
+    | 'overlay'
+    | 'form'
+    | 'layout';
   description: string;
   component: React.ReactNode;
   code: string;

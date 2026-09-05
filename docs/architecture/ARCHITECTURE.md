@@ -1587,6 +1587,24 @@ All text and UI components meet minimum contrast requirements:
 - **WCAG_CONTRAST_AUDIT.md** - Detailed accessibility compliance audit
 - **THEME_IMPLEMENTATION_SUMMARY.md** - Implementation review summary
 
+## UI Primitive Layer
+
+`src/components/ui/` is the shared shadcn/Radix primitive layer. Feature screens consume it;
+they are not written here. Colour comes from the second `@theme inline` block in
+`src/index.css`, which maps shadcn token names (`--color-primary`, …) onto Graphium's
+`--app-*` variables. Primitives use those bridge utilities or `[var(--app-*)]` — never a raw
+palette class.
+
+Overlay primitives (`dialog`, `sheet`, `popover`, `dropdown-menu`) render
+`data-esc-owns="true"` by default so Session Console audio is not killed by Escape. Pass
+`ownsEscape={false}` to opt out.
+
+Every primitive is registered in `src/components/DesignSystemPlayground/registry/` with
+`id: 'ui-<name>'`. The category must exist in both `types.ts` and `registry/index.ts`
+(`registry.test.ts` enforces it).
+
+Contract and add-a-primitive steps: `src/components/ui/README.md`.
+
 ## Build and Deployment
 
 ### Development Build

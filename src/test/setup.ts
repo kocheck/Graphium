@@ -42,6 +42,19 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// Radix primitives in jsdom (plan 003): ResizeObserver, pointer capture, scrollIntoView
+if (typeof window.ResizeObserver === 'undefined') {
+  window.ResizeObserver = class {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  } as unknown as typeof ResizeObserver;
+}
+Element.prototype.hasPointerCapture = vi.fn(() => false);
+Element.prototype.setPointerCapture = vi.fn();
+Element.prototype.releasePointerCapture = vi.fn();
+Element.prototype.scrollIntoView = vi.fn();
+
 // Basic Canvas Mock for Konva in jsdom
 if (typeof HTMLCanvasElement !== 'undefined') {
   // @ts-expect-error - Mocking Canvas context for tests

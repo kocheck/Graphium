@@ -1,7 +1,10 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 @import './styles/fonts.css';
 @import './styles/theme.css';
 @import './styles/app.css';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 /*
  * Tailwind namespace aliases → Graphium tokens. `rounded-lg`, `shadow-2xl`, `ease-out`,
@@ -40,6 +43,32 @@
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+/* Plan 002 bridge: shadcn token names defined in terms of Graphium's --app-* variables.
+   `inline` keeps the var() references so theme.css's [data-theme='dark'] swap reaches every
+   shadcn utility. shadcn's `accent` is the neutral row-hover colour, NOT Graphium's brand
+   accent; it maps to --app-bg-hover on purpose. */
+@theme inline {
+  --color-background: var(--app-bg-base);
+  --color-foreground: var(--app-text-primary);
+  --color-card: var(--app-bg-surface);
+  --color-card-foreground: var(--app-text-primary);
+  --color-popover: var(--app-bg-surface);
+  --color-popover-foreground: var(--app-text-primary);
+  --color-primary: var(--app-accent-solid);
+  --color-primary-foreground: var(--app-accent-solid-text);
+  --color-secondary: var(--app-bg-active);
+  --color-secondary-foreground: var(--app-text-primary);
+  --color-muted: var(--app-bg-subtle);
+  --color-muted-foreground: var(--app-text-secondary);
+  --color-accent: var(--app-bg-hover);
+  --color-accent-foreground: var(--app-text-primary);
+  --color-destructive: var(--app-error-solid);
+  --color-destructive-foreground: var(--app-accent-solid-text);
+  --color-border: var(--app-border-subtle);
+  --color-input: var(--app-border-default);
+  --color-ring: var(--app-accent-solid);
 }
 
 /* Ensure html, body, and root fill viewport */

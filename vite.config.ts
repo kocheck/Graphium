@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
     },
+    resolve: {
+      alias: { '@': path.resolve(__dirname, './src') },
+    },
     plugins: [
       react(),
       // Only load Electron plugin for Electron builds
