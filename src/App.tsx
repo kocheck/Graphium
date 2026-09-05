@@ -7,7 +7,6 @@ import CommandPalette from './components/AssetLibrary/CommandPalette';
 import AutoSaveManager from './components/AutoSaveManager';
 import ConfirmDialog from './components/ConfirmDialog';
 import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog';
-import { HomeScreen } from './components/HomeScreen';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import MobileToolbar from './components/MobileToolbar';
 import { PauseManager } from './components/PauseManager';
@@ -43,6 +42,11 @@ const WorldStage = lazy(async () => {
 const DesignSystemPlayground = lazy(async () => {
   const module = await import('./components/DesignSystemPlayground/DesignSystemPlayground');
   return { default: module.DesignSystemPlayground };
+});
+
+const HomeScreen = lazy(async () => {
+  const module = await import('./components/HomeScreen');
+  return { default: module.HomeScreen };
 });
 
 // Dev-only feedback toolbar. The ternary lets the production build drop the import entirely.
@@ -478,7 +482,9 @@ function App(): React.JSX.Element {
         </UpdateManagerErrorBoundary>
 
         {/* Home/Splash Screen */}
-        <HomeScreen onStartEditor={handleStartEditor} />
+        <Suspense fallback={null}>
+          <HomeScreen onStartEditor={handleStartEditor} />
+        </Suspense>
         {import.meta.env.DEV && (
           <Suspense fallback={null}>
             <Agentation />
