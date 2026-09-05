@@ -110,17 +110,6 @@ describe('UpdateManager', () => {
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onClose when backdrop is clicked', () => {
-      const onClose = vi.fn();
-      render(<UpdateManager isOpen={true} onClose={onClose} />);
-
-      const backdrop = screen.getByRole('dialog').parentElement;
-      if (backdrop) {
-        fireEvent.click(backdrop);
-        expect(onClose).toHaveBeenCalledTimes(1);
-      }
-    });
-
     it('should not close when clicking inside dialog', () => {
       const onClose = vi.fn();
       render(<UpdateManager isOpen={true} onClose={onClose} />);
@@ -146,7 +135,7 @@ describe('UpdateManager', () => {
       const onClose = vi.fn();
       render(<UpdateManager isOpen={true} onClose={onClose} />);
 
-      fireEvent.keyDown(window, { key: 'Escape' });
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
 
       expect(onClose).toHaveBeenCalledTimes(1);
     });

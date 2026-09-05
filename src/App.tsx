@@ -273,12 +273,6 @@ function App(): React.JSX.Element {
         return;
       }
 
-      // Escape to close Update Manager
-      if (e.key === 'Escape' && isUpdateManagerOpen) {
-        setIsUpdateManagerOpen(false);
-        return;
-      }
-
       // Prevent tool switching in World View (player mode)
       if (!isArchitectView) {
         return;
@@ -332,7 +326,7 @@ function App(): React.JSX.Element {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isArchitectView, tool, isAboutOpen, isUpdateManagerOpen]);
+  }, [isArchitectView, tool, isAboutOpen]);
 
   // Handle Menu Commands (Electron IPC)
   useEffect(() => {

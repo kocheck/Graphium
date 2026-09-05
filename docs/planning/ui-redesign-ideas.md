@@ -46,3 +46,9 @@
 - Category and Default Type stay native `<select>`s next to `Input` fields.
 - Vision radius is a raw number field; a Slider with feet marks would match the rest of the chrome.
 - The editor is also mounted from CommandPalette; a shared sheet on mobile would match LibraryManager.
+
+### UpdateManager
+
+- Restart & Install was a success-green fill; it is now `variant="default"` like the other actions.
+- Download percent still sets width in a ref (runtime value; no static class).
+- Opened from About via "Consult the Archives"; a dedicated menu item would avoid stacking two dialogs.
