@@ -47,8 +47,7 @@ If any row differs: STOP.
 - **Requires**: `scripts/preflight.sh`; the `verify:static`, `verify:web`, `verify:electron`,
   `verify` and `shots` scripts in `package.json`; one `@theme` block in `src/index.css`
   (all from plan 000); `plans/002-shadcn-compatibility-spike.md`.
-- **Grounded at**: ‹merge SHA of plan 000, written there by its final step› (citations verified
-  at d3d3642)
+- **Grounded at**: `a9a56b5` (citations verified at d3d3642)
 
 ## Why this matters
 
