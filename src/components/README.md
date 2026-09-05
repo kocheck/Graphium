@@ -24,6 +24,7 @@ you are about to change is the source of truth; read it.
 **Layout components**
 
 - `Toolbar.tsx` — desktop Architect View tool strip (extracted from `App.tsx` in plan 004).
+- `CanvasHost` and `TokenInspectorGate` feed `CanvasManager` and `TokenInspector` from `uiStore` (plan 005).
 
 ## Conventions that matter here
 

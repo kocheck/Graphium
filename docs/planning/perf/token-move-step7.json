@@ -1,0 +1,59 @@
+{
+  "scenario": "token-move",
+  "tag": "step7",
+  "updateCounts": {
+    "CanvasManager": 3,
+    "TokenInspector": 3,
+    "Sidebar": 2
+  },
+  "entries": [
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.4000000022351742,
+      "timestamp": 1473.1000000014901
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.5,
+      "timestamp": 1513.1000000014901
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.7000000029802322,
+      "timestamp": 1514.7000000029802
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.20000000298023224,
+      "timestamp": 1515.2000000029802
+    },
+    {
+      "id": "Sidebar",
+      "phase": "update",
+      "actualDuration": 3.900000002235174,
+      "timestamp": 1648.800000000745
+    },
+    {
+      "id": "CanvasManager",
+      "phase": "update",
+      "actualDuration": 0.5,
+      "timestamp": 1659
+    },
+    {
+      "id": "TokenInspector",
+      "phase": "update",
+      "actualDuration": 0.10000000149011612,
+      "timestamp": 1659
+    },
+    {
+      "id": "Sidebar",
+      "phase": "update",
+      "actualDuration": 0,
+      "timestamp": 1666.7000000029802
+    }
+  ]
+}
