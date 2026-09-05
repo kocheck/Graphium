@@ -481,5 +481,39 @@ module.exports = {
         '@typescript-eslint/explicit-function-return-type': 'off',
       },
     },
+    // Plan 003: shadcn-generated primitives. They have no consumers until plan 004 (unused
+    // exports), export non-component helpers (buttonVariants), and omit return types.
+    {
+      files: ['src/components/ui/**/*.tsx', 'src/lib/utils.ts'],
+      excludedFiles: ['src/components/ui/**/*.test.tsx'],
+      rules: {
+        'import/no-unused-modules': 'off',
+        'prettier/prettier': 'off',
+        'react-refresh/only-export-components': 'off',
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        'no-restricted-imports': [
+          'error',
+          {
+            patterns: [
+              {
+                group: [
+                  '../*',
+                  '../../*',
+                  '@/store/*',
+                  '@/utils/*',
+                  '@/components/*',
+                  '@/services/*',
+                  '@components/*',
+                  '@store/*',
+                  '@utils/*',
+                ],
+                message:
+                  'Primitives import only react, @radix-ui/*, class-variance-authority, lucide-react, @remixicon/react, ./siblings and @/lib/utils.',
+              },
+            ],
+          },
+        ],
+      },
+    },
   ],
 };
