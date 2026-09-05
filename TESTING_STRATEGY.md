@@ -103,7 +103,7 @@ export default defineConfig({
       name: 'Electron-App',
       use: {
         // Launch actual Electron executable
-        // Note: Requires Electron build to exist (npm run build)
+        // Note: Requires Electron build to exist (npm run build:electron)
         // @ts-ignore - _electron is a valid Playwright context
         _electron: {
           executablePath: require('electron'),
@@ -143,10 +143,10 @@ export default defineConfig({
 
 ### 1.2 Why Two Projects?
 
-| Project          | Purpose                                        | Test Types                   | Build Required               |
-| ---------------- | ---------------------------------------------- | ---------------------------- | ---------------------------- |
-| **Web-Chromium** | User workflows, state management, DOM behavior | Functional/integration tests | ✅ Yes (`npm run build:web`) |
-| **Electron-App** | IPC, native features, startup, file system     | Integration tests            | ✅ Yes (`npm run build`)     |
+| Project          | Purpose                                        | Test Types                   | Build Required                    |
+| ---------------- | ---------------------------------------------- | ---------------------------- | --------------------------------- |
+| **Web-Chromium** | User workflows, state management, DOM behavior | Functional/integration tests | ✅ Yes (`npm run build:web`)      |
+| **Electron-App** | IPC, native features, startup, file system     | Integration tests            | ✅ Yes (`npm run build:electron`) |
 
 ### 1.3 Trace Configuration Deep Dive
 
@@ -692,7 +692,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Build Electron app
-        run: npm run build
+        run: npm run type-check && npm run build:electron
 
       - name: Run Playwright tests (Electron-App)
         run: npx playwright test --project=Electron-App
