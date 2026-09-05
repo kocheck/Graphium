@@ -71,3 +71,9 @@ Replaced by the 14-scan surface × theme matrix in `tests/accessibility.spec.ts`
 | confirm-dialog | light | aria-prohibited-attr | `[data-testid="session-console-status"]`                                      | n/a                           | (a) fixed: added `role="img"` |
 | confirm-dialog | dark  | aria-prohibited-attr | `[data-testid="session-console-status"]`                                      | n/a                           | (a) fixed: added `role="img"` |
 | editor-mobile  | dark  | color-contrast       | `.flex-col.justify-center.py-2:nth-child(1) > span` (mobile toolbar "Select") | 2.89 (`#0070c1` on `#0d2847`) | (b) deferred to plan 006      |
+
+## Overlay contract
+
+Unreachable from a fresh campaign (`open: null`): MobileBottomSheet, AddToLibraryDialog, TokenMetadataEditor, ImageCropper, SessionConsoleEditorSheet.
+
+No `trapsFocus` flips: AboutModal is the only overlay that traps focus; every other exercised row matches the source-read `trapsFocus: false`.
