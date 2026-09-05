@@ -115,3 +115,7 @@ Lost coverage (one line per deleted file):
 Unreachable from a fresh campaign (`open: null`): MobileBottomSheet, AddToLibraryDialog, TokenMetadataEditor, ImageCropper, SessionConsoleEditorSheet.
 
 No `trapsFocus` flips: AboutModal is the only overlay that traps focus; every other exercised row matches the source-read `trapsFocus: false`.
+
+## Touch targets
+
+Desktop `.btn-tool` measured 46 × 30 px (no CSS minimum). Mobile menu is ≥ 48 × 48; mobile toolbar buttons are ≥ 56 tall. `TokenInspector`'s 44 px buttons and HomeScreen's ≤ 480 px rules are unasserted (they need a selected token / a 480 px viewport).
