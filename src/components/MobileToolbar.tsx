@@ -107,6 +107,7 @@ function MobileToolbar({
           {/* Menu */}
           <div
             className="fixed bottom-16 right-0 left-0 mx-4 mb-2 rounded-lg shadow-xl z-50 overflow-hidden"
+            data-testid="toolbar-mobile-more-menu"
             style={{
               backgroundColor: 'var(--app-bg-surface)',
               borderWidth: '1px',
@@ -245,6 +246,7 @@ function MobileToolbar({
       {/* Bottom Navigation Bar */}
       <div
         className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
+        data-testid="toolbar-mobile-root"
         style={{
           backgroundColor: 'var(--app-bg-surface)',
           borderTopWidth: '1px',
@@ -308,6 +310,7 @@ function MobileToolbar({
         {/* More Menu */}
         <button
           onClick={handleMoreClick}
+          data-testid="toolbar-mobile-more"
           className="flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors"
           style={{
             color: showMoreMenu ? 'var(--app-accent-solid)' : 'var(--app-text-secondary)',

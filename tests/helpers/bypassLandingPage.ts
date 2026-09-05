@@ -100,20 +100,16 @@ export async function bypassLandingPageAndInjectState(
     localStorage.setItem('graphium-theme', 'light'); // Use light theme for tests
   });
 
-  // 4. Navigate to app (landing page logic will detect "returning user" and skip)
-  await page.goto('/');
+  // 4. Navigate with ?e2e=1 so window.__GAME_STORE__ is exposed in every build
+  await page.goto('/?e2e=1');
 
-  // 5. Wait for main app to render
-  // Note: The app uses data-testid="editor-view" on the editor root div (when in EDITOR state)
-  await page
-    .waitForSelector('[data-testid="editor-view"]', {
-      timeout: 10000,
-      state: 'visible',
-    })
-    .catch(async () => {
-      // Fallback: If editor-view doesn't exist, wait for root to be visible
-      await page.waitForSelector('#root:visible', { timeout: 10000 });
-    });
+  // 5. Enter the editor. Nothing auto-enters EDITOR; New Campaign is the only path.
+  await page.waitForSelector('[data-testid="new-campaign-button"]', {
+    timeout: 10000,
+    state: 'visible',
+  });
+  await page.click('[data-testid="new-campaign-button"]');
+  await page.waitForSelector('[data-testid="editor-view"]', { timeout: 10000, state: 'visible' });
 
   // Wait for any initial animations/loading to complete
   await page.waitForLoadState('networkidle');

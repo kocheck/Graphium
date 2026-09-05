@@ -553,7 +553,10 @@ function App(): React.JSX.Element {
 
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
         {isArchitectView && !isMobile && (
-          <div className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50 bg-black border-2 border-neutral-600">
+          <div
+            className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50 bg-black border-2 border-neutral-600"
+            data-testid="toolbar-root"
+          >
             {/* Play/Pause Button */}
             <Tooltip
               content={
@@ -570,6 +573,7 @@ function App(): React.JSX.Element {
                   void handlePauseToggle();
                 }}
                 aria-label={isGamePaused ? 'Resume game' : 'Pause game'}
+                data-testid="toolbar-pause"
               >
                 {isGamePaused ? (
                   <RiPlayFill className="w-5 h-5" />
@@ -585,6 +589,7 @@ function App(): React.JSX.Element {
                 className={`btn btn-tool p-2 ${tool === 'select' ? 'active' : ''}`}
                 onClick={() => setTool('select')}
                 aria-label="Select tool"
+                data-testid="toolbar-tool-select"
               >
                 <RiCursorLine className="w-5 h-5" />
               </button>
@@ -595,6 +600,7 @@ function App(): React.JSX.Element {
                 className={`btn btn-tool p-2 ${tool === 'marker' ? 'active' : ''}`}
                 onClick={() => setTool('marker')}
                 aria-label="Marker tool"
+                data-testid="toolbar-tool-marker"
               >
                 <RiPencilLine className="w-5 h-5" />
               </button>
@@ -605,6 +611,7 @@ function App(): React.JSX.Element {
                 className={`btn btn-tool p-2 ${tool === 'eraser' ? 'active' : ''}`}
                 onClick={() => setTool('eraser')}
                 aria-label="Eraser tool"
+                data-testid="toolbar-tool-eraser"
               >
                 <RiEraserLine className="w-5 h-5" />
               </button>
@@ -615,6 +622,7 @@ function App(): React.JSX.Element {
                 className={`btn btn-tool p-2 ${tool === 'wall' ? 'active' : ''}`}
                 onClick={() => setTool('wall')}
                 aria-label="Wall tool"
+                data-testid="toolbar-tool-wall"
               >
                 <RiLayoutMasonryLine className="w-5 h-5" />
               </button>
@@ -625,6 +633,7 @@ function App(): React.JSX.Element {
                 className={`btn btn-tool p-2 ${tool === 'door' ? 'active' : ''}`}
                 onClick={() => setTool('door')}
                 aria-label="Door tool"
+                data-testid="toolbar-tool-door"
               >
                 <RiDoorOpenLine className="w-5 h-5" />
               </button>
@@ -653,6 +662,7 @@ function App(): React.JSX.Element {
                   className={`btn btn-tool p-2 ${tool === 'measure' ? 'active' : ''}`}
                   onClick={() => setTool('measure')}
                   aria-label="Measure tool"
+                  data-testid="toolbar-tool-measure"
                 >
                   <RiRulerLine className="w-5 h-5" />
                 </button>
