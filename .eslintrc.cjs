@@ -493,6 +493,8 @@ module.exports = {
         'src/components/SessionConsole/SessionConsoleBoard.tsx',
         'src/components/SessionConsole/ImageSetBoard.tsx',
         'src/components/SessionConsole/SessionConsoleMasterBar.tsx',
+        'src/components/Sidebar.tsx',
+        'src/components/MapNavigator.tsx',
       ],
       rules: {
         'no-restricted-syntax': [

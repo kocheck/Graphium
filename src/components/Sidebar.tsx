@@ -70,6 +70,8 @@ import {
   RiBookLine,
 } from '@remixicon/react';
 
+import { Button } from '@/components/ui/button';
+
 import { useGameStore } from '../store/gameStore';
 import { processImage } from '../utils/AssetProcessor';
 import AddToLibraryDialog from './AssetLibrary/AddToLibraryDialog';
@@ -348,16 +350,17 @@ function Sidebar(): JSX.Element {
               })}
             </ul>
 
-            <button
+            <Button
               onClick={() => {
                 setMapSettingsMode('CREATE');
                 setEditingMapId(null);
                 setIsMapSettingsOpen(true);
               }}
-              className="btn btn-secondary w-full py-2 text-sm flex items-center justify-center gap-2 border-dashed border-2"
+              variant="ghost"
+              className="w-full py-2 text-sm flex items-center justify-center gap-2 border-dashed border-2"
             >
               <RiAddLine className="w-5 h-5" /> New Map
-            </button>
+            </Button>
           </CollapsibleSection>
 
           <div className="w-full h-px bg-[var(--app-border-default)] my-6"></div>
@@ -370,12 +373,13 @@ function Sidebar(): JSX.Element {
             {/* Action Bar */}
             <div className="flex gap-2 mb-4">
               <Tooltip content="Open Command Palette (Cmd+K / Cmd+P)">
-                <button
+                <Button
                   onClick={() => setPaletteOpen(true)}
-                  className="btn btn-secondary flex-1 py-2 text-sm flex items-center justify-center gap-2"
+                  variant="ghost"
+                  className="flex-1 py-2 text-sm flex items-center justify-center gap-2"
                 >
                   <RiSearchLine className="w-5 h-5" /> Place
-                </button>
+                </Button>
               </Tooltip>
 
               <input
@@ -388,22 +392,24 @@ function Sidebar(): JSX.Element {
                 }}
               />
               <Tooltip content="Add token to library">
-                <button
+                <Button
                   onClick={() => tokenInputRef.current?.click()}
-                  className="btn btn-secondary flex-1 py-2 text-sm flex items-center justify-center gap-2"
+                  variant="ghost"
+                  className="flex-1 py-2 text-sm flex items-center justify-center gap-2"
                 >
                   <RiAddLine className="w-5 h-5" /> Add
-                </button>
+                </Button>
               </Tooltip>
 
               <Tooltip content="Manage library">
-                <button
+                <Button
                   onClick={() => setIsLibraryManagerOpen(true)}
-                  className="btn btn-ghost px-3 py-2"
+                  variant="ghost"
+                  className="px-3 py-2"
                   aria-label="Manage library"
                 >
                   <RiBookLine className="w-5 h-5" />
-                </button>
+                </Button>
               </Tooltip>
             </div>
 

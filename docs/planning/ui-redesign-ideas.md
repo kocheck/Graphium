@@ -114,3 +114,18 @@
 - Transport buttons were `btn-secondary` and now map to `ghost`. A compact `size="sm"` or a real toolbar group would distinguish Duck/Pause/Stop from text actions.
 - World-link status still uses hex (`#6b7280` / `#d97706` / `#22c55e`); tokens would survive a theme pass.
 - Volume is still a native range.
+
+### Sidebar
+
+- New Map / Place / Add were `btn-secondary` and now map to `ghost`. A real secondary (or outline dashed) treatment would keep New Map distinct from Place/Add.
+- Dashed-border New Map styling was kept as leftover classes on `Button`; a dedicated dashed variant would not fight the primitive's default padding.
+
+### MapNavigator
+
+- Delete hover was `hover:text-red-500` and is now `--app-error-text`. Rename still uses an emoji button; an icon + token would match Sidebar's settings control.
+- New Map is the same dashed `ghost` as Sidebar; one shared "create map" control would remove the duplicate.
+
+### DoorControls
+
+- Unlock All keeps `bg-orange-600/20 hover:bg-orange-600/30` and the locked count keeps `text-orange-400` (no token; not on the ratchet). Plan 006b decides the orange.
+- Open All / Close All are `secondary` (old `btn-default`); a quieter ghost set would match the Session Console transport.
