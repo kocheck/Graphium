@@ -27,3 +27,9 @@
 - Title is `sr-only` ("Crop image"); a visible header would make the modal feel like the other dialogs.
 - Zoom is a native range input; a Slider primitive would match the rest of the chrome.
 - Cropping itself has no automated coverage (jsdom cannot drive `react-easy-crop`).
+
+### SessionConsoleEditorSheet
+
+- Tag and Recommended plate stay native `<select>`s (not `Input`); a shared Select primitive would match the rest of the sheet.
+- Volume offset is still a native range; a Slider primitive would match.
+- The sheet still early-returns when closed, so Radix never mounts a closed instance.

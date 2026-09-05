@@ -476,6 +476,7 @@ module.exports = {
         'src/components/MapSettingsSheet.tsx',
         'src/components/AssetLibrary/AddToLibraryDialog.tsx',
         'src/components/ImageCropper.tsx',
+        'src/components/SessionConsole/SessionConsoleEditorSheet.tsx',
       ],
       rules: {
         'no-restricted-syntax': [
