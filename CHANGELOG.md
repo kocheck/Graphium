@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Toast slide-down animation now runs (Tailwind v4 CSS `@theme` / `@keyframes slideDown`).
+- Main toolbar follows the light/dark theme instead of a black slab.
+- Pause button shows red when paused and green when running.
+
 ### Removed
 
 - `PreferencesDialog` component (unreferenced; kept in git history).
