@@ -111,7 +111,7 @@ const OVERLAYS: OverlayCase[] = [
     hasAriaModal: true,
     escOwns: true,
     escapeCloses: true,
-    trapsFocus: false,
+    trapsFocus: true,
   },
   {
     name: 'MobileSidebarDrawer',

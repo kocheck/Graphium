@@ -477,6 +477,7 @@ module.exports = {
         'src/components/AssetLibrary/AddToLibraryDialog.tsx',
         'src/components/ImageCropper.tsx',
         'src/components/SessionConsole/SessionConsoleEditorSheet.tsx',
+        'src/components/SessionConsole/SessionConsoleSettingsSheet.tsx',
       ],
       rules: {
         'no-restricted-syntax': [
