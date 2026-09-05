@@ -2,27 +2,14 @@ import type { Page } from '@playwright/test';
 import type { Campaign } from '../../src/store/gameStore';
 
 /**
- * Bypass Landing Page and Inject Test State
+ * Legacy Electron-mocked editor entry for door-sync and dm-world-sync.
  *
- * This helper bypasses the "Download Landing Page" gateway by:
- * 1. Mocking Electron APIs (for web mode compatibility)
- * 2. Injecting pre-configured IndexedDB state
- * 3. Setting localStorage flags to simulate returning user
+ * New tests should use `gotoSurface` from `tests/helpers/surfaces.ts` instead.
+ * This helper injects `window.ipcRenderer`, which makes SyncManager skip
+ * BroadcastChannel — so it cannot drive the World View in the web build.
  *
- * **Why this is needed:**
- * The production web build shows a landing page before the main app.
- * For functional tests, we want to skip directly to the app to test behavior,
- * not landing page UX.
- *
- * **Usage:**
- * ```typescript
- * test.beforeEach(async ({ page }) => {
- *   await bypassLandingPageAndInjectState(page);
- * });
- * ```
- *
- * @param page - Playwright Page object
- * @param campaignData - Optional initial campaign data to inject
+ * Flow: mock Electron APIs, seed IndexedDB, open `/?e2e=1`, click New Campaign,
+ * wait for `editor-view`.
  */
 export async function bypassLandingPageAndInjectState(
   page: Page,
