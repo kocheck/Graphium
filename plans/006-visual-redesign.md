@@ -27,7 +27,7 @@ invents.
   `<!-- steps-5-plus:start -->` in this file. `preflight.sh` cannot read this line; the 006b
   drift block below checks each item by hand.
 - **Grounded at**: `e8cc678` (006a; citations verified at d3d3642)
-- **Grounded at (006b)**: ‹merge SHA of plan 005, written here by plan 005's post-merge run›
+- **Grounded at (006b)**: `8d686c2`
   (citations re-verified by 006a Step 4)
 
 ## Drift check
