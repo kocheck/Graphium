@@ -73,6 +73,30 @@
   border-color: var(--app-accent-solid-hover);
 }
 
+/* Pause button state (App.tsx). Lives in this unlayered file so it beats Tailwind's
+   @layer utilities the same way .btn-tool does. */
+.btn-tool.is-paused {
+  background: var(--app-error-solid);
+  color: var(--app-error-solid-text);
+  border-color: var(--app-error-solid);
+}
+
+.btn-tool.is-paused:hover {
+  background: var(--app-error-solid-hover);
+  border-color: var(--app-error-solid-hover);
+}
+
+.btn-tool.is-running {
+  background: var(--app-success-solid);
+  color: var(--app-success-solid-text);
+  border-color: var(--app-success-solid);
+}
+
+.btn-tool.is-running:hover {
+  background: var(--app-success-solid-hover);
+  border-color: var(--app-success-solid-hover);
+}
+
 /* Measurement mode buttons (smaller, used as sub-options) */
 .btn-mode {
   padding: 0.125rem 0.5rem;
