@@ -24,6 +24,7 @@ import {
 
 import { AboutModal, type AboutModalTab } from './AboutModal';
 import { LogoLockup } from './LogoLockup';
+import { applyTheme } from './ThemeManager';
 import Tooltip from './Tooltip';
 import { getStorage } from '../services/storage';
 import { useGameStore } from '../store/gameStore';
@@ -355,7 +356,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
 
       // Apply theme immediately for web (Electron handles via IPC)
       if (storage.getPlatform() === 'web') {
-        let effectiveTheme: string;
+        let effectiveTheme: 'light' | 'dark';
         if (nextTheme === 'system') {
           effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
             ? 'dark'
@@ -363,7 +364,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
         } else {
           effectiveTheme = nextTheme;
         }
-        document.documentElement.setAttribute('data-theme', effectiveTheme);
+        applyTheme(effectiveTheme);
 
         // Broadcast to other tabs
         if (typeof BroadcastChannel !== 'undefined') {

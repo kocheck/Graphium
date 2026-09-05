@@ -320,18 +320,15 @@
 body {
   background-color: var(--app-bg-base);
   color: var(--app-text-primary);
-
-  /* Prevent flash of wrong theme on load */
-  transition:
-    background-color var(--app-duration-fast) var(--app-ease-standard),
-    color var(--app-duration-fast) var(--app-ease-standard);
 }
 
-/* Ensure smooth theme transitions across all themed elements */
-* {
+/* Theme-change transition: applied only while `.theme-transitioning` is on <html>
+   (ThemeManager.applyTheme), so the cost is paid during a theme switch instead of on
+   every style recalculation in the app. Covers <body> too. */
+.theme-transitioning * {
   transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: var(--app-duration-fast);
-  transition-timing-function: var(--app-ease-standard);
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
 }
 
 /* Disable transitions on page load to prevent animation on initial render */
