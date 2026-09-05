@@ -87,7 +87,6 @@ export default defineConfig({
         /tests\/functional\/door-sync\.spec\.ts/,
         /tests\/functional\/dm-world-sync\.spec\.ts/,
         /tests\/performance\/drawing-performance\.spec\.ts/,
-        /tests\/visual\.spec\.ts/,
       ],
     },
     {
