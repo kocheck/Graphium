@@ -468,7 +468,7 @@ module.exports = {
     // plan 004 palette ratchet: every file migrated onto the primitives is appended here and
     // may never regain a raw Tailwind palette class. Plan 006b extends it to the whole tree.
     {
-      files: ['src/components/Tooltip.tsx'],
+      files: ['src/components/Tooltip.tsx', 'src/components/ToggleSwitch.tsx', 'src/components/CollapsibleSection.tsx'],
       rules: {
         'no-restricted-syntax': [
           'error',

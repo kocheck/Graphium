@@ -1,17 +1,12 @@
 /**
- * ToggleSwitch Component - Modern toggle switch with theme support
- *
- * A reusable toggle switch component with smooth animations and theme-aware styling.
- * Designed to replace standard checkboxes for better UX.
- *
- * @param checked - Whether the toggle is on or off
- * @param onChange - Callback when toggle state changes (receives new boolean value)
- * @param label - Optional label text to display next to the toggle
- * @param description - Optional description text below the toggle
- * @param disabled - Whether the toggle is disabled
- * @param id - Optional ID for the toggle (for accessibility)
+ * ToggleSwitch adapter — same props API, rendered on the `switch` and `label` primitives.
  */
-import type React from 'react';
+
+import type { JSX } from 'react';
+import { useId } from 'react';
+
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 interface ToggleSwitchProps {
   checked: boolean;
@@ -29,77 +24,30 @@ function ToggleSwitch({
   description,
   disabled = false,
   id,
-}: ToggleSwitchProps): React.ReactElement {
-  const handleToggle = (): void => {
-    if (!disabled) {
-      onChange(!checked);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent): void => {
-    if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault();
-      onChange(!checked);
-    }
-  };
-
-  const toggleId = id ?? `toggle-${Math.random().toString(36).substr(2, 9)}`;
+}: ToggleSwitchProps): JSX.Element {
+  const generatedId = useId();
+  const toggleId = id ?? generatedId;
 
   return (
     <div>
       <div className="flex items-center justify-between">
         {label && (
-          <label
+          <Label
             htmlFor={toggleId}
-            className="text-xs uppercase font-semibold cursor-pointer"
-            style={{ color: 'var(--app-text-secondary)' }}
+            className="text-xs uppercase font-semibold cursor-pointer text-[var(--app-text-secondary)]"
           >
             {label}
-          </label>
+          </Label>
         )}
-
-        <button
+        <Switch
           id={toggleId}
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          aria-disabled={disabled}
+          checked={checked}
+          onCheckedChange={onChange}
           disabled={disabled}
-          onClick={handleToggle}
-          onKeyDown={handleKeyDown}
-          className={`
-            relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-            focus:outline-none focus:ring-2 focus:ring-offset-2
-            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            ${
-              checked
-                ? 'bg-[var(--app-accent-solid)] focus:ring-[var(--app-accent-solid)]'
-                : 'bg-[var(--app-border-default)] focus:ring-[var(--app-border-default)]'
-            }
-          `}
-          style={{
-            transitionDuration: '200ms',
-          }}
-        >
-          <span
-            className={`
-              inline-block h-5 w-5 transform rounded-full bg-white transition-transform
-              shadow-sm
-              ${checked ? 'translate-x-6' : 'translate-x-1'}
-            `}
-            style={{
-              transitionDuration: '200ms',
-              transitionTimingFunction: 'ease-in-out',
-            }}
-          />
-        </button>
+          aria-disabled={disabled}
+        />
       </div>
-
-      {description && (
-        <p className="text-xs mt-1" style={{ color: 'var(--app-text-muted)' }}>
-          {description}
-        </p>
-      )}
+      {description && <p className="text-xs mt-1 text-[var(--app-text-muted)]">{description}</p>}
     </div>
   );
 }
