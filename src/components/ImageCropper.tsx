@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react';
 
 import Cropper from 'react-easy-crop';
 
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+
 import type { Area } from 'react-easy-crop';
 
 /**
@@ -116,12 +119,21 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps): JSX
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-      data-testid="dialog-image-cropper-root"
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          onCancel();
+        }
+      }}
     >
-      <div className="relative w-[90vw] h-[80vh] bg-neutral-800 rounded-lg overflow-hidden flex flex-col">
-        <div className="relative flex-1 bg-black">
+      <DialogContent
+        className="w-[90vw] max-w-none h-[80vh] p-0 flex flex-col overflow-hidden"
+        data-testid="dialog-image-cropper-root"
+        showCloseButton={false}
+      >
+        <DialogTitle className="sr-only">Crop image</DialogTitle>
+        <div className="relative flex-1 bg-[var(--app-bg-base)]">
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -140,9 +152,9 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps): JSX
           />
         </div>
 
-        <div className="p-4 flex justify-between items-center bg-neutral-900 border-t border-neutral-700">
+        <div className="p-4 flex justify-between items-center bg-[var(--app-bg-subtle)] border-t border-[var(--app-border-default)]">
           <div className="flex gap-4">
-            <span className="text-white text-sm">Zoom</span>
+            <span className="text-[var(--app-text-primary)] text-sm">Zoom</span>
             <input
               type="range"
               value={zoom}
@@ -155,22 +167,16 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps): JSX
             />
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 hover:bg-neutral-700 rounded text-white font-medium"
-            >
+            <Button variant="ghost" onClick={onCancel}>
               Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold"
-            >
+            </Button>
+            <Button variant="default" onClick={handleSave}>
               Crop & Import
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -20,6 +20,10 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { getStorage } from '../../services/storage';
 import { useGameStore } from '../../store/gameStore';
@@ -45,7 +49,7 @@ function AddToLibraryDialog({
   suggestedName,
   onClose,
   onConfirm,
-}: AddToLibraryDialogProps): React.ReactElement | null {
+}: AddToLibraryDialogProps): React.ReactElement {
   const [name, setName] = useState(suggestedName ?? '');
   const [category, setCategory] = useState('Monsters');
   const [tagsInput, setTagsInput] = useState('');
@@ -179,62 +183,57 @@ function AddToLibraryDialog({
     onClose();
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      data-testid="dialog-add-to-library-root"
-      onClick={handleClose}
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          handleClose();
+        }
+      }}
     >
-      <div
-        className={`w-full overflow-hidden ${isMobile ? 'h-full' : 'max-w-md rounded-lg'}`}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: 'var(--app-bg-surface)',
-        }}
+      <DialogContent
+        className={isMobile ? 'h-full max-w-none rounded-none' : 'max-w-md'}
+        data-testid="dialog-add-to-library-root"
+        showCloseButton={false}
       >
-        {/* Header */}
-        <div className="p-4 border-b border-neutral-700">
-          <h2 className="text-lg font-bold text-white">Add to Library</h2>
-        </div>
+        <DialogHeader>
+          <DialogTitle>Add to Library</DialogTitle>
+        </DialogHeader>
 
-        {/* Body */}
         <div className="p-6 space-y-4">
-          {/* Preview */}
           {imageSrc && (
             <div className="flex justify-center">
               <img
                 src={toMediaProtocol(imageSrc)}
                 alt="Preview"
-                className="w-32 h-32 object-cover rounded bg-neutral-800"
+                className="w-32 h-32 object-cover rounded bg-[var(--app-bg-subtle)]"
               />
             </div>
           )}
 
-          {/* Name */}
           <div>
-            <label htmlFor="asset-name" className="block text-sm font-medium text-neutral-300 mb-1">
+            <label
+              htmlFor="asset-name"
+              className="block text-sm font-medium text-[var(--app-text-secondary)] mb-1"
+            >
               Name *
             </label>
-            <input
+            <Input
               id="asset-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Red Dragon"
-              className="w-full bg-neutral-800 text-white px-3 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 rounded bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
               disabled={isLoading}
             />
           </div>
 
-          {/* Category */}
           <div>
             <label
               htmlFor="asset-category"
-              className="block text-sm font-medium text-neutral-300 mb-1"
+              className="block text-sm font-medium text-[var(--app-text-secondary)] mb-1"
             >
               Category
             </label>
@@ -242,7 +241,7 @@ function AddToLibraryDialog({
               id="asset-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-neutral-800 text-white px-3 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 rounded bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
               disabled={isLoading}
             >
               {DEFAULT_CATEGORIES.map((cat) => (
@@ -253,45 +252,44 @@ function AddToLibraryDialog({
             </select>
           </div>
 
-          {/* Tags */}
           <div>
-            <label htmlFor="asset-tags" className="block text-sm font-medium text-neutral-300 mb-1">
+            <label
+              htmlFor="asset-tags"
+              className="block text-sm font-medium text-[var(--app-text-secondary)] mb-1"
+            >
               Tags (optional)
             </label>
-            <input
+            <Input
               id="asset-tags"
               type="text"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="e.g., dragon, red, large"
-              className="w-full bg-neutral-800 text-white px-3 py-2 rounded border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 rounded bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
               disabled={isLoading}
             />
-            <p className="text-xs text-neutral-500 mt-1">Separate tags with commas or spaces</p>
+            <p className="text-xs text-[var(--app-text-muted)] mt-1">
+              Separate tags with commas or spaces
+            </p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-neutral-700 flex justify-end gap-2">
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white font-medium"
-            disabled={isLoading}
-          >
+        <div className="p-4 border-t border-[var(--app-border-default)] flex justify-end gap-2">
+          <Button variant="secondary" onClick={handleClose} disabled={isLoading}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="default"
             onClick={() => {
               void handleSave();
             }}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !name.trim()}
           >
             {isLoading ? 'Saving...' : 'Add to Library'}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

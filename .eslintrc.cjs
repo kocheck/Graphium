@@ -473,6 +473,9 @@ module.exports = {
         'src/components/ToggleSwitch.tsx',
         'src/components/CollapsibleSection.tsx',
         'src/components/ConfirmDialog.tsx',
+        'src/components/MapSettingsSheet.tsx',
+        'src/components/AssetLibrary/AddToLibraryDialog.tsx',
+        'src/components/ImageCropper.tsx',
       ],
       rules: {
         'no-restricted-syntax': [

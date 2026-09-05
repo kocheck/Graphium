@@ -14,6 +14,10 @@ import { useRef, useState, useEffect } from 'react';
 
 import { RiRulerLine } from '@remixicon/react';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+
 import ToggleSwitch from './ToggleSwitch';
 import { useGameStore } from '../store/gameStore';
 import { processImage } from '../utils/AssetProcessor';
@@ -35,7 +39,7 @@ function MapSettingsSheet({
   onClose,
   mode,
   mapId,
-}: MapSettingsSheetProps): React.ReactElement | null {
+}: MapSettingsSheetProps): React.ReactElement {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const processingHandleRef = useRef<ProcessingHandle | null>(null);
 
@@ -227,36 +231,26 @@ function MapSettingsSheet({
     );
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={`fixed inset-0 z-40 transition-colors duration-200 ${
-          isCalibrating ? 'bg-transparent pointer-events-none' : 'bg-black/50'
-        }`}
-        onClick={isCalibrating ? undefined : onClose}
-      />
-
-      {/* Drawer */}
-      <div
-        className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-[var(--app-bg-surface)] shadow-2xl z-50 overflow-y-auto"
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      modal={!isCalibrating}
+    >
+      <SheetContent
+        side="right"
+        className="w-full sm:w-96 sm:max-w-none p-0 overflow-y-auto"
         data-testid="sheet-map-settings-root"
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">{mode === 'CREATE' ? 'New Map' : 'Edit Map'}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-[var(--app-bg-subtle)] rounded transition"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+        <SheetHeader className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4">
+          <SheetTitle className="text-lg font-bold">
+            {mode === 'CREATE' ? 'New Map' : 'Edit Map'}
+          </SheetTitle>
+        </SheetHeader>
 
         {/* Content */}
         <div className="p-4 space-y-6">
@@ -264,27 +258,23 @@ function MapSettingsSheet({
           <div>
             <label
               htmlFor="map-name"
-              className="block text-xs mb-2 uppercase font-semibold"
-              style={{ color: 'var(--app-text-secondary)' }}
+              className="block text-xs mb-2 uppercase font-semibold text-[var(--app-text-secondary)]"
             >
               Map Name
             </label>
-            <input
+            <Input
               id="map-name"
               type="text"
               value={mapName}
               onChange={(e) => setMapName(e.target.value)}
-              className="sidebar-input w-full rounded px-3 py-2 text-sm"
+              className="w-full"
               placeholder="Enter map name"
             />
           </div>
 
           {/* Upload Map */}
           <div>
-            <label
-              className="block text-xs mb-2 uppercase font-semibold"
-              style={{ color: 'var(--app-text-secondary)' }}
-            >
+            <label className="block text-xs mb-2 uppercase font-semibold text-[var(--app-text-secondary)]">
               Upload Map
             </label>
             <input
@@ -296,47 +286,45 @@ function MapSettingsSheet({
                 void handleMapUpload(e);
               }}
             />
-            <button
+            <Button
+              variant="default"
               onClick={() => fileInputRef.current?.click()}
-              className="btn btn-primary w-full font-medium py-2 px-4 rounded transition flex items-center justify-center gap-2"
+              className="w-full font-medium py-2 px-4"
             >
               <span>🗺️</span> Choose Map Image
-            </button>
+            </Button>
           </div>
 
           {/* Calibrate Map */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label
-                className="block text-xs uppercase font-semibold"
-                style={{ color: 'var(--app-text-secondary)' }}
-              >
+              <label className="block text-xs uppercase font-semibold text-[var(--app-text-secondary)]">
                 Calibration
               </label>
               {isCalibrating && (
-                <span className="text-xs animate-pulse" style={{ color: 'var(--app-accent-text)' }}>
-                  Active
-                </span>
+                <span className="text-xs animate-pulse text-[var(--app-accent-text)]">Active</span>
               )}
             </div>
 
             {isCalibrating ? (
-              <div className="info-box rounded p-3 mb-3 text-xs">
+              <div className="rounded p-3 mb-3 text-xs bg-[var(--app-accent-bg)] border border-[var(--app-accent-solid)] text-[var(--app-accent-text-contrast)]">
                 <p className="mb-2">
                   <strong>Draw a square</strong> on the map that represents exactly{' '}
                   <strong>one grid cell</strong> (e.g. 5ft square).
                 </p>
-                <button
+                <Button
+                  variant="secondary"
                   onClick={() => setIsCalibrating(false)}
-                  className="btn btn-default w-full py-1 rounded transition"
+                  className="w-full py-1"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setIsCalibrating(true)}
-                className="btn btn-default w-full font-medium py-2 px-3 rounded text-sm flex items-center justify-center gap-2 transition"
+                className="w-full font-medium py-2 px-3 text-sm"
                 disabled={gridType === 'HEXAGONAL' || gridType === 'ISOMETRIC'}
                 title={
                   gridType === 'HEXAGONAL' || gridType === 'ISOMETRIC'
@@ -344,11 +332,11 @@ function MapSettingsSheet({
                     : 'Draw a box around one grid cell to calibrate map scale'
                 }
               >
-                <RiRulerLine className="w-4 h-4" /> Calibrate via Draw
+                <RiRulerLine className="size-4" /> Calibrate via Draw
                 {(gridType === 'HEXAGONAL' || gridType === 'ISOMETRIC') && (
                   <span className="text-xs opacity-50">(Square grids only)</span>
                 )}
-              </button>
+              </Button>
             )}
           </div>
 
@@ -356,8 +344,7 @@ function MapSettingsSheet({
           <div>
             <label
               htmlFor="grid-type-select"
-              className="block text-xs mb-2 uppercase font-semibold"
-              style={{ color: 'var(--app-text-secondary)' }}
+              className="block text-xs mb-2 uppercase font-semibold text-[var(--app-text-secondary)]"
             >
               Grid Type
             </label>
@@ -369,7 +356,7 @@ function MapSettingsSheet({
                   ? setPendingGridType(e.target.value as GridType)
                   : setGridType(e.target.value as GridType)
               }
-              className="sidebar-input w-full rounded px-3 py-2 text-sm"
+              className="w-full"
             >
               <option value="LINES">Square - Lines</option>
               <option value="DOTS">Square - Dots</option>
@@ -383,8 +370,7 @@ function MapSettingsSheet({
           <div>
             <label
               htmlFor="grid-color-input"
-              className="block text-xs mb-1 uppercase font-semibold"
-              style={{ color: 'var(--app-text-secondary)' }}
+              className="block text-xs mb-1 uppercase font-semibold text-[var(--app-text-secondary)]"
             >
               Grid Color
             </label>
@@ -431,33 +417,30 @@ function MapSettingsSheet({
           {/* Reset Map */}
           {mode === 'EDIT' && (
             <div>
-              <label
-                className="block text-xs mb-2 uppercase font-semibold"
-                style={{ color: 'var(--app-text-secondary)' }}
-              >
+              <label className="block text-xs mb-2 uppercase font-semibold text-[var(--app-text-secondary)]">
                 Danger Zone
               </label>
-              <button
+              <Button
+                variant="ghost"
                 onClick={handleResetMap}
-                className="btn btn-destructive w-full font-medium py-2 px-3 rounded text-sm flex items-center justify-center gap-2 transition"
+                className="w-full font-medium py-2 px-3 text-sm"
               >
                 <span>⚠️</span> Reset Map Position & Scale
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)] p-4 flex gap-2">
-          <button onClick={onClose} className="btn btn-ghost flex-1 py-2 rounded">
+        <SheetFooter className="sticky bottom-0 bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)] p-4 flex flex-row gap-2">
+          <Button variant="ghost" className="flex-1 py-2" onClick={onClose}>
             Cancel
-          </button>
-          <button onClick={handleSave} className="btn btn-primary flex-1 py-2 rounded">
+          </Button>
+          <Button variant="default" className="flex-1 py-2" onClick={handleSave}>
             {mode === 'CREATE' ? 'Create Map' : 'Save Changes'}
-          </button>
-        </div>
-      </div>
-    </>
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
