@@ -66,7 +66,7 @@ should not improvise. When a step is unclear, the correct action is always to ST
 After plan 000 lands, run:
 
 ```bash
-bash scripts/preflight.sh NNN     # NNN = your plan number, e.g. 001
+bash scripts/preflight.sh NNN     # NNN = your plan number, e.g. 001, 006a, 006b
 ```
 
 It exits 0 only when: every plan in your plan's **Depends on** line has a `DONE` row in
@@ -94,6 +94,7 @@ contents.
 | `npm run verify:web`       | `build:web`, then Playwright `Web-Chromium` project, then `test:a11y`                         | After every step that touches `src/` or `tests/`    |
 | `npm run verify:electron`  | `build:electron`, then Playwright `Electron-App` under `xvfb-run -a`                          | Where the plan says so (it is slow)                 |
 | `npm run verify`           | All three, in that order                                                                      | Before every push                                   |
+| `bash scripts/plan-lint.sh plans/NNN-*.md` | Structural lint of a plan file (eight fields per step, mechanical Check on its first line, no `‹…›` after the first step). Created by plan 006a Step 4; any plan may run it. | Before editing a plan; before opening a PR |
 | `SHOTS_OUT=D npm run shots` | Screenshots every surface in both themes into directory `D` (Playwright cannot take custom flags, so the output directory is an environment variable) | Where the plan says so |
 
 `verify:web` and `shots` run with `CI=1`, so Playwright serves the **built** output on port 4173
@@ -161,8 +162,9 @@ not listed, STOP.
 - One commit per step, message exactly as the step's **Commit** line. The commit history
   is the reviewer's map of the plan.
 - Push with `git push -u origin plan/NNN-<slug>` after `npm run verify` exits 0.
-- Open one pull request into `main` per plan (plan 004 opens six, plan 006 opens two,
-  as their text says). PR title: `Plan NNN: <plan title>`. PR body: the **Report**
+- Open one pull request into `main` per plan (plan 004 opens six; plan 006 opens two: 006a is
+  opened at its first BLOCKED stop and updated across runs, 006b may split at its `PR boundary`
+  seams, as their text says). PR title: `Plan NNN: <plan title>`. PR body: the **Report**
   (section 11) pasted in full.
 - CI runs only on pull requests into `main` (`lint.yml`, `test.yml`, `e2e.yml`,
   `accessibility.yml`, `documentation-check*.yml`). Nothing runs on the branch alone.
@@ -243,6 +245,9 @@ Decisions already made on 2026-09-04 (do not re-ask):
 | Toolbar extraction                          | Plan 004 Step 10 extracts `src/components/Toolbar.tsx`; plan 005 depends on it.             |
 | Toast                                       | Keep `src/components/Toast.tsx`; do not add `sonner`.                                       |
 | `command` palette                           | Out of scope for the whole program.                                                         |
+| Reduced motion                              | The `* { transition: none !important }` rule in `theme.css` stays until plan 006b Step 6; 006a only adds token zeroing beside it. |
+| New Radix scales for 006 directions         | `tomato`, `orange`, `sand` are imported in `theme.css` with a `[data-theme='dark']` copy of each (006a Step 2a). |
+| `docs/planning/ui-redesign-ideas.md`        | Created by whichever of 006a Step 1 or 004 Step 14 runs first; the other appends under its own heading. |
 
 ## 10. How to STOP
 
