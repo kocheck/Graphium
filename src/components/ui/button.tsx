@@ -1,67 +1,115 @@
 import type * as React from 'react';
 
+import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from 'cn';
-import { Slot } from 'radix-ui';
+
+import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium transition-colors duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/80',
-        outline:
-          'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
-        secondary:
-          'bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
-        ghost:
-          'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50',
+        /** .btn-primary */
+        default: 'bg-primary text-primary-foreground hover:bg-[var(--app-accent-solid-hover)]',
+        /** .btn-default */
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-accent',
+        /** bare .btn (also .btn-secondary / .btn-ghost / .btn-destructive, undefined in app.css) */
+        ghost: 'bg-transparent text-foreground hover:bg-accent',
         destructive:
-          'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40',
-        link: 'text-primary underline-offset-4 hover:underline',
+          'bg-destructive text-[var(--app-error-solid-text)] hover:bg-[var(--app-error-solid-hover)]',
+        outline: 'border border-input bg-background text-foreground hover:bg-accent',
+        link: 'text-[var(--app-accent-text)] underline-offset-4 hover:underline',
+        /** .btn-tool */
+        tool: 'border border-input bg-secondary text-secondary-foreground hover:bg-accent hover:border-[var(--app-border-hover)]',
+        /** .btn-mode */
+        mode: 'bg-secondary text-secondary-foreground hover:bg-accent',
+        /** .btn-broadcast */
+        broadcast: 'bg-secondary text-secondary-foreground hover:bg-accent',
       },
       size: {
-        default:
-          'h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: 'h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-        icon: 'size-8',
-        'icon-xs':
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        'icon-sm':
-          'size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg',
-        'icon-lg': 'size-9',
+        default: 'h-9 px-4 py-2',
+        sm: 'h-8 gap-1.5 px-3 text-xs',
+        lg: 'h-10 px-6',
+        icon: 'size-9',
+        /** close-button size used by generated dialog.tsx until Step 5 */
+        'icon-sm': 'size-7',
+        /** .btn padding/font; pair with variant="tool" */
+        tool: 'px-3 py-1 text-sm',
+        /** .btn-mode / .btn-broadcast padding/font; pair with variant="mode" | "broadcast" */
+        mode: 'px-2 py-0.5 text-xs',
+      },
+      /** .active on .btn-tool / .btn-mode / .btn-broadcast (colours set in compoundVariants) */
+      active: {
+        true: '',
+        false: '',
+      },
+      /** .is-paused / .is-running on .btn-tool (plan 001) */
+      state: {
+        none: '',
+        paused: '',
+        running: '',
       },
     },
+    compoundVariants: [
+      {
+        variant: ['tool', 'mode'],
+        active: true,
+        class:
+          'bg-primary text-primary-foreground border-primary hover:bg-[var(--app-accent-solid-hover)] hover:border-[var(--app-accent-solid-hover)]',
+      },
+      {
+        variant: 'broadcast',
+        active: true,
+        class:
+          'bg-[var(--app-success-solid)] text-[var(--app-success-solid-text)] hover:bg-[var(--app-success-solid-hover)]',
+      },
+      {
+        variant: 'tool',
+        state: 'paused',
+        class:
+          'bg-destructive text-[var(--app-error-solid-text)] border-destructive hover:bg-[var(--app-error-solid-hover)] hover:border-[var(--app-error-solid-hover)]',
+      },
+      {
+        variant: 'tool',
+        state: 'running',
+        class:
+          'bg-[var(--app-success-solid)] text-[var(--app-success-solid-text)] border-[var(--app-success-solid)] hover:bg-[var(--app-success-solid-hover)] hover:border-[var(--app-success-solid-hover)]',
+      },
+    ],
     defaultVariants: {
       variant: 'default',
       size: 'default',
+      active: false,
+      state: 'none',
     },
   },
 );
 
-function Button({
-  className,
-  variant = 'default',
-  size = 'default',
-  asChild = false,
-  ...props
-}: React.ComponentProps<'button'> &
+type ButtonProps = React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
-  }) {
-  const Comp = asChild ? Slot.Root : 'button';
+  };
 
+function Button({
+  className,
+  variant,
+  size,
+  active,
+  state,
+  asChild = false,
+  ...props
+}: ButtonProps): JSX.Element {
+  const Comp = asChild ? Slot : 'button';
   return (
     <Comp
       data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      data-active={active === true ? 'true' : undefined}
+      className={cn(buttonVariants({ variant, size, active, state, className }))}
       {...props}
     />
   );
 }
 
 export { Button, buttonVariants };
+export type { ButtonProps };
