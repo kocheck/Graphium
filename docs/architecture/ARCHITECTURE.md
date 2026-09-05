@@ -1398,7 +1398,7 @@ Graphium/
 ├── package.json                # Dependencies, scripts
 ├── tsconfig.json               # TypeScript compiler config
 ├── vite.config.ts              # Vite bundler + Electron plugin
-├── tailwind.config.js          # Tailwind CSS configuration
+├── postcss.config.js           # PostCSS (Tailwind theme: src/index.css @theme)
 ├── electron-builder.json5      # Production build config
 └── README.md                   # Project documentation
 ```

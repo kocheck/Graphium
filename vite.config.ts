@@ -63,7 +63,6 @@ export default defineConfig(({ mode }) => {
           '**/*{.,-}{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
           '**/init.ts',
           '**/vite.config.ts',
-          '**/tailwind.config.js',
           '**/postcss.config.js',
         ],
       },
