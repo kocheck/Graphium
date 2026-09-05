@@ -426,6 +426,7 @@ import './ComponentName.css';
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@utils/*": ["src/utils/*"],
       "@store/*": ["src/store/*"],
@@ -434,6 +435,8 @@ import './ComponentName.css';
   }
 }
 ```
+
+`@/*` is the shadcn alias; primitives and their tests use it.
 
 **Then import as:**
 
