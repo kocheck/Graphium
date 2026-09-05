@@ -1,51 +1,50 @@
 /**
  * Confirmation Dialog Component
  *
- * Displays a modal dialog for user confirmations (e.g., deleting maps or tokens).
- * Integrated with gameStore for centralized dialog management.
- *
- * **Features:**
- * - Modal overlay with focus trap
- * - Confirm/Cancel buttons
- * - Customizable message and confirm button text
- * - Keyboard support (Enter to confirm, Escape to cancel)
- * - Accessible with ARIA attributes
- *
- * **Integration with gameStore:**
- * Dialogs are triggered via gameStore method:
- * - `showConfirmDialog(message, onConfirm, confirmText?)` - Show confirmation dialog
- *
- * @example
- * // Show delete confirmation
- * const { showConfirmDialog } = useGameStore();
- * showConfirmDialog(
- *   'Are you sure you want to delete this map?',
- *   () => deleteMap(mapId),
- *   'Delete'
- * );
+ * Store-driven confirmation dialog on the `dialog` primitive. Triggered via
+ * `showConfirmDialog(message, onConfirm, confirmText?)` in gameStore and cleared via
+ * `clearConfirmDialog()`. Enter confirms from anywhere inside the dialog, the primitive
+ * cancels, and the Cancel button receives initial focus (the safe action on a destructive
+ * dialog). This file does not attach a second host-key handler.
  *
  * @component
- * @returns {JSX.Element | null} Confirmation dialog or null if not active
  */
 
 import { type JSX, useEffect } from 'react';
 
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
 import { useGameStore } from '../store/gameStore';
+
+/** Radix focuses the first tabbable element on open; we want Cancel instead. */
+function focusCancelButton(event: Event): void {
+  event.preventDefault();
+  const root = event.currentTarget;
+  if (root instanceof HTMLElement) {
+    root.querySelector<HTMLButtonElement>('[data-testid="dialog-confirm-cancel"]')?.focus();
+  }
+}
 
 function ConfirmDialog(): JSX.Element | null {
   const confirmDialog = useGameStore((state) => state.confirmDialog);
   const clearConfirmDialog = useGameStore((state) => state.clearConfirmDialog);
 
-  // Handle keyboard events
+  // Enter confirms (the primitive supplies the host-key close, not Enter)
   useEffect(() => {
     if (!confirmDialog) {
       return;
     }
 
     const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        clearConfirmDialog();
-      } else if (e.key === 'Enter') {
+      if (e.key === 'Enter') {
         e.preventDefault();
         confirmDialog.onConfirm();
         clearConfirmDialog();
@@ -65,52 +64,42 @@ function ConfirmDialog(): JSX.Element | null {
     clearConfirmDialog();
   };
 
-  const handleCancel = (): void => {
-    clearConfirmDialog();
+  const handleOpenChange = (open: boolean): void => {
+    if (!open) {
+      clearConfirmDialog();
+    }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
-      onClick={handleCancel}
-      role="dialog"
-      aria-modal="true"
-      data-esc-owns="true"
-      aria-labelledby="confirm-dialog-title"
-      data-testid="dialog-confirm-root"
-    >
-      <div
-        className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-lg shadow-2xl p-6 max-w-md w-full mx-4"
-        onClick={(e) => e.stopPropagation()}
+    <Dialog open onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="max-w-md"
+        data-testid="dialog-confirm-root"
+        showCloseButton={false}
+        onOpenAutoFocus={focusCancelButton}
       >
-        <h2
-          id="confirm-dialog-title"
-          className="text-lg font-semibold mb-4"
-          style={{ color: 'var(--app-text)' }}
-        >
-          Confirm Action
-        </h2>
-        <p className="mb-6" style={{ color: 'var(--app-text-muted)' }}>
-          {confirmDialog.message}
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={handleCancel}
-            className="px-4 py-2 rounded bg-[var(--app-bg-subtle)] hover:bg-[var(--app-bg-hover)] transition"
-            style={{ color: 'var(--app-text)' }}
+        <DialogHeader>
+          <DialogTitle>Confirm Action</DialogTitle>
+          <DialogDescription>{confirmDialog.message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="secondary"
+            onClick={clearConfirmDialog}
+            data-testid="dialog-confirm-cancel"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="destructive"
             onClick={handleConfirm}
-            className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white transition"
-            autoFocus
+            data-testid="dialog-confirm-confirm"
           >
             {confirmDialog.confirmText ?? 'Confirm'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

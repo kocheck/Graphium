@@ -559,11 +559,16 @@ describe('SessionConsolePanel', () => {
 
     const stopSpy = vi.spyOn(Event.prototype, 'stopImmediatePropagation');
     act(() => {
+      // Hotkeys listen on window; Radix Dialog listens on document. Window first so
+      // [data-esc-owns] is still in the DOM when Session Console decides not to STOP.
       fireEvent.keyDown(window, { key: 'Escape' });
     });
-
     expect(dispatchSpy).not.toHaveBeenCalledWith({ type: 'STOP' });
     expect(useGameStore.getState().sessionConsoleRuntime.audio.status).toBe('playing');
+
+    act(() => {
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    });
     expect(useGameStore.getState().confirmDialog).toBeNull();
     stopSpy.mockRestore();
   });
