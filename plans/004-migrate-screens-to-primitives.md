@@ -19,6 +19,7 @@
   `tests/pause-button.spec.ts`; `src/styles/palette-classes.test.ts`;
   `docs/planning/verification-baseline.md`; `docs/guides/UI_RECIPES.md`
 - **Grounded at**: `e8cc678` (citations verified at d3d3642)
+- **Grounded at (PR 1)**: `f53ef0a`
 
 ## Drift check
 
