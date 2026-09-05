@@ -17,7 +17,10 @@ test.describe('Editor smoke', () => {
   test('new campaign opens the editor with the toolbar and select active', async ({ page }) => {
     await gotoSurface(page, 'editor', 'light');
     await expect(page.locator('[data-testid="toolbar-root"]')).toBeVisible();
-    await expect(page.locator('[data-testid="toolbar-tool-select"]')).toHaveClass(/\bactive\b/);
+    await expect(page.locator('[data-testid="toolbar-tool-select"]')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     // Pause only works under Electron (handlePauseToggle returns without ipcRenderer).
     await expect(page.locator('[data-testid="toolbar-pause"]')).toHaveAttribute(
       'aria-label',
@@ -30,15 +33,16 @@ test.describe('Editor smoke', () => {
       await gotoSurface(page, 'editor', 'light');
       const button = page.locator(`[data-testid="toolbar-tool-${tool.name}"]`);
       await button.click();
-      await expect(button).toHaveClass(/\bactive\b/);
+      await expect(button).toHaveAttribute('aria-pressed', 'true');
     });
 
     test(`pressing ${tool.key} activates ${tool.name}`, async ({ page }) => {
       await gotoSurface(page, 'editor', 'light');
       await page.locator('[data-testid="toolbar-tool-select"]').click();
       await page.keyboard.press(tool.key);
-      await expect(page.locator(`[data-testid="toolbar-tool-${tool.name}"]`)).toHaveClass(
-        /\bactive\b/,
+      await expect(page.locator(`[data-testid="toolbar-tool-${tool.name}"]`)).toHaveAttribute(
+        'aria-pressed',
+        'true',
       );
     });
   }

@@ -73,7 +73,7 @@ be executed as written.** The causes clustered:
 | 002  | Prove shadcn works on this stack                | P1       | S      | LOW  | 000, 001          | `aedd359`                       | DONE 0fae465              |
 | 003  | Build the shared UI primitive layer             | P1       | L      | MED  | 000, 001, 002     | `0fae465`                       | DONE e8cc678              |
 | 006a | Audit, three directions, IA, write 006b's steps | **P1**   | M      | LOW  | 000, 001, 003     | `e8cc678`                       | TODO                      |
-| 004  | Migrate every screen onto the primitive layer   | P1       | **XL** | HIGH | 000, 003          | `e8cc678` (six PRs, sequential) | IN PROGRESS (PR 4/6 open) |
+| 004  | Migrate every screen onto the primitive layer   | P1       | **XL** | HIGH | 000, 003          | `e8cc678` (six PRs, sequential) | IN PROGRESS (PR 5/6 open) |
 | 005  | Fix the DOM-layer performance drags             | P2       | M      | MED  | 000, 001, **004** | ‹004 final merge SHA›           | TODO                      |
 | 006b | Apply the redesign                              | P2       | L      | MED  | 004, 005, 006a    | ‹005 merge SHA›                 | TODO                      |
 
