@@ -6,7 +6,6 @@ import { useShallow } from 'zustand/shallow';
 import { AboutModal } from './components/AboutModal';
 import CommandPalette from './components/AssetLibrary/CommandPalette';
 import AutoSaveManager from './components/AutoSaveManager';
-import CanvasManager from './components/Canvas/CanvasManager';
 import ConfirmDialog from './components/ConfirmDialog';
 import { DesignSystemPlayground } from './components/DesignSystemPlayground/DesignSystemPlayground';
 import { DungeonGeneratorDialog } from './components/DungeonGeneratorDialog';
@@ -16,7 +15,6 @@ import MobileToolbar from './components/MobileToolbar';
 import { PauseManager } from './components/PauseManager';
 import ResourceMonitor from './components/ResourceMonitor';
 import { SessionConsoleEscapeStop } from './components/SessionConsole/SessionConsoleEscapeStop';
-import Sidebar from './components/Sidebar';
 import SyncManager from './components/SyncManager';
 import { ThemeManager } from './components/ThemeManager';
 import Toast from './components/Toast';
@@ -31,6 +29,7 @@ import UpdateManager from './components/UpdateManager';
 import UpdateManagerErrorBoundary from './components/UpdateManagerErrorBoundary';
 import { useCommandPalette } from './hooks/useCommandPalette';
 import { useIsMobile } from './hooks/useMediaQuery';
+import { ProfiledBoundary, ProfiledCanvasManager, ProfiledSidebar } from './perf/profiler';
 import { getStorage } from './services/storage';
 import { useGameStore } from './store/gameStore';
 import { addRecentCampaignWithPlatform } from './utils/recentCampaigns';
@@ -433,22 +432,32 @@ function App(): React.JSX.Element {
     return (
       <>
         {/* Global components */}
-        <ThemeManager />
-        <Toast />
-        <ConfirmDialog />
-        <AboutModal
-          isOpen={isAboutOpen}
-          onClose={() => setIsAboutOpen(false)}
-          onCheckForUpdates={() => {
-            setIsAboutOpen(false);
-            setIsUpdateManagerOpen(true);
-          }}
-        />
-        <UpdateManagerErrorBoundary>
-          <UpdateManager
-            isOpen={isUpdateManagerOpen}
-            onClose={() => setIsUpdateManagerOpen(false)}
+        <ProfiledBoundary id="ThemeManager">
+          <ThemeManager />
+        </ProfiledBoundary>
+        <ProfiledBoundary id="Toast">
+          <Toast />
+        </ProfiledBoundary>
+        <ProfiledBoundary id="ConfirmDialog">
+          <ConfirmDialog />
+        </ProfiledBoundary>
+        <ProfiledBoundary id="AboutModal">
+          <AboutModal
+            isOpen={isAboutOpen}
+            onClose={() => setIsAboutOpen(false)}
+            onCheckForUpdates={() => {
+              setIsAboutOpen(false);
+              setIsUpdateManagerOpen(true);
+            }}
           />
+        </ProfiledBoundary>
+        <UpdateManagerErrorBoundary>
+          <ProfiledBoundary id="UpdateManager">
+            <UpdateManager
+              isOpen={isUpdateManagerOpen}
+              onClose={() => setIsUpdateManagerOpen(false)}
+            />
+          </ProfiledBoundary>
         </UpdateManagerErrorBoundary>
 
         {/* Home/Splash Screen */}
@@ -462,22 +471,41 @@ function App(): React.JSX.Element {
   return (
     <div className="app-root w-full h-screen flex overflow-hidden" data-testid="editor-view">
       {/* Global components (rendered in both Architect and World View) */}
-      <ThemeManager />
-      <SyncManager />
-      <PauseManager />
-      <Toast />
-      <ConfirmDialog />
-      <DungeonGeneratorDialog />
-      <AboutModal
-        isOpen={isAboutOpen}
-        onClose={() => setIsAboutOpen(false)}
-        onCheckForUpdates={() => {
-          setIsAboutOpen(false);
-          setIsUpdateManagerOpen(true);
-        }}
-      />
+      <ProfiledBoundary id="ThemeManager">
+        <ThemeManager />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="SyncManager">
+        <SyncManager />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="PauseManager">
+        <PauseManager />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="Toast">
+        <Toast />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="ConfirmDialog">
+        <ConfirmDialog />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="DungeonGeneratorDialog">
+        <DungeonGeneratorDialog />
+      </ProfiledBoundary>
+      <ProfiledBoundary id="AboutModal">
+        <AboutModal
+          isOpen={isAboutOpen}
+          onClose={() => setIsAboutOpen(false)}
+          onCheckForUpdates={() => {
+            setIsAboutOpen(false);
+            setIsUpdateManagerOpen(true);
+          }}
+        />
+      </ProfiledBoundary>
       <UpdateManagerErrorBoundary>
-        <UpdateManager isOpen={isUpdateManagerOpen} onClose={() => setIsUpdateManagerOpen(false)} />
+        <ProfiledBoundary id="UpdateManager">
+          <UpdateManager
+            isOpen={isUpdateManagerOpen}
+            onClose={() => setIsUpdateManagerOpen(false)}
+          />
+        </ProfiledBoundary>
       </UpdateManagerErrorBoundary>
 
       {/* Loading Overlay: Only render in World View to block players' view */}
@@ -489,11 +517,19 @@ function App(): React.JSX.Element {
       )}
 
       {/* Auto-save (Architect View only) */}
-      {isArchitectView && <SessionConsoleEscapeStop defer={isAboutOpen || isUpdateManagerOpen} />}
-      {isArchitectView && <AutoSaveManager />}
+      {isArchitectView && (
+        <ProfiledBoundary id="SessionConsoleEscapeStop">
+          <SessionConsoleEscapeStop defer={isAboutOpen || isUpdateManagerOpen} />
+        </ProfiledBoundary>
+      )}
+      {isArchitectView && (
+        <ProfiledBoundary id="AutoSaveManager">
+          <AutoSaveManager />
+        </ProfiledBoundary>
+      )}
 
       {/* Sidebar: Only render in Architect View (DM's token library) */}
-      {isArchitectView && <Sidebar />}
+      {isArchitectView && <ProfiledSidebar />}
 
       <div className="flex-1 relative h-full transition-all duration-300">
         {/* Mobile Hamburger Menu Button (top-left, Architect View only) */}
@@ -523,7 +559,7 @@ function App(): React.JSX.Element {
         )}
 
         {/* CanvasManager: Rendered in both views, but with different interaction modes */}
-        <CanvasManager
+        <ProfiledCanvasManager
           tool={tool}
           color={color}
           doorOrientation={doorOrientation}
@@ -534,25 +570,27 @@ function App(): React.JSX.Element {
 
         {/* Toolbar: Desktop or Mobile (Architect View only) */}
         {isArchitectView && !isMobile && (
-          <Toolbar
-            tool={tool}
-            setTool={setTool}
-            color={color}
-            onColorChange={handleColorChange}
-            colorInputRef={colorInputRef}
-            doorOrientation={doorOrientation}
-            onToggleDoorOrientation={() =>
-              setDoorOrientation((prev) => (prev === 'horizontal' ? 'vertical' : 'horizontal'))
-            }
-            measurementMode={measurementMode}
-            setMeasurementMode={setMeasurementMode}
-            broadcastMeasurement={broadcastMeasurement}
-            setBroadcastMeasurement={setBroadcastMeasurement}
-            isGamePaused={isGamePaused}
-            onPauseToggle={(): void => {
-              void handlePauseToggle();
-            }}
-          />
+          <ProfiledBoundary id="Toolbar">
+            <Toolbar
+              tool={tool}
+              setTool={setTool}
+              color={color}
+              onColorChange={handleColorChange}
+              colorInputRef={colorInputRef}
+              doorOrientation={doorOrientation}
+              onToggleDoorOrientation={() =>
+                setDoorOrientation((prev) => (prev === 'horizontal' ? 'vertical' : 'horizontal'))
+              }
+              measurementMode={measurementMode}
+              setMeasurementMode={setMeasurementMode}
+              broadcastMeasurement={broadcastMeasurement}
+              setBroadcastMeasurement={setBroadcastMeasurement}
+              isGamePaused={isGamePaused}
+              onPauseToggle={(): void => {
+                void handlePauseToggle();
+              }}
+            />
+          </ProfiledBoundary>
         )}
 
         {/* Floating Color Palette (appears above marker tool when active) */}
@@ -589,33 +627,37 @@ function App(): React.JSX.Element {
 
         {/* Token Inspector (only show in Architect View when tokens selected) */}
         {isArchitectView && selectedTokensOnly.length > 0 && (
-          <TokenInspector
-            selectedTokenIds={selectedTokensOnly}
-            onClose={() => setSelectedTokenIds([])}
-          />
+          <ProfiledBoundary id="TokenInspector">
+            <TokenInspector
+              selectedTokenIds={selectedTokensOnly}
+              onClose={() => setSelectedTokenIds([])}
+            />
+          </ProfiledBoundary>
         )}
 
         {/* Command Palette: Quick actions & asset search (Cmd+P, Architect View only) */}
         {isArchitectView && (
-          <CommandPalette
-            isOpen={isPaletteOpen}
-            onClose={() => setPaletteOpen(false)}
-            onSetTool={setTool}
-            onTogglePause={(): void => {
-              void handlePauseToggle();
-            }}
-            onLaunchWorldView={() => {
-              const ipcRenderer = window.ipcRenderer;
-              if (ipcRenderer) {
-                ipcRenderer.send('create-world-window');
-              } else {
-                const baseUrl = window.location.origin + window.location.pathname;
-                window.open(`${baseUrl}?type=world`, '_blank');
-              }
-            }}
-            onOpenDungeonGenerator={() => useGameStore.getState().showDungeonDialog()}
-            isGamePaused={isGamePaused}
-          />
+          <ProfiledBoundary id="CommandPalette">
+            <CommandPalette
+              isOpen={isPaletteOpen}
+              onClose={() => setPaletteOpen(false)}
+              onSetTool={setTool}
+              onTogglePause={(): void => {
+                void handlePauseToggle();
+              }}
+              onLaunchWorldView={() => {
+                const ipcRenderer = window.ipcRenderer;
+                if (ipcRenderer) {
+                  ipcRenderer.send('create-world-window');
+                } else {
+                  const baseUrl = window.location.origin + window.location.pathname;
+                  window.open(`${baseUrl}?type=world`, '_blank');
+                }
+              }}
+              onOpenDungeonGenerator={() => useGameStore.getState().showDungeonDialog()}
+              isGamePaused={isGamePaused}
+            />
+          </ProfiledBoundary>
         )}
 
         {/* Mobile Toolbar: Bottom navigation bar (Architect View only, mobile only) */}
