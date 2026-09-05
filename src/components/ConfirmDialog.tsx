@@ -79,7 +79,9 @@ function ConfirmDialog(): JSX.Element | null {
         onOpenAutoFocus={focusCancelButton}
       >
         <DialogHeader>
-          <DialogTitle>Confirm Action</DialogTitle>
+          <DialogTitle id="confirm-dialog-title" className="text-lg font-semibold">
+            Confirm Action
+          </DialogTitle>
           <DialogDescription>{confirmDialog.message}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
