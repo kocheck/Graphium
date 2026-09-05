@@ -24,7 +24,7 @@ should not improvise. When a step is unclear, the correct action is always to ST
 | **`data-esc-owns`**      | An attribute (`data-esc-owns="true"`) on an open overlay's content element. While any element carrying it is in the DOM, the global Escape key does **not** stop Session Console audio. Drop it from a dialog and Escape kills the DM's music. |
 | **Session Console**      | The audio/ambience panel inside the sidebar (`src/components/SessionConsole/`).                                                                                                                                       |
 | **Primitive**            | A component in `src/components/ui/` (shadcn-generated, Radix-based). Not a feature component.                                                                                                                         |
-| **Bridge**               | The `--color-*` declarations (plan 002/003) inside the single `@theme inline` block in `src/index.css` (created by plan 000) that define shadcn's token names (`--color-primary`, …) in terms of Graphium's `--app-*` variables. Plan 000's alias block and plan 002's bridge block are both `@theme inline`; there are never more than these two `@theme` blocks. |
+| **Bridge**               | The second `@theme inline` block in `src/index.css` (added by plan 002) whose `--color-*` declarations define shadcn's token names (`--color-primary`, …) in terms of Graphium's `--app-*` variables. Plan 000's alias block is the first `@theme inline` block; there are never more than these two `@theme` blocks. |
 | **Adapter**              | A thin existing component (`Tooltip.tsx`, `ToggleSwitch.tsx`, `CollapsibleSection.tsx`) whose internals are replaced by a primitive while its props API stays unchanged.                                              |
 | **Tranche**              | A group of primitives added and committed together in plan 003.                                                                                                                                                       |
 | **Surface**              | One of the named screens the test helpers can navigate to: `home`, `editor`, `editor-mobile`, `confirm-dialog`, `world`, `world-dialog`, `design-system`. Defined in `tests/helpers/surfaces.ts` after plan 000.       |
@@ -183,7 +183,8 @@ not listed, STOP.
 - `data-testid`: kebab-case, `<surface>-<element>`, e.g. `toolbar-tool-marker`,
   `dialog-confirm-root`, `sheet-map-settings-root`, `library-token-item`. Prefixes in
   use: `toolbar-`, `dialog-`, `sheet-`, `sidebar-`, `library-`, `token-`, `session-console-`,
-  `world-`, `home-`. Never renamed once added.
+  `world-`, `home-`, `playground-` (playground triggers and probes such as `playground-open-dialog`,
+  `bridge-swatch-*`). Never renamed once added.
 - New `--app-*` tokens: `--app-<family>-<role>` (`--app-radius-md`,
   `--app-toolbar-bg`). Families in use after plan 000: `bg`, `text`, `border`, `accent`,
   `success`, `warning`, `error`, `overlay`, `grid`, `shadow` (colour), `elevation`

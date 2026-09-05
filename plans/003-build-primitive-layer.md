@@ -1,593 +1,1796 @@
 # Plan 003: Build the shared UI primitive layer
 
-> **Executor instructions**: Follow this plan step by step. Confirm each step's
-> **Check** before moving to the next. If anything in "STOP conditions" occurs,
-> stop and report — do not improvise. When done, update the status row in
-> `plans/README.md`.
->
-> **Read `docs/planning/shadcn-adoption-decision.md` before Step 1.** It is the
-> output of plan 002 and contains the exact, already-proven install commands, the
-> theming bridge, and any ESLint overrides this plan needs. If that file does not
-> exist, **STOP** — plan 002 has not been done and this plan is not safe to run.
->
-> **Drift check (run first)**:
-> `git diff --stat d3d3642..HEAD -- src/index.css src/styles/ package.json tsconfig.json vite.config.ts`
+> **Executor instructions**: Read `plans/CONVENTIONS.md` first. Run the pre-flight (§3), then the
+> Drift check below. Follow the steps in order; each step's **Check** must hold before the next.
+> If any **If it fails** or STOP condition fires, follow CONVENTIONS §10. Finish with the report
+> in §11.
+
+**Drift check** (run after pre-flight; `<grounded-at>` is the SHA in the Status block):
+
+```bash
+git fetch origin main
+git diff --stat <grounded-at>..origin/main -- src/index.css src/styles/ src/components/DesignSystemPlayground/ src/components/ui/ src/test/setup.ts .eslintrc.cjs tsconfig.json vite.config.ts vitest.config.ts package.json tests/   # Expected: empty
+```
+
+**Citation re-check** (each command must print exactly the expected number; line numbers in this
+plan are hints, the greps are authoritative):
+
+| Anchor (grep)                                                                                   | File                                                          | Expected hits |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------- |
+| `grep -c '^@theme' src/index.css`                                                               | `src/index.css`                                               | 2             |
+| `grep -c '^@custom-variant dark' src/index.css`                                                 | `src/index.css`                                               | 1             |
+| `grep -c 'overrides: \[' .eslintrc.cjs`                                                         | `.eslintrc.cjs`                                               | 1             |
+| `grep -c '^export const categories' src/components/DesignSystemPlayground/playground-registry.tsx` | `playground-registry.tsx`                                  | 1             |
+| `grep -c "from './playground-registry'" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx` | `DesignSystemPlayground.tsx`                        | 1             |
+| `grep -c 'data-esc-owns' src/components/SessionConsole/useSessionConsoleHotkeys.ts`             | `useSessionConsoleHotkeys.ts`                                 | 1             |
+| `grep -c '^\.btn-tool\.is-paused' src/styles/app.css`                                           | `src/styles/app.css` (added by plan 001)                      | 1             |
+| `grep -c -- '--app-success-solid-text' src/styles/theme.css`                                    | `src/styles/theme.css` (added by plan 001, one per theme)     | 2             |
+| `grep -c 'Extrapolated 12-primitive delta' docs/planning/shadcn-adoption-decision.md`           | decision doc (plan 002)                                       | 1             |
+| `grep -c '^export async function gotoSurface' tests/helpers/surfaces.ts`                        | `tests/helpers/surfaces.ts` (plan 000)                        | 1             |
+| `grep -c 'Mock matchMedia' src/test/setup.ts`                                                   | `src/test/setup.ts`                                           | 1             |
+| `ls src/components/ui 2>/dev/null \| wc -l`                                                     | `src/components/ui/` must not exist yet                       | 0             |
+
+If any row differs: STOP.
 
 ## Status
 
 - **Priority**: P1
 - **Effort**: L
 - **Risk**: MED
-- **Depends on**: plans/000-repair-verification-infrastructure.md, plans/001-stabilize-styling-foundation.md, plans/002-shadcn-compatibility-spike.md
+- **Depends on**: plans/000-repair-verification-infrastructure.md,
+  plans/001-stabilize-styling-foundation.md, plans/002-shadcn-compatibility-spike.md
 - **Category**: migration
-- **Grounded at**: `d3d3642` (2026-09-04)
+- **Requires**: `docs/planning/shadcn-adoption-decision.md`, `docs/planning/shadcn-spike.patch`,
+  `docs/planning/verification-baseline.md`, `scripts/preflight.sh`, `tests/helpers/surfaces.ts`
+- **Grounded at**: ‹merge SHA of plan 002, written there by its final step› (citations verified
+  at d3d3642)
 
 ## Why this matters
 
-Graphium has no shared component layer. Every dialog, every button variant, every
-overlay is built from scratch inside the feature component that needs it. The
-concrete evidence: **nine components hand-roll a modal overlay, and exactly one of
-them has a focus trap.** `AboutModal.tsx:279–297` implements focus wrapping by
-hand; `PreferencesDialog`, `UpdateManager`, `MapSettingsSheet`,
-`DungeonGeneratorDialog`, `ConfirmDialog`, `AddToLibraryDialog`,
-`SessionConsoleEditorSheet`, and `ImageCropper` do not. Three of those
-(`MapSettingsSheet`, `AddToLibraryDialog`, `ImageCropper`) have no `role="dialog"`
-or `aria-modal` at all. Four do not handle Escape.
-
-This is the extensibility ceiling in one sentence: **adding a new dialog to
-Graphium costs a full rebuild of modal behavior, and the rebuild is usually
-incomplete.** That is why the UI feels stale — not because the pixels are dated,
-but because changing anything is expensive, so nothing changes.
-
-This plan builds the layer that makes the next four years of UI work cheap. It
-adds primitives; it does **not** migrate any existing screen to them — that is
-plan 004, deliberately separated so this plan can land and ship without touching
-a single user-facing component.
+Graphium has no shared component layer. Eleven components hand-roll a modal overlay
+(`grep -rl 'aria-modal' src/components --include=*.tsx | grep -v test | wc -l` prints `11` at
+d3d3642; ten after plan 000 deletes `PreferencesDialog.tsx`), and three more overlays
+(`MapSettingsSheet`, `AddToLibraryDialog`, `ImageCropper`) have no `role="dialog"` at all.
+`AboutModal.tsx` carries a hand-written Tab trap (`grep -n 'handleTabKey' src/components/AboutModal.tsx`,
+line 282 at d3d3642); the others do not. Adding a dialog to Graphium therefore costs a rebuild of
+modal behaviour, and the rebuild is usually incomplete. This plan adds Radix-based primitives
+under `src/components/ui/`, themed through the `@theme inline` bridge plan 002 proved, each with
+a playground example and automated tests. It migrates **no** existing screen; that is plan 004.
 
 ## Context the executor needs
 
-### What already exists that this plan must respect
+- **`src/styles/theme.css`** owns colour. Primitives never define colours; they use the bridge
+  tokens (`bg-primary`, `text-foreground`, `border-input`, …) or, where the bridge has no token,
+  `[var(--app-*)]` arbitrary values. Never a raw Tailwind palette class.
+- **Bridge tokens** (19, defined by plan 002 in the second `@theme inline` block of
+  `src/index.css`; `grep -n -- '--color-' src/index.css` lists them): `background`→`--app-bg-base`,
+  `foreground`→`--app-text-primary`, `card`/`popover`→`--app-bg-surface`,
+  `card-foreground`/`popover-foreground`/`secondary-foreground`/`accent-foreground`→`--app-text-primary`,
+  `primary`→`--app-accent-solid`, `primary-foreground`/`destructive-foreground`→`--app-accent-solid-text`,
+  `secondary`→`--app-bg-active`, `muted`→`--app-bg-subtle`, `muted-foreground`→`--app-text-secondary`,
+  `accent`→`--app-bg-hover`, `destructive`→`--app-error-solid`, `border`→`--app-border-subtle`,
+  `input`→`--app-border-default`, `ring`→`--app-accent-solid`.
+- **`--radius` is not bridged.** Plan 000 aliased Tailwind's `--radius-*` to `--app-radius-*`
+  (`grep -n 'radius' src/index.css` shows the alias lines); the bridge block must not define
+  `--radius`. shadcn's `rounded-md` etc. already resolve.
+- **`@custom-variant dark`** in `src/index.css` keys `dark:` utilities off `[data-theme='dark']`,
+  not `prefers-color-scheme`. Step 8's portal spec proves it.
+- **Playground** (`/design-system`, `src/App.tsx`, `grep -n "isDesignSystemPlayground" src/App.tsx`,
+  lines 123 and 441 at d3d3642) renders `categories` × `componentExamples` from
+  `playground-registry.tsx`. An example whose `category` is not in the `categories` array is
+  **never rendered** (`grep -n 'categories.map' src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`
+  finds the loop, line 270). Every registration edits both `types.ts` and the `categories`
+  array; the contract test in Step 5 enforces it.
+- **`data-esc-owns`**: `useSessionConsoleHotkeys.ts` defers the global Escape while
+  `[data-esc-owns="true"]` is in the DOM. Every overlay primitive renders it by default (Step 5,
+  Step 7).
+- **Button class mapping** plan 004 relies on (record it in `src/components/ui/README.md`):
+  `.btn-primary`→`variant="default"`, `.btn-default`→`"secondary"`,
+  `.btn-secondary`/`.btn-ghost`/`.btn-destructive` (undefined in `app.css`, render as bare `.btn`)
+  →`"ghost"`, `.btn-tool`→`"tool"`, `.btn-mode`→`"mode"`, `.btn-broadcast`→`"broadcast"`;
+  `.active`→`active`; `.is-paused`/`.is-running`→`state`.
+- **Existing adapters stay**: `Tooltip.tsx`, `Toast.tsx`, `ConfirmDialog.tsx`,
+  `ToggleSwitch.tsx`, `CollapsibleSection.tsx` are not touched or deleted here.
+- Icons: the repo uses `@remixicon/react`; shadcn generates `lucide-react` imports. Both are
+  allowed inside `src/components/ui/`.
 
-- **`src/styles/theme.css`** is the source of truth for color. Its semantic
-  variables (`--app-bg-surface`, `--app-text-primary`, `--app-accent-solid`, …) are
-  audited for WCAG AA compliance in `docs/features/wcag-audit.md`. Primitives
-  consume these through the theming bridge established in plan 002 — they never
-  define their own colors and never use raw Radix scale names.
-- **`src/components/DesignSystemPlayground/`** already exists and is served at the
-  `/design-system` route (`src/App.tsx:123`). It has a registry
-  (`playground-registry.tsx`, 1274 lines) that renders live component examples with
-  copyable snippets. **This is the validation surface for every primitive in this
-  plan** — do not build a new one.
-- **Dual-window architecture**: `src/App.tsx` branches between an Architect View
-  (DM chrome) and a World View (player projection). Primitives must never render DM
-  chrome into the World View. Plan 002 Step 6 verified portal behavior here; honor
-  its findings.
-- **Strict ESLint** with `--max-warnings 0` and a Husky pre-commit hook.
-  `.ai-rules.md` at the repo root is mandatory reading: no `any`, enforced import
-  ordering, complexity and function-length limits.
-- **Existing hand-rolled primitives** that this layer will eventually replace (but
-  does **not** delete in this plan): `src/components/Tooltip.tsx`,
-  `src/components/Toast.tsx`, `src/components/ConfirmDialog.tsx`,
-  `src/components/ToggleSwitch.tsx`, `src/components/CollapsibleSection.tsx`.
+### The primitive roster (all required except `scroll-area`)
 
-### The primitive roster
+| Tranche | Primitives                                                        | Why                                                                                   |
+| ------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| A       | `button`, `dialog`, `tooltip`, `input`, `label`                   | `.btn*` classes; eleven hand-rolled overlays; `Tooltip.tsx`; inline field styles      |
+| B       | `switch`, `select`, `slider`, `tabs`, `collapsible`, `separator`  | `ToggleSwitch.tsx`; `<select` in `MapSettingsSheet.tsx` (`grep -n '<select' src/components/MapSettingsSheet.tsx`, line 361); `.tab-button` in `AboutModal.tsx` (`grep -n 'tab-button' src/components/AboutModal.tsx`); `CollapsibleSection.tsx`; `.toolbar-divider` |
+| C       | `sheet`, `popover`, `dropdown-menu`                               | `MapSettingsSheet`/`SessionConsoleEditorSheet` are side panels; token quick-actions; context menus |
 
-Derived from what Graphium's existing screens actually build by hand. Delivered in
-three tranches so the plan stays shippable at each boundary.
-
-**Tranche A — the load-bearing four** (unblocks plan 004 entirely):
-
-| Primitive  | Why Graphium needs it | Replaces (in plan 004) |
-|------------|----------------------|------------------------|
-| `button`   | `.btn`, `.btn-tool`, `.btn-mode`, `.btn-broadcast` in `app.css` are four ad-hoc variant systems | `src/styles/app.css` button classes |
-| `dialog`   | Nine hand-rolled overlays, one focus trap between them | the nine listed above |
-| `tooltip`  | `src/components/Tooltip.tsx` is hand-positioned | `Tooltip.tsx` |
-| `input` + `label` | Form fields are re-styled inline in every dialog | `.sidebar-input`, inline field styles |
-
-**Tranche B — the settings surfaces** (unblocks the Preferences/Settings migrations):
-
-| Primitive | Why |
-|-----------|-----|
-| `switch` | replaces `src/components/ToggleSwitch.tsx` |
-| `select` | dropdowns are hand-built in `PreferencesDialog` and `MapSettingsSheet` |
-| `slider` | numeric settings (grid size, opacity, audio volume) |
-| `tabs` | `PreferencesDialog` and `AboutModal` both hand-roll tab switching |
-| `collapsible` | replaces `src/components/CollapsibleSection.tsx` |
-| `separator` | replaces `.toolbar-divider` and ad-hoc `border-t` dividers |
-
-**Tranche C — the richer surfaces.** `sheet`, `popover` and `dropdown-menu` are
-**required, not optional**: Step 7 exercises `popover` and `dropdown-menu`, and plan
-004 Steps 4-5 migrate `MapSettingsSheet` and `SessionConsoleEditorSheet` onto `sheet`
-with no fallback. Only `scroll-area` may be deferred.
-
-| Primitive | Why |
-|-----------|-----|
-| `sheet` | `MapSettingsSheet` and `SessionConsoleEditorSheet` are side panels, not dialogs |
-| `popover` | color picker, token quick-actions |
-| `dropdown-menu` | context menus on tokens and maps |
-| `scroll-area` | the token library and session console lists |
-| `sonner` (toast) | replaces `src/components/Toast.tsx` — **see the caveat in Step 6** |
-
-**Explicitly not in the roster**: `command`. Graphium already has a working
-`src/components/AssetLibrary/CommandPalette.tsx` (420 lines) with its own registry
-at `src/utils/commandRegistry.ts`. Replacing it is a feature-level decision, not a
-primitive-layer one, and it is out of scope for this entire plan set.
+**Deferred**: `scroll-area` (recorded in `ui/README.md`, Step 9). **Not primitives here**: toast
+(keep `Toast.tsx`, do not add `sonner`; CONVENTIONS §9) and `command` (out of scope for the
+program; CONVENTIONS §9).
 
 ## Inputs & resources
 
-**Read first**: `docs/planning/shadcn-adoption-decision.md` (output of plan 002).
+Gates: `plans/CONVENTIONS.md` §4.
 
-| Purpose        | Command                    | Expected on success        |
-|----------------|----------------------------|----------------------------|
-| Install deps   | `npm install`              | exit 0                     |
-| Install browsers | `npx playwright install chromium` | exit 0 — `npm install` does not fetch them |
-| Lint           | `npm run lint`             | exit 0, zero warnings      |
-| Typecheck      | `npm run type-check`       | exit 0                     |
-| Unit tests     | `npm run test:run`         | all pass                   |
-| Web build      | `npm run build:web`        | exit 0                     |
-| Electron dev   | `npm run dev`              | app + World View launch    |
-| A11y E2E       | `npm run test:a11y`        | all pass                   |
-| Web E2E        | `npm run build:web && npx playwright test --project=Web-Chromium` | all pass |
-| Electron E2E   | `npm run build:electron && npx playwright test --project=Electron-App` | all pass — **never run bare `npm run test:e2e`**; it launches the Electron project without building it |
+| Purpose                     | Command                                                     | Expected                       |
+| --------------------------- | ----------------------------------------------------------- | ------------------------------ |
+| Generate a primitive        | `npx shadcn@1.1.23 add <name> -y` (version pinned by plan 002) | exit 0, `src/components/ui/<name>.tsx` |
+| Run one vitest file         | `npx vitest run src/components/ui/<file>`                   | exit 0                         |
+| Run one Playwright spec     | `npm run build:web && CI=1 npx playwright test tests/<file> --project=Web-Chromium` | exit 0 |
+| Screenshot set              | `SHOTS_OUT=docs/planning/screenshots/003-final npm run shots` | exit 0                       |
 
 ## Scope
 
-**In scope**:
-- `components.json`, `src/lib/utils.ts`
-- `src/components/ui/**` (all new primitives)
-- `src/index.css` (theming bridge, from the plan 002 decision doc)
-- `tsconfig.json`, `vite.config.ts`, `vitest.config.ts` (path aliases)
-- `.eslintrc.cjs` — a scoped override for `src/components/ui/**`. **Pre-authorised
-  for exactly two rules**: `import/no-unused-modules` and `prettier/prettier`. This
-  plan's defining premise is that primitives exist with no consumers yet, which
-  *guarantees* unused-export warnings; `--max-warnings 0` turns those into failures.
-  Anything beyond those two needs the plan 002 decision doc to have named it.
-- `src/styles/theme.css` — **new `--app-*` tokens only** (see Step 3's note on
-  `.btn-tool`). You may add tokens; you may not change an existing colour value.
-- `src/components/DesignSystemPlayground/types.ts` — the `category` union is closed
-  (12 members, none of which fit `tooltip`, `select`, `slider`, `tabs`,
-  `collapsible`, `separator`, `sheet`, `popover`, `dropdown-menu`, or `scroll-area`).
-  Extend it; do not shoehorn primitives into wrong categories.
-- `package.json` / lockfile (new dependencies)
-- `src/components/DesignSystemPlayground/playground-registry.tsx` (register each primitive)
-- `docs/architecture/DECISIONS.md` (the ADR in Step 8)
-- `src/components/ui/README.md` (the contribution contract in Step 8)
+**In scope**: `.eslintrc.cjs` (one override, Step 1); `components.json`, `src/lib/utils.ts`,
+`tsconfig.json`, `vite.config.ts`, `vitest.config.ts`, `package.json`, `package-lock.json`
+(from the spike patch); `src/index.css` (only if the decision doc's required changes say so);
+`src/components/ui/**`; `src/components/DesignSystemPlayground/{types.ts,playground-registry.tsx,registry/**,registry.test.ts}`;
+`src/test/setup.ts`; `tests/theme-bridge.spec.ts`, `tests/functional/primitives-portals.spec.ts`;
+`docs/guides/UI_RECIPES.md`, `docs/guides/CONVENTIONS.md`, `docs/architecture/DECISIONS.md`,
+`docs/architecture/ARCHITECTURE.md`, `.github/copilot-instructions.md`, `.cursorrules`;
+`docs/planning/screenshots/003-final/`; `plans/reports/003.md`, `plans/README.md`,
+`plans/004-migrate-screens-to-primitives.md`, `plans/006-visual-redesign.md` (Grounded-at lines).
 
-**Out of scope** (do NOT touch, even though they look related):
-- **Any existing feature component.** Not `AboutModal`, not `PreferencesDialog`,
-  not `Sidebar`, not one of them. This plan *adds* a layer; plan 004 migrates onto
-  it. Mixing the two is what turns a shippable increment into a three-week branch.
-- **Deleting `src/components/Tooltip.tsx`, `Toast.tsx`, `ConfirmDialog.tsx`,
-  `ToggleSwitch.tsx`, or `CollapsibleSection.tsx`.** They stay until their
-  consumers migrate in plan 004. Deleting them here breaks the app.
-- **`src/styles/app.css` button classes.** They still have live consumers. Removed
-  in plan 004.
-- **`src/components/Canvas/**`** — Konva rendering, no DOM primitives involved.
-- **Performance work** (memoization, code splitting, state hoisting) — plan 005.
-- **Any visual redesign decision** — plan 006. Primitives here should look like
-  Graphium looks *today*, so that plan 004's migration is provably behavior-neutral.
+**Out of scope**: any existing feature component (`src/components/*.tsx` other than the
+playground); deleting the five adapters; `src/styles/app.css` and `src/styles/theme.css` (plan
+001 already added every token this plan needs); `src/components/Canvas/**`; performance work;
+visual redesign. Primitives must look like Graphium looks today.
 
-## Working approach
-
-Branch off `main` as `plan/003-primitive-layer`. **Commit at every tranche boundary**
-so the work is releasable at three natural points.
-
-### How this plan lands: one PR per plan, targeting `main`
-
-**This is the program-wide rule; it is identical in every plan.** Each plan is
-developed on its own branch off `main` and merged as a **single pull request into
-`main`** before the next plan begins.
-
-That choice exists for one reason: **it is the only way CI runs.** Verified in
-`.github/workflows/`:
-
-| Workflow | Trigger | What it gates |
-|---|---|---|
-| `lint.yml` | `pull_request` → `main` | ESLint + `tsc` |
-| `test.yml` | `pull_request` → `main` | Vitest |
-| `e2e.yml` | `pull_request` → `main` | Playwright, **per project, after the matching build** |
-| `accessibility.yml` | `pull_request` → `main` or `NEXT` | axe WCAG AA |
-| `documentation-check*.yml` | `pull_request` → `main` | doc-drift comment |
-
-Nothing fires on a long-lived feature branch. Under the original "one branch, don't
-open a PR" approach, ~40 commits of work would have been gated only by local
-`npm run` on one machine — which is how the unverified-gate problem this program was
-revised to fix got in.
-
-**Consequences to know before you start:**
-
-- **`e2e.yml` is the reference for how to run Playwright** — it runs
-  `--project=Web-Chromium` after `npm run build:web` and `--project=Electron-App` under
-  `xvfb-run` after `npm run build:electron`. Never bare `npm run test:e2e`.
-- **Merging to `main` auto-deploys the public web build.** `deploy-web.yml` runs on
-  every push to `main`. Intermediate states of the migration will go live on GitHub
-  Pages. That is consistent with the strangler-fig principle that every commit is
-  releasable, but it is a real consequence — if the web demo must stay pinned, say so
-  before starting rather than after.
-- **Local gates still come first.** CI is the enforcement, not the discovery. Run the
-  full local gate before every push; a red PR costs a cycle and reviewer trust.
-- **Keep the PR reviewable.** Push each step as its own commit with a descriptive
-  message so a reviewer can read the plan's steps in the commit history. If a plan's PR
-  grows past roughly 1,500 changed lines, split it at a step boundary named in the plan
-  and land the halves in order.
-- **`build-release.yml` fires on `v*.*.*` tags only** — nothing here triggers a release.
-  Versioning and `CHANGELOG.md` entries are a separate decision, noted in
-  `plans/README.md`.
-
-**Splitting this one is expected.** Three tranches is a natural three-PR split if the
-single PR grows unwieldy — land them in tranche order (A, then B, then C).
-
-Every primitive follows the same lifecycle, and it is not done until all four hold:
-1. Generated/written into `src/components/ui/`.
-2. Re-themed onto `--app-*` variables via the bridge — zero literal colors.
-3. Registered in the Design System Playground with a live example.
-4. `npm run lint && npm run type-check && npm run test:a11y` all green.
+Branch, commits, PR, CI and rollback: `plans/CONVENTIONS.md` §7. Branch name:
+`plan/003-primitive-layer`.
 
 ## Steps
 
-### Step 1: Execute the proven install sequence
+### Step 1: Add the scoped ESLint override for `src/components/ui/**`
 
-Open `docs/planning/shadcn-adoption-decision.md` and run the install sequence it
-records, verbatim — including any peer-dependency flag it identified, the
-`tsconfig.json` / `vite.config.ts` / `vitest.config.ts` alias edits, and the
-`@theme inline` bridge block for `src/index.css`.
-
-**First, read its verdict line.**
-- **GO** → proceed as written.
-- **GO-WITH-CAVEATS** → the doc lists each caveat as a required change to this plan.
-  Apply them before starting, and note them in `src/components/ui/README.md`.
-- **NO-GO** → **STOP.** This plan is hardwired to the CLI path (`components.json`,
-  "after generation", the Done criteria). The doc's fallback is "pattern only, no
-  CLI" — own primitives built directly on Radix Primitives with CVA. That is a
-  different plan and needs rewriting before execution, not improvising during it.
-
-Do not improvise around the install sequence. If a command in that document fails,
-that is a STOP condition — the environment has drifted since the spike.
-
-**Expect `npm run lint` to fail on first contact** with `prettier/prettier` (shadcn
-emits double quotes; `.prettierrc` sets `singleQuote: true`) and
-`import/no-unused-modules` (every unused primitive export). Run `npm run lint:fix`
-and `npm run format`, then apply the pre-authorised scoped override from Scope for
-whatever remains. This is expected, not drift.
-
-Apply the ESLint override for `src/components/ui/**` **only if** the decision doc
-concluded one was necessary, and only for the specific rules it named. Do not
-blanket-disable linting for the directory.
-
-**Check**:
-```bash
-npm install && npm run type-check && npm run lint && npm run build:web
-```
-All exit 0. `components.json` and `src/lib/utils.ts` exist, and `src/lib/utils.ts`
-exports a `cn` function.
-
-### Step 2: Verify the theming bridge is complete and correct
-
-The bridge maps shadcn's token names onto Graphium's `--app-*` variables. Before
-adding primitives, confirm nothing in it resolves to an undefined variable.
-
-Add a temporary probe element to the playground that reads each bridged token
-**as a custom property**, not as a computed colour:
+**Files**: `.eslintrc.cjs`
+**Do**: In the `overrides` array (`grep -n 'overrides: \[' .eslintrc.cjs`, line 399 at d3d3642),
+insert the following object as the **last** element, immediately before the array's closing
+`],` (`grep -n "files: \['docs/\*\*/\*'\]" .eslintrc.cjs` finds the current last element; add
+after its closing `},`):
 
 ```js
-getComputedStyle(document.documentElement).getPropertyValue('--color-primary')
+    // Plan 003: shadcn-generated primitives. They have no consumers until plan 004 (unused
+    // exports), export non-component helpers (buttonVariants), and omit return types.
+    {
+      files: ['src/components/ui/**/*.tsx'],
+      excludedFiles: ['src/components/ui/**/*.test.tsx'],
+      rules: {
+        'import/no-unused-modules': 'off',
+        'prettier/prettier': 'off',
+        'react-refresh/only-export-components': 'off',
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        'no-restricted-imports': [
+          'error',
+          {
+            patterns: [
+              {
+                group: [
+                  '../*',
+                  '../../*',
+                  '@/store/*',
+                  '@/utils/*',
+                  '@/components/*',
+                  '@/services/*',
+                  '@components/*',
+                  '@store/*',
+                  '@utils/*',
+                ],
+                message:
+                  'Primitives import only react, @radix-ui/*, class-variance-authority, lucide-react, @remixicon/react, ./siblings and @/lib/utils.',
+              },
+            ],
+          },
+        ],
+      },
+    },
 ```
 
-> **Do not check `getComputedStyle(el).backgroundColor`.** An undefined custom
-> property makes `background-color: var(--nope)` compute to the *initial* value,
-> `rgba(0, 0, 0, 0)` — a perfectly valid colour string. Every broken token would pass.
-> `getPropertyValue` returns `''` for an undefined property, which is the signal you
-> want.
+**Do NOT**: relax any other rule; widen `files` beyond `src/components/ui/**/*.tsx`; edit the
+test-file override above it; create `src/components/ui/` yet.
+**Commands**: `npm run verify:static`
+**Expected**: exit 0.
+**Check**: `grep -c "files: \['src/components/ui/\*\*/\*.tsx'\]" .eslintrc.cjs` prints `1` and
+`grep -c "no-restricted-imports" .eslintrc.cjs` prints `1`.
+**If it fails**: if ESLint reports a config schema error, re-check the pasted block for a missing
+comma and retry once; otherwise STOP with the ESLint output.
+**Commit**: `plan-003 step-1: scoped ESLint override for src/components/ui`
 
-**Check**: Every bridged `--color-*` token returns a non-empty value in **both**
-`data-theme="light"` and `data-theme="dark"`. Also assert the reverse — that a
-deliberately misspelled token returns `''` — so you know the probe works. Remove the
-probe afterward.
+### Step 2: Apply the spike patch and the decision doc's required changes
 
-Then: `grep -nE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(|oklch\(" src/index.css` — the only
-acceptable matches are inside `@keyframes` blocks. shadcn's `init` writes `oklch(...)`
-values and a `.dark` block into this file; delete them, since the bridge supersedes
-both.
+**Files**: `components.json`, `src/lib/utils.ts`, `src/components/ui/button.tsx`,
+`src/components/ui/dialog.tsx`, `src/components/ui/tooltip.tsx`, `tsconfig.json`,
+`vite.config.ts`, `vitest.config.ts`, `package.json`, `package-lock.json`, `src/index.css`
+**Do**:
 
-> **A literal-colour grep will not tell you whether a primitive is on-theme.** shadcn
-> components contain no colour literals by construction — they are all class names
-> (`bg-blue-500`, `text-white`, `border-neutral-600`). Use this instead, which catches
-> a primitive wired to a raw Tailwind palette rather than to the bridge:
-> ```bash
-> grep -rnE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber)-?[0-9]*\b' src/components/ui/
-> ```
-> That must return nothing. For scale: the same grep over `src/` returns **396 hits
-> across 35 files** today, with **zero `dark:` variants anywhere** — the bulk of the
-> real theme-invariance problem, resolved per-component in plan 004.
+1. Read the `Verdict` line of `docs/planning/shadcn-adoption-decision.md`
+   (`grep -n '^Verdict' docs/planning/shadcn-adoption-decision.md`).
+   - `GO` → continue at 2.
+   - `GO-WITH-CAVEATS` → continue at 2; item 3 applies the numbered required changes.
+   - `NO-GO` → STOP: "plan 003 assumes the shadcn CLI path; decision doc says NO-GO".
+2. Apply the spike (the bridge is already in `src/index.css`, so exclude that file):
+   ```bash
+   git apply --3way --exclude=src/index.css docs/planning/shadcn-spike.patch
+   npm install
+   ```
+3. Apply, in order, every entry of the decision doc's numbered "required changes" list
+   (`grep -n 'required change' -i docs/planning/shadcn-adoption-decision.md`). Each entry is a
+   checklist line: do it, then run its stated verification. If the list is empty, skip.
+4. `npm run format` (shadcn emits double quotes; `.prettierrc` sets `singleQuote`).
+5. If `src/index.css` contains any `oklch(` or `.dark {` left by the CLI, that is drift from
+   plan 002: STOP.
 
-### Step 3: Add Tranche A primitives
+**Do NOT**: run `npx shadcn init` (the patch already carries `components.json`); add any
+primitive beyond the three in the patch; edit `src/index.css` unless item 3 says so; touch
+`.eslintrc.cjs` again; add `sonner`.
+**Commands**: `npm run verify:static && npm run verify:web`
+**Expected**: both exit 0.
+**Check**: `ls components.json src/lib/utils.ts src/components/ui/button.tsx src/components/ui/dialog.tsx src/components/ui/tooltip.tsx | wc -l`
+prints `5`; `grep -c 'export function cn' src/lib/utils.ts` prints `1`;
+`grep -c '^@theme' src/index.css` prints `2`; `grep -c 'oklch(' src/index.css` prints `0`.
+**If it fails**: if `git apply` reports a conflict, STOP with the conflict hunk (the spike patch
+has drifted from `main`). If lint fails inside `src/components/ui/` on a rule other than the four
+in Step 1, STOP with the rule name. Otherwise fix once and retry.
+**Commit**: `plan-003 step-2: apply shadcn spike patch and decision-doc changes`
 
-Add `button`, `dialog`, `tooltip`, `input`, `label`.
+### Step 3: Split the playground registry
 
-For each, after generation:
-- Read the generated file and confirm it uses only bridged Tailwind tokens
-  (`bg-primary`, `text-foreground`, `border-border`, …) — never a raw color.
-- Confirm it type-checks under this repo's strict settings. `noUncheckedIndexedAccess`
-  is `true`; `exactOptionalPropertyTypes` is **`false`** — do not chase it.
-- Fix import ordering to satisfy `eslint-plugin-import`.
+**Files**: `src/components/DesignSystemPlayground/playground-registry.tsx`,
+`src/components/DesignSystemPlayground/types.ts`,
+`src/components/DesignSystemPlayground/registry/index.ts`,
+`src/components/DesignSystemPlayground/registry/legacy.tsx`,
+`src/components/DesignSystemPlayground/registry/buttons.tsx`,
+`src/components/DesignSystemPlayground/registry/overlays.tsx`,
+`src/components/DesignSystemPlayground/registry/forms.tsx`,
+`src/components/DesignSystemPlayground/registry/layout.tsx`
+**Do**:
 
-Then **extend `button` with Graphium's real variants**. `src/styles/app.css`
-currently encodes four button behaviors that the stock shadcn variants do not
-cover. Add these as CVA variants so plan 004 can migrate cleanly:
+1. `git mv src/components/DesignSystemPlayground/playground-registry.tsx src/components/DesignSystemPlayground/registry/legacy.tsx`.
+2. In `registry/legacy.tsx`: fix the relative imports
+   (`../../store/gameStore` → `../../../store/gameStore`,
+   `../ToggleSwitch` → `../../ToggleSwitch`, `../UpdateManager` → `../../UpdateManager`,
+   `./types` → `../types`); delete the `RiTreeLine,` import line and the two lines
+   `// @ts-expect-error - RiTreeLine is used in code example strings` / `const _unused = RiTreeLine;`
+   (the icon is only named inside a code string); rename the two exports:
+   `export const categories` → `export const legacyCategories`,
+   `export const componentExamples` → `export const legacyExamples`. Change nothing else.
+3. Create the four tranche files with this exact content (each will be filled in later steps):
+   ```ts
+   import type { ComponentExample } from '../types';
 
-- `tool` — the toolbar tool button, with an `active` state that uses
-  `--app-accent-solid` (today: `.btn-tool` / `.btn-tool.active`)
-- `mode` — the smaller sub-option button (today: `.btn-mode`)
-- `broadcast` — like `mode`, but its active state uses `--app-success-solid`
-  (today: `.btn-broadcast.active`)
+   export const buttonExamples: ComponentExample[] = [];
+   ```
+   (`overlays.tsx` exports `overlayExamples`, `forms.tsx` exports `formExamples`, `layout.tsx`
+   exports `layoutExamples`.)
+4. Create `registry/index.ts`:
+   ```ts
+   import type { ComponentCategory, ComponentExample } from '../types';
+   import { buttonExamples } from './buttons';
+   import { formExamples } from './forms';
+   import { layoutExamples } from './layout';
+   import { legacyCategories, legacyExamples } from './legacy';
+   import { overlayExamples } from './overlays';
 
-Read `src/styles/app.css` and reproduce the existing padding, font-size, and
-active-state colours. Two things make this harder than it looks:
+   /** New categories for src/components/ui primitives. Legacy categories stay first. */
+   export const categories: ComponentCategory[] = [
+     ...legacyCategories,
+     { id: 'overlay', name: 'Overlays (ui)', description: 'Dialog, sheet, popover, dropdown menu, tooltip' },
+     { id: 'form', name: 'Form controls (ui)', description: 'Input, label, switch, select, slider' },
+     { id: 'layout', name: 'Layout (ui)', description: 'Tabs, collapsible, separator, theme bridge probe' },
+   ];
 
-**(a) `.btn-tool`'s colours are hardcoded neutrals with no `--app-*` counterpart.**
-`rgb(64,64,64)`, `rgb(229,229,229)`, `rgb(82,82,82)`, `rgb(115,115,115)` — none maps
-to an existing token, and they are theme-*invariant* today because the toolbar sits on
-`#000000`. The rules elsewhere in this plan (no literal colours in a primitive; no
-literals in `index.css`) would leave these values with nowhere legal to live.
-**Resolution: add new semantic tokens to `src/styles/theme.css`** — e.g.
-`--app-toolbar-bg`, `--app-toolbar-fg`, `--app-toolbar-border` — defined per theme,
-seeded with today's values for dark. `theme.css` is in scope for *additions* for
-exactly this reason. Adding a token is right; putting the literal in the component is
-not. The same applies to `.btn-broadcast.active`'s `color: white`, which needs an
-`--app-success-solid-text`.
+   export const componentExamples: ComponentExample[] = [
+     ...legacyExamples,
+     ...buttonExamples,
+     ...overlayExamples,
+     ...formExamples,
+     ...layoutExamples,
+   ];
+   ```
+5. Create the new `playground-registry.tsx` with exactly one line:
+   `export { categories, componentExamples } from './registry';`
+6. In `types.ts`, extend the `category` union with `| 'overlay' | 'form' | 'layout'` after
+   `| 'performance'`.
 
-**(b) "Pixel-identical" is not achievable by translating classes, and you should not
-promise it.** `src/index.css` imports `app.css` **unlayered**; Tailwind v4 emits
-utilities into `@layer utilities`; unlayered CSS beats any layer regardless of
-specificity. So `.btn-tool` *overrides* any Tailwind colour utility on the same element.
-(That is why the pause button rendered grey despite carrying `bg-red-500`/`bg-green-500`
-— **plan 001 Step 8 fixed it** by adding `.btn-tool.is-paused` / `.is-running` in
-`app.css`.) A CVA `Button` emits its variants as utilities in the *same* layer as those
-classes, so the cascade outcome changes wherever both are present. Aim for **visually
-equivalent in the default state**, and give `button` variants that carry the
-`.is-paused` / `.is-running` states across, so plan 004 Step 10 can preserve the fix
-rather than reintroduce the grey.
+**Do NOT**: rewrite, reorder or delete any legacy example; rename any legacy `id`; edit
+`DesignSystemPlayground.tsx` or its test; register a primitive yet.
+**Commands**: `npm run verify:static && npm run verify:web`
+**Expected**: both exit 0.
+**Check**: `grep -o "category: '[a-z-]*'" src/components/DesignSystemPlayground/registry/legacy.tsx | wc -l`
+prints `37` (same command on the old file at d3d3642 prints `37`), and
+`wc -l < src/components/DesignSystemPlayground/playground-registry.tsx` prints `1`.
+**If it fails**: if `DesignSystemPlayground.test.tsx` fails, an export name or import path in
+item 2 or 5 is wrong; fix once and retry. Otherwise STOP.
+**Commit**: `plan-003 step-3: split playground registry into registry/*`
 
-**Check**:
-```bash
-npm run lint && npm run type-check && npm run test:run && npm run test:a11y
-```
-All exit 0. Then in `npm run dev` at `/design-system`, all five primitives render,
-and the `tool` / `mode` / `broadcast` button variants are visually
-indistinguishable from the equivalents in the live toolbar (compare side by side
-with the editor open in another window).
+### Step 4: Give `button` Graphium's variants and register it
 
-### Step 4: Register Tranche A in the Design System Playground
+**Files**: `src/components/ui/button.tsx`, `src/components/DesignSystemPlayground/registry/buttons.tsx`
+**Do**:
 
-Add an entry for each new primitive to
-`src/components/DesignSystemPlayground/playground-registry.tsx`, following the
-shape of the entries already there. Each entry needs a live rendered example, every
-variant shown, and a copyable code snippet.
+1. Overwrite `src/components/ui/button.tsx` with the file below. Values come from
+   `src/styles/app.css` (`grep -n '^\.btn' src/styles/app.css`, lines 25–118 at d3d3642):
+   `.btn` = `padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem; font-weight: 500`;
+   `.btn-mode`/`.btn-broadcast` = `padding: 0.125rem 0.5rem; font-size: 0.75rem`; `.btn-tool`
+   sets **no** padding (inherits `.btn`). Colours are plan 001's semantic tokens via the bridge:
+   toolbar button bg `--app-bg-active`→`bg-secondary`, fg
+   `--app-text-primary`→`text-secondary-foreground`, border `--app-border-default`→`border-input`, hover bg `--app-bg-hover`→`hover:bg-accent`,
+   hover border `--app-border-hover` (no bridge token → arbitrary value), active
+   `--app-accent-solid`→`bg-primary`, broadcast-active `--app-success-solid` +
+   `--app-success-solid-text`, paused `--app-error-solid`→`bg-destructive` + `--app-error-solid-text`.
 
-For `dialog`, the example must demonstrate the behaviors that justify the whole
-migration: an open trigger, Escape-to-close, focus trapping, and focus restoration
-to the trigger.
+   ```tsx
+   import { Slot } from '@radix-ui/react-slot';
+   import { cva, type VariantProps } from 'class-variance-authority';
+   import * as React from 'react';
 
-Note: `playground-registry.tsx` is already 1274 lines. Do not let it grow
-unboundedly — if adding these entries pushes it past roughly 1500 lines, split it
-into per-category modules (`registry/buttons.tsx`, `registry/overlays.tsx`, …) with
-`playground-registry.tsx` re-exporting the composed list.
+   import { cn } from '@/lib/utils';
 
-**Check**: `/design-system` renders every Tranche A primitive with working live
-examples. `npm run lint` exits 0 (this file is subject to `max-lines-per-function`,
-so watch for it).
+   const buttonVariants = cva(
+     "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium transition-colors duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+     {
+       variants: {
+         variant: {
+           /** .btn-primary */
+           default: 'bg-primary text-primary-foreground hover:bg-[var(--app-accent-solid-hover)]',
+           /** .btn-default */
+           secondary: 'bg-secondary text-secondary-foreground hover:bg-accent',
+           /** bare .btn (also .btn-secondary / .btn-ghost / .btn-destructive, undefined in app.css) */
+           ghost: 'bg-transparent text-foreground hover:bg-accent',
+           destructive:
+             'bg-destructive text-[var(--app-error-solid-text)] hover:bg-[var(--app-error-solid-hover)]',
+           outline: 'border border-input bg-background text-foreground hover:bg-accent',
+           link: 'text-[var(--app-accent-text)] underline-offset-4 hover:underline',
+           /** .btn-tool */
+           tool: 'border border-input bg-secondary text-secondary-foreground hover:bg-accent hover:border-[var(--app-border-hover)]',
+           /** .btn-mode */
+           mode: 'bg-secondary text-secondary-foreground hover:bg-accent',
+           /** .btn-broadcast */
+           broadcast: 'bg-secondary text-secondary-foreground hover:bg-accent',
+         },
+         size: {
+           default: 'h-9 px-4 py-2',
+           sm: 'h-8 gap-1.5 px-3 text-xs',
+           lg: 'h-10 px-6',
+           icon: 'size-9',
+           /** .btn padding/font; pair with variant="tool" */
+           tool: 'px-3 py-1 text-sm',
+           /** .btn-mode / .btn-broadcast padding/font; pair with variant="mode" | "broadcast" */
+           mode: 'px-2 py-0.5 text-xs',
+         },
+         /** .active on .btn-tool / .btn-mode / .btn-broadcast (colours set in compoundVariants) */
+         active: {
+           true: '',
+           false: '',
+         },
+         /** .is-paused / .is-running on .btn-tool (plan 001) */
+         state: {
+           none: '',
+           paused: '',
+           running: '',
+         },
+       },
+       compoundVariants: [
+         {
+           variant: ['tool', 'mode'],
+           active: true,
+           class:
+             'bg-primary text-primary-foreground border-primary hover:bg-[var(--app-accent-solid-hover)] hover:border-[var(--app-accent-solid-hover)]',
+         },
+         {
+           variant: 'broadcast',
+           active: true,
+           class:
+             'bg-[var(--app-success-solid)] text-[var(--app-success-solid-text)] hover:bg-[var(--app-success-solid-hover)]',
+         },
+         {
+           variant: 'tool',
+           state: 'paused',
+           class:
+             'bg-destructive text-[var(--app-error-solid-text)] border-destructive hover:bg-[var(--app-error-solid-hover)] hover:border-[var(--app-error-solid-hover)]',
+         },
+         {
+           variant: 'tool',
+           state: 'running',
+           class:
+             'bg-[var(--app-success-solid)] text-[var(--app-success-solid-text)] border-[var(--app-success-solid)] hover:bg-[var(--app-success-solid-hover)] hover:border-[var(--app-success-solid-hover)]',
+         },
+       ],
+       defaultVariants: {
+         variant: 'default',
+         size: 'default',
+         active: false,
+         state: 'none',
+       },
+     },
+   );
 
-### Step 5: Commit the Tranche A boundary, then add Tranche B
+   type ButtonProps = React.ComponentProps<'button'> &
+     VariantProps<typeof buttonVariants> & {
+       asChild?: boolean;
+     };
 
-Commit. The app is fully functional and shippable at this point — new primitives
-exist, nothing consumes them yet.
+   function Button({
+     className,
+     variant,
+     size,
+     active,
+     state,
+     asChild = false,
+     ...props
+   }: ButtonProps): JSX.Element {
+     const Comp = asChild ? Slot : 'button';
+     return (
+       <Comp
+         data-slot="button"
+         data-active={active === true ? 'true' : undefined}
+         className={cn(buttonVariants({ variant, size, active, state, className }))}
+         {...props}
+       />
+     );
+   }
 
-Then add `switch`, `select`, `slider`, `tabs`, `collapsible`, `separator`, applying
-the same four-part lifecycle and registering each in the playground.
+   export { Button, buttonVariants };
+   export type { ButtonProps };
+   ```
 
-For `separator`, reproduce `.toolbar-divider` from `src/styles/app.css` as a variant
-so the toolbar migration in plan 004 is a pure swap.
+   If `npm run type-check` cannot resolve `@radix-ui/react-slot`, use the `Slot` import line the
+   spike generated (`git show HEAD:src/components/ui/button.tsx | grep -n Slot`) and nothing else
+   from it.
 
-**Check**: Same four commands green. All Tranche B primitives render at
-`/design-system` in both themes. Both Playwright projects still pass — nothing has
-consumed these yet, so any E2E failure indicates an unexpected global side effect
-(most likely a CSS reset introduced by a primitive) and should be reported.
+2. Replace `registry/buttons.tsx` with:
 
-### Step 6: Commit the Tranche B boundary, then add Tranche C
+   ```tsx
+   import { Button } from '@/components/ui/button';
 
-Commit. Then add `sheet`, `popover`, `dropdown-menu`, `scroll-area`.
+   import type { ComponentExample } from '../types';
 
-**Caveat on toast**: shadcn's current toast recommendation is `sonner`, which
-brings its own renderer and its own portal. Graphium already has a working
-`src/components/Toast.tsx` driven by `showToast` in the Zustand store
-(`src/store/gameStore.ts`), consumed throughout the app and in the World View.
-Swapping it is a behavior change, not a primitive addition.
+   function ToolbarButtonsExample(): JSX.Element {
+     return (
+       <div className="flex flex-wrap items-center gap-2">
+         <Button variant="tool" size="tool">Tool</Button>
+         <Button variant="tool" size="tool" active>Tool active</Button>
+         <Button variant="tool" size="tool" state="paused">Paused</Button>
+         <Button variant="tool" size="tool" state="running">Running</Button>
+         <Button variant="mode" size="mode">Mode</Button>
+         <Button variant="mode" size="mode" active>Mode active</Button>
+         <Button variant="broadcast" size="mode">Broadcast</Button>
+         <Button variant="broadcast" size="mode" active>Broadcasting</Button>
+       </div>
+     );
+   }
 
-**The decision is: do not add `sonner`.** Recording it here rather than leaving it to
-the executor, because the stated criterion ("can be driven from `showToast` without
-changing a call site") is trivially satisfiable by a subscribing `useEffect` and would
-lead two executors to opposite conclusions.
+   export const buttonExamples: ComponentExample[] = [
+     {
+       id: 'ui-button',
+       name: 'Button (ui)',
+       category: 'button',
+       description: 'shadcn Button: default (.btn-primary), secondary (.btn-default), ghost (.btn), destructive, outline, link',
+       component: (
+         <div className="flex flex-wrap items-center gap-2">
+           <Button>Default</Button>
+           <Button variant="secondary">Secondary</Button>
+           <Button variant="ghost">Ghost</Button>
+           <Button variant="destructive">Destructive</Button>
+           <Button variant="outline">Outline</Button>
+           <Button variant="link">Link</Button>
+           <Button disabled>Disabled</Button>
+         </div>
+       ),
+       code: `import { Button } from '@/components/ui/button';
 
-The reasons: `gameStore` models a **single** toast (replaced by newer ones, cleared via
-`clearToast`, on a 5s timer in `Toast.tsx:52-60`), while sonner stacks and owns its own
-timers, positioning and dismissal — a behaviour change, not a primitive addition. And
-`Toast` is mounted **twice** (in `App.tsx` and in the playground shell at
-`DesignSystemPlayground.tsx:44`), so a partial swap ships two toast renderers.
+   <Button>Default</Button>
+   <Button variant="secondary">Secondary</Button>`,
+     },
+     {
+       id: 'ui-button-toolbar',
+       name: 'Button toolbar variants (ui)',
+       category: 'button',
+       description: 'tool / mode / broadcast variants with active and state, matching .btn-tool, .btn-mode, .btn-broadcast',
+       component: <ToolbarButtonsExample />,
+       code: `<Button variant="tool" size="tool" active>Tool</Button>
+   <Button variant="tool" size="tool" state="paused">Paused</Button>
+   <Button variant="broadcast" size="mode" active>Broadcasting</Button>`,
+     },
+   ];
+   ```
 
-Keep `src/components/Toast.tsx`. Record in `src/components/ui/README.md` that toast is
-deliberately not a shadcn primitive in Graphium, with these reasons, so it reads as a
-decision rather than an oversight.
+**Do NOT**: change `src/styles/app.css`; add tokens to `theme.css`; use `bg-neutral-*` or any
+palette class; touch `dialog.tsx`/`tooltip.tsx` (Step 5); migrate `App.tsx`'s toolbar.
+**Commands**: `npm run verify:static && npm run verify:web`
+**Expected**: both exit 0.
+**Check**: `grep -cE "^\s+(tool|mode|broadcast|paused|running): " src/components/ui/button.tsx`
+prints `7` (three variants, two sizes, two states) and
+`grep -c "id: 'ui-button" src/components/DesignSystemPlayground/registry/buttons.tsx` prints `2`.
+**If it fails**: a type error naming `VariantProps` or `active` means the CVA version in
+`package.json` is below 0.7; STOP with `npm ls class-variance-authority` output. Otherwise fix
+once and retry.
+**Commit**: `plan-003 step-4: button variants tool/mode/broadcast/active/state`
 
-**Check**: Same four commands green. Tranche C primitives render at
-`/design-system`. The toast decision is written down either way.
+### Step 5: Tranche A — dialog `ownsEscape`, tooltip, input, label; contract test; jsdom mocks
 
-### Step 7: Prove the Electron dual-window behavior at layer scale
+**Files**: `src/components/ui/dialog.tsx`, `src/components/ui/input.tsx`,
+`src/components/ui/label.tsx`, `src/components/ui/tooltip.tsx`, `package.json`,
+`package-lock.json`, `src/components/DesignSystemPlayground/registry/overlays.tsx`,
+`src/components/DesignSystemPlayground/registry/forms.tsx`,
+`src/components/DesignSystemPlayground/registry.test.ts`, `src/test/setup.ts`
+**Do**:
 
-Plan 002 tested one dialog. Now test the layer.
+1. `npx shadcn@1.1.23 add input label -y && npm run format`.
+2. `ownsEscape` on `DialogContent`. In `dialog.tsx` find the component that renders
+   `<DialogPrimitive.Content` (`grep -n 'DialogPrimitive.Content' src/components/ui/dialog.tsx`)
+   and make these three edits — the result, in shadcn's current function form, is:
 
-> **`/design-system` cannot host this step.** `src/App.tsx:441-448` returns the
-> playground *exclusively* — no Konva canvas, no toolbar, no World View launcher.
-> **This step is authorised to add a temporary, dev-only scaffold to `src/App.tsx`**
-> that mounts the four primitives inside the real editor. Remove it before the Step 9
-> commit. That is not "migrating a feature component"; do not convert a real overlay.
+   ```tsx
+   function DialogContent({
+     className,
+     children,
+     showCloseButton = true,
+     ownsEscape = true,
+     ...props
+   }: React.ComponentProps<typeof DialogPrimitive.Content> & {
+     showCloseButton?: boolean;
+     /** Renders data-esc-owns="true" so the global Escape does not stop Session Console audio. */
+     ownsEscape?: boolean;
+   }) {
+     return (
+       <DialogPortal data-slot="dialog-portal">
+         <DialogOverlay />
+         <DialogPrimitive.Content
+           data-slot="dialog-content"
+           data-esc-owns={ownsEscape ? 'true' : undefined}
+   ```
 
-With `npm run dev` running and the scaffold in place, open the World View alongside
-the Architect View, then:
+   (a) add `ownsEscape?: boolean` to the props type, (b) destructure `ownsEscape = true`,
+   (c) add `data-esc-owns={ownsEscape ? 'true' : undefined}` on `DialogPrimitive.Content`. Keep
+   every other generated line. If the generated file uses `React.forwardRef` instead, make the
+   same three edits inside it. `data-testid` already passes through `...props`
+   (plan 004 passes `dialog-<x>-root`).
+3. Append to `src/test/setup.ts`, directly after the `// Mock matchMedia` block
+   (`grep -n 'Mock matchMedia' src/test/setup.ts`):
 
-1. Open a `dialog`, a `popover`, a `dropdown-menu`, and a `tooltip` **in the editor**.
-   Confirm each renders above the Konva canvas, traps focus where appropriate, and
-   closes on Escape.
-2. With an overlay open, confirm the Konva canvas beneath does not receive pointer
-   events — attempt to draw; no stroke may appear.
-3. Confirm the World View window is unaffected and shows none of them.
-   > This one is close to unfailable — each Electron `BrowserWindow` has its own
-   > `document`, and a portal to `document.body` in one cannot render in another. Do
-   > it as a smoke check, but do not treat passing it as evidence of anything.
-4. Toggle light/dark with an overlay open and confirm it re-themes.
-   > Also near-unfailable: `--app-*` are defined on `<html>` and inherit into
-   > `document.body`, so a same-document portal cannot escape the theme scope. **The
-   > mechanism that *will* actually break light/dark is shadcn's inline `dark:`
-   > utilities**, which key off `prefers-color-scheme` rather than this app's
-   > `data-theme` attribute. Test *that* instead: set `data-theme="light"` while
-   > emulating a dark OS preference, and confirm no `dark:` styling applies. If it
-   > does, the `@custom-variant dark` from plan 002 Step 5 is missing or wrong.
+   ```ts
+   // Radix primitives in jsdom (plan 003): ResizeObserver, pointer capture, scrollIntoView
+   if (typeof window.ResizeObserver === 'undefined') {
+     window.ResizeObserver = vi.fn(() => ({
+       observe: vi.fn(),
+       unobserve: vi.fn(),
+       disconnect: vi.fn(),
+     })) as unknown as typeof ResizeObserver;
+   }
+   Element.prototype.hasPointerCapture = vi.fn(() => false);
+   Element.prototype.setPointerCapture = vi.fn();
+   Element.prototype.releasePointerCapture = vi.fn();
+   Element.prototype.scrollIntoView = vi.fn();
+   ```
+4. Replace `registry/overlays.tsx` with (sheet/popover/dropdown examples are appended in Step 7):
 
-**Record the outcome of item 4 in `src/components/ui/README.md`** — it affects how
-every overlay primitive is built, and plan 004 migrates nine of them against it.
+   ```tsx
+   import { Button } from '@/components/ui/button';
+   import {
+     Dialog,
+     DialogContent,
+     DialogDescription,
+     DialogFooter,
+     DialogHeader,
+     DialogTitle,
+     DialogTrigger,
+   } from '@/components/ui/dialog';
+   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-**Check**: All four confirmed and recorded. Item 4 is the subtle one — a portal
-that escapes the theme scope will look correct in dark mode (the default) and
-silently wrong in light mode.
+   import type { ComponentExample } from '../types';
 
-### Step 8: Write the contribution contract and the ADR
+   function DialogExample(): JSX.Element {
+     return (
+       <Dialog>
+         <DialogTrigger asChild>
+           <Button variant="secondary" data-testid="playground-open-dialog">
+             Open dialog
+           </Button>
+         </DialogTrigger>
+         <DialogContent data-testid="playground-dialog-content">
+           <DialogHeader>
+             <DialogTitle>Dialog title</DialogTitle>
+             <DialogDescription>Escape closes; focus returns to the trigger.</DialogDescription>
+           </DialogHeader>
+           <DialogFooter>
+             <Button variant="ghost" data-testid="playground-dialog-cancel">
+               Cancel
+             </Button>
+             <Button data-testid="playground-dialog-confirm">Confirm</Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
+     );
+   }
 
-**This step is what makes the layer *extendible* rather than just *present*.**
-Without it, the next person adds a primitive their own way and the drift restarts.
+   function TooltipExample(): JSX.Element {
+     return (
+       <TooltipProvider delayDuration={0}>
+         <Tooltip>
+           <TooltipTrigger asChild>
+             <Button variant="secondary" data-testid="playground-open-tooltip">
+               Hover or focus me
+             </Button>
+           </TooltipTrigger>
+           <TooltipContent data-testid="playground-tooltip-content">Tooltip text</TooltipContent>
+         </Tooltip>
+       </TooltipProvider>
+     );
+   }
 
-Create `src/components/ui/README.md` covering:
-- What lives in `src/components/ui/` and what does not (primitives, not features).
-- **The rule**: primitives consume `--app-*` theme variables through the bridge in
-  `src/index.css`. Zero literal colors. Ever. State it as flatly as
-  `src/styles/theme.css` already states it.
-- The four-part lifecycle from "Working approach" above, as the checklist for
-  adding a primitive.
-- How to add a Graphium-specific variant to an existing primitive (the CVA
-  pattern), using the `button` `tool`/`mode`/`broadcast` variants as the worked example.
-- Which ESLint rules are relaxed for this directory and why, if any.
-- The toast decision from Step 6.
-- The explicit note that `command` is out of scope and why.
+   export const overlayExamples: ComponentExample[] = [
+     {
+       id: 'ui-dialog',
+       name: 'Dialog (ui)',
+       category: 'overlay',
+       description: 'Radix dialog: focus trap, Escape, focus restore, data-esc-owns',
+       component: <DialogExample />,
+       code: `<Dialog>
+     <DialogTrigger asChild><Button>Open</Button></DialogTrigger>
+     <DialogContent data-testid="dialog-example-root">
+       <DialogHeader><DialogTitle>Title</DialogTitle></DialogHeader>
+     </DialogContent>
+   </Dialog>`,
+     },
+     {
+       id: 'ui-tooltip',
+       name: 'Tooltip (ui)',
+       category: 'overlay',
+       description: 'Radix tooltip: opens on hover and focus, flips at viewport edges',
+       component: <TooltipExample />,
+       code: `<TooltipProvider>
+     <Tooltip>
+       <TooltipTrigger asChild><Button>Trigger</Button></TooltipTrigger>
+       <TooltipContent>Tooltip text</TooltipContent>
+     </Tooltip>
+   </TooltipProvider>`,
+     },
+   ];
+   ```
+5. Replace `registry/forms.tsx` with (switch/select/slider appended in Step 6):
 
-Then add an ADR to `docs/architecture/DECISIONS.md`, matching the format of the
-entries already in that file, recording: the decision to adopt shadcn/ui, the
-alternatives considered (hand-rolled primitives; pattern-only without the CLI), why
-the existing Radix Colors system is bridged rather than replaced, and a link to
-`docs/planning/shadcn-adoption-decision.md`.
+   ```tsx
+   import { Input } from '@/components/ui/input';
+   import { Label } from '@/components/ui/label';
 
-**Check**: Both files exist.
+   import type { ComponentExample } from '../types';
 
-The contract is only real if someone without this plan's context can follow it. Verify
-that concretely: **dispatch a subagent with no context from this work**, give it only
-the repo path and `src/components/ui/README.md`, and ask it to add a `badge` primitive.
-If it satisfies all four lifecycle steps without asking a question, the contract works.
-If it stalls, fix the README — that failure *is* the test result.
+   export const formExamples: ComponentExample[] = [
+     {
+       id: 'ui-input',
+       name: 'Input + Label (ui)',
+       category: 'form',
+       description: 'Text input with an associated label',
+       component: (
+         <div className="grid w-64 gap-1.5">
+           <Label htmlFor="ui-input-example">Campaign name</Label>
+           <Input id="ui-input-example" placeholder="Untitled campaign" />
+         </div>
+       ),
+       code: `<Label htmlFor="name">Campaign name</Label>
+   <Input id="name" placeholder="Untitled campaign" />`,
+     },
+     {
+       id: 'ui-label',
+       name: 'Label (ui)',
+       category: 'form',
+       description: 'Radix label; disabled peer styling',
+       component: <Label>Standalone label</Label>,
+       code: `<Label htmlFor="field">Label</Label>`,
+     },
+   ];
+   ```
+6. Create `src/components/DesignSystemPlayground/registry.test.ts`:
 
-Practicalities the original framing omitted: `badge` is not in the roster, so **delete
-its output after evaluating** (keep the transcript as evidence); and if no subagent
-mechanism is available, say so and mark this Done-criteria line **not performed**
-rather than silently ticking it.
+   ```ts
+   import { describe, expect, it } from 'vitest';
 
-### Step 9: Full verification
+   import { categories, componentExamples } from './playground-registry';
 
-```bash
-npm run lint
-npm run type-check
-npm run test:run
-npm run build:web
-npm run test:a11y
-npm run build:web && npx playwright test --project=Web-Chromium
-npm run build:electron && npx playwright test --project=Electron-App
-```
+   const uiFiles = Object.keys(import.meta.glob('/src/components/ui/*.tsx')).filter(
+     (file) => !file.endsWith('.test.tsx'),
+   );
 
-Record the `dist-web/` size and compare against the pre-plan baseline captured in
-plan 002 Step 1. Note the delta in `src/components/ui/README.md`.
+   describe('playground registry contract', () => {
+     it('every example category is in the categories array (otherwise it is never rendered)', () => {
+       const known = new Set(categories.map((c) => c.id));
+       const orphans = componentExamples.filter((e) => !known.has(e.category)).map((e) => e.id);
+       expect(orphans).toEqual([]);
+     });
 
-**Check**: All exit 0. The bundle delta is recorded and is within a factor of ~2 of
-the extrapolation made in plan 002 Step 7. A much larger delta means something is
-bundled wrongly — investigate before closing the plan.
+     it('every example id is unique', () => {
+       const ids = componentExamples.map((e) => e.id);
+       expect(new Set(ids).size).toBe(ids.length);
+     });
+
+     it('every primitive in src/components/ui has a registry entry id "ui-<file>"', () => {
+       expect(uiFiles.length).toBeGreaterThan(0);
+       const ids = componentExamples.map((e) => e.id);
+       const missing = uiFiles
+         .map((file) => file.replace(/^.*\//, '').replace(/\.tsx$/, ''))
+         .filter((base) => !ids.some((id) => id === `ui-${base}` || id.startsWith(`ui-${base}-`)));
+       expect(missing).toEqual([]);
+     });
+   });
+   ```
+
+**Do NOT**: add `ownsEscape` to `DialogOverlay`; register the examples under legacy categories
+(`modal`, `input`); edit `MobileSidebarDrawer`/`MobileBottomSheet` (they never claim Escape;
+CONVENTIONS §9); touch `Tooltip.tsx`.
+**Commands**: `npm run verify:static && npm run verify:web`
+**Expected**: both exit 0.
+**Check**: `npx vitest run src/components/DesignSystemPlayground/registry.test.ts` exits 0 and
+`grep -c 'data-esc-owns={ownsEscape' src/components/ui/dialog.tsx` prints `1`.
+**If it fails**: if the contract test lists a missing id, the `id` in the registry file does not
+start with `ui-<basename>`; fix once and retry. If `shadcn add` exits non-zero, STOP with its
+output.
+**Commit**: `plan-003 step-5: tranche A primitives, registry contract test, jsdom mocks`
+
+### Step 6: Tranche B — switch, select, slider, tabs, collapsible, separator
+
+**Files**: `src/components/ui/switch.tsx`, `src/components/ui/select.tsx`,
+`src/components/ui/slider.tsx`, `src/components/ui/tabs.tsx`, `src/components/ui/collapsible.tsx`,
+`src/components/ui/separator.tsx`, `package.json`, `package-lock.json`,
+`src/components/DesignSystemPlayground/registry/forms.tsx`,
+`src/components/DesignSystemPlayground/registry/layout.tsx`
+**Do**:
+
+1. `npx shadcn@1.1.23 add switch select slider tabs collapsible separator -y && npm run format`.
+2. Overwrite `src/components/ui/separator.tsx` with the file below. `.toolbar-divider` sets only
+   `background: var(--app-border-subtle)` (`grep -n 'toolbar-divider' -A2 src/styles/app.css`,
+   line 20 at d3d3642) = `bg-border`; the call sites add `w-px mx-1` and, once, `h-6`
+   (`grep -n 'toolbar-divider' src/App.tsx`, lines 581, 648, 683). The `toolbar` variant carries
+   `w-px mx-1`; callers keep passing `h-6` via `className` where they do today.
+
+   ```tsx
+   import * as SeparatorPrimitive from '@radix-ui/react-separator';
+   import * as React from 'react';
+
+   import { cn } from '@/lib/utils';
+
+   type SeparatorProps = React.ComponentProps<typeof SeparatorPrimitive.Root> & {
+     /** 'toolbar' reproduces `.toolbar-divider w-px mx-1` from App.tsx (vertical, no fixed height). */
+     variant?: 'default' | 'toolbar';
+   };
+
+   function Separator({
+     className,
+     orientation = 'horizontal',
+     decorative = true,
+     variant = 'default',
+     ...props
+   }: SeparatorProps): JSX.Element {
+     const isToolbar = variant === 'toolbar';
+     return (
+       <SeparatorPrimitive.Root
+         data-slot="separator"
+         decorative={decorative}
+         orientation={isToolbar ? 'vertical' : orientation}
+         className={cn(
+           isToolbar
+             ? 'mx-1 w-px shrink-0 bg-border'
+             : 'shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px',
+           className,
+         )}
+         {...props}
+       />
+     );
+   }
+
+   export { Separator };
+   export type { SeparatorProps };
+   ```
+
+3. Append to the `formExamples` array in `registry/forms.tsx` (add the imports at the top of the
+   file, alphabetical, keeping the blank line before `import type`):
+
+   ```tsx
+   import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+   import { Slider } from '@/components/ui/slider';
+   import { Switch } from '@/components/ui/switch';
+   ```
+
+   ```tsx
+     {
+       id: 'ui-switch',
+       name: 'Switch (ui)',
+       category: 'form',
+       description: 'Radix switch (replaces ToggleSwitch.tsx in plan 004)',
+       component: (
+         <div className="flex items-center gap-2">
+           <Switch id="ui-switch-example" defaultChecked />
+           <Label htmlFor="ui-switch-example">Snap to grid</Label>
+         </div>
+       ),
+       code: `<Switch id="snap" checked={value} onCheckedChange={setValue} />`,
+     },
+     {
+       id: 'ui-select',
+       name: 'Select (ui)',
+       category: 'form',
+       description: 'Radix select (replaces the native <select> in MapSettingsSheet in plan 004)',
+       component: (
+         <Select defaultValue="square">
+           <SelectTrigger className="w-48" data-testid="playground-open-select">
+             <SelectValue placeholder="Grid type" />
+           </SelectTrigger>
+           <SelectContent data-testid="playground-select-content">
+             <SelectItem value="square">Square</SelectItem>
+             <SelectItem value="hex">Hex</SelectItem>
+             <SelectItem value="none">None</SelectItem>
+           </SelectContent>
+         </Select>
+       ),
+       code: `<Select value={v} onValueChange={setV}>
+     <SelectTrigger><SelectValue /></SelectTrigger>
+     <SelectContent><SelectItem value="square">Square</SelectItem></SelectContent>
+   </Select>`,
+     },
+     {
+       id: 'ui-slider',
+       name: 'Slider (ui)',
+       category: 'form',
+       description: 'Radix slider for grid size, opacity, audio volume',
+       component: <Slider defaultValue={[50]} max={100} step={1} className="w-64" aria-label="Opacity" />,
+       code: `<Slider value={[opacity]} onValueChange={([v]) => setOpacity(v)} max={100} />`,
+     },
+   ```
+
+4. Replace `registry/layout.tsx` with (the bridge probe is appended in Step 8):
+
+   ```tsx
+   import { Button } from '@/components/ui/button';
+   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+   import { Separator } from '@/components/ui/separator';
+   import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+   import type { ComponentExample } from '../types';
+
+   export const layoutExamples: ComponentExample[] = [
+     {
+       id: 'ui-tabs',
+       name: 'Tabs (ui)',
+       category: 'layout',
+       description: 'Radix tabs (replaces .tab-button in AboutModal in plan 004)',
+       component: (
+         <Tabs defaultValue="about" className="w-80">
+           <TabsList>
+             <TabsTrigger value="about">About</TabsTrigger>
+             <TabsTrigger value="tutorial">Tutorial</TabsTrigger>
+             <TabsTrigger value="shortcuts">Shortcuts</TabsTrigger>
+           </TabsList>
+           <TabsContent value="about">About panel</TabsContent>
+           <TabsContent value="tutorial">Tutorial panel</TabsContent>
+           <TabsContent value="shortcuts">Shortcuts panel</TabsContent>
+         </Tabs>
+       ),
+       code: `<Tabs defaultValue="about">
+     <TabsList><TabsTrigger value="about">About</TabsTrigger></TabsList>
+     <TabsContent value="about">…</TabsContent>
+   </Tabs>`,
+     },
+     {
+       id: 'ui-collapsible',
+       name: 'Collapsible (ui)',
+       category: 'layout',
+       description: 'Radix collapsible (replaces CollapsibleSection.tsx in plan 004)',
+       component: (
+         <Collapsible defaultOpen className="w-80">
+           <CollapsibleTrigger asChild>
+             <Button variant="ghost" data-testid="playground-open-collapsible">
+               Section title
+             </Button>
+           </CollapsibleTrigger>
+           <CollapsibleContent className="pt-2">Section content</CollapsibleContent>
+         </Collapsible>
+       ),
+       code: `<Collapsible open={open} onOpenChange={setOpen}>
+     <CollapsibleTrigger asChild><Button variant="ghost">Title</Button></CollapsibleTrigger>
+     <CollapsibleContent>…</CollapsibleContent>
+   </Collapsible>`,
+     },
+     {
+       id: 'ui-separator',
+       name: 'Separator (ui)',
+       category: 'layout',
+       description: 'Horizontal, vertical, and the toolbar variant (.toolbar-divider w-px mx-1)',
+       component: (
+         <div className="w-80">
+           <p>Above</p>
+           <Separator className="my-2" />
+           <div className="flex h-6 items-center gap-2">
+             <span>Tool</span>
+             <Separator variant="toolbar" className="h-6" />
+             <span>Tool</span>
+             <Separator orientation="vertical" />
+             <span>Tool</span>
+           </div>
+         </div>
+       ),
+       code: `<Separator />
+   <Separator variant="toolbar" className="h-6" />`,
+     },
+   ];
+   ```
+
+**Do NOT**: touch `ToggleSwitch.tsx`, `CollapsibleSection.tsx`, `AboutModal.tsx`,
+`MapSettingsSheet.tsx` or `App.tsx`; add `scroll-area`; add a `toolbar` variant to anything but
+`separator`.
+**Commands**: `npm run verify:static && npm run verify:web`
+**Expected**: both exit 0.
+**Check**: `ls src/components/ui/*.tsx | wc -l` prints `11` and
+`npx vitest run src/components/DesignSystemPlayground/registry.test.ts` exits 0.
+**If it fails**: if `verify:web` fails in a spec that does not visit `/design-system`, a primitive
+has introduced a global style; STOP with the failing spec name (do not edit the spec). Otherwise
+fix once and retry.
+**Commit**: `plan-003 step-6: tranche B primitives`
+
+### Step 7: Tranche C — sheet, popover, dropdown-menu with `ownsEscape`; esc-owns test
+
+**Files**: `src/components/ui/sheet.tsx`, `src/components/ui/popover.tsx`,
+`src/components/ui/dropdown-menu.tsx`, `src/components/ui/esc-owns.test.tsx`, `package.json`,
+`package-lock.json`, `src/components/DesignSystemPlayground/registry/overlays.tsx`
+**Do**:
+
+1. `npx shadcn@1.1.23 add sheet popover dropdown-menu -y && npm run format`.
+2. Make the Step 5 item 2 edits (props type `ownsEscape?: boolean`, destructure
+   `ownsEscape = true`, attribute `data-esc-owns={ownsEscape ? 'true' : undefined}`) in:
+   - `sheet.tsx`, on `<SheetPrimitive.Content` inside `SheetContent`
+     (`grep -n 'SheetPrimitive.Content' src/components/ui/sheet.tsx`);
+   - `popover.tsx`, on `<PopoverPrimitive.Content` inside `PopoverContent`;
+   - `dropdown-menu.tsx`, on `<DropdownMenuPrimitive.Content` inside `DropdownMenuContent`
+     (not on `SubContent`).
+   `sheet.tsx` diff, for reference (the other two are identical in shape):
+
+   ```diff
+    function SheetContent({
+      className,
+      children,
+      side = 'right',
+   +  ownsEscape = true,
+      ...props
+    }: React.ComponentProps<typeof SheetPrimitive.Content> & {
+      side?: 'top' | 'right' | 'bottom' | 'left';
+   +  /** Renders data-esc-owns="true" so the global Escape does not stop Session Console audio. */
+   +  ownsEscape?: boolean;
+    }) {
+      return (
+        <SheetPortal>
+          <SheetOverlay />
+          <SheetPrimitive.Content
+            data-slot="sheet-content"
+   +        data-esc-owns={ownsEscape ? 'true' : undefined}
+   ```
+
+3. In `registry/overlays.tsx` add imports (alphabetical among the `@/components/ui/*` group):
+
+   ```tsx
+   import {
+     DropdownMenu,
+     DropdownMenuContent,
+     DropdownMenuItem,
+     DropdownMenuTrigger,
+   } from '@/components/ui/dropdown-menu';
+   import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+   import {
+     Sheet,
+     SheetContent,
+     SheetDescription,
+     SheetHeader,
+     SheetTitle,
+     SheetTrigger,
+   } from '@/components/ui/sheet';
+   ```
+
+   add these components after `TooltipExample`:
+
+   ```tsx
+   function SheetExample(): JSX.Element {
+     return (
+       <Sheet>
+         <SheetTrigger asChild>
+           <Button variant="secondary" data-testid="playground-open-sheet">
+             Open sheet
+           </Button>
+         </SheetTrigger>
+         <SheetContent data-testid="playground-sheet-content">
+           <SheetHeader>
+             <SheetTitle>Sheet title</SheetTitle>
+             <SheetDescription>Side panel, same focus rules as Dialog.</SheetDescription>
+           </SheetHeader>
+         </SheetContent>
+       </Sheet>
+     );
+   }
+
+   function PopoverExample(): JSX.Element {
+     return (
+       <Popover>
+         <PopoverTrigger asChild>
+           <Button variant="secondary" data-testid="playground-open-popover">
+             Open popover
+           </Button>
+         </PopoverTrigger>
+         <PopoverContent data-testid="playground-popover-content">
+           <p>Popover content</p>
+           <Button variant="ghost" data-testid="playground-popover-action">
+             Action
+           </Button>
+         </PopoverContent>
+       </Popover>
+     );
+   }
+
+   function DropdownMenuExample(): JSX.Element {
+     return (
+       <DropdownMenu>
+         <DropdownMenuTrigger asChild>
+           <Button variant="secondary" data-testid="playground-open-dropdown">
+             Open menu
+           </Button>
+         </DropdownMenuTrigger>
+         <DropdownMenuContent data-testid="playground-dropdown-content">
+           <DropdownMenuItem>First item</DropdownMenuItem>
+           <DropdownMenuItem>Second item</DropdownMenuItem>
+           <DropdownMenuItem>Third item</DropdownMenuItem>
+         </DropdownMenuContent>
+       </DropdownMenu>
+     );
+   }
+   ```
+
+   and append to `overlayExamples`:
+
+   ```tsx
+     {
+       id: 'ui-sheet',
+       name: 'Sheet (ui)',
+       category: 'overlay',
+       description: 'Side panel (MapSettingsSheet / SessionConsoleEditorSheet migrate here in plan 004)',
+       component: <SheetExample />,
+       code: `<Sheet><SheetTrigger asChild><Button>Open</Button></SheetTrigger>
+     <SheetContent side="right" data-testid="sheet-example-root">…</SheetContent></Sheet>`,
+     },
+     {
+       id: 'ui-popover',
+       name: 'Popover (ui)',
+       category: 'overlay',
+       description: 'Non-modal popover for colour pickers and token quick-actions',
+       component: <PopoverExample />,
+       code: `<Popover><PopoverTrigger asChild><Button>Open</Button></PopoverTrigger>
+     <PopoverContent>…</PopoverContent></Popover>`,
+     },
+     {
+       id: 'ui-dropdown-menu',
+       name: 'Dropdown menu (ui)',
+       category: 'overlay',
+       description: 'Keyboard-navigable menu for token and map context actions',
+       component: <DropdownMenuExample />,
+       code: `<DropdownMenu><DropdownMenuTrigger asChild><Button>Menu</Button></DropdownMenuTrigger>
+     <DropdownMenuContent><DropdownMenuItem>Item</DropdownMenuItem></DropdownMenuContent></DropdownMenu>`,
+     },
+   ```
+
+4. Create `src/components/ui/esc-owns.test.tsx` (mirrors
+   `grep -n 'esc-owns' src/components/SessionConsole/useSessionConsoleHotkeys.test.ts`, line 53):
+
+   ```tsx
+   import { render } from '@testing-library/react';
+   import { describe, expect, it } from 'vitest';
+
+   import { Dialog, DialogContent, DialogTitle } from './dialog';
+   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
+   import { Popover, PopoverContent, PopoverTrigger } from './popover';
+   import { Sheet, SheetContent, SheetTitle } from './sheet';
+
+   const OWNER = '[data-esc-owns="true"]';
+
+   const cases: Array<[name: string, render: (ownsEscape: boolean) => JSX.Element]> = [
+     [
+       'DialogContent',
+       (ownsEscape) => (
+         <Dialog open>
+           <DialogContent ownsEscape={ownsEscape}>
+             <DialogTitle>t</DialogTitle>
+           </DialogContent>
+         </Dialog>
+       ),
+     ],
+     [
+       'SheetContent',
+       (ownsEscape) => (
+         <Sheet open>
+           <SheetContent ownsEscape={ownsEscape}>
+             <SheetTitle>t</SheetTitle>
+           </SheetContent>
+         </Sheet>
+       ),
+     ],
+     [
+       'PopoverContent',
+       (ownsEscape) => (
+         <Popover open>
+           <PopoverTrigger>t</PopoverTrigger>
+           <PopoverContent ownsEscape={ownsEscape}>c</PopoverContent>
+         </Popover>
+       ),
+     ],
+     [
+       'DropdownMenuContent',
+       (ownsEscape) => (
+         <DropdownMenu open>
+           <DropdownMenuTrigger>t</DropdownMenuTrigger>
+           <DropdownMenuContent ownsEscape={ownsEscape}>
+             <DropdownMenuItem>i</DropdownMenuItem>
+           </DropdownMenuContent>
+         </DropdownMenu>
+       ),
+     ],
+   ];
+
+   describe.each(cases)('%s claims the global Escape', (_name, renderCase) => {
+     it('renders data-esc-owns="true" by default', () => {
+       const view = render(renderCase(true));
+       expect(document.querySelector(OWNER)).not.toBeNull();
+       view.unmount();
+       expect(document.querySelector(OWNER)).toBeNull();
+     });
+
+     it('renders no data-esc-owns with ownsEscape={false}', () => {
+       const view = render(renderCase(false));
+       expect(document.querySelector(OWNER)).toBeNull();
+       view.unmount();
+     });
+   });
+   ```
+
+**Do NOT**: add `ownsEscape` to `DropdownMenuSubContent` or to tooltip; add `scroll-area`;
+touch `MobileSidebarDrawer.tsx`/`MobileBottomSheet.tsx`; migrate `MapSettingsSheet`.
+**Commands**: `npm run verify:static && npm run verify:web`
+**Expected**: both exit 0.
+**Check**: `grep -l 'data-esc-owns={ownsEscape' src/components/ui/*.tsx | wc -l` prints `4`
+and `npx vitest run src/components/ui/esc-owns.test.tsx` reports `8 passed`.
+**If it fails**: a `ResizeObserver`/`hasPointerCapture`/`scrollIntoView` error means Step 5
+item 3 was not applied; fix once and retry. Otherwise STOP with the vitest output.
+**Commit**: `plan-003 step-7: tranche C primitives with ownsEscape; esc-owns test`
+
+### Step 8: Automated proofs — axe, keyboard, purity, bridge, portals
+
+**Files**: `src/components/ui/a11y.test.tsx`, `src/components/ui/keyboard.test.tsx`,
+`src/components/ui/purity.test.ts`, `tests/theme-bridge.spec.ts`,
+`tests/functional/primitives-portals.spec.ts`,
+`src/components/DesignSystemPlayground/registry/layout.tsx`
+**Do**:
+
+1. Append the bridge probe to `registry/layout.tsx`. Utilities must appear as literal strings so
+   Tailwind generates them; the probe pairs each bridged utility with the `--app-*` value it must
+   resolve to, plus a negative control and a `dark:` probe. Add after the imports:
+
+   ```tsx
+   /** One row per bridge token: the shadcn utility and the --app-* value it must equal. */
+   const BRIDGE_PROBES: ReadonlyArray<{ token: string; utility: string; expected: string }> = [
+     { token: 'background', utility: 'bg-background', expected: 'bg-[var(--app-bg-base)]' },
+     { token: 'foreground', utility: 'bg-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     { token: 'card', utility: 'bg-card', expected: 'bg-[var(--app-bg-surface)]' },
+     { token: 'card-foreground', utility: 'bg-card-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     { token: 'popover', utility: 'bg-popover', expected: 'bg-[var(--app-bg-surface)]' },
+     { token: 'popover-foreground', utility: 'bg-popover-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     { token: 'primary', utility: 'bg-primary', expected: 'bg-[var(--app-accent-solid)]' },
+     { token: 'primary-foreground', utility: 'bg-primary-foreground', expected: 'bg-[var(--app-accent-solid-text)]' },
+     { token: 'secondary', utility: 'bg-secondary', expected: 'bg-[var(--app-bg-active)]' },
+     { token: 'secondary-foreground', utility: 'bg-secondary-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     { token: 'muted', utility: 'bg-muted', expected: 'bg-[var(--app-bg-subtle)]' },
+     { token: 'muted-foreground', utility: 'bg-muted-foreground', expected: 'bg-[var(--app-text-secondary)]' },
+     { token: 'accent', utility: 'bg-accent', expected: 'bg-[var(--app-bg-hover)]' },
+     { token: 'accent-foreground', utility: 'bg-accent-foreground', expected: 'bg-[var(--app-text-primary)]' },
+     { token: 'destructive', utility: 'bg-destructive', expected: 'bg-[var(--app-error-solid)]' },
+     { token: 'destructive-foreground', utility: 'bg-destructive-foreground', expected: 'bg-[var(--app-accent-solid-text)]' },
+     { token: 'border', utility: 'bg-border', expected: 'bg-[var(--app-border-subtle)]' },
+     { token: 'input', utility: 'bg-input', expected: 'bg-[var(--app-border-default)]' },
+     { token: 'ring', utility: 'bg-ring', expected: 'bg-[var(--app-accent-solid)]' },
+   ];
+
+   function BridgeProbe(): JSX.Element {
+     return (
+       <div className="flex flex-wrap gap-2" data-testid="bridge-probe">
+         {BRIDGE_PROBES.map((p) => (
+           <div key={p.token} className="flex items-center gap-1" title={p.token}>
+             <div data-testid={`bridge-swatch-${p.token}`} className={`size-4 rounded-sm ${p.utility}`} />
+             <div data-testid={`bridge-expected-${p.token}`} className={`size-4 rounded-sm ${p.expected}`} />
+           </div>
+         ))}
+         <div data-testid="bridge-swatch-none" className="size-4 bg-[var(--color-does-not-exist)]" />
+         <div
+           data-testid="bridge-dark-probe"
+           className="size-4 bg-[var(--app-bg-base)] dark:bg-[var(--app-accent-solid)]"
+         />
+         <div data-testid="bridge-dark-ref-light" className="size-4 bg-[var(--app-bg-base)]" />
+         <div data-testid="bridge-dark-ref-dark" className="size-4 bg-[var(--app-accent-solid)]" />
+       </div>
+     );
+   }
+   ```
+
+   and this entry at the end of `layoutExamples`:
+
+   ```tsx
+     {
+       id: 'ui-bridge-probe',
+       name: 'Theme bridge probe (ui)',
+       category: 'layout',
+       description: 'Each bridged shadcn utility next to the --app-* value it must equal (tests/theme-bridge.spec.ts)',
+       component: <BridgeProbe />,
+       code: `// bg-primary === bg-[var(--app-accent-solid)] in both themes`,
+     },
+   ```
+
+   If plan 002's bridge maps a token to a different `--app-*` variable than the table above
+   (`grep -n -- '--color-' src/index.css`), change the `expected` string to match the bridge; the
+   bridge is authoritative.
+
+2. Create `src/components/ui/purity.test.ts`:
+
+   ```ts
+   import { describe, expect, it } from 'vitest';
+
+   const RAW_PALETTE =
+     /\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange)(-[0-9]{2,3})?\b/g;
+   const LITERAL_COLOUR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\boklch\(/g;
+
+   const sources = import.meta.glob<string>('./*.tsx', { query: '?raw', import: 'default', eager: true });
+
+   describe('src/components/ui purity', () => {
+     const files = Object.entries(sources).filter(([file]) => !file.endsWith('.test.tsx'));
+
+     it('has primitives to check', () => {
+       expect(files.length).toBeGreaterThanOrEqual(14);
+     });
+
+     it.each(files)('%s uses no raw Tailwind palette class', (_file, source) => {
+       expect(source.match(RAW_PALETTE) ?? []).toEqual([]);
+     });
+
+     it.each(files)('%s contains no literal colour', (_file, source) => {
+       expect(source.match(LITERAL_COLOUR) ?? []).toEqual([]);
+     });
+   });
+   ```
+
+3. Create `src/components/ui/a11y.test.tsx` (`axe-core` is a devDependency:
+   `grep -n '"axe-core"' package.json`; `color-contrast` is disabled because jsdom does not
+   compute styles; the tag filter matches `tests/accessibility.spec.ts`):
+
+   ```tsx
+   import { render } from '@testing-library/react';
+   import axe from 'axe-core';
+   import { describe, expect, it } from 'vitest';
+
+   import { Button } from './button';
+   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './collapsible';
+   import { Dialog, DialogContent, DialogDescription, DialogTitle } from './dialog';
+   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
+   import { Input } from './input';
+   import { Label } from './label';
+   import { Popover, PopoverContent, PopoverTrigger } from './popover';
+   import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+   import { Separator } from './separator';
+   import { Sheet, SheetContent, SheetDescription, SheetTitle } from './sheet';
+   import { Slider } from './slider';
+   import { Switch } from './switch';
+   import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
+   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
+
+   const cases: Array<[name: string, element: JSX.Element]> = [
+     [
+       'button',
+       <div key="b">
+         <Button>Default</Button>
+         <Button variant="secondary">Secondary</Button>
+         <Button variant="tool" size="tool" active>
+           Tool
+         </Button>
+         <Button variant="broadcast" size="mode" state="running">
+           Broadcast
+         </Button>
+       </div>,
+     ],
+     [
+       'dialog (open)',
+       <Dialog key="d" open>
+         <DialogContent>
+           <DialogTitle>Title</DialogTitle>
+           <DialogDescription>Description</DialogDescription>
+           <Button>Ok</Button>
+         </DialogContent>
+       </Dialog>,
+     ],
+     [
+       'tooltip (open)',
+       <TooltipProvider key="t">
+         <Tooltip open>
+           <TooltipTrigger asChild>
+             <Button>Trigger</Button>
+           </TooltipTrigger>
+           <TooltipContent>Tip</TooltipContent>
+         </Tooltip>
+       </TooltipProvider>,
+     ],
+     [
+       'input + label',
+       <div key="i">
+         <Label htmlFor="a11y-input">Name</Label>
+         <Input id="a11y-input" />
+       </div>,
+     ],
+     [
+       'switch',
+       <div key="sw">
+         <Label htmlFor="a11y-switch">Snap</Label>
+         <Switch id="a11y-switch" />
+       </div>,
+     ],
+     [
+       'select (open)',
+       <Select key="se" open defaultValue="a">
+         <SelectTrigger aria-label="Grid">
+           <SelectValue />
+         </SelectTrigger>
+         <SelectContent>
+           <SelectItem value="a">A</SelectItem>
+           <SelectItem value="b">B</SelectItem>
+         </SelectContent>
+       </Select>,
+     ],
+     ['slider', <Slider key="sl" defaultValue={[50]} aria-label="Opacity" />],
+     [
+       'tabs',
+       <Tabs key="ta" defaultValue="one">
+         <TabsList>
+           <TabsTrigger value="one">One</TabsTrigger>
+           <TabsTrigger value="two">Two</TabsTrigger>
+         </TabsList>
+         <TabsContent value="one">One</TabsContent>
+         <TabsContent value="two">Two</TabsContent>
+       </Tabs>,
+     ],
+     [
+       'collapsible (open)',
+       <Collapsible key="c" open>
+         <CollapsibleTrigger asChild>
+           <Button>Toggle</Button>
+         </CollapsibleTrigger>
+         <CollapsibleContent>Content</CollapsibleContent>
+       </Collapsible>,
+     ],
+     ['separator', <Separator key="sp" />],
+     [
+       'sheet (open)',
+       <Sheet key="sh" open>
+         <SheetContent>
+           <SheetTitle>Title</SheetTitle>
+           <SheetDescription>Description</SheetDescription>
+         </SheetContent>
+       </Sheet>,
+     ],
+     [
+       'popover (open)',
+       <Popover key="p" open>
+         <PopoverTrigger asChild>
+           <Button>Trigger</Button>
+         </PopoverTrigger>
+         <PopoverContent>Content</PopoverContent>
+       </Popover>,
+     ],
+     [
+       'dropdown-menu (open)',
+       <DropdownMenu key="dm" open>
+         <DropdownMenuTrigger asChild>
+           <Button>Menu</Button>
+         </DropdownMenuTrigger>
+         <DropdownMenuContent>
+           <DropdownMenuItem>Item</DropdownMenuItem>
+         </DropdownMenuContent>
+       </DropdownMenu>,
+     ],
+   ];
+
+   describe.each(cases)('%s has no axe violations (WCAG 2.1 AA, contrast excluded)', (_name, element) => {
+     it('passes', async () => {
+       const view = render(element);
+       const results = await axe.run(document.body, {
+         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+         rules: { 'color-contrast': { enabled: false } },
+       });
+       expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+       view.unmount();
+     });
+   });
+   ```
+
+4. Create `src/components/ui/keyboard.test.tsx` (`@testing-library/user-event` is installed:
+   `grep -n 'user-event' package.json`):
+
+   ```tsx
+   import { render, screen } from '@testing-library/react';
+   import userEvent from '@testing-library/user-event';
+   import { describe, expect, it } from 'vitest';
+
+   import { Button } from './button';
+   import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from './dialog';
+   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
+   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
+
+   function DialogFixture(): JSX.Element {
+     return (
+       <Dialog>
+         <DialogTrigger asChild>
+           <Button>Open</Button>
+         </DialogTrigger>
+         <DialogContent data-testid="dialog-root">
+           <DialogTitle>Title</DialogTitle>
+           <DialogDescription>Description</DialogDescription>
+           <Button>Cancel</Button>
+           <Button>Confirm</Button>
+         </DialogContent>
+       </Dialog>
+     );
+   }
+
+   describe('Dialog keyboard behaviour', () => {
+     it('Escape closes and focus returns to the trigger', async () => {
+       const user = userEvent.setup();
+       render(<DialogFixture />);
+       const trigger = screen.getByRole('button', { name: 'Open' });
+       await user.click(trigger);
+       expect(await screen.findByTestId('dialog-root')).toBeInTheDocument();
+       await user.keyboard('{Escape}');
+       expect(screen.queryByTestId('dialog-root')).not.toBeInTheDocument();
+       expect(trigger).toHaveFocus();
+     });
+
+     it('Tab stays inside the open dialog', async () => {
+       const user = userEvent.setup();
+       render(<DialogFixture />);
+       await user.click(screen.getByRole('button', { name: 'Open' }));
+       const root = await screen.findByTestId('dialog-root');
+       for (let i = 0; i < 6; i += 1) {
+         await user.tab();
+         expect(root.contains(document.activeElement)).toBe(true);
+       }
+     });
+   });
+
+   describe('DropdownMenu keyboard behaviour', () => {
+     it('ArrowDown moves focus through the items', async () => {
+       const user = userEvent.setup();
+       render(
+         <DropdownMenu>
+           <DropdownMenuTrigger asChild>
+             <Button>Menu</Button>
+           </DropdownMenuTrigger>
+           <DropdownMenuContent>
+             <DropdownMenuItem>First</DropdownMenuItem>
+             <DropdownMenuItem>Second</DropdownMenuItem>
+           </DropdownMenuContent>
+         </DropdownMenu>,
+       );
+       screen.getByRole('button', { name: 'Menu' }).focus();
+       await user.keyboard('{Enter}');
+       await screen.findByRole('menu');
+       await user.keyboard('{ArrowDown}');
+       expect(screen.getByRole('menuitem', { name: 'First' })).toHaveFocus();
+       await user.keyboard('{ArrowDown}');
+       expect(screen.getByRole('menuitem', { name: 'Second' })).toHaveFocus();
+     });
+   });
+
+   describe('Tooltip keyboard behaviour', () => {
+     it('opens when the trigger receives focus', async () => {
+       const user = userEvent.setup();
+       render(
+         <TooltipProvider delayDuration={0}>
+           <Tooltip>
+             <TooltipTrigger asChild>
+               <Button>Trigger</Button>
+             </TooltipTrigger>
+             <TooltipContent>Tip</TooltipContent>
+           </Tooltip>
+         </TooltipProvider>,
+       );
+       await user.tab();
+       expect(screen.getByRole('button', { name: 'Trigger' })).toHaveFocus();
+       expect((await screen.findAllByText('Tip')).length).toBeGreaterThanOrEqual(1);
+     });
+   });
+   ```
+
+5. Create `tests/theme-bridge.spec.ts` (Web-Chromium; `gotoSurface` from plan 000):
+
+   ```ts
+   import { expect, test } from '@playwright/test';
+
+   import { gotoSurface } from './helpers/surfaces';
+
+   const TOKENS = [
+     'background', 'foreground', 'card', 'card-foreground', 'popover', 'popover-foreground',
+     'primary', 'primary-foreground', 'secondary', 'secondary-foreground', 'muted',
+     'muted-foreground', 'accent', 'accent-foreground', 'destructive', 'destructive-foreground',
+     'border', 'input', 'ring',
+   ] as const;
+   const TRANSPARENT = 'rgba(0, 0, 0, 0)';
+
+   async function bg(page: import('@playwright/test').Page, testId: string): Promise<string> {
+     return page.getByTestId(testId).evaluate((el) => getComputedStyle(el).backgroundColor);
+   }
+
+   for (const theme of ['light', 'dark'] as const) {
+     test(`every bridged token resolves to its --app-* value (${theme})`, async ({ page }) => {
+       await gotoSurface(page, 'design-system', theme);
+       await expect(page.getByTestId('bridge-probe')).toBeVisible();
+       for (const token of TOKENS) {
+         const actual = await bg(page, `bridge-swatch-${token}`);
+         const expected = await bg(page, `bridge-expected-${token}`);
+         expect(actual, token).not.toBe(TRANSPARENT);
+         expect(actual, token).toBe(expected);
+       }
+       // Negative control: an unbridged token must NOT resolve, proving the probe can fail.
+       expect(await bg(page, 'bridge-swatch-none')).toBe(TRANSPARENT);
+     });
+   }
+   ```
+
+6. Create `tests/functional/primitives-portals.spec.ts` (Web-Chromium). World-View isolation is
+   already covered by plan 000's `world-dialog` surface and is not re-tested here.
+
+   ```ts
+   import { expect, test } from '@playwright/test';
+
+   import { gotoSurface } from '../helpers/surfaces';
+
+   const OVERLAYS = ['dialog', 'sheet', 'popover', 'dropdown'] as const;
+
+   async function bgOf(page: import('@playwright/test').Page, testId: string): Promise<string> {
+     return page.getByTestId(testId).evaluate((el) => getComputedStyle(el).backgroundColor);
+   }
+
+   for (const name of OVERLAYS) {
+     test(`${name}: opens, claims Escape, re-themes while open, closes, restores focus`, async ({ page }) => {
+       await gotoSurface(page, 'design-system', 'light');
+       const trigger = page.getByTestId(`playground-open-${name}`);
+       await trigger.scrollIntoViewIfNeeded();
+       await trigger.click();
+       const content = page.getByTestId(`playground-${name}-content`);
+       await expect(content).toBeVisible();
+       await expect(content).toHaveAttribute('data-esc-owns', 'true');
+
+       const lightBg = await bgOf(page, `playground-${name}-content`);
+       await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+       await expect.poll(() => bgOf(page, `playground-${name}-content`)).not.toBe(lightBg);
+       await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+
+       await page.keyboard.press('Escape');
+       await expect(content).toBeHidden();
+       await expect(trigger).toBeFocused();
+     });
+   }
+
+   test('tooltip: opens on focus and closes on Escape', async ({ page }) => {
+     await gotoSurface(page, 'design-system', 'light');
+     const trigger = page.getByTestId('playground-open-tooltip');
+     await trigger.scrollIntoViewIfNeeded();
+     await trigger.focus();
+     await expect(page.getByTestId('playground-tooltip-content')).toBeVisible();
+     await page.keyboard.press('Escape');
+     await expect(page.getByTestId('playground-tooltip-content')).toBeHidden();
+   });
+
+   test('dark: utilities follow data-theme, not the OS colour scheme', async ({ page }) => {
+     await gotoSurface(page, 'design-system', 'light');
+     await page.emulateMedia({ colorScheme: 'dark' });
+     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+     expect(await bgOf(page, 'bridge-dark-probe')).toBe(await bgOf(page, 'bridge-dark-ref-light'));
+
+     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+     await expect.poll(() => bgOf(page, 'bridge-dark-probe')).toBe(
+       await bgOf(page, 'bridge-dark-ref-dark'),
+     );
+   });
+   ```
+
+**Do NOT**: add `exclude()` or `test.skip` anywhere; disable any axe rule other than
+`color-contrast`; edit `tests/accessibility.spec.ts` or `playwright.config.ts`; add a dev-only
+scaffold to `src/App.tsx`.
+**Commands**: `npm run verify:static && npm run verify:web`
+**Expected**: both exit 0.
+**Check**: `npx vitest run src/components/ui` reports `0 failed`, and
+`npm run build:web && CI=1 npx playwright test tests/theme-bridge.spec.ts tests/functional/primitives-portals.spec.ts --project=Web-Chromium`
+reports `8 passed`.
+**If it fails**: a bridge-probe mismatch (`expect(actual).toBe(expected)`) means the bridge in
+`src/index.css` maps that token to a different variable than the probe: fix the probe's
+`expected` once and retry. A `dark:` probe failure means `@custom-variant dark` is missing or
+wrong: STOP with `grep -n '^@custom-variant' src/index.css`. An axe violation: STOP with the
+violation id and primitive; do not disable the rule.
+**Commit**: `plan-003 step-8: axe, keyboard, purity, bridge and portal proofs`
+
+### Step 9: Contribution contract, recipes stub, ADR and doc updates
+
+**Files**: `src/components/ui/README.md`, `docs/guides/UI_RECIPES.md`,
+`docs/architecture/DECISIONS.md`, `docs/architecture/ARCHITECTURE.md`,
+`docs/guides/CONVENTIONS.md`, `.github/copilot-instructions.md`, `.cursorrules`
+**Do**:
+
+1. Create `src/components/ui/README.md` with exactly these `##` headings, in this order, each
+   filled as described:
+   - `## What lives here` — primitives only (shadcn-generated, Radix-based). Feature components
+     (`TokenCard`, dialogs with app state) do not.
+   - `## Colour rule` — bridge tokens or `[var(--app-*)]` only; never a raw palette class or a
+     literal colour; enforced by `purity.test.ts` and the regex it contains (paste the regex).
+   - `## Imports rule` — only `react`, `@radix-ui/*`, `class-variance-authority`, `lucide-react`,
+     `@remixicon/react`, `./siblings`, `@/lib/utils`; enforced by the `no-restricted-imports`
+     override in `.eslintrc.cjs`.
+   - `## Add a primitive` — this exact ordered list, one command per line, with its expected
+     output:
+     1. `npx shadcn@1.1.23 add <name> -y` → exit 0, `src/components/ui/<name>.tsx` exists.
+     2. `npm run format` → exit 0.
+     3. If it renders an overlay `Content`: add the `ownsEscape` prop (three edits, as in
+        `dialog.tsx`; `grep -n 'ownsEscape' src/components/ui/dialog.tsx`).
+     4. Register it: add an entry with `id: 'ui-<name>'` to the matching
+        `src/components/DesignSystemPlayground/registry/*.tsx`; if it needs a new category, add it
+        to `types.ts` **and** the `categories` array in `registry/index.ts`.
+     5. Add it to the `cases` arrays in `a11y.test.tsx` (open state) and, if it owns Escape, in
+        `esc-owns.test.tsx`.
+     6. `npm run verify:static && npm run verify:web` → exit 0 (`registry.test.ts` fails until 4
+        is done; `purity.test.ts` fails on any palette class).
+   - `## Add a Graphium variant` — the CVA pattern, using `button.tsx` `tool`/`mode`/`broadcast`
+     + `active` + `state` as the worked example (copy the `compoundVariants` block).
+   - `## Button class mapping (plan 004)` — the table from "Context the executor needs".
+   - `## ESLint rules relaxed here` — the four rules and why, plus `no-restricted-imports`.
+   - `## Decisions` — toast: keep `Toast.tsx`, no `sonner` (`gameStore` models one toast on a
+     5 s timer, `grep -n '5000' src/components/Toast.tsx`; sonner stacks and owns timers; `Toast`
+     is mounted twice, in `App.tsx` and `DesignSystemPlayground.tsx`). `command`: out of scope
+     for the program. `scroll-area`: deferred; no consumer until plan 004 needs one.
+   - `## dark: utilities` — `dark:` keys off `[data-theme='dark']` via `@custom-variant dark` in
+     `src/index.css`; portals stay inside `<html>` so theme scope is never escaped; proven by
+     `tests/functional/primitives-portals.spec.ts`.
+   - `## Bundle` — filled in Step 10.
+2. Create `docs/guides/UI_RECIPES.md` with the title `# UI recipes` and exactly these `##`
+   headings, in this order: `## Add a dialog`, `## Add a sheet`, `## Add a toolbar tool`,
+   `## Add a surface to the test harness`, `## Add a primitive`. The first four contain only the
+   line `_Filled by plan 004._`. `## Add a primitive` contains one line pointing at
+   `src/components/ui/README.md` § "Add a primitive".
+3. ADR: append to `docs/architecture/DECISIONS.md`, immediately before `## Summary Table`
+   (`grep -n '^## Summary Table' docs/architecture/DECISIONS.md`), a section numbered one higher
+   than `grep -oE '^## [0-9]+\.' docs/architecture/DECISIONS.md | tail -1` (14 at d3d3642), in
+   the file's format (`## N. Title` / `### Context` / `### Alternatives Considered` /
+   `### Decision: …`; `grep -n '^## \|^### ' docs/architecture/DECISIONS.md | head -12`):
+   title `Adopt shadcn/ui primitives bridged onto the --app-* theme`; alternatives: hand-rolled
+   primitives, Radix + CVA without the CLI; decision: CLI-generated primitives in
+   `src/components/ui/`, Radix Colors kept and bridged, link to
+   `docs/planning/shadcn-adoption-decision.md`.
+4. `docs/architecture/ARCHITECTURE.md`: insert a `## UI Primitive Layer` section (≤ 25 lines:
+   what `src/components/ui/` is, the bridge, `ownsEscape`, the registry contract, link to the
+   README) immediately before `## Build and Deployment`
+   (`grep -n '^## Build and Deployment' docs/architecture/ARCHITECTURE.md`, line 1590 at d3d3642).
+5. `docs/guides/CONVENTIONS.md`: in the `paths` JSON example
+   (`grep -n '"@components/\*"' docs/guides/CONVENTIONS.md`, line 430 at d3d3642) add the line
+   `"@/*": ["src/*"],` above `"@components/*"` and one sentence after the block: "`@/*` is the
+   shadcn alias; primitives and their tests use it."
+6. `.github/copilot-instructions.md` (`grep -n 'inline styles' .github/copilot-instructions.md`,
+   lines 135 and 229 at d3d3642): change both to "No inline styles — use Tailwind classes; in
+   `src/components/ui/` compose them with `cva()` and `cn()`". `.cursorrules` line 14
+   (`grep -n 'Styling' .cursorrules`): append " + shadcn/Radix primitives in `src/components/ui/`
+   (see its README)".
+
+**Do NOT**: edit `.ai-rules.md` (it has no conflicting line); rewrite existing ADRs or the
+Summary Table; write plan 004's recipes; create `docs/planning/decisions/*` (nothing here is
+Kyle's decision).
+**Commands**: `npm run verify:static`
+**Expected**: exit 0.
+**Check**: `grep -c '^## ' src/components/ui/README.md` prints `10`;
+`grep -c '^## Add a \(dialog\|sheet\|toolbar tool\|surface to the test harness\|primitive\)$' docs/guides/UI_RECIPES.md`
+prints `5`; `grep -c 'Adopt shadcn/ui primitives' docs/architecture/DECISIONS.md` prints `1`;
+`grep -c '^## UI Primitive Layer' docs/architecture/ARCHITECTURE.md` prints `1`.
+**If it fails**: `format:check` failing on Markdown means Prettier rewrapped a table; run
+`npm run format` and retry once.
+**Commit**: `plan-003 step-9: ui README, UI_RECIPES stub, ADR, doc updates`
+
+### Step 10: Dry-run the README, record the bundle, screenshots, report
+
+**Files**: `src/components/ui/README.md`, `docs/planning/screenshots/003-final/`,
+`plans/reports/003.md`, `plans/README.md`, `plans/004-migrate-screens-to-primitives.md`,
+`plans/006-visual-redesign.md`, `CHANGELOG.md`
+**Do**:
+
+1. README dry-run with a throwaway primitive, following `## Add a primitive` literally: `badge`
+   (register it in `registry/layout.tsx` with `id: 'ui-badge'`, add it to `a11y.test.tsx`
+   `cases`). Run `npm run verify:static`. Record exit code and any step of the README that was
+   ambiguous in the report; fix the README wording if so. Then discard the throwaway:
+   `git checkout -- src/components/DesignSystemPlayground/registry/layout.tsx src/components/ui/a11y.test.tsx package.json package-lock.json && rm -f src/components/ui/badge.tsx`
+   and confirm `git status --porcelain` lists only `src/components/ui/README.md` (if edited).
+2. Bundle: `npm run build:web`, then run the byte-count command recorded next to the
+   `Extrapolated 12-primitive delta` field in `docs/planning/shadcn-adoption-decision.md`
+   (`grep -n -B3 'Extrapolated 12-primitive delta' docs/planning/shadcn-adoption-decision.md`).
+   Write under `## Bundle` in `src/components/ui/README.md`: plan 002's before number, today's
+   number, the delta, the extrapolation, and the command.
+3. `npm run verify` (all three gates).
+4. `SHOTS_OUT=docs/planning/screenshots/003-final npm run shots`. Only `design-system-*.png` may
+   differ from plan 001's set; `tests/visual.spec.ts` inside `verify:web` enforces the others.
+5. Write the report (`plans/reports/003.md`, CONVENTIONS §11): include the raw-palette count
+   before/after (`grep -rnE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange)(-[0-9]{2,3})?\b' src/ --include=*.tsx --include=*.ts | wc -l`,
+   243 hits in 39 files at d3d3642 — unchanged by this plan; compare with the field in
+   `docs/planning/verification-baseline.md`), `ls src/components/ui/*.tsx | wc -l` (`17`: 14
+   primitives + 3 `.test.tsx`; `purity.test.ts` is `.ts`), the bundle numbers, and the README
+   dry-run outcome. No user-visible
+   change ships: add no `CHANGELOG.md` bullet unless a gate forced a `src/` change outside
+   `src/components/ui/` and the playground; then add one under `## [Unreleased]`. After merge:
+   set this plan's row in `plans/README.md` to `DONE <merge sha>`; write the merge SHA into the
+   `Grounded at` line of `plans/004-migrate-screens-to-primitives.md` and of
+   `plans/006-visual-redesign.md` (006a starts after this plan merges).
+
+**Do NOT**: keep `badge.tsx`; commit `test-results/`; edit `tests/visual.spec.ts` snapshots;
+squash-merge.
+**Commands**: `npm run verify` then `SHOTS_OUT=docs/planning/screenshots/003-final npm run shots`
+**Expected**: both exit 0.
+**Check**: `git status --porcelain | grep -c badge` prints `0`;
+`ls docs/planning/screenshots/003-final/design-system-*.png | wc -l` prints `2`; the bundle delta
+in `src/components/ui/README.md` is ≤ 2 × the `Extrapolated 12-primitive delta` value.
+**If it fails**: bundle delta > 2× → STOP with both numbers (something is bundled twice, e.g.
+two Radix versions: `npm ls @radix-ui/react-dialog`). Otherwise STOP with the gate output.
+**Commit**: `plan-003 step-10: bundle record, screenshots, report`
 
 ## Validation plan
 
-- **Automated**: the Step 9 sequence. `npm run test:a11y` is the most important
-  gate — it runs axe-core against WCAG 2.1 AA in both themes, and it is what proves
-  the theming bridge did not quietly break contrast.
-- **The playground is the acceptance surface.** Every primitive must render, in
-  both themes, at `/design-system`. A primitive that is not in the playground does
-  not count as delivered.
-- **No new unit tests are required for the primitives themselves.** They are
-  third-party-generated code whose behavior is covered by Radix's own test suite;
-  writing tests for `Dialog` here would test Radix, not Graphium. The a11y suite
-  and the playground cover the integration, which is the part that can actually
-  break. Tests come in plan 004, where real behavior migrates.
-- **The Step 8 README test is a real gate**, not a formality. An unextendible
-  primitive layer is the failure mode this whole plan set exists to avoid.
-- **Kyle confirms** that the `tool` / `mode` / `broadcast` button variants are
-  visually indistinguishable from today's toolbar buttons.
+- `npm run verify` after Step 10; `verify:static` + `verify:web` after every step that touches
+  `src/` or `tests/`.
+- Unit (vitest): `registry.test.ts` (categories + one entry per primitive), `esc-owns.test.tsx`
+  (8 tests), `a11y.test.tsx` (13 primitives in open state), `keyboard.test.tsx` (4 tests),
+  `purity.test.ts` (2 × 14 files + 1).
+- E2E (Web-Chromium): `tests/theme-bridge.spec.ts` (2 tests), `tests/functional/primitives-portals.spec.ts`
+  (6 tests), plus the existing `accessibility.spec.ts`, `visual.spec.ts` and surface smoke specs.
+- Kyle reviews `docs/planning/screenshots/003-final/design-system-{light,dark}.png` in the PR;
+  the `tool`/`mode`/`broadcast` rows must read as today's toolbar buttons. No other surface
+  changes (`visual.spec.ts`).
 
 ## Done criteria
 
-- [ ] `docs/planning/shadcn-adoption-decision.md` was read and its install sequence executed
-- [ ] `components.json` and `src/lib/utils.ts` (exporting `cn`) exist
-- [ ] Path aliases resolve in `tsconfig.json`, `vite.config.ts`, and `vitest.config.ts`
-- [ ] All Tranche A and Tranche B primitives exist in `src/components/ui/`
-- [ ] `sheet`, `popover` and `dropdown-menu` exist (required by Step 7 and plan 004)
-- [ ] `scroll-area` exists, **or** its deferral is recorded in `src/components/ui/README.md`
-- [ ] `src/components/DesignSystemPlayground/types.ts` `category` union extended for the new primitives
-- [ ] The item-4 finding from Step 7 (the `dark:` variant behaviour) is recorded in `src/components/ui/README.md`
-- [ ] The `button` primitive has working `tool`, `mode`, and `broadcast` variants matching `src/styles/app.css`
-- [ ] `grep -rnE "#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(" src/components/ui/*.tsx` returns nothing
-- [ ] Every primitive is registered and renders at `/design-system` in both themes
-- [ ] Electron dual-window portal behavior verified per Step 7, including the theme-scope check
-- [ ] `src/components/ui/README.md` exists and passed the Step 8 fresh-reader test
-- [ ] An ADR is recorded in `docs/architecture/DECISIONS.md`
-- [ ] The toast/`sonner` decision is written down
-- [ ] `npm run lint`, `npm run type-check`, `npm run test:run`, `npm run build:web`, `npm run test:a11y`, and both Playwright projects (`--project=Web-Chromium` after `build:web`, `--project=Electron-App` after `build:electron`) all exit 0
-- [ ] **No existing feature component was modified** (`git diff --stat` confirms only in-scope paths)
-- [ ] Bundle delta recorded
-- [ ] `plans/README.md` status row updated
+- [ ] `.eslintrc.cjs` has the one `src/components/ui/**/*.tsx` override (Step 1)
+- [ ] Spike patch applied; `components.json`, `src/lib/utils.ts` (`cn`), aliases present (Step 2)
+- [ ] `grep -c '^@theme' src/index.css` prints `2`; `grep -c 'oklch(' src/index.css` prints `0`
+- [ ] Registry split into `registry/{index.ts,buttons,overlays,forms,layout,legacy}.tsx`; 37 legacy examples intact
+- [ ] 14 primitives exist: `ls src/components/ui/*.tsx | grep -vc test` prints `14`
+- [ ] `button` has `tool`/`mode`/`broadcast`, `active`, `state` (Step 4 Check)
+- [ ] `dialog`, `sheet`, `popover`, `dropdown-menu` render `data-esc-owns` by default with `ownsEscape` opt-out
+- [ ] `separator` has `variant="toolbar"`
+- [ ] `npx vitest run src/components/ui src/components/DesignSystemPlayground/registry.test.ts` reports `0 failed`
+- [ ] `tests/theme-bridge.spec.ts` and `tests/functional/primitives-portals.spec.ts` pass (8 tests)
+- [ ] Purity: `grep -rnE '\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange)(-[0-9]{2,3})?\b' src/components/ui/` returns nothing
+- [ ] `src/components/ui/README.md` (10 sections) and `docs/guides/UI_RECIPES.md` (5 headings) exist; README dry-run recorded
+- [ ] ADR in `docs/architecture/DECISIONS.md`; `## UI Primitive Layer` in `ARCHITECTURE.md`
+- [ ] Bundle delta recorded and ≤ 2 × the decision doc's `Extrapolated 12-primitive delta`
+- [ ] `docs/planning/screenshots/003-final/` committed
+- [ ] `git diff --stat <grounded-at>..HEAD` touches only in-scope paths
+- [ ] `plans/reports/003.md` written; `plans/README.md` row `DONE <merge sha>`; Grounded-at written into plans 004 and 006
 
 ## STOP conditions
 
-Stop and report back — do not improvise — if:
-
-- **`docs/planning/shadcn-adoption-decision.md` does not exist.** Plan 002 has not
-  run. Do not attempt the install by guessing.
-- **A command from that decision doc fails.** The environment has drifted since the
-  spike. Report the failure; do not substitute a different command.
-- **`npm run test:a11y` fails at any tranche boundary.** Report the exact axe
-  violation and which primitive introduced it. Do not weaken the test, and do not
-  hardcode a color to satisfy it.
-- **A primitive requires a literal color to look right.** That means the theming
-  bridge is missing a token. Add the token to the bridge; do not add the color to
-  the component.
-- **An overlay fails to re-theme in Step 7 item 4.** The portal is escaping the
-  themed root. Report it — the fix (an explicit portal container) affects every
-  overlay primitive and should be decided once, not per-component.
-- **You find yourself needing to modify an existing feature component** to make a
-  primitive work. That is plan 004's scope and a sign this plan has grown.
-- **`sonner` cannot be driven from the existing `showToast` store action.** Do not
-  refactor the store to accommodate it. Keep `Toast.tsx` and record the decision.
-- **The bundle delta is more than ~2× the plan 002 extrapolation.**
+- Decision doc verdict `NO-GO`, or `git apply` of the spike patch conflicts (Step 2).
+- Lint fails inside `src/components/ui/` on a rule other than the four in Step 1 — report the
+  rule name; do not widen the override.
+- An axe violation in `a11y.test.tsx` or `test:a11y` — report id and primitive; never disable a
+  rule or hardcode a colour.
+- A primitive needs a colour the bridge lacks — use `[var(--app-*)]`; if no `--app-*` token
+  fits either, STOP (adding a token is plan 006b's call).
+- The `dark:` probe fails (Step 8) — `@custom-variant dark` is wrong; affects every overlay.
+- Bundle delta > 2 × the extrapolation (Step 10).
+- Any step seems to need an edit to an existing feature component.
 
 ## Handoff / after it lands
 
-- **Plan 004 consumes this directly** and is where the value is realized — until
-  screens migrate, this layer is pure cost. Do not let 003 land and 004 stall; that
-  is the worst outcome in the set (two component systems, permanently).
-- **What a reviewer should scrutinize most**: (1) the `button` variants — if they
-  don't match today's toolbar exactly, plan 004's migration stops being provably
-  neutral and becomes a redesign by accident; (2) `src/components/ui/README.md` —
-  it is the only thing preventing the drift from restarting.
-- **Deliberately deferred**: `command` (Graphium's palette works and is
-  feature-coupled), toast (decided in Step 6), and every visual change (plan 006).
-- **Watch for**: `src/components/ui/` accumulating feature components. It is for
-  primitives. A `TokenCard` is not a primitive.
+- Plan 004 consumes this layer directly; until screens migrate it is pure cost. Its migration
+  uses the button mapping in `src/components/ui/README.md` and passes
+  `data-testid="dialog-<x>-root"` / `sheet-<x>-root` through `DialogContent`/`SheetContent`.
+- Plan 006a may start once this plan merges (both read the same Grounded-at).
+- Reviewer focus: (1) the `tool`/`mode`/`broadcast` rows in the design-system screenshots;
+  (2) `src/components/ui/README.md`, the only thing preventing drift from restarting.
+- Watch for `src/components/ui/` accumulating feature components; `registry.test.ts` will demand
+  an example for each file, which makes the mistake visible.
