@@ -46,6 +46,9 @@ jobs:
       - name: Report web bundle size (bytes; plan 005 adds the budget)
         run: find dist-web/assets \( -name '*.js' -o -name '*.css' \) -print0 | xargs -0 wc -c | tail -1
 
+      - name: Check bundle budget
+        run: bash scripts/bundle-budget.sh
+
       - name: Run Playwright tests (Web-Chromium)
         run: npx playwright test --project=Web-Chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
