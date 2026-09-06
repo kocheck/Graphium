@@ -45,7 +45,7 @@ function MobileBottomSheet({
     >
       <SheetContent
         side="bottom"
-        className="max-h-[70vh] rounded-t-xl p-0 overflow-y-auto bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)]"
+        className="max-h-[70vh] rounded-t-lg p-0 overflow-y-auto bg-[var(--app-bg-surface)] border-t border-[var(--app-border-default)]"
         ownsEscape={false}
         aria-label="Bottom sheet"
         data-testid="sheet-mobile-bottom-root"

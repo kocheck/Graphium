@@ -128,7 +128,7 @@ function ImageCropper({ imageSrc, onConfirm, onCancel }: ImageCropperProps): JSX
       }}
     >
       <DialogContent
-        className="w-[90vw] max-w-none h-[80vh] p-0 flex flex-col overflow-hidden"
+        className="w-[90vw] max-w-none h-[80vh] p-0 flex flex-col overflow-hidden rounded-lg"
         data-testid="dialog-image-cropper-root"
         showCloseButton={false}
       >

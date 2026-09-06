@@ -307,7 +307,7 @@ function MapSettingsSheet({
             </div>
 
             {isCalibrating ? (
-              <div className="rounded p-3 mb-3 text-xs bg-[var(--app-accent-bg)] border border-[var(--app-accent-solid)] text-[var(--app-accent-text-contrast)]">
+              <div className="rounded-sm p-3 mb-3 text-xs bg-[var(--app-accent-bg)] border border-[var(--app-accent-solid)] text-[var(--app-accent-text-contrast)]">
                 <p className="mb-2">
                   <strong>Draw a square</strong> on the map that represents exactly{' '}
                   <strong>one grid cell</strong> (e.g. 5ft square).
@@ -390,7 +390,7 @@ function MapSettingsSheet({
                     ? setPendingGridColor(e.target.value)
                     : setGridColor(e.target.value)
                 }
-                className="h-10 w-20 rounded cursor-pointer border border-[var(--app-border-default)]"
+                className="h-10 w-20 rounded-sm cursor-pointer border border-[var(--app-border-default)]"
               />
               <span className="text-xs text-[var(--app-text-secondary)]">
                 {mode === 'CREATE' ? pendingGridColor : gridColor}

@@ -89,7 +89,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
   return (
     <Dialog open onOpenChange={handleOpenChange}>
       <DialogContent
-        className="max-w-md"
+        className="max-w-md rounded-lg"
         data-testid="dialog-dungeon-generator-root"
         showCloseButton={false}
         onOpenAutoFocus={focusGenerateButton}
@@ -172,7 +172,7 @@ export function DungeonGeneratorDialog(): React.ReactElement | null {
           </div>
 
           {/* Info Text */}
-          <div className="text-xs p-3 rounded text-[var(--app-text-muted)] bg-[var(--app-bg-subtle)]">
+          <div className="text-xs p-3 rounded-sm text-[var(--app-text-muted)] bg-[var(--app-bg-subtle)]">
             <p>
               <strong>Note:</strong> The dungeon will be drawn using the Wall tool and will be fully
               interactive. You can modify the generated walls manually after creation.
