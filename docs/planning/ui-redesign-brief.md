@@ -1,8 +1,9 @@
 # Graphium UI redesign — design brief
 
-Status: DRAFTED BY CLAUDE 2026-09-04 — Kyle to confirm, edit, or veto before plan 006a
-runs. Plan 006 treats every statement here as Kyle's instruction. Anything Kyle strikes
-out is gone; anything he adds is binding.
+Status: CONFIRMED 2026-09-06
+Kyle confirmed the draft as written ("Looks good continue"). Plan 006 treats every
+statement here as Kyle's instruction. Anything Kyle strikes out is gone; anything he
+adds is binding.
 
 This brief exists so that the executor of plan 006 **renders Kyle's taste into options**
 rather than inventing a brand. It was assembled from three sources: the brand language in
@@ -171,9 +172,9 @@ hybrid in the decision file.
 
 Leave these for Kyle. Plan 006 STOPs if any is still blank.
 
-- Mood words confirmed or edited: \_\_\_\_
-- References vetoed (titles): \_\_\_\_
-- References added (titles or URLs): \_\_\_\_
-- Anti-references added: \_\_\_\_
-- Direction table edits (rows added, removed, renamed): \_\_\_\_
-- Does the World View get its own token set? (decide in 006 Step 3, may pre-answer): \_\_\_\_
+- Mood words confirmed or edited: as written
+- References vetoed (titles): none
+- References added (titles or URLs): none
+- Anti-references added: none
+- Direction table edits (rows added, removed, renamed): none
+- Does the World View get its own token set? (decide in 006 Step 3, may pre-answer): decide in Step 3
