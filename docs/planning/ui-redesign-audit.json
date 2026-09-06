@@ -1,0 +1,2415 @@
+{
+  "generatedAt": "2026-09-06T00:48:53.408Z",
+  "samples": [
+    {
+      "surface": "home",
+      "theme": "light",
+      "tokens": {
+        "--app-accent-bg": "#e6f4fe",
+        "--app-accent-bg-active": "#c2e5ff",
+        "--app-accent-bg-hover": "#d5efff",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#113264",
+        "--app-accent-text-contrast": "#113264",
+        "--app-bg-active": "#e0e1e6",
+        "--app-bg-base": "#fcfcfd",
+        "--app-bg-hover": "#e8e8ec",
+        "--app-bg-subtle": "#f9f9fb",
+        "--app-bg-surface": "#f0f0f3",
+        "--app-border-default": "#cdced6",
+        "--app-border-hover": "#b9bbc6",
+        "--app-border-subtle": "#d9d9e0",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#feebec",
+        "--app-error-bg-hover": "#ffdbdc",
+        "--app-error-border": "#f4a9aa",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#dc3e42",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ce2c31",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#222",
+        "--app-overlay": "#0007149f",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#00083046",
+        "--app-shadow-md": "#00002f26",
+        "--app-shadow-sm": "#0000330f",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#e6f6eb",
+        "--app-success-bg-hover": "#d6f1df",
+        "--app-success-border": "#8eceaa",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#2b9a66",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#218358",
+        "--app-text-disabled": "#8b8d98",
+        "--app-text-muted": "#60646c",
+        "--app-text-primary": "#1c2024",
+        "--app-text-secondary": "#60646c",
+        "--app-warning-bg": "#fff7c2",
+        "--app-warning-bg-hover": "#ffee9c",
+        "--app-warning-border": "#e9c162",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffba18",
+        "--app-warning-text": "#ab6400"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "28px",
+            "fontWeight": "600",
+            "lineHeight": "36.4px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "4px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(17, 50, 100)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "home",
+      "theme": "dark",
+      "tokens": {
+        "--app-accent-bg": "#0d2847",
+        "--app-accent-bg-active": "#004074",
+        "--app-accent-bg-hover": "#003362",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#70b8ff",
+        "--app-accent-text-contrast": "#c2e6ff",
+        "--app-bg-active": "#2e3135",
+        "--app-bg-base": "#111113",
+        "--app-bg-hover": "#272a2d",
+        "--app-bg-subtle": "#18191b",
+        "--app-bg-surface": "#212225",
+        "--app-border-default": "#43484e",
+        "--app-border-hover": "#5a6169",
+        "--app-border-subtle": "#363a3f",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#3b1219",
+        "--app-error-bg-hover": "#500f1c",
+        "--app-error-border": "#8c333a",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#ec5d5e",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ff9592",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#5a6169",
+        "--app-overlay": "#e4f3feb0",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#dff1fe5e",
+        "--app-shadow-md": "#d6ebfd30",
+        "--app-shadow-sm": "#ddeaf814",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#132d1b",
+        "--app-success-bg-hover": "#113b1f",
+        "--app-success-border": "#28684a",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#33b074",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#3dd68c",
+        "--app-text-disabled": "#696e77",
+        "--app-text-muted": "#b0b4ba",
+        "--app-text-primary": "#edeef0",
+        "--app-text-secondary": "#b0b4ba",
+        "--app-warning-bg": "#302008",
+        "--app-warning-bg-hover": "#3f2700",
+        "--app-warning-border": "#714f19",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffd60a",
+        "--app-warning-text": "#ffca16"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "28px",
+            "fontWeight": "600",
+            "lineHeight": "36.4px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "4px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(112, 184, 255)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "editor",
+      "theme": "light",
+      "tokens": {
+        "--app-accent-bg": "#e6f4fe",
+        "--app-accent-bg-active": "#c2e5ff",
+        "--app-accent-bg-hover": "#d5efff",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#113264",
+        "--app-accent-text-contrast": "#113264",
+        "--app-bg-active": "#e0e1e6",
+        "--app-bg-base": "#fcfcfd",
+        "--app-bg-hover": "#e8e8ec",
+        "--app-bg-subtle": "#f9f9fb",
+        "--app-bg-surface": "#f0f0f3",
+        "--app-border-default": "#cdced6",
+        "--app-border-hover": "#b9bbc6",
+        "--app-border-subtle": "#d9d9e0",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#feebec",
+        "--app-error-bg-hover": "#ffdbdc",
+        "--app-error-border": "#f4a9aa",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#dc3e42",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ce2c31",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#222",
+        "--app-overlay": "#0007149f",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#00083046",
+        "--app-shadow-md": "#00002f26",
+        "--app-shadow-sm": "#0000330f",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#e6f6eb",
+        "--app-success-bg-hover": "#d6f1df",
+        "--app-success-border": "#8eceaa",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#2b9a66",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#218358",
+        "--app-text-disabled": "#8b8d98",
+        "--app-text-muted": "#60646c",
+        "--app-text-primary": "#1c2024",
+        "--app-text-secondary": "#60646c",
+        "--app-warning-bg": "#fff7c2",
+        "--app-warning-bg-hover": "#ffee9c",
+        "--app-warning-border": "#e9c162",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffba18",
+        "--app-warning-text": "#ab6400"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "8px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": ".toolbar",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "12px",
+            "borderRadius": "8px",
+            "borderWidth": "2px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.25) 0px 25px 50px -12px",
+            "backgroundColor": "rgb(240, 240, 243)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "editor",
+      "theme": "dark",
+      "tokens": {
+        "--app-accent-bg": "#0d2847",
+        "--app-accent-bg-active": "#004074",
+        "--app-accent-bg-hover": "#003362",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#70b8ff",
+        "--app-accent-text-contrast": "#c2e6ff",
+        "--app-bg-active": "#2e3135",
+        "--app-bg-base": "#111113",
+        "--app-bg-hover": "#272a2d",
+        "--app-bg-subtle": "#18191b",
+        "--app-bg-surface": "#212225",
+        "--app-border-default": "#43484e",
+        "--app-border-hover": "#5a6169",
+        "--app-border-subtle": "#363a3f",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#3b1219",
+        "--app-error-bg-hover": "#500f1c",
+        "--app-error-border": "#8c333a",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#ec5d5e",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ff9592",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#5a6169",
+        "--app-overlay": "#e4f3feb0",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#dff1fe5e",
+        "--app-shadow-md": "#d6ebfd30",
+        "--app-shadow-sm": "#ddeaf814",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#132d1b",
+        "--app-success-bg-hover": "#113b1f",
+        "--app-success-border": "#28684a",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#33b074",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#3dd68c",
+        "--app-text-disabled": "#696e77",
+        "--app-text-muted": "#b0b4ba",
+        "--app-text-primary": "#edeef0",
+        "--app-text-secondary": "#b0b4ba",
+        "--app-warning-bg": "#302008",
+        "--app-warning-bg-hover": "#3f2700",
+        "--app-warning-border": "#714f19",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffd60a",
+        "--app-warning-text": "#ffca16"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "8px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": ".toolbar",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "12px",
+            "borderRadius": "8px",
+            "borderWidth": "2px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.25) 0px 25px 50px -12px",
+            "backgroundColor": "rgb(33, 34, 37)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "editor-mobile",
+      "theme": "light",
+      "tokens": {
+        "--app-accent-bg": "#e6f4fe",
+        "--app-accent-bg-active": "#c2e5ff",
+        "--app-accent-bg-hover": "#d5efff",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#113264",
+        "--app-accent-text-contrast": "#113264",
+        "--app-bg-active": "#e0e1e6",
+        "--app-bg-base": "#fcfcfd",
+        "--app-bg-hover": "#e8e8ec",
+        "--app-bg-subtle": "#f9f9fb",
+        "--app-bg-surface": "#f0f0f3",
+        "--app-border-default": "#cdced6",
+        "--app-border-hover": "#b9bbc6",
+        "--app-border-subtle": "#d9d9e0",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#feebec",
+        "--app-error-bg-hover": "#ffdbdc",
+        "--app-error-border": "#f4a9aa",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#dc3e42",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ce2c31",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#222",
+        "--app-overlay": "#0007149f",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#00083046",
+        "--app-shadow-md": "#00002f26",
+        "--app-shadow-sm": "#0000330f",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#e6f6eb",
+        "--app-success-bg-hover": "#d6f1df",
+        "--app-success-border": "#8eceaa",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#2b9a66",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#218358",
+        "--app-text-disabled": "#8b8d98",
+        "--app-text-muted": "#60646c",
+        "--app-text-primary": "#1c2024",
+        "--app-text-secondary": "#60646c",
+        "--app-warning-bg": "#fff7c2",
+        "--app-warning-bg-hover": "#ffee9c",
+        "--app-warning-border": "#e9c162",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffba18",
+        "--app-warning-text": "#ab6400"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "12px",
+            "borderRadius": "4px",
+            "borderWidth": "1px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px",
+            "backgroundColor": "rgb(240, 240, 243)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "editor-mobile",
+      "theme": "dark",
+      "tokens": {
+        "--app-accent-bg": "#0d2847",
+        "--app-accent-bg-active": "#004074",
+        "--app-accent-bg-hover": "#003362",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#70b8ff",
+        "--app-accent-text-contrast": "#c2e6ff",
+        "--app-bg-active": "#2e3135",
+        "--app-bg-base": "#111113",
+        "--app-bg-hover": "#272a2d",
+        "--app-bg-subtle": "#18191b",
+        "--app-bg-surface": "#212225",
+        "--app-border-default": "#43484e",
+        "--app-border-hover": "#5a6169",
+        "--app-border-subtle": "#363a3f",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#3b1219",
+        "--app-error-bg-hover": "#500f1c",
+        "--app-error-border": "#8c333a",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#ec5d5e",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ff9592",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#5a6169",
+        "--app-overlay": "#e4f3feb0",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#dff1fe5e",
+        "--app-shadow-md": "#d6ebfd30",
+        "--app-shadow-sm": "#ddeaf814",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#132d1b",
+        "--app-success-bg-hover": "#113b1f",
+        "--app-success-border": "#28684a",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#33b074",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#3dd68c",
+        "--app-text-disabled": "#696e77",
+        "--app-text-muted": "#b0b4ba",
+        "--app-text-primary": "#edeef0",
+        "--app-text-secondary": "#b0b4ba",
+        "--app-warning-bg": "#302008",
+        "--app-warning-bg-hover": "#3f2700",
+        "--app-warning-border": "#714f19",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffd60a",
+        "--app-warning-text": "#ffca16"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "12px",
+            "borderRadius": "4px",
+            "borderWidth": "1px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px",
+            "backgroundColor": "rgb(33, 34, 37)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "confirm-dialog",
+      "theme": "light",
+      "tokens": {
+        "--app-accent-bg": "#e6f4fe",
+        "--app-accent-bg-active": "#c2e5ff",
+        "--app-accent-bg-hover": "#d5efff",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#113264",
+        "--app-accent-text-contrast": "#113264",
+        "--app-bg-active": "#e0e1e6",
+        "--app-bg-base": "#fcfcfd",
+        "--app-bg-hover": "#e8e8ec",
+        "--app-bg-subtle": "#f9f9fb",
+        "--app-bg-surface": "#f0f0f3",
+        "--app-border-default": "#cdced6",
+        "--app-border-hover": "#b9bbc6",
+        "--app-border-subtle": "#d9d9e0",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#feebec",
+        "--app-error-bg-hover": "#ffdbdc",
+        "--app-error-border": "#f4a9aa",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#dc3e42",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ce2c31",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#222",
+        "--app-overlay": "#0007149f",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#00083046",
+        "--app-shadow-md": "#00002f26",
+        "--app-shadow-sm": "#0000330f",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#e6f6eb",
+        "--app-success-bg-hover": "#d6f1df",
+        "--app-success-border": "#8eceaa",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#2b9a66",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#218358",
+        "--app-text-disabled": "#8b8d98",
+        "--app-text-muted": "#60646c",
+        "--app-text-primary": "#1c2024",
+        "--app-text-secondary": "#60646c",
+        "--app-warning-bg": "#fff7c2",
+        "--app-warning-bg-hover": "#ffee9c",
+        "--app-warning-border": "#e9c162",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffba18",
+        "--app-warning-text": "#ab6400"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "8px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": ".toolbar",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "12px",
+            "borderRadius": "8px",
+            "borderWidth": "2px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.25) 0px 25px 50px -12px",
+            "backgroundColor": "rgb(240, 240, 243)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "14px",
+            "fontWeight": "400",
+            "lineHeight": "20px",
+            "padding": "16px",
+            "borderRadius": "12px",
+            "borderWidth": "0px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.241128 -0.0035833 -0.00899437 / 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+            "backgroundColor": "rgb(240, 240, 243)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "confirm-dialog",
+      "theme": "dark",
+      "tokens": {
+        "--app-accent-bg": "#0d2847",
+        "--app-accent-bg-active": "#004074",
+        "--app-accent-bg-hover": "#003362",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#70b8ff",
+        "--app-accent-text-contrast": "#c2e6ff",
+        "--app-bg-active": "#2e3135",
+        "--app-bg-base": "#111113",
+        "--app-bg-hover": "#272a2d",
+        "--app-bg-subtle": "#18191b",
+        "--app-bg-surface": "#212225",
+        "--app-border-default": "#43484e",
+        "--app-border-hover": "#5a6169",
+        "--app-border-subtle": "#363a3f",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#3b1219",
+        "--app-error-bg-hover": "#500f1c",
+        "--app-error-border": "#8c333a",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#ec5d5e",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ff9592",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#5a6169",
+        "--app-overlay": "#e4f3feb0",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#dff1fe5e",
+        "--app-shadow-md": "#d6ebfd30",
+        "--app-shadow-sm": "#ddeaf814",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#132d1b",
+        "--app-success-bg-hover": "#113b1f",
+        "--app-success-border": "#28684a",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#33b074",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#3dd68c",
+        "--app-text-disabled": "#696e77",
+        "--app-text-muted": "#b0b4ba",
+        "--app-text-primary": "#edeef0",
+        "--app-text-secondary": "#b0b4ba",
+        "--app-warning-bg": "#302008",
+        "--app-warning-bg-hover": "#3f2700",
+        "--app-warning-border": "#714f19",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffd60a",
+        "--app-warning-text": "#ffca16"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "8px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": ".toolbar",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "12px",
+            "borderRadius": "8px",
+            "borderWidth": "2px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.25) 0px 25px 50px -12px",
+            "backgroundColor": "rgb(33, 34, 37)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "14px",
+            "fontWeight": "400",
+            "lineHeight": "20px",
+            "padding": "16px",
+            "borderRadius": "12px",
+            "borderWidth": "0px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.948915 -0.000231266 -0.0028556 / 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+            "backgroundColor": "rgb(33, 34, 37)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "world",
+      "theme": "light",
+      "tokens": {
+        "--app-accent-bg": "#e6f4fe",
+        "--app-accent-bg-active": "#c2e5ff",
+        "--app-accent-bg-hover": "#d5efff",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#113264",
+        "--app-accent-text-contrast": "#113264",
+        "--app-bg-active": "#e0e1e6",
+        "--app-bg-base": "#fcfcfd",
+        "--app-bg-hover": "#e8e8ec",
+        "--app-bg-subtle": "#f9f9fb",
+        "--app-bg-surface": "#f0f0f3",
+        "--app-border-default": "#cdced6",
+        "--app-border-hover": "#b9bbc6",
+        "--app-border-subtle": "#d9d9e0",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#feebec",
+        "--app-error-bg-hover": "#ffdbdc",
+        "--app-error-border": "#f4a9aa",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#dc3e42",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ce2c31",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#222",
+        "--app-overlay": "#0007149f",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#00083046",
+        "--app-shadow-md": "#00002f26",
+        "--app-shadow-sm": "#0000330f",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#e6f6eb",
+        "--app-success-bg-hover": "#d6f1df",
+        "--app-success-border": "#8eceaa",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#2b9a66",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#218358",
+        "--app-text-disabled": "#8b8d98",
+        "--app-text-muted": "#60646c",
+        "--app-text-primary": "#1c2024",
+        "--app-text-secondary": "#60646c",
+        "--app-warning-bg": "#fff7c2",
+        "--app-warning-bg-hover": "#ffee9c",
+        "--app-warning-border": "#e9c162",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffba18",
+        "--app-warning-text": "#ab6400"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "500",
+            "lineHeight": "24px",
+            "padding": "8px 16px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(0, 112, 193)",
+            "color": "rgb(255, 255, 255)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "world",
+      "theme": "dark",
+      "tokens": {
+        "--app-accent-bg": "#0d2847",
+        "--app-accent-bg-active": "#004074",
+        "--app-accent-bg-hover": "#003362",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#70b8ff",
+        "--app-accent-text-contrast": "#c2e6ff",
+        "--app-bg-active": "#2e3135",
+        "--app-bg-base": "#111113",
+        "--app-bg-hover": "#272a2d",
+        "--app-bg-subtle": "#18191b",
+        "--app-bg-surface": "#212225",
+        "--app-border-default": "#43484e",
+        "--app-border-hover": "#5a6169",
+        "--app-border-subtle": "#363a3f",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#3b1219",
+        "--app-error-bg-hover": "#500f1c",
+        "--app-error-border": "#8c333a",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#ec5d5e",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ff9592",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#5a6169",
+        "--app-overlay": "#e4f3feb0",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#dff1fe5e",
+        "--app-shadow-md": "#d6ebfd30",
+        "--app-shadow-sm": "#ddeaf814",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#132d1b",
+        "--app-success-bg-hover": "#113b1f",
+        "--app-success-border": "#28684a",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#33b074",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#3dd68c",
+        "--app-text-disabled": "#696e77",
+        "--app-text-muted": "#b0b4ba",
+        "--app-text-primary": "#edeef0",
+        "--app-text-secondary": "#b0b4ba",
+        "--app-warning-bg": "#302008",
+        "--app-warning-bg-hover": "#3f2700",
+        "--app-warning-border": "#714f19",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffd60a",
+        "--app-warning-text": "#ffca16"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "500",
+            "lineHeight": "24px",
+            "padding": "8px 16px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(0, 112, 193)",
+            "color": "rgb(255, 255, 255)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "world-dialog",
+      "theme": "light",
+      "tokens": {
+        "--app-accent-bg": "#e6f4fe",
+        "--app-accent-bg-active": "#c2e5ff",
+        "--app-accent-bg-hover": "#d5efff",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#113264",
+        "--app-accent-text-contrast": "#113264",
+        "--app-bg-active": "#e0e1e6",
+        "--app-bg-base": "#fcfcfd",
+        "--app-bg-hover": "#e8e8ec",
+        "--app-bg-subtle": "#f9f9fb",
+        "--app-bg-surface": "#f0f0f3",
+        "--app-border-default": "#cdced6",
+        "--app-border-hover": "#b9bbc6",
+        "--app-border-subtle": "#d9d9e0",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#feebec",
+        "--app-error-bg-hover": "#ffdbdc",
+        "--app-error-border": "#f4a9aa",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#dc3e42",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ce2c31",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#222",
+        "--app-overlay": "#0007149f",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#00083046",
+        "--app-shadow-md": "#00002f26",
+        "--app-shadow-sm": "#0000330f",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#e6f6eb",
+        "--app-success-bg-hover": "#d6f1df",
+        "--app-success-border": "#8eceaa",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#2b9a66",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#218358",
+        "--app-text-disabled": "#8b8d98",
+        "--app-text-muted": "#60646c",
+        "--app-text-primary": "#1c2024",
+        "--app-text-secondary": "#60646c",
+        "--app-warning-bg": "#fff7c2",
+        "--app-warning-bg-hover": "#ffee9c",
+        "--app-warning-border": "#e9c162",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffba18",
+        "--app-warning-text": "#ab6400"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "500",
+            "lineHeight": "24px",
+            "padding": "8px 16px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(0, 112, 193)",
+            "color": "rgb(255, 255, 255)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "14px",
+            "fontWeight": "400",
+            "lineHeight": "20px",
+            "padding": "16px",
+            "borderRadius": "12px",
+            "borderWidth": "0px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.241128 -0.0035833 -0.00899437 / 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+            "backgroundColor": "rgb(240, 240, 243)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "world-dialog",
+      "theme": "dark",
+      "tokens": {
+        "--app-accent-bg": "#0d2847",
+        "--app-accent-bg-active": "#004074",
+        "--app-accent-bg-hover": "#003362",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#70b8ff",
+        "--app-accent-text-contrast": "#c2e6ff",
+        "--app-bg-active": "#2e3135",
+        "--app-bg-base": "#111113",
+        "--app-bg-hover": "#272a2d",
+        "--app-bg-subtle": "#18191b",
+        "--app-bg-surface": "#212225",
+        "--app-border-default": "#43484e",
+        "--app-border-hover": "#5a6169",
+        "--app-border-subtle": "#363a3f",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#3b1219",
+        "--app-error-bg-hover": "#500f1c",
+        "--app-error-border": "#8c333a",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#ec5d5e",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ff9592",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#5a6169",
+        "--app-overlay": "#e4f3feb0",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#dff1fe5e",
+        "--app-shadow-md": "#d6ebfd30",
+        "--app-shadow-sm": "#ddeaf814",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#132d1b",
+        "--app-success-bg-hover": "#113b1f",
+        "--app-success-border": "#28684a",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#33b074",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#3dd68c",
+        "--app-text-disabled": "#696e77",
+        "--app-text-muted": "#b0b4ba",
+        "--app-text-primary": "#edeef0",
+        "--app-text-secondary": "#b0b4ba",
+        "--app-warning-bg": "#302008",
+        "--app-warning-bg-hover": "#3f2700",
+        "--app-warning-border": "#714f19",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffd60a",
+        "--app-warning-text": "#ffca16"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "500",
+            "lineHeight": "24px",
+            "padding": "8px 16px",
+            "borderRadius": "4px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(0, 112, 193)",
+            "color": "rgb(255, 255, 255)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "14px",
+            "fontWeight": "400",
+            "lineHeight": "20px",
+            "padding": "16px",
+            "borderRadius": "12px",
+            "borderWidth": "0px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.948915 -0.000231266 -0.0028556 / 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+            "backgroundColor": "rgb(33, 34, 37)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "design-system",
+      "theme": "light",
+      "tokens": {
+        "--app-accent-bg": "#e6f4fe",
+        "--app-accent-bg-active": "#c2e5ff",
+        "--app-accent-bg-hover": "#d5efff",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#113264",
+        "--app-accent-text-contrast": "#113264",
+        "--app-bg-active": "#e0e1e6",
+        "--app-bg-base": "#fcfcfd",
+        "--app-bg-hover": "#e8e8ec",
+        "--app-bg-subtle": "#f9f9fb",
+        "--app-bg-surface": "#f0f0f3",
+        "--app-border-default": "#cdced6",
+        "--app-border-hover": "#b9bbc6",
+        "--app-border-subtle": "#d9d9e0",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#feebec",
+        "--app-error-bg-hover": "#ffdbdc",
+        "--app-error-border": "#f4a9aa",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#dc3e42",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ce2c31",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#222",
+        "--app-overlay": "#0007149f",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#00083046",
+        "--app-shadow-md": "#00002f26",
+        "--app-shadow-sm": "#0000330f",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#e6f6eb",
+        "--app-success-bg-hover": "#d6f1df",
+        "--app-success-border": "#8eceaa",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#2b9a66",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#218358",
+        "--app-text-disabled": "#8b8d98",
+        "--app-text-muted": "#60646c",
+        "--app-text-primary": "#1c2024",
+        "--app-text-secondary": "#60646c",
+        "--app-warning-bg": "#fff7c2",
+        "--app-warning-bg-hover": "#ffee9c",
+        "--app-warning-border": "#e9c162",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffba18",
+        "--app-warning-text": "#ab6400"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(252, 252, 253)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "30px",
+            "fontWeight": "700",
+            "lineHeight": "36px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "8px",
+            "borderRadius": "8px",
+            "borderWidth": "1px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(240, 240, 243)",
+            "color": "rgb(96, 100, 108)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "12px 16px 12px 40px",
+            "borderRadius": "8px",
+            "borderWidth": "1px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(0, 112, 193) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+            "backgroundColor": "rgb(240, 240, 243)",
+            "color": "rgb(28, 32, 36)"
+          }
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    },
+    {
+      "surface": "design-system",
+      "theme": "dark",
+      "tokens": {
+        "--app-accent-bg": "#0d2847",
+        "--app-accent-bg-active": "#004074",
+        "--app-accent-bg-hover": "#003362",
+        "--app-accent-solid": "#0070c1",
+        "--app-accent-solid-hover": "#005a9c",
+        "--app-accent-solid-text": "white",
+        "--app-accent-text": "#70b8ff",
+        "--app-accent-text-contrast": "#c2e6ff",
+        "--app-bg-active": "#2e3135",
+        "--app-bg-base": "#111113",
+        "--app-bg-hover": "#272a2d",
+        "--app-bg-subtle": "#18191b",
+        "--app-bg-surface": "#212225",
+        "--app-border-default": "#43484e",
+        "--app-border-hover": "#5a6169",
+        "--app-border-subtle": "#363a3f",
+        "--app-duration-base": ".3s",
+        "--app-duration-fast": ".2s",
+        "--app-duration-slow": ".5s",
+        "--app-ease-decelerate": "cubic-bezier(0,0,.2,1)",
+        "--app-ease-standard": "ease",
+        "--app-elevation-high": "0 25px 50px -12px #00000040",
+        "--app-elevation-low": "0 1px 3px 0 #0000001a,0 1px 2px -1px #0000001a",
+        "--app-elevation-medium": "0 10px 15px -3px #0000001a,0 4px 6px -4px #0000001a",
+        "--app-error-bg": "#3b1219",
+        "--app-error-bg-hover": "#500f1c",
+        "--app-error-border": "#8c333a",
+        "--app-error-solid": "#e5484d",
+        "--app-error-solid-hover": "#ec5d5e",
+        "--app-error-solid-text": "white",
+        "--app-error-text": "#ff9592",
+        "--app-font-size-2xl": "1.5rem",
+        "--app-font-size-base": "1rem",
+        "--app-font-size-lg": "1.125rem",
+        "--app-font-size-sm": ".875rem",
+        "--app-font-size-xl": "1.25rem",
+        "--app-font-size-xs": ".75rem",
+        "--app-font-weight-bold": "700",
+        "--app-font-weight-medium": "500",
+        "--app-font-weight-normal": "400",
+        "--app-font-weight-semibold": "600",
+        "--app-grid-color": "#5a6169",
+        "--app-overlay": "#e4f3feb0",
+        "--app-radius-lg": ".5rem",
+        "--app-radius-md": ".375rem",
+        "--app-radius-sm": ".25rem",
+        "--app-shadow-lg": "#dff1fe5e",
+        "--app-shadow-md": "#d6ebfd30",
+        "--app-shadow-sm": "#ddeaf814",
+        "--app-space-unit": ".25rem",
+        "--app-success-bg": "#132d1b",
+        "--app-success-bg-hover": "#113b1f",
+        "--app-success-border": "#28684a",
+        "--app-success-solid": "#30a46c",
+        "--app-success-solid-hover": "#33b074",
+        "--app-success-solid-text": "white",
+        "--app-success-text": "#3dd68c",
+        "--app-text-disabled": "#696e77",
+        "--app-text-muted": "#b0b4ba",
+        "--app-text-primary": "#edeef0",
+        "--app-text-secondary": "#b0b4ba",
+        "--app-warning-bg": "#302008",
+        "--app-warning-bg-hover": "#3f2700",
+        "--app-warning-border": "#714f19",
+        "--app-warning-solid": "#ffc53d",
+        "--app-warning-solid-hover": "#ffd60a",
+        "--app-warning-text": "#ffca16"
+      },
+      "selectors": [
+        {
+          "selector": "body",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(17, 17, 19)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "h1",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "30px",
+            "fontWeight": "700",
+            "lineHeight": "36px",
+            "padding": "0px",
+            "borderRadius": "0px",
+            "borderWidth": "0px",
+            "boxShadow": "none",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": "button",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "8px",
+            "borderRadius": "8px",
+            "borderWidth": "1px",
+            "boxShadow": "none",
+            "backgroundColor": "rgb(33, 34, 37)",
+            "color": "rgb(176, 180, 186)"
+          }
+        },
+        {
+          "selector": "input",
+          "found": true,
+          "styles": {
+            "fontFamily": "\"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px",
+            "padding": "12px 16px 12px 40px",
+            "borderRadius": "8px",
+            "borderWidth": "1px",
+            "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(0, 112, 193) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+            "backgroundColor": "rgb(33, 34, 37)",
+            "color": "rgb(237, 238, 240)"
+          }
+        },
+        {
+          "selector": ".toolbar",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": ".btn-tool",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[role=\"dialog\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"editor-view\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"session-console-panel\"]",
+          "found": false,
+          "styles": {}
+        },
+        {
+          "selector": "[data-testid=\"playground-readout\"]",
+          "found": false,
+          "styles": {}
+        }
+      ]
+    }
+  ]
+}

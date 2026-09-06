@@ -342,6 +342,11 @@ body {
 
 /* Disable transitions in testing/CI to ensure stable accessibility checks */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --app-duration-fast: 0ms;
+    --app-duration-base: 0ms;
+    --app-duration-slow: 0ms;
+  }
   * {
     transition: none !important;
     animation: none !important;

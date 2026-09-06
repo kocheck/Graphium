@@ -1,6 +1,6 @@
 # Decision 006-brief-unanswered: Has Kyle confirmed docs/planning/ui-redesign-brief.md?
 
-Status: PENDING
+Status: DECIDED
 
 ## Question
 
@@ -26,3 +26,6 @@ filled and the Status line reads `CONFIRMED <date>`. Which lines are still blank
 Option 1; the brief was drafted for confirmation, not for redesign.
 
 ## Kyle's answer
+
+1 — brief as written. Confirmed 2026-09-06 ("Looks good continue"). World View token set
+left to Step 3.

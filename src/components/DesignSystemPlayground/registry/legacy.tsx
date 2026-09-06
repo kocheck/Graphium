@@ -111,11 +111,11 @@ export const legacyExamples: ComponentExample[] = [
     category: 'button',
     description: 'Main call-to-action button with accent color',
     component: (
-      <button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white shadow-sm">
+      <button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-[var(--app-accent-solid-text)] shadow-sm">
         Primary Action
       </button>
     ),
-    code: `<button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white shadow-sm">
+    code: `<button className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-[var(--app-accent-solid-text)] shadow-sm">
   Primary Action
 </button>`,
     tags: ['button', 'primary', 'action'],
@@ -357,7 +357,7 @@ showConfirmDialog(
         return (
           <>
             <button
-              className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white shadow-sm"
+              className="px-4 py-2 rounded font-medium transition-all bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-[var(--app-accent-solid-text)] shadow-sm"
               onClick={() => setIsOpen(true)}
             >
               Check for Updates

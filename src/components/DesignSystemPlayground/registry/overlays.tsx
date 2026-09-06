@@ -23,7 +23,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+import { TooltipExample } from './TooltipExample';
 
 import type { ComponentExample } from '../types';
 
@@ -47,19 +48,6 @@ const dialogExample = (
       </DialogFooter>
     </DialogContent>
   </Dialog>
-);
-
-const tooltipExample = (
-  <TooltipProvider delayDuration={0}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="secondary" data-testid="playground-open-tooltip">
-          Hover or focus me
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent data-testid="playground-tooltip-content">Tooltip text</TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
 );
 
 const sheetExample = (
@@ -128,7 +116,7 @@ export const overlayExamples: ComponentExample[] = [
     name: 'Tooltip (ui)',
     category: 'overlay',
     description: 'Radix tooltip: opens on hover and focus, flips at viewport edges',
-    component: tooltipExample,
+    component: <TooltipExample />,
     code: `<TooltipProvider>
   <Tooltip>
     <TooltipTrigger asChild><Button>Trigger</Button></TooltipTrigger>

@@ -42,3 +42,29 @@ test.describe('Accessibility audit (WCAG 2.1 AA)', () => {
     }
   }
 });
+
+test.describe('Design directions on /design-system (plan 006a)', () => {
+  for (const direction of ['a', 'b', 'c'] as const) {
+    for (const theme of ['light', 'dark'] as const) {
+      test(`direction ${direction} — ${theme} — no WCAG AA violations`, async ({ page }) => {
+        await page.goto('/design-system');
+        await page.getByTestId(`playground-direction-${direction}`).click();
+        await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+        await page.waitForFunction(
+          ([d, t]) =>
+            document.documentElement.dataset.direction === d &&
+            document.documentElement.getAttribute('data-theme') === t,
+          [direction, theme] as const,
+        );
+        await page.evaluate(() => document.fonts.ready);
+        await page.waitForTimeout(250);
+        const results = await new AxeBuilder({ page })
+          .withTags(['wcag2a', 'wcag2aa'])
+          .exclude('canvas')
+          .exclude('[aria-disabled="true"]')
+          .analyze();
+        expect(results.violations).toEqual([]);
+      });
+    }
+  }
+});

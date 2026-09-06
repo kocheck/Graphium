@@ -68,18 +68,18 @@ difference is drift: STOP.
 
 **Citation re-check** (run each; "If any row differs: STOP."):
 
-| Anchor (grep)                                                                                                                                      | File                                   | Expected hits |
-| -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------- |
-| `grep -n "prefers-reduced-motion" src/styles/theme.css`                                                                                            | `src/styles/theme.css`                 | 1 (line 303)  |
-| `grep -c "^@import '@radix-ui/colors/" src/styles/theme.css`                                                                                       | `src/styles/theme.css`                 | 14            |
-| `grep -c "app-accent-solid-text" src/styles/theme.css`                                                                                             | `src/styles/theme.css`                 | 2             |
-| `grep -n "import { componentExamples, categories } from './playground-registry'" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx` | `DesignSystemPlayground.tsx`           | 1 (line 30)   |
-| `grep -n "{/\* Theme Toggle \*/}" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`                                                | `DesignSystemPlayground.tsx`           | 1 (line 173)  |
-| `grep -n "'/design-system'" src/App.tsx`                                                                                                           | `src/App.tsx`                          | 1 (line 123)  |
-| `grep -n "'performance';" src/components/DesignSystemPlayground/types.ts`                                                                          | `types.ts`                             | 1 (line 22)   |
-| `grep -n "#### Text on Background Combinations" docs/features/wcag-audit.md`                                                                       | `docs/features/wcag-audit.md`          | 1 (line 30)   |
-| `grep -c "^export async function gotoSurface" tests/helpers/surfaces.ts`                                                                           | `tests/helpers/surfaces.ts` (plan 000) | 1             |
-| `grep -c "import AxeBuilder from '@axe-core/playwright'" tests/accessibility.spec.ts`                                                              | `tests/accessibility.spec.ts`          | 1             |
+| Anchor (grep)                                                                                                                                      | File                                   | Expected hits                                                                     |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------- |
+| `grep -n "prefers-reduced-motion" src/styles/theme.css`                                                                                            | `src/styles/theme.css`                 | 1 (line 344)                                                                      |
+| `grep -c "^@import '@radix-ui/colors/" src/styles/theme.css`                                                                                       | `src/styles/theme.css`                 | 14                                                                                |
+| `grep -c "app-accent-solid-text" src/styles/theme.css`                                                                                             | `src/styles/theme.css`                 | 2                                                                                 |
+| `grep -n "import { componentExamples, categories } from './playground-registry'" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx` | `DesignSystemPlayground.tsx`           | 1 (line 28)                                                                       |
+| `grep -n "{/\* Theme Toggle \*/}" src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`                                                | `DesignSystemPlayground.tsx`           | 1 (line 180 on origin/main; 234 on this branch)                                   |
+| `grep -n "'/design-system'" src/App.tsx`                                                                                                           | `src/App.tsx`                          | 1 (line 131)                                                                      |
+| `grep -n "'performance'" src/components/DesignSystemPlayground/types.ts`                                                                           | `types.ts`                             | 1 (line 22)                                                                       |
+| `grep -n "#### Text on Background Combinations" docs/features/wcag-audit.md`                                                                       | `docs/features/wcag-audit.md`          | 1 (line 30 on origin/main; this branch uses `<!-- contrast:start -->` at line 30) |
+| `grep -c "^export async function gotoSurface" tests/helpers/surfaces.ts`                                                                           | `tests/helpers/surfaces.ts` (plan 000) | 1                                                                                 |
+| `grep -c "import AxeBuilder from '@axe-core/playwright'" tests/accessibility.spec.ts`                                                              | `tests/accessibility.spec.ts`          | 1                                                                                 |
 
 ## Why this matters
 
@@ -1261,11 +1261,7 @@ npm run verify:static
 
 <!-- steps-5-plus:start -->
 
-‹Reviewed-by: Kyle <date> — Kyle writes this line; until it exists 006b is BLOCKED (decision
-006-steps-review)›
-
-Template for Step 4. Every `‹…›` is filled by Step 4; the code blocks and the concrete actions
-already decided (CONVENTIONS §9 table and this plan's Context) are kept verbatim.
+Reviewed-by: Kyle 2026-09-06
 
 ### Step 5: Apply the chosen tokens and delete the prototypes
 
@@ -1274,7 +1270,7 @@ already decided (CONVENTIONS §9 table and this plan's Context) are kept verbati
 `src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`, `scripts/contrast-pairs.json`,
 `tests/accessibility.spec.ts`, `tests/direction-shots.spec.ts` (delete),
 `docs/planning/screenshots/006b-baseline/**`
-**Do**: Implements `006-direction.md` line: ‹quote the "Kyle's answer" line›.
+**Do**: Implements `006-direction.md` line: `1 — A · Instrument panel. Recorded 2026-09-06 ("Let’s go with your best recommendation so we can be unblocked").`
 `SHOTS_OUT=docs/planning/screenshots/006b-baseline npm run shots` first. Copy the chosen
 direction's light and dark blocks from `directions.css` into the matching `:root, [data-theme='light']`
 and `[data-theme='dark']` blocks of `theme.css` (replacing the values of tokens with the same name,
@@ -1290,7 +1286,10 @@ passes 3:1 (`8` or higher; keep `--app-border-subtle` where it is); set
 `--app-text-muted` to `var(--slate-11)` (or the chosen grey's step 11). Delete `directions.css`,
 `directions.test.ts`, `direction-shots.spec.ts`, the switcher, `readDirection`, the `DIRECTIONS`
 constants and the `directions.css` import from the playground, and the "Design directions" describe
-block from `tests/accessibility.spec.ts`; empty `CONTRAST_DEFERRED` there. ‹fill remaining specifics›
+block from `tests/accessibility.spec.ts`; empty `CONTRAST_DEFERRED` there.
+
+Remaining specifics for A (no hybrid): do **not** add tomato, orange, or sand `@import` lines
+(slate and amber are already among the 14 `theme.css` imports; `grep -c "^@import '@radix-ui/colors/" src/styles/theme.css` is 14). Do **not** move the Plex Serif `@font-face` (A uses Plex Sans titles and Plex Mono readouts; both faces already live in `fonts.css`). Copy every token from `[data-direction='a']` (lines 23–58 of `directions.css` at this writing) into the light `:root` / `[data-theme='light']` block, and copy `[data-theme='dark'][data-direction='a']` (`--app-accent-solid-text: var(--slate-1)`) into `[data-theme='dark']`. Also copy the shared `[data-direction]` motion values (`--app-duration-*: 120ms`, `--app-ease-*: cubic-bezier(0.2, 0, 0, 1)`) into the non-colour `:root` block. A's seed sets `--app-border-default: var(--slate-6)` which failed 3:1 in Step 2b (dark 1.65:1); start the border walk at `--slate-8` and climb until `npm run contrast` prints no `DEFER` and no `FAIL`. `--app-text-muted` is already `var(--slate-11)` in the A block. Playground deletions are exactly: the `import '../../styles/directions.css'` line, `DIRECTIONS`, `Direction`, `DIRECTION_KEY`, `readDirection`, the `direction` state, and every `data-testid={`playground-direction-${d}`}` button. `CONTRAST_DEFERRED` becomes `[]`.
 **Do NOT**: Change any component file. Keep any `data-direction` selector. Leave a `deferred` key.
 Change a `data-testid`.
 **Commands**:
@@ -1309,15 +1308,26 @@ npm run verify:static && npm run verify:web
 
 ### Step 6: Align primitive variants and motion with the direction
 
-**Files**: `src/components/ui/‹files›`, `src/styles/theme.css` (reduced-motion block),
-`src/styles/app.css`
-**Do**: Implements `006-direction.md` line: ‹quote›. Radius, elevation and pressed states of every
+**Files**: `src/components/ui/button.tsx`, `src/components/ui/dialog.tsx`,
+`src/components/ui/sheet.tsx`, `src/components/ui/popover.tsx`,
+`src/components/ui/dropdown-menu.tsx`, `src/components/ui/select.tsx`,
+`src/components/ui/tooltip.tsx`, `src/components/ui/tabs.tsx`,
+`src/components/ui/input.tsx`, `src/components/ui/slider.tsx`,
+`src/components/ui/switch.tsx`, `src/components/ui/collapsible.tsx`,
+`src/components/ui/label.tsx`, `src/components/ui/separator.tsx`,
+`src/index.css`, `src/styles/theme.css` (reduced-motion block), `src/styles/app.css`,
+`src/App.tsx`, `src/components/Sidebar.tsx`, `src/components/UpdateManager.tsx`,
+`src/components/DesignSystemPlayground/DesignSystemPlayground.tsx`,
+`src/components/SessionConsole/WorldStage.tsx`, `src/components/Canvas/TouchVisualFeedback.tsx`
+**Do**: Implements `006-direction.md` line: `1 — A · Instrument panel. Recorded 2026-09-06 ("Let’s go with your best recommendation so we can be unblocked").` Radius, elevation and pressed states of every
 primitive consume `--app-radius-*`, `--app-elevation-*` and `--app-elevation-active`; `.btn-tool`
 in `src/styles/app.css` (line 54) drops its `rgb()` literals for tokens. Motion: replace every
 literal Tailwind duration (`grep -rnE "\bduration-[0-9]+\b" src --include=*.tsx`) with the token
-classes ‹names›; when that grep prints nothing, delete the `* { transition: none !important;
+classes `duration-fast`, `duration-base`, `duration-slow`; when that grep prints nothing, delete the `* { transition: none !important;
 animation: none !important; }` rule from `theme.css` (the `:root` zeroing from 006a Step 2a
-remains and is the reduced-motion design: same design, zero durations). ‹fill›
+remains and is the reduced-motion design: same design, zero durations).
+
+Fill: add `--duration-fast: var(--app-duration-fast)`, `--duration-base: var(--app-duration-base)`, `--duration-slow: var(--app-duration-slow)` to the first `@theme inline` block in `src/index.css` (those aliases are absent today). Map `duration-75` and `duration-100` to `duration-fast`, `duration-200` to `duration-fast`, `duration-300` to `duration-base`, `duration-500` to `duration-slow`. On `button.tsx` `active: true` compoundVariants, append `shadow-[var(--app-elevation-active)]` so the A inset ring is the pressed state. `grep -n "rgb(" src/styles/app.css` is `0` on origin/main (the old `.btn-tool` `rgb(64, 64, 64)` is gone); skip that edit when the grep is 0. `TouchVisualFeedback.tsx` is listed only so the duration grep can reach 0; do not change its Konva drawing.
 **Do NOT**: Add a primitive. Change a variant's props API. Delete the `*` rule while the duration
 grep still prints a line.
 **Commands**:
@@ -1334,15 +1344,11 @@ npm run verify:static && npm run verify:web
 **If it fails**: Fix and retry once; a second failure is a STOP.
 **Commit**: `plan-006b step-6: align primitive variants and motion with the direction`
 
-Step 4 writes one step in this shape per screen, highest traffic first: 7.1 toolbar, 7.2 sidebar,
-7.3 home screen, 7.4 dialogs, 7.5 Session Console.
-
 ### Step 7.1: Refine the toolbar
 
-**Files**: ‹the screen's files; `src/components/Toolbar.tsx` after plan 004 Step 10›
-**Do**: Implements `006-ia.md` line: ‹quote Q1 answer› and `006-direction.md` line: ‹quote›.
-‹exact edits; palette classes and literal colours in this screen are replaced with tokens when Q7
-is `fix-in-006b`›
+**Files**: `src/components/Toolbar.tsx`, `src/components/MobileToolbar.tsx`
+**Do**: Implements `006-ia.md` line: `Q1 keep` and `006-direction.md` line: `1 — A · Instrument panel. Recorded 2026-09-06 ("Let’s go with your best recommendation so we can be unblocked").`
+Keep the floating bar (`toolbar fixed bottom-4 left-1/2` at `Toolbar.tsx:69`). Restyle in place: `rounded-lg` / `shadow-2xl` become token radius (cap 4 px) and hairline elevation; active tools use `--app-elevation-active`. Q7 is `fix-in-006b`: replace palette classes and literal colours in these two files (Toolbar has `borderColor: '#525252'` on the recent-colour swatch; retarget to `--app-border-hover`). Tool options stay inline.
 **Do NOT**: Change a flow (that is Step 8). Rename a `data-testid`. Shrink any control below the
 `tests/touch-targets.spec.ts` minimums.
 **Commands**:
@@ -1357,29 +1363,120 @@ npm run verify:static && npm run verify:web
 **If it fails**: Fix and retry once; a second failure is a STOP.
 **Commit**: `plan-006b step-7.1: refine the toolbar`
 
+### Step 7.2: Refine the sidebar
+
+**Files**: `src/components/Sidebar.tsx`, `src/components/QuickTokenSidebar.tsx`,
+`src/components/MobileSidebarDrawer.tsx`, `src/components/MapNavigator.tsx`
+**Do**: Implements `006-ia.md` line: `Q2 keep` and `006-direction.md` line: `1 — A · Instrument panel. Recorded 2026-09-06 ("Let’s go with your best recommendation so we can be unblocked").`
+Keep the three-component split and placement. Restyle in place onto A tokens (hairline rules, 4 px radius, inset active). Q7 is `fix-in-006b`: replace palette classes and literal colours in these files (`grep -rhoE "\b(bg|text|border|ring)-(white|black|slate|gray|zinc|neutral|blue|red|green|amber|orange|yellow|purple|indigo)(-[0-9]{2,3})?\b"` and the literal-colour grep from the audit Counts, scoped to these paths).
+**Do NOT**: Change a flow (that is Step 8). Rename a `data-testid`. Shrink any control below the
+`tests/touch-targets.spec.ts` minimums.
+**Commands**:
+
+```bash
+SHOTS_OUT=docs/planning/screenshots/006b-step7.2 npm run shots
+npm run verify:static && npm run verify:web
+```
+
+**Expected**: exit 0; exit 0.
+**Check**: `npm run verify:web` exits 0 (includes `tests/touch-targets.spec.ts`).
+**If it fails**: Fix and retry once; a second failure is a STOP.
+**Commit**: `plan-006b step-7.2: refine the sidebar`
+
+### Step 7.3: Refine the home screen (PR boundary)
+
+**Files**: `src/components/HomeScreen.tsx`
+**Do**: Implements `006-ia.md` line: `Q4 keep` and `006-direction.md` line: `1 — A · Instrument panel. Recorded 2026-09-06 ("Let’s go with your best recommendation so we can be unblocked").`
+Keep one landing screen (recent campaigns, templates, new campaign, settings). Restyle in place onto A tokens. Q7 is `fix-in-006b`: replace palette classes and literal colours in `HomeScreen.tsx`. This step is a PR boundary because `HomeScreen.tsx` is 1802 lines and a restyle plus the Q7 sweep would push a combined 7.1–7.3 diff past 1500 lines.
+**Do NOT**: Change a flow (that is Step 8). Rename a `data-testid`. Shrink any control below the
+`tests/touch-targets.spec.ts` minimums.
+**Commands**:
+
+```bash
+SHOTS_OUT=docs/planning/screenshots/006b-step7.3 npm run shots
+npm run verify:static && npm run verify:web
+```
+
+**Expected**: exit 0; exit 0.
+**Check**: `npm run verify:web` exits 0 (includes `tests/touch-targets.spec.ts`).
+**If it fails**: Fix and retry once; a second failure is a STOP.
+**Commit**: `plan-006b step-7.3: refine the home screen`
+
+### Step 7.4: Refine the dialogs
+
+**Files**: `src/components/ConfirmDialog.tsx`, `src/components/AboutModal.tsx`,
+`src/components/DungeonGeneratorDialog.tsx`, `src/components/MapSettingsSheet.tsx`,
+`src/components/MobileBottomSheet.tsx`, `src/components/ImageCropper.tsx`,
+`src/components/AssetLibrary/AddToLibraryDialog.tsx`,
+`src/components/AssetLibrary/LibraryManager.tsx`,
+`src/components/AssetLibrary/TokenMetadataEditor.tsx`,
+`src/components/UpdateManager.tsx`
+**Do**: Implements `006-ia.md` line: `Q3 keep` and `006-direction.md` line: `1 — A · Instrument panel. Recorded 2026-09-06 ("Let’s go with your best recommendation so we can be unblocked").`
+Keep the two settings surfaces (map sheet vs Session Console settings) and existing dialog flows. Restyle in place onto A tokens (ConfirmDialog 12 px radius becomes token radius; no new overlay). Q7 is `fix-in-006b`: replace palette classes and literal colours in these files. Q3 `keep` means MapSettingsSheet stays a sheet; do not merge it with Session Console settings.
+**Do NOT**: Change a flow (that is Step 8). Rename a `data-testid`. Shrink any control below the
+`tests/touch-targets.spec.ts` minimums.
+**Commands**:
+
+```bash
+SHOTS_OUT=docs/planning/screenshots/006b-step7.4 npm run shots
+npm run verify:static && npm run verify:web
+```
+
+**Expected**: exit 0; exit 0.
+**Check**: `npm run verify:web` exits 0 (includes `tests/touch-targets.spec.ts`).
+**If it fails**: Fix and retry once; a second failure is a STOP.
+**Commit**: `plan-006b step-7.4: refine the dialogs`
+
+### Step 7.5: Refine the Session Console (PR boundary)
+
+**Files**: `src/components/SessionConsole/SessionConsolePanel.tsx`,
+`src/components/SessionConsole/sessionConsoleSettingsSections.tsx`,
+`src/components/SessionConsole/SessionConsoleBoard.tsx`,
+`src/components/SessionConsole/ImageSetBoard.tsx`,
+`src/components/SessionConsole/SessionConsoleMasterBar.tsx`,
+`src/components/SessionConsole/TrackGroupList.tsx`,
+`src/components/SessionConsole/SessionConsoleSettingsSheet.tsx`,
+`src/components/SessionConsole/SessionConsoleEditorSheet.tsx`,
+`src/components/SessionConsole/WorldStage.tsx`,
+`src/components/SessionConsole/DiscordSetupHelp.tsx`
+**Do**: Implements `006-ia.md` line: `Q5 keep` and `006-direction.md` line: `1 — A · Instrument panel. Recorded 2026-09-06 ("Let’s go with your best recommendation so we can be unblocked").`
+Keep Session Console opening inside the sidebar (24 files; do not move it). Restyle in place onto A tokens. Q7 is `fix-in-006b`: replace palette classes and literal colours in these files (TrackGroupList recommended-plate `#c4a35a`; MasterBar world-link `#6b7280` / `#d97706` / `#22c55e`). This step is a PR boundary because the console is ten feature files and would push a combined 7.1–7.5 diff past 1500 lines.
+**Do NOT**: Change a flow (that is Step 8). Rename a `data-testid`. Shrink any control below the
+`tests/touch-targets.spec.ts` minimums.
+**Commands**:
+
+```bash
+SHOTS_OUT=docs/planning/screenshots/006b-step7.5 npm run shots
+npm run verify:static && npm run verify:web
+```
+
+**Expected**: exit 0; exit 0.
+**Check**: `npm run verify:web` exits 0 (includes `tests/touch-targets.spec.ts`).
+**If it fails**: Fix and retry once; a second failure is a STOP.
+**Commit**: `plan-006b step-7.5: refine the Session Console`
+
 ### Step 8: Restructure where 006-ia says restructure
 
-**Files**: ‹files of the restructured questions, plus the E2E specs that need additive `data-testid`s›
-**Do**: Implements `006-ia.md` lines: ‹quote each `restructure` answer›. Additive `data-testid`s
-only. ‹fill; or "No question was answered restructure; nothing to do"›
+**Files**: `docs/planning/decisions/006-ia.md`
+**Do**: Implements `006-ia.md` lines: none. No question was answered restructure; nothing to do.
 **Do NOT**: Rename or remove a `data-testid`. Touch a question answered `keep` or `adjust`.
 **Commands**:
 
 ```bash
-npm run verify:static && npm run verify:web && npm run verify:electron
+true
 ```
 
 **Expected**: exit 0.
-**Check**: `npm run verify:electron` exits 0.
+**Check**: true exits 0.
 **If it fails**: STOP with the failing spec name (a flow change that breaks a spec needs Kyle).
 **Commit**: `plan-006b step-8: restructure where 006-ia says restructure`
 
 ### Step 9: Gate the World View against the brief §8 rules
 
 **Files**: `tests/world-legibility.spec.ts`, `src/styles/theme.css` (a `[data-view="world"]` block
-only, and only if Q6 gives the World View its own tokens), ‹World View files only if the spec
-fails and Q6 permits›
-**Do**: Implements `006-ia.md` line: ‹quote Q6 answer›. Create the spec exactly:
+only, and only if Q6 gives the World View its own tokens), `src/utils/useWindowType.ts`,
+`src/components/SessionConsole/WorldStage.tsx`, `src/components/SessionConsole/WorldAudioEngine.tsx`
+**Do**: Implements `006-ia.md` line: `Q6 adjust`. Create the spec exactly:
 
 ```ts
 import { expect, test } from '@playwright/test';
@@ -1476,9 +1573,7 @@ for (const surface of ['world', 'world-dialog'] as const) {
 }
 ```
 
-Fix failures in the World View's own files only when Q6 was answered `adjust` or `restructure`;
-when Q6 is `keep`, a failure means Step 5's tokens leaked and the fix is in `theme.css` (a
-`[data-view="world"]` block per brief §8, added only if Q6 says the World View gets its own set).
+Q6 is `adjust`, so the World View gets its own token set. In `useWindowType.ts`, when `isWorldView` is true, set `document.documentElement.dataset.view = 'world'` (and remove it when false) so `[data-view="world"]` matches. Add a `[data-view="world"]` block in `theme.css` that keeps Architect amber off the projection: accent tokens stay on the pre-A blue/slate pair (or another pair `npm run contrast` plus this spec both pass); do not introduce DM chrome. Fix failures in `WorldStage.tsx` and `WorldAudioEngine.tsx` only when this spec fails.
 **Do NOT**: Add any element to the World View. Loosen a threshold. Exclude an element.
 **Commands**:
 
@@ -1502,7 +1597,7 @@ JSON.
 **Do**: `SHOTS_OUT=docs/planning/screenshots/006b-final npm run shots`. Rebaseline:
 `npm run build:web && CI=1 npx playwright test tests/visual.spec.ts --project=Web-Chromium --update-snapshots`,
 then rerun without the flag. `npm run contrast -- --write`; update `docs/features/theming.md`
-"Full Variable Reference" (line 105) with the new families and values; copy
+"Full Variable Reference" (heading still under that name, or the `contrast:start` table if the heading was replaced) with the new families and values; copy
 `docs/planning/screenshots/006b-final/editor-dark.png` to `public/screenshots/graphium-overview.png`
 (README line 40 currently points at a file that does not exist) and replace the two
 `via.placeholder.com` images (README lines 61–62) with `public/screenshots/Graphium-show.gif` and
@@ -1513,6 +1608,7 @@ his to do at review; add one bullet under `## [Unreleased]` in `CHANGELOG.md` fo
 after merge, the post-merge run (CONVENTIONS §5; branch `plan/006b-post-merge`, commit
 `plan-006b post-merge: record merge sha`) sets the `006b` row in `plans/README.md` to
 `DONE <merge sha>`. This is the last plan of the program; there is no next `Grounded at` to write.
+Q7 is `fix-in-006b`, so the leftover-literal grep in Commands is expected to print `0` after Steps 7.1–7.5 (or STOP and name the leftover path).
 **Do NOT**: Edit README prose. Change any token. Restore `deploy-web.yml` before every other step
 is committed.
 **Commands**:

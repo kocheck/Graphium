@@ -25,6 +25,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:a11y": "playwright test tests/accessibility.spec.ts --config=playwright.config.ts --project=Web-Chromium",
+    "contrast": "node scripts/contrast.mjs",
     "test:e2e": "npm run verify:web && npm run verify:electron",
     "verify:static": "npm run lint:strict && npm run type-check && npm run format:check && npm run test:run",
     "verify:web": "npm run build:web && CI=1 npm run test:e2e:web && CI=1 npm run test:a11y",
