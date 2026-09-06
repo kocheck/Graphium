@@ -340,12 +340,12 @@ function ResourceMonitor(): React.JSX.Element {
    */
   const getFPSColor = (fps: number): string => {
     if (fps >= 55) {
-      return '#4CAF50';
-    } // Green
+      return 'var(--app-success-solid)';
+    }
     if (fps >= 30) {
-      return '#FFC107';
-    } // Yellow
-    return '#f44336'; // Red
+      return 'var(--app-warning-solid)';
+    }
+    return 'var(--app-error-solid)';
   };
 
   /**
@@ -364,16 +364,16 @@ function ResourceMonitor(): React.JSX.Element {
         position: 'fixed',
         bottom: '20px',
         right: '20px',
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        color: '#fff',
+        backgroundColor: 'var(--app-bg-base)',
+        color: 'var(--app-text-primary)',
         padding: '12px',
-        borderRadius: '8px',
-        fontFamily: 'monospace',
+        borderRadius: 'var(--app-radius-md)',
+        fontFamily: 'var(--app-font-family-readout)',
         fontSize: '12px',
         zIndex: 9999,
         minWidth: isExpanded ? '280px' : '120px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: 'var(--app-elevation-high)',
+        border: '1px solid var(--app-border-default)',
       }}
     >
       {/* Header */}
@@ -383,7 +383,7 @@ function ResourceMonitor(): React.JSX.Element {
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: isExpanded ? '10px' : '0',
-          borderBottom: isExpanded ? '1px solid rgba(255,255,255,0.2)' : 'none',
+          borderBottom: isExpanded ? '1px solid var(--app-border-default)' : 'none',
           paddingBottom: isExpanded ? '8px' : '0',
         }}
       >
@@ -393,7 +393,7 @@ function ResourceMonitor(): React.JSX.Element {
           style={{
             background: 'none',
             border: 'none',
-            color: '#fff',
+            color: 'var(--app-text-primary)',
             cursor: 'pointer',
             fontSize: '16px',
             padding: '0 4px',
@@ -410,7 +410,15 @@ function ResourceMonitor(): React.JSX.Element {
           <div style={{ marginBottom: '8px' }}>
             <strong style={{ color: getFPSColor(metrics.fps) }}>FPS: {metrics.fps}</strong>
             {metrics.fps < 55 && (
-              <span style={{ color: '#FFC107', marginLeft: '8px', fontSize: '11px' }}>⚠️ Low</span>
+              <span
+                style={{
+                  color: 'var(--app-warning-solid)',
+                  marginLeft: '8px',
+                  fontSize: '11px',
+                }}
+              >
+                ⚠️ Low
+              </span>
             )}
           </div>
 
@@ -418,14 +426,14 @@ function ResourceMonitor(): React.JSX.Element {
           {metrics.memory && (
             <div style={{ marginBottom: '8px' }}>
               <div>Memory: {formatBytes(metrics.memory.used)}</div>
-              <div style={{ fontSize: '11px', color: '#aaa' }}>
+              <div style={{ fontSize: '11px', color: 'var(--app-text-muted)' }}>
                 {getMemoryPercent()}% of {formatBytes(metrics.memory.limit)}
               </div>
               <div
                 style={{
                   width: '100%',
                   height: '4px',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  backgroundColor: 'var(--app-bg-hover)',
                   borderRadius: '2px',
                   marginTop: '4px',
                   overflow: 'hidden',
@@ -435,7 +443,10 @@ function ResourceMonitor(): React.JSX.Element {
                   style={{
                     width: `${getMemoryPercent()}%`,
                     height: '100%',
-                    backgroundColor: getMemoryPercent() > 80 ? '#f44336' : '#4CAF50',
+                    backgroundColor:
+                      getMemoryPercent() > 80
+                        ? 'var(--app-error-solid)'
+                        : 'var(--app-success-solid)',
                     transition: 'width 0.3s',
                   }}
                 />
@@ -459,14 +470,14 @@ function ResourceMonitor(): React.JSX.Element {
             style={{
               marginBottom: '8px',
               fontSize: '11px',
-              borderTop: '1px solid rgba(255,255,255,0.1)',
+              borderTop: '1px solid var(--app-border-default)',
               paddingTop: '8px',
             }}
           >
             <div>IPC Messages: {metrics.ipcMessageCount}/sec</div>
             <div>IPC Bandwidth: {formatBytes(metrics.ipcBandwidth)}/s</div>
             {Object.keys(metrics.ipcActionsByType).length > 0 && (
-              <div style={{ color: '#aaa', marginTop: '4px' }}>
+              <div style={{ color: 'var(--app-text-muted)', marginTop: '4px' }}>
                 {Object.entries(metrics.ipcActionsByType)
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 6)
@@ -478,7 +489,13 @@ function ResourceMonitor(): React.JSX.Element {
               </div>
             )}
             {metrics.ipcBandwidth > 100000 && (
-              <div style={{ color: '#FFC107', fontSize: '10px', marginTop: '2px' }}>
+              <div
+                style={{
+                  color: 'var(--app-warning-solid)',
+                  fontSize: '10px',
+                  marginTop: '2px',
+                }}
+              >
                 ⚠️ High bandwidth (check delta sync)
               </div>
             )}
@@ -488,7 +505,13 @@ function ResourceMonitor(): React.JSX.Element {
           <div style={{ marginBottom: '8px', fontSize: '11px' }}>
             <div>Active Workers: {metrics.activeWorkers}</div>
             {metrics.activeWorkers > 2 && (
-              <div style={{ color: '#f44336', fontSize: '10px', marginTop: '2px' }}>
+              <div
+                style={{
+                  color: 'var(--app-error-solid)',
+                  fontSize: '10px',
+                  marginTop: '2px',
+                }}
+              >
                 ⚠️ Possible worker leak
               </div>
             )}
@@ -500,10 +523,10 @@ function ResourceMonitor(): React.JSX.Element {
               style={{
                 marginTop: '8px',
                 padding: '6px',
-                backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                borderRadius: '4px',
+                backgroundColor: 'var(--app-warning-bg)',
+                borderRadius: 'var(--app-radius-sm)',
                 fontSize: '10px',
-                borderLeft: '2px solid #FFC107',
+                borderLeft: '2px solid var(--app-warning-solid)',
               }}
             >
               <strong>⚠️ Performance Issues Detected:</strong>
@@ -522,9 +545,9 @@ function ResourceMonitor(): React.JSX.Element {
               width: '100%',
               marginTop: '8px',
               padding: '6px 8px',
-              background: 'rgba(255,255,255,0.08)',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.2)',
+              background: 'var(--app-bg-hover)',
+              color: 'var(--app-text-primary)',
+              border: '1px solid var(--app-border-default)',
               borderRadius: '4px',
               cursor: 'pointer',
               fontSize: '11px',
@@ -538,7 +561,7 @@ function ResourceMonitor(): React.JSX.Element {
             style={{
               marginTop: '8px',
               fontSize: '10px',
-              color: '#666',
+              color: 'var(--app-text-muted)',
               textAlign: 'right',
             }}
           >
