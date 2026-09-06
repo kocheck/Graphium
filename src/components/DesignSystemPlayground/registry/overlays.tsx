@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,7 +23,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+import { TooltipExample } from './TooltipExample';
 
 import type { ComponentExample } from '../types';
 
@@ -50,28 +49,6 @@ const dialogExample = (
     </DialogContent>
   </Dialog>
 );
-
-function TooltipExample(): JSX.Element {
-  // Playwright's locator.focus() is not :focus-visible in CI Chromium, so Radix
-  // does not open. Open on the focus event the portal spec uses.
-  const [open, setOpen] = useState(false);
-  return (
-    <TooltipProvider delayDuration={0}>
-      <Tooltip open={open} onOpenChange={setOpen}>
-        <TooltipTrigger asChild>
-          <Button
-            variant="secondary"
-            data-testid="playground-open-tooltip"
-            onFocus={() => setOpen(true)}
-          >
-            Hover or focus me
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent data-testid="playground-tooltip-content">Tooltip text</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
 
 const sheetExample = (
   <Sheet>
