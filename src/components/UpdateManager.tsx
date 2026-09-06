@@ -253,7 +253,7 @@ function StatusContent({
         </div>
       )}
       {status === 'update-available' && updateInfo && (
-        <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
+        <div className="p-4 bg-[var(--app-bg-subtle)] rounded-sm">
           <p className="mb-2 font-medium text-[var(--app-text)]">
             {formatMessage(messages.updateAvailableTitle, updateInfo.version)}
           </p>
@@ -263,9 +263,9 @@ function StatusContent({
         </div>
       )}
       {status === 'downloading' && downloadProgress && (
-        <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
+        <div className="p-4 bg-[var(--app-bg-subtle)] rounded-sm">
           <p className="mb-3 font-medium text-[var(--app-text)]">{messages.downloading}</p>
-          <div className="mb-2 bg-[var(--app-bg)] rounded-full h-2 overflow-hidden">
+          <div className="mb-2 bg-[var(--app-bg-surface)] rounded-full h-2 overflow-hidden">
             <div
               className="h-full bg-[var(--app-accent-solid)] transition-all duration-base"
               ref={(el) => {
@@ -287,7 +287,7 @@ function StatusContent({
         </div>
       )}
       {status === 'downloaded' && updateInfo && (
-        <div className="p-4 bg-[var(--app-bg-subtle)] rounded">
+        <div className="p-4 bg-[var(--app-bg-subtle)] rounded-sm">
           <p className="mb-2 font-medium text-[var(--app-text)]">{messages.downloadedTitle}</p>
           <p className="text-sm mb-2 text-[var(--app-text-muted)]">
             {formatMessage(messages.downloadedSubtitle, updateInfo.version)}
@@ -296,7 +296,7 @@ function StatusContent({
         </div>
       )}
       {status === 'error' && (
-        <div className="p-4 bg-[var(--app-error-bg)] border border-[var(--app-error-border)] rounded">
+        <div className="p-4 bg-[var(--app-error-bg)] border border-[var(--app-error-border)] rounded-sm">
           <p className="text-sm text-[var(--app-text-muted)]">{errorMessage || messages.error}</p>
         </div>
       )}
@@ -502,7 +502,7 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps): React.ReactElem
       }}
     >
       <DialogContent
-        className="max-w-md"
+        className="max-w-md rounded-lg"
         data-testid="dialog-update-manager-root"
         showCloseButton={false}
       >
@@ -524,7 +524,7 @@ function UpdateManager({ isOpen, onClose }: UpdateManagerProps): React.ReactElem
         </div>
 
         {/* Current Version */}
-        <div className="mb-6 p-4 bg-[var(--app-bg-subtle)] rounded">
+        <div className="mb-6 p-4 bg-[var(--app-bg-subtle)] rounded-sm">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-[var(--app-text-muted)]">
               Current Version

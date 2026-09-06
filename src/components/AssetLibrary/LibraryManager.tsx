@@ -216,7 +216,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
         className={
           isMobile
             ? 'h-full max-w-none rounded-none p-0 flex flex-col'
-            : 'max-w-6xl h-[80vh] p-0 flex flex-col'
+            : 'max-w-6xl h-[80vh] p-0 flex flex-col rounded-lg'
         }
         data-testid="dialog-library-manager-root"
         showCloseButton={false}
@@ -255,13 +255,13 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search assets..."
-              className="flex-1 bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none text-base"
+              className="flex-1 bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded-sm border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none text-base"
             />
             <select
               aria-label="Filter by category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none text-base"
+              className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded-sm border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none text-base"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -303,7 +303,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
                     className={cn(
                       'group rounded-lg overflow-hidden hover:ring-2 hover:ring-[var(--app-accent-solid)] transition-all cursor-grab active:cursor-grabbing bg-[var(--app-bg-surface)]',
                       isDragging &&
-                        'opacity-50 scale-105 z-[1000] shadow-[0_10px_30px_rgba(0,0,0,0.6)]',
+                        'opacity-50 scale-105 z-[1000] shadow-[var(--app-elevation-high)]',
                     )}
                   >
                     {/* Thumbnail */}
@@ -356,7 +356,7 @@ function LibraryManager({ isOpen, onClose }: LibraryManagerProps): JSX.Element |
                           {item.tags.slice(0, 2).map((tag, idx) => (
                             <span
                               key={idx}
-                              className="text-xs bg-[var(--app-bg-active)] text-[var(--app-text-secondary)] px-2 py-0.5 rounded"
+                              className="text-xs bg-[var(--app-bg-active)] text-[var(--app-text-secondary)] px-2 py-0.5 rounded-sm"
                             >
                               {tag}
                             </span>

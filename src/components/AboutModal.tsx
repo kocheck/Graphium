@@ -43,8 +43,8 @@ const modalStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
+    border-radius: var(--app-radius-sm);
+    transition: all var(--app-duration-fast) var(--app-ease-standard);
   }
   .about-modal-close-btn:hover {
     background: var(--app-bg-hover);
@@ -57,7 +57,8 @@ const modalStyles = `
   .screenshot-showcase {
     background: var(--app-bg-surface);
     border: 1px solid var(--app-border-subtle);
-    border-radius: 16px;
+    border-radius: var(--app-radius-lg);
+    box-shadow: var(--app-elevation-low);
     padding: 2rem;
     text-align: center;
     margin-bottom: 2rem;
@@ -77,7 +78,7 @@ const modalStyles = `
   }
 
   .showcase-item {
-    border-radius: 12px;
+    border-radius: var(--app-radius-md);
     overflow: hidden;
   }
 
@@ -97,7 +98,7 @@ const modalStyles = `
   .showcase-note code {
     background: var(--app-bg-base);
     padding: 0.125rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--app-radius-sm);
     font-family: 'Courier New', monospace;
     color: var(--app-accent-text);
   }
@@ -108,7 +109,8 @@ const modalStyles = `
   .feature-highlights {
     background: var(--app-bg-surface);
     border: 1px solid var(--app-border-subtle);
-    border-radius: 16px;
+    border-radius: var(--app-radius-lg);
+    box-shadow: var(--app-elevation-low);
     padding: 2rem;
     margin-bottom: 2rem;
   }
@@ -136,16 +138,15 @@ const modalStyles = `
   .feature-card {
     background: var(--app-bg-base);
     border: 1px solid var(--app-border-subtle);
-    border-radius: 12px;
+    border-radius: var(--app-radius-md);
     padding: 1.5rem;
     text-align: center;
-    transition: all 0.3s;
+    transition: all var(--app-duration-fast) var(--app-ease-standard);
   }
 
   .feature-card:hover {
-    border-color: var(--app-accent-solid);
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.15);
+    border-color: var(--app-border-hover);
+    box-shadow: var(--app-elevation-active);
   }
 
   .feature-icon-wrapper {
@@ -153,11 +154,11 @@ const modalStyles = `
     height: 3.5rem;
     margin: 0 auto 1rem;
     background: var(--app-accent-bg);
-    border-radius: 12px;
+    border-radius: var(--app-radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.3s;
+    transition: transform var(--app-duration-fast) var(--app-ease-standard);
   }
 
   .feature-card:hover .feature-icon-wrapper {
@@ -221,7 +222,7 @@ export function AboutModal({
       }}
     >
       <DialogContent
-        className="max-w-[700px] max-h-[85vh] flex flex-col p-0"
+        className="max-w-[700px] max-h-[85vh] flex flex-col p-0 rounded-lg"
         data-testid="dialog-about-root"
         showCloseButton={false}
       >

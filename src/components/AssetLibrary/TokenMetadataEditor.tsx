@@ -198,7 +198,7 @@ function TokenMetadataEditor({
             <img
               src={toMediaProtocol(libraryItem.thumbnailSrc)}
               alt={libraryItem.name}
-              className="w-20 h-20 object-cover rounded"
+              className="w-20 h-20 object-cover rounded-sm"
             />
             <div className="flex-1">
               <p className="text-[var(--app-text-primary)] font-medium">{libraryItem.name}</p>
@@ -215,7 +215,7 @@ function TokenMetadataEditor({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded-sm border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
               placeholder="Token name"
             />
           </div>
@@ -228,7 +228,7 @@ function TokenMetadataEditor({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded-sm border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
             >
               <option value="PC">PC (Player Character)</option>
               <option value="Monsters">Monsters</option>
@@ -247,7 +247,7 @@ function TokenMetadataEditor({
               type="text"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded-sm border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
               placeholder="e.g., dragon, red, large"
             />
             <p className="text-[var(--app-text-muted)] text-xs mt-1">
@@ -266,7 +266,7 @@ function TokenMetadataEditor({
               min="0.1"
               value={defaultScale}
               onChange={(e) => setDefaultScale(e.target.value)}
-              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded-sm border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
               placeholder="1.0"
             />
             <p className="text-[var(--app-text-muted)] text-xs mt-1">
@@ -282,7 +282,7 @@ function TokenMetadataEditor({
             <select
               value={defaultType}
               onChange={(e) => setDefaultType(e.target.value as 'PC' | 'NPC' | '')}
-              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
+              className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded-sm border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
             >
               <option value="">None</option>
               <option value="PC">PC (Player Character)</option>
@@ -305,7 +305,7 @@ function TokenMetadataEditor({
                 min="0"
                 value={defaultVisionRadius}
                 onChange={(e) => setDefaultVisionRadius(e.target.value)}
-                className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
+                className="w-full bg-[var(--app-bg-active)] text-[var(--app-text-primary)] px-4 py-2 rounded-sm border border-[var(--app-border-default)] focus:border-[var(--app-accent-solid)] focus:outline-none"
                 placeholder="60"
               />
               <p className="text-[var(--app-text-muted)] text-xs mt-1">

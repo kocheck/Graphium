@@ -193,7 +193,7 @@ function AddToLibraryDialog({
       }}
     >
       <DialogContent
-        className={isMobile ? 'h-full max-w-none rounded-none' : 'max-w-md'}
+        className={isMobile ? 'h-full max-w-none rounded-none' : 'max-w-md rounded-lg'}
         data-testid="dialog-add-to-library-root"
         showCloseButton={false}
       >
@@ -207,7 +207,7 @@ function AddToLibraryDialog({
               <img
                 src={toMediaProtocol(imageSrc)}
                 alt="Preview"
-                className="w-32 h-32 object-cover rounded bg-[var(--app-bg-subtle)]"
+                className="w-32 h-32 object-cover rounded-sm bg-[var(--app-bg-subtle)]"
               />
             </div>
           )}
@@ -225,7 +225,7 @@ function AddToLibraryDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Red Dragon"
-              className="w-full px-3 py-2 rounded bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
+              className="w-full px-3 py-2 rounded-sm bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
               disabled={isLoading}
             />
           </div>
@@ -241,7 +241,7 @@ function AddToLibraryDialog({
               id="asset-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 rounded bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
+              className="w-full px-3 py-2 rounded-sm bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
               disabled={isLoading}
             >
               {DEFAULT_CATEGORIES.map((cat) => (
@@ -265,7 +265,7 @@ function AddToLibraryDialog({
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="e.g., dragon, red, large"
-              className="w-full px-3 py-2 rounded bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
+              className="w-full px-3 py-2 rounded-sm bg-[var(--app-bg-active)] text-[var(--app-text-primary)] border border-[var(--app-border-default)]"
               disabled={isLoading}
             />
             <p className="text-xs text-[var(--app-text-muted)] mt-1">

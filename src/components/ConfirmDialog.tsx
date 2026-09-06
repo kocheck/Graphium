@@ -73,7 +73,7 @@ function ConfirmDialog(): JSX.Element | null {
   return (
     <Dialog open onOpenChange={handleOpenChange}>
       <DialogContent
-        className="max-w-md"
+        className="max-w-md rounded-lg"
         data-testid="dialog-confirm-root"
         showCloseButton={false}
         onOpenAutoFocus={focusCancelButton}
