@@ -1,7 +1,7 @@
 # Graphium Theme System Documentation
 
 **Version:** 1.0.0
-**Last Updated:** 2025-12-15
+**Last Updated:** 2026-09-06
 
 This document explains Graphium's accessible theme system for developers, future AI assistants, and contributors.
 
@@ -104,15 +104,24 @@ border: 1px solid var(--slate-7);
 
 #### Full Variable Reference
 
-See `src/styles/theme.css` for the complete list. Key categories:
+See `src/styles/theme.css` for the complete list. Direction A (instrument panel) is the live theme. Key families:
 
-| Category        | Variables                                                        | Usage                           |
-| --------------- | ---------------------------------------------------------------- | ------------------------------- |
-| **Backgrounds** | `--app-bg-base`, `--app-bg-surface`, `--app-bg-hover`            | Page backgrounds, panels, cards |
-| **Text**        | `--app-text-primary`, `--app-text-secondary`, `--app-text-muted` | Body text, labels, placeholders |
-| **Borders**     | `--app-border-subtle`, `--app-border-default`                    | Dividers, outlines              |
-| **Accent**      | `--app-accent-solid`, `--app-accent-text`                        | Primary buttons, links          |
-| **Status**      | `--app-error-*`, `--app-warning-*`, `--app-success-*`            | Alerts, notifications           |
+| Category        | Variables                                                                                          | Values / usage                                                                                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Backgrounds** | `--app-bg-base`, `--app-bg-subtle`, `--app-bg-surface`, `--app-bg-hover`, `--app-bg-active`        | Page backgrounds, panels, cards                                                                                                                                    |
+| **Text**        | `--app-text-primary`, `--app-text-secondary`, `--app-text-muted`, `--app-text-disabled`            | Body text, labels, placeholders                                                                                                                                    |
+| **Borders**     | `--app-border-subtle`, `--app-border-default`, `--app-border-hover`                                | Dividers, outlines. Light default is `--slate-9`; dark default is `--slate-8`                                                                                      |
+| **Accent**      | `--app-accent-solid`, `--app-accent-solid-hover`, `--app-accent-solid-text`, `--app-accent-text`   | Architect: amber-9 with ink (`--slate-12` light) / `--slate-1` (dark). Links use amber-12                                                                          |
+| **Status**      | `--app-error-*`, `--app-warning-*`, `--app-success-*`                                              | Alerts, notifications. Light error solid is `--red-11` + white; success solid text is ink on `--green-9`                                                           |
+| **Overlay**     | `--app-overlay`                                                                                    | Modal overlay: `--slate-a11`                                                                                                                                       |
+| **Shadows**     | `--app-shadow-sm`, `--app-shadow-md`, `--app-shadow-lg`                                            | `transparent` (A uses hairline elevation, not drop shadows)                                                                                                        |
+| **Radius**      | `--app-radius-sm`, `--app-radius-md`, `--app-radius-lg`                                            | All `4px`                                                                                                                                                          |
+| **Elevation**   | `--app-elevation-low`, `--app-elevation-medium`, `--app-elevation-high`, `--app-elevation-active`  | `0 0 0 1px var(--slate-6)`; active is `inset 0 0 0 1px var(--slate-8)`                                                                                             |
+| **Duration**    | `--app-duration-fast`, `--app-duration-base`, `--app-duration-slow`                                | `120ms`; `0ms` under `prefers-reduced-motion`                                                                                                                      |
+| **Ease**        | `--app-ease-standard`, `--app-ease-decelerate`                                                     | `cubic-bezier(0.2, 0, 0, 1)`                                                                                                                                       |
+| **Space**       | `--app-space-unit`                                                                                 | `0.25rem`                                                                                                                                                          |
+| **Font**        | `--app-font-size-*`, `--app-font-weight-*`, `--app-font-family-title`, `--app-font-family-readout` | Plex Sans / Plex Mono. Architect sizes `0.75rem`–`1.5rem`; readout `13px` / `500`                                                                                  |
+| **World View**  | `[data-view='world']`                                                                              | Font floor 18px; buttons and `.border` / `.border-t` at 2px; solid pair `#003362` / `#fcfcfd` (light) or `#edeef0` (dark). Architect amber stays off the projector |
 
 ---
 
