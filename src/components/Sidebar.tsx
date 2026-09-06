@@ -263,13 +263,13 @@ function Sidebar(): JSX.Element {
   // Sidebar content (same for mobile and desktop)
   const sidebarContent = (
     <div
-      className={`sidebar flex flex-col p-4 z-10 overflow-y-auto transition-all duration-300 ${sidebarWidthClass}`}
+      className={`sidebar flex flex-col p-4 z-10 overflow-y-auto transition-all duration-base ${sidebarWidthClass}`}
     >
       {/* Header Section */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div
-            className={`flex-1 min-w-0 transition-opacity duration-200 ${isSidebarCollapsed ? 'opacity-0' : 'opacity-100 delay-100'}`}
+            className={`flex-1 min-w-0 transition-opacity duration-fast ${isSidebarCollapsed ? 'opacity-0' : 'opacity-100 delay-100'}`}
           >
             <h2
               className="text-xs uppercase font-semibold mb-1"
@@ -285,7 +285,7 @@ function Sidebar(): JSX.Element {
             <Tooltip content={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="p-2 hover:bg-[var(--app-bg-subtle)] rounded transition"
+                className="p-2 hover:bg-[var(--app-bg-subtle)] rounded-sm transition"
                 aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 <RiArrowLeftSLine
@@ -308,10 +308,10 @@ function Sidebar(): JSX.Element {
                   <li
                     key={map.id}
                     className={`
-                                            group flex items-center justify-between p-2 rounded transition
+                                            group flex items-center justify-between p-2 rounded-sm transition
                                             ${
                                               isActive
-                                                ? 'bg-[var(--app-accent-bg)] border border-[var(--app-accent-border)]'
+                                                ? 'bg-[var(--app-accent-bg)] border border-[var(--app-border-hover)] shadow-[var(--app-elevation-active)]'
                                                 : 'bg-[var(--app-bg-subtle)]'
                                             }
                                         `}

@@ -528,7 +528,7 @@ function App(): React.JSX.Element {
       {/* Sidebar: Only render in Architect View (DM's token library) */}
       {isArchitectView && <ProfiledSidebar />}
 
-      <div className="flex-1 relative h-full transition-all duration-300">
+      <div className="flex-1 relative h-full transition-all duration-base">
         {/* Mobile Hamburger Menu Button (top-left, Architect View only) */}
         {isArchitectView && isMobile && (
           <button

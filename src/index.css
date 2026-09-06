@@ -31,6 +31,9 @@
   --font-weight-medium: var(--app-font-weight-medium);
   --font-weight-semibold: var(--app-font-weight-semibold);
   --font-weight-bold: var(--app-font-weight-bold);
+  --duration-fast: var(--app-duration-fast);
+  --duration-base: var(--app-duration-base);
+  --duration-slow: var(--app-duration-slow);
   --animate-slide-down: slideDown 0.3s ease-out;
 }
 

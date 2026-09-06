@@ -108,7 +108,7 @@ function MobileToolbar({ isGamePaused, onPauseToggle }: MobileToolbarProps): Rea
 
           {/* Menu */}
           <div
-            className="fixed bottom-16 right-0 left-0 mx-4 mb-2 rounded-lg shadow-xl z-50 overflow-hidden bg-[var(--app-bg-surface)] border border-[var(--app-border-default)]"
+            className="fixed bottom-16 right-0 left-0 mx-4 mb-2 rounded-lg shadow-[var(--app-elevation-high)] z-50 overflow-hidden bg-[var(--app-bg-surface)] border border-[var(--app-border-default)]"
             data-testid="toolbar-mobile-more-menu"
           >
             {/* Play/Pause Button */}
@@ -224,7 +224,7 @@ function MobileToolbar({ isGamePaused, onPauseToggle }: MobileToolbarProps): Rea
           onClick={() => setTool('select')}
           className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
             tool === 'select'
-              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              ? 'text-[var(--app-accent-text)] bg-[var(--app-accent-bg)] shadow-[var(--app-elevation-active)]'
               : 'text-[var(--app-text-secondary)] bg-transparent'
           }`}
         >
@@ -238,7 +238,7 @@ function MobileToolbar({ isGamePaused, onPauseToggle }: MobileToolbarProps): Rea
           onClick={() => setTool('marker')}
           className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
             tool === 'marker'
-              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              ? 'text-[var(--app-accent-text)] bg-[var(--app-accent-bg)] shadow-[var(--app-elevation-active)]'
               : 'text-[var(--app-text-secondary)] bg-transparent'
           }`}
         >
@@ -252,7 +252,7 @@ function MobileToolbar({ isGamePaused, onPauseToggle }: MobileToolbarProps): Rea
           onClick={() => setTool('eraser')}
           className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
             tool === 'eraser'
-              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              ? 'text-[var(--app-accent-text)] bg-[var(--app-accent-bg)] shadow-[var(--app-elevation-active)]'
               : 'text-[var(--app-text-secondary)] bg-transparent'
           }`}
         >
@@ -266,7 +266,7 @@ function MobileToolbar({ isGamePaused, onPauseToggle }: MobileToolbarProps): Rea
           onClick={() => setTool('wall')}
           className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
             tool === 'wall'
-              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              ? 'text-[var(--app-accent-text)] bg-[var(--app-accent-bg)] shadow-[var(--app-elevation-active)]'
               : 'text-[var(--app-text-secondary)] bg-transparent'
           }`}
         >
@@ -281,7 +281,7 @@ function MobileToolbar({ isGamePaused, onPauseToggle }: MobileToolbarProps): Rea
           data-testid="toolbar-mobile-more"
           className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
             showMoreMenu
-              ? 'text-[var(--app-accent-solid)] bg-[var(--app-accent-bg)]'
+              ? 'text-[var(--app-accent-text)] bg-[var(--app-accent-bg)] shadow-[var(--app-elevation-active)]'
               : 'text-[var(--app-text-secondary)] bg-transparent'
           }`}
         >

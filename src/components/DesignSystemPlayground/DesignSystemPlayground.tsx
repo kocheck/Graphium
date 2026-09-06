@@ -31,22 +31,8 @@ import { useGameStore } from '../../store/gameStore';
 import ConfirmDialog from '../ConfirmDialog';
 import { ThemeManager } from '../ThemeManager';
 import Toast from '../Toast';
-import '../../styles/directions.css';
 
 import type { ComponentExample } from './types';
-
-const DIRECTIONS = ['none', 'a', 'b', 'c'] as const;
-type Direction = (typeof DIRECTIONS)[number];
-const DIRECTION_KEY = 'graphium-direction';
-
-function readDirection(): Direction {
-  try {
-    const stored = window.localStorage.getItem(DIRECTION_KEY);
-    return DIRECTIONS.includes(stored as Direction) ? (stored as Direction) : 'none';
-  } catch {
-    return 'none';
-  }
-}
 
 /**
  * Shell component to provide necessary context (Theme, Toasts, Dialogs)
@@ -54,7 +40,7 @@ function readDirection(): Direction {
  */
 function PlaygroundShell({ children }: { children: React.ReactNode }): JSX.Element {
   return (
-    <div className="playground-shell w-full h-full bg-[var(--app-bg-base)] text-[var(--app-text-primary)] transition-colors duration-200">
+    <div className="playground-shell w-full h-full bg-[var(--app-bg-base)] text-[var(--app-text-primary)] transition-colors duration-fast">
       <ThemeManager />
       <Toast />
       <ConfirmDialog />
@@ -118,24 +104,6 @@ function PlaygroundContent(): JSX.Element {
       showToast('Failed to switch theme', 'error');
     }
   };
-
-  const [direction, setDirection] = useState<Direction>(readDirection);
-
-  useEffect(() => {
-    if (direction === 'none') {
-      delete document.documentElement.dataset['direction'];
-    } else {
-      document.documentElement.dataset['direction'] = direction;
-    }
-    try {
-      window.localStorage.setItem(DIRECTION_KEY, direction);
-    } catch {
-      // Storage may be unavailable (private mode); the attribute still applies.
-    }
-    return () => {
-      delete document.documentElement.dataset['direction'];
-    };
-  }, [direction]);
 
   // Filter components based on search query
   const filteredExamples = useMemo(() => {
@@ -208,28 +176,6 @@ function PlaygroundContent(): JSX.Element {
                   System Stable
                 </span>
               </div>
-
-              <>
-                {/* Direction switcher (plan 006a): prototypes from docs/planning/ui-redesign-brief.md §10 */}
-                <div className="flex items-center gap-1" role="group" aria-label="Design direction">
-                  {DIRECTIONS.map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      data-testid={`playground-direction-${d}`}
-                      aria-pressed={direction === d}
-                      onClick={() => setDirection(d)}
-                      className={`px-2 py-1 text-xs font-mono uppercase rounded border border-[var(--app-border-subtle)] ${
-                        direction === d
-                          ? 'bg-[var(--app-accent-solid)] text-[var(--app-accent-solid-text)]'
-                          : 'bg-[var(--app-bg-surface)] text-[var(--app-text-secondary)]'
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              </>
 
               {/* Theme Toggle */}
               <button
@@ -378,7 +324,7 @@ function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps): JSX.E
   const [showCode, setShowCode] = useState(false);
 
   return (
-    <div className="group bg-[var(--app-bg-surface)] rounded-xl border border-[var(--app-border-subtle)] overflow-hidden hover:border-[var(--app-border-hover)] hover:shadow-lg transition-all duration-200">
+    <div className="group bg-[var(--app-bg-surface)] rounded-xl border border-[var(--app-border-subtle)] overflow-hidden hover:border-[var(--app-border-hover)] hover:shadow-lg transition-all duration-fast">
       {/* Card Header */}
       <div className="px-5 py-4 border-b border-[var(--app-border-subtle)] flex items-start justify-between bg-[var(--app-bg-subtle)]/30">
         <div>

@@ -44,7 +44,7 @@ function MobileSidebarDrawer({
     >
       <SheetContent
         side="left"
-        className="w-[85vw] max-w-xs p-0"
+        className="w-[85vw] max-w-xs p-0 rounded-lg shadow-[var(--app-elevation-high)]"
         ownsEscape={false}
         aria-label="Navigation menu"
         data-testid="sheet-mobile-sidebar-root"

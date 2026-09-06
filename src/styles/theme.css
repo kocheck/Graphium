@@ -152,7 +152,7 @@
 
   /* ===== Borders ===== */
   --app-border-subtle: var(--slate-6); /* Subtle borders, dividers */
-  --app-border-default: var(--slate-7); /* Default border color */
+  --app-border-default: var(--slate-9); /* 3:1 walk: light slate-8 was 1.86:1 */
   --app-border-hover: var(--slate-8); /* Border on hover */
 
   /* ===== Text ===== */
@@ -161,23 +161,23 @@
   --app-text-muted: var(--slate-11); /* Muted text, placeholders (AA compliant) */
   --app-text-disabled: var(--slate-9); /* Disabled text (below AA threshold - intentional) */
 
-  /* ===== Interactive (Blue) ===== */
-  --app-accent-bg: var(--blue-3); /* Accent background (buttons, tags) */
-  --app-accent-bg-hover: var(--blue-4); /* Accent hover state */
-  --app-accent-bg-active: var(--blue-5); /* Accent active state */
-  --app-accent-solid: #0070c1; /* Solid accent - WCAG AA compliant with white (4.51:1) */
-  --app-accent-solid-hover: #005a9c; /* Solid accent hover - darker for 6:1 contrast */
-  --app-accent-solid-text: white; /* Text color for solid buttons */
-  --app-accent-text: var(--blue-12); /* Accent text (links) - blue-12 for AA compliance */
-  --app-accent-text-contrast: var(--blue-12); /* High contrast accent text */
+  /* ===== Interactive (Amber — A · Instrument panel) ===== */
+  --app-accent-bg: var(--amber-3); /* Accent background (buttons, tags) */
+  --app-accent-bg-hover: var(--amber-4); /* Accent hover state */
+  --app-accent-bg-active: var(--amber-5); /* Accent active state */
+  --app-accent-solid: var(--amber-9); /* Solid accent */
+  --app-accent-solid-hover: var(--amber-10); /* Solid accent hover */
+  --app-accent-solid-text: var(--slate-12); /* Ink on amber-9 */
+  --app-accent-text: var(--amber-12); /* Accent text (links) */
+  --app-accent-text-contrast: var(--amber-12); /* High contrast accent text */
 
   /* ===== Status: Error (Red) ===== */
   --app-error-bg: var(--red-3); /* Error background */
   --app-error-bg-hover: var(--red-4); /* Error hover state */
   --app-error-border: var(--red-7); /* Error border */
-  --app-error-solid: var(--red-9); /* Solid error (destructive buttons) */
-  --app-error-solid-hover: var(--red-10); /* Solid error hover */
-  --app-error-solid-text: white; /* Text/icon colour on solid error */
+  --app-error-solid: var(--red-11); /* Step 11: red-9 and red-10 failed with ink and white */
+  --app-error-solid-hover: var(--red-11);
+  --app-error-solid-text: white;
   --app-error-text: var(--red-11); /* Error text */
 
   /* ===== Status: Warning (Amber) ===== */
@@ -186,6 +186,7 @@
   --app-warning-border: var(--amber-7); /* Warning border */
   --app-warning-solid: var(--amber-9); /* Solid warning */
   --app-warning-solid-hover: var(--amber-10); /* Solid warning hover */
+  --app-warning-solid-text: var(--slate-12); /* Ink on amber-9 */
   --app-warning-text: var(--amber-11); /* Warning text */
 
   /* ===== Status: Success (Green) ===== */
@@ -194,14 +195,14 @@
   --app-success-border: var(--green-7); /* Success border */
   --app-success-solid: var(--green-9); /* Solid success */
   --app-success-solid-hover: var(--green-10); /* Solid success hover */
-  --app-success-solid-text: white; /* Text/icon colour on solid success */
+  --app-success-solid-text: var(--slate-12); /* Ink: white on green-9 was 3.16:1 */
   --app-success-text: var(--green-11); /* Success text */
 
   /* ===== Overlays & Shadows ===== */
   --app-overlay: var(--slate-a11); /* Modal overlay (alpha channel) */
-  --app-shadow-sm: var(--slate-a3); /* Small shadow */
-  --app-shadow-md: var(--slate-a6); /* Medium shadow */
-  --app-shadow-lg: var(--slate-a8); /* Large shadow */
+  --app-shadow-sm: transparent; /* A: hairline elevation, not drop shadows */
+  --app-shadow-md: transparent;
+  --app-shadow-lg: transparent;
 
   /* ===== Grid Colors ===== */
   --app-grid-color: #222222; /* Default grid color (Dark Gray) */
@@ -215,15 +216,15 @@
   color-scheme: dark;
 
   /* ===== Backgrounds ===== */
-  --app-bg-base: #111113; /* slate-1 */
-  --app-bg-subtle: #18191b; /* slate-2 */
-  --app-bg-surface: #212225; /* slate-3 */
-  --app-bg-hover: #272a2d; /* slate-4 */
-  --app-bg-active: #2e3135; /* slate-5 */
+  --app-bg-base: var(--slate-1);
+  --app-bg-subtle: var(--slate-2);
+  --app-bg-surface: var(--slate-3);
+  --app-bg-hover: var(--slate-4);
+  --app-bg-active: var(--slate-5);
 
   /* ===== Borders ===== */
   --app-border-subtle: var(--slate-6);
-  --app-border-default: var(--slate-7);
+  --app-border-default: var(--slate-8);
   --app-border-hover: var(--slate-8);
 
   /* ===== Text ===== */
@@ -232,15 +233,15 @@
   --app-text-muted: var(--slate-11);
   --app-text-disabled: var(--slate-9);
 
-  /* ===== Interactive (Blue) ===== */
-  --app-accent-bg: var(--blue-3);
-  --app-accent-bg-hover: var(--blue-4);
-  --app-accent-bg-active: var(--blue-5);
-  --app-accent-solid: #0070c1; /* Solid accent - WCAG AA compliant with white */
-  --app-accent-solid-hover: #005a9c; /* Solid accent hover */
-  --app-accent-solid-text: white; /* Text color for solid buttons */
-  --app-accent-text: var(--blue-11);
-  --app-accent-text-contrast: var(--blue-12);
+  /* ===== Interactive (Amber — A · Instrument panel) ===== */
+  --app-accent-bg: var(--amber-3);
+  --app-accent-bg-hover: var(--amber-4);
+  --app-accent-bg-active: var(--amber-5);
+  --app-accent-solid: var(--amber-9);
+  --app-accent-solid-hover: var(--amber-10);
+  --app-accent-solid-text: var(--slate-1);
+  --app-accent-text: var(--amber-12);
+  --app-accent-text-contrast: var(--amber-12);
 
   /* ===== Status: Error (Red) ===== */
   --app-error-bg: var(--red-3);
@@ -248,7 +249,7 @@
   --app-error-border: var(--red-7);
   --app-error-solid: var(--red-9);
   --app-error-solid-hover: var(--red-10);
-  --app-error-solid-text: white;
+  --app-error-solid-text: var(--slate-1);
   --app-error-text: var(--red-11);
 
   /* ===== Status: Warning (Amber) ===== */
@@ -257,6 +258,7 @@
   --app-warning-border: var(--amber-7);
   --app-warning-solid: var(--amber-9);
   --app-warning-solid-hover: var(--amber-10);
+  --app-warning-solid-text: var(--slate-1);
   --app-warning-text: var(--amber-11);
 
   /* ===== Status: Success (Green) ===== */
@@ -265,14 +267,14 @@
   --app-success-border: var(--green-7);
   --app-success-solid: var(--green-9);
   --app-success-solid-hover: var(--green-10);
-  --app-success-solid-text: white;
+  --app-success-solid-text: var(--slate-1);
   --app-success-text: var(--green-11);
 
   /* ===== Overlays & Shadows ===== */
   --app-overlay: var(--slate-a11);
-  --app-shadow-sm: var(--slate-a3);
-  --app-shadow-md: var(--slate-a6);
-  --app-shadow-lg: var(--slate-a8);
+  --app-shadow-sm: transparent;
+  --app-shadow-md: transparent;
+  --app-shadow-lg: transparent;
 
   /* ===== Grid Colors ===== */
   --app-grid-color: var(--slate-8); /* Lighter gray for visibility on dark bg */
@@ -285,22 +287,23 @@
    --app-shadow-sm|md|lg above are COLOURS; elevation tokens are real box-shadows.
    ============================================ */
 :root {
-  /* Radius: .btn is 0.25rem (app.css); the toolbar is rounded-lg (0.5rem) */
-  --app-radius-sm: 0.25rem;
-  --app-radius-md: 0.375rem;
-  --app-radius-lg: 0.5rem;
+  /* Radius: A · Instrument panel — no corner above 4 px */
+  --app-radius-sm: 4px;
+  --app-radius-md: 4px;
+  --app-radius-lg: 4px;
 
-  /* Elevation: Tailwind v4 shadow-sm / shadow-lg / shadow-2xl */
-  --app-elevation-low: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --app-elevation-medium: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --app-elevation-high: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  /* Elevation: 1 px slate-6 hairlines; pressed state is a recessed inset */
+  --app-elevation-low: 0 0 0 1px var(--slate-6);
+  --app-elevation-medium: 0 0 0 1px var(--slate-6);
+  --app-elevation-high: 0 0 0 1px var(--slate-6);
+  --app-elevation-active: inset 0 0 0 1px var(--slate-8);
 
-  /* Motion: theme.css and .btn use 0.2s ease; duration-300 / slide-down use 0.3s */
-  --app-duration-fast: 0.2s;
-  --app-duration-base: 0.3s;
-  --app-duration-slow: 0.5s;
-  --app-ease-standard: ease;
-  --app-ease-decelerate: cubic-bezier(0, 0, 0.2, 1); /* Tailwind ease-out */
+  /* Motion: brief §2.5 — fast, decisive, no overshoot */
+  --app-duration-fast: 120ms;
+  --app-duration-base: 120ms;
+  --app-duration-slow: 120ms;
+  --app-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --app-ease-decelerate: cubic-bezier(0.2, 0, 0, 1);
 
   /* Spacing: every Tailwind spacing utility is a multiple of this unit */
   --app-space-unit: 0.25rem;
@@ -316,6 +319,10 @@
   --app-font-weight-medium: 500;
   --app-font-weight-semibold: 600;
   --app-font-weight-bold: 700;
+  --app-font-family-title: 'IBM Plex Sans', system-ui, sans-serif;
+  --app-font-family-readout: 'IBM Plex Mono', ui-monospace, monospace;
+  --app-font-size-readout: 13px;
+  --app-font-weight-readout: 500;
 }
 
 /* ============================================
@@ -346,9 +353,5 @@ body {
     --app-duration-fast: 0ms;
     --app-duration-base: 0ms;
     --app-duration-slow: 0ms;
-  }
-  * {
-    transition: none !important;
-    animation: none !important;
   }
 }

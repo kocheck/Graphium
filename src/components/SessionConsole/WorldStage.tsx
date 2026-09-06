@@ -29,7 +29,7 @@ function PlateImage({
       onError={onReady}
       className={`absolute inset-0 w-full h-full object-contain ${
         opaque ? 'opacity-100' : 'opacity-0'
-      } ${reducedMotion ? '' : 'transition-opacity duration-500'}`}
+      } ${reducedMotion ? '' : 'transition-opacity duration-slow'}`}
     />
   );
 }

@@ -11,9 +11,8 @@ import { test, expect } from '@playwright/test';
 import { SURFACES, THEMES, gotoSurface } from './helpers/surfaces';
 import type { Surface } from './helpers/surfaces';
 
-// Surfaces whose only remaining violations are `color-contrast`. Each entry is recorded in
-// docs/planning/verification-baseline.md, fixed by plan 006. Plan 006b empties this list.
-const CONTRAST_DEFERRED: Surface[] = ['editor-mobile', 'confirm-dialog', 'world-dialog'];
+// Surfaces whose only remaining violations are `color-contrast`. Emptied by plan 006b Step 5.
+const CONTRAST_DEFERRED: Surface[] = [];
 
 test.describe('Accessibility audit (WCAG 2.1 AA)', () => {
   for (const surface of SURFACES) {
@@ -37,32 +36,6 @@ test.describe('Accessibility audit (WCAG 2.1 AA)', () => {
             JSON.stringify(results.violations, null, 2),
           );
         }
-        expect(results.violations).toEqual([]);
-      });
-    }
-  }
-});
-
-test.describe('Design directions on /design-system (plan 006a)', () => {
-  for (const direction of ['a', 'b', 'c'] as const) {
-    for (const theme of ['light', 'dark'] as const) {
-      test(`direction ${direction} — ${theme} — no WCAG AA violations`, async ({ page }) => {
-        await page.goto('/design-system');
-        await page.getByTestId(`playground-direction-${direction}`).click();
-        await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
-        await page.waitForFunction(
-          ([d, t]) =>
-            document.documentElement.dataset.direction === d &&
-            document.documentElement.getAttribute('data-theme') === t,
-          [direction, theme] as const,
-        );
-        await page.evaluate(() => document.fonts.ready);
-        await page.waitForTimeout(250);
-        const results = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa'])
-          .exclude('canvas')
-          .exclude('[aria-disabled="true"]')
-          .analyze();
         expect(results.violations).toEqual([]);
       });
     }

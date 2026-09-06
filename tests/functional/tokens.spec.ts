@@ -10,7 +10,7 @@ test.describe('Non-colour tokens are live', () => {
     const toolbar = page.locator('[data-testid="toolbar-root"]');
     const title = page.locator('#confirm-dialog-title');
 
-    await expect(toolbar).toHaveCSS('border-radius', '8px');
+    await expect(toolbar).toHaveCSS('border-radius', '4px');
     await expect(title).toHaveCSS('font-weight', '600');
     await expect(title).toHaveCSS('font-size', '18px');
 

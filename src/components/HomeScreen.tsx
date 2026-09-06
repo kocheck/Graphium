@@ -810,12 +810,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           /* Monochrome + Blue Gradient using Theme Variables */
           background: radial-gradient(
             circle at 50% 30%,
-            var(--blue-a3) 0%, /* Theme-aware blue alpha */
+            var(--app-accent-bg) 0%,
             transparent 60%
           ),
           radial-gradient(
             circle at 80% 10%,
-            var(--slate-a3) 0%, /* Theme-aware slate alpha */
+            var(--slate-a3) 0%,
             transparent 40%
           );
           filter: blur(40px);
@@ -863,7 +863,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           display: flex;
           flex-direction: column;
           gap: 2rem;
-          animation: fadeInUp 0.8s ease-out;
+          animation: fadeInUp var(--app-duration-slow) var(--app-ease-standard);
         }
 
         @keyframes fadeInUp {
@@ -900,7 +900,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           width: 100%;
           height: auto;
           max-width: 420px;
-          filter: drop-shadow(0 4px 20px rgba(139, 92, 246, 0.3));
+          filter: none;
         }
 
         .hero-title {
@@ -941,10 +941,10 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
         .download-banner {
           background: var(--app-accent-bg);
           border: 1px solid var(--app-accent-solid);
-          border-radius: 12px;
+          border-radius: var(--app-radius-lg);
           padding: 1rem;
           position: relative;
-          animation: slideIn 0.5s ease-out 0.3s both;
+          animation: slideIn var(--app-duration-slow) var(--app-ease-standard) var(--app-duration-base) both;
         }
 
         @keyframes slideIn {
@@ -969,12 +969,12 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           padding: 0.25rem;
           border-radius: 4px;
           opacity: 0.6;
-          transition: all 0.2s;
+          transition: all var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .dismiss-btn:hover {
           opacity: 1;
-          background: rgba(0, 0, 0, 0.1);
+          background: var(--app-bg-hover);
         }
 
         .banner-content {
@@ -1011,16 +1011,16 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           background: var(--app-accent-solid);
           color: var(--app-accent-solid-text);
           padding: 0.5rem 1.5rem;
-          border-radius: 8px;
+          border-radius: var(--app-radius-lg);
           font-weight: 500;
           text-decoration: none;
           white-space: nowrap;
-          transition: transform 0.2s, box-shadow 0.2s;
+          transition: transform var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .banner-button:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          box-shadow: var(--app-elevation-medium);
         }
 
         /* ======================
@@ -1038,7 +1038,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           position: relative;
           background: var(--app-bg-surface);
           border: 1px solid var(--app-border-default);
-          border-radius: 12px;
+          border-radius: var(--app-radius-lg);
           padding: 1rem 2rem;
           min-width: 180px;
 
@@ -1048,7 +1048,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           gap: 0.75rem;
 
           cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all var(--app-duration-fast) var(--app-ease-standard);
           color: var(--app-text-primary) !important;
           overflow: hidden; /* Ensure shimmer handles overflow correctly */
         }
@@ -1057,7 +1057,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           border-color: var(--app-accent-solid);
           background: var(--app-bg-subtle);
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+          box-shadow: var(--app-elevation-high);
         }
 
         .action-card:active {
@@ -1068,11 +1068,11 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           width: 2rem;
           height: 2rem;
           color: var(--app-text-secondary); /* Grey by default */
-          transition: color 0.2s;
+          transition: color var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .action-card:hover .card-icon {
-          color: var(--app-accent-solid); /* Blue on hover */
+          color: var(--app-accent-solid);
         }
 
         .card-title {
@@ -1095,7 +1095,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
             var(--slate-a3),
             transparent
           );
-          transition: left 0.5s;
+          transition: left var(--app-duration-slow) var(--app-ease-standard);
           pointer-events: none;
         }
 
@@ -1116,13 +1116,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           border: 1px solid var(--app-border-subtle);
           color: var(--app-text-primary) !important;
           padding: 0.875rem 1.5rem;
-          border-radius: 12px;
+          border-radius: var(--app-radius-lg);
           display: flex;
           align-items: center;
           gap: 0.5rem;
           font-size: 0.9375rem;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .quick-action-btn:hover {
@@ -1139,7 +1139,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
         .recent-campaigns {
           background: var(--app-bg-surface);
           border: 1px solid var(--app-border-subtle);
-          border-radius: 16px;
+          border-radius: var(--app-radius-lg);
           padding: 1.5rem;
         }
 
@@ -1174,9 +1174,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           justify-content: space-between;
           background: var(--app-bg-base);
           border: 1px solid var(--app-border-subtle);
-          border-radius: 10px;
+          border-radius: var(--app-radius-lg);
           padding: 0.875rem;
-          transition: all 0.2s;
+          transition: all var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .recent-item:hover {
@@ -1227,9 +1227,9 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           color: var(--app-text-muted);
           cursor: pointer;
           padding: 0.5rem;
-          border-radius: 6px;
+          border-radius: var(--app-radius-lg);
           opacity: 0;
-          transition: all 0.2s;
+          transition: all var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .recent-item:hover .recent-remove {
@@ -1272,7 +1272,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           cursor: pointer;
           font-family: inherit;
           font-size: inherit;
-          transition: color 0.2s;
+          transition: color var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .footer-link:hover {
@@ -1322,10 +1322,10 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           padding: 0.625rem 0.875rem 0.625rem 2.75rem;
           background: var(--app-bg-base);
           border: 1px solid var(--app-border-subtle);
-          border-radius: 8px;
+          border-radius: var(--app-radius-lg);
           color: var(--app-text-primary);
           font-size: 0.875rem;
-          transition: border-color 0.2s;
+          transition: border-color var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .recent-search:focus {
@@ -1353,14 +1353,14 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.6);
+          background: var(--app-overlay);
           backdrop-filter: blur(4px);
           z-index: 1000;
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 1rem;
-          animation: fadeIn 0.2s ease-out;
+          animation: fadeIn var(--app-duration-fast) var(--app-ease-standard);
         }
 
         @keyframes fadeIn {
@@ -1375,13 +1375,13 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
         .templates-modal {
           background: var(--app-bg-surface);
           border: 1px solid var(--app-border-default);
-          border-radius: 16px;
+          border-radius: var(--app-radius-lg);
           max-width: 600px;
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
           padding: 1.5rem;
-          animation: slideUp 0.3s ease-out;
+          animation: slideUp var(--app-duration-base) var(--app-ease-standard);
         }
 
         @keyframes slideUp {
@@ -1414,8 +1414,8 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           color: var(--app-text-muted);
           cursor: pointer;
           padding: 0.5rem;
-          border-radius: 8px;
-          transition: all 0.2s;
+          border-radius: var(--app-radius-lg);
+          transition: all var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .templates-close:hover {
@@ -1438,18 +1438,18 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
         .template-card {
           background: var(--app-bg-base);
           border: 1px solid var(--app-border-subtle);
-          border-radius: 12px;
+          border-radius: var(--app-radius-lg);
           padding: 1.25rem;
           text-align: center;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all var(--app-duration-fast) var(--app-ease-standard);
         }
 
         .template-card:hover {
           border-color: var(--app-accent-solid);
           background: var(--app-bg-hover);
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          box-shadow: var(--app-elevation-medium);
         }
 
         .template-icon {
@@ -1459,7 +1459,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           margin-left: auto;
           margin-right: auto;
           margin-bottom: 0.75rem;
-          color: var(--blue-11); /* Theme-aware blue for icon color */
+          color: var(--app-accent-text);
         }
 
         .template-name {

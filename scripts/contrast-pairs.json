@@ -3,13 +3,13 @@
   { "fg": "app-text-primary", "bg": "app-bg-surface", "min": 7, "why": "brief §9 row 2 readouts" },
   { "fg": "app-text-secondary", "bg": "app-bg-base", "min": 4.5 },
   { "fg": "app-text-secondary", "bg": "app-bg-surface", "min": 4.5 },
-  { "fg": "app-text-muted", "bg": "app-bg-surface", "min": 4.5, "deferred": "006b" },
+  { "fg": "app-text-muted", "bg": "app-bg-surface", "min": 4.5 },
   { "fg": "app-accent-text", "bg": "app-bg-base", "min": 4.5 },
   { "fg": "app-accent-solid-text", "bg": "app-accent-solid", "min": 4.5 },
   { "fg": "app-accent-solid-text", "bg": "app-accent-solid-hover", "min": 4.5 },
   { "fg": "app-error-text", "bg": "app-error-bg", "min": 4.5 },
-  { "fg": "white", "bg": "app-error-solid", "min": 4.5, "deferred": "006b" },
-  { "fg": "white", "bg": "app-success-solid", "min": 4.5, "deferred": "006b" },
-  { "fg": "white", "bg": "app-warning-solid", "min": 4.5, "deferred": "006b" },
-  { "fg": "app-border-default", "bg": "app-bg-base", "min": 3, "deferred": "006b" }
+  { "fg": "app-error-solid-text", "bg": "app-error-solid", "min": 4.5 },
+  { "fg": "app-success-solid-text", "bg": "app-success-solid", "min": 4.5 },
+  { "fg": "app-warning-solid-text", "bg": "app-warning-solid", "min": 4.5 },
+  { "fg": "app-border-default", "bg": "app-bg-base", "min": 3 }
 ]
