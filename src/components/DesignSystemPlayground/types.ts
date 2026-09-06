@@ -20,6 +20,7 @@ export interface ComponentExample {
     | 'icon'
     | 'landing-patterns'
     | 'performance'
+    | 'motion'
     | 'overlay'
     | 'form'
     | 'layout';

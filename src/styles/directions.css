@@ -1,0 +1,193 @@
+/* src/styles/directions.css — plan 006a Step 2a. Prototype only: imported by the playground
+   and deleted by plan 006b Step 5. Each block overrides --app-* tokens under [data-direction]. */
+@import '@radix-ui/colors/tomato.css';
+@import '@radix-ui/colors/tomato-dark.css';
+@import '@radix-ui/colors/orange.css';
+@import '@radix-ui/colors/orange-dark.css';
+@import '@radix-ui/colors/sand.css';
+@import '@radix-ui/colors/sand-dark.css';
+
+/* IBM Plex Serif (direction C titles only). Path mirrors src/styles/fonts.css. */
+@font-face {
+  font-family: 'IBM Plex Serif';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('@ibm/plex/IBM-Plex-Serif/fonts/complete/woff2/IBMPlexSerif-SemiBold.woff2')
+    format('woff2');
+}
+
+/* ---- A · Instrument panel (brief §10 row A) ------------------------------------------
+   amber-9 (#ffc53d) on slate-1; 1 px slate-6 rules; no radius above 4 px; recessed (inset)
+   active states; Plex Sans labels, Plex Mono readouts. Seeded; validated by npm run contrast. */
+[data-direction='a'] {
+  --app-bg-base: var(--slate-1);
+  --app-bg-subtle: var(--slate-2);
+  --app-bg-surface: var(--slate-3);
+  --app-bg-hover: var(--slate-4);
+  --app-bg-active: var(--slate-5);
+  --app-border-subtle: var(--slate-6);
+  --app-border-default: var(--slate-6);
+  --app-border-hover: var(--slate-8);
+  --app-text-primary: var(--slate-12);
+  --app-text-secondary: var(--slate-11);
+  --app-text-muted: var(--slate-11);
+  --app-text-disabled: var(--slate-9);
+  --app-accent-bg: var(--amber-3);
+  --app-accent-bg-hover: var(--amber-4);
+  --app-accent-bg-active: var(--amber-5);
+  --app-accent-text: var(--amber-11);
+  --app-accent-text-contrast: var(--amber-12);
+  --app-accent-solid: var(--amber-9);
+  --app-accent-solid-hover: var(--amber-10);
+  --app-accent-solid-text: var(--slate-12);
+  --app-shadow-sm: transparent;
+  --app-shadow-md: transparent;
+  --app-shadow-lg: transparent;
+  --app-elevation-active: inset 0 0 0 1px var(--slate-8);
+  --app-font-family-title: 'IBM Plex Sans', system-ui, sans-serif;
+  --app-font-family-readout: 'IBM Plex Mono', ui-monospace, monospace;
+  --app-font-size-readout: 13px;
+  --app-font-weight-readout: 500;
+  --app-radius-lg: 4px;
+  --app-radius-md: 4px;
+  --app-radius-sm: 4px;
+  --app-elevation-high: 0 0 0 1px var(--slate-6);
+  --app-elevation-low: 0 0 0 1px var(--slate-6);
+  --app-elevation-medium: 0 0 0 1px var(--slate-6);
+}
+
+[data-theme='dark'][data-direction='a'] {
+  --app-accent-solid-text: var(--slate-1);
+}
+
+/* Shared by every direction (brief §2.5): fast, decisive, no overshoot. */
+[data-direction] {
+  --app-duration-base: 120ms;
+  --app-duration-fast: 120ms;
+  --app-duration-slow: 120ms;
+  --app-ease-decelerate: cubic-bezier(0.2, 0, 0, 1);
+  --app-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ---- B · Etched plate (brief §10 row B) ---------------------------------------------- */
+[data-direction='b'] {
+  --app-bg-base: var(--slate-1);
+  --app-bg-subtle: var(--slate-2);
+  --app-bg-surface: var(--slate-2);
+  --app-bg-hover: var(--slate-3);
+  --app-bg-active: var(--slate-4);
+  --app-border-subtle: var(--slate-4);
+  --app-border-default: var(--slate-5);
+  --app-border-hover: var(--slate-8);
+  --app-text-primary: var(--slate-12);
+  --app-text-secondary: var(--slate-11);
+  --app-text-muted: var(--slate-11);
+  --app-text-disabled: var(--slate-9);
+  --app-accent-bg: var(--tomato-3);
+  --app-accent-bg-hover: var(--tomato-4);
+  --app-accent-bg-active: var(--tomato-5);
+  --app-accent-text: var(--tomato-11);
+  --app-accent-text-contrast: var(--tomato-12);
+  --app-accent-solid: var(--tomato-11);
+  --app-accent-solid-hover: var(--tomato-12);
+  --app-accent-solid-text: white;
+  --app-shadow-sm: transparent;
+  --app-shadow-md: transparent;
+  --app-shadow-lg: transparent;
+  --app-elevation-active: inset 0 1px 0 0 var(--slate-1), inset 0 -1px 0 0 var(--slate-7);
+  --app-font-family-title: 'IBM Plex Sans', system-ui, sans-serif;
+  --app-font-family-readout: 'IBM Plex Sans', system-ui, sans-serif;
+  --app-font-size-readout: 15px;
+  --app-font-weight-readout: 600;
+  --app-radius-lg: 2px;
+  --app-radius-md: 2px;
+  --app-radius-sm: 2px;
+  --app-elevation-high: 0 0 0 1px var(--slate-6);
+  --app-elevation-low: 0 0 0 1px var(--slate-6);
+  --app-elevation-medium: 0 0 0 1px var(--slate-6);
+}
+
+[data-theme='dark'][data-direction='b'] {
+  --app-accent-solid: var(--tomato-9);
+  --app-accent-solid-hover: var(--tomato-10);
+  --app-accent-solid-text: var(--slate-1);
+}
+
+/* ---- C · Cartographer's desk (brief §10 row C) --------------------------------------- */
+[data-direction='c'] {
+  --app-bg-base: var(--sand-1);
+  --app-bg-subtle: var(--sand-2);
+  --app-bg-surface: var(--sand-3);
+  --app-bg-hover: var(--sand-4);
+  --app-bg-active: var(--sand-5);
+  --app-border-subtle: var(--sand-6);
+  --app-border-default: var(--sand-6);
+  --app-border-hover: var(--sand-8);
+  --app-text-primary: var(--sand-12);
+  --app-text-secondary: var(--sand-11);
+  --app-text-muted: var(--sand-11);
+  --app-text-disabled: var(--sand-9);
+  --app-accent-bg: var(--orange-3);
+  --app-accent-bg-hover: var(--orange-4);
+  --app-accent-bg-active: var(--orange-5);
+  --app-accent-text: var(--orange-11);
+  --app-accent-text-contrast: var(--orange-12);
+  --app-accent-solid: var(--orange-9);
+  --app-accent-solid-hover: var(--orange-10);
+  --app-accent-solid-text: var(--sand-12);
+  --app-shadow-sm: transparent;
+  --app-shadow-md: transparent;
+  --app-shadow-lg: transparent;
+  --app-elevation-active: inset 0 1px 0 0 var(--sand-7);
+  --app-font-family-title: 'IBM Plex Serif', Georgia, serif;
+  --app-font-family-readout: 'IBM Plex Mono', ui-monospace, monospace;
+  --app-font-size-readout: 13px;
+  --app-font-weight-readout: 500;
+}
+
+[data-theme='dark'][data-direction='c'] {
+  --app-accent-solid-text: var(--sand-1);
+}
+[data-theme='dark'] {
+  --tomato-1: #181111;
+  --tomato-2: #1f1513;
+  --tomato-3: #391714;
+  --tomato-4: #4e1511;
+  --tomato-5: #5e1c16;
+  --tomato-6: #6e2920;
+  --tomato-7: #853a2d;
+  --tomato-8: #ac4d39;
+  --tomato-9: #e54d2e;
+  --tomato-10: #ec6142;
+  --tomato-11: #ff977d;
+  --tomato-12: #fbd3cb;
+}
+[data-theme='dark'] {
+  --orange-1: #17120e;
+  --orange-2: #1e160f;
+  --orange-3: #331e0b;
+  --orange-4: #462100;
+  --orange-5: #562800;
+  --orange-6: #66350c;
+  --orange-7: #7e451d;
+  --orange-8: #a35829;
+  --orange-9: #f76b15;
+  --orange-10: #ff801f;
+  --orange-11: #ffa057;
+  --orange-12: #ffe0c2;
+}
+[data-theme='dark'] {
+  --sand-1: #111110;
+  --sand-2: #191918;
+  --sand-3: #222221;
+  --sand-4: #2a2a28;
+  --sand-5: #31312e;
+  --sand-6: #3b3a37;
+  --sand-7: #494844;
+  --sand-8: #62605b;
+  --sand-9: #6f6d66;
+  --sand-10: #7c7b74;
+  --sand-11: #b5b3ad;
+  --sand-12: #eeeeec;
+}
