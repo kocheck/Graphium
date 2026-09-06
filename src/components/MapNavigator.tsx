@@ -93,10 +93,10 @@ function MapNavigator(): React.ReactElement | null {
             <li
               key={map.id}
               className={`
-                                group flex items-center justify-between p-2 rounded transition
+                                group flex items-center justify-between p-2 rounded-sm transition
                                 ${
                                   isActive
-                                    ? 'bg-[var(--app-accent-bg)] border border-[var(--app-accent-border)]'
+                                    ? 'bg-[var(--app-accent-bg)] border border-[var(--app-border-hover)] shadow-[var(--app-elevation-active)]'
                                     : 'bg-[var(--app-bg-subtle)]'
                                 }
                             `}
@@ -115,7 +115,7 @@ function MapNavigator(): React.ReactElement | null {
                     onChange={(e) => setEditName(e.target.value)}
                     onBlur={handleFinishEdit}
                     onKeyDown={handleKeyDown}
-                    className="bg-[var(--app-bg-base)] text-[var(--app-text-primary)] px-1 rounded w-full border border-[var(--app-border-default)] text-sm"
+                    className="bg-[var(--app-bg-base)] text-[var(--app-text-primary)] px-1 rounded-sm w-full border border-[var(--app-border-default)] text-sm"
                     autoFocus
                     onClick={(e) => e.stopPropagation()}
                   />

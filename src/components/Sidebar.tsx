@@ -285,7 +285,7 @@ function Sidebar(): JSX.Element {
             <Tooltip content={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="p-2 hover:bg-[var(--app-bg-subtle)] rounded transition"
+                className="p-2 hover:bg-[var(--app-bg-subtle)] rounded-sm transition"
                 aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 <RiArrowLeftSLine
@@ -308,10 +308,10 @@ function Sidebar(): JSX.Element {
                   <li
                     key={map.id}
                     className={`
-                                            group flex items-center justify-between p-2 rounded transition
+                                            group flex items-center justify-between p-2 rounded-sm transition
                                             ${
                                               isActive
-                                                ? 'bg-[var(--app-accent-bg)] border border-[var(--app-accent-border)]'
+                                                ? 'bg-[var(--app-accent-bg)] border border-[var(--app-border-hover)] shadow-[var(--app-elevation-active)]'
                                                 : 'bg-[var(--app-bg-subtle)]'
                                             }
                                         `}

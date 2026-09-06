@@ -57,7 +57,7 @@ function QuickTokenSidebar({
     div.style.left = '-1000px';
     div.style.width = '64px';
     div.style.height = '64px';
-    div.style.borderRadius = '8px';
+    div.style.borderRadius = '4px';
     div.style.backgroundColor = 'var(--app-bg-subtle)';
     div.style.border = '2px dashed var(--app-border-default)';
     div.style.display = 'flex';
@@ -97,7 +97,7 @@ function QuickTokenSidebar({
             {recentTokens.map((token) => (
               <Tooltip key={token.id} content={token.name}>
                 <div
-                  className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
+                  className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded-sm cursor-grab flex items-center justify-center transition relative group"
                   data-testid="sidebar-token-tile"
                   draggable
                   onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
@@ -126,7 +126,7 @@ function QuickTokenSidebar({
           {/* Generic Token (Always first slot) */}
           <Tooltip content="Generic Token">
             <div
-              className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group border-2 border-dashed"
+              className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded-sm cursor-grab flex items-center justify-center transition relative group border-2 border-dashed"
               data-testid="sidebar-token-tile"
               style={{
                 backgroundColor: 'var(--app-bg-subtle)',
@@ -146,7 +146,7 @@ function QuickTokenSidebar({
           {playerTokens.map((token) => (
             <Tooltip key={token.id} content={token.name}>
               <div
-                className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded cursor-grab flex items-center justify-center transition relative group"
+                className="bg-[var(--app-bg-active)] text-[var(--app-text-primary)] hover:bg-[var(--app-bg-hover)] w-16 h-16 rounded-sm cursor-grab flex items-center justify-center transition relative group"
                 data-testid="sidebar-token-tile"
                 draggable
                 onDragStart={(e) => onDragStart(e, 'LIBRARY_TOKEN', token.src, token.id)}
