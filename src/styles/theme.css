@@ -294,9 +294,9 @@
   --app-accent-bg: var(--blue-3);
   --app-accent-bg-hover: var(--blue-4);
   --app-accent-bg-active: var(--blue-5);
-  --app-accent-solid: var(--blue-4);
-  --app-accent-solid-hover: var(--blue-5);
-  --app-accent-solid-text: var(--slate-1);
+  --app-accent-solid: #003362;
+  --app-accent-solid-hover: #004074;
+  --app-accent-solid-text: #fcfcfd;
   --app-accent-text: var(--slate-12);
   --app-accent-text-contrast: var(--slate-12);
 }
@@ -305,9 +305,9 @@
   --app-accent-bg: var(--blue-3);
   --app-accent-bg-hover: var(--blue-4);
   --app-accent-bg-active: var(--blue-5);
-  --app-accent-solid: var(--blue-4);
-  --app-accent-solid-hover: var(--blue-5);
-  --app-accent-solid-text: var(--slate-12);
+  --app-accent-solid: #003362;
+  --app-accent-solid-hover: #004074;
+  --app-accent-solid-text: #edeef0;
   --app-accent-text: var(--slate-12);
   --app-accent-text-contrast: var(--slate-12);
 }
