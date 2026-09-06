@@ -1261,6 +1261,8 @@ npm run verify:static
 
 <!-- steps-5-plus:start -->
 
+Reviewed-by: Kyle 2026-09-06
+
 ### Step 5: Apply the chosen tokens and delete the prototypes
 
 **Files**: `src/styles/theme.css`, `src/styles/fonts.css`, `src/styles/directions.css`

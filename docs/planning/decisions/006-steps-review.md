@@ -1,6 +1,6 @@
 # Decision 006-steps-review: Are Steps 5–10 of `plans/006-visual-redesign.md` approved for execution?
 
-Status: PENDING
+Status: DECIDED
 
 ## Question
 
@@ -17,3 +17,5 @@ Are Steps 5–10 of `plans/006-visual-redesign.md` approved for execution?
    fix-in-006b). Step 8 is a no-op because no question was answered restructure.
 
 ## Kyle's answer
+
+1 — approve. Recorded 2026-09-06 ("Looks good let’s continue").
