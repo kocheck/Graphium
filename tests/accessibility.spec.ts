@@ -56,6 +56,8 @@ test.describe('Design directions on /design-system (plan 006a)', () => {
             document.documentElement.getAttribute('data-theme') === t,
           [direction, theme] as const,
         );
+        await page.evaluate(() => document.fonts.ready);
+        await page.waitForTimeout(250);
         const results = await new AxeBuilder({ page })
           .withTags(['wcag2a', 'wcag2aa'])
           .exclude('canvas')

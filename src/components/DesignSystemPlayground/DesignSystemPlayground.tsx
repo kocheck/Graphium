@@ -251,7 +251,7 @@ function PlaygroundContent(): JSX.Element {
 
               <a
                 href="/"
-                className="px-4 py-2 rounded-lg bg-[var(--app-bg-surface)] hover:bg-[var(--app-bg-hover)] border border-[var(--app-border-subtle)] transition-all flex items-center gap-2 text-sm font-medium"
+                className="px-4 py-2 rounded-lg bg-[var(--app-bg-surface)] hover:bg-[var(--app-bg-hover)] border border-[var(--app-border-subtle)] text-[var(--app-text-primary)] transition-all flex items-center gap-2 text-sm font-medium"
               >
                 <RiCloseLine className="w-5 h-5" />
                 Exit
@@ -315,7 +315,7 @@ function PlaygroundContent(): JSX.Element {
             </p>
             <button
               onClick={() => setSearchQuery('')}
-              className="mt-6 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white rounded-md transition-colors"
+              className="mt-6 px-4 py-2 bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-[var(--app-accent-solid-text)] rounded-md transition-colors"
             >
               Clear Search
             </button>
