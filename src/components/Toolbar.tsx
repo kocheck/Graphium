@@ -66,7 +66,7 @@ function Toolbar({
   return (
     <>
       <div
-        className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-2xl flex items-center gap-2 z-50"
+        className="toolbar fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg shadow-[var(--app-elevation-high)] flex items-center gap-2 z-50"
         data-testid="toolbar-root"
       >
         {/* Play/Pause Button */}
@@ -256,8 +256,8 @@ function Toolbar({
           <Tooltip content="Change marker color (I)">
             <button
               onClick={() => colorInputRef.current?.click()}
-              className="w-12 h-12 rounded-full border-2 shadow-lg hover:scale-110 transition-transform cursor-pointer"
-              style={{ backgroundColor: color, borderColor: 'white' }}
+              className="w-12 h-12 rounded-full border-2 shadow-[var(--app-elevation-medium)] hover:scale-110 transition-transform cursor-pointer"
+              style={{ backgroundColor: color, borderColor: 'var(--app-border-hover)' }}
               aria-label="Change marker color"
             />
           </Tooltip>
@@ -268,8 +268,8 @@ function Toolbar({
               <Tooltip key={recentColor} content={`Use color ${recentColor}`}>
                 <button
                   onClick={() => setColor(recentColor)}
-                  className="w-8 h-8 rounded-full border-2 shadow-md hover:scale-110 transition-transform cursor-pointer"
-                  style={{ backgroundColor: recentColor, borderColor: '#525252' }}
+                  className="w-8 h-8 rounded-full border-2 shadow-[var(--app-elevation-medium)] hover:scale-110 transition-transform cursor-pointer"
+                  style={{ backgroundColor: recentColor, borderColor: 'var(--app-border-hover)' }}
                   aria-label={`Switch to color ${recentColor}`}
                 />
               </Tooltip>
