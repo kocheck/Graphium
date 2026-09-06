@@ -40,7 +40,7 @@ import type { ComponentExample } from './types';
  */
 function PlaygroundShell({ children }: { children: React.ReactNode }): JSX.Element {
   return (
-    <div className="playground-shell w-full h-full bg-[var(--app-bg-base)] text-[var(--app-text-primary)] transition-colors duration-200">
+    <div className="playground-shell w-full h-full bg-[var(--app-bg-base)] text-[var(--app-text-primary)] transition-colors duration-fast">
       <ThemeManager />
       <Toast />
       <ConfirmDialog />
@@ -324,7 +324,7 @@ function ComponentCard({ example, isCopied, onCopy }: ComponentCardProps): JSX.E
   const [showCode, setShowCode] = useState(false);
 
   return (
-    <div className="group bg-[var(--app-bg-surface)] rounded-xl border border-[var(--app-border-subtle)] overflow-hidden hover:border-[var(--app-border-hover)] hover:shadow-lg transition-all duration-200">
+    <div className="group bg-[var(--app-bg-surface)] rounded-xl border border-[var(--app-border-subtle)] overflow-hidden hover:border-[var(--app-border-hover)] hover:shadow-lg transition-all duration-fast">
       {/* Card Header */}
       <div className="px-5 py-4 border-b border-[var(--app-border-subtle)] flex items-start justify-between bg-[var(--app-bg-subtle)]/30">
         <div>

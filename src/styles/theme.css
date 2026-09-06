@@ -354,8 +354,4 @@ body {
     --app-duration-base: 0ms;
     --app-duration-slow: 0ms;
   }
-  * {
-    transition: none !important;
-    animation: none !important;
-  }
 }

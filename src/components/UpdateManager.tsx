@@ -267,7 +267,7 @@ function StatusContent({
           <p className="mb-3 font-medium text-[var(--app-text)]">{messages.downloading}</p>
           <div className="mb-2 bg-[var(--app-bg)] rounded-full h-2 overflow-hidden">
             <div
-              className="h-full bg-[var(--app-accent-solid)] transition-all duration-300"
+              className="h-full bg-[var(--app-accent-solid)] transition-all duration-base"
               ref={(el) => {
                 if (el) {
                   el.style.width = `${downloadProgress.percent}%`;

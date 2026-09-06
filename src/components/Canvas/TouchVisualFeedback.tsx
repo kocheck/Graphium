@@ -96,7 +96,7 @@ function TouchVisualFeedback({
         pressure !== null &&
         pointerPosition && (
           <div
-            className="absolute transition-all duration-75"
+            className="absolute transition-all duration-fast"
             style={{
               left: pointerPosition.x + 30, // Offset from cursor
               top: pointerPosition.y - 30,
@@ -105,7 +105,7 @@ function TouchVisualFeedback({
           >
             {/* Pressure circle */}
             <div
-              className="rounded-full opacity-80 border-2 border-white shadow-lg transition-all duration-75"
+              className="rounded-full opacity-80 border-2 border-white shadow-lg transition-all duration-fast"
               style={{
                 width: pressureIndicatorSize,
                 height: pressureIndicatorSize,
