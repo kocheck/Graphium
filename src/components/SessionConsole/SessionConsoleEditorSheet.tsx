@@ -219,7 +219,7 @@ export function SessionConsoleEditorSheet({
     >
       <SheetContent
         side="right"
-        className="w-full sm:w-96 sm:max-w-none p-0 overflow-y-auto"
+        className="w-full sm:w-96 sm:max-w-none p-0 overflow-y-auto bg-[var(--app-bg-surface)] shadow-[var(--app-elevation-medium)]"
         data-testid="sheet-session-console-editor-root"
       >
         <SheetHeader className="sticky top-0 bg-[var(--app-bg-surface)] border-b border-[var(--app-border-default)] p-4">

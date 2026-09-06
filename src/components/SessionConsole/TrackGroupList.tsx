@@ -102,15 +102,15 @@ export function TrackGroupList({
                 onClick={() => onPlayTrack(track.id)}
                 aria-label={`Play ${track.title}`}
                 aria-pressed={isActive}
-                className={`w-full rounded px-2 py-1.5 text-left transition ${
+                className={`w-full rounded-sm px-2 py-1.5 text-left transition ${
                   isActive
-                    ? 'bg-[var(--app-accent-bg)] border border-[var(--app-accent-border)]'
+                    ? 'bg-[var(--app-accent-bg)] border border-[var(--app-border-hover)] shadow-[var(--app-elevation-active)]'
                     : 'bg-[var(--app-bg-subtle)]'
                 }`}
               >
                 <span className="block text-sm font-medium truncate">{track.title}</span>
                 {recommended && (
-                  <span className="block text-[11px] truncate" style={{ color: '#c4a35a' }}>
+                  <span className="block text-[11px] truncate text-[var(--app-accent-text)]">
                     {recommended}
                   </span>
                 )}

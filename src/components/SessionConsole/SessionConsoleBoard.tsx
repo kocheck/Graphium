@@ -74,7 +74,7 @@ export function SessionConsoleBoard({
       data-testid="session-console-dropzone"
       onDragOver={(event) => event.preventDefault()}
       onDrop={handleDrop}
-      className="rounded border-2 border-dashed border-[var(--app-border-default)] p-2 space-y-2"
+      className="rounded-sm border-2 border-dashed border-[var(--app-border-default)] p-2 space-y-2"
     >
       {isEmpty && (
         <p className="text-xs text-center py-4" style={{ color: 'var(--app-text-secondary)' }}>
@@ -89,7 +89,7 @@ export function SessionConsoleBoard({
         onChange={(event) => setYoutubeDraft(event.target.value)}
         onPaste={handleYoutubePaste}
         onKeyDown={handleYoutubeKeyDown}
-        className="w-full rounded px-2 py-1 text-sm"
+        className="w-full rounded-sm px-2 py-1 text-sm"
       />
 
       <input

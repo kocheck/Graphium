@@ -13,7 +13,7 @@ const KEYBOARD = [
 
 export function DiscordSetupHelp(): JSX.Element {
   return (
-    <div className="space-y-3 text-sm" style={{ color: 'var(--app-text-secondary)' }}>
+    <div className="space-y-3 text-sm text-[var(--app-text-secondary)]">
       <p>Voice stays in Discord. World View is the single share target for plates and ambience.</p>
       <ul className="list-disc pl-4 space-y-1">
         {CHECKLIST.map((item) => (

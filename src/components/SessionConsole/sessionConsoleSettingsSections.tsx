@@ -51,7 +51,7 @@ export function SessionConsoleStageFields(): JSX.Element {
               patch: { title: event.target.value },
             })
           }
-          className="mt-2 w-full rounded px-3 py-2 text-sm"
+          className="mt-2 w-full rounded-sm px-3 py-2 text-sm"
         />
       </label>
       <label
@@ -67,7 +67,7 @@ export function SessionConsoleStageFields(): JSX.Element {
               patch: { subtitle: event.target.value },
             })
           }
-          className="mt-2 w-full rounded px-3 py-2 text-sm"
+          className="mt-2 w-full rounded-sm px-3 py-2 text-sm"
         />
       </label>
       <ToggleSwitch

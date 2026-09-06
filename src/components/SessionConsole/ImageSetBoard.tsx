@@ -95,9 +95,9 @@ export function ImageSetBoard({
                 onClick={() => onShowPlate(image.id)}
                 aria-label={`Show plate ${image.name}`}
                 aria-pressed={isActive}
-                className={`w-full rounded p-1 text-left transition ${
+                className={`w-full rounded-sm p-1 text-left transition ${
                   isActive
-                    ? 'bg-[var(--app-accent-bg)] border border-[var(--app-accent-border)]'
+                    ? 'bg-[var(--app-accent-bg)] border border-[var(--app-border-hover)] shadow-[var(--app-elevation-active)]'
                     : 'bg-[var(--app-bg-subtle)]'
                 }`}
               >
@@ -105,7 +105,7 @@ export function ImageSetBoard({
                   src={toMediaProtocol(image.thumbnailSrc)}
                   alt={image.alt}
                   loading="lazy"
-                  className="w-full h-16 object-cover rounded mb-1"
+                  className="w-full h-16 object-cover rounded-sm mb-1"
                 />
                 <span className="block text-xs font-medium truncate" title={image.name}>
                   {image.name}
