@@ -5,10 +5,13 @@ Status: PENDING
 ## Question
 
 The brief (`docs/planning/ui-redesign-brief.md` §10) names three directions. All three are
-rendered at `/design-system` (switcher `playground-direction-a|b|c`), pass `npm run test:a11y`
-and `npm run contrast -- --direction <x>`, and are screenshotted under
-`docs/planning/screenshots/006a-step2/` (six files, listed below). Which one is applied by plan
-006b, or which hybrid (named as "<base direction> + <one named element of another>")?
+rendered at `/design-system` (switcher `playground-direction-a|b|c`), pass
+`npm run contrast -- --direction <x>`, and are screenshotted under
+`docs/planning/screenshots/006a-step2/` (six files, listed below). `npm run test:a11y` direction
+scans: B light passes; A light/dark, B dark, C light/dark fail `color-contrast` on playground
+examples that hardcode `text-white` (and the Exit link with no text token). Token pairs in
+`npm run contrast` still PASS. Which one is applied by plan 006b, or which hybrid (named as
+"<base direction> + <one named element of another>")?
 
 ## Options
 
