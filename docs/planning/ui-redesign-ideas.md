@@ -134,3 +134,15 @@
 
 - Tiles are token-background `div`s with `data-testid="sidebar-token-tile"`, not `Button`s (they are drag sources). A shared token-tile primitive would match Library cards.
 - The generic tile still overrides the token background with an inline `style` (`--app-bg-subtle` + dashed border).
+
+## From plan 006 audit
+
+- Accent is `#0070c1` on every surface; brief §2.2 forbids tech-blue.
+- Editor toolbar is `8px` radius with a 25px blur shadow; brief §2.3 wants hairline/recessed, no blur.
+- Confirm and World dialogs are `12px` radius; not etched.
+- Body type is Plex Sans 16px/400 everywhere; no Plex Mono readout face (brief §2.4).
+- Button padding is 4px (home), 8px (editor), 12px (editor-mobile), 8px 16px (world) — one density scale is missing.
+- `transition` counts range from 0 (ConfirmDialog) to 12 (HomeScreen).
+- Remix Icon is imported on home/toolbar/playground and absent on ConfirmDialog / WorldStage.
+- Eleven brief §6 reference PNGs were not in `docs/planning/screenshots/006a-baseline/reference/`.
+- Conclusion: identity gap (`| brief:` ≥ 21). Weights Step 3 question 7 only; do not change the §10 direction set.
