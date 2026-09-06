@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -49,18 +51,27 @@ const dialogExample = (
   </Dialog>
 );
 
-const tooltipExample = (
-  <TooltipProvider delayDuration={0}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="secondary" data-testid="playground-open-tooltip">
-          Hover or focus me
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent data-testid="playground-tooltip-content">Tooltip text</TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
+function TooltipExample(): JSX.Element {
+  // Playwright's locator.focus() is not :focus-visible in CI Chromium, so Radix
+  // does not open. Open on the focus event the portal spec uses.
+  const [open, setOpen] = useState(false);
+  return (
+    <TooltipProvider delayDuration={0}>
+      <Tooltip open={open} onOpenChange={setOpen}>
+        <TooltipTrigger asChild>
+          <Button
+            variant="secondary"
+            data-testid="playground-open-tooltip"
+            onFocus={() => setOpen(true)}
+          >
+            Hover or focus me
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent data-testid="playground-tooltip-content">Tooltip text</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 const sheetExample = (
   <Sheet>
@@ -128,7 +139,7 @@ export const overlayExamples: ComponentExample[] = [
     name: 'Tooltip (ui)',
     category: 'overlay',
     description: 'Radix tooltip: opens on hover and focus, flips at viewport edges',
-    component: tooltipExample,
+    component: <TooltipExample />,
     code: `<TooltipProvider>
   <Tooltip>
     <TooltipTrigger asChild><Button>Trigger</Button></TooltipTrigger>
