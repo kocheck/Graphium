@@ -131,10 +131,10 @@ export function WorldStage(): JSX.Element {
             />
           )}
           {(stage.title || stage.subtitle) && (
-            <div className="absolute left-8 top-8 pointer-events-none text-[var(--app-text-secondary)] text-xs tracking-widest uppercase">
+            <div className="absolute left-8 top-8 pointer-events-none text-[var(--app-text-primary)] text-lg tracking-widest uppercase">
               {stage.title}
               {stage.subtitle ? (
-                <span className="block mt-1 normal-case tracking-normal text-sm text-[var(--app-accent-text)]">
+                <span className="block mt-1 normal-case tracking-normal text-lg text-[var(--app-accent-text)]">
                   {stage.subtitle}
                 </span>
               ) : null}

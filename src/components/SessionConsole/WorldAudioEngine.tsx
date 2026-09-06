@@ -166,13 +166,13 @@ export function WorldAudioEngine(): JSX.Element {
       {!runtime.worldArmed && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/80">
           <section
-            className="max-w-md mx-5 p-6 rounded-lg text-center border border-[var(--app-border-default)] bg-[var(--app-bg-surface)] shadow-lg"
+            className="max-w-md mx-5 p-6 rounded-lg text-center border-2 border-[var(--app-border-default)] bg-[var(--app-bg-surface)] shadow-lg"
             aria-label="Arm World View audio"
           >
             <h2 className="text-2xl font-semibold text-[var(--app-text-primary)] mb-2">
               World View
             </h2>
-            <p className="text-sm text-[var(--app-text-secondary)] mb-4">
+            <p className="text-lg text-[var(--app-text-primary)] mb-4">
               This window owns campaign audio and artwork. Arm it once, then share this window in
               Discord.
             </p>
@@ -182,7 +182,7 @@ export function WorldAudioEngine(): JSX.Element {
               onClick={() => {
                 void handleArm();
               }}
-              className="min-w-[170px] px-4 py-2 rounded font-medium bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-white disabled:opacity-50 disabled:cursor-wait"
+              className="min-w-[170px] px-4 py-2 rounded-lg text-lg font-medium bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-[var(--app-accent-solid-text)] disabled:opacity-50 disabled:cursor-wait"
             >
               {armEnabled ? 'Arm audio' : 'Loading audio…'}
             </button>
