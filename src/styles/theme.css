@@ -280,6 +280,59 @@
   --app-grid-color: var(--slate-8); /* Lighter gray for visibility on dark bg */
 }
 
+/* World View (Q6 adjust): Architect amber stays off the projection. Solid pair is
+   blue-4 with slate-1 (light) / slate-12 (dark) so overlay text can hit brief §8 7:1
+   (pre-A #0070c1 / white is 4.51:1). */
+[data-view='world'] {
+  font-size: 18px;
+  --app-font-size-xs: 18px;
+  --app-font-size-sm: 18px;
+  --app-font-size-base: 18px;
+  --text-xs: 18px;
+  --text-sm: 18px;
+  --text-base: 18px;
+  --app-accent-bg: var(--blue-3);
+  --app-accent-bg-hover: var(--blue-4);
+  --app-accent-bg-active: var(--blue-5);
+  --app-accent-solid: #003362;
+  --app-accent-solid-hover: #004074;
+  --app-accent-solid-text: #fcfcfd;
+  --app-accent-text: var(--slate-12);
+  --app-accent-text-contrast: var(--slate-12);
+}
+
+[data-theme='dark'][data-view='world'] {
+  --app-accent-bg: var(--blue-3);
+  --app-accent-bg-hover: var(--blue-4);
+  --app-accent-bg-active: var(--blue-5);
+  --app-accent-solid: #003362;
+  --app-accent-solid-hover: #004074;
+  --app-accent-solid-text: #edeef0;
+  --app-accent-text: var(--slate-12);
+  --app-accent-text-contrast: var(--slate-12);
+}
+
+[data-view='world'] button {
+  border-width: 2px;
+  font-size: 18px;
+}
+
+[data-view='world'] .text-xs,
+[data-view='world'] .text-sm,
+[data-view='world'] .text-base {
+  font-size: 18px;
+}
+
+[data-view='world'] .text-neutral-400,
+[data-view='world'] .text-gray-300 {
+  color: var(--app-text-primary);
+}
+
+[data-view='world'] .border,
+[data-view='world'] .border-t {
+  border-width: 2px;
+}
+
 /* ============================================
    NON-COLOUR TOKENS (theme-independent)
    Values are exactly what the code used before these names existed.

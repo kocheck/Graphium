@@ -64,6 +64,12 @@ export const useWindowType = (): { isWorldView: boolean; isArchitectView: boolea
   const params = new URLSearchParams(window.location.search);
   const isWorldView = params.get('type') === 'world';
 
+  if (isWorldView) {
+    document.documentElement.dataset['view'] = 'world';
+  } else {
+    delete document.documentElement.dataset['view'];
+  }
+
   return {
     /**
      * True if this is the World View (player-facing projection window)
