@@ -281,7 +281,8 @@
 }
 
 /* World View (Q6 adjust): Architect amber stays off the projection. Solid pair is
-   blue-4 / slate-1 so overlay text meets brief §8 7:1 (pre-A #0070c1 / white is 4.51:1). */
+   blue-4 with slate-1 (light) / slate-12 (dark) so overlay text can hit brief §8 7:1
+   (pre-A #0070c1 / white is 4.51:1). */
 [data-view='world'] {
   font-size: 18px;
   --app-font-size-xs: 18px;
@@ -306,7 +307,7 @@
   --app-accent-bg-active: var(--blue-5);
   --app-accent-solid: var(--blue-4);
   --app-accent-solid-hover: var(--blue-5);
-  --app-accent-solid-text: var(--slate-1);
+  --app-accent-solid-text: var(--slate-12);
   --app-accent-text: var(--slate-12);
   --app-accent-text-contrast: var(--slate-12);
 }

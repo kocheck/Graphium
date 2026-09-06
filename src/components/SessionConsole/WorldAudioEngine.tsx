@@ -182,7 +182,11 @@ export function WorldAudioEngine(): JSX.Element {
               onClick={() => {
                 void handleArm();
               }}
-              className="min-w-[170px] px-4 py-2 rounded-lg text-lg font-medium bg-[var(--app-accent-solid)] hover:bg-[var(--app-accent-solid-hover)] text-[var(--app-accent-solid-text)] disabled:opacity-50 disabled:cursor-wait"
+              className="min-w-[170px] px-4 py-2 rounded-lg text-lg font-medium border-2 border-[var(--app-border-default)] disabled:opacity-50 disabled:cursor-wait"
+              style={{
+                backgroundColor: 'var(--app-bg-surface)',
+                color: 'var(--app-text-primary)',
+              }}
             >
               {armEnabled ? 'Arm audio' : 'Loading audio…'}
             </button>
