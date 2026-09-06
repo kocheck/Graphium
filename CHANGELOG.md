@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Visual language is direction A (instrument panel): 4px radius, hairline elevation, amber Architect accent, and a projector-safe World View token set gated by `tests/world-legibility.spec.ts`.
+
 ### Fixed
 
 - Toast slide-down animation now runs (Tailwind v4 CSS `@theme` / `@keyframes slideDown`).
@@ -21,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Web build: the home screen, About dialog, Dungeon Generator and Design System Playground load on demand; vendor code is cached separately. About and Dungeon Generator now reset when reopened.
 - Every dialog and sheet now traps focus, closes on Escape, and exposes `role="dialog"`. The pause and tool buttons are unchanged.
-- Web deploy workflow runs on manual dispatch only for the duration of the UI redesign program.
+- Web deploy workflow triggers on push to `main` again (restored at the end of the UI redesign program).
 
 ### Added
 

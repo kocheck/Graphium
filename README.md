@@ -58,8 +58,8 @@ Most VTTs feel floaty and temporary. Graphium is built with **funicular friction
 _Observe the tool in action._
 
 <div align="center">
-  <img src="https://via.placeholder.com/800x450?text=GIF:+Fog+of+War+Raycasting" alt="Fog of War Demo" width="48%">
-  <img src="https://via.placeholder.com/800x450?text=GIF:+Architect+vs+World+View" alt="Dual Window Demo" width="48%">
+  <img src="public/screenshots/Graphium-show.gif" alt="Fog of War Demo" width="48%">
+  <img src="public/screenshots/editor-dark.png" alt="Dual Window Demo" width="48%">
 </div>
 
 _(Placeholder: Real captures of the fog raycasting and window projection being forged.)_
