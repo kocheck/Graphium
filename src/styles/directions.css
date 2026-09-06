@@ -36,7 +36,7 @@
   --app-accent-bg: var(--amber-3);
   --app-accent-bg-hover: var(--amber-4);
   --app-accent-bg-active: var(--amber-5);
-  --app-accent-text: var(--amber-11);
+  --app-accent-text: var(--amber-12);
   --app-accent-text-contrast: var(--amber-12);
   --app-accent-solid: var(--amber-9);
   --app-accent-solid-hover: var(--amber-10);
@@ -131,7 +131,7 @@
   --app-accent-bg: var(--orange-3);
   --app-accent-bg-hover: var(--orange-4);
   --app-accent-bg-active: var(--orange-5);
-  --app-accent-text: var(--orange-11);
+  --app-accent-text: var(--orange-12);
   --app-accent-text-contrast: var(--orange-12);
   --app-accent-solid: var(--orange-9);
   --app-accent-solid-hover: var(--orange-10);
