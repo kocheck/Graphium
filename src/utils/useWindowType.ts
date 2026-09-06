@@ -65,9 +65,9 @@ export const useWindowType = (): { isWorldView: boolean; isArchitectView: boolea
   const isWorldView = params.get('type') === 'world';
 
   if (isWorldView) {
-    document.documentElement.dataset.view = 'world';
+    document.documentElement.dataset['view'] = 'world';
   } else {
-    delete document.documentElement.dataset.view;
+    delete document.documentElement.dataset['view'];
   }
 
   return {
