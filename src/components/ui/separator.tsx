@@ -2,8 +2,9 @@
 
 import type * as React from 'react';
 
-import { cn } from 'cn';
 import { Separator as SeparatorPrimitive } from 'radix-ui';
+
+import { cn } from '@/lib/utils';
 
 type SeparatorProps = React.ComponentProps<typeof SeparatorPrimitive.Root> & {
   /** 'toolbar' reproduces `.toolbar-divider w-px mx-1` from App.tsx (vertical, no fixed height). */
