@@ -120,7 +120,7 @@ export function WorldStage(): JSX.Element {
             className="absolute inset-0 pointer-events-none"
             style={{
               background:
-                'radial-gradient(ellipse at center, transparent 48%, rgba(2,3,3,0.22) 78%, rgba(2,3,3,0.68) 100%)',
+                'radial-gradient(ellipse at center, transparent 48%, var(--app-overlay) 100%)',
             }}
           />
           {stage.showFrame && (

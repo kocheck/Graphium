@@ -18,9 +18,9 @@ const STATUS_LABEL: Record<ReturnType<typeof useWorldLinkStatus>, string> = {
 };
 
 const STATUS_COLOR: Record<ReturnType<typeof useWorldLinkStatus>, string> = {
-  closed: '#6b7280',
-  connected: '#d97706',
-  armed: '#22c55e',
+  closed: 'var(--app-text-muted)',
+  connected: 'var(--app-warning-solid)',
+  armed: 'var(--app-success-solid)',
 };
 
 export function SessionConsoleMasterBar(): JSX.Element {

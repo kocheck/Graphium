@@ -63,7 +63,7 @@ export function SessionConsolePanel(): JSX.Element {
 
   return (
     <div
-      className="space-y-3"
+      className="space-y-3 rounded-sm"
       data-testid="session-console-panel"
       data-session-console="panel"
       tabIndex={0}
