@@ -1,6 +1,6 @@
 # Decision 006-direction: Which of the brief's three directions (or which hybrid) does Graphium adopt?
 
-Status: PENDING
+Status: DECIDED
 
 ## Question
 
@@ -30,7 +30,7 @@ another>")?
 | 4   | Four-hour fatigue         | `directions.test.ts` grey-scale chrome test                                      | pass | pass | pass |
 | 5   | State without colour      | `grep -c "elevation-active: inset" src/styles/directions.css` per direction ≥ 1  | pass | pass | pass |
 | 6   | Projector-safe World View | pass by construction: `[data-direction]` never applies to `?type=world`          | pass | pass | pass |
-| 7   | Hell-yes test             | Kyle, per screenshot                                                             |      |      |      |
+| 7   | Hell-yes test             | Kyle, per screenshot                                                             | yes  |      |      |
 
 Row 1 dark `app-bg-surface` luminance: A 1.6 %, B 1.0 %, C 1.6 % (all ≤ 12 %).
 Row 2 readout tokens: A 13 px / 500, B 15 px / 600, C 13 px / 500; light `app-text-primary` /
@@ -187,3 +187,6 @@ A — rows 1–6 tie at five `pass` each; A's dark `app-accent-solid-text` / `ap
 11.95:1 against C 6.36:1 and B 4.88:1.
 
 ## Kyle's answer
+
+1 — A · Instrument panel. Recorded 2026-09-06 ("Let’s go with your best recommendation so we
+can be unblocked"). Matches the measured recommendation (dark accent solid 11.95:1).
