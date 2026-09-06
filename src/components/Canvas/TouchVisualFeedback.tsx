@@ -56,18 +56,15 @@ function TouchVisualFeedback({
   // Pressure indicator color changes with pressure (blue -> green -> red)
   const pressureIndicatorColor = useMemo(() => {
     if (!pressure) {
-      return '#3b82f6';
+      return 'var(--app-accent-solid)';
     }
 
     if (pressure < 0.33) {
-      // Low pressure: blue
-      return '#3b82f6';
+      return 'var(--app-accent-solid)';
     } else if (pressure < 0.66) {
-      // Medium pressure: green
-      return '#10b981';
+      return 'var(--app-success-solid)';
     } else {
-      // High pressure: red
-      return '#ef4444';
+      return 'var(--app-error-solid)';
     }
   }, [pressure]);
 
@@ -78,9 +75,9 @@ function TouchVisualFeedback({
     }
 
     if (gestureMode === 'pan') {
-      return { label: 'Pan Mode', color: '#3b82f6' };
+      return { label: 'Pan Mode', color: 'var(--app-accent-solid)' };
     } else if (gestureMode === 'pinch') {
-      return { label: 'Pinch/Zoom Mode', color: '#10b981' };
+      return { label: 'Pinch/Zoom Mode', color: 'var(--app-success-solid)' };
     }
     return null;
   }, [gestureMode]);
@@ -117,8 +114,8 @@ function TouchVisualFeedback({
             <div
               className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 text-xs font-mono px-2 py-0.5 rounded shadow-md whitespace-nowrap"
               style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                color: 'white',
+                backgroundColor: 'var(--app-bg-base)',
+                color: 'var(--app-text-primary)',
               }}
             >
               {(pressure * 100).toFixed(0)}%
@@ -145,7 +142,7 @@ function TouchVisualFeedback({
                 style={{
                   width: 40,
                   height: 40,
-                  backgroundColor: '#6366f1', // Indigo
+                  backgroundColor: 'var(--app-accent-solid)',
                 }}
               />
 
@@ -164,7 +161,7 @@ function TouchVisualFeedback({
                 y1={touchPoints[0].y}
                 x2={touchPoints[1].x}
                 y2={touchPoints[1].y}
-                stroke="#6366f1"
+                stroke="var(--app-accent-solid)"
                 strokeWidth="2"
                 strokeDasharray="5,5"
                 opacity="0.5"
@@ -180,7 +177,7 @@ function TouchVisualFeedback({
           className="absolute top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg font-semibold text-sm animate-fade-in"
           style={{
             backgroundColor: gestureModeInfo.color,
-            color: 'white',
+            color: 'var(--app-accent-solid-text)',
           }}
         >
           {gestureModeInfo.label}

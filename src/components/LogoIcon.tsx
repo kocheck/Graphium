@@ -69,7 +69,7 @@ export function LogoIcon({
         justifyContent: 'center',
         transition: isRolling ? 'none' : 'transform 0.3s ease-out',
         transform: `rotate(${rotation}deg) ${isRolling ? 'scale(1.1)' : 'scale(1)'}`,
-        filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))',
+        filter: 'drop-shadow(0 4px 12px var(--app-overlay))',
       }}
     >
       <img

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Visual language is direction A (instrument panel): 4px radius, hairline elevation, amber Architect accent, and a projector-safe World View token set gated by `tests/world-legibility.spec.ts`.
+- Resource monitor, asset-processing error panel, logo shadow, and touch HUD use `--app-*` tokens instead of leftover hex.
 
 ### Fixed
 
@@ -28,8 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web deploy workflow triggers on push to `main` again (restored at the end of the UI redesign program).
 
 ### Added
-
-- Design System Playground: direction switcher and motion tile (prototype)
 
 #### Hexagonal and Isometric Grid Support
 

@@ -121,13 +121,15 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
           style={{
             padding: '20px',
             margin: '20px',
-            backgroundColor: '#fee',
-            border: '2px solid #c33',
-            borderRadius: '8px',
-            fontFamily: 'system-ui, sans-serif',
+            backgroundColor: 'var(--app-error-bg)',
+            border: '2px solid var(--app-error-border)',
+            borderRadius: 'var(--app-radius-md)',
+            fontFamily: 'var(--app-font-family-title)',
           }}
         >
-          <h3 style={{ color: '#c33', margin: '0 0 10px 0' }}>{this.state.errorTitle}</h3>
+          <h3 style={{ color: 'var(--app-error-text)', margin: '0 0 10px 0' }}>
+            {this.state.errorTitle}
+          </h3>
           <p style={{ margin: '10px 0' }}>{this.state.errorDesc}</p>
           <ul style={{ margin: '10px 0 10px 20px' }}>
             <li>The file is corrupt or unsupported</li>
@@ -138,16 +140,16 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
 
           {this.state.error && (
             <details style={{ margin: '10px 0', cursor: 'pointer' }}>
-              <summary style={{ fontWeight: 'bold', color: '#c33' }}>
+              <summary style={{ fontWeight: 'bold', color: 'var(--app-error-text)' }}>
                 Error Details (for debugging)
               </summary>
               <pre
                 style={{
                   marginTop: '10px',
                   padding: '10px',
-                  backgroundColor: '#fff',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
+                  backgroundColor: 'var(--app-bg-base)',
+                  border: '1px solid var(--app-border-default)',
+                  borderRadius: 'var(--app-radius-sm)',
                   overflow: 'auto',
                   fontSize: '12px',
                 }}
@@ -163,20 +165,30 @@ class AssetProcessingErrorBoundary extends Component<Props, State> {
               onClick={this.handleRetry}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#4CAF50',
-                color: 'white',
+                backgroundColor: 'var(--app-success-solid)',
+                color: 'var(--app-success-solid-text)',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: 'var(--app-radius-sm)',
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: 'bold',
               }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#45a049')}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4CAF50')}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--app-success-solid-hover)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--app-success-solid)';
+              }}
             >
               Dismiss
             </button>
-            <span style={{ marginLeft: '10px', color: '#666', fontSize: '14px' }}>
+            <span
+              style={{
+                marginLeft: '10px',
+                color: 'var(--app-text-secondary)',
+                fontSize: '14px',
+              }}
+            >
               Please re-upload or re-crop your image to try again
             </span>
           </div>

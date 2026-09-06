@@ -798,7 +798,7 @@ export function HomeScreen({ onStartEditor }: HomeScreenProps): JSX.Element {
           z-index: 0;
           overflow: hidden;
           pointer-events: none;
-          /* Removed hardcoded #050505 to respect theme background */
+          /* Background is --app-bg-base from the theme; do not hardcode a fill. */
         }
 
         .bg-gradient {
