@@ -1,7 +1,7 @@
 ---
 id: state-without-colour
 applies_to: [mac, architect, world-view, toolbar, canvas]
-sources: ["brief §9 row 5", "HIG Accessibility", "PARITY §1.12"]
+sources: ['brief §9 row 5', 'HIG Accessibility', 'PARITY §1.12']
 confidence: decided
 reviewed: 2026-10-17
 ---
@@ -16,6 +16,7 @@ reviewed: 2026-10-17
 **Bad.** A button that only turns red. A selection that differs from hover only by hue.
 
 **Also check.**
+
 - VoiceOver reads the state ("Resume", "Broadcasting", "selected").
 - Increase Contrast keeps the cue visible (thicker selection ring, opaque backings).
 

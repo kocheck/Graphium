@@ -21,9 +21,9 @@ Scope: user-facing strings in `macos/App/` and the copy constants in `macos/Sour
 
 ## Before and after
 
-| Before | After |
-|---|---|
-| Resume - Players will see the map | Resume: players will see the map |
-| Pause - Hide map from players | Pause: hide the map from players |
+| Before                                                          | After                                                               |
+| --------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Resume - Players will see the map                               | Resume: players will see the map                                    |
+| Pause - Hide map from players                                   | Pause: hide the map from players                                    |
 | Dual-window VTT with fog of war • Local-first, no subscriptions | Two windows, fog of war, your files. No accounts, no subscriptions. |
-| Drag a box around exactly one grid cell on the map image | Drag a box around one grid cell on the map image |
+| Drag a box around exactly one grid cell on the map image        | Drag a box around one grid cell on the map image                    |

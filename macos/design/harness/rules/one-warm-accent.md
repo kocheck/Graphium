@@ -1,7 +1,12 @@
 ---
 id: one-warm-accent
 applies_to: [mac, architect, canvas, toolbar, overlay]
-sources: ["docs/planning/decisions/006-direction.md", "docs/planning/ui-redesign-brief.md#2-what-fresh-means-for-graphium", "brief §9 rows 1 and 4"]
+sources:
+  [
+    'docs/planning/decisions/006-direction.md',
+    'docs/planning/ui-redesign-brief.md#2-what-fresh-means-for-graphium',
+    'brief §9 rows 1 and 4',
+  ]
 confidence: decided
 reviewed: 2026-10-17
 ---
@@ -16,6 +21,7 @@ reviewed: 2026-10-17
 **Bad.** A blue selection ring, a green "live" button, a red tint on a button that isn't destructive, an amber background on a whole panel.
 
 **Also check.**
+
 - `controlAccentColor` follows the user's system accent (often blue); use `Palette.accent` on app-owned surfaces instead.
 - Map art, marker ink and token art are content, not accent; leave them as the DM chose.
 

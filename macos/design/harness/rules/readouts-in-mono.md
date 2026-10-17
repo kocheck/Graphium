@@ -1,7 +1,12 @@
 ---
 id: readouts-in-mono
 applies_to: [mac, readout, overlay, inspector, canvas]
-sources: ["brief §2.1 An instrument, not a dashboard", "brief §2.4 Typography does the work", "DESIGN.md#typography"]
+sources:
+  [
+    'brief §2.1 An instrument, not a dashboard',
+    'brief §2.4 Typography does the work',
+    'DESIGN.md#typography',
+  ]
 confidence: decided
 reviewed: 2026-10-17
 ---
@@ -16,6 +21,7 @@ reviewed: 2026-10-17
 **Bad.** A proportional bold system font for a measurement that jitters as it updates; a 10 pt caption for the frame rate.
 
 **Also check.**
+
 - Native `Form` rows keep system type; apply `.monospacedDigit()` to the value only.
 - Units stay attached with a space ("30 ft", "4.2 ms").
 

@@ -1,7 +1,7 @@
 ---
 id: canvas-marks-read-on-any-map
 applies_to: [mac, canvas, world-view, architect]
-sources: ["brief §8 hairlines", "brief §9 row 6", "DESIGN.md#colors"]
+sources: ['brief §8 hairlines', 'brief §9 row 6', 'DESIGN.md#colors']
 confidence: strong
 reviewed: 2026-10-17
 ---
@@ -16,6 +16,7 @@ reviewed: 2026-10-17
 **Bad.** A blue glow that vanishes on water, label text in `labelColor` that turns white on a parchment map in Dark Mode.
 
 **Also check.**
+
 - Line widths divide by zoom so they keep their on-screen size; World View strokes stay ≥ 2 pt.
 - Increase Contrast thickens rings and makes backings opaque.
 

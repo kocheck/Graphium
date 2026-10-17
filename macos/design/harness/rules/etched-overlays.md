@@ -1,7 +1,13 @@
 ---
 id: etched-overlays
 applies_to: [mac, overlay, canvas, welcome, motion]
-sources: ["brief §2.3 Etched, not floating", "brief §2.5 motion", "brief §5 anti-references", "DESIGN.md#depth"]
+sources:
+  [
+    'brief §2.3 Etched, not floating',
+    'brief §2.5 motion',
+    'brief §5 anti-references',
+    'DESIGN.md#depth',
+  ]
 confidence: decided
 reviewed: 2026-10-17
 ---
@@ -16,6 +22,7 @@ reviewed: 2026-10-17
 **Bad.** A `.regularMaterial` capsule, a soft drop shadow, a spring-in from the top, a gradient fill.
 
 **Also check.**
+
 - Native popovers and sheets keep their system material; this card is only for surfaces Graphium draws.
 - Overlay text uses `ink-primary`/`ink-secondary`, so it passes contrast in both appearances regardless of the map under it.
 

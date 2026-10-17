@@ -1,7 +1,8 @@
 ---
 id: world-view-player-safe
 applies_to: [mac, world-view, canvas, readout]
-sources: ["docs/planning/ui-redesign-brief.md#8-world-view-rules", "PARITY §4", "macos/docs/PRINCIPLES.md"]
+sources:
+  ['docs/planning/ui-redesign-brief.md#8-world-view-rules', 'PARITY §4', 'macos/docs/PRINCIPLES.md']
 confidence: decided
 reviewed: 2026-10-17
 ---
@@ -16,6 +17,7 @@ reviewed: 2026-10-17
 **Bad.** A 12 pt caption, a 1 px hairline frame, the Architect's amber selection ring, or a toolbar button that only the DM should press.
 
 **Also check.**
+
 - Nothing new appears in the World View without a decision recorded in `docs/planning/decisions/`.
 - While paused, the canvas is not drawn at all (opacity 0 is not enough if it can flash on resume).
 - Window toolbar items in the World View window are for whoever moves it to the projector (display placement); keep it to that.
