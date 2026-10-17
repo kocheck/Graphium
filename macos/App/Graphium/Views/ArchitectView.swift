@@ -211,6 +211,21 @@ struct ArchitectView: View {
                 break
             }
         }
+        .onAppear {
+            #if DEBUG
+                // Profiling (TS `?stress=1`): launch with `-GraphiumStress YES` to add the
+                // stress map (200 tokens, 50 walls, 200 strokes, 1,500 fog regions).
+                if UserDefaults.standard.bool(forKey: "GraphiumStress"),
+                    !document.campaign.maps.contains(where: { $0.name == "Stress Test" })
+                {
+                    let stress = StressFixture.map(exploredRegions: 1500)
+                    document.edit("Add Stress Map", undoManager: undoManager) {
+                        $0.maps.append(stress)
+                        $0.activeMapID = stress.id
+                    }
+                }
+            #endif
+        }
         .onReceive(NotificationCenter.default.publisher(for: .graphiumShowAbout)) { _ in
             ShowAbout(openWindow: openWindow)(.about)
         }
