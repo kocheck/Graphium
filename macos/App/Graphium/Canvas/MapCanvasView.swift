@@ -75,6 +75,8 @@ final class MapCanvasNSView: NSView {
     /// Positions of tokens another window is dragging (World View shows DM drags live).
     private var showMovementRange = false
     private var hoverPoint: Point2D?
+    /// The token under the pointer with the Select tool (Architect), for the hover look.
+    private var hoveredTokenID: String?
     var fitRequest: FitRequest? {
         didSet {
             guard let fitRequest, fitRequest != oldValue else { return }
@@ -407,7 +409,7 @@ final class MapCanvasNSView: NSView {
             let isSelected = selection.contains(token.id)
             if let offset = dragOffset, isSelected {
                 if offset.duplicate {
-                    drawToken(token, in: rect, lift: lift, selected: false, alpha: 1, context: context)  // original stays
+                    drawToken(token, in: rect, lift: lift, selected: false, look: .idle, context: context)  // original stays
                 }
                 rect = rect.offsetBy(dx: offset.dx, dy: offset.dy)
                 if let target = preview[token.id] {
@@ -418,12 +420,13 @@ final class MapCanvasNSView: NSView {
                     context.strokeEllipse(in: CGRect(x: target.x, y: target.y + lift, width: size, height: size))
                     context.restoreGState()
                 }
-                drawToken(token, in: rect, lift: lift, selected: true, alpha: 0.6, context: context)
+                drawToken(token, in: rect, lift: lift, selected: false, look: .dragged, context: context)
                 continue
             }
             // Cull tokens well off screen (2-cell margin, as in TS).
             guard padded.intersects(Bounds(x: token.x, y: token.y + lift, width: size, height: size)) else { continue }
-            drawToken(token, in: rect, lift: lift, selected: isSelected, alpha: 1, context: context)
+            let hovered = token.id == hoveredTokenID && toolState.tool == .select
+            drawToken(token, in: rect, lift: lift, selected: isSelected, look: hovered ? .hovered : .idle, context: context)
         }
     }
 
@@ -467,27 +470,52 @@ final class MapCanvasNSView: NSView {
         context.restoreGState()
     }
 
+    /// TS `TokenNode` states: hover (Select tool) scales 1.02 with a soft shadow; a dragged
+    /// token is 50% opaque, scaled 1.05, with a strong shadow. Scaled about the centre.
+    private enum TokenLook {
+        case idle, hovered, dragged
+    }
+
     /// `lift` is the iso display offset already applied to `rect`; the label stays under the footprint (TS).
-    private func drawToken(_ token: Token, in rect: CGRect, lift: Double, selected: Bool, alpha: CGFloat, context: CGContext) {
+    private func drawToken(_ token: Token, in rect: CGRect, lift: Double, selected: Bool, look: TokenLook, context: CGContext) {
         context.saveGState()
-        context.setAlpha(alpha)
+        var art = rect
+        // Shadow offsets ignore the CTM (base space); flip the sign so the shadow falls down-right.
+        let down: CGFloat = context.ctm.d < 0 ? -1 : 1
+        switch look {
+        case .idle:
+            break
+        case .hovered:
+            art = rect.insetBy(dx: -rect.width * 0.01, dy: -rect.height * 0.01)
+            context.setShadow(
+                offset: CGSize(width: 2, height: 2 * down), blur: 12, color: NSColor.black.withAlphaComponent(0.4).cgColor)
+        case .dragged:
+            art = rect.insetBy(dx: -rect.width * 0.025, dy: -rect.height * 0.025)
+            context.setAlpha(0.5)
+            context.setShadow(
+                offset: CGSize(width: 5, height: 5 * down), blur: 20, color: NSColor.black.withAlphaComponent(0.6).cgColor)
+        }
         if let image = imageProvider(token.src) {
-            draw(image, in: rect, context: context)
+            draw(image, in: art, context: context)
         } else {
             context.setFillColor(NSColor.systemGray.cgColor)
-            context.fillEllipse(in: rect.insetBy(dx: rect.width * 0.08, dy: rect.height * 0.08))
-        }
-        if selected {
-            context.setStrokeColor(NSColor.systemBlue.cgColor)
-            context.setLineWidth((highContrast ? 3.5 : 2) / viewport.zoom)
-            context.setLineDash(phase: 0, lengths: [6 / viewport.zoom, 3 / viewport.zoom])
-            context.stroke(rect.insetBy(dx: -3 / viewport.zoom, dy: -3 / viewport.zoom))
+            context.fillEllipse(in: art.insetBy(dx: art.width * 0.08, dy: art.height * 0.08))
         }
         context.restoreGState()
+        if selected {
+            // TS: a dashed [8, 4] blue circle of radius size/2 + 2 with a blue glow.
+            context.saveGState()
+            context.setShadow(offset: .zero, blur: 8, color: NSColor.systemBlue.cgColor)
+            context.setStrokeColor(NSColor.systemBlue.cgColor)
+            context.setLineWidth((highContrast ? 4.5 : 3) / viewport.zoom)
+            context.setLineDash(phase: 0, lengths: [8 / viewport.zoom, 4 / viewport.zoom])
+            context.strokeEllipse(in: rect.insetBy(dx: -2, dy: -2))
+            context.restoreGState()
+        }
 
         let name = ResolvedToken(token, library: library).name
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor.withAlphaComponent(alpha),
+            .font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor,
         ]
         let label = NSAttributedString(string: name, attributes: attributes)
         let labelSize = label.size()
@@ -732,7 +760,13 @@ final class MapCanvasNSView: NSView {
 
     override func mouseMoved(with event: NSEvent) {
         guard !isPlayerView, editing != nil else { return }
-        hoverPoint = mapLocation(of: event)
+        let point = mapLocation(of: event)
+        hoverPoint = point
+        if toolState.tool == .select, let hit = map?.token(at: point, library: library), !hiddenTokenIDs.contains(hit.id) {
+            hoveredTokenID = hit.id
+        } else {
+            hoveredTokenID = nil
+        }
         needsDisplay = true
     }
 
@@ -750,6 +784,7 @@ final class MapCanvasNSView: NSView {
 
     override func mouseExited(with event: NSEvent) {
         hoverPoint = nil
+        hoveredTokenID = nil
         needsDisplay = true
     }
 
