@@ -12,7 +12,7 @@ struct WorldWindow: View {
 
     var body: some View {
         if let sessionID, let document = DocumentRegistry.shared.document(for: sessionID) {
-            WorldView(document: document)
+            WorldView(document: document, liveDrag: document.liveDrag)
         } else {
             ContentUnavailableView(
                 "No Campaign",
@@ -24,6 +24,9 @@ struct WorldWindow: View {
 
 private struct WorldView: View {
     @ObservedObject var document: CampaignDocument
+    @ObservedObject var liveDrag: LiveDragModel
+    /// Raycasting reruns only when tokens, walls, doors or daylight change.
+    @State private var visibilityCache = VisibilityCache()
     @StateObject private var window = WindowReference()
     @State private var selection: Set<String> = []
     @State private var fitRequest: FitRequest?
@@ -41,9 +44,9 @@ private struct WorldView: View {
         let library = campaign.libraryIndex
         var map = campaign.activeMap
         // The DM's in-progress drag, so fog and NPC visibility follow it live.
-        if !document.liveTokenPositions.isEmpty {
+        if !liveDrag.positions.isEmpty {
             for i in map.tokens.indices {
-                if let p = document.liveTokenPositions[map.tokens[i].id] {
+                if let p = liveDrag.positions[map.tokens[i].id] {
                     map.tokens[i].x = p.x
                     map.tokens[i].y = p.y
                 }
@@ -51,10 +54,9 @@ private struct WorldView: View {
         }
         let party = map.partyBounds(library: library)
         // Fog and hidden NPCs (CORE_SPEC §3.3); none in daylight.
-        let vision = map.isDaylightMode ? [] : LineOfSight.polygons(of: map, library: library)
-        let hidden =
-            map.isDaylightMode
-            ? Set<String>() : LineOfSight.hiddenNPCIDs(of: map, library: library, polygons: vision.map(\.polygon))
+        let visibility = visibilityCache.visibility(of: map, library: library)
+        let vision = visibility.vision
+        let hidden = visibility.hiddenNPCIDs
         let fog =
             map.isDaylightMode
             ? nil

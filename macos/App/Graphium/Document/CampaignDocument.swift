@@ -28,9 +28,9 @@ final class CampaignDocument: ReferenceFileDocument {
     @Published var isPaused = false
     /// The DM's measurement mirrored to the World View when broadcasting. Transient.
     @Published var broadcastMeasurement: MeasurementShape?
-    /// Unsnapped positions of tokens the DM is dragging, so players see the move
-    /// as it happens (PARITY §4.2). Transient; never saved or undoable.
-    @Published var liveTokenPositions: [String: Point2D] = [:]
+    /// The DM's in-progress token drag. Its own object, not `@Published` here, so a
+    /// drag only re-renders the World View and not every view of the document.
+    let liveDrag = LiveDragModel()
     /// What the World View is showing/playing (Session Console). Session-only.
     @Published var sessionRuntime = SessionConsoleRuntime(catalog: .empty(campaignName: ""))
     /// Open World View windows, for the master bar's link status.
@@ -193,5 +193,15 @@ final class DocumentRegistry: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return documents[sessionID]?.document
+    }
+}
+
+/// Unsnapped positions of tokens the DM is dragging, so players see the move as it
+/// happens (PARITY §4.2). Transient; never saved or undoable.
+final class LiveDragModel: ObservableObject {
+    @Published var positions: [String: Point2D] = [:]
+
+    func update(_ new: [String: Point2D]) {
+        if new != positions { positions = new }
     }
 }

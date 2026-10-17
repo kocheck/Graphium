@@ -379,7 +379,7 @@ struct ArchitectView: View {
                     calibrating = false
                     showToast("Calibration cancelled")
                 },
-                dragPreview: { positions in document.liveTokenPositions = positions ?? [:] },
+                dragPreview: { positions in document.liveDrag.update(positions ?? [:]) },
                 setGridType: { type in
                     guard type != document.campaign.activeMap.gridType else { return }
                     document.edit("Change Grid", undoManager: undoManager) { $0.activeMap.gridType = type }
