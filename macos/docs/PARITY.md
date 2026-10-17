@@ -249,12 +249,12 @@ touch-bar-like floating HUD is optional.
 ### 2.3 Token inspector (Architect, shown when one or more tokens are selected)
 
 - [ ] Title — "Token Name" for a single token, or "N Tokens Selected". There is a compact read-only summary (Type, Vision) with an Edit button and a close button. (source: src/components/TokenInspector.tsx:205-250)
-- [ ] Name field — The placeholder reads "Multiple tokens" when several are selected. Edits apply to every selected token. (source: src/components/TokenInspector.tsx:145-150, 263-280)
-- [ ] Type — PC/NPC toggle. Hint: "Only PC tokens emit vision for Fog of War". (source: src/components/TokenInspector.tsx:152-157, 289-343)
-- [ ] Vision radius — Presets 0, 30, 60 and 120 ft, plus a number field from 0 to 300 in steps of 5. Applies to every selected token. (source: src/components/TokenInspector.tsx:159-164, 350-398)
+- [x] Name field — The placeholder reads "Multiple tokens" when several are selected. Edits apply to every selected token. (source: src/components/TokenInspector.tsx:145-150, 263-280)
+- [x] Type — PC/NPC toggle. Hint: "Only PC tokens emit vision for Fog of War". (source: src/components/TokenInspector.tsx:152-157, 289-343)
+- [x] Vision radius — Presets 0, 30, 60 and 120 ft, plus a number field from 0 to 300 in steps of 5. Applies to every selected token. (source: src/components/TokenInspector.tsx:159-164, 350-398)
 - [ ] "Save to library" (single, library-linked token) — Writes the name, type and vision back as library defaults. (source: src/components/TokenInspector.tsx:166-203, 400-430)
-- [ ] Read-only details — Scale (for example "1x") and rounded position. (source: src/components/TokenInspector.tsx:431-450)
-- [ ] Prototype/instance resolution — Each token property falls back to the linked library item's defaults (name, type, visionRadius, scale, movementSpeed). (source: src/store/gameStore.ts:25-62, src/hooks/useTokenData.ts)
+- [x] Read-only details — Scale (for example "1x") and rounded position. (source: src/components/TokenInspector.tsx:431-450)
+- [x] Prototype/instance resolution — Each token property falls back to the linked library item's defaults (name, type, visionRadius, scale, movementSpeed). (source: src/store/gameStore.ts:25-62, src/hooks/useTokenData.ts)
 - [ ] Not editable anywhere in the UI: per-token `movementSpeed` (always the 30 ft default unless a library default sets it), token rotation, and explicit numeric scale. (source: src/components/Canvas/OverlayLayer.tsx:131, src/hooks/useTokenData.ts)
 
 **Native mapping:** Use a trailing `.inspector` (macOS 14) with a `Form`, a `Picker(.segmented)` for
@@ -276,13 +276,13 @@ decision.
 
 ### 3.1 Pan and zoom
 
-- [ ] Zoom range is 0.1x to 5x with a step factor of 1.1. Zoom is anchored at the pointer for the wheel and at the pinch centre for pinch. (source: src/components/Canvas/CanvasManager.tsx:35-37, 494-523)
-- [ ] Mouse/trackpad — The wheel pans (deltaX/deltaY). Ctrl/Cmd+wheel zooms. A trackpad pinch arrives as ctrl+wheel. (source: src/components/Canvas/CanvasManager.tsx:978-1006)
+- [x] Zoom range is 0.1x to 5x with a step factor of 1.1. Zoom is anchored at the pointer for the wheel and at the pinch centre for pinch. (source: src/components/Canvas/CanvasManager.tsx:35-37, 494-523)
+- [x] Mouse/trackpad — The wheel pans (deltaX/deltaY). Ctrl/Cmd+wheel zooms. A trackpad pinch arrives as ctrl+wheel. (source: src/components/Canvas/CanvasManager.tsx:978-1006)
 - [ ] Space+drag pans with grab/grabbing cursors. The viewport is clamped on release. (source: src/components/Canvas/CanvasManager.tsx:1155, 1170-1196)
-- [ ] Keyboard `+`/`-` zoom around the centre. (source: src/components/Canvas/CanvasManager.tsx:526-539)
+- [x] Keyboard `+`/`-` zoom around the centre. (source: src/components/Canvas/CanvasManager.tsx:526-539)
 - [ ] Touch — Two-finger pinch zooms when the distance change is above a threshold (setting, clamped to 5-50 px, default 10). Otherwise two fingers pan. One finger goes to the active tool. Default gestures are suppressed for drawing tools. (source: src/components/Canvas/CanvasManager.tsx:307-315, 713-821)
 - [ ] Viewport clamp — The viewport centre stays within the map bounds (or ±5000 with no map), expanded by PC token bounds, plus 1000 px of padding. (source: src/components/Canvas/CanvasManager.tsx:39, 439-491)
-- [ ] Camera is per window — Architect and World View pan and zoom independently. The camera is not synced. (source: src/components/Canvas/CanvasManager.tsx:257-298)
+- [x] Camera is per window — Architect and World View pan and zoom independently. The camera is not synced. (source: src/components/Canvas/CanvasManager.tsx:257-298)
 - [ ] Performance — Gestures write the stage transform directly and commit to React state 100 ms later. (source: src/components/Canvas/CanvasManager.tsx:268-298)
 - [ ] Cursor — Crosshair for drawing, measure and door tools. Default for select. Grabbing while dragging a token. (source: src/components/Canvas/CanvasManager.tsx:406-429)
 
@@ -307,13 +307,13 @@ WebP input must decode (ImageIO handles it on macOS 11 and later).
 
 ### 3.3 Grid
 
-- [ ] Types — Square Lines, Square Dots, Hexagonal (flat-top, axial coordinates), Isometric (diamond), Hidden. Set per map. (source: src/store/gameStore.ts:101, src/types/grid.ts, src/utils/gridGeometry.ts)
+- [x] Types — Square Lines, Square Dots, Hexagonal (flat-top, axial coordinates), Isometric (diamond), Hidden. Set per map. (source: src/store/gameStore.ts:101, src/types/grid.ts, src/utils/gridGeometry.ts)
 - [ ] Size semantics — Square: cell px. Hex: circumradius. Iso: half the diamond width. The default is 50. There is no UI to type a grid size. Templates set 50 and calibration scales the map, not the grid. (source: CHANGELOG.md "Grid Size Semantics", src/store/gameStore.ts:267, src/components/HomeScreen.tsx:397)
 - [ ] Per-map grid colour picker — Default `#222222`, theme-adaptive when left at the default. A note is shown while the grid is hidden. (source: src/components/MapSettingsSheet.tsx:369-395, src/components/Canvas/CanvasManager.tsx:303-305)
 - [ ] Viewport culling — Only visible lines, cells or dots are drawn. The DOTS step coarsens above 10,000 dots. (source: src/components/Canvas/GridOverlay.tsx:1-60)
 - [ ] Hover cell highlight — A translucent fill on the hovered cell, for every type except Dots and Hidden. Architect only. (source: src/components/Canvas/GridOverlay.tsx:72-80, 213-230, src/components/Canvas/hooks/useCanvasInteraction.ts:377-384)
-- [ ] Snapping — Square: odd-sized tokens snap to cell centres and even-sized tokens to intersections. Hex/iso: always snap to the cell centre. Applies on drop, drag end and door placement. (source: src/utils/grid.ts, CHANGELOG.md "Smart Grid-Aware Snapping")
-- [ ] Snap preview — A dashed blue circle shows the snap destination of each dragged token, including multi-token drags. (source: src/components/Canvas/OverlayLayer.tsx:57-90, src/components/Canvas/hooks/useTokenDrag.ts:249-294)
+- [x] Snapping — Square: odd-sized tokens snap to cell centres and even-sized tokens to intersections. Hex/iso: always snap to the cell centre. Applies on drop, drag end and door placement. (source: src/utils/grid.ts, CHANGELOG.md "Smart Grid-Aware Snapping")
+- [x] Snap preview — A dashed blue circle shows the snap destination of each dragged token, including multi-token drags. (source: src/components/Canvas/OverlayLayer.tsx:57-90, src/components/Canvas/hooks/useTokenDrag.ts:249-294)
 - [ ] Grid type quick keys `1` to `5` with toasts (see 1.4).
 
 **Native mapping:** Port `GridGeometry` (pixelToGrid, gridToPixel, getCellVertices, neighbours) to
@@ -328,14 +328,14 @@ Render with a `CAShapeLayer` path rebuilt on viewport change, or in a Metal pass
 - [ ] Add from the command palette at the map centre (see 1.5).
 - [ ] Rendering — Square image of size gridSize x scale. The name label (12pt bold, theme text colour) sits below. Iso grids offset the token up by half its height. Hover shows a soft shadow. A selected token gets a dashed blue ring. A dragged token is semi-transparent with a strong shadow. (source: src/components/Canvas/TokenNode.tsx:36-100, 145-215)
 - [ ] Move — Pointer drag with a 5 px threshold. Multi-select drags move together. Every token snaps on release. Live positions stream to World View during the drag (rAF-batched). (source: src/components/Canvas/hooks/useTokenDrag.ts:94, 106-116, 330-392)
-- [ ] Duplicate — Option/Alt-drag leaves the originals and drops copies at the snapped destinations. Ghosts are shown while dragging. (source: src/components/Canvas/hooks/useTokenDrag.ts:394-401, src/components/Canvas/TokenLayer.tsx:76-82)
+- [x] Duplicate — Option/Alt-drag leaves the originals and drops copies at the snapped destinations. Ghosts are shown while dragging. (source: src/components/Canvas/hooks/useTokenDrag.ts:394-401, src/components/Canvas/TokenLayer.tsx:76-82)
 - [ ] Resize — Transformer handles scale the token uniformly (the average of scaleX and scaleY multiplies the stored scale). Architect only. (source: src/components/Canvas/CanvasManager.tsx:1357-1396)
 - [ ] Rotate **(gap)** — The Konva Transformer shows its default rotate handle, but rotation is discarded on transform end and the Token model has no rotation field. [Decision needed: either hide rotation or add `rotation` to the model.] (source: src/components/Canvas/CanvasManager.tsx:1359-1394, src/store/gameStore.ts:51-62)
-- [ ] Select — Click selects. Shift-click toggles. Marquee selection starts on empty stage or map and selects tokens and drawings whose bounds intersect. Shift-marquee is additive. Clicking empty space clears the selection. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:334-351, 476-502, 650-695)
-- [ ] Delete with `Delete`/`Backspace`. (see 1.4)
-- [ ] There is no undo or redo anywhere in the app. The native port should add it. (source: src/store/gameStore.ts:296-447 has no history)
-- [ ] Viewport culling — Off-screen tokens (with a 2-cell margin) skip their visuals. (source: src/components/Canvas/TokenNode.tsx:150-153, src/utils/viewportCulling.ts)
-- [ ] Token library linkage — Instances store only id, x, y, src and libraryItemId. Other properties inherit from the library item unless overridden. (source: src/utils/tokenHelpers.ts:19-41, src/store/gameStore.ts:25-62)
+- [x] Select — Click selects. Shift-click toggles. Marquee selection starts on empty stage or map and selects tokens and drawings whose bounds intersect. Shift-marquee is additive. Clicking empty space clears the selection. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:334-351, 476-502, 650-695)
+- [x] Delete with `Delete`/`Backspace`. (see 1.4)
+- [x] There is no undo or redo anywhere in the app. The native port should add it. (source: src/store/gameStore.ts:296-447 has no history)
+- [x] Viewport culling — Off-screen tokens (with a 2-cell margin) skip their visuals. (source: src/components/Canvas/TokenNode.tsx:150-153, src/utils/viewportCulling.ts)
+- [x] Token library linkage — Instances store only id, x, y, src and libraryItemId. Other properties inherit from the library item unless overridden. (source: src/utils/tokenHelpers.ts:19-41, src/store/gameStore.ts:25-62)
 
 **Native mapping:** Make tokens model structs in GraphiumCore. Render them as `CALayer`s (contents =
 `CGImage`) or Metal instanced quads. Handle drag in `mouseDown`/`mouseDragged`. Use
@@ -488,12 +488,12 @@ system window picker (ScreenCaptureKit) handles "share this window with audio" n
 
 ### 5.1 Campaign and multiple maps
 
-- [ ] A campaign has an id, a name, maps (a dictionary), an activeMapId, a tokenLibrary and a sessionConsole catalog. A new campaign is named "New Campaign" with one map, "Map 1" or "Default Map". (source: src/store/gameStore.ts:153-161, 256-283)
-- [ ] Each map holds its own tokens, drawings, doors, stairs, background, grid size, type and colour, explored regions and daylight flag. (source: src/store/gameStore.ts:105-118)
-- [ ] Switch map from the sidebar list. The active map is synced into the campaign before switching. (source: src/store/gameStore.ts:692-728, src/components/Sidebar.tsx:303-330)
+- [x] A campaign has an id, a name, maps (a dictionary), an activeMapId, a tokenLibrary and a sessionConsole catalog. A new campaign is named "New Campaign" with one map, "Map 1" or "Default Map". (source: src/store/gameStore.ts:153-161, 256-283)
+- [x] Each map holds its own tokens, drawings, doors, stairs, background, grid size, type and colour, explored regions and daylight flag. (source: src/store/gameStore.ts:105-118)
+- [x] Switch map from the sidebar list. The active map is synced into the campaign before switching. (source: src/store/gameStore.ts:692-728, src/components/Sidebar.tsx:303-330)
 - [ ] Create a map with Map Settings in create mode: name (default "Untitled Map"), optional background image, grid type, grid colour and daylight. The new map becomes active. (source: src/components/MapSettingsSheet.tsx:183-210, src/store/gameStore.ts:603-630)
-- [ ] Rename a map in edit mode. An empty name is rejected with a toast. (source: src/components/MapSettingsSheet.tsx:211-220, src/store/gameStore.ts:730-750)
-- [ ] Delete map **(gap)** — `deleteMap` exists (it refuses to delete the last map and switches to the next or previous map first), but its only UI is `MapNavigator.tsx`, which nothing mounts. [Intended: a delete action for maps with confirmation.] (source: src/store/gameStore.ts:632-690, src/components/MapNavigator.tsx:20, 66)
+- [x] Rename a map in edit mode. An empty name is rejected with a toast. (source: src/components/MapSettingsSheet.tsx:211-220, src/store/gameStore.ts:730-750)
+- [x] Delete map **(gap)** — `deleteMap` exists (it refuses to delete the last map and switches to the next or previous map first), but its only UI is `MapNavigator.tsx`, which nothing mounts. [Intended: a delete action for maps with confirmation.] (source: src/store/gameStore.ts:632-690, src/components/MapNavigator.tsx:20, 66)
 - [ ] MapNavigator (not mounted) — A dropdown map switcher with inline rename (Enter/Esc), delete and add. Use it as a spec for map management UI, not as a current feature. (source: src/components/MapNavigator.tsx)
 - [ ] There is no UI to rename the campaign itself. The name comes from the file or the template. (source: src/store/gameStore.ts, src/components/Sidebar.tsx:280)
 
@@ -504,12 +504,12 @@ is the document name.
 ### 5.2 New / open / save / autosave
 
 - [ ] File format `.graphium` — A ZIP with `manifest.json` (the campaign JSON) and `assets/` (every `file://` asset copied in with collision-safe basenames, including library thumbnails). (source: electron/main.ts:637-717)
-- [ ] Load — Unzips into a fresh `sessions/<timestamp>/` folder and rewrites asset paths to absolute URLs. Legacy single-map files (no `maps` key) are migrated into "Imported Campaign" / "Imported Map". A missing session console catalog is filled in. (source: electron/main.ts:719-799, 853-901, src/store/gameStore.ts:285-295, 490-518)
+- [x] Load — Unzips into a fresh `sessions/<timestamp>/` folder and rewrites asset paths to absolute URLs. Legacy single-map files (no `maps` key) are migrated into "Imported Campaign" / "Imported Map". A missing session console catalog is filled in. (source: electron/main.ts:719-799, 853-901, src/store/gameStore.ts:285-295, 490-518)
 - [ ] Save — Always shows the native save dialog (Save-As semantics). It writes non-atomically and remembers the path for autosave. (source: electron/main.ts:817-832)
 - [ ] Autosave — Every 60 s, only after a path is known (that is, after a save or load). Atomic `.tmp` + rename. Failures are silent. Web autosaves to IndexedDB. (source: src/components/AutoSaveManager.tsx:16-60, electron/main.ts:834-851)
 - [ ] Asset security — Saving refuses assets outside the temp, sessions or library roots. A missing asset gives "Campaign asset file not found". (source: electron/main.ts:645-667, electron/pathSecurity.ts)
 - [ ] New campaign from the menu asks for confirmation. Home "New Campaign" just enters the editor. (see 1.2 and 1.3)
-- [ ] Dirty-state tracking and "unsaved changes" prompts on close **(gap)** do not exist. Closing a window or quitting never warns. [Intended natively: standard document dirty tracking.]
+- [x] Dirty-state tracking and "unsaved changes" prompts on close **(gap)** do not exist. Closing a window or quitting never warns. [Intended natively: standard document dirty tracking.]
 - [ ] Compatibility — The native app must open existing `.graphium` ZIPs, legacy single-map manifests included. Native files may use `.graphiumcampaign` (see macos/README.md), but `.graphium` import and export are required for parity. (source: electron/main.ts:853-901)
 
 **Native mapping:** `DocumentGroup` with a `ReferenceFileDocument` whose `FileWrapper` is a
