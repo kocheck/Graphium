@@ -376,15 +376,15 @@ right-click `NSMenu` (and Control-click).
 
 ### 3.7 Fog of war and explored regions
 
-- [ ] Fog renders only in World View, and only when Daylight Mode is off. The Architect always sees the whole map. (source: src/components/Canvas/CanvasManager.tsx:1289-1303)
-- [ ] Vision sources — PC tokens with a vision radius above 0. Radius in px = feet / 5 x gridSize. (source: src/components/Canvas/FogOfWarLayer.tsx:340-372)
-- [ ] Raycast visibility polygon for each PC against wall segments (wall drawings, with their x/y/scale transforms applied) and closed doors. The ray count depends on radius and zoom. Polygons are cached per token and recomputed only when that token or the walls change. (source: src/components/Canvas/FogOfWarLayer.tsx:100-120, 252-372)
-- [ ] Three-state fog — Unexplored areas are 94% black. Explored areas are dimmed through a cached offscreen mask (union of explored polygons). Current vision is cleared with a radial-gradient soft edge. (source: src/components/Canvas/FogOfWarLayer.tsx:452-540, docs/features/explored-fog-of-war.md)
-- [ ] Explored regions are recorded at most once per second per PC polygon, capped at 2000 per map (oldest dropped), and persisted in the map. (source: src/components/Canvas/FogOfWarLayer.tsx:395-427, src/store/gameStore.ts:248, 852-859)
-- [ ] NPC hiding — NPC tokens outside every PC's vision are hidden and not interactive in World View. (source: src/utils/fogVisibility.ts, src/components/Canvas/FogOfWarLayer.tsx:384-387, src/components/Canvas/TokenNode.tsx:134, 162)
+- [x] Fog renders only in World View, and only when Daylight Mode is off. The Architect always sees the whole map. (source: src/components/Canvas/CanvasManager.tsx:1289-1303)
+- [x] Vision sources — PC tokens with a vision radius above 0. Radius in px = feet / 5 x gridSize. (source: src/components/Canvas/FogOfWarLayer.tsx:340-372)
+- [x] Raycast visibility polygon for each PC against wall segments (wall drawings, with their x/y/scale transforms applied) and closed doors. The ray count depends on radius and zoom. Polygons are cached per token and recomputed only when that token or the walls change. (source: src/components/Canvas/FogOfWarLayer.tsx:100-120, 252-372)
+- [x] Three-state fog — Unexplored areas are 94% black. Explored areas are dimmed through a cached offscreen mask (union of explored polygons). Current vision is cleared with a radial-gradient soft edge. (source: src/components/Canvas/FogOfWarLayer.tsx:452-540, docs/features/explored-fog-of-war.md)
+- [x] Explored regions are recorded at most once per second per PC polygon, capped at 2000 per map (oldest dropped), and persisted in the map. (source: src/components/Canvas/FogOfWarLayer.tsx:395-427, src/store/gameStore.ts:248, 852-859)
+- [x] NPC hiding — NPC tokens outside every PC's vision are hidden and not interactive in World View. (source: src/utils/fogVisibility.ts, src/components/Canvas/FogOfWarLayer.tsx:384-387, src/components/Canvas/TokenNode.tsx:134, 162)
 - [ ] Wall lines show in World View as black 6 px lines, drawn under the fog. (source: src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/CanvasManager.tsx:1290)
-- [ ] Reset explored fog **(gap)** — `clearExploredRegions` exists, but nothing in the UI calls it. [Intended: a "Reset explored areas" action per map.] (source: src/store/gameStore.ts:860)
-- [ ] Explored-region sync caveat — Explored regions are computed in World View, but World-to-Architect sync only carries token x/y. So regions recorded in World View never reach the Architect's saved campaign. **(gap)** [Intended: compute exploration in the shared model so it persists.] (source: src/utils/worldViewTokenSync.ts, src/components/SyncManager.tsx:267-268)
+- [x] Reset explored fog **(gap)** — `clearExploredRegions` exists, but nothing in the UI calls it. [Intended: a "Reset explored areas" action per map.] (source: src/store/gameStore.ts:860)
+- [x] Explored-region sync caveat — Explored regions are computed in World View, but World-to-Architect sync only carries token x/y. So regions recorded in World View never reach the Architect's saved campaign. **(gap)** [Intended: compute exploration in the shared model so it persists.] (source: src/utils/worldViewTokenSync.ts, src/components/SyncManager.tsx:267-268)
 
 **Native mapping:** Port the visibility-polygon raycaster to GraphiumCore as pure Swift (SIMD) and
 unit-test it. Render fog as a Metal fragment pass or a `CALayer` mask: a `CGImage` explored
@@ -393,7 +393,7 @@ exploration is computed once.
 
 ### 3.8 Daylight mode
 
-- [ ] A per-map toggle in Map Settings ("Daylight Mode", with the description switching between "Fog of War disabled" and "Fog of War enabled"). When on, World View shows no fog. In create mode the value is pending until "Create Map". (source: src/components/MapSettingsSheet.tsx:396-415, src/store/gameStore.ts:861)
+- [x] A per-map toggle in Map Settings ("Daylight Mode", with the description switching between "Fog of War disabled" and "Fog of War enabled"). When on, World View shows no fog. In create mode the value is pending until "Create Map". (source: src/components/MapSettingsSheet.tsx:396-415, src/store/gameStore.ts:861)
 
 ### 3.9 Measurement overlay
 
@@ -444,7 +444,7 @@ at 25%) as a pattern layer.
 
 - [ ] The map background, paper noise, the grid in the map's grid colour, markers, wall lines (black, 6 px), doors with high-legibility styling, stairs, tokens with name labels, fog of war (unless Daylight mode is on), and the DM's measurement when broadcasting is on. (source: src/components/Canvas/CanvasManager.tsx:1201-1356, src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/DoorShape.tsx:182-217)
 - [ ] Not shown: the sidebar, toolbar, inspector, palette, resource monitor, transformer handles, hover-cell highlight, door preview and movement range. (source: src/App.tsx:516-618, src/components/Canvas/OverlayLayer.tsx:33, 119)
-- [ ] NPCs outside party vision are hidden (see 3.7).
+- [x] NPCs outside party vision are hidden (see 3.7).
 - [x] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
 - [ ] Minimap (see 3.12).
 - [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2)
