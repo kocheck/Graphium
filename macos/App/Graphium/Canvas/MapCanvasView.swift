@@ -20,7 +20,7 @@ struct CanvasEditing {
 struct FogState {
     var bounds: Bounds
     var explored: [[Point2D]]
-    var vision: [Visibility.VisionPolygon]
+    var vision: [LineOfSight.VisionPolygon]
 }
 
 /// Asks a canvas to frame a region once (e.g. Center on Party). A new `id` re-triggers.

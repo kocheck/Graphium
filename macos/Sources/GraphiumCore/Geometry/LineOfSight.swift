@@ -12,7 +12,7 @@ public struct WallSegment: Equatable, Sendable {
 }
 
 /// Fog of war / line of sight (CORE_SPEC §3.3). Pure maths; the app renders it.
-public enum Visibility {
+public enum LineOfSight {
     /// World bounds fogged when no map image exists (TS `NO_MAP_FOG_BOUNDS`).
     public static let noMapFogBounds = Bounds(x: -500, y: -500, width: 3500, height: 3500)
 
@@ -181,8 +181,8 @@ extension GameMap {
         since previous: GameMap, library: [String: TokenLibraryItem], timestamp: Double
     ) {
         guard !isDaylightMode else { return }
-        let before = Set(Visibility.viewers(of: previous, library: library).map(\.key))
-        let changed = Visibility.polygons(of: self, library: library).filter { !before.contains($0.viewer.key) }
+        let before = Set(LineOfSight.viewers(of: previous, library: library).map(\.key))
+        let changed = LineOfSight.polygons(of: self, library: library).filter { !before.contains($0.viewer.key) }
         for entry in changed where !entry.polygon.isEmpty {
             addExploredRegion(ExploredRegion(points: entry.polygon, timestamp: timestamp))
         }

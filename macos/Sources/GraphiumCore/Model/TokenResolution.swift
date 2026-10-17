@@ -26,7 +26,7 @@ public struct ResolvedToken: Equatable, Sendable {
         var inherited = Set<Field>()
         func pick<T>(_ instance: T?, _ libraryValue: T?, _ field: Field) -> T? {
             if let instance { return instance }
-            if let libraryValue { inherited.insert(field) }
+            if libraryValue != nil { inherited.insert(field) }
             return libraryValue
         }
         name = pick(token.name, item?.name, .name) ?? Self.defaultName

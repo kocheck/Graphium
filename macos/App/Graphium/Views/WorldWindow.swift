@@ -35,15 +35,15 @@ private struct WorldView: View {
         let map = campaign.activeMap
         let party = map.partyBounds(library: library)
         // Fog and hidden NPCs (CORE_SPEC §3.3); none in daylight.
-        let vision = map.isDaylightMode ? [] : Visibility.polygons(of: map, library: library)
+        let vision = map.isDaylightMode ? [] : LineOfSight.polygons(of: map, library: library)
         let hidden =
             map.isDaylightMode
-            ? Set<String>() : Visibility.hiddenNPCIDs(of: map, library: library, polygons: vision.map(\.polygon))
+            ? Set<String>() : LineOfSight.hiddenNPCIDs(of: map, library: library, polygons: vision.map(\.polygon))
         let fog =
             map.isDaylightMode
             ? nil
             : FogState(
-                bounds: Visibility.fogBounds(of: map), explored: map.exploredRegions.map(\.points), vision: vision)
+                bounds: LineOfSight.fogBounds(of: map), explored: map.exploredRegions.map(\.points), vision: vision)
 
         ZStack(alignment: .bottomTrailing) {
             MapCanvas(
