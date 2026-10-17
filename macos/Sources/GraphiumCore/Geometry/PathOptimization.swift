@@ -58,7 +58,8 @@ public enum PathOptimization {
     /// on any segment within `threshold`, else the point unchanged.
     public static func snap(_ point: Point2D, to paths: [[Double]], threshold: Double) -> SnapResult {
         var best: (point: Point2D, distance: Double, index: Int)?
-        for (index, path) in paths.enumerated() where path.count >= 2 {
+        // Paths shorter than one segment are ignored entirely (TS).
+        for (index, path) in paths.enumerated() where path.count >= 4 {
             for i in stride(from: 0, to: path.count - 1, by: 2) {
                 let v = Point2D(x: path[i], y: path[i + 1])
                 let d = hypot(v.x - point.x, v.y - point.y)
