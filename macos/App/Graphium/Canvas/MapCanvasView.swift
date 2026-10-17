@@ -7,11 +7,19 @@ import UniformTypeIdentifiers
 /// World View. All campaign changes go through the owner so they get undo.
 struct CanvasEditing {
     var setSelection: (Set<String>) -> Void
-    /// Commits a token drag; `duplicate` is Option-drag.
+    /// Commits a token drag; `duplicate` is Option-drag (only when `allowsDuplicate`).
     var dropTokens: (_ ids: [String], _ primary: String, _ dx: Double, _ dy: Double, _ duplicate: Bool) -> Void
-    var deleteSelection: () -> Void
-    /// Image files dropped from Finder at a map point.
-    var dropImageFiles: (_ urls: [URL], _ at: Point2D) -> Void
+    var allowsDuplicate = true
+    /// Nil where deleting isn't allowed (World View).
+    var deleteSelection: (() -> Void)?
+    /// Image files dropped from Finder at a map point; nil where drops aren't allowed.
+    var dropImageFiles: ((_ urls: [URL], _ at: Point2D) -> Void)?
+}
+
+/// Asks a canvas to frame a region once (e.g. Center on Party). A new `id` re-triggers.
+struct FitRequest: Equatable {
+    var id = UUID()
+    var bounds: Bounds
 }
 
 /// The map surface. AppKit, not SwiftUI Canvas, because it needs raw NSEvent
@@ -23,6 +31,14 @@ final class MapCanvasNSView: NSView {
     var imageProvider: (String) -> CGImage? = { _ in nil }
     var selection: Set<String> = []
     var editing: CanvasEditing?
+    /// Tokens players must not see or grab (NPCs outside party vision, M4).
+    var hiddenTokenIDs: Set<String> = []
+    var fitRequest: FitRequest? {
+        didSet {
+            guard let fitRequest, fitRequest != oldValue else { return }
+            viewport.fit(fitRequest.bounds, viewWidth: Double(bounds.width), viewHeight: Double(bounds.height))
+        }
+    }
     var viewport = Viewport() { didSet { if viewport != oldValue { needsDisplay = true } } }
 
     /// Drag distance (view points) before a press on a token becomes a move.
@@ -159,7 +175,7 @@ final class MapCanvasNSView: NSView {
         var dragOffset: (dx: Double, dy: Double, duplicate: Bool)?
         var preview: [String: Point2D] = [:]
         if case .movingTokens(let ids, let primary, let start, let current, true) = interaction {
-            let duplicate = NSEvent.modifierFlags.contains(.option)
+            let duplicate = NSEvent.modifierFlags.contains(.option) && editing?.allowsDuplicate == true
             dragOffset = (current.x - start.x, current.y - start.y, duplicate)
             // Snap preview: where each token will land on release.
             var trial = map
@@ -176,7 +192,7 @@ final class MapCanvasNSView: NSView {
         let padded = Bounds(
             x: visible.x - margin, y: visible.y - margin, width: visible.width + 2 * margin,
             height: visible.height + 2 * margin)
-        for token in map.tokens {
+        for token in map.tokens where !hiddenTokenIDs.contains(token.id) {
             let size = map.tokenSize(token, library: library)
             var rect = CGRect(x: token.x, y: token.y, width: size, height: size)
             let isSelected = selection.contains(token.id)
@@ -248,7 +264,7 @@ final class MapCanvasNSView: NSView {
         }
         let point = mapLocation(of: event)
         let shift = event.modifierFlags.contains(.shift)
-        if let hit = map.token(at: point, library: library) {
+        if let hit = map.token(at: point, library: library), !hiddenTokenIDs.contains(hit.id) {
             if shift {
                 var next = selection
                 if next.contains(hit.id) { next.remove(hit.id) } else { next.insert(hit.id) }
@@ -294,8 +310,8 @@ final class MapCanvasNSView: NSView {
 
     override func mouseUp(with event: NSEvent) {
         if case .movingTokens(let ids, let primary, let start, let current, true) = interaction {
-            editing?.dropTokens(
-                ids, primary, current.x - start.x, current.y - start.y, event.modifierFlags.contains(.option))
+            let duplicate = event.modifierFlags.contains(.option) && editing?.allowsDuplicate == true
+            editing?.dropTokens(ids, primary, current.x - start.x, current.y - start.y, duplicate)
         }
         interaction = .idle
         (spaceHeld ? NSCursor.openHand : NSCursor.arrow).set()
@@ -331,7 +347,7 @@ final class MapCanvasNSView: NSView {
                 NSCursor.openHand.set()
             }
         case 51, 117:  // delete, forward delete
-            if !selection.isEmpty { editing?.deleteSelection() }
+            if !selection.isEmpty { editing?.deleteSelection?() }
         case 53:  // escape
             editing?.setSelection([])
         default:
@@ -363,14 +379,14 @@ final class MapCanvasNSView: NSView {
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        editing != nil && !imageURLs(from: sender).isEmpty ? .copy : []
+        editing?.dropImageFiles != nil && !imageURLs(from: sender).isEmpty ? .copy : []
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         let urls = imageURLs(from: sender)
-        guard let editing, !urls.isEmpty else { return false }
+        guard let drop = editing?.dropImageFiles, !urls.isEmpty else { return false }
         let location = convert(sender.draggingLocation, from: nil)
-        editing.dropImageFiles(urls, viewport.mapPoint(fromView: Point2D(x: Double(location.x), y: Double(location.y))))
+        drop(urls, viewport.mapPoint(fromView: Point2D(x: Double(location.x), y: Double(location.y))))
         return true
     }
 }
@@ -381,6 +397,8 @@ struct MapCanvas: NSViewRepresentable {
     let imageProvider: (String) -> CGImage?
     var selection: Set<String> = []
     var editing: CanvasEditing?
+    var hiddenTokenIDs: Set<String> = []
+    var fitRequest: FitRequest?
 
     func makeNSView(context: Context) -> MapCanvasNSView {
         MapCanvasNSView()
@@ -392,6 +410,8 @@ struct MapCanvas: NSViewRepresentable {
         view.imageProvider = imageProvider
         view.selection = selection
         view.editing = editing
+        view.hiddenTokenIDs = hiddenTokenIDs
+        view.fitRequest = fitRequest
         view.needsDisplay = true
     }
 }

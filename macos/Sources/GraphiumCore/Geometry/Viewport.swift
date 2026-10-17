@@ -32,4 +32,15 @@ public struct Viewport: Equatable, Sendable {
         origin.x -= dx / zoom
         origin.y -= dy / zoom
     }
+
+    /// Fits `bounds` (map units) into a view of the given size, centred, with the
+    /// zoom clamped to `zoomRange` (TS "Center on Party").
+    public mutating func fit(_ bounds: Bounds, viewWidth: Double, viewHeight: Double) {
+        guard bounds.width > 0, bounds.height > 0, viewWidth > 0, viewHeight > 0 else { return }
+        let scale = min(viewWidth / bounds.width, viewHeight / bounds.height)
+        zoom = min(max(scale, Self.zoomRange.lowerBound), Self.zoomRange.upperBound)
+        origin = Point2D(
+            x: bounds.x + bounds.width / 2 - viewWidth / (2 * zoom),
+            y: bounds.y + bounds.height / 2 - viewHeight / (2 * zoom))
+    }
 }

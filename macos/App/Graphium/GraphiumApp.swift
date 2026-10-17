@@ -9,6 +9,7 @@ struct GraphiumApp: App {
         DocumentGroup(newDocument: { CampaignDocument() }) { file in
             ArchitectView(document: file.document)
         }
+        .commands { WorldViewCommands() }
 
         WindowGroup("World View", id: WorldWindow.id, for: UUID.self) { $sessionID in
             WorldWindow(sessionID: sessionID)

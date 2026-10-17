@@ -24,6 +24,11 @@ final class CampaignDocument: ReferenceFileDocument {
 
     /// Identifies this open document to windows opened for it (World View).
     let sessionID = UUID()
+    /// "Blank the projector": hides the map from players. Session-only, starts unpaused.
+    @Published var isPaused = false
+    /// The Architect window's undo manager, so World View edits are undoable and
+    /// mark the document edited too.
+    private weak var lastUndoManager: UndoManager?
     /// Decoded images, shared by every window showing this document.
     let imageCache = AssetImageCache()
 
@@ -93,6 +98,7 @@ final class CampaignDocument: ReferenceFileDocument {
     /// UndoManager is also what marks the document edited, which drives
     /// autosave, the close-without-saving prompt, and the title-bar dot.
     func edit(_ actionName: String, undoManager: UndoManager?, _ change: (inout Campaign) -> Void) {
+        if let undoManager { lastUndoManager = undoManager }
         let before = campaign
         change(&campaign)
         guard campaign != before else { return }
@@ -100,6 +106,16 @@ final class CampaignDocument: ReferenceFileDocument {
             document.restore(before, actionName: actionName, undoManager: undoManager)
         }
         undoManager?.setActionName(actionName)
+    }
+
+    /// The only edit the World View may make (PARITY §4.2): move tokens that exist
+    /// on the active map. No duplication, deletion or property changes.
+    func playerMoveTokens(_ ids: [String], primary: String, dx: Double, dy: Double) {
+        guard dx.isFinite, dy.isFinite else { return }
+        edit("Move Token", undoManager: lastUndoManager) { campaign in
+            let library = campaign.libraryIndex
+            campaign.activeMap.dropTokens(ids, primary: primary, dx: dx, dy: dy, duplicate: false, library: library)
+        }
     }
 
     private func restore(_ value: Campaign, actionName: String, undoManager: UndoManager?) {

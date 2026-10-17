@@ -77,6 +77,7 @@ struct ArchitectView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .focusedSceneValue(\.campaignDocument, document)
         .onChange(of: document.campaign) { _, campaign in
             // Undo/redo or a map switch can remove selected tokens.
             let live = Set(campaign.activeMap.tokens.map(\.id))
@@ -184,7 +185,8 @@ struct ArchitectView: View {
                 Label("World View", systemImage: "tv")
             }
             .help("Open the player-facing World View (drag it to the projector)")
-            .keyboardShortcut("w", modifiers: [.command, .shift])
+
+            PauseToolbarButton(document: document)
         }
     }
 
@@ -252,5 +254,22 @@ struct ArchitectView: View {
         } catch {
             errorMessage = "A campaign needs at least one map."
         }
+    }
+}
+
+/// Play/Pause for the World View (PARITY §1.12): red while players can't see the map.
+private struct PauseToolbarButton: View {
+    @ObservedObject var document: CampaignDocument
+
+    var body: some View {
+        Button {
+            document.isPaused.toggle()
+        } label: {
+            Label(
+                document.isPaused ? "Resume" : "Pause",
+                systemImage: document.isPaused ? "play.fill" : "pause.fill")
+        }
+        .tint(document.isPaused ? .red : .green)
+        .help(document.isPaused ? "Resume - Players will see the map" : "Pause - Hide map from players")
     }
 }
