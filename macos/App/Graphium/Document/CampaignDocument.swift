@@ -24,6 +24,17 @@ final class CampaignDocument: ReferenceFileDocument {
 
     /// Identifies this open document to windows opened for it (World View).
     let sessionID = UUID()
+    /// Decoded images, shared by every window showing this document.
+    let imageCache = AssetImageCache()
+
+    /// Stores asset bytes under a fresh package-safe name and returns that name.
+    /// Not undoable on its own: callers reference it from an `edit`, and an
+    /// unreferenced asset is harmless.
+    func addAsset(_ data: Data, preferredName: String) -> String {
+        let name = uniqueAssetName(for: preferredName, existing: Set(assets.keys))
+        assets[name] = data
+        return name
+    }
 
     init(campaign: Campaign = .makeDefault()) {
         self.campaign = campaign

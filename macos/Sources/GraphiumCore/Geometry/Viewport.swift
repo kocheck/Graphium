@@ -10,7 +10,7 @@ public struct Viewport: Equatable, Sendable {
         self.zoom = zoom
     }
 
-    public static let zoomRange: ClosedRange<Double> = 0.1...8
+    public static let zoomRange: ClosedRange<Double> = 0.1...5
 
     public func viewPoint(fromMap point: Point2D) -> Point2D {
         Point2D(x: (point.x - origin.x) * zoom, y: (point.y - origin.y) * zoom)

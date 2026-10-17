@@ -24,7 +24,12 @@ private struct WorldView: View {
     @ObservedObject var document: CampaignDocument
 
     var body: some View {
-        MapCanvas(map: document.campaign.activeMap)
-            .navigationTitle("World View — \(document.campaign.name)")
+        // Read-only: no selection or editing callbacks; dragging pans.
+        MapCanvas(
+            map: document.campaign.activeMap,
+            library: document.campaign.libraryIndex,
+            imageProvider: { [document] name in document.imageCache.image(named: name, in: document.assets) }
+        )
+        .navigationTitle("World View — \(document.campaign.name)")
     }
 }
