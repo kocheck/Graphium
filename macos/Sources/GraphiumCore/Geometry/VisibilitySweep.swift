@@ -16,7 +16,7 @@ public enum VisibilitySweep {
 
     public static func polygon(from origin: Point2D, radius: Double, walls: [WallSegment], arcRays: Int) -> [Point2D] {
         guard radius > 0, arcRays > 0 else { return [] }
-        let nearby = walls.filter { distance(from: origin, to: $0) < radius }
+        let nearby = walls.filter { !$0.letsSightThrough(from: origin) && distance(from: origin, to: $0) < radius }
         func angle(to p: Point2D) -> Double { atan2(p.y - origin.y, p.x - origin.x) }
 
         var angles = (0..<arcRays).map { Double($0) * 2 * .pi / Double(arcRays) }

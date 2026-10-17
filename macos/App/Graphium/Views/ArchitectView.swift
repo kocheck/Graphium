@@ -402,6 +402,7 @@ struct ArchitectView: View {
                     }
                 },
                 doorAction: { id, action in performDoorAction(id, action) },
+                wallAction: { ids, action in performWallAction(ids, action) },
                 setMeasurement: { setMeasurement($0) },
                 setTool: { selectTool($0) },
                 toggleDoorOrientation: {
@@ -707,7 +708,9 @@ struct ArchitectView: View {
         let name: String
         switch drawing.tool {
         case .wall:
-            let existing = document.campaign.activeMap.drawings.filter { $0.tool == .wall }.map(\.points)
+            // World points, so walls that were moved still snap where they are drawn.
+            let existing = document.campaign.activeMap.drawings.filter { $0.tool == .wall }
+                .map { $0.worldPoints.flatMap { [$0.x, $0.y] } }
             stroke.points = PathOptimization.finalizeWall(drawing.points, existingWalls: existing)
             name = "Draw Wall"
         case .marker:
@@ -716,6 +719,25 @@ struct ArchitectView: View {
             name = "Erase"
         }
         document.edit(name, undoManager: undoManager) { $0.activeMap.drawings.append(stroke) }
+    }
+
+    private func performWallAction(_ ids: Set<String>, _ action: WallAction) {
+        let plural = ids.count == 1 ? "Wall" : "Walls"
+        switch action {
+        case .kind(let kind):
+            document.edit("Change \(plural) to \(kind.title)", undoManager: undoManager) {
+                $0.activeMap.setWallKind(kind, ids: ids)
+            }
+        case .oneWay(let oneWay):
+            document.edit(oneWay ? "Make \(plural) One-Way" : "Make \(plural) Two-Way", undoManager: undoManager) {
+                $0.activeMap.setOneWay(oneWay, ids: ids)
+            }
+        case .flip:
+            document.edit("Flip \(plural)", undoManager: undoManager) { $0.activeMap.flipWalls(ids) }
+        case .delete:
+            document.edit("Delete \(plural)", undoManager: undoManager) { $0.activeMap.removeItems(ids) }
+            selection.subtract(ids)
+        }
     }
 
     private func performDoorAction(_ id: String, _ action: DoorAction) {
@@ -906,6 +928,21 @@ struct ArchitectView: View {
                     .help(hex)
                     .accessibilityLabel("Recent colour \(hex)")
                 }
+            }
+        case .wall:
+            HStack(spacing: 6) {
+                Picker("Wall Type", selection: $tools.wallKind) {
+                    ForEach(WallKind.allCases, id: \.self) { kind in
+                        Text(kind.title).tag(kind)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .help("Walls block sight; windows let it through")
+                Toggle(isOn: $tools.wallOneWay) {
+                    Label("One-Way", systemImage: "arrow.forward")
+                }
+                .toggleStyle(.button)
+                .help("Sight passes from the left of the wall as you draw it; ticks mark the blocked side")
             }
         case .door:
             Button {

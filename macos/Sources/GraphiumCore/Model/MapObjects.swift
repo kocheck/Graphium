@@ -46,6 +46,20 @@ public enum DrawingTool: String, Codable, CaseIterable, Sendable {
     case marker, eraser, wall
 }
 
+/// What a wall stroke stops (native addition, PARITY §3.5). Not in TS, which ignores the
+/// field, so a window there is an ordinary wall.
+public enum WallKind: String, Codable, CaseIterable, Sendable {
+    /// Blocks sight and movement.
+    case wall
+    /// Blocks movement; sight passes through.
+    case window
+
+    /// A kind written by a newer version reads as a wall, so the file still opens.
+    public init(from decoder: Decoder) throws {
+        self = WallKind(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .wall
+    }
+}
+
 /// A stroke (TS `Drawing`, CORE_SPEC §1.5). Eraser strokes are stored too and
 /// composited as erase. World point = (px * scale + x, py * scale + y).
 public struct Drawing: Codable, Equatable, Identifiable, Sendable {
@@ -60,10 +74,16 @@ public struct Drawing: Codable, Equatable, Identifiable, Sendable {
     public var scale: Double?
     public var x: Double?
     public var y: Double?
+    /// Walls only; nil is `.wall`.
+    public var wallKind: WallKind?
+    /// Walls only: sight passes from the left of the stroke as drawn (on screen, facing from
+    /// its first point to its last) and is blocked from the right. Nil is two-way.
+    public var oneWay: Bool?
 
     public init(
         id: String = newID(), tool: DrawingTool, points: [Double], color: String, size: Double,
-        pressures: [Double]? = nil, scale: Double? = nil, x: Double? = nil, y: Double? = nil
+        pressures: [Double]? = nil, scale: Double? = nil, x: Double? = nil, y: Double? = nil,
+        wallKind: WallKind? = nil, oneWay: Bool? = nil
     ) {
         self.id = id
         self.tool = tool
@@ -74,7 +94,12 @@ public struct Drawing: Codable, Equatable, Identifiable, Sendable {
         self.scale = scale
         self.x = x
         self.y = y
+        self.wallKind = wallKind
+        self.oneWay = oneWay
     }
+
+    /// A wall stroke that stops sight (any wall but a window).
+    public var blocksSight: Bool { tool == .wall && (wallKind ?? .wall) == .wall }
 
     /// Stroke points transformed into world space.
     public var worldPoints: [Point2D] {

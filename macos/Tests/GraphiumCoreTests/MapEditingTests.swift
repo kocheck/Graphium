@@ -46,16 +46,16 @@ final class MapEditingTests: XCTestCase {
         XCTAssertEqual(live.exploredRegions.count, 1)
     }
 
-    func testStrokeHitTestingSkipsWalls() {
+    func testStrokeHitTestingIncludesWalls() {
         var map = GameMap()
         map.drawings = [
             Drawing(id: "m", tool: .marker, points: [0, 0, 100, 0], color: "#000", size: 6),
             Drawing(id: "w", tool: .wall, points: [0, 50, 100, 50], color: "#f00", size: 8),
         ]
         XCTAssertEqual(map.drawing(at: Point2D(x: 50, y: 5))?.id, "m")
-        XCTAssertNil(map.drawing(at: Point2D(x: 50, y: 50)), "walls aren't selectable")
+        XCTAssertEqual(map.drawing(at: Point2D(x: 50, y: 50))?.id, "w", "walls are selectable (native change)")
         XCTAssertNil(map.drawing(at: Point2D(x: 50, y: 20)))
-        XCTAssertEqual(map.drawingIDs(intersecting: Bounds(x: -10, y: -10, width: 200, height: 200)), ["m"])
+        XCTAssertEqual(map.drawingIDs(intersecting: Bounds(x: -10, y: -10, width: 200, height: 200)), ["m", "w"])
     }
 
     func testMoveAndDuplicateStrokes() {

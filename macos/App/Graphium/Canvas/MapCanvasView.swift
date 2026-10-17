@@ -19,6 +19,7 @@ struct CanvasEditing {
     var addDrawing: ((Drawing) -> Void)?
     var placeDoor: ((Point2D) -> Void)?
     var doorAction: ((_ doorID: String, DoorAction) -> Void)?
+    var wallAction: ((_ wallIDs: Set<String>, WallAction) -> Void)?
     var setMeasurement: ((MeasurementShape?) -> Void)?
     var setTool: ((CanvasTool) -> Void)?
     var toggleDoorOrientation: (() -> Void)?
@@ -638,7 +639,8 @@ final class MapCanvasNSView: NSView {
             beginStroke(
                 Drawing(
                     tool: .wall, points: [point.x, point.y], color: StrokeDefaults.wallColor,
-                    size: StrokeDefaults.wallSize))
+                    size: StrokeDefaults.wallSize, wallKind: toolState.wallKind == .wall ? nil : toolState.wallKind,
+                    oneWay: toolState.wallOneWay ? true : nil))
         case .door:
             editing.placeDoor?(point)
         case .measure:
@@ -811,9 +813,12 @@ final class MapCanvasNSView: NSView {
     }
 
     /// Right-click (or Control-click) on a door: Open/Close, Lock/Unlock, Delete (PARITY §3.6).
+    /// On a wall: its kind, one-way and direction, Delete (PARITY §3.5 Native).
     override func menu(for event: NSEvent) -> NSMenu? {
-        guard let map, let doorAction = editing?.doorAction, let door = map.door(at: mapLocation(of: event)) else {
-            return nil
+        guard let map else { return nil }
+        let point = mapLocation(of: event)
+        guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
+            return wallMenu(at: point, map: map)
         }
         selectedDoorID = door.id
         needsDisplay = true
@@ -831,6 +836,38 @@ final class MapCanvasNSView: NSView {
         let delete = MenuAction.item("Delete Door") { doorAction(door.id, .delete) }
         delete.attributedTitle = NSAttributedString(
             string: "Delete Door", attributes: [.foregroundColor: NSColor.systemRed])
+        menu.addItem(delete)
+        return menu
+    }
+
+    /// Acts on the selected walls when the clicked wall is among them, else on that wall alone.
+    private func wallMenu(at point: Point2D, map: GameMap) -> NSMenu? {
+        guard let wallAction = editing?.wallAction, let wall = map.drawing(at: point), wall.tool == .wall else {
+            return nil
+        }
+        let ids: Set<String> =
+            selection.contains(wall.id)
+            ? Set(map.drawings.filter { $0.tool == .wall && selection.contains($0.id) }.map(\.id)) : [wall.id]
+        if !selection.contains(wall.id) { editing?.setSelection([wall.id]) }
+        let targets = map.drawings.filter { ids.contains($0.id) }
+        let kinds = Set(targets.map { $0.wallKind ?? .wall })
+        let oneWay = targets.allSatisfy { $0.oneWay ?? false }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        for kind in WallKind.allCases {
+            let item = MenuAction.item(kind.title) { wallAction(ids, .kind(kind)) }
+            item.state = kinds == [kind] ? .on : .off
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
+        let oneWayItem = MenuAction.item("One-Way") { wallAction(ids, .oneWay(!oneWay)) }
+        oneWayItem.state = oneWay ? .on : .off
+        menu.addItem(oneWayItem)
+        menu.addItem(MenuAction.item("Flip Direction", enabled: oneWay) { wallAction(ids, .flip) })
+        menu.addItem(.separator())
+        let title = ids.count == 1 ? "Delete Wall" : "Delete Walls"
+        let delete = MenuAction.item(title) { wallAction(ids, .delete) }
+        delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
         return menu
     }

@@ -36,7 +36,7 @@ extension GameMap {
         background = edited.background
     }
 
-    // MARK: Drawings (marker and eraser strokes are selectable; walls are not)
+    // MARK: Drawings (every stroke is selectable, walls too: a native change, PARITY §3.5)
 
     public func drawingBounds(_ drawing: Drawing) -> Bounds {
         let points = drawing.worldPoints
@@ -55,7 +55,6 @@ extension GameMap {
     /// The topmost selectable stroke within its line width (plus `tolerance`) of `point`.
     public func drawing(at point: Point2D, tolerance: Double = 4) -> Drawing? {
         drawings.last { drawing in
-            guard drawing.tool != .wall else { return false }
             let points = drawing.worldPoints
             let reach = drawing.size * (drawing.scale ?? 1) / 2 + tolerance
             if points.count == 1 { return Measure.euclideanDistance(points[0], point) <= reach }
@@ -68,7 +67,7 @@ extension GameMap {
     }
 
     public func drawingIDs(intersecting rect: Bounds) -> [String] {
-        drawings.filter { $0.tool != .wall && drawingBounds($0).intersects(rect) }.map(\.id)
+        drawings.filter { drawingBounds($0).intersects(rect) }.map(\.id)
     }
 
     public func doorIDs(intersecting rect: Bounds) -> [String] {
@@ -87,7 +86,7 @@ extension GameMap {
     @discardableResult
     public mutating func moveDrawings(_ ids: Set<String>, dx: Double, dy: Double, duplicate: Bool) -> [String] {
         var placed: [String] = []
-        for index in drawings.indices where ids.contains(drawings[index].id) && drawings[index].tool != .wall {
+        for index in drawings.indices where ids.contains(drawings[index].id) {
             var moved = drawings[index]
             moved.x = (moved.x ?? 0) + dx
             moved.y = (moved.y ?? 0) + dy
@@ -100,6 +99,29 @@ extension GameMap {
             placed.append(moved.id)
         }
         return placed
+    }
+
+    /// Makes the given walls `kind` (strokes that aren't walls are left alone). `.wall` is
+    /// stored as nil so files that never use windows don't change.
+    public mutating func setWallKind(_ kind: WallKind, ids: Set<String>) {
+        for i in drawings.indices where drawings[i].tool == .wall && ids.contains(drawings[i].id) {
+            drawings[i].wallKind = kind == .wall ? nil : kind
+        }
+    }
+
+    /// Makes the given walls one-way or two-way.
+    public mutating func setOneWay(_ oneWay: Bool, ids: Set<String>) {
+        for i in drawings.indices where drawings[i].tool == .wall && ids.contains(drawings[i].id) {
+            drawings[i].oneWay = oneWay ? true : nil
+        }
+    }
+
+    /// Reverses the given walls' point order, which turns a one-way wall around.
+    public mutating func flipWalls(_ ids: Set<String>) {
+        for i in drawings.indices where drawings[i].tool == .wall && ids.contains(drawings[i].id) {
+            let p = drawings[i].points
+            drawings[i].points = stride(from: p.count - 2, through: 0, by: -2).flatMap { [p[$0], p[$0 + 1]] }
+        }
     }
 
     /// Removes any tokens, strokes and doors whose ids are in `ids`.

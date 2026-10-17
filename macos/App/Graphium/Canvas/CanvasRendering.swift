@@ -31,15 +31,19 @@ extension MapCanvasNSView {
             context.setBlendMode(.clear)
             context.setStrokeColor(NSColor.black.cgColor)
         case .wall:
-            // Walls stay straight and dashed so they match the vision segments (PARITY §3.5).
+            // Walls stay straight so they match the vision segments (PARITY §3.5). Kinds differ
+            // by shape, not colour: a window is dotted, a one-way wall has ticks on its blocked side.
+            let isWindow = drawing.wallKind == .window
             if isPlayerView {
-                // World View: black 6px solid.
+                // World View: black 6px, solid for walls and dotted for windows (decision 008).
                 context.setStrokeColor(NSColor.black.cgColor)
                 context.setLineWidth(6)
+                if isWindow { context.setLineDash(phase: 0, lengths: [0.01, 14]) }
             } else {
+                let width = drawing.size * scale
                 context.setStrokeColor((NSColor(hex: drawing.color) ?? .systemRed).cgColor)
-                context.setLineWidth(drawing.size * scale)
-                context.setLineDash(phase: 0, lengths: [10, 5])
+                context.setLineWidth(width)
+                context.setLineDash(phase: 0, lengths: isWindow ? [0.01, width * 2] : [10, 5])
             }
             context.move(to: CGPoint(first))
             if points.count == 1 {
@@ -47,6 +51,9 @@ extension MapCanvasNSView {
             }
             for p in points.dropFirst() { context.addLine(to: CGPoint(p)) }
             context.strokePath()
+            if drawing.oneWay == true, !isPlayerView {
+                drawOneWayTicks(points, width: drawing.size * scale, context: context)
+            }
             context.restoreGState()
             return
         case .marker:
@@ -72,6 +79,31 @@ extension MapCanvasNSView {
         context.addPath(path)
         context.strokePath()
         context.restoreGState()
+    }
+
+    /// Short ticks on the side a one-way wall blocks: the right of its points as drawn on
+    /// screen, since sight passes from the left (`WallSegment.letsSightThrough`).
+    private func drawOneWayTicks(_ points: [Point2D], width: Double, context: CGContext) {
+        let spacing = max(width * 3, 16)
+        let length = max(width * 1.5, 8)
+        context.setLineDash(phase: 0, lengths: [])
+        context.setLineWidth(max(width / 3, 2))
+        for (a, b) in zip(points, points.dropFirst()) {
+            let dx = b.x - a.x
+            let dy = b.y - a.y
+            let segment = hypot(dx, dy)
+            guard segment > 0 else { continue }
+            // Map y points down, so (−dy, dx) is the on-screen right of a → b.
+            let normal = CGPoint(x: -dy / segment * length, y: dx / segment * length)
+            var t = spacing / 2
+            while t < segment {
+                let p = CGPoint(x: a.x + dx * t / segment, y: a.y + dy * t / segment)
+                context.move(to: p)
+                context.addLine(to: CGPoint(x: p.x + normal.x, y: p.y + normal.y))
+                t += spacing
+            }
+        }
+        context.strokePath()
     }
 
     func drawDoors(_ doors: [Door], context: CGContext) {
