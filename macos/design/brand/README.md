@@ -10,13 +10,13 @@
 
 `make_brand_assets.py` generates every product use from `mark.svg`. Edit the SVG, never the outputs:
 
-| Output | Use |
-|---|---|
-| `App/Graphium/Assets.xcassets/AppIcon.appiconset` | Release app icon (asset catalog PNGs: shadowed 824 px plate on the 1024 macOS grid). |
-| `App/Graphium/Assets.xcassets/AppIconDev.appiconset` | Debug app icon. Picked per configuration by `ASSETCATALOG_COMPILER_APPICON_NAME` in `App/project.yml`. |
-| `design/brand/Graphium.icon`, `GraphiumDev.icon` | Icon Composer bundles with Dark and Tinted appearances, the same art as Icarus's. Not wired yet: CI builds on `macos-15`, whose Xcode can't compile `.icon`. Swap them in for the appiconsets when the app builds with Xcode 26. |
-| `App/Graphium/Design/BrandMark.swift` | SwiftUI `Shape` for the Welcome window. |
-| `site/icon.svg`, `site/apple-touch-icon.png` | Favicon (follows light/dark) and Home Screen icon for the public site. |
+| Output                                               | Use                                                                                                                                                                                                                              |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `App/Graphium/Assets.xcassets/AppIcon.appiconset`    | Release app icon (asset catalog PNGs: shadowed 824 px plate on the 1024 macOS grid).                                                                                                                                             |
+| `App/Graphium/Assets.xcassets/AppIconDev.appiconset` | Debug app icon. Picked per configuration by `ASSETCATALOG_COMPILER_APPICON_NAME` in `App/project.yml`.                                                                                                                           |
+| `design/brand/Graphium.icon`, `GraphiumDev.icon`     | Icon Composer bundles with Dark and Tinted appearances, the same art as Icarus's. Not wired yet: CI builds on `macos-15`, whose Xcode can't compile `.icon`. Swap them in for the appiconsets when the app builds with Xcode 26. |
+| `App/Graphium/Design/BrandMark.swift`                | SwiftUI `Shape` for the Welcome window.                                                                                                                                                                                          |
+| `site/icon.svg`, `site/apple-touch-icon.png`         | Favicon (follows light/dark) and Home Screen icon for the public site.                                                                                                                                                           |
 
 ```sh
 python3 -I macos/design/brand/make_brand_assets.py          # regenerate (needs Pillow)
