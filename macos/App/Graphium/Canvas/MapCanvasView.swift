@@ -63,7 +63,26 @@ final class MapCanvasNSView: NSView {
             viewport.fit(fitRequest.bounds, viewWidth: Double(bounds.width), viewHeight: Double(bounds.height))
         }
     }
-    var viewport = Viewport() { didSet { if viewport != oldValue { needsDisplay = true } } }
+    var viewport = Viewport() {
+        didSet {
+            guard viewport != oldValue else { return }
+            needsDisplay = true
+            reportViewport()
+        }
+    }
+    /// Told the camera and view size whenever either changes (World View minimap).
+    var onViewportChange: ((Viewport, CGSize) -> Void)?
+
+    private func reportViewport() {
+        let report = onViewportChange
+        let state = (viewport, bounds.size)
+        DispatchQueue.main.async { report?(state.0, state.1) }
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        reportViewport()
+    }
 
     /// Drag distance (view points) before a press on a token becomes a move.
     private static let dragThreshold = 5.0
@@ -105,11 +124,17 @@ final class MapCanvasNSView: NSView {
         context.translateBy(x: -viewport.origin.x, y: -viewport.origin.y)
 
         if let background = map.background, let image = imageProvider(background.src) {
-            draw(
-                image,
-                in: CGRect(
-                    x: background.x, y: background.y, width: background.width * background.scale,
-                    height: background.height * background.scale), context: context)
+            let rect = CGRect(
+                x: background.x, y: background.y, width: background.width * background.scale,
+                height: background.height * background.scale)
+            draw(image, in: rect, context: context)
+            // Paper texture at 25% over the map (PARITY §3.13).
+            context.saveGState()
+            context.clip(to: rect)
+            context.setAlpha(0.25)
+            context.setBlendMode(.multiply)
+            context.draw(PaperTexture.image, in: CGRect(x: 0, y: 0, width: 256, height: 256), byTiling: true)
+            context.restoreGState()
         }
         drawGrid(map, context: context)
         var liveStroke: Drawing?
@@ -644,6 +669,7 @@ struct MapCanvas: NSViewRepresentable {
     var toolState = ToolState()
     var measurement: MeasurementShape?
     var fitRequest: FitRequest?
+    var onViewportChange: ((Viewport, CGSize) -> Void)?
 
     func makeNSView(context: Context) -> MapCanvasNSView {
         MapCanvasNSView()
@@ -661,6 +687,7 @@ struct MapCanvas: NSViewRepresentable {
         view.toolState = toolState
         view.measurement = measurement
         view.fitRequest = fitRequest
+        view.onViewportChange = onViewportChange
         view.needsDisplay = true
     }
 }
@@ -669,6 +696,28 @@ extension CGPoint {
     init(_ p: Point2D) {
         self.init(x: p.x, y: p.y)
     }
+}
+
+/// A tiling paper-grain texture, generated once (deterministic noise, light value band).
+enum PaperTexture {
+    static let image: CGImage = {
+        let side = 256
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        var seed: UInt64 = 0x9A9E_7E57
+        for i in 0..<(side * side) {
+            seed = seed &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+            let v = UInt8(200 + Int((seed >> 33) % 56))
+            pixels[i * 4] = v
+            pixels[i * 4 + 1] = v
+            pixels[i * 4 + 2] = UInt8(max(0, Int(v) - 8))
+            pixels[i * 4 + 3] = 255
+        }
+        let provider = CGDataProvider(data: Data(pixels) as CFData)!
+        return CGImage(
+            width: side, height: side, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: side * 4,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
+            provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)!
+    }()
 }
 
 extension CGMutablePath {

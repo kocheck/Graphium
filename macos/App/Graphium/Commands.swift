@@ -5,10 +5,43 @@ struct FocusedCampaignKey: FocusedValueKey {
     typealias Value = CampaignDocument
 }
 
+/// Architect-window actions the menus can trigger.
+struct ArchitectActions {
+    var showPalette: () -> Void
+    var showDungeon: () -> Void
+}
+
+struct FocusedArchitectActionsKey: FocusedValueKey {
+    typealias Value = ArchitectActions
+}
+
 extension FocusedValues {
     var campaignDocument: CampaignDocument? {
         get { self[FocusedCampaignKey.self] }
         set { self[FocusedCampaignKey.self] = newValue }
+    }
+
+    var architectActions: ArchitectActions? {
+        get { self[FocusedArchitectActionsKey.self] }
+        set { self[FocusedArchitectActionsKey.self] = newValue }
+    }
+}
+
+/// Command Palette (⌘K) and Insert > Generate Dungeon (PARITY §1.3, §1.5).
+struct ArchitectCommands: Commands {
+    @FocusedValue(\.architectActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Button("Command Palette…") { actions?.showPalette() }
+                .keyboardShortcut("k")
+                .disabled(actions == nil)
+        }
+        CommandMenu("Insert") {
+            Button("Generate Dungeon…") { actions?.showDungeon() }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+        }
     }
 }
 

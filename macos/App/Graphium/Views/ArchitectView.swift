@@ -21,6 +21,10 @@ struct ArchitectView: View {
     @State private var broadcastMeasurement = true
     @State private var showingLibrary = false
     @State private var showingConsole = false
+    @State private var showingPalette = false
+    @State private var showingDungeon = false
+    @State private var editingLibraryItem: TokenLibraryItem?
+    @State private var showingConsoleSettings = false
     @State private var inspectorTab = InspectorTab.token
 
     private enum InspectorTab: Hashable {
@@ -134,6 +138,28 @@ struct ArchitectView: View {
                 addCroppedToken(cropped, name: request.name, centredAt: request.point)
             }
         }
+        .sheet(isPresented: $showingPalette) {
+            CommandPalette(
+                isPaused: document.isPaused,
+                run: { runCommand($0) },
+                placeAsset: { placeLibraryItem($0, at: nil) },
+                editAsset: { editingLibraryItem = $0 })
+        }
+        .sheet(isPresented: $showingDungeon) {
+            DungeonDialog { options, clearFirst in generateDungeon(options, clearFirst: clearFirst) }
+        }
+        .sheet(item: $editingLibraryItem) { item in
+            TokenMetadataEditor(item: item) { updated in
+                try? LibraryStore.shared.update(updated)
+                document.syncLibraryItem(updated, undoManager: undoManager)
+            }
+        }
+        .sheet(isPresented: $showingConsoleSettings) {
+            SessionConsoleSettings(document: document)
+        }
+        .focusedSceneValue(
+            \.architectActions,
+            ArchitectActions(showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true }))
         .focusedSceneValue(\.campaignDocument, document)
         .onChange(of: selection) { _, new in if !new.isEmpty { inspectorTab = .token } }
         .onChange(of: document.campaign) { _, campaign in
@@ -258,6 +284,43 @@ struct ArchitectView: View {
         .navigationSubtitle(campaign.name)
     }
 
+    // MARK: Palette and generation
+
+    private func runCommand(_ command: PaletteCommand) {
+        let tools: [String: CanvasTool] = [
+            "tool-select": .select, "tool-marker": .marker, "tool-eraser": .eraser,
+            "tool-wall": .wall, "tool-door": .door, "tool-measure": .measure,
+        ]
+        if let tool = tools[command.id] {
+            selectTool(tool)
+            return
+        }
+        switch command.id {
+        case "world-view-toggle-pause": document.isPaused.toggle()
+        case "world-view-launch": openWindow(id: WorldWindow.id, value: document.sessionID)
+        case "dungeon-generate": showingDungeon = true
+        case "session-console-stop": document.dispatch(.stop)
+        case "session-console-duck": document.dispatch(.setDucked(!document.sessionRuntime.ducked))
+        case "session-console-return-to-map": document.dispatch(.returnToMap)
+        case "session-console-test-tone": document.dispatch(.fireSfx(sfxId: "test-tone"))
+        case "session-console-settings": showingConsoleSettings = true
+        default: break
+        }
+    }
+
+    /// One undoable edit; walls and doors only, grid-aligned to this map (PARITY §5.5).
+    private func generateDungeon(_ options: DungeonOptions, clearFirst: Bool) {
+        var opts = options
+        opts.gridSize = document.campaign.activeMap.gridSize
+        if let screen = NSScreen.main?.visibleFrame.size {
+            opts.canvasWidth = screen.width
+            opts.canvasHeight = screen.height
+        }
+        let dungeon = DungeonGenerator.generate(opts)
+        document.edit("Generate Dungeon", undoManager: undoManager) { $0.activeMap.apply(dungeon, clearFirst: clearFirst) }
+        selection = []
+    }
+
     // MARK: Library
 
     /// Sidebar Library section (PARITY §2.1): Place / Add / Manage plus quick tokens.
@@ -268,7 +331,7 @@ struct ArchitectView: View {
         let party = TokenLibrarySearch.party(library: library.items, excluding: recent)
         Section("Library") {
             HStack {
-                Button("Place…") { showingLibrary = true }
+                Button("Place…") { showingPalette = true }
                 Button("Add…") { importTarget = .libraryUpload }
                 Button("Manage…") { showingLibrary = true }
             }

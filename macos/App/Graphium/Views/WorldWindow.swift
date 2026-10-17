@@ -30,6 +30,8 @@ private struct WorldView: View {
     @State private var pauseLine = SystemMessages.pauseOverlay[0]
     /// This window owns the campaign's Session Console audio.
     @StateObject private var audio = WorldAudioEngine()
+    /// Held without observing, so camera moves only redraw the minimap.
+    @State private var minimap = MinimapModel()
 
     var body: some View {
         let campaign = document.campaign
@@ -64,12 +66,26 @@ private struct WorldView: View {
                 fog: fog,
                 isPlayerView: true,
                 measurement: document.broadcastMeasurement,
-                fitRequest: fitRequest
+                fitRequest: fitRequest,
+                onViewportChange: { [minimap] viewport, size in
+                    minimap.viewport = viewport
+                    minimap.viewSize = size
+                }
             )
             // Stop showing the map entirely while paused so nothing leaks to the projector.
             .opacity(document.isPaused ? 0 : 1)
 
             if !document.isPaused {
+                Minimap(map: map, library: library, model: minimap) { point in
+                    // Same zoom, centred on the clicked point.
+                    let v = minimap.viewport
+                    let w = minimap.viewSize.width / v.zoom
+                    let h = minimap.viewSize.height / v.zoom
+                    fitRequest = FitRequest(bounds: Bounds(x: point.x - w / 2, y: point.y - h / 2, width: w, height: h))
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+
                 Button {
                     if let party { fitRequest = FitRequest(bounds: party) }
                 } label: {
