@@ -86,7 +86,8 @@ private struct WorldView: View {
                 onViewportChange: { [minimap] viewport, size in
                     minimap.viewport = viewport
                     minimap.viewSize = size
-                }
+                },
+                assetNamespace: document.sessionID.uuidString
             )
             // Stop showing the map entirely while paused so nothing leaks to the projector.
             .opacity(document.isPaused ? 0 : 1)

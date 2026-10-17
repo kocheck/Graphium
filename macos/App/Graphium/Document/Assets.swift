@@ -11,7 +11,7 @@ final class AssetImageCache: @unchecked Sendable {
     /// evicts under memory pressure; evicted images decode again on demand.
     private let cache: NSCache<NSString, CGImage> = {
         let cache = NSCache<NSString, CGImage>()
-        cache.totalCostLimit = 768 * 1024 * 1024
+        cache.totalCostLimit = 512 * 1024 * 1024
         return cache
     }()
 

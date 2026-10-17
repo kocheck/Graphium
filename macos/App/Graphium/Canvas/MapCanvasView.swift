@@ -58,6 +58,8 @@ final class MapCanvasNSView: NSView {
     var map: GameMap?
     var library: [String: TokenLibraryItem] = [:]
     var imageProvider: (String) -> CGImage? = { _ in nil }
+    /// Identifies the document whose asset names `imageProvider` resolves (cache keys).
+    var assetNamespace = ""
     var selection: Set<String> = []
     var editing: CanvasEditing?
     /// Tokens players must not see or grab (NPCs outside party vision).
@@ -126,6 +128,7 @@ final class MapCanvasNSView: NSView {
     }
 
     private var interaction = Interaction.idle
+    private var lastBaked: (key: String, image: CGImage)?
     private var spaceHeld = false
 
     override init(frame frameRect: NSRect) {
@@ -181,9 +184,7 @@ final class MapCanvasNSView: NSView {
             // Faster resampling while the user is dragging, panning or zooming.
             let quality: CGInterpolationQuality
             if case .idle = interaction { quality = .high } else { quality = .medium }
-            if let baked = PaperTexture.baked(onto: image, key: background.src, mapScale: background.scale, then: { [weak self] in
-                self?.needsDisplay = true
-            }) {
+            if let baked = bakedBackground(image, src: background.src, mapScale: background.scale) {
                 // Map and paper composed once off the main thread: one image per frame.
                 draw(baked, in: rect, context: context, quality: quality)
             } else {
@@ -282,6 +283,19 @@ final class MapCanvasNSView: NSView {
     }
 
     /// CGImages draw bottom-up; flip locally so they appear upright in this flipped view.
+    /// The map image with paper baked in, once ready. Asset names are only unique per
+    /// document, so the shared cache key includes `assetNamespace`. The visible map's
+    /// baked copy is also held here, so cache eviction can't cause a re-bake loop.
+    private func bakedBackground(_ image: CGImage, src: String, mapScale: Double) -> CGImage? {
+        let key = "\(assetNamespace)/\(src)@\(mapScale)"
+        if let lastBaked, lastBaked.key == key { return lastBaked.image }
+        let baked = PaperTexture.baked(onto: image, key: key, mapScale: mapScale) { [weak self] in
+            self?.needsDisplay = true
+        }
+        if let baked { lastBaked = (key, baked) }
+        return baked
+    }
+
     private func draw(_ image: CGImage, in rect: CGRect, context: CGContext, quality: CGInterpolationQuality = .high) {
         context.saveGState()
         context.translateBy(x: rect.minX, y: rect.maxY)
@@ -868,6 +882,8 @@ struct MapCanvas: NSViewRepresentable {
     var fitRequest: FitRequest?
     var onViewportChange: ((Viewport, CGSize) -> Void)?
     var calibrating = false
+    /// Identifies the document whose asset names `imageProvider` resolves (cache keys).
+    var assetNamespace = ""
 
     func makeNSView(context: Context) -> MapCanvasNSView {
         MapCanvasNSView()
@@ -890,6 +906,7 @@ struct MapCanvas: NSViewRepresentable {
             view.window?.invalidateCursorRects(for: view)
         }
         view.calibrating = calibrating
+        view.assetNamespace = assetNamespace
         view.needsDisplay = true
     }
 }
@@ -906,7 +923,7 @@ enum PaperTexture {
     /// name and map scale (the grain is 256 map units per tile, as in TS).
     private static let bakedCache: NSCache<NSString, CGImage> = {
         let cache = NSCache<NSString, CGImage>()
-        cache.totalCostLimit = 512 * 1024 * 1024
+        cache.totalCostLimit = 256 * 1024 * 1024
         return cache
     }()
     @MainActor private static var pending: Set<String> = []
@@ -915,7 +932,13 @@ enum PaperTexture {
     /// `then` on the main actor when done, and returns nil.
     @MainActor
     static func baked(onto image: CGImage, key: String, mapScale: Double, then: @escaping @MainActor () -> Void) -> CGImage? {
-        let cacheKey = "\(key)@\(mapScale)" as NSString
+        // Maps with transparency keep the live paper pass: multiplying grain onto
+        // transparent pixels would leave a grey haze instead of tinting what's behind.
+        switch image.alphaInfo {
+        case .none, .noneSkipFirst, .noneSkipLast: break
+        default: return nil
+        }
+        let cacheKey = key as NSString
         if let hit = bakedCache.object(forKey: cacheKey) { return hit }
         guard !pending.contains(cacheKey as String) else { return nil }
         pending.insert(cacheKey as String)

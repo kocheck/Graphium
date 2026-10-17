@@ -197,10 +197,12 @@ struct SessionConsolePanel: View {
         Task { @MainActor in
             var files = urls
             var folderTitle: String?
-            if fromFolder, let folder = urls.first {
+            // A folder's access covers its children, so hold it for the whole import.
+            let folder = fromFolder ? urls.first : nil
+            let folderScoped = folder?.startAccessingSecurityScopedResource() ?? false
+            defer { if folderScoped { folder?.stopAccessingSecurityScopedResource() } }
+            if let folder {
                 folderTitle = folder.lastPathComponent
-                let scoped = folder.startAccessingSecurityScopedResource()
-                defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
                 files =
                     (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil))?
                     .filter {

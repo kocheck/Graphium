@@ -3,7 +3,7 @@ import XCTest
 @testable import GraphiumCore
 
 final class VisibilityCacheTests: XCTestCase {
-    private func map() -> GameMap {
+    private func makeMap() -> GameMap {
         var map = GameMap(gridSize: 50)
         map.tokens = [
             Token(id: "pc", x: 0, y: 0, src: "", type: .pc, visionRadius: 60),
@@ -14,7 +14,7 @@ final class VisibilityCacheTests: XCTestCase {
 
     func testReusesResultUntilVisionInputsChange() {
         let cache = VisibilityCache()
-        var map = map()
+        var map = makeMap()
         let first = cache.visibility(of: map, library: [:])
         XCTAssertEqual(first.vision.count, 1)
         XCTAssertEqual(first.hiddenNPCIDs, ["npc"])
@@ -30,7 +30,7 @@ final class VisibilityCacheTests: XCTestCase {
     }
 
     func testDaylightHasNoFog() {
-        var map = map()
+        var map = makeMap()
         map.isDaylightMode = true
         let result = VisibilityCache().visibility(of: map, library: [:])
         XCTAssertTrue(result.vision.isEmpty)

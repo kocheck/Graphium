@@ -407,7 +407,8 @@ struct ArchitectView: View {
             ),
             toolState: penAdjusted(tools),
             measurement: measurement,
-            calibrating: calibrating
+            calibrating: calibrating,
+            assetNamespace: document.sessionID.uuidString
         )
         .overlay(alignment: .top) { canvasBanner }
         .overlay(alignment: .bottomTrailing) {
@@ -941,11 +942,13 @@ struct ArchitectView: View {
                     errorMessage = error.localizedDescription
                 }
             }
-            guard !created.isEmpty, document.campaign.activeMapID == map.id else { return }
-            document.edit(created.count == 1 ? "Add Token" : "Add Tokens", undoManager: undoManager) {
-                $0.activeMap.tokens.append(contentsOf: created)
+            guard !created.isEmpty else { return }
+            document.edit(created.count == 1 ? "Add Token" : "Add Tokens", undoManager: undoManager) { campaign in
+                // The map they were added to, even if the user switched maps meanwhile.
+                guard let i = campaign.maps.firstIndex(where: { $0.id == map.id }) else { return }
+                campaign.maps[i].tokens.append(contentsOf: created)
             }
-            selection = Set(created.map(\.id))
+            if document.campaign.activeMapID == map.id { selection = Set(created.map(\.id)) }
         }
     }
 
