@@ -269,8 +269,9 @@ struct SessionConsolePanel: View {
     private func section<Content: View>(
         _ title: String, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content
     ) -> some View {
-        DisclosureGroup(isExpanded: isExpanded) {
-            VStack(alignment: .leading, spacing: 12) { content() }
+        let content = content()
+        return DisclosureGroup(isExpanded: isExpanded) {
+            VStack(alignment: .leading, spacing: 12) { content }
                 .padding(.top, 6)
         } label: {
             Text(title).font(.headline)
