@@ -406,7 +406,7 @@ exploration is computed once.
 
 ### 3.10 Movement range
 
-- [x] Hold `M` with a token selected (Architect only) to show a BFS flood-fill of reachable cells within movementSpeed / 5 cells (default 30 ft). It uses grid-aware neighbours (square, hex, iso), is drawn as a translucent blue overlay, and follows the token during a drag. (source: src/components/Canvas/MovementRangeOverlay.tsx:1-176, src/components/Canvas/OverlayLayer.tsx:98-135)
+- [x] Hold `M` with a token selected (Architect only) to show a BFS flood-fill of reachable cells within movementSpeed / 5 cells (default 30 ft). It uses grid-aware neighbours (square, hex, iso), is drawn as a translucent blue overlay, and follows the token during a drag. (source: src/components/Canvas/MovementRangeOverlay.tsx:1-176, src/components/Canvas/OverlayLayer.tsx:98-135) **Native:** On hex and iso grids the fill starts from the cell under the token centre, so it is centred on the token. TS starts from the top-left, which on iso is half a cell above the token. Square grids keep the TS top-left start.
 - [x] `docs/movement-range-concept.tsx` is the earlier concept. The shipped implementation is MovementRangeOverlay. Port only the shipped one. (source: docs/movement-range-concept.tsx)
 
 ### 3.11 AoE templates

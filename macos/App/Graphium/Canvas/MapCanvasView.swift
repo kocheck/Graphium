@@ -243,7 +243,9 @@ final class MapCanvasNSView: NSView {
             }
             let speed = ResolvedToken(token, library: library).movementSpeed
             drawMovementRange(
-                movementRange(tokenTopLeft: position, speedFeet: speed, gridSize: map.gridSize, gridType: map.gridType),
+                movementRange(
+                    tokenTopLeft: position, tokenSize: map.tokenSize(token, library: library), speedFeet: speed,
+                    gridSize: map.gridSize, gridType: map.gridType),
                 map: map, context: context)
         }
         drawTokens(map, context: context)

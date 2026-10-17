@@ -516,6 +516,9 @@ Inputs: token top-left position (live drag position if dragging, `OverlayLayer.t
 
 - `HIDDEN` → no cells.
 - `maxCells = ceil(speed / 5)`; start = `pixelToGrid(token.x, token.y)` (top-left, not centre).
+  **Native:** square grids keep the top-left; hex and iso seed from the token centre
+  (`pixelToGrid(x + size/2, y + size/2)`), the cell the token is snapped onto, because the top-left lies in a
+  neighbouring cell there (TS iso starts half a cell above the token). See `movementRangeOrigin`.
 - BFS (FIFO) with visited set keyed `"q,r"`: pop; skip if visited or `distance > maxCells`; mark & emit; push all neighbours not yet visited with `distance+1`. Output order = BFS discovery order.
 - Neighbours: square & iso: `(±1,0),(0,±1)` in order `+q, −q, +r, −r`; hex: `(+1,0),(−1,0),(0,+1),(0,−1),(+1,−1),(−1,+1)`.
 - All steps cost 1 (no 5-10-5 diagonal rule, no walls/doors).

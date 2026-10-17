@@ -74,4 +74,30 @@ final class MeasurementTests: XCTestCase {
         XCTAssertEqual(movementRange(tokenTopLeft: .zero, speedFeet: 5, gridSize: 40, gridType: .hexagonal).count, 7)
         XCTAssertTrue(movementRange(tokenTopLeft: .zero, speedFeet: 30, gridSize: 50, gridType: .hidden).isEmpty)
     }
+
+    func testMovementRangeOnIsoStartsUnderTheSnappedTokenCentre() {
+        let grid = IsoGrid(cellSize: 50)
+        // A 1×1 token snapped onto diamond (3,1): centre (100,100), top-left (75,75).
+        let topLeft = grid.snapPoint(Point2D(x: 80, y: 80), width: 50, height: 50)
+        XCTAssertEqual(topLeft, Point2D(x: 75, y: 75))
+        let range = movementRange(tokenTopLeft: topLeft, tokenSize: 50, speedFeet: 5, gridSize: 50, gridType: .isometric)
+        XCTAssertEqual(range.first, GridCell(q: 3, r: 1))
+        XCTAssertEqual(range.first, grid.pixelToGrid(Point2D(x: 100, y: 100)), "the cell under the token's centre")
+        XCTAssertEqual(range.count, 5)
+    }
+
+    func testMovementRangeOnHexStartsUnderTheSnappedTokenCentre() {
+        let grid = HexGrid(cellSize: 40)
+        let cell = GridCell(q: 2, r: -1)
+        let centre = grid.gridToPixel(cell)
+        let topLeft = Point2D(x: centre.x - 20, y: centre.y - 20)
+        let range = movementRange(tokenTopLeft: topLeft, tokenSize: 40, speedFeet: 5, gridSize: 40, gridType: .hexagonal)
+        XCTAssertEqual(range.first, cell)
+    }
+
+    func testMovementRangeOnSquareStillSeedsFromTopLeft() {
+        let range = movementRange(
+            tokenTopLeft: Point2D(x: 50, y: 50), tokenSize: 100, speedFeet: 5, gridSize: 50, gridType: .lines)
+        XCTAssertEqual(range.first, GridCell(q: 1, r: 1))
+    }
 }
