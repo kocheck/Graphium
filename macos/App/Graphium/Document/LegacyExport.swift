@@ -1,22 +1,24 @@
-import AppKit
 import GraphiumCore
+import SwiftUI
 import UniformTypeIdentifiers
 
-extension CampaignDocument {
-    /// File > Export as .graphium… (PARITY §5.2): writes a ZIP the Electron app opens.
-    /// The open document keeps its native format and location.
-    @MainActor
-    func exportLegacyGraphium() {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.legacyGraphium]
-        panel.nameFieldStringValue = campaign.name.isEmpty ? "Campaign.graphium" : "\(campaign.name).graphium"
-        panel.message = "Export a copy that the Graphium web and Electron apps can open."
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            let data = try LegacyExporter.export(CampaignPackage(campaign: campaign, assets: assets))
-            try data.write(to: url, options: .atomic)
-        } catch {
-            NSAlert(error: error).runModal()
-        }
+/// The bytes of a legacy `.graphium` ZIP, for `.fileExporter` (PARITY §5.2).
+/// The open document keeps its native format and location.
+struct LegacyGraphiumFile: FileDocument {
+    static var readableContentTypes: [UTType] { [.legacyGraphium] }
+
+    let data: Data
+
+    init(package: CampaignPackage) throws {
+        data = try LegacyExporter.export(package)
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }
+        self.data = data
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
     }
 }

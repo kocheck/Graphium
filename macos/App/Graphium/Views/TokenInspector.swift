@@ -9,6 +9,9 @@ struct TokenInspector: View {
     @Environment(\.undoManager) private var undoManager
 
     @State private var nameDraft = ""
+    // Collapsible sections, remembered across launches.
+    @AppStorage("graphium.inspector.visionExpanded") private var visionExpanded = true
+    @AppStorage("graphium.inspector.detailsExpanded") private var detailsExpanded = true
 
     static let visionPresets: [Double] = [0, 30, 60, 120]
 
@@ -47,7 +50,7 @@ struct TokenInspector: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Vision") {
+            Section("Vision", isExpanded: $visionExpanded) {
                 HStack {
                     ForEach(Self.visionPresets, id: \.self) { feet in
                         Button(feet == 0 ? "None" : "\(Int(feet)) ft") { setVision(feet) }
@@ -70,7 +73,7 @@ struct TokenInspector: View {
             }
 
             if tokens.count == 1, let token = tokens.first {
-                Section("Details") {
+                Section("Details", isExpanded: $detailsExpanded) {
                     LabeledContent("Scale", value: "\(jsNumber(token.scale))x")
                     LabeledContent("Position", value: "\(Int(jsRound(token.token.x))), \(Int(jsRound(token.token.y)))")
                     LabeledContent("Speed", value: "\(jsNumber(token.movementSpeed)) ft")

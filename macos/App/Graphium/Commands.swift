@@ -10,6 +10,20 @@ struct ArchitectActions {
     var showPalette: () -> Void
     var showDungeon: () -> Void
     var togglePerformanceMonitor: () -> Void
+    var exportLegacy: () -> Void
+    var tool: CanvasTool
+    var selectTool: (CanvasTool) -> Void
+    var showMapSettings: () -> Void
+    var newMap: () -> Void
+    /// Nil when calibration isn't possible (no map image, or not a square grid).
+    var calibrate: (() -> Void)?
+    var isDaylight: Bool
+    var toggleDaylight: () -> Void
+    /// Nil when nothing has been explored.
+    var resetFog: (() -> Void)?
+    /// Nil when nothing is selected.
+    var deleteSelection: (() -> Void)?
+    var showConsoleSettings: () -> Void
 }
 
 struct FocusedArchitectActionsKey: FocusedValueKey {
@@ -54,13 +68,13 @@ struct ArchitectCommands: Commands {
 
 /// File > Export as .graphium… for the web/Electron app (PARITY §5.2).
 struct ExportCommands: Commands {
-    @FocusedValue(\.campaignDocument) private var document
+    @FocusedValue(\.architectActions) private var actions
 
     var body: some Commands {
         CommandGroup(after: .saveItem) {
-            Button("Export as .graphium…") { document?.exportLegacyGraphium() }
+            Button("Export as .graphium…") { actions?.exportLegacy() }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
-                .disabled(document == nil)
+                .disabled(actions == nil)
         }
     }
 }
@@ -164,5 +178,71 @@ private struct WelcomeMenuItem: View {
     var body: some View {
         Button("Welcome to Graphium") { openWindow(id: WelcomeView.windowID) }
             .keyboardShortcut("1", modifiers: [.command, .shift])
+    }
+}
+
+/// Tools, Map and Session Console menus (every action reachable from a menu, so Help
+/// search and System Settings > Keyboard shortcuts can find it). Single-letter tool
+/// keys stay on the canvas; menu key equivalents would steal typing in text fields.
+struct EditorCommands: Commands {
+    @FocusedValue(\.architectActions) private var actions
+    @FocusedValue(\.campaignDocument) private var document
+
+    var body: some Commands {
+        CommandMenu("Tools") {
+            ForEach(CanvasTool.allCases) { tool in
+                Toggle(
+                    "\(tool.title) (\(String(tool.key).uppercased()))",
+                    isOn: Binding(get: { actions?.tool == tool }, set: { if $0 { actions?.selectTool(tool) } }))
+            }
+            .disabled(actions == nil)
+        }
+        CommandMenu("Map") {
+            Button("Map Settings…") { actions?.showMapSettings() }
+                .keyboardShortcut(",", modifiers: [.command, .option])
+                .disabled(actions == nil)
+            Button("New Map…") { actions?.newMap() }
+                .keyboardShortcut("n", modifiers: [.command, .option])
+                .disabled(actions == nil)
+            Button("Calibrate Map Image…") { actions?.calibrate?() }
+                .disabled(actions?.calibrate == nil)
+            Divider()
+            Toggle("Daylight", isOn: Binding(get: { actions?.isDaylight ?? false }, set: { _ in actions?.toggleDaylight() }))
+                .disabled(actions == nil)
+            Button("Reset Explored Fog") { actions?.resetFog?() }
+                .disabled(actions?.resetFog == nil)
+            Divider()
+            Button("Delete Selection") { actions?.deleteSelection?() }
+                .keyboardShortcut(.delete, modifiers: [.command])
+                .disabled(actions?.deleteSelection == nil)
+        }
+        CommandMenu("Session") {
+            if let document {
+                SessionMenuItems(document: document, showSettings: actions?.showConsoleSettings)
+            } else {
+                Button("Stop Music") {}.disabled(true)
+            }
+        }
+    }
+}
+
+private struct SessionMenuItems: View {
+    @ObservedObject var document: CampaignDocument
+    let showSettings: (() -> Void)?
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        let runtime = document.sessionRuntime
+        Button("Stop Music") { document.dispatch(.stop) }
+            .disabled(runtime.audio.trackId == nil)
+        Toggle("Duck Music", isOn: Binding(get: { runtime.ducked }, set: { document.dispatch(.setDucked($0)) }))
+        Button("Return to Map") { document.dispatch(.returnToMap) }
+            .disabled(!runtime.stageVisible)
+        Button("Play Test Tone") { document.dispatch(.fireSfx(sfxId: "test-tone")) }
+        Divider()
+        Button("Session Console Window") { openWindow(id: SessionConsoleWindow.id, value: document.sessionID) }
+            .keyboardShortcut("c", modifiers: [.command, .option])
+        Button("Session Console Settings…") { showSettings?() }
+            .disabled(showSettings == nil)
     }
 }

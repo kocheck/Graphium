@@ -111,8 +111,10 @@ final class CampaignDocument: ReferenceFileDocument {
     /// Applies an edit and registers its undo. Registering with the window's
     /// UndoManager is also what marks the document edited, which drives
     /// autosave, the close-without-saving prompt, and the title-bar dot.
+    /// `undoManager` nil (World View, detached Session Console) uses the Architect window's.
     func edit(_ actionName: String, undoManager: UndoManager?, _ change: (inout Campaign) -> Void) {
         if let undoManager { lastUndoManager = undoManager }
+        let undoManager = undoManager ?? lastUndoManager
         let before = campaign
         var next = campaign
         change(&next)
@@ -128,6 +130,11 @@ final class CampaignDocument: ReferenceFileDocument {
             document.restore(before, actionName: actionName, undoManager: undoManager)
         }
         undoManager?.setActionName(actionName)
+    }
+
+    /// Called by the Architect window so edits from other windows join its undo stack.
+    func adoptUndoManager(_ undoManager: UndoManager?) {
+        if let undoManager { lastUndoManager = undoManager }
     }
 
     /// The only edit the World View may make (PARITY §4.2): move tokens that exist

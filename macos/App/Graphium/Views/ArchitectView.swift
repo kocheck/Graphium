@@ -12,6 +12,10 @@ struct ArchitectView: View {
     @AppStorage(PreferenceKey.pressureEnabled) private var pressureEnabled = true
     @AppStorage(PreferenceKey.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
     @State private var showingPerformance = false
+    @State private var legacyExport: LegacyGraphiumFile?
+    @State private var showingColorPopover = false
+    /// Sidebar shown or hidden, restored with the window (column widths are restored by the system).
+    @SceneStorage("architect.sidebarHidden") private var sidebarHidden = false
 
     @State private var selection: Set<String> = []
     @State private var importTarget: ImportTarget?
@@ -71,7 +75,7 @@ struct ArchitectView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: sidebarVisibility) {
             mapList
         } detail: {
             canvas
@@ -94,7 +98,7 @@ struct ArchitectView: View {
                     }
                     .inspectorColumnWidth(min: 260, ideal: 300)
                 }
-                .toolbar { toolbarContent }
+                .toolbar(id: "architect") { toolbarContent }
         }
         .fileImporter(
             isPresented: Binding(get: { importTarget != nil }, set: { if !$0 { importTarget = nil } }),
@@ -176,8 +180,23 @@ struct ArchitectView: View {
             \.architectActions,
             ArchitectActions(
                 showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true },
-                togglePerformanceMonitor: { showingPerformance.toggle() }))
+                togglePerformanceMonitor: { showingPerformance.toggle() },
+                exportLegacy: { exportLegacy() },
+                tool: tools.tool,
+                selectTool: { selectTool($0) },
+                showMapSettings: { mapSettings = MapSettingsRequest(map: document.campaign.activeMap, isNew: false) },
+                newMap: { mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true) },
+                calibrate: canCalibrate ? { startCalibration() } : nil,
+                isDaylight: document.campaign.activeMap.isDaylightMode,
+                toggleDaylight: {
+                    let daylight = daylightBinding
+                    daylight.wrappedValue.toggle()
+                },
+                resetFog: document.campaign.activeMap.exploredRegions.isEmpty ? nil : { resetExploredFog() },
+                deleteSelection: selection.isEmpty ? nil : { deleteSelection() },
+                showConsoleSettings: { showingConsoleSettings = true }))
         .onAppear {
+            document.adoptUndoManager(undoManager)
             dismissWindow(id: WelcomeView.windowID)
             switch LaunchIntent.shared.take() {
             case .generateDungeon:
@@ -366,7 +385,7 @@ struct ArchitectView: View {
                     document.edit("Change Grid", undoManager: undoManager) { $0.activeMap.gridType = type }
                     showToast("Grid: \(type.title)")
                 },
-                openColorPicker: { openMarkerColorPanel() },
+                openColorPicker: { openMarkerColorPicker() },
                 stopAudio: { document.dispatch(.stop) }
             ),
             toolState: penAdjusted(tools),
@@ -379,6 +398,19 @@ struct ArchitectView: View {
         }
         .navigationTitle(campaign.activeMap.name)
         .navigationSubtitle(campaign.name)
+        // On the canvas, not the root: the root already has a file importer.
+        .fileExporter(
+            isPresented: Binding(get: { legacyExport != nil }, set: { if !$0 { legacyExport = nil } }),
+            document: legacyExport,
+            contentType: .legacyGraphium,
+            defaultFilename: campaign.name.isEmpty ? "Campaign" : campaign.name
+        ) { result in
+            legacyExport = nil
+            switch result {
+            case .success(let url): showToast("Exported \(url.lastPathComponent)", .success)
+            case .failure(let error): showToast(error.localizedDescription, .error)
+            }
+        }
     }
 
     // MARK: Palette and generation
@@ -492,18 +524,19 @@ struct ArchitectView: View {
         }
     }
 
-    /// `I`: the system colour panel, writing into the marker colour (switches to Marker).
-    private func openMarkerColorPanel() {
+    /// `I`: the marker colour popover (switches to Marker).
+    private func openMarkerColorPicker() {
         selectTool(.marker)
-        let panel = NSColorPanel.shared
-        panel.showsAlpha = false
-        panel.color = NSColor(hex: tools.markerColor) ?? .systemOrange
-        ColorPanelBridge.shared.onChange = { color in
-            if let hex = color.hexString { tools.markerColor = hex }
+        showingColorPopover = true
+    }
+
+    /// File > Export as .graphium… (PARITY §5.2).
+    private func exportLegacy() {
+        do {
+            legacyExport = try LegacyGraphiumFile(package: CampaignPackage(campaign: document.campaign, assets: document.assets))
+        } catch {
+            showToast(error.localizedDescription, .error)
         }
-        panel.setTarget(ColorPanelBridge.shared)
-        panel.setAction(#selector(ColorPanelBridge.colorChanged(_:)))
-        panel.makeKeyAndOrderFront(nil)
     }
 
     private func placeGenericToken(at point: Point2D?) {
@@ -632,21 +665,136 @@ struct ArchitectView: View {
             })
     }
 
+    /// View > Customize Toolbar… can add, remove and reorder these (ids are stable).
     @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .principal) {
-            Picker("Tool", selection: Binding(get: { tools.tool }, set: { selectTool($0) })) {
-                ForEach(CanvasTool.allCases) { tool in
-                    Label(tool.title, systemImage: tool.symbol).tag(tool).help(tool.help)
+    private var toolbarContent: some CustomizableToolbarContent {
+        Group {
+            ToolbarItem(id: "tool", placement: .principal) {
+                Picker("Tool", selection: Binding(get: { tools.tool }, set: { selectTool($0) })) {
+                    ForEach(CanvasTool.allCases) { tool in
+                        Label(tool.title, systemImage: tool.symbol).tag(tool).help(tool.help)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .labelStyle(.iconOnly)
             }
-            .pickerStyle(.segmented)
-            .labelStyle(.iconOnly)
+            ToolbarItem(id: "tool-options", placement: .principal) {
+                toolOptions
+            }
+        }
+        Group {
+            ToolbarItem(id: "map-settings", placement: .primaryAction) {
+                Button {
+                    mapSettings = MapSettingsRequest(map: document.campaign.activeMap, isNew: false)
+                } label: {
+                    Label("Map Settings", systemImage: "slider.horizontal.3")
+                }
+                .help("Name, grid, daylight, map image and calibration")
+            }
+            ToolbarItem(id: "map-image", placement: .primaryAction) {
+                Button {
+                    importTarget = .mapImage
+                } label: {
+                    Label("Map Image", systemImage: "photo")
+                }
+                .help("Set this map's background image")
+            }
+            ToolbarItem(id: "add-tokens", placement: .primaryAction) {
+                Button {
+                    importTarget = .tokens
+                } label: {
+                    Label("Add Tokens", systemImage: "person.crop.circle.badge.plus")
+                }
+                .help("Add tokens from image files")
+            }
+            ToolbarItem(id: "world-view", placement: .primaryAction) {
+                Button {
+                    openWindow(id: WorldWindow.id, value: document.sessionID)
+                } label: {
+                    Label("World View", systemImage: "tv")
+                }
+                .help("Open the player-facing World View (drag it to the projector)")
+            }
+            ToolbarItem(id: "pause", placement: .primaryAction) {
+                PauseToolbarButton(document: document)
+            }
+            ToolbarItem(id: "session-console", placement: .primaryAction) {
+                Toggle(isOn: $showingConsole) {
+                    Label("Session Console", systemImage: "music.note.list")
+                }
+                .help("Plates and music for the World View")
+                .onChange(of: showingConsole) { _, shown in if shown { inspectorTab = .console } }
+            }
+        }
+        Group {
+            ToolbarItem(id: "daylight", placement: .secondaryAction) {
+                Toggle(isOn: daylightBinding) {
+                    Label("Daylight", systemImage: "sun.max")
+                }
+                .help("Daylight: no fog of war on this map")
+            }
+            ToolbarItem(id: "reset-fog", placement: .secondaryAction) {
+                Button {
+                    resetExploredFog()
+                } label: {
+                    Label("Reset Explored Fog", systemImage: "eye.slash")
+                }
+                .help("Forget what the party has explored on this map")
+                .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
+            }
+            // Off by default; add them with Customize Toolbar.
+            ToolbarItem(id: "console-window", placement: .secondaryAction, showsByDefault: false) {
+                Button {
+                    openWindow(id: SessionConsoleWindow.id, value: document.sessionID)
+                } label: {
+                    Label("Session Console Window", systemImage: "macwindow.on.rectangle")
+                }
+                .help("Open the Session Console in its own window")
+            }
+            ToolbarItem(id: "palette", placement: .secondaryAction, showsByDefault: false) {
+                Button {
+                    showingPalette = true
+                } label: {
+                    Label("Command Palette", systemImage: "command")
+                }
+                .help("Search actions and assets (⌘K)")
+            }
+            ToolbarItem(id: "dungeon", placement: .secondaryAction, showsByDefault: false) {
+                Button {
+                    showingDungeon = true
+                } label: {
+                    Label("Generate Dungeon", systemImage: "square.grid.3x3.topleft.filled")
+                }
+                .help("Generate a random dungeon (⇧⌘G)")
+            }
+            ToolbarItem(id: "performance", placement: .secondaryAction, showsByDefault: false) {
+                Toggle(isOn: $showingPerformance) {
+                    Label("Performance Monitor", systemImage: "gauge.with.dots.needle.33percent")
+                }
+                .help("Canvas frame rate, memory and counts (⇧⌘M)")
+            }
+        }
+    }
 
-            switch tools.tool {
-            case .marker:
-                ColorPicker("Marker Colour", selection: markerColorBinding, supportsOpacity: false)
-                    .labelsHidden()
+    /// Options for the active tool, in one toolbar item so customisation keeps them together.
+    @ViewBuilder
+    private var toolOptions: some View {
+        switch tools.tool {
+        case .marker:
+            HStack(spacing: 6) {
+                Button {
+                    showingColorPopover.toggle()
+                } label: {
+                    Image(systemName: "circle.fill")
+                        .foregroundStyle(Color(nsColor: NSColor(hex: tools.markerColor) ?? .systemOrange))
+                }
+                .help("Marker colour (I)")
+                .accessibilityLabel("Marker colour")
+                .popover(isPresented: $showingColorPopover, arrowEdge: .bottom) {
+                    MarkerColorPopover(color: markerColorBinding, recent: recentColors) { hex in
+                        tools.markerColor = hex
+                    }
+                }
                 ForEach(recentColors, id: \.self) { hex in
                     Button {
                         tools.markerColor = hex
@@ -654,17 +802,20 @@ struct ArchitectView: View {
                         Image(systemName: "circle.fill").foregroundStyle(Color(nsColor: NSColor(hex: hex) ?? .black))
                     }
                     .help(hex)
+                    .accessibilityLabel("Recent colour \(hex)")
                 }
-            case .door:
-                Button {
-                    tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
-                } label: {
-                    Label(
-                        tools.doorOrientation == .horizontal ? "Horizontal" : "Vertical",
-                        systemImage: tools.doorOrientation == .horizontal ? "arrow.left.and.right" : "arrow.up.and.down")
-                }
-                .help("Door orientation (R or arrow keys)")
-            case .measure:
+            }
+        case .door:
+            Button {
+                tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
+            } label: {
+                Label(
+                    tools.doorOrientation == .horizontal ? "Horizontal" : "Vertical",
+                    systemImage: tools.doorOrientation == .horizontal ? "arrow.left.and.right" : "arrow.up.and.down")
+            }
+            .help("Door orientation (R or arrow keys)")
+        case .measure:
+            HStack(spacing: 6) {
                 Picker("Measure", selection: measureModeBinding) {
                     Text("Ruler").tag(MeasurementShape.Mode.ruler)
                     Text("Blast").tag(MeasurementShape.Mode.blast)
@@ -676,56 +827,30 @@ struct ArchitectView: View {
                 }
                 .help("Show this measurement in the World View")
                 .onChange(of: broadcastMeasurement) { _, _ in publishMeasurement() }
-            default:
-                EmptyView()
             }
+        default:
+            EmptyView()
         }
-        ToolbarItemGroup(placement: .primaryAction) {
-            Button {
-                importTarget = .mapImage
-            } label: {
-                Label("Map Image", systemImage: "photo")
-            }
-            .help("Set this map's background image")
+    }
 
-            Button {
-                importTarget = .tokens
-            } label: {
-                Label("Add Tokens", systemImage: "person.crop.circle.badge.plus")
-            }
-            .help("Add tokens from image files")
+    private var sidebarVisibility: Binding<NavigationSplitViewVisibility> {
+        Binding(
+            get: { sidebarHidden ? .detailOnly : .all },
+            set: { sidebarHidden = $0 == .detailOnly })
+    }
 
-            Button {
-                openWindow(id: WorldWindow.id, value: document.sessionID)
-            } label: {
-                Label("World View", systemImage: "tv")
-            }
-            .help("Open the player-facing World View (drag it to the projector)")
+    private var canCalibrate: Bool {
+        let map = document.campaign.activeMap
+        return map.background != nil && map.gridType.isSquare
+    }
 
-            PauseToolbarButton(document: document)
+    private func startCalibration() {
+        selection = []
+        calibrating = true
+    }
 
-            Toggle(isOn: $showingConsole) {
-                Label("Session Console", systemImage: "music.note.list")
-            }
-            .help("Plates and music for the World View")
-            .onChange(of: showingConsole) { _, shown in if shown { inspectorTab = .console } }
-        }
-        ToolbarItemGroup(placement: .secondaryAction) {
-            Toggle(isOn: daylightBinding) {
-                Label("Daylight", systemImage: "sun.max")
-            }
-            .help("Daylight: no fog of war on this map")
-
-            Button {
-                document.edit("Reset Explored Fog", undoManager: undoManager) {
-                    $0.activeMap.exploredRegions = []
-                }
-            } label: {
-                Label("Reset Explored Fog", systemImage: "eye.slash")
-            }
-            .help("Forget what the party has explored on this map")
-            .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
-        }
+    private func resetExploredFog() {
+        document.edit("Reset Explored Fog", undoManager: undoManager) { $0.activeMap.exploredRegions = [] }
     }
 
     // MARK: Actions
@@ -881,12 +1006,3 @@ private struct PauseToolbarButton: View {
     }
 }
 
-/// Routes NSColorPanel changes to whichever Architect window opened it last.
-final class ColorPanelBridge: NSObject {
-    static let shared = ColorPanelBridge()
-    var onChange: ((NSColor) -> Void)?
-
-    @objc func colorChanged(_ sender: NSColorPanel) {
-        onChange?(sender.color)
-    }
-}

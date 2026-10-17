@@ -1,5 +1,6 @@
 import GraphiumCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Plate editor (PARITY §5.4): name, cue, alt text.
 struct PlateEditor: View {
@@ -77,15 +78,13 @@ struct TrackEditor: View {
 /// Session Console settings (PARITY §5.4): stage chrome, playback defaults, table setup.
 struct SessionConsoleSettings: View {
     @ObservedObject var document: CampaignDocument
+    var detached = false
     @Environment(\.undoManager) private var undoManager
+    private var undo: UndoManager? { detached ? nil : undoManager }
     @Environment(\.dismiss) private var dismiss
     @State private var packSummary: String?
-
-    private func run(_ work: @escaping @MainActor () async -> String?) {
-        Task { @MainActor in
-            if let summary = await work() { packSummary = summary }
-        }
-    }
+    @State private var importMode: BoardPackIO.Mode?
+    @State private var choosingExportFolder = false
 
     var body: some View {
         let catalog = document.campaign.sessionConsole
@@ -102,7 +101,7 @@ struct SessionConsoleSettings: View {
                         Slider(
                             value: Binding(
                                 get: { catalog.defaults.volume },
-                                set: { v in document.editConsole("Default Volume", undoManager: undoManager) { $0.updateDefaults(volume: v.rounded()) } }),
+                                set: { v in document.editConsole("Default Volume", undoManager: undo) { $0.updateDefaults(volume: v.rounded()) } }),
                             in: 0...100)
                     }
                     LabeledContent("Duck to") {
@@ -110,7 +109,7 @@ struct SessionConsoleSettings: View {
                             Slider(
                                 value: Binding(
                                     get: { catalog.defaults.duckPercent },
-                                    set: { v in document.editConsole("Duck Percent", undoManager: undoManager) { $0.updateDefaults(duckPercent: v.rounded()) } }),
+                                    set: { v in document.editConsole("Duck Percent", undoManager: undo) { $0.updateDefaults(duckPercent: v.rounded()) } }),
                                 in: 1...100)
                             Text("\(Int(catalog.defaults.duckPercent))%").monospacedDigit()
                         }
@@ -118,9 +117,9 @@ struct SessionConsoleSettings: View {
                 }
                 Section("Advanced: board pack") {
                     HStack {
-                        Button("Import (Replace)…") { run { await BoardPackIO.importPack(into: document, mode: .replace, undoManager: undoManager) } }
-                        Button("Import (Merge)…") { run { await BoardPackIO.importPack(into: document, mode: .merge, undoManager: undoManager) } }
-                        Button("Export Pack…") { packSummary = BoardPackIO.exportPack(from: document) }
+                        Button("Import (Replace)…") { importMode = .replace }
+                        Button("Import (Merge)…") { importMode = .merge }
+                        Button("Export Pack…") { choosingExportFolder = true }
                     }
                     if let packSummary {
                         Text(packSummary).font(.caption).textSelection(.enabled)
@@ -140,6 +139,13 @@ struct SessionConsoleSettings: View {
                 }
             }
             .formStyle(.grouped)
+            // A second importer must sit on a different view to work.
+            .fileImporter(isPresented: $choosingExportFolder, allowedContentTypes: [.folder]) { result in
+                switch result {
+                case .success(let folder): packSummary = BoardPackIO.exportPack(from: document, to: folder)
+                case .failure(let error): packSummary = error.localizedDescription
+                }
+            }
             HStack {
                 Spacer()
                 Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
@@ -147,11 +153,26 @@ struct SessionConsoleSettings: View {
         }
         .padding(20)
         .frame(width: 480, height: 560)
+        .fileImporter(
+            isPresented: Binding(get: { importMode != nil }, set: { if !$0 { importMode = nil } }),
+            allowedContentTypes: [.json]
+        ) { result in
+            let mode = importMode ?? .replace
+            importMode = nil
+            switch result {
+            case .success(let url):
+                Task { @MainActor in
+                    packSummary = await BoardPackIO.importPack(from: url, into: document, mode: mode, undoManager: undo)
+                }
+            case .failure(let error):
+                packSummary = error.localizedDescription
+            }
+        }
     }
 
     private func binding<T>(_ keyPath: WritableKeyPath<SessionConsoleCatalog, T>, _ action: String) -> Binding<T> {
         Binding(
             get: { document.campaign.sessionConsole[keyPath: keyPath] },
-            set: { value in document.editConsole(action, undoManager: undoManager) { $0[keyPath: keyPath] = value } })
+            set: { value in document.editConsole(action, undoManager: undo) { $0[keyPath: keyPath] = value } })
     }
 }

@@ -129,13 +129,28 @@ final class MapCanvasNSView: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        registerForDraggedTypes([.fileURL, .string])
+        commonInit()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        registerForDraggedTypes([.fileURL, .string])
+        commonInit()
     }
+
+    private func commonInit() {
+        registerForDraggedTypes([.fileURL, .string])
+        // Redraw when Increase Contrast changes (PARITY §7).
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(displayOptionsChanged),
+            name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil)
+    }
+
+    @objc private func displayOptionsChanged() {
+        needsDisplay = true
+    }
+
+    /// Increase Contrast: a stronger default grid and thicker selection outlines.
+    var highContrast: Bool { NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast }
 
     override var isFlipped: Bool { true }
 
@@ -277,7 +292,7 @@ final class MapCanvasNSView: NSView {
         let color =
             map.gridColor.lowercased() == GameMap.defaultGridColor
             // The default colour adapts to the theme, as in the TS app.
-            ? NSColor.labelColor.withAlphaComponent(0.25) : (NSColor(hex: map.gridColor) ?? .separatorColor)
+            ? NSColor.labelColor.withAlphaComponent(highContrast ? 0.55 : 0.25) : (NSColor(hex: map.gridColor) ?? .separatorColor)
         context.setStrokeColor(color.cgColor)
         context.setFillColor(color.cgColor)
         context.setLineWidth(1 / viewport.zoom)
@@ -426,7 +441,7 @@ final class MapCanvasNSView: NSView {
         }
         if selected {
             context.setStrokeColor(NSColor.systemBlue.cgColor)
-            context.setLineWidth(2 / viewport.zoom)
+            context.setLineWidth((highContrast ? 3.5 : 2) / viewport.zoom)
             context.setLineDash(phase: 0, lengths: [6 / viewport.zoom, 3 / viewport.zoom])
             context.stroke(rect.insetBy(dx: -3 / viewport.zoom, dy: -3 / viewport.zoom))
         }

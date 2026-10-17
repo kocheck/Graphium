@@ -6,7 +6,11 @@ import UniformTypeIdentifiers
 /// The DM's Session Console (PARITY §5.4): plates and music the World View plays.
 struct SessionConsolePanel: View {
     @ObservedObject var document: CampaignDocument
+    /// In its own window the panel's undo manager isn't the document's; edits then
+    /// go to the Architect window's stack (nil lets the document pick it).
+    var detached = false
     @Environment(\.undoManager) private var undoManager
+    private var undo: UndoManager? { detached ? nil : undoManager }
 
     @State private var youtubeText = ""
     @State private var notice: String?
@@ -14,6 +18,16 @@ struct SessionConsolePanel: View {
     @State private var editingPlate: StageImage?
     @State private var editingTrack: Track?
     @State private var showingSettings = false
+    @State private var renaming: RenameTarget?
+    // Collapsible sections, remembered across launches.
+    @AppStorage("graphium.console.platesExpanded") private var platesExpanded = true
+    @AppStorage("graphium.console.tracksExpanded") private var tracksExpanded = true
+    @AppStorage("graphium.console.sfxExpanded") private var sfxExpanded = true
+    @State private var renameText = ""
+
+    private enum RenameTarget {
+        case set(String), group(String)
+    }
 
     private enum ImportKind: Identifiable {
         case files, folder
@@ -34,9 +48,9 @@ struct SessionConsolePanel: View {
                     Text(notice).font(.caption).foregroundStyle(.secondary)
                 }
                 addControls
-                platesSection
-                tracksSection
-                sfxSection
+                section("Plates", isExpanded: $platesExpanded) { platesSection }
+                section("Music", isExpanded: $tracksExpanded) { tracksSection }
+                section("Sound Effects", isExpanded: $sfxExpanded) { sfxSection }
             }
             .padding(12)
         }
@@ -58,20 +72,28 @@ struct SessionConsolePanel: View {
         }
         .sheet(item: $editingPlate) { plate in
             PlateEditor(plate: plate) { updated in
-                document.editConsole("Edit Plate", undoManager: undoManager) { c in
+                document.editConsole("Edit Plate", undoManager: undo) { c in
                     c.updateImage(id: updated.id) { $0 = updated }
                 }
             }
         }
         .sheet(item: $editingTrack) { track in
             TrackEditor(track: track, plates: catalog.imageSets.flatMap(\.images)) { updated in
-                document.editConsole("Edit Track", undoManager: undoManager) { c in
+                document.editConsole("Edit Track", undoManager: undo) { c in
                     c.updateTrack(id: updated.id) { $0 = updated }
                 }
             }
         }
         .sheet(isPresented: $showingSettings) {
-            SessionConsoleSettings(document: document)
+            SessionConsoleSettings(document: document, detached: detached)
+        }
+        .alert(
+            renameTitle,
+            isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })
+        ) {
+            TextField("Name", text: $renameText)
+            Button("Rename") { commitRename() }
+            Button("Cancel", role: .cancel) {}
         }
     }
 
@@ -144,10 +166,10 @@ struct SessionConsolePanel: View {
             }
             HStack(spacing: 6) {
                 Button("New Image Set") {
-                    document.editConsole("New Image Set", undoManager: undoManager) { $0.addNewImageSet() }
+                    document.editConsole("New Image Set", undoManager: undo) { $0.addNewImageSet() }
                 }
                 Button("New Track Group") {
-                    document.editConsole("New Track Group", undoManager: undoManager) { $0.addNewTrackGroup() }
+                    document.editConsole("New Track Group", undoManager: undo) { $0.addNewTrackGroup() }
                 }
             }
         }
@@ -158,7 +180,7 @@ struct SessionConsolePanel: View {
         let text = youtubeText
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         var added: String?
-        document.editConsole("Add YouTube Track", undoManager: undoManager) { added = $0.addYouTube(text) }
+        document.editConsole("Add YouTube Track", undoManager: undo) { added = $0.addYouTube(text) }
         notice = added == nil ? "Invalid YouTube link" : "Added YouTube track"
         if added != nil { youtubeText = "" }
     }
@@ -222,7 +244,7 @@ struct SessionConsolePanel: View {
             notice = messages.first ?? "Nothing to add"
             return
         }
-        document.editConsole("Add to Board", undoManager: undoManager) { c in
+        document.editConsole("Add to Board", undoManager: undo) { c in
             if !plates.isEmpty {
                 let set = intoSet.flatMap { id in c.imageSets.contains { $0.id == id } ? id : nil }
                     ?? c.ensureImageSet(title: folderTitle)
@@ -239,6 +261,17 @@ struct SessionConsolePanel: View {
 
     // MARK: Board
 
+    private func section<Content: View>(
+        _ title: String, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content
+    ) -> some View {
+        DisclosureGroup(isExpanded: isExpanded) {
+            VStack(alignment: .leading, spacing: 12) { content() }
+                .padding(.top, 6)
+        } label: {
+            Text(title).font(.headline)
+        }
+    }
+
     private var platesSection: some View {
         ForEach(catalog.imageSets) { set in
             VStack(alignment: .leading, spacing: 6) {
@@ -248,7 +281,7 @@ struct SessionConsolePanel: View {
                     Menu {
                         Button("Rename…") { rename(set: set) }
                         Button("Remove Set", role: .destructive) {
-                            document.editConsole("Remove Image Set", undoManager: undoManager) { $0.removeImageSet(id: set.id) }
+                            document.editConsole("Remove Image Set", undoManager: undo) { $0.removeImageSet(id: set.id) }
                         }
                     } label: { Image(systemName: "ellipsis.circle") }
                         .menuStyle(.borderlessButton)
@@ -275,7 +308,7 @@ struct SessionConsolePanel: View {
                             Button("Move Earlier") { move(plate: plate, in: set, by: -1) }.disabled(index == 0)
                             Button("Move Later") { move(plate: plate, in: set, by: 1) }.disabled(index == set.images.count - 1)
                             Button("Remove", role: .destructive) {
-                                document.editConsole("Remove Plate", undoManager: undoManager) { $0.removeImage(id: plate.id) }
+                                document.editConsole("Remove Plate", undoManager: undo) { $0.removeImage(id: plate.id) }
                             }
                         }
                     }
@@ -315,14 +348,14 @@ struct SessionConsolePanel: View {
                     Menu {
                         Button("Rename…") { rename(group: group) }
                         Picker("Accent", selection: Binding(get: { group.accent }, set: { accent in
-                            document.editConsole("Change Accent", undoManager: undoManager) {
+                            document.editConsole("Change Accent", undoManager: undo) {
                                 $0.updateTrackGroup(id: group.id, accent: accent)
                             }
                         })) {
                             ForEach(TrackAccent.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
                         }
                         Button("Remove Group", role: .destructive) {
-                            document.editConsole("Remove Track Group", undoManager: undoManager) { $0.removeTrackGroup(id: group.id) }
+                            document.editConsole("Remove Track Group", undoManager: undo) { $0.removeTrackGroup(id: group.id) }
                         }
                     } label: { Image(systemName: "ellipsis.circle") }
                         .menuStyle(.borderlessButton)
@@ -355,7 +388,7 @@ struct SessionConsolePanel: View {
                         Button("Move Up") { move(track: track, in: group, by: -1) }.disabled(index == 0)
                         Button("Move Down") { move(track: track, in: group, by: 1) }.disabled(index == group.tracks.count - 1)
                         Button("Remove", role: .destructive) {
-                            document.editConsole("Remove Track", undoManager: undoManager) { $0.removeTrack(id: track.id) }
+                            document.editConsole("Remove Track", undoManager: undo) { $0.removeTrack(id: track.id) }
                         }
                     }
                 }
@@ -369,7 +402,6 @@ struct SessionConsolePanel: View {
 
     private var sfxSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Sound Effects").font(.headline)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 6)], spacing: 6) {
                 ForEach(catalog.sfx) { sfx in
                     Button(sfx.label) { document.dispatch(.fireSfx(sfxId: sfx.id)) }
@@ -385,14 +417,14 @@ struct SessionConsolePanel: View {
         var ids = set.images.map(\.id)
         guard let i = ids.firstIndex(of: plate.id), ids.indices.contains(i + delta) else { return }
         ids.swapAt(i, i + delta)
-        document.editConsole("Reorder Plates", undoManager: undoManager) { $0.reorderImages(inSet: set.id, ids) }
+        document.editConsole("Reorder Plates", undoManager: undo) { $0.reorderImages(inSet: set.id, ids) }
     }
 
     private func move(track: Track, in group: TrackGroup, by delta: Int) {
         var ids = group.tracks.map(\.id)
         guard let i = ids.firstIndex(of: track.id), ids.indices.contains(i + delta) else { return }
         ids.swapAt(i, i + delta)
-        document.editConsole("Reorder Tracks", undoManager: undoManager) { $0.reorderTracks(inGroup: group.id, ids) }
+        document.editConsole("Reorder Tracks", undoManager: undo) { $0.reorderTracks(inGroup: group.id, ids) }
     }
 
     /// Drag-reorder within one set or group; drops from elsewhere are ignored.
@@ -401,7 +433,7 @@ struct SessionConsolePanel: View {
         guard id != target.id, let from = ids.firstIndex(of: id) else { return }
         ids.remove(at: from)
         ids.insert(id, at: ids.firstIndex(of: target.id) ?? ids.count)
-        document.editConsole("Reorder Plates", undoManager: undoManager) { $0.reorderImages(inSet: set.id, ids) }
+        document.editConsole("Reorder Plates", undoManager: undo) { $0.reorderImages(inSet: set.id, ids) }
     }
 
     private func moveTrack(_ id: String, before target: Track, in group: TrackGroup) {
@@ -409,31 +441,33 @@ struct SessionConsolePanel: View {
         guard id != target.id, let from = ids.firstIndex(of: id) else { return }
         ids.remove(at: from)
         ids.insert(id, at: ids.firstIndex(of: target.id) ?? ids.count)
-        document.editConsole("Reorder Tracks", undoManager: undoManager) { $0.reorderTracks(inGroup: group.id, ids) }
+        document.editConsole("Reorder Tracks", undoManager: undo) { $0.reorderTracks(inGroup: group.id, ids) }
     }
 
     private func rename(set: ImageSet) {
-        guard let name = prompt("Rename Image Set", current: set.title) else { return }
-        document.editConsole("Rename Image Set", undoManager: undoManager) { $0.updateImageSet(id: set.id, title: name) }
+        renameText = set.title
+        renaming = .set(set.id)
     }
 
     private func rename(group: TrackGroup) {
-        guard let name = prompt("Rename Track Group", current: group.title) else { return }
-        document.editConsole("Rename Track Group", undoManager: undoManager) { $0.updateTrackGroup(id: group.id, title: name) }
+        renameText = group.title
+        renaming = .group(group.id)
     }
 
-    /// A small modal text prompt (sheets inside a scrolling inspector get awkward).
-    private func prompt(_ title: String, current: String) -> String? {
-        let alert = NSAlert()
-        alert.messageText = title
-        let field = NSTextField(string: current)
-        field.frame = NSRect(x: 0, y: 0, width: 240, height: 24)
-        alert.accessoryView = field
-        alert.addButton(withTitle: "Rename")
-        alert.addButton(withTitle: "Cancel")
-        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
-        let text = field.stringValue.trimmingCharacters(in: .whitespaces)
-        return text.isEmpty ? nil : text
+    private var renameTitle: String {
+        if case .group = renaming { return "Rename Track Group" }
+        return "Rename Image Set"
+    }
+
+    private func commitRename() {
+        let name = renameText.trimmingCharacters(in: .whitespaces)
+        guard let target = renaming, !name.isEmpty else { return }
+        switch target {
+        case .set(let id):
+            document.editConsole("Rename Image Set", undoManager: undo) { $0.updateImageSet(id: id, title: name) }
+        case .group(let id):
+            document.editConsole("Rename Track Group", undoManager: undo) { $0.updateTrackGroup(id: id, title: name) }
+        }
     }
 
     private func copyCurrentLink() {
@@ -488,4 +522,23 @@ enum BoardDrag {
 
     static func plateID(_ s: String) -> String? { s.hasPrefix(platePrefix) ? String(s.dropFirst(platePrefix.count)) : nil }
     static func trackID(_ s: String) -> String? { s.hasPrefix(trackPrefix) ? String(s.dropFirst(trackPrefix.count)) : nil }
+}
+
+/// The Session Console in its own window (Window > Session Console), for a second
+/// display or a narrow Architect window. Same document, so it stays in step.
+struct SessionConsoleWindow: View {
+    static let id = "session-console"
+    let sessionID: UUID?
+
+    var body: some View {
+        if let sessionID, let document = DocumentRegistry.shared.document(for: sessionID) {
+            SessionConsolePanel(document: document, detached: true)
+                .frame(minWidth: 300, idealWidth: 340, minHeight: 420)
+                .navigationTitle("Session Console — \(document.campaign.name)")
+        } else {
+            ContentUnavailableView(
+                "No Campaign", systemImage: "music.note.list",
+                description: Text("Open a campaign, then choose Session Console."))
+        }
+    }
 }

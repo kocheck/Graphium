@@ -1,4 +1,4 @@
-import AppKit
+import Foundation
 import GraphiumCore
 
 /// Board pack import/export for the Session Console settings (PARITY §5.4).
@@ -8,12 +8,13 @@ enum BoardPackIO {
         case replace, merge
     }
 
-    /// Asks for a `board.json`, materialises it into this campaign, and returns a summary.
-    static func importPack(into document: CampaignDocument, mode: Mode, undoManager: UndoManager?) async -> String? {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.json]
-        panel.message = "Choose a board.json"
-        guard panel.runModal() == .OK, let url = panel.url, let data = try? Data(contentsOf: url) else { return nil }
+    /// Materialises a chosen `board.json` into this campaign and returns a summary.
+    static func importPack(
+        from url: URL, into document: CampaignDocument, mode: Mode, undoManager: UndoManager?
+    ) async -> String {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else { return "Couldn't read \(url.lastPathComponent)." }
         let root = url.deletingLastPathComponent()
         let (pack, errors) = BoardPack.parse(data)
         // Materialising runs off the main actor; collect assets and commit them after.
@@ -67,15 +68,10 @@ enum BoardPackIO {
         }
     }
 
-    /// Asks for a folder, then writes board.json plus images/ and audio/ copies.
-    static func exportPack(from document: CampaignDocument) -> String? {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.canCreateDirectories = true
-        panel.prompt = "Export Here"
-        panel.message = "Choose a folder for the board pack"
-        guard panel.runModal() == .OK, let folder = panel.url else { return nil }
+    /// Writes board.json plus images/ and audio/ copies into a chosen folder.
+    static func exportPack(from document: CampaignDocument, to folder: URL) -> String {
+        let scoped = folder.startAccessingSecurityScopedResource()
+        defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
         do {
             let export = try BoardPack.export(document.campaign.sessionConsole)
             var missing: [String] = []

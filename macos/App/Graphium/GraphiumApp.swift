@@ -23,12 +23,18 @@ struct GraphiumApp: App {
             ArchitectCommands()
             ExportCommands()
             ShellCommands()
+            EditorCommands()
         }
 
         WindowGroup("World View", id: WorldWindow.id, for: UUID.self) { $sessionID in
             WorldWindow(sessionID: sessionID)
         }
         .defaultSize(width: 1280, height: 720)
+
+        WindowGroup("Session Console", id: SessionConsoleWindow.id, for: UUID.self) { $sessionID in
+            SessionConsoleWindow(sessionID: sessionID)
+        }
+        .defaultSize(width: 360, height: 720)
 
         Window("About Graphium", id: AboutView.windowID) {
             AboutView()

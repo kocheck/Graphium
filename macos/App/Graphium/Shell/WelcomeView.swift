@@ -59,6 +59,7 @@ struct WelcomeView: View {
     @State private var showingTemplates = false
     @State private var recentsQuery = ""
     @State private var recents: [RecentCampaign] = []
+    @State private var openError: String?
 
     /// Fixed for the session, like the TS `useState` initializer.
     private static let subtitle = [
@@ -105,6 +106,14 @@ struct WelcomeView: View {
         .onKeyPress("?") {
             ShowAbout(openWindow: openWindow)(.shortcuts)
             return .handled
+        }
+        .alert(
+            "Couldn't open the campaign",
+            isPresented: Binding(get: { openError != nil }, set: { if !$0 { openError = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(openError ?? "")
         }
         .sheet(isPresented: $showingTemplates) {
             TemplatesSheet { template in
@@ -185,7 +194,7 @@ struct WelcomeView: View {
                     HStack {
                         Button {
                             NSDocumentController.shared.openDocument(withContentsOf: recent.url, display: true) { _, _, error in
-                                if let error { NSAlert(error: error).runModal() }
+                                if let error { openError = error.localizedDescription }
                             }
                         } label: {
                             HStack {
