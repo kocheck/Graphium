@@ -54,12 +54,11 @@ uploads `Graphium-macOS.zip` as a workflow artifact.
 behaviour spec for data and logic. Items tagged **(gap)** in PARITY.md are behaviours the
 Electron app gets wrong or never finished; the native app implements the intended behaviour.
 
-Status: 267 of 273 items are ticked. Each deliberate difference from the Electron app is noted
+Status: 268 of 273 items are ticked. Each deliberate difference from the Electron app is noted
 inline with **Native:**. Open items:
 
 - Sparkle updates (PARITY §1.9). These need a Developer ID-signed, notarised build and an
   update feed, so they wait on Apple Developer credentials.
-- Image import off the main thread (§3.15).
 - An automated World View legibility test (§4.1, §7).
 
 M9 work since CI last ran (M7b fix onwards) was written without a compiler. CI was down, so
@@ -80,26 +79,33 @@ the first local `xcodebuild` is its first build.
 
 ## Performance and wrap-up
 
-Done or open, in priority order:
+Done:
 
-1. **First Mac build and smoke test.** See GETTING_STARTED.md.
-2. **Keep live drags out of the SwiftUI tree.** `liveTokenPositions` is `@Published` on the
-   document, so every drag event re-evaluates both windows' bodies. Move it to its own small
-   observable object that only the World View canvas reads.
-3. **Cache fog of war.** The World View recomputes vision polygons and hidden NPCs in `body` on
-   every change. Memoise them on (map revision, token positions, doors, walls).
-4. **Layered canvas drawing.** Cache the map image, paper texture and grid in a layer, and
-   redraw only tokens, ink and fog while panning or dragging. Draw only `dirtyRect`.
-5. **Image import off the main thread** (PARITY §3.15). Decode and resize in a `Task.detached`,
-   with a progress indicator for large maps.
-6. **Assets on demand.** Assets are held in memory as `Data`. For big campaigns, read package
-   files lazily through `FileWrapper` and keep only decoded images in the cache, with a size
-   limit.
-7. **Profile with Instruments** (Time Profiler, Allocations, SwiftUI) on Apple Silicon. Use a
-   DEBUG-only stress fixture (TS `stressFixture.ts`: hundreds of tokens, long walls, many fog
-   regions) and add XCTest `measure` tests for line of sight and the dungeon generator.
-8. **Release.** Developer ID signing, notarisation, Sparkle updates, then get CI green again
-   and add a UI test target for the smoke test.
+- **Live drags don't refresh every window.** Drag positions live in `LiveDragModel`, which
+  only the World View observes. The Architect window no longer re-renders on each drag event.
+- **Fog of war is memoised.** `VisibilityCache` reruns raycasting only when tokens, walls,
+  doors, daylight or the library change. Camera moves, selection and console changes reuse it.
+- **One image per frame for the map.** The paper texture is baked into the map image off the
+  main thread and shared by every canvas. Images resample at medium quality while you drag,
+  pan or zoom, and at high quality when idle. The grid and tokens were already culled to the
+  visible area.
+- **Image import off the main thread**, with a spinner. This covers map images, tokens and
+  Session Console drops.
+- **Cheap saves.** Saves and autosaves reuse unchanged asset files from the existing package,
+  so only `campaign.json` and new assets are written. The decoded-image cache has a 768 MB cost
+  limit and evicts under memory pressure.
+- **Profiling tools.** `StressFixture` (the TS stress map), XCTest `measure` tests
+  (`PerformanceTests`), and the `-GraphiumStress YES` launch flag in Debug builds. See
+  GETTING_STARTED.md.
+
+Open:
+
+1. First Mac build and smoke test (GETTING_STARTED.md).
+2. Instruments pass on Apple Silicon with the stress map, then set `measure` baselines.
+3. If profiling shows the canvas is still the bottleneck, move the map image into its own
+   GPU-composited `CALayer`, so pan and zoom cost nothing on the CPU.
+4. Release: Developer ID signing, notarisation, Sparkle updates, CI green again, and a UI test
+   target for the smoke test.
 
 ## File format
 

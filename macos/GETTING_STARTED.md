@@ -93,7 +93,19 @@ Work through these in order. The first five are the areas most likely to need a 
 | 12  | Graphium > **Settings…** (⌘,)                                                                   | Theme and pen-pressure options. Changing the theme switches every window.                                         |
 | 13  | View > **Performance Monitor** (⇧⌘M)                                                            | Canvas FPS, draw time, memory and object counts.                                                                  |
 
-## 7. Keyboard reference
+## 7. Profiling
+
+1. In Xcode, choose Product > Scheme > Edit Scheme > Run > Arguments, and add
+   `-GraphiumStress YES`. In Debug builds this adds a **Stress Test** map: 200 tokens, 5 PCs,
+   50 walls, 200 strokes and 1,500 fog regions (the old app's `?stress=1`).
+2. Open a World View (⇧⌘W), turn on the performance monitor (⇧⌘M), and drag a PC around.
+   Watch the canvas FPS and draw time.
+3. Product > **Profile** (⌘I), then use Time Profiler and Allocations, and the SwiftUI
+   instrument for view-body updates.
+4. Run the timing tests (`PerformanceTests`) in Xcode's Test navigator and use **Set Baseline**,
+   so later slowdowns fail the test. From the terminal: `swift test --filter PerformanceTests`.
+
+## 8. Keyboard reference
 
 The full list is in Help > **Keyboard Shortcuts** (or press `?`). The main ones:
 
@@ -104,7 +116,7 @@ The full list is in Help > **Keyboard Shortcuts** (or press `?`). The main ones:
 - **Map menu:** ⌥⌘, settings · ⌥⌘N new map · ⌘⌫ delete selection.
 - **Welcome window:** ⇧⌘D generate dungeon · ⇧⌘T templates.
 
-## 8. Where things are
+## 9. Where things are
 
 - `Sources/GraphiumCore` holds platform-independent logic, tested by `swift test`.
 - `App/Graphium` holds the app:
@@ -112,10 +124,10 @@ The full list is in Help > **Keyboard Shortcuts** (or press `?`). The main ones:
   - `Views/` holds the windows and sheets.
   - `Shell/` holds Welcome, About, Settings and the performance monitor.
   - `SessionConsole/` holds the ambience board and audio.
-- `docs/PARITY.md` is the feature checklist against the Electron app (267 of 273 done).
+- `docs/PARITY.md` is the feature checklist against the Electron app (268 of 273 done).
   `docs/CORE_SPEC.md` is the behaviour spec.
 
-## 9. Still open
+## 10. Still open
 
 - **Sparkle updates, Developer ID signing and notarisation.** These need your Apple
   Developer account.

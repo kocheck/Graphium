@@ -432,7 +432,7 @@ at 25%) as a pattern layer.
 
 - [x] Viewport culling for grid, tokens and fog bounds. (source: src/utils/viewportCulling.ts, src/components/Canvas/GridOverlay.tsx)
 - [x] Direct node updates during drag, without full re-render. A token node registry is used for live positions. (source: src/utils/tokenNodeRegistry.ts, src/store/pointerOverlayStore.ts)
-- [ ] Image processing off the main thread with cancellation. (source: src/utils/AssetProcessor.ts:40-110, src/workers/image-processor.worker.ts) **Native:** Open: image import still decodes and resizes on the main thread.
+- [x] Image processing off the main thread with cancellation. (source: src/utils/AssetProcessor.ts:40-110, src/workers/image-processor.worker.ts) **Native:** `ImportedImage.loadInBackground` decodes and resizes in a detached task, with a spinner. It isn't cancellable, but imports are short. The paper texture is also baked off the main thread.
 - [x] Stress fixture autoload for perf testing **(dev-only)**. (source: src/utils/stressFixture.ts, src/App.tsx:220-224) **Native:** Not ported (dev-only).
 - [x] React profiler boundaries **(dev-only)**. (source: src/perf/profiler.tsx) **Native:** Not ported (dev-only).
 
