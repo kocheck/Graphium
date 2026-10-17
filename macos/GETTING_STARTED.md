@@ -77,21 +77,24 @@ xcodebuild -project Graphium.xcodeproj -scheme Graphium -configuration Debug \
 
 Work through these in order. The first five are the areas most likely to need a fix.
 
-| #   | Do this                                                                                         | You should see                                                                                                    |
-| --- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 1   | Launch the app                                                                                  | The **Welcome** window (logo, "Virtual Tabletop for …", four cards). No blank campaign and no system Open dialog. |
-| 2   | Click **New Campaign** (or ⌘N)                                                                  | An Architect window opens and Welcome closes.                                                                     |
-| 3   | View > **Customize Toolbar…**                                                                   | You can drag buttons in and out. The sidebar's **+** (Add Map) is still there.                                    |
-| 4   | File > **Export as .graphium…** (⇧⌘E), then open the exported file                              | The campaign reopens with the same maps and images.                                                               |
-| 5   | Session > **Session Console Window** (⌥⌘C), rename a set there, then ⌘Z in the Architect window | The rename is undone, and the campaign shows as edited.                                                           |
-| 6   | Map > **Map Settings…**, choose a map image, then **Save**                                      | Calibration starts. Drag a box around one printed grid cell, and the map lines up with the grid.                  |
-| 7   | Press **V M E W D R** on the map                                                                | The tools switch. **I** opens the colour popover. **1–5** change the grid, with a notice.                         |
-| 8   | Drag a token while a World View is open (⇧⌘W)                                                   | Players see it move live, and the fog follows it.                                                                 |
-| 9   | Session Console: drop an image folder and some audio onto the panel                             | You get a plate set named after the folder, plus tracks. Drag thumbnails to reorder them.                         |
-| 10  | Turn on VoiceOver (⌘F5) over the map                                                            | Tokens and doors are read out. Pressing a door toggles it.                                                        |
-| 11  | System Settings > Accessibility > Display > **Increase Contrast**                               | The grid and selection outlines get stronger right away.                                                          |
-| 12  | Graphium > **Settings…** (⌘,)                                                                   | Theme and pen-pressure options. Changing the theme switches every window.                                         |
-| 13  | View > **Performance Monitor** (⇧⌘M)                                                            | Canvas FPS, draw time, memory and object counts.                                                                  |
+| #   | Do this                                                                                                 | You should see                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 1   | Launch the app                                                                                          | The **Welcome** window (logo, "Virtual Tabletop for …", four cards). No blank campaign and no system Open dialog. |
+| 2   | Click **New Campaign** (or ⌘N)                                                                          | An Architect window opens and Welcome closes.                                                                     |
+| 3   | View > **Customize Toolbar…**                                                                           | You can drag buttons in and out. The sidebar's **+** (Add Map) is still there.                                    |
+| 4   | File > **Export as .graphium…** (⇧⌘E), then open the exported file                                      | The campaign reopens with the same maps and images.                                                               |
+| 5   | Session > **Session Console Window** (⌥⌘C), rename a set there, then ⌘Z in the Architect window         | The rename is undone, and the campaign shows as edited.                                                           |
+| 6   | Map > **Map Settings…**, choose a map image, then **Save**                                              | Calibration starts. Drag a box around one printed grid cell, and the map lines up with the grid.                  |
+| 7   | Press **V M E W D R** on the map                                                                        | The tools switch. **I** opens the colour popover. **1–5** change the grid, with a notice.                         |
+| 8   | Drag a token while a World View is open (⇧⌘W)                                                           | Players see it move live, and the fog follows it.                                                                 |
+| 9   | Session Console: drop an image folder and some audio onto the panel                                     | You get a plate set named after the folder, plus tracks. Drag thumbnails to reorder them.                         |
+| 10  | Turn on VoiceOver (⌘F5) over the map                                                                    | Tokens and doors are read out. Pressing a door toggles it.                                                        |
+| 11  | System Settings > Accessibility > Display > **Increase Contrast**                                       | The grid and selection outlines get stronger right away.                                                          |
+| 12  | Graphium > **Settings…** (⌘,)                                                                           | Theme and pen-pressure options. Changing the theme switches every window.                                         |
+| 13  | View > **Performance Monitor** (⇧⌘M)                                                                    | Canvas FPS, draw time, memory and object counts.                                                                  |
+| 14  | Open two campaigns whose map images have the same file name (e.g. both `map.jpg`)                       | Each window shows its own map.                                                                                    |
+| 15  | Use a PNG map with transparent areas                                                                    | The transparent areas look the same before and after the map finishes loading (no grey haze).                     |
+| 16  | Save, add one token image, save again, then check file dates inside the package (Show Package Contents) | Only `campaign.json` and the new image changed. Duplicate and reopen: every asset is intact.                      |
 
 ## 7. Profiling
 
