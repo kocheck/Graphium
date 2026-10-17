@@ -79,6 +79,8 @@ final class MapCanvasNSView: NSView {
     /// Positions of tokens another window is dragging (World View shows DM drags live).
     private var showMovementRange = false
     private var hoverPoint: Point2D?
+    /// The token under the pointer with the Select tool (Architect), for the hover look.
+    private var hoveredTokenID: String?
     var fitRequest: FitRequest? {
         didSet {
             guard let fitRequest, fitRequest != oldValue else { return }
@@ -114,7 +116,8 @@ final class MapCanvasNSView: NSView {
         case panning
         case movingTokens(ids: [String], primary: String, start: Point2D, current: Point2D, began: Bool)
         case marquee(start: Point2D, current: Point2D, base: Set<String>)
-        case stroke(Drawing)
+        /// Drawing a marker, eraser or wall stroke; the stroke itself is `liveStroke`.
+        case stroke
         case measuring(origin: Point2D)
         case movingStrokes(ids: Set<String>, start: Point2D, current: Point2D, began: Bool)
         case resizing(tokenID: String, baseSize: Double, start: Point2D, current: Point2D)
@@ -128,10 +131,16 @@ final class MapCanvasNSView: NSView {
         else { return nil }
         let size = map.tokenSize(token, library: library)
         let handle = 10 / viewport.zoom
-        return (token, Bounds(x: token.x + size - handle / 2, y: token.y + size - handle / 2, width: handle, height: handle))
+        let bottom = token.y + map.tokenDisplayYOffset(size: size) + size  // drawn bottom edge (iso lift)
+        return (token, Bounds(x: token.x + size - handle / 2, y: bottom - handle / 2, width: handle, height: handle))
     }
 
     private var interaction = Interaction.idle
+    /// The stroke being drawn. Held outside `interaction` so each drag event appends in
+    /// place instead of copying the growing point arrays (TS mutates its line in place).
+    private var liveStroke: Drawing?
+    /// Door open/close swings in flight (PARITY §3.6); used by `drawDoors`.
+    lazy var doorSwings = DoorSwingAnimator()
     private var lastBaked: (key: String, image: CGImage)?
     private var spaceHeld = false
 
@@ -221,7 +230,7 @@ final class MapCanvasNSView: NSView {
             context.fillPath()
         }
         var liveStroke: Drawing?
-        if case .stroke(let drawing) = interaction { liveStroke = drawing }
+        if case .stroke = interaction { liveStroke = self.liveStroke }
         var ink = map.drawings
         if case .movingStrokes(let ids, let start, let current, true) = interaction {
             let duplicate = NSEvent.modifierFlags.contains(.option)
@@ -258,7 +267,9 @@ final class MapCanvasNSView: NSView {
             }
             let speed = ResolvedToken(token, library: library).movementSpeed
             drawMovementRange(
-                movementRange(tokenTopLeft: position, speedFeet: speed, gridSize: map.gridSize, gridType: map.gridType),
+                movementRange(
+                    tokenTopLeft: position, tokenSize: map.tokenSize(token, library: library), speedFeet: speed,
+                    gridSize: map.gridSize, gridType: map.gridType),
                 map: map, context: context)
         }
         drawTokens(map, context: context)
@@ -275,7 +286,7 @@ final class MapCanvasNSView: NSView {
             let size = max(map.gridSize * 0.25, base + max(current.x - start.x, current.y - start.y))
             context.setStrokeColor(NSColor.systemBlue.cgColor)
             context.setLineWidth(2 / viewport.zoom)
-            context.stroke(CGRect(x: token.x, y: token.y, width: size, height: size))
+            context.stroke(CGRect(x: token.x, y: token.y + map.tokenDisplayYOffset(size: size), width: size, height: size))
         }
         if case .calibrating(let start, let current) = interaction {
             context.setStrokeColor(NSColor.systemOrange.cgColor)
@@ -331,8 +342,10 @@ final class MapCanvasNSView: NSView {
         guard map.gridType != .hidden, map.gridSize * viewport.zoom >= 4 else { return }
         let color =
             map.gridColor.lowercased() == GameMap.defaultGridColor
-            // The default colour adapts to the theme, as in the TS app.
-            ? NSColor.labelColor.withAlphaComponent(highContrast ? 0.55 : 0.25) : (NSColor(hex: map.gridColor) ?? .separatorColor)
+            // The default colour adapts to the theme, as in the TS app; a custom colour draws
+            // at 50% like every TS grid (GridOverlay opacity), stronger with Increase Contrast.
+            ? NSColor.labelColor.withAlphaComponent(highContrast ? 0.55 : 0.25)
+            : (NSColor(hex: map.gridColor) ?? .separatorColor).withAlphaComponent(highContrast ? 0.8 : 0.5)
         context.setStrokeColor(color.cgColor)
         context.setFillColor(color.cgColor)
         context.setLineWidth(1 / viewport.zoom)
@@ -406,11 +419,12 @@ final class MapCanvasNSView: NSView {
             height: visible.height + 2 * margin)
         for token in map.tokens where !hiddenTokenIDs.contains(token.id) {
             let size = map.tokenSize(token, library: library)
-            var rect = CGRect(x: token.x, y: token.y, width: size, height: size)
+            let lift = map.tokenDisplayYOffset(size: size)  // iso tokens stand on their diamond (TS)
+            var rect = CGRect(x: token.x, y: token.y + lift, width: size, height: size)
             let isSelected = selection.contains(token.id)
             if let offset = dragOffset, isSelected {
                 if offset.duplicate {
-                    drawToken(token, in: rect, selected: false, alpha: 1, context: context)  // original stays
+                    drawToken(token, in: rect, lift: lift, selected: false, look: .idle, context: context)  // original stays
                 }
                 rect = rect.offsetBy(dx: offset.dx, dy: offset.dy)
                 if let target = preview[token.id] {
@@ -418,15 +432,16 @@ final class MapCanvasNSView: NSView {
                     context.setStrokeColor(NSColor.systemBlue.cgColor)
                     context.setLineWidth(2 / viewport.zoom)
                     context.setLineDash(phase: 0, lengths: [6 / viewport.zoom, 4 / viewport.zoom])
-                    context.strokeEllipse(in: CGRect(x: target.x, y: target.y, width: size, height: size))
+                    context.strokeEllipse(in: CGRect(x: target.x, y: target.y + lift, width: size, height: size))
                     context.restoreGState()
                 }
-                drawToken(token, in: rect, selected: true, alpha: 0.6, context: context)
+                drawToken(token, in: rect, lift: lift, selected: false, look: .dragged, context: context)
                 continue
             }
             // Cull tokens well off screen (2-cell margin, as in TS).
-            guard padded.intersects(Bounds(x: token.x, y: token.y, width: size, height: size)) else { continue }
-            drawToken(token, in: rect, selected: isSelected, alpha: 1, context: context)
+            guard padded.intersects(Bounds(x: token.x, y: token.y + lift, width: size, height: size)) else { continue }
+            let hovered = token.id == hoveredTokenID && toolState.tool == .select
+            drawToken(token, in: rect, lift: lift, selected: isSelected, look: hovered ? .hovered : .idle, context: context)
         }
     }
 
@@ -476,30 +491,56 @@ final class MapCanvasNSView: NSView {
         context.restoreGState()
     }
 
-    private func drawToken(_ token: Token, in rect: CGRect, selected: Bool, alpha: CGFloat, context: CGContext) {
+    /// TS `TokenNode` states: hover (Select tool) scales 1.02 with a soft shadow; a dragged
+    /// token is 50% opaque, scaled 1.05, with a strong shadow. Scaled about the centre.
+    private enum TokenLook {
+        case idle, hovered, dragged
+    }
+
+    /// `lift` is the iso display offset already applied to `rect`; the label stays under the footprint (TS).
+    private func drawToken(_ token: Token, in rect: CGRect, lift: Double, selected: Bool, look: TokenLook, context: CGContext) {
         context.saveGState()
-        context.setAlpha(alpha)
+        var art = rect
+        // Shadow offsets ignore the CTM (base space); flip the sign so the shadow falls down-right.
+        let down: CGFloat = context.ctm.d < 0 ? -1 : 1
+        switch look {
+        case .idle:
+            break
+        case .hovered:
+            art = rect.insetBy(dx: -rect.width * 0.01, dy: -rect.height * 0.01)
+            context.setShadow(
+                offset: CGSize(width: 2, height: 2 * down), blur: 12, color: NSColor.black.withAlphaComponent(0.4).cgColor)
+        case .dragged:
+            art = rect.insetBy(dx: -rect.width * 0.025, dy: -rect.height * 0.025)
+            context.setAlpha(0.5)
+            context.setShadow(
+                offset: CGSize(width: 5, height: 5 * down), blur: 20, color: NSColor.black.withAlphaComponent(0.6).cgColor)
+        }
         if let image = imageProvider(token.src) {
-            draw(image, in: rect, context: context)
+            draw(image, in: art, context: context)
         } else {
             context.setFillColor(NSColor.systemGray.cgColor)
-            context.fillEllipse(in: rect.insetBy(dx: rect.width * 0.08, dy: rect.height * 0.08))
-        }
-        if selected {
-            context.setStrokeColor(NSColor.systemBlue.cgColor)
-            context.setLineWidth((highContrast ? 3.5 : 2) / viewport.zoom)
-            context.setLineDash(phase: 0, lengths: [6 / viewport.zoom, 3 / viewport.zoom])
-            context.stroke(rect.insetBy(dx: -3 / viewport.zoom, dy: -3 / viewport.zoom))
+            context.fillEllipse(in: art.insetBy(dx: art.width * 0.08, dy: art.height * 0.08))
         }
         context.restoreGState()
+        if selected {
+            // TS: a dashed [8, 4] blue circle of radius size/2 + 2 with a blue glow.
+            context.saveGState()
+            context.setShadow(offset: .zero, blur: 8, color: NSColor.systemBlue.cgColor)
+            context.setStrokeColor(NSColor.systemBlue.cgColor)
+            context.setLineWidth((highContrast ? 4.5 : 3) / viewport.zoom)
+            context.setLineDash(phase: 0, lengths: [8 / viewport.zoom, 4 / viewport.zoom])
+            context.strokeEllipse(in: rect.insetBy(dx: -2, dy: -2))
+            context.restoreGState()
+        }
 
         let name = ResolvedToken(token, library: library).name
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor.withAlphaComponent(alpha),
+            .font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor,
         ]
         let label = NSAttributedString(string: name, attributes: attributes)
         let labelSize = label.size()
-        label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY + 2))
+        label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY - lift + 8))
     }
 
     // MARK: Pointer input
@@ -581,7 +622,7 @@ final class MapCanvasNSView: NSView {
         case .select:
             break
         case .marker:
-            interaction = .stroke(
+            beginStroke(
                 Drawing(
                     tool: .marker, points: [point.x, point.y], color: toolState.markerColor,
                     size: StrokeDefaults.markerSize, pressures: toolState.pressureEnabled ? [pressure(of: event)] : nil))
@@ -590,12 +631,12 @@ final class MapCanvasNSView: NSView {
                 editing.doorAction?(door.id, .delete)  // the eraser deletes doors it touches
                 return
             }
-            interaction = .stroke(
+            beginStroke(
                 Drawing(
                     tool: .eraser, points: [point.x, point.y], color: StrokeDefaults.eraserColor,
-                    size: StrokeDefaults.eraserSize))
+                    size: StrokeDefaults.eraserSize, pressures: toolState.pressureEnabled ? [pressure(of: event)] : nil))
         case .wall:
-            interaction = .stroke(
+            beginStroke(
                 Drawing(
                     tool: .wall, points: [point.x, point.y], color: StrokeDefaults.wallColor,
                     size: StrokeDefaults.wallSize))
@@ -605,6 +646,37 @@ final class MapCanvasNSView: NSView {
             interaction = .measuring(origin: point)
             editing.setMeasurement?(MeasurementShape(mode: toolState.measureMode, origin: point, pointer: point))
         }
+    }
+
+    private func beginStroke(_ drawing: Drawing) {
+        liveStroke = drawing
+        interaction = .stroke
+    }
+
+    /// The view area the newest stroke point can change: the last four points (adding a
+    /// point bends the spline's previous segment), padded by the spline's control-point
+    /// reach (at most half of two neighbouring segments) and the widest pressure width.
+    private func liveStrokeDirtyRect() -> NSRect {
+        guard let points = liveStroke?.points, points.count >= 2, let stroke = liveStroke else { return bounds }
+        let n = points.count / 2
+        let tail = (max(0, n - 4)..<n).map { Point2D(x: points[2 * $0], y: points[2 * $0 + 1]) }
+        var minX = Double.infinity, minY = Double.infinity, maxX = -Double.infinity, maxY = -Double.infinity
+        var reach = 0.0
+        for (i, p) in tail.enumerated() {
+            minX = min(minX, p.x)
+            minY = min(minY, p.y)
+            maxX = max(maxX, p.x)
+            maxY = max(maxY, p.y)
+            if i >= 2 {
+                reach = max(
+                    reach, (Measure.euclideanDistance(tail[i - 2], tail[i - 1]) + Measure.euclideanDistance(tail[i - 1], p)) / 2)
+            }
+        }
+        let pad = reach + stroke.size * (stroke.scale ?? 1) + 2  // pressure widths reach 2× the base
+        let topLeft = viewport.viewPoint(fromMap: Point2D(x: minX - pad, y: minY - pad))
+        let bottomRight = viewport.viewPoint(fromMap: Point2D(x: maxX + pad, y: maxY + pad))
+        return NSRect(x: topLeft.x, y: topLeft.y, width: bottomRight.x - topLeft.x, height: bottomRight.y - topLeft.y)
+            .insetBy(dx: -2, dy: -2)
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -628,17 +700,18 @@ final class MapCanvasNSView: NSView {
                 }
             }
             needsDisplay = true
-        case .stroke(var drawing):
+        case .stroke:
+            guard let count = liveStroke?.points.count, count >= 2 else { break }
             var point = mapLocation(of: event)
             // Shift locks the segment to the dominant axis from the stroke's start.
-            if event.modifierFlags.contains(.shift), drawing.points.count >= 2 {
-                let start = Point2D(x: drawing.points[0], y: drawing.points[1])
-                if abs(point.x - start.x) > abs(point.y - start.y) { point.y = start.y } else { point.x = start.x }
+            if event.modifierFlags.contains(.shift), let x0 = liveStroke?.points[0], let y0 = liveStroke?.points[1] {
+                if abs(point.x - x0) > abs(point.y - y0) { point.y = y0 } else { point.x = x0 }
             }
-            drawing.points += [point.x, point.y]
-            if drawing.pressures != nil { drawing.pressures?.append(pressure(of: event)) }
-            interaction = .stroke(drawing)
-            needsDisplay = true
+            // Skip a repeat of the last point, as TS does (axis-lock produces many).
+            if liveStroke?.points[count - 2] == point.x, liveStroke?.points[count - 1] == point.y { break }
+            liveStroke?.points.append(contentsOf: [point.x, point.y])
+            if liveStroke?.pressures != nil { liveStroke?.pressures?.append(pressure(of: event)) }
+            setNeedsDisplay(liveStrokeDirtyRect())
         case .movingStrokes(let ids, let start, _, let began):
             let point = mapLocation(of: event)
             let moved = began || Measure.euclideanDistance(start, point) * viewport.zoom >= Self.dragThreshold
@@ -689,9 +762,10 @@ final class MapCanvasNSView: NSView {
             editing?.calibrate?(Bounds(corner: start, corner: current))
         }
         if case .panning = interaction { clampViewport() }
-        if case .stroke(let drawing) = interaction {
+        if case .stroke = interaction, let drawing = liveStroke {
             editing?.addDrawing?(drawing)
         }
+        liveStroke = nil
         // A measurement stays up after release until Esc or a tool change (TS).
         interaction = .idle
         (spaceHeld ? NSCursor.openHand : NSCursor.arrow).set()
@@ -709,7 +783,13 @@ final class MapCanvasNSView: NSView {
 
     override func mouseMoved(with event: NSEvent) {
         guard !isPlayerView, editing != nil else { return }
-        hoverPoint = mapLocation(of: event)
+        let point = mapLocation(of: event)
+        hoverPoint = point
+        if toolState.tool == .select, let hit = map?.token(at: point, library: library), !hiddenTokenIDs.contains(hit.id) {
+            hoveredTokenID = hit.id
+        } else {
+            hoveredTokenID = nil
+        }
         needsDisplay = true
     }
 
@@ -727,6 +807,7 @@ final class MapCanvasNSView: NSView {
 
     override func mouseExited(with event: NSEvent) {
         hoverPoint = nil
+        hoveredTokenID = nil
         needsDisplay = true
     }
 
@@ -755,8 +836,19 @@ final class MapCanvasNSView: NSView {
         return menu
     }
 
+    /// Every zoom step is clamped, as in TS `performZoom` (PARITY §3.1).
+    private func zoomViewport(by factor: Double, around anchor: Point2D) {
+        guard let map else {
+            viewport.zoom(by: factor, around: anchor)
+            return
+        }
+        viewport = viewport.zoomed(
+            by: factor, around: anchor, clampingTo: map, library: library, viewWidth: Double(bounds.width),
+            viewHeight: Double(bounds.height))
+    }
+
     override func magnify(with event: NSEvent) {
-        viewport.zoom(by: 1 + Double(event.magnification), around: viewLocation(of: event))
+        zoomViewport(by: 1 + Double(event.magnification), around: viewLocation(of: event))
     }
 
     override func scrollWheel(with event: NSEvent) {
@@ -766,12 +858,12 @@ final class MapCanvasNSView: NSView {
             let factor =
                 event.hasPreciseScrollingDeltas
                 ? exp(Double(event.scrollingDeltaY) * 0.01) : (event.scrollingDeltaY > 0 ? 1.1 : 1 / 1.1)
-            viewport.zoom(by: factor, around: viewLocation(of: event))
+            zoomViewport(by: factor, around: viewLocation(of: event))
         } else {
             // Plain wheel / two-finger scroll pans.
             let scale = event.hasPreciseScrollingDeltas ? 1.0 : 10.0
             viewport.pan(byViewDX: Double(event.scrollingDeltaX) * scale, dy: Double(event.scrollingDeltaY) * scale)
-            if event.phase == .ended || event.momentumPhase == .ended || !event.hasPreciseScrollingDeltas { clampViewport() }
+            clampViewport()  // every scroll event, as in TS
         }
     }
 
@@ -840,8 +932,8 @@ final class MapCanvasNSView: NSView {
             }
             let centre = Point2D(x: Double(bounds.midX), y: Double(bounds.midY))
             switch event.charactersIgnoringModifiers {
-            case "+", "=": viewport.zoom(by: 1.1, around: centre)
-            case "-", "_": viewport.zoom(by: 1 / 1.1, around: centre)
+            case "+", "=": zoomViewport(by: 1.1, around: centre)
+            case "-", "_": zoomViewport(by: 1 / 1.1, around: centre)
             default: super.keyDown(with: event)
             }
         }
