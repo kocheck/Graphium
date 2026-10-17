@@ -526,7 +526,7 @@ final class MapCanvasNSView: NSView {
                 dragged = [hit.id]
                 editing.setSelection(dragged)
             }
-            let ordered = map.tokens.map(\.id).filter { dragged.contains($0) }
+            let ordered = map.draggedTokenIDs(selected: dragged, hidden: hiddenTokenIDs)
             interaction = .movingTokens(ids: ordered, primary: hit.id, start: point, current: point, began: false)
         } else if let door = map.door(at: point), let doorAction = editing.doorAction {
             // Clicking a door opens or closes it (locked doors stay put).

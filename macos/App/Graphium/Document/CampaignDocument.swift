@@ -148,12 +148,13 @@ final class CampaignDocument: ReferenceFileDocument {
     }
 
     /// The only edit the World View may make (PARITY §4.2): move tokens that exist
-    /// on the active map. No duplication, deletion or property changes.
+    /// on the active map. No duplication, deletion or property changes, and never a
+    /// token hidden from the players, whatever the window's selection still holds.
     func playerMoveTokens(_ ids: [String], primary: String, dx: Double, dy: Double) {
         guard dx.isFinite, dy.isFinite else { return }
         edit("Move Token", undoManager: lastUndoManager) { campaign in
             let library = campaign.libraryIndex
-            campaign.activeMap.dropTokens(ids, primary: primary, dx: dx, dy: dy, duplicate: false, library: library)
+            campaign.activeMap.playerMoveTokens(ids, primary: primary, dx: dx, dy: dy, library: library)
         }
     }
 

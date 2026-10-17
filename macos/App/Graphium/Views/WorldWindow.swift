@@ -155,6 +155,8 @@ private struct WorldView: View {
             if paused { pauseLine = SystemMessages.pauseOverlay.randomElement() ?? pauseLine }
         }
         .onChange(of: campaign.activeMapID) { _, _ in selection = [] }
+        // Tokens that drop out of sight leave the selection, so a later drag can't carry them.
+        .onChange(of: hidden) { _, now in selection.subtract(now) }
         .onChange(of: document.sessionRuntime) { _, runtime in audio.apply(runtime, assets: document.assets) }
         .onChange(of: audio.lastError) { _, message in document.audioError = message }
         .onAppear {

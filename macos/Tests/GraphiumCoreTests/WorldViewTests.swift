@@ -32,6 +32,45 @@ final class WorldViewTests: XCTestCase {
         XCTAssertEqual(viewport.zoom, Viewport.zoomRange.upperBound)
     }
 
+    /// A PC at the origin that sees 600 px (60 ft at 50 px cells), a visible NPC beside
+    /// it and an NPC far outside its vision.
+    private func visionMap() -> GameMap {
+        var map = GameMap(gridSize: 50)
+        map.tokens = [
+            Token(id: "pc", x: 0, y: 0, src: "", type: .pc, visionRadius: 60),
+            Token(id: "near", x: 100, y: 0, src: "", type: .npc),
+            Token(id: "far", x: 2000, y: 2000, src: "", type: .npc),
+        ]
+        return map
+    }
+
+    func testDraggedTokenIDsDropHiddenTokens() {
+        let map = visionMap()
+        XCTAssertEqual(map.tokensHiddenFromPlayers(library: [:]), ["far"])
+        XCTAssertEqual(
+            map.draggedTokenIDs(selected: ["far", "pc", "near"], hidden: ["far"]), ["pc", "near"],
+            "map order, hidden NPC left behind")
+        XCTAssertEqual(map.draggedTokenIDs(selected: ["far", "pc"]), ["pc", "far"])
+    }
+
+    func testPlayerMoveNeverMovesHiddenNPCs() {
+        var map = visionMap()
+        let moved = map.playerMoveTokens(["pc", "near", "far"], primary: "pc", dx: 50, dy: 0, library: [:])
+        XCTAssertEqual(moved, ["pc", "near"])
+        XCTAssertEqual(map.tokens.first { $0.id == "far" }?.x, 2000)
+        XCTAssertEqual(map.tokens.first { $0.id == "pc" }?.x, 50)
+
+        let before = map
+        XCTAssertEqual(map.playerMoveTokens(["far"], primary: "far", dx: 50, dy: 0, library: [:]), [])
+        XCTAssertEqual(map, before, "a hidden primary moves nothing")
+    }
+
+    func testPlayerMoveInDaylightHidesNothing() {
+        var map = visionMap()
+        map.isDaylightMode = true
+        XCTAssertEqual(map.playerMoveTokens(["far"], primary: "far", dx: 50, dy: 0, library: [:]), ["far"])
+    }
+
     func testPauseMessagesMatchTSPool() {
         XCTAssertEqual(SystemMessages.pauseOverlay.count, 7)
     }
