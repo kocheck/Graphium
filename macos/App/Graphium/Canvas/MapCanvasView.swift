@@ -579,7 +579,7 @@ final class MapCanvasNSView: NSView {
             interaction = .stroke(
                 Drawing(
                     tool: .eraser, points: [point.x, point.y], color: StrokeDefaults.eraserColor,
-                    size: StrokeDefaults.eraserSize))
+                    size: StrokeDefaults.eraserSize, pressures: toolState.pressureEnabled ? [pressure(of: event)] : nil))
         case .wall:
             interaction = .stroke(
                 Drawing(
