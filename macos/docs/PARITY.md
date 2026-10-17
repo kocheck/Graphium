@@ -108,7 +108,7 @@ All single-key shortcuts are ignored while typing in an input or textarea.
 - [ ] Command palette keys — `Esc` close, `Enter` run the highlighted item, `Up`/`Down` move while skipping section headers. (source: src/components/AssetLibrary/CommandPalette.tsx:182-228)
 - [ ] Confirm dialog — `Enter` confirms. Cancel has initial focus. `Esc` cancels. (source: src/components/ConfirmDialog.tsx:27-55)
 - [ ] Map rename field — `Enter` commits, `Esc` cancels. This lives in the unmounted MapNavigator (see section 5.1). (source: src/components/MapNavigator.tsx:55-57)
-- [ ] Session Console panel focus — `1` to `9` play tracks in board order. `D` ducks or unducks. Only active while focus is inside the panel. (source: src/components/SessionConsole/useSessionConsoleHotkeys.ts:91-130)
+- [x] Session Console panel focus — `1` to `9` play tracks in board order. `D` ducks or unducks. Only active while focus is inside the panel. (source: src/components/SessionConsole/useSessionConsoleHotkeys.ts:91-130)
 - [ ] Menu accelerators — `Cmd+N`, `Cmd+O`, `Cmd+S`, `Cmd+Shift+W`, `Cmd+Shift+M`. (source: electron/main.ts:192-277)
 - [ ] Home screen — `Cmd+N`, `Cmd+O`, `Cmd+G`, `Cmd+T`, `?`, `Esc` (see 1.2). (source: src/components/HomeScreen.tsx:276-315)
 - [ ] Ctrl/Cmd + scroll wheel — Zoom at the pointer. Plain wheel pans. (source: src/components/Canvas/CanvasManager.tsx:978-1006)
@@ -122,12 +122,12 @@ the macOS Help menu search and the system shortcuts overlay show them.
 
 ### 1.5 Command palette (Architect only)
 
-- [ ] Spotlight-style modal — A search field ("Search actions and assets...") autofocused, with results grouped into Actions and Assets section headers. (source: src/components/AssetLibrary/CommandPalette.tsx:1-25, 253)
-- [ ] Action registry — Select, Marker, Eraser, Wall, Door and Measure tools; Pause/Resume World View; Launch World View; Generate Dungeon; Session Console: Stop, Duck, Return to Map, Test Tone, Settings. Each has keywords and a shortcut hint. (source: src/utils/commandRegistry.ts:61-195)
-- [ ] Weighted fuzzy command search — Label x3, keywords x2, category x1. (source: src/utils/commandRegistry.ts)
-- [ ] Asset search — Fuzzy subsequence match on library item name and tags. Choosing an asset places a library-linked token at the map centre, or (500, 500) when there is no map. (source: src/utils/fuzzySearch.ts, src/utils/tokenHelpers.ts:19-41, src/components/AssetLibrary/CommandPalette.tsx:159)
-- [ ] Edit asset from palette — An edit button on an asset result opens TokenMetadataEditor. (source: src/components/AssetLibrary/CommandPalette.tsx:70-71, 406)
-- [ ] Also opened by the Sidebar Library "Place" button. (source: src/components/Sidebar.tsx:379-387)
+- [x] Spotlight-style modal — A search field ("Search actions and assets...") autofocused, with results grouped into Actions and Assets section headers. (source: src/components/AssetLibrary/CommandPalette.tsx:1-25, 253)
+- [x] Action registry — Select, Marker, Eraser, Wall, Door and Measure tools; Pause/Resume World View; Launch World View; Generate Dungeon; Session Console: Stop, Duck, Return to Map, Test Tone, Settings. Each has keywords and a shortcut hint. (source: src/utils/commandRegistry.ts:61-195)
+- [x] Weighted fuzzy command search — Label x3, keywords x2, category x1. (source: src/utils/commandRegistry.ts)
+- [x] Asset search — Fuzzy subsequence match on library item name and tags. Choosing an asset places a library-linked token at the map centre, or (500, 500) when there is no map. (source: src/utils/fuzzySearch.ts, src/utils/tokenHelpers.ts:19-41, src/components/AssetLibrary/CommandPalette.tsx:159)
+- [x] Edit asset from palette — An edit button on an asset result opens TokenMetadataEditor. (source: src/components/AssetLibrary/CommandPalette.tsx:70-71, 406)
+- [x] Also opened by the Sidebar Library "Place" button. (source: src/components/Sidebar.tsx:379-387)
 
 **Native mapping:** Use a SwiftUI sheet or an `NSPanel` floating palette with a `List` and
 `.searchable`. Commands are best modelled as one `[Command]` source that also drives the menus.
@@ -227,7 +227,7 @@ reimplemented IPC meter.
 - [x] LIBRARY section — "Place" (opens the command palette), "Add" (pick an image, process it as a TOKEN, then show the Add to Library dialog), "Manage library" (opens Library Manager). (source: src/components/Sidebar.tsx:376-428, 213-262)
 - [x] Quick Token Sidebar — "Recent History" (last 3 unique library tokens used on this map) and "Party Tokens" (a generic placeholder plus up to 5 PC library tokens, deduped against recents). Every item can be dragged onto the canvas. (source: src/components/QuickTokenSidebar.tsx:1-168, src/utils/tokenUtils.ts)
 - [x] Custom drag image (64x64) when dragging a library token. (source: src/components/Sidebar.tsx:174-210)
-- [ ] SESSION CONSOLE section — Hosts the Session Console panel (see 5.4). (source: src/components/Sidebar.tsx:432-434)
+- [x] SESSION CONSOLE section — Hosts the Session Console panel (see 5.4). (source: src/components/Sidebar.tsx:432-434)
 
 **Native mapping:** Use a `NavigationSplitView` sidebar with `Section`s and `DisclosureGroup`s.
 Library items use `.draggable` with a custom `Transferable` type (library item id). The
@@ -415,11 +415,11 @@ exploration is computed once.
 
 ### 3.12 Minimap (World View only)
 
-- [ ] A 200x200 canvas showing the map bounds (or PC bounds when there is no map), PC tokens as green dots, and the current viewport rectangle. Clicking recentres the World View camera there. It is wrapped in an error boundary. (source: src/components/Canvas/Minimap.tsx:1-233, src/components/Canvas/ConnectedMinimap.tsx:5-59, src/components/Canvas/CanvasManager.tsx:1427-1433)
+- [x] A 200x200 canvas showing the map bounds (or PC bounds when there is no map), PC tokens as green dots, and the current viewport rectangle. Clicking recentres the World View camera there. It is wrapped in an error boundary. (source: src/components/Canvas/Minimap.tsx:1-233, src/components/Canvas/ConnectedMinimap.tsx:5-59, src/components/Canvas/CanvasManager.tsx:1427-1433)
 
 ### 3.13 Paper-noise overlay
 
-- [ ] An SVG `feTurbulence` paper texture at 25% opacity over the map bounds (or the visible bounds when there is no map). It moves with the map and is non-interactive. (source: src/components/Canvas/PaperNoiseOverlay.tsx:1-94, src/components/Canvas/CanvasManager.tsx:1221-1232)
+- [x] An SVG `feTurbulence` paper texture at 25% opacity over the map bounds (or the visible bounds when there is no map). It moves with the map and is non-interactive. (source: src/components/Canvas/PaperNoiseOverlay.tsx:1-94, src/components/Canvas/CanvasManager.tsx:1221-1232)
 
 **Native mapping:** Use a pre-rendered tiling noise `CGImage` (or a `CIFilter.randomGenerator` blended
 at 25%) as a pattern layer.
@@ -448,7 +448,7 @@ at 25%) as a pattern layer.
 - [x] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
 - [ ] Minimap (see 3.12).
 - [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2)
-- [ ] Session Console stage — A full-window "plate" artwork with an optional frame, title and subtitle that crossfades between plates (no fade under reduced motion). It covers the map while `stageVisible` is true. (source: src/components/SessionConsole/WorldStage.tsx:41-140)
+- [x] Session Console stage — A full-window "plate" artwork with an optional frame, title and subtitle that crossfades between plates (no fade under reduced motion). It covers the map while `stageVisible` is true. (source: src/components/SessionConsole/WorldStage.tsx:41-140)
 - [ ] "Arm World View audio" card — Shown until the window is armed. It explains that this window owns campaign audio and should be shared in Discord. The "Arm audio" button needs a user gesture to start the AudioContext and the YouTube player, and reads "Loading audio..." while getting ready. (source: src/components/SessionConsole/WorldAudioEngine.tsx:163-195)
 
 ### 4.2 What players can do
@@ -539,24 +539,24 @@ groups of music tracks (YouTube or local audio), plus a few sound effects. The D
 from the sidebar. World View is the only output: it shows the plate full-window and plays the
 audio, so the DM can share World View in Discord with "Include Audio". (source: src/types/sessionConsole.ts:1-80, src/components/SessionConsole/DiscordSetupHelp.tsx)
 
-- [ ] Catalog model — Stage chrome (title, which defaults to the campaign name; subtitle; showFrame), defaults (volume 45, duck 27%), imageSets[{title, note, images[{name, cue, src, thumbnailSrc, alt}]}], trackGroups[{title, note, accent bed|road|dread|combat|arrive, tracks[{title, cue, tag, source youtube|local, youtubeId|src, volumeOffset ±30, loop, recommendedImageId}]}], and sfx (synth chime, drone, snap, ping, test-tone, plus local files). (source: src/types/sessionConsole.ts:7-110, 210-232)
-- [ ] Master bar — World link status: "World closed", "World connected" or "World armed", with a colour. Also a volume slider from 0 to 100, Duck toggle, Pause, Resume, Restart, Stop, Return to Map, and Test Tone. (source: src/components/SessionConsole/SessionConsoleMasterBar.tsx:14-120, src/components/SessionConsole/useWorldLinkStatus.ts)
-- [ ] "Copy current link" and "Copy all links" — Copy fallback track links (numbered, with YouTube URLs) to the clipboard, with a toast. (source: src/components/SessionConsole/SessionConsolePanel.tsx:44-62, src/utils/sessionConsoleBoard.ts:30-42)
+- [x] Catalog model — Stage chrome (title, which defaults to the campaign name; subtitle; showFrame), defaults (volume 45, duck 27%), imageSets[{title, note, images[{name, cue, src, thumbnailSrc, alt}]}], trackGroups[{title, note, accent bed|road|dread|combat|arrive, tracks[{title, cue, tag, source youtube|local, youtubeId|src, volumeOffset ±30, loop, recommendedImageId}]}], and sfx (synth chime, drone, snap, ping, test-tone, plus local files). (source: src/types/sessionConsole.ts:7-110, 210-232)
+- [x] Master bar — World link status: "World closed", "World connected" or "World armed", with a colour. Also a volume slider from 0 to 100, Duck toggle, Pause, Resume, Restart, Stop, Return to Map, and Test Tone. (source: src/components/SessionConsole/SessionConsoleMasterBar.tsx:14-120, src/components/SessionConsole/useWorldLinkStatus.ts)
+- [x] "Copy current link" and "Copy all links" — Copy fallback track links (numbered, with YouTube URLs) to the clipboard, with a toast. (source: src/components/SessionConsole/SessionConsolePanel.tsx:44-62, src/utils/sessionConsoleBoard.ts:30-42)
 - [ ] Board dropzone — Drop images and/or audio files. Image files go to an image set named after the folder. Audio goes to a track group. Audio over 8 MB warns and over 25 MB is rejected. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:44-52, src/utils/sessionConsoleBoard.ts:255-298, src/utils/localAudioLimits.ts:3-9)
-- [ ] Paste YouTube URL field — Accepts a paste or Enter. Parses raw 11-character ids and youtu.be, watch?v=, shorts, embed and v/ URLs. Playlist-only URLs are rejected. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:54-90, src/types/sessionConsole.ts:150-190, src/utils/sessionConsoleBoard.ts:206)
-- [ ] "Add from folder" (directory image picker), "New image set" and "New track group" buttons. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:92-140)
+- [x] Paste YouTube URL field — Accepts a paste or Enter. Parses raw 11-character ids and youtu.be, watch?v=, shorts, embed and v/ URLs. Playlist-only URLs are rejected. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:54-90, src/types/sessionConsole.ts:150-190, src/utils/sessionConsoleBoard.ts:206)
+- [x] "Add from folder" (directory image picker), "New image set" and "New track group" buttons. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:92-140)
 - [ ] Image set board — Clicking a thumbnail shows that plate in World View (SHOW_PLATE). Thumbnails can be reordered by drag. Each has an edit button. Files can be dropped onto a set. (source: src/components/SessionConsole/ImageSetBoard.tsx:51-130)
 - [ ] Track group list — Click Play on a track. Tracks can be reordered by drag. Each has an edit button. Files can be dropped onto a group. (source: src/components/SessionConsole/TrackGroupList.tsx:57-125)
-- [ ] SFX buttons — One per catalog sfx (FIRE_SFX). (source: src/components/SessionConsole/SessionConsolePanel.tsx:110-120)
-- [ ] Editor sheet — For a plate: Name, Cue and Alt text. For a track: Title, Cue, Tag (accent), Loop toggle, a volume-offset slider (±30) and a recommended plate (None or a plate). (source: src/components/SessionConsole/SessionConsoleEditorSheet.tsx:20-80, 126-215)
+- [x] SFX buttons — One per catalog sfx (FIRE_SFX). (source: src/components/SessionConsole/SessionConsolePanel.tsx:110-120)
+- [x] Editor sheet — For a plate: Name, Cue and Alt text. For a track: Title, Cue, Tag (accent), Loop toggle, a volume-offset slider (±30) and a recommended plate (None or a plate). (source: src/components/SessionConsole/SessionConsoleEditorSheet.tsx:20-80, 126-215)
 - [ ] Remove plate, track, set or group **(gap)** — Reducers exist (REMOVE_IMAGE, REMOVE_TRACK, REMOVE_IMAGE_SET, REMOVE_TRACK_GROUP), but no UI calls them. The same goes for renaming sets and groups (UPDATE_IMAGE_SET/UPDATE_TRACK_GROUP) and for `recommendedImageId`, which is stored but never acted on. [Intended: full board editing.] (source: src/store/sessionConsoleReducers.ts:21-44)
 - [ ] Settings sheet — "Stage" (title, subtitle, Show frame), "Playback defaults" (default volume on load, duck percent), "Advanced: board pack" (Import replace, Import merge, Export pack, with a skipped/warnings summary), and "Table setup" (the Discord checklist: Krisp off, attenuation 0%, share World View with audio, play the test tone; plus the keyboard list). Also opened from the command palette. (source: src/components/SessionConsole/SessionConsoleSettingsSheet.tsx:1-49, src/components/SessionConsole/sessionConsoleSettingsSections.tsx:29-272, src/components/SessionConsole/DiscordSetupHelp.tsx:1-33)
 - [ ] Board pack import — Pick `board.json`. Relative files are sandboxed to the pack folder and copied into temp assets. http(s) assets are fetched with a byte cap. YouTube is kept. Per-row errors are reported as skipped. Replace or merge into the catalog. Plate thumbnails are generated. (source: electron/sessionConsolePackIngest.ts:22-60, electron/sessionConsolePackFiles.ts:130-220, src/utils/sessionConsolePack.ts:569-1075, src/utils/sessionConsoleBoard.ts:149)
 - [ ] Board pack export — Pick a folder. Writes `board.json` plus `images/` and `audio/` copies, and YouTube watch URLs. Reports "Board pack exported" or "finished with errors". (source: electron/sessionConsolePackFiles.ts:224-290, src/utils/sessionConsolePack.ts:1076-1125, docs/planning/session-console-pack.example.json)
-- [ ] Runtime transport — PLAY_TRACK, PAUSE, RESUME, RESTART (bumps restartSeq), STOP, SET_VOLUME (0-100), SET_DUCKED, FIRE_SFX (bumps sfxSeq), SHOW_PLATE and RETURN_TO_MAP. (source: src/store/sessionConsoleReducers.ts:47-56, 665-779)
-- [ ] World audio engine — The YouTube IFrame player or an `<audio>` element. Effective volume = clamp(volume + offset), multiplied by duck% when ducked. Fades: stop 500 ms, switch track 300 ms out then in, mixer change 250 ms. Looping follows the track. Audio is silent until armed. Load or play errors are reported back to the Architect as SESSION_CONSOLE_WORLD_EVENT (armed, unarmed, ready, error). (source: src/components/SessionConsole/WorldAudioEngine.tsx, src/components/SessionConsole/useWorldTransport.ts:41-198, src/components/SessionConsole/worldAudioYoutube.ts, src/types/sessionConsole.ts:117-131, electron/main.ts:1176-1182)
-- [ ] Synth SFX — Web Audio oscillator recipes for chime, drone, snap, ping and test tone. Local SFX use decoded buffers that are cached. (source: src/components/SessionConsole/worldStageSfx.ts:6-161)
-- [ ] Hotkeys `1` to `9`, `D` and `Esc` (see 1.4).
+- [x] Runtime transport — PLAY_TRACK, PAUSE, RESUME, RESTART (bumps restartSeq), STOP, SET_VOLUME (0-100), SET_DUCKED, FIRE_SFX (bumps sfxSeq), SHOW_PLATE and RETURN_TO_MAP. (source: src/store/sessionConsoleReducers.ts:47-56, 665-779)
+- [x] World audio engine — The YouTube IFrame player or an `<audio>` element. Effective volume = clamp(volume + offset), multiplied by duck% when ducked. Fades: stop 500 ms, switch track 300 ms out then in, mixer change 250 ms. Looping follows the track. Audio is silent until armed. Load or play errors are reported back to the Architect as SESSION_CONSOLE_WORLD_EVENT (armed, unarmed, ready, error). (source: src/components/SessionConsole/WorldAudioEngine.tsx, src/components/SessionConsole/useWorldTransport.ts:41-198, src/components/SessionConsole/worldAudioYoutube.ts, src/types/sessionConsole.ts:117-131, electron/main.ts:1176-1182)
+- [x] Synth SFX — Web Audio oscillator recipes for chime, drone, snap, ping and test tone. Local SFX use decoded buffers that are cached. (source: src/components/SessionConsole/worldStageSfx.ts:6-161)
+- [x] Hotkeys `1` to `9`, `D` and `Esc` (see 1.4).
 - [ ] The YouTube embed needs a non-`file://` origin and a Referer header, which is why the `graphium://` protocol and `YOUTUBE_EMBED_URL_FILTER` exist. (source: electron/main.ts:374-379, 1118-1123, electron/graphiumProtocol.ts)
 
 **Native mapping:** Local audio maps to `AVAudioEngine` (`AVAudioPlayerNode` per bed, mixer volume
@@ -570,9 +570,9 @@ ScreenCaptureKit app-audio capture is per application, not per window. Document 
 
 ### 5.5 Dungeon generator
 
-- [ ] Dialog — Number of rooms (3-15, default 5), Min room size (2-6, default 3), Max room size (4-12, default 8), and a "Clear existing walls and doors" toggle. Note: "drawn using the Wall tool... fully interactive". Cancel and Generate buttons, with Generate focused on open. Opened from the menu, the palette, the home card, `Cmd+G` on home, and the mobile More menu. (source: src/components/DungeonGeneratorDialog.tsx:16-198, src/components/DungeonGeneratorDialogGate.tsx)
-- [ ] Algorithm — Organic growth: a central room, then repeated "random existing room + corridor (4 cells long, 1 wide) + new room" with collision retry. Everything is grid-aligned to the current gridSize. The canvas size is the window size. (source: src/utils/DungeonGenerator.ts:151-200, docs/DUNGEON_GENERATOR.md)
-- [ ] Output — Wall drawings (red, 8 px) and doors added to the active map, so fog works immediately. No stairs and no map image. (source: src/components/DungeonGeneratorDialog.tsx:44-80)
+- [x] Dialog — Number of rooms (3-15, default 5), Min room size (2-6, default 3), Max room size (4-12, default 8), and a "Clear existing walls and doors" toggle. Note: "drawn using the Wall tool... fully interactive". Cancel and Generate buttons, with Generate focused on open. Opened from the menu, the palette, the home card, `Cmd+G` on home, and the mobile More menu. (source: src/components/DungeonGeneratorDialog.tsx:16-198, src/components/DungeonGeneratorDialogGate.tsx)
+- [x] Algorithm — Organic growth: a central room, then repeated "random existing room + corridor (4 cells long, 1 wide) + new room" with collision retry. Everything is grid-aligned to the current gridSize. The canvas size is the window size. (source: src/utils/DungeonGenerator.ts:151-200, docs/DUNGEON_GENERATOR.md)
+- [x] Output — Wall drawings (red, 8 px) and doors added to the active map, so fog works immediately. No stairs and no map image. (source: src/components/DungeonGeneratorDialog.tsx:44-80)
 
 **Native mapping:** Port DungeonGenerator to GraphiumCore with a seedable RNG
 (`RandomNumberGenerator`), which makes it testable. Show a SwiftUI sheet with `Stepper`s. Add

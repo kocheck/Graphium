@@ -79,6 +79,13 @@ struct SessionConsoleSettings: View {
     @ObservedObject var document: CampaignDocument
     @Environment(\.undoManager) private var undoManager
     @Environment(\.dismiss) private var dismiss
+    @State private var packSummary: String?
+
+    private func run(_ work: @escaping @MainActor () async -> String?) {
+        Task { @MainActor in
+            if let summary = await work() { packSummary = summary }
+        }
+    }
 
     var body: some View {
         let catalog = document.campaign.sessionConsole
@@ -107,6 +114,16 @@ struct SessionConsoleSettings: View {
                                 in: 1...100)
                             Text("\(Int(catalog.defaults.duckPercent))%").monospacedDigit()
                         }
+                    }
+                }
+                Section("Advanced: board pack") {
+                    HStack {
+                        Button("Import (Replace)…") { run { await BoardPackIO.importPack(into: document, mode: .replace, undoManager: undoManager) } }
+                        Button("Import (Merge)…") { run { await BoardPackIO.importPack(into: document, mode: .merge, undoManager: undoManager) } }
+                        Button("Export Pack…") { packSummary = BoardPackIO.exportPack(from: document) }
+                    }
+                    if let packSummary {
+                        Text(packSummary).font(.caption).textSelection(.enabled)
                     }
                 }
                 Section("Table setup (Discord)") {

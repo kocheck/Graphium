@@ -1,0 +1,98 @@
+import AppKit
+import GraphiumCore
+
+/// Board pack import/export for the Session Console settings (PARITY §5.4).
+@MainActor
+enum BoardPackIO {
+    enum Mode {
+        case replace, merge
+    }
+
+    /// Asks for a `board.json`, materialises it into this campaign, and returns a summary.
+    static func importPack(into document: CampaignDocument, mode: Mode, undoManager: UndoManager?) async -> String? {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.message = "Choose a board.json"
+        guard panel.runModal() == .OK, let url = panel.url, let data = try? Data(contentsOf: url) else { return nil }
+        let root = url.deletingLastPathComponent()
+        let (pack, errors) = BoardPack.parse(data)
+        let result = await BoardPack.materialize(
+            pack,
+            resolveFile: { path in resolve(path, root: root) },
+            fetch: { url in await fetchCapped(url) },
+            persist: { data, name in document.addAsset(data, preferredName: name) })
+        document.editConsole(mode == .replace ? "Import Board Pack" : "Merge Board Pack", undoManager: undoManager) { catalog in
+            if mode == .replace { catalog = result.catalog } else { catalog.merge(result.catalog) }
+        }
+        if mode == .replace { document.sessionRuntime = SessionConsoleRuntime(catalog: document.campaign.sessionConsole) }
+        let skipped = errors + result.skipped
+        var lines = ["Imported \(result.catalog.imageSets.flatMap(\.images).count) plates and \(result.catalog.allTracks.count) tracks."]
+        if !skipped.isEmpty { lines.append("Skipped \(skipped.count):\n" + skipped.joined(separator: "\n")) }
+        if !result.warnings.isEmpty { lines.append(Array(Set(result.warnings)).joined(separator: "\n")) }
+        return lines.joined(separator: "\n\n")
+    }
+
+    /// Relative or absolute paths, only if they stay inside the pack folder after
+    /// resolving symlinks; 25 MB cap (TS `resolveSandboxedPackPath`).
+    private static func resolve(_ path: String, root: URL) -> BoardPack.FileResult? {
+        let realRoot = root.resolvingSymlinksInPath().standardizedFileURL
+        let candidate = (path.hasPrefix("/") ? URL(fileURLWithPath: path) : root.appendingPathComponent(path))
+            .resolvingSymlinksInPath().standardizedFileURL
+        guard candidate.path == realRoot.path || candidate.path.hasPrefix(realRoot.path + "/") else { return nil }
+        guard let size = try? candidate.resourceValues(forKeys: [.fileSizeKey]).fileSize else { return nil }
+        if size > BoardPack.httpMaxBytes { return .skip("file is larger than 25MB") }
+        guard let data = try? Data(contentsOf: candidate) else { return nil }
+        return .data(data, fileName: candidate.lastPathComponent)
+    }
+
+    /// https only (already checked by the classifier), no redirects to elsewhere, 25 MB cap.
+    private static func fetchCapped(_ url: URL) async -> BoardPack.FetchResult {
+        do {
+            let (bytes, response) = try await URLSession.shared.bytes(from: url)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+                http.url?.host == url.host
+            else { return .failed }
+            if http.expectedContentLength > Int64(BoardPack.httpMaxBytes) { return .tooLarge }
+            var data = Data()
+            for try await byte in bytes {
+                data.append(byte)
+                if data.count > BoardPack.httpMaxBytes { return .tooLarge }
+            }
+            return .data(data)
+        } catch {
+            return .failed
+        }
+    }
+
+    /// Asks for a folder, then writes board.json plus images/ and audio/ copies.
+    static func exportPack(from document: CampaignDocument) -> String? {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Export Here"
+        panel.message = "Choose a folder for the board pack"
+        guard panel.runModal() == .OK, let folder = panel.url else { return nil }
+        do {
+            let export = try BoardPack.export(document.campaign.sessionConsole)
+            var missing: [String] = []
+            for file in export.files {
+                guard let data = document.assets[file.asset] else {
+                    missing.append(file.path)
+                    continue
+                }
+                let destination = folder.appendingPathComponent(file.path)
+                guard destination.standardizedFileURL.path.hasPrefix(folder.standardizedFileURL.path + "/") else { continue }
+                try FileManager.default.createDirectory(
+                    at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try data.write(to: destination, options: .atomic)
+            }
+            try export.boardJSON.write(to: folder.appendingPathComponent("board.json"), options: .atomic)
+            return missing.isEmpty
+                ? "Board pack exported"
+                : "Board pack finished with errors. Missing files:\n" + missing.joined(separator: "\n")
+        } catch {
+            return "Export failed: \(error.localizedDescription)"
+        }
+    }
+}
