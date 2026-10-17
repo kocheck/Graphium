@@ -416,7 +416,7 @@ exploration is computed once.
 
 ### 3.12 Minimap (World View only)
 
-- [x] A 200x200 canvas showing the map bounds (or PC bounds when there is no map), PC tokens as green dots, and the current viewport rectangle. Clicking recentres the World View camera there. It is wrapped in an error boundary. (source: src/components/Canvas/Minimap.tsx:1-233, src/components/Canvas/ConnectedMinimap.tsx:5-59, src/components/Canvas/CanvasManager.tsx:1427-1433)
+- [x] A 200x200 canvas showing the map bounds (or PC bounds when there is no map), PC tokens as green dots, and the current viewport rectangle. Clicking recentres the World View camera there. It is wrapped in an error boundary. (source: src/components/Canvas/Minimap.tsx:1-233, src/components/Canvas/ConnectedMinimap.tsx:5-59, src/components/Canvas/CanvasManager.tsx:1427-1433) **Native:** Without a map image it frames the PCs padded by 500 px, else a fixed 0–2000 world, as in TS; PC bounds use each token's real footprint rather than TS's 100 px × scale.
 
 ### 3.13 Paper-noise overlay
 

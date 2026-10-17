@@ -21,6 +21,23 @@ extension GameMap {
 }
 
 extension GameMap {
+    /// TS minimap: PC bounds padding and the fixed world used when there is nothing to frame.
+    public static let minimapPartyPadding = 500.0
+    public static let minimapDefaultBounds = Bounds(x: 0, y: 0, width: 2000, height: 2000)
+
+    /// What the World View minimap frames (PARITY §3.12, TS `Minimap`): the map image's
+    /// extent, else every PC token padded by 500 px, else a fixed 2000 × 2000 world.
+    public func minimapBounds(library: [String: TokenLibraryItem]) -> Bounds {
+        if let bg = background, bg.width * bg.scale > 0, bg.height * bg.scale > 0 {
+            return Bounds(x: bg.x, y: bg.y, width: bg.width * bg.scale, height: bg.height * bg.scale)
+        }
+        let pad = Self.minimapPartyPadding
+        guard let party = partyBounds(library: library, paddingCells: 0) else { return Self.minimapDefaultBounds }
+        return Bounds(x: party.x - pad, y: party.y - pad, width: party.width + 2 * pad, height: party.height + 2 * pad)
+    }
+}
+
+extension GameMap {
     /// NPCs the players can't see right now (CORE_SPEC §3.3; none in daylight).
     /// Recomputed from this map, so it never trusts a window's possibly stale copy.
     public func tokensHiddenFromPlayers(library: [String: TokenLibraryItem]) -> Set<String> {

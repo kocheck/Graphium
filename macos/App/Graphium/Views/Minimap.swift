@@ -9,7 +9,7 @@ final class MinimapModel: ObservableObject {
     @Published var viewSize = CGSize.zero
 }
 
-/// World View minimap (PARITY §3.12): map (or party) bounds, PCs as green dots,
+/// World View minimap (PARITY §3.12): map (or party, or fixed) bounds, PCs as green dots,
 /// the current view as a rectangle; click to recentre there.
 struct Minimap: View {
     let map: GameMap
@@ -22,7 +22,7 @@ struct Minimap: View {
     var body: some View {
         let world = worldBounds
         Canvas { context, size in
-            guard let world, world.width > 0, world.height > 0 else { return }
+            guard world.width > 0, world.height > 0 else { return }
             let scale = min(size.width / world.width, size.height / world.height)
             func p(_ point: Point2D) -> CGPoint {
                 CGPoint(x: (point.x - world.x) * scale, y: (point.y - world.y) * scale)
@@ -46,7 +46,7 @@ struct Minimap: View {
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.3)))
         .contentShape(Rectangle())
         .onTapGesture { location in
-            guard let world else { return }
+            guard world.width > 0, world.height > 0 else { return }
             let scale = min(side / world.width, side / world.height)
             recentre(Point2D(x: world.x + location.x / scale, y: world.y + location.y / scale))
         }
@@ -54,11 +54,7 @@ struct Minimap: View {
         .accessibilityHint("Click to move the view there")
     }
 
-    /// The map image's extent, else the party's.
-    private var worldBounds: Bounds? {
-        if let bg = map.background {
-            return Bounds(x: bg.x, y: bg.y, width: bg.width * bg.scale, height: bg.height * bg.scale)
-        }
-        return map.partyBounds(library: library)
-    }
+    /// The map image's extent, else the party's, else a fixed world, so the viewport
+    /// rectangle and click-to-recentre always work (TS).
+    private var worldBounds: Bounds { map.minimapBounds(library: library) }
 }

@@ -201,6 +201,14 @@ final class MapCanvasNSView: NSView {
                 context.draw(PaperTexture.image, in: CGRect(x: 0, y: 0, width: 256, height: 256), byTiling: true)
                 context.restoreGState()
             }
+        } else if map.background == nil {
+            // No map image: paper over the visible area, tiled in map space so it moves with the map (TS).
+            context.saveGState()
+            context.clip(to: CGRect(bounds: visibleMapBounds))
+            context.setAlpha(0.25)
+            context.setBlendMode(.multiply)
+            context.draw(PaperTexture.image, in: CGRect(x: 0, y: 0, width: 256, height: 256), byTiling: true)
+            context.restoreGState()
         }
         drawGrid(map, context: context)
         if !isPlayerView, editing != nil, let hoverPoint, map.gridType != .dots, map.gridType != .hidden {

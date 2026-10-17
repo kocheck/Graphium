@@ -19,6 +19,20 @@ final class WorldViewTests: XCTestCase {
         XCTAssertNil(map.partyBounds(library: [:]))
     }
 
+    func testMinimapBoundsFallBackToPartyThenFixedWorld() {
+        var map = GameMap(gridSize: 50)
+        XCTAssertEqual(map.minimapBounds(library: [:]), Bounds(x: 0, y: 0, width: 2000, height: 2000))
+
+        map.tokens = [
+            Token(id: "pc", x: 100, y: 200, src: "", type: .pc),
+            Token(id: "npc", x: 5000, y: 5000, src: "", type: .npc),
+        ]
+        XCTAssertEqual(map.minimapBounds(library: [:]), Bounds(x: -400, y: -300, width: 1050, height: 1050))
+
+        map.background = MapBackground(src: "m", x: 10, y: 20, width: 100, height: 50, scale: 2)
+        XCTAssertEqual(map.minimapBounds(library: [:]), Bounds(x: 10, y: 20, width: 200, height: 100))
+    }
+
     func testFitCentresBoundsAndClampsZoom() {
         var viewport = Viewport()
         viewport.fit(Bounds(x: 0, y: 0, width: 400, height: 200), viewWidth: 800, viewHeight: 800)
