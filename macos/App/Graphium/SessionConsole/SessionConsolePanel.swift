@@ -42,6 +42,11 @@ struct SessionConsolePanel: View {
         }
         .focusable()
         .onKeyPress(phases: .down) { press in handleKey(press) }
+        // Board dropzone (PARITY §5.4): files or one folder dropped anywhere on the panel.
+        .dropDestination(for: URL.self) { urls, _ in
+            ingestDropped(urls)
+            return true
+        }
         .fileImporter(
             isPresented: Binding(get: { importing != nil }, set: { if !$0 { importing = nil } }),
             allowedContentTypes: importing == .folder ? [.folder] : [.image, .audio],
@@ -160,7 +165,12 @@ struct SessionConsolePanel: View {
 
     /// TS `ingestDroppedFiles`: images become plates (in a set named after the folder),
     /// audio becomes tracks, with the TS size limits.
-    private func ingest(_ urls: [URL], fromFolder: Bool) {
+    private func ingestDropped(_ urls: [URL], intoSet: String? = nil, intoGroup: String? = nil) {
+        let folder = urls.count == 1 && urls[0].hasDirectoryPath
+        ingest(urls, fromFolder: folder, intoSet: intoSet, intoGroup: intoGroup)
+    }
+
+    private func ingest(_ urls: [URL], fromFolder: Bool, intoSet: String? = nil, intoGroup: String? = nil) {
         var files = urls
         var folderTitle: String?
         if fromFolder, let folder = urls.first {
@@ -169,7 +179,10 @@ struct SessionConsolePanel: View {
             defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
             files =
                 (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil))?
-                .filter { UTType(filenameExtension: $0.pathExtension)?.conforms(to: .image) == true }
+                .filter {
+                    let type = UTType(filenameExtension: $0.pathExtension)
+                    return type?.conforms(to: .image) == true || type?.conforms(to: .audio) == true
+                }
                 .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending } ?? []
         }
         var plates: [StageImage] = []
@@ -211,11 +224,13 @@ struct SessionConsolePanel: View {
         }
         document.editConsole("Add to Board", undoManager: undoManager) { c in
             if !plates.isEmpty {
-                let set = c.ensureImageSet(title: folderTitle)
+                let set = intoSet.flatMap { id in c.imageSets.contains { $0.id == id } ? id : nil }
+                    ?? c.ensureImageSet(title: folderTitle)
                 for plate in plates { c.addImage(plate, toSet: set) }
             }
             if !tracks.isEmpty {
-                let group = c.ensureTrackGroup()
+                let group = intoGroup.flatMap { id in c.trackGroups.contains { $0.id == id } ? id : nil }
+                    ?? c.ensureTrackGroup()
                 for track in tracks { c.addTrack(track, toGroup: group) }
             }
         }
@@ -248,6 +263,13 @@ struct SessionConsolePanel: View {
                         }
                         .buttonStyle(.plain)
                         .help(plate.cue.isEmpty ? plate.name : "\(plate.name) — \(plate.cue)")
+                        .accessibilityLabel("Show plate \(plate.name)")
+                        .draggable(BoardDrag.platePrefix + plate.id)
+                        .dropDestination(for: String.self) { items, _ in
+                            guard let id = items.first.flatMap(BoardDrag.plateID) else { return false }
+                            movePlate(id, before: plate, in: set)
+                            return true
+                        }
                         .contextMenu {
                             Button("Edit…") { editingPlate = plate }
                             Button("Move Earlier") { move(plate: plate, in: set, by: -1) }.disabled(index == 0)
@@ -258,6 +280,10 @@ struct SessionConsolePanel: View {
                         }
                     }
                 }
+            }
+            .dropDestination(for: URL.self) { urls, _ in
+                ingestDropped(urls, intoSet: set.id)
+                return true
             }
         }
     }
@@ -311,10 +337,18 @@ struct SessionConsolePanel: View {
                                 ? "speaker.wave.2.fill" : "play.circle")
                         }
                         .buttonStyle(.borderless)
+                        .accessibilityLabel("Play \(track.title)")
                         Text(track.title).lineLimit(1)
                         Spacer()
                         Image(systemName: track.source == .youtube ? "play.rectangle" : "music.note")
                             .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                    .draggable(BoardDrag.trackPrefix + track.id)
+                    .dropDestination(for: String.self) { items, _ in
+                        guard let id = items.first.flatMap(BoardDrag.trackID) else { return false }
+                        moveTrack(id, before: track, in: group)
+                        return true
                     }
                     .contextMenu {
                         Button("Edit…") { editingTrack = track }
@@ -325,6 +359,10 @@ struct SessionConsolePanel: View {
                         }
                     }
                 }
+            }
+            .dropDestination(for: URL.self) { urls, _ in
+                ingestDropped(urls, intoGroup: group.id)
+                return true
             }
         }
     }
@@ -354,6 +392,23 @@ struct SessionConsolePanel: View {
         var ids = group.tracks.map(\.id)
         guard let i = ids.firstIndex(of: track.id), ids.indices.contains(i + delta) else { return }
         ids.swapAt(i, i + delta)
+        document.editConsole("Reorder Tracks", undoManager: undoManager) { $0.reorderTracks(inGroup: group.id, ids) }
+    }
+
+    /// Drag-reorder within one set or group; drops from elsewhere are ignored.
+    private func movePlate(_ id: String, before target: StageImage, in set: ImageSet) {
+        var ids = set.images.map(\.id)
+        guard id != target.id, let from = ids.firstIndex(of: id) else { return }
+        ids.remove(at: from)
+        ids.insert(id, at: ids.firstIndex(of: target.id) ?? ids.count)
+        document.editConsole("Reorder Plates", undoManager: undoManager) { $0.reorderImages(inSet: set.id, ids) }
+    }
+
+    private func moveTrack(_ id: String, before target: Track, in group: TrackGroup) {
+        var ids = group.tracks.map(\.id)
+        guard id != target.id, let from = ids.firstIndex(of: id) else { return }
+        ids.remove(at: from)
+        ids.insert(id, at: ids.firstIndex(of: target.id) ?? ids.count)
         document.editConsole("Reorder Tracks", undoManager: undoManager) { $0.reorderTracks(inGroup: group.id, ids) }
     }
 
@@ -424,4 +479,13 @@ extension TrackAccent {
         case .arrive: return .green
         }
     }
+}
+
+/// Drag payloads for reordering board items.
+enum BoardDrag {
+    static let platePrefix = "graphium-plate:"
+    static let trackPrefix = "graphium-track:"
+
+    static func plateID(_ s: String) -> String? { s.hasPrefix(platePrefix) ? String(s.dropFirst(platePrefix.count)) : nil }
+    static func trackID(_ s: String) -> String? { s.hasPrefix(trackPrefix) ? String(s.dropFirst(trackPrefix.count)) : nil }
 }

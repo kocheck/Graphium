@@ -31,6 +31,10 @@ struct CanvasEditing {
     /// Live (unsnapped) positions of tokens being dragged, for the World View; nil when done.
     var dragPreview: (([String: Point2D]?) -> Void)?
     var setGridType: ((GridType) -> Void)?
+    /// `I` (PARITY §1.4).
+    var openColorPicker: (() -> Void)?
+    /// Esc with nothing else to cancel stops Session Console audio (PARITY §1.4).
+    var stopAudio: (() -> Void)?
 }
 
 /// Fog of war to draw over the map (World View, when not in daylight).
@@ -724,6 +728,10 @@ final class MapCanvasNSView: NSView {
                 editing?.cancelCalibration?()
                 return
             }
+            if measurement == nil, selection.isEmpty, selectedDoorID == nil {
+                editing?.stopAudio?()
+                return
+            }
             editing?.setSelection([])
             editing?.setMeasurement?(nil)
             selectedDoorID = nil
@@ -742,6 +750,10 @@ final class MapCanvasNSView: NSView {
                     // Hold M with a token selected to see movement range (no tool change).
                     showMovementRange = true
                     needsDisplay = true
+                    return
+                }
+                if char == "i", let openColorPicker = editing?.openColorPicker {
+                    openColorPicker()
                     return
                 }
                 if char == "r", toolState.tool == .door {

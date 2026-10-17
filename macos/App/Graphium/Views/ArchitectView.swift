@@ -330,7 +330,11 @@ struct ArchitectView: View {
                     tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
                 },
                 dropLibraryItem: { id, point in
-                    if let item = libraryItem(id) { placeLibraryItem(item, at: point) }
+                    if id == GenericToken.id {
+                        placeGenericToken(at: point)
+                    } else if let item = libraryItem(id) {
+                        placeLibraryItem(item, at: point)
+                    }
                 },
                 moveDrawings: { ids, dx, dy, duplicate in
                     var placed: [String] = []
@@ -361,7 +365,9 @@ struct ArchitectView: View {
                     guard type != document.campaign.activeMap.gridType else { return }
                     document.edit("Change Grid", undoManager: undoManager) { $0.activeMap.gridType = type }
                     showToast("Grid: \(type.title)")
-                }
+                },
+                openColorPicker: { openMarkerColorPanel() },
+                stopAudio: { document.dispatch(.stop) }
             ),
             toolState: penAdjusted(tools),
             measurement: measurement,
@@ -427,6 +433,19 @@ struct ArchitectView: View {
                 Button("Manage…") { showingLibrary = true }
             }
             .buttonStyle(.link)
+            Button {
+                placeGenericToken(at: nil)
+            } label: {
+                HStack {
+                    Image(systemName: "person.crop.circle.fill").frame(width: 24, height: 24)
+                    Text(GenericToken.name)
+                }
+            }
+            .buttonStyle(.plain)
+            .draggable(GenericToken.dragPayload) {
+                Text(GenericToken.name).padding(6).background(.regularMaterial, in: Capsule())
+            }
+            .help("Click to place at the map centre, or drag onto the map")
             if !recent.isEmpty {
                 Text("Recent").font(.caption).foregroundStyle(.secondary)
                 ForEach(recent) { item in quickToken(item, image: document.imageCache.image(named: item.thumbnailSrc, in: document.assets)) }
@@ -471,6 +490,24 @@ struct ArchitectView: View {
         } else {
             errorMessage = "“\(item.name)” is missing its image in the library."
         }
+    }
+
+    /// `I`: the system colour panel, writing into the marker colour (switches to Marker).
+    private func openMarkerColorPanel() {
+        selectTool(.marker)
+        let panel = NSColorPanel.shared
+        panel.showsAlpha = false
+        panel.color = NSColor(hex: tools.markerColor) ?? .systemOrange
+        ColorPanelBridge.shared.onChange = { color in
+            if let hex = color.hexString { tools.markerColor = hex }
+        }
+        panel.setTarget(ColorPanelBridge.shared)
+        panel.setAction(#selector(ColorPanelBridge.colorChanged(_:)))
+        panel.makeKeyAndOrderFront(nil)
+    }
+
+    private func placeGenericToken(at point: Point2D?) {
+        if let id = document.placeGenericToken(centredAt: point, undoManager: undoManager) { selection = [id] }
     }
 
     /// Finder drops: one image goes through the 1:1 cropper (TS); several import directly.
@@ -841,5 +878,15 @@ private struct PauseToolbarButton: View {
         }
         .tint(document.isPaused ? .red : .green)
         .help(document.isPaused ? "Resume - Players will see the map" : "Pause - Hide map from players")
+    }
+}
+
+/// Routes NSColorPanel changes to whichever Architect window opened it last.
+final class ColorPanelBridge: NSObject {
+    static let shared = ColorPanelBridge()
+    var onChange: ((NSColor) -> Void)?
+
+    @objc func colorChanged(_ sender: NSColorPanel) {
+        onChange?(sender.color)
     }
 }
