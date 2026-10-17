@@ -25,6 +25,17 @@ extension GameMap {
         background?.scale = 1
     }
 
+    /// Applies only what the Map Settings sheet edits (TS MapSettingsSheet.tsx:183-196).
+    /// Tokens, drawings, doors and explored regions keep their current values, so edits
+    /// made in other windows while the sheet was open survive the save.
+    public mutating func applySettings(from edited: GameMap) {
+        name = edited.name
+        gridType = edited.gridType
+        gridColor = edited.gridColor
+        isDaylightMode = edited.isDaylightMode
+        background = edited.background
+    }
+
     // MARK: Drawings (marker and eraser strokes are selectable; walls are not)
 
     public func drawingBounds(_ drawing: Drawing) -> Bounds {

@@ -80,6 +80,29 @@ final class LegacyImporterTests: XCTestCase {
         XCTAssertTrue(result.missingAssets.isEmpty)
     }
 
+    func testDataURLTokensBecomePackageAssets() throws {
+        let png = Data([0x89, 0x50, 0x4E, 0x47, 1, 2, 3])
+        let pngURL = "data:image/png;base64," + png.base64EncodedString()
+        let svgURL = "data:image/svg+xml;base64," + Data("<svg/>".utf8).base64EncodedString()
+        let manifest = """
+            {"tokens": [
+              {"id": "a", "x": 0, "y": 0, "src": "\(pngURL)"},
+              {"id": "b", "x": 0, "y": 0, "src": "\(pngURL)"},
+              {"id": "c", "x": 0, "y": 0, "src": "\(svgURL)"},
+              {"id": "d", "x": 0, "y": 0, "src": "data:text/plain,hello"}
+            ]}
+            """
+        let result = try LegacyImporter.importManifest(
+            Data(manifest.utf8), zipAssets: ["embedded-1.png": Data("taken".utf8)])
+        let tokens = result.package.campaign.activeMap.tokens
+        XCTAssertEqual(tokens[0].src, "embedded-2.png", "skips names already in the ZIP")
+        XCTAssertEqual(tokens[1].src, "embedded-2.png", "identical URLs share one asset")
+        XCTAssertEqual(result.package.assets["embedded-2.png"], png)
+        XCTAssertEqual(tokens[2].src, LegacyImporter.genericTokenAssetName)
+        XCTAssertTrue(result.usesGenericTokenAsset)
+        XCTAssertEqual(tokens[3].src, "data:text/plain,hello", "non-base64 data URLs are kept")
+    }
+
     func testRejectsManifestThatIsNotAnObject() throws {
         XCTAssertThrowsError(try LegacyImporter.importManifest(Data("[]".utf8), zipAssets: [:]))
     }
