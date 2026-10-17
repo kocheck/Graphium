@@ -28,6 +28,12 @@ final class CampaignDocument: ReferenceFileDocument {
     @Published var isPaused = false
     /// The DM's measurement mirrored to the World View when broadcasting. Transient.
     @Published var broadcastMeasurement: MeasurementShape?
+    /// What the World View is showing/playing (Session Console). Session-only.
+    @Published var sessionRuntime = SessionConsoleRuntime(catalog: .empty(campaignName: ""))
+    /// Open World View windows, for the master bar's link status.
+    @Published var worldViewsOpen = 0
+    /// Last playback problem reported by a World View.
+    @Published var audioError: String?
     /// The Architect window's undo manager, so World View edits are undoable and
     /// mark the document edited too.
     private weak var lastUndoManager: UndoManager?
@@ -46,6 +52,7 @@ final class CampaignDocument: ReferenceFileDocument {
     init(campaign: Campaign = .makeDefault()) {
         self.campaign = campaign
         self.assets = [:]
+        self.sessionRuntime = SessionConsoleRuntime(catalog: campaign.sessionConsole)
         DocumentRegistry.shared.register(self)
     }
 
@@ -57,6 +64,7 @@ final class CampaignDocument: ReferenceFileDocument {
             let imported = try LegacyImporter.importArchive(data)
             self.campaign = imported.package.campaign
             self.assets = imported.package.assets
+            self.sessionRuntime = SessionConsoleRuntime(catalog: imported.package.campaign.sessionConsole)
             DocumentRegistry.shared.register(self)
             return
         }
@@ -72,6 +80,7 @@ final class CampaignDocument: ReferenceFileDocument {
         let package = try CampaignPackage(manifest: manifest, assets: assets)
         self.campaign = package.campaign
         self.assets = package.assets
+        self.sessionRuntime = SessionConsoleRuntime(catalog: package.campaign.sessionConsole)
         DocumentRegistry.shared.register(self)
     }
 
@@ -126,6 +135,18 @@ final class CampaignDocument: ReferenceFileDocument {
             let library = campaign.libraryIndex
             campaign.activeMap.dropTokens(ids, primary: primary, dx: dx, dy: dy, duplicate: false, library: library)
         }
+    }
+
+    /// Session Console transport (not undoable: it's live playback, not campaign content).
+    func dispatch(_ command: SessionCommand) {
+        var runtime = sessionRuntime
+        if command.apply(to: &runtime, catalog: campaign.sessionConsole) { sessionRuntime = runtime }
+    }
+
+    /// Undoable board edits; stage chrome and duck % follow into the runtime (TS).
+    func editConsole(_ actionName: String, undoManager: UndoManager?, _ change: (inout SessionConsoleCatalog) -> Void) {
+        edit(actionName, undoManager: undoManager) { change(&$0.sessionConsole) }
+        sessionRuntime.copyChrome(from: campaign.sessionConsole)
     }
 
     private func restore(_ value: Campaign, actionName: String, undoManager: UndoManager?) {

@@ -20,6 +20,12 @@ struct ArchitectView: View {
     @State private var measurement: MeasurementShape?
     @State private var broadcastMeasurement = true
     @State private var showingLibrary = false
+    @State private var showingConsole = false
+    @State private var inspectorTab = InspectorTab.token
+
+    private enum InspectorTab: Hashable {
+        case token, console
+    }
     @State private var libraryUpload: ImportedImage?
     @State private var cropping: CropRequest?
     @ObservedObject private var library = LibraryStore.shared
@@ -43,8 +49,23 @@ struct ArchitectView: View {
         } detail: {
             canvas
                 .inspector(isPresented: inspectorShown) {
-                    TokenInspector(document: document, selection: selection)
-                        .inspectorColumnWidth(min: 240, ideal: 260)
+                    VStack(spacing: 0) {
+                        if showingConsole && !selection.isEmpty {
+                            Picker("Panel", selection: $inspectorTab) {
+                                Text("Token").tag(InspectorTab.token)
+                                Text("Session Console").tag(InspectorTab.console)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                            .padding(8)
+                        }
+                        if !selection.isEmpty && (inspectorTab == .token || !showingConsole) {
+                            TokenInspector(document: document, selection: selection)
+                        } else {
+                            SessionConsolePanel(document: document)
+                        }
+                    }
+                    .inspectorColumnWidth(min: 260, ideal: 300)
                 }
                 .toolbar { toolbarContent }
         }
@@ -114,6 +135,7 @@ struct ArchitectView: View {
             }
         }
         .focusedSceneValue(\.campaignDocument, document)
+        .onChange(of: selection) { _, new in if !new.isEmpty { inspectorTab = .token } }
         .onChange(of: document.campaign) { _, campaign in
             // Undo/redo or a map switch can remove selected tokens.
             let live = Set(campaign.activeMap.tokens.map(\.id))
@@ -408,7 +430,14 @@ struct ArchitectView: View {
     }
 
     private var inspectorShown: Binding<Bool> {
-        Binding(get: { !selection.isEmpty }, set: { if !$0 { selection = [] } })
+        Binding(
+            get: { !selection.isEmpty || showingConsole },
+            set: { shown in
+                if !shown {
+                    selection = []
+                    showingConsole = false
+                }
+            })
     }
 
     @ToolbarContentBuilder
@@ -482,6 +511,12 @@ struct ArchitectView: View {
             .help("Open the player-facing World View (drag it to the projector)")
 
             PauseToolbarButton(document: document)
+
+            Toggle(isOn: $showingConsole) {
+                Label("Session Console", systemImage: "music.note.list")
+            }
+            .help("Plates and music for the World View")
+            .onChange(of: showingConsole) { _, shown in if shown { inspectorTab = .console } }
         }
         ToolbarItemGroup(placement: .secondaryAction) {
             Toggle(isOn: daylightBinding) {

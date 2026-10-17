@@ -28,6 +28,8 @@ private struct WorldView: View {
     @State private var selection: Set<String> = []
     @State private var fitRequest: FitRequest?
     @State private var pauseLine = SystemMessages.pauseOverlay[0]
+    /// This window owns the campaign's Session Console audio.
+    @StateObject private var audio = WorldAudioEngine()
 
     var body: some View {
         let campaign = document.campaign
@@ -82,9 +84,20 @@ private struct WorldView: View {
                 .padding(20)
             }
 
+            // Session Console plate covers the map (and Center on Party) while shown.
+            WorldStageView(
+                runtime: document.sessionRuntime,
+                imageProvider: { [document] name in document.imageCache.image(named: name, in: document.assets) })
+
             if document.isPaused {
                 PauseOverlay(line: pauseLine)
             }
+
+            HiddenWebView(webView: audio.youtube.webView)
+                .frame(width: 2, height: 2)
+                .opacity(0.01)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
         .background(WindowAccessor(reference: window))
         .navigationTitle("World View — \(campaign.name)")
@@ -104,6 +117,13 @@ private struct WorldView: View {
             if paused { pauseLine = SystemMessages.pauseOverlay.randomElement() ?? pauseLine }
         }
         .onChange(of: campaign.activeMapID) { _, _ in selection = [] }
+        .onChange(of: document.sessionRuntime) { _, runtime in audio.apply(runtime, assets: document.assets) }
+        .onChange(of: audio.lastError) { _, message in document.audioError = message }
+        .onAppear {
+            document.worldViewsOpen += 1
+            audio.apply(document.sessionRuntime, assets: document.assets)
+        }
+        .onDisappear { document.worldViewsOpen -= 1 }
     }
 }
 
