@@ -66,3 +66,15 @@ public struct PaletteCommand: Equatable, Identifiable, Sendable {
         .map { $0.0 }
     }
 }
+
+/// Keyboard highlight in the command palette's flattened results (TS `CommandPalette`
+/// `selectedIndex`). Section headers aren't rows here, so no skipping is needed.
+public enum PaletteHighlight {
+    /// Moves `index` by `delta`, clamped to the rows (no wrap, as in TS). A missing
+    /// index starts at the first row; no rows gives nil.
+    public static func step(_ index: Int?, by delta: Int, count: Int) -> Int? {
+        guard count > 0 else { return nil }
+        guard let index else { return 0 }
+        return min(max(index + delta, 0), count - 1)
+    }
+}
