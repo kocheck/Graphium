@@ -233,6 +233,10 @@ final class MapCanvasNSView: NSView {
         }
         drawStairs(map.stairs, context: context)
         drawDoors(map.doors, context: context)
+        // Fog covers the map, walls, stairs and doors, but not tokens: visible tokens stay
+        // crisp on top and only hidden NPCs are left out (TS CanvasManager layer order).
+        // Doors stay under it so unexplored fog doesn't reveal them (PARITY §3.7 Native).
+        if let fog { drawFog(fog, context: context) }
         if showMovementRange, !isPlayerView, selection.count == 1,
             let token = map.tokens.first(where: { selection.contains($0.id) })
         {
@@ -266,7 +270,6 @@ final class MapCanvasNSView: NSView {
             context.setLineWidth(2 / viewport.zoom)
             context.stroke(CGRect(bounds: Bounds(corner: start, corner: current)))
         }
-        if let fog { drawFog(fog, context: context) }
         if let measurement { drawMeasurement(measurement, gridSize: map.gridSize, context: context) }
         if !isPlayerView, editing != nil, toolState.tool == .door, let hoverPoint {
             drawDoorGhost(at: hoverPoint, map: map, context: context)
