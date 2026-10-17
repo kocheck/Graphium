@@ -30,6 +30,9 @@ jobs:
       - name: Design harness and tokens
         run: bash scripts/check-design-docs.sh
 
+      - name: Brand assets up to date
+        run: python3 -I design/brand/make_brand_assets.py --check
+
       - name: GraphiumCore unit tests
         run: swift test --parallel
 
