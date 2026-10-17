@@ -158,6 +158,16 @@ struct ArchitectView: View {
         .navigationSubtitle(campaign.name)
     }
 
+    private var daylightBinding: Binding<Bool> {
+        Binding(
+            get: { document.campaign.activeMap.isDaylightMode },
+            set: { value in
+                document.edit(value ? "Daylight On" : "Daylight Off", undoManager: undoManager) {
+                    $0.activeMap.isDaylightMode = value
+                }
+            })
+    }
+
     private var inspectorShown: Binding<Bool> {
         Binding(get: { !selection.isEmpty }, set: { if !$0 { selection = [] } })
     }
@@ -187,6 +197,22 @@ struct ArchitectView: View {
             .help("Open the player-facing World View (drag it to the projector)")
 
             PauseToolbarButton(document: document)
+        }
+        ToolbarItemGroup(placement: .secondaryAction) {
+            Toggle(isOn: daylightBinding) {
+                Label("Daylight", systemImage: "sun.max")
+            }
+            .help("Daylight: no fog of war on this map")
+
+            Button {
+                document.edit("Reset Explored Fog", undoManager: undoManager) {
+                    $0.activeMap.exploredRegions = []
+                }
+            } label: {
+                Label("Reset Explored Fog", systemImage: "eye.slash")
+            }
+            .help("Forget what the party has explored on this map")
+            .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
         }
     }
 

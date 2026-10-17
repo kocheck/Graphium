@@ -32,7 +32,18 @@ private struct WorldView: View {
     var body: some View {
         let campaign = document.campaign
         let library = campaign.libraryIndex
-        let party = campaign.activeMap.partyBounds(library: library)
+        let map = campaign.activeMap
+        let party = map.partyBounds(library: library)
+        // Fog and hidden NPCs (CORE_SPEC §3.3); none in daylight.
+        let vision = map.isDaylightMode ? [] : Visibility.polygons(of: map, library: library)
+        let hidden =
+            map.isDaylightMode
+            ? Set<String>() : Visibility.hiddenNPCIDs(of: map, library: library, polygons: vision.map(\.polygon))
+        let fog =
+            map.isDaylightMode
+            ? nil
+            : FogState(
+                bounds: Visibility.fogBounds(of: map), explored: map.exploredRegions.map(\.points), vision: vision)
 
         ZStack(alignment: .bottomTrailing) {
             MapCanvas(
@@ -47,6 +58,8 @@ private struct WorldView: View {
                         document.playerMoveTokens(ids, primary: primary, dx: dx, dy: dy)
                     },
                     allowsDuplicate: false),
+                hiddenTokenIDs: hidden,
+                fog: fog,
                 fitRequest: fitRequest
             )
             // Stop showing the map entirely while paused so nothing leaks to the projector.

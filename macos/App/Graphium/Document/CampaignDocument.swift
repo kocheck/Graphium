@@ -100,8 +100,16 @@ final class CampaignDocument: ReferenceFileDocument {
     func edit(_ actionName: String, undoManager: UndoManager?, _ change: (inout Campaign) -> Void) {
         if let undoManager { lastUndoManager = undoManager }
         let before = campaign
-        change(&campaign)
-        guard campaign != before else { return }
+        var next = campaign
+        change(&next)
+        // Fog: whatever PCs can now see becomes explored, in the same undo step.
+        if next.activeMapID == before.activeMapID {
+            let library = next.libraryIndex
+            next.activeMap.recordExploration(
+                since: before.activeMap, library: library, timestamp: Date().timeIntervalSince1970 * 1000)
+        }
+        guard next != before else { return }
+        campaign = next
         undoManager?.registerUndo(withTarget: self) { document in
             document.restore(before, actionName: actionName, undoManager: undoManager)
         }

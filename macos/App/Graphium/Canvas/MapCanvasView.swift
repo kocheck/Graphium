@@ -16,6 +16,13 @@ struct CanvasEditing {
     var dropImageFiles: ((_ urls: [URL], _ at: Point2D) -> Void)?
 }
 
+/// Fog of war to draw over the map (World View, when not in daylight).
+struct FogState {
+    var bounds: Bounds
+    var explored: [[Point2D]]
+    var vision: [Visibility.VisionPolygon]
+}
+
 /// Asks a canvas to frame a region once (e.g. Center on Party). A new `id` re-triggers.
 struct FitRequest: Equatable {
     var id = UUID()
@@ -31,8 +38,9 @@ final class MapCanvasNSView: NSView {
     var imageProvider: (String) -> CGImage? = { _ in nil }
     var selection: Set<String> = []
     var editing: CanvasEditing?
-    /// Tokens players must not see or grab (NPCs outside party vision, M4).
+    /// Tokens players must not see or grab (NPCs outside party vision).
     var hiddenTokenIDs: Set<String> = []
+    var fog: FogState?
     var fitRequest: FitRequest? {
         didSet {
             guard let fitRequest, fitRequest != oldValue else { return }
@@ -87,6 +95,7 @@ final class MapCanvasNSView: NSView {
         }
         drawGrid(map, context: context)
         drawTokens(map, context: context)
+        if let fog { drawFog(fog, context: context) }
         if case .marquee(let start, let current, _) = interaction {
             let rect = CGRect(bounds: Bounds(corner: start, corner: current))
             context.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor)
@@ -216,6 +225,46 @@ final class MapCanvasNSView: NSView {
             guard padded.intersects(Bounds(x: token.x, y: token.y, width: size, height: size)) else { continue }
             drawToken(token, in: rect, selected: isSelected, alpha: 1, context: context)
         }
+    }
+
+    /// TS compositing (CORE_SPEC §3.3 step 7): fog bounds filled black at 94%;
+    /// explored areas erased down to 20% coverage; current vision erased with a
+    /// radial falloff (clear to 60% of the radius, fading to fog at the edge).
+    /// Explored polygons are filled as one path, so overlaps don't compound as in TS.
+    private func drawFog(_ fog: FogState, context: CGContext) {
+        context.saveGState()
+        context.beginTransparencyLayer(auxiliaryInfo: nil)
+        context.setFillColor(NSColor.black.withAlphaComponent(0.94).cgColor)
+        context.fill(CGRect(bounds: fog.bounds))
+        context.setBlendMode(.destinationOut)
+
+        if !fog.explored.isEmpty {
+            let path = CGMutablePath()
+            for polygon in fog.explored { path.addPolygon(polygon) }
+            context.addPath(path)
+            context.setFillColor(NSColor.black.withAlphaComponent(0.8).cgColor)
+            context.fillPath()
+        }
+
+        let colors = [
+            NSColor.black.cgColor, NSColor.black.cgColor, NSColor.black.withAlphaComponent(0).cgColor,
+        ] as CFArray
+        if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.6, 1]) {
+            for entry in fog.vision where entry.polygon.count >= 3 {
+                context.saveGState()
+                let path = CGMutablePath()
+                path.addPolygon(entry.polygon)
+                context.addPath(path)
+                context.clip()
+                let centre = CGPoint(entry.viewer.centre)
+                context.drawRadialGradient(
+                    gradient, startCenter: centre, startRadius: 0, endCenter: centre,
+                    endRadius: entry.viewer.radius, options: [])
+                context.restoreGState()
+            }
+        }
+        context.endTransparencyLayer()
+        context.restoreGState()
     }
 
     private func drawToken(_ token: Token, in rect: CGRect, selected: Bool, alpha: CGFloat, context: CGContext) {
@@ -398,6 +447,7 @@ struct MapCanvas: NSViewRepresentable {
     var selection: Set<String> = []
     var editing: CanvasEditing?
     var hiddenTokenIDs: Set<String> = []
+    var fog: FogState?
     var fitRequest: FitRequest?
 
     func makeNSView(context: Context) -> MapCanvasNSView {
@@ -411,6 +461,7 @@ struct MapCanvas: NSViewRepresentable {
         view.selection = selection
         view.editing = editing
         view.hiddenTokenIDs = hiddenTokenIDs
+        view.fog = fog
         view.fitRequest = fitRequest
         view.needsDisplay = true
     }
@@ -419,6 +470,15 @@ struct MapCanvas: NSViewRepresentable {
 extension CGPoint {
     init(_ p: Point2D) {
         self.init(x: p.x, y: p.y)
+    }
+}
+
+extension CGMutablePath {
+    func addPolygon(_ points: [Point2D]) {
+        guard let first = points.first else { return }
+        move(to: CGPoint(first))
+        for p in points.dropFirst() { addLine(to: CGPoint(p)) }
+        closeSubpath()
     }
 }
 
