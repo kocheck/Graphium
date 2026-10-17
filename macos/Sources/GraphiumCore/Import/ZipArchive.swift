@@ -126,3 +126,86 @@ extension Array where Element == UInt8 {
         return UInt32(self[i]) | UInt32(self[i + 1]) << 8 | UInt32(self[i + 2]) << 16 | UInt32(self[i + 3]) << 24
     }
 }
+
+/// Minimal ZIP writer (STORE only) for exporting legacy `.graphium` files. Images
+/// and audio are already compressed, so DEFLATE would buy little. No ZIP64:
+/// archives must stay under 4 GB.
+public struct ZipWriter {
+    private var body: [UInt8] = []
+    private var directory: [UInt8] = []
+    private var count = 0
+
+    public enum WriteError: Error, Equatable {
+        case tooLarge
+    }
+
+    public init() {}
+
+    public mutating func add(_ path: String, _ data: Data) throws {
+        let name = Array(path.utf8)
+        let bytes = [UInt8](data)
+        guard body.count + bytes.count + name.count + 30 < 0xFFFF_FFFF, count < 0xFFFF else { throw WriteError.tooLarge }
+        let crc = CRC32.checksum(bytes)
+        let offset = UInt32(body.count)
+        let size = UInt32(bytes.count)
+        // Local file header. Flag bit 11: names are UTF-8.
+        body.le32(0x0403_4b50)
+        body.le16(20)
+        body.le16(0x0800)
+        body.le16(0)
+        body.le16(0)
+        body.le16(0x21)  // 1980-01-01 00:00, a fixed time keeps exports reproducible
+        body.le32(crc)
+        body.le32(size)
+        body.le32(size)
+        body.le16(UInt16(name.count))
+        body.le16(0)
+        body += name
+        body += bytes
+        // Central directory entry.
+        directory.le32(0x0201_4b50)
+        directory.le16(20)
+        directory.le16(20)
+        directory.le16(0x0800)
+        directory.le16(0)
+        directory.le16(0)
+        directory.le16(0x21)
+        directory.le32(crc)
+        directory.le32(size)
+        directory.le32(size)
+        directory.le16(UInt16(name.count))
+        directory.le16(0)
+        directory.le16(0)
+        directory.le16(0)
+        directory.le16(0)
+        directory.le32(0)
+        directory.le32(offset)
+        directory += name
+        count += 1
+    }
+
+    public func finish() -> Data {
+        var out = body
+        out += directory
+        out.le32(0x0605_4b50)
+        out.le16(0)
+        out.le16(0)
+        out.le16(UInt16(count))
+        out.le16(UInt16(count))
+        out.le32(UInt32(directory.count))
+        out.le32(UInt32(body.count))
+        out.le16(0)
+        return Data(out)
+    }
+}
+
+extension Array where Element == UInt8 {
+    fileprivate mutating func le16(_ v: UInt16) {
+        append(UInt8(v & 0xFF))
+        append(UInt8(v >> 8))
+    }
+
+    fileprivate mutating func le32(_ v: UInt32) {
+        for shift in stride(from: 0, to: 32, by: 8) { append(UInt8((v >> UInt32(shift)) & 0xFF)) }
+    }
+}

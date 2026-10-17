@@ -12,6 +12,7 @@ struct GraphiumApp: App {
         .commands {
             WorldViewCommands()
             ArchitectCommands()
+            ExportCommands()
         }
 
         WindowGroup("World View", id: WorldWindow.id, for: UUID.self) { $sessionID in

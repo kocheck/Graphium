@@ -45,6 +45,19 @@ struct ArchitectCommands: Commands {
     }
 }
 
+/// File > Export as .graphium… for the web/Electron app (PARITY §5.2).
+struct ExportCommands: Commands {
+    @FocusedValue(\.campaignDocument) private var document
+
+    var body: some Commands {
+        CommandGroup(after: .saveItem) {
+            Button("Export as .graphium…") { document?.exportLegacyGraphium() }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+                .disabled(document == nil)
+        }
+    }
+}
+
 /// View menu: World View and pause (PARITY §1.3, §1.12).
 struct WorldViewCommands: Commands {
     @FocusedValue(\.campaignDocument) private var document
