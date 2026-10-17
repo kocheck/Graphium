@@ -437,7 +437,7 @@ public enum BoardPack {
             "defaults": ["volume": catalog.defaults.volume, "duckPercent": catalog.defaults.duckPercent],
             "imageSets": sets, "trackGroups": groups, "sfx": sfx,
         ]
-        var json = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
+        var json = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         json.append(0x0A)
         return Export(boardJSON: json, files: files)
     }
