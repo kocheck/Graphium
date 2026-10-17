@@ -23,16 +23,16 @@ code as of the `claude/swift-macos` branch.
 
 ### 1.1 Windows
 
-- [ ] Architect window — The main DM window. It has the full UI (sidebar, toolbar, inspector, canvas) and is the single source of truth for state. (source: electron/main.ts:335, src/App.tsx:126)
-- [ ] Architect window bounds persistence — Window size and position are saved (debounced 400 ms on resize/move, and on close) and restored on launch. The default size is 1200x800. (source: electron/main.ts:336-365)
+- [x] Architect window — The main DM window. It has the full UI (sidebar, toolbar, inspector, canvas) and is the single source of truth for state. (source: electron/main.ts:335, src/App.tsx:126) **Native:** DocumentGroup window per campaign; the campaign document is the single source of truth.
+- [x] Architect window bounds persistence — Window size and position are saved (debounced 400 ms on resize/move, and on close) and restored on launch. The default size is 1200x800. (source: electron/main.ts:336-365) **Native:** AppKit restores document window frames and reopens windows on relaunch (state restoration); default size is the system's.
 - [x] World View window — A second window loads the same app with `?type=world`. It renders only the canvas plus player-safe overlays. (source: electron/main.ts:410-430, src/utils/useWindowType.ts)
 - [x] World View singleton — Opening World View while it is already open focuses the existing window instead of creating a second one. (source: electron/main.ts:412-415)
-- [ ] World View opens from: menu View > World View (Projector) `Cmd+Shift+W`, the command palette "Launch World View Window", and the mobile toolbar "More" menu. The desktop toolbar has no World View button. (source: electron/main.ts:269-273, src/utils/commandRegistry.ts:125, src/components/MobileToolbar.tsx:84)
-- [ ] World View skips the home screen and always starts in the editor. (source: src/App.tsx:135)
+- [x] World View opens from: menu View > World View (Projector) `Cmd+Shift+W`, the command palette "Launch World View Window", and the mobile toolbar "More" menu. The desktop toolbar has no World View button. (source: electron/main.ts:269-273, src/utils/commandRegistry.ts:125, src/components/MobileToolbar.tsx:84) **Native:** Also a toolbar button and the Session Console link light. No mobile toolbar on macOS.
+- [x] World View skips the home screen and always starts in the editor. (source: src/App.tsx:135)
 - [x] macOS app lifecycle — Closing every window does not quit the app on macOS. Clicking the Dock icon re-creates the main window. (source: electron/main.ts:435-449)
-- [ ] Single instance — A second launch focuses the existing window and forwards any `.graphium` path in argv. (source: electron/main.ts:477-496)
+- [x] Single instance — A second launch focuses the existing window and forwards any `.graphium` path in argv. (source: electron/main.ts:477-496) **Native:** LaunchServices keeps one instance; Finder opens and `open` forward to it.
 - [x] Open from Finder **(gap)** — `open-file` and argv paths are sent as `OPEN_FILE_FROM_OS`, but no renderer code listens and there is no `fileAssociations` entry in electron-builder.json5. [Intended: double-clicking a `.graphium` file opens it.] (source: electron/main.ts:452-474, 1139-1154)
-- [ ] Quit cleanup — Before quitting, the app waits for in-flight saves and autosaves, then deletes `temp_assets/` and every session folder except the active one. (source: electron/main.ts:1219-1253, electron/campaignWriteGate.ts)
+- [x] Quit cleanup — Before quitting, the app waits for in-flight saves and autosaves, then deletes `temp_assets/` and every session folder except the active one. (source: electron/main.ts:1219-1253, electron/campaignWriteGate.ts) **Native:** NSDocument finishes saves and autosaves before quit. The native format keeps assets in the package, so there are no temp or session folders to clean.
 
 **Native mapping:** Use a `DocumentGroup` (or `NSDocument`) for the Architect window, which gives
 frame autosave for free via `NSWindow.setFrameAutosaveName`. Make World View a singleton
@@ -44,20 +44,20 @@ together with `CFBundleDocumentTypes`/`UTExportedTypeDeclarations` for Finder op
 
 ### 1.2 Home screen (Architect only)
 
-- [ ] Hero — The logo lockup, the title "Virtual Tabletop for {random subtitle}" (23 options, fixed per session) and the tagline. (source: src/components/HomeScreen.tsx:130-156, 445-457)
-- [ ] New Campaign card — Enters the editor with the current (default) campaign. (source: src/components/HomeScreen.tsx:165-167, 494-508)
-- [ ] Load Campaign card — Opens the file picker. On success it loads the campaign, adds it to recents, enters the editor and shows a success toast. Errors show an error toast. (source: src/components/HomeScreen.tsx:169-185)
-- [ ] Generate Dungeon card — Enters the editor, then opens the Dungeon Generator dialog after a 100 ms delay. (source: src/components/HomeScreen.tsx:187-193, 524-532)
-- [ ] Templates card and modal — Four templates: Classic Dungeon, Wilderness Map, Starting Tavern, Combat Arena. Choosing one resets to a new campaign and sets grid cell size to 50. The width/height values are reference only. A toast confirms. The modal traps focus, closes on Esc or backdrop click, and restores focus afterwards. (source: src/components/HomeScreen.tsx:68-97, 228-273, 389-401, 536-544, 722-760)
-- [ ] Onboarding entry — The "New to Graphium? Learn the basics" button opens the About modal on its Tutorial tab. There is no other onboarding flow. (source: src/components/HomeScreen.tsx:548-560)
-- [ ] Recent campaigns list — Shows name and last-opened date/time, plus a remove (x) button. Stored in localStorage `graphium-recent-campaigns`, capped at 3. (source: src/components/HomeScreen.tsx:563-622, src/utils/recentCampaigns.ts:37-38)
-- [ ] Open a recent campaign **(gap)** — Clicking a recent entry only shows an info toast telling you to use Load Campaign. [Intended: it reopens the file.] (source: src/components/HomeScreen.tsx:317-322)
-- [ ] Recent search **(gap)** — The search box appears only when there are 6 or more recents, so it never appears while the list is capped at 3. [Intended: a filter for a long recents list.] (source: src/components/HomeScreen.tsx:571-583)
-- [ ] Footer links — GitHub, About, Report Bug (GitHub issues), Help (?) which opens About on the Shortcuts tab, and Design System (dev-only). (source: src/components/HomeScreen.tsx:628-671)
-- [ ] Footer theme cycle button — Cycles Light, Dark, Auto (system). The icon and label show the current mode. (source: src/components/HomeScreen.tsx:348-387, 672-682)
-- [ ] Footer Lite/Full mode toggle — Turns home-screen animations off or on. Persisted in localStorage `liteMode`. A toast confirms. (source: src/components/HomeScreen.tsx:336-346, 684-700)
-- [ ] Version footer — "Version X · Desktop|Web Edition". (source: src/components/HomeScreen.tsx:705-707)
-- [ ] Home keyboard shortcuts — `Cmd/Ctrl+N` new, `Cmd/Ctrl+O` load, `Cmd/Ctrl+G` generate dungeon, `Cmd/Ctrl+T` templates, `?` About on the Shortcuts tab, `Esc` closes templates or About. (source: src/components/HomeScreen.tsx:276-315)
+- [x] Hero — The logo lockup, the title "Virtual Tabletop for {random subtitle}" (23 options, fixed per session) and the tagline. (source: src/components/HomeScreen.tsx:130-156, 445-457) **Native:** Welcome window (`Shell/WelcomeView.swift`), same 23 subtitles.
+- [x] New Campaign card — Enters the editor with the current (default) campaign. (source: src/components/HomeScreen.tsx:165-167, 494-508) **Native:** Opens a new campaign window.
+- [x] Load Campaign card — Opens the file picker. On success it loads the campaign, adds it to recents, enters the editor and shows a success toast. Errors show an error toast. (source: src/components/HomeScreen.tsx:169-185) **Native:** System open panel; success needs no toast (the window opening is the feedback). Errors use the system alert.
+- [x] Generate Dungeon card — Enters the editor, then opens the Dungeon Generator dialog after a 100 ms delay. (source: src/components/HomeScreen.tsx:187-193, 524-532) **Native:** New campaign, then the dialog after 100 ms (`LaunchIntent`).
+- [x] Templates card and modal — Four templates: Classic Dungeon, Wilderness Map, Starting Tavern, Combat Arena. Choosing one resets to a new campaign and sets grid cell size to 50. The width/height values are reference only. A toast confirms. The modal traps focus, closes on Esc or backdrop click, and restores focus afterwards. (source: src/components/HomeScreen.tsx:68-97, 228-273, 389-401, 536-544, 722-760) **Native:** Native also names the first map after the template.
+- [x] Onboarding entry — The "New to Graphium? Learn the basics" button opens the About modal on its Tutorial tab. There is no other onboarding flow. (source: src/components/HomeScreen.tsx:548-560) **Native:** Opens About on the Tutorial tab.
+- [x] Recent campaigns list — Shows name and last-opened date/time, plus a remove (x) button. Stored in localStorage `graphium-recent-campaigns`, capped at 3. (source: src/components/HomeScreen.tsx:563-622, src/utils/recentCampaigns.ts:37-38) **Native:** Uses the system recents (NSDocumentController), shown with last-opened date and an x that hides an entry. Shows up to the system limit (10), not 3.
+- [x] Open a recent campaign **(gap)** — Clicking a recent entry only shows an info toast telling you to use Load Campaign. [Intended: it reopens the file.] (source: src/components/HomeScreen.tsx:317-322) **Native:** Fixed: a recent entry reopens the file.
+- [x] Recent search **(gap)** — The search box appears only when there are 6 or more recents, so it never appears while the list is capped at 3. [Intended: a filter for a long recents list.] (source: src/components/HomeScreen.tsx:571-583) **Native:** Fixed: the search field appears at 6 or more recents, which the system list can reach.
+- [x] Footer links — GitHub, About, Report Bug (GitHub issues), Help (?) which opens About on the Shortcuts tab, and Design System (dev-only). (source: src/components/HomeScreen.tsx:628-671) **Native:** GitHub, About, Report Bug, Help. Design System is dev-only and not ported.
+- [x] Footer theme cycle button — Cycles Light, Dark, Auto (system). The icon and label show the current mode. (source: src/components/HomeScreen.tsx:348-387, 672-682)
+- [x] Footer Lite/Full mode toggle — Turns home-screen animations off or on. Persisted in localStorage `liteMode`. A toast confirms. (source: src/components/HomeScreen.tsx:336-346, 684-700) **Native:** Not ported: the Welcome window has no animations to turn off. Reduce Motion is honoured instead.
+- [x] Version footer — "Version X · Desktop|Web Edition". (source: src/components/HomeScreen.tsx:705-707) **Native:** "Version X · macOS Edition".
+- [x] Home keyboard shortcuts — `Cmd/Ctrl+N` new, `Cmd/Ctrl+O` load, `Cmd/Ctrl+G` generate dungeon, `Cmd/Ctrl+T` templates, `?` About on the Shortcuts tab, `Esc` closes templates or About. (source: src/components/HomeScreen.tsx:276-315) **Native:** ⌘N/⌘O are the File menu; ⌘G/⌘T are on the Welcome cards; ? opens Shortcuts; Esc closes the Templates sheet.
 
 **Native mapping:** Use a SwiftUI welcome window (like Xcode's "Welcome to Xcode") or the
 `DocumentGroup` launch scene, with recents from `NSDocumentController.recentDocumentURLs`. That
@@ -66,18 +66,18 @@ mode becomes respecting `accessibilityReduceMotion`.
 
 ### 1.3 Menus (Electron application menu)
 
-- [ ] App menu (macOS) — About, Services, Hide, Hide Others, Show All, Quit. (source: electron/main.ts:167-184)
-- [ ] File > New Campaign `Cmd+N` — Asks for confirmation ("Create a new campaign? Any unsaved changes will be lost.") and then resets to a new campaign. (source: electron/main.ts:190-199, src/App.tsx:351-362)
-- [ ] File > Open Campaign... `Cmd+O` — Uses the native open dialog filtered to `.graphium`. Loads the campaign, adds it to recents and shows a toast. (source: electron/main.ts:200-209, src/App.tsx:323-341)
-- [ ] File > Save Campaign `Cmd+S` — Syncs the active map into the campaign, then always shows the native save dialog (there is no silent re-save to the current path). Adds to recents and shows a toast. This is the only manual-save entry point in the app. (source: electron/main.ts:210-219, 817-832, src/App.tsx:301-321)
-- [ ] File > Close (macOS) or Quit. (source: electron/main.ts:221)
-- [ ] Insert > Generate Dungeon... — Opens the Dungeon Generator dialog. (source: electron/main.ts:225-239, src/App.tsx:347-349)
-- [ ] View > Theme > Light / Dark / System — Radio items. The choice is persisted and broadcast to all windows. (source: electron/main.ts:243-267)
-- [ ] View > World View (Projector) `Cmd+Shift+W`. (source: electron/main.ts:269-273)
-- [ ] View > Performance Monitor `Cmd+Shift+M` — Toggles the resource monitor overlay. (source: electron/main.ts:274-283, src/App.tsx:343-345)
-- [ ] View > Reload, Force Reload, Toggle DevTools, Reset Zoom, Zoom In, Zoom Out, Toggle Full Screen (Electron roles). (source: electron/main.ts:285-293)
-- [ ] Window > Minimize, Zoom, Bring All to Front, Window list. (source: electron/main.ts:297-312)
-- [ ] About menu item handler — The renderer listens for `MENU_SHOW_ABOUT`, but no menu item sends it. The macOS app menu uses the stock `role: 'about'`. [Intended: About opens the in-app About modal.] (source: src/App.tsx:364-366, 380)
+- [x] App menu (macOS) — About, Services, Hide, Hide Others, Show All, Quit. (source: electron/main.ts:167-184) **Native:** Standard app menu; About opens the in-app About window.
+- [x] File > New Campaign `Cmd+N` — Asks for confirmation ("Create a new campaign? Any unsaved changes will be lost.") and then resets to a new campaign. (source: electron/main.ts:190-199, src/App.tsx:351-362) **Native:** Native: ⌘N opens a new campaign window, so there is nothing to lose and no confirmation.
+- [x] File > Open Campaign... `Cmd+O` — Uses the native open dialog filtered to `.graphium`. Loads the campaign, adds it to recents and shows a toast. (source: electron/main.ts:200-209, src/App.tsx:323-341) **Native:** Opens .graphiumcampaign and legacy .graphium; recents come from the system.
+- [x] File > Save Campaign `Cmd+S` — Syncs the active map into the campaign, then always shows the native save dialog (there is no silent re-save to the current path). Adds to recents and shows a toast. This is the only manual-save entry point in the app. (source: electron/main.ts:210-219, 817-832, src/App.tsx:301-321) **Native:** Native: standard document saving. ⌘S saves in place after the first save, autosave runs continuously, and Save As/Duplicate are available. Export as .graphium (⇧⌘E) writes the legacy format.
+- [x] File > Close (macOS) or Quit. (source: electron/main.ts:221)
+- [x] Insert > Generate Dungeon... — Opens the Dungeon Generator dialog. (source: electron/main.ts:225-239, src/App.tsx:347-349) **Native:** ⇧⌘G.
+- [x] View > Theme > Light / Dark / System — Radio items. The choice is persisted and broadcast to all windows. (source: electron/main.ts:243-267) **Native:** View > Theme picker; applies app-wide.
+- [x] View > World View (Projector) `Cmd+Shift+W`. (source: electron/main.ts:269-273)
+- [x] View > Performance Monitor `Cmd+Shift+M` — Toggles the resource monitor overlay. (source: electron/main.ts:274-283, src/App.tsx:343-345)
+- [x] View > Reload, Force Reload, Toggle DevTools, Reset Zoom, Zoom In, Zoom Out, Toggle Full Screen (Electron roles). (source: electron/main.ts:285-293) **Native:** Electron roles (reload, DevTools, page zoom) do not apply. Enter Full Screen is the standard View item.
+- [x] Window > Minimize, Zoom, Bring All to Front, Window list. (source: electron/main.ts:297-312) **Native:** Standard Window menu, plus Window > Welcome to Graphium (⇧⌘1).
+- [x] About menu item handler — The renderer listens for `MENU_SHOW_ABOUT`, but no menu item sends it. The macOS app menu uses the stock `role: 'about'`. [Intended: About opens the in-app About modal.] (source: src/App.tsx:364-366, 380) **Native:** Fixed: About Graphium opens the in-app About window.
 
 **Native mapping:** Use SwiftUI `.commands` with `CommandGroup(replacing: .newItem / .saveItem)`,
 `CommandMenu("Insert")`, a Theme `Picker` in View, and `Cmd+Shift+W` and `Cmd+Shift+M` via
@@ -89,31 +89,31 @@ Full Screen. Save, Save As and Revert come from `DocumentGroup`.
 
 All single-key shortcuts are ignored while typing in an input or textarea.
 
-- [ ] `?` / `Shift+/` — Opens the About modal. In the editor it opens the About tab. On the home screen it opens the Shortcuts tab. Works in both windows. (source: src/App.tsx:237-241, src/components/HomeScreen.tsx:297-301)
-- [ ] `V` Select, `M` Marker, `E` Eraser, `W` Wall, `D` Door — Architect only. (source: src/App.tsx:257-272)
-- [ ] `R` — Measure tool. When the Door tool is active, `R` rotates door orientation instead. (source: src/App.tsx:273-281)
-- [ ] Arrow keys with the Door tool active — Toggle door orientation, with page scroll suppressed. (source: src/App.tsx:249-255)
-- [ ] `I` — Opens the marker colour picker. (source: src/App.tsx:282-284)
-- [ ] Hold `M` — Shows the movement-range overlay for the selected token. Released on keyup or window blur. Note that pressing `M` also switches to the Marker tool (see App.tsx), so the two behaviours fire together. Reconcile this natively, for example with hold-`M`-while-Select. (source: src/components/Canvas/CanvasManager.tsx:607-610, 650-652)
-- [ ] `1` to `5` — Grid type: Square Lines, Square Dots, Hexagonal, Isometric, Hidden. Each shows a toast. Architect only, no key repeat. (source: src/components/Canvas/CanvasManager.tsx:613-635)
-- [ ] `Delete` / `Backspace` — Removes the selected tokens, drawings and doors. Blocked in World View. (source: src/components/Canvas/CanvasManager.tsx:566-576)
-- [ ] `Esc` — Clears the active measurement. Blocked in World View. (source: src/components/Canvas/CanvasManager.tsx:579-586)
-- [ ] `Esc` — Stops Session Console audio when nothing else owns Escape: no palette, confirm, dungeon dialog, calibration, active measurement, focused text field or modal. Capture phase. Architect only. (source: src/components/SessionConsole/useSessionConsoleHotkeys.ts:38-89, src/App.tsx:517-521)
-- [ ] Hold `Space` — Pan mode. The stage becomes draggable and the cursor changes to grab/grabbing. (source: src/components/Canvas/CanvasManager.tsx:589-592, 415-429)
-- [ ] `=` / `+` / `Numpad+` zoom in, `-` / `Numpad-` zoom out — Zooms around the viewport centre by a factor of 1.1. (source: src/components/Canvas/CanvasManager.tsx:594-604, 526-539)
-- [ ] Hold `Alt` (Option) — Duplicate-on-drag mode for tokens and drawings, with ghosts shown. Disabled in World View. (source: src/components/Canvas/CanvasManager.tsx:555-557, 640-642)
-- [ ] `Shift` while drawing — Locks the stroke to the horizontal or vertical axis. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:520-531)
-- [ ] `Shift` + click / `Shift` + marquee — Additive selection. Shift-click toggles a token in or out of the selection. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:347-350, 683-691, src/components/Canvas/hooks/useTokenDrag.ts:411-417)
-- [ ] `Cmd/Ctrl+P` and `Cmd/Ctrl+K` — Open the command palette. (source: src/hooks/useCommandPalette.ts:25)
-- [ ] Command palette keys — `Esc` close, `Enter` run the highlighted item, `Up`/`Down` move while skipping section headers. (source: src/components/AssetLibrary/CommandPalette.tsx:182-228)
-- [ ] Confirm dialog — `Enter` confirms. Cancel has initial focus. `Esc` cancels. (source: src/components/ConfirmDialog.tsx:27-55)
-- [ ] Map rename field — `Enter` commits, `Esc` cancels. This lives in the unmounted MapNavigator (see section 5.1). (source: src/components/MapNavigator.tsx:55-57)
+- [x] `?` / `Shift+/` — Opens the About modal. In the editor it opens the About tab. On the home screen it opens the Shortcuts tab. Works in both windows. (source: src/App.tsx:237-241, src/components/HomeScreen.tsx:297-301) **Native:** Opens About from either window (canvas key); on Welcome it opens Shortcuts.
+- [x] `V` Select, `M` Marker, `E` Eraser, `W` Wall, `D` Door — Architect only. (source: src/App.tsx:257-272)
+- [x] `R` — Measure tool. When the Door tool is active, `R` rotates door orientation instead. (source: src/App.tsx:273-281)
+- [x] Arrow keys with the Door tool active — Toggle door orientation, with page scroll suppressed. (source: src/App.tsx:249-255)
+- [x] `I` — Opens the marker colour picker. (source: src/App.tsx:282-284) **Native:** Opens the system colour panel and switches to Marker.
+- [x] Hold `M` — Shows the movement-range overlay for the selected token. Released on keyup or window blur. Note that pressing `M` also switches to the Marker tool (see App.tsx), so the two behaviours fire together. Reconcile this natively, for example with hold-`M`-while-Select. (source: src/components/Canvas/CanvasManager.tsx:607-610, 650-652) **Native:** Reconciled: with the Select tool and a selection, holding M shows the range and does not switch tools; otherwise M selects Marker.
+- [x] `1` to `5` — Grid type: Square Lines, Square Dots, Hexagonal, Isometric, Hidden. Each shows a toast. Architect only, no key repeat. (source: src/components/Canvas/CanvasManager.tsx:613-635) **Native:** Toast shows the grid type.
+- [x] `Delete` / `Backspace` — Removes the selected tokens, drawings and doors. Blocked in World View. (source: src/components/Canvas/CanvasManager.tsx:566-576) **Native:** Mixed selections of tokens, strokes and doors delete together. World View has no delete.
+- [x] `Esc` — Clears the active measurement. Blocked in World View. (source: src/components/Canvas/CanvasManager.tsx:579-586)
+- [x] `Esc` — Stops Session Console audio when nothing else owns Escape: no palette, confirm, dungeon dialog, calibration, active measurement, focused text field or modal. Capture phase. Architect only. (source: src/components/SessionConsole/useSessionConsoleHotkeys.ts:38-89, src/App.tsx:517-521) **Native:** Esc on the canvas with nothing to cancel stops the music; Esc in the Session Console always stops.
+- [x] Hold `Space` — Pan mode. The stage becomes draggable and the cursor changes to grab/grabbing. (source: src/components/Canvas/CanvasManager.tsx:589-592, 415-429)
+- [x] `=` / `+` / `Numpad+` zoom in, `-` / `Numpad-` zoom out — Zooms around the viewport centre by a factor of 1.1. (source: src/components/Canvas/CanvasManager.tsx:594-604, 526-539)
+- [x] Hold `Alt` (Option) — Duplicate-on-drag mode for tokens and drawings, with ghosts shown. Disabled in World View. (source: src/components/Canvas/CanvasManager.tsx:555-557, 640-642) **Native:** The original stays and the copy follows the pointer; snap preview shown.
+- [x] `Shift` while drawing — Locks the stroke to the horizontal or vertical axis. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:520-531)
+- [x] `Shift` + click / `Shift` + marquee — Additive selection. Shift-click toggles a token in or out of the selection. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:347-350, 683-691, src/components/Canvas/hooks/useTokenDrag.ts:411-417)
+- [x] `Cmd/Ctrl+P` and `Cmd/Ctrl+K` — Open the command palette. (source: src/hooks/useCommandPalette.ts:25) **Native:** ⌘K and ⌘P (Print is removed from the File menu).
+- [x] Command palette keys — `Esc` close, `Enter` run the highlighted item, `Up`/`Down` move while skipping section headers. (source: src/components/AssetLibrary/CommandPalette.tsx:182-228)
+- [x] Confirm dialog — `Enter` confirms. Cancel has initial focus. `Esc` cancels. (source: src/components/ConfirmDialog.tsx:27-55) **Native:** Native confirmation dialogs: Return confirms the default, Esc cancels.
+- [x] Map rename field — `Enter` commits, `Esc` cancels. This lives in the unmounted MapNavigator (see section 5.1). (source: src/components/MapNavigator.tsx:55-57) **Native:** Rename uses an alert text field: Return commits, Esc cancels.
 - [x] Session Console panel focus — `1` to `9` play tracks in board order. `D` ducks or unducks. Only active while focus is inside the panel. (source: src/components/SessionConsole/useSessionConsoleHotkeys.ts:91-130)
-- [ ] Menu accelerators — `Cmd+N`, `Cmd+O`, `Cmd+S`, `Cmd+Shift+W`, `Cmd+Shift+M`. (source: electron/main.ts:192-277)
-- [ ] Home screen — `Cmd+N`, `Cmd+O`, `Cmd+G`, `Cmd+T`, `?`, `Esc` (see 1.2). (source: src/components/HomeScreen.tsx:276-315)
-- [ ] Ctrl/Cmd + scroll wheel — Zoom at the pointer. Plain wheel pans. (source: src/components/Canvas/CanvasManager.tsx:978-1006)
-- [ ] About modal Shortcuts tab content — Lists `V`, `M`, `E`, `W`, `I`, `Shift` (lock axis) and `?`. It omits `D`, `R`, `1` to `5`, `Space`, `Alt`, `Delete`, `+`/`-` and `Cmd+K/P`. The native help should list the full set above. (source: src/components/AboutModal.tsx:437-470)
-- [ ] README shortcut list — Also documents `Cmd+S`, `Cmd+O`, `D`, `1` to `5` and hold-`M`. (source: README.md "Keyboard Sigils")
+- [x] Menu accelerators — `Cmd+N`, `Cmd+O`, `Cmd+S`, `Cmd+Shift+W`, `Cmd+Shift+M`. (source: electron/main.ts:192-277) **Native:** Plus ⇧⌘E export, ⇧⌘G dungeon, ⇧⌘P pause, ⌘K/⌘P palette.
+- [x] Home screen — `Cmd+N`, `Cmd+O`, `Cmd+G`, `Cmd+T`, `?`, `Esc` (see 1.2). (source: src/components/HomeScreen.tsx:276-315)
+- [x] Ctrl/Cmd + scroll wheel — Zoom at the pointer. Plain wheel pans. (source: src/components/Canvas/CanvasManager.tsx:978-1006)
+- [x] About modal Shortcuts tab content — Lists `V`, `M`, `E`, `W`, `I`, `Shift` (lock axis) and `?`. It omits `D`, `R`, `1` to `5`, `Space`, `Alt`, `Delete`, `+`/`-` and `Cmd+K/P`. The native help should list the full set above. (source: src/components/AboutModal.tsx:437-470) **Native:** Fixed: Help > Keyboard Shortcuts lists every key.
+- [x] README shortcut list — Also documents `Cmd+S`, `Cmd+O`, `D`, `1` to `5` and hold-`M`. (source: README.md "Keyboard Sigils")
 
 **Native mapping:** Handle tool keys in `NSView.keyDown` / `performKeyEquivalent` on the canvas, or
 with SwiftUI `.onKeyPress`, gated on first responder not being a text field. Use
@@ -134,8 +134,8 @@ the macOS Help menu search and the system shortcuts overlay show them.
 
 ### 1.6 Toasts
 
-- [ ] A single toast at a time at the top centre. Types are error, success and info. It auto-dismisses after 5 s, has a close button with an aria-label, and slides down. A new toast replaces the current one. (source: src/components/Toast.tsx:1-100, 54-56)
-- [ ] Flavour text — Most messages come from `rollForMessage(KEY)`, which picks randomly from 32 themed message pools (for example CAMPAIGN_SAVE_SUCCESS and LOADING_PAUSE_OVERLAY) with `{placeholder}` substitution. (source: src/utils/systemMessages.ts:390)
+- [x] A single toast at a time at the top centre. Types are error, success and info. It auto-dismisses after 5 s, has a close button with an aria-label, and slides down. A new toast replaces the current one. (source: src/components/Toast.tsx:1-100, 54-56) **Native:** Architect window: one toast at a time, top centre, info/success/error, close button, 5 s.
+- [x] Flavour text — Most messages come from `rollForMessage(KEY)`, which picks randomly from 32 themed message pools (for example CAMPAIGN_SAVE_SUCCESS and LOADING_PAUSE_OVERLAY) with `{placeholder}` substitution. (source: src/utils/systemMessages.ts:390) **Native:** All 32 pools ported verbatim (`SystemMessages.swift`).
 
 **Native mapping:** Use a custom SwiftUI overlay banner (`.overlay(alignment: .top)` with a
 transition), and post `NSAccessibility.announcementRequested` for VoiceOver. Move the message
@@ -143,18 +143,18 @@ pools into a `Localizable.xcstrings` string catalog with variants.
 
 ### 1.7 Confirm dialogs
 
-- [ ] Store-driven confirm — Takes a message, an optional confirm label, and Cancel + Confirm buttons, with Confirm styled as destructive. Cancel gets initial focus. `Enter` confirms. Used by New Campaign, Reset Map, Delete Library Asset and Delete Map. (source: src/components/ConfirmDialog.tsx, src/store/gameStore.ts:868-870)
+- [x] Store-driven confirm — Takes a message, an optional confirm label, and Cancel + Confirm buttons, with Confirm styled as destructive. Cancel gets initial focus. `Enter` confirms. Used by New Campaign, Reset Map, Delete Library Asset and Delete Map. (source: src/components/ConfirmDialog.tsx, src/store/gameStore.ts:868-870) **Native:** Native confirmationDialog with a destructive confirm button.
 
 **Native mapping:** Use `.confirmationDialog` or `NSAlert` with `hasDestructiveAction`, or
 `.alert` with `role: .destructive`. Consider undo instead of confirm where possible.
 
 ### 1.8 About modal
 
-- [ ] Three tabs: About, Tutorial, Shortcuts. The initial tab is selectable by the caller, and the tab resets when the modal reopens. (source: src/components/AboutModal.tsx:17-20, 202-209, 246-248)
-- [ ] About tab — Themed description, the version, a "Consult the Archives" button that opens the Update Manager (only when a callback is given, which happens in the editor and not on home), and a "View Source on GitHub" link. (source: src/components/AboutModal.tsx:256-308)
-- [ ] Tutorial tab — "Core Powers" bullet list, six feature cards (Dual Windows, Fog of War, Dungeon Generator, Local-First, Drawing Tools, Asset Library) and a screenshot showcase. (source: src/components/AboutModal.tsx:313-433)
-- [ ] Shortcuts tab — A shortcut list plus feature cards. **(gap)** The Shortcuts block is rendered twice (lines 437 and 569). [Intended: render it once.] (source: src/components/AboutModal.tsx:437-603)
-- [ ] Footer — "May your rolls be ever in your favor, Dungeon Master." (source: src/components/AboutModal.tsx:607-609)
+- [x] Three tabs: About, Tutorial, Shortcuts. The initial tab is selectable by the caller, and the tab resets when the modal reopens. (source: src/components/AboutModal.tsx:17-20, 202-209, 246-248)
+- [x] About tab — Themed description, the version, a "Consult the Archives" button that opens the Update Manager (only when a callback is given, which happens in the editor and not on home), and a "View Source on GitHub" link. (source: src/components/AboutModal.tsx:256-308) **Native:** Version and GitHub link. No "Consult the Archives" button until updates ship (see 1.9).
+- [x] Tutorial tab — "Core Powers" bullet list, six feature cards (Dual Windows, Fog of War, Dungeon Generator, Local-First, Drawing Tools, Asset Library) and a screenshot showcase. (source: src/components/AboutModal.tsx:313-433) **Native:** Core Powers, six feature cards and two screenshots.
+- [x] Shortcuts tab — A shortcut list plus feature cards. **(gap)** The Shortcuts block is rendered twice (lines 437 and 569). [Intended: render it once.] (source: src/components/AboutModal.tsx:437-603) **Native:** Fixed: rendered once, and it lists the full shortcut set.
+- [x] Footer — "May your rolls be ever in your favor, Dungeon Master." (source: src/components/AboutModal.tsx:607-609)
 
 **Native mapping:** Use a custom About window (an `NSApplication` About panel with credits for the
 basic part), plus a Help book or a SwiftUI `Window("Getting Started")` with a `TabView` for the
@@ -162,9 +162,9 @@ tutorial and shortcuts.
 
 ### 1.9 Update manager
 
-- [ ] Modal workflow — Check for updates, then on "update available" show the version and a Download button, then a progress bar with percent and speed (bytes/s), then "Restart & Install". There is also an "up to date" state and an error state. Messages are randomised. It is disabled in dev and on web. (source: src/components/UpdateManager.tsx:1-30, 152-280, electron/autoUpdater.ts:18-49, 185-244)
-- [ ] Download is never automatic. The update installs on quit once downloaded. (source: electron/autoUpdater.ts:43-46)
-- [ ] An error boundary around the Update Manager shows a retry fallback instead of crashing the app. (source: src/components/UpdateManagerErrorBoundary.tsx, src/components/UpdateErrorFallbackUI.tsx)
+- [ ] Modal workflow — Check for updates, then on "update available" show the version and a Download button, then a progress bar with percent and speed (bytes/s), then "Restart & Install". There is also an "up to date" state and an error state. Messages are randomised. It is disabled in dev and on web. (source: src/components/UpdateManager.tsx:1-30, 152-280, electron/autoUpdater.ts:18-49, 185-244) **Native:** Deferred: Sparkle updates need a signed, notarised build and a feed (Apple Developer credentials).
+- [ ] Download is never automatic. The update installs on quit once downloaded. (source: electron/autoUpdater.ts:43-46) **Native:** Deferred with Sparkle.
+- [ ] An error boundary around the Update Manager shows a retry fallback instead of crashing the app. (source: src/components/UpdateManagerErrorBoundary.tsx, src/components/UpdateErrorFallbackUI.tsx) **Native:** Deferred with Sparkle.
 
 **Native mapping:** Use Sparkle 2 (`SPUStandardUpdaterController`) with a "Check for Updates..." menu
 item in the app menu. Sparkle provides its own UI, progress and relaunch. Turn off automatic
@@ -172,12 +172,12 @@ downloads to match.
 
 ### 1.10 Error boundaries and error reporting
 
-- [ ] Root PrivacyErrorBoundary — On any uncaught render error it shows a full-screen report UI. The error is sanitised: the username becomes `<USER>` and absolute paths become relative. Below it are an optional "what were you doing" field (max 500 chars), a privacy notice, Report on GitHub (opens a prefilled issue URL), Save to File (native save dialog, `.txt`) and Reload App. (source: src/components/PrivacyErrorBoundary.tsx:1-60, 200-430, src/utils/errorSanitizer.ts, src/utils/githubIssueUrl.ts, electron/main.ts:1056-1084)
-- [ ] Global error handler — Captures `window.onerror` and unhandled promise rejections, sanitises them, dedupes them by hash with an occurrence count, and stores them in localStorage `graphium_pending_errors`. Nothing is sent without user consent. (source: src/utils/globalErrorHandler.ts:1-200)
-- [ ] Pending errors indicator — A bottom-right badge opens a "Stored Errors" panel with a "Report on GitHub" action for each error and "Clear reported". (source: src/components/PendingErrorsIndicator.tsx:179-310, src/main.tsx:106-109)
-- [ ] Storage-init failure screen — "Failed to Initialize Storage" with Retry and "Clear Data & Retry". (source: src/main.tsx:22-95)
-- [ ] Scoped boundaries that degrade silently — TokenErrorBoundary (hides one broken token), CanvasOverlayErrorBoundary (hides paper noise, measurement or movement range), MinimapErrorBoundary, QuickTokenSidebarErrorBoundary (inline message), LibraryModalErrorBoundary (Close button), AssetProcessingErrorBoundary (around the cropper), UpdateManagerErrorBoundary. (source: src/components/Canvas/TokenErrorBoundary.tsx, src/components/Canvas/CanvasOverlayErrorBoundary.tsx, src/components/Canvas/MinimapErrorBoundary.tsx, src/components/QuickTokenSidebarErrorBoundary.tsx, src/components/AssetLibrary/LibraryModalErrorBoundary.tsx, src/components/AssetProcessingErrorBoundary.tsx)
-- [ ] Not mounted — `GlobalErrorBoundary.tsx` and `DungeonGeneratorErrorBoundary.tsx` exist but are not used. Do not port them as separate features. (source: src/components/GlobalErrorBoundary.tsx, src/components/DungeonGeneratorErrorBoundary.tsx)
+- [x] Root PrivacyErrorBoundary — On any uncaught render error it shows a full-screen report UI. The error is sanitised: the username becomes `<USER>` and absolute paths become relative. Below it are an optional "what were you doing" field (max 500 chars), a privacy notice, Report on GitHub (opens a prefilled issue URL), Save to File (native save dialog, `.txt`) and Reload App. (source: src/components/PrivacyErrorBoundary.tsx:1-60, 200-430, src/utils/errorSanitizer.ts, src/utils/githubIssueUrl.ts, electron/main.ts:1056-1084) **Native:** Not ported: Swift has no render error boundaries. Crashes go to the macOS crash reporter, and Help > Report a Bug opens GitHub issues.
+- [x] Global error handler — Captures `window.onerror` and unhandled promise rejections, sanitises them, dedupes them by hash with an occurrence count, and stores them in localStorage `graphium_pending_errors`. Nothing is sent without user consent. (source: src/utils/globalErrorHandler.ts:1-200) **Native:** Not ported: see above. Nothing was ever sent automatically in TS either.
+- [x] Pending errors indicator — A bottom-right badge opens a "Stored Errors" panel with a "Report on GitHub" action for each error and "Clear reported". (source: src/components/PendingErrorsIndicator.tsx:179-310, src/main.tsx:106-109) **Native:** Not ported: see above.
+- [x] Storage-init failure screen — "Failed to Initialize Storage" with Retry and "Clear Data & Retry". (source: src/main.tsx:22-95) **Native:** Not applicable: there is no browser storage to initialise.
+- [x] Scoped boundaries that degrade silently — TokenErrorBoundary (hides one broken token), CanvasOverlayErrorBoundary (hides paper noise, measurement or movement range), MinimapErrorBoundary, QuickTokenSidebarErrorBoundary (inline message), LibraryModalErrorBoundary (Close button), AssetProcessingErrorBoundary (around the cropper), UpdateManagerErrorBoundary. (source: src/components/Canvas/TokenErrorBoundary.tsx, src/components/Canvas/CanvasOverlayErrorBoundary.tsx, src/components/Canvas/MinimapErrorBoundary.tsx, src/components/QuickTokenSidebarErrorBoundary.tsx, src/components/AssetLibrary/LibraryModalErrorBoundary.tsx, src/components/AssetProcessingErrorBoundary.tsx) **Native:** Native: a missing or unreadable image draws a placeholder, and failed overlays draw nothing, so there is nothing to catch.
+- [x] Not mounted — `GlobalErrorBoundary.tsx` and `DungeonGeneratorErrorBoundary.tsx` exist but are not used. Do not port them as separate features. (source: src/components/GlobalErrorBoundary.tsx, src/components/DungeonGeneratorErrorBoundary.tsx)
 
 **Native mapping:** Swift has no render-error boundaries. Make rendering total (validate the model
 on load, skip bad tokens with `os_log`). For crash and issue reporting, use MetricKit
@@ -187,11 +187,11 @@ same sanitised report: replace `NSUserName()` and `NSHomeDirectory()`, then
 
 ### 1.11 Theme
 
-- [ ] Three modes: light, dark, system (the default). Persisted in electron-store `config.json` or localStorage. In system mode the app follows OS changes live. (source: electron/themeManager.ts:1-30, 56-109)
-- [ ] All windows switch together. Electron uses an IPC broadcast and web uses a BroadcastChannel `graphium-theme-sync`. (source: electron/themeManager.ts:109, src/components/ThemeManager.tsx:85-120, src/components/HomeScreen.tsx:373-380)
-- [ ] No flash of the wrong theme on launch. There is no transition on first paint, and an animated transition after that. (source: src/components/ThemeManager.tsx:1-60, src/styles/theme.css:398-401)
-- [ ] Theme-adaptive canvas colours — The default grid colour `#222222` is replaced by a theme token in dark mode. Token label text uses the theme text colour. (source: src/components/Canvas/CanvasManager.tsx:300-305, src/store/gameStore.ts:253)
-- [ ] Visual language "direction A" — 4px radius, hairline elevation, amber Architect accent, and a separate projector-safe World View token set. (source: CHANGELOG.md "Unreleased > Changed", src/styles/theme.css)
+- [x] Three modes: light, dark, system (the default). Persisted in electron-store `config.json` or localStorage. In system mode the app follows OS changes live. (source: electron/themeManager.ts:1-30, 56-109) **Native:** Stored in UserDefaults; System follows macOS live.
+- [x] All windows switch together. Electron uses an IPC broadcast and web uses a BroadcastChannel `graphium-theme-sync`. (source: electron/themeManager.ts:109, src/components/ThemeManager.tsx:85-120, src/components/HomeScreen.tsx:373-380) **Native:** Set app-wide (NSApp.appearance), so every window switches together.
+- [x] No flash of the wrong theme on launch. There is no transition on first paint, and an animated transition after that. (source: src/components/ThemeManager.tsx:1-60, src/styles/theme.css:398-401) **Native:** Applied in applicationWillFinishLaunching, before any window draws.
+- [x] Theme-adaptive canvas colours — The default grid colour `#222222` is replaced by a theme token in dark mode. Token label text uses the theme text colour. (source: src/components/Canvas/CanvasManager.tsx:300-305, src/store/gameStore.ts:253)
+- [x] Visual language "direction A" — 4px radius, hairline elevation, amber Architect accent, and a separate projector-safe World View token set. (source: CHANGELOG.md "Unreleased > Changed", src/styles/theme.css) **Native:** Native controls with an amber accent colour; the World View uses the TS navy (#003362) on its button.
 
 **Native mapping:** Set `NSApp.appearance` (nil, `.aqua` or `.darkAqua`) from an `@AppStorage`
 value, shown as a Picker in a `Settings` scene and in View > Theme. Use asset-catalog colours
@@ -201,15 +201,15 @@ with Any/Dark variants. World View can keep its own fixed palette.
 
 - [x] A global pause flag lives in the main process. It persists across map switches and starts unpaused on launch. Toggling it broadcasts `PAUSE_STATE_CHANGED` to both windows. (source: electron/main.ts:144-145, 1035-1046, src/components/PauseManager.tsx:75-101)
 - [x] Toolbar Play/Pause button — Red when paused, green when running. Tooltips read "Resume - Players will see the map" and "Pause - Hide map from players". (source: src/components/Toolbar.tsx:72-90)
-- [ ] Also available from the command palette (`world-view-toggle-pause`) and the mobile toolbar. (source: src/utils/commandRegistry.ts:117, src/components/MobileToolbar.tsx)
-- [ ] An error toast appears if the toggle fails. (source: src/App.tsx:163-175)
+- [x] Also available from the command palette (`world-view-toggle-pause`) and the mobile toolbar. (source: src/utils/commandRegistry.ts:117, src/components/MobileToolbar.tsx)
+- [x] An error toast appears if the toggle fails. (source: src/App.tsx:163-175) **Native:** Not applicable: the native toggle can't fail (same process, no IPC).
 
 **Native mapping:** Make it a `@Published var isPaused` on a shared session model with no IPC. Add a
 menu item (for example View > Pause World View, `Cmd+Shift+P`) and a toolbar item.
 
 ### 1.13 Resource / performance monitor
 
-- [ ] Overlay — FPS (rAF), JS heap used and % of limit, token and drawing counts, IPC messages per second and bytes per second, active workers, canvas commit time. Updates every 500 ms. Toggled with `Cmd+Shift+M`. Architect only. (source: src/components/ResourceMonitor.tsx:35-120, src/components/Canvas/CanvasManager.tsx:1008-1017, src/utils/perfCounters.ts)
+- [x] Overlay — FPS (rAF), JS heap used and % of limit, token and drawing counts, IPC messages per second and bytes per second, active workers, canvas commit time. Updates every 500 ms. Toggled with `Cmd+Shift+M`. Architect only. (source: src/components/ResourceMonitor.tsx:35-120, src/components/Canvas/CanvasManager.tsx:1008-1017, src/utils/perfCounters.ts) **Native:** Native metrics: canvas FPS and draw time, memory footprint, display refresh rate, object counts and open World Views. JS heap, IPC and workers don't exist natively.
 
 **Native mapping:** Use a debug HUD with `CADisplayLink`/`CVDisplayLink` frame timing,
 `task_info` resident memory, and model counts. Prefer `os_signpost` with Instruments over a
@@ -221,8 +221,8 @@ reimplemented IPC meter.
 
 ### 2.1 Sidebar (left, Architect only)
 
-- [ ] Header — Shows the campaign name (truncated, with the full name as a tooltip) and a collapse/expand button (w-64 to w-16). (source: src/components/Sidebar.tsx:268-295)
-- [ ] MAPS section (collapsible) — Maps sorted alphabetically. Clicking switches maps. The active map shows `aria-current`. A hover gear opens Map Settings in edit mode. A "New Map" button opens Map Settings in create mode. (source: src/components/Sidebar.tsx:302-368)
+- [x] Header — Shows the campaign name (truncated, with the full name as a tooltip) and a collapse/expand button (w-64 to w-16). (source: src/components/Sidebar.tsx:268-295) **Native:** The NavigationSplitView sidebar collapses; the campaign name is the window subtitle.
+- [x] MAPS section (collapsible) — Maps sorted alphabetically. Clicking switches maps. The active map shows `aria-current`. A hover gear opens Map Settings in edit mode. A "New Map" button opens Map Settings in create mode. (source: src/components/Sidebar.tsx:302-368) **Native:** Sorted alphabetically; right-click opens Map Settings; the + button opens Map Settings in create mode.
 - [x] Door Controls section — Only shown when doors exist. Offers "Open all unlocked doors", "Close all open doors", and "Unlock all" (only when any door is locked). (source: src/components/DoorControls.tsx:34-48, 75-120, src/components/Sidebar.tsx:373)
 - [x] LIBRARY section — "Place" (opens the command palette), "Add" (pick an image, process it as a TOKEN, then show the Add to Library dialog), "Manage library" (opens Library Manager). (source: src/components/Sidebar.tsx:376-428, 213-262)
 - [x] Quick Token Sidebar — "Recent History" (last 3 unique library tokens used on this map) and "Party Tokens" (a generic placeholder plus up to 5 PC library tokens, deduped against recents). Every item can be dragged onto the canvas. (source: src/components/QuickTokenSidebar.tsx:1-168, src/utils/tokenUtils.ts)
@@ -235,12 +235,12 @@ sidebar collapse is the system sidebar toggle.
 
 ### 2.2 Toolbar (floating, Architect desktop only)
 
-- [ ] Play/Pause (see 1.12). (source: src/components/Toolbar.tsx:72-90)
+- [x] Play/Pause (see 1.12). (source: src/components/Toolbar.tsx:72-90)
 - [x] Tool buttons with pressed state and tooltips — Select (V), Marker (M), Eraser (E), Wall (W), Door (D, "Arrow keys or R to rotate"). (source: src/components/Toolbar.tsx:92-166)
 - [x] Door orientation toggle button — Only visible while the Door tool is active. (source: src/components/Toolbar.tsx:167-180)
 - [x] Measure (R) with mode buttons Ruler / Blast / Cone and a Broadcast toggle ("Broadcasting" / "Local Only"). The mode buttons are only visible while Measure is active. Changing mode clears the active measurement. (source: src/components/Toolbar.tsx:182-242, src/store/uiStore.ts:52-56)
 - [x] Marker colour HUD (bottom centre, Marker tool only) — A large swatch opens the colour picker. Three recent-colour swatches follow, most recent first and deduped. The default is `#df4b26`. (source: src/components/Toolbar.tsx:243-280, src/store/uiStore.ts:34-47)
-- [ ] Not in the toolbar: Save/Load, World View launch and Generate Dungeon. These live in menus and the palette. Older docstrings claim otherwise. (source: src/App.tsx:77-84 vs src/components/Toolbar.tsx)
+- [x] Not in the toolbar: Save/Load, World View launch and Generate Dungeon. These live in menus and the palette. Older docstrings claim otherwise. (source: src/App.tsx:77-84 vs src/components/Toolbar.tsx) **Native:** Native: the toolbar also has World View, Add Tokens and Map Image, which is usual on macOS.
 
 **Native mapping:** Use a window `.toolbar` with a segmented `Picker` for tools, a `ControlGroup` for
 measure modes, and `ColorPicker` (backed by `NSColorPanel`) plus recent swatches. A
@@ -248,14 +248,14 @@ touch-bar-like floating HUD is optional.
 
 ### 2.3 Token inspector (Architect, shown when one or more tokens are selected)
 
-- [ ] Title — "Token Name" for a single token, or "N Tokens Selected". There is a compact read-only summary (Type, Vision) with an Edit button and a close button. (source: src/components/TokenInspector.tsx:205-250)
+- [x] Title — "Token Name" for a single token, or "N Tokens Selected". There is a compact read-only summary (Type, Vision) with an Edit button and a close button. (source: src/components/TokenInspector.tsx:205-250) **Native:** Native: the inspector shows the editable fields directly, with no compact summary.
 - [x] Name field — The placeholder reads "Multiple tokens" when several are selected. Edits apply to every selected token. (source: src/components/TokenInspector.tsx:145-150, 263-280)
 - [x] Type — PC/NPC toggle. Hint: "Only PC tokens emit vision for Fog of War". (source: src/components/TokenInspector.tsx:152-157, 289-343)
 - [x] Vision radius — Presets 0, 30, 60 and 120 ft, plus a number field from 0 to 300 in steps of 5. Applies to every selected token. (source: src/components/TokenInspector.tsx:159-164, 350-398)
 - [x] "Save to library" (single, library-linked token) — Writes the name, type and vision back as library defaults. (source: src/components/TokenInspector.tsx:166-203, 400-430)
 - [x] Read-only details — Scale (for example "1x") and rounded position. (source: src/components/TokenInspector.tsx:431-450)
 - [x] Prototype/instance resolution — Each token property falls back to the linked library item's defaults (name, type, visionRadius, scale, movementSpeed). (source: src/store/gameStore.ts:25-62, src/hooks/useTokenData.ts)
-- [ ] Not editable anywhere in the UI: per-token `movementSpeed` (always the 30 ft default unless a library default sets it), token rotation, and explicit numeric scale. (source: src/components/Canvas/OverlayLayer.tsx:131, src/hooks/useTokenData.ts)
+- [x] Not editable anywhere in the UI: per-token `movementSpeed` (always the 30 ft default unless a library default sets it), token rotation, and explicit numeric scale. (source: src/components/Canvas/OverlayLayer.tsx:131, src/hooks/useTokenData.ts)
 
 **Native mapping:** Use a trailing `.inspector` (macOS 14) with a `Form`, a `Picker(.segmented)` for
 type, and `Stepper`/`TextField(format: .number)` for vision. Multi-selection editing binds to
@@ -263,9 +263,9 @@ an aggregate proxy.
 
 ### 2.4 Mobile / narrow-window layout (viewport 767px wide or less)
 
-- [ ] Hamburger button (48x48) opens the sidebar as a drawer. (source: src/App.tsx:533-556, src/components/MobileSidebarDrawer.tsx)
-- [ ] Bottom MobileToolbar — Select, Marker, Eraser, Wall and More. The More menu has Place Door (with orientation), Change Marker Color, Generate Random Dungeon, Open World View and pause. Buttons are at least 56px tall. (source: src/components/MobileToolbar.tsx:84-230, tests/touch-targets.spec.ts)
-- [ ] Bottom sheet inspector on mobile. (source: src/components/MobileBottomSheet.tsx, src/components/TokenInspector.tsx:59, 207)
+- [x] Hamburger button (48x48) opens the sidebar as a drawer. (source: src/App.tsx:533-556, src/components/MobileSidebarDrawer.tsx) **Native:** Not ported: macOS windows use the standard sidebar at every width.
+- [x] Bottom MobileToolbar — Select, Marker, Eraser, Wall and More. The More menu has Place Door (with orientation), Change Marker Color, Generate Random Dungeon, Open World View and pause. Buttons are at least 56px tall. (source: src/components/MobileToolbar.tsx:84-230, tests/touch-targets.spec.ts) **Native:** Not ported: no mobile toolbar on macOS.
+- [x] Bottom sheet inspector on mobile. (source: src/components/MobileBottomSheet.tsx, src/components/TokenInspector.tsx:59, 207) **Native:** Not ported: the inspector is a column at every width.
 
 These trigger in Electron too when the window is resized narrow. See section 8 for the porting
 decision.
@@ -278,13 +278,13 @@ decision.
 
 - [x] Zoom range is 0.1x to 5x with a step factor of 1.1. Zoom is anchored at the pointer for the wheel and at the pinch centre for pinch. (source: src/components/Canvas/CanvasManager.tsx:35-37, 494-523)
 - [x] Mouse/trackpad — The wheel pans (deltaX/deltaY). Ctrl/Cmd+wheel zooms. A trackpad pinch arrives as ctrl+wheel. (source: src/components/Canvas/CanvasManager.tsx:978-1006)
-- [ ] Space+drag pans with grab/grabbing cursors. The viewport is clamped on release. (source: src/components/Canvas/CanvasManager.tsx:1155, 1170-1196)
+- [x] Space+drag pans with grab/grabbing cursors. The viewport is clamped on release. (source: src/components/Canvas/CanvasManager.tsx:1155, 1170-1196)
 - [x] Keyboard `+`/`-` zoom around the centre. (source: src/components/Canvas/CanvasManager.tsx:526-539)
-- [ ] Touch — Two-finger pinch zooms when the distance change is above a threshold (setting, clamped to 5-50 px, default 10). Otherwise two fingers pan. One finger goes to the active tool. Default gestures are suppressed for drawing tools. (source: src/components/Canvas/CanvasManager.tsx:307-315, 713-821)
-- [ ] Viewport clamp — The viewport centre stays within the map bounds (or ±5000 with no map), expanded by PC token bounds, plus 1000 px of padding. (source: src/components/Canvas/CanvasManager.tsx:39, 439-491)
+- [x] Touch — Two-finger pinch zooms when the distance change is above a threshold (setting, clamped to 5-50 px, default 10). Otherwise two fingers pan. One finger goes to the active tool. Default gestures are suppressed for drawing tools. (source: src/components/Canvas/CanvasManager.tsx:307-315, 713-821) **Native:** Native: trackpad pinch zooms and two-finger scroll pans (system gestures). There is no touchscreen on a Mac.
+- [x] Viewport clamp — The viewport centre stays within the map bounds (or ±5000 with no map), expanded by PC token bounds, plus 1000 px of padding. (source: src/components/Canvas/CanvasManager.tsx:39, 439-491)
 - [x] Camera is per window — Architect and World View pan and zoom independently. The camera is not synced. (source: src/components/Canvas/CanvasManager.tsx:257-298)
-- [ ] Performance — Gestures write the stage transform directly and commit to React state 100 ms later. (source: src/components/Canvas/CanvasManager.tsx:268-298)
-- [ ] Cursor — Crosshair for drawing, measure and door tools. Default for select. Grabbing while dragging a token. (source: src/components/Canvas/CanvasManager.tsx:406-429)
+- [x] Performance — Gestures write the stage transform directly and commit to React state 100 ms later. (source: src/components/Canvas/CanvasManager.tsx:268-298) **Native:** Native: AppKit redraws directly; there is no React state to commit.
+- [x] Cursor — Crosshair for drawing, measure and door tools. Default for select. Grabbing while dragging a token. (source: src/components/Canvas/CanvasManager.tsx:406-429)
 
 **Native mapping:** Build a custom `NSView` (Metal or Core Animation layer tree, or an
 `NSScrollView` with `allowsMagnification`) and use `magnify(with:)` for trackpad pinch,
@@ -294,12 +294,12 @@ GraphiumCore.
 
 ### 3.2 Map background
 
-- [ ] Import from the Map Settings sheet with "Upload". The image is resized to at most 4096 px, converted to WebP at 85% in a Web Worker, and placed at (0,0) with scale 1. (source: src/components/MapSettingsSheet.tsx:113-180, 275-296, src/utils/AssetProcessor.ts:1-110, src/utils/imageMaxDimensions.ts)
-- [ ] Upload automatically enters calibration mode. In create mode the image is held until "Create Map". (source: src/components/MapSettingsSheet.tsx:155-165, 183-210)
-- [ ] Calibration — "Draw a square on the map that represents exactly one grid cell." The map scales so that box equals the grid size, then offsets so the box aligns to grid lines. Boxes of 5 px or less are ignored. Square grids only (disabled for hex/iso, with a tooltip). Has a Cancel button. The sheet becomes non-modal while calibrating. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:275-286, 463-474, 576-607, src/components/MapSettingsSheet.tsx:296-335, 243)
-- [ ] Danger Zone "Reset Map Position & Scale" (edit mode) — Asks for confirmation, then resets to (0,0) at scale 1. (source: src/components/MapSettingsSheet.tsx:223-232, 418-430)
-- [ ] The map is not directly draggable or selectable. It is a listening-false background layer. (source: src/components/Canvas/CanvasManager.tsx:1202-1219)
-- [ ] Map cropping does not exist. The cropper is only used for image files dropped onto the canvas as tokens (see 3.4).
+- [x] Import from the Map Settings sheet with "Upload". The image is resized to at most 4096 px, converted to WebP at 85% in a Web Worker, and placed at (0,0) with scale 1. (source: src/components/MapSettingsSheet.tsx:113-180, 275-296, src/utils/AssetProcessor.ts:1-110, src/utils/imageMaxDimensions.ts) **Native:** Native: up to 4096 px, stored as PNG (with alpha) or JPEG at 85%; macOS can't encode WebP.
+- [x] Upload automatically enters calibration mode. In create mode the image is held until "Create Map". (source: src/components/MapSettingsSheet.tsx:155-165, 183-210) **Native:** After an upload, "Calibrate to the grid after saving" is on (square grids). Create mode holds the image until Create Map.
+- [x] Calibration — "Draw a square on the map that represents exactly one grid cell." The map scales so that box equals the grid size, then offsets so the box aligns to grid lines. Boxes of 5 px or less are ignored. Square grids only (disabled for hex/iso, with a tooltip). Has a Cancel button. The sheet becomes non-modal while calibrating. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:275-286, 463-474, 576-607, src/components/MapSettingsSheet.tsx:296-335, 243)
+- [x] Danger Zone "Reset Map Position & Scale" (edit mode) — Asks for confirmation, then resets to (0,0) at scale 1. (source: src/components/MapSettingsSheet.tsx:223-232, 418-430)
+- [x] The map is not directly draggable or selectable. It is a listening-false background layer. (source: src/components/Canvas/CanvasManager.tsx:1202-1219)
+- [x] Map cropping does not exist. The cropper is only used for image files dropped onto the canvas as tokens (see 3.4).
 
 **Native mapping:** Use `NSOpenPanel` (UTType.image) or drag-and-drop. Downscale with
 ImageIO (`CGImageSourceCreateThumbnailAtIndex` with `kCGImageSourceThumbnailMaxPixelSize` 4096) off the main thread. HEIC or PNG storage is fine natively. WebP output is not required but
@@ -308,13 +308,13 @@ WebP input must decode (ImageIO handles it on macOS 11 and later).
 ### 3.3 Grid
 
 - [x] Types — Square Lines, Square Dots, Hexagonal (flat-top, axial coordinates), Isometric (diamond), Hidden. Set per map. (source: src/store/gameStore.ts:101, src/types/grid.ts, src/utils/gridGeometry.ts)
-- [ ] Size semantics — Square: cell px. Hex: circumradius. Iso: half the diamond width. The default is 50. There is no UI to type a grid size. Templates set 50 and calibration scales the map, not the grid. (source: CHANGELOG.md "Grid Size Semantics", src/store/gameStore.ts:267, src/components/HomeScreen.tsx:397)
-- [ ] Per-map grid colour picker — Default `#222222`, theme-adaptive when left at the default. A note is shown while the grid is hidden. (source: src/components/MapSettingsSheet.tsx:369-395, src/components/Canvas/CanvasManager.tsx:303-305)
-- [ ] Viewport culling — Only visible lines, cells or dots are drawn. The DOTS step coarsens above 10,000 dots. (source: src/components/Canvas/GridOverlay.tsx:1-60)
-- [ ] Hover cell highlight — A translucent fill on the hovered cell, for every type except Dots and Hidden. Architect only. (source: src/components/Canvas/GridOverlay.tsx:72-80, 213-230, src/components/Canvas/hooks/useCanvasInteraction.ts:377-384)
+- [x] Size semantics — Square: cell px. Hex: circumradius. Iso: half the diamond width. The default is 50. There is no UI to type a grid size. Templates set 50 and calibration scales the map, not the grid. (source: CHANGELOG.md "Grid Size Semantics", src/store/gameStore.ts:267, src/components/HomeScreen.tsx:397)
+- [x] Per-map grid colour picker — Default `#222222`, theme-adaptive when left at the default. A note is shown while the grid is hidden. (source: src/components/MapSettingsSheet.tsx:369-395, src/components/Canvas/CanvasManager.tsx:303-305) **Native:** Default colour adapts to the theme; a note shows while the grid is hidden.
+- [x] Viewport culling — Only visible lines, cells or dots are drawn. The DOTS step coarsens above 10,000 dots. (source: src/components/Canvas/GridOverlay.tsx:1-60)
+- [x] Hover cell highlight — A translucent fill on the hovered cell, for every type except Dots and Hidden. Architect only. (source: src/components/Canvas/GridOverlay.tsx:72-80, 213-230, src/components/Canvas/hooks/useCanvasInteraction.ts:377-384)
 - [x] Snapping — Square: odd-sized tokens snap to cell centres and even-sized tokens to intersections. Hex/iso: always snap to the cell centre. Applies on drop, drag end and door placement. (source: src/utils/grid.ts, CHANGELOG.md "Smart Grid-Aware Snapping")
 - [x] Snap preview — A dashed blue circle shows the snap destination of each dragged token, including multi-token drags. (source: src/components/Canvas/OverlayLayer.tsx:57-90, src/components/Canvas/hooks/useTokenDrag.ts:249-294)
-- [ ] Grid type quick keys `1` to `5` with toasts (see 1.4).
+- [x] Grid type quick keys `1` to `5` with toasts (see 1.4).
 
 **Native mapping:** Port `GridGeometry` (pixelToGrid, gridToPixel, getCellVertices, neighbours) to
 GraphiumCore unchanged. It is pure maths and the existing unit tests can be translated 1:1.
@@ -323,14 +323,14 @@ Render with a `CAShapeLayer` path rebuilt on viewport change, or in a Metal pass
 ### 3.4 Tokens
 
 - [x] Add by dragging a library or quick token onto the canvas — Creates a library-linked instance at the snapped drop point. (source: src/components/Canvas/CanvasManager.tsx:858-879)
-- [ ] Add by dragging the generic token — A theme-coloured SVG placeholder named "Generic Token", type NPC. (source: src/components/Canvas/CanvasManager.tsx:880-902)
+- [x] Add by dragging the generic token — A theme-coloured SVG placeholder named "Generic Token", type NPC. (source: src/components/Canvas/CanvasManager.tsx:880-902) **Native:** Sidebar Library > Generic Token: click to place or drag onto the map. A neutral PNG instead of a theme-coloured SVG.
 - [x] Add by dropping an image file — Opens the 1:1 ImageCropper (zoom 1x-3x by slider, wheel or pinch, "Crop & Import" / Cancel). Then creates a "New Token" (NPC) with an embedded data URL. This token is not added to the library. (source: src/components/Canvas/CanvasManager.tsx:909-961, src/components/ImageCropper.tsx:24-58)
-- [ ] Add from the command palette at the map centre (see 1.5).
-- [ ] Rendering — Square image of size gridSize x scale. The name label (12pt bold, theme text colour) sits below. Iso grids offset the token up by half its height. Hover shows a soft shadow. A selected token gets a dashed blue ring. A dragged token is semi-transparent with a strong shadow. (source: src/components/Canvas/TokenNode.tsx:36-100, 145-215)
-- [ ] Move — Pointer drag with a 5 px threshold. Multi-select drags move together. Every token snaps on release. Live positions stream to World View during the drag (rAF-batched). (source: src/components/Canvas/hooks/useTokenDrag.ts:94, 106-116, 330-392)
+- [x] Add from the command palette at the map centre (see 1.5).
+- [x] Rendering — Square image of size gridSize x scale. The name label (12pt bold, theme text colour) sits below. Iso grids offset the token up by half its height. Hover shows a soft shadow. A selected token gets a dashed blue ring. A dragged token is semi-transparent with a strong shadow. (source: src/components/Canvas/TokenNode.tsx:36-100, 145-215)
+- [x] Move — Pointer drag with a 5 px threshold. Multi-select drags move together. Every token snaps on release. Live positions stream to World View during the drag (rAF-batched). (source: src/components/Canvas/hooks/useTokenDrag.ts:94, 106-116, 330-392)
 - [x] Duplicate — Option/Alt-drag leaves the originals and drops copies at the snapped destinations. Ghosts are shown while dragging. (source: src/components/Canvas/hooks/useTokenDrag.ts:394-401, src/components/Canvas/TokenLayer.tsx:76-82)
-- [ ] Resize — Transformer handles scale the token uniformly (the average of scaleX and scaleY multiplies the stored scale). Architect only. (source: src/components/Canvas/CanvasManager.tsx:1357-1396)
-- [ ] Rotate **(gap)** — The Konva Transformer shows its default rotate handle, but rotation is discarded on transform end and the Token model has no rotation field. [Decision needed: either hide rotation or add `rotation` to the model.] (source: src/components/Canvas/CanvasManager.tsx:1359-1394, src/store/gameStore.ts:51-62)
+- [x] Resize — Transformer handles scale the token uniformly (the average of scaleX and scaleY multiplies the stored scale). Architect only. (source: src/components/Canvas/CanvasManager.tsx:1357-1396) **Native:** Native: a corner resize handle, in quarter-scale steps.
+- [x] Rotate **(gap)** — The Konva Transformer shows its default rotate handle, but rotation is discarded on transform end and the Token model has no rotation field. [Decision needed: either hide rotation or add `rotation` to the model.] (source: src/components/Canvas/CanvasManager.tsx:1359-1394, src/store/gameStore.ts:51-62) **Native:** Decision: rotation is hidden (no rotate handle), since the model has no rotation field.
 - [x] Select — Click selects. Shift-click toggles. Marquee selection starts on empty stage or map and selects tokens and drawings whose bounds intersect. Shift-marquee is additive. Clicking empty space clears the selection. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:334-351, 476-502, 650-695)
 - [x] Delete with `Delete`/`Backspace`. (see 1.4)
 - [x] There is no undo or redo anywhere in the app. The native port should add it. (source: src/store/gameStore.ts:296-447 has no history)
@@ -350,8 +350,8 @@ every commit, which `DocumentGroup` already wires up.
 - [x] Wall smoothing and endpoint snapping — Ramer-Douglas-Peucker simplification (epsilon 3, kept if at least 2 points remain). Endpoints snap to existing walls within 10 px. Settings live in the `graphium-preferences` store and have no UI. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:84-101, 620-641, src/store/preferencesStore.ts:38-67, src/utils/pathOptimization.ts:21, 207)
 - [x] Pressure-sensitive lines — Per-point pressure is captured when pressure sensitivity is on. Width = base x mapped pressure, using a pressure curve: light 0.2-2.0, normal 0.3-1.5 (the default), heavy 0.4-1.2. A custom scene function draws the variable width. Mouse input uses 0.5. (source: src/components/Canvas/CanvasManager.tsx:41-45, src/components/Canvas/CanvasUtils.ts:18-27, src/components/Canvas/PressureSensitiveLine.tsx, src/store/touchSettingsStore.ts:116)
 - [x] Shift axis-lock while drawing (see 1.4).
-- [ ] Marker strokes and eraser strokes can be selected, dragged (Option-drag duplicates) and scaled with the transformer. Walls cannot. (source: src/components/Canvas/DrawingLayer.tsx:60-61, 120-130, src/components/Canvas/CanvasManager.tsx:1258-1286, 1380-1393)
-- [ ] Live stroke preview is rAF-throttled. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:544-555)
+- [x] Marker strokes and eraser strokes can be selected, dragged (Option-drag duplicates) and scaled with the transformer. Walls cannot. (source: src/components/Canvas/DrawingLayer.tsx:60-61, 120-130, src/components/Canvas/CanvasManager.tsx:1258-1286, 1380-1393) **Native:** Native: strokes can be selected, dragged and Option-duplicated, but not scaled.
+- [x] Live stroke preview is rAF-throttled. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:544-555)
 
 **Native mapping:** Read `NSEvent.pressure` (and `tangentialPressure`/`tilt` for Wacom), then render
 variable-width strokes as filled `CGPath` outlines or with a Metal stroke shader. For the
@@ -367,7 +367,7 @@ drawing input and is not suitable here.
 - [x] Bulk door controls in the sidebar (see 2.1).
 - [x] Blocking — Closed doors become wall segments for vision. Open doors let vision through. (source: src/components/Canvas/FogOfWarLayer.tsx:242-320)
 - [x] World View door rendering — Thicker strokes and a white glow for legibility. It does not respond to clicks. (source: src/components/Canvas/DoorShape.tsx:137, 182-217)
-- [ ] Doors can be selected for deletion with marquee or Delete. They show a selection highlight. (source: src/components/Canvas/DoorShape.tsx:149, src/components/Canvas/CanvasManager.tsx:573)
+- [x] Doors can be selected for deletion with marquee or Delete. They show a selection highlight. (source: src/components/Canvas/DoorShape.tsx:149, src/components/Canvas/CanvasManager.tsx:573)
 - [x] Stairs — Render-only (non-interactive). A stepped pattern with a direction arrow (N/S/E/W) and up/down shading, visible in both windows. **(gap)** No UI or generator creates stairs. They exist only in the model, sync and persistence. [Port rendering and persistence. Creating stairs is a new feature.] (source: src/components/Canvas/StairsShape.tsx:1-41, src/store/gameStore.ts:236-250, 826-830)
 
 **Native mapping:** Keep a `Door` model in core and render it as a layer with a
@@ -382,7 +382,7 @@ right-click `NSMenu` (and Control-click).
 - [x] Three-state fog — Unexplored areas are 94% black. Explored areas are dimmed through a cached offscreen mask (union of explored polygons). Current vision is cleared with a radial-gradient soft edge. (source: src/components/Canvas/FogOfWarLayer.tsx:452-540, docs/features/explored-fog-of-war.md)
 - [x] Explored regions are recorded at most once per second per PC polygon, capped at 2000 per map (oldest dropped), and persisted in the map. (source: src/components/Canvas/FogOfWarLayer.tsx:395-427, src/store/gameStore.ts:248, 852-859)
 - [x] NPC hiding — NPC tokens outside every PC's vision are hidden and not interactive in World View. (source: src/utils/fogVisibility.ts, src/components/Canvas/FogOfWarLayer.tsx:384-387, src/components/Canvas/TokenNode.tsx:134, 162)
-- [ ] Wall lines show in World View as black 6 px lines, drawn under the fog. (source: src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/CanvasManager.tsx:1290)
+- [x] Wall lines show in World View as black 6 px lines, drawn under the fog. (source: src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/CanvasManager.tsx:1290)
 - [x] Reset explored fog **(gap)** — `clearExploredRegions` exists, but nothing in the UI calls it. [Intended: a "Reset explored areas" action per map.] (source: src/store/gameStore.ts:860)
 - [x] Explored-region sync caveat — Explored regions are computed in World View, but World-to-Architect sync only carries token x/y. So regions recorded in World View never reach the Architect's saved campaign. **(gap)** [Intended: compute exploration in the shared model so it persists.] (source: src/utils/worldViewTokenSync.ts, src/components/SyncManager.tsx:267-268)
 
@@ -407,11 +407,11 @@ exploration is computed once.
 ### 3.10 Movement range
 
 - [x] Hold `M` with a token selected (Architect only) to show a BFS flood-fill of reachable cells within movementSpeed / 5 cells (default 30 ft). It uses grid-aware neighbours (square, hex, iso), is drawn as a translucent blue overlay, and follows the token during a drag. (source: src/components/Canvas/MovementRangeOverlay.tsx:1-176, src/components/Canvas/OverlayLayer.tsx:98-135)
-- [ ] `docs/movement-range-concept.tsx` is the earlier concept. The shipped implementation is MovementRangeOverlay. Port only the shipped one. (source: docs/movement-range-concept.tsx)
+- [x] `docs/movement-range-concept.tsx` is the earlier concept. The shipped implementation is MovementRangeOverlay. Port only the shipped one. (source: docs/movement-range-concept.tsx)
 
 ### 3.11 AoE templates
 
-- [ ] **(concept-only, not shipped)** Cell-highlighting AoE templates (circle, cone, line, cube) that highlight the grid cells inside a spell area. They are not imported anywhere in `src/`. The shipped equivalent is the geometric Blast/Cone measurement (3.9). (source: docs/aoe-templates-concept.tsx:1-70)
+- [x] **(concept-only, not shipped)** Cell-highlighting AoE templates (circle, cone, line, cube) that highlight the grid cells inside a spell area. They are not imported anywhere in `src/`. The shipped equivalent is the geometric Blast/Cone measurement (3.9). (source: docs/aoe-templates-concept.tsx:1-70) **Native:** Not ported (concept-only).
 
 ### 3.12 Minimap (World View only)
 
@@ -426,15 +426,15 @@ at 25%) as a pattern layer.
 
 ### 3.14 Touch visual feedback
 
-- [ ] **(gap, not mounted)** `TouchVisualFeedback` (touch-point indicators, pressure indicator, gesture-mode overlay) exists but no component imports it. Its settings (`showTouchPointIndicators`, `showPressureIndicator`, `showGestureFeedback`, `showGestureTutorial`) are unused. Do not port it as a user-visible feature. (source: src/components/Canvas/TouchVisualFeedback.tsx, src/store/touchSettingsStore.ts:136-141)
+- [x] **(gap, not mounted)** `TouchVisualFeedback` (touch-point indicators, pressure indicator, gesture-mode overlay) exists but no component imports it. Its settings (`showTouchPointIndicators`, `showPressureIndicator`, `showGestureFeedback`, `showGestureTutorial`) are unused. Do not port it as a user-visible feature. (source: src/components/Canvas/TouchVisualFeedback.tsx, src/store/touchSettingsStore.ts:136-141) **Native:** Not ported (not mounted).
 
 ### 3.15 Performance features worth keeping
 
-- [ ] Viewport culling for grid, tokens and fog bounds. (source: src/utils/viewportCulling.ts, src/components/Canvas/GridOverlay.tsx)
-- [ ] Direct node updates during drag, without full re-render. A token node registry is used for live positions. (source: src/utils/tokenNodeRegistry.ts, src/store/pointerOverlayStore.ts)
-- [ ] Image processing off the main thread with cancellation. (source: src/utils/AssetProcessor.ts:40-110, src/workers/image-processor.worker.ts)
-- [ ] Stress fixture autoload for perf testing **(dev-only)**. (source: src/utils/stressFixture.ts, src/App.tsx:220-224)
-- [ ] React profiler boundaries **(dev-only)**. (source: src/perf/profiler.tsx)
+- [x] Viewport culling for grid, tokens and fog bounds. (source: src/utils/viewportCulling.ts, src/components/Canvas/GridOverlay.tsx)
+- [x] Direct node updates during drag, without full re-render. A token node registry is used for live positions. (source: src/utils/tokenNodeRegistry.ts, src/store/pointerOverlayStore.ts)
+- [ ] Image processing off the main thread with cancellation. (source: src/utils/AssetProcessor.ts:40-110, src/workers/image-processor.worker.ts) **Native:** Open: image import still decodes and resizes on the main thread.
+- [x] Stress fixture autoload for perf testing **(dev-only)**. (source: src/utils/stressFixture.ts, src/App.tsx:220-224) **Native:** Not ported (dev-only).
+- [x] React profiler boundaries **(dev-only)**. (source: src/perf/profiler.tsx) **Native:** Not ported (dev-only).
 
 ---
 
@@ -442,25 +442,25 @@ at 25%) as a pattern layer.
 
 ### 4.1 What players see
 
-- [ ] The map background, paper noise, the grid in the map's grid colour, markers, wall lines (black, 6 px), doors with high-legibility styling, stairs, tokens with name labels, fog of war (unless Daylight mode is on), and the DM's measurement when broadcasting is on. (source: src/components/Canvas/CanvasManager.tsx:1201-1356, src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/DoorShape.tsx:182-217)
-- [ ] Not shown: the sidebar, toolbar, inspector, palette, resource monitor, transformer handles, hover-cell highlight, door preview and movement range. (source: src/App.tsx:516-618, src/components/Canvas/OverlayLayer.tsx:33, 119)
+- [x] The map background, paper noise, the grid in the map's grid colour, markers, wall lines (black, 6 px), doors with high-legibility styling, stairs, tokens with name labels, fog of war (unless Daylight mode is on), and the DM's measurement when broadcasting is on. (source: src/components/Canvas/CanvasManager.tsx:1201-1356, src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/DoorShape.tsx:182-217)
+- [x] Not shown: the sidebar, toolbar, inspector, palette, resource monitor, transformer handles, hover-cell highlight, door preview and movement range. (source: src/App.tsx:516-618, src/components/Canvas/OverlayLayer.tsx:33, 119)
 - [x] NPCs outside party vision are hidden (see 3.7).
 - [x] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
-- [ ] Minimap (see 3.12).
-- [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2)
+- [x] Minimap (see 3.12).
+- [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2) **Native:** Open: Center on Party uses 18 pt and the pause text is large, but no automated legibility test exists.
 - [x] Session Console stage — A full-window "plate" artwork with an optional frame, title and subtitle that crossfades between plates (no fade under reduced motion). It covers the map while `stageVisible` is true. (source: src/components/SessionConsole/WorldStage.tsx:41-140)
-- [ ] "Arm World View audio" card — Shown until the window is armed. It explains that this window owns campaign audio and should be shared in Discord. The "Arm audio" button needs a user gesture to start the AudioContext and the YouTube player, and reads "Loading audio..." while getting ready. (source: src/components/SessionConsole/WorldAudioEngine.tsx:163-195)
+- [x] "Arm World View audio" card — Shown until the window is armed. It explains that this window owns campaign audio and should be shared in Discord. The "Arm audio" button needs a user gesture to start the AudioContext and the YouTube player, and reads "Loading audio..." while getting ready. (source: src/components/SessionConsole/WorldAudioEngine.tsx:163-195) **Native:** Native: AVAudioEngine and the hidden WKWebView need no user gesture, so the card isn't needed.
 
 ### 4.2 What players can do
 
 - [x] Pan and zoom independently: wheel, Ctrl+wheel, Space-drag, pinch, two-finger pan, `+`/`-`. (source: src/components/Canvas/CanvasManager.tsx:92-101)
 - [x] Select and drag visible tokens. Only x/y positions are sent back. The main process sanitises every World-to-Architect message down to `TOKEN_UPDATE {x,y}` or a single-level `BATCH`. Players cannot change any other property. Hidden NPCs cannot be grabbed. (source: src/utils/worldViewTokenSync.ts, electron/main.ts:1167-1173, src/components/SyncManager.tsx:307-330, 370-410)
-- [ ] Blocked: drawing tools, file drops, calibration, transform (scale/rotate), Alt-duplicate, delete, door toggling and door context menu, measurement, grid hotkeys, and tool hotkeys. `?` still opens About. (source: src/components/Canvas/CanvasManager.tsx:92-101, 823-836, src/components/Canvas/hooks/useCanvasInteraction.ts:248-305, src/components/Canvas/DoorShape.tsx:102-122, src/App.tsx:243-246)
+- [x] Blocked: drawing tools, file drops, calibration, transform (scale/rotate), Alt-duplicate, delete, door toggling and door context menu, measurement, grid hotkeys, and tool hotkeys. `?` still opens About. (source: src/components/Canvas/CanvasManager.tsx:92-101, 823-836, src/components/Canvas/hooks/useCanvasInteraction.ts:248-305, src/components/Canvas/DoorShape.tsx:102-122, src/App.tsx:243-246)
 
 ### 4.3 Sync model
 
-- [ ] The Architect is the producer. It subscribes to store changes, diffs them into delta actions (TOKEN*ADD/UPDATE/REMOVE, TOKEN_DRAG*\_, DRAWING\_\_, DOOR*\*, STAIRS*\*, MAP_UPDATE, GRID_UPDATE, EXPLORED_UPDATE, MEASUREMENT_UPDATE, STAGE_UPDATE, AUDIO_UPDATE, SFX_FIRE, LIBRARY_UPDATE), throttles them to 32 ms, and switches to FULL_SYNC above 20 actions. (source: src/components/SyncManager.tsx:127-290, 472, src/utils/syncUtils.ts:136-240)
-- [ ] On open, World View sends `REQUEST_INITIAL_STATE`. The Architect replies with FULL_SYNC (tokens, library, drawings, doors, stairs, grid, map, explored regions, daylight, measurement, session runtime). (source: src/components/SyncManager.tsx:298-304, 344-366, electron/main.ts:1160-1164, docs/features/world-view-sync-fix.md)
+- [x] The Architect is the producer. It subscribes to store changes, diffs them into delta actions (TOKEN*ADD/UPDATE/REMOVE, TOKEN_DRAG*\_, DRAWING\_\_, DOOR*\*, STAIRS*\*, MAP_UPDATE, GRID_UPDATE, EXPLORED_UPDATE, MEASUREMENT_UPDATE, STAGE_UPDATE, AUDIO_UPDATE, SFX_FIRE, LIBRARY_UPDATE), throttles them to 32 ms, and switches to FULL_SYNC above 20 actions. (source: src/components/SyncManager.tsx:127-290, 472, src/utils/syncUtils.ts:136-240) **Native:** Native: both windows observe one CampaignDocument, so there is no sync protocol.
+- [x] On open, World View sends `REQUEST_INITIAL_STATE`. The Architect replies with FULL_SYNC (tokens, library, drawings, doors, stairs, grid, map, explored regions, daylight, measurement, session runtime). (source: src/components/SyncManager.tsx:298-304, 344-366, electron/main.ts:1160-1164, docs/features/world-view-sync-fix.md) **Native:** Native: see above.
 - [x] Switching maps on the Architect updates World View, which is covered by the pause overlay while paused. (source: src/components/LoadingOverlay.tsx:1-60)
 
 **Native mapping:** Delete the whole sync layer. Both windows observe the same
@@ -491,11 +491,11 @@ system window picker (ScreenCaptureKit) handles "share this window with audio" n
 - [x] A campaign has an id, a name, maps (a dictionary), an activeMapId, a tokenLibrary and a sessionConsole catalog. A new campaign is named "New Campaign" with one map, "Map 1" or "Default Map". (source: src/store/gameStore.ts:153-161, 256-283)
 - [x] Each map holds its own tokens, drawings, doors, stairs, background, grid size, type and colour, explored regions and daylight flag. (source: src/store/gameStore.ts:105-118)
 - [x] Switch map from the sidebar list. The active map is synced into the campaign before switching. (source: src/store/gameStore.ts:692-728, src/components/Sidebar.tsx:303-330)
-- [ ] Create a map with Map Settings in create mode: name (default "Untitled Map"), optional background image, grid type, grid colour and daylight. The new map becomes active. (source: src/components/MapSettingsSheet.tsx:183-210, src/store/gameStore.ts:603-630)
+- [x] Create a map with Map Settings in create mode: name (default "Untitled Map"), optional background image, grid type, grid colour and daylight. The new map becomes active. (source: src/components/MapSettingsSheet.tsx:183-210, src/store/gameStore.ts:603-630) **Native:** Default name "Untitled Map".
 - [x] Rename a map in edit mode. An empty name is rejected with a toast. (source: src/components/MapSettingsSheet.tsx:211-220, src/store/gameStore.ts:730-750)
 - [x] Delete map **(gap)** — `deleteMap` exists (it refuses to delete the last map and switches to the next or previous map first), but its only UI is `MapNavigator.tsx`, which nothing mounts. [Intended: a delete action for maps with confirmation.] (source: src/store/gameStore.ts:632-690, src/components/MapNavigator.tsx:20, 66)
-- [ ] MapNavigator (not mounted) — A dropdown map switcher with inline rename (Enter/Esc), delete and add. Use it as a spec for map management UI, not as a current feature. (source: src/components/MapNavigator.tsx)
-- [ ] There is no UI to rename the campaign itself. The name comes from the file or the template. (source: src/store/gameStore.ts, src/components/Sidebar.tsx:280)
+- [x] MapNavigator (not mounted) — A dropdown map switcher with inline rename (Enter/Esc), delete and add. Use it as a spec for map management UI, not as a current feature. (source: src/components/MapNavigator.tsx)
+- [x] There is no UI to rename the campaign itself. The name comes from the file or the template. (source: src/store/gameStore.ts, src/components/Sidebar.tsx:280)
 
 **Native mapping:** Make maps an ordered list in the document's sidebar (`List` with `.onMove`,
 `.contextMenu` with Rename, Duplicate and Delete, and a `.onDeleteCommand`). The campaign name
@@ -503,14 +503,14 @@ is the document name.
 
 ### 5.2 New / open / save / autosave
 
-- [ ] File format `.graphium` — A ZIP with `manifest.json` (the campaign JSON) and `assets/` (every `file://` asset copied in with collision-safe basenames, including library thumbnails). (source: electron/main.ts:637-717)
+- [x] File format `.graphium` — A ZIP with `manifest.json` (the campaign JSON) and `assets/` (every `file://` asset copied in with collision-safe basenames, including library thumbnails). (source: electron/main.ts:637-717) **Native:** Native: `.graphiumcampaign` package. `.graphium` ZIPs are imported, and File > Export as .graphium writes them.
 - [x] Load — Unzips into a fresh `sessions/<timestamp>/` folder and rewrites asset paths to absolute URLs. Legacy single-map files (no `maps` key) are migrated into "Imported Campaign" / "Imported Map". A missing session console catalog is filled in. (source: electron/main.ts:719-799, 853-901, src/store/gameStore.ts:285-295, 490-518)
-- [ ] Save — Always shows the native save dialog (Save-As semantics). It writes non-atomically and remembers the path for autosave. (source: electron/main.ts:817-832)
-- [ ] Autosave — Every 60 s, only after a path is known (that is, after a save or load). Atomic `.tmp` + rename. Failures are silent. Web autosaves to IndexedDB. (source: src/components/AutoSaveManager.tsx:16-60, electron/main.ts:834-851)
-- [ ] Asset security — Saving refuses assets outside the temp, sessions or library roots. A missing asset gives "Campaign asset file not found". (source: electron/main.ts:645-667, electron/pathSecurity.ts)
-- [ ] New campaign from the menu asks for confirmation. Home "New Campaign" just enters the editor. (see 1.2 and 1.3)
+- [x] Save — Always shows the native save dialog (Save-As semantics). It writes non-atomically and remembers the path for autosave. (source: electron/main.ts:817-832) **Native:** Native: standard document saving (see 1.3).
+- [x] Autosave — Every 60 s, only after a path is known (that is, after a save or load). Atomic `.tmp` + rename. Failures are silent. Web autosaves to IndexedDB. (source: src/components/AutoSaveManager.tsx:16-60, electron/main.ts:834-851) **Native:** Native: macOS autosave in place and Versions.
+- [x] Asset security — Saving refuses assets outside the temp, sessions or library roots. A missing asset gives "Campaign asset file not found". (source: electron/main.ts:645-667, electron/pathSecurity.ts) **Native:** Native: assets live inside the package, and asset names are validated.
+- [x] New campaign from the menu asks for confirmation. Home "New Campaign" just enters the editor. (see 1.2 and 1.3) **Native:** Native: ⌘N opens a new window, so no confirmation is needed.
 - [x] Dirty-state tracking and "unsaved changes" prompts on close **(gap)** do not exist. Closing a window or quitting never warns. [Intended natively: standard document dirty tracking.]
-- [ ] Compatibility — The native app must open existing `.graphium` ZIPs, legacy single-map manifests included. Native files may use `.graphiumcampaign` (see macos/README.md), but `.graphium` import and export are required for parity. (source: electron/main.ts:853-901)
+- [x] Compatibility — The native app must open existing `.graphium` ZIPs, legacy single-map manifests included. Native files may use `.graphiumcampaign` (see macos/README.md), but `.graphium` import and export are required for parity. (source: electron/main.ts:853-901) **Native:** Imports both, including legacy single-map manifests, and exports `.graphium`.
 
 **Native mapping:** `DocumentGroup` with a `ReferenceFileDocument` whose `FileWrapper` is a
 directory package, or a ZIP via Apple Archive or ZIPFoundation, for `.graphium`. Autosave in
@@ -542,22 +542,22 @@ audio, so the DM can share World View in Discord with "Include Audio". (source: 
 - [x] Catalog model — Stage chrome (title, which defaults to the campaign name; subtitle; showFrame), defaults (volume 45, duck 27%), imageSets[{title, note, images[{name, cue, src, thumbnailSrc, alt}]}], trackGroups[{title, note, accent bed|road|dread|combat|arrive, tracks[{title, cue, tag, source youtube|local, youtubeId|src, volumeOffset ±30, loop, recommendedImageId}]}], and sfx (synth chime, drone, snap, ping, test-tone, plus local files). (source: src/types/sessionConsole.ts:7-110, 210-232)
 - [x] Master bar — World link status: "World closed", "World connected" or "World armed", with a colour. Also a volume slider from 0 to 100, Duck toggle, Pause, Resume, Restart, Stop, Return to Map, and Test Tone. (source: src/components/SessionConsole/SessionConsoleMasterBar.tsx:14-120, src/components/SessionConsole/useWorldLinkStatus.ts)
 - [x] "Copy current link" and "Copy all links" — Copy fallback track links (numbered, with YouTube URLs) to the clipboard, with a toast. (source: src/components/SessionConsole/SessionConsolePanel.tsx:44-62, src/utils/sessionConsoleBoard.ts:30-42)
-- [ ] Board dropzone — Drop images and/or audio files. Image files go to an image set named after the folder. Audio goes to a track group. Audio over 8 MB warns and over 25 MB is rejected. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:44-52, src/utils/sessionConsoleBoard.ts:255-298, src/utils/localAudioLimits.ts:3-9)
+- [x] Board dropzone — Drop images and/or audio files. Image files go to an image set named after the folder. Audio goes to a track group. Audio over 8 MB warns and over 25 MB is rejected. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:44-52, src/utils/sessionConsoleBoard.ts:255-298, src/utils/localAudioLimits.ts:3-9) **Native:** Drop on the panel, or onto one set or group. A folder becomes a set named after it.
 - [x] Paste YouTube URL field — Accepts a paste or Enter. Parses raw 11-character ids and youtu.be, watch?v=, shorts, embed and v/ URLs. Playlist-only URLs are rejected. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:54-90, src/types/sessionConsole.ts:150-190, src/utils/sessionConsoleBoard.ts:206)
 - [x] "Add from folder" (directory image picker), "New image set" and "New track group" buttons. (source: src/components/SessionConsole/SessionConsoleBoard.tsx:92-140)
-- [ ] Image set board — Clicking a thumbnail shows that plate in World View (SHOW_PLATE). Thumbnails can be reordered by drag. Each has an edit button. Files can be dropped onto a set. (source: src/components/SessionConsole/ImageSetBoard.tsx:51-130)
-- [ ] Track group list — Click Play on a track. Tracks can be reordered by drag. Each has an edit button. Files can be dropped onto a group. (source: src/components/SessionConsole/TrackGroupList.tsx:57-125)
+- [x] Image set board — Clicking a thumbnail shows that plate in World View (SHOW_PLATE). Thumbnails can be reordered by drag. Each has an edit button. Files can be dropped onto a set. (source: src/components/SessionConsole/ImageSetBoard.tsx:51-130) **Native:** Drag a thumbnail onto another to reorder; drop files onto a set to add them.
+- [x] Track group list — Click Play on a track. Tracks can be reordered by drag. Each has an edit button. Files can be dropped onto a group. (source: src/components/SessionConsole/TrackGroupList.tsx:57-125)
 - [x] SFX buttons — One per catalog sfx (FIRE_SFX). (source: src/components/SessionConsole/SessionConsolePanel.tsx:110-120)
 - [x] Editor sheet — For a plate: Name, Cue and Alt text. For a track: Title, Cue, Tag (accent), Loop toggle, a volume-offset slider (±30) and a recommended plate (None or a plate). (source: src/components/SessionConsole/SessionConsoleEditorSheet.tsx:20-80, 126-215)
-- [ ] Remove plate, track, set or group **(gap)** — Reducers exist (REMOVE_IMAGE, REMOVE_TRACK, REMOVE_IMAGE_SET, REMOVE_TRACK_GROUP), but no UI calls them. The same goes for renaming sets and groups (UPDATE_IMAGE_SET/UPDATE_TRACK_GROUP) and for `recommendedImageId`, which is stored but never acted on. [Intended: full board editing.] (source: src/store/sessionConsoleReducers.ts:21-44)
-- [ ] Settings sheet — "Stage" (title, subtitle, Show frame), "Playback defaults" (default volume on load, duck percent), "Advanced: board pack" (Import replace, Import merge, Export pack, with a skipped/warnings summary), and "Table setup" (the Discord checklist: Krisp off, attenuation 0%, share World View with audio, play the test tone; plus the keyboard list). Also opened from the command palette. (source: src/components/SessionConsole/SessionConsoleSettingsSheet.tsx:1-49, src/components/SessionConsole/sessionConsoleSettingsSections.tsx:29-272, src/components/SessionConsole/DiscordSetupHelp.tsx:1-33)
-- [ ] Board pack import — Pick `board.json`. Relative files are sandboxed to the pack folder and copied into temp assets. http(s) assets are fetched with a byte cap. YouTube is kept. Per-row errors are reported as skipped. Replace or merge into the catalog. Plate thumbnails are generated. (source: electron/sessionConsolePackIngest.ts:22-60, electron/sessionConsolePackFiles.ts:130-220, src/utils/sessionConsolePack.ts:569-1075, src/utils/sessionConsoleBoard.ts:149)
-- [ ] Board pack export — Pick a folder. Writes `board.json` plus `images/` and `audio/` copies, and YouTube watch URLs. Reports "Board pack exported" or "finished with errors". (source: electron/sessionConsolePackFiles.ts:224-290, src/utils/sessionConsolePack.ts:1076-1125, docs/planning/session-console-pack.example.json)
+- [x] Remove plate, track, set or group **(gap)** — Reducers exist (REMOVE_IMAGE, REMOVE_TRACK, REMOVE_IMAGE_SET, REMOVE_TRACK_GROUP), but no UI calls them. The same goes for renaming sets and groups (UPDATE_IMAGE_SET/UPDATE_TRACK_GROUP) and for `recommendedImageId`, which is stored but never acted on. [Intended: full board editing.] (source: src/store/sessionConsoleReducers.ts:21-44) **Native:** Fixed: remove and rename sets, groups, plates and tracks; recommended plate is in the track editor.
+- [x] Settings sheet — "Stage" (title, subtitle, Show frame), "Playback defaults" (default volume on load, duck percent), "Advanced: board pack" (Import replace, Import merge, Export pack, with a skipped/warnings summary), and "Table setup" (the Discord checklist: Krisp off, attenuation 0%, share World View with audio, play the test tone; plus the keyboard list). Also opened from the command palette. (source: src/components/SessionConsole/SessionConsoleSettingsSheet.tsx:1-49, src/components/SessionConsole/sessionConsoleSettingsSections.tsx:29-272, src/components/SessionConsole/DiscordSetupHelp.tsx:1-33)
+- [x] Board pack import — Pick `board.json`. Relative files are sandboxed to the pack folder and copied into temp assets. http(s) assets are fetched with a byte cap. YouTube is kept. Per-row errors are reported as skipped. Replace or merge into the catalog. Plate thumbnails are generated. (source: electron/sessionConsolePackIngest.ts:22-60, electron/sessionConsolePackFiles.ts:130-220, src/utils/sessionConsolePack.ts:569-1075, src/utils/sessionConsoleBoard.ts:149)
+- [x] Board pack export — Pick a folder. Writes `board.json` plus `images/` and `audio/` copies, and YouTube watch URLs. Reports "Board pack exported" or "finished with errors". (source: electron/sessionConsolePackFiles.ts:224-290, src/utils/sessionConsolePack.ts:1076-1125, docs/planning/session-console-pack.example.json)
 - [x] Runtime transport — PLAY_TRACK, PAUSE, RESUME, RESTART (bumps restartSeq), STOP, SET_VOLUME (0-100), SET_DUCKED, FIRE_SFX (bumps sfxSeq), SHOW_PLATE and RETURN_TO_MAP. (source: src/store/sessionConsoleReducers.ts:47-56, 665-779)
 - [x] World audio engine — The YouTube IFrame player or an `<audio>` element. Effective volume = clamp(volume + offset), multiplied by duck% when ducked. Fades: stop 500 ms, switch track 300 ms out then in, mixer change 250 ms. Looping follows the track. Audio is silent until armed. Load or play errors are reported back to the Architect as SESSION_CONSOLE_WORLD_EVENT (armed, unarmed, ready, error). (source: src/components/SessionConsole/WorldAudioEngine.tsx, src/components/SessionConsole/useWorldTransport.ts:41-198, src/components/SessionConsole/worldAudioYoutube.ts, src/types/sessionConsole.ts:117-131, electron/main.ts:1176-1182)
 - [x] Synth SFX — Web Audio oscillator recipes for chime, drone, snap, ping and test tone. Local SFX use decoded buffers that are cached. (source: src/components/SessionConsole/worldStageSfx.ts:6-161)
 - [x] Hotkeys `1` to `9`, `D` and `Esc` (see 1.4).
-- [ ] The YouTube embed needs a non-`file://` origin and a Referer header, which is why the `graphium://` protocol and `YOUTUBE_EMBED_URL_FILTER` exist. (source: electron/main.ts:374-379, 1118-1123, electron/graphiumProtocol.ts)
+- [x] The YouTube embed needs a non-`file://` origin and a Referer header, which is why the `graphium://` protocol and `YOUTUBE_EMBED_URL_FILTER` exist. (source: electron/main.ts:374-379, 1118-1123, electron/graphiumProtocol.ts) **Native:** Native: the hidden WKWebView loads the IFrame API with base URL https://graphium.app.
 
 **Native mapping:** Local audio maps to `AVAudioEngine` (`AVAudioPlayerNode` per bed, mixer volume
 ramps for fades and ducking) and synth SFX to `AVAudioSourceNode` oscillators. YouTube is the
@@ -582,13 +582,13 @@ the generated content as one undoable edit.
 
 ## 6. Platform and device behaviours to reproduce
 
-- [ ] Unified pointer pipeline — Mouse, pen and touch go through the same handlers. Multi-touch (2 or more fingers) is handled separately for pinch and pan. (source: src/components/Canvas/CanvasManager.tsx:701-712, src/components/Canvas/hooks/useCanvasInteraction.ts:226-352)
-- [ ] Pen pressure maps to stroke width through a selectable curve (light, normal, heavy). Pressure sensitivity can be toggled (default on). (source: src/store/touchSettingsStore.ts:1-20, 116-118, src/components/Canvas/CanvasManager.tsx:139-141)
-- [ ] Palm rejection modes: off, touchSize (reject contact over 40 px, the default), stylusOnly (ignore touch once a pen has been seen), smartDelay (ignore touch for 300 ms after the pen lifts). There is also a desktop-only mode that ignores all touch. (source: src/store/touchSettingsStore.ts:21-30, 120-130, 177-215, src/components/Canvas/hooks/useCanvasInteraction.ts:186-223)
-- [ ] Touch settings persist in localStorage `graphium-touch-settings`, but there is no settings UI (PreferencesDialog was removed). **(gap)** [Intended: a Settings pane.] (source: src/store/touchSettingsStore.ts:219, CHANGELOG.md "Removed")
-- [ ] Documented but not implemented in source — Tilt shading, hover preview, barrel-button tool switching and eraser-end. Flags exist (`tiltSensitivityEnabled`, `hoverPreviewEnabled`, `barrelButtonEnabled`), but no code reads tilt, hover or `button`. DEVICE_COMPATIBILITY.md lists them as supported. Treat them as new work if wanted. (source: src/store/touchSettingsStore.ts:62-66, 131-135, DEVICE_COMPATIBILITY.md:125-174)
-- [ ] Touch targets — Mobile menu button at least 48x48, mobile toolbar buttons at least 56 tall, inspector buttons at least 44 tall, home quick actions at least 44. Enforced by tests. (source: tests/touch-targets.spec.ts, src/components/TokenInspector.tsx:246, src/components/HomeScreen.tsx:1739)
-- [ ] Suppressed browser behaviours on the canvas — `touch-action: none`, no text selection, no iOS callout. (source: src/components/Canvas/CanvasManager.tsx:1126-1137)
+- [x] Unified pointer pipeline — Mouse, pen and touch go through the same handlers. Multi-touch (2 or more fingers) is handled separately for pinch and pan. (source: src/components/Canvas/CanvasManager.tsx:701-712, src/components/Canvas/hooks/useCanvasInteraction.ts:226-352) **Native:** Mouse, pen (tablet events) and trackpad. No touchscreen on a Mac.
+- [x] Pen pressure maps to stroke width through a selectable curve (light, normal, heavy). Pressure sensitivity can be toggled (default on). (source: src/store/touchSettingsStore.ts:1-20, 116-118, src/components/Canvas/CanvasManager.tsx:139-141) **Native:** Settings > Pen tablet.
+- [x] Palm rejection modes: off, touchSize (reject contact over 40 px, the default), stylusOnly (ignore touch once a pen has been seen), smartDelay (ignore touch for 300 ms after the pen lifts). There is also a desktop-only mode that ignores all touch. (source: src/store/touchSettingsStore.ts:21-30, 120-130, 177-215, src/components/Canvas/hooks/useCanvasInteraction.ts:186-223) **Native:** Not applicable: Macs have no touchscreen, so there is nothing to reject.
+- [x] Touch settings persist in localStorage `graphium-touch-settings`, but there is no settings UI (PreferencesDialog was removed). **(gap)** [Intended: a Settings pane.] (source: src/store/touchSettingsStore.ts:219, CHANGELOG.md "Removed") **Native:** Fixed: Settings (⌘,) has appearance and pen pressure.
+- [x] Documented but not implemented in source — Tilt shading, hover preview, barrel-button tool switching and eraser-end. Flags exist (`tiltSensitivityEnabled`, `hoverPreviewEnabled`, `barrelButtonEnabled`), but no code reads tilt, hover or `button`. DEVICE_COMPATIBILITY.md lists them as supported. Treat them as new work if wanted. (source: src/store/touchSettingsStore.ts:62-66, 131-135, DEVICE_COMPATIBILITY.md:125-174) **Native:** Not ported (not implemented in TS either).
+- [x] Touch targets — Mobile menu button at least 48x48, mobile toolbar buttons at least 56 tall, inspector buttons at least 44 tall, home quick actions at least 44. Enforced by tests. (source: tests/touch-targets.spec.ts, src/components/TokenInspector.tsx:246, src/components/HomeScreen.tsx:1739) **Native:** Not applicable: desktop pointer input; controls use standard macOS sizes.
+- [x] Suppressed browser behaviours on the canvas — `touch-action: none`, no text selection, no iOS callout. (source: src/components/Canvas/CanvasManager.tsx:1126-1137) **Native:** Not applicable.
 
 **Native mapping:** On macOS, the relevant inputs are the mouse, Magic Trackpad (gesture events,
 not raw touches), Wacom/Huion tablets (`NSEvent.pressure`, `.tilt`, `.subtype == .tabletPoint`,
@@ -601,13 +601,13 @@ because there are no direct touch screens. Collapse the four modes into a "Table
 
 ## 7. Accessibility
 
-- [ ] WCAG 2.1 AA contrast for all UI text and controls, using Radix Colors steps 11-12 on steps 1-3 and borders at 3:1 or better. Disabled text is intentionally below AA. The canvas is exempt. Checked with axe-core in Playwright. (source: docs/features/wcag-audit.md, tests/accessibility.spec.ts)
-- [ ] World View projector legibility test (see 4.1). (source: tests/world-legibility.spec.ts)
-- [ ] Dialogs and sheets trap focus, close on Esc and expose `role="dialog"`. Templates restores focus. (source: CHANGELOG.md "Every dialog and sheet now traps focus", src/components/HomeScreen.tsx:228-273)
-- [ ] ARIA — Labelled icon buttons throughout (for example "Select tool", "Pause game", "Close notification", "Remove {name} from recent campaigns", "Session volume", "Show plate {name}"). Tool buttons use `aria-pressed`. The active map uses `aria-current`. Disclosures use `aria-expanded`. (source: src/components/Toolbar.tsx:92-196, src/components/Sidebar.tsx:320-322, src/components/Toast.tsx:91, src/components/SessionConsole/sessionConsoleSettingsSections.tsx:212)
-- [ ] Reduced motion — Durations drop to 0 under `prefers-reduced-motion`. WorldStage plate crossfade and YouTube fades are skipped. The home "Lite mode" is a manual equivalent. (source: src/styles/theme.css:404-410, src/components/SessionConsole/WorldStage.tsx:41, 71, src/components/SessionConsole/worldAudioYoutube.ts:189)
-- [ ] Image alt text for plates (an editable "Alt text" field). (source: src/components/SessionConsole/SessionConsoleEditorSheet.tsx:213, src/components/SessionConsole/WorldStage.tsx:24-30)
-- [ ] Canvas accessibility is absent today. Tokens and doors are not exposed to assistive technology. Consider adding this natively (see the mapping).
+- [x] WCAG 2.1 AA contrast for all UI text and controls, using Radix Colors steps 11-12 on steps 1-3 and borders at 3:1 or better. Disabled text is intentionally below AA. The canvas is exempt. Checked with axe-core in Playwright. (source: docs/features/wcag-audit.md, tests/accessibility.spec.ts) **Native:** Native: system colours and controls, which meet macOS contrast and support Increase Contrast.
+- [ ] World View projector legibility test (see 4.1). (source: tests/world-legibility.spec.ts) **Native:** Open: no automated legibility test yet.
+- [x] Dialogs and sheets trap focus, close on Esc and expose `role="dialog"`. Templates restores focus. (source: CHANGELOG.md "Every dialog and sheet now traps focus", src/components/HomeScreen.tsx:228-273) **Native:** Native sheets and windows handle focus and Esc.
+- [x] ARIA — Labelled icon buttons throughout (for example "Select tool", "Pause game", "Close notification", "Remove {name} from recent campaigns", "Session volume", "Show plate {name}"). Tool buttons use `aria-pressed`. The active map uses `aria-current`. Disclosures use `aria-expanded`. (source: src/components/Toolbar.tsx:92-196, src/components/Sidebar.tsx:320-322, src/components/Toast.tsx:91, src/components/SessionConsole/sessionConsoleSettingsSections.tsx:212) **Native:** Icon buttons have labels; board thumbnails say "Show plate {name}"; tracks say "Play {title}"; toast close is labelled.
+- [x] Reduced motion — Durations drop to 0 under `prefers-reduced-motion`. WorldStage plate crossfade and YouTube fades are skipped. The home "Lite mode" is a manual equivalent. (source: src/styles/theme.css:404-410, src/components/SessionConsole/WorldStage.tsx:41, 71, src/components/SessionConsole/worldAudioYoutube.ts:189) **Native:** Reduce Motion skips the plate crossfade and audio fades.
+- [x] Image alt text for plates (an editable "Alt text" field). (source: src/components/SessionConsole/SessionConsoleEditorSheet.tsx:213, src/components/SessionConsole/WorldStage.tsx:24-30)
+- [x] Canvas accessibility is absent today. Tokens and doors are not exposed to assistive technology. Consider adding this natively (see the mapping). **Native:** Added: tokens and doors are VoiceOver elements; press selects a token or toggles a door.
 
 **Native mapping:** Use system colours and semantic fonts so Increase Contrast and Dynamic Type work.
 Honour `NSWorkspace.accessibilityDisplayShouldReduceMotion` and `accessibilityReduceMotion`.

@@ -52,14 +52,6 @@ enum PreferenceKey {
     static let hiddenRecents = "graphium.hiddenRecents"
 }
 
-/// Pen settings both windows render with, so strokes look the same on the projector.
-struct PenPreferences {
-    @AppStorage(PreferenceKey.pressureEnabled) var enabled = true
-    @AppStorage(PreferenceKey.pressureCurve) var curveRaw = PressureCurve.normal.rawValue
-
-    var curve: PressureCurve { PressureCurve(rawValue: curveRaw) ?? .normal }
-}
-
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Launch into the Welcome window rather than the system open panel (PARITY §1.2).
