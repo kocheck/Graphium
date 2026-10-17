@@ -319,8 +319,10 @@ final class MapCanvasNSView: NSView {
         guard map.gridType != .hidden, map.gridSize * viewport.zoom >= 4 else { return }
         let color =
             map.gridColor.lowercased() == GameMap.defaultGridColor
-            // The default colour adapts to the theme, as in the TS app.
-            ? NSColor.labelColor.withAlphaComponent(highContrast ? 0.55 : 0.25) : (NSColor(hex: map.gridColor) ?? .separatorColor)
+            // The default colour adapts to the theme, as in the TS app; a custom colour draws
+            // at 50% like every TS grid (GridOverlay opacity), stronger with Increase Contrast.
+            ? NSColor.labelColor.withAlphaComponent(highContrast ? 0.55 : 0.25)
+            : (NSColor(hex: map.gridColor) ?? .separatorColor).withAlphaComponent(highContrast ? 0.8 : 0.5)
         context.setStrokeColor(color.cgColor)
         context.setFillColor(color.cgColor)
         context.setLineWidth(1 / viewport.zoom)
