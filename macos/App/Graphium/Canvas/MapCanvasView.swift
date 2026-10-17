@@ -124,7 +124,8 @@ final class MapCanvasNSView: NSView {
         else { return nil }
         let size = map.tokenSize(token, library: library)
         let handle = 10 / viewport.zoom
-        return (token, Bounds(x: token.x + size - handle / 2, y: token.y + size - handle / 2, width: handle, height: handle))
+        let bottom = token.y + map.tokenDisplayYOffset(size: size) + size  // drawn bottom edge (iso lift)
+        return (token, Bounds(x: token.x + size - handle / 2, y: bottom - handle / 2, width: handle, height: handle))
     }
 
     private var interaction = Interaction.idle
@@ -259,7 +260,7 @@ final class MapCanvasNSView: NSView {
             let size = max(map.gridSize * 0.25, base + max(current.x - start.x, current.y - start.y))
             context.setStrokeColor(NSColor.systemBlue.cgColor)
             context.setLineWidth(2 / viewport.zoom)
-            context.stroke(CGRect(x: token.x, y: token.y, width: size, height: size))
+            context.stroke(CGRect(x: token.x, y: token.y + map.tokenDisplayYOffset(size: size), width: size, height: size))
         }
         if case .calibrating(let start, let current) = interaction {
             context.setStrokeColor(NSColor.systemOrange.cgColor)
@@ -391,11 +392,12 @@ final class MapCanvasNSView: NSView {
             height: visible.height + 2 * margin)
         for token in map.tokens where !hiddenTokenIDs.contains(token.id) {
             let size = map.tokenSize(token, library: library)
-            var rect = CGRect(x: token.x, y: token.y, width: size, height: size)
+            let lift = map.tokenDisplayYOffset(size: size)  // iso tokens stand on their diamond (TS)
+            var rect = CGRect(x: token.x, y: token.y + lift, width: size, height: size)
             let isSelected = selection.contains(token.id)
             if let offset = dragOffset, isSelected {
                 if offset.duplicate {
-                    drawToken(token, in: rect, selected: false, alpha: 1, context: context)  // original stays
+                    drawToken(token, in: rect, lift: lift, selected: false, alpha: 1, context: context)  // original stays
                 }
                 rect = rect.offsetBy(dx: offset.dx, dy: offset.dy)
                 if let target = preview[token.id] {
@@ -403,15 +405,15 @@ final class MapCanvasNSView: NSView {
                     context.setStrokeColor(NSColor.systemBlue.cgColor)
                     context.setLineWidth(2 / viewport.zoom)
                     context.setLineDash(phase: 0, lengths: [6 / viewport.zoom, 4 / viewport.zoom])
-                    context.strokeEllipse(in: CGRect(x: target.x, y: target.y, width: size, height: size))
+                    context.strokeEllipse(in: CGRect(x: target.x, y: target.y + lift, width: size, height: size))
                     context.restoreGState()
                 }
-                drawToken(token, in: rect, selected: true, alpha: 0.6, context: context)
+                drawToken(token, in: rect, lift: lift, selected: true, alpha: 0.6, context: context)
                 continue
             }
             // Cull tokens well off screen (2-cell margin, as in TS).
-            guard padded.intersects(Bounds(x: token.x, y: token.y, width: size, height: size)) else { continue }
-            drawToken(token, in: rect, selected: isSelected, alpha: 1, context: context)
+            guard padded.intersects(Bounds(x: token.x, y: token.y + lift, width: size, height: size)) else { continue }
+            drawToken(token, in: rect, lift: lift, selected: isSelected, alpha: 1, context: context)
         }
     }
 
@@ -455,7 +457,8 @@ final class MapCanvasNSView: NSView {
         context.restoreGState()
     }
 
-    private func drawToken(_ token: Token, in rect: CGRect, selected: Bool, alpha: CGFloat, context: CGContext) {
+    /// `lift` is the iso display offset already applied to `rect`; the label stays under the footprint (TS).
+    private func drawToken(_ token: Token, in rect: CGRect, lift: Double, selected: Bool, alpha: CGFloat, context: CGContext) {
         context.saveGState()
         context.setAlpha(alpha)
         if let image = imageProvider(token.src) {
@@ -478,7 +481,7 @@ final class MapCanvasNSView: NSView {
         ]
         let label = NSAttributedString(string: name, attributes: attributes)
         let labelSize = label.size()
-        label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY + 2))
+        label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY - lift + 8))
     }
 
     // MARK: Pointer input

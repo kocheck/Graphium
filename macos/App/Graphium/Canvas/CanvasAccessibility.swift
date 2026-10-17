@@ -27,7 +27,7 @@ extension MapCanvasNSView {
             let kind = resolved.type == .pc ? "PC" : resolved.type == .npc ? "NPC" : "token"
             let element = makeElement(
                 label: "\(resolved.name), \(kind)\(selection.contains(token.id) ? ", selected" : "")",
-                bounds: map.tokenBounds(token, library: library))
+                bounds: map.tokenDisplayBounds(token, library: library))
             if let editing {
                 let id = token.id
                 element.onPress = { editing.setSelection([id]) }

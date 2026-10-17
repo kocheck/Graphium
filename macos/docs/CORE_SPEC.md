@@ -440,6 +440,13 @@ Snap inputs/outputs are **top-left** positions for tokens; "legacy mode" (width 
 Known quirk (preserve unless deliberately fixed): iso `pixelToGrid` uses `floor`, so the "cell" of a point is the
 diamond whose **top vertex** is `gridToPixel(q,r)`; snapping therefore lands on that diamond's top vertex rather
 than the visual centre for points in the upper half. Round-trip `pixelToGrid(gridToPixel(c)) == c` holds and is tested.
+**Native:** deliberately fixed. Swift `IsoGrid.pixelToGrid` uses `round` (`jsRound`) on `col` and `row`, so a point
+resolves to the diamond whose drawn centre is nearest and snapping lands on the visual centre. The round trip still
+holds. Saved TS iso positions load unchanged but can sit half a cell off the native snap grid until next moved.
+
+Token display (TS `TokenNode.tsx:149-150`): on ISOMETRIC grids the token is drawn at `y − size/2` (it stands on its
+diamond); the name label stays at `y + size + 8`. Swift: `GameMap.tokenDisplayYOffset(size:)` /
+`tokenDisplayBounds`, used for drawing, hit-testing and marquee; `tokenBounds` stays the stored footprint.
 
 Tests `src/utils/grid.test.ts` (`snapToGrid`): legacy behavior (no dimensions provided) › should snap to top-left corner when dimensions are undefined; should snap to nearest grid intersection; should handle negative coordinates; should handle zero dimensions (zero-sized tokens). dimension-aware snapping › odd cell count tokens (snap to cell center) › should snap 1x1 / 3x3 / 5x5 token (odd) to cell center; even cell count tokens › should snap 2x2 / 4x4 token (even) to grid intersection; non-square tokens › should handle different width and height (odd x even) / (even x odd); edge cases › should handle tokens already perfectly aligned (odd) / (even); should handle very small tokens (less than grid size); should handle negative coordinates with dimensions; grid size variations › should work with different grid sizes; should work with very small grid sizes; grid type parameter › should default to LINES (square grid) when gridType not provided; should work with explicit DOTS grid type (same as square); should work with HIDDEN grid type (same as square).
 

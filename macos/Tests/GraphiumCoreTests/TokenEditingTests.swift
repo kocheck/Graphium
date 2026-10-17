@@ -80,6 +80,22 @@ final class TokenEditingTests: XCTestCase {
         XCTAssertNil(map.token(at: Point2D(x: 200, y: 200), library: [:]))
     }
 
+    func testIsometricTokensAreDrawnAndHitHalfTheirHeightHigher() {
+        var map = GameMap(gridSize: 50, gridType: .isometric)
+        map.tokens = [Token(id: "a", x: 75, y: 75, src: "", scale: 2)]
+        XCTAssertEqual(map.tokenDisplayYOffset(size: 100), -50)
+        XCTAssertEqual(map.tokenBounds(map.tokens[0], library: [:]), Bounds(x: 75, y: 75, width: 100, height: 100))
+        XCTAssertEqual(map.tokenDisplayBounds(map.tokens[0], library: [:]), Bounds(x: 75, y: 25, width: 100, height: 100))
+        XCTAssertEqual(map.token(at: Point2D(x: 100, y: 30), library: [:])?.id, "a", "the lifted art is hit")
+        XCTAssertNil(map.token(at: Point2D(x: 100, y: 160), library: [:]), "the uncovered lower half is not")
+        XCTAssertEqual(
+            map.tokenIDs(intersecting: Bounds(corner: Point2D(x: 0, y: 0), corner: Point2D(x: 80, y: 30)), library: [:]), ["a"])
+
+        map.gridType = .hexagonal
+        XCTAssertEqual(map.tokenDisplayYOffset(size: 100), 0, "only iso lifts")
+        XCTAssertEqual(map.tokenDisplayBounds(map.tokens[0], library: [:]), map.tokenBounds(map.tokens[0], library: [:]))
+    }
+
     func testDeleteMapRules() throws {
         var campaign = Campaign.makeDefault()
         XCTAssertThrowsError(try campaign.deleteMap(id: campaign.activeMapID)) {
