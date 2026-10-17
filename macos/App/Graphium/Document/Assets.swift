@@ -7,7 +7,13 @@ import UniformTypeIdentifiers
 /// Decodes package assets to CGImages once and shares them between the
 /// Architect and World View canvases.
 final class AssetImageCache: @unchecked Sendable {
-    private let cache = NSCache<NSString, CGImage>()
+    /// Decoded images are large (4 bytes a pixel), so the cache is bounded and
+    /// evicts under memory pressure; evicted images decode again on demand.
+    private let cache: NSCache<NSString, CGImage> = {
+        let cache = NSCache<NSString, CGImage>()
+        cache.totalCostLimit = 768 * 1024 * 1024
+        return cache
+    }()
 
     func image(named name: String, in assets: [String: Data]) -> CGImage? {
         if let hit = cache.object(forKey: name as NSString) { return hit }
@@ -15,7 +21,7 @@ final class AssetImageCache: @unchecked Sendable {
             let source = CGImageSourceCreateWithData(data as CFData, nil),
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else { return nil }
-        cache.setObject(image, forKey: name as NSString)
+        cache.setObject(image, forKey: name as NSString, cost: image.bytesPerRow * image.height)
         return image
     }
 }
@@ -24,7 +30,7 @@ final class AssetImageCache: @unchecked Sendable {
 /// (CORE_SPEC §3.13) and re-encoded. WebP can't be encoded with ImageIO on every
 /// supported macOS, so images with alpha are stored as PNG and the rest as
 /// JPEG at 85% (the TS app's WebP quality).
-struct ImportedImage {
+struct ImportedImage: Sendable {
     var preferredName: String
     var data: Data
     var width: Int
@@ -38,6 +44,14 @@ struct ImportedImage {
             case .unreadable(let name): return "“\(name)” isn't an image Graphium can read."
             }
         }
+    }
+
+    /// Decodes, resizes and re-encodes off the main thread (PARITY §3.15), with
+    /// security-scoped access held for the duration.
+    static func loadInBackground(from url: URL, kind: ImageKind) async throws -> ImportedImage {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        return try await Task.detached(priority: .userInitiated) { try load(from: url, kind: kind) }.value
     }
 
     static func load(from url: URL, kind: ImageKind) throws -> ImportedImage {

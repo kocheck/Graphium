@@ -14,6 +14,8 @@ struct ArchitectView: View {
     @State private var showingPerformance = false
     @State private var legacyExport: LegacyGraphiumFile?
     @State private var showingColorPopover = false
+    /// Image imports in flight (decoded off the main thread); shows a spinner.
+    @State private var importsInFlight = 0
     /// Sidebar shown or hidden, restored with the window (column widths are restored by the system).
     @SceneStorage("architect.sidebarHidden") private var sidebarHidden = false
 
@@ -395,6 +397,13 @@ struct ArchitectView: View {
         .overlay(alignment: .top) { canvasBanner }
         .overlay(alignment: .bottomTrailing) {
             if showingPerformance { PerformanceOverlay(document: document).padding(12) }
+        }
+        .overlay {
+            if importsInFlight > 0 {
+                ProgressView("Importing image…")
+                    .padding(16)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+            }
         }
         .navigationTitle(campaign.activeMap.name)
         .navigationSubtitle(campaign.name)
@@ -876,42 +885,53 @@ struct ArchitectView: View {
     }
 
     private func setMapImage(from url: URL) {
-        do {
-            let image = try withAccess(to: url) { try ImportedImage.load(from: url, kind: .map) }
-            let name = document.addAsset(image.data, preferredName: image.preferredName)
-            document.edit("Set Map Image", undoManager: undoManager) { campaign in
-                campaign.activeMap.background = MapBackground(
-                    src: name, width: Double(image.width), height: Double(image.height))
+        let mapID = document.campaign.activeMapID
+        importsInFlight += 1
+        Task { @MainActor in
+            defer { importsInFlight -= 1 }
+            do {
+                let image = try await ImportedImage.loadInBackground(from: url, kind: .map)
+                let name = document.addAsset(image.data, preferredName: image.preferredName)
+                document.edit("Set Map Image", undoManager: undoManager) { campaign in
+                    // The map the user chose it for, even if they switched maps meanwhile.
+                    guard let i = campaign.maps.firstIndex(where: { $0.id == mapID }) else { return }
+                    campaign.maps[i].background = MapBackground(
+                        src: name, width: Double(image.width), height: Double(image.height))
+                }
+            } catch {
+                errorMessage = error.localizedDescription
             }
-        } catch {
-            errorMessage = error.localizedDescription
         }
     }
 
     /// Adds one token per image. `point` is the top-left for the first token, or its
     /// centre when `centred` (Finder drops land under the pointer). Each is snapped.
     private func addTokens(from urls: [URL], at point: Point2D, centred: Bool = false) {
-        var created: [Token] = []
         let map = document.campaign.activeMap
-        for (offset, url) in urls.enumerated() {
-            do {
-                let image = try withAccess(to: url) { try ImportedImage.load(from: url, kind: .token) }
-                let name = document.addAsset(image.data, preferredName: image.preferredName)
-                let size = map.gridSize
-                let shift = Double(offset) * size
-                let topLeft = Point2D(
-                    x: point.x + shift - (centred ? size / 2 : 0), y: point.y - (centred ? size / 2 : 0))
-                let snapped = snapToGrid(topLeft, gridSize: size, gridType: map.gridType, width: size, height: size)
-                created.append(Token(x: snapped.x, y: snapped.y, src: name, type: .npc, name: "New Token"))
-            } catch {
-                errorMessage = error.localizedDescription
+        importsInFlight += 1
+        Task { @MainActor in
+            defer { importsInFlight -= 1 }
+            var created: [Token] = []
+            for (offset, url) in urls.enumerated() {
+                do {
+                    let image = try await ImportedImage.loadInBackground(from: url, kind: .token)
+                    let name = document.addAsset(image.data, preferredName: image.preferredName)
+                    let size = map.gridSize
+                    let shift = Double(offset) * size
+                    let topLeft = Point2D(
+                        x: point.x + shift - (centred ? size / 2 : 0), y: point.y - (centred ? size / 2 : 0))
+                    let snapped = snapToGrid(topLeft, gridSize: size, gridType: map.gridType, width: size, height: size)
+                    created.append(Token(x: snapped.x, y: snapped.y, src: name, type: .npc, name: "New Token"))
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
             }
+            guard !created.isEmpty, document.campaign.activeMapID == map.id else { return }
+            document.edit(created.count == 1 ? "Add Token" : "Add Tokens", undoManager: undoManager) {
+                $0.activeMap.tokens.append(contentsOf: created)
+            }
+            selection = Set(created.map(\.id))
         }
-        guard !created.isEmpty else { return }
-        document.edit(created.count == 1 ? "Add Token" : "Add Tokens", undoManager: undoManager) {
-            $0.activeMap.tokens.append(contentsOf: created)
-        }
-        selection = Set(created.map(\.id))
     }
 
     /// Deletes selected tokens, strokes and doors in one undoable step.

@@ -92,8 +92,18 @@ final class CampaignDocument: ReferenceFileDocument {
     }
 
     func fileWrapper(snapshot: CampaignPackage, configuration: WriteConfiguration) throws -> FileWrapper {
+        // Asset names are never reused for different bytes, so an asset already in the
+        // saved package is passed through untouched. Saves and autosaves then rewrite
+        // only campaign.json and new assets, not every image and track.
+        let existing = configuration.existingFile?.fileWrappers?[CampaignPackage.assetsDirectoryName]?.fileWrappers ?? [:]
         var assetWrappers: [String: FileWrapper] = [:]
         for (name, data) in snapshot.assets {
+            if let saved = existing[name], saved.isRegularFile,
+                (saved.fileAttributes[FileAttributeKey.size.rawValue] as? NSNumber)?.intValue == data.count
+            {
+                assetWrappers[name] = saved
+                continue
+            }
             let wrapper = FileWrapper(regularFileWithContents: data)
             wrapper.preferredFilename = name
             assetWrappers[name] = wrapper

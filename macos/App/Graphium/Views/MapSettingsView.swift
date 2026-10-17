@@ -19,6 +19,7 @@ struct MapSettingsView: View {
     /// TS enters calibration straight after an upload (PARITY §3.2).
     @State private var calibrateAfterSave = false
     @State private var uploadedImage = false
+    @State private var loadingImage = false
 
     init(
         document: CampaignDocument, map: GameMap, isNew: Bool, onSave: @escaping (GameMap) -> Void,
@@ -63,7 +64,9 @@ struct MapSettingsView: View {
                             Text("None").foregroundStyle(.secondary)
                         }
                         Spacer()
+                        if loadingImage { ProgressView().controlSize(.small) }
                         Button(map.background == nil ? "Choose…" : "Replace…") { choosingImage = true }
+                            .disabled(loadingImage)
                     }
                     if uploadedImage, map.gridType.isSquare {
                         Toggle("Calibrate to the grid after saving", isOn: $calibrateAfterSave)
@@ -94,7 +97,7 @@ struct MapSettingsView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(trimmedName.isEmpty)
+                .disabled(trimmedName.isEmpty || loadingImage)
             }
         }
         .padding(20)
@@ -121,16 +124,18 @@ struct MapSettingsView: View {
     }
 
     private func loadImage(_ url: URL) {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        do {
-            let image = try ImportedImage.load(from: url, kind: .map)
-            let name = document.addAsset(image.data, preferredName: image.preferredName)
-            map.background = MapBackground(src: name, width: Double(image.width), height: Double(image.height))
-            calibrateAfterSave = true
-            uploadedImage = true
-        } catch {
-            errorMessage = error.localizedDescription
+        loadingImage = true
+        Task { @MainActor in
+            defer { loadingImage = false }
+            do {
+                let image = try await ImportedImage.loadInBackground(from: url, kind: .map)
+                let name = document.addAsset(image.data, preferredName: image.preferredName)
+                map.background = MapBackground(src: name, width: Double(image.width), height: Double(image.height))
+                calibrateAfterSave = true
+                uploadedImage = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }
