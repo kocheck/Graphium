@@ -224,9 +224,9 @@ reimplemented IPC meter.
 - [ ] Header — Shows the campaign name (truncated, with the full name as a tooltip) and a collapse/expand button (w-64 to w-16). (source: src/components/Sidebar.tsx:268-295)
 - [ ] MAPS section (collapsible) — Maps sorted alphabetically. Clicking switches maps. The active map shows `aria-current`. A hover gear opens Map Settings in edit mode. A "New Map" button opens Map Settings in create mode. (source: src/components/Sidebar.tsx:302-368)
 - [x] Door Controls section — Only shown when doors exist. Offers "Open all unlocked doors", "Close all open doors", and "Unlock all" (only when any door is locked). (source: src/components/DoorControls.tsx:34-48, 75-120, src/components/Sidebar.tsx:373)
-- [ ] LIBRARY section — "Place" (opens the command palette), "Add" (pick an image, process it as a TOKEN, then show the Add to Library dialog), "Manage library" (opens Library Manager). (source: src/components/Sidebar.tsx:376-428, 213-262)
-- [ ] Quick Token Sidebar — "Recent History" (last 3 unique library tokens used on this map) and "Party Tokens" (a generic placeholder plus up to 5 PC library tokens, deduped against recents). Every item can be dragged onto the canvas. (source: src/components/QuickTokenSidebar.tsx:1-168, src/utils/tokenUtils.ts)
-- [ ] Custom drag image (64x64) when dragging a library token. (source: src/components/Sidebar.tsx:174-210)
+- [x] LIBRARY section — "Place" (opens the command palette), "Add" (pick an image, process it as a TOKEN, then show the Add to Library dialog), "Manage library" (opens Library Manager). (source: src/components/Sidebar.tsx:376-428, 213-262)
+- [x] Quick Token Sidebar — "Recent History" (last 3 unique library tokens used on this map) and "Party Tokens" (a generic placeholder plus up to 5 PC library tokens, deduped against recents). Every item can be dragged onto the canvas. (source: src/components/QuickTokenSidebar.tsx:1-168, src/utils/tokenUtils.ts)
+- [x] Custom drag image (64x64) when dragging a library token. (source: src/components/Sidebar.tsx:174-210)
 - [ ] SESSION CONSOLE section — Hosts the Session Console panel (see 5.4). (source: src/components/Sidebar.tsx:432-434)
 
 **Native mapping:** Use a `NavigationSplitView` sidebar with `Section`s and `DisclosureGroup`s.
@@ -252,7 +252,7 @@ touch-bar-like floating HUD is optional.
 - [x] Name field — The placeholder reads "Multiple tokens" when several are selected. Edits apply to every selected token. (source: src/components/TokenInspector.tsx:145-150, 263-280)
 - [x] Type — PC/NPC toggle. Hint: "Only PC tokens emit vision for Fog of War". (source: src/components/TokenInspector.tsx:152-157, 289-343)
 - [x] Vision radius — Presets 0, 30, 60 and 120 ft, plus a number field from 0 to 300 in steps of 5. Applies to every selected token. (source: src/components/TokenInspector.tsx:159-164, 350-398)
-- [ ] "Save to library" (single, library-linked token) — Writes the name, type and vision back as library defaults. (source: src/components/TokenInspector.tsx:166-203, 400-430)
+- [x] "Save to library" (single, library-linked token) — Writes the name, type and vision back as library defaults. (source: src/components/TokenInspector.tsx:166-203, 400-430)
 - [x] Read-only details — Scale (for example "1x") and rounded position. (source: src/components/TokenInspector.tsx:431-450)
 - [x] Prototype/instance resolution — Each token property falls back to the linked library item's defaults (name, type, visionRadius, scale, movementSpeed). (source: src/store/gameStore.ts:25-62, src/hooks/useTokenData.ts)
 - [ ] Not editable anywhere in the UI: per-token `movementSpeed` (always the 30 ft default unless a library default sets it), token rotation, and explicit numeric scale. (source: src/components/Canvas/OverlayLayer.tsx:131, src/hooks/useTokenData.ts)
@@ -322,9 +322,9 @@ Render with a `CAShapeLayer` path rebuilt on viewport change, or in a Metal pass
 
 ### 3.4 Tokens
 
-- [ ] Add by dragging a library or quick token onto the canvas — Creates a library-linked instance at the snapped drop point. (source: src/components/Canvas/CanvasManager.tsx:858-879)
+- [x] Add by dragging a library or quick token onto the canvas — Creates a library-linked instance at the snapped drop point. (source: src/components/Canvas/CanvasManager.tsx:858-879)
 - [ ] Add by dragging the generic token — A theme-coloured SVG placeholder named "Generic Token", type NPC. (source: src/components/Canvas/CanvasManager.tsx:880-902)
-- [ ] Add by dropping an image file — Opens the 1:1 ImageCropper (zoom 1x-3x by slider, wheel or pinch, "Crop & Import" / Cancel). Then creates a "New Token" (NPC) with an embedded data URL. This token is not added to the library. (source: src/components/Canvas/CanvasManager.tsx:909-961, src/components/ImageCropper.tsx:24-58)
+- [x] Add by dropping an image file — Opens the 1:1 ImageCropper (zoom 1x-3x by slider, wheel or pinch, "Crop & Import" / Cancel). Then creates a "New Token" (NPC) with an embedded data URL. This token is not added to the library. (source: src/components/Canvas/CanvasManager.tsx:909-961, src/components/ImageCropper.tsx:24-58)
 - [ ] Add from the command palette at the map centre (see 1.5).
 - [ ] Rendering — Square image of size gridSize x scale. The name label (12pt bold, theme text colour) sits below. Iso grids offset the token up by half its height. Hover shows a soft shadow. A selected token gets a dashed blue ring. A dragged token is semi-transparent with a strong shadow. (source: src/components/Canvas/TokenNode.tsx:36-100, 145-215)
 - [ ] Move — Pointer drag with a 5 px threshold. Multi-select drags move together. Every token snaps on release. Live positions stream to World View during the drag (rAF-batched). (source: src/components/Canvas/hooks/useTokenDrag.ts:94, 106-116, 330-392)
@@ -519,13 +519,13 @@ place, Versions, Revert, dirty dot, close prompts and Open Recent all come free.
 
 ### 5.3 Asset library (persistent, cross-campaign)
 
-- [ ] Storage — `userData/library/assets/{id}.webp`, `thumb-{id}.webp`, and `library/index.json`. On startup, library items are merged into the campaign's tokenLibrary with de-duplication by id. (source: electron/main.ts:905-960, src/App.tsx:177-218)
-- [ ] Add to Library dialog — Preview, Name (required, placeholder "e.g., Red Dragon"), Category (PC, Monsters [default], NPCs, Props, Items, Custom), and Tags (comma-separated, trimmed, placeholder "e.g., dragon, red, large"). Generates a 128x128 WebP thumbnail. A toast reports the result. (source: src/components/AssetLibrary/AddToLibraryDialog.tsx:1-30, 42, 75-150, 216-270)
-- [ ] Library Manager modal — Search (fuzzy), a category filter (All plus the categories in use), and a thumbnail grid. Each card has hover actions Edit and Delete, a click or "Add to map" action, and is draggable onto the canvas. The footer shows the asset count and an Upload button. (source: src/components/AssetLibrary/LibraryManager.tsx:1-25, 86, 108-160, 226-400)
-- [ ] Delete asset — Asks for confirmation, then removes the files and index entry and shows a toast. (source: src/components/AssetLibrary/LibraryManager.tsx:151-170, electron/main.ts:962-983)
-- [ ] Token Metadata Editor — Name (required), category (default Custom), tags, default scale (must be positive), default type PC/NPC, and default vision radius (must be at least 0, only shown for PC). Saves to the index and the store and shows a toast. Opened from Library Manager and the command palette. (source: src/components/AssetLibrary/TokenMetadataEditor.tsx:1-31, 84-125, electron/main.ts:985-1024)
-- [ ] Token Inspector "Save to library" writes instance overrides back as defaults (see 2.3).
-- [ ] Token images are resized to at most 512 px WebP. (source: src/utils/AssetProcessor.ts:7-9, 60-71)
+- [x] Storage — `userData/library/assets/{id}.webp`, `thumb-{id}.webp`, and `library/index.json`. On startup, library items are merged into the campaign's tokenLibrary with de-duplication by id. (source: electron/main.ts:905-960, src/App.tsx:177-218)
+- [x] Add to Library dialog — Preview, Name (required, placeholder "e.g., Red Dragon"), Category (PC, Monsters [default], NPCs, Props, Items, Custom), and Tags (comma-separated, trimmed, placeholder "e.g., dragon, red, large"). Generates a 128x128 WebP thumbnail. A toast reports the result. (source: src/components/AssetLibrary/AddToLibraryDialog.tsx:1-30, 42, 75-150, 216-270)
+- [x] Library Manager modal — Search (fuzzy), a category filter (All plus the categories in use), and a thumbnail grid. Each card has hover actions Edit and Delete, a click or "Add to map" action, and is draggable onto the canvas. The footer shows the asset count and an Upload button. (source: src/components/AssetLibrary/LibraryManager.tsx:1-25, 86, 108-160, 226-400)
+- [x] Delete asset — Asks for confirmation, then removes the files and index entry and shows a toast. (source: src/components/AssetLibrary/LibraryManager.tsx:151-170, electron/main.ts:962-983)
+- [x] Token Metadata Editor — Name (required), category (default Custom), tags, default scale (must be positive), default type PC/NPC, and default vision radius (must be at least 0, only shown for PC). Saves to the index and the store and shows a toast. Opened from Library Manager and the command palette. (source: src/components/AssetLibrary/TokenMetadataEditor.tsx:1-31, 84-125, electron/main.ts:985-1024)
+- [x] Token Inspector "Save to library" writes instance overrides back as defaults (see 2.3).
+- [x] Token images are resized to at most 512 px WebP. (source: src/utils/AssetProcessor.ts:7-9, 60-71)
 
 **Native mapping:** Store the library in `Application Support/Graphium/Library/` as one folder per
 asset with a JSON/Codable index, or use SwiftData. Present it as a sheet with `LazyVGrid`,
