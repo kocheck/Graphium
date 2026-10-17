@@ -39,19 +39,23 @@ private struct WorldView: View {
     @AppStorage(Prefs.pressureEnabled) private var pressureEnabled = true
     @AppStorage(Prefs.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
 
+    /// The active map with the DM's in-progress drag applied, so fog and NPC visibility follow it live.
+    private func liveMap(_ campaign: Campaign) -> GameMap {
+        var map = campaign.activeMap
+        guard !liveDrag.positions.isEmpty else { return map }
+        for i in map.tokens.indices {
+            if let p = liveDrag.positions[map.tokens[i].id] {
+                map.tokens[i].x = p.x
+                map.tokens[i].y = p.y
+            }
+        }
+        return map
+    }
+
     var body: some View {
         let campaign = document.campaign
         let library = campaign.libraryIndex
-        var map = campaign.activeMap
-        // The DM's in-progress drag, so fog and NPC visibility follow it live.
-        if !liveDrag.positions.isEmpty {
-            for i in map.tokens.indices {
-                if let p = liveDrag.positions[map.tokens[i].id] {
-                    map.tokens[i].x = p.x
-                    map.tokens[i].y = p.y
-                }
-            }
-        }
+        let map = liveMap(campaign)
         let party = map.partyBounds(library: library)
         // Fog and hidden NPCs (CORE_SPEC §3.3); none in daylight.
         let visibility = visibilityCache.visibility(of: map, library: library)
