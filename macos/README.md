@@ -9,6 +9,10 @@ rest of this repository.
   spec; the `.xcodeproj` is generated, not committed.
 - `docs/`: porting spec (`CORE_SPEC.md`) and the feature-parity checklist (`PARITY.md`).
 
+Every change follows [docs/PRINCIPLES.md](docs/PRINCIPLES.md): privacy first and file over app.
+Campaigns live in open files the DM owns, and nothing leaves the Mac unless the DM asks.
+[docs/SESSION_TIMING.md](docs/SESSION_TIMING.md) is how in-session friction is measured.
+
 ## Build
 
 First time? See [GETTING_STARTED.md](GETTING_STARTED.md) for setup, troubleshooting and a smoke test.
