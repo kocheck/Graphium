@@ -223,7 +223,7 @@ reimplemented IPC meter.
 
 - [ ] Header — Shows the campaign name (truncated, with the full name as a tooltip) and a collapse/expand button (w-64 to w-16). (source: src/components/Sidebar.tsx:268-295)
 - [ ] MAPS section (collapsible) — Maps sorted alphabetically. Clicking switches maps. The active map shows `aria-current`. A hover gear opens Map Settings in edit mode. A "New Map" button opens Map Settings in create mode. (source: src/components/Sidebar.tsx:302-368)
-- [ ] Door Controls section — Only shown when doors exist. Offers "Open all unlocked doors", "Close all open doors", and "Unlock all" (only when any door is locked). (source: src/components/DoorControls.tsx:34-48, 75-120, src/components/Sidebar.tsx:373)
+- [x] Door Controls section — Only shown when doors exist. Offers "Open all unlocked doors", "Close all open doors", and "Unlock all" (only when any door is locked). (source: src/components/DoorControls.tsx:34-48, 75-120, src/components/Sidebar.tsx:373)
 - [ ] LIBRARY section — "Place" (opens the command palette), "Add" (pick an image, process it as a TOKEN, then show the Add to Library dialog), "Manage library" (opens Library Manager). (source: src/components/Sidebar.tsx:376-428, 213-262)
 - [ ] Quick Token Sidebar — "Recent History" (last 3 unique library tokens used on this map) and "Party Tokens" (a generic placeholder plus up to 5 PC library tokens, deduped against recents). Every item can be dragged onto the canvas. (source: src/components/QuickTokenSidebar.tsx:1-168, src/utils/tokenUtils.ts)
 - [ ] Custom drag image (64x64) when dragging a library token. (source: src/components/Sidebar.tsx:174-210)
@@ -236,10 +236,10 @@ sidebar collapse is the system sidebar toggle.
 ### 2.2 Toolbar (floating, Architect desktop only)
 
 - [ ] Play/Pause (see 1.12). (source: src/components/Toolbar.tsx:72-90)
-- [ ] Tool buttons with pressed state and tooltips — Select (V), Marker (M), Eraser (E), Wall (W), Door (D, "Arrow keys or R to rotate"). (source: src/components/Toolbar.tsx:92-166)
-- [ ] Door orientation toggle button — Only visible while the Door tool is active. (source: src/components/Toolbar.tsx:167-180)
-- [ ] Measure (R) with mode buttons Ruler / Blast / Cone and a Broadcast toggle ("Broadcasting" / "Local Only"). The mode buttons are only visible while Measure is active. Changing mode clears the active measurement. (source: src/components/Toolbar.tsx:182-242, src/store/uiStore.ts:52-56)
-- [ ] Marker colour HUD (bottom centre, Marker tool only) — A large swatch opens the colour picker. Three recent-colour swatches follow, most recent first and deduped. The default is `#df4b26`. (source: src/components/Toolbar.tsx:243-280, src/store/uiStore.ts:34-47)
+- [x] Tool buttons with pressed state and tooltips — Select (V), Marker (M), Eraser (E), Wall (W), Door (D, "Arrow keys or R to rotate"). (source: src/components/Toolbar.tsx:92-166)
+- [x] Door orientation toggle button — Only visible while the Door tool is active. (source: src/components/Toolbar.tsx:167-180)
+- [x] Measure (R) with mode buttons Ruler / Blast / Cone and a Broadcast toggle ("Broadcasting" / "Local Only"). The mode buttons are only visible while Measure is active. Changing mode clears the active measurement. (source: src/components/Toolbar.tsx:182-242, src/store/uiStore.ts:52-56)
+- [x] Marker colour HUD (bottom centre, Marker tool only) — A large swatch opens the colour picker. Three recent-colour swatches follow, most recent first and deduped. The default is `#df4b26`. (source: src/components/Toolbar.tsx:243-280, src/store/uiStore.ts:34-47)
 - [ ] Not in the toolbar: Save/Load, World View launch and Generate Dungeon. These live in menus and the palette. Older docstrings claim otherwise. (source: src/App.tsx:77-84 vs src/components/Toolbar.tsx)
 
 **Native mapping:** Use a window `.toolbar` with a segmented `Picker` for tools, a `ControlGroup` for
@@ -344,12 +344,12 @@ every commit, which `DocumentGroup` already wires up.
 
 ### 3.5 Drawing tools (marker, eraser, wall)
 
-- [ ] Marker — Freehand line in the chosen colour, 5 px base width, round caps, 0.5 tension. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:301-331, src/components/Canvas/DrawingLayer.tsx:50-100)
-- [ ] Eraser — Draws a 20 px `destination-out` stroke on the drawings layer. It erases ink from markers and walls visually but never erases the map, tokens or wall geometry used for vision. Clicking a door with the eraser deletes the door. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:315-317, src/components/Canvas/DrawingLayer.tsx:58-59, src/components/Canvas/DoorShape.tsx:101-110)
-- [ ] Wall — Red 8 px dashed `[10,5]` line. It blocks fog-of-war vision. Walls are not selectable or draggable. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:318-321, src/components/Canvas/DrawingLayer.tsx:54-61, 96)
-- [ ] Wall smoothing and endpoint snapping — Ramer-Douglas-Peucker simplification (epsilon 3, kept if at least 2 points remain). Endpoints snap to existing walls within 10 px. Settings live in the `graphium-preferences` store and have no UI. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:84-101, 620-641, src/store/preferencesStore.ts:38-67, src/utils/pathOptimization.ts:21, 207)
-- [ ] Pressure-sensitive lines — Per-point pressure is captured when pressure sensitivity is on. Width = base x mapped pressure, using a pressure curve: light 0.2-2.0, normal 0.3-1.5 (the default), heavy 0.4-1.2. A custom scene function draws the variable width. Mouse input uses 0.5. (source: src/components/Canvas/CanvasManager.tsx:41-45, src/components/Canvas/CanvasUtils.ts:18-27, src/components/Canvas/PressureSensitiveLine.tsx, src/store/touchSettingsStore.ts:116)
-- [ ] Shift axis-lock while drawing (see 1.4).
+- [x] Marker — Freehand line in the chosen colour, 5 px base width, round caps, 0.5 tension. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:301-331, src/components/Canvas/DrawingLayer.tsx:50-100)
+- [x] Eraser — Draws a 20 px `destination-out` stroke on the drawings layer. It erases ink from markers and walls visually but never erases the map, tokens or wall geometry used for vision. Clicking a door with the eraser deletes the door. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:315-317, src/components/Canvas/DrawingLayer.tsx:58-59, src/components/Canvas/DoorShape.tsx:101-110)
+- [x] Wall — Red 8 px dashed `[10,5]` line. It blocks fog-of-war vision. Walls are not selectable or draggable. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:318-321, src/components/Canvas/DrawingLayer.tsx:54-61, 96)
+- [x] Wall smoothing and endpoint snapping — Ramer-Douglas-Peucker simplification (epsilon 3, kept if at least 2 points remain). Endpoints snap to existing walls within 10 px. Settings live in the `graphium-preferences` store and have no UI. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:84-101, 620-641, src/store/preferencesStore.ts:38-67, src/utils/pathOptimization.ts:21, 207)
+- [x] Pressure-sensitive lines — Per-point pressure is captured when pressure sensitivity is on. Width = base x mapped pressure, using a pressure curve: light 0.2-2.0, normal 0.3-1.5 (the default), heavy 0.4-1.2. A custom scene function draws the variable width. Mouse input uses 0.5. (source: src/components/Canvas/CanvasManager.tsx:41-45, src/components/Canvas/CanvasUtils.ts:18-27, src/components/Canvas/PressureSensitiveLine.tsx, src/store/touchSettingsStore.ts:116)
+- [x] Shift axis-lock while drawing (see 1.4).
 - [ ] Marker strokes and eraser strokes can be selected, dragged (Option-drag duplicates) and scaled with the transformer. Walls cannot. (source: src/components/Canvas/DrawingLayer.tsx:60-61, 120-130, src/components/Canvas/CanvasManager.tsx:1258-1286, 1380-1393)
 - [ ] Live stroke preview is rAF-throttled. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:544-555)
 
@@ -360,15 +360,15 @@ drawing input and is not suitable here.
 
 ### 3.6 Doors and stairs
 
-- [ ] Place a door with the Door tool. A white ghost preview follows the snapped pointer. Clicking adds a closed, unlocked door the size of one grid cell in the current orientation (horizontal or vertical, toggled with `R`, arrow keys or the toolbar). (source: src/components/Canvas/hooks/useCanvasInteraction.ts:248-269, 386-396, src/components/Canvas/OverlayLayer.tsx:32-50)
-- [ ] Open and close a door by clicking it (Architect). Locked doors do not toggle. The swing arc animates over 300 ms with ease-in-out. (source: src/components/Canvas/DoorShape.tsx:52-117)
-- [ ] Door right-click context menu — Open/Close Door (disabled when locked), Lock/Unlock Door, and Delete Door in red. Clicking outside closes it. (source: src/components/Canvas/CanvasManager.tsx:235-255, 1437-1484, src/components/Canvas/DoorShape.tsx:118-126)
-- [ ] Lock state — A lock icon overlay shows on locked doors. (source: src/components/Canvas/DoorShape.tsx:146, 421)
-- [ ] Bulk door controls in the sidebar (see 2.1).
-- [ ] Blocking — Closed doors become wall segments for vision. Open doors let vision through. (source: src/components/Canvas/FogOfWarLayer.tsx:242-320)
-- [ ] World View door rendering — Thicker strokes and a white glow for legibility. It does not respond to clicks. (source: src/components/Canvas/DoorShape.tsx:137, 182-217)
+- [x] Place a door with the Door tool. A white ghost preview follows the snapped pointer. Clicking adds a closed, unlocked door the size of one grid cell in the current orientation (horizontal or vertical, toggled with `R`, arrow keys or the toolbar). (source: src/components/Canvas/hooks/useCanvasInteraction.ts:248-269, 386-396, src/components/Canvas/OverlayLayer.tsx:32-50)
+- [x] Open and close a door by clicking it (Architect). Locked doors do not toggle. The swing arc animates over 300 ms with ease-in-out. (source: src/components/Canvas/DoorShape.tsx:52-117)
+- [x] Door right-click context menu — Open/Close Door (disabled when locked), Lock/Unlock Door, and Delete Door in red. Clicking outside closes it. (source: src/components/Canvas/CanvasManager.tsx:235-255, 1437-1484, src/components/Canvas/DoorShape.tsx:118-126)
+- [x] Lock state — A lock icon overlay shows on locked doors. (source: src/components/Canvas/DoorShape.tsx:146, 421)
+- [x] Bulk door controls in the sidebar (see 2.1).
+- [x] Blocking — Closed doors become wall segments for vision. Open doors let vision through. (source: src/components/Canvas/FogOfWarLayer.tsx:242-320)
+- [x] World View door rendering — Thicker strokes and a white glow for legibility. It does not respond to clicks. (source: src/components/Canvas/DoorShape.tsx:137, 182-217)
 - [ ] Doors can be selected for deletion with marquee or Delete. They show a selection highlight. (source: src/components/Canvas/DoorShape.tsx:149, src/components/Canvas/CanvasManager.tsx:573)
-- [ ] Stairs — Render-only (non-interactive). A stepped pattern with a direction arrow (N/S/E/W) and up/down shading, visible in both windows. **(gap)** No UI or generator creates stairs. They exist only in the model, sync and persistence. [Port rendering and persistence. Creating stairs is a new feature.] (source: src/components/Canvas/StairsShape.tsx:1-41, src/store/gameStore.ts:236-250, 826-830)
+- [x] Stairs — Render-only (non-interactive). A stepped pattern with a direction arrow (N/S/E/W) and up/down shading, visible in both windows. **(gap)** No UI or generator creates stairs. They exist only in the model, sync and persistence. [Port rendering and persistence. Creating stairs is a new feature.] (source: src/components/Canvas/StairsShape.tsx:1-41, src/store/gameStore.ts:236-250, 826-830)
 
 **Native mapping:** Keep a `Door` model in core and render it as a layer with a
 `CABasicAnimation` for the swing. Use `menu(for event:)` on the canvas view for the native
@@ -397,16 +397,16 @@ exploration is computed once.
 
 ### 3.9 Measurement overlay
 
-- [ ] Ruler — A line from the drag origin with a label like "30ft (6 cells)". (source: src/components/Canvas/hooks/useCanvasInteraction.ts:409-423, src/utils/measurement.ts, src/components/Canvas/MeasurementOverlay.tsx:80-100)
-- [ ] Blast — A circle with a label like "20ft radius (4 cells)". (source: src/components/Canvas/hooks/useCanvasInteraction.ts:424-435, src/components/Canvas/MeasurementOverlay.tsx:120-140)
-- [ ] Cone — A 53° cone triangle with a label like "30ft 53° cone (6 cells)". (source: src/components/Canvas/hooks/useCanvasInteraction.ts:436-453, src/utils/measurement.ts:130-160)
-- [ ] Distance is Euclidean, with 1 cell = 5 ft. A D&D 5e 5-10-5 diagonal mode exists in utils but is not exposed in the UI. Labels are 16pt with a dark backing and handle singular and plural. (source: src/utils/measurement.ts:13-100)
-- [ ] The measurement stays on screen after release until `Esc`, a mode change, or a click with another tool. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:271-273, 569-574)
-- [ ] Broadcast — When "Broadcasting" is on, the DM's measurement is mirrored into World View (`dmMeasurement`). (source: src/components/Toolbar.tsx:230-240, src/components/SyncManager.tsx:145, 271-273, src/components/Canvas/CanvasManager.tsx:1354)
+- [x] Ruler — A line from the drag origin with a label like "30ft (6 cells)". (source: src/components/Canvas/hooks/useCanvasInteraction.ts:409-423, src/utils/measurement.ts, src/components/Canvas/MeasurementOverlay.tsx:80-100)
+- [x] Blast — A circle with a label like "20ft radius (4 cells)". (source: src/components/Canvas/hooks/useCanvasInteraction.ts:424-435, src/components/Canvas/MeasurementOverlay.tsx:120-140)
+- [x] Cone — A 53° cone triangle with a label like "30ft 53° cone (6 cells)". (source: src/components/Canvas/hooks/useCanvasInteraction.ts:436-453, src/utils/measurement.ts:130-160)
+- [x] Distance is Euclidean, with 1 cell = 5 ft. A D&D 5e 5-10-5 diagonal mode exists in utils but is not exposed in the UI. Labels are 16pt with a dark backing and handle singular and plural. (source: src/utils/measurement.ts:13-100)
+- [x] The measurement stays on screen after release until `Esc`, a mode change, or a click with another tool. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:271-273, 569-574)
+- [x] Broadcast — When "Broadcasting" is on, the DM's measurement is mirrored into World View (`dmMeasurement`). (source: src/components/Toolbar.tsx:230-240, src/components/SyncManager.tsx:145, 271-273, src/components/Canvas/CanvasManager.tsx:1354)
 
 ### 3.10 Movement range
 
-- [ ] Hold `M` with a token selected (Architect only) to show a BFS flood-fill of reachable cells within movementSpeed / 5 cells (default 30 ft). It uses grid-aware neighbours (square, hex, iso), is drawn as a translucent blue overlay, and follows the token during a drag. (source: src/components/Canvas/MovementRangeOverlay.tsx:1-176, src/components/Canvas/OverlayLayer.tsx:98-135)
+- [x] Hold `M` with a token selected (Architect only) to show a BFS flood-fill of reachable cells within movementSpeed / 5 cells (default 30 ft). It uses grid-aware neighbours (square, hex, iso), is drawn as a translucent blue overlay, and follows the token during a drag. (source: src/components/Canvas/MovementRangeOverlay.tsx:1-176, src/components/Canvas/OverlayLayer.tsx:98-135)
 - [ ] `docs/movement-range-concept.tsx` is the earlier concept. The shipped implementation is MovementRangeOverlay. Port only the shipped one. (source: docs/movement-range-concept.tsx)
 
 ### 3.11 AoE templates
