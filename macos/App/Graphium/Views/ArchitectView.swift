@@ -8,6 +8,10 @@ struct ArchitectView: View {
     @ObservedObject var document: CampaignDocument
     @Environment(\.undoManager) private var undoManager
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
+    @AppStorage(PreferenceKey.pressureEnabled) private var pressureEnabled = true
+    @AppStorage(PreferenceKey.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
+    @State private var showingPerformance = false
 
     @State private var selection: Set<String> = []
     @State private var importTarget: ImportTarget?
@@ -52,8 +56,13 @@ struct ArchitectView: View {
     }
 
     private struct Toast: Equatable {
+        enum Kind {
+            case info, success, error
+        }
+
         let id = UUID()
         let message: String
+        let kind: Kind
     }
 
     private enum ImportTarget: Identifiable {
@@ -131,14 +140,6 @@ struct ArchitectView: View {
         } message: {
             Text("Its tokens, drawings and fog go with it. You can undo this.")
         }
-        .alert(
-            "Something went wrong",
-            isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
-        ) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage ?? "")
-        }
         .sheet(isPresented: $showingLibrary) {
             LibraryManagerView(
                 onPlace: { placeLibraryItem($0, at: nil) },
@@ -173,7 +174,32 @@ struct ArchitectView: View {
         }
         .focusedSceneValue(
             \.architectActions,
-            ArchitectActions(showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true }))
+            ArchitectActions(
+                showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true },
+                togglePerformanceMonitor: { showingPerformance.toggle() }))
+        .onAppear {
+            dismissWindow(id: WelcomeView.windowID)
+            switch LaunchIntent.shared.take() {
+            case .generateDungeon:
+                // TS opens the dialog 100 ms after entering the editor.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showingDungeon = true }
+            case .template(let template):
+                document.edit("Apply Template", undoManager: undoManager) { template.apply(to: &$0) }
+                showToast("🎲 Created \(template.name) campaign!", .success)
+            case nil:
+                break
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .graphiumShowAbout)) { _ in
+            ShowAbout(openWindow: openWindow)(.about)
+        }
+        .onChange(of: errorMessage) { _, message in
+            // Errors are toasts, as in TS (PARITY §1.6).
+            if let message {
+                showToast(message, .error)
+                errorMessage = nil
+            }
+        }
         .focusedSceneValue(\.campaignDocument, document)
         .onChange(of: selection) { _, _ in if hasSelectedTokens { inspectorTab = .token } }
         .onChange(of: document.campaign) { _, campaign in
@@ -337,11 +363,14 @@ struct ArchitectView: View {
                     showToast("Grid: \(type.title)")
                 }
             ),
-            toolState: tools,
+            toolState: penAdjusted(tools),
             measurement: measurement,
             calibrating: calibrating
         )
         .overlay(alignment: .top) { canvasBanner }
+        .overlay(alignment: .bottomTrailing) {
+            if showingPerformance { PerformanceOverlay(document: document).padding(12) }
+        }
         .navigationTitle(campaign.activeMap.name)
         .navigationSubtitle(campaign.name)
     }
@@ -438,6 +467,7 @@ struct ArchitectView: View {
     private func placeLibraryItem(_ item: TokenLibraryItem, at point: Point2D?) {
         if let id = document.placeLibraryItem(item, centredAt: point, undoManager: undoManager) {
             selection = [id]
+            showToast(SystemMessages.roll(.assetAddedToMapSuccess, ["itemName": item.name]), .success)
         } else {
             errorMessage = "“\(item.name)” is missing its image in the library."
         }
@@ -734,8 +764,16 @@ struct ArchitectView: View {
         if isNew { selection = [] }
     }
 
-    private func showToast(_ message: String) {
-        toast = Toast(message: message)
+    /// One toast at a time; a new one replaces it (PARITY §1.6).
+    private func showToast(_ message: String, _ kind: Toast.Kind = .info) {
+        toast = Toast(message: message, kind: kind)
+    }
+
+    private func penAdjusted(_ state: ToolState) -> ToolState {
+        var state = state
+        state.pressureEnabled = pressureEnabled
+        state.pressureCurve = PressureCurve(rawValue: pressureCurveRaw) ?? .normal
+        return state
     }
 
     /// Calibration instructions, or a brief toast (PARITY §3.2).
@@ -752,17 +790,28 @@ struct ArchitectView: View {
             .background(.regularMaterial, in: Capsule())
             .padding(.top, 12)
         } else if let toast {
-            Text(toast.message)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(.regularMaterial, in: Capsule())
-                .padding(.top, 12)
-                .transition(.opacity)
-                .allowsHitTesting(false)
-                .task(id: toast.id) {
-                    try? await Task.sleep(for: .seconds(2))
-                    if self.toast?.id == toast.id { self.toast = nil }
+            HStack(spacing: 10) {
+                Image(systemName: toast.kind == .error ? "exclamationmark.triangle.fill" : toast.kind == .success ? "checkmark.circle.fill" : "info.circle.fill")
+                    .foregroundStyle(toast.kind == .error ? Color.red : toast.kind == .success ? Color.green : Color.accentColor)
+                Text(toast.message)
+                Button {
+                    self.toast = nil
+                } label: {
+                    Image(systemName: "xmark")
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close notification")
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(.regularMaterial, in: Capsule())
+            .padding(.top, 12)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .accessibilityElement(children: .contain)
+            .task(id: toast.id) {
+                try? await Task.sleep(for: .seconds(5))
+                if self.toast?.id == toast.id { self.toast = nil }
+            }
         }
     }
 
@@ -773,7 +822,7 @@ struct ArchitectView: View {
             selection = []
             document.edit("Delete Map", undoManager: undoManager) { $0 = next }
         } catch {
-            errorMessage = "A campaign needs at least one map."
+            errorMessage = SystemMessages.roll(.cannotDeleteOnlyMap)
         }
     }
 }

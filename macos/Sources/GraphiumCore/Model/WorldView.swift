@@ -19,17 +19,3 @@ extension GameMap {
         return Bounds(x: minX - pad, y: minY - pad, width: maxX - minX + 2 * pad, height: maxY - minY + 2 * pad)
     }
 }
-
-/// Flavour text pools (TS `systemMessages.ts`).
-public enum SystemMessages {
-    /// Shown on the World View while the DM has paused it (TS `LOADING_PAUSE_OVERLAY`).
-    public static let pauseOverlay = [
-        "⏸️ The Dungeon Master is preparing the next scene...",
-        "🎲 Rolling for random encounter... Please stand by.",
-        "✨ Consulting the ancient scrolls. One moment, adventurer...",
-        "🔮 Divination in progress. The spirits are being consulted...",
-        "📖 The DM is reviewing their notes. Patience, brave hero...",
-        "⏳ Time stands still as the world is prepared for your return...",
-        "🌙 The realm sleeps. Awaiting the Dungeon Master's signal...",
-    ]
-}

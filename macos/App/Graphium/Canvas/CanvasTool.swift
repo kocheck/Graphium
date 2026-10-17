@@ -59,6 +59,7 @@ struct ToolState: Equatable {
     var doorOrientation: DoorOrientation = .horizontal
     var measureMode: MeasurementShape.Mode = .ruler
     var pressureCurve: PressureCurve = .normal
+    var pressureEnabled = true
 }
 
 /// Right-click actions on a door (PARITY §3.6).

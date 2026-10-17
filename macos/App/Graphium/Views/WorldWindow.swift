@@ -32,6 +32,9 @@ private struct WorldView: View {
     @StateObject private var audio = WorldAudioEngine()
     /// Held without observing, so camera moves only redraw the minimap.
     @State private var minimap = MinimapModel()
+    /// Strokes render with the DM's pressure settings so both windows match.
+    @AppStorage(PreferenceKey.pressureEnabled) private var pressureEnabled = true
+    @AppStorage(PreferenceKey.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
 
     var body: some View {
         let campaign = document.campaign
@@ -74,6 +77,8 @@ private struct WorldView: View {
                 hiddenTokenIDs: hidden,
                 fog: fog,
                 isPlayerView: true,
+                toolState: ToolState(
+                    pressureCurve: PressureCurve(rawValue: pressureCurveRaw) ?? .normal, pressureEnabled: pressureEnabled),
                 measurement: document.broadcastMeasurement,
                 fitRequest: fitRequest,
                 onViewportChange: { [minimap] viewport, size in

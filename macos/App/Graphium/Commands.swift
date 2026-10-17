@@ -9,6 +9,7 @@ struct FocusedCampaignKey: FocusedValueKey {
 struct ArchitectActions {
     var showPalette: () -> Void
     var showDungeon: () -> Void
+    var togglePerformanceMonitor: () -> Void
 }
 
 struct FocusedArchitectActionsKey: FocusedValueKey {
@@ -36,7 +37,13 @@ struct ArchitectCommands: Commands {
             Button("Command Palette…") { actions?.showPalette() }
                 .keyboardShortcut("k")
                 .disabled(actions == nil)
+            // TS also binds ⌘P (PARITY §1.4); printing a map isn't supported.
+            Button("Command Palette") { actions?.showPalette() }
+                .keyboardShortcut("p")
+                .disabled(actions == nil)
         }
+        // ⌘P is the palette and ⇧⌘P pauses the World View; maps aren't printable.
+        CommandGroup(replacing: .printItem) {}
         CommandMenu("Insert") {
             Button("Generate Dungeon…") { actions?.showDungeon() }
                 .keyboardShortcut("g", modifiers: [.command, .shift])
@@ -100,5 +107,62 @@ private struct PauseMenuItem: View {
             document.isPaused.toggle()
         }
         .keyboardShortcut("p", modifiers: [.command, .shift])
+    }
+}
+
+/// About, Help, Theme, Performance Monitor and Welcome (PARITY §1.3, §1.8, §1.11, §1.13).
+struct ShellCommands: Commands {
+    @FocusedValue(\.architectActions) private var actions
+    @AppStorage(PreferenceKey.theme) private var themeRaw = AppTheme.system.rawValue
+
+    var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            AboutMenuItem(title: "About Graphium", tab: .about)
+        }
+        CommandGroup(replacing: .help) {
+            AboutMenuItem(title: "Graphium Tutorial", tab: .tutorial)
+            AboutMenuItem(title: "Keyboard Shortcuts", tab: .shortcuts)
+            Divider()
+            Link("Report a Bug…", destination: AppLinks.issues)
+            Link("View Source on GitHub", destination: AppLinks.source)
+        }
+        CommandGroup(before: .toolbar) {
+            Picker("Theme", selection: Binding(
+                get: { themeRaw },
+                set: { raw in
+                    themeRaw = raw
+                    (AppTheme(rawValue: raw) ?? .system).apply()
+                })
+            ) {
+                ForEach(AppTheme.allCases) { Text($0.title).tag($0.rawValue) }
+            }
+            Button("Performance Monitor") { actions?.togglePerformanceMonitor() }
+                .keyboardShortcut("m", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Divider()
+        }
+        CommandGroup(before: .windowList) {
+            WelcomeMenuItem()
+            Divider()
+        }
+    }
+}
+
+private struct AboutMenuItem: View {
+    let title: String
+    let tab: AboutModel.Tab
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button(title) { ShowAbout(openWindow: openWindow)(tab) }
+    }
+}
+
+private struct WelcomeMenuItem: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Welcome to Graphium") { openWindow(id: WelcomeView.windowID) }
+            .keyboardShortcut("1", modifiers: [.command, .shift])
     }
 }

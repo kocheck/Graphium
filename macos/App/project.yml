@@ -28,6 +28,7 @@ targets:
         PRODUCT_NAME: Graphium
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_ENTITLEMENTS: Graphium/Graphium.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     entitlements:
       path: Graphium/Graphium.entitlements
       properties:

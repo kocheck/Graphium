@@ -139,6 +139,8 @@ final class MapCanvasNSView: NSView {
     // MARK: Drawing
 
     override func draw(_ dirtyRect: NSRect) {
+        let drawStarted = CACurrentMediaTime()
+        defer { PerformanceStats.shared.recordDraw(started: drawStarted) }
         NSColor.textBackgroundColor.setFill()
         dirtyRect.fill()
         guard let map, let context = NSGraphicsContext.current?.cgContext else { return }
@@ -510,7 +512,7 @@ final class MapCanvasNSView: NSView {
             interaction = .stroke(
                 Drawing(
                     tool: .marker, points: [point.x, point.y], color: toolState.markerColor,
-                    size: StrokeDefaults.markerSize, pressures: [pressure(of: event)]))
+                    size: StrokeDefaults.markerSize, pressures: toolState.pressureEnabled ? [pressure(of: event)] : nil))
         case .eraser:
             if let door = map.door(at: point) {
                 editing.doorAction?(door.id, .delete)  // the eraser deletes doors it touches
@@ -729,6 +731,10 @@ final class MapCanvasNSView: NSView {
             if toolState.tool == .door { editing?.toggleDoorOrientation?() } else { super.keyDown(with: event) }
         default:
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if event.charactersIgnoringModifiers == "?", flags.isDisjoint(with: [.command, .control, .option]) {
+                NotificationCenter.default.post(name: .graphiumShowAbout, object: nil)
+                return
+            }
             if flags.isDisjoint(with: [.command, .control, .option]), editing?.setTool != nil,
                 let char = event.charactersIgnoringModifiers?.lowercased().first
             {

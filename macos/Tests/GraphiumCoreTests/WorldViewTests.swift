@@ -35,4 +35,13 @@ final class WorldViewTests: XCTestCase {
     func testPauseMessagesMatchTSPool() {
         XCTAssertEqual(SystemMessages.pauseOverlay.count, 7)
     }
+
+    func testEveryIntentHasMessagesAndPlaceholdersFill() {
+        for intent in SystemMessages.Intent.allCases {
+            XCTAssertFalse(SystemMessages.pools[intent, default: []].isEmpty, intent.rawValue)
+        }
+        let line = SystemMessages.roll(.campaignSaveFailed, ["error": "disk full"])
+        XCTAssertTrue(line.contains("disk full"))
+        XCTAssertFalse(line.contains("{error}"))
+    }
 }
