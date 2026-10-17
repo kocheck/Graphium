@@ -95,7 +95,7 @@ public enum SynthSfx {
 }
 
 /// Small deterministic RNG so the snap sounds the same every time (and tests are stable).
-struct SplitMix64 {
+struct SplitMix64: RandomNumberGenerator {
     private var state: UInt64
 
     init(seed: UInt64) { state = seed }
