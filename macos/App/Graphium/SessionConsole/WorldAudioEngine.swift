@@ -31,6 +31,22 @@ final class WorldAudioEngine: ObservableObject {
         youtube.onError = { [weak self] message in self?.lastError = message }
     }
 
+    /// Ends all playback when the World View closes: the World View is the only audio
+    /// output (PARITY §5.4). A later `apply` starts again from scratch.
+    func shutdown() {
+        fadeTimer?.invalidate()
+        fadeTimer = nil
+        fadeCompletion = nil
+        musicGeneration += 1
+        music.stop()
+        effects.stop()
+        engine.stop()
+        youtube.shutdown()
+        closeMusicFile()
+        applied = nil
+        setMusicLevel(0)
+    }
+
     deinit {
         for url in tempFiles { try? FileManager.default.removeItem(at: url) }
     }
@@ -286,11 +302,13 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
         configuration.userContentController = controller
         webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 320, height: 180), configuration: configuration)
         super.init()
-        controller.add(self, name: "graphium")
+        // The controller retains its handlers; a weak proxy avoids a cycle through webView.
+        controller.add(WeakScriptMessageHandler(self), name: "graphium")
         webView.loadHTMLString(Self.html, baseURL: URL(string: "https://graphium.app/world"))
     }
 
     func play(videoID: String, loop: Bool, volume: Int) {
+        reviveIfShutDown()
         // The id comes from campaign.json, which may be a shared file; never let it reach the page unchecked.
         guard SessionConsoleAudio.isVideoID(videoID) else {
             onError?("That YouTube link isn't valid.")
@@ -303,6 +321,24 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
     func resume() { run("graphiumResume()") }
     func stop() { run("graphiumStop()") }
     func setVolume(_ volume: Int) { run("graphiumVolume(volume)", ["volume": volume]) }
+
+    private var isShutDown = false
+
+    /// Unloads the player page so nothing keeps playing after the World View closes.
+    func shutdown() {
+        isShutDown = true
+        ready = false
+        pending = nil
+        webView.stopLoading()
+        if let blank = URL(string: "about:blank") { webView.load(URLRequest(url: blank)) }
+    }
+
+    /// Reloads the player page after `shutdown`; its "ready" message replays the pending load.
+    private func reviveIfShutDown() {
+        guard isShutDown else { return }
+        isShutDown = false
+        webView.loadHTMLString(Self.html, baseURL: URL(string: "https://graphium.app/world"))
+    }
 
     /// Values travel as JavaScript arguments, never spliced into the script source.
     private func run(_ function: String, _ arguments: [String: Any] = [:]) {
@@ -369,4 +405,22 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
         <script src="https://www.youtube.com/iframe_api"></script>
         </body></html>
         """
+}
+
+/// Forwards script messages without retaining the real handler, which would otherwise
+/// form a cycle (handler → webView → configuration → controller → handler).
+@MainActor
+private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
+    weak var target: (any WKScriptMessageHandler)?
+
+    init(_ target: any WKScriptMessageHandler) {
+        self.target = target
+        super.init()
+    }
+
+    nonisolated func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        MainActor.assumeIsolated {
+            target?.userContentController(controller, didReceive: message)
+        }
+    }
 }
