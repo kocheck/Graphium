@@ -148,6 +148,7 @@ struct ArchitectView: View {
         }
         .sheet(isPresented: $showingLibrary) {
             LibraryManagerView(
+                document: document,
                 onPlace: { placeLibraryItem($0, at: nil) },
                 onEdited: { document.syncLibraryItem($0, undoManager: undoManager) })
         }
@@ -164,7 +165,8 @@ struct ArchitectView: View {
                 isPaused: document.isPaused,
                 run: { runCommand($0) },
                 placeAsset: { placeLibraryItem($0, at: nil) },
-                editAsset: { editingLibraryItem = $0 })
+                editAsset: { editingLibraryItem = $0 },
+                document: document)
         }
         .sheet(isPresented: $showingDungeon) {
             DungeonDialog { options, clearFirst in generateDungeon(options, clearFirst: clearFirst) }
@@ -482,7 +484,7 @@ struct ArchitectView: View {
     private var librarySection: some View {
         let campaignLibrary = document.campaign.tokenLibrary
         let recent = TokenLibrarySearch.recent(tokens: document.campaign.activeMap.tokens, library: campaignLibrary)
-        let party = TokenLibrarySearch.party(library: library.items, excluding: recent)
+        let party = TokenLibrarySearch.party(library: document.browsableLibrary.items, excluding: recent)
         Section("Library") {
             HStack {
                 Button("Place…") { showingPalette = true }
@@ -509,7 +511,7 @@ struct ArchitectView: View {
             }
             if !party.isEmpty {
                 Text("Party").font(.caption).foregroundStyle(.secondary)
-                ForEach(party) { item in quickToken(item, image: library.image(item.thumbnailSrc)) }
+                ForEach(party) { item in quickToken(item, image: document.libraryThumbnail(item)) }
             }
         }
     }
@@ -535,7 +537,8 @@ struct ArchitectView: View {
         .help("Click to place at the map centre, or drag onto the map")
     }
 
-    /// Campaign copy first (its src points at this package), else the app-wide library.
+    /// The app-wide library first, else the campaign's copy (items that came with the file).
+    /// Either way, placing uses the campaign copy's package image when there is one.
     private func libraryItem(_ id: String) -> TokenLibraryItem? {
         library.items.first { $0.id == id } ?? document.campaign.tokenLibrary.first { $0.id == id }
     }

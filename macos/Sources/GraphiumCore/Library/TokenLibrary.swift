@@ -117,6 +117,27 @@ public enum TokenLibrarySearch {
             .filter { !recentSrcs.contains($0.src) }
     }
 
+    /// What the library UI browses: the app-wide library, then items only this campaign
+    /// carries (e.g. a `.graphium` from another DM), de-duplicated by id with the first
+    /// occurrence winning. TS merges the app library into `campaign.tokenLibrary` the same
+    /// way (`App.tsx` loadLibrary); natively the two stay separate because their image
+    /// files live in different places, so `campaignOnly` says which store holds each image.
+    public static func union(
+        app: [TokenLibraryItem], campaign: [TokenLibraryItem]
+    ) -> (items: [TokenLibraryItem], campaignOnly: Set<String>) {
+        var seen = Set<String>()
+        var items: [TokenLibraryItem] = []
+        var campaignOnly = Set<String>()
+        for item in app where seen.insert(item.id).inserted {
+            items.append(item)
+        }
+        for item in campaign where seen.insert(item.id).inserted {
+            items.append(item)
+            campaignOnly.insert(item.id)
+        }
+        return (items, campaignOnly)
+    }
+
     /// Library categories offered when adding (TS `AddToLibraryDialog`).
     public static let standardCategories = ["PC", "Monsters", "NPCs", "Props", "Items", "Custom"]
 }

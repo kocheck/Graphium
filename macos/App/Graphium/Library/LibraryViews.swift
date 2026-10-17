@@ -5,6 +5,8 @@ import UniformTypeIdentifiers
 /// Library Manager (PARITY §5.3): fuzzy search, category filter, thumbnail grid.
 struct LibraryManagerView: View {
     @ObservedObject var store = LibraryStore.shared
+    /// The open campaign: items it carries are browsable too (PARITY §5.3).
+    @ObservedObject var document: CampaignDocument
     /// Places an item on the current map; nil hides "Add to Map".
     var onPlace: ((TokenLibraryItem) -> Void)?
     var onEdited: ((TokenLibraryItem) -> Void)?
@@ -18,18 +20,21 @@ struct LibraryManagerView: View {
     @State private var pendingImage: ImportedImage?
     @State private var errorMessage: String?
 
+    private var browsable: (items: [TokenLibraryItem], campaignOnly: Set<String>) { document.browsableLibrary }
+
     private var results: [TokenLibraryItem] {
-        TokenLibrarySearch.search(TokenLibrarySearch.filter(store.items, category: category), query: query)
+        TokenLibrarySearch.search(TokenLibrarySearch.filter(browsable.items, category: category), query: query)
     }
 
     var body: some View {
+        let browsable = self.browsable
         VStack(spacing: 0) {
             HStack {
                 TextField("Search library", text: $query)
                     .textFieldStyle(.roundedBorder)
                 Picker("Category", selection: $category) {
                     Text("All").tag("All")
-                    ForEach(TokenLibrarySearch.categories(store.items), id: \.self) { Text($0).tag($0) }
+                    ForEach(TokenLibrarySearch.categories(browsable.items), id: \.self) { Text($0).tag($0) }
                 }
                 .frame(maxWidth: 200)
             }
@@ -37,19 +42,24 @@ struct LibraryManagerView: View {
 
             if results.isEmpty {
                 ContentUnavailableView(
-                    store.items.isEmpty ? "No Tokens Yet" : "No Matches", systemImage: "person.crop.square",
-                    description: Text(store.items.isEmpty ? "Upload an image to start your library." : "Try another search."))
+                    browsable.items.isEmpty ? "No Tokens Yet" : "No Matches", systemImage: "person.crop.square",
+                    description: Text(browsable.items.isEmpty ? "Upload an image to start your library." : "Try another search."))
             } else {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 12)], spacing: 12) {
                         ForEach(results) { item in
-                            LibraryCard(item: item, store: store)
+                            let campaignOnly = browsable.campaignOnly.contains(item.id)
+                            LibraryCard(item: item, image: document.libraryThumbnail(item), campaignOnly: campaignOnly)
                                 .onTapGesture(count: 2) { place(item) }
                                 .draggable(LibraryDrag.payload(for: item))
                                 .contextMenu {
                                     if onPlace != nil { Button("Add to Map") { place(item) } }
                                     Button("Edit…") { editing = item }
-                                    Button("Delete…", role: .destructive) { deleting = item }
+                                    if campaignOnly {
+                                        Button("Add to My Library") { addToMyLibrary(item) }
+                                    } else {
+                                        Button("Delete…", role: .destructive) { deleting = item }
+                                    }
                                 }
                         }
                     }
@@ -59,7 +69,7 @@ struct LibraryManagerView: View {
 
             Divider()
             HStack {
-                Text("\(store.items.count) asset\(store.items.count == 1 ? "" : "s")")
+                Text("\(browsable.items.count) asset\(browsable.items.count == 1 ? "" : "s")")
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button("Upload…") { showingImporter = true }
@@ -115,6 +125,14 @@ struct LibraryManagerView: View {
         onPlace(item)
         dismiss()
     }
+
+    private func addToMyLibrary(_ item: TokenLibraryItem) {
+        do {
+            try document.addToAppLibrary(item)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
 extension ImportedImage: Identifiable {
@@ -123,12 +141,14 @@ extension ImportedImage: Identifiable {
 
 struct LibraryCard: View {
     let item: TokenLibraryItem
-    @ObservedObject var store: LibraryStore
+    let image: CGImage?
+    /// Carried by this campaign but not in the app-wide library.
+    var campaignOnly = false
 
     var body: some View {
         VStack(spacing: 6) {
             Group {
-                if let image = store.image(item.thumbnailSrc) ?? store.image(item.src) {
+                if let image {
                     Image(decorative: image, scale: 1).resizable().scaledToFit()
                 } else {
                     Image(systemName: "questionmark.square.dashed").font(.largeTitle).foregroundStyle(.secondary)
@@ -136,10 +156,23 @@ struct LibraryCard: View {
             }
             .frame(width: 96, height: 96)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .overlay(alignment: .topTrailing) {
+                if campaignOnly {
+                    Image(systemName: "doc.fill")
+                        .font(.caption)
+                        .padding(4)
+                        .background(.regularMaterial, in: Circle())
+                        .padding(4)
+                        .accessibilityLabel("In this campaign only")
+                }
+            }
             Text(item.name).font(.caption.weight(.medium)).lineLimit(1)
-            Text(item.category).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            Text(campaignOnly ? "\(item.category) · this campaign" : item.category)
+                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
         }
-        .help(item.tags.isEmpty ? item.name : "\(item.name) — \(item.tags.joined(separator: ", "))")
+        .help(
+            (item.tags.isEmpty ? item.name : "\(item.name) — \(item.tags.joined(separator: ", "))")
+                + (campaignOnly ? "\nCame with this campaign; not in your library." : ""))
         .accessibilityElement(children: .combine)
     }
 }

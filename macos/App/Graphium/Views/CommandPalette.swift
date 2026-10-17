@@ -8,6 +8,8 @@ struct CommandPalette: View {
     let placeAsset: (TokenLibraryItem) -> Void
     let editAsset: (TokenLibraryItem) -> Void
     @ObservedObject var library = LibraryStore.shared
+    /// Items the open campaign carries are searchable too (PARITY §5.3).
+    @ObservedObject var document: CampaignDocument
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @FocusState private var focused: Bool
@@ -17,7 +19,7 @@ struct CommandPalette: View {
     }
 
     private var assets: [TokenLibraryItem] {
-        query.trimmingCharacters(in: .whitespaces).isEmpty ? [] : TokenLibrarySearch.search(library.items, query: query)
+        query.trimmingCharacters(in: .whitespaces).isEmpty ? [] : TokenLibrarySearch.search(document.browsableLibrary.items, query: query)
     }
 
     var body: some View {
@@ -55,7 +57,7 @@ struct CommandPalette: View {
                                     dismiss()
                                 } label: {
                                     HStack {
-                                        if let image = library.image(item.thumbnailSrc) {
+                                        if let image = document.libraryThumbnail(item) {
                                             Image(decorative: image, scale: 1).resizable().scaledToFit().frame(width: 24, height: 24)
                                         }
                                         Text(item.name)
