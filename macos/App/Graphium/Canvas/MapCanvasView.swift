@@ -737,8 +737,19 @@ final class MapCanvasNSView: NSView {
         return menu
     }
 
+    /// Every zoom step is clamped, as in TS `performZoom` (PARITY §3.1).
+    private func zoomViewport(by factor: Double, around anchor: Point2D) {
+        guard let map else {
+            viewport.zoom(by: factor, around: anchor)
+            return
+        }
+        viewport = viewport.zoomed(
+            by: factor, around: anchor, clampingTo: map, library: library, viewWidth: Double(bounds.width),
+            viewHeight: Double(bounds.height))
+    }
+
     override func magnify(with event: NSEvent) {
-        viewport.zoom(by: 1 + Double(event.magnification), around: viewLocation(of: event))
+        zoomViewport(by: 1 + Double(event.magnification), around: viewLocation(of: event))
     }
 
     override func scrollWheel(with event: NSEvent) {
@@ -748,12 +759,12 @@ final class MapCanvasNSView: NSView {
             let factor =
                 event.hasPreciseScrollingDeltas
                 ? exp(Double(event.scrollingDeltaY) * 0.01) : (event.scrollingDeltaY > 0 ? 1.1 : 1 / 1.1)
-            viewport.zoom(by: factor, around: viewLocation(of: event))
+            zoomViewport(by: factor, around: viewLocation(of: event))
         } else {
             // Plain wheel / two-finger scroll pans.
             let scale = event.hasPreciseScrollingDeltas ? 1.0 : 10.0
             viewport.pan(byViewDX: Double(event.scrollingDeltaX) * scale, dy: Double(event.scrollingDeltaY) * scale)
-            if event.phase == .ended || event.momentumPhase == .ended || !event.hasPreciseScrollingDeltas { clampViewport() }
+            clampViewport()  // every scroll event, as in TS
         }
     }
 
@@ -822,8 +833,8 @@ final class MapCanvasNSView: NSView {
             }
             let centre = Point2D(x: Double(bounds.midX), y: Double(bounds.midY))
             switch event.charactersIgnoringModifiers {
-            case "+", "=": viewport.zoom(by: 1.1, around: centre)
-            case "-", "_": viewport.zoom(by: 1 / 1.1, around: centre)
+            case "+", "=": zoomViewport(by: 1.1, around: centre)
+            case "-", "_": zoomViewport(by: 1 / 1.1, around: centre)
             default: super.keyDown(with: event)
             }
         }

@@ -121,4 +121,15 @@ extension Viewport {
             y: min(max(origin.y + halfH, area.y - pad), area.y + area.height + pad))
         return Viewport(origin: Point2D(x: centre.x - halfW, y: centre.y - halfH), zoom: zoom)
     }
+
+    /// Zooms around `anchor` (view coordinates), then clamps. TS `performZoom` runs
+    /// `clampPosition` on every zoom step (pinch, wheel and keyboard).
+    public func zoomed(
+        by factor: Double, around anchor: Point2D, clampingTo map: GameMap, library: [String: TokenLibraryItem],
+        viewWidth: Double, viewHeight: Double
+    ) -> Viewport {
+        var next = self
+        next.zoom(by: factor, around: anchor)
+        return next.clamped(map: map, library: library, viewWidth: viewWidth, viewHeight: viewHeight)
+    }
 }
