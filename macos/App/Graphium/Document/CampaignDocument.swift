@@ -102,25 +102,28 @@ final class CampaignDocument: ReferenceFileDocument {
 }
 
 /// Lets a World View window (opened with only a `sessionID`) find its live document.
-@MainActor
-final class DocumentRegistry {
+/// Lock-protected rather than main-actor-bound because `ReferenceFileDocument`
+/// initializers are nonisolated and may run off the main thread.
+final class DocumentRegistry: @unchecked Sendable {
     static let shared = DocumentRegistry()
 
     private struct WeakDocument {
         weak var document: CampaignDocument?
     }
 
+    private let lock = NSLock()
     private var documents: [UUID: WeakDocument] = [:]
 
-    nonisolated func register(_ document: CampaignDocument) {
-        let id = document.sessionID
-        Task { @MainActor in
-            self.documents = self.documents.filter { $0.value.document != nil }
-            self.documents[id] = WeakDocument(document: document)
-        }
+    func register(_ document: CampaignDocument) {
+        lock.lock()
+        defer { lock.unlock() }
+        documents = documents.filter { $0.value.document != nil }
+        documents[document.sessionID] = WeakDocument(document: document)
     }
 
     func document(for sessionID: UUID) -> CampaignDocument? {
-        documents[sessionID]?.document
+        lock.lock()
+        defer { lock.unlock() }
+        return documents[sessionID]?.document
     }
 }

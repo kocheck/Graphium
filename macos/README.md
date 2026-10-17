@@ -34,6 +34,25 @@ uploads `Graphium-macOS.zip` as a workflow artifact.
 - **AppKit canvas.** `MapCanvasNSView` takes raw `NSEvent` input (trackpad pinch and scroll,
   later tablet pressure) and draws with Core Graphics.
 
+## Roadmap to full parity
+
+`docs/PARITY.md` is the checklist (273 items, ticked as they ship); `docs/CORE_SPEC.md` is the
+behaviour spec for data and logic. Items tagged **(gap)** in PARITY.md are behaviours the
+Electron app gets wrong or never finished; the native app implements the intended behaviour.
+
+| Milestone | Scope                                                                                                                                                                           | Status |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M0        | Package, document-based app shell, World View window on the same document, canvas pan/zoom, macOS CI                                                                            | Done   |
+| M1        | Full persisted model (CORE_SPEC §1), `.graphiumcampaign` format, legacy `.graphium` importer                                                                                    | In CI  |
+| M2        | Grid geometry for square/hex/iso + snapping (§3.1), map background import, tokens (place, move, resize, select, multi-select), token inspector, map add/rename/delete           |        |
+| M3        | World View parity: player-safe rendering, display picker and full screen on the projector, pause screen, token dragging limited as in TS (§3.12), Center on Party               |        |
+| M4        | Fog of war (§3.3): visibility raycasting against walls and closed doors, explored regions saved and resettable, daylight mode, NPC hiding                                       |        |
+| M5        | Drawing: pressure-sensitive marker, eraser, walls with smoothing (§3.5); doors (place, open, lock); stairs; measurement ruler/blast/cone (§3.2); movement range (§3.4)          |        |
+| M6        | Asset library (persistent, thumbnails, categories, tags, search), image cropper, token library prototypes and overrides, drag and drop                                          |        |
+| M7        | Session Console: catalog editor, stage plates, local audio with AVAudioEngine fades/ducking, synth SFX, YouTube via WKWebView, board packs (§3.9-3.11)                          |        |
+| M8        | Dungeon generator (§3.8), command palette (§3.15), minimap, paper texture, home screen and recent campaigns                                                                     |        |
+| M9        | Polish and release: full menus and shortcuts, Settings, accessibility audit, performance on Apple Silicon (Instruments), Sparkle updates, Developer ID signing and notarization |        |
+
 ## File format
 
 A `.graphiumcampaign` document is a package (a folder Finder shows as one file):
