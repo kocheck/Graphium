@@ -36,6 +36,15 @@ uploads `Graphium-macOS.zip` as a workflow artifact.
 - **App shell** (`App/Graphium/Shell`). A Welcome window opens at launch (recents, templates,
   Generate Dungeon). It also holds the About/Tutorial/Shortcuts window, Settings (theme and
   pen pressure), View > Theme and the ⇧⌘M performance monitor.
+- **SwiftUI first.** All chrome is SwiftUI: file pickers (`fileImporter`/`fileExporter`),
+  alerts, popovers, a customisable toolbar (View > Customize Toolbar), the Tools, Map and
+  Session menus, and collapsible inspector and console sections. The Session Console can also
+  run in its own window. AppKit is kept only where SwiftUI can't do the job:
+  - the map canvas, for raw tablet, trackpad and key input and for draw performance;
+  - the canvas's hit-tested right-click menu;
+  - the World View's display placement;
+  - the hidden YouTube web view;
+  - the pasteboard.
 
 ## Roadmap to full parity
 
