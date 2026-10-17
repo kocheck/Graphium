@@ -12,6 +12,8 @@ rest of this repository.
 Every change follows [docs/PRINCIPLES.md](docs/PRINCIPLES.md): privacy first and file over app.
 Campaigns live in open files the DM owns, and nothing leaves the Mac unless the DM asks.
 [docs/SESSION_TIMING.md](docs/SESSION_TIMING.md) is how in-session friction is measured.
+UI work starts at the [design harness](design/harness/INDEX.md) and [DESIGN.md](docs/design/DESIGN.md);
+agents start at [AGENTS.md](AGENTS.md).
 
 ## Build
 

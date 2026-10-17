@@ -27,6 +27,9 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: Design harness and tokens
+        run: bash scripts/check-design-docs.sh
+
       - name: GraphiumCore unit tests
         run: swift test --parallel
 

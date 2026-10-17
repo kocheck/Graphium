@@ -35,3 +35,6 @@ accessibility-violations*.json
 
 # Test coverage artifacts
 coverage/
+
+# Design review screenshots (macos/design/harness/review-loop.md)
+design-shots/

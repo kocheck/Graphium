@@ -9,6 +9,7 @@ struct ArchitectView: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage(Prefs.pressureEnabled) private var pressureEnabled = true
     @AppStorage(Prefs.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
     @State private var showingPerformance = false
@@ -65,6 +66,30 @@ struct ArchitectView: View {
     private struct Toast: Equatable {
         enum Kind {
             case info, success, error
+
+            var symbol: String {
+                switch self {
+                case .info: return "info.circle.fill"
+                case .success: return "checkmark.circle.fill"
+                case .error: return "exclamationmark.triangle.fill"
+                }
+            }
+
+            var tint: Palette {
+                switch self {
+                case .info: return .inkSecondary
+                case .success: return .statusOk
+                case .error: return .statusCritical
+                }
+            }
+
+            var accessibilityLabel: String {
+                switch self {
+                case .info: return "Note"
+                case .success: return "Done"
+                case .error: return "Error"
+                }
+            }
         }
 
         let id = UUID()
@@ -421,15 +446,18 @@ struct ArchitectView: View {
             calibrating: calibrating,
             assetNamespace: document.sessionID.uuidString
         )
-        .overlay(alignment: .top) { canvasBanner }
+        .overlay(alignment: .top) {
+            canvasBanner
+                .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: toast)
+                .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: calibrating)
+        }
         .overlay(alignment: .bottomTrailing) {
             if showingPerformance { PerformanceOverlay(document: document).padding(12) }
         }
         .overlay {
             if importsInFlight > 0 {
                 ProgressView("Importing image…")
-                    .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    .etchedPanel(padding: EdgeInsets(top: Spacing.lg, leading: Spacing.lg, bottom: Spacing.lg, trailing: Spacing.lg))
             }
         }
         .navigationTitle(campaign.activeMap.name)
@@ -1010,33 +1038,38 @@ struct ArchitectView: View {
     @ViewBuilder
     private var canvasBanner: some View {
         if calibrating {
-            HStack(spacing: 12) {
-                Label("Drag a box around exactly one grid cell on the map image", systemImage: "square.dashed")
+            HStack(spacing: Spacing.md) {
+                Label {
+                    Text("Drag a box around one grid cell on the map image")
+                } icon: {
+                    Image(systemName: "square.dashed").foregroundStyle(Palette.accentText.color)
+                }
                 Button("Cancel") { calibrating = false }
                     .keyboardShortcut(.cancelAction)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(.regularMaterial, in: Capsule())
-            .padding(.top, 12)
+            .etchedPanel()
+            .padding(.top, Spacing.md)
+            .transition(.opacity)
         } else if let toast {
-            HStack(spacing: 10) {
-                Image(systemName: toast.kind == .error ? "exclamationmark.triangle.fill" : toast.kind == .success ? "checkmark.circle.fill" : "info.circle.fill")
-                    .foregroundStyle(toast.kind == .error ? Color.red : toast.kind == .success ? Color.green : Color.accentColor)
+            HStack(spacing: Spacing.sm + 2) {
+                Image(systemName: toast.kind.symbol)
+                    .foregroundStyle(toast.kind.tint.color)
+                    .accessibilityLabel(toast.kind.accessibilityLabel)
                 Text(toast.message)
+                    .lineLimit(2)
                 Button {
                     self.toast = nil
                 } label: {
                     Image(systemName: "xmark")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
+                .foregroundStyle(Palette.inkSecondary.color)
                 .accessibilityLabel("Close notification")
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(.regularMaterial, in: Capsule())
-            .padding(.top, 12)
-            .transition(.move(edge: .top).combined(with: .opacity))
+            .etchedPanel()
+            .frame(maxWidth: 560)
+            .padding(.top, Spacing.md)
+            .transition(.opacity)
             .accessibilityElement(children: .contain)
             .task(id: toast.id) {
                 try? await Task.sleep(for: .seconds(5))
@@ -1057,7 +1090,8 @@ struct ArchitectView: View {
     }
 }
 
-/// Play/Pause for the World View (PARITY §1.12): red while players can't see the map.
+/// Play/Pause for the World View (PARITY §1.12). Native: only the paused state carries the
+/// accent, with its own symbol and label (design harness: state-without-colour, one-warm-accent).
 private struct PauseToolbarButton: View {
     @ObservedObject var document: CampaignDocument
 
@@ -1069,8 +1103,8 @@ private struct PauseToolbarButton: View {
                 document.isPaused ? "Resume" : "Pause",
                 systemImage: document.isPaused ? "play.fill" : "pause.fill")
         }
-        .tint(document.isPaused ? .red : .green)
-        .help(document.isPaused ? "Resume - Players will see the map" : "Pause - Hide map from players")
+        .tint(document.isPaused ? Palette.accent.color : nil)
+        .help(document.isPaused ? "Resume: players will see the map" : "Pause: hide the map from players")
     }
 }
 

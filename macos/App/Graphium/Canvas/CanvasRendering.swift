@@ -121,11 +121,7 @@ extension MapCanvasNSView {
                 drawSymbol("lock.fill", centredAt: CGPoint(x: door.x, y: door.y), size: max(12, door.size * 0.35), context: context)
             }
             if selectedDoorID == door.id || selection.contains(door.id) {
-                context.saveGState()
-                context.setStrokeColor(NSColor.systemBlue.cgColor)
-                context.setLineWidth(2 / viewport.zoom)
-                context.stroke(closed.insetBy(dx: -4, dy: -4))
-                context.restoreGState()
+                context.strokeMark(CGPath(rect: closed.insetBy(dx: -4, dy: -4), transform: nil), width: 2 / viewport.zoom)
             }
         }
         doorSwings.finishFrame(doorIDs: Set(doors.map(\.id)))
@@ -188,14 +184,14 @@ extension MapCanvasNSView {
         for cell in cells { path.addPolygon(geometry.cellVertices(cell)) }
         context.saveGState()
         context.addPath(path)
-        context.setFillColor(NSColor.systemBlue.withAlphaComponent(0.22).cgColor)
+        context.setFillColor(Palette.canvasRange.nsColor.cgColor)
         context.fillPath()
         context.restoreGState()
     }
 
     func drawMeasurement(_ shape: MeasurementShape, gridSize: Double, context: CGContext) {
         context.saveGState()
-        let color = NSColor.systemYellow
+        let color = Palette.canvasMeasure.nsColor
         context.setStrokeColor(color.cgColor)
         context.setFillColor(color.withAlphaComponent(0.18).cgColor)
         context.setLineWidth(3 / viewport.zoom)
@@ -221,18 +217,23 @@ extension MapCanvasNSView {
         }
         context.restoreGState()
 
-        // 16pt label on a dark backing, constant on-screen size.
+        // A readout on a dark backing, constant on-screen size: 16 pt for the DM, 18 pt on the
+        // projector (design harness: world-view-player-safe, readouts-in-mono).
         let label = NSAttributedString(
             string: shape.label(gridSize: gridSize),
-            attributes: [.font: NSFont.boldSystemFont(ofSize: 16 / viewport.zoom), .foregroundColor: NSColor.white])
+            attributes: [
+                .font: ReadoutFont.ns(size: (isPlayerView ? 18 : 16) / viewport.zoom, weight: .semibold),
+                .foregroundColor: NSColor.white,
+            ])
         let size = label.size()
         let pad = 6 / viewport.zoom
+        let radius = Radius.control / viewport.zoom
         let box = CGRect(
             x: labelAnchor.x + 10 / viewport.zoom, y: labelAnchor.y - size.height - pad * 2,
             width: size.width + pad * 2, height: size.height + pad * 2)
         context.saveGState()
-        context.setFillColor(NSColor.black.withAlphaComponent(0.75).cgColor)
-        context.addPath(CGPath(roundedRect: box, cornerWidth: pad, cornerHeight: pad, transform: nil))
+        context.setFillColor(Palette.worldScrim.nsColor.cgColor)
+        context.addPath(CGPath(roundedRect: box, cornerWidth: radius, cornerHeight: radius, transform: nil))
         context.fillPath()
         context.restoreGState()
         label.draw(at: CGPoint(x: box.minX + pad, y: box.minY + pad))

@@ -226,7 +226,7 @@ final class MapCanvasNSView: NSView {
             let path = CGMutablePath()
             path.addPolygon(geometry.cellVertices(geometry.pixelToGrid(hoverPoint)))
             context.addPath(path)
-            context.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor)
+            context.setFillColor(Palette.canvasHover.nsColor.cgColor)
             context.fillPath()
         }
         var liveStroke: Drawing?
@@ -245,12 +245,9 @@ final class MapCanvasNSView: NSView {
         }
         drawInk(ink, live: liveStroke, context: context)
         for drawing in ink where selection.contains(drawing.id) {
-            context.saveGState()
-            context.setStrokeColor(NSColor.systemBlue.cgColor)
-            context.setLineWidth(1.5 / viewport.zoom)
-            context.setLineDash(phase: 0, lengths: [5 / viewport.zoom, 3 / viewport.zoom])
-            context.stroke(CGRect(bounds: map.drawingBounds(drawing)))
-            context.restoreGState()
+            context.strokeMark(
+                CGPath(rect: CGRect(bounds: map.drawingBounds(drawing)), transform: nil), width: 1.5 / viewport.zoom,
+                dash: [5 / viewport.zoom, 3 / viewport.zoom])
         }
         drawStairs(map.stairs, context: context)
         drawDoors(map.doors, context: context)
@@ -274,24 +271,26 @@ final class MapCanvasNSView: NSView {
         }
         drawTokens(map, context: context)
         if let handle = resizeHandle(in: map), case .idle = interaction {
-            context.setFillColor(NSColor.white.cgColor)
-            context.setStrokeColor(NSColor.systemBlue.cgColor)
-            context.setLineWidth(1.5 / viewport.zoom)
+            context.setFillColor(Palette.canvasSelection.nsColor.cgColor)
             context.fill(CGRect(bounds: handle.rect))
-            context.stroke(CGRect(bounds: handle.rect))
+            context.strokeMark(
+                CGPath(rect: CGRect(bounds: handle.rect), transform: nil), width: 1 / viewport.zoom,
+                color: Palette.canvasHalo.nsColor)
         }
         if case .resizing(let id, let base, let start, let current) = interaction,
             let token = map.tokens.first(where: { $0.id == id })
         {
             let size = max(map.gridSize * 0.25, base + max(current.x - start.x, current.y - start.y))
-            context.setStrokeColor(NSColor.systemBlue.cgColor)
-            context.setLineWidth(2 / viewport.zoom)
-            context.stroke(CGRect(x: token.x, y: token.y + map.tokenDisplayYOffset(size: size), width: size, height: size))
+            context.strokeMark(
+                CGPath(
+                    rect: CGRect(x: token.x, y: token.y + map.tokenDisplayYOffset(size: size), width: size, height: size),
+                    transform: nil),
+                width: 2 / viewport.zoom)
         }
         if case .calibrating(let start, let current) = interaction {
-            context.setStrokeColor(NSColor.systemOrange.cgColor)
-            context.setLineWidth(2 / viewport.zoom)
-            context.stroke(CGRect(bounds: Bounds(corner: start, corner: current)))
+            context.strokeMark(
+                CGPath(rect: CGRect(bounds: Bounds(corner: start, corner: current)), transform: nil),
+                width: 2 / viewport.zoom, color: Palette.canvasMeasure.nsColor)
         }
         if let measurement { drawMeasurement(measurement, gridSize: map.gridSize, context: context) }
         if !isPlayerView, editing != nil, toolState.tool == .door, let hoverPoint {
@@ -299,11 +298,9 @@ final class MapCanvasNSView: NSView {
         }
         if case .marquee(let start, let current, _) = interaction {
             let rect = CGRect(bounds: Bounds(corner: start, corner: current))
-            context.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor)
+            context.setFillColor(Palette.canvasHover.nsColor.cgColor)
             context.fill(rect)
-            context.setStrokeColor(NSColor.controlAccentColor.cgColor)
-            context.setLineWidth(1 / viewport.zoom)
-            context.stroke(rect)
+            context.strokeMark(CGPath(rect: rect, transform: nil), width: 1 / viewport.zoom)
         }
         context.restoreGState()
     }
@@ -428,12 +425,9 @@ final class MapCanvasNSView: NSView {
                 }
                 rect = rect.offsetBy(dx: offset.dx, dy: offset.dy)
                 if let target = preview[token.id] {
-                    context.saveGState()
-                    context.setStrokeColor(NSColor.systemBlue.cgColor)
-                    context.setLineWidth(2 / viewport.zoom)
-                    context.setLineDash(phase: 0, lengths: [6 / viewport.zoom, 4 / viewport.zoom])
-                    context.strokeEllipse(in: CGRect(x: target.x, y: target.y + lift, width: size, height: size))
-                    context.restoreGState()
+                    context.strokeMark(
+                        CGPath(ellipseIn: CGRect(x: target.x, y: target.y + lift, width: size, height: size), transform: nil),
+                        width: 2 / viewport.zoom, dash: [6 / viewport.zoom, 4 / viewport.zoom])
                 }
                 drawToken(token, in: rect, lift: lift, selected: false, look: .dragged, context: context)
                 continue
@@ -524,21 +518,14 @@ final class MapCanvasNSView: NSView {
         }
         context.restoreGState()
         if selected {
-            // TS: a dashed [8, 4] blue circle of radius size/2 + 2 with a blue glow.
-            context.saveGState()
-            context.setShadow(offset: .zero, blur: 8, color: NSColor.systemBlue.cgColor)
-            context.setStrokeColor(NSColor.systemBlue.cgColor)
-            context.setLineWidth((highContrast ? 4.5 : 3) / viewport.zoom)
-            context.setLineDash(phase: 0, lengths: [8 / viewport.zoom, 4 / viewport.zoom])
-            context.strokeEllipse(in: rect.insetBy(dx: -2, dy: -2))
-            context.restoreGState()
+            // TS: a dashed [8, 4] circle of radius size/2 + 2. Native: amber over a halo, not a blue glow.
+            context.strokeMark(
+                CGPath(ellipseIn: rect.insetBy(dx: -2, dy: -2), transform: nil),
+                width: (highContrast ? 4.5 : 3) / viewport.zoom, dash: [8 / viewport.zoom, 4 / viewport.zoom])
         }
 
         let name = ResolvedToken(token, library: library).name
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor,
-        ]
-        let label = NSAttributedString(string: name, attributes: attributes)
+        let label = NSAttributedString.mapLabel(name, font: NSFont.boldSystemFont(ofSize: 12))
         let labelSize = label.size()
         label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY - lift + 8))
     }

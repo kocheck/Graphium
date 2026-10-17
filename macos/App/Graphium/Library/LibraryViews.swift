@@ -155,7 +155,7 @@ struct LibraryCard: View {
                 }
             }
             .frame(width: 96, height: 96)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.control))
             .overlay(alignment: .topTrailing) {
                 if campaignOnly {
                     Image(systemName: "doc.fill")
