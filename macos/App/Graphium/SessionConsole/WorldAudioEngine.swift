@@ -308,7 +308,8 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
         super.init()
         // The controller retains its handlers; a weak proxy avoids a cycle through webView.
         controller.add(WeakScriptMessageHandler(self), name: "graphium")
-        webView.loadHTMLString(Self.html, baseURL: URL(string: "https://graphium.app/world"))
+        // The page isn't loaded until the first YouTube play: opening the World View
+        // must not contact YouTube (docs/PRINCIPLES.md, Network).
     }
 
     func play(videoID: String, loop: Bool, volume: Int) {
@@ -359,7 +360,8 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
         call("graphiumVolume(volume)", ["volume": volume])
     }
 
-    private var isShutDown = false
+    /// True until the first play, and again after `shutdown`.
+    private var isShutDown = true
 
     /// Unloads the player page so nothing keeps playing after the World View closes.
     func shutdown() {
@@ -370,7 +372,7 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
         if let blank = URL(string: "about:blank") { webView.load(URLRequest(url: blank)) }
     }
 
-    /// Reloads the player page after `shutdown`; its "ready" message applies the pending load.
+    /// Loads the player page on first use or after `shutdown`; its "ready" message applies the pending load.
     private func reviveIfShutDown() {
         guard isShutDown else { return }
         isShutDown = false
