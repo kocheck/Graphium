@@ -65,6 +65,14 @@ final class WorldViewTests: XCTestCase {
         XCTAssertEqual(map, before, "a hidden primary moves nothing")
     }
 
+    func testLiveDragPositionsDriveVisibility() {
+        let map = visionMap()
+        let dragged = map.withTokenPositions(["pc": Point2D(x: 1900, y: 1900)])
+        XCTAssertEqual(dragged.tokens.first { $0.id == "pc" }?.x, 1900)
+        XCTAssertEqual(dragged.tokensHiddenFromPlayers(library: [:]), ["near"], "vision follows the drag")
+        XCTAssertEqual(map.withTokenPositions([:]), map)
+    }
+
     func testPlayerMoveInDaylightHidesNothing() {
         var map = visionMap()
         map.isDaylightMode = true

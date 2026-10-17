@@ -29,6 +29,8 @@ private struct WorldView: View {
     @State private var visibilityCache = VisibilityCache()
     @StateObject private var window = WindowReference()
     @State private var selection: Set<String> = []
+    /// A player's own in-progress drag in this window, so fog and NPC hiding follow it live.
+    @State private var playerDrag: [String: Point2D] = [:]
     @State private var fitRequest: FitRequest?
     @State private var pauseLine = SystemMessages.pauseOverlay[0]
     /// This window owns the campaign's Session Console audio.
@@ -58,7 +60,8 @@ private struct WorldView: View {
         let map = liveMap(campaign)
         let party = map.partyBounds(library: library)
         // Fog and hidden NPCs (CORE_SPEC §3.3); none in daylight.
-        let visibility = visibilityCache.visibility(of: map, library: library)
+        // The canvas draws its own drag offset, so only vision sees the player's drag.
+        let visibility = visibilityCache.visibility(of: map.withTokenPositions(playerDrag), library: library)
         let vision = visibility.vision
         let hidden = visibility.hiddenNPCIDs
         let fog =
@@ -79,7 +82,8 @@ private struct WorldView: View {
                     dropTokens: { ids, primary, dx, dy, _ in
                         document.playerMoveTokens(ids, primary: primary, dx: dx, dy: dy)
                     },
-                    allowsDuplicate: false),
+                    allowsDuplicate: false,
+                    dragPreview: { playerDrag = $0 ?? [:] }),
                 hiddenTokenIDs: hidden,
                 fog: fog,
                 isPlayerView: true,
@@ -154,7 +158,10 @@ private struct WorldView: View {
         .onChange(of: document.isPaused) { _, paused in
             if paused { pauseLine = SystemMessages.pauseOverlay.randomElement() ?? pauseLine }
         }
-        .onChange(of: campaign.activeMapID) { _, _ in selection = [] }
+        .onChange(of: campaign.activeMapID) { _, _ in
+            selection = []
+            playerDrag = [:]
+        }
         // Tokens that drop out of sight leave the selection, so a later drag can't carry them.
         .onChange(of: hidden) { _, now in selection.subtract(now) }
         .onChange(of: document.sessionRuntime) { _, runtime in audio.apply(runtime, assets: document.assets) }

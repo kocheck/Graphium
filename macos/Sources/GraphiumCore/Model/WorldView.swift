@@ -29,6 +29,20 @@ extension GameMap {
         return LineOfSight.hiddenNPCIDs(of: self, library: library, polygons: vision.map(\.polygon))
     }
 
+    /// This map with some tokens at in-progress drag positions (top-left corners), so
+    /// fog and NPC hiding can follow a drag before it is dropped (TS `fogVisibility`).
+    public func withTokenPositions(_ positions: [String: Point2D]) -> GameMap {
+        guard !positions.isEmpty else { return self }
+        var map = self
+        for i in map.tokens.indices {
+            if let p = positions[map.tokens[i].id] {
+                map.tokens[i].x = p.x
+                map.tokens[i].y = p.y
+            }
+        }
+        return map
+    }
+
     /// The tokens a drag moves, in map order: `selected` minus anything `hidden`
     /// (PARITY §3.7/§4.2: hidden NPCs are not interactive, even when still selected).
     public func draggedTokenIDs(selected: Set<String>, hidden: Set<String> = []) -> [String] {

@@ -119,4 +119,67 @@ final class LineOfSightTests: XCTestCase {
         daylight.recordExploration(since: start, library: [:], timestamp: 0)
         XCTAssertTrue(daylight.exploredRegions.isEmpty, "no fog in daylight")
     }
+
+    /// A PC standing west of a closed door in a wall at x = 200 (the door spans y 0…100).
+    private func doorwayMap() -> GameMap {
+        var map = GameMap(gridSize: 50)
+        map.tokens = [Token(id: "pc", x: 0, y: 25, src: "", type: .pc, visionRadius: 60)]
+        map.drawings = [
+            Drawing(tool: .wall, points: [200, -1000, 200, 0], color: "#f00", size: 8),
+            Drawing(tool: .wall, points: [200, 100, 200, 1000], color: "#f00", size: 8),
+        ]
+        map.doors = [Door(id: "door", x: 200, y: 50, orientation: .vertical, size: 100)]
+        return map
+    }
+
+    func testOpeningThenClosingADoorKeepsTheGlimpseExplored() {
+        var map = doorwayMap()
+        let beyond = Point2D(x: 400, y: 50)
+        let closed = map
+        map.doors[0].isOpen = true
+        XCTAssertEqual(map.recordExploration(since: closed, library: [:], timestamp: 1), 1, "the standing PC is stamped")
+        let opened = map
+        map.doors[0].isOpen = false
+        map.recordExploration(since: opened, library: [:], timestamp: 2)
+        XCTAssertEqual(map.exploredRegions.count, 2)
+        XCTAssertTrue(
+            LineOfSight.containsInAny(map.exploredRegions.map(\.points), beyond), "the room seen through the door stays explored")
+        XCTAssertFalse(LineOfSight.contains(map.exploredRegions[1].points, beyond), "but the PC can no longer see it")
+    }
+
+    func testUnrelatedEditDoesNotRaycast() {
+        var map = doorwayMap()
+        let before = map
+        map.gridColor = "#ff0000"
+        map.exploredRegions = [ExploredRegion(points: [Point2D(x: 1, y: 1)], timestamp: 1)]
+        XCTAssertEqual(map.recordExploration(since: before, library: [:], timestamp: 3), 0)
+        XCTAssertEqual(map.exploredRegions.count, 1)
+
+        // A marker stroke changes drawings but not walls: only moved viewers (none) are cast.
+        let unmoved = map
+        map.drawings.append(Drawing(tool: .marker, points: [0, 0, 5, 5], color: "#000", size: 5))
+        XCTAssertEqual(map.recordExploration(since: unmoved, library: [:], timestamp: 4), 0)
+    }
+
+    func testOnlyMovedViewersAreRaycast() {
+        var map = doorwayMap()
+        map.tokens.append(Token(id: "other", x: 0, y: 500, src: "", type: .pc, visionRadius: 30))
+        let before = map
+        map.tokens[1].x = 50
+        XCTAssertEqual(map.recordExploration(since: before, library: [:], timestamp: 5), 1)
+    }
+
+    func testLibraryVisionChangeStampsAffectedViewers() {
+        let item = TokenLibraryItem(
+            id: "hero", name: "Hero", src: "", thumbnailSrc: "", category: "PC", dateAdded: 0, defaultVisionRadius: 30)
+        var map = GameMap(gridSize: 50)
+        map.tokens = [Token(id: "pc", x: 0, y: 0, src: "", libraryItemId: "hero")]
+        let before = map
+        var wider = item
+        wider.defaultVisionRadius = 60
+        XCTAssertEqual(
+            map.recordExploration(
+                since: before, library: ["hero": wider], previousLibrary: ["hero": item], timestamp: 6), 1)
+        XCTAssertEqual(map.recordExploration(since: map, library: ["hero": wider], timestamp: 7), 0)
+    }
 }

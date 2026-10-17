@@ -131,8 +131,11 @@ final class CampaignDocument: ReferenceFileDocument {
         // Fog: whatever PCs can now see becomes explored, in the same undo step.
         if next.activeMapID == before.activeMapID {
             let library = next.libraryIndex
+            // A library edit can change PCs' vision without touching the map.
+            let previousLibrary = next.tokenLibrary == before.tokenLibrary ? nil : before.libraryIndex
             next.activeMap.recordExploration(
-                since: before.activeMap, library: library, timestamp: Date().timeIntervalSince1970 * 1000)
+                since: before.activeMap, library: library, previousLibrary: previousLibrary,
+                timestamp: Date().timeIntervalSince1970 * 1000)
         }
         guard next != before else { return }
         campaign = next
