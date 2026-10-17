@@ -19,11 +19,11 @@ final class MapCanvasNSView: NSView {
     }
 
     private func drawGrid(cellSize: Double, in context: CGContext) {
-        let spacing = CGFloat(cellSize) * viewport.zoom
+        let spacing = CGFloat(cellSize * viewport.zoom)
         guard spacing >= 4 else { return }  // too dense to read; skip like the TS grid does
         let first = viewport.viewPoint(fromMap: .zero)
-        let startX = first.x.truncatingRemainder(dividingBy: spacing)
-        let startY = first.y.truncatingRemainder(dividingBy: spacing)
+        let startX = CGFloat(first.x).truncatingRemainder(dividingBy: spacing)
+        let startY = CGFloat(first.y).truncatingRemainder(dividingBy: spacing)
 
         context.setStrokeColor(NSColor.separatorColor.cgColor)
         context.setLineWidth(1)
@@ -44,24 +44,27 @@ final class MapCanvasNSView: NSView {
 
     // MARK: Input
 
+    private func viewLocation(of event: NSEvent) -> Point2D {
+        let location = convert(event.locationInWindow, from: nil)
+        return Point2D(x: Double(location.x), y: Double(location.y))
+    }
+
     override func magnify(with event: NSEvent) {
-        let anchor = convert(event.locationInWindow, from: nil)
-        viewport.zoom(by: 1 + event.magnification, around: anchor)
+        viewport.zoom(by: 1 + Double(event.magnification), around: viewLocation(of: event))
     }
 
     override func scrollWheel(with event: NSEvent) {
         if event.hasPreciseScrollingDeltas {
             // Trackpad / Magic Mouse: two-finger scroll pans.
-            viewport.pan(byView: CGSize(width: event.scrollingDeltaX, height: event.scrollingDeltaY))
+            viewport.pan(byViewDX: Double(event.scrollingDeltaX), dy: Double(event.scrollingDeltaY))
         } else {
             // Wheel mouse: wheel zooms around the cursor.
-            let anchor = convert(event.locationInWindow, from: nil)
-            viewport.zoom(by: event.scrollingDeltaY > 0 ? 1.1 : 1 / 1.1, around: anchor)
+            viewport.zoom(by: event.scrollingDeltaY > 0 ? 1.1 : 1 / 1.1, around: viewLocation(of: event))
         }
     }
 
     override func mouseDragged(with event: NSEvent) {
-        viewport.pan(byView: CGSize(width: event.deltaX, height: event.deltaY))
+        viewport.pan(byViewDX: Double(event.deltaX), dy: Double(event.deltaY))
     }
 }
 

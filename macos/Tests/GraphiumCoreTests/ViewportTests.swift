@@ -5,16 +5,16 @@ import XCTest
 
 final class ViewportTests: XCTestCase {
     func testMapAndViewPointsRoundTrip() {
-        let viewport = Viewport(origin: CGPoint(x: 120, y: -40), zoom: 2.5)
-        let map = CGPoint(x: 333, y: 77)
+        let viewport = Viewport(origin: Point2D(x: 120, y: -40), zoom: 2.5)
+        let map = Point2D(x: 333, y: 77)
         let back = viewport.mapPoint(fromView: viewport.viewPoint(fromMap: map))
         XCTAssertEqual(back.x, map.x, accuracy: 1e-9)
         XCTAssertEqual(back.y, map.y, accuracy: 1e-9)
     }
 
     func testZoomKeepsPointUnderCursorFixed() {
-        var viewport = Viewport(origin: CGPoint(x: 10, y: 20), zoom: 1)
-        let cursor = CGPoint(x: 400, y: 300)
+        var viewport = Viewport(origin: Point2D(x: 10, y: 20), zoom: 1)
+        let cursor = Point2D(x: 400, y: 300)
         let underCursor = viewport.mapPoint(fromView: cursor)
         viewport.zoom(by: 1.75, around: cursor)
         let after = viewport.mapPoint(fromView: cursor)
@@ -31,9 +31,16 @@ final class ViewportTests: XCTestCase {
         XCTAssertEqual(viewport.zoom, Viewport.zoomRange.lowerBound)
     }
 
+    func testJSRoundMatchesJavaScriptHalfRounding() {
+        XCTAssertEqual(jsRound(2.5), 3)
+        XCTAssertEqual(jsRound(-2.5), -2)
+        XCTAssertEqual(jsRound(-2.6), -3)
+        XCTAssertEqual(jsRound(0.49), 0)
+    }
+
     func testPanMovesMapOppositeToDragInMapUnits() {
         var viewport = Viewport(origin: .zero, zoom: 2)
-        viewport.pan(byView: CGSize(width: 100, height: -50))
-        XCTAssertEqual(viewport.origin, CGPoint(x: -50, y: 25))
+        viewport.pan(byViewDX: 100, dy: -50)
+        XCTAssertEqual(viewport.origin, Point2D(x: -50, y: 25))
     }
 }
