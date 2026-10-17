@@ -30,6 +30,7 @@ struct CommandPalette: View {
 
     private static func rowID(action id: String) -> String { "action:\(id)" }
     private static func rowID(asset id: String) -> String { "asset:\(id)" }
+    private static func rowBackground(_ highlighted: Bool) -> Color? { highlighted ? Color.accentColor.opacity(0.25) : nil }
 
     var body: some View {
         let actions = self.actions
@@ -63,7 +64,7 @@ struct CommandPalette: View {
                                 }
                                 .buttonStyle(.plain)
                                 .id(Self.rowID(action: command.id))
-                                .listRowBackground(selected == index ? Color.accentColor.opacity(0.25) : nil)
+                                .listRowBackground(Self.rowBackground(selected == index))
                             }
                         }
                     }
@@ -92,7 +93,7 @@ struct CommandPalette: View {
                                     .controlSize(.small)
                                 }
                                 .id(Self.rowID(asset: item.id))
-                                .listRowBackground(selected == actions.count + index ? Color.accentColor.opacity(0.25) : nil)
+                                .listRowBackground(Self.rowBackground(selected == actions.count + index))
                             }
                         }
                     }

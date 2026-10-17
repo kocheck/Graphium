@@ -125,11 +125,11 @@ struct TokenInspector: View {
         let tokenID = token.token.id
         // A name typed but not yet committed is part of what gets saved (TS reads the live field).
         commitName(ids: selection)
-        let token = selected.first { $0.token.id == tokenID } ?? token
-        let previousName = document.campaign.tokenLibrary.first(where: { $0.id == itemID })?.name ?? token.name
+        let saved = selected.first(where: { $0.token.id == tokenID }) ?? token
+        let previousName = document.campaign.tokenLibrary.first(where: { $0.id == itemID })?.name ?? saved.name
         document.edit("Save to Library", undoManager: undoManager) { campaign in
             guard let index = campaign.tokenLibrary.firstIndex(where: { $0.id == itemID }) else { return }
-            campaign.tokenLibrary[index].adoptDefaults(from: token)
+            campaign.tokenLibrary[index].adoptDefaults(from: saved)
             if let t = campaign.activeMap.tokens.firstIndex(where: { $0.id == tokenID }) {
                 campaign.activeMap.tokens[t].name = nil
                 campaign.activeMap.tokens[t].type = nil
@@ -140,7 +140,7 @@ struct TokenInspector: View {
         let store = LibraryStore.shared
         if let previous = store.items.first(where: { $0.id == itemID }) {
             var global = previous
-            global.adoptDefaults(from: token)
+            global.adoptDefaults(from: saved)
             // The in-memory copy changes even if writing index.json fails, so undo is registered either way.
             defer { store.registerUndo(restoring: previous, undoManager: undoManager) }
             do {
