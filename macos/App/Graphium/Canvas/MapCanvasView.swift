@@ -110,7 +110,8 @@ final class MapCanvasNSView: NSView {
         case panning
         case movingTokens(ids: [String], primary: String, start: Point2D, current: Point2D, began: Bool)
         case marquee(start: Point2D, current: Point2D, base: Set<String>)
-        case stroke(Drawing)
+        /// Drawing a marker, eraser or wall stroke; the stroke itself is `liveStroke`.
+        case stroke
         case measuring(origin: Point2D)
         case movingStrokes(ids: Set<String>, start: Point2D, current: Point2D, began: Bool)
         case resizing(tokenID: String, baseSize: Double, start: Point2D, current: Point2D)
@@ -129,6 +130,9 @@ final class MapCanvasNSView: NSView {
     }
 
     private var interaction = Interaction.idle
+    /// The stroke being drawn. Held outside `interaction` so each drag event appends in
+    /// place instead of copying the growing point arrays (TS mutates its line in place).
+    private var liveStroke: Drawing?
     /// Door open/close swings in flight (PARITY §3.6); used by `drawDoors`.
     lazy var doorSwings = DoorSwingAnimator()
     private var lastBaked: (key: String, image: CGImage)?
@@ -212,7 +216,7 @@ final class MapCanvasNSView: NSView {
             context.fillPath()
         }
         var liveStroke: Drawing?
-        if case .stroke(let drawing) = interaction { liveStroke = drawing }
+        if case .stroke = interaction { liveStroke = self.liveStroke }
         var ink = map.drawings
         if case .movingStrokes(let ids, let start, let current, true) = interaction {
             let duplicate = NSEvent.modifierFlags.contains(.option)
@@ -567,7 +571,7 @@ final class MapCanvasNSView: NSView {
         case .select:
             break
         case .marker:
-            interaction = .stroke(
+            beginStroke(
                 Drawing(
                     tool: .marker, points: [point.x, point.y], color: toolState.markerColor,
                     size: StrokeDefaults.markerSize, pressures: toolState.pressureEnabled ? [pressure(of: event)] : nil))
@@ -576,12 +580,12 @@ final class MapCanvasNSView: NSView {
                 editing.doorAction?(door.id, .delete)  // the eraser deletes doors it touches
                 return
             }
-            interaction = .stroke(
+            beginStroke(
                 Drawing(
                     tool: .eraser, points: [point.x, point.y], color: StrokeDefaults.eraserColor,
                     size: StrokeDefaults.eraserSize, pressures: toolState.pressureEnabled ? [pressure(of: event)] : nil))
         case .wall:
-            interaction = .stroke(
+            beginStroke(
                 Drawing(
                     tool: .wall, points: [point.x, point.y], color: StrokeDefaults.wallColor,
                     size: StrokeDefaults.wallSize))
@@ -591,6 +595,37 @@ final class MapCanvasNSView: NSView {
             interaction = .measuring(origin: point)
             editing.setMeasurement?(MeasurementShape(mode: toolState.measureMode, origin: point, pointer: point))
         }
+    }
+
+    private func beginStroke(_ drawing: Drawing) {
+        liveStroke = drawing
+        interaction = .stroke
+    }
+
+    /// The view area the newest stroke point can change: the last four points (adding a
+    /// point bends the spline's previous segment), padded by the spline's control-point
+    /// reach (at most half of two neighbouring segments) and the widest pressure width.
+    private func liveStrokeDirtyRect() -> NSRect {
+        guard let points = liveStroke?.points, points.count >= 2, let stroke = liveStroke else { return bounds }
+        let n = points.count / 2
+        let tail = (max(0, n - 4)..<n).map { Point2D(x: points[2 * $0], y: points[2 * $0 + 1]) }
+        var minX = Double.infinity, minY = Double.infinity, maxX = -Double.infinity, maxY = -Double.infinity
+        var reach = 0.0
+        for (i, p) in tail.enumerated() {
+            minX = min(minX, p.x)
+            minY = min(minY, p.y)
+            maxX = max(maxX, p.x)
+            maxY = max(maxY, p.y)
+            if i >= 2 {
+                reach = max(
+                    reach, (Measure.euclideanDistance(tail[i - 2], tail[i - 1]) + Measure.euclideanDistance(tail[i - 1], p)) / 2)
+            }
+        }
+        let pad = reach + stroke.size * (stroke.scale ?? 1) + 2  // pressure widths reach 2× the base
+        let topLeft = viewport.viewPoint(fromMap: Point2D(x: minX - pad, y: minY - pad))
+        let bottomRight = viewport.viewPoint(fromMap: Point2D(x: maxX + pad, y: maxY + pad))
+        return NSRect(x: topLeft.x, y: topLeft.y, width: bottomRight.x - topLeft.x, height: bottomRight.y - topLeft.y)
+            .insetBy(dx: -2, dy: -2)
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -614,17 +649,18 @@ final class MapCanvasNSView: NSView {
                 }
             }
             needsDisplay = true
-        case .stroke(var drawing):
+        case .stroke:
+            guard let count = liveStroke?.points.count, count >= 2 else { break }
             var point = mapLocation(of: event)
             // Shift locks the segment to the dominant axis from the stroke's start.
-            if event.modifierFlags.contains(.shift), drawing.points.count >= 2 {
-                let start = Point2D(x: drawing.points[0], y: drawing.points[1])
-                if abs(point.x - start.x) > abs(point.y - start.y) { point.y = start.y } else { point.x = start.x }
+            if event.modifierFlags.contains(.shift), let x0 = liveStroke?.points[0], let y0 = liveStroke?.points[1] {
+                if abs(point.x - x0) > abs(point.y - y0) { point.y = y0 } else { point.x = x0 }
             }
-            drawing.points += [point.x, point.y]
-            if drawing.pressures != nil { drawing.pressures?.append(pressure(of: event)) }
-            interaction = .stroke(drawing)
-            needsDisplay = true
+            // Skip a repeat of the last point, as TS does (axis-lock produces many).
+            if liveStroke?.points[count - 2] == point.x, liveStroke?.points[count - 1] == point.y { break }
+            liveStroke?.points.append(contentsOf: [point.x, point.y])
+            if liveStroke?.pressures != nil { liveStroke?.pressures?.append(pressure(of: event)) }
+            setNeedsDisplay(liveStrokeDirtyRect())
         case .movingStrokes(let ids, let start, _, let began):
             let point = mapLocation(of: event)
             let moved = began || Measure.euclideanDistance(start, point) * viewport.zoom >= Self.dragThreshold
@@ -675,9 +711,10 @@ final class MapCanvasNSView: NSView {
             editing?.calibrate?(Bounds(corner: start, corner: current))
         }
         if case .panning = interaction { clampViewport() }
-        if case .stroke(let drawing) = interaction {
+        if case .stroke = interaction, let drawing = liveStroke {
             editing?.addDrawing?(drawing)
         }
+        liveStroke = nil
         // A measurement stays up after release until Esc or a tool change (TS).
         interaction = .idle
         (spaceHeld ? NSCursor.openHand : NSCursor.arrow).set()

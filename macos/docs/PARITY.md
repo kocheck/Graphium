@@ -351,7 +351,7 @@ every commit, which `DocumentGroup` already wires up.
 - [x] Pressure-sensitive lines — Per-point pressure is captured when pressure sensitivity is on. Width = base x mapped pressure, using a pressure curve: light 0.2-2.0, normal 0.3-1.5 (the default), heavy 0.4-1.2. A custom scene function draws the variable width. Mouse input uses 0.5. (source: src/components/Canvas/CanvasManager.tsx:41-45, src/components/Canvas/CanvasUtils.ts:18-27, src/components/Canvas/PressureSensitiveLine.tsx, src/store/touchSettingsStore.ts:116) **Native:** Marker and eraser strokes record pressure (the eraser gets a variable width); without pressure they draw as a 0.5-tension cardinal spline, as Konva does (`CardinalSpline`).
 - [x] Shift axis-lock while drawing (see 1.4).
 - [x] Marker strokes and eraser strokes can be selected, dragged (Option-drag duplicates) and scaled with the transformer. Walls cannot. (source: src/components/Canvas/DrawingLayer.tsx:60-61, 120-130, src/components/Canvas/CanvasManager.tsx:1258-1286, 1380-1393) **Native:** Native: strokes can be selected, dragged and Option-duplicated, but not scaled.
-- [x] Live stroke preview is rAF-throttled. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:544-555)
+- [x] Live stroke preview is rAF-throttled. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:544-555) **Native:** The live stroke is appended in place, repeated points are skipped, and each drag event redraws only the area around the newest segment (AppKit coalesces redraws per display frame).
 
 **Native mapping:** Read `NSEvent.pressure` (and `tangentialPressure`/`tilt` for Wacom), then render
 variable-width strokes as filled `CGPath` outlines or with a Metal stroke shader. For the
