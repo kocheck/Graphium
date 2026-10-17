@@ -2,7 +2,7 @@ import Foundation
 
 /// Door open/close swing (TS `DoorShape`, PARITY §3.6): the leaf turns 90° about its
 /// hinge over 300 ms with an ease-in-out quad curve. Times are in seconds.
-public enum DoorSwing {
+public enum DoorSwingAnimation {
     public static let duration = 0.3
 
     /// TS easing: `p < 0.5 ? 2p² : 1 − (−2p + 2)² / 2`, with `p` clamped to [0, 1].
@@ -25,11 +25,11 @@ public enum DoorSwing {
         }
 
         public func openFraction(at time: Double) -> Double {
-            from + (to - from) * DoorSwing.easeInOut((time - start) / DoorSwing.duration)
+            from + (to - from) * DoorSwingAnimation.easeInOut((time - start) / DoorSwingAnimation.duration)
         }
 
         public func isFinished(at time: Double) -> Bool {
-            time - start >= DoorSwing.duration
+            time - start >= DoorSwingAnimation.duration
         }
     }
 }
@@ -39,7 +39,7 @@ public enum DoorSwing {
 /// re-toggle reverses smoothly, as in TS). Doors seen for the first time draw at rest.
 public struct DoorSwingTracker: Sendable {
     private var drawnOpen: [String: Bool] = [:]
-    private var swings: [String: DoorSwing.Transition] = [:]
+    private var swings: [String: DoorSwingAnimation.Transition] = [:]
 
     public init() {}
 
@@ -54,7 +54,7 @@ public struct DoorSwingTracker: Sendable {
             swings[doorID] = nil
         } else if let previous = drawnOpen[doorID], previous != isOpen {
             let current = swings[doorID]?.openFraction(at: now) ?? (previous ? 1 : 0)
-            swings[doorID] = DoorSwing.Transition(from: current, to: target, start: now)
+            swings[doorID] = DoorSwingAnimation.Transition(from: current, to: target, start: now)
         }
         drawnOpen[doorID] = isOpen
         guard let swing = swings[doorID] else { return target }

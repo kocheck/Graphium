@@ -5,17 +5,17 @@ import XCTest
 /// Mirrors the TS DoorShape swing animation (300 ms, ease-in-out quad; PARITY §3.6).
 final class DoorSwingTests: XCTestCase {
     func testEaseInOutQuadMatchesTS() {
-        XCTAssertEqual(DoorSwing.easeInOut(0), 0)
-        XCTAssertEqual(DoorSwing.easeInOut(0.25), 0.125, accuracy: 1e-12)
-        XCTAssertEqual(DoorSwing.easeInOut(0.5), 0.5, accuracy: 1e-12)
-        XCTAssertEqual(DoorSwing.easeInOut(0.75), 0.875, accuracy: 1e-12)
-        XCTAssertEqual(DoorSwing.easeInOut(1), 1)
-        XCTAssertEqual(DoorSwing.easeInOut(-1), 0, "clamped")
-        XCTAssertEqual(DoorSwing.easeInOut(2), 1, "clamped")
+        XCTAssertEqual(DoorSwingAnimation.easeInOut(0), 0)
+        XCTAssertEqual(DoorSwingAnimation.easeInOut(0.25), 0.125, accuracy: 1e-12)
+        XCTAssertEqual(DoorSwingAnimation.easeInOut(0.5), 0.5, accuracy: 1e-12)
+        XCTAssertEqual(DoorSwingAnimation.easeInOut(0.75), 0.875, accuracy: 1e-12)
+        XCTAssertEqual(DoorSwingAnimation.easeInOut(1), 1)
+        XCTAssertEqual(DoorSwingAnimation.easeInOut(-1), 0, "clamped")
+        XCTAssertEqual(DoorSwingAnimation.easeInOut(2), 1, "clamped")
     }
 
     func testTransitionRunsForThreeHundredMilliseconds() {
-        let swing = DoorSwing.Transition(from: 0, to: 1, start: 10)
+        let swing = DoorSwingAnimation.Transition(from: 0, to: 1, start: 10)
         XCTAssertEqual(swing.openFraction(at: 10), 0)
         XCTAssertEqual(swing.openFraction(at: 10.15), 0.5, accuracy: 1e-9)
         XCTAssertFalse(swing.isFinished(at: 10.29))
