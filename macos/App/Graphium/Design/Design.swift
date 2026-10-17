@@ -12,10 +12,21 @@ enum Spacing {
     static let hitMin: CGFloat = 44
 }
 
-/// App-owned radii (DESIGN.md#shapes): etched, never pill-shaped.
+/// App-owned radii (DESIGN.md#shapes). Small marks stay crisp; glass overlays are
+/// capsules or 20 pt cards, concentric with the window corners.
 enum Radius {
     static let control: CGFloat = 4
+    /// World View panels keep the etched plate look (world-view-player-safe).
     static let panel: CGFloat = 4
+    static let card: CGFloat = 20
+}
+
+/// The outline of a glass overlay (DESIGN.md#shapes).
+enum GlassShape {
+    /// Single-line controls and readouts: zoom buttons, status, toasts.
+    case capsule
+    /// Multi-line overlays: HUDs, progress.
+    case card
 }
 
 /// Fast, decisive, no bounce (DESIGN.md#motion). Reduce Motion drops the animation, not the change.
@@ -41,26 +52,61 @@ extension View {
         self.font(font.monospaced().weight(.medium))
     }
 
-    /// Flat panel with a hairline edge (DESIGN.md#depth). For surfaces Graphium draws itself.
-    func etchedPanel(padding: EdgeInsets = EdgeInsets(top: Spacing.sm, leading: Spacing.md, bottom: Spacing.sm, trailing: Spacing.md))
-        -> some View
-    {
-        modifier(EtchedPanel(padding: padding))
+    /// Floating glass over the map (DESIGN.md#depth). Only for overlays Graphium draws on the
+    /// canvas; never inside the sidebar, inspector, a sheet or another glass surface.
+    func glassPanel(
+        _ shape: GlassShape = .card,
+        padding: EdgeInsets = EdgeInsets(top: Spacing.sm, leading: Spacing.md, bottom: Spacing.sm, trailing: Spacing.md)
+    ) -> some View {
+        modifier(GlassPanel(shape: shape, padding: padding))
     }
 }
 
-private struct EtchedPanel: ViewModifier {
+private struct GlassPanel: ViewModifier {
+    let shape: GlassShape
     let padding: EdgeInsets
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
 
+    private var outline: AnyShape {
+        switch shape {
+        case .capsule: AnyShape(Capsule(style: .continuous))
+        case .card: AnyShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        }
+    }
+
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
-        content
-            .foregroundStyle(Palette.inkPrimary.color)
-            .padding(padding)
-            .background(Palette.surfacePanel.color, in: shape)
-            .overlay(
-                shape.strokeBorder(
-                    contrast == .increased ? Palette.ruleStrong.color : Palette.ruleHairline.color, lineWidth: 1))
+        let padded = content.padding(padding)
+        let edge = outline.stroke(
+            contrast == .increased ? Palette.ruleStrong.color : Color.white.opacity(0.14),
+            lineWidth: contrast == .increased ? 1 : 0.5)
+        if reduceTransparency {
+            // Reduce Transparency: the same shape, opaque, so the map never shows through.
+            padded
+                .background(Palette.surfacePanel.color, in: outline)
+                .overlay(outline.stroke(Palette.ruleStrong.color, lineWidth: 1))
+        } else {
+            glass(padded).overlay(edge)
+        }
+    }
+
+    #if compiler(>=6.2)
+        @ViewBuilder
+        private func glass(_ view: some View) -> some View {
+            if #available(macOS 26, *) {
+                view.glassEffect(.regular, in: outline)
+            } else {
+                material(view)
+            }
+        }
+    #else
+        private func glass(_ view: some View) -> some View { material(view) }
+    #endif
+
+    /// macOS 14 and 15: the closest system material, with a soft lift off the map.
+    private func material(_ view: some View) -> some View {
+        view
+            .background(.regularMaterial, in: outline)
+            .shadow(color: .black.opacity(0.3), radius: 14, y: 6)
     }
 }

@@ -53,6 +53,12 @@ struct FitRequest: Equatable {
     var bounds: Bounds
 }
 
+/// Asks a canvas to zoom once around its centre (map controls, View menu). A new `id` re-triggers.
+struct ZoomRequest: Equatable {
+    var id = UUID()
+    var factor: Double
+}
+
 /// The map surface. AppKit, not SwiftUI Canvas, because it needs raw NSEvent
 /// input (trackpad pinch and scroll phases, modifier-aware drags, later tablet
 /// pressure). Each window owns its own viewport; cameras are not synced.
@@ -85,6 +91,12 @@ final class MapCanvasNSView: NSView {
         didSet {
             guard let fitRequest, fitRequest != oldValue else { return }
             viewport.fit(fitRequest.bounds, viewWidth: Double(bounds.width), viewHeight: Double(bounds.height))
+        }
+    }
+    var zoomRequest: ZoomRequest? {
+        didSet {
+            guard let zoomRequest, zoomRequest != oldValue else { return }
+            zoomViewport(by: zoomRequest.factor, around: Point2D(x: Double(bounds.midX), y: Double(bounds.midY)))
         }
     }
     var viewport = Viewport() {
@@ -1073,6 +1085,7 @@ struct MapCanvas: NSViewRepresentable {
     var toolState = ToolState()
     var measurement: MeasurementShape?
     var fitRequest: FitRequest?
+    var zoomRequest: ZoomRequest?
     var onViewportChange: ((Viewport, CGSize) -> Void)?
     var calibrating = false
     /// Identifies the document whose asset names `imageProvider` resolves (cache keys).
@@ -1094,6 +1107,7 @@ struct MapCanvas: NSViewRepresentable {
         view.toolState = toolState
         view.measurement = measurement
         view.fitRequest = fitRequest
+        view.zoomRequest = zoomRequest
         view.onViewportChange = onViewportChange
         if view.calibrating != calibrating || view.toolState.tool != toolState.tool {
             view.window?.invalidateCursorRects(for: view)

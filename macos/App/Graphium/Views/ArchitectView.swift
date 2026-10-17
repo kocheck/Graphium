@@ -40,6 +40,9 @@ struct ArchitectView: View {
     @State private var inspectorTab = InspectorTab.token
     @State private var mapSettings: MapSettingsRequest?
     @State private var calibrating = false
+    @State private var zoomRequest: ZoomRequest?
+    @State private var fitRequest: FitRequest?
+    @State private var canvasZoom = 1.0
     @State private var toast: Toast?
 
     private enum InspectorTab: Hashable {
@@ -226,7 +229,10 @@ struct ArchitectView: View {
                 },
                 resetFog: document.campaign.activeMap.exploredRegions.isEmpty ? nil : { resetExploredFog() },
                 deleteSelection: selection.isEmpty ? nil : { deleteSelection() },
-                showConsoleSettings: { showingConsoleSettings = true }))
+                showConsoleSettings: { showingConsoleSettings = true },
+                zoomIn: { zoomCanvas(by: 1.25) },
+                zoomOut: { zoomCanvas(by: 0.8) },
+                zoomToFit: { zoomToFit() }))
         .onAppear {
             document.adoptUndoManager(undoManager)
             dismissWindow(id: WelcomeView.windowID)
@@ -443,6 +449,11 @@ struct ArchitectView: View {
             ),
             toolState: penAdjusted(tools),
             measurement: measurement,
+            fitRequest: fitRequest,
+            zoomRequest: zoomRequest,
+            onViewportChange: { viewport, _ in
+                if canvasZoom != viewport.zoom { canvasZoom = viewport.zoom }
+            },
             calibrating: calibrating,
             assetNamespace: document.sessionID.uuidString
         )
@@ -452,12 +463,20 @@ struct ArchitectView: View {
                 .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: calibrating)
         }
         .overlay(alignment: .bottomTrailing) {
-            if showingPerformance { PerformanceOverlay(document: document).padding(12) }
+            MapZoomControls(zoomIn: { zoomCanvas(by: 1.25) }, zoomOut: { zoomCanvas(by: 0.8) }, zoomToFit: { zoomToFit() })
+                .padding(Spacing.lg)
+        }
+        .overlay(alignment: .bottomLeading) {
+            MapScaleReadout(zoom: canvasZoom, gridSize: campaign.activeMap.gridSize)
+                .padding(Spacing.lg)
+        }
+        .overlay(alignment: .topTrailing) {
+            if showingPerformance { PerformanceOverlay(document: document).padding(Spacing.lg) }
         }
         .overlay {
             if importsInFlight > 0 {
                 ProgressView("Importing image…")
-                    .etchedPanel(padding: EdgeInsets(top: Spacing.lg, leading: Spacing.lg, bottom: Spacing.lg, trailing: Spacing.lg))
+                    .glassPanel(.card, padding: EdgeInsets(top: Spacing.lg, leading: Spacing.xl, bottom: Spacing.lg, trailing: Spacing.xl))
             }
         }
         .navigationTitle(campaign.activeMap.name)
@@ -1047,7 +1066,7 @@ struct ArchitectView: View {
                 Button("Cancel") { calibrating = false }
                     .keyboardShortcut(.cancelAction)
             }
-            .etchedPanel()
+            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
             .padding(.top, Spacing.md)
             .transition(.opacity)
         } else if let toast {
@@ -1066,7 +1085,7 @@ struct ArchitectView: View {
                 .foregroundStyle(Palette.inkSecondary.color)
                 .accessibilityLabel("Close notification")
             }
-            .etchedPanel()
+            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
             .frame(maxWidth: 560)
             .padding(.top, Spacing.md)
             .transition(.opacity)
@@ -1076,6 +1095,16 @@ struct ArchitectView: View {
                 if self.toast?.id == toast.id { self.toast = nil }
             }
         }
+    }
+
+    private func zoomCanvas(by factor: Double) {
+        zoomRequest = ZoomRequest(factor: factor)
+    }
+
+    /// Frames the map image, else the party, else the default world (as the minimap does).
+    private func zoomToFit() {
+        let campaign = document.campaign
+        fitRequest = FitRequest(bounds: campaign.activeMap.minimapBounds(library: campaign.libraryIndex))
     }
 
     private func deleteMap(_ id: String) {

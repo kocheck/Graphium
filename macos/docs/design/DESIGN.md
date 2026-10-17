@@ -1,7 +1,7 @@
 ---
 version: 1
 name: "Graphium native — A · Instrument panel"
-description: "Direction A (docs/planning/decisions/006-direction.md) carried into the native macOS app: native chrome, ink-on-dark-stock app surfaces, one warm amber accent, etched rules, monospaced readouts, and a separate player-safe World View set."
+description: "Direction A (docs/planning/decisions/006-direction.md) carried into the native macOS app: native chrome, ink-on-dark-stock app surfaces, one warm amber accent, map-first glass overlays (decision 007), monospaced readouts, and a separate player-safe World View set."
 colors:
   accent: "#FFC53D"
   accent-dark: "#FFC53D"
@@ -67,12 +67,12 @@ Overview · Colors · Typography · Layout · Depth · Shapes · Components · M
 
 ## Overview
 
-Graphium's look was decided for the web app in plan 006: the [brief](../../../docs/planning/ui-redesign-brief.md) (mood words **Etched · Instrument · Warm ink · Decisive · Quiet**) and [Direction A · Instrument panel](../../../docs/planning/decisions/006-direction.md). This file carries that decision into the native app; it does not reopen it.
+Graphium's look was decided for the web app in plan 006: the [brief](../../../docs/planning/ui-redesign-brief.md) (mood words **Etched · Instrument · Warm ink · Decisive · Quiet**) and [Direction A · Instrument panel](../../../docs/planning/decisions/006-direction.md). This file carries that decision into the native app. [Decision 007](../../../docs/planning/decisions/007-map-first-glass.md) (map-first glass, 2026-10-17) replaces 006's "etched, not floating" for overlays on the map; everything else from 006 stands.
 
 Two owners split every screen:
 
 - **Apple owns native chrome**: window, toolbar, sidebar, inspector, menus, sheets, alerts, popovers, forms, pickers and their selection, focus and hover states. Leave their appearance, metrics and semantics alone. The app's `AccentColor` asset tints them (amber, not blue).
-- **Graphium owns its surfaces**: the map canvas and everything drawn on it, canvas overlays (toasts, banners, HUDs, the performance monitor), readouts, welcome cards and the World View. Tokens below apply only here.
+- **Graphium owns its surfaces**: the map canvas and everything drawn on it, canvas overlays (map controls, the scale readout, toasts, banners, HUDs, the performance monitor), readouts, welcome cards and the World View. Tokens below apply only here.
 
 Values come from the web app's Radix scales (`src/styles/theme.css`) so both apps read as one product. Dark is the design lead; light is a faithful inversion (brief §7).
 
@@ -165,16 +165,18 @@ App-owned spacing: 4 / 8 / 12 / 16 / 24 pt (`Spacing.xs…xl`). Custom pointer a
 
 ## Depth
 
-Etched, not floating (brief §2.3). App-owned surfaces are flat `surface-panel` with a 1 pt `rule-hairline` border (`.etchedPanel()`); an active or pressed state is a recessed 1 pt inset of `rule-strong`, not a glow. No blurred drop shadows, gradients or translucent materials on app-owned surfaces. Native popovers, sheets and the toolbar keep their system materials. On the canvas, depth for tokens (hover lift, drag shadow) is part of the map, not chrome, and stays.
+Map first (decision 007). The map runs under the whole detail area and is the only content layer. Overlays Graphium draws over it float as system glass (`.glassPanel()`): Liquid Glass on macOS 26, `.regularMaterial` with a soft shadow on macOS 14 and 15, a 0.5 pt light edge, opaque `surface-panel` under Reduce Transparency. Glass is never stacked: nothing app-drawn sits on the sidebar, inspector, toolbar, sheets or another overlay, and inside the inspector a grouped block is a native `GroupBox`. The World View keeps its etched `world-*` plates until its own decision. On the canvas, depth for tokens (hover lift, drag shadow) is part of the map and stays.
 
 ## Shapes
 
-App-owned radius is 4 pt (`Radius.control`) for panels, cards and badges; hairlines are 1 pt; nothing app-owned is a capsule or a large rounded rectangle. Native controls own their shapes.
+Glass overlays are capsules when they hold one line or a column of buttons, and 20 pt continuous cards (`Radius.card`) when they hold more. Small marks on the map and badges keep 4 pt (`Radius.control`); hairlines are 1 pt. Native controls own their shapes.
 
 ## Components
 
-- **Canvas message** (toast, calibration banner): etched panel, status glyph left, one line, close button; top-centre; replaces the previous message; 5 s.
-- **HUD** (performance monitor, import progress): etched panel, readout rows (label in `ink-secondary`, value in readout style).
+- **Canvas message** (toast, calibration banner): glass capsule, status glyph left, one line, close button; top-centre; replaces the previous message; 5 s.
+- **HUD** (performance monitor top-trailing, import progress centred): glass card, readout rows (label in `ink-secondary`, value in readout style).
+- **Map controls**: bottom-trailing, as in Maps: a glass capsule with Zoom In and Zoom Out over a round Zoom to Fit button; 32 pt hit areas; each also in the View menu (⌘=, ⌘-, ⌘0).
+- **Scale readout**: bottom-leading glass capsule: zoom percent and a one-cell scale bar labelled 5 ft, in readout style.
 - **Welcome card**: bordered native button with a 4 pt etched panel look, SF Symbol, title, shortcut shown in Meta.
 - **Selection on the canvas**: `canvas-selection` dashed ring over a `canvas-halo` ring; no glow.
 - **Measurement**: `canvas-measure` stroke and fill, label as a readout on `canvas-halo`.
@@ -196,13 +198,13 @@ Fast, decisive, no bounce or overshoot (brief §2.5): 0.15 s ease-out for overla
 | Need | API |
 |---|---|
 | App-owned colours | `Palette.<token>` (`.color` for SwiftUI, `.nsColor` for AppKit / Core Graphics) |
-| Panel | `.etchedPanel()` |
+| Overlay | `.glassPanel(.capsule)` / `.glassPanel(.card)` |
 | Readout | `.readoutStyle()`; AppKit: `NSFont.monospacedDigitSystemFont` / `monospacedSystemFont` |
 | Spacing, radius | `Spacing`, `Radius` |
 | Motion | `Motion.quick`, `.animation(Motion.animation(.quick, reduceMotion:), value:)` |
 | Native chrome | `NavigationSplitView`, `.inspector`, `.toolbar`, `Form(.grouped)`, `.segmented` pickers |
 
-Deployment target is macOS 14, so Liquid Glass APIs (macOS 26) are out of scope until the target moves.
+Deployment target is macOS 14. Liquid Glass APIs (macOS 26) are used only behind `#if compiler(>=6.2)` and `#available(macOS 26, *)`, with a system-material fallback, so older SDKs and systems build and run the same layout.
 
 ## World View
 

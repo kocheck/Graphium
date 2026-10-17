@@ -24,6 +24,9 @@ struct ArchitectActions {
     /// Nil when nothing is selected.
     var deleteSelection: (() -> Void)?
     var showConsoleSettings: () -> Void
+    var zoomIn: () -> Void
+    var zoomOut: () -> Void
+    var zoomToFit: () -> Void
 }
 
 struct FocusedArchitectActionsKey: FocusedValueKey {
@@ -142,6 +145,16 @@ struct ShellCommands: Commands {
             Link("View Source on GitHub", destination: AppLinks.source)
         }
         CommandGroup(before: .toolbar) {
+            Button("Zoom In") { actions?.zoomIn() }
+                .keyboardShortcut("=", modifiers: .command)
+                .disabled(actions == nil)
+            Button("Zoom Out") { actions?.zoomOut() }
+                .keyboardShortcut("-", modifiers: .command)
+                .disabled(actions == nil)
+            Button("Zoom to Fit") { actions?.zoomToFit() }
+                .keyboardShortcut("0", modifiers: .command)
+                .disabled(actions == nil)
+            Divider()
             Picker("Theme", selection: Binding(
                 get: { themeRaw },
                 set: { raw in
