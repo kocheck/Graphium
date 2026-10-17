@@ -85,6 +85,19 @@ final class SessionConsoleTests: XCTestCase {
         XCTAssertEqual(SessionConsoleAudio.effectiveVolume(volume: 50, ducked: true, offset: 0, duckPercent: 25), 13, "12.5 → 13")
     }
 
+    func testUnknownSynthTypeDecodesAndRoundTrips() throws {
+        let json = Data(#"{"id":"t","label":"Thunder","kind":"synth","synthType":"thunder"}"#.utf8)
+        let sfx = try JSONDecoder().decode(SfxDefinition.self, from: json)
+        XCTAssertNil(sfx.synthType)
+        let reencoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(sfx)) as? [String: Any]
+        XCTAssertEqual(reencoded?["synthType"] as? String, "thunder")
+
+        var edited = sfx
+        edited.synthType = .chime
+        let replaced = try JSONSerialization.jsonObject(with: JSONEncoder().encode(edited)) as? [String: Any]
+        XCTAssertEqual(replaced?["synthType"] as? String, "chime")
+    }
+
     func testYouTubeParsing() {
         let id = "dQw4w9WgXcQ"
         XCTAssertEqual(SessionConsoleAudio.parseYouTubeVideoID(id), id)
