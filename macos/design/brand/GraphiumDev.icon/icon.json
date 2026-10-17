@@ -2,13 +2,13 @@
   "fill-specializations": [
     {
       "value": {
-        "solid": "extended-srgb:1.00000,0.77255,0.23922,1.00000"
+        "solid": "extended-srgb:0.10196,0.10196,0.09412,1.00000"
       }
     },
     {
       "appearance": "dark",
       "value": {
-        "solid": "extended-srgb:0.20392,0.20784,0.21176,1.00000"
+        "solid": "extended-srgb:0.02745,0.03137,0.03137,1.00000"
       }
     }
   ],
@@ -27,11 +27,11 @@
           ],
           "image-name-specializations": [
             {
-              "value": "mark-ink.svg"
+              "value": "mark-default.svg"
             },
             {
               "appearance": "dark",
-              "value": "mark-dev.svg"
+              "value": "mark-dark.svg"
             },
             {
               "appearance": "tinted",

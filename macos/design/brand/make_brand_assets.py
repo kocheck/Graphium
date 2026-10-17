@@ -25,14 +25,20 @@ BRAND = ROOT / "macos" / "design" / "brand"
 SOURCE = BRAND / "mark.svg"
 VIEW = 512.0
 
-# Shared with Icarus's brand system so the two apps read as one family on the Dock.
-INK = "#1A1A18"        # mark on paper
-PAPER = "#ECEAE4"      # icon base, and the mark on graphite
-GRAPHITE = "#343536"   # Dark appearance base
-# Graphium's own: the dev twin uses the app's amber accent (DESIGN.md `accent`) where Icarus uses yellow-green.
-DEV = "#FFC53D"        # Debug builds, Default base
-DEV_DARK = "#FFC53D"   # Debug builds, Dark mark on graphite
+# Ink, paper and graphite are shared with Icarus's brand system; amber is Graphium's own
+# (DESIGN.md `accent`). Icon direction B "Amber", chosen 2026-10-17 on the Sketch "Brand — Logo" page.
+INK = "#1A1A18"        # mark on amber and on paper
+PAPER = "#ECEAE4"      # mark on dark surfaces (favicon in dark mode)
+AMBER = "#FFC53D"      # Release base; the mark on dark bases
+GRAPHITE = "#343536"   # Release Dark base
+DEV_DARK = "#070808"   # Debug Dark base (Debug Default uses INK)
 MONO = "#FFFFFF"       # Tinted/Clear: the system recolours by luminance
+
+# (base, mark) per build and appearance.
+ICONS = {
+    False: {"default": (AMBER, INK), "dark": (GRAPHITE, AMBER)},
+    True: {"default": (INK, AMBER), "dark": (DEV_DARK, AMBER)},
+}
 
 ICON_CANVAS = 1024
 # The pin is taller and narrower than Icarus's quill, so it runs a little larger than Icarus's 0.6
@@ -202,11 +208,12 @@ def mark_svg(d, colour, canvas, fraction):
 
 
 def icon_bundle(dev):
-    marks = {"default": "mark-ink.svg", "dark": "mark-dev.svg" if dev else "mark-paper.svg", "tinted": "mark-mono.svg"}
+    colours = ICONS[dev]
+    marks = {"default": "mark-default.svg", "dark": "mark-dark.svg", "tinted": "mark-mono.svg"}
     return {
         "fill-specializations": [
-            {"value": {"solid": icon_colour(DEV if dev else PAPER)}},
-            {"appearance": "dark", "value": {"solid": icon_colour(GRAPHITE)}},
+            {"value": {"solid": icon_colour(colours["default"][0])}},
+            {"appearance": "dark", "value": {"solid": icon_colour(colours["dark"][0])}},
         ],
         "groups": [{
             "layers": [{
@@ -313,10 +320,10 @@ def mac_master(polys, dev):
     ImageDraw.Draw(shadow).rounded_rectangle((box[0], box[1] + 10 * ss, box[2], box[3] + 10 * ss), radius=radius, fill=77)
     img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     img.putalpha(shadow.filter(ImageFilter.GaussianBlur(10 * ss)))
-    base = Image.new("RGBA", (big, big), rgb(DEV if dev else PAPER) + (255,))
-    img.paste(base, (0, 0), shape)
+    plate_colour, mark_colour = ICONS[dev]["default"]
+    img.paste(Image.new("RGBA", (big, big), rgb(plate_colour) + (255,)), (0, 0), shape)
     mark = mark_mask(polys, big, ICON_MARK * MAC_PLATE / ICON_CANVAS)
-    img.paste(Image.new("RGBA", (big, big), rgb(INK) + (255,)), (0, 0), mark)
+    img.paste(Image.new("RGBA", (big, big), rgb(mark_colour) + (255,)), (0, 0), mark)
     return img.resize((ICON_CANVAS, ICON_CANVAS), Image.LANCZOS)
 
 
@@ -326,10 +333,9 @@ def outputs(d):
     for name, dev in (("Graphium", False), ("GraphiumDev", True)):
         base = f"macos/design/brand/{name}.icon"
         text[f"{base}/icon.json"] = json.dumps(icon_bundle(dev), indent=2) + "\n"
-        text[f"{base}/Assets/mark-ink.svg"] = mark_svg(d, INK, ICON_CANVAS, ICON_MARK)
+        text[f"{base}/Assets/mark-default.svg"] = mark_svg(d, ICONS[dev]["default"][1], ICON_CANVAS, ICON_MARK)
+        text[f"{base}/Assets/mark-dark.svg"] = mark_svg(d, ICONS[dev]["dark"][1], ICON_CANVAS, ICON_MARK)
         text[f"{base}/Assets/mark-mono.svg"] = mark_svg(d, MONO, ICON_CANVAS, ICON_MARK)
-        dark = f"{base}/Assets/mark-dev.svg" if dev else f"{base}/Assets/mark-paper.svg"
-        text[dark] = mark_svg(d, DEV_DARK if dev else PAPER, ICON_CANVAS, ICON_MARK)
     for name in APPICON_SETS:
         text[f"{CATALOG}/{name}.appiconset/Contents.json"] = appiconset_contents()
     text["macos/App/Graphium/Design/BrandMark.swift"] = swift_shape(subs)
@@ -349,7 +355,7 @@ def binaries(subs):
             master.resize((px, px), Image.LANCZOS).save(buf, format="PNG", optimize=True)
             out[f"{CATALOG}/{name}.appiconset/{appicon_name(points, scale)}"] = buf.getvalue()
     buf = io.BytesIO()
-    render_png(polys, 180, WEB_TILE_MARK, INK, PAPER).convert("RGB").save(buf, format="PNG", optimize=True)
+    render_png(polys, 180, WEB_TILE_MARK, INK, AMBER).convert("RGB").save(buf, format="PNG", optimize=True)
     out["site/apple-touch-icon.png"] = buf.getvalue()
     return out
 
