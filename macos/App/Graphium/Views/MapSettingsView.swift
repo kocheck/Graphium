@@ -16,6 +16,9 @@ struct MapSettingsView: View {
     @State private var choosingImage = false
     @State private var confirmingReset = false
     @State private var errorMessage: String?
+    /// TS enters calibration straight after an upload (PARITY §3.2).
+    @State private var calibrateAfterSave = false
+    @State private var uploadedImage = false
 
     init(
         document: CampaignDocument, map: GameMap, isNew: Bool, onSave: @escaping (GameMap) -> Void,
@@ -46,6 +49,9 @@ struct MapSettingsView: View {
                         ForEach(GridType.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
                     ColorPicker("Colour", selection: gridColorBinding, supportsOpacity: false)
+                    if map.gridType == .hidden {
+                        Text("The grid is hidden, but tokens still snap to it.").font(.caption).foregroundStyle(.secondary)
+                    }
                     Toggle("Daylight (no fog of war)", isOn: $map.isDaylightMode)
                 }
                 Section("Map image") {
@@ -58,6 +64,9 @@ struct MapSettingsView: View {
                         }
                         Spacer()
                         Button(map.background == nil ? "Choose…" : "Replace…") { choosingImage = true }
+                    }
+                    if uploadedImage, map.gridType.isSquare {
+                        Toggle("Calibrate to the grid after saving", isOn: $calibrateAfterSave)
                     }
                     HStack {
                         Button("Calibrate…") { onCalibrate(map); dismiss() }
@@ -75,9 +84,13 @@ struct MapSettingsView: View {
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
-                Button(isNew ? "Create" : "Save") {
+                Button(isNew ? "Create Map" : "Save") {
                     map.name = trimmedName
-                    onSave(map)
+                    if calibrateAfterSave, map.gridType.isSquare, map.background != nil {
+                        onCalibrate(map)
+                    } else {
+                        onSave(map)
+                    }
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -114,6 +127,8 @@ struct MapSettingsView: View {
             let image = try ImportedImage.load(from: url, kind: .map)
             let name = document.addAsset(image.data, preferredName: image.preferredName)
             map.background = MapBackground(src: name, width: Double(image.width), height: Double(image.height))
+            calibrateAfterSave = true
+            uploadedImage = true
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -108,7 +108,7 @@ extension MapCanvasNSView {
             if door.isLocked {
                 drawSymbol("lock.fill", centredAt: CGPoint(x: door.x, y: door.y), size: max(12, door.size * 0.35), context: context)
             }
-            if selectedDoorID == door.id {
+            if selectedDoorID == door.id || selection.contains(door.id) {
                 context.saveGState()
                 context.setStrokeColor(NSColor.systemBlue.cgColor)
                 context.setLineWidth(2 / viewport.zoom)

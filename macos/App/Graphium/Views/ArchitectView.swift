@@ -228,7 +228,8 @@ struct ArchitectView: View {
     private var mapList: some View {
         List(selection: activeMapBinding) {
             Section("Maps") {
-                ForEach(document.campaign.maps) { map in
+                // Alphabetical, as TS (PARITY §2.1).
+                ForEach(document.campaign.maps.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) { map in
                     Text(map.name)
                         .tag(map.id)
                         .contextMenu {
@@ -272,8 +273,7 @@ struct ArchitectView: View {
         .toolbar {
             ToolbarItem {
                 Button {
-                    let n = document.campaign.maps.count + 1
-                    mapSettings = MapSettingsRequest(map: GameMap(name: "Map \(n)"), isNew: true)
+                    mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true)
                 } label: {
                     Label("Add Map", systemImage: "plus")
                 }

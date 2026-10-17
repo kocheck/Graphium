@@ -104,11 +104,12 @@ private struct WorldView: View {
                     if let party { fitRequest = FitRequest(bounds: party) }
                 } label: {
                     Label("Center on Party", systemImage: "person.3.fill")
-                        .font(.title3.weight(.semibold))
+                        .font(.system(size: 18, weight: .semibold))  // projector legibility: ≥18 px (PARITY §4.1)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 4)
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Color(red: 0, green: 0x33 / 255, blue: 0x62 / 255))  // World View accent (TS #003362)
                 .disabled(party == nil)
                 .help(party == nil ? "No PC tokens on this map" : "Fit the view to every PC token")
                 .padding(20)
