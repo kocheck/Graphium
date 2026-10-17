@@ -114,7 +114,7 @@ The full list is in Help > **Keyboard Shortcuts** (or press `?`). The main ones:
 
 - **Tools (on the map):** V, M, E, W, D, R, I · 1–5 grid · Space-drag pan · ⌥-drag
   duplicate · hold M for movement range.
-- **Campaign:** ⌘N, ⌘O, ⌘S, ⇧⌘E export · ⌘K or ⌘P palette · ⇧⌘G generate dungeon.
+- **Campaign:** ⌘N, ⌘O, ⌘S, ⇧⌘E export · ⌘K or ⌘P palette · ⇧⌘D generate dungeon.
 - **World View:** ⇧⌘W open · ⇧⌘P pause.
 - **Map menu:** ⌥⌘, settings · ⌥⌘N new map · ⌘⌫ delete selection.
 - **Welcome window:** ⇧⌘D generate dungeon · ⇧⌘T templates.

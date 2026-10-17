@@ -193,7 +193,7 @@ struct ShortcutsList: View {
         ]),
         ShortcutGroup(title: "Campaign", rows: [
             Row(keys: "⌘N", action: "New campaign"), Row(keys: "⌘O", action: "Open"), Row(keys: "⌘S", action: "Save"), Row(keys: "⇧⌘E", action: "Export as .graphium"),
-            Row(keys: "⌘K / ⌘P", action: "Command palette"), Row(keys: "⇧⌘G", action: "Generate dungeon"), Row(keys: "⌘Z / ⇧⌘Z", action: "Undo / Redo"),
+            Row(keys: "⌘K / ⌘P", action: "Command palette"), Row(keys: "⇧⌘D", action: "Generate dungeon"), Row(keys: "⌘Z / ⇧⌘Z", action: "Undo / Redo"),
         ]),
         ShortcutGroup(title: "World View", rows: [
             Row(keys: "⇧⌘W", action: "Open World View"), Row(keys: "⇧⌘P", action: "Pause / resume players"), Row(keys: "⇧⌘M", action: "Performance monitor"),

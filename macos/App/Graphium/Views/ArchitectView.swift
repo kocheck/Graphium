@@ -26,7 +26,7 @@ struct ArchitectView: View {
     @State private var deletingMapID: String?
     @State private var errorMessage: String?
     @State private var tools = ToolState()
-    @State private var recentColors: [String] = []
+    @State private var recentColors = StrokeDefaults.recentMarkerColors
     @State private var measurement: MeasurementShape?
     @State private var broadcastMeasurement = true
     @State private var showingLibrary = false
@@ -617,8 +617,14 @@ struct ArchitectView: View {
             get: { Color(nsColor: NSColor(hex: tools.markerColor) ?? .systemOrange) },
             set: { color in
                 let hex = NSColor(color).usingColorSpace(.sRGB)?.hexString ?? StrokeDefaults.markerColor
-                tools.markerColor = hex
+                pickMarkerColor(hex)
             })
+    }
+
+    /// Sets the marker colour and moves it to the front of the recents (TS `setColor`, PARITY §2.2).
+    private func pickMarkerColor(_ hex: String) {
+        tools.markerColor = hex
+        recentColors = StrokeDefaults.recentColors(picking: hex, after: recentColors)
     }
 
     private var measureModeBinding: Binding<MeasurementShape.Mode> {
@@ -648,8 +654,6 @@ struct ArchitectView: View {
             stroke.points = PathOptimization.finalizeWall(drawing.points, existingWalls: existing)
             name = "Draw Wall"
         case .marker:
-            // Recent colours: most recent first, deduped, three shown (PARITY §2.2).
-            recentColors = Array(([drawing.color] + recentColors.filter { $0 != drawing.color }).prefix(3))
             name = "Draw"
         case .eraser:
             name = "Erase"
@@ -805,7 +809,7 @@ struct ArchitectView: View {
             } label: {
                 Label("Generate Dungeon", systemImage: "square.grid.3x3.topleft.filled")
             }
-            .help("Generate a random dungeon (⇧⌘G)")
+            .help("Generate a random dungeon (⇧⌘D)")
         }
         .defaultCustomization(.hidden)
         ToolbarItem(id: "performance", placement: .secondaryAction) {
@@ -833,12 +837,12 @@ struct ArchitectView: View {
                 .accessibilityLabel("Marker colour")
                 .popover(isPresented: $showingColorPopover, arrowEdge: .bottom) {
                     MarkerColorPopover(color: markerColorBinding, recent: recentColors) { hex in
-                        tools.markerColor = hex
+                        pickMarkerColor(hex)
                     }
                 }
                 ForEach(recentColors, id: \.self) { hex in
                     Button {
-                        tools.markerColor = hex
+                        pickMarkerColor(hex)
                     } label: {
                         Image(systemName: "circle.fill").foregroundStyle(Color(nsColor: NSColor(hex: hex) ?? .black))
                     }

@@ -4,6 +4,18 @@ import XCTest
 
 /// Mirrors pathOptimization.test.ts, gameStore door operations and DoorInteraction tests.
 final class DrawingAndDoorTests: XCTestCase {
+    /// uiStore `setColor` (PARITY §2.2).
+    func testRecentMarkerColours() {
+        XCTAssertEqual(StrokeDefaults.recentMarkerColors, ["#df4b26", "#3b82f6", "#22c55e"])
+        let seeded = StrokeDefaults.recentMarkerColors
+        XCTAssertEqual(StrokeDefaults.recentColors(picking: "#ff0000", after: seeded), ["#ff0000", "#df4b26", "#3b82f6"])
+        XCTAssertEqual(StrokeDefaults.recentColors(picking: "#3b82f6", after: seeded), ["#3b82f6", "#df4b26", "#22c55e"],
+            "re-picking moves it to the front")
+        XCTAssertEqual(StrokeDefaults.recentColors(picking: "#DF4B26", after: seeded), ["#DF4B26", "#3b82f6", "#22c55e"],
+            "dedupe ignores case")
+        XCTAssertEqual(StrokeDefaults.recentColors(picking: "#000000", after: []), ["#000000"])
+    }
+
     func testSimplifyEdgeCases() {
         XCTAssertEqual(PathOptimization.simplify([], epsilon: 3), [])
         XCTAssertEqual(PathOptimization.simplify([1, 2], epsilon: 3), [1, 2])

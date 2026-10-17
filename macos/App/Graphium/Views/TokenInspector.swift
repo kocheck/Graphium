@@ -62,12 +62,19 @@ struct TokenInspector: View {
             Section("Vision", isExpanded: $visionExpanded) {
                 HStack {
                     ForEach(Self.visionPresets, id: \.self) { feet in
-                        Button(feet == 0 ? "None" : "\(Int(feet)) ft") { setVision(feet) }
-                            .buttonStyle(.bordered)
+                        visionPresetButton(feet, active: commonVision(tokens) == feet)
                     }
                 }
-                Stepper(value: visionBinding(tokens), in: 0...300, step: 5) {
-                    Text(visionLabel(tokens))
+                LabeledContent("Radius") {
+                    HStack(spacing: 4) {
+                        TextField("Radius", value: visionFieldBinding(tokens), format: .number, prompt: Text("Mixed"))
+                            .labelsHidden()
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 64)
+                        Text("ft")
+                        Stepper("Radius", value: visionBinding(tokens), in: 0...300, step: 5)
+                            .labelsHidden()
+                    }
                 }
             }
 
@@ -192,9 +199,31 @@ struct TokenInspector: View {
             set: { setVision($0) })
     }
 
-    private func visionLabel(_ tokens: [ResolvedToken]) -> String {
+    /// The selection's shared vision radius (unset counts as 0), or nil when mixed.
+    private func commonVision(_ tokens: [ResolvedToken]) -> Double? {
         let values = Set(tokens.map { $0.visionRadius ?? 0 })
-        guard values.count == 1, let feet = values.first else { return "Mixed" }
-        return feet == 0 ? "No vision" : "\(jsNumber(feet)) ft"
+        return values.count == 1 ? values.first : nil
     }
+
+    /// The active preset is highlighted (TS).
+    @ViewBuilder
+    private func visionPresetButton(_ feet: Double, active: Bool) -> some View {
+        let button = Button(feet == 0 ? "None" : "\(Int(feet)) ft") { setVision(feet) }
+        if active {
+            button.buttonStyle(.borderedProminent)
+        } else {
+            button.buttonStyle(.bordered)
+        }
+    }
+
+    /// Typed vision radius, clamped to 0…300 ft (TS number field). Empty when mixed.
+    private func visionFieldBinding(_ tokens: [ResolvedToken]) -> Binding<Double?> {
+        Binding(
+            get: { commonVision(tokens) },
+            set: { newValue in
+                guard let newValue, newValue.isFinite else { return }
+                setVision(min(max(newValue, 0), 300))
+            })
+    }
+
 }
