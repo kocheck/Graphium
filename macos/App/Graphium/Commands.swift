@@ -59,8 +59,9 @@ struct ArchitectCommands: Commands {
         // ⌘P is the palette and ⇧⌘P pauses the World View; maps aren't printable.
         CommandGroup(replacing: .printItem) {}
         CommandMenu("Insert") {
+            // ⇧⌘D, as on the Welcome card: ⇧⌘G is Edit > Find > Find Previous on macOS.
             Button("Generate Dungeon…") { actions?.showDungeon() }
-                .keyboardShortcut("g", modifiers: [.command, .shift])
+                .keyboardShortcut("d", modifiers: [.command, .shift])
                 .disabled(actions == nil)
         }
     }
@@ -176,7 +177,7 @@ private struct WelcomeMenuItem: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Button("Welcome to Graphium") { openWindow(id: WelcomeView.windowID) }
+        Button(WelcomeView.menuTitle) { openWindow(id: WelcomeView.windowID) }
             .keyboardShortcut("1", modifiers: [.command, .shift])
     }
 }

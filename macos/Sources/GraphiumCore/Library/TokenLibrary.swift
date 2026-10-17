@@ -146,13 +146,14 @@ public struct LibraryIndex: Codable, Equatable, Sendable {
 }
 
 extension TokenLibraryItem {
-    /// Writes a token's resolved name/type/vision (and scale) back as library defaults
-    /// (TS Token Inspector "Save to library"). All fields persist natively; TS only
-    /// persisted name/category/tags to the global index (CORE_SPEC §1.10).
+    /// Writes a token's resolved name/type/vision back as library defaults (TS Token
+    /// Inspector "Save to library"). Scale, category and tags are left alone, so a
+    /// resized token doesn't resize every other token linked to the item. All three
+    /// fields persist natively; TS only persisted name/category/tags to the global
+    /// index (CORE_SPEC §1.10).
     public mutating func adoptDefaults(from token: ResolvedToken) {
         name = token.name
         defaultType = token.type
         defaultVisionRadius = token.visionRadius
-        defaultScale = token.scale
     }
 }

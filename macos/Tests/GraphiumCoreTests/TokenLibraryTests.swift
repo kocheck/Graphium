@@ -80,6 +80,17 @@ final class TokenLibraryTests: XCTestCase {
         XCTAssertEqual(lib.name, "Grik")
         XCTAssertEqual(lib.defaultType, .pc)
         XCTAssertEqual(lib.defaultVisionRadius, 60)
-        XCTAssertEqual(lib.defaultScale, 1)
+        XCTAssertNil(lib.defaultScale)
+    }
+
+    func testSaveToLibraryLeavesDefaultScaleAlone() {
+        var lib = item("Goblin", tags: ["small"])
+        lib.defaultScale = 2
+        let resized = Token(x: 0, y: 0, src: "", libraryItemId: lib.id, scale: 3, name: "Big Grik")
+        lib.adoptDefaults(from: ResolvedToken(resized, library: [lib.id: lib]))
+        XCTAssertEqual(lib.name, "Big Grik")
+        XCTAssertEqual(lib.defaultScale, 2, "a resized token must not resize every linked token")
+        XCTAssertEqual(lib.category, "Monsters")
+        XCTAssertEqual(lib.tags, ["small"])
     }
 }

@@ -17,6 +17,8 @@ struct GraphiumApp: App {
         // title-bar proxy icon all come from the system.
         DocumentGroup(newDocument: { CampaignDocument() }) { file in
             ArchitectView(document: file.document)
+                // Opening or saving a campaign brings back a recent hidden on Welcome (PARITY §1.2).
+                .task(id: file.fileURL) { HiddenRecents.unhide(file.fileURL) }
         }
         .commands {
             WorldViewCommands()

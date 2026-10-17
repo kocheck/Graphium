@@ -126,6 +126,16 @@ public enum StrokeDefaults {
     public static let markerColor = "#df4b26"
     public static let eraserColor = "#000000"
     public static let wallColor = "#ff0000"
+
+    /// TS `uiStore` initial recent marker colours (PARITY §2.2).
+    public static let recentMarkerColors = ["#df4b26", "#3b82f6", "#22c55e"]
+
+    /// TS `setColor`: the picked colour first, then the rest minus case-insensitive
+    /// duplicates, keeping `limit`.
+    public static func recentColors(picking color: String, after recent: [String], limit: Int = 3) -> [String] {
+        let key = color.lowercased()
+        return Array(([color] + recent.filter { $0.lowercased() != key }).prefix(limit))
+    }
 }
 
 extension GameMap {

@@ -75,6 +75,19 @@ final class LibraryStore: ObservableObject {
         try LibraryIndex(items: items).encoded().write(to: indexURL, options: .atomic)
     }
 
+    /// Registers an undo that puts `item` back (and a redo that re-applies the copy
+    /// there now), so ⌘Z after an app-wide library edit reverts it with the campaign
+    /// edit registered in the same event. Nothing is registered if nothing changed.
+    func registerUndo(restoring item: TokenLibraryItem, undoManager: UndoManager?) {
+        guard let undoManager, let current = items.first(where: { $0.id == item.id }), current != item else { return }
+        undoManager.registerUndo(withTarget: self) { store in
+            MainActor.assumeIsolated {
+                try? store.update(item)
+                store.registerUndo(restoring: current, undoManager: undoManager)
+            }
+        }
+    }
+
     /// 256 px (THUMB limit) aspect-fit thumbnail. TS stretched to 128×128; keeping
     /// the aspect ratio is a deliberate fix.
     static func thumbnail(of data: Data) throws -> Data {
