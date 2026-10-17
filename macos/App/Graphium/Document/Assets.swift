@@ -15,8 +15,13 @@ final class AssetImageCache: @unchecked Sendable {
         return cache
     }()
 
+    /// The decoded image if it is still cached; never decodes.
+    func cached(named name: String) -> CGImage? {
+        cache.object(forKey: name as NSString)
+    }
+
     func image(named name: String, in assets: [String: Data]) -> CGImage? {
-        if let hit = cache.object(forKey: name as NSString) { return hit }
+        if let hit = cached(named: name) { return hit }
         guard let data = assets[name],
             let source = CGImageSourceCreateWithData(data as CFData, nil),
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)

@@ -33,8 +33,10 @@ final class LibraryStore: ObservableObject {
         return try? Data(contentsOf: folder.appendingPathComponent(fileName))
     }
 
-    /// The image for a library file name, decoded once.
+    /// The image for a library file name, decoded once. SwiftUI calls this on every
+    /// redraw, so the cache is checked before the file is read.
     func image(_ fileName: String) -> CGImage? {
+        if let hit = images.cached(named: fileName) { return hit }
         guard let data = data(for: fileName) else { return nil }
         return images.image(named: fileName, in: [fileName: data])
     }
