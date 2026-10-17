@@ -138,6 +138,11 @@ final class MapCanvasNSView: NSView {
     }
 
     override var isFlipped: Bool { true }
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .group }
+    override func accessibilityLabel() -> String? { canvasAccessibilityLabel }
+    override func accessibilityChildren() -> [Any]? { canvasAccessibilityChildren }
     override var acceptsFirstResponder: Bool { true }
 
     // MARK: Drawing

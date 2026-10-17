@@ -1,4 +1,5 @@
 import AVFoundation
+import AppKit
 import GraphiumCore
 import WebKit
 
@@ -111,7 +112,9 @@ final class WorldAudioEngine: ObservableObject {
     }
 
     /// TS `fadeToLevel`: 40 ms linear steps; zero duration sets immediately.
-    private func fade(to level: Float, over seconds: Double, then completion: (() -> Void)? = nil) {
+    private func fade(to level: Float, over requested: Double, then completion: (() -> Void)? = nil) {
+        // Reduce Motion skips fades, as TS does under prefers-reduced-motion (PARITY §7).
+        let seconds = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : requested
         fadeTimer?.invalidate()
         // An interrupted fade still finishes its job (e.g. starting the next track).
         let interrupted = fadeCompletion
