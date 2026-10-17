@@ -82,21 +82,27 @@ final class WorldAudioEngine: ObservableObject {
     // MARK: Music
 
     private func start(_ audio: SessionConsoleRuntime.Audio, assets: [String: Data]) {
+        musicGeneration += 1
         music.stop()
         youtube.stop()
         lastError = nil
+        if audio.source != .local || audio.src != musicFile?.name { closeMusicFile() }
         switch audio.source {
         case .youtube:
             guard let id = audio.youtubeId else { return }
             youtube.play(videoID: id, loop: audio.loop, volume: 0)
         case .local:
-            guard let src = audio.src, let buffer = decode(asset: src, assets: assets) else {
+            guard let src = audio.src, let file = openMusic(asset: src, assets: assets) else {
                 lastError = "Couldn't play “\(audio.title)”."
                 return
             }
             ensureRunning()
-            engine.connect(music, to: engine.mainMixerNode, format: buffer.format)
-            music.scheduleBuffer(buffer, at: nil, options: audio.loop ? [.loops] : [])
+            engine.connect(music, to: engine.mainMixerNode, format: file.processingFormat)
+            // Streamed from the open file, like TS's <audio> element; never decoded whole.
+            musicLoops = audio.loop
+            scheduleMusic(file, generation: musicGeneration)
+            // A second copy queued ahead keeps the loop gapless; each finished copy queues another.
+            if audio.loop { scheduleMusic(file, generation: musicGeneration) }
             music.play()
         case nil:
             break
@@ -187,15 +193,20 @@ final class WorldAudioEngine: ObservableObject {
 
     private var decoded: [String: AVAudioPCMBuffer] = [:]
 
-    /// Package assets are bytes in memory; AVAudioFile needs a file, so write once to temp.
+    /// Package assets are bytes in memory; AVAudioFile needs a file, so write to temp.
+    private static func tempURL(for name: String) -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("graphium-audio-\(UUID().uuidString)-\((name as NSString).lastPathComponent)")
+    }
+
+    /// SFX are short, so they are decoded whole (and cached); the temp file goes right away.
     private func decode(asset name: String, assets: [String: Data]) -> AVAudioPCMBuffer? {
         if let cached = decoded[name] { return cached }
         guard let data = assets[name] else { return nil }
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("graphium-audio-\(UUID().uuidString)-\(name)")
+        let url = Self.tempURL(for: name)
+        defer { try? FileManager.default.removeItem(at: url) }
         do {
             try data.write(to: url)
-            tempFiles.append(url)
             let file = try AVAudioFile(forReading: url)
             guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length))
             else { return nil }
@@ -206,6 +217,55 @@ final class WorldAudioEngine: ObservableObject {
             lastError = "Couldn't read audio “\(name)”."
             return nil
         }
+    }
+
+    // MARK: Streamed music
+
+    /// The current local track, open on its temp file (only one at a time).
+    private var musicFile: (name: String, url: URL, file: AVAudioFile)?
+    private var musicLoops = false
+    /// Bumped whenever music restarts or shuts down, so stale completion handlers do nothing.
+    private var musicGeneration = 0
+
+    private func openMusic(asset name: String, assets: [String: Data]) -> AVAudioFile? {
+        if let current = musicFile, current.name == name { return current.file }
+        closeMusicFile()
+        guard let data = assets[name] else { return nil }
+        let url = Self.tempURL(for: name)
+        do {
+            try data.write(to: url)
+            tempFiles.append(url)
+            let file = try AVAudioFile(forReading: url)
+            musicFile = (name: name, url: url, file: file)
+            return file
+        } catch {
+            try? FileManager.default.removeItem(at: url)
+            tempFiles.removeAll { $0 == url }
+            lastError = "Couldn't read audio “\(name)”."
+            return nil
+        }
+    }
+
+    /// Drops the current track's file and deletes its temp copy.
+    private func closeMusicFile() {
+        guard let current = musicFile else { return }
+        musicFile = nil
+        try? FileManager.default.removeItem(at: current.url)
+        tempFiles.removeAll { $0 == current.url }
+    }
+
+    private func scheduleMusic(_ file: AVAudioFile, generation: Int) {
+        music.scheduleFile(file, at: nil, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+            Task { @MainActor in self?.musicSegmentFinished(generation) }
+        }
+    }
+
+    /// Loops by queueing the file again each time a copy finishes playing.
+    private func musicSegmentFinished(_ generation: Int) {
+        guard generation == musicGeneration, musicLoops, let file = musicFile?.file,
+            applied?.audio.status != .stopped
+        else { return }
+        scheduleMusic(file, generation: generation)
     }
 }
 
