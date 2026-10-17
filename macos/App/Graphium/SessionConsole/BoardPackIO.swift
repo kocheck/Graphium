@@ -24,13 +24,20 @@ enum BoardPackIO {
             resolveFile: { path in resolve(path, root: root) },
             fetch: { url in await fetchCapped(url) },
             persist: { data, name in pending.add(data, preferredName: name) })
-        for (name, bytes) in pending.assets { document.assets[name] = bytes }
+        // The DM may have added assets during the await, so names are allocated again
+        // here (never overwriting existing bytes) and the catalog follows any rename.
+        var renamed: [String: String] = [:]
+        for (name, bytes) in pending.assets.sorted(by: { $0.key < $1.key }) {
+            renamed[name] = document.addAsset(bytes, preferredName: name)
+        }
+        var imported = result.catalog
+        imported.rewriteAssetReferences { renamed[$0] ?? $0 }
         document.editConsole(mode == .replace ? "Import Board Pack" : "Merge Board Pack", undoManager: undoManager) { catalog in
-            if mode == .replace { catalog = result.catalog } else { catalog.merge(result.catalog) }
+            if mode == .replace { catalog = imported } else { catalog.merge(imported) }
         }
         if mode == .replace { document.sessionRuntime = SessionConsoleRuntime(catalog: document.campaign.sessionConsole) }
         let skipped = errors + result.skipped
-        var lines = ["Imported \(result.catalog.imageSets.flatMap(\.images).count) plates and \(result.catalog.allTracks.count) tracks."]
+        var lines = ["Imported \(imported.imageSets.flatMap(\.images).count) plates and \(imported.allTracks.count) tracks."]
         if !skipped.isEmpty { lines.append("Skipped \(skipped.count):\n" + skipped.joined(separator: "\n")) }
         if !result.warnings.isEmpty { lines.append(Array(Set(result.warnings)).joined(separator: "\n")) }
         return lines.joined(separator: "\n\n")
