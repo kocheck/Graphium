@@ -177,7 +177,7 @@ private struct WelcomeMenuItem: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Button("Welcome to Graphium") { openWindow(id: WelcomeView.windowID) }
+        Button(WelcomeView.menuTitle) { openWindow(id: WelcomeView.windowID) }
             .keyboardShortcut("1", modifiers: [.command, .shift])
     }
 }

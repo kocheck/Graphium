@@ -27,6 +27,28 @@ final class LaunchIntent {
     }
 }
 
+/// Recents hidden with the Welcome window's x (PARITY §1.2), stored as newline-separated
+/// paths. Like TS `removeRecentCampaign`, hiding only lasts until the campaign is opened
+/// or saved again, which brings it back to the list.
+enum HiddenRecents {
+    static func decode(_ raw: String) -> Set<String> {
+        Set(raw.split(separator: "\n").map(String.init))
+    }
+
+    static func encode(_ paths: Set<String>) -> String {
+        paths.sorted().joined(separator: "\n")
+    }
+
+    /// Called when a campaign window opens a file or saves to a new one.
+    static func unhide(_ url: URL?) {
+        guard let url else { return }
+        let defaults = UserDefaults.standard
+        var hidden = decode(defaults.string(forKey: Prefs.hiddenRecents) ?? "")
+        guard hidden.remove(url.path) != nil else { return }
+        defaults.set(encode(hidden), forKey: Prefs.hiddenRecents)
+    }
+}
+
 /// TS home-screen templates (PARITY §1.2): a new campaign with 50 px cells. The
 /// native app also names the first map after the template.
 struct CampaignTemplate: Identifiable, Hashable {
@@ -52,6 +74,8 @@ struct CampaignTemplate: Identifiable, Hashable {
 /// The launch window (PARITY §1.2): hero, quick actions, recents and footer.
 struct WelcomeView: View {
     static let windowID = "welcome"
+    /// Window menu item; the app delegate also finds it by this title for Dock reopen.
+    static let menuTitle = "Welcome to Graphium"
 
     @Environment(\.openWindow) private var openWindow
     @AppStorage(Prefs.theme) private var themeRaw = AppTheme.system.rawValue
@@ -104,6 +128,7 @@ struct WelcomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             reloadRecents()
         }
+        .onChange(of: hiddenRecentsRaw) { _, _ in reloadRecents() }
         .alert(
             "Couldn't open the campaign",
             isPresented: Binding(get: { openError != nil }, set: { if !$0 { openError = nil } })
@@ -156,12 +181,16 @@ struct WelcomeView: View {
     }
 
     private var hiddenRecents: Set<String> {
-        Set(hiddenRecentsRaw.split(separator: "\n").map(String.init))
+        HiddenRecents.decode(hiddenRecentsRaw)
     }
 
     private func reloadRecents() {
         let hidden = hiddenRecents
-        recents = NSDocumentController.shared.recentDocumentURLs
+        let urls = NSDocumentController.shared.recentDocumentURLs
+        // Forget hidden paths that have dropped off the system list, so the set stays bounded.
+        let kept = hidden.intersection(urls.map(\.path))
+        if kept != hidden { hiddenRecentsRaw = HiddenRecents.encode(kept) }
+        recents = urls
             .filter { !hidden.contains($0.path) }
             .map { url in
                 let values = try? url.resourceValues(forKeys: [.contentAccessDateKey])
@@ -170,7 +199,7 @@ struct WelcomeView: View {
     }
 
     private func hide(_ recent: RecentCampaign) {
-        hiddenRecentsRaw = (hiddenRecents.union([recent.url.path])).sorted().joined(separator: "\n")
+        hiddenRecentsRaw = HiddenRecents.encode(hiddenRecents.union([recent.url.path]))
         reloadRecents()
     }
 
