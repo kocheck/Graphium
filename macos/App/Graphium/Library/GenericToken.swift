@@ -7,7 +7,7 @@ enum GenericToken {
     /// Pseudo library id, so it drags through the same path as library items.
     static let id = "generic-token"
     static let name = "Generic Token"
-    static let assetName = "generic-token.png"
+    static let assetName = LegacyImporter.genericTokenAssetName
     static var dragPayload: String { LibraryDrag.prefix + id }
 
     @MainActor

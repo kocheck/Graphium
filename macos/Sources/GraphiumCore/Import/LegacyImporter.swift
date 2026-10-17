@@ -12,7 +12,15 @@ public enum LegacyImporter {
         public var package: CampaignPackage
         /// `assets/…` references whose file was not in the ZIP (left as-is).
         public var missingAssets: [String]
+        /// Some src pointed at `genericTokenAssetName` because it was an SVG `data:`
+        /// URL; the app supplies that asset's bytes if the package lacks them.
+        public var usesGenericTokenAsset = false
     }
+
+    /// Native Generic Token image. Electron stores its Generic Token as an SVG
+    /// `data:` URL (CanvasManager.tsx:880-902), which ImageIO can't draw, so SVG
+    /// srcs import as this placeholder instead.
+    public static let genericTokenAssetName = "generic-token.png"
 
     public static func importArchive(_ data: Data) throws -> Result {
         let zip = try ZipArchive(data: data)
@@ -47,10 +55,28 @@ public enum LegacyImporter {
             throw ImportError.invalidManifest(String(describing: error))
         }
 
-        // `assets/<x>` → package asset named by basename; everything else is kept as-is.
+        // `assets/<x>` → package asset named by basename; base64 `data:` URLs (images
+        // dropped on the Electron canvas, CanvasManager.tsx:941-960) → new package
+        // assets, one per distinct URL; everything else is kept as-is.
         var assets: [String: Data] = [:]
         var missing: [String] = []
+        var embedded: [String: String] = [:]
+        var usesGenericToken = false
         campaign.rewriteAssetReferences { src in
+            if src.hasPrefix("data:") {
+                if let name = embedded[src] { return name }
+                guard let (mime, bytes) = decodeDataURL(src) else { return src }
+                let name: String
+                if mime == "image/svg+xml" {
+                    name = genericTokenAssetName
+                    usesGenericToken = true
+                } else {
+                    name = embeddedAssetName(mime: mime, taken: Set(zipAssets.keys).union(assets.keys))
+                    assets[name] = bytes
+                }
+                embedded[src] = name
+                return name
+            }
             guard src.hasPrefix("assets/") else { return src }
             let name = (src as NSString).lastPathComponent
             guard CampaignPackage.isValidAssetName(name), let bytes = zipAssets[name] else {
@@ -60,7 +86,31 @@ public enum LegacyImporter {
             assets[name] = bytes
             return name
         }
-        return Result(package: CampaignPackage(campaign: campaign, assets: assets), missingAssets: missing)
+        return Result(
+            package: CampaignPackage(campaign: campaign, assets: assets), missingAssets: missing,
+            usesGenericTokenAsset: usesGenericToken)
+    }
+
+    /// `data:<mime>[;params];base64,<payload>` → (lowercased mime, bytes). Non-base64
+    /// data URLs aren't produced by the Electron app and are left alone.
+    static func decodeDataURL(_ src: String) -> (String, Data)? {
+        guard let comma = src.firstIndex(of: ",") else { return nil }
+        let header = src[src.index(src.startIndex, offsetBy: 5)..<comma].lowercased()
+        let parts = header.split(separator: ";", omittingEmptySubsequences: false)
+        guard parts.dropFirst().contains("base64"),
+            let bytes = Data(base64Encoded: String(src[src.index(after: comma)...]), options: .ignoreUnknownCharacters),
+            !bytes.isEmpty
+        else { return nil }
+        return (String(parts.first ?? ""), bytes)
+    }
+
+    private static func embeddedAssetName(mime: String, taken: Set<String>) -> String {
+        let subtype = mime.split(separator: "/").last.map(String.init) ?? ""
+        var ext = subtype == "jpeg" ? "jpg" : subtype == "mpeg" ? "mp3" : subtype.filter { $0.isLetter || $0.isNumber }
+        if ext.isEmpty { ext = "bin" }
+        var n = 1
+        while taken.contains("embedded-\(n).\(ext)") { n += 1 }
+        return "embedded-\(n).\(ext)"
     }
 
     /// TS `migrateLegacyCampaign`: a pre-campaign single-map game state (CORE_SPEC §2.6).

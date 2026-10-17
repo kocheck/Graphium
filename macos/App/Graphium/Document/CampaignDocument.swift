@@ -69,6 +69,13 @@ final class CampaignDocument: ReferenceFileDocument {
             self.assets = imported.package.assets
             self.sessionRuntime = SessionConsoleRuntime(catalog: imported.package.campaign.sessionConsole)
             DocumentRegistry.shared.register(self)
+            if imported.usesGenericTokenAsset, assets[GenericToken.assetName] == nil {
+                // Electron's SVG Generic Tokens import as the native placeholder image.
+                Task { @MainActor [weak self] in
+                    guard let self, self.assets[GenericToken.assetName] == nil, let png = GenericToken.pngData() else { return }
+                    self.assets[GenericToken.assetName] = png
+                }
+            }
             return
         }
         let root = configuration.file
