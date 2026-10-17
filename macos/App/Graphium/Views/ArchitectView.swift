@@ -212,6 +212,12 @@ struct ArchitectView: View {
                 break
             }
         }
+        .onDisappear {
+            // The campaign is closing: its projector and detached console go with it,
+            // rather than lingering on a closed document (PARITY §1.1).
+            dismissWindow(id: WorldWindow.id, value: document.sessionID)
+            dismissWindow(id: SessionConsoleWindow.id, value: document.sessionID)
+        }
         .onAppear {
             #if DEBUG
                 // Profiling (TS `?stress=1`): launch with `-GraphiumStress YES` to add the

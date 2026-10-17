@@ -540,9 +540,9 @@ struct SessionConsoleWindow: View {
         if let sessionID, let document = DocumentRegistry.shared.document(for: sessionID) {
             DetachedSessionConsole(document: document)
         } else {
-            ContentUnavailableView(
-                "No Campaign", systemImage: "music.note.list",
-                description: Text("Open a campaign, then choose Session Console."))
+            OrphanedWindow(
+                title: "No Campaign", systemImage: "music.note.list",
+                description: "Open a campaign, then choose Session Console.")
         }
     }
 }
