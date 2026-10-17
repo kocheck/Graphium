@@ -147,7 +147,10 @@ struct WelcomeView: View {
 
     private var hero: some View {
         VStack(spacing: 10) {
-            Image("Logo").resizable().frame(width: 96, height: 96).accessibilityHidden(true)
+            BrandMark()
+                .foregroundStyle(Palette.inkPrimary.color)
+                .frame(width: 72, height: 72)
+                .accessibilityHidden(true)
             (Text("Virtual Tabletop for ") + Text(Self.subtitle).foregroundColor(.accentColor))
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// About / Tutorial / Shortcuts (PARITY §1.8). One window; callers pick the tab.
@@ -40,7 +41,8 @@ struct AboutView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
-                Image("Logo").resizable().frame(width: 64, height: 64)
+                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 64, height: 64)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading) {
                     Text("Graphium").font(.largeTitle.bold())
                     Text("Version \(AppLinks.version) · macOS Edition").foregroundStyle(.secondary)
