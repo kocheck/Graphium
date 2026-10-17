@@ -133,7 +133,7 @@ private struct WorldView: View {
                         .padding(.vertical, 4)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color(red: 0, green: 0x33 / 255, blue: 0x62 / 255))  // World View accent (TS #003362)
+                .tint(Palette.worldAction.color)  // World View accent (TS #003362)
                 .disabled(party == nil)
                 .help(party == nil ? "No PC tokens on this map" : "Fit the view to every PC token")
                 .padding(20)
@@ -196,11 +196,11 @@ private struct PauseOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.9)
+            Palette.worldScrim.color
             VStack(spacing: 20) {
                 ProgressView()
                     .controlSize(.large)
-                    .tint(.white)
+                    .tint(Palette.worldInk.color)
                 Text("Please Wait")
                     .font(.system(size: 40, weight: .bold))
                 Text(line)
@@ -208,8 +208,9 @@ private struct PauseOverlay: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(Palette.worldInk.color)
         }
+        .environment(\.colorScheme, .dark)
         .ignoresSafeArea()
         .accessibilityElement(children: .combine)
     }

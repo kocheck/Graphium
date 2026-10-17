@@ -70,6 +70,7 @@ struct TokenInspector: View {
                         TextField("Radius", value: visionFieldBinding(tokens), format: .number, prompt: Text("Mixed"))
                             .labelsHidden()
                             .multilineTextAlignment(.trailing)
+                            .monospacedDigit()
                             .frame(width: 64)
                         Text("ft")
                         Stepper("Radius", value: visionBinding(tokens), in: 0...300, step: 5)
@@ -90,9 +91,11 @@ struct TokenInspector: View {
 
             if tokens.count == 1, let token = tokens.first {
                 Section("Details", isExpanded: $detailsExpanded) {
-                    LabeledContent("Scale", value: "\(jsNumber(token.scale))x")
-                    LabeledContent("Position", value: "\(Int(jsRound(token.token.x))), \(Int(jsRound(token.token.y)))")
-                    LabeledContent("Speed", value: "\(jsNumber(token.movementSpeed)) ft")
+                    LabeledContent("Scale") { Text("\(jsNumber(token.scale))×").monospacedDigit() }
+                    LabeledContent("Position") {
+                        Text("\(Int(jsRound(token.token.x))), \(Int(jsRound(token.token.y)))").monospacedDigit()
+                    }
+                    LabeledContent("Speed") { Text("\(jsNumber(token.movementSpeed)) ft").monospacedDigit() }
                     if !token.inherited.isEmpty {
                         Text("Some values come from the library item.")
                             .font(.caption)

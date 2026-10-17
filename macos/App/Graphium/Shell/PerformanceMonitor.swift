@@ -56,9 +56,7 @@ struct PerformanceOverlay: View {
                 row("Fog regions", "\(map.exploredRegions.count)")
                 row("World Views", "\(document.worldViewsOpen)")
             }
-            .font(.caption.monospacedDigit())
-            .padding(10)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 4))
+            .etchedPanel(padding: EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Performance monitor")
         }
@@ -67,10 +65,10 @@ struct PerformanceOverlay: View {
 
     private func row(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).foregroundStyle(.secondary)
+            Text(label).font(.body).foregroundStyle(Palette.inkSecondary.color)
             Spacer(minLength: 16)
-            Text(value)
+            Text(value).readoutStyle()
         }
-        .frame(width: 180)
+        .frame(width: 200)
     }
 }

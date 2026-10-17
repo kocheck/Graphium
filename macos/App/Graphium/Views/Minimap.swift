@@ -28,22 +28,22 @@ struct Minimap: View {
                 CGPoint(x: (point.x - world.x) * scale, y: (point.y - world.y) * scale)
             }
             context.fill(Path(CGRect(origin: .zero, size: CGSize(width: world.width * scale, height: world.height * scale))),
-                         with: .color(.white.opacity(0.12)))
+                         with: .color(Palette.worldRule.color.opacity(0.4)))
             for token in map.tokens where ResolvedToken(token, library: library).type == .pc {
                 let b = map.tokenBounds(token, library: library)
                 let centre = p(Point2D(x: b.x + b.width / 2, y: b.y + b.height / 2))
-                context.fill(Path(ellipseIn: CGRect(x: centre.x - 4, y: centre.y - 4, width: 8, height: 8)), with: .color(.green))
+                context.fill(Path(ellipseIn: CGRect(x: centre.x - 4, y: centre.y - 4, width: 8, height: 8)), with: .color(Palette.worldParty.color))
             }
             let v = model.viewport
             let topLeft = p(v.origin)
             let rect = CGRect(
                 x: topLeft.x, y: topLeft.y, width: model.viewSize.width / v.zoom * scale,
                 height: model.viewSize.height / v.zoom * scale)
-            context.stroke(Path(rect), with: .color(.yellow), lineWidth: 2)
+            context.stroke(Path(rect), with: .color(Palette.worldFrame.color), lineWidth: 2)
         }
         .frame(width: side, height: side)
-        .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.3)))
+        .background(Palette.worldPanel.color, in: RoundedRectangle(cornerRadius: Radius.panel))
+        .overlay(RoundedRectangle(cornerRadius: Radius.panel).strokeBorder(Palette.worldRule.color, lineWidth: 2))
         .contentShape(Rectangle())
         .onTapGesture { location in
             guard world.width > 0, world.height > 0 else { return }

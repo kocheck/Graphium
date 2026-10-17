@@ -100,18 +100,18 @@ struct WelcomeView: View {
         VStack(spacing: 28) {
             hero
             HStack(spacing: 14) {
-                card("New Campaign", "doc.badge.plus", "Start a fresh campaign (⌘N)") {
+                card("New Campaign", "doc.badge.plus", "⌘N", "Start a fresh campaign (⌘N)") {
                     NSDocumentController.shared.newDocument(nil)
                 }
-                card("Load Campaign", "folder", "Open a .graphiumcampaign or .graphium file (⌘O)") {
+                card("Load Campaign", "folder", "⌘O", "Open a .graphiumcampaign or .graphium file (⌘O)") {
                     NSDocumentController.shared.openDocument(nil)
                 }
                 // ⌘G is Find Next in the Edit menu, so these use Shift (TS: Ctrl/⌘ G and T).
-                card("Generate Dungeon", "square.grid.3x3.topleft.filled", "A new campaign with a random dungeon (⇧⌘D)") {
+                card("Generate Dungeon", "square.grid.3x3.topleft.filled", "⇧⌘D", "A new campaign with a random dungeon (⇧⌘D)") {
                     LaunchIntent.shared.newCampaign(then: .generateDungeon)
                 }
                 .keyboardShortcut("d", modifiers: [.command, .shift])
-                card("Templates", "square.on.square", "Start from a pre-made campaign (⇧⌘T)") {
+                card("Templates", "square.on.square", "⇧⌘T", "Start from a pre-made campaign (⇧⌘T)") {
                     showingTemplates = true
                 }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
@@ -151,24 +151,29 @@ struct WelcomeView: View {
             (Text("Virtual Tabletop for ") + Text(Self.subtitle).foregroundColor(.accentColor))
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
-            Text("Dual-window VTT with fog of war • Local-first, no subscriptions")
+            Text("Two windows, fog of war, your files. No accounts, no subscriptions.")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
     }
 
-    private func card(_ title: String, _ symbol: String, _ help: String, action: @escaping () -> Void) -> some View {
+    /// Instrument-panel card: symbol, title and its shortcut as a readout (taste rule 1: visible shortcuts).
+    private func card(
+        _ title: String, _ symbol: String, _ shortcut: String, _ help: String, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
-            VStack(spacing: 10) {
+            VStack(spacing: Spacing.sm) {
                 Image(systemName: symbol).font(.system(size: 28))
                 Text(title).font(.headline)
+                Text(shortcut).readoutStyle(.caption).foregroundStyle(.secondary)
             }
-            .frame(width: 150, height: 100)
+            .frame(width: 150, height: 108)
             .contentShape(Rectangle())
         }
         .buttonStyle(.bordered)
         .help(help)
         .accessibilityLabel(title)
+        .accessibilityHint(help)
     }
 
     // MARK: Recents

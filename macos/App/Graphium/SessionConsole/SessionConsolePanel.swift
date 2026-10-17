@@ -42,7 +42,7 @@ struct SessionConsolePanel: View {
             VStack(alignment: .leading, spacing: 14) {
                 masterBar
                 if let error = document.audioError {
-                    Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).font(.caption)
+                    Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(Palette.statusWarning.color).font(.caption)
                 }
                 if let notice {
                     Text(notice).font(.caption).foregroundStyle(.secondary)
@@ -102,8 +102,12 @@ struct SessionConsolePanel: View {
     private var masterBar: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Circle().fill(document.worldViewsOpen > 0 ? Color.green : Color.secondary).frame(width: 8, height: 8)
-                Text(document.worldViewsOpen > 0 ? "World View open" : "World View closed").font(.caption)
+                Label(
+                    document.worldViewsOpen > 0 ? "World View open" : "World View closed",
+                    systemImage: document.worldViewsOpen > 0 ? "tv.fill" : "tv.slash"
+                )
+                .font(.caption)
+                .foregroundStyle(document.worldViewsOpen > 0 ? Palette.statusOk.color : Palette.inkSecondary.color)
                 Spacer()
                 Button { showingSettings = true } label: { Image(systemName: "gearshape") }
                     .buttonStyle(.borderless)
@@ -120,7 +124,7 @@ struct SessionConsolePanel: View {
                 Slider(
                     value: Binding(get: { runtime.volume }, set: { document.dispatch(.setVolume($0.rounded())) }),
                     in: 0...100)
-                Text("\(Int(runtime.volume))").monospacedDigit().frame(width: 28, alignment: .trailing)
+                Text("\(Int(runtime.volume))").readoutStyle(.callout).frame(width: 28, alignment: .trailing)
             }
             HStack(spacing: 6) {
                 Toggle("Duck", isOn: Binding(get: { runtime.ducked }, set: { document.dispatch(.setDucked($0)) }))
@@ -146,8 +150,7 @@ struct SessionConsolePanel: View {
             }
             .controlSize(.small)
         }
-        .padding(10)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+        .etchedPanel(padding: EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
     }
 
     // MARK: Adding
@@ -340,8 +343,9 @@ struct SessionConsolePanel: View {
         }
         .frame(width: 70, height: 50)
         .clipped()
-        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(active ? Color.accentColor : .clear, lineWidth: 3))
-        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(RoundedRectangle(cornerRadius: Radius.control).strokeBorder(active ? Palette.accent.color : .clear, lineWidth: 3))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.control))
+        .accessibilityAddTraits(active ? .isSelected : [])
     }
 
     private var tracksSection: some View {
