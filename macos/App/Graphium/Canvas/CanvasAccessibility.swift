@@ -1,0 +1,66 @@
+import AppKit
+import GraphiumCore
+
+/// A token or door on the canvas, exposed to VoiceOver (PARITY §7: the TS canvas
+/// had no accessibility; the native app adds it). Press selects a token or toggles a door.
+final class CanvasAccessibilityElement: NSAccessibilityElement {
+    var onPress: (() -> Void)?
+
+    override func accessibilityPerformPress() -> Bool {
+        guard let onPress else { return false }
+        onPress()
+        return true
+    }
+}
+
+extension MapCanvasNSView {
+    var canvasAccessibilityLabel: String {
+        guard let map else { return "Map" }
+        return isPlayerView ? "World View map: \(map.name)" : "Map canvas: \(map.name)"
+    }
+
+    var canvasAccessibilityChildren: [CanvasAccessibilityElement] {
+        guard let map else { return [] }
+        var elements: [CanvasAccessibilityElement] = []
+        for token in map.tokens where !hiddenTokenIDs.contains(token.id) {
+            let resolved = ResolvedToken(token, library: library)
+            let kind = resolved.type == .pc ? "PC" : resolved.type == .npc ? "NPC" : "token"
+            let element = makeElement(
+                label: "\(resolved.name), \(kind)\(selection.contains(token.id) ? ", selected" : "")",
+                bounds: map.tokenDisplayBounds(token, library: library))
+            if let editing {
+                let id = token.id
+                element.onPress = { editing.setSelection([id]) }
+            }
+            elements.append(element)
+        }
+        for door in map.doors {
+            let state = door.isLocked ? "locked" : door.isOpen ? "open" : "closed"
+            let half = door.size / 2
+            let bounds =
+                door.orientation == .horizontal
+                ? Bounds(x: door.x - half, y: door.y - 6, width: door.size, height: 12)
+                : Bounds(x: door.x - 6, y: door.y - half, width: 12, height: door.size)
+            let element = makeElement(label: "Door, \(state)", bounds: bounds)
+            if !isPlayerView, let doorAction = editing?.doorAction, !door.isLocked {
+                let id = door.id
+                element.onPress = { doorAction(id, .toggle) }
+            }
+            elements.append(element)
+        }
+        return elements
+    }
+
+    private func makeElement(label: String, bounds: Bounds) -> CanvasAccessibilityElement {
+        let element = CanvasAccessibilityElement()
+        element.setAccessibilityParent(self)
+        element.setAccessibilityRole(.button)
+        element.setAccessibilityLabel(label)
+        let origin = viewport.viewPoint(fromMap: Point2D(x: bounds.x, y: bounds.y))
+        let rect = NSRect(x: origin.x, y: origin.y, width: bounds.width * viewport.zoom, height: bounds.height * viewport.zoom)
+        if let window {
+            element.setAccessibilityFrame(window.convertToScreen(convert(rect, to: nil)))
+        }
+        return element
+    }
+}

@@ -1,0 +1,71 @@
+# XcodeGen spec for the Graphium macOS app. Generate the project with:
+#   cd macos/App && xcodegen generate && open Graphium.xcodeproj
+# Graphium.xcodeproj is generated and not committed.
+name: Graphium
+options:
+  bundleIdPrefix: com.graphium
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+packages:
+  GraphiumCore:
+    path: ..
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Graphium:
+    type: application
+    platform: macOS
+    sources: [Graphium]
+    dependencies:
+      - package: GraphiumCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mac
+        PRODUCT_NAME: Graphium
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: Graphium/Graphium.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    entitlements:
+      path: Graphium/Graphium.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+    info:
+      path: Graphium/Info.plist
+      properties:
+        CFBundleDisplayName: Graphium
+        LSApplicationCategoryType: public.app-category.role-playing-games
+        NSHumanReadableCopyright: MIT License
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Graphium Campaign
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSTypeIsPackage: true
+            LSItemContentTypes: [com.graphium.campaign-package]
+          - CFBundleTypeName: Graphium Campaign (Legacy)
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [com.graphium.campaign]
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.graphium.campaign-package
+            UTTypeDescription: Graphium Campaign
+            UTTypeConformsTo: [com.apple.package, public.content]
+            UTTypeTagSpecification:
+              public.filename-extension: [graphiumcampaign]
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.graphium.campaign
+            UTTypeDescription: Graphium Campaign (Legacy)
+            UTTypeConformsTo: [public.data, public.content]
+            UTTypeTagSpecification:
+              public.filename-extension: [graphium]
+schemes:
+  Graphium:
+    build:
+      targets:
+        Graphium: all
+    run:
+      config: Debug
