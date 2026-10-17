@@ -247,10 +247,11 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
     }
 
     nonisolated func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-        let body = message.body as? [String: Any]
-        let type = body?["type"] as? String
-        let code = body?["code"] as? Int
+        // WebKit delivers script messages on the main thread, and `body` is main-actor isolated.
         MainActor.assumeIsolated {
+            let body = message.body as? [String: Any]
+            let type = body?["type"] as? String
+            let code = body?["code"] as? Int
             switch type {
             case "ready":
                 ready = true
