@@ -17,6 +17,7 @@ struct GraphiumApp: App {
         // title-bar proxy icon all come from the system.
         DocumentGroup(newDocument: { CampaignDocument() }) { file in
             ArchitectView(document: file.document)
+                .modifier(DocumentNoticeAlert(document: file.document))
         }
         .commands {
             WorldViewCommands()

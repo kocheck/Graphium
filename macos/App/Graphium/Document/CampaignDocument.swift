@@ -37,6 +37,9 @@ final class CampaignDocument: ReferenceFileDocument {
     @Published var worldViewsOpen = 0
     /// Last playback problem reported by a World View.
     @Published var audioError: String?
+    /// Something the DM should know about the file that was just opened (e.g. assets a
+    /// `.graphium` import couldn't find). Shown once by `DocumentNoticeAlert`.
+    @Published var importNotice: String?
     /// The Architect window's undo manager, so World View edits are undoable and
     /// mark the document edited too.
     private weak var lastUndoManager: UndoManager?
@@ -68,6 +71,7 @@ final class CampaignDocument: ReferenceFileDocument {
             self.campaign = imported.package.campaign
             self.assets = imported.package.assets
             self.sessionRuntime = SessionConsoleRuntime(catalog: imported.package.campaign.sessionConsole)
+            self.importNotice = imported.missingAssetsNotice
             DocumentRegistry.shared.register(self)
             return
         }
@@ -178,6 +182,22 @@ final class CampaignDocument: ReferenceFileDocument {
             document.restore(current, actionName: actionName, undoManager: undoManager)
         }
         undoManager?.setActionName(actionName)
+    }
+}
+
+/// Shows the notice a document recorded while opening, once.
+struct DocumentNoticeAlert: ViewModifier {
+    @ObservedObject var document: CampaignDocument
+
+    func body(content: Content) -> some View {
+        content.alert(
+            "Some Files Are Missing",
+            isPresented: Binding(get: { document.importNotice != nil }, set: { if !$0 { document.importNotice = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(document.importNotice ?? "")
+        }
     }
 }
 
