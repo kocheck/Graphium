@@ -973,7 +973,7 @@ struct ArchitectView: View {
                 campaign.maps.append(map)
                 campaign.activeMapID = map.id
             } else if let i = campaign.maps.firstIndex(where: { $0.id == map.id }) {
-                campaign.maps[i] = map
+                campaign.maps[i].applySettings(from: map)
             }
         }
         if isNew { selection = [] }
