@@ -29,7 +29,7 @@ public enum SynthSfx {
             for n in 0..<count {
                 let t = Double(n) * dt
                 let gain = t < 0.2 ? linear(0.0001, 0.22, t / 0.2) : t < 2.6 ? 0.22 : linear(0.22, 0.0001, (t - 2.6) / 0.4)
-                out[n] = Float(gain * freqs.reduce(0) { $0 + sin(2 * .pi * $1 * t) })
+                out[n] = Float(gain * freqs.reduce(0) { $0 + sin(2 * Double.pi * $1 * t) })
             }
         case .chime:
             // Sine sweeping 880→1760 Hz (exponential, 0.1 s); gain 0.35→0.0001 exponential over 2.5 s.
@@ -37,7 +37,7 @@ public enum SynthSfx {
             for n in 0..<count {
                 let t = Double(n) * dt
                 let f = t < 0.1 ? exponential(880, 1760, t / 0.1) : 1760
-                phase += 2 * .pi * f * dt
+                phase += 2 * Double.pi * f * dt
                 out[n] = Float(exponential(0.35, 0.0001, t / 2.5) * sin(phase))
             }
         case .drone:
@@ -56,7 +56,7 @@ public enum SynthSfx {
             var rng = SplitMix64(seed: 0x5EED)
             var previousIn = 0.0
             var previousOut = 0.0
-            let rc = 1 / (2 * .pi * 1000)
+            let rc = 1 / (2 * Double.pi * 1000)
             let a = rc / (rc + dt)
             for n in 0..<count {
                 let t = Double(n) * dt
@@ -89,7 +89,7 @@ public enum SynthSfx {
 
     private static func onePoleAlpha(cutoff: Double, sampleRate: Double) -> Double {
         let dt = 1 / sampleRate
-        let rc = 1 / (2 * .pi * cutoff)
+        let rc = 1 / (2 * Double.pi * cutoff)
         return dt / (rc + dt)
     }
 }
