@@ -81,14 +81,14 @@ enum Palette: CaseIterable {
         case .statusWarning: return Self.adaptive(light: (red: 0.6039, green: 0.3529, blue: 0.0000, alpha: 1.0000), dark: (red: 1.0000, green: 0.7922, blue: 0.0863, alpha: 1.0000))
         case .surfacePanel: return Self.adaptive(light: (red: 0.9765, green: 0.9765, blue: 0.9843, alpha: 1.0000), dark: (red: 0.0941, green: 0.0980, blue: 0.1059, alpha: 1.0000))
         case .surfaceSunken: return Self.adaptive(light: (red: 0.9412, green: 0.9412, blue: 0.9529, alpha: 1.0000), dark: (red: 0.1294, green: 0.1333, blue: 0.1451, alpha: 1.0000))
-        case .worldAction: return Self.fixed(red: 0.0000, green: 0.2000, blue: 0.3843, alpha: 1.0000)
-        case .worldFrame: return Self.fixed(red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 1.0000)
-        case .worldInk: return Self.fixed(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000)
-        case .worldInkDim: return Self.fixed(red: 0.6902, green: 0.7059, blue: 0.7294, alpha: 1.0000)
-        case .worldPanel: return Self.fixed(red: 0.0000, green: 0.0000, blue: 0.0000, alpha: 0.7020)
-        case .worldParty: return Self.fixed(red: 0.2392, green: 0.8392, blue: 0.5490, alpha: 1.0000)
-        case .worldRule: return Self.fixed(red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 0.3020)
-        case .worldScrim: return Self.fixed(red: 0.0000, green: 0.0000, blue: 0.0000, alpha: 0.9020)
+        case .worldAction: return Self.fixed((red: 0.0000, green: 0.2000, blue: 0.3843, alpha: 1.0000))
+        case .worldFrame: return Self.fixed((red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 1.0000))
+        case .worldInk: return Self.fixed((red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000))
+        case .worldInkDim: return Self.fixed((red: 0.6902, green: 0.7059, blue: 0.7294, alpha: 1.0000))
+        case .worldPanel: return Self.fixed((red: 0.0000, green: 0.0000, blue: 0.0000, alpha: 0.7020))
+        case .worldParty: return Self.fixed((red: 0.2392, green: 0.8392, blue: 0.5490, alpha: 1.0000))
+        case .worldRule: return Self.fixed((red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 0.3020))
+        case .worldScrim: return Self.fixed((red: 0.0000, green: 0.0000, blue: 0.0000, alpha: 0.9020))
         }
     }
 

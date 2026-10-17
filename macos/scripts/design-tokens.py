@@ -144,7 +144,7 @@ def render_swift(toks):
     ]
     for n, (light, dark) in toks.items():
         if dark is None:
-            lines.append(f"        case .{camel(n)}: return Self.fixed{swift_literal(light)}")
+            lines.append(f"        case .{camel(n)}: return Self.fixed({swift_literal(light)})")
         else:
             lines.append(
                 f"        case .{camel(n)}: return Self.adaptive(light: {swift_literal(light)}, dark: {swift_literal(dark)})"
