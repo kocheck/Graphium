@@ -11,6 +11,8 @@ rest of this repository.
 
 ## Build
 
+First time? See [GETTING_STARTED.md](GETTING_STARTED.md) for setup, troubleshooting and a smoke test.
+
 Requires macOS 14+ and Xcode 16+.
 
 ```sh
@@ -75,6 +77,29 @@ the first local `xcodebuild` is its first build.
 | M7        | Session Console: catalog editor, stage plates, local audio with AVAudioEngine fades/ducking, synth SFX, YouTube via WKWebView, board packs (§3.9-3.11)                          | Done   |
 | M8        | Dungeon generator (§3.8), command palette (§3.15), minimap, paper texture, home screen and recent campaigns                                                                     | Done   |
 | M9        | Polish and release: full menus and shortcuts, Settings, accessibility audit, performance on Apple Silicon (Instruments), Sparkle updates, Developer ID signing and notarization | Partly |
+
+## Performance and wrap-up
+
+Done or open, in priority order:
+
+1. **First Mac build and smoke test.** See GETTING_STARTED.md.
+2. **Keep live drags out of the SwiftUI tree.** `liveTokenPositions` is `@Published` on the
+   document, so every drag event re-evaluates both windows' bodies. Move it to its own small
+   observable object that only the World View canvas reads.
+3. **Cache fog of war.** The World View recomputes vision polygons and hidden NPCs in `body` on
+   every change. Memoise them on (map revision, token positions, doors, walls).
+4. **Layered canvas drawing.** Cache the map image, paper texture and grid in a layer, and
+   redraw only tokens, ink and fog while panning or dragging. Draw only `dirtyRect`.
+5. **Image import off the main thread** (PARITY §3.15). Decode and resize in a `Task.detached`,
+   with a progress indicator for large maps.
+6. **Assets on demand.** Assets are held in memory as `Data`. For big campaigns, read package
+   files lazily through `FileWrapper` and keep only decoded images in the cache, with a size
+   limit.
+7. **Profile with Instruments** (Time Profiler, Allocations, SwiftUI) on Apple Silicon. Use a
+   DEBUG-only stress fixture (TS `stressFixture.ts`: hundreds of tokens, long walls, many fog
+   regions) and add XCTest `measure` tests for line of sight and the dungeon generator.
+8. **Release.** Developer ID signing, notarisation, Sparkle updates, then get CI green again
+   and add a UI test target for the smoke test.
 
 ## File format
 
