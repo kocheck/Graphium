@@ -129,6 +129,8 @@ final class MapCanvasNSView: NSView {
     }
 
     private var interaction = Interaction.idle
+    /// Door open/close swings in flight (PARITY §3.6); used by `drawDoors`.
+    lazy var doorSwings = DoorSwingAnimator()
     private var lastBaked: (key: String, image: CGImage)?
     private var spaceHeld = false
 

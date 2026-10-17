@@ -361,7 +361,7 @@ drawing input and is not suitable here.
 ### 3.6 Doors and stairs
 
 - [x] Place a door with the Door tool. A white ghost preview follows the snapped pointer. Clicking adds a closed, unlocked door the size of one grid cell in the current orientation (horizontal or vertical, toggled with `R`, arrow keys or the toolbar). (source: src/components/Canvas/hooks/useCanvasInteraction.ts:248-269, 386-396, src/components/Canvas/OverlayLayer.tsx:32-50)
-- [x] Open and close a door by clicking it (Architect). Locked doors do not toggle. The swing arc animates over 300 ms with ease-in-out. (source: src/components/Canvas/DoorShape.tsx:52-117)
+- [x] Open and close a door by clicking it (Architect). Locked doors do not toggle. The swing arc animates over 300 ms with ease-in-out. (source: src/components/Canvas/DoorShape.tsx:52-117) **Native:** The leaf turns about its hinge over 300 ms (ease-in-out quad) for every open or close, whether from a click, the context menu or the sidebar, in both windows. A re-toggle mid-swing reverses from the current angle. With Reduce Motion on, doors switch instantly.
 - [x] Door right-click context menu — Open/Close Door (disabled when locked), Lock/Unlock Door, and Delete Door in red. Clicking outside closes it. (source: src/components/Canvas/CanvasManager.tsx:235-255, 1437-1484, src/components/Canvas/DoorShape.tsx:118-126)
 - [x] Lock state — A lock icon overlay shows on locked doors. (source: src/components/Canvas/DoorShape.tsx:146, 421)
 - [x] Bulk door controls in the sidebar (see 2.1).
