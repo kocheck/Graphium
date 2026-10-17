@@ -457,18 +457,18 @@ on drop the primary token is snapped with its size, then for multi-select the sa
 
 ### 3.2 Measurement — `src/utils/measurement.ts`
 
-| Function                                            | Line | Behaviour                                                                               |
-| --------------------------------------------------- | ---- | --------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ | --- | -------------------------------------------------------------------------------------------------------------------------- |
-| `DistanceMode`                                      | 15   | `EUCLIDEAN = 'euclidean'`, `DND_5E = 'dnd5e'`                                           |
-| `euclideanDistance(p1,p2)`                          | 30   | `sqrt(dx²+dy²)`                                                                         |
-| `dnd5eDistance(p1,p2,g)`                            | 51   | `cx = round(                                                                            | dx            | /g)`, `cy = round(                                                                                                       | dy  | /g)`; `diag = min`, `straight = max − diag`; `cells = floor(diag/2)\*3 + diag%2 + straight` (5-10-5 rule, result in cells) |
-| `pixelsToFeet(px, g, mode = EUCLIDEAN, p1?, p2?)`   | 84   | DND_5E with both points → `dnd5eDistance*5`; else `round(px/g*5)`                       |
-| `calculateAngle(p1,p2)`                             | 109  | `atan2(dy, dx)` radians (y-down: "up" = −π/2)                                           |
-| `calculateAngleDegrees`                             | 121  | degrees, negatives +360 → [0,360)                                                       |
-| `calculateConeVertices(origin, target, angle = 53)` | 139  | `L =                                                                                    | target−origin | `, `θ = atan2`, `h = angle/2 in rad`; returns `[origin, origin + L(cos(θ+h), sin(θ+h)), origin + L(cos(θ−h), sin(θ−h))]` |
-| `formatDistance(feet, showCells = true)`            | 180  | `"{feet}ft ({n} cell[s])"`, `n = round(feet/5)`, singular iff n == 1; else `"{feet}ft"` |
-| `formatRadius(feet, showCells = true)`              | 198  | `"{feet}ft radius ({n} cell[s])"` (singular iff n == 1) / `"{feet}ft radius"`              |
-| `formatCone(feet, angle = 53, showCells = true)`    | 217  | `"{feet}ft {angle}° cone ({n} cell[s])"` (singular iff n == 1) / `"{feet}ft {angle}° cone"`|
+| Function                                            | Line | Behaviour                                                                                   |
+| --------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ | --- | -------------------------------------------------------------------------------------------------------------------------- |
+| `DistanceMode`                                      | 15   | `EUCLIDEAN = 'euclidean'`, `DND_5E = 'dnd5e'`                                               |
+| `euclideanDistance(p1,p2)`                          | 30   | `sqrt(dx²+dy²)`                                                                             |
+| `dnd5eDistance(p1,p2,g)`                            | 51   | `cx = round(                                                                                | dx            | /g)`, `cy = round(                                                                                                       | dy  | /g)`; `diag = min`, `straight = max − diag`; `cells = floor(diag/2)\*3 + diag%2 + straight` (5-10-5 rule, result in cells) |
+| `pixelsToFeet(px, g, mode = EUCLIDEAN, p1?, p2?)`   | 84   | DND_5E with both points → `dnd5eDistance*5`; else `round(px/g*5)`                           |
+| `calculateAngle(p1,p2)`                             | 109  | `atan2(dy, dx)` radians (y-down: "up" = −π/2)                                               |
+| `calculateAngleDegrees`                             | 121  | degrees, negatives +360 → [0,360)                                                           |
+| `calculateConeVertices(origin, target, angle = 53)` | 139  | `L =                                                                                        | target−origin | `, `θ = atan2`, `h = angle/2 in rad`; returns `[origin, origin + L(cos(θ+h), sin(θ+h)), origin + L(cos(θ−h), sin(θ−h))]` |
+| `formatDistance(feet, showCells = true)`            | 180  | `"{feet}ft ({n} cell[s])"`, `n = round(feet/5)`, singular iff n == 1; else `"{feet}ft"`     |
+| `formatRadius(feet, showCells = true)`              | 198  | `"{feet}ft radius ({n} cell[s])"` (singular iff n == 1) / `"{feet}ft radius"`               |
+| `formatCone(feet, angle = 53, showCells = true)`    | 217  | `"{feet}ft {angle}° cone ({n} cell[s])"` (singular iff n == 1) / `"{feet}ft {angle}° cone"` |
 
 Number formatting: JS `${n}` — integers print without `.0`; Swift must format `30.0` as `"30"` (use a JS-number formatter).
 
