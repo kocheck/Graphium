@@ -8,6 +8,19 @@ public enum GridType: String, Codable, CaseIterable, Sendable {
     case hidden = "HIDDEN"
     case hexagonal = "HEXAGONAL"
     case isometric = "ISOMETRIC"
+
+    public var title: String {
+        switch self {
+        case .lines: return "Lines"
+        case .dots: return "Dots"
+        case .hidden: return "Hidden"
+        case .hexagonal: return "Hexagonal"
+        case .isometric: return "Isometric"
+        }
+    }
+
+    /// Calibration assumes square cells (TS offers it for these only).
+    public var isSquare: Bool { self == .lines || self == .dots || self == .hidden }
 }
 
 /// One map: background, grid, tokens, drawings, doors, stairs, explored fog.

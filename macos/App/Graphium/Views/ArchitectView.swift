@@ -26,6 +26,9 @@ struct ArchitectView: View {
     @State private var editingLibraryItem: TokenLibraryItem?
     @State private var showingConsoleSettings = false
     @State private var inspectorTab = InspectorTab.token
+    @State private var mapSettings: MapSettingsRequest?
+    @State private var calibrating = false
+    @State private var toast: Toast?
 
     private enum InspectorTab: Hashable {
         case token, console
@@ -42,6 +45,17 @@ struct ArchitectView: View {
         let point: Point2D
     }
 
+    private struct MapSettingsRequest: Identifiable {
+        let id = UUID()
+        let map: GameMap
+        let isNew: Bool
+    }
+
+    private struct Toast: Equatable {
+        let id = UUID()
+        let message: String
+    }
+
     private enum ImportTarget: Identifiable {
         case mapImage, tokens, libraryUpload
         var id: Self { self }
@@ -54,7 +68,7 @@ struct ArchitectView: View {
             canvas
                 .inspector(isPresented: inspectorShown) {
                     VStack(spacing: 0) {
-                        if showingConsole && !selection.isEmpty {
+                        if showingConsole && hasSelectedTokens {
                             Picker("Panel", selection: $inspectorTab) {
                                 Text("Token").tag(InspectorTab.token)
                                 Text("Session Console").tag(InspectorTab.console)
@@ -63,7 +77,7 @@ struct ArchitectView: View {
                             .labelsHidden()
                             .padding(8)
                         }
-                        if !selection.isEmpty && (inspectorTab == .token || !showingConsole) {
+                        if hasSelectedTokens && (inspectorTab == .token || !showingConsole) {
                             TokenInspector(document: document, selection: selection)
                         } else {
                             SessionConsolePanel(document: document)
@@ -161,11 +175,25 @@ struct ArchitectView: View {
             \.architectActions,
             ArchitectActions(showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true }))
         .focusedSceneValue(\.campaignDocument, document)
-        .onChange(of: selection) { _, new in if !new.isEmpty { inspectorTab = .token } }
+        .onChange(of: selection) { _, _ in if hasSelectedTokens { inspectorTab = .token } }
         .onChange(of: document.campaign) { _, campaign in
-            // Undo/redo or a map switch can remove selected tokens.
-            let live = Set(campaign.activeMap.tokens.map(\.id))
+            // Undo/redo or a map switch can remove selected items.
+            let map = campaign.activeMap
+            let live = Set(map.tokens.map(\.id) + map.drawings.map(\.id) + map.doors.map(\.id))
             if !selection.isSubset(of: live) { selection.formIntersection(live) }
+        }
+        .onChange(of: document.campaign.activeMapID) { _, _ in calibrating = false }
+        .sheet(item: $mapSettings) { request in
+            MapSettingsView(
+                document: document,
+                map: request.map,
+                isNew: request.isNew,
+                onSave: { saveMapSettings($0, isNew: request.isNew) },
+                onCalibrate: { map in
+                    saveMapSettings(map, isNew: request.isNew)
+                    selection = []
+                    calibrating = true
+                })
         }
     }
 
@@ -178,6 +206,7 @@ struct ArchitectView: View {
                     Text(map.name)
                         .tag(map.id)
                         .contextMenu {
+                            Button("Map Settings…") { mapSettings = MapSettingsRequest(map: map, isNew: false) }
                             Button("Rename…") {
                                 renameText = map.name
                                 renamingMapID = map.id
@@ -217,7 +246,8 @@ struct ArchitectView: View {
         .toolbar {
             ToolbarItem {
                 Button {
-                    document.edit("Add Map", undoManager: undoManager) { $0.addMap() }
+                    let n = document.campaign.maps.count + 1
+                    mapSettings = MapSettingsRequest(map: GameMap(name: "Map \(n)"), isNew: true)
                 } label: {
                     Label("Add Map", systemImage: "plus")
                 }
@@ -259,7 +289,7 @@ struct ArchitectView: View {
                     }
                     if duplicate { selection = Set(placed) }
                 },
-                deleteSelection: { deleteSelectedTokens() },
+                deleteSelection: { deleteSelection() },
                 dropImageFiles: { urls, point in dropImages(urls, at: point) },
                 addDrawing: { addDrawing($0) },
                 placeDoor: { point in
@@ -275,11 +305,43 @@ struct ArchitectView: View {
                 },
                 dropLibraryItem: { id, point in
                     if let item = libraryItem(id) { placeLibraryItem(item, at: point) }
+                },
+                moveDrawings: { ids, dx, dy, duplicate in
+                    var placed: [String] = []
+                    document.edit(duplicate ? "Duplicate Strokes" : "Move Strokes", undoManager: undoManager) {
+                        placed = $0.activeMap.moveDrawings(ids, dx: dx, dy: dy, duplicate: duplicate)
+                    }
+                    if duplicate { selection = selection.subtracting(ids).union(placed) }
+                },
+                resizeToken: { id, scale in
+                    document.edit("Resize Token", undoManager: undoManager) { campaign in
+                        if let i = campaign.activeMap.tokens.firstIndex(where: { $0.id == id }) {
+                            campaign.activeMap.tokens[i].scale = scale
+                        }
+                    }
+                },
+                calibrate: { box in
+                    calibrating = false
+                    var applied = false
+                    document.edit("Calibrate Map", undoManager: undoManager) { applied = $0.activeMap.calibrate(to: box) }
+                    showToast(applied ? "Map calibrated to the grid" : "Drag a larger box around one grid cell")
+                },
+                cancelCalibration: {
+                    calibrating = false
+                    showToast("Calibration cancelled")
+                },
+                dragPreview: { positions in document.liveTokenPositions = positions ?? [:] },
+                setGridType: { type in
+                    guard type != document.campaign.activeMap.gridType else { return }
+                    document.edit("Change Grid", undoManager: undoManager) { $0.activeMap.gridType = type }
+                    showToast("Grid: \(type.title)")
                 }
             ),
             toolState: tools,
-            measurement: measurement
+            measurement: measurement,
+            calibrating: calibrating
         )
+        .overlay(alignment: .top) { canvasBanner }
         .navigationTitle(campaign.activeMap.name)
         .navigationSubtitle(campaign.name)
     }
@@ -494,7 +556,7 @@ struct ArchitectView: View {
 
     private var inspectorShown: Binding<Bool> {
         Binding(
-            get: { !selection.isEmpty || showingConsole },
+            get: { hasSelectedTokens || showingConsole },
             set: { shown in
                 if !shown {
                     selection = []
@@ -646,12 +708,62 @@ struct ArchitectView: View {
         selection = Set(created.map(\.id))
     }
 
-    private func deleteSelectedTokens() {
+    /// Deletes selected tokens, strokes and doors in one undoable step.
+    private func deleteSelection() {
         let ids = selection
-        document.edit(ids.count == 1 ? "Delete Token" : "Delete Tokens", undoManager: undoManager) {
-            $0.activeMap.removeTokens(ids)
-        }
+        let tokenCount = document.campaign.activeMap.tokens.filter { ids.contains($0.id) }.count
+        let name =
+            tokenCount == ids.count ? (ids.count == 1 ? "Delete Token" : "Delete Tokens") : "Delete Selection"
+        document.edit(name, undoManager: undoManager) { $0.activeMap.removeItems(ids) }
         selection = []
+    }
+
+    private var hasSelectedTokens: Bool {
+        document.campaign.activeMap.tokens.contains { selection.contains($0.id) }
+    }
+
+    private func saveMapSettings(_ map: GameMap, isNew: Bool) {
+        document.edit(isNew ? "Add Map" : "Map Settings", undoManager: undoManager) { campaign in
+            if isNew {
+                campaign.maps.append(map)
+                campaign.activeMapID = map.id
+            } else if let i = campaign.maps.firstIndex(where: { $0.id == map.id }) {
+                campaign.maps[i] = map
+            }
+        }
+        if isNew { selection = [] }
+    }
+
+    private func showToast(_ message: String) {
+        toast = Toast(message: message)
+    }
+
+    /// Calibration instructions, or a brief toast (PARITY §3.2).
+    @ViewBuilder
+    private var canvasBanner: some View {
+        if calibrating {
+            HStack(spacing: 12) {
+                Label("Drag a box around exactly one grid cell on the map image", systemImage: "square.dashed")
+                Button("Cancel") { calibrating = false }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(.regularMaterial, in: Capsule())
+            .padding(.top, 12)
+        } else if let toast {
+            Text(toast.message)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(.regularMaterial, in: Capsule())
+                .padding(.top, 12)
+                .transition(.opacity)
+                .allowsHitTesting(false)
+                .task(id: toast.id) {
+                    try? await Task.sleep(for: .seconds(2))
+                    if self.toast?.id == toast.id { self.toast = nil }
+                }
+        }
     }
 
     private func deleteMap(_ id: String) {

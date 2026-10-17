@@ -23,6 +23,14 @@ struct CanvasEditing {
     var toggleDoorOrientation: (() -> Void)?
     /// A library item dragged from the sidebar or Library Manager, dropped at a map point.
     var dropLibraryItem: ((_ itemID: String, _ at: Point2D) -> Void)?
+    /// Marker/eraser strokes dragged by an offset (Option duplicates).
+    var moveDrawings: ((_ ids: Set<String>, _ dx: Double, _ dy: Double, _ duplicate: Bool) -> Void)?
+    var resizeToken: ((_ id: String, _ scale: Double) -> Void)?
+    var calibrate: ((Bounds) -> Void)?
+    var cancelCalibration: (() -> Void)?
+    /// Live (unsnapped) positions of tokens being dragged, for the World View; nil when done.
+    var dragPreview: (([String: Point2D]?) -> Void)?
+    var setGridType: ((GridType) -> Void)?
 }
 
 /// Fog of war to draw over the map (World View, when not in daylight).
@@ -55,6 +63,9 @@ final class MapCanvasNSView: NSView {
     var toolState = ToolState()
     var measurement: MeasurementShape?
     var selectedDoorID: String?
+    /// Map calibration mode: the next drag draws the one-cell box.
+    var calibrating = false
+    /// Positions of tokens another window is dragging (World View shows DM drags live).
     private var showMovementRange = false
     private var hoverPoint: Point2D?
     var fitRequest: FitRequest? {
@@ -94,6 +105,19 @@ final class MapCanvasNSView: NSView {
         case marquee(start: Point2D, current: Point2D, base: Set<String>)
         case stroke(Drawing)
         case measuring(origin: Point2D)
+        case movingStrokes(ids: Set<String>, start: Point2D, current: Point2D, began: Bool)
+        case resizing(tokenID: String, baseSize: Double, start: Point2D, current: Point2D)
+        case calibrating(start: Point2D, current: Point2D)
+    }
+
+    /// The resize handle of a single selected token (Architect), in map space.
+    private func resizeHandle(in map: GameMap) -> (token: Token, rect: Bounds)? {
+        guard !isPlayerView, editing?.resizeToken != nil, toolState.tool == .select, selection.count == 1,
+            let token = map.tokens.first(where: { selection.contains($0.id) })
+        else { return nil }
+        let size = map.tokenSize(token, library: library)
+        let handle = 10 / viewport.zoom
+        return (token, Bounds(x: token.x + size - handle / 2, y: token.y + size - handle / 2, width: handle, height: handle))
     }
 
     private var interaction = Interaction.idle
@@ -137,9 +161,38 @@ final class MapCanvasNSView: NSView {
             context.restoreGState()
         }
         drawGrid(map, context: context)
+        if !isPlayerView, editing != nil, let hoverPoint, map.gridType != .dots, map.gridType != .hidden {
+            // Hover cell highlight (Architect only, PARITY §3.3).
+            let geometry = makeGridGeometry(map.gridType, cellSize: map.gridSize)
+            let path = CGMutablePath()
+            path.addPolygon(geometry.cellVertices(geometry.pixelToGrid(hoverPoint)))
+            context.addPath(path)
+            context.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor)
+            context.fillPath()
+        }
         var liveStroke: Drawing?
         if case .stroke(let drawing) = interaction { liveStroke = drawing }
-        drawInk(map.drawings, live: liveStroke, context: context)
+        var ink = map.drawings
+        if case .movingStrokes(let ids, let start, let current, true) = interaction {
+            let duplicate = NSEvent.modifierFlags.contains(.option)
+            let moved = ink.filter { ids.contains($0.id) }.map { d -> Drawing in
+                var c = d
+                c.x = (c.x ?? 0) + current.x - start.x
+                c.y = (c.y ?? 0) + current.y - start.y
+                if duplicate { c.id = "preview-" + c.id }
+                return c
+            }
+            ink = duplicate ? ink + moved : ink.map { d in moved.first { $0.id == d.id } ?? d }
+        }
+        drawInk(ink, live: liveStroke, context: context)
+        for drawing in ink where selection.contains(drawing.id) {
+            context.saveGState()
+            context.setStrokeColor(NSColor.systemBlue.cgColor)
+            context.setLineWidth(1.5 / viewport.zoom)
+            context.setLineDash(phase: 0, lengths: [5 / viewport.zoom, 3 / viewport.zoom])
+            context.stroke(CGRect(bounds: map.drawingBounds(drawing)))
+            context.restoreGState()
+        }
         drawStairs(map.stairs, context: context)
         drawDoors(map.doors, context: context)
         if showMovementRange, !isPlayerView, selection.count == 1,
@@ -155,6 +208,26 @@ final class MapCanvasNSView: NSView {
                 map: map, context: context)
         }
         drawTokens(map, context: context)
+        if let handle = resizeHandle(in: map), case .idle = interaction {
+            context.setFillColor(NSColor.white.cgColor)
+            context.setStrokeColor(NSColor.systemBlue.cgColor)
+            context.setLineWidth(1.5 / viewport.zoom)
+            context.fill(CGRect(bounds: handle.rect))
+            context.stroke(CGRect(bounds: handle.rect))
+        }
+        if case .resizing(let id, let base, let start, let current) = interaction,
+            let token = map.tokens.first(where: { $0.id == id })
+        {
+            let size = max(map.gridSize * 0.25, base + max(current.x - start.x, current.y - start.y))
+            context.setStrokeColor(NSColor.systemBlue.cgColor)
+            context.setLineWidth(2 / viewport.zoom)
+            context.stroke(CGRect(x: token.x, y: token.y, width: size, height: size))
+        }
+        if case .calibrating(let start, let current) = interaction {
+            context.setStrokeColor(NSColor.systemOrange.cgColor)
+            context.setLineWidth(2 / viewport.zoom)
+            context.stroke(CGRect(bounds: Bounds(corner: start, corner: current)))
+        }
         if let fog { drawFog(fog, context: context) }
         if let measurement { drawMeasurement(measurement, gridSize: map.gridSize, context: context) }
         if !isPlayerView, editing != nil, toolState.tool == .door, let hoverPoint {
@@ -377,6 +450,15 @@ final class MapCanvasNSView: NSView {
         }
         let point = mapLocation(of: event)
         let shift = event.modifierFlags.contains(.shift)
+        if calibrating, editing.calibrate != nil {
+            interaction = .calibrating(start: point, current: point)
+            return
+        }
+        if let handle = resizeHandle(in: map), handle.rect.contains(point) {
+            interaction = .resizing(
+                tokenID: handle.token.id, baseSize: map.tokenSize(handle.token, library: library), start: point, current: point)
+            return
+        }
         if editing.addDrawing != nil, toolState.tool != .select {
             beginToolInteraction(at: point, map: map, event: event)
             return
@@ -399,6 +481,13 @@ final class MapCanvasNSView: NSView {
             // Clicking a door opens or closes it (locked doors stay put).
             selectedDoorID = door.id
             doorAction(door.id, .toggle)
+        } else if editing.moveDrawings != nil, let stroke = map.drawing(at: point) {
+            var next = shift ? selection : []
+            if shift, next.contains(stroke.id) { next.remove(stroke.id) } else { next.insert(stroke.id) }
+            if !shift, selection.contains(stroke.id) { next = selection }
+            editing.setSelection(next)
+            let ids = Set(map.drawings.map(\.id)).intersection(next)
+            interaction = .movingStrokes(ids: ids, start: point, current: point, began: false)
         } else {
             let base = shift ? selection : []
             if !shift { editing.setSelection([]) }
@@ -454,7 +543,16 @@ final class MapCanvasNSView: NSView {
             let point = mapLocation(of: event)
             let moved = began || Measure.euclideanDistance(start, point) * viewport.zoom >= Self.dragThreshold
             interaction = .movingTokens(ids: ids, primary: primary, start: start, current: point, began: moved)
-            if moved { NSCursor.closedHand.set() }
+            if moved {
+                NSCursor.closedHand.set()
+                if let map {
+                    var live: [String: Point2D] = [:]
+                    for token in map.tokens where ids.contains(token.id) {
+                        live[token.id] = Point2D(x: token.x + point.x - start.x, y: token.y + point.y - start.y)
+                    }
+                    editing?.dragPreview?(live)
+                }
+            }
             needsDisplay = true
         case .stroke(var drawing):
             var point = mapLocation(of: event)
@@ -467,6 +565,17 @@ final class MapCanvasNSView: NSView {
             if drawing.pressures != nil { drawing.pressures?.append(pressure(of: event)) }
             interaction = .stroke(drawing)
             needsDisplay = true
+        case .movingStrokes(let ids, let start, _, let began):
+            let point = mapLocation(of: event)
+            let moved = began || Measure.euclideanDistance(start, point) * viewport.zoom >= Self.dragThreshold
+            interaction = .movingStrokes(ids: ids, start: start, current: point, began: moved)
+            needsDisplay = true
+        case .resizing(let id, let base, let start, _):
+            interaction = .resizing(tokenID: id, baseSize: base, start: start, current: mapLocation(of: event))
+            needsDisplay = true
+        case .calibrating(let start, _):
+            interaction = .calibrating(start: start, current: mapLocation(of: event))
+            needsDisplay = true
         case .measuring(let origin):
             editing?.setMeasurement?(
                 MeasurementShape(mode: toolState.measureMode, origin: origin, pointer: mapLocation(of: event)))
@@ -474,7 +583,12 @@ final class MapCanvasNSView: NSView {
             let point = mapLocation(of: event)
             interaction = .marquee(start: start, current: point, base: base)
             if let map {
-                let hits = map.tokenIDs(intersecting: Bounds(corner: start, corner: point), library: library)
+                let rect = Bounds(corner: start, corner: point)
+                var hits = Set(map.tokenIDs(intersecting: rect, library: library)).subtracting(hiddenTokenIDs)
+                if editing?.moveDrawings != nil {
+                    hits.formUnion(map.drawingIDs(intersecting: rect))
+                    hits.formUnion(map.doorIDs(intersecting: rect))
+                }
                 editing?.setSelection(base.union(hits))
             }
             needsDisplay = true
@@ -485,7 +599,22 @@ final class MapCanvasNSView: NSView {
         if case .movingTokens(let ids, let primary, let start, let current, true) = interaction {
             let duplicate = event.modifierFlags.contains(.option) && editing?.allowsDuplicate == true
             editing?.dropTokens(ids, primary, current.x - start.x, current.y - start.y, duplicate)
+            editing?.dragPreview?(nil)
         }
+        if case .movingStrokes(let ids, let start, let current, true) = interaction {
+            editing?.moveDrawings?(ids, current.x - start.x, current.y - start.y, event.modifierFlags.contains(.option))
+        }
+        if case .resizing(let id, let base, let start, let current) = interaction, let map,
+            let token = map.tokens.first(where: { $0.id == id }), base > 0
+        {
+            let size = max(map.gridSize * 0.25, base + max(current.x - start.x, current.y - start.y))
+            let scale = ResolvedToken(token, library: library).scale * size / base
+            editing?.resizeToken?(id, (scale * 4).rounded() / 4)  // quarter steps keep tokens grid-friendly
+        }
+        if case .calibrating(let start, let current) = interaction {
+            editing?.calibrate?(Bounds(corner: start, corner: current))
+        }
+        if case .panning = interaction { clampViewport() }
         if case .stroke(let drawing) = interaction {
             editing?.addDrawing?(drawing)
         }
@@ -505,12 +634,21 @@ final class MapCanvasNSView: NSView {
     }
 
     override func mouseMoved(with event: NSEvent) {
-        guard toolState.tool == .door else {
-            hoverPoint = nil
-            return
-        }
+        guard !isPlayerView, editing != nil else { return }
         hoverPoint = mapLocation(of: event)
         needsDisplay = true
+    }
+
+    /// Crosshair for drawing, measuring, doors and calibration; arrow for select (PARITY §3.1).
+    override func resetCursorRects() {
+        let crosshair = calibrating || (editing?.addDrawing != nil && toolState.tool != .select)
+        addCursorRect(bounds, cursor: crosshair ? .crosshair : .arrow)
+    }
+
+    private func clampViewport() {
+        guard let map else { return }
+        viewport = viewport.clamped(
+            map: map, library: library, viewWidth: Double(bounds.width), viewHeight: Double(bounds.height))
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -559,6 +697,7 @@ final class MapCanvasNSView: NSView {
             // Plain wheel / two-finger scroll pans.
             let scale = event.hasPreciseScrollingDeltas ? 1.0 : 10.0
             viewport.pan(byViewDX: Double(event.scrollingDeltaX) * scale, dy: Double(event.scrollingDeltaY) * scale)
+            if event.phase == .ended || event.momentumPhase == .ended || !event.hasPreciseScrollingDeltas { clampViewport() }
         }
     }
 
@@ -579,6 +718,10 @@ final class MapCanvasNSView: NSView {
                 selectedDoorID = nil
             }
         case 53:  // escape
+            if calibrating {
+                editing?.cancelCalibration?()
+                return
+            }
             editing?.setSelection([])
             editing?.setMeasurement?(nil)
             selectedDoorID = nil
@@ -601,6 +744,11 @@ final class MapCanvasNSView: NSView {
                 }
                 if let tool = CanvasTool.forKey(char) {
                     editing?.setTool?(tool)
+                    return
+                }
+                let gridKeys: [Character: GridType] = ["1": .lines, "2": .dots, "3": .hexagonal, "4": .isometric, "5": .hidden]
+                if let type = gridKeys[char], let setGridType = editing?.setGridType {
+                    setGridType(type)
                     return
                 }
             }
@@ -670,6 +818,7 @@ struct MapCanvas: NSViewRepresentable {
     var measurement: MeasurementShape?
     var fitRequest: FitRequest?
     var onViewportChange: ((Viewport, CGSize) -> Void)?
+    var calibrating = false
 
     func makeNSView(context: Context) -> MapCanvasNSView {
         MapCanvasNSView()
@@ -688,6 +837,10 @@ struct MapCanvas: NSViewRepresentable {
         view.measurement = measurement
         view.fitRequest = fitRequest
         view.onViewportChange = onViewportChange
+        if view.calibrating != calibrating || view.toolState.tool != toolState.tool {
+            view.window?.invalidateCursorRects(for: view)
+        }
+        view.calibrating = calibrating
         view.needsDisplay = true
     }
 }

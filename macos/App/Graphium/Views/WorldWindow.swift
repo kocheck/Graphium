@@ -36,7 +36,16 @@ private struct WorldView: View {
     var body: some View {
         let campaign = document.campaign
         let library = campaign.libraryIndex
-        let map = campaign.activeMap
+        var map = campaign.activeMap
+        // The DM's in-progress drag, so fog and NPC visibility follow it live.
+        if !document.liveTokenPositions.isEmpty {
+            for i in map.tokens.indices {
+                if let p = document.liveTokenPositions[map.tokens[i].id] {
+                    map.tokens[i].x = p.x
+                    map.tokens[i].y = p.y
+                }
+            }
+        }
         let party = map.partyBounds(library: library)
         // Fog and hidden NPCs (CORE_SPEC §3.3); none in daylight.
         let vision = map.isDaylightMode ? [] : LineOfSight.polygons(of: map, library: library)
@@ -51,7 +60,7 @@ private struct WorldView: View {
 
         ZStack(alignment: .bottomTrailing) {
             MapCanvas(
-                map: campaign.activeMap,
+                map: map,
                 library: library,
                 imageProvider: { [document] name in document.imageCache.image(named: name, in: document.assets) },
                 selection: selection,

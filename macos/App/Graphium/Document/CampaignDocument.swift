@@ -28,6 +28,9 @@ final class CampaignDocument: ReferenceFileDocument {
     @Published var isPaused = false
     /// The DM's measurement mirrored to the World View when broadcasting. Transient.
     @Published var broadcastMeasurement: MeasurementShape?
+    /// Unsnapped positions of tokens the DM is dragging, so players see the move
+    /// as it happens (PARITY §4.2). Transient; never saved or undoable.
+    @Published var liveTokenPositions: [String: Point2D] = [:]
     /// What the World View is showing/playing (Session Console). Session-only.
     @Published var sessionRuntime = SessionConsoleRuntime(catalog: .empty(campaignName: ""))
     /// Open World View windows, for the master bar's link status.
