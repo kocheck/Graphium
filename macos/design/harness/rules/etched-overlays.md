@@ -10,7 +10,10 @@ sources:
   ]
 confidence: decided
 reviewed: 2026-10-17
+superseded_by: glass-overlays
 ---
+
+> Retired 2026-10-17 by decision 007 (map-first glass). Kept for history; follow [glass-overlays](glass-overlays.md).
 
 # App-owned overlays are etched panels, not floating glass
 

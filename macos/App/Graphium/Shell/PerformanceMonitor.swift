@@ -56,7 +56,7 @@ struct PerformanceOverlay: View {
                 row("Fog regions", "\(map.exploredRegions.count)")
                 row("World Views", "\(document.worldViewsOpen)")
             }
-            .etchedPanel(padding: EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+            .glassPanel(.card, padding: EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Performance monitor")
         }

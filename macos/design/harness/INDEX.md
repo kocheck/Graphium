@@ -14,7 +14,8 @@ Start here for any visual, UI, copy or interaction work in `macos/`. Read this f
 - [native-chrome-stays-native](rules/native-chrome-stays-native.md): toolbar, sidebar, inspector, sheets, menus
 - [one-warm-accent](rules/one-warm-accent.md): any colour choice in the Architect window or canvas
 - [state-without-colour](rules/state-without-colour.md): pause, broadcast, active tool, selection, locks
-- [etched-overlays](rules/etched-overlays.md): toasts, banners, HUDs, cards on app-owned surfaces
+- [glass-overlays](rules/glass-overlays.md): toasts, banners, HUDs, map controls over the canvas
+- [etched-overlays](rules/etched-overlays.md): retired; history only
 - [readouts-in-mono](rules/readouts-in-mono.md): any number the DM reads
 - [canvas-marks-read-on-any-map](rules/canvas-marks-read-on-any-map.md): selection, labels, measurements on the map
 

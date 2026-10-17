@@ -99,7 +99,12 @@ struct SessionConsolePanel: View {
 
     // MARK: Master bar
 
+    /// Inside the inspector: a native group box, never glass on glass.
     private var masterBar: some View {
+        GroupBox { masterBarContent }
+    }
+
+    private var masterBarContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label(
@@ -150,7 +155,7 @@ struct SessionConsolePanel: View {
             }
             .controlSize(.small)
         }
-        .etchedPanel(padding: EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Adding
