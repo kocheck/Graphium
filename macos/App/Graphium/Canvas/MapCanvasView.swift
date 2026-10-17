@@ -21,6 +21,8 @@ struct CanvasEditing {
     var setMeasurement: ((MeasurementShape?) -> Void)?
     var setTool: ((CanvasTool) -> Void)?
     var toggleDoorOrientation: (() -> Void)?
+    /// A library item dragged from the sidebar or Library Manager, dropped at a map point.
+    var dropLibraryItem: ((_ itemID: String, _ at: Point2D) -> Void)?
 }
 
 /// Fog of war to draw over the map (World View, when not in daylight).
@@ -80,12 +82,12 @@ final class MapCanvasNSView: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        registerForDraggedTypes([.fileURL])
+        registerForDraggedTypes([.fileURL, .string])
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        registerForDraggedTypes([.fileURL])
+        registerForDraggedTypes([.fileURL, .string])
     }
 
     override var isFlipped: Bool { true }
@@ -607,11 +609,21 @@ final class MapCanvasNSView: NSView {
         return urls.filter { UTType(filenameExtension: $0.pathExtension)?.conforms(to: .image) ?? false }
     }
 
+    private func libraryItemID(from info: NSDraggingInfo) -> String? {
+        info.draggingPasteboard.string(forType: .string).flatMap(LibraryDrag.itemID(from:))
+    }
+
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        editing?.dropImageFiles != nil && !imageURLs(from: sender).isEmpty ? .copy : []
+        if editing?.dropLibraryItem != nil, libraryItemID(from: sender) != nil { return .copy }
+        return editing?.dropImageFiles != nil && !imageURLs(from: sender).isEmpty ? .copy : []
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        if let id = libraryItemID(from: sender), let drop = editing?.dropLibraryItem {
+            let location = convert(sender.draggingLocation, from: nil)
+            drop(id, viewport.mapPoint(fromView: Point2D(x: Double(location.x), y: Double(location.y))))
+            return true
+        }
         let urls = imageURLs(from: sender)
         guard let drop = editing?.dropImageFiles, !urls.isEmpty else { return false }
         let location = convert(sender.draggingLocation, from: nil)

@@ -59,6 +59,16 @@ struct TokenInspector: View {
                 }
             }
 
+            if tokens.count == 1, let token = tokens.first, let itemID = token.token.libraryItemId,
+                document.campaign.tokenLibrary.contains(where: { $0.id == itemID })
+            {
+                Section {
+                    Button("Save to Library") { saveToLibrary(token, itemID: itemID) }
+                } footer: {
+                    Text("Makes this token's name, type and vision the library defaults.")
+                }
+            }
+
             if tokens.count == 1, let token = tokens.first {
                 Section("Details") {
                     LabeledContent("Scale", value: "\(jsNumber(token.scale))x")
@@ -75,6 +85,27 @@ struct TokenInspector: View {
         .formStyle(.grouped)
         .onAppear { resetDraft() }
         .onChange(of: selection) { _, _ in resetDraft() }
+    }
+
+    /// PARITY §2.3: writes the token's values back as library defaults (campaign copy
+    /// and app-wide library), then clears the overrides so the token inherits them.
+    private func saveToLibrary(_ token: ResolvedToken, itemID: String) {
+        let tokenID = token.token.id
+        document.edit("Save to Library", undoManager: undoManager) { campaign in
+            guard let index = campaign.tokenLibrary.firstIndex(where: { $0.id == itemID }) else { return }
+            campaign.tokenLibrary[index].adoptDefaults(from: token)
+            if let t = campaign.activeMap.tokens.firstIndex(where: { $0.id == tokenID }) {
+                campaign.activeMap.tokens[t].name = nil
+                campaign.activeMap.tokens[t].type = nil
+                campaign.activeMap.tokens[t].visionRadius = nil
+                campaign.activeMap.tokens[t].scale = nil
+            }
+        }
+        let store = LibraryStore.shared
+        if var global = store.items.first(where: { $0.id == itemID }) {
+            global.adoptDefaults(from: token)
+            try? store.update(global)
+        }
     }
 
     private func resetDraft() {

@@ -1,4 +1,5 @@
 import GraphiumCore
+import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -18,9 +19,21 @@ struct ArchitectView: View {
     @State private var recentColors: [String] = []
     @State private var measurement: MeasurementShape?
     @State private var broadcastMeasurement = true
+    @State private var showingLibrary = false
+    @State private var libraryUpload: ImportedImage?
+    @State private var cropping: CropRequest?
+    @ObservedObject private var library = LibraryStore.shared
+
+    /// A Finder-dropped image waiting in the cropper.
+    private struct CropRequest: Identifiable {
+        let id = UUID()
+        let image: CGImage
+        let name: String
+        let point: Point2D
+    }
 
     private enum ImportTarget: Identifiable {
-        case mapImage, tokens
+        case mapImage, tokens, libraryUpload
         var id: Self { self }
     }
 
@@ -46,6 +59,12 @@ struct ArchitectView: View {
             case .success(let urls):
                 if target == .mapImage, let url = urls.first {
                     setMapImage(from: url)
+                } else if target == .libraryUpload, let url = urls.first {
+                    do {
+                        libraryUpload = try withAccess(to: url) { try ImportedImage.load(from: url, kind: .token) }
+                    } catch {
+                        errorMessage = error.localizedDescription
+                    }
                 } else {
                     addTokens(from: urls, at: document.campaign.activeMap.centrePlacementPoint)
                 }
@@ -81,6 +100,19 @@ struct ArchitectView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .sheet(isPresented: $showingLibrary) {
+            LibraryManagerView(
+                onPlace: { placeLibraryItem($0, at: nil) },
+                onEdited: { document.syncLibraryItem($0, undoManager: undoManager) })
+        }
+        .sheet(item: $libraryUpload) { image in
+            AddToLibraryView(image: image)
+        }
+        .sheet(item: $cropping) { request in
+            ImageCropperView(image: request.image) { cropped in
+                addCroppedToken(cropped, name: request.name, centredAt: request.point)
+            }
+        }
         .focusedSceneValue(\.campaignDocument, document)
         .onChange(of: document.campaign) { _, campaign in
             // Undo/redo or a map switch can remove selected tokens.
@@ -107,6 +139,7 @@ struct ArchitectView: View {
                         }
                 }
             }
+            librarySection
             let doors = document.campaign.activeMap.doors
             if !doors.isEmpty {
                 // Bulk door controls (PARITY §2.1).
@@ -179,7 +212,7 @@ struct ArchitectView: View {
                     if duplicate { selection = Set(placed) }
                 },
                 deleteSelection: { deleteSelectedTokens() },
-                dropImageFiles: { urls, point in addTokens(from: urls, at: point, centred: true) },
+                dropImageFiles: { urls, point in dropImages(urls, at: point) },
                 addDrawing: { addDrawing($0) },
                 placeDoor: { point in
                     document.edit("Place Door", undoManager: undoManager) {
@@ -191,6 +224,9 @@ struct ArchitectView: View {
                 setTool: { selectTool($0) },
                 toggleDoorOrientation: {
                     tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
+                },
+                dropLibraryItem: { id, point in
+                    if let item = libraryItem(id) { placeLibraryItem(item, at: point) }
                 }
             ),
             toolState: tools,
@@ -198,6 +234,99 @@ struct ArchitectView: View {
         )
         .navigationTitle(campaign.activeMap.name)
         .navigationSubtitle(campaign.name)
+    }
+
+    // MARK: Library
+
+    /// Sidebar Library section (PARITY §2.1): Place / Add / Manage plus quick tokens.
+    @ViewBuilder
+    private var librarySection: some View {
+        let campaignLibrary = document.campaign.tokenLibrary
+        let recent = TokenLibrarySearch.recent(tokens: document.campaign.activeMap.tokens, library: campaignLibrary)
+        let party = TokenLibrarySearch.party(library: library.items, excluding: recent)
+        Section("Library") {
+            HStack {
+                Button("Place…") { showingLibrary = true }
+                Button("Add…") { importTarget = .libraryUpload }
+                Button("Manage…") { showingLibrary = true }
+            }
+            .buttonStyle(.link)
+            if !recent.isEmpty {
+                Text("Recent").font(.caption).foregroundStyle(.secondary)
+                ForEach(recent) { item in quickToken(item, image: document.imageCache.image(named: item.thumbnailSrc, in: document.assets)) }
+            }
+            if !party.isEmpty {
+                Text("Party").font(.caption).foregroundStyle(.secondary)
+                ForEach(party) { item in quickToken(item, image: library.image(item.thumbnailSrc)) }
+            }
+        }
+    }
+
+    private func quickToken(_ item: TokenLibraryItem, image: CGImage?) -> some View {
+        Button {
+            placeLibraryItem(item, at: nil)
+        } label: {
+            HStack {
+                Group {
+                    if let image { Image(decorative: image, scale: 1).resizable().scaledToFit() } else {
+                        Image(systemName: "person.crop.circle")
+                    }
+                }
+                .frame(width: 24, height: 24)
+                Text(item.name).lineLimit(1)
+            }
+        }
+        .buttonStyle(.plain)
+        .draggable(LibraryDrag.payload(for: item)) {
+            Text(item.name).padding(6).background(.regularMaterial, in: Capsule())
+        }
+        .help("Click to place at the map centre, or drag onto the map")
+    }
+
+    /// Campaign copy first (its src points at this package), else the app-wide library.
+    private func libraryItem(_ id: String) -> TokenLibraryItem? {
+        library.items.first { $0.id == id } ?? document.campaign.tokenLibrary.first { $0.id == id }
+    }
+
+    private func placeLibraryItem(_ item: TokenLibraryItem, at point: Point2D?) {
+        if let id = document.placeLibraryItem(item, centredAt: point, undoManager: undoManager) {
+            selection = [id]
+        } else {
+            errorMessage = "“\(item.name)” is missing its image in the library."
+        }
+    }
+
+    /// Finder drops: one image goes through the 1:1 cropper (TS); several import directly.
+    private func dropImages(_ urls: [URL], at point: Point2D) {
+        if urls.count == 1, let url = urls.first,
+            let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+            let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
+        {
+            cropping = CropRequest(image: image, name: url.lastPathComponent, point: point)
+        } else {
+            addTokens(from: urls, at: point, centred: true)
+        }
+    }
+
+    private func addCroppedToken(_ image: CGImage, name: String, centredAt point: Point2D) {
+        let side = min(image.width, ImageKind.token.maxDimension)
+        guard let context = CGContext(
+            data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return }
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
+        guard let scaled = context.makeImage(), let png = NSBitmapImageRep(cgImage: scaled).representation(using: .png, properties: [:])
+        else { return }
+        let asset = document.addAsset(png, preferredName: (name as NSString).deletingPathExtension + ".png")
+        let map = document.campaign.activeMap
+        let size = map.gridSize
+        let snapped = snapToGrid(
+            Point2D(x: point.x - size / 2, y: point.y - size / 2), gridSize: size, gridType: map.gridType,
+            width: size, height: size)
+        let token = Token(x: snapped.x, y: snapped.y, src: asset, type: .npc, name: "New Token")
+        document.edit("Add Token", undoManager: undoManager) { $0.activeMap.tokens.append(token) }
+        selection = [token.id]
     }
 
     // MARK: Tools
