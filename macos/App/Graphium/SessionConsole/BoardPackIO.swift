@@ -24,16 +24,58 @@ enum BoardPackIO {
             resolveFile: { path in resolve(path, root: root) },
             fetch: { url in await fetchCapped(url) },
             persist: { data, name in pending.add(data, preferredName: name) })
-        for (name, bytes) in pending.assets { document.assets[name] = bytes }
+        // Plates get a MAP-sized image and a THUMB thumbnail, as the dropzone does
+        // (TS `processImportedCatalogPlates`); a plate that can't be processed keeps its bytes.
+        let plateNames = Set(result.catalog.imageSets.flatMap { $0.images.map(\.src) })
+        let raw = pending.assets
+        let plates = await Task.detached(priority: .userInitiated) { BoardPackIO.processPlates(plateNames, in: raw) }.value
+        // The DM may have added assets during the await, so names are allocated again
+        // here (never overwriting existing bytes) and the catalog follows any rename.
+        var renamed: [String: String] = [:]
+        var thumbnails: [String: String] = [:]  // final plate name → its thumbnail
+        for (name, bytes) in raw.sorted(by: { $0.key < $1.key }) {
+            if let plate = plates[name] {
+                let full = document.addAsset(plate.full.data, preferredName: plate.full.preferredName)
+                renamed[name] = full
+                if let thumb = plate.thumbnail {
+                    thumbnails[full] = document.addAsset(thumb.data, preferredName: "thumb-" + thumb.preferredName)
+                }
+            } else {
+                renamed[name] = document.addAsset(bytes, preferredName: name)
+            }
+        }
+        var imported = result.catalog
+        imported.rewriteAssetReferences { renamed[$0] ?? $0 }
+        for s in imported.imageSets.indices {
+            for i in imported.imageSets[s].images.indices {
+                let image = imported.imageSets[s].images[i]
+                if image.thumbnailSrc == image.src, let thumb = thumbnails[image.src] {
+                    imported.imageSets[s].images[i].thumbnailSrc = thumb
+                }
+            }
+        }
         document.editConsole(mode == .replace ? "Import Board Pack" : "Merge Board Pack", undoManager: undoManager) { catalog in
-            if mode == .replace { catalog = result.catalog } else { catalog.merge(result.catalog) }
+            if mode == .replace { catalog = imported } else { catalog.merge(imported) }
         }
         if mode == .replace { document.sessionRuntime = SessionConsoleRuntime(catalog: document.campaign.sessionConsole) }
         let skipped = errors + result.skipped
-        var lines = ["Imported \(result.catalog.imageSets.flatMap(\.images).count) plates and \(result.catalog.allTracks.count) tracks."]
+        var lines = ["Imported \(imported.imageSets.flatMap(\.images).count) plates and \(imported.allTracks.count) tracks."]
         if !skipped.isEmpty { lines.append("Skipped \(skipped.count):\n" + skipped.joined(separator: "\n")) }
         if !result.warnings.isEmpty { lines.append(Array(Set(result.warnings)).joined(separator: "\n")) }
         return lines.joined(separator: "\n\n")
+    }
+
+    /// Resizes each plate's bytes to MAP and THUMB; plates that aren't readable images are left out.
+    nonisolated private static func processPlates(_ names: Set<String>, in assets: [String: Data]) -> [String: ProcessedPlate] {
+        var processed: [String: ProcessedPlate] = [:]
+        for name in names {
+            guard let data = assets[name], let full = try? ImportedImage.load(data: data, name: name, kind: .map) else {
+                continue
+            }
+            let thumbnail = try? ImportedImage.load(data: data, name: name, kind: .thumbnail)
+            processed[name] = ProcessedPlate(full: full, thumbnail: thumbnail)
+        }
+        return processed
     }
 
     /// Relative or absolute paths, only if they stay inside the pack folder after
@@ -94,6 +136,12 @@ enum BoardPackIO {
             return "Export failed: \(error.localizedDescription)"
         }
     }
+}
+
+/// A board pack plate resized for the package (MAP image plus THUMB thumbnail).
+private struct ProcessedPlate: Sendable {
+    var full: ImportedImage
+    var thumbnail: ImportedImage?
 }
 
 /// Names and holds imported bytes until they can be added to the document on the main actor.

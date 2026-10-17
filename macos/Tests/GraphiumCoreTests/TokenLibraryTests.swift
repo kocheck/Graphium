@@ -80,6 +80,41 @@ final class TokenLibraryTests: XCTestCase {
         XCTAssertEqual(lib.name, "Grik")
         XCTAssertEqual(lib.defaultType, .pc)
         XCTAssertEqual(lib.defaultVisionRadius, 60)
-        XCTAssertEqual(lib.defaultScale, 1)
+        XCTAssertNil(lib.defaultScale)
+    }
+
+    func testSaveToLibraryLeavesDefaultScaleAlone() {
+        var lib = item("Goblin", tags: ["small"])
+        lib.defaultScale = 2
+        let resized = Token(x: 0, y: 0, src: "", libraryItemId: lib.id, scale: 3, name: "Big Grik")
+        lib.adoptDefaults(from: ResolvedToken(resized, library: [lib.id: lib]))
+        XCTAssertEqual(lib.name, "Big Grik")
+        XCTAssertEqual(lib.defaultScale, 2, "a resized token must not resize every linked token")
+        XCTAssertEqual(lib.category, "Monsters")
+        XCTAssertEqual(lib.tags, ["small"])
+    }
+}
+
+final class LibraryUnionTests: XCTestCase {
+    func item(_ id: String, src: String) -> TokenLibraryItem {
+        TokenLibraryItem(id: id, name: id, src: src, thumbnailSrc: "", dateAdded: 0)
+    }
+
+    func testAppItemsFirstThenCampaignOnlyItemsDedupedByID() {
+        let app = [item("goblin", src: "goblin-lib.png"), item("orc", src: "orc-lib.png")]
+        let campaign = [
+            item("orc", src: "orc-pkg.png"), item("dragon", src: "dragon.png"), item("dragon", src: "dragon-2.png"),
+        ]
+        let union = TokenLibrarySearch.union(app: app, campaign: campaign)
+        XCTAssertEqual(union.items.map(\.id), ["goblin", "orc", "dragon"])
+        XCTAssertEqual(union.items[1].src, "orc-lib.png", "the app library's copy wins")
+        XCTAssertEqual(union.items[2].src, "dragon.png", "first campaign copy wins")
+        XCTAssertEqual(union.campaignOnly, ["dragon"])
+    }
+
+    func testEmptyAppLibraryShowsEveryCampaignItem() {
+        let union = TokenLibrarySearch.union(app: [], campaign: [item("a", src: "a.png"), item("b", src: "b.png")])
+        XCTAssertEqual(union.items.map(\.id), ["a", "b"])
+        XCTAssertEqual(union.campaignOnly, ["a", "b"])
     }
 }

@@ -89,4 +89,28 @@ final class MapEditingTests: XCTestCase {
         let inside = Viewport(origin: Point2D(x: 100, y: 100), zoom: 1)
         XCTAssertEqual(inside.clamped(map: map, library: [:], viewWidth: 800, viewHeight: 600), inside)
     }
+
+    func testZoomOutFarFromTheMapIsClamped() {
+        var map = GameMap()
+        map.background = MapBackground(src: "m", x: 0, y: 0, width: 2000, height: 1000)
+        let start = Viewport(origin: Point2D(x: 2500, y: 0), zoom: 1)
+        let anchor = Point2D(x: 0, y: 300)
+        var unclamped = start
+        unclamped.zoom(by: 0.5, around: anchor)
+        XCTAssertEqual(unclamped.origin.x + 400 / 0.5, 3300, "plain zoom leaves the centre past the padding")
+
+        let zoomed = start.zoomed(by: 0.5, around: anchor, clampingTo: map, library: [:], viewWidth: 800, viewHeight: 600)
+        XCTAssertEqual(zoomed.zoom, 0.5)
+        XCTAssertEqual(zoomed.origin.x + 400 / 0.5, 3000, "right edge + 1000 padding")
+        XCTAssertEqual(zoomed.origin.y, unclamped.origin.y, "the in-range axis is untouched")
+
+        let inside = Viewport(origin: Point2D(x: 100, y: 100), zoom: 1)
+        var plain = inside
+        plain.zoom(by: 1.1, around: Point2D(x: 400, y: 300))
+        let near = inside.zoomed(
+            by: 1.1, around: Point2D(x: 400, y: 300), clampingTo: map, library: [:], viewWidth: 800, viewHeight: 600)
+        XCTAssertEqual(near.zoom, plain.zoom)
+        XCTAssertEqual(near.origin.x, plain.origin.x, accuracy: 1e-9, "inside the area the zoom is not moved")
+        XCTAssertEqual(near.origin.y, plain.origin.y, accuracy: 1e-9)
+    }
 }

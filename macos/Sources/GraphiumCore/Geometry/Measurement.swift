@@ -52,21 +52,26 @@ public enum Measure {
         ]
     }
 
+    /// "(n cell)" / "(n cells)": singular only when n == 1 (TS, all three formatters).
+    static func cellCount(_ feet: Double) -> String {
+        let cells = jsRound(feet / 5)
+        return "(\(jsNumber(cells)) cell\(cells == 1 ? "" : "s"))"
+    }
+
     public static func formatDistance(_ feet: Double, showCells: Bool = true) -> String {
         guard showCells else { return "\(jsNumber(feet))ft" }
-        let cells = jsRound(feet / 5)
-        return "\(jsNumber(feet))ft (\(jsNumber(cells)) cell\(cells == 1 ? "" : "s"))"
+        return "\(jsNumber(feet))ft \(cellCount(feet))"
     }
 
     public static func formatRadius(_ feet: Double, showCells: Bool = true) -> String {
         showCells
-            ? "\(jsNumber(feet))ft radius (\(jsNumber(jsRound(feet / 5))) cells)"
+            ? "\(jsNumber(feet))ft radius \(cellCount(feet))"
             : "\(jsNumber(feet))ft radius"
     }
 
     public static func formatCone(_ feet: Double, angle: Double = defaultConeAngle, showCells: Bool = true) -> String {
         let base = "\(jsNumber(feet))ft \(jsNumber(angle))° cone"
-        return showCells ? "\(base) (\(jsNumber(jsRound(feet / 5))) cells)" : base
+        return showCells ? "\(base) \(cellCount(feet))" : base
     }
 }
 
@@ -78,15 +83,16 @@ public func jsNumber(_ value: Double) -> String {
     return "\(value)"
 }
 
-/// Cells reachable within a movement speed (CORE_SPEC §3.4): BFS from the cell
-/// under the token's top-left, every step costs 1, in discovery order.
+/// Cells reachable within a movement speed (CORE_SPEC §3.4): BFS from the token's
+/// start cell (see `movementRangeOrigin`), every step costs 1, in discovery order.
 public func movementRange(
-    tokenTopLeft: Point2D, speedFeet: Double, gridSize: Double, gridType: GridType
+    tokenTopLeft: Point2D, tokenSize: Double = 0, speedFeet: Double, gridSize: Double, gridType: GridType
 ) -> [GridCell] {
     guard gridType != .hidden else { return [] }
     let grid = makeGridGeometry(gridType, cellSize: gridSize)
     let maxCells = Int((speedFeet / 5).rounded(.up))
-    var queue: [(GridCell, Int)] = [(grid.pixelToGrid(tokenTopLeft), 0)]
+    let origin = movementRangeOrigin(tokenTopLeft: tokenTopLeft, tokenSize: tokenSize, gridType: gridType)
+    var queue: [(GridCell, Int)] = [(grid.pixelToGrid(origin), 0)]
     var head = 0
     var visited = Set<GridCell>()
     var result: [GridCell] = []
@@ -102,4 +108,16 @@ public func movementRange(
         }
     }
     return result
+}
+
+/// The point whose cell seeds the movement range. Square grids keep the TS top-left
+/// (parity for even-sized tokens). Hex and iso snap a token's centre onto a cell
+/// centre, so they seed from the centre; the top-left lies in a neighbouring cell.
+public func movementRangeOrigin(tokenTopLeft: Point2D, tokenSize: Double, gridType: GridType) -> Point2D {
+    switch gridType {
+    case .hexagonal, .isometric:
+        return Point2D(x: tokenTopLeft.x + tokenSize / 2, y: tokenTopLeft.y + tokenSize / 2)
+    case .lines, .dots, .hidden:
+        return tokenTopLeft
+    }
 }

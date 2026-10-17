@@ -1,7 +1,7 @@
 import Foundation
 
 /// Memoises fog of war for one window (PARITY §3.15). Vision raycasting only
-/// depends on tokens, walls, doors, daylight and the library, so camera moves,
+/// depends on tokens, walls, doors, grid size, daylight and the library, so camera moves,
 /// selection, measurement and Session Console changes reuse the last result.
 public final class VisibilityCache {
     public struct Result: Equatable {
@@ -14,6 +14,9 @@ public final class VisibilityCache {
         var tokens: [Token]
         var drawings: [Drawing]
         var doors: [Door]
+        /// Vision radii, viewer centres and NPC hit boxes all scale with the grid
+        /// (TS `FogOfWarLayer` invalidates on `lastGridRef !== gridSize`).
+        var gridSize: Double
         var daylight: Bool
         var library: [String: TokenLibraryItem]
     }
@@ -28,7 +31,7 @@ public final class VisibilityCache {
     public func visibility(of map: GameMap, library: [String: TokenLibraryItem]) -> Result {
         let next = Key(
             mapID: map.id, tokens: map.tokens, drawings: map.drawings, doors: map.doors,
-            daylight: map.isDaylightMode, library: library)
+            gridSize: map.gridSize, daylight: map.isDaylightMode, library: library)
         if next == key { return result }
         key = next
         computeCount += 1

@@ -30,8 +30,8 @@ extension MapCanvasNSView {
         case .eraser:
             context.setBlendMode(.clear)
             context.setStrokeColor(NSColor.black.cgColor)
-            context.setLineWidth(drawing.size * scale)
         case .wall:
+            // Walls stay straight and dashed so they match the vision segments (PARITY §3.5).
             if isPlayerView {
                 // World View: black 6px solid.
                 context.setStrokeColor(NSColor.black.cgColor)
@@ -41,27 +41,35 @@ extension MapCanvasNSView {
                 context.setLineWidth(drawing.size * scale)
                 context.setLineDash(phase: 0, lengths: [10, 5])
             }
+            context.move(to: CGPoint(first))
+            if points.count == 1 {
+                context.addLine(to: CGPoint(first))  // a dot
+            }
+            for p in points.dropFirst() { context.addLine(to: CGPoint(p)) }
+            context.strokePath()
+            context.restoreGState()
+            return
         case .marker:
             context.setStrokeColor((NSColor(hex: drawing.color) ?? .labelColor).cgColor)
-            if let pressures = drawing.pressures, pressures.count == points.count, points.count > 1 {
-                // Variable width: one segment at a time.
-                for i in 1..<points.count {
-                    let p = (pressures[i - 1] + pressures[i]) / 2
-                    context.setLineWidth(toolState.pressureCurve.width(base: drawing.size * scale, pressure: p))
-                    context.move(to: CGPoint(points[i - 1]))
-                    context.addLine(to: CGPoint(points[i]))
-                    context.strokePath()
-                }
-                context.restoreGState()
-                return
+        }
+        // Marker and eraser.
+        if let pressures = drawing.pressures, pressures.count == points.count, points.count > 1 {
+            // Variable width: one segment at a time.
+            for i in 1..<points.count {
+                let p = (pressures[i - 1] + pressures[i]) / 2
+                context.setLineWidth(toolState.pressureCurve.width(base: drawing.size * scale, pressure: p))
+                context.move(to: CGPoint(points[i - 1]))
+                context.addLine(to: CGPoint(points[i]))
+                context.strokePath()
             }
-            context.setLineWidth(drawing.size * scale)
+            context.restoreGState()
+            return
         }
-        context.move(to: CGPoint(first))
-        if points.count == 1 {
-            context.addLine(to: CGPoint(first))  // a dot
-        }
-        for p in points.dropFirst() { context.addLine(to: CGPoint(p)) }
+        // Without pressure, a 0.5-tension cardinal spline (TS Konva `tension={0.5}`).
+        context.setLineWidth(drawing.size * scale)
+        let path = CGMutablePath()
+        path.addElements(CardinalSpline.path(through: points))
+        context.addPath(path)
         context.strokePath()
         context.restoreGState()
     }
@@ -74,6 +82,7 @@ extension MapCanvasNSView {
                 door.orientation == .horizontal
                 ? CGRect(x: door.x - half, y: door.y - thickness / 2, width: door.size, height: thickness)
                 : CGRect(x: door.x - thickness / 2, y: door.y - half, width: thickness, height: door.size)
+            let openFraction = CGFloat(doorSwings.openFraction(for: door, in: self))
             context.saveGState()
             if isPlayerView {
                 // Projector legibility: white glow and a heavier outline.
@@ -82,22 +91,25 @@ extension MapCanvasNSView {
             let fill = NSColor(srgbRed: 0.55, green: 0.36, blue: 0.2, alpha: 1)
             context.setStrokeColor(NSColor.black.cgColor)
             context.setLineWidth(isPlayerView ? 3 : 1.5)
-            if door.isOpen {
-                // Swung 90° about the hinge end, with the swing arc.
+            if openFraction > 0 {
+                // Swung up to 90° about the hinge end (animated, TS DoorShape), with the swing arc.
+                // The closed leaf points along +x (horizontal) or +y (vertical) and turns towards −y / +x.
                 let hinge =
                     door.orientation == .horizontal
                     ? CGPoint(x: door.x - half, y: door.y) : CGPoint(x: door.x, y: door.y - half)
-                let leaf =
-                    door.orientation == .horizontal
-                    ? CGRect(x: hinge.x - thickness / 2, y: hinge.y - door.size, width: thickness, height: door.size)
-                    : CGRect(x: hinge.x, y: hinge.y - thickness / 2, width: door.size, height: thickness)
-                context.setFillColor(fill.withAlphaComponent(0.85).cgColor)
+                let closedAngle: CGFloat = door.orientation == .horizontal ? 0 : .pi / 2
+                let leafAngle = closedAngle - .pi / 2 * openFraction
+                context.saveGState()
+                context.translateBy(x: hinge.x, y: hinge.y)
+                context.rotate(by: leafAngle)
+                let leaf = CGRect(x: 0, y: -thickness / 2, width: door.size, height: thickness)
+                context.setFillColor(fill.withAlphaComponent(1 - 0.15 * openFraction).cgColor)
                 context.fill(leaf)
                 context.stroke(leaf)
+                context.restoreGState()
                 context.setLineDash(phase: 0, lengths: [4, 4])
                 context.setLineWidth(1)
-                let start: CGFloat = door.orientation == .horizontal ? -.pi / 2 : 0
-                context.addArc(center: hinge, radius: door.size, startAngle: start, endAngle: start + .pi / 2, clockwise: false)
+                context.addArc(center: hinge, radius: door.size, startAngle: leafAngle, endAngle: closedAngle, clockwise: false)
                 context.strokePath()
             } else {
                 context.setFillColor(fill.cgColor)
@@ -116,6 +128,7 @@ extension MapCanvasNSView {
                 context.restoreGState()
             }
         }
+        doorSwings.finishFrame(doorIDs: Set(doors.map(\.id)))
     }
 
     /// Render-only stairs (PARITY §3.6): step lines plus a direction arrow; "down" is darker.
@@ -233,5 +246,20 @@ extension MapCanvasNSView {
             x: centre.x - image.size.width / 2, y: centre.y - image.size.height / 2, width: image.size.width,
             height: image.size.height)
         image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+    }
+}
+
+extension CGMutablePath {
+    /// Replays core path elements (e.g. `CardinalSpline.path`).
+    func addElements(_ elements: [PathElement]) {
+        for element in elements {
+            switch element {
+            case .move(let to): move(to: CGPoint(to))
+            case .line(let to): addLine(to: CGPoint(to))
+            case .quadCurve(let to, let control): addQuadCurve(to: CGPoint(to), control: CGPoint(control))
+            case .curve(let to, let control1, let control2):
+                addCurve(to: CGPoint(to), control1: CGPoint(control1), control2: CGPoint(control2))
+            }
+        }
     }
 }

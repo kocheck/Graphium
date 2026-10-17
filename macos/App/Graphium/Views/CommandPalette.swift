@@ -8,77 +8,119 @@ struct CommandPalette: View {
     let placeAsset: (TokenLibraryItem) -> Void
     let editAsset: (TokenLibraryItem) -> Void
     @ObservedObject var library = LibraryStore.shared
+    /// Items the open campaign carries are searchable too (PARITY §5.3).
+    @ObservedObject var document: CampaignDocument
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
+    @State private var highlighted = 0
     @FocusState private var focused: Bool
 
     private var actions: [PaletteCommand] {
         PaletteCommand.search(PaletteCommand.registry(isPaused: isPaused), query: query)
     }
 
+    /// TS `fuzzySearch`: an empty query lists the whole library, newest first, so
+    /// the sidebar's "Place…" opens onto something to place (PARITY §1.5, §2.1).
     private var assets: [TokenLibraryItem] {
-        query.trimmingCharacters(in: .whitespaces).isEmpty ? [] : TokenLibrarySearch.search(library.items, query: query)
+        TokenLibrarySearch.search(document.browsableLibrary.items, query: query)
     }
 
+    /// The highlighted row over `actions + assets` (section headers aren't rows); nil when empty.
+    private func current(count: Int) -> Int? {
+        count == 0 ? nil : min(max(highlighted, 0), count - 1)
+    }
+
+    private static func rowID(action id: String) -> String { "action:\(id)" }
+    private static func rowID(asset id: String) -> String { "asset:\(id)" }
+    private static func rowBackground(_ highlighted: Bool) -> Color? { highlighted ? Color.accentColor.opacity(0.25) : nil }
+
     var body: some View {
+        let actions = self.actions
+        let assets = self.assets
+        let count = actions.count + assets.count
+        let selected = current(count: count)
         VStack(spacing: 0) {
             TextField("Search actions and assets…", text: $query)
                 .textFieldStyle(.plain)
                 .font(.title3)
                 .padding(14)
                 .focused($focused)
-                .onSubmit { runFirst() }
+                .onSubmit { runHighlighted(actions: actions, assets: assets) }
+                .onKeyPress(.upArrow) { move(by: -1, count: count) }
+                .onKeyPress(.downArrow) { move(by: 1, count: count) }
             Divider()
-            List {
-                if !actions.isEmpty {
-                    Section("Actions") {
-                        ForEach(actions) { command in
-                            Button { choose(command) } label: {
-                                HStack {
-                                    Text(command.label)
-                                    Spacer()
-                                    if let shortcut = command.shortcut {
-                                        Text(shortcut).font(.caption.monospaced()).foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                if !assets.isEmpty {
-                    Section("Assets") {
-                        ForEach(assets) { item in
-                            HStack {
-                                Button {
-                                    placeAsset(item)
-                                    dismiss()
-                                } label: {
+            ScrollViewReader { proxy in
+                List {
+                    if !actions.isEmpty {
+                        Section("Actions") {
+                            ForEach(Array(actions.enumerated()), id: \.element.id) { index, command in
+                                Button { choose(command) } label: {
                                     HStack {
-                                        if let image = library.image(item.thumbnailSrc) {
-                                            Image(decorative: image, scale: 1).resizable().scaledToFit().frame(width: 24, height: 24)
+                                        Text(command.label)
+                                        Spacer()
+                                        if let shortcut = command.shortcut {
+                                            Text(shortcut).font(.caption.monospaced()).foregroundStyle(.secondary)
                                         }
-                                        Text(item.name)
-                                        Text(item.category).foregroundStyle(.secondary)
                                     }
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
-                                Spacer()
-                                Button("Edit") {
-                                    editAsset(item)
-                                    dismiss()
+                                .id(Self.rowID(action: command.id))
+                                .listRowBackground(Self.rowBackground(selected == index))
+                            }
+                        }
+                    }
+                    if !assets.isEmpty {
+                        Section("Assets") {
+                            ForEach(Array(assets.enumerated()), id: \.element.id) { index, item in
+                                HStack {
+                                    Button {
+                                        placeAsset(item)
+                                        dismiss()
+                                    } label: {
+                                        HStack {
+                                            if let image = document.libraryThumbnail(item) {
+                                                Image(decorative: image, scale: 1).resizable().scaledToFit().frame(width: 24, height: 24)
+                                            }
+                                            Text(item.name)
+                                            Text(item.category).foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    Spacer()
+                                    Button("Edit") {
+                                        editAsset(item)
+                                        dismiss()
+                                    }
+                                    .controlSize(.small)
                                 }
-                                .controlSize(.small)
+                                .id(Self.rowID(asset: item.id))
+                                .listRowBackground(Self.rowBackground(selected == actions.count + index))
                             }
                         }
                     }
                 }
+                .listStyle(.inset)
+                .onChange(of: highlighted) { _, _ in
+                    guard let row = current(count: count) else { return }
+                    let id = row < actions.count
+                        ? Self.rowID(action: actions[row].id) : Self.rowID(asset: assets[row - actions.count].id)
+                    proxy.scrollTo(id)
+                }
             }
-            .listStyle(.inset)
         }
         .frame(width: 520, height: 420)
         .onAppear { focused = true }
+        .onChange(of: query) { _, _ in highlighted = 0 }
         .onExitCommand { dismiss() }
+    }
+
+    /// Up/Down move the highlight, clamped at the ends (TS `CommandPalette`).
+    private func move(by delta: Int, count: Int) -> KeyPress.Result {
+        if let next = PaletteHighlight.step(current(count: count), by: delta, count: count) {
+            highlighted = next
+        }
+        return .handled
     }
 
     private func choose(_ command: PaletteCommand) {
@@ -86,11 +128,13 @@ struct CommandPalette: View {
         run(command)
     }
 
-    private func runFirst() {
-        if let first = actions.first {
-            choose(first)
-        } else if let asset = assets.first {
-            placeAsset(asset)
+    /// Return runs the highlighted row.
+    private func runHighlighted(actions: [PaletteCommand], assets: [TokenLibraryItem]) {
+        guard let row = current(count: actions.count + assets.count) else { return }
+        if row < actions.count {
+            choose(actions[row])
+        } else {
+            placeAsset(assets[row - actions.count])
             dismiss()
         }
     }

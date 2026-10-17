@@ -26,4 +26,14 @@ final class CommandRegistryTests: XCTestCase {
         XCTAssertEqual(PaletteCommand.search(commands, query: "actions").count, commands.count)
         XCTAssertTrue(PaletteCommand.search(commands, query: "zzzz").isEmpty)
     }
+
+    func testPaletteHighlightStepsAndClamps() {
+        XCTAssertNil(PaletteHighlight.step(nil, by: 1, count: 0), "no results")
+        XCTAssertNil(PaletteHighlight.step(0, by: -1, count: 0), "no results")
+        XCTAssertEqual(PaletteHighlight.step(nil, by: 1, count: 3), 0)
+        XCTAssertEqual(PaletteHighlight.step(0, by: 1, count: 3), 1)
+        XCTAssertEqual(PaletteHighlight.step(2, by: 1, count: 3), 2, "stops at the last row")
+        XCTAssertEqual(PaletteHighlight.step(0, by: -1, count: 3), 0, "stops at the first row")
+        XCTAssertEqual(PaletteHighlight.step(5, by: -1, count: 3), 2, "a stale index clamps")
+    }
 }

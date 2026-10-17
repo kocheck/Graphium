@@ -173,18 +173,44 @@ public enum LineOfSight {
 }
 
 extension GameMap {
-    /// Records what PCs can see now as explored, for every viewer whose position or
-    /// vision changed since `previous` (the map before an edit). Deliberate fix vs TS,
-    /// where exploration was only ever held by the World View and never saved: here it
-    /// lives in the campaign, persists, and undoes together with the move that caused it.
+    /// Records what PCs can see now as explored (CORE_SPEC §3.3 step 5), comparing with
+    /// `previous` (the map before an edit; `previousLibrary` defaults to `library`):
+    /// - nothing vision depends on changed (e.g. a Session Console edit): no raycast;
+    /// - walls or closed doors changed, or fog just came on: every viewer is stamped,
+    ///   so a glimpse through a door opened next to a standing PC is kept;
+    /// - otherwise only viewers whose position or vision changed are raycast and stamped.
+    /// Deliberate fix vs TS, where exploration was only ever held by the World View and
+    /// never saved: here it lives in the campaign, persists, and undoes together with the
+    /// edit that caused it. Returns how many viewers were raycast.
+    @discardableResult
     public mutating func recordExploration(
-        since previous: GameMap, library: [String: TokenLibraryItem], timestamp: Double
-    ) {
-        guard !isDaylightMode else { return }
-        let before = Set(LineOfSight.viewers(of: previous, library: library).map(\.key))
-        let changed = LineOfSight.polygons(of: self, library: library).filter { !before.contains($0.viewer.key) }
-        for entry in changed where !entry.polygon.isEmpty {
-            addExploredRegion(ExploredRegion(points: entry.polygon, timestamp: timestamp))
+        since previous: GameMap, library: [String: TokenLibraryItem],
+        previousLibrary: [String: TokenLibraryItem]? = nil, timestamp: Double
+    ) -> Int {
+        guard !isDaylightMode else { return 0 }
+        let oldLibrary = previousLibrary ?? library
+        let fogTurnedOn = previous.isDaylightMode
+        let wallInputsChanged = drawings != previous.drawings || doors != previous.doors
+        if !fogTurnedOn, !wallInputsChanged, tokens == previous.tokens, gridSize == previous.gridSize,
+            previousLibrary == nil || oldLibrary == library
+        {
+            return 0
         }
+        let segments = LineOfSight.walls(of: self)
+        let current = LineOfSight.viewers(of: self, library: library)
+        let pending: [LineOfSight.Viewer]
+        if fogTurnedOn || (wallInputsChanged && LineOfSight.walls(of: previous) != segments) {
+            pending = current
+        } else {
+            let before = Set(LineOfSight.viewers(of: previous, library: oldLibrary).map(\.key))
+            pending = current.filter { !before.contains($0.key) }
+        }
+        for viewer in pending {
+            let polygon = LineOfSight.polygon(
+                from: viewer.centre, radius: viewer.radius, walls: segments,
+                rays: LineOfSight.rayCount(radius: viewer.radius))
+            if !polygon.isEmpty { addExploredRegion(ExploredRegion(points: polygon, timestamp: timestamp)) }
+        }
+        return pending.count
     }
 }

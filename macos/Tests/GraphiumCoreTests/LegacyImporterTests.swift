@@ -115,3 +115,25 @@ extension Data {
         return out
     }
 }
+
+final class ImportNoticeTests: XCTestCase {
+    func testNoticeListsMissingAssetsByName() throws {
+        let result = try LegacyImporter.importArchive(Fixtures.modernGraphium)
+        let notice = try XCTUnwrap(result.missingAssetsNotice)
+        XCTAssertTrue(notice.hasPrefix("1 image or sound"))
+        XCTAssertTrue(notice.hasSuffix("\nmissing.webp"))
+    }
+
+    func testNoNoticeWhenNothingIsMissing() throws {
+        let result = try LegacyImporter.importArchive(Fixtures.legacyGraphium)
+        XCTAssertNil(result.missingAssetsNotice)
+    }
+
+    func testLongListsAreCut() {
+        let result = LegacyImporter.Result(
+            package: CampaignPackage(campaign: .makeDefault()), missingAssets: (1...8).map { "assets/a\($0).png" })
+        let lines = result.missingAssetsNotice?.components(separatedBy: "\n") ?? []
+        XCTAssertEqual(lines.count, 7)
+        XCTAssertEqual(lines.last, "…and 3 more")
+    }
+}

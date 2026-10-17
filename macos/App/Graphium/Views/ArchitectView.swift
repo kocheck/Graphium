@@ -26,7 +26,7 @@ struct ArchitectView: View {
     @State private var deletingMapID: String?
     @State private var errorMessage: String?
     @State private var tools = ToolState()
-    @State private var recentColors: [String] = []
+    @State private var recentColors = StrokeDefaults.recentMarkerColors
     @State private var measurement: MeasurementShape?
     // Off by default, as in TS: measurements stay on the DM's screen until broadcasting is turned on.
     @State private var broadcastMeasurement = false
@@ -94,7 +94,9 @@ struct ArchitectView: View {
                             .padding(8)
                         }
                         if hasSelectedTokens && (inspectorTab == .token || !showingConsole) {
-                            TokenInspector(document: document, selection: selection)
+                            TokenInspector(document: document, selection: selection) { message, isError in
+                                showToast(message, isError ? .error : .success)
+                            }
                         } else {
                             SessionConsolePanel(document: document)
                         }
@@ -149,6 +151,7 @@ struct ArchitectView: View {
         }
         .sheet(isPresented: $showingLibrary) {
             LibraryManagerView(
+                document: document,
                 onPlace: { placeLibraryItem($0, at: nil) },
                 onEdited: { document.syncLibraryItem($0, undoManager: undoManager) })
         }
@@ -165,7 +168,8 @@ struct ArchitectView: View {
                 isPaused: document.isPaused,
                 run: { runCommand($0) },
                 placeAsset: { placeLibraryItem($0, at: nil) },
-                editAsset: { editingLibraryItem = $0 })
+                editAsset: { editingLibraryItem = $0 },
+                document: document)
         }
         .sheet(isPresented: $showingDungeon) {
             DungeonDialog { options, clearFirst in generateDungeon(options, clearFirst: clearFirst) }
@@ -489,7 +493,7 @@ struct ArchitectView: View {
     private var librarySection: some View {
         let campaignLibrary = document.campaign.tokenLibrary
         let recent = TokenLibrarySearch.recent(tokens: document.campaign.activeMap.tokens, library: campaignLibrary)
-        let party = TokenLibrarySearch.party(library: library.items, excluding: recent)
+        let party = TokenLibrarySearch.party(library: document.browsableLibrary.items, excluding: recent)
         Section("Library") {
             HStack {
                 Button("Place…") { showingPalette = true }
@@ -516,7 +520,7 @@ struct ArchitectView: View {
             }
             if !party.isEmpty {
                 Text("Party").font(.caption).foregroundStyle(.secondary)
-                ForEach(party) { item in quickToken(item, image: library.image(item.thumbnailSrc)) }
+                ForEach(party) { item in quickToken(item, image: document.libraryThumbnail(item)) }
             }
         }
     }
@@ -542,7 +546,8 @@ struct ArchitectView: View {
         .help("Click to place at the map centre, or drag onto the map")
     }
 
-    /// Campaign copy first (its src points at this package), else the app-wide library.
+    /// The app-wide library first, else the campaign's copy (items that came with the file).
+    /// Either way, placing uses the campaign copy's package image when there is one.
     private func libraryItem(_ id: String) -> TokenLibraryItem? {
         library.items.first { $0.id == id } ?? document.campaign.tokenLibrary.first { $0.id == id }
     }
@@ -622,8 +627,14 @@ struct ArchitectView: View {
             get: { Color(nsColor: NSColor(hex: tools.markerColor) ?? .systemOrange) },
             set: { color in
                 let hex = NSColor(color).usingColorSpace(.sRGB)?.hexString ?? StrokeDefaults.markerColor
-                tools.markerColor = hex
+                pickMarkerColor(hex)
             })
+    }
+
+    /// Sets the marker colour and moves it to the front of the recents (TS `setColor`, PARITY §2.2).
+    private func pickMarkerColor(_ hex: String) {
+        tools.markerColor = hex
+        recentColors = StrokeDefaults.recentColors(picking: hex, after: recentColors)
     }
 
     private var measureModeBinding: Binding<MeasurementShape.Mode> {
@@ -653,8 +664,6 @@ struct ArchitectView: View {
             stroke.points = PathOptimization.finalizeWall(drawing.points, existingWalls: existing)
             name = "Draw Wall"
         case .marker:
-            // Recent colours: most recent first, deduped, three shown (PARITY §2.2).
-            recentColors = Array(([drawing.color] + recentColors.filter { $0 != drawing.color }).prefix(3))
             name = "Draw"
         case .eraser:
             name = "Erase"
@@ -810,7 +819,7 @@ struct ArchitectView: View {
             } label: {
                 Label("Generate Dungeon", systemImage: "square.grid.3x3.topleft.filled")
             }
-            .help("Generate a random dungeon (⇧⌘G)")
+            .help("Generate a random dungeon (⇧⌘D)")
         }
         .defaultCustomization(.hidden)
         ToolbarItem(id: "performance", placement: .secondaryAction) {
@@ -838,12 +847,12 @@ struct ArchitectView: View {
                 .accessibilityLabel("Marker colour")
                 .popover(isPresented: $showingColorPopover, arrowEdge: .bottom) {
                     MarkerColorPopover(color: markerColorBinding, recent: recentColors) { hex in
-                        tools.markerColor = hex
+                        pickMarkerColor(hex)
                     }
                 }
                 ForEach(recentColors, id: \.self) { hex in
                     Button {
-                        tools.markerColor = hex
+                        pickMarkerColor(hex)
                     } label: {
                         Image(systemName: "circle.fill").foregroundStyle(Color(nsColor: NSColor(hex: hex) ?? .black))
                     }

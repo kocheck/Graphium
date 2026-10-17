@@ -19,6 +19,20 @@ final class WorldViewTests: XCTestCase {
         XCTAssertNil(map.partyBounds(library: [:]))
     }
 
+    func testMinimapBoundsFallBackToPartyThenFixedWorld() {
+        var map = GameMap(gridSize: 50)
+        XCTAssertEqual(map.minimapBounds(library: [:]), Bounds(x: 0, y: 0, width: 2000, height: 2000))
+
+        map.tokens = [
+            Token(id: "pc", x: 100, y: 200, src: "", type: .pc),
+            Token(id: "npc", x: 5000, y: 5000, src: "", type: .npc),
+        ]
+        XCTAssertEqual(map.minimapBounds(library: [:]), Bounds(x: -400, y: -300, width: 1050, height: 1050))
+
+        map.background = MapBackground(src: "m", x: 10, y: 20, width: 100, height: 50, scale: 2)
+        XCTAssertEqual(map.minimapBounds(library: [:]), Bounds(x: 10, y: 20, width: 200, height: 100))
+    }
+
     func testFitCentresBoundsAndClampsZoom() {
         var viewport = Viewport()
         viewport.fit(Bounds(x: 0, y: 0, width: 400, height: 200), viewWidth: 800, viewHeight: 800)
@@ -30,6 +44,53 @@ final class WorldViewTests: XCTestCase {
 
         viewport.fit(Bounds(x: 0, y: 0, width: 10, height: 10), viewWidth: 800, viewHeight: 800)
         XCTAssertEqual(viewport.zoom, Viewport.zoomRange.upperBound)
+    }
+
+    /// A PC at the origin that sees 600 px (60 ft at 50 px cells), a visible NPC beside
+    /// it and an NPC far outside its vision.
+    private func visionMap() -> GameMap {
+        var map = GameMap(gridSize: 50)
+        map.tokens = [
+            Token(id: "pc", x: 0, y: 0, src: "", type: .pc, visionRadius: 60),
+            Token(id: "near", x: 100, y: 0, src: "", type: .npc),
+            Token(id: "far", x: 2000, y: 2000, src: "", type: .npc),
+        ]
+        return map
+    }
+
+    func testDraggedTokenIDsDropHiddenTokens() {
+        let map = visionMap()
+        XCTAssertEqual(map.tokensHiddenFromPlayers(library: [:]), ["far"])
+        XCTAssertEqual(
+            map.draggedTokenIDs(selected: ["far", "pc", "near"], hidden: ["far"]), ["pc", "near"],
+            "map order, hidden NPC left behind")
+        XCTAssertEqual(map.draggedTokenIDs(selected: ["far", "pc"]), ["pc", "far"])
+    }
+
+    func testPlayerMoveNeverMovesHiddenNPCs() {
+        var map = visionMap()
+        let moved = map.playerMoveTokens(["pc", "near", "far"], primary: "pc", dx: 50, dy: 0, library: [:])
+        XCTAssertEqual(moved, ["pc", "near"])
+        XCTAssertEqual(map.tokens.first { $0.id == "far" }?.x, 2000)
+        XCTAssertEqual(map.tokens.first { $0.id == "pc" }?.x, 50)
+
+        let before = map
+        XCTAssertEqual(map.playerMoveTokens(["far"], primary: "far", dx: 50, dy: 0, library: [:]), [])
+        XCTAssertEqual(map, before, "a hidden primary moves nothing")
+    }
+
+    func testLiveDragPositionsDriveVisibility() {
+        let map = visionMap()
+        let dragged = map.withTokenPositions(["pc": Point2D(x: 1900, y: 1900)])
+        XCTAssertEqual(dragged.tokens.first { $0.id == "pc" }?.x, 1900)
+        XCTAssertEqual(dragged.tokensHiddenFromPlayers(library: [:]), ["near"], "vision follows the drag")
+        XCTAssertEqual(map.withTokenPositions([:]), map)
+    }
+
+    func testPlayerMoveInDaylightHidesNothing() {
+        var map = visionMap()
+        map.isDaylightMode = true
+        XCTAssertEqual(map.playerMoveTokens(["far"], primary: "far", dx: 50, dy: 0, library: [:]), ["far"])
     }
 
     func testPauseMessagesMatchTSPool() {

@@ -33,8 +33,10 @@ final class LibraryStore: ObservableObject {
         return try? Data(contentsOf: folder.appendingPathComponent(fileName))
     }
 
-    /// The image for a library file name, decoded once.
+    /// The image for a library file name, decoded once. SwiftUI calls this on every
+    /// redraw, so the cache is checked before the file is read.
     func image(_ fileName: String) -> CGImage? {
+        if let hit = images.cached(named: fileName) { return hit }
         guard let data = data(for: fileName) else { return nil }
         return images.image(named: fileName, in: [fileName: data])
     }
@@ -57,6 +59,25 @@ final class LibraryStore: ObservableObject {
         return item
     }
 
+    /// "Add to My Library" for an item that came inside a campaign: copies its image out
+    /// of the package into the library folder, keeping the item's id so the two dedupe.
+    @discardableResult
+    func adopt(_ item: TokenLibraryItem, image: Data) throws -> TokenLibraryItem {
+        if let existing = items.first(where: { $0.id == item.id }) { return existing }
+        let fileID = newID()
+        let ext = (item.src as NSString).pathExtension.lowercased().filter { $0.isLetter || $0.isNumber }
+        let fileName = "\(fileID).\(ext.isEmpty ? "png" : ext)"
+        let thumbName = "thumb-\(fileID).png"
+        try image.write(to: folder.appendingPathComponent(fileName), options: .atomic)
+        try Self.thumbnail(of: image).write(to: folder.appendingPathComponent(thumbName), options: .atomic)
+        var adopted = item
+        adopted.src = fileName
+        adopted.thumbnailSrc = thumbName
+        items.append(adopted)
+        try save()
+        return adopted
+    }
+
     func update(_ item: TokenLibraryItem) throws {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
         items[index] = item
@@ -73,6 +94,19 @@ final class LibraryStore: ObservableObject {
 
     private func save() throws {
         try LibraryIndex(items: items).encoded().write(to: indexURL, options: .atomic)
+    }
+
+    /// Registers an undo that puts `item` back (and a redo that re-applies the copy
+    /// there now), so ⌘Z after an app-wide library edit reverts it with the campaign
+    /// edit registered in the same event. Nothing is registered if nothing changed.
+    func registerUndo(restoring item: TokenLibraryItem, undoManager: UndoManager?) {
+        guard let undoManager, let current = items.first(where: { $0.id == item.id }), current != item else { return }
+        undoManager.registerUndo(withTarget: self) { store in
+            MainActor.assumeIsolated {
+                try? store.update(item)
+                store.registerUndo(restoring: current, undoManager: undoManager)
+            }
+        }
     }
 
     /// 256 px (THUMB limit) aspect-fit thumbnail. TS stretched to 128×128; keeping
@@ -130,6 +164,31 @@ extension CampaignDocument {
             campaign.activeMap.tokens.append(placed)
         }
         return placed.id
+    }
+
+    /// The app library plus items only this campaign carries (PARITY §5.3), for the
+    /// Library Manager, the palette and the sidebar Party list.
+    @MainActor
+    var browsableLibrary: (items: [TokenLibraryItem], campaignOnly: Set<String>) {
+        TokenLibrarySearch.union(app: LibraryStore.shared.items, campaign: campaign.tokenLibrary)
+    }
+
+    /// A browsable item's thumbnail, from the library folder or, for an item only this
+    /// campaign carries, from the package.
+    @MainActor
+    func libraryThumbnail(_ item: TokenLibraryItem) -> CGImage? {
+        let store = LibraryStore.shared
+        if store.items.contains(where: { $0.id == item.id }) {
+            return store.image(item.thumbnailSrc) ?? store.image(item.src)
+        }
+        return imageCache.image(named: item.thumbnailSrc, in: assets) ?? imageCache.image(named: item.src, in: assets)
+    }
+
+    /// Copies an item that came with this campaign into the app-wide library.
+    @MainActor
+    func addToAppLibrary(_ item: TokenLibraryItem) throws {
+        guard let image = assets[item.src] else { throw ImportedImage.ImportError.unreadable(item.name) }
+        try LibraryStore.shared.adopt(item, image: image)
     }
 
     /// Keeps the campaign's copy of a library item in step with an edit made in the library.

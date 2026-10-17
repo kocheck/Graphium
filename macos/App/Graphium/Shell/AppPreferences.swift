@@ -65,6 +65,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         false
     }
+
+    /// Clicking the Dock icon with no windows open shows the Welcome window, as Electron
+    /// re-creates its main window on `activate` (PARITY §1.1). Minimised windows are left
+    /// for AppKit to restore.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        guard !flag, !sender.windows.contains(where: { $0.isMiniaturized }),
+            let found = Self.menuItem(titled: WelcomeView.menuTitle, in: sender.mainMenu)
+        else { return true }
+        // Window > Welcome to Graphium is a SwiftUI command that calls `openWindow`.
+        found.menu.performActionForItem(at: found.index)
+        return false
+    }
+
+    private static func menuItem(titled title: String, in menu: NSMenu?) -> (menu: NSMenu, index: Int)? {
+        guard let menu else { return nil }
+        for (index, item) in menu.items.enumerated() {
+            if item.title == title, item.isEnabled { return (menu, index) }
+            if let found = menuItem(titled: title, in: item.submenu) { return found }
+        }
+        return nil
+    }
 }
 
 extension Notification.Name {

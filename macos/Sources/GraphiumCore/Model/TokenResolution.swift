@@ -51,9 +51,22 @@ extension GameMap {
         gridSize * ResolvedToken(token, library: library).scale
     }
 
+    /// The stored footprint (top-left `x`, `y`). Vision, party framing and the minimap use this.
     public func tokenBounds(_ token: Token, library: [String: TokenLibraryItem]) -> Bounds {
         let size = tokenSize(token, library: library)
         return Bounds(x: token.x, y: token.y, width: size, height: size)
+    }
+
+    /// TS `TokenNode` `displayYOffset`: on isometric grids a token is drawn half its
+    /// height higher, so it stands on its diamond. Zero on every other grid.
+    public func tokenDisplayYOffset(size: Double) -> Double {
+        gridType == .isometric ? -size / 2 : 0
+    }
+
+    /// Where the token is drawn, hit and marquee-selected: `tokenBounds` lifted on iso grids.
+    public func tokenDisplayBounds(_ token: Token, library: [String: TokenLibraryItem]) -> Bounds {
+        let size = tokenSize(token, library: library)
+        return Bounds(x: token.x, y: token.y + tokenDisplayYOffset(size: size), width: size, height: size)
     }
 
     /// Where a token placed "at the map centre" goes (TS `addLibraryTokenToMap`):
@@ -63,14 +76,14 @@ extension GameMap {
         return Point2D(x: bg.x + bg.width * bg.scale / 2, y: bg.y + bg.height * bg.scale / 2)
     }
 
-    /// Ids of tokens whose bounds intersect `rect` (marquee selection).
+    /// Ids of tokens whose drawn bounds intersect `rect` (marquee selection).
     public func tokenIDs(intersecting rect: Bounds, library: [String: TokenLibraryItem]) -> [String] {
-        tokens.filter { tokenBounds($0, library: library).intersects(rect) }.map(\.id)
+        tokens.filter { tokenDisplayBounds($0, library: library).intersects(rect) }.map(\.id)
     }
 
-    /// Topmost token under `point` (tokens draw in array order, so search from the end).
+    /// Topmost token drawn under `point` (tokens draw in array order, so search from the end).
     public func token(at point: Point2D, library: [String: TokenLibraryItem]) -> Token? {
-        tokens.last { tokenBounds($0, library: library).contains(point) }
+        tokens.last { tokenDisplayBounds($0, library: library).contains(point) }
     }
 
     /// Drops dragged tokens (TS `useTokenDrag`, CORE_SPEC §3.1): the primary token is

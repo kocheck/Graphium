@@ -29,6 +29,16 @@ final class VisibilityCacheTests: XCTestCase {
         XCTAssertEqual(cache.computeCount, 2, "moving a PC recomputes")
     }
 
+    func testGridSizeChangeRecomputes() {
+        let cache = VisibilityCache()
+        var map = makeMap()
+        let first = cache.visibility(of: map, library: [:])
+        map.gridSize = 100
+        let second = cache.visibility(of: map, library: [:])
+        XCTAssertEqual(cache.computeCount, 2, "vision radius and centres scale with the grid")
+        XCTAssertNotEqual(first.vision.first?.viewer.radius, second.vision.first?.viewer.radius)
+    }
+
     func testDaylightHasNoFog() {
         var map = makeMap()
         map.isDaylightMode = true
