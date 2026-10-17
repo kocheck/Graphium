@@ -57,7 +57,7 @@ together with `CFBundleDocumentTypes`/`UTExportedTypeDeclarations` for Finder op
 - [x] Footer theme cycle button — Cycles Light, Dark, Auto (system). The icon and label show the current mode. (source: src/components/HomeScreen.tsx:348-387, 672-682)
 - [x] Footer Lite/Full mode toggle — Turns home-screen animations off or on. Persisted in localStorage `liteMode`. A toast confirms. (source: src/components/HomeScreen.tsx:336-346, 684-700) **Native:** Not ported: the Welcome window has no animations to turn off. Reduce Motion is honoured instead.
 - [x] Version footer — "Version X · Desktop|Web Edition". (source: src/components/HomeScreen.tsx:705-707) **Native:** "Version X · macOS Edition".
-- [x] Home keyboard shortcuts — `Cmd/Ctrl+N` new, `Cmd/Ctrl+O` load, `Cmd/Ctrl+G` generate dungeon, `Cmd/Ctrl+T` templates, `?` About on the Shortcuts tab, `Esc` closes templates or About. (source: src/components/HomeScreen.tsx:276-315) **Native:** ⌘N/⌘O are the File menu; ⌘G/⌘T are on the Welcome cards; ? opens Shortcuts; Esc closes the Templates sheet.
+- [x] Home keyboard shortcuts — `Cmd/Ctrl+N` new, `Cmd/Ctrl+O` load, `Cmd/Ctrl+G` generate dungeon, `Cmd/Ctrl+T` templates, `?` About on the Shortcuts tab, `Esc` closes templates or About. (source: src/components/HomeScreen.tsx:276-315) **Native:** ⌘N/⌘O are the File menu; Generate Dungeon is ⇧⌘D and Templates ⇧⌘T (⌘G is Find Next on macOS); ? opens Shortcuts; Esc closes the Templates sheet.
 
 **Native mapping:** Use a SwiftUI welcome window (like Xcode's "Welcome to Xcode") or the
 `DocumentGroup` launch scene, with recents from `NSDocumentController.recentDocumentURLs`. That

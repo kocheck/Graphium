@@ -532,13 +532,22 @@ struct SessionConsoleWindow: View {
 
     var body: some View {
         if let sessionID, let document = DocumentRegistry.shared.document(for: sessionID) {
-            SessionConsolePanel(document: document, detached: true)
-                .frame(minWidth: 300, idealWidth: 340, minHeight: 420)
-                .navigationTitle("Session Console — \(document.campaign.name)")
+            DetachedSessionConsole(document: document)
         } else {
             ContentUnavailableView(
                 "No Campaign", systemImage: "music.note.list",
                 description: Text("Open a campaign, then choose Session Console."))
         }
+    }
+}
+
+/// Observes the document so the window title follows campaign renames.
+private struct DetachedSessionConsole: View {
+    @ObservedObject var document: CampaignDocument
+
+    var body: some View {
+        SessionConsolePanel(document: document, detached: true)
+            .frame(minWidth: 300, idealWidth: 340, minHeight: 420)
+            .navigationTitle("Session Console — \(document.campaign.name)")
     }
 }

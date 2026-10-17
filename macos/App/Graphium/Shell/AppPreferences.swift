@@ -45,7 +45,7 @@ enum AppTheme: String, CaseIterable, Identifiable {
 }
 
 /// UserDefaults keys shared by @AppStorage users.
-enum PreferenceKey {
+enum Prefs {
     static let theme = "graphium.theme"
     static let pressureEnabled = "graphium.pressureEnabled"
     static let pressureCurve = "graphium.pressureCurve"
@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         UserDefaults.standard.register(defaults: [
             "NSShowAppCentricOpenPanelInsteadOfUntitledFile": false,
         ])
-        let stored = UserDefaults.standard.string(forKey: PreferenceKey.theme) ?? AppTheme.system.rawValue
+        let stored = UserDefaults.standard.string(forKey: Prefs.theme) ?? AppTheme.system.rawValue
         (AppTheme(rawValue: stored) ?? .system).apply()
     }
 

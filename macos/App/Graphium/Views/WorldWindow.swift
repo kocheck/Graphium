@@ -33,8 +33,8 @@ private struct WorldView: View {
     /// Held without observing, so camera moves only redraw the minimap.
     @State private var minimap = MinimapModel()
     /// Strokes render with the DM's pressure settings so both windows match.
-    @AppStorage(PreferenceKey.pressureEnabled) private var pressureEnabled = true
-    @AppStorage(PreferenceKey.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
+    @AppStorage(Prefs.pressureEnabled) private var pressureEnabled = true
+    @AppStorage(Prefs.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
 
     var body: some View {
         let campaign = document.campaign

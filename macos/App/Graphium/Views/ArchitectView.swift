@@ -9,8 +9,8 @@ struct ArchitectView: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
-    @AppStorage(PreferenceKey.pressureEnabled) private var pressureEnabled = true
-    @AppStorage(PreferenceKey.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
+    @AppStorage(Prefs.pressureEnabled) private var pressureEnabled = true
+    @AppStorage(Prefs.pressureCurve) private var pressureCurveRaw = PressureCurve.normal.rawValue
     @State private var showingPerformance = false
     @State private var legacyExport: LegacyGraphiumFile?
     @State private var showingColorPopover = false
@@ -289,8 +289,8 @@ struct ArchitectView: View {
             }
         }
         .navigationSplitViewColumnWidth(min: 180, ideal: 220)
-        .toolbar {
-            ToolbarItem {
+        .toolbar(id: "sidebar") {
+            ToolbarItem(id: "add-map") {
                 Button {
                     mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true)
                 } label: {
@@ -527,7 +527,8 @@ struct ArchitectView: View {
     /// `I`: the marker colour popover (switches to Marker).
     private func openMarkerColorPicker() {
         selectTool(.marker)
-        showingColorPopover = true
+        // Next turn of the run loop: the popover's anchor only exists once Marker is active.
+        DispatchQueue.main.async { showingColorPopover = true }
     }
 
     /// File > Export as .graphium… (PARITY §5.2).
@@ -668,112 +669,125 @@ struct ArchitectView: View {
     /// View > Customize Toolbar… can add, remove and reorder these (ids are stable).
     @ToolbarContentBuilder
     private var toolbarContent: some CustomizableToolbarContent {
-        Group {
-            ToolbarItem(id: "tool", placement: .principal) {
-                Picker("Tool", selection: Binding(get: { tools.tool }, set: { selectTool($0) })) {
-                    ForEach(CanvasTool.allCases) { tool in
-                        Label(tool.title, systemImage: tool.symbol).tag(tool).help(tool.help)
-                    }
+        toolItems
+        actionItems
+        secondaryItems
+    }
+
+    @ToolbarContentBuilder
+    private var toolItems: some CustomizableToolbarContent {
+        ToolbarItem(id: "tool", placement: .principal) {
+            Picker("Tool", selection: Binding(get: { tools.tool }, set: { selectTool($0) })) {
+                ForEach(CanvasTool.allCases) { tool in
+                    Label(tool.title, systemImage: tool.symbol).tag(tool).help(tool.help)
                 }
-                .pickerStyle(.segmented)
-                .labelStyle(.iconOnly)
             }
-            ToolbarItem(id: "tool-options", placement: .principal) {
-                toolOptions
-            }
+            .pickerStyle(.segmented)
+            .labelStyle(.iconOnly)
         }
-        Group {
-            ToolbarItem(id: "map-settings", placement: .primaryAction) {
-                Button {
-                    mapSettings = MapSettingsRequest(map: document.campaign.activeMap, isNew: false)
-                } label: {
-                    Label("Map Settings", systemImage: "slider.horizontal.3")
-                }
-                .help("Name, grid, daylight, map image and calibration")
-            }
-            ToolbarItem(id: "map-image", placement: .primaryAction) {
-                Button {
-                    importTarget = .mapImage
-                } label: {
-                    Label("Map Image", systemImage: "photo")
-                }
-                .help("Set this map's background image")
-            }
-            ToolbarItem(id: "add-tokens", placement: .primaryAction) {
-                Button {
-                    importTarget = .tokens
-                } label: {
-                    Label("Add Tokens", systemImage: "person.crop.circle.badge.plus")
-                }
-                .help("Add tokens from image files")
-            }
-            ToolbarItem(id: "world-view", placement: .primaryAction) {
-                Button {
-                    openWindow(id: WorldWindow.id, value: document.sessionID)
-                } label: {
-                    Label("World View", systemImage: "tv")
-                }
-                .help("Open the player-facing World View (drag it to the projector)")
-            }
-            ToolbarItem(id: "pause", placement: .primaryAction) {
-                PauseToolbarButton(document: document)
-            }
-            ToolbarItem(id: "session-console", placement: .primaryAction) {
-                Toggle(isOn: $showingConsole) {
-                    Label("Session Console", systemImage: "music.note.list")
-                }
-                .help("Plates and music for the World View")
-                .onChange(of: showingConsole) { _, shown in if shown { inspectorTab = .console } }
-            }
+        ToolbarItem(id: "tool-options", placement: .principal) {
+            toolOptions
         }
-        Group {
-            ToolbarItem(id: "daylight", placement: .secondaryAction) {
-                Toggle(isOn: daylightBinding) {
-                    Label("Daylight", systemImage: "sun.max")
-                }
-                .help("Daylight: no fog of war on this map")
+    }
+
+    @ToolbarContentBuilder
+    private var actionItems: some CustomizableToolbarContent {
+        ToolbarItem(id: "map-settings", placement: .primaryAction) {
+            Button {
+                mapSettings = MapSettingsRequest(map: document.campaign.activeMap, isNew: false)
+            } label: {
+                Label("Map Settings", systemImage: "slider.horizontal.3")
             }
-            ToolbarItem(id: "reset-fog", placement: .secondaryAction) {
-                Button {
-                    resetExploredFog()
-                } label: {
-                    Label("Reset Explored Fog", systemImage: "eye.slash")
-                }
-                .help("Forget what the party has explored on this map")
-                .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
-            }
-            // Off by default; add them with Customize Toolbar.
-            ToolbarItem(id: "console-window", placement: .secondaryAction, showsByDefault: false) {
-                Button {
-                    openWindow(id: SessionConsoleWindow.id, value: document.sessionID)
-                } label: {
-                    Label("Session Console Window", systemImage: "macwindow.on.rectangle")
-                }
-                .help("Open the Session Console in its own window")
-            }
-            ToolbarItem(id: "palette", placement: .secondaryAction, showsByDefault: false) {
-                Button {
-                    showingPalette = true
-                } label: {
-                    Label("Command Palette", systemImage: "command")
-                }
-                .help("Search actions and assets (⌘K)")
-            }
-            ToolbarItem(id: "dungeon", placement: .secondaryAction, showsByDefault: false) {
-                Button {
-                    showingDungeon = true
-                } label: {
-                    Label("Generate Dungeon", systemImage: "square.grid.3x3.topleft.filled")
-                }
-                .help("Generate a random dungeon (⇧⌘G)")
-            }
-            ToolbarItem(id: "performance", placement: .secondaryAction, showsByDefault: false) {
-                Toggle(isOn: $showingPerformance) {
-                    Label("Performance Monitor", systemImage: "gauge.with.dots.needle.33percent")
-                }
-                .help("Canvas frame rate, memory and counts (⇧⌘M)")
-            }
+            .help("Name, grid, daylight, map image and calibration")
         }
+        ToolbarItem(id: "map-image", placement: .primaryAction) {
+            Button {
+                importTarget = .mapImage
+            } label: {
+                Label("Map Image", systemImage: "photo")
+            }
+            .help("Set this map's background image")
+        }
+        ToolbarItem(id: "add-tokens", placement: .primaryAction) {
+            Button {
+                importTarget = .tokens
+            } label: {
+                Label("Add Tokens", systemImage: "person.crop.circle.badge.plus")
+            }
+            .help("Add tokens from image files")
+        }
+        ToolbarItem(id: "world-view", placement: .primaryAction) {
+            Button {
+                openWindow(id: WorldWindow.id, value: document.sessionID)
+            } label: {
+                Label("World View", systemImage: "tv")
+            }
+            .help("Open the player-facing World View (drag it to the projector)")
+        }
+        ToolbarItem(id: "pause", placement: .primaryAction) {
+            PauseToolbarButton(document: document)
+        }
+        ToolbarItem(id: "session-console", placement: .primaryAction) {
+            Toggle(isOn: $showingConsole) {
+                Label("Session Console", systemImage: "music.note.list")
+            }
+            .help("Plates and music for the World View")
+            .onChange(of: showingConsole) { _, shown in if shown { inspectorTab = .console } }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var secondaryItems: some CustomizableToolbarContent {
+        ToolbarItem(id: "daylight", placement: .secondaryAction) {
+            Toggle(isOn: daylightBinding) {
+                Label("Daylight", systemImage: "sun.max")
+            }
+            .help("Daylight: no fog of war on this map")
+        }
+        ToolbarItem(id: "reset-fog", placement: .secondaryAction) {
+            Button {
+                resetExploredFog()
+            } label: {
+                Label("Reset Explored Fog", systemImage: "eye.slash")
+            }
+            .help("Forget what the party has explored on this map")
+            .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
+        }
+        // Off by default; add them with Customize Toolbar.
+        ToolbarItem(id: "console-window", placement: .secondaryAction) {
+            Button {
+                openWindow(id: SessionConsoleWindow.id, value: document.sessionID)
+            } label: {
+                Label("Session Console Window", systemImage: "macwindow.on.rectangle")
+            }
+            .help("Open the Session Console in its own window")
+        }
+        .defaultCustomization(.hidden)
+        ToolbarItem(id: "palette", placement: .secondaryAction) {
+            Button {
+                showingPalette = true
+            } label: {
+                Label("Command Palette", systemImage: "command")
+            }
+            .help("Search actions and assets (⌘K)")
+        }
+        .defaultCustomization(.hidden)
+        ToolbarItem(id: "dungeon", placement: .secondaryAction) {
+            Button {
+                showingDungeon = true
+            } label: {
+                Label("Generate Dungeon", systemImage: "square.grid.3x3.topleft.filled")
+            }
+            .help("Generate a random dungeon (⇧⌘G)")
+        }
+        .defaultCustomization(.hidden)
+        ToolbarItem(id: "performance", placement: .secondaryAction) {
+            Toggle(isOn: $showingPerformance) {
+                Label("Performance Monitor", systemImage: "gauge.with.dots.needle.33percent")
+            }
+            .help("Canvas frame rate, memory and counts (⇧⌘M)")
+        }
+        .defaultCustomization(.hidden)
     }
 
     /// Options for the active tool, in one toolbar item so customisation keeps them together.

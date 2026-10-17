@@ -54,8 +54,8 @@ struct WelcomeView: View {
     static let windowID = "welcome"
 
     @Environment(\.openWindow) private var openWindow
-    @AppStorage(PreferenceKey.theme) private var themeRaw = AppTheme.system.rawValue
-    @AppStorage(PreferenceKey.hiddenRecents) private var hiddenRecentsRaw = ""
+    @AppStorage(Prefs.theme) private var themeRaw = AppTheme.system.rawValue
+    @AppStorage(Prefs.hiddenRecents) private var hiddenRecentsRaw = ""
     @State private var showingTemplates = false
     @State private var recentsQuery = ""
     @State private var recents: [RecentCampaign] = []
@@ -82,14 +82,15 @@ struct WelcomeView: View {
                 card("Load Campaign", "folder", "Open a .graphiumcampaign or .graphium file (⌘O)") {
                     NSDocumentController.shared.openDocument(nil)
                 }
-                card("Generate Dungeon", "square.grid.3x3.topleft.filled", "A new campaign with a random dungeon (⌘G)") {
+                // ⌘G is Find Next in the Edit menu, so these use Shift (TS: Ctrl/⌘ G and T).
+                card("Generate Dungeon", "square.grid.3x3.topleft.filled", "A new campaign with a random dungeon (⇧⌘D)") {
                     LaunchIntent.shared.newCampaign(then: .generateDungeon)
                 }
-                .keyboardShortcut("g", modifiers: .command)
-                card("Templates", "square.on.square", "Start from a pre-made campaign (⌘T)") {
+                .keyboardShortcut("d", modifiers: [.command, .shift])
+                card("Templates", "square.on.square", "Start from a pre-made campaign (⇧⌘T)") {
                     showingTemplates = true
                 }
-                .keyboardShortcut("t", modifiers: .command)
+                .keyboardShortcut("t", modifiers: [.command, .shift])
             }
             Button("New to Graphium? Learn the basics") { ShowAbout(openWindow: openWindow)(.tutorial) }
                 .buttonStyle(.link)
@@ -102,10 +103,6 @@ struct WelcomeView: View {
         .onAppear(perform: reloadRecents)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             reloadRecents()
-        }
-        .onKeyPress("?") {
-            ShowAbout(openWindow: openWindow)(.shortcuts)
-            return .handled
         }
         .alert(
             "Couldn't open the campaign",
@@ -231,6 +228,7 @@ struct WelcomeView: View {
             Button("About") { ShowAbout(openWindow: openWindow)(.about) }.buttonStyle(.link)
             Link("Report Bug", destination: AppLinks.issues)
             Button("Help") { ShowAbout(openWindow: openWindow)(.shortcuts) }.buttonStyle(.link)
+                .keyboardShortcut("?", modifiers: [])
                 .help("Keyboard shortcuts (?)")
             Button {
                 themeRaw = theme.next.rawValue

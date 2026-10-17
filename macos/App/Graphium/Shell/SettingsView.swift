@@ -4,9 +4,9 @@ import SwiftUI
 /// Graphium > Settings… (PARITY §6: the TS touch settings had no UI; this is the
 /// intended Settings pane, limited to what a Mac has: appearance and pen pressure).
 struct SettingsView: View {
-    @AppStorage(PreferenceKey.theme) private var themeRaw = AppTheme.system.rawValue
-    @AppStorage(PreferenceKey.pressureEnabled) private var pressureEnabled = true
-    @AppStorage(PreferenceKey.pressureCurve) private var pressureCurve = PressureCurve.normal.rawValue
+    @AppStorage(Prefs.theme) private var themeRaw = AppTheme.system.rawValue
+    @AppStorage(Prefs.pressureEnabled) private var pressureEnabled = true
+    @AppStorage(Prefs.pressureCurve) private var pressureCurve = PressureCurve.normal.rawValue
 
     var body: some View {
         Form {

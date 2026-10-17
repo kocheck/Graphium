@@ -1,3 +1,5 @@
+import Foundation
+
 /// Flavour text pools, ported verbatim from TS `systemMessages.ts` (PARITY §1.6).
 public enum SystemMessages {
     public enum Intent: String, CaseIterable, Sendable {

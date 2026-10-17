@@ -127,7 +127,7 @@ private struct PauseMenuItem: View {
 /// About, Help, Theme, Performance Monitor and Welcome (PARITY §1.3, §1.8, §1.11, §1.13).
 struct ShellCommands: Commands {
     @FocusedValue(\.architectActions) private var actions
-    @AppStorage(PreferenceKey.theme) private var themeRaw = AppTheme.system.rawValue
+    @AppStorage(Prefs.theme) private var themeRaw = AppTheme.system.rawValue
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {

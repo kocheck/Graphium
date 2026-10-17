@@ -1,4 +1,5 @@
 import AppKit
+import QuartzCore
 import GraphiumCore
 import SwiftUI
 import UniformTypeIdentifiers
