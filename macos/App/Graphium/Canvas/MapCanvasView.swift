@@ -178,14 +178,24 @@ final class MapCanvasNSView: NSView {
             let rect = CGRect(
                 x: background.x, y: background.y, width: background.width * background.scale,
                 height: background.height * background.scale)
-            draw(image, in: rect, context: context)
-            // Paper texture at 25% over the map (PARITY §3.13).
-            context.saveGState()
-            context.clip(to: rect)
-            context.setAlpha(0.25)
-            context.setBlendMode(.multiply)
-            context.draw(PaperTexture.image, in: CGRect(x: 0, y: 0, width: 256, height: 256), byTiling: true)
-            context.restoreGState()
+            // Faster resampling while the user is dragging, panning or zooming.
+            let quality: CGInterpolationQuality
+            if case .idle = interaction { quality = .high } else { quality = .medium }
+            if let baked = PaperTexture.baked(onto: image, key: background.src, mapScale: background.scale, then: { [weak self] in
+                self?.needsDisplay = true
+            }) {
+                // Map and paper composed once off the main thread: one image per frame.
+                draw(baked, in: rect, context: context, quality: quality)
+            } else {
+                draw(image, in: rect, context: context, quality: quality)
+                // Paper texture at 25% over the map (PARITY §3.13), until the baked copy is ready.
+                context.saveGState()
+                context.clip(to: rect)
+                context.setAlpha(0.25)
+                context.setBlendMode(.multiply)
+                context.draw(PaperTexture.image, in: CGRect(x: 0, y: 0, width: 256, height: 256), byTiling: true)
+                context.restoreGState()
+            }
         }
         drawGrid(map, context: context)
         if !isPlayerView, editing != nil, let hoverPoint, map.gridType != .dots, map.gridType != .hidden {
@@ -272,11 +282,11 @@ final class MapCanvasNSView: NSView {
     }
 
     /// CGImages draw bottom-up; flip locally so they appear upright in this flipped view.
-    private func draw(_ image: CGImage, in rect: CGRect, context: CGContext) {
+    private func draw(_ image: CGImage, in rect: CGRect, context: CGContext, quality: CGInterpolationQuality = .high) {
         context.saveGState()
         context.translateBy(x: rect.minX, y: rect.maxY)
         context.scaleBy(x: 1, y: -1)
-        context.interpolationQuality = .high
+        context.interpolationQuality = quality
         context.draw(image, in: CGRect(origin: .zero, size: rect.size))
         context.restoreGState()
     }
@@ -892,6 +902,52 @@ extension CGPoint {
 
 /// A tiling paper-grain texture, generated once (deterministic noise, light value band).
 enum PaperTexture {
+    /// Map images with the paper multiplied in, shared by every canvas. Keyed by asset
+    /// name and map scale (the grain is 256 map units per tile, as in TS).
+    private static let bakedCache: NSCache<NSString, CGImage> = {
+        let cache = NSCache<NSString, CGImage>()
+        cache.totalCostLimit = 512 * 1024 * 1024
+        return cache
+    }()
+    @MainActor private static var pending: Set<String> = []
+
+    /// The baked copy if ready; otherwise starts baking it in the background, calls
+    /// `then` on the main actor when done, and returns nil.
+    @MainActor
+    static func baked(onto image: CGImage, key: String, mapScale: Double, then: @escaping @MainActor () -> Void) -> CGImage? {
+        let cacheKey = "\(key)@\(mapScale)" as NSString
+        if let hit = bakedCache.object(forKey: cacheKey) { return hit }
+        guard !pending.contains(cacheKey as String) else { return nil }
+        pending.insert(cacheKey as String)
+        Task.detached(priority: .userInitiated) {
+            let baked = bake(image, mapScale: mapScale)
+            await MainActor.run {
+                pending.remove(cacheKey as String)
+                if let baked {
+                    bakedCache.setObject(baked, forKey: cacheKey, cost: baked.bytesPerRow * baked.height)
+                    then()
+                }
+            }
+        }
+        return nil
+    }
+
+    private static func bake(_ image: CGImage, mapScale: Double) -> CGImage? {
+        let width = image.width, height = image.height
+        guard width > 0, height > 0, mapScale > 0,
+            let context = CGContext(
+                data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        context.draw(image, in: rect)
+        context.setAlpha(0.25)
+        context.setBlendMode(.multiply)
+        let tile = 256 / mapScale  // image pixels per 256 map units
+        context.draw(self.image, in: CGRect(x: 0, y: 0, width: tile, height: tile), byTiling: true)
+        return context.makeImage()
+    }
+
     static let image: CGImage = {
         let side = 256
         var pixels = [UInt8](repeating: 0, count: side * side * 4)
