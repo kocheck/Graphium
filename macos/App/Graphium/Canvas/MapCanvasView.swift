@@ -40,8 +40,10 @@ struct CanvasEditing {
 
 /// Fog of war to draw over the map (World View, when not in daylight).
 struct FogState {
+    /// Keys the cached explored mask together with `bounds`.
+    var mapID: String
     var bounds: Bounds
-    var explored: [[Point2D]]
+    var explored: [ExploredRegion]
     var vision: [LineOfSight.VisionPolygon]
 }
 
@@ -65,6 +67,8 @@ final class MapCanvasNSView: NSView {
     /// Tokens players must not see or grab (NPCs outside party vision).
     var hiddenTokenIDs: Set<String> = []
     var fog: FogState?
+    /// The explored-fog union, stamped incrementally and reused across frames.
+    private let exploredMask = ExploredFogMask()
     /// Player-facing styling (walls black 6px, doors with glow) and no DM overlays.
     var isPlayerView = false
     var toolState = ToolState()
@@ -421,7 +425,8 @@ final class MapCanvasNSView: NSView {
     /// TS compositing (CORE_SPEC §3.3 step 7): fog bounds filled black at 94%;
     /// explored areas erased down to 20% coverage; current vision erased with a
     /// radial falloff (clear to 60% of the radius, fading to fog at the edge).
-    /// Explored polygons are filled as one path, so overlaps don't compound as in TS.
+    /// Explored polygons are stamped as one union into a cached mask (`ExploredFogMask`),
+    /// so overlaps don't compound as in TS.
     private func drawFog(_ fog: FogState, context: CGContext) {
         context.saveGState()
         context.beginTransparencyLayer(auxiliaryInfo: nil)
@@ -429,12 +434,17 @@ final class MapCanvasNSView: NSView {
         context.fill(CGRect(bounds: fog.bounds))
         context.setBlendMode(.destinationOut)
 
-        if !fog.explored.isEmpty {
-            let path = CGMutablePath()
-            for polygon in fog.explored { path.addPolygon(polygon) }
-            context.addPath(path)
+        if let mask = exploredMask.image(mapID: fog.mapID, bounds: fog.bounds, regions: fog.explored) {
+            // One cached mask per frame instead of every explored polygon (PARITY §3.7).
+            let rect = CGRect(bounds: fog.bounds)
+            context.saveGState()
+            context.translateBy(x: rect.minX, y: rect.maxY)
+            context.scaleBy(x: 1, y: -1)
+            let local = CGRect(origin: .zero, size: rect.size)
+            context.clip(to: local, mask: mask)
             context.setFillColor(NSColor.black.withAlphaComponent(0.8).cgColor)
-            context.fillPath()
+            context.fill(local)
+            context.restoreGState()
         }
 
         let colors = [
