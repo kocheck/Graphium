@@ -95,7 +95,8 @@ When running from source, the "Check for Updates" button will show "Development 
 2. **Create a GitHub Release:**
    - Tag the release with a version number (e.g., `v0.5.4`)
    - Upload the built installers:
-     - `Graphium-Mac-0.5.4-Installer.dmg` (macOS)
+     - `Graphium-Mac-0.5.4-arm64.dmg` / `Graphium-Mac-0.5.4-x64.dmg` (macOS first install)
+     - `Graphium-Mac-0.5.4-arm64.zip` / `Graphium-Mac-0.5.4-x64.zip` (macOS: what the updater installs)
      - `Graphium-Windows-0.5.4-Setup.exe` (Windows)
      - `Graphium-Linux-0.5.4.AppImage` (Linux)
 
@@ -108,18 +109,11 @@ When running from source, the "Check for Updates" button will show "Development 
 
 ### Code Signing (Required for macOS)
 
-For auto-update to work on macOS in production, the app **must be code-signed and notarized**:
-
-```json5
-// electron-builder.json5
-"mac": {
-  "identity": "Developer ID Application: Your Name (TEAM_ID)",
-  "hardenedRuntime": true,
-  "gatekeeperAssess": false,
-  "entitlements": "build/entitlements.mac.plist",
-  "entitlementsInherit": "build/entitlements.mac.plist"
-}
-```
+For auto-update to work on macOS in production, the app **must be code-signed and notarized**.
+Hardened runtime, entitlements (`build/entitlements.mac.plist`) and notarization are already
+configured in `electron-builder.json5`. They activate when the release workflow has the Apple
+secrets. See [docs/guides/MACOS_RELEASE.md](docs/guides/MACOS_RELEASE.md) for the one-time setup
+and the release checks.
 
 Without code signing:
 
@@ -166,9 +160,9 @@ To test the update workflow without building:
    ```yaml
    version: 0.5.4
    files:
-     - url: Graphium-Mac-0.5.4-Installer.dmg
+     - url: Graphium-Mac-0.5.4-arm64.zip
        sha512: ...
-   path: Graphium-Mac-0.5.4-Installer.dmg
+   path: Graphium-Mac-0.5.4-arm64.zip
    sha512: ...
    releaseDate: '2026-01-05T00:00:00.000Z'
    ```

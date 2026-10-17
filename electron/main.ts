@@ -37,7 +37,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, Menu, session, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  protocol,
+  net,
+  Menu,
+  screen,
+  session,
+  shell,
+} from 'electron';
 import Store from 'electron-store';
 import JSZip from 'jszip';
 
@@ -68,6 +79,7 @@ import {
   setThemeMode,
   type ThemeMode,
 } from './themeManager.js';
+import { restorableBounds, type SavedBounds } from './windowBounds.js';
 import { emptySessionConsoleCatalog } from '../src/types/sessionConsole.js';
 import { rewriteCampaignAssetSrcs } from '../src/utils/campaignAssets.js';
 import { rewriteSafeAssetFileName } from '../src/utils/safeAssetFileName.js';
@@ -79,12 +91,8 @@ import type { SessionConsoleWorldEvent } from '../src/utils/syncUtils.js';
 import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 
 interface StoreSchema {
-  windowBounds: {
-    width: number;
-    height: number;
-    x?: number;
-    y?: number;
-  };
+  windowBounds: SavedBounds;
+  worldWindowBounds: SavedBounds;
 }
 
 const store = new Store<StoreSchema>();
@@ -146,13 +154,163 @@ let isGamePaused = false;
 let activeSessionDir: string | null = null;
 let pendingOpenFile: string | undefined;
 
+/** Work areas of the displays connected right now (for restoring saved window positions). */
+function connectedWorkAreas(): Electron.Rectangle[] {
+  return screen.getAllDisplays().map((display) => display.workArea);
+}
+
+/** Persists a window's bounds under `key` on resize/move (debounced) and on close. */
+function rememberBounds(win: BrowserWindow, key: keyof StoreSchema): void {
+  const saveBounds = (): void => {
+    if (!win.isDestroyed() && !win.isFullScreen()) {
+      store.set(key, win.getBounds());
+    }
+  };
+
+  let boundsTimer: ReturnType<typeof setTimeout> | undefined;
+  const debouncedSaveBounds = (): void => {
+    if (boundsTimer) {
+      clearTimeout(boundsTimer);
+    }
+    boundsTimer = setTimeout(saveBounds, 400);
+  };
+
+  win.on('resize', debouncedSaveBounds);
+  win.on('move', debouncedSaveBounds);
+  win.on('close', saveBounds);
+}
+
+/**
+ * Queues a `.graphium` file the OS asked us to open (Finder double-click, Open Recent,
+ * drag onto the Dock icon, or a Windows/Linux command-line argument).
+ *
+ * Main keeps the path; the Architect renderer pulls it with TAKE_PENDING_OPEN_FILE, so
+ * the renderer never chooses a path for main to read. On a warm app we nudge the
+ * renderer with OPEN_FILE_FROM_OS; on a cold start the renderer pulls on mount.
+ */
+function queueOsOpenFile(filePath: string): void {
+  pendingOpenFile = filePath;
+  if (!app.isReady()) {
+    return;
+  }
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  mainWindow.focus();
+  mainWindow.webContents.send('OPEN_FILE_FROM_OS');
+}
+
+/** Records an opened/saved campaign with the OS (Open Recent, title-bar proxy icon). */
+function noteCampaignPath(filePath: string): void {
+  app.addRecentDocument(filePath);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setRepresentedFilename(filePath);
+  }
+}
+
+/** File menu: campaign New/Open/Save (sent to the focused renderer), Open Recent on macOS. */
+function fileMenu(): Electron.MenuItemConstructorOptions {
+  return {
+    label: 'File',
+    submenu: [
+      {
+        label: 'New Campaign',
+        accelerator: 'CmdOrCtrl+N',
+        click: () => {
+          const win = BrowserWindow.getFocusedWindow();
+          if (win) {
+            win.webContents.send('MENU_NEW_CAMPAIGN');
+          }
+        },
+      },
+      {
+        label: 'Open Campaign...',
+        accelerator: 'CmdOrCtrl+O',
+        click: () => {
+          const win = BrowserWindow.getFocusedWindow();
+          if (win) {
+            win.webContents.send('MENU_LOAD_CAMPAIGN');
+          }
+        },
+      },
+      ...(process.platform === 'darwin'
+        ? [
+            {
+              label: 'Open Recent',
+              role: 'recentDocuments' as const,
+              submenu: [{ label: 'Clear Menu', role: 'clearRecentDocuments' as const }],
+            },
+          ]
+        : []),
+      {
+        label: 'Save Campaign',
+        accelerator: 'CmdOrCtrl+S',
+        click: () => {
+          const win = BrowserWindow.getFocusedWindow();
+          if (win) {
+            win.webContents.send('MENU_SAVE_CAMPAIGN');
+          }
+        },
+      },
+      { type: 'separator' },
+      process.platform === 'darwin' ? ({ role: 'close' } as const) : ({ role: 'quit' } as const),
+    ],
+  };
+}
+
+/** Edit menu — without it macOS has no Cmd+C/V/X/Z/A in text fields. */
+function editMenu(): Electron.MenuItemConstructorOptions {
+  return {
+    label: 'Edit',
+    submenu: [
+      { role: 'undo' },
+      { role: 'redo' },
+      { type: 'separator' },
+      { role: 'cut' },
+      { role: 'copy' },
+      { role: 'paste' },
+      ...(process.platform === 'darwin'
+        ? [{ role: 'pasteAndMatchStyle' as const }, { role: 'delete' as const }]
+        : [{ role: 'delete' as const }]),
+      { role: 'selectAll' },
+    ],
+  };
+}
+
+/** Help menu (macOS adds its menu-search field to the menu with role 'help'). */
+function helpMenu(): Electron.MenuItemConstructorOptions {
+  return {
+    role: 'help',
+    submenu: [
+      {
+        label: 'Graphium on GitHub',
+        click: () => {
+          void shell.openExternal('https://github.com/kocheck/Graphium');
+        },
+      },
+      {
+        label: 'Report an Issue',
+        click: () => {
+          void shell.openExternal('https://github.com/kocheck/Graphium/issues');
+        },
+      },
+    ],
+  };
+}
+
 /**
  * Build application menu with theme options
  *
  * Creates native menu bar with:
- * - File menu (standard app controls)
+ * - App menu (macOS: About, Services, Hide, Quit)
+ * - File menu (standard app controls, Open Recent on macOS)
+ * - Edit menu (native text editing shortcuts)
  * - View menu (theme selection)
- * - Help menu (future: docs, about)
+ * - Help menu (project links; macOS menu search)
  *
  * Theme submenu allows selecting:
  * - Light mode (force light theme)
@@ -183,44 +341,9 @@ function buildApplicationMenu(): void {
         ]
       : []),
 
-    // File menu
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'New Campaign',
-          accelerator: 'CmdOrCtrl+N',
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (win) {
-              win.webContents.send('MENU_NEW_CAMPAIGN');
-            }
-          },
-        },
-        {
-          label: 'Open Campaign...',
-          accelerator: 'CmdOrCtrl+O',
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (win) {
-              win.webContents.send('MENU_LOAD_CAMPAIGN');
-            }
-          },
-        },
-        {
-          label: 'Save Campaign',
-          accelerator: 'CmdOrCtrl+S',
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (win) {
-              win.webContents.send('MENU_SAVE_CAMPAIGN');
-            }
-          },
-        },
-        { type: 'separator' },
-        process.platform === 'darwin' ? ({ role: 'close' } as const) : ({ role: 'quit' } as const),
-      ],
-    },
+    fileMenu(),
+
+    editMenu(),
 
     // Insert menu
     {
@@ -310,6 +433,8 @@ function buildApplicationMenu(): void {
           : [{ role: 'close' as const }]),
       ],
     },
+
+    helpMenu(),
   ];
 
   const menu = Menu.buildFromTemplate(template);
@@ -333,36 +458,21 @@ function buildApplicationMenu(): void {
  * **Development:** Vite `VITE_DEV_SERVER_URL` when set.
  */
 function createMainWindow(): void {
-  const bounds = store.get('windowBounds');
+  const saved = store.get('windowBounds');
+  const bounds = restorableBounds(
+    { width: saved?.width || 1200, height: saved?.height || 800, x: saved?.x, y: saved?.y },
+    connectedWorkAreas(),
+  );
 
   mainWindow = new BrowserWindow({
-    width: bounds?.width || 1200,
-    height: bounds?.height || 800,
-    x: bounds?.x,
-    y: bounds?.y,
+    ...bounds,
     icon: path.join(process.env.VITE_PUBLIC, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
   });
 
-  const saveBounds = (): void => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      store.set('windowBounds', mainWindow.getBounds());
-    }
-  };
-
-  let boundsTimer: ReturnType<typeof setTimeout> | undefined;
-  const debouncedSaveBounds = (): void => {
-    if (boundsTimer) {
-      clearTimeout(boundsTimer);
-    }
-    boundsTimer = setTimeout(saveBounds, 400);
-  };
-
-  mainWindow.on('resize', debouncedSaveBounds);
-  mainWindow.on('move', debouncedSaveBounds);
-  mainWindow.on('close', saveBounds);
+  rememberBounds(mainWindow, 'windowBounds');
 
   // Legacy template diagnostic event; keep it development-only to reduce noise.
   if (process.env['NODE_ENV'] === 'development') {
@@ -414,12 +524,19 @@ function createWorldWindow(): void {
     return;
   }
 
+  // Restore the World View onto the projector it was last on, if that display is still attached
+  const saved = store.get('worldWindowBounds');
+  const bounds = saved ? restorableBounds(saved, connectedWorkAreas()) : {};
+
   worldWindow = new BrowserWindow({
+    ...bounds,
     icon: path.join(process.env.VITE_PUBLIC, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
   });
+
+  rememberBounds(worldWindow, 'worldWindowBounds');
 
   // Load same app with ?type=world query parameter
   if (VITE_DEV_SERVER_URL) {
@@ -441,36 +558,18 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
+  // On macOS clicking the Dock icon brings back the Architect View, including
+  // when only the World View (projector) window is still open.
+  if (!mainWindow || mainWindow.isDestroyed()) {
     createMainWindow();
   }
 });
 
-// Handle file association (macOS)
-app.on('open-file', (_event, path) => {
-  // If app is already ready, open the file
-  if (app.isReady()) {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      // Focus window and send load command
-      if (mainWindow.isMinimized()) {
-        mainWindow.restore();
-      }
-      mainWindow.focus();
-      // We'll need to implement a way to send this file path to the renderer
-      // For now, let's store it and the renderer can poll or we send an event
-      // But typically we send an IPC message if the window is ready
-      mainWindow.webContents.send('OPEN_FILE_FROM_OS', path);
-    }
-  } else {
-    // If not ready, we need to handle it on startup (process.argv handling usually covers this on other OSs)
-    // But for macOS open-file event, we might need to cache it
-    // For simplicity, we'll let the standard startup flow handle it if it captures it,
-    // or just rely on the user re-opening if it was a cold start from file
-    // Actually, capturing it here for cold start:
-    pendingOpenFile = path;
-  }
+// Handle file association (macOS): Finder double-click, Open Recent, drop on Dock icon.
+// Registered before 'ready' so cold-start opens are captured.
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  queueOsOpenFile(filePath);
 });
 
 // Handle second instance (Windows/Linux)
@@ -479,18 +578,15 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', (_event, commandLine) => {
-    // Someone tried to run a second instance, we should focus our window.
-    if (mainWindow && !mainWindow.isDestroyed()) {
+    // Someone tried to run a second instance (Windows/Linux file open), focus ours instead.
+    const filePath = commandLine.find((arg) => arg.endsWith('.graphium'));
+    if (filePath) {
+      queueOsOpenFile(filePath);
+    } else if (mainWindow && !mainWindow.isDestroyed()) {
       if (mainWindow.isMinimized()) {
         mainWindow.restore();
       }
       mainWindow.focus();
-
-      // Extract file path from command line
-      const filePath = commandLine.find((arg) => arg.endsWith('.graphium'));
-      if (filePath) {
-        mainWindow.webContents.send('OPEN_FILE_FROM_OS', filePath);
-      }
     }
   });
 }
@@ -826,6 +922,7 @@ function registerCampaignHandlers(ctx: AppContext): void {
       return withCampaignWrite(async () => {
         currentCampaignPath = filePath;
         await writeCampaignZip(filePath, campaign, allowedMediaRoots, { atomic: false });
+        noteCampaignPath(filePath);
         return true;
       });
     },
@@ -850,19 +947,8 @@ function registerCampaignHandlers(ctx: AppContext): void {
     },
   );
 
-  ipcMain.handle('LOAD_CAMPAIGN', async () => {
-    const { filePaths } = await dialog.showOpenDialog({
-      filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }],
-    });
-    if (filePaths.length === 0) {
-      return null;
-    }
-    const selectedPath = filePaths[0];
-    if (!selectedPath) {
-      return null;
-    }
-    currentCampaignPath = selectedPath;
-
+  /** Reads a .graphium ZIP into a fresh session directory and returns the campaign. */
+  const loadCampaignFile = async (selectedPath: string): Promise<SerializableCampaign> => {
     const zipContent = await fs.readFile(selectedPath);
     const zip = await JSZip.loadAsync(zipContent);
 
@@ -897,7 +983,32 @@ function registerCampaignHandlers(ctx: AppContext): void {
       await restoreCampaignAssets(campaign, assets, path.join(sessionDir, 'assets'));
     }
 
+    currentCampaignPath = selectedPath;
+    noteCampaignPath(selectedPath);
     return campaign;
+  };
+
+  ipcMain.handle('LOAD_CAMPAIGN', async () => {
+    const { filePaths } = await dialog.showOpenDialog({
+      filters: [{ name: 'Graphium Campaign', extensions: ['graphium'] }],
+    });
+    const selectedPath = filePaths[0];
+    if (!selectedPath) {
+      return null;
+    }
+    return loadCampaignFile(selectedPath);
+  });
+
+  // Finder / Open Recent / command-line opens: main owns the path (see queueOsOpenFile)
+  ipcMain.handle('TAKE_PENDING_OPEN_FILE', async (event: IpcMainInvokeEvent) => {
+    const isArchitect =
+      mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents;
+    const filePath = pendingOpenFile;
+    if (!isArchitect || !filePath) {
+      return null;
+    }
+    pendingOpenFile = undefined;
+    return loadCampaignFile(filePath);
   });
 }
 
@@ -1136,21 +1247,11 @@ void app.whenReady().then((): void => {
   // Initialize auto-updater after window is created
   initializeAutoUpdater(mainWindow);
 
-  // Check for cold-start file open (macOS)
-  if (pendingOpenFile && mainWindow) {
-    const fileToOpen = pendingOpenFile;
-    pendingOpenFile = undefined;
-    mainWindow.webContents.on('did-finish-load', () => {
-      mainWindow?.webContents.send('OPEN_FILE_FROM_OS', fileToOpen);
-    });
-  }
-
-  // Check for cold-start file open (Windows/Linux)
+  // Cold-start file open (Windows/Linux pass it on the command line; macOS uses
+  // 'open-file', already queued). The Architect renderer pulls it on mount.
   const argvFile = process.argv.find((arg) => arg.endsWith('.graphium'));
-  if (argvFile && mainWindow) {
-    mainWindow.webContents.on('did-finish-load', () => {
-      mainWindow?.webContents.send('OPEN_FILE_FROM_OS', argvFile);
-    });
+  if (argvFile) {
+    pendingOpenFile = argvFile;
   }
 
   // IPC: create-world-window

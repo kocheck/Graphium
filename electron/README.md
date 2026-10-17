@@ -208,15 +208,24 @@ load creates a new active session.
 
 **Channel types:**
 
-| Channel                | Direction | Type   | Payload             | Response         |
-| ---------------------- | --------- | ------ | ------------------- | ---------------- |
-| `create-world-window`  | R→M       | send   | none                | none             |
-| `SYNC_WORLD_STATE`     | R→M       | send   | SyncAction          | none             |
-| `SYNC_WORLD_STATE`     | M→R       | send   | SyncAction          | none             |
-| `SYNC_FROM_WORLD_VIEW` | R→M       | send   | SyncAction (token)  | none             |
-| `SAVE_ASSET_TEMP`      | R→M       | invoke | ArrayBuffer, string | file:// URL      |
-| `SAVE_CAMPAIGN`        | R→M       | invoke | Campaign            | boolean          |
-| `LOAD_CAMPAIGN`        | R→M       | invoke | none                | Campaign \| null |
+| Channel                  | Direction | Type   | Payload             | Response         |
+| ------------------------ | --------- | ------ | ------------------- | ---------------- |
+| `create-world-window`    | R→M       | send   | none                | none             |
+| `SYNC_WORLD_STATE`       | R→M       | send   | SyncAction          | none             |
+| `SYNC_WORLD_STATE`       | M→R       | send   | SyncAction          | none             |
+| `SYNC_FROM_WORLD_VIEW`   | R→M       | send   | SyncAction (token)  | none             |
+| `SAVE_ASSET_TEMP`        | R→M       | invoke | ArrayBuffer, string | file:// URL      |
+| `SAVE_CAMPAIGN`          | R→M       | invoke | Campaign            | boolean          |
+| `LOAD_CAMPAIGN`          | R→M       | invoke | none                | Campaign \| null |
+| `TAKE_PENDING_OPEN_FILE` | R→M       | invoke | none                | Campaign \| null |
+| `OPEN_FILE_FROM_OS`      | M→R       | send   | none                | none             |
+
+**OS file open** (Finder double-click, Open Recent, Dock drop, Windows/Linux argv): main
+keeps the path in `pendingOpenFile` (`queueOsOpenFile`) and nudges the Architect window with
+`OPEN_FILE_FROM_OS`. The Architect renderer then calls `TAKE_PENDING_OPEN_FILE`, which loads
+the pending file through the same loader as `LOAD_CAMPAIGN`. The renderer never passes a path,
+and it also pulls once on mount so cold-start opens can't race page load. Opened and saved
+campaigns are added to the OS recent-documents list and set as the window's represented file.
 
 **Broadcast pattern:**
 

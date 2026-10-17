@@ -378,7 +378,7 @@ Or edit directly on GitHub.
 
 The workflow creates these installers:
 
-- **macOS**: `Graphium-Mac-0.0.1-Installer.dmg` (~94 MB)
+- **macOS**: `Graphium-Mac-0.0.1-arm64.dmg` and `Graphium-Mac-0.0.1-x64.dmg`, plus matching `.zip` files for auto-update
 - **Windows**: `Graphium-Windows-0.0.1-Setup.exe` (~85 MB)
 - **Linux**: `Graphium-Linux-0.0.1.AppImage` (~95 MB)
 

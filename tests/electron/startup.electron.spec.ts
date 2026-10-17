@@ -36,6 +36,22 @@ test.describe('Electron startup', () => {
     );
   });
 
+  test('should expose a native Edit menu for text-field shortcuts', async ({
+    electronApp,
+    electronWindow,
+  }) => {
+    await electronWindow.waitForLoadState('domcontentloaded');
+
+    const editRoles = await electronApp.evaluate(async ({ Menu }) => {
+      const editMenu = Menu.getApplicationMenu()?.items.find((item) => item.label === 'Edit');
+      return editMenu?.submenu?.items.map((item) => item.role).filter(Boolean) ?? null;
+    });
+
+    expect(editRoles).toEqual(
+      expect.arrayContaining(['undo', 'redo', 'cut', 'copy', 'paste', 'selectall']),
+    );
+  });
+
   test('should register the media protocol', async ({ electronApp }) => {
     const hasMediaProtocol = await electronApp.evaluate(({ protocol }) =>
       protocol.isProtocolHandled('media'),

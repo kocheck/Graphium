@@ -19,11 +19,46 @@
     "owner": "kocheck",
     "repo": "Graphium"
   },
+  // .graphium campaigns: Finder (macOS), Explorer (NSIS), and desktop entry (Linux)
+  "fileAssociations": [
+    {
+      "ext": "graphium",
+      "name": "Graphium Campaign",
+      "description": "Graphium Campaign",
+      "role": "Editor",
+      "rank": "Owner",
+      "mimeType": "application/x-graphium"
+    }
+  ],
+  // Developer ID distribution (not Mac App Store). Signing uses CSC_LINK / CSC_KEY_PASSWORD;
+  // notarization runs only when APPLE_API_KEY, APPLE_API_KEY_ID and APPLE_API_ISSUER are set.
+  // Separate arm64 and x64 builds: half the download of a universal app, and
+  // electron-updater picks the matching zip from latest-mac.yml.
   "mac": {
+    "category": "public.app-category.role-playing-games",
     "target": [
-      "dmg"
+      { "target": "dmg", "arch": ["arm64", "x64"] },
+      // zip is what electron-updater installs on macOS; the dmg is for first install
+      { "target": "zip", "arch": ["arm64", "x64"] }
     ],
-    "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
+    "artifactName": "${productName}-Mac-${version}-${arch}.${ext}",
+    "hardenedRuntime": true,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "notarize": true,
+    "extendInfo": {
+      "UTExportedTypeDeclarations": [
+        {
+          "UTTypeIdentifier": "com.graphium.campaign",
+          "UTTypeDescription": "Graphium Campaign",
+          "UTTypeConformsTo": ["public.data", "public.content"],
+          "UTTypeTagSpecification": {
+            "public.filename-extension": ["graphium"],
+            "public.mime-type": ["application/x-graphium"]
+          }
+        }
+      ]
+    }
   },
   "win": {
     "target": [

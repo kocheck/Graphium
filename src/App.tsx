@@ -28,6 +28,8 @@ import { loadStressFixture, shouldAutoloadStressFixture } from './utils/stressFi
 import { rollForMessage } from './utils/systemMessages';
 import { useWindowType } from './utils/useWindowType';
 
+import type { Campaign } from './store/gameStore';
+
 const WorldStage = lazy(async () => {
   const module = await import('./components/SessionConsole/WorldStage');
   return { default: module.WorldStage };
@@ -320,15 +322,45 @@ function App(): React.JSX.Element {
       }
     };
 
+    const openLoadedCampaign = (campaign: Campaign): void => {
+      // gameStore.loadCampaign silently ignores malformed campaigns; don't report success for them
+      if (!campaign.maps || !campaign.activeMapId) {
+        return;
+      }
+      useGameStore.getState().loadCampaign(campaign);
+      // Add to recent campaigns
+      addRecentCampaignWithPlatform(campaign.id, campaign.name);
+      setViewState('EDITOR');
+      useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
+    };
+
+    // A .graphium file opened from Finder / Open Recent / the command line. Main holds the
+    // path; we only ask it to load whatever is pending (Architect View only).
+    const handleOpenFromOs = async (): Promise<void> => {
+      if (!isArchitectView) {
+        return;
+      }
+      try {
+        const campaign = (await ipcRenderer.invoke('TAKE_PENDING_OPEN_FILE')) as Campaign | null;
+        if (campaign) {
+          openLoadedCampaign(campaign);
+        }
+      } catch (e) {
+        if (import.meta.env.DEV) {
+          console.error(e);
+        }
+        useGameStore
+          .getState()
+          .showToast(rollForMessage('CAMPAIGN_LOAD_FAILED', { error: String(e) }), 'error');
+      }
+    };
+
     const handleLoad = async (): Promise<void> => {
       try {
         const storage = getStorage();
         const campaign = await storage.loadCampaign();
         if (campaign) {
-          useGameStore.getState().loadCampaign(campaign);
-          // Add to recent campaigns
-          addRecentCampaignWithPlatform(campaign.id, campaign.name);
-          useGameStore.getState().showToast(rollForMessage('CAMPAIGN_LOAD_SUCCESS'), 'success');
+          openLoadedCampaign(campaign);
         }
       } catch (e) {
         if (import.meta.env.DEV) {
@@ -371,6 +403,9 @@ function App(): React.JSX.Element {
     const loadWrapper = (): void => {
       void handleLoad();
     };
+    const openFromOsWrapper = (): void => {
+      void handleOpenFromOs();
+    };
 
     ipcRenderer.on('MENU_SAVE_CAMPAIGN', saveWrapper);
     ipcRenderer.on('MENU_LOAD_CAMPAIGN', loadWrapper);
@@ -378,6 +413,10 @@ function App(): React.JSX.Element {
     ipcRenderer.on('MENU_GENERATE_DUNGEON', handleGenerateDungeon);
     ipcRenderer.on('MENU_NEW_CAMPAIGN', handleNewCampaign);
     ipcRenderer.on('MENU_SHOW_ABOUT', handleShowAbout);
+    ipcRenderer.on('OPEN_FILE_FROM_OS', openFromOsWrapper);
+
+    // Cold start: the OS may have handed main a file before this window loaded
+    openFromOsWrapper();
 
     return (): void => {
       ipcRenderer.off('MENU_SAVE_CAMPAIGN', saveWrapper);
@@ -386,8 +425,9 @@ function App(): React.JSX.Element {
       ipcRenderer.off('MENU_GENERATE_DUNGEON', handleGenerateDungeon);
       ipcRenderer.off('MENU_NEW_CAMPAIGN', handleNewCampaign);
       ipcRenderer.off('MENU_SHOW_ABOUT', handleShowAbout);
+      ipcRenderer.off('OPEN_FILE_FROM_OS', openFromOsWrapper);
     };
-  }, []); // Empty dependency array as handlers use getState()
+  }, [isArchitectView]); // Handlers use getState(); window type is fixed for the window's life
 
   // Handler to transition from HOME to EDITOR
   const handleStartEditor = (): void => {

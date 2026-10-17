@@ -1143,6 +1143,31 @@ ipcMain.handle('save-error-report', async (_event, reportContent: string) => {
 
 ---
 
+### 12. TAKE_PENDING_OPEN_FILE / OPEN_FILE_FROM_OS
+
+**Pattern:** Invoke/Handle, plus a Main → Renderer nudge
+**Direction:** Renderer → Main (`TAKE_PENDING_OPEN_FILE`), Main → Architect (`OPEN_FILE_FROM_OS`)
+**Purpose:** Open a `.graphium` file the OS handed to Graphium (Finder double-click, File → Open Recent, drop on the Dock icon, or a Windows/Linux command-line argument)
+
+Main owns the path. `queueOsOpenFile()` stores it in `pendingOpenFile` and, when the
+Architect window exists, sends `OPEN_FILE_FROM_OS` with no payload. The Architect renderer
+(`src/App.tsx`, menu-command effect) then invokes `TAKE_PENDING_OPEN_FILE`, and it also does
+this once on mount so a cold-start open never races page load.
+
+`TAKE_PENDING_OPEN_FILE` takes no arguments, answers only the Architect window's
+`webContents`, consumes the pending path, and returns the same `Campaign | null` as
+`LOAD_CAMPAIGN` (shared `loadCampaignFile` loader). A renderer can never choose a path for
+main to read.
+
+```typescript
+// Renderer (Architect only)
+const campaign = (await window.ipcRenderer.invoke('TAKE_PENDING_OPEN_FILE')) as Campaign | null;
+```
+
+Tested by `tests/electron/openFile.electron.spec.ts`.
+
+---
+
 ## Best Practices
 
 ### 1. Type Safety
