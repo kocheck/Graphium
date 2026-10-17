@@ -288,7 +288,9 @@ public enum BoardPack {
             case .invalid(let reason): skipped.append("\(label): \(reason)")
             case .http(let url):
                 switch await fetch?(url) ?? .failed {
-                case .data(let data) where data.count > httpMaxBytes, .tooLarge:
+                case .tooLarge:
+                    skipped.append("\(label): remote file is larger than 25MB")
+                case .data(let data) where data.count > httpMaxBytes:
                     skipped.append("\(label): remote file is larger than 25MB")
                 case .data(let data):
                     if SessionConsoleAudio.allowedAudioExtensions.contains(url.pathExtension.lowercased()),
