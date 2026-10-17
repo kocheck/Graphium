@@ -127,7 +127,7 @@ the macOS Help menu search and the system shortcuts overlay show them.
 - [ ] Weighted fuzzy command search — Label x3, keywords x2, category x1. (source: src/utils/commandRegistry.ts)
 - [ ] Asset search — Fuzzy subsequence match on library item name and tags. Choosing an asset places a library-linked token at the map centre, or (500, 500) when there is no map. (source: src/utils/fuzzySearch.ts, src/utils/tokenHelpers.ts:19-41, src/components/AssetLibrary/CommandPalette.tsx:159)
 - [ ] Edit asset from palette — An edit button on an asset result opens TokenMetadataEditor. (source: src/components/AssetLibrary/CommandPalette.tsx:70-71, 406)
-- [ ] Also opened by the Sidebar Library "Place" button. (source: src/components/Sidebar.tsx:378-387)
+- [ ] Also opened by the Sidebar Library "Place" button. (source: src/components/Sidebar.tsx:379-387)
 
 **Native mapping:** Use a SwiftUI sheet or an `NSPanel` floating palette with a `List` and
 `.searchable`. Commands are best modelled as one `[Command]` source that also drives the menus.
@@ -222,8 +222,8 @@ reimplemented IPC meter.
 ### 2.1 Sidebar (left, Architect only)
 
 - [ ] Header — Shows the campaign name (truncated, with the full name as a tooltip) and a collapse/expand button (w-64 to w-16). (source: src/components/Sidebar.tsx:268-295)
-- [ ] MAPS section (collapsible) — Maps sorted alphabetically. Clicking switches maps. The active map shows `aria-current`. A hover gear opens Map Settings in edit mode. A "New Map" button opens Map Settings in create mode. (source: src/components/Sidebar.tsx:303-368)
-- [ ] Door Controls section — Only shown when doors exist. Offers "Open all unlocked doors", "Close all open doors", and "Unlock all" (only when any door is locked). (source: src/components/DoorControls.tsx:34-48, 75-120, src/components/Sidebar.tsx:375)
+- [ ] MAPS section (collapsible) — Maps sorted alphabetically. Clicking switches maps. The active map shows `aria-current`. A hover gear opens Map Settings in edit mode. A "New Map" button opens Map Settings in create mode. (source: src/components/Sidebar.tsx:302-368)
+- [ ] Door Controls section — Only shown when doors exist. Offers "Open all unlocked doors", "Close all open doors", and "Unlock all" (only when any door is locked). (source: src/components/DoorControls.tsx:34-48, 75-120, src/components/Sidebar.tsx:373)
 - [ ] LIBRARY section — "Place" (opens the command palette), "Add" (pick an image, process it as a TOKEN, then show the Add to Library dialog), "Manage library" (opens Library Manager). (source: src/components/Sidebar.tsx:376-428, 213-262)
 - [ ] Quick Token Sidebar — "Recent History" (last 3 unique library tokens used on this map) and "Party Tokens" (a generic placeholder plus up to 5 PC library tokens, deduped against recents). Every item can be dragged onto the canvas. (source: src/components/QuickTokenSidebar.tsx:1-168, src/utils/tokenUtils.ts)
 - [ ] Custom drag image (64x64) when dragging a library token. (source: src/components/Sidebar.tsx:174-210)
@@ -250,10 +250,10 @@ touch-bar-like floating HUD is optional.
 
 - [ ] Title — "Token Name" for a single token, or "N Tokens Selected". There is a compact read-only summary (Type, Vision) with an Edit button and a close button. (source: src/components/TokenInspector.tsx:205-250)
 - [ ] Name field — The placeholder reads "Multiple tokens" when several are selected. Edits apply to every selected token. (source: src/components/TokenInspector.tsx:145-150, 263-280)
-- [ ] Type — PC/NPC toggle. Hint: "Only PC tokens emit vision for Fog of War". (source: src/components/TokenInspector.tsx:152-157, 284-343)
-- [ ] Vision radius — Presets 0, 30, 60 and 120 ft, plus a number field from 0 to 300 in steps of 5. Applies to every selected token. (source: src/components/TokenInspector.tsx:159-164, 345-380)
-- [ ] "Save to library" (single, library-linked token) — Writes the name, type and vision back as library defaults. (source: src/components/TokenInspector.tsx:166-203, 382-410)
-- [ ] Read-only details — Scale (for example "1x") and rounded position. (source: src/components/TokenInspector.tsx:411-450)
+- [ ] Type — PC/NPC toggle. Hint: "Only PC tokens emit vision for Fog of War". (source: src/components/TokenInspector.tsx:152-157, 289-343)
+- [ ] Vision radius — Presets 0, 30, 60 and 120 ft, plus a number field from 0 to 300 in steps of 5. Applies to every selected token. (source: src/components/TokenInspector.tsx:159-164, 350-398)
+- [ ] "Save to library" (single, library-linked token) — Writes the name, type and vision back as library defaults. (source: src/components/TokenInspector.tsx:166-203, 400-430)
+- [ ] Read-only details — Scale (for example "1x") and rounded position. (source: src/components/TokenInspector.tsx:431-450)
 - [ ] Prototype/instance resolution — Each token property falls back to the linked library item's defaults (name, type, visionRadius, scale, movementSpeed). (source: src/store/gameStore.ts:25-62, src/hooks/useTokenData.ts)
 - [ ] Not editable anywhere in the UI: per-token `movementSpeed` (always the 30 ft default unless a library default sets it), token rotation, and explicit numeric scale. (source: src/components/Canvas/OverlayLayer.tsx:131, src/hooks/useTokenData.ts)
 
@@ -294,7 +294,7 @@ GraphiumCore.
 
 ### 3.2 Map background
 
-- [ ] Import from the Map Settings sheet with "Upload". The image is resized to at most 4096 px, converted to WebP at 85% in a Web Worker, and placed at (0,0) with scale 1. (source: src/components/MapSettingsSheet.tsx:113-180, src/utils/AssetProcessor.ts:1-110, src/utils/imageMaxDimensions.ts)
+- [ ] Import from the Map Settings sheet with "Upload". The image is resized to at most 4096 px, converted to WebP at 85% in a Web Worker, and placed at (0,0) with scale 1. (source: src/components/MapSettingsSheet.tsx:113-180, 275-296, src/utils/AssetProcessor.ts:1-110, src/utils/imageMaxDimensions.ts)
 - [ ] Upload automatically enters calibration mode. In create mode the image is held until "Create Map". (source: src/components/MapSettingsSheet.tsx:155-165, 183-210)
 - [ ] Calibration — "Draw a square on the map that represents exactly one grid cell." The map scales so that box equals the grid size, then offsets so the box aligns to grid lines. Boxes of 5 px or less are ignored. Square grids only (disabled for hex/iso, with a tooltip). Has a Cancel button. The sheet becomes non-modal while calibrating. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:275-286, 463-474, 576-607, src/components/MapSettingsSheet.tsx:296-335, 243)
 - [ ] Danger Zone "Reset Map Position & Scale" (edit mode) — Asks for confirmation, then resets to (0,0) at scale 1. (source: src/components/MapSettingsSheet.tsx:223-232, 418-430)
@@ -459,7 +459,7 @@ at 25%) as a pattern layer.
 
 ### 4.3 Sync model
 
-- [ ] The Architect is the producer. It subscribes to store changes, diffs them into delta actions (TOKEN*ADD/UPDATE/REMOVE, TOKEN_DRAG*_, DRAWING\__, DOOR*\*, STAIRS*\*, MAP_UPDATE, GRID_UPDATE, EXPLORED_UPDATE, MEASUREMENT_UPDATE, STAGE_UPDATE, AUDIO_UPDATE, SFX_FIRE, LIBRARY_UPDATE), throttles them to 32 ms, and switches to FULL_SYNC above 20 actions. (source: src/components/SyncManager.tsx:127-290, 472, src/utils/syncUtils.ts:136-240)
+- [ ] The Architect is the producer. It subscribes to store changes, diffs them into delta actions (TOKEN*ADD/UPDATE/REMOVE, TOKEN_DRAG*\_, DRAWING\_\_, DOOR*\*, STAIRS*\*, MAP_UPDATE, GRID_UPDATE, EXPLORED_UPDATE, MEASUREMENT_UPDATE, STAGE_UPDATE, AUDIO_UPDATE, SFX_FIRE, LIBRARY_UPDATE), throttles them to 32 ms, and switches to FULL_SYNC above 20 actions. (source: src/components/SyncManager.tsx:127-290, 472, src/utils/syncUtils.ts:136-240)
 - [ ] On open, World View sends `REQUEST_INITIAL_STATE`. The Architect replies with FULL_SYNC (tokens, library, drawings, doors, stairs, grid, map, explored regions, daylight, measurement, session runtime). (source: src/components/SyncManager.tsx:298-304, 344-366, electron/main.ts:1160-1164, docs/features/world-view-sync-fix.md)
 - [ ] Switching maps on the Architect updates World View, which is covered by the pause overlay while paused. (source: src/components/LoadingOverlay.tsx:1-60)
 
@@ -621,7 +621,7 @@ board. Use `.accessibilityLabel` on every SwiftUI icon button.
 
 Each item lists the decision and the reason.
 
-- **IPC sync layer** (`SyncManager`, `syncUtils` deltas/FULL_SYNC/throttle, `REQUEST_INITIAL_STATE`, `SYNC_WORLD_STATE`, `SYNC_FROM_WORLD_VIEW`, `rafSync`, `syncStamp`). _Drop._ Both windows share one in-process model. Keep only the rule that player input may change token positions and nothing else, as an API boundary. (source: src/components/SyncManager.tsx, src/utils/syncUtils.ts, electron/main.ts:1156-1200)
+- **IPC sync layer** (`SyncManager`, `syncUtils` deltas/FULL*SYNC/throttle, `REQUEST_INITIAL_STATE`, `SYNC_WORLD_STATE`, `SYNC_FROM_WORLD_VIEW`, `rafSync`, `syncStamp`). \_Drop.* Both windows share one in-process model. Keep only the rule that player input may change token positions and nothing else, as an API boundary. (source: src/components/SyncManager.tsx, src/utils/syncUtils.ts, electron/main.ts:1156-1200)
 - **BroadcastChannel sync and the web `?type=world` new tab.** _Drop._ This is the web equivalent of IPC. (source: src/components/SyncManager.tsx:81-82, src/App.tsx:600-601)
 - **Main-process pause relay** (`TOGGLE_PAUSE`, `GET_PAUSE_STATE`, `PAUSE_STATE_CHANGED`) and **theme IPC** (`get-theme-state`, `set-theme-mode`, `themeAPI`). _Drop._ Use shared observable state and `NSApp.appearance`. (source: electron/main.ts:1029-1046, electron/preload.ts:212)
 - **electron-updater / `autoUpdater` preload API.** _Replace with Sparkle 2._ (source: electron/autoUpdater.ts, electron/preload.ts:277)

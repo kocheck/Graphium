@@ -5,13 +5,18 @@ import UniformTypeIdentifiers
 extension UTType {
     /// Native package format (see GraphiumCore.CampaignPackage). Declared in Info.plist.
     static let graphiumCampaign = UTType(exportedAs: "com.graphium.campaign-package")
+    /// The Electron app's `.graphium` ZIP. Opened through LegacyImporter; never written.
+    static let legacyGraphium = UTType(importedAs: "com.graphium.campaign")
 }
 
 /// One open campaign. Both the Architect (DM) window and the World View window
 /// observe the same instance, so there is no state sync layer: players see
 /// whatever this object holds.
 final class CampaignDocument: ReferenceFileDocument {
-    static var readableContentTypes: [UTType] { [.graphiumCampaign] }
+    static var readableContentTypes: [UTType] { [.graphiumCampaign, .legacyGraphium] }
+    // Legacy files aren't writable, so the first save of an imported campaign
+    // asks for a new .graphiumcampaign location and leaves the original untouched.
+    static var writableContentTypes: [UTType] { [.graphiumCampaign] }
 
     @Published var campaign: Campaign
     /// Asset bytes live outside `campaign` so undo snapshots stay small.
@@ -27,6 +32,16 @@ final class CampaignDocument: ReferenceFileDocument {
     }
 
     required init(configuration: ReadConfiguration) throws {
+        if configuration.contentType.conforms(to: .legacyGraphium) {
+            guard let data = configuration.file.regularFileContents else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            let imported = try LegacyImporter.importArchive(data)
+            self.campaign = imported.package.campaign
+            self.assets = imported.package.assets
+            DocumentRegistry.shared.register(self)
+            return
+        }
         let root = configuration.file
         let children = root.fileWrappers ?? [:]
         let manifest = children[CampaignPackage.manifestFileName]?.regularFileContents

@@ -15,7 +15,7 @@ final class MapCanvasNSView: NSView {
         NSColor.textBackgroundColor.setFill()
         dirtyRect.fill()
         guard let map, let context = NSGraphicsContext.current?.cgContext else { return }
-        drawGrid(cellSize: map.grid.cellSize, in: context)
+        drawGrid(cellSize: map.gridSize, in: context)
     }
 
     private func drawGrid(cellSize: Double, in context: CGContext) {

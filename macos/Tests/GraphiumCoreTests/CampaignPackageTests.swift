@@ -8,7 +8,9 @@ final class CampaignPackageTests: XCTestCase {
         XCTAssertEqual(campaign.name, "New Campaign")
         XCTAssertEqual(campaign.maps.count, 1)
         XCTAssertEqual(campaign.activeMap.name, "Map 1")
-        XCTAssertEqual(campaign.activeMap.grid.cellSize, 50)
+        XCTAssertEqual(campaign.activeMap.gridSize, 50)
+        XCTAssertEqual(campaign.activeMap.gridType, .lines)
+        XCTAssertEqual(campaign.sessionConsole.stage.title, "New Campaign")
     }
 
     func testAddMapAppendsAndActivates() {

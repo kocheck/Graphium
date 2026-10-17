@@ -44,12 +44,22 @@ targets:
             LSHandlerRank: Owner
             LSTypeIsPackage: true
             LSItemContentTypes: [com.graphium.campaign-package]
+          - CFBundleTypeName: Graphium Campaign (Legacy)
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [com.graphium.campaign]
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: com.graphium.campaign-package
             UTTypeDescription: Graphium Campaign
             UTTypeConformsTo: [com.apple.package, public.content]
             UTTypeTagSpecification:
               public.filename-extension: [graphiumcampaign]
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.graphium.campaign
+            UTTypeDescription: Graphium Campaign (Legacy)
+            UTTypeConformsTo: [public.data, public.content]
+            UTTypeTagSpecification:
+              public.filename-extension: [graphium]
 schemes:
   Graphium:
     build:

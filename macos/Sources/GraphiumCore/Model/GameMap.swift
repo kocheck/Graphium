@@ -1,0 +1,130 @@
+import Foundation
+
+/// Grid style. LINES/DOTS/HIDDEN share square geometry (visual style only);
+/// HEXAGONAL is flat-top hex; ISOMETRIC is diamond. (CORE_SPEC §1.3)
+public enum GridType: String, Codable, CaseIterable, Sendable {
+    case lines = "LINES"
+    case dots = "DOTS"
+    case hidden = "HIDDEN"
+    case hexagonal = "HEXAGONAL"
+    case isometric = "ISOMETRIC"
+}
+
+/// One map: background, grid, tokens, drawings, doors, stairs, explored fog.
+/// (TS `MapData`, CORE_SPEC §1.3.) Decoding applies the TS `loadCampaign`
+/// fallbacks for every field, so older files load.
+public struct GameMap: Codable, Equatable, Identifiable, Sendable {
+    public static let defaultGridSize = 50.0
+    public static let defaultGridColor = "#222222"
+    /// Oldest explored regions are dropped beyond this (TS MAX_EXPLORED_REGIONS).
+    public static let maxExploredRegions = 2000
+
+    public var id: String
+    public var name: String
+    public var tokens: [Token]
+    public var drawings: [Drawing]
+    public var doors: [Door]
+    public var stairs: [Stairs]
+    /// Background image; TS key `map`.
+    public var background: MapBackground?
+    /// Pixels per cell.
+    public var gridSize: Double
+    public var gridType: GridType
+    /// Hex colour string, e.g. `#222222`.
+    public var gridColor: String
+    public var exploredRegions: [ExploredRegion]
+    public var isDaylightMode: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, tokens, drawings, doors, stairs, gridSize, gridType, gridColor
+        case exploredRegions, isDaylightMode
+        case background = "map"
+    }
+
+    public init(
+        id: String = newID(),
+        name: String = "New Map",
+        tokens: [Token] = [],
+        drawings: [Drawing] = [],
+        doors: [Door] = [],
+        stairs: [Stairs] = [],
+        background: MapBackground? = nil,
+        gridSize: Double = GameMap.defaultGridSize,
+        gridType: GridType = .lines,
+        gridColor: String = GameMap.defaultGridColor,
+        exploredRegions: [ExploredRegion] = [],
+        isDaylightMode: Bool = false
+    ) {
+        self.id = id
+        self.name = name
+        self.tokens = tokens
+        self.drawings = drawings
+        self.doors = doors
+        self.stairs = stairs
+        self.background = background
+        self.gridSize = gridSize
+        self.gridType = gridType
+        self.gridColor = gridColor
+        self.exploredRegions = exploredRegions
+        self.isDaylightMode = isDaylightMode
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? "New Map"
+        tokens = try c.decodeIfPresent([Token].self, forKey: .tokens) ?? []
+        drawings = try c.decodeIfPresent([Drawing].self, forKey: .drawings) ?? []
+        doors = try c.decodeIfPresent([Door].self, forKey: .doors) ?? []
+        stairs = try c.decodeIfPresent([Stairs].self, forKey: .stairs) ?? []
+        background = try c.decodeIfPresent(MapBackground.self, forKey: .background)
+        // TS uses `|| 50`: a stored 0 also becomes 50.
+        let size = try c.decodeIfPresent(Double.self, forKey: .gridSize) ?? 0
+        gridSize = size > 0 ? size : Self.defaultGridSize
+        gridType = try c.decodeIfPresent(GridType.self, forKey: .gridType) ?? .lines
+        gridColor = try c.decodeIfPresent(String.self, forKey: .gridColor) ?? Self.defaultGridColor
+        exploredRegions = try c.decodeIfPresent([ExploredRegion].self, forKey: .exploredRegions) ?? []
+        isDaylightMode = try c.decodeIfPresent(Bool.self, forKey: .isDaylightMode) ?? false
+    }
+
+    /// Appends an explored region, dropping the oldest beyond the cap.
+    public mutating func addExploredRegion(_ region: ExploredRegion) {
+        exploredRegions.append(region)
+        if exploredRegions.count > Self.maxExploredRegions {
+            exploredRegions.removeFirst(exploredRegions.count - Self.maxExploredRegions)
+        }
+    }
+}
+
+/// Background image placement (TS `MapConfig`, CORE_SPEC §1.6).
+public struct MapBackground: Codable, Equatable, Sendable {
+    /// Asset reference (see AssetReference).
+    public var src: String
+    public var x: Double
+    public var y: Double
+    /// Natural pixel size of the stored image (≤ 4096 on import).
+    public var width: Double
+    public var height: Double
+    public var scale: Double
+
+    public init(src: String, x: Double = 0, y: Double = 0, width: Double, height: Double, scale: Double = 1) {
+        self.src = src
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.scale = scale
+    }
+}
+
+/// One explored-fog polygon (TS `ExploredRegion`, CORE_SPEC §1.9).
+public struct ExploredRegion: Codable, Equatable, Sendable {
+    public var points: [Point2D]
+    /// Milliseconds since the Unix epoch.
+    public var timestamp: Double
+
+    public init(points: [Point2D], timestamp: Double) {
+        self.points = points
+        self.timestamp = timestamp
+    }
+}
