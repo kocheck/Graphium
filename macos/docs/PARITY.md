@@ -25,13 +25,13 @@ code as of the `claude/swift-macos` branch.
 
 - [ ] Architect window — The main DM window. It has the full UI (sidebar, toolbar, inspector, canvas) and is the single source of truth for state. (source: electron/main.ts:335, src/App.tsx:126)
 - [ ] Architect window bounds persistence — Window size and position are saved (debounced 400 ms on resize/move, and on close) and restored on launch. The default size is 1200x800. (source: electron/main.ts:336-365)
-- [ ] World View window — A second window loads the same app with `?type=world`. It renders only the canvas plus player-safe overlays. (source: electron/main.ts:410-430, src/utils/useWindowType.ts)
-- [ ] World View singleton — Opening World View while it is already open focuses the existing window instead of creating a second one. (source: electron/main.ts:412-415)
+- [x] World View window — A second window loads the same app with `?type=world`. It renders only the canvas plus player-safe overlays. (source: electron/main.ts:410-430, src/utils/useWindowType.ts)
+- [x] World View singleton — Opening World View while it is already open focuses the existing window instead of creating a second one. (source: electron/main.ts:412-415)
 - [ ] World View opens from: menu View > World View (Projector) `Cmd+Shift+W`, the command palette "Launch World View Window", and the mobile toolbar "More" menu. The desktop toolbar has no World View button. (source: electron/main.ts:269-273, src/utils/commandRegistry.ts:125, src/components/MobileToolbar.tsx:84)
 - [ ] World View skips the home screen and always starts in the editor. (source: src/App.tsx:135)
-- [ ] macOS app lifecycle — Closing every window does not quit the app on macOS. Clicking the Dock icon re-creates the main window. (source: electron/main.ts:435-449)
+- [x] macOS app lifecycle — Closing every window does not quit the app on macOS. Clicking the Dock icon re-creates the main window. (source: electron/main.ts:435-449)
 - [ ] Single instance — A second launch focuses the existing window and forwards any `.graphium` path in argv. (source: electron/main.ts:477-496)
-- [ ] Open from Finder **(gap)** — `open-file` and argv paths are sent as `OPEN_FILE_FROM_OS`, but no renderer code listens and there is no `fileAssociations` entry in electron-builder.json5. [Intended: double-clicking a `.graphium` file opens it.] (source: electron/main.ts:452-474, 1139-1154)
+- [x] Open from Finder **(gap)** — `open-file` and argv paths are sent as `OPEN_FILE_FROM_OS`, but no renderer code listens and there is no `fileAssociations` entry in electron-builder.json5. [Intended: double-clicking a `.graphium` file opens it.] (source: electron/main.ts:452-474, 1139-1154)
 - [ ] Quit cleanup — Before quitting, the app waits for in-flight saves and autosaves, then deletes `temp_assets/` and every session folder except the active one. (source: electron/main.ts:1219-1253, electron/campaignWriteGate.ts)
 
 **Native mapping:** Use a `DocumentGroup` (or `NSDocument`) for the Architect window, which gives
@@ -199,8 +199,8 @@ with Any/Dark variants. World View can keep its own fixed palette.
 
 ### 1.12 Pause state ("Blank the projector")
 
-- [ ] A global pause flag lives in the main process. It persists across map switches and starts unpaused on launch. Toggling it broadcasts `PAUSE_STATE_CHANGED` to both windows. (source: electron/main.ts:144-145, 1035-1046, src/components/PauseManager.tsx:75-101)
-- [ ] Toolbar Play/Pause button — Red when paused, green when running. Tooltips read "Resume - Players will see the map" and "Pause - Hide map from players". (source: src/components/Toolbar.tsx:72-90)
+- [x] A global pause flag lives in the main process. It persists across map switches and starts unpaused on launch. Toggling it broadcasts `PAUSE_STATE_CHANGED` to both windows. (source: electron/main.ts:144-145, 1035-1046, src/components/PauseManager.tsx:75-101)
+- [x] Toolbar Play/Pause button — Red when paused, green when running. Tooltips read "Resume - Players will see the map" and "Pause - Hide map from players". (source: src/components/Toolbar.tsx:72-90)
 - [ ] Also available from the command palette (`world-view-toggle-pause`) and the mobile toolbar. (source: src/utils/commandRegistry.ts:117, src/components/MobileToolbar.tsx)
 - [ ] An error toast appears if the toggle fails. (source: src/App.tsx:163-175)
 
@@ -445,7 +445,7 @@ at 25%) as a pattern layer.
 - [ ] The map background, paper noise, the grid in the map's grid colour, markers, wall lines (black, 6 px), doors with high-legibility styling, stairs, tokens with name labels, fog of war (unless Daylight mode is on), and the DM's measurement when broadcasting is on. (source: src/components/Canvas/CanvasManager.tsx:1201-1356, src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/DoorShape.tsx:182-217)
 - [ ] Not shown: the sidebar, toolbar, inspector, palette, resource monitor, transformer handles, hover-cell highlight, door preview and movement range. (source: src/App.tsx:516-618, src/components/Canvas/OverlayLayer.tsx:33, 119)
 - [ ] NPCs outside party vision are hidden (see 3.7).
-- [ ] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
+- [x] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
 - [ ] Minimap (see 3.12).
 - [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2)
 - [ ] Session Console stage — A full-window "plate" artwork with an optional frame, title and subtitle that crossfades between plates (no fade under reduced motion). It covers the map while `stageVisible` is true. (source: src/components/SessionConsole/WorldStage.tsx:41-140)
@@ -453,15 +453,15 @@ at 25%) as a pattern layer.
 
 ### 4.2 What players can do
 
-- [ ] Pan and zoom independently: wheel, Ctrl+wheel, Space-drag, pinch, two-finger pan, `+`/`-`. (source: src/components/Canvas/CanvasManager.tsx:92-101)
-- [ ] Select and drag visible tokens. Only x/y positions are sent back. The main process sanitises every World-to-Architect message down to `TOKEN_UPDATE {x,y}` or a single-level `BATCH`. Players cannot change any other property. Hidden NPCs cannot be grabbed. (source: src/utils/worldViewTokenSync.ts, electron/main.ts:1167-1173, src/components/SyncManager.tsx:307-330, 370-410)
+- [x] Pan and zoom independently: wheel, Ctrl+wheel, Space-drag, pinch, two-finger pan, `+`/`-`. (source: src/components/Canvas/CanvasManager.tsx:92-101)
+- [x] Select and drag visible tokens. Only x/y positions are sent back. The main process sanitises every World-to-Architect message down to `TOKEN_UPDATE {x,y}` or a single-level `BATCH`. Players cannot change any other property. Hidden NPCs cannot be grabbed. (source: src/utils/worldViewTokenSync.ts, electron/main.ts:1167-1173, src/components/SyncManager.tsx:307-330, 370-410)
 - [ ] Blocked: drawing tools, file drops, calibration, transform (scale/rotate), Alt-duplicate, delete, door toggling and door context menu, measurement, grid hotkeys, and tool hotkeys. `?` still opens About. (source: src/components/Canvas/CanvasManager.tsx:92-101, 823-836, src/components/Canvas/hooks/useCanvasInteraction.ts:248-305, src/components/Canvas/DoorShape.tsx:102-122, src/App.tsx:243-246)
 
 ### 4.3 Sync model
 
 - [ ] The Architect is the producer. It subscribes to store changes, diffs them into delta actions (TOKEN*ADD/UPDATE/REMOVE, TOKEN_DRAG*\_, DRAWING\_\_, DOOR*\*, STAIRS*\*, MAP_UPDATE, GRID_UPDATE, EXPLORED_UPDATE, MEASUREMENT_UPDATE, STAGE_UPDATE, AUDIO_UPDATE, SFX_FIRE, LIBRARY_UPDATE), throttles them to 32 ms, and switches to FULL_SYNC above 20 actions. (source: src/components/SyncManager.tsx:127-290, 472, src/utils/syncUtils.ts:136-240)
 - [ ] On open, World View sends `REQUEST_INITIAL_STATE`. The Architect replies with FULL_SYNC (tokens, library, drawings, doors, stairs, grid, map, explored regions, daylight, measurement, session runtime). (source: src/components/SyncManager.tsx:298-304, 344-366, electron/main.ts:1160-1164, docs/features/world-view-sync-fix.md)
-- [ ] Switching maps on the Architect updates World View, which is covered by the pause overlay while paused. (source: src/components/LoadingOverlay.tsx:1-60)
+- [x] Switching maps on the Architect updates World View, which is covered by the pause overlay while paused. (source: src/components/LoadingOverlay.tsx:1-60)
 
 **Native mapping:** Delete the whole sync layer. Both windows observe the same
 `@Observable CampaignSession` in-process. World View is a different SwiftUI view on the same
@@ -471,7 +471,7 @@ player-originated edits may only change token positions as an explicit API bound
 
 ### 4.4 Loading / pause overlay
 
-- [ ] While paused, World View shows a full-screen black overlay at 90% with an 8 px backdrop blur, a spinner, "Please Wait", and a random flavour line (`LOADING_PAUSE_OVERLAY`). It sits above everything, including the minimap. It is never shown in the Architect. (source: src/components/LoadingOverlay.tsx:1-113, 87, src/App.tsx:508-509)
+- [x] While paused, World View shows a full-screen black overlay at 90% with an 8 px backdrop blur, a spinner, "Please Wait", and a random flavour line (`LOADING_PAUSE_OVERLAY`). It sits above everything, including the minimap. It is never shown in the Architect. (source: src/components/LoadingOverlay.tsx:1-113, 87, src/App.tsx:508-509)
 
 **Native mapping:** Use a `.overlay` with `.ultraThinMaterial` or a solid black view. For projector
 output, also stop rendering the canvas while paused so nothing leaks during transitions.
