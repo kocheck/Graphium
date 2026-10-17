@@ -6,9 +6,14 @@ import SwiftUI
 struct TokenInspector: View {
     @ObservedObject var document: CampaignDocument
     let selection: Set<String>
+    /// Shows a toast in the Architect window (`isError` picks the style).
+    var notify: (_ message: String, _ isError: Bool) -> Void = { _, _ in }
     @Environment(\.undoManager) private var undoManager
 
     @State private var nameDraft = ""
+    /// What the field was seeded with; an unchanged draft is never written back.
+    @State private var nameOrigin = ""
+    @FocusState private var nameFocused: Bool
     // Collapsible sections, remembered across launches.
     @AppStorage("graphium.inspector.visionExpanded") private var visionExpanded = true
     @AppStorage("graphium.inspector.detailsExpanded") private var detailsExpanded = true
@@ -30,7 +35,11 @@ struct TokenInspector: View {
                 TextField(
                     "Name", text: $nameDraft, prompt: Text(tokens.count > 1 ? "Multiple tokens" : "Token")
                 )
-                .onSubmit { commitName() }
+                .focused($nameFocused)
+                .onSubmit {
+                    commitName(ids: selection)
+                    if tokens.count == 1 { resetDraft() }
+                }
             } header: {
                 Text(tokens.count == 1 ? tokens[0].name : "\(tokens.count) Tokens Selected")
                     .font(.headline)
@@ -87,13 +96,30 @@ struct TokenInspector: View {
         }
         .formStyle(.grouped)
         .onAppear { resetDraft() }
-        .onChange(of: selection) { _, _ in resetDraft() }
+        // A typed name is kept when focus or the selection moves on (TS writes every keystroke).
+        .onChange(of: nameFocused) { _, focused in
+            if !focused { commitName(ids: selection) }
+        }
+        .onChange(of: selection) { old, _ in
+            commitName(ids: old)
+            resetDraft()
+        }
+        // Undo/redo and other windows: follow the tokens' names unless the field is being edited.
+        .onChange(of: tokens.map(\.name)) { _, _ in
+            if !nameFocused { resetDraft() }
+        }
+        .onDisappear { commitName(ids: selection) }
     }
 
-    /// PARITY §2.3: writes the token's values back as library defaults (campaign copy
-    /// and app-wide library), then clears the overrides so the token inherits them.
+    /// PARITY §2.3: writes the token's name, type and vision back as library defaults
+    /// (campaign copy and app-wide library), then clears those overrides so the token
+    /// inherits them. Scale stays a per-token override. One undo step reverts both copies.
     private func saveToLibrary(_ token: ResolvedToken, itemID: String) {
         let tokenID = token.token.id
+        // A name typed but not yet committed is part of what gets saved (TS reads the live field).
+        commitName(ids: selection)
+        let token = selected.first { $0.token.id == tokenID } ?? token
+        let previousName = document.campaign.tokenLibrary.first(where: { $0.id == itemID })?.name ?? token.name
         document.edit("Save to Library", undoManager: undoManager) { campaign in
             guard let index = campaign.tokenLibrary.firstIndex(where: { $0.id == itemID }) else { return }
             campaign.tokenLibrary[index].adoptDefaults(from: token)
@@ -101,23 +127,35 @@ struct TokenInspector: View {
                 campaign.activeMap.tokens[t].name = nil
                 campaign.activeMap.tokens[t].type = nil
                 campaign.activeMap.tokens[t].visionRadius = nil
-                campaign.activeMap.tokens[t].scale = nil
             }
         }
+        resetDraft()
         let store = LibraryStore.shared
-        if var global = store.items.first(where: { $0.id == itemID }) {
+        if let previous = store.items.first(where: { $0.id == itemID }) {
+            var global = previous
             global.adoptDefaults(from: token)
-            try? store.update(global)
+            // The in-memory copy changes even if writing index.json fails, so undo is registered either way.
+            defer { store.registerUndo(restoring: previous, undoManager: undoManager) }
+            do {
+                try store.update(global)
+            } catch {
+                notify("Failed to save to library", true)
+                return
+            }
         }
+        notify("Updated \"\(previousName)\" in library", false)
     }
 
+    /// Seeds the field with the effective name (library-inherited included) for one
+    /// token, or leaves it empty for several (TS).
     private func resetDraft() {
         let tokens = selected
-        nameDraft = tokens.count == 1 ? (tokens[0].token.name ?? "") : ""
+        nameDraft = tokens.count == 1 ? tokens[0].name : ""
+        nameOrigin = nameDraft
     }
 
-    private func update(_ actionName: String, _ change: @escaping (inout Token) -> Void) {
-        let ids = selection
+    private func update(_ actionName: String, ids: Set<String>? = nil, _ change: @escaping (inout Token) -> Void) {
+        let ids = ids ?? selection
         document.edit(actionName, undoManager: undoManager) { campaign in
             for index in campaign.activeMap.tokens.indices where ids.contains(campaign.activeMap.tokens[index].id) {
                 change(&campaign.activeMap.tokens[index])
@@ -125,10 +163,14 @@ struct TokenInspector: View {
         }
     }
 
-    private func commitName() {
+    /// Writes the draft to `ids` if it was edited. An untouched field (including an
+    /// empty multi-selection field) writes nothing.
+    private func commitName(ids: Set<String>) {
+        guard nameDraft != nameOrigin else { return }
+        nameOrigin = nameDraft
         let trimmed = nameDraft.trimmingCharacters(in: .whitespaces)
         // An empty name clears the override, so the library name shows again.
-        update("Rename Token") { $0.name = trimmed.isEmpty ? nil : trimmed }
+        update("Rename Token", ids: ids) { $0.name = trimmed.isEmpty ? nil : trimmed }
     }
 
     private func typeBinding(_ tokens: [ResolvedToken]) -> Binding<CreatureType?> {

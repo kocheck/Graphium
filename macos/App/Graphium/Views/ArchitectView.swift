@@ -93,7 +93,9 @@ struct ArchitectView: View {
                             .padding(8)
                         }
                         if hasSelectedTokens && (inspectorTab == .token || !showingConsole) {
-                            TokenInspector(document: document, selection: selection)
+                            TokenInspector(document: document, selection: selection) { message, isError in
+                                showToast(message, isError ? .error : .success)
+                            }
                         } else {
                             SessionConsolePanel(document: document)
                         }
