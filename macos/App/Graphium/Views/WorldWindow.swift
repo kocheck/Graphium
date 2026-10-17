@@ -170,7 +170,10 @@ private struct WorldView: View {
             document.worldViewsOpen += 1
             audio.apply(document.sessionRuntime, assets: document.assets)
         }
-        .onDisappear { document.worldViewsOpen -= 1 }
+        .onDisappear {
+            document.worldViewsOpen -= 1
+            audio.shutdown()  // nothing may keep playing once the window is gone
+        }
     }
 }
 

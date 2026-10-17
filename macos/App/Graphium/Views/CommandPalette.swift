@@ -8,6 +8,8 @@ struct CommandPalette: View {
     let placeAsset: (TokenLibraryItem) -> Void
     let editAsset: (TokenLibraryItem) -> Void
     @ObservedObject var library = LibraryStore.shared
+    /// Items the open campaign carries are searchable too (PARITY §5.3).
+    @ObservedObject var document: CampaignDocument
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var highlighted = 0
@@ -20,7 +22,7 @@ struct CommandPalette: View {
     /// TS `fuzzySearch`: an empty query lists the whole library, newest first, so
     /// the sidebar's "Place…" opens onto something to place (PARITY §1.5, §2.1).
     private var assets: [TokenLibraryItem] {
-        TokenLibrarySearch.search(library.items, query: query)
+        TokenLibrarySearch.search(document.browsableLibrary.items, query: query)
     }
 
     /// The highlighted row over `actions + assets` (section headers aren't rows); nil when empty.
@@ -77,7 +79,7 @@ struct CommandPalette: View {
                                         dismiss()
                                     } label: {
                                         HStack {
-                                            if let image = library.image(item.thumbnailSrc) {
+                                            if let image = document.libraryThumbnail(item) {
                                                 Image(decorative: image, scale: 1).resizable().scaledToFit().frame(width: 24, height: 24)
                                             }
                                             Text(item.name)

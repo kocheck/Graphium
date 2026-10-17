@@ -15,8 +15,13 @@ final class AssetImageCache: @unchecked Sendable {
         return cache
     }()
 
+    /// The decoded image if it is still cached; never decodes.
+    func cached(named name: String) -> CGImage? {
+        cache.object(forKey: name as NSString)
+    }
+
     func image(named name: String, in assets: [String: Data]) -> CGImage? {
-        if let hit = cache.object(forKey: name as NSString) { return hit }
+        if let hit = cached(named: name) { return hit }
         guard let data = assets[name],
             let source = CGImageSourceCreateWithData(data as CFData, nil),
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
@@ -55,9 +60,20 @@ struct ImportedImage: Sendable {
     }
 
     static func load(from url: URL, kind: ImageKind) throws -> ImportedImage {
-        let name = url.lastPathComponent
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+            throw ImportError.unreadable(url.lastPathComponent)
+        }
+        return try load(source: source, name: url.lastPathComponent, kind: kind)
+    }
+
+    /// The same pipeline for bytes already in memory (board pack plates).
+    static func load(data: Data, name: String, kind: ImageKind) throws -> ImportedImage {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { throw ImportError.unreadable(name) }
+        return try load(source: source, name: name, kind: kind)
+    }
+
+    private static func load(source: CGImageSource, name: String, kind: ImageKind) throws -> ImportedImage {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
             let pixelWidth = properties[kCGImagePropertyPixelWidth] as? Int,
             let pixelHeight = properties[kCGImagePropertyPixelHeight] as? Int
         else { throw ImportError.unreadable(name) }

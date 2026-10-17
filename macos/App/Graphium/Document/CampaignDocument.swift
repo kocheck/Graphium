@@ -37,6 +37,9 @@ final class CampaignDocument: ReferenceFileDocument {
     @Published var worldViewsOpen = 0
     /// Last playback problem reported by a World View.
     @Published var audioError: String?
+    /// Something the DM should know about the file that was just opened (e.g. assets a
+    /// `.graphium` import couldn't find). Shown once by `DocumentNoticeAlert`.
+    @Published var importNotice: String?
     /// The Architect window's undo manager, so World View edits are undoable and
     /// mark the document edited too.
     private weak var lastUndoManager: UndoManager?
@@ -68,6 +71,7 @@ final class CampaignDocument: ReferenceFileDocument {
             self.campaign = imported.package.campaign
             self.assets = imported.package.assets
             self.sessionRuntime = SessionConsoleRuntime(catalog: imported.package.campaign.sessionConsole)
+            self.importNotice = imported.missingAssetsNotice
             DocumentRegistry.shared.register(self)
             return
         }
@@ -80,7 +84,9 @@ final class CampaignDocument: ReferenceFileDocument {
                 assets[name] = data
             }
         }
-        let package = try CampaignPackage(manifest: manifest, assets: assets)
+        var package = try CampaignPackage(manifest: manifest, assets: assets)
+        // Drop orphaned bytes left by earlier sessions; the next save writes the smaller package.
+        package.pruneUnreferencedAssets(keeping: [GenericToken.assetName])
         self.campaign = package.campaign
         self.assets = package.assets
         self.sessionRuntime = SessionConsoleRuntime(catalog: package.campaign.sessionConsole)
@@ -92,30 +98,8 @@ final class CampaignDocument: ReferenceFileDocument {
     }
 
     func fileWrapper(snapshot: CampaignPackage, configuration: WriteConfiguration) throws -> FileWrapper {
-        // Asset names are never reused for different bytes, so an asset already in the
-        // saved package is passed through untouched. Saves and autosaves then rewrite
-        // only campaign.json and new assets, not every image and track.
-        let existing = configuration.existingFile?.fileWrappers?[CampaignPackage.assetsDirectoryName]?.fileWrappers ?? [:]
-        var assetWrappers: [String: FileWrapper] = [:]
-        for (name, data) in snapshot.assets {
-            if let saved = existing[name], saved.isRegularFile,
-                (saved.fileAttributes[FileAttributeKey.size.rawValue] as? NSNumber)?.intValue == data.count
-            {
-                assetWrappers[name] = saved
-                continue
-            }
-            let wrapper = FileWrapper(regularFileWithContents: data)
-            wrapper.preferredFilename = name
-            assetWrappers[name] = wrapper
-        }
-        let manifest = FileWrapper(regularFileWithContents: try snapshot.encodeManifest())
-        manifest.preferredFilename = CampaignPackage.manifestFileName
-        let assetsDir = FileWrapper(directoryWithFileWrappers: assetWrappers)
-        assetsDir.preferredFilename = CampaignPackage.assetsDirectoryName
-        return FileWrapper(directoryWithFileWrappers: [
-            CampaignPackage.manifestFileName: manifest,
-            CampaignPackage.assetsDirectoryName: assetsDir,
-        ])
+        // Saves and autosaves rewrite only campaign.json and new assets (see GraphiumCore).
+        try snapshot.fileWrapper(reusing: configuration.existingFile)
     }
 
     /// Applies an edit and registers its undo. Registering with the window's
@@ -180,6 +164,22 @@ final class CampaignDocument: ReferenceFileDocument {
             document.restore(current, actionName: actionName, undoManager: undoManager)
         }
         undoManager?.setActionName(actionName)
+    }
+}
+
+/// Shows the notice a document recorded while opening, once.
+struct DocumentNoticeAlert: ViewModifier {
+    @ObservedObject var document: CampaignDocument
+
+    func body(content: Content) -> some View {
+        content.alert(
+            "Some Files Are Missing",
+            isPresented: Binding(get: { document.importNotice != nil }, set: { if !$0 { document.importNotice = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(document.importNotice ?? "")
+        }
     }
 }
 

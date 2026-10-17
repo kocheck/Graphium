@@ -30,21 +30,7 @@ extension Campaign {
             apply(&tokenLibrary[i].src)
             apply(&tokenLibrary[i].thumbnailSrc)
         }
-        for s in sessionConsole.imageSets.indices {
-            for i in sessionConsole.imageSets[s].images.indices {
-                apply(&sessionConsole.imageSets[s].images[i].src)
-                apply(&sessionConsole.imageSets[s].images[i].thumbnailSrc)
-            }
-        }
-        for g in sessionConsole.trackGroups.indices {
-            for t in sessionConsole.trackGroups[g].tracks.indices
-            where sessionConsole.trackGroups[g].tracks[t].source == .local {
-                apply(&sessionConsole.trackGroups[g].tracks[t].src)
-            }
-        }
-        for i in sessionConsole.sfx.indices where sessionConsole.sfx[i].kind == .local {
-            apply(&sessionConsole.sfx[i].src)
-        }
+        sessionConsole.rewriteAssetReferences(rewrite)
     }
 
     /// All asset references currently in the campaign.
@@ -53,5 +39,31 @@ extension Campaign {
         var found: [String] = []
         copy.rewriteAssetReferences { found.append($0); return $0 }
         return found
+    }
+}
+
+extension SessionConsoleCatalog {
+    /// The board's asset-bearing fields, in `Campaign.rewriteAssetReferences` order.
+    public mutating func rewriteAssetReferences(_ rewrite: (String) -> String) {
+        func apply(_ src: inout String) {
+            if !src.isEmpty { src = rewrite(src) }
+        }
+        func apply(_ src: inout String?) {
+            if let value = src, !value.isEmpty { src = rewrite(value) }
+        }
+        for s in imageSets.indices {
+            for i in imageSets[s].images.indices {
+                apply(&imageSets[s].images[i].src)
+                apply(&imageSets[s].images[i].thumbnailSrc)
+            }
+        }
+        for g in trackGroups.indices {
+            for t in trackGroups[g].tracks.indices where trackGroups[g].tracks[t].source == .local {
+                apply(&trackGroups[g].tracks[t].src)
+            }
+        }
+        for i in sfx.indices where sfx[i].kind == .local {
+            apply(&sfx[i].src)
+        }
     }
 }

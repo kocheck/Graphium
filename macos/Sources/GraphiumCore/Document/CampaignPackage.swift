@@ -57,6 +57,47 @@ public struct CampaignPackage: Equatable, Sendable {
         self.assets = assets
     }
 
+    /// Removes assets the campaign no longer references (replaced backgrounds, deleted
+    /// tokens, plates and tracks), so a package doesn't grow forever. TS writes only
+    /// referenced assets at save time; the app prunes on open instead, because undo can
+    /// still bring back a reference during a session. `keeping` names survive regardless.
+    /// Returns the removed names, sorted.
+    @discardableResult
+    public mutating func pruneUnreferencedAssets(keeping: Set<String> = []) -> [String] {
+        let referenced = Set(campaign.assetReferences).union(keeping)
+        let removed = assets.keys.filter { !referenced.contains($0) }.sorted()
+        for name in removed { assets[name] = nil }
+        return removed
+    }
+
+    /// The package as a directory `FileWrapper`. Asset names are never reused for
+    /// different bytes, so an asset already in `existing` (the saved package) with the
+    /// same name and byte size is passed through untouched. Saves and autosaves then
+    /// rewrite only campaign.json and new assets, not every image and track.
+    public func fileWrapper(reusing existing: FileWrapper?) throws -> FileWrapper {
+        let saved = existing?.fileWrappers?[Self.assetsDirectoryName]?.fileWrappers ?? [:]
+        var assetWrappers: [String: FileWrapper] = [:]
+        for (name, data) in assets {
+            if let previous = saved[name], previous.isRegularFile,
+                (previous.fileAttributes[FileAttributeKey.size.rawValue] as? NSNumber)?.intValue == data.count
+            {
+                assetWrappers[name] = previous
+                continue
+            }
+            let wrapper = FileWrapper(regularFileWithContents: data)
+            wrapper.preferredFilename = name
+            assetWrappers[name] = wrapper
+        }
+        let manifest = FileWrapper(regularFileWithContents: try encodeManifest())
+        manifest.preferredFilename = Self.manifestFileName
+        let assetsDir = FileWrapper(directoryWithFileWrappers: assetWrappers)
+        assetsDir.preferredFilename = Self.assetsDirectoryName
+        return FileWrapper(directoryWithFileWrappers: [
+            Self.manifestFileName: manifest,
+            Self.assetsDirectoryName: assetsDir,
+        ])
+    }
+
     /// Flat, non-hidden names only, so a crafted package can't point outside `assets/`.
     public static func isValidAssetName(_ name: String) -> Bool {
         !name.isEmpty && !name.hasPrefix(".") && !name.contains("/") && !name.contains("\\")
