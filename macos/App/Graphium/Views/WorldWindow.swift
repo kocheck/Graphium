@@ -60,6 +60,8 @@ private struct WorldView: View {
                     allowsDuplicate: false),
                 hiddenTokenIDs: hidden,
                 fog: fog,
+                isPlayerView: true,
+                measurement: document.broadcastMeasurement,
                 fitRequest: fitRequest
             )
             // Stop showing the map entirely while paused so nothing leaks to the projector.

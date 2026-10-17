@@ -26,6 +26,8 @@ final class CampaignDocument: ReferenceFileDocument {
     let sessionID = UUID()
     /// "Blank the projector": hides the map from players. Session-only, starts unpaused.
     @Published var isPaused = false
+    /// The DM's measurement mirrored to the World View when broadcasting. Transient.
+    @Published var broadcastMeasurement: MeasurementShape?
     /// The Architect window's undo manager, so World View edits are undoable and
     /// mark the document edited too.
     private weak var lastUndoManager: UndoManager?

@@ -14,6 +14,13 @@ struct CanvasEditing {
     var deleteSelection: (() -> Void)?
     /// Image files dropped from Finder at a map point; nil where drops aren't allowed.
     var dropImageFiles: ((_ urls: [URL], _ at: Point2D) -> Void)?
+    /// Architect-only tool edits; nil in the World View.
+    var addDrawing: ((Drawing) -> Void)?
+    var placeDoor: ((Point2D) -> Void)?
+    var doorAction: ((_ doorID: String, DoorAction) -> Void)?
+    var setMeasurement: ((MeasurementShape?) -> Void)?
+    var setTool: ((CanvasTool) -> Void)?
+    var toggleDoorOrientation: (() -> Void)?
 }
 
 /// Fog of war to draw over the map (World View, when not in daylight).
@@ -41,6 +48,13 @@ final class MapCanvasNSView: NSView {
     /// Tokens players must not see or grab (NPCs outside party vision).
     var hiddenTokenIDs: Set<String> = []
     var fog: FogState?
+    /// Player-facing styling (walls black 6px, doors with glow) and no DM overlays.
+    var isPlayerView = false
+    var toolState = ToolState()
+    var measurement: MeasurementShape?
+    var selectedDoorID: String?
+    private var showMovementRange = false
+    private var hoverPoint: Point2D?
     var fitRequest: FitRequest? {
         didSet {
             guard let fitRequest, fitRequest != oldValue else { return }
@@ -57,6 +71,8 @@ final class MapCanvasNSView: NSView {
         case panning
         case movingTokens(ids: [String], primary: String, start: Point2D, current: Point2D, began: Bool)
         case marquee(start: Point2D, current: Point2D, base: Set<String>)
+        case stroke(Drawing)
+        case measuring(origin: Point2D)
     }
 
     private var interaction = Interaction.idle
@@ -94,8 +110,29 @@ final class MapCanvasNSView: NSView {
                     height: background.height * background.scale), context: context)
         }
         drawGrid(map, context: context)
+        var liveStroke: Drawing?
+        if case .stroke(let drawing) = interaction { liveStroke = drawing }
+        drawInk(map.drawings, live: liveStroke, context: context)
+        drawStairs(map.stairs, context: context)
+        drawDoors(map.doors, context: context)
+        if showMovementRange, !isPlayerView, selection.count == 1,
+            let token = map.tokens.first(where: { selection.contains($0.id) })
+        {
+            var position = Point2D(x: token.x, y: token.y)
+            if case .movingTokens(_, _, let start, let current, true) = interaction {
+                position = Point2D(x: position.x + current.x - start.x, y: position.y + current.y - start.y)
+            }
+            let speed = ResolvedToken(token, library: library).movementSpeed
+            drawMovementRange(
+                movementRange(tokenTopLeft: position, speedFeet: speed, gridSize: map.gridSize, gridType: map.gridType),
+                map: map, context: context)
+        }
         drawTokens(map, context: context)
         if let fog { drawFog(fog, context: context) }
+        if let measurement { drawMeasurement(measurement, gridSize: map.gridSize, context: context) }
+        if !isPlayerView, editing != nil, toolState.tool == .door, let hoverPoint {
+            drawDoorGhost(at: hoverPoint, map: map, context: context)
+        }
         if case .marquee(let start, let current, _) = interaction {
             let rect = CGRect(bounds: Bounds(corner: start, corner: current))
             context.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor)
@@ -313,6 +350,10 @@ final class MapCanvasNSView: NSView {
         }
         let point = mapLocation(of: event)
         let shift = event.modifierFlags.contains(.shift)
+        if editing.addDrawing != nil, toolState.tool != .select {
+            beginToolInteraction(at: point, map: map, event: event)
+            return
+        }
         if let hit = map.token(at: point, library: library), !hiddenTokenIDs.contains(hit.id) {
             if shift {
                 var next = selection
@@ -327,10 +368,52 @@ final class MapCanvasNSView: NSView {
             }
             let ordered = map.tokens.map(\.id).filter { dragged.contains($0) }
             interaction = .movingTokens(ids: ordered, primary: hit.id, start: point, current: point, began: false)
+        } else if let door = map.door(at: point), let doorAction = editing.doorAction {
+            // Clicking a door opens or closes it (locked doors stay put).
+            selectedDoorID = door.id
+            doorAction(door.id, .toggle)
         } else {
             let base = shift ? selection : []
             if !shift { editing.setSelection([]) }
+            selectedDoorID = nil
             interaction = .marquee(start: point, current: point, base: base)
+        }
+    }
+
+    private func pressure(of event: NSEvent) -> Double {
+        // Tablets report real pressure; mouse input uses 0.5 (TS).
+        event.subtype == .tabletPoint ? Double(event.pressure) : 0.5
+    }
+
+    private func beginToolInteraction(at point: Point2D, map: GameMap, event: NSEvent) {
+        guard let editing else { return }
+        switch toolState.tool {
+        case .select:
+            break
+        case .marker:
+            interaction = .stroke(
+                Drawing(
+                    tool: .marker, points: [point.x, point.y], color: toolState.markerColor,
+                    size: StrokeDefaults.markerSize, pressures: [pressure(of: event)]))
+        case .eraser:
+            if let door = map.door(at: point) {
+                editing.doorAction?(door.id, .delete)  // the eraser deletes doors it touches
+                return
+            }
+            interaction = .stroke(
+                Drawing(
+                    tool: .eraser, points: [point.x, point.y], color: StrokeDefaults.eraserColor,
+                    size: StrokeDefaults.eraserSize))
+        case .wall:
+            interaction = .stroke(
+                Drawing(
+                    tool: .wall, points: [point.x, point.y], color: StrokeDefaults.wallColor,
+                    size: StrokeDefaults.wallSize))
+        case .door:
+            editing.placeDoor?(point)
+        case .measure:
+            interaction = .measuring(origin: point)
+            editing.setMeasurement?(MeasurementShape(mode: toolState.measureMode, origin: point, pointer: point))
         }
     }
 
@@ -346,6 +429,20 @@ final class MapCanvasNSView: NSView {
             interaction = .movingTokens(ids: ids, primary: primary, start: start, current: point, began: moved)
             if moved { NSCursor.closedHand.set() }
             needsDisplay = true
+        case .stroke(var drawing):
+            var point = mapLocation(of: event)
+            // Shift locks the segment to the dominant axis from the stroke's start.
+            if event.modifierFlags.contains(.shift), drawing.points.count >= 2 {
+                let start = Point2D(x: drawing.points[0], y: drawing.points[1])
+                if abs(point.x - start.x) > abs(point.y - start.y) { point.y = start.y } else { point.x = start.x }
+            }
+            drawing.points += [point.x, point.y]
+            if drawing.pressures != nil { drawing.pressures?.append(pressure(of: event)) }
+            interaction = .stroke(drawing)
+            needsDisplay = true
+        case .measuring(let origin):
+            editing?.setMeasurement?(
+                MeasurementShape(mode: toolState.measureMode, origin: origin, pointer: mapLocation(of: event)))
         case .marquee(let start, _, let base):
             let point = mapLocation(of: event)
             interaction = .marquee(start: start, current: point, base: base)
@@ -362,9 +459,61 @@ final class MapCanvasNSView: NSView {
             let duplicate = event.modifierFlags.contains(.option) && editing?.allowsDuplicate == true
             editing?.dropTokens(ids, primary, current.x - start.x, current.y - start.y, duplicate)
         }
+        if case .stroke(let drawing) = interaction {
+            editing?.addDrawing?(drawing)
+        }
+        // A measurement stays up after release until Esc or a tool change (TS).
         interaction = .idle
         (spaceHeld ? NSCursor.openHand : NSCursor.arrow).set()
         needsDisplay = true
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(
+            NSTrackingArea(
+                rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                owner: self))
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        guard toolState.tool == .door else {
+            hoverPoint = nil
+            return
+        }
+        hoverPoint = mapLocation(of: event)
+        needsDisplay = true
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        hoverPoint = nil
+        needsDisplay = true
+    }
+
+    /// Right-click (or Control-click) on a door: Open/Close, Lock/Unlock, Delete (PARITY §3.6).
+    override func menu(for event: NSEvent) -> NSMenu? {
+        guard let map, let doorAction = editing?.doorAction, let door = map.door(at: mapLocation(of: event)) else {
+            return nil
+        }
+        selectedDoorID = door.id
+        needsDisplay = true
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.addItem(
+            MenuAction.item(door.isOpen ? "Close Door" : "Open Door", enabled: !door.isLocked) {
+                doorAction(door.id, .toggle)
+            })
+        menu.addItem(
+            MenuAction.item(door.isLocked ? "Unlock Door" : "Lock Door") {
+                doorAction(door.id, door.isLocked ? .unlock : .lock)
+            })
+        menu.addItem(.separator())
+        let delete = MenuAction.item("Delete Door") { doorAction(door.id, .delete) }
+        delete.attributedTitle = NSAttributedString(
+            string: "Delete Door", attributes: [.foregroundColor: NSColor.systemRed])
+        menu.addItem(delete)
+        return menu
     }
 
     override func magnify(with event: NSEvent) {
@@ -396,10 +545,38 @@ final class MapCanvasNSView: NSView {
                 NSCursor.openHand.set()
             }
         case 51, 117:  // delete, forward delete
-            if !selection.isEmpty { editing?.deleteSelection?() }
+            if !selection.isEmpty {
+                editing?.deleteSelection?()
+            } else if let door = selectedDoorID {
+                editing?.doorAction?(door, .delete)
+                selectedDoorID = nil
+            }
         case 53:  // escape
             editing?.setSelection([])
+            editing?.setMeasurement?(nil)
+            selectedDoorID = nil
+        case 123, 124, 125, 126:  // arrows rotate the door while the Door tool is active
+            if toolState.tool == .door { editing?.toggleDoorOrientation?() } else { super.keyDown(with: event) }
         default:
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if flags.isDisjoint(with: [.command, .control, .option]), editing?.setTool != nil,
+                let char = event.charactersIgnoringModifiers?.lowercased().first
+            {
+                if char == "m", toolState.tool == .select, !selection.isEmpty {
+                    // Hold M with a token selected to see movement range (no tool change).
+                    showMovementRange = true
+                    needsDisplay = true
+                    return
+                }
+                if char == "r", toolState.tool == .door {
+                    editing?.toggleDoorOrientation?()
+                    return
+                }
+                if let tool = CanvasTool.forKey(char) {
+                    editing?.setTool?(tool)
+                    return
+                }
+            }
             let centre = Point2D(x: Double(bounds.midX), y: Double(bounds.midY))
             switch event.charactersIgnoringModifiers {
             case "+", "=": viewport.zoom(by: 1.1, around: centre)
@@ -410,7 +587,10 @@ final class MapCanvasNSView: NSView {
     }
 
     override func keyUp(with event: NSEvent) {
-        if event.keyCode == 49 {
+        if event.charactersIgnoringModifiers?.lowercased() == "m", showMovementRange {
+            showMovementRange = false
+            needsDisplay = true
+        } else if event.keyCode == 49 {
             spaceHeld = false
             NSCursor.arrow.set()
         } else {
@@ -448,6 +628,9 @@ struct MapCanvas: NSViewRepresentable {
     var editing: CanvasEditing?
     var hiddenTokenIDs: Set<String> = []
     var fog: FogState?
+    var isPlayerView = false
+    var toolState = ToolState()
+    var measurement: MeasurementShape?
     var fitRequest: FitRequest?
 
     func makeNSView(context: Context) -> MapCanvasNSView {
@@ -462,6 +645,9 @@ struct MapCanvas: NSViewRepresentable {
         view.editing = editing
         view.hiddenTokenIDs = hiddenTokenIDs
         view.fog = fog
+        view.isPlayerView = isPlayerView
+        view.toolState = toolState
+        view.measurement = measurement
         view.fitRequest = fitRequest
         view.needsDisplay = true
     }
@@ -489,6 +675,15 @@ extension CGRect {
 }
 
 extension NSColor {
+    /// `#rrggbb` (sRGB), lowercase.
+    var hexString: String? {
+        guard let c = usingColorSpace(.sRGB) else { return nil }
+        let r = Int((c.redComponent * 255).rounded())
+        let g = Int((c.greenComponent * 255).rounded())
+        let b = Int((c.blueComponent * 255).rounded())
+        return String(format: "#%02x%02x%02x", r, g, b)
+    }
+
     /// `#rgb` or `#rrggbb`.
     convenience init?(hex: String) {
         var text = hex.trimmingCharacters(in: .whitespaces)

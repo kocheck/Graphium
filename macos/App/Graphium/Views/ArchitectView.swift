@@ -14,6 +14,10 @@ struct ArchitectView: View {
     @State private var renameText = ""
     @State private var deletingMapID: String?
     @State private var errorMessage: String?
+    @State private var tools = ToolState()
+    @State private var recentColors: [String] = []
+    @State private var measurement: MeasurementShape?
+    @State private var broadcastMeasurement = true
 
     private enum ImportTarget: Identifiable {
         case mapImage, tokens
@@ -103,6 +107,30 @@ struct ArchitectView: View {
                         }
                 }
             }
+            let doors = document.campaign.activeMap.doors
+            if !doors.isEmpty {
+                // Bulk door controls (PARITY §2.1).
+                Section("Doors") {
+                    Button("Open All Unlocked Doors") {
+                        document.edit("Open Doors", undoManager: undoManager) {
+                            $0.activeMap.setAllUnlockedDoors(open: true)
+                        }
+                    }
+                    Button("Close All Open Doors") {
+                        document.edit("Close Doors", undoManager: undoManager) {
+                            $0.activeMap.setAllUnlockedDoors(open: false)
+                        }
+                    }
+                    if doors.contains(where: \.isLocked) {
+                        Button("Unlock All") {
+                            document.edit("Unlock Doors", undoManager: undoManager) {
+                                $0.activeMap.setAllDoorLocks(locked: false)
+                            }
+                        }
+                    }
+                }
+                .buttonStyle(.link)
+            }
         }
         .navigationSplitViewColumnWidth(min: 180, ideal: 220)
         .toolbar {
@@ -151,11 +179,93 @@ struct ArchitectView: View {
                     if duplicate { selection = Set(placed) }
                 },
                 deleteSelection: { deleteSelectedTokens() },
-                dropImageFiles: { urls, point in addTokens(from: urls, at: point, centred: true) }
-            )
+                dropImageFiles: { urls, point in addTokens(from: urls, at: point, centred: true) },
+                addDrawing: { addDrawing($0) },
+                placeDoor: { point in
+                    document.edit("Place Door", undoManager: undoManager) {
+                        $0.activeMap.placeDoor(at: point, orientation: tools.doorOrientation)
+                    }
+                },
+                doorAction: { id, action in performDoorAction(id, action) },
+                setMeasurement: { setMeasurement($0) },
+                setTool: { selectTool($0) },
+                toggleDoorOrientation: {
+                    tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
+                }
+            ),
+            toolState: tools,
+            measurement: measurement
         )
         .navigationTitle(campaign.activeMap.name)
         .navigationSubtitle(campaign.name)
+    }
+
+    // MARK: Tools
+
+    private func selectTool(_ tool: CanvasTool) {
+        guard tool != tools.tool else { return }
+        tools.tool = tool
+        setMeasurement(nil)  // changing tool clears the measurement (TS)
+    }
+
+    private var markerColorBinding: Binding<Color> {
+        Binding(
+            get: { Color(nsColor: NSColor(hex: tools.markerColor) ?? .systemOrange) },
+            set: { color in
+                let hex = NSColor(color).usingColorSpace(.sRGB)?.hexString ?? StrokeDefaults.markerColor
+                tools.markerColor = hex
+            })
+    }
+
+    private var measureModeBinding: Binding<MeasurementShape.Mode> {
+        Binding(
+            get: { tools.measureMode },
+            set: {
+                tools.measureMode = $0
+                setMeasurement(nil)
+            })
+    }
+
+    private func setMeasurement(_ shape: MeasurementShape?) {
+        measurement = shape
+        publishMeasurement()
+    }
+
+    private func publishMeasurement() {
+        document.broadcastMeasurement = broadcastMeasurement ? measurement : nil
+    }
+
+    private func addDrawing(_ drawing: Drawing) {
+        var stroke = drawing
+        let name: String
+        switch drawing.tool {
+        case .wall:
+            let existing = document.campaign.activeMap.drawings.filter { $0.tool == .wall }.map(\.points)
+            stroke.points = PathOptimization.finalizeWall(drawing.points, existingWalls: existing)
+            name = "Draw Wall"
+        case .marker:
+            // Recent colours: most recent first, deduped, three shown (PARITY §2.2).
+            recentColors = Array(([drawing.color] + recentColors.filter { $0 != drawing.color }).prefix(3))
+            name = "Draw"
+        case .eraser:
+            name = "Erase"
+        }
+        document.edit(name, undoManager: undoManager) { $0.activeMap.drawings.append(stroke) }
+    }
+
+    private func performDoorAction(_ id: String, _ action: DoorAction) {
+        switch action {
+        case .toggle:
+            document.edit("Toggle Door", undoManager: undoManager) { $0.activeMap.toggleDoor(id: id) }
+        case .lock, .unlock:
+            document.edit(action == .lock ? "Lock Door" : "Unlock Door", undoManager: undoManager) { campaign in
+                if let i = campaign.activeMap.doors.firstIndex(where: { $0.id == id }) {
+                    campaign.activeMap.doors[i].isLocked = action == .lock
+                }
+            }
+        case .delete:
+            document.edit("Delete Door", undoManager: undoManager) { $0.activeMap.doors.removeAll { $0.id == id } }
+        }
     }
 
     private var daylightBinding: Binding<Bool> {
@@ -174,6 +284,52 @@ struct ArchitectView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .principal) {
+            Picker("Tool", selection: Binding(get: { tools.tool }, set: { selectTool($0) })) {
+                ForEach(CanvasTool.allCases) { tool in
+                    Label(tool.title, systemImage: tool.symbol).tag(tool).help(tool.help)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelStyle(.iconOnly)
+
+            switch tools.tool {
+            case .marker:
+                ColorPicker("Marker Colour", selection: markerColorBinding, supportsOpacity: false)
+                    .labelsHidden()
+                ForEach(recentColors, id: \.self) { hex in
+                    Button {
+                        tools.markerColor = hex
+                    } label: {
+                        Image(systemName: "circle.fill").foregroundStyle(Color(nsColor: NSColor(hex: hex) ?? .black))
+                    }
+                    .help(hex)
+                }
+            case .door:
+                Button {
+                    tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
+                } label: {
+                    Label(
+                        tools.doorOrientation == .horizontal ? "Horizontal" : "Vertical",
+                        systemImage: tools.doorOrientation == .horizontal ? "arrow.left.and.right" : "arrow.up.and.down")
+                }
+                .help("Door orientation (R or arrow keys)")
+            case .measure:
+                Picker("Measure", selection: measureModeBinding) {
+                    Text("Ruler").tag(MeasurementShape.Mode.ruler)
+                    Text("Blast").tag(MeasurementShape.Mode.blast)
+                    Text("Cone").tag(MeasurementShape.Mode.cone)
+                }
+                .pickerStyle(.segmented)
+                Toggle(isOn: $broadcastMeasurement) {
+                    Label(broadcastMeasurement ? "Broadcasting" : "Local Only", systemImage: "dot.radiowaves.left.and.right")
+                }
+                .help("Show this measurement in the World View")
+                .onChange(of: broadcastMeasurement) { _, _ in publishMeasurement() }
+            default:
+                EmptyView()
+            }
+        }
         ToolbarItemGroup(placement: .primaryAction) {
             Button {
                 importTarget = .mapImage
