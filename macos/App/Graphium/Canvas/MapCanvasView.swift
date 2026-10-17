@@ -494,6 +494,8 @@ final class MapCanvasNSView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
+        // Backstop for a Space release this view never saw (PARITY §1.4).
+        if spaceHeld, !CGEventSource.keyState(.combinedSessionState, key: 49) { spaceHeld = false }
         guard let editing, let map, !spaceHeld else {
             interaction = .panning
             NSCursor.closedHand.set()
@@ -834,6 +836,97 @@ final class MapCanvasNSView: NSView {
         } else {
             super.keyUp(with: event)
         }
+    }
+
+    // MARK: Window-wide keys and focus loss (PARITY §1.4)
+
+    /// TS listens for canvas keys on the whole window, skipping only text inputs.
+    private var windowKeyMonitor: Any?
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        super.viewWillMove(toWindow: newWindow)
+        if newWindow == nil { stopWatchingWindow() }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard let window else { return }
+        let center = NotificationCenter.default
+        center.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
+        center.removeObserver(self, name: NSWindow.willCloseNotification, object: nil)
+        center.addObserver(self, selector: #selector(windowResignedKey), name: NSWindow.didResignKeyNotification, object: window)
+        center.addObserver(self, selector: #selector(windowWillClose), name: NSWindow.willCloseNotification, object: window)
+        if windowKeyMonitor == nil {
+            windowKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+                let handled = MainActor.assumeIsolated { self?.handleWindowKey(event) ?? false }
+                return handled ? nil : event
+            }
+        }
+        // A newly opened campaign window starts with the map focused.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let window = self.window, window.firstResponder === window, self.editing?.setTool != nil
+            else { return }
+            window.makeFirstResponder(self)
+        }
+    }
+
+    private func stopWatchingWindow() {
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: NSWindow.willCloseNotification, object: nil)
+        if let windowKeyMonitor { NSEvent.removeMonitor(windowKeyMonitor) }
+        windowKeyMonitor = nil
+        releaseHeldKeys()
+    }
+
+    @objc private func windowResignedKey(_ notification: Notification) {
+        releaseHeldKeys()
+    }
+
+    @objc private func windowWillClose(_ notification: Notification) {
+        stopWatchingWindow()
+    }
+
+    override func resignFirstResponder() -> Bool {
+        releaseHeldKeys()
+        return super.resignFirstResponder()
+    }
+
+    /// Clears hold-Space pan and hold-M range when their key-up can't reach this view (TS `handleBlur`).
+    private func releaseHeldKeys() {
+        guard spaceHeld || showMovementRange else { return }
+        spaceHeld = false
+        showMovementRange = false
+        NSCursor.arrow.set()
+        needsDisplay = true
+    }
+
+    /// Sends canvas keys pressed while another control (sidebar list, toolbar, inspector
+    /// picker) has focus to the canvas. Text fields and focusable SwiftUI views (the
+    /// Session Console's own keys) keep their keys. Returns true when the key was used.
+    private func handleWindowKey(_ event: NSEvent) -> Bool {
+        guard let window, event.window === window else { return false }
+        let responder = window.firstResponder
+        guard responder !== self else { return false }
+        if event.type == .keyUp {
+            let isM = event.charactersIgnoringModifiers?.lowercased() == "m"
+            if (event.keyCode == 49 && spaceHeld) || (isM && showMovementRange) { keyUp(with: event) }
+            return false
+        }
+        guard event.type == .keyDown, editing?.setTool != nil, !isHiddenOrHasHiddenAncestor else { return false }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags.isDisjoint(with: [.command, .control, .option]) else { return false }
+        guard responder == nil || responder === window || (responder is NSControl && !(responder is NSTextField))
+        else { return false }
+        if event.keyCode == 49, responder is NSButton { return false }  // Space presses a focused button
+        let keyCodes: Set<UInt16> = [49, 51, 53, 117]  // space, delete, escape, forward delete
+        let arrows: Set<UInt16> = [123, 124, 125, 126]
+        let characters = Set("vmewdri12345?+=-_")
+        let character = event.charactersIgnoringModifiers?.lowercased().first
+        guard keyCodes.contains(event.keyCode) || (arrows.contains(event.keyCode) && toolState.tool == .door)
+            || (character.map { characters.contains($0) } ?? false)
+        else { return false }
+        keyDown(with: event)
+        return true
     }
 
     // MARK: Drag and drop from Finder

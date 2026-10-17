@@ -87,7 +87,7 @@ Full Screen. Save, Save As and Revert come from `DocumentGroup`.
 
 ### 1.4 Keyboard shortcuts (complete list of keydown handlers)
 
-All single-key shortcuts are ignored while typing in an input or textarea.
+All single-key shortcuts are ignored while typing in an input or textarea. **Native:** The canvas takes focus when its window opens, and a window-level key monitor sends canvas keys to it while another non-text control (sidebar list, toolbar, inspector picker) has focus. Text fields and focusable panels with their own keys (the Session Console) keep them. Window blur or the canvas losing focus releases hold-Space and hold-M.
 
 - [x] `?` / `Shift+/` — Opens the About modal. In the editor it opens the About tab. On the home screen it opens the Shortcuts tab. Works in both windows. (source: src/App.tsx:237-241, src/components/HomeScreen.tsx:297-301) **Native:** Opens About from either window (canvas key); on Welcome it opens Shortcuts.
 - [x] `V` Select, `M` Marker, `E` Eraser, `W` Wall, `D` Door — Architect only. (source: src/App.tsx:257-272)
