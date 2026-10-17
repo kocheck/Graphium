@@ -97,6 +97,16 @@ final class SessionConsoleTests: XCTestCase {
         XCTAssertNil(SessionConsoleAudio.parseYouTubeVideoID("garbage"))
     }
 
+    func testVideoIDValidation() {
+        XCTAssertTrue(SessionConsoleAudio.isVideoID("dQw4w9WgXcQ"))
+        XCTAssertTrue(SessionConsoleAudio.isVideoID("a-b_c-d_e-f"))
+        XCTAssertFalse(SessionConsoleAudio.isVideoID("dQw4w9WgXc"), "too short")
+        XCTAssertFalse(SessionConsoleAudio.isVideoID("dQw4w9WgXcQQ"), "too long")
+        XCTAssertFalse(SessionConsoleAudio.isVideoID("');alert(1)//"), "script injection")
+        XCTAssertFalse(SessionConsoleAudio.isVideoID("dQw4w9WgXc'"), "quote")
+        XCTAssertFalse(SessionConsoleAudio.isVideoID("dQw4w9WgXcé"), "non-ASCII")
+    }
+
     func testAudioLimits() {
         XCTAssertEqual(SessionConsoleAudio.check(audioFileName: "bed.mp3", byteCount: 1000), .ok)
         XCTAssertEqual(SessionConsoleAudio.check(audioFileName: "BED.M4A", byteCount: 9 * 1024 * 1024),

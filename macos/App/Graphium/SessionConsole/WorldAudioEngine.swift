@@ -216,7 +216,8 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
     let webView: WKWebView
     var onError: ((String) -> Void)?
     private var ready = false
-    private var pending: String?
+    /// A load requested before the player was ready, replayed on "ready".
+    private var pending: (function: String, arguments: [String: Any])?
 
     override init() {
         let configuration = WKWebViewConfiguration()
@@ -230,20 +231,30 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
     }
 
     func play(videoID: String, loop: Bool, volume: Int) {
-        run("graphiumLoad('\(videoID)', \(loop), \(volume))")
+        // The id comes from campaign.json, which may be a shared file; never let it reach the page unchecked.
+        guard SessionConsoleAudio.isVideoID(videoID) else {
+            onError?("That YouTube link isn't valid.")
+            return
+        }
+        run("graphiumLoad(id, loop, volume)", ["id": videoID, "loop": loop, "volume": volume])
     }
 
     func pause() { run("graphiumPause()") }
     func resume() { run("graphiumResume()") }
     func stop() { run("graphiumStop()") }
-    func setVolume(_ volume: Int) { run("graphiumVolume(\(volume))") }
+    func setVolume(_ volume: Int) { run("graphiumVolume(volume)", ["volume": volume]) }
 
-    private func run(_ script: String) {
+    /// Values travel as JavaScript arguments, never spliced into the script source.
+    private func run(_ function: String, _ arguments: [String: Any] = [:]) {
         guard ready else {
-            if script.hasPrefix("graphiumLoad") { pending = script }
+            if function.hasPrefix("graphiumLoad") { pending = (function, arguments) }
             return
         }
-        webView.evaluateJavaScript(script, completionHandler: nil)
+        call(function, arguments)
+    }
+
+    private func call(_ function: String, _ arguments: [String: Any]) {
+        webView.callAsyncJavaScript(function, arguments: arguments, in: nil, in: .page, completionHandler: nil)
     }
 
     nonisolated func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -255,7 +266,7 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
             switch type {
             case "ready":
                 ready = true
-                if let pending { webView.evaluateJavaScript(pending, completionHandler: nil) }
+                if let pending { call(pending.function, pending.arguments) }
                 pending = nil
             case "error":
                 onError?(Self.errorMessage(code ?? 0))

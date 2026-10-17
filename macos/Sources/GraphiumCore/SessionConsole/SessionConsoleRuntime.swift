@@ -129,7 +129,8 @@ public enum SessionConsoleAudio {
         return ["youtu.be", "youtube.com", "m.youtube.com", "music.youtube.com", "youtube-nocookie.com"].contains(h)
     }
 
-    private static func isVideoID(_ s: Substring) -> Bool {
+    /// A bare YouTube video id: exactly 11 of `A–Z a–z 0–9 _ -`.
+    public static func isVideoID<S: StringProtocol>(_ s: S) -> Bool {
         s.count == 11 && s.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "_" || $0 == "-") }
     }
 
