@@ -16,11 +16,14 @@ enum BoardPackIO {
         guard panel.runModal() == .OK, let url = panel.url, let data = try? Data(contentsOf: url) else { return nil }
         let root = url.deletingLastPathComponent()
         let (pack, errors) = BoardPack.parse(data)
+        // Materialising runs off the main actor; collect assets and commit them after.
+        let pending = PendingAssets(existing: Set(document.assets.keys))
         let result = await BoardPack.materialize(
             pack,
             resolveFile: { path in resolve(path, root: root) },
             fetch: { url in await fetchCapped(url) },
-            persist: { data, name in document.addAsset(data, preferredName: name) })
+            persist: { data, name in pending.add(data, preferredName: name) })
+        for (name, bytes) in pending.assets { document.assets[name] = bytes }
         document.editConsole(mode == .replace ? "Import Board Pack" : "Merge Board Pack", undoManager: undoManager) { catalog in
             if mode == .replace { catalog = result.catalog } else { catalog.merge(result.catalog) }
         }
@@ -34,7 +37,7 @@ enum BoardPackIO {
 
     /// Relative or absolute paths, only if they stay inside the pack folder after
     /// resolving symlinks; 25 MB cap (TS `resolveSandboxedPackPath`).
-    private static func resolve(_ path: String, root: URL) -> BoardPack.FileResult? {
+    nonisolated private static func resolve(_ path: String, root: URL) -> BoardPack.FileResult? {
         let realRoot = root.resolvingSymlinksInPath().standardizedFileURL
         let candidate = (path.hasPrefix("/") ? URL(fileURLWithPath: path) : root.appendingPathComponent(path))
             .resolvingSymlinksInPath().standardizedFileURL
@@ -46,7 +49,7 @@ enum BoardPackIO {
     }
 
     /// https only (already checked by the classifier), no redirects to elsewhere, 25 MB cap.
-    private static func fetchCapped(_ url: URL) async -> BoardPack.FetchResult {
+    nonisolated private static func fetchCapped(_ url: URL) async -> BoardPack.FetchResult {
         do {
             let (bytes, response) = try await URLSession.shared.bytes(from: url)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
@@ -94,5 +97,25 @@ enum BoardPackIO {
         } catch {
             return "Export failed: \(error.localizedDescription)"
         }
+    }
+}
+
+/// Names and holds imported bytes until they can be added to the document on the main actor.
+private final class PendingAssets: @unchecked Sendable {
+    private let lock = NSLock()
+    private var names: Set<String>
+    private(set) var assets: [String: Data] = [:]
+
+    init(existing: Set<String>) {
+        names = existing
+    }
+
+    func add(_ data: Data, preferredName: String) -> String {
+        lock.lock()
+        defer { lock.unlock() }
+        let name = uniqueAssetName(for: preferredName, existing: names)
+        names.insert(name)
+        assets[name] = data
+        return name
     }
 }
