@@ -1,0 +1,64 @@
+name: macOS Native App
+
+on:
+  push:
+    paths:
+      - 'macos/**'
+      - '.github/workflows/macos-native.yml'
+  pull_request:
+    paths:
+      - 'macos/**'
+      - '.github/workflows/macos-native.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & test (macOS)
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: macos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: GraphiumCore unit tests
+        run: swift test --parallel
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          cd App && xcodegen generate
+
+      - name: Build app (ad-hoc signed so it launches on Apple Silicon)
+        run: |
+          xcodebuild build \
+            -project App/Graphium.xcodeproj \
+            -scheme Graphium \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath DerivedData \
+            -quiet \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
+
+      - name: Check bundle declares the document type
+        run: |
+          APP=DerivedData/Build/Products/Release/Graphium.app
+          plutil -extract UTExportedTypeDeclarations.0.UTTypeIdentifier raw "$APP/Contents/Info.plist" \
+            | grep -qx com.graphium.campaign-package
+          codesign --verify --verbose=2 "$APP"
+          lipo -archs "$APP/Contents/MacOS/Graphium"
+
+      - name: Package app
+        run: ditto -c -k --keepParent DerivedData/Build/Products/Release/Graphium.app Graphium-macOS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Graphium-macOS
+          path: macos/Graphium-macOS.zip
+          retention-days: 14
