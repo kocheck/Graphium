@@ -24,6 +24,28 @@ final class MapEditingTests: XCTestCase {
         XCTAssertFalse(map.calibrate(to: Bounds(x: 0, y: 0, width: 5, height: 40)))
     }
 
+    func testApplySettingsKeepsEditsMadeWhileTheSheetWasOpen() {
+        var live = GameMap(name: "Cave", tokens: [Token(id: "pc", x: 0, y: 0, src: "a")])
+        var edited = live  // the sheet's snapshot
+        edited.name = "Deep Cave"
+        edited.gridType = .hidden
+        edited.gridColor = "#ff0000"
+        edited.isDaylightMode = true
+        edited.background = MapBackground(src: "m", width: 10, height: 10)
+        // Meanwhile a player moves the PC and explores.
+        live.tokens[0].x = 100
+        live.exploredRegions = [ExploredRegion(points: [Point2D(x: 0, y: 0)], timestamp: 1)]
+
+        live.applySettings(from: edited)
+        XCTAssertEqual(live.name, "Deep Cave")
+        XCTAssertEqual(live.gridType, .hidden)
+        XCTAssertEqual(live.gridColor, "#ff0000")
+        XCTAssertTrue(live.isDaylightMode)
+        XCTAssertEqual(live.background?.src, "m")
+        XCTAssertEqual(live.tokens[0].x, 100)
+        XCTAssertEqual(live.exploredRegions.count, 1)
+    }
+
     func testStrokeHitTestingSkipsWalls() {
         var map = GameMap()
         map.drawings = [

@@ -216,8 +216,12 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
     let webView: WKWebView
     var onError: ((String) -> Void)?
     private var ready = false
-    /// A load requested before the player was ready, replayed on "ready".
-    private var pending: (function: String, arguments: [String: Any])?
+    /// What the player should be doing once it is ready. Calls made before the
+    /// IFrame API loads update this instead of being dropped, so a fade-in, pause
+    /// or stop issued meanwhile still takes effect (TS useWorldTransport).
+    private var pendingLoad: (id: String, loop: Bool)?
+    private var pendingVolume = 0
+    private var pendingPaused = false
 
     override init() {
         let configuration = WKWebViewConfiguration()
@@ -236,23 +240,48 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
             onError?("That YouTube link isn't valid.")
             return
         }
-        run("graphiumLoad(id, loop, volume)", ["id": videoID, "loop": loop, "volume": volume])
-    }
-
-    func pause() { run("graphiumPause()") }
-    func resume() { run("graphiumResume()") }
-    func stop() { run("graphiumStop()") }
-    func setVolume(_ volume: Int) { run("graphiumVolume(volume)", ["volume": volume]) }
-
-    /// Values travel as JavaScript arguments, never spliced into the script source.
-    private func run(_ function: String, _ arguments: [String: Any] = [:]) {
         guard ready else {
-            if function.hasPrefix("graphiumLoad") { pending = (function, arguments) }
+            pendingLoad = (videoID, loop)
+            pendingVolume = volume
+            pendingPaused = false
             return
         }
-        call(function, arguments)
+        call("graphiumLoad(id, loop, volume)", ["id": videoID, "loop": loop, "volume": volume])
     }
 
+    func pause() {
+        guard ready else {
+            pendingPaused = true
+            return
+        }
+        call("graphiumPause()", [:])
+    }
+
+    func resume() {
+        guard ready else {
+            pendingPaused = false
+            return
+        }
+        call("graphiumResume()", [:])
+    }
+
+    func stop() {
+        guard ready else {
+            pendingLoad = nil
+            return
+        }
+        call("graphiumStop()", [:])
+    }
+
+    func setVolume(_ volume: Int) {
+        guard ready else {
+            pendingVolume = volume
+            return
+        }
+        call("graphiumVolume(volume)", ["volume": volume])
+    }
+
+    /// Values travel as JavaScript arguments, never spliced into the script source.
     private func call(_ function: String, _ arguments: [String: Any]) {
         webView.callAsyncJavaScript(function, arguments: arguments, in: nil, in: .page, completionHandler: nil)
     }
@@ -266,8 +295,13 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
             switch type {
             case "ready":
                 ready = true
-                if let pending { call(pending.function, pending.arguments) }
-                pending = nil
+                if let load = pendingLoad {
+                    // A track paused before the player loaded is cued, not started.
+                    call(
+                        pendingPaused ? "graphiumCue(id, loop, volume)" : "graphiumLoad(id, loop, volume)",
+                        ["id": load.id, "loop": load.loop, "volume": pendingVolume])
+                }
+                pendingLoad = nil
             case "error":
                 onError?(Self.errorMessage(code ?? 0))
             default:
@@ -301,6 +335,7 @@ final class YouTubePlayer: NSObject, WKScriptMessageHandler {
             }});
         }
         function graphiumLoad(id, loop, volume){ wantLoop = loop; player.setVolume(volume); player.loadVideoById(id); }
+        function graphiumCue(id, loop, volume){ wantLoop = loop; player.setVolume(volume); player.cueVideoById(id); }
         function graphiumPause(){ player && player.pauseVideo(); }
         function graphiumResume(){ player && player.playVideo(); }
         function graphiumStop(){ player && player.stopVideo(); }

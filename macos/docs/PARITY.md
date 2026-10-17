@@ -402,7 +402,7 @@ exploration is computed once.
 - [x] Cone — A 53° cone triangle with a label like "30ft 53° cone (6 cells)". (source: src/components/Canvas/hooks/useCanvasInteraction.ts:436-453, src/utils/measurement.ts:130-160)
 - [x] Distance is Euclidean, with 1 cell = 5 ft. A D&D 5e 5-10-5 diagonal mode exists in utils but is not exposed in the UI. Labels are 16pt with a dark backing and handle singular and plural. (source: src/utils/measurement.ts:13-100)
 - [x] The measurement stays on screen after release until `Esc`, a mode change, or a click with another tool. (source: src/components/Canvas/hooks/useCanvasInteraction.ts:271-273, 569-574)
-- [x] Broadcast — When "Broadcasting" is on, the DM's measurement is mirrored into World View (`dmMeasurement`). (source: src/components/Toolbar.tsx:230-240, src/components/SyncManager.tsx:145, 271-273, src/components/Canvas/CanvasManager.tsx:1354)
+- [x] Broadcast — When "Broadcasting" is on, the DM's measurement is mirrored into World View (`dmMeasurement`). (source: src/components/Toolbar.tsx:230-240, src/components/SyncManager.tsx:145, 271-273, src/components/Canvas/CanvasManager.tsx:1354) Off by default (src/store/gameStore.ts:480).
 
 ### 3.10 Movement range
 

@@ -28,7 +28,8 @@ struct ArchitectView: View {
     @State private var tools = ToolState()
     @State private var recentColors: [String] = []
     @State private var measurement: MeasurementShape?
-    @State private var broadcastMeasurement = true
+    // Off by default, as in TS: measurements stay on the DM's screen until broadcasting is turned on.
+    @State private var broadcastMeasurement = false
     @State private var showingLibrary = false
     @State private var showingConsole = false
     @State private var showingPalette = false
@@ -210,6 +211,12 @@ struct ArchitectView: View {
             case nil:
                 break
             }
+        }
+        .onDisappear {
+            // The campaign is closing: its projector and detached console go with it,
+            // rather than lingering on a closed document (PARITY §1.1).
+            dismissWindow(id: WorldWindow.id, value: document.sessionID)
+            dismissWindow(id: SessionConsoleWindow.id, value: document.sessionID)
         }
         .onAppear {
             #if DEBUG
@@ -972,7 +979,7 @@ struct ArchitectView: View {
                 campaign.maps.append(map)
                 campaign.activeMapID = map.id
             } else if let i = campaign.maps.firstIndex(where: { $0.id == map.id }) {
-                campaign.maps[i] = map
+                campaign.maps[i].applySettings(from: map)
             }
         }
         if isNew { selection = [] }

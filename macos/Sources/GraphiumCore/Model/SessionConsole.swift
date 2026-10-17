@@ -164,8 +164,18 @@ public struct SfxDefinition: Codable, Equatable, Identifiable, Sendable {
     public var id: String
     public var label: String
     public var kind: SfxKind
-    public var synthType: SynthType?
+    public var synthType: SynthType? {
+        didSet { unknownSynthType = nil }
+    }
     public var src: String?
+    /// A `synthType` this app doesn't know. TS board packs copy the string unchecked
+    /// (sessionConsolePack.ts:636-640), so Electron campaigns can hold any value; it is
+    /// kept so a re-export doesn't lose it, and plays nothing here.
+    private var unknownSynthType: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, label, kind, synthType, src
+    }
 
     public init(id: String, label: String, kind: SfxKind, synthType: SynthType? = nil, src: String? = nil) {
         self.id = id
@@ -173,6 +183,27 @@ public struct SfxDefinition: Codable, Equatable, Identifiable, Sendable {
         self.kind = kind
         self.synthType = synthType
         self.src = src
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        label = try c.decode(String.self, forKey: .label)
+        kind = try c.decode(SfxKind.self, forKey: .kind)
+        src = try c.decodeIfPresent(String.self, forKey: .src)
+        if let raw = try c.decodeIfPresent(String.self, forKey: .synthType) {
+            synthType = SynthType(rawValue: raw)
+            if synthType == nil { unknownSynthType = raw }
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(label, forKey: .label)
+        try c.encode(kind, forKey: .kind)
+        try c.encodeIfPresent(synthType?.rawValue ?? unknownSynthType, forKey: .synthType)
+        try c.encodeIfPresent(src, forKey: .src)
     }
 
     /// The five synth effects every new catalog starts with, in order.

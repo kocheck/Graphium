@@ -14,11 +14,24 @@ struct WorldWindow: View {
         if let sessionID, let document = DocumentRegistry.shared.document(for: sessionID) {
             WorldView(document: document, liveDrag: document.liveDrag)
         } else {
-            ContentUnavailableView(
-                "No Campaign",
-                systemImage: "map",
-                description: Text("Open a campaign, then choose World View."))
+            OrphanedWindow(
+                title: "No Campaign", systemImage: "map",
+                description: "Open a campaign, then choose World View.")
         }
+    }
+}
+
+/// Shown when a window's campaign is gone, e.g. one restored on relaunch: session
+/// ids aren't saved, so it can never reconnect. It closes itself.
+struct OrphanedWindow: View {
+    let title: String
+    let systemImage: String
+    let description: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ContentUnavailableView(title, systemImage: systemImage, description: Text(description))
+            .onAppear { dismiss() }
     }
 }
 
