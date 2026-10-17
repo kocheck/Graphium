@@ -28,7 +28,8 @@ struct ArchitectView: View {
     @State private var tools = ToolState()
     @State private var recentColors: [String] = []
     @State private var measurement: MeasurementShape?
-    @State private var broadcastMeasurement = true
+    // Off by default, as in TS: measurements stay on the DM's screen until broadcasting is turned on.
+    @State private var broadcastMeasurement = false
     @State private var showingLibrary = false
     @State private var showingConsole = false
     @State private var showingPalette = false
