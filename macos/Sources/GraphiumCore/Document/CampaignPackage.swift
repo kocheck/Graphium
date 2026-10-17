@@ -57,6 +57,19 @@ public struct CampaignPackage: Equatable, Sendable {
         self.assets = assets
     }
 
+    /// Removes assets the campaign no longer references (replaced backgrounds, deleted
+    /// tokens, plates and tracks), so a package doesn't grow forever. TS writes only
+    /// referenced assets at save time; the app prunes on open instead, because undo can
+    /// still bring back a reference during a session. `keeping` names survive regardless.
+    /// Returns the removed names, sorted.
+    @discardableResult
+    public mutating func pruneUnreferencedAssets(keeping: Set<String> = []) -> [String] {
+        let referenced = Set(campaign.assetReferences).union(keeping)
+        let removed = assets.keys.filter { !referenced.contains($0) }.sorted()
+        for name in removed { assets[name] = nil }
+        return removed
+    }
+
     /// Flat, non-hidden names only, so a crafted package can't point outside `assets/`.
     public static func isValidAssetName(_ name: String) -> Bool {
         !name.isEmpty && !name.hasPrefix(".") && !name.contains("/") && !name.contains("\\")

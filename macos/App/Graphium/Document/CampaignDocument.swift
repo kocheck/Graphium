@@ -80,7 +80,9 @@ final class CampaignDocument: ReferenceFileDocument {
                 assets[name] = data
             }
         }
-        let package = try CampaignPackage(manifest: manifest, assets: assets)
+        var package = try CampaignPackage(manifest: manifest, assets: assets)
+        // Drop orphaned bytes left by earlier sessions; the next save writes the smaller package.
+        package.pruneUnreferencedAssets(keeping: [GenericToken.assetName])
         self.campaign = package.campaign
         self.assets = package.assets
         self.sessionRuntime = SessionConsoleRuntime(catalog: package.campaign.sessionConsole)

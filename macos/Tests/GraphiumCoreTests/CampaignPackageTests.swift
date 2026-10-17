@@ -59,3 +59,32 @@ final class CampaignPackageTests: XCTestCase {
         }
     }
 }
+
+final class AssetPruningTests: XCTestCase {
+    func testPruneKeepsReferencedAndKeptAssetsOnly() {
+        var campaign = Campaign.makeDefault()
+        campaign.activeMap.tokens.append(Token(x: 0, y: 0, src: "goblin.png", type: .npc, name: "Goblin"))
+        campaign.sessionConsole.trackGroups = [
+            TrackGroup(title: "Tracks", accent: .bed, tracks: [Track(title: "Rain", source: .local, src: "rain.mp3")])
+        ]
+        var package = CampaignPackage(
+            campaign: campaign,
+            assets: [
+                "goblin.png": Data([1]), "rain.mp3": Data([2]), "old-map.jpg": Data([3]),
+                "deleted.png": Data([4]), "generic-token.png": Data([5]),
+            ])
+
+        let removed = package.pruneUnreferencedAssets(keeping: ["generic-token.png"])
+
+        XCTAssertEqual(removed, ["deleted.png", "old-map.jpg"])
+        XCTAssertEqual(Set(package.assets.keys), ["goblin.png", "rain.mp3", "generic-token.png"])
+    }
+
+    func testPruneDropsAssetsOnlyNamedByExternalURLs() {
+        var campaign = Campaign.makeDefault()
+        campaign.activeMap.tokens.append(Token(x: 0, y: 0, src: "https://example.com/a.png", type: .npc, name: "A"))
+        var package = CampaignPackage(campaign: campaign, assets: ["a.png": Data([1])])
+        XCTAssertEqual(package.pruneUnreferencedAssets(), ["a.png"])
+        XCTAssertTrue(package.assets.isEmpty)
+    }
+}
