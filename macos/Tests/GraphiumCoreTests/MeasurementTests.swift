@@ -53,6 +53,9 @@ final class MeasurementTests: XCTestCase {
         XCTAssertEqual(Measure.formatRadius(20), "20ft radius (4 cells)")
         XCTAssertEqual(Measure.formatCone(15), "15ft 53° cone (3 cells)")
         XCTAssertEqual(Measure.formatCone(15, angle: 90, showCells: false), "15ft 90° cone")
+        XCTAssertEqual(Measure.formatRadius(5), "5ft radius (1 cell)", "singular, as in TS")
+        XCTAssertEqual(Measure.formatCone(5), "5ft 53° cone (1 cell)", "singular, as in TS")
+        XCTAssertEqual(Measure.formatRadius(0), "0ft radius (0 cells)")
         XCTAssertEqual(jsNumber(2.5), "2.5")
     }
 

@@ -460,8 +460,8 @@ on drop the primary token is snapped with its size, then for multi-select the sa
 | `calculateAngleDegrees`                             | 121  | degrees, negatives +360 → [0,360)                                                       |
 | `calculateConeVertices(origin, target, angle = 53)` | 139  | `L =                                                                                    | target−origin | `, `θ = atan2`, `h = angle/2 in rad`; returns `[origin, origin + L(cos(θ+h), sin(θ+h)), origin + L(cos(θ−h), sin(θ−h))]` |
 | `formatDistance(feet, showCells = true)`            | 180  | `"{feet}ft ({n} cell[s])"`, `n = round(feet/5)`, singular iff n == 1; else `"{feet}ft"` |
-| `formatRadius(feet, showCells = true)`              | 198  | `"{feet}ft radius ({n} cells)"` / `"{feet}ft radius"`                                   |
-| `formatCone(feet, angle = 53, showCells = true)`    | 217  | `"{feet}ft {angle}° cone ({n} cells)"` / `"{feet}ft {angle}° cone"`                     |
+| `formatRadius(feet, showCells = true)`              | 198  | `"{feet}ft radius ({n} cell[s])"` (singular iff n == 1) / `"{feet}ft radius"`              |
+| `formatCone(feet, angle = 53, showCells = true)`    | 217  | `"{feet}ft {angle}° cone ({n} cell[s])"` (singular iff n == 1) / `"{feet}ft {angle}° cone"`|
 
 Number formatting: JS `${n}` — integers print without `.0`; Swift must format `30.0` as `"30"` (use a JS-number formatter).
 

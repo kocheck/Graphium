@@ -52,21 +52,26 @@ public enum Measure {
         ]
     }
 
+    /// "(n cell)" / "(n cells)": singular only when n == 1 (TS, all three formatters).
+    static func cellCount(_ feet: Double) -> String {
+        let cells = jsRound(feet / 5)
+        return "(\(jsNumber(cells)) cell\(cells == 1 ? "" : "s"))"
+    }
+
     public static func formatDistance(_ feet: Double, showCells: Bool = true) -> String {
         guard showCells else { return "\(jsNumber(feet))ft" }
-        let cells = jsRound(feet / 5)
-        return "\(jsNumber(feet))ft (\(jsNumber(cells)) cell\(cells == 1 ? "" : "s"))"
+        return "\(jsNumber(feet))ft \(cellCount(feet))"
     }
 
     public static func formatRadius(_ feet: Double, showCells: Bool = true) -> String {
         showCells
-            ? "\(jsNumber(feet))ft radius (\(jsNumber(jsRound(feet / 5))) cells)"
+            ? "\(jsNumber(feet))ft radius \(cellCount(feet))"
             : "\(jsNumber(feet))ft radius"
     }
 
     public static func formatCone(_ feet: Double, angle: Double = defaultConeAngle, showCells: Bool = true) -> String {
         let base = "\(jsNumber(feet))ft \(jsNumber(angle))° cone"
-        return showCells ? "\(base) (\(jsNumber(jsRound(feet / 5))) cells)" : base
+        return showCells ? "\(base) \(cellCount(feet))" : base
     }
 }
 
