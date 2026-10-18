@@ -69,7 +69,26 @@ final class TokenEditingTests: XCTestCase {
         XCTAssertEqual(copies.count, 1)
         XCTAssertNotEqual(copies[0], "a")
         XCTAssertEqual(map.tokens[1].x, 100)
-        XCTAssertEqual(map.tokens[1].name, "Orc")
+        XCTAssertEqual(map.tokens[1].name, "Orc 2", "copies are numbered")
+    }
+
+    func testOptionDragCopiesTakeTheNextFreeNumber() {
+        var map = GameMap(gridSize: 50)
+        map.tokens = [
+            Token(id: "a", x: 0, y: 0, src: "", libraryItemId: goblin.id),  // "Goblin" from the library
+            Token(id: "b", x: 100, y: 0, src: "", name: "Goblin 4"),
+            Token(id: "c", x: 200, y: 0, src: "", name: "Goblin King"),
+            Token(id: "d", x: 300, y: 0, src: "", name: "R2D2"),
+        ]
+        map.dropTokens(["a"], primary: "a", dx: 0, dy: 100, duplicate: true, library: library)
+        XCTAssertEqual(map.tokens.last?.name, "Goblin 5", "one past the highest Goblin number")
+        XCTAssertNil(map.tokens[0].name, "the original keeps inheriting its name")
+        map.dropTokens(["b"], primary: "b", dx: 0, dy: 100, duplicate: true, library: library)
+        XCTAssertEqual(map.tokens.last?.name, "Goblin 6", "a numbered name continues the count")
+        map.dropTokens(["c", "d"], primary: "c", dx: 0, dy: 100, duplicate: true, library: library)
+        XCTAssertEqual(map.tokens.suffix(2).map(\.name), ["Goblin King 2", "R2D2 2"])
+        map.dropTokens(["a", "b"], primary: "a", dx: 0, dy: 200, duplicate: true, library: library)
+        XCTAssertEqual(map.tokens.suffix(2).map(\.name), ["Goblin 7", "Goblin 8"], "each copy in one drop gets its own number")
     }
 
     func testMarqueeAndHitTesting() {

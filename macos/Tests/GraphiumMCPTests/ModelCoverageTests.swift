@@ -41,6 +41,11 @@ final class ModelCoverageTests: XCTestCase {
             "revealedAreas": "Revealing fog by hand is table-time, for parties played with miniatures.",
             "initiative": "Initiative is table-time, not map building.",
         ],
+        "Token": [
+            "hitPoints": "session state (hit points, conditions), not map building",
+            "maxHitPoints": "session state (hit points, conditions), not map building",
+            "conditions": "session state (hit points, conditions), not map building",
+        ],
         "Drawing": ["pressures": "Pen pressure only matters for hand-drawn strokes."],
         "Door": ["thickness": "Drawing detail; the app's default is right for built maps."],
     ]

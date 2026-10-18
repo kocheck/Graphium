@@ -128,6 +128,7 @@ extension GameMap {
                 copy.id = newID()
                 copy.x = target.x
                 copy.y = target.y
+                copy.name = nameForCopy(of: original, library: library)
                 tokens.append(copy)
                 placed.append(copy.id)
             } else {
@@ -137,6 +138,31 @@ extension GameMap {
             }
         }
         return placed
+    }
+
+    /// The name for a copy of `token` (Option-drag): its resolved name numbered one past the
+    /// highest number on this map with the same base, so "Goblin" copies as "Goblin 2", then
+    /// "Goblin 3". A copy of "Goblin 2" continues the count. An unnumbered name counts as 1.
+    public func nameForCopy(of token: Token, library: [String: TokenLibraryItem]) -> String {
+        let base = Self.splitNumberedName(ResolvedToken(token, library: library).name).base
+        var highest = 1
+        for other in tokens {
+            let split = Self.splitNumberedName(ResolvedToken(other, library: library).name)
+            if split.base == base { highest = max(highest, split.number ?? 1) }
+        }
+        return "\(base) \(highest + 1)"
+    }
+
+    /// "Goblin 3" is ("Goblin", 3); "Goblin", "R2D2" and "3" have no number (nor does a
+    /// number too long to be a count).
+    private static func splitNumberedName(_ name: String) -> (base: String, number: Int?) {
+        guard let space = name.lastIndex(of: " ") else { return (name, nil) }
+        let digits = name[name.index(after: space)...]
+        let base = String(name[..<space]).trimmingCharacters(in: .whitespaces)
+        guard !digits.isEmpty, digits.count <= 6, digits.allSatisfy({ $0.isASCII && $0.isNumber }),
+            let number = Int(digits), !base.isEmpty
+        else { return (name, nil) }
+        return (base, number)
     }
 
     public mutating func removeTokens(_ ids: Set<String>) {
