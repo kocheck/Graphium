@@ -155,7 +155,7 @@ public enum AgentGuide {
         - Break up long sightlines with pillars (small closed walls) or corners, so ranged attackers and \
         stealth both matter.
         - Use doors to control what players see and when: closed doors block sight; locked doors make a \
-        decision. Windows (kind "window") show the next room without letting anyone walk through.
+        decision; a hidden door rewards searching. Windows (kind "window") show the next room without letting anyone walk through.
         - One-way walls are for secrets: a mirror, a hidden spy hole, a cliff edge you can see down from.
         - Put stairs where the map connects to other maps, and say which map they lead to in a marker.
         - Place monsters where they would really be, not in a line: guards at doors, a leader at the back.
@@ -218,7 +218,8 @@ public enum AgentGuide {
         line as drawn (walking from its first point to its last, with y pointing down).
         - Doors: a centre point, a width (default 1 cell) and an angle in degrees (0 horizontal, 90 vertical, \
         anything else diagonal). A closed door blocks sight and movement; an open door also cuts the wall \
-        underneath it, so a door can sit on top of a continuous wall. Locked doors can't be opened by clicking.
+        underneath it, so a door can sit on top of a continuous wall. Locked doors can't be opened by clicking. \
+        A hidden (secret) door looks like plain wall to players while it is shut, until the DM reveals it.
         - Tokens: position is the top-left corner; size is the footprint in cells (1 = one square).
         - Stairs: centre, width and height, which way they face, up or down.
         - Lights: a centre point and two radii in feet (bright_ft, then dim_ft as the outer edge). They only \

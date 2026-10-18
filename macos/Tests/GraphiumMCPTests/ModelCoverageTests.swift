@@ -22,7 +22,7 @@ final class ModelCoverageTests: XCTestCase {
         "LightSource": ["id", "x", "y", "bright", "dim", "isOn", "name"],
         "MapNote": ["id", "x", "y", "title", "dmNotes", "playerNotes", "isShared"],
         "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay"],
-        "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection"],
+        "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection", "isHidden"],
         "Stairs": ["id", "x", "y", "direction", "type", "width", "height"],
         "MapBackground": ["src", "x", "y", "width", "height", "scale"],
         "TokenLibraryItem": [

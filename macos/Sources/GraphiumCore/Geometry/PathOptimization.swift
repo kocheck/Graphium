@@ -193,9 +193,18 @@ extension GameMap {
         doors[i].isOpen.toggle()
     }
 
-    /// TS `updateAllDoorStates`: only unlocked doors change.
+    /// TS `updateAllDoorStates`: only unlocked doors change. Native: opening skips hidden
+    /// doors, so a bulk open never shows players a secret door.
     public mutating func setAllUnlockedDoors(open: Bool) {
-        for i in doors.indices where !doors[i].isLocked { doors[i].isOpen = open }
+        for i in doors.indices where !doors[i].isLocked && !(open && doors[i].isHidden == true) {
+            doors[i].isOpen = open
+        }
+    }
+
+    /// Hides doors from players (they see wall while shut) or reveals them. Revealing leaves
+    /// the flag out of the file.
+    public mutating func setDoorsHidden(_ ids: Set<String>, hidden: Bool) {
+        for i in doors.indices where ids.contains(doors[i].id) { doors[i].isHidden = hidden ? true : nil }
     }
 
     public mutating func setAllDoorLocks(locked: Bool) {

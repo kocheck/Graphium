@@ -102,6 +102,57 @@ final class DoorEditingTests: XCTestCase {
         XCTAssertTrue(LineOfSight.hatchWalls(of: map).isEmpty, "windows aren't rock")
     }
 
+    func testShutHiddenDoorIsHatchedAsWall() {
+        var map = GameMap(gridSize: 50)
+        map.drawings = [wall([0, 0, 300, 0])]
+        map.doors = [Door(id: "d", x: 150, y: 0, orientation: .horizontal, size: 50, isHidden: true)]
+        XCTAssertTrue(map.doors[0].looksLikeWall)
+        let pieces = LineOfSight.hatchWalls(of: map)
+        XCTAssertEqual(pieces.count, 2, "the wall stays whole, plus the door's own segment")
+        XCTAssertEqual(pieces[0].end.x, 300, accuracy: 1e-9)
+        XCTAssertEqual(pieces[1].start.x, 125, accuracy: 1e-9)
+        map.doors[0].isOpen = true
+        XCTAssertFalse(map.doors[0].looksLikeWall, "an open hidden door is a doorway")
+        XCTAssertEqual(LineOfSight.hatchWalls(of: map).count, 2)
+        XCTAssertEqual(LineOfSight.hatchWalls(of: map)[0].end.x, 125, accuracy: 1e-9)
+    }
+
+    func testKnownDoorsAreTheOnesExploredOrSeen() {
+        let doors = [
+            Door(id: "seen", x: 100, y: 0, orientation: .horizontal, size: 50),
+            Door(id: "remembered", x: 500, y: 0, orientation: .horizontal, size: 50),
+            Door(id: "unknown", x: 900, y: 0, orientation: .horizontal, size: 50),
+            Door(id: "secret", x: 120, y: 40, orientation: .horizontal, size: 50, isHidden: true),
+        ]
+        func square(_ x: Double, _ y: Double, _ r: Double) -> [Point2D] {
+            [Point2D(x: x - r, y: y - r), Point2D(x: x + r, y: y - r), Point2D(x: x + r, y: y + r), Point2D(x: x - r, y: y + r)]
+        }
+        // Sight reaches the door's face from below only, as a closed door stops it.
+        let viewer = LineOfSight.Viewer(tokenID: "pc", centre: Point2D(x: 100, y: 100), radius: 300)
+        let sight = PartySight(vision: [LineOfSight.VisionPolygon(viewer: viewer, polygon: square(100, 100, 100))])
+        let explored = [ExploredRegion(points: square(500, -60, 50), timestamp: 1)]
+        let known = LineOfSight.knownDoors(doors, explored: explored, sight: sight, gridSize: 50)
+        XCTAssertEqual(known, ["seen", "remembered"])
+        XCTAssertTrue(LineOfSight.knownDoors(doors, explored: [], sight: .none, gridSize: 50).isEmpty)
+    }
+
+    func testBulkOpenSkipsHiddenDoorsAndRevealClearsTheFlag() {
+        var map = GameMap(gridSize: 50)
+        map.doors = [
+            Door(id: "a", x: 0, y: 0, orientation: .horizontal, size: 50),
+            Door(id: "b", x: 100, y: 0, orientation: .horizontal, size: 50, isHidden: true),
+        ]
+        map.setAllUnlockedDoors(open: true)
+        XCTAssertEqual(map.doors.map(\.isOpen), [true, false])
+        map.doors[1].isOpen = true
+        map.setAllUnlockedDoors(open: false)
+        XCTAssertEqual(map.doors.map(\.isOpen), [false, false], "closing includes hidden doors")
+        map.setDoorsHidden(["a"], hidden: true)
+        XCTAssertEqual(map.doors[0].isHidden, true)
+        map.setDoorsHidden(["a", "b"], hidden: false)
+        XCTAssertEqual(map.doors.map(\.isHidden), [nil, nil])
+    }
+
     func testFlamesFlickerGentlyAndMagicIsSteady() {
         XCTAssertTrue(LightPreset.torch.light(at: .zero).isFlame)
         XCTAssertTrue(LightPreset.candle.light(at: .zero).isFlame)

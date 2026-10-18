@@ -256,9 +256,10 @@ extension GraphiumTools {
                     let width = try spec.double("width").map(units.px) ?? cell
                     let at = try spec.double("at").map(units.px) ?? sideLength(side) / 2
                     let centre = pointOn(side, min(max(at, 0), sideLength(side)))
-                    let door = Self.makeDoor(
+                    var door = Self.makeDoor(
                         centre: centre, width: width, degrees: side == .north || side == .south ? 0 : 90,
                         open: try spec.bool("open") ?? false, locked: try spec.bool("locked") ?? false)
+                    if try spec.bool("hidden") == true { door.isHidden = true }
                     loaded.campaign.maps[index].doors.append(door)
                     doorIDs.append(.string(door.id))
                 }
@@ -336,9 +337,10 @@ extension GraphiumTools {
                 guard width > 0 else { throw ToolError("\(spec.context).width must be more than 0.") }
                 let degrees =
                     try spec.double("angle") ?? Self.nearestWallAngle(map, to: centre, reach: map.gridSize * 0.25) ?? 0
-                let door = Self.makeDoor(
+                var door = Self.makeDoor(
                     centre: centre, width: width, degrees: degrees, open: try spec.bool("open") ?? false,
                     locked: try spec.bool("locked") ?? false)
+                if try spec.bool("hidden") == true { door.isHidden = true }
                 loaded.campaign.maps[index].doors.append(door)
                 added.append(Describe.door(door, units: units))
             }
@@ -542,6 +544,7 @@ extension GraphiumTools {
                     kind = "door"
                     if take("open"), let open = try change.bool("open") { map.doors[i].isOpen = open }
                     if take("locked"), let locked = try change.bool("locked") { map.doors[i].isLocked = locked }
+                    if take("hidden"), let hidden = try change.bool("hidden") { map.doors[i].isHidden = hidden ? true : nil }
                     if take("center"), let p = try change.point("center").map(units.px) {
                         map.doors[i].x = p.x
                         map.doors[i].y = p.y

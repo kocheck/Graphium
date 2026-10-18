@@ -86,7 +86,7 @@ enum NoteAction {
 
 /// Right-click actions on a door (PARITY §3.6).
 enum DoorAction {
-    case toggle, lock, unlock, delete
+    case toggle, lock, unlock, hide, reveal, delete
 }
 
 extension WallKind {
