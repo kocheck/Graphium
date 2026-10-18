@@ -32,6 +32,16 @@ targets:
         codeSign: true
         copy:
           destination: executables
+      # Finder thumbnails, Quick Look previews and Spotlight search for campaigns, in Contents/PlugIns.
+      - target: QuickLookThumbnail
+        embed: true
+        codeSign: true
+      - target: QuickLookPreview
+        embed: true
+        codeSign: true
+      - target: SpotlightImporter
+        embed: true
+        codeSign: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mac
@@ -90,6 +100,99 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mcp
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
+  # Quick Look and Spotlight for .graphiumcampaign packages (README, "Campaigns in Finder").
+  # Each is sandboxed and reads only the package it is handed; nothing touches the network.
+  QuickLookThumbnail:
+    type: app-extension
+    platform: macOS
+    sources: [QuickLookThumbnail]
+    dependencies:
+      - package: GraphiumCore
+      - package: GraphiumCore
+        product: GraphiumRender
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mac.thumbnail
+        PRODUCT_NAME: GraphiumThumbnail
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: QuickLookThumbnail/QuickLookThumbnail.entitlements
+        SKIP_INSTALL: YES
+    entitlements:
+      path: QuickLookThumbnail/QuickLookThumbnail.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    info:
+      path: QuickLookThumbnail/Info.plist
+      properties:
+        CFBundleDisplayName: Graphium Thumbnails
+        NSHumanReadableCopyright: MIT License
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ThumbnailProvider"
+          NSExtensionAttributes:
+            QLSupportedContentTypes: [com.graphium.campaign-package]
+            QLThumbnailMinimumDimension: 0
+  QuickLookPreview:
+    type: app-extension
+    platform: macOS
+    sources: [QuickLookPreview]
+    dependencies:
+      - package: GraphiumCore
+      - package: GraphiumCore
+        product: GraphiumRender
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mac.preview
+        PRODUCT_NAME: GraphiumPreview
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: QuickLookPreview/QuickLookPreview.entitlements
+        SKIP_INSTALL: YES
+    entitlements:
+      path: QuickLookPreview/QuickLookPreview.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    info:
+      path: QuickLookPreview/Info.plist
+      properties:
+        CFBundleDisplayName: Graphium Previews
+        NSHumanReadableCopyright: MIT License
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.preview
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).PreviewProvider"
+          NSExtensionAttributes:
+            QLIsDataBasedPreview: true
+            QLSupportsSearchableItems: false
+            QLSupportedContentTypes: [com.graphium.campaign-package]
+  SpotlightImporter:
+    type: app-extension
+    platform: macOS
+    sources: [SpotlightImporter]
+    dependencies:
+      - package: GraphiumCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mac.spotlight
+        PRODUCT_NAME: GraphiumSpotlight
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: SpotlightImporter/SpotlightImporter.entitlements
+        SKIP_INSTALL: YES
+    entitlements:
+      path: SpotlightImporter/SpotlightImporter.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    info:
+      path: SpotlightImporter/Info.plist
+      properties:
+        CFBundleDisplayName: Graphium Spotlight
+        NSHumanReadableCopyright: MIT License
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.spotlight.import
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ImportExtension"
+          NSExtensionAttributes:
+            CSSupportedContentTypes: [com.graphium.campaign-package]
 schemes:
   Graphium:
     build:

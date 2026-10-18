@@ -1,5 +1,6 @@
 import Foundation
 import GraphiumCore
+import GraphiumRender
 
 extension GraphiumTools {
     // MARK: Campaigns

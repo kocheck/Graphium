@@ -160,7 +160,8 @@ about the MCP tools:
 - To expose a new feature:
   1. Add or extend a tool in `GraphiumTools.swift` (schema and description) and
      `ToolHandlers.swift`, taking positions in cells through `Units`.
-  2. Show it to the model: `Describe` in `MapDescription.swift` (get_map), `MapRenderer` and its
+  2. Show it to the model: `Describe` in `MapDescription.swift` (get_map), `MapRenderer`
+     (`Sources/GraphiumRender/MapRenderer.swift`, also drawn by the Quick Look extensions) and its
      legend in `Rendering.swift`, and `AsciiMap.swift`.
   3. Add a check to `MapChecks.swift` if it can be set up wrong.
   4. Explain it in `AgentGuide.swift` (instructions and guides) and in the Tools table above.
