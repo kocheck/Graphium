@@ -20,6 +20,13 @@ struct MapSettingsView: View {
     @State private var calibrateAfterSave = false
     @State private var uploadedImage = false
     @State private var loadingImage = false
+    @State private var importingVTT = false
+    /// What the last Universal VTT import brought in.
+    @State private var importedVTT: String?
+
+    /// Dungeondraft writes `.dd2vtt`, other tools `.uvtt` or `.df2vtt`; all are JSON.
+    private static let vttTypes: [UTType] =
+        ["dd2vtt", "uvtt", "df2vtt"].compactMap { UTType(filenameExtension: $0, conformingTo: .json) } + [.json]
 
     init(
         document: CampaignDocument, map: GameMap, isNew: Bool, onSave: @escaping (GameMap) -> Void,
@@ -86,6 +93,24 @@ struct MapSettingsView: View {
                     if uploadedImage, map.gridType.isSquare {
                         Toggle("Calibrate to the grid after saving", isOn: $calibrateAfterSave)
                     }
+                    if isNew {
+                        HStack {
+                            Text("Universal VTT").foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Import…") { importingVTT = true }
+                                .disabled(loadingImage)
+                                .help("A .dd2vtt, .uvtt or .df2vtt map: its image, walls, doors and lights")
+                                .fileImporter(isPresented: $importingVTT, allowedContentTypes: Self.vttTypes) { result in
+                                    switch result {
+                                    case .success(let url): loadVTT(url)
+                                    case .failure(let error): errorMessage = error.localizedDescription
+                                    }
+                                }
+                        }
+                        if let importedVTT {
+                            Text(importedVTT).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                     HStack {
                         Button("Calibrate…") { onCalibrate(map); dismiss() }
                             .disabled(map.background == nil || !map.gridType.isSquare || trimmedName.isEmpty)
@@ -129,13 +154,56 @@ struct MapSettingsView: View {
             Text("This undoes any calibration. Tokens and drawings stay where they are.")
         }
         .alert(
-            "Couldn't use that image",
+            "Couldn't use that file",
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
         ) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
         }
+    }
+
+    /// Reads a Universal VTT file on the Mac (nothing is fetched): the image becomes the map
+    /// image, already lined up with the grid, and its walls, doors and lights replace the map's.
+    private func loadVTT(_ url: URL) {
+        loadingImage = true
+        let name = url.deletingPathExtension().lastPathComponent
+        Task { @MainActor in
+            defer { loadingImage = false }
+            do {
+                let (vtt, image) = try await Task.detached(priority: .userInitiated) {
+                    let scoped = url.startAccessingSecurityScopedResource()
+                    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                    let vtt = try UniversalVTT.decode(Data(contentsOf: url))
+                    let image = try vtt.image.map { try ImportedImage.load(data: $0, name: "\(name).png", kind: .map) }
+                    return (vtt, image)
+                }.value
+                var background: (src: String, width: Double, height: Double)?
+                if let image {
+                    let src = document.addAsset(image.data, preferredName: image.preferredName)
+                    background = (src, Double(image.width), Double(image.height))
+                }
+                if !map.gridType.isSquare { map.gridType = .lines }
+                vtt.apply(to: &map, background: background)
+                if trimmedName.isEmpty || map.name.hasPrefix("Map ") { map.name = name }
+                calibrateAfterSave = false
+                uploadedImage = false
+                importedVTT = Self.summary(of: vtt, hasImage: image != nil)
+            } catch is UniversalVTT.ImportError {
+                errorMessage = "“\(url.lastPathComponent)” isn't a Universal VTT map."
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private static func summary(of vtt: UniversalVTT, hasImage: Bool) -> String {
+        func count(_ n: Int, _ one: String, _ many: String) -> String { n == 1 ? "1 \(one)" : "\(n) \(many)" }
+        let parts = [
+            count(vtt.walls.count, "wall", "walls"), count(vtt.portals.count, "door", "doors"),
+            count(vtt.lights.count, "light", "lights"),
+        ]
+        return "Imported \(parts.joined(separator: ", "))" + (hasImage ? "." : ", and no map image.")
     }
 
     private func loadImage(_ url: URL) {
