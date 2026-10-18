@@ -1,5 +1,6 @@
 import GraphiumCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Edits the selected tokens (PARITY §2.3). Values shown are resolved through the
 /// library; edits are per-token overrides and apply to every selected token.
@@ -8,7 +9,14 @@ struct TokenInspector: View {
     let selection: Set<String>
     /// Shows a toast in the Architect window (`isError` picks the style).
     var notify: (_ message: String, _ isError: Bool) -> Void = { _, _ in }
+    /// Change Image…: the Architect's file picker, then the cropper.
+    var chooseImageFile: () -> Void = {}
+    /// An image file dropped on the image well, for the cropper.
+    var useImageFile: (URL) -> Void = { _ in }
     @Environment(\.undoManager) private var undoManager
+
+    @State private var showingLibraryPicker = false
+    @State private var imageDropTargeted = false
 
     @State private var nameDraft = ""
     /// What the field was seeded with; an unchanged draft is never written back.
@@ -44,6 +52,8 @@ struct TokenInspector: View {
                 Text(tokens.count == 1 ? tokens[0].name : "\(tokens.count) Tokens Selected")
                     .font(.headline)
             }
+
+            imageSection(tokens)
 
             Section {
                 Picker("Type", selection: typeBinding(tokens)) {
@@ -144,6 +154,84 @@ struct TokenInspector: View {
             if !nameFocused { resetDraft() }
         }
         .onDisappear { commitName(ids: selection) }
+    }
+
+    /// The current picture (or a placeholder when the selection's differ), Change Image…
+    /// and the library picker. The well takes dropped image files and library items.
+    private func imageSection(_ tokens: [ResolvedToken]) -> some View {
+        let sources = Set(tokens.map(\.token.src))
+        let image = sources.count == 1 ? sources.first.flatMap { document.imageCache.image(named: $0, in: document.assets) } : nil
+        return Section {
+            HStack(spacing: 12) {
+                Group {
+                    if let image {
+                        Image(decorative: image, scale: 1).resizable().scaledToFit()
+                    } else {
+                        Image(systemName: sources.count > 1 ? "square.stack" : "questionmark.square.dashed")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(width: 56, height: 56)
+                .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.control))
+                .overlay {
+                    if imageDropTargeted {
+                        RoundedRectangle(cornerRadius: Radius.control).strokeBorder(Color.accentColor, lineWidth: 2)
+                    }
+                }
+                .accessibilityLabel(sources.count > 1 ? "Different images" : "Token image")
+                .onDrop(of: [.fileURL, .plainText], isTargeted: $imageDropTargeted) { providers in
+                    handleImageDrop(providers)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Button("Change Image…") { chooseImageFile() }
+                    Button("Choose from Library…") { showingLibraryPicker = true }
+                        .popover(isPresented: $showingLibraryPicker, arrowEdge: .leading) {
+                            TokenImageLibraryPicker(document: document) { item in
+                                showingLibraryPicker = false
+                                useLibraryItem(item)
+                            }
+                        }
+                }
+            }
+        } footer: {
+            Text("Or drop an image file or a library token on the picture. The image is kept in this campaign file.")
+        }
+    }
+
+    /// A Finder image file goes to the cropper; a library drag sets its image directly.
+    private func handleImageDrop(_ providers: [NSItemProvider]) -> Bool {
+        guard let provider = providers.first else { return false }
+        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                guard let url else { return }
+                DispatchQueue.main.async { useImageFile(url) }
+            }
+            return true
+        }
+        guard provider.canLoadObject(ofClass: String.self) else { return false }
+        _ = provider.loadObject(ofClass: String.self) { string, _ in
+            let id = string.flatMap(LibraryDrag.itemID)
+            DispatchQueue.main.async {
+                if id.map({ useLibraryItem(id: $0) }) != true {
+                    notify("Drop an image file or a library token.", true)
+                }
+            }
+        }
+        return true
+    }
+
+    @discardableResult
+    private func useLibraryItem(id: String) -> Bool {
+        guard let item = document.browsableLibrary.items.first(where: { $0.id == id }) else { return false }
+        useLibraryItem(item)
+        return true
+    }
+
+    private func useLibraryItem(_ item: TokenLibraryItem) {
+        if !document.setTokenImage(from: item, for: selection, undoManager: undoManager) {
+            notify("“\(item.name)” is missing its image in the library.", true)
+        }
     }
 
     /// PARITY §2.3: writes the token's name, type and vision back as library defaults

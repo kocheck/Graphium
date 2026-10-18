@@ -23,6 +23,7 @@ final class CommandRegistryTests: XCTestCase {
         XCTAssertEqual(PaletteCommand.search(commands, query: " ").count, commands.count)
         XCTAssertEqual(PaletteCommand.search(commands, query: "wall").first?.id, "tool-wall")
         XCTAssertEqual(PaletteCommand.search(commands, query: "dungeon").first?.id, "dungeon-generate")
+        XCTAssertEqual(PaletteCommand.search(commands, query: "seen").first?.id, "fog-reset")
         XCTAssertEqual(PaletteCommand.search(commands, query: "actions").count, commands.count)
         XCTAssertTrue(PaletteCommand.search(commands, query: "zzzz").isEmpty)
     }

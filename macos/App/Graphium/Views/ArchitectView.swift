@@ -25,6 +25,7 @@ struct ArchitectView: View {
     @State private var renamingMapID: String?
     @State private var renameText = ""
     @State private var deletingMapID: String?
+    @State private var confirmingFogReset = false
     @State private var errorMessage: String?
     @State private var tools = ToolState()
     @State private var recentColors = StrokeDefaults.recentMarkerColors
@@ -53,12 +54,18 @@ struct ArchitectView: View {
     @State private var cropping: CropRequest?
     @ObservedObject private var library = LibraryStore.shared
 
-    /// A Finder-dropped image waiting in the cropper.
+    /// An image waiting in the cropper: a Finder drop that becomes a new token, or the
+    /// new picture for existing tokens (Change Image).
     private struct CropRequest: Identifiable {
+        enum Purpose {
+            case newToken(centredAt: Point2D)
+            case tokenImage(Set<String>)
+        }
+
         let id = UUID()
         let image: CGImage
         let name: String
-        let point: Point2D
+        let purpose: Purpose
     }
 
     private struct MapSettingsRequest: Identifiable {
@@ -101,8 +108,10 @@ struct ArchitectView: View {
         let kind: Kind
     }
 
-    private enum ImportTarget: Identifiable {
+    private enum ImportTarget: Hashable, Identifiable {
         case mapImage, tokens, libraryUpload
+        /// Change Image for these tokens.
+        case tokenImage(Set<String>)
         var id: Self { self }
     }
 
@@ -124,9 +133,11 @@ struct ArchitectView: View {
                         }
                         if hasInspectableSelection && (inspectorTab == .selection || !showingConsole) {
                             if hasSelectedTokens {
-                                TokenInspector(document: document, selection: selection) { message, isError in
-                                    showToast(message, isError ? .error : .success)
-                                }
+                                TokenInspector(
+                                    document: document, selection: selection,
+                                    notify: { message, isError in showToast(message, isError ? .error : .success) },
+                                    chooseImageFile: { importTarget = .tokenImage(selection) },
+                                    useImageFile: { url in cropTokenImage(from: url, for: selection) })
                             } else {
                                 NoteInspector(document: document, selection: selection)
                             }
@@ -147,7 +158,9 @@ struct ArchitectView: View {
             importTarget = nil
             switch result {
             case .success(let urls):
-                if target == .mapImage, let url = urls.first {
+                if case .tokenImage(let ids) = target, let url = urls.first {
+                    cropTokenImage(from: url, for: ids)
+                } else if target == .mapImage, let url = urls.first {
                     setMapImage(from: url)
                 } else if target == .libraryUpload, let url = urls.first {
                     do {
@@ -182,6 +195,11 @@ struct ArchitectView: View {
         } message: {
             Text("Its tokens, drawings and fog go with it. You can undo this.")
         }
+        .confirmationDialog("Reset what the party has seen?", isPresented: $confirmingFogReset) {
+            Button("Reset Explored Fog", role: .destructive) { resetExploredFog() }
+        } message: {
+            Text("The World View forgets everywhere the party has explored on this map, apart from what PCs can see right now. You can undo this.")
+        }
         .sheet(isPresented: $showingLibrary) {
             LibraryManagerView(
                 document: document,
@@ -193,7 +211,14 @@ struct ArchitectView: View {
         }
         .sheet(item: $cropping) { request in
             ImageCropperView(image: request.image) { cropped in
-                addCroppedToken(cropped, name: request.name, centredAt: request.point)
+                switch request.purpose {
+                case .newToken(let point):
+                    addCroppedToken(cropped, name: request.name, centredAt: point)
+                case .tokenImage(let ids):
+                    if let src = document.addCroppedTokenImage(cropped, name: request.name) {
+                        document.setTokenImage(src, for: ids, undoManager: undoManager)
+                    }
+                }
             }
         }
         .sheet(isPresented: $showingPalette) {
@@ -232,7 +257,7 @@ struct ArchitectView: View {
                     let daylight = daylightBinding
                     daylight.wrappedValue.toggle()
                 },
-                resetFog: document.campaign.activeMap.exploredRegions.isEmpty ? nil : { resetExploredFog() },
+                resetFog: document.campaign.activeMap.exploredRegions.isEmpty ? nil : { confirmingFogReset = true },
                 deleteSelection: selection.isEmpty ? nil : { deleteSelection() },
                 showConsoleSettings: { showingConsoleSettings = true },
                 zoomIn: { zoomCanvas(by: 1.25) },
@@ -488,6 +513,22 @@ struct ArchitectView: View {
                     document.edit("Change Grid", undoManager: undoManager) { $0.activeMap.gridType = type }
                     showToast("Grid: \(type.title)")
                 },
+                tokenMenu: { ids in
+                    TokenMenu.make(
+                        tokenIDs: ids, document: document,
+                        chooseFile: { importTarget = .tokenImage(ids) },
+                        pickLibraryItem: { item in
+                            if !document.setTokenImage(from: item, for: ids, undoManager: undoManager) {
+                                errorMessage = "“\(item.name)” is missing its image in the library."
+                            }
+                        },
+                        delete: {
+                            document.edit(ids.count == 1 ? "Delete Token" : "Delete Tokens", undoManager: undoManager) {
+                                $0.activeMap.removeItems(ids)
+                            }
+                            selection.subtract(ids)
+                        })
+                },
                 openColorPicker: { openMarkerColorPicker() },
                 stopAudio: { document.dispatch(.stop) }
             ),
@@ -556,6 +597,9 @@ struct ArchitectView: View {
         case "world-view-toggle-pause": document.isPaused.toggle()
         case "world-view-launch": openWindow(id: WorldWindow.id, value: document.sessionID)
         case "dungeon-generate": showingDungeon = true
+        case "fog-reset":
+            // After the palette sheet has closed, so the dialog isn't dropped with it.
+            DispatchQueue.main.async { confirmingFogReset = !document.campaign.activeMap.exploredRegions.isEmpty }
         case "session-console-stop": document.dispatch(.stop)
         case "session-console-duck": document.dispatch(.setDucked(!document.sessionRuntime.ducked))
         case "session-console-return-to-map": document.dispatch(.returnToMap)
@@ -679,23 +723,30 @@ struct ArchitectView: View {
             let source = CGImageSourceCreateWithURL(url as CFURL, nil),
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         {
-            cropping = CropRequest(image: image, name: url.lastPathComponent, point: point)
+            cropping = CropRequest(image: image, name: url.lastPathComponent, purpose: .newToken(centredAt: point))
         } else {
             addTokens(from: urls, at: point, centred: true)
         }
     }
 
+    /// Change Image: the chosen file goes through the same 1:1 cropper as a Finder drop.
+    private func cropTokenImage(from url: URL, for ids: Set<String>) {
+        guard !ids.isEmpty else { return }
+        let image = withAccess(to: url) { () -> CGImage? in
+            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+            // Decoded now, while the file is still accessible.
+            return CGImageSourceCreateImageAtIndex(
+                source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
+        }
+        guard let image else {
+            errorMessage = ImportedImage.ImportError.unreadable(url.lastPathComponent).localizedDescription
+            return
+        }
+        cropping = CropRequest(image: image, name: url.lastPathComponent, purpose: .tokenImage(ids))
+    }
+
     private func addCroppedToken(_ image: CGImage, name: String, centredAt point: Point2D) {
-        let side = min(image.width, ImageKind.token.maxDimension)
-        guard let context = CGContext(
-            data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return }
-        context.interpolationQuality = .high
-        context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
-        guard let scaled = context.makeImage(), let png = NSBitmapImageRep(cgImage: scaled).representation(using: .png, properties: [:])
-        else { return }
-        let asset = document.addAsset(png, preferredName: (name as NSString).deletingPathExtension + ".png")
+        guard let asset = document.addCroppedTokenImage(image, name: name) else { return }
         let map = document.campaign.activeMap
         let size = map.gridSize
         let snapped = snapToGrid(
@@ -941,9 +992,9 @@ struct ArchitectView: View {
         }
         ToolbarItem(id: "reset-fog", placement: .secondaryAction) {
             Button {
-                resetExploredFog()
+                confirmingFogReset = true
             } label: {
-                Label("Reset Explored Fog", systemImage: "eye.slash")
+                Label("Reset Explored Fog…", systemImage: "eye.slash")
             }
             .help("Forget what the party has explored on this map")
             .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
@@ -1082,7 +1133,10 @@ struct ArchitectView: View {
     }
 
     private func resetExploredFog() {
-        document.edit("Reset Explored Fog", undoManager: undoManager) { $0.activeMap.exploredRegions = [] }
+        document.edit("Reset Explored Fog", undoManager: undoManager) { campaign in
+            let library = campaign.libraryIndex
+            campaign.activeMap.resetExploration(library: library, timestamp: Date().timeIntervalSince1970 * 1000)
+        }
     }
 
     // MARK: Actions

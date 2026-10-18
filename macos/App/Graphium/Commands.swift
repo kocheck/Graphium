@@ -223,7 +223,7 @@ struct EditorCommands: Commands {
             Divider()
             Toggle("Daylight", isOn: Binding(get: { actions?.isDaylight ?? false }, set: { _ in actions?.toggleDaylight() }))
                 .disabled(actions == nil)
-            Button("Reset Explored Fog") { actions?.resetFog?() }
+            Button("Reset Explored Fog…") { actions?.resetFog?() }
                 .disabled(actions?.resetFog == nil)
             Divider()
             Button("Delete Selection") { actions?.deleteSelection?() }

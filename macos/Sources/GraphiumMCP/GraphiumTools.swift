@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.1.0"
+    public static let version = "1.2.0"
 
     struct Tool {
         var name: String
@@ -409,7 +409,8 @@ public final class GraphiumTools {
                 name: "update_objects", title: "Update objects",
                 description:
                     "Change existing objects by id (from get_map). Tokens: position, name, type, size, vision_ft, "
-                    + "darkvision_ft, speed_ft. Doors: open, locked, center, width, angle. Walls: kind, one_way, flip "
+                    + "darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
+                    + "(a token library item id or name; only its picture is used). Doors: open, locked, center, width, angle. Walls: kind, one_way, flip "
                     + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
                     + "Notes: center, title, dm_notes, player_notes, shared. Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [
