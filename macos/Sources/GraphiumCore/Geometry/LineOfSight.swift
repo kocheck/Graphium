@@ -360,4 +360,16 @@ extension GameMap {
         }
         return pending.count
     }
+
+    /// Forgets everything the party has explored on this map (the DM's reset), keeping only
+    /// what PCs can see right now, as when fog first comes on. Without that, the ground a
+    /// standing PC sees would drop to unexplored as soon as they walked away.
+    /// Returns how many viewers were raycast.
+    @discardableResult
+    public mutating func resetExploration(library: [String: TokenLibraryItem], timestamp: Double) -> Int {
+        exploredRegions = []
+        var fogOff = self
+        fogOff.isDaylightMode = true
+        return recordExploration(since: fogOff, library: library, timestamp: timestamp)
+    }
 }

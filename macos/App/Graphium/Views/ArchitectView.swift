@@ -25,6 +25,7 @@ struct ArchitectView: View {
     @State private var renamingMapID: String?
     @State private var renameText = ""
     @State private var deletingMapID: String?
+    @State private var confirmingFogReset = false
     @State private var errorMessage: String?
     @State private var tools = ToolState()
     @State private var recentColors = StrokeDefaults.recentMarkerColors
@@ -177,6 +178,11 @@ struct ArchitectView: View {
         } message: {
             Text("Its tokens, drawings and fog go with it. You can undo this.")
         }
+        .confirmationDialog("Reset what the party has seen?", isPresented: $confirmingFogReset) {
+            Button("Reset Explored Fog", role: .destructive) { resetExploredFog() }
+        } message: {
+            Text("The World View forgets everywhere the party has explored on this map, apart from what PCs can see right now. You can undo this.")
+        }
         .sheet(isPresented: $showingLibrary) {
             LibraryManagerView(
                 document: document,
@@ -227,7 +233,7 @@ struct ArchitectView: View {
                     let daylight = daylightBinding
                     daylight.wrappedValue.toggle()
                 },
-                resetFog: document.campaign.activeMap.exploredRegions.isEmpty ? nil : { resetExploredFog() },
+                resetFog: document.campaign.activeMap.exploredRegions.isEmpty ? nil : { confirmingFogReset = true },
                 deleteSelection: selection.isEmpty ? nil : { deleteSelection() },
                 showConsoleSettings: { showingConsoleSettings = true },
                 zoomIn: { zoomCanvas(by: 1.25) },
@@ -532,6 +538,7 @@ struct ArchitectView: View {
         case "world-view-toggle-pause": document.isPaused.toggle()
         case "world-view-launch": openWindow(id: WorldWindow.id, value: document.sessionID)
         case "dungeon-generate": showingDungeon = true
+        case "fog-reset": confirmingFogReset = !document.campaign.activeMap.exploredRegions.isEmpty
         case "session-console-stop": document.dispatch(.stop)
         case "session-console-duck": document.dispatch(.setDucked(!document.sessionRuntime.ducked))
         case "session-console-return-to-map": document.dispatch(.returnToMap)
@@ -901,9 +908,9 @@ struct ArchitectView: View {
         }
         ToolbarItem(id: "reset-fog", placement: .secondaryAction) {
             Button {
-                resetExploredFog()
+                confirmingFogReset = true
             } label: {
-                Label("Reset Explored Fog", systemImage: "eye.slash")
+                Label("Reset Explored Fog…", systemImage: "eye.slash")
             }
             .help("Forget what the party has explored on this map")
             .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
@@ -1042,7 +1049,10 @@ struct ArchitectView: View {
     }
 
     private func resetExploredFog() {
-        document.edit("Reset Explored Fog", undoManager: undoManager) { $0.activeMap.exploredRegions = [] }
+        document.edit("Reset Explored Fog", undoManager: undoManager) { campaign in
+            let library = campaign.libraryIndex
+            campaign.activeMap.resetExploration(library: library, timestamp: Date().timeIntervalSince1970 * 1000)
+        }
     }
 
     // MARK: Actions

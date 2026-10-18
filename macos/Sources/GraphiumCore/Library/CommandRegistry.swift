@@ -29,6 +29,7 @@ public struct PaletteCommand: Equatable, Identifiable, Sendable {
                 id: "world-view-toggle-pause", label: isPaused ? "Resume World View (Play)" : "Pause World View",
                 category: .worldView, keywords: ["pause", "play", "resume", "world", "view", "players", "loading"], shortcut: "⇧⌘P"),
             .init(id: "world-view-launch", label: "Launch World View Window", category: .worldView, keywords: ["world", "view", "projector", "player", "window", "launch", "open"], shortcut: "⇧⌘W"),
+            .init(id: "fog-reset", label: "Reset Explored Fog", category: .worldView, keywords: ["fog", "explored", "seen", "reset", "forget", "party", "vision", "clear"]),
             .init(id: "dungeon-generate", label: "Generate Dungeon", category: .generation, keywords: ["dungeon", "generator", "generate", "random", "map", "create"]),
             .init(id: "session-console-stop", label: "Session Console: Stop", category: .worldView, keywords: ["session", "console", "stop", "audio", "escape"], shortcut: "Esc"),
             .init(id: "session-console-duck", label: "Session Console: Duck", category: .worldView, keywords: ["session", "console", "duck", "volume"], shortcut: "D (Console)"),

@@ -120,6 +120,32 @@ final class LineOfSightTests: XCTestCase {
         XCTAssertTrue(daylight.exploredRegions.isEmpty, "no fog in daylight")
     }
 
+    func testResetExplorationKeepsOnlyWhatPCsSeeNow() {
+        var map = GameMap(gridSize: 50)
+        map.tokens = [Token(id: "a", x: 0, y: 0, src: "", type: .pc, visionRadius: 30)]
+        let start = map
+        map.tokens[0].x = 1000
+        map.recordExploration(since: start, library: [:], timestamp: 1)
+        map.exploredRegions.insert(ExploredRegion(points: [Point2D(x: 0, y: 0)], timestamp: 0), at: 0)
+        XCTAssertEqual(map.exploredRegions.count, 2)
+
+        XCTAssertEqual(map.resetExploration(library: [:], timestamp: 2), 1)
+        XCTAssertEqual(map.exploredRegions.count, 1)
+        XCTAssertEqual(map.exploredRegions[0].timestamp, 2)
+        let centre = Point2D(x: 1000 + 25, y: 25)
+        XCTAssertTrue(LineOfSight.contains(map.exploredRegions[0].points, centre), "where the PC stands stays explored")
+
+        map.tokens = []
+        map.resetExploration(library: [:], timestamp: 3)
+        XCTAssertTrue(map.exploredRegions.isEmpty, "no PCs: nothing explored")
+
+        var daylight = start
+        daylight.isDaylightMode = true
+        daylight.exploredRegions = [ExploredRegion(points: [Point2D(x: 1, y: 1)], timestamp: 1)]
+        daylight.resetExploration(library: [:], timestamp: 4)
+        XCTAssertTrue(daylight.exploredRegions.isEmpty)
+    }
+
     /// A PC standing west of a closed door in a wall at x = 200 (the door spans y 0…100).
     private func doorwayMap() -> GameMap {
         var map = GameMap(gridSize: 50)
