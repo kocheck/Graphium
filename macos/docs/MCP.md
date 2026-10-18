@@ -116,7 +116,7 @@ the installed version; the app sees the same number as the server's version.
 | `add_tokens`                                        | PCs, NPCs and monsters, from an image, the campaign's token library, or a lettered disc |
 | `add_lights`                                        | Torches, lanterns and other lights for maps with lighting on (5e bright and dim radii)  |
 | `add_stairs`, `draw_markers`                        | Stairs and freehand marker lines                                                        |
-| `update_objects`, `remove_objects`, `clear_map`     | Edit (including new token art), remove or clear by id or layer                        |
+| `update_objects`, `remove_objects`, `clear_map`     | Edit (including new token art), remove or clear by id or layer                          |
 | `generate_dungeon`                                  | Graphium's room-and-corridor generator, repeatable with a seed                          |
 | `render_map`                                        | A PNG of the DM's or the players' view, and/or a text grid                              |
 | `check_map`                                         | Light leaks between walls, doors off walls, tokens in walls, PCs without vision         |
