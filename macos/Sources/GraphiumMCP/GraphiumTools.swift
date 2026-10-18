@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.3.0"
+    public static let version = "1.4.0"
 
     struct Tool {
         var name: String
