@@ -1,6 +1,7 @@
 import AppKit
 import QuartzCore
 import GraphiumCore
+import GraphiumRender
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -81,6 +82,11 @@ final class MapCanvasNSView: NSView {
     var fog: FogState?
     /// The explored-fog union, stamped incrementally and reused across frames.
     private let exploredMask = ExploredFogMask()
+    /// Draws the fog on the GPU, with hatching over remembered ground (decision 010); nil
+    /// without a Metal device, when Core Graphics draws it instead (without hatching).
+    private lazy var fogRenderer: FogRenderer? = FogRenderer()
+    /// The last GPU fog, reused while nothing it shows changes.
+    private var metalFog: (scene: FogScene, view: FogView, image: CGImage)?
     /// Player-facing styling (walls black 6px, doors with glow) and no DM overlays.
     var isPlayerView = false
     var toolState = ToolState()
@@ -477,6 +483,17 @@ final class MapCanvasNSView: NSView {
     /// Explored polygons are stamped as one union into a cached mask (`ExploredFogMask`),
     /// so overlaps don't compound as in TS.
     private func drawFog(_ fog: FogState, context: CGContext) {
+        if let drawn = metalFogImage(fog) {
+            let (image, rect) = drawn
+            // The image's top row first, so it draws upright in the flipped canvas.
+            context.saveGState()
+            context.translateBy(x: rect.minX, y: rect.maxY)
+            context.scaleBy(x: 1, y: -1)
+            context.interpolationQuality = .none
+            context.draw(image, in: CGRect(origin: .zero, size: rect.size))
+            context.restoreGState()
+            return
+        }
         context.saveGState()
         context.beginTransparencyLayer(auxiliaryInfo: nil)
         context.setFillColor(NSColor.black.withAlphaComponent(0.94).cgColor)
@@ -523,8 +540,29 @@ final class MapCanvasNSView: NSView {
         context.restoreGState()
     }
 
+    /// The fog for this view drawn with Metal, one pixel per backing pixel, and where it goes
+    /// in map space.
+    private func metalFogImage(_ fog: FogState) -> (CGImage, CGRect)? {
+        guard let renderer = fogRenderer else { return nil }
+        let pointScale = window?.backingScaleFactor ?? 2
+        let view = FogView(
+            origin: viewport.origin, scale: viewport.zoom * pointScale,
+            width: Int((bounds.width * pointScale).rounded(.up)), height: Int((bounds.height * pointScale).rounded(.up)),
+            pointScale: pointScale)
+        let scene = FogScene(
+            bounds: fog.bounds, explored: fog.explored,
+            sight: PartySight(vision: fog.vision, lit: fog.lit, ambient: fog.ambient))
+        let rect = CGRect(
+            x: view.origin.x, y: view.origin.y, width: Double(view.width) / view.scale,
+            height: Double(view.height) / view.scale)
+        if let metalFog, metalFog.scene == scene, metalFog.view == view { return (metalFog.image, rect) }
+        guard let image = renderer.render(scene, view: view)?.image else { return nil }
+        metalFog = (scene, view, image)
+        return (image, rect)
+    }
+
     /// How much of the fog dim light clears; bright clears all of it.
-    private static let dimClearing = 0.65
+    private static let dimClearing = FogShading.dimClearing
 
     /// Lighting on (native, 5e 2024): inside each PC's sight, the fog is cleared by the
     /// ambient light, by each light (fully out to its bright radius, `dimClearing` out to its
