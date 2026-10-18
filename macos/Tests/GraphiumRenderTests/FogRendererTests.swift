@@ -48,7 +48,9 @@ final class FogRendererTests: XCTestCase {
         let (_, alpha, _) = try render(map(width: 400, height: 300, pc: Point2D(x: 75, y: 75), vision: 10))
         XCTAssertEqual(alpha(100, 100), 0, accuracy: tolerance, "clear at the PC")
         XCTAssertEqual(alpha(150, 100), 0, accuracy: tolerance, "clear to 60% of the radius")
-        XCTAssertEqual(alpha(180, 100), FogShading.base * 0.5, accuracy: tolerance, "half way through the fade")
+        // The pixel sampled for x = 180 has its centre at 180.5: 80.5 px out, 19.5 px short of the edge.
+        XCTAssertEqual(
+            alpha(180, 100), FogShading.base * (1 - 19.5 / 40), accuracy: tolerance, "half way through the fade")
         XCTAssertEqual(alpha(350, 250), FogShading.base, accuracy: tolerance, "unexplored")
         XCTAssertEqual(alpha(-15, -15), 0, accuracy: tolerance, "no fog outside its bounds")
     }
