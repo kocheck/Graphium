@@ -225,6 +225,49 @@ final class MCPServerTests: XCTestCase {
         XCTAssertTrue(try loadCampaign("Lit.graphiumcampaign").activeMap.lights.isEmpty)
     }
 
+    func testNotes() throws {
+        try call("create_campaign", ["path": "Notes", "name": "Notes"])
+        let added = try call(
+            "add_notes",
+            [
+                "campaign": "Notes",
+                "notes": [
+                    ["center": [2.5, 3.5], "title": "1. Guard Room", "dm_notes": "The sergeant has the key."],
+                    ["center": [6, 2], "title": "Mural", "shared": true],
+                ],
+            ])
+        let first = try XCTUnwrap(added["added_notes"]?.arrayValue?.first)
+        XCTAssertEqual(first["center"], [2.5, 3.5])
+        XCTAssertEqual(first["shared"], .bool(false))
+        var map = try loadCampaign("Notes.graphiumcampaign").activeMap
+        XCTAssertEqual(map.notes.map(\.title), ["1. Guard Room", "Mural"])
+        XCTAssertEqual(map.notes[0].x, 125)
+        XCTAssertEqual(map.notes[0].dmNotes, "The sergeant has the key.")
+        XCTAssertFalse(map.notes[0].isShared)
+
+        let check = try call("check_map", ["campaign": "Notes"])
+        let kinds = Set(check["issues"]?.arrayValue?.compactMap { $0["kind"]?.stringValue } ?? [])
+        XCTAssertTrue(kinds.contains("shared_note_without_player_notes"), check.serialized())
+
+        let mural = map.notes[1].id
+        try call(
+            "update_objects",
+            ["campaign": "Notes", "changes": [["id": .string(mural), "player_notes": "A dragon over a burning city."]]])
+        map = try loadCampaign("Notes.graphiumcampaign").activeMap
+        XCTAssertEqual(map.notes[1].playerNotes, "A dragon over a burning city.")
+
+        let described = try call("get_map", ["campaign": "Notes"])
+        XCTAssertEqual(described["notes"]?.arrayValue?.count, 2)
+        let text = try request(
+            "tools/call", ["name": "render_map", "arguments": ["campaign": "Notes", "view": "players", "format": "both"]])
+        XCTAssertEqual(text["result"]?["isError"], .bool(false))
+
+        try call("remove_objects", ["campaign": "Notes", "ids": [.string(mural)]])
+        XCTAssertEqual(try loadCampaign("Notes.graphiumcampaign").activeMap.notes.count, 1)
+        try call("clear_map", ["campaign": "Notes", "layers": ["notes"]])
+        XCTAssertTrue(try loadCampaign("Notes.graphiumcampaign").activeMap.notes.isEmpty)
+    }
+
     func testUpdateRemoveAndUndo() throws {
         try call("create_campaign", ["path": "Edit", "name": "Edit"])
         let added = try call("add_tokens", ["campaign": "Edit", "tokens": [["name": "Goblin", "type": "NPC", "position": [1, 1]]]])

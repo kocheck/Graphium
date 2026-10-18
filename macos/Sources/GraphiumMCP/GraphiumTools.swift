@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.1.0"
+    public static let version = "1.2.0"
 
     struct Tool {
         var name: String
@@ -370,6 +370,26 @@ public final class GraphiumTools {
                 ],
                 required: ["campaign", "lights"], readOnly: false, run: addLights),
             Tool(
+                name: "add_notes", title: "Add note pins",
+                description:
+                    "Pin notes to the map: room keys, read-aloud text, clues, handouts. dm_notes are for the DM alone "
+                    + "and never reach players. player_notes are what players may read: with shared true the pin shows "
+                    + "on the World View and players can click it to read them. Notes are DM-only (shared false) unless "
+                    + "the DM asks otherwise.",
+                properties: [
+                    "campaign": c, "map": m, "units": u,
+                    "notes": Self.objects(
+                        "Notes to add.",
+                        [
+                            "center": Self.point("Where the pin goes, e.g. a room's centre."),
+                            "title": Self.string("Short title shown under the pin, e.g. 1. Guard Room."),
+                            "dm_notes": Self.string("Secrets, monster tactics, treasure: DM only."),
+                            "player_notes": Self.string("Read-aloud or handout text players may see."),
+                            "shared": Self.boolean("Show the pin to players on the World View (default false)."),
+                        ], required: ["center"]),
+                ],
+                required: ["campaign", "notes"], readOnly: false, run: addNotes),
+            Tool(
                 name: "draw_markers", title: "Draw markers",
                 description:
                     "Draw freehand marker lines (annotations, terrain outlines, paths). Markers don't block anything; "
@@ -392,7 +412,7 @@ public final class GraphiumTools {
                     + "darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
                     + "(a token library item id or name; only its picture is used). Doors: open, locked, center, width, angle. Walls: kind, one_way, flip "
                     + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
-                    + "Stairs: center, direction, type. Fields that don't apply are reported back.",
+                    + "Notes: center, title, dm_notes, player_notes, shared. Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "changes": [
@@ -404,7 +424,7 @@ public final class GraphiumTools {
                 required: ["campaign", "changes"], readOnly: false, run: updateObjects),
             Tool(
                 name: "remove_objects", title: "Remove objects",
-                description: "Remove tokens, walls, markers, doors, lights or stairs by id. Undo puts them back.",
+                description: "Remove tokens, walls, markers, doors, lights, notes or stairs by id. Undo puts them back.",
                 properties: [
                     "campaign": c, "map": m,
                     "ids": ["type": "array", "items": ["type": "string"], "minItems": 1, "description": "Ids from get_map."],
@@ -413,13 +433,13 @@ public final class GraphiumTools {
             Tool(
                 name: "clear_map", title: "Clear map layers",
                 description:
-                    "Remove whole layers from a map: walls, doors, tokens, markers, stairs, lights, fog (explored areas), "
+                    "Remove whole layers from a map: walls, doors, tokens, markers, stairs, lights, notes, fog (explored areas), "
                     + "background.",
                 properties: [
                     "campaign": c, "map": m,
                     "layers": [
                         "type": "array", "minItems": 1,
-                        "items": ["type": "string", "enum": ["walls", "doors", "tokens", "markers", "stairs", "lights", "fog", "background"]],
+                        "items": ["type": "string", "enum": ["walls", "doors", "tokens", "markers", "stairs", "lights", "notes", "fog", "background"]],
                     ],
                 ],
                 required: ["campaign", "layers"], readOnly: false, destructive: true, run: clearMap),

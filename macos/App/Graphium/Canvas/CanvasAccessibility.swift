@@ -43,6 +43,21 @@ extension MapCanvasNSView {
             }
             elements.append(element)
         }
+        // Players reach only the shared pins, and only their player notes.
+        for note in map.notes where !isPlayerView || note.isShared {
+            let r = (isPlayerView ? Self.worldNoteMarkerRadius : Self.noteMarkerRadius) / viewport.zoom
+            let sharing = isPlayerView ? "" : note.isShared ? ", shown to players" : ", DM only"
+            let element = makeElement(
+                label: "Note: \(note.displayTitle)\(sharing)\(selection.contains(note.id) ? ", selected" : "")",
+                bounds: Bounds(x: note.x - r, y: note.y - r, width: 2 * r, height: 2 * r))
+            let id = note.id
+            if isPlayerView, let openNote = editing?.openNote {
+                element.onPress = { openNote(id) }
+            } else if !isPlayerView, let editing {
+                element.onPress = { editing.setSelection([id]) }
+            }
+            elements.append(element)
+        }
         if !isPlayerView {
             // Lights are the DM's alone; players only see their effect.
             for light in map.lights {

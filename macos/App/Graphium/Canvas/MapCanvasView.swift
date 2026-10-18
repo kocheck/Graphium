@@ -21,6 +21,11 @@ struct CanvasEditing {
     var placeDoor: ((Point2D) -> Void)?
     var placeLight: ((Point2D) -> Void)?
     var lightAction: ((_ lightIDs: Set<String>, LightAction) -> Void)?
+    /// Places a note pin; the owner selects it so the side panel opens on it.
+    var placeNote: ((Point2D) -> Void)?
+    var noteAction: ((_ noteIDs: Set<String>, NoteAction) -> Void)?
+    /// World View: a player clicked a shared pin, to read its player notes.
+    var openNote: ((String) -> Void)?
     var doorAction: ((_ doorID: String, DoorAction) -> Void)?
     var wallAction: ((_ wallIDs: Set<String>, WallAction) -> Void)?
     var setMeasurement: ((MeasurementShape?) -> Void)?
@@ -32,7 +37,7 @@ struct CanvasEditing {
     var rotateDoors: ((_ doorIDs: Set<String>, _ degrees: Double) -> Void)?
     /// A library item dragged from the sidebar or Library Manager, dropped at a map point.
     var dropLibraryItem: ((_ itemID: String, _ at: Point2D) -> Void)?
-    /// Strokes and lights dragged by an offset (Option duplicates).
+    /// Strokes, lights and notes dragged by an offset (Option duplicates).
     var moveDrawings: ((_ ids: Set<String>, _ dx: Double, _ dy: Double, _ duplicate: Bool) -> Void)?
     var resizeToken: ((_ id: String, _ scale: Double) -> Void)?
     var calibrate: ((Bounds) -> Void)?
@@ -318,12 +323,17 @@ final class MapCanvasNSView: NSView {
         drawTokens(map, context: context)
         if !isPlayerView, editing != nil {
             if case .movingStrokes(let ids, let start, let current, true) = interaction {
-                drawLights(
-                    map.lights, map: map, moving: ids, offset: CGSize(width: current.x - start.x, height: current.y - start.y),
-                    duplicate: NSEvent.modifierFlags.contains(.option), context: context)
+                let offset = CGSize(width: current.x - start.x, height: current.y - start.y)
+                let duplicate = NSEvent.modifierFlags.contains(.option)
+                drawLights(map.lights, map: map, moving: ids, offset: offset, duplicate: duplicate, context: context)
+                drawNotes(map.notes, moving: ids, offset: offset, duplicate: duplicate, context: context)
             } else {
                 drawLights(map.lights, map: map, context: context)
+                drawNotes(map.notes, context: context)
             }
+        } else if isPlayerView {
+            // Shared pins sit over the fog, like tokens: the DM chose to show them (decision 011).
+            drawNotes(map.notes, context: context)
         }
         if let handle = resizeHandle(in: map), case .idle = interaction {
             context.setFillColor(Palette.canvasSelection.nsColor.cgColor)
@@ -727,6 +737,12 @@ final class MapCanvasNSView: NSView {
         }
         let point = mapLocation(of: event)
         let shift = event.modifierFlags.contains(.shift)
+        if isPlayerView, let openNote = editing.openNote,
+            let note = map.note(at: point, tolerance: noteHitRadius, sharedOnly: true)
+        {
+            openNote(note.id)
+            return
+        }
         if calibrating, editing.calibrate != nil {
             interaction = .calibrating(start: point, current: point)
             return
@@ -743,6 +759,11 @@ final class MapCanvasNSView: NSView {
         if editing.moveDrawings != nil, let light = map.light(at: point, tolerance: Self.lightHitRadius / viewport.zoom) {
             // Light markers draw over tokens, so they take the click first.
             beginMovingStrokes(hit: light.id, at: point, map: map, shift: shift, editing: editing)
+            return
+        }
+        if !isPlayerView, editing.moveDrawings != nil, let note = map.note(at: point, tolerance: noteHitRadius) {
+            // Note pins draw over tokens too.
+            beginMovingStrokes(hit: note.id, at: point, map: map, shift: shift, editing: editing)
             return
         }
         if let hit = map.token(at: point, library: library), !hiddenTokenIDs.contains(hit.id) {
@@ -782,14 +803,14 @@ final class MapCanvasNSView: NSView {
     /// The light hit radius in view points.
     private static let lightHitRadius = lightMarkerRadius + 3
 
-    /// A press on a stroke or light: selects it (Shift toggles) and starts a move of every
-    /// selected stroke and light.
+    /// A press on a stroke, light or note: selects it (Shift toggles) and starts a move of every
+    /// selected stroke, light and note.
     private func beginMovingStrokes(hit id: String, at point: Point2D, map: GameMap, shift: Bool, editing: CanvasEditing) {
         var next = shift ? selection : []
         if shift, next.contains(id) { next.remove(id) } else { next.insert(id) }
         if !shift, selection.contains(id) { next = selection }
         editing.setSelection(next)
-        let ids = Set(map.drawings.map(\.id) + map.lights.map(\.id)).intersection(next)
+        let ids = Set(map.drawings.map(\.id) + map.lights.map(\.id) + map.notes.map(\.id)).intersection(next)
         interaction = .movingStrokes(ids: ids, start: point, current: point, began: false)
     }
 
@@ -817,6 +838,10 @@ final class MapCanvasNSView: NSView {
                 editing.lightAction?([light.id], .delete)  // and lights
                 return
             }
+            if let note = map.note(at: point, tolerance: noteHitRadius) {
+                editing.noteAction?([note.id], .delete)  // and notes
+                return
+            }
             beginStroke(
                 Drawing(
                     tool: .eraser, points: [point.x, point.y], color: StrokeDefaults.eraserColor,
@@ -842,6 +867,19 @@ final class MapCanvasNSView: NSView {
             editing.placeDoor?(point)
         case .light:
             editing.placeLight?(point)
+        case .note:
+            if let note = map.note(at: point, tolerance: noteHitRadius) {
+                // Clicking a pin opens it rather than stacking another on it.
+                if event.modifierFlags.contains(.shift) {
+                    var next = selection
+                    if next.contains(note.id) { next.remove(note.id) } else { next.insert(note.id) }
+                    editing.setSelection(next)
+                } else {
+                    editing.setSelection([note.id])
+                }
+                return
+            }
+            editing.placeNote?(point)
         case .measure:
             interaction = .measuring(origin: point)
             editing.setMeasurement?(MeasurementShape(mode: toolState.measureMode, origin: point, pointer: point))
@@ -936,6 +974,7 @@ final class MapCanvasNSView: NSView {
                     hits.formUnion(map.drawingIDs(intersecting: rect))
                     hits.formUnion(map.doorIDs(intersecting: rect))
                     hits.formUnion(map.lightIDs(intersecting: rect))
+                    hits.formUnion(map.noteIDs(intersecting: rect))
                 }
                 editing?.setSelection(base.union(hits))
             }
@@ -1023,7 +1062,10 @@ final class MapCanvasNSView: NSView {
         {
             return lightMenu(light, map: map, action: lightAction)
         }
-        // Lights and doors are small targets, so they win over a token standing on them.
+        // Lights, notes and doors are small targets, so they win over a token standing on them.
+        if let noteAction = editing?.noteAction, let note = map.note(at: point, tolerance: noteHitRadius) {
+            return noteMenu(note, map: map, action: noteAction)
+        }
         guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
             return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map)
         }
@@ -1096,6 +1138,27 @@ final class MapCanvasNSView: NSView {
         }
         menu.addItem(.separator())
         let title = ids.count == 1 ? "Delete Light" : "Delete Lights"
+        let delete = MenuAction.item(title) { action(ids, .delete) }
+        delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
+        menu.addItem(delete)
+        return menu
+    }
+
+    /// Share, show and Delete for the selected notes when the clicked one is among them, else
+    /// for that note alone.
+    private func noteMenu(_ note: MapNote, map: GameMap, action: @escaping (Set<String>, NoteAction) -> Void) -> NSMenu {
+        let ids: Set<String> =
+            selection.contains(note.id) ? Set(map.notes.filter { selection.contains($0.id) }.map(\.id)) : [note.id]
+        if !selection.contains(note.id) { editing?.setSelection([note.id]) }
+        let allShared = map.notes.filter { ids.contains($0.id) }.allSatisfy(\.isShared)
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let share = MenuAction.item("Show Pin to Players") { action(ids, .share(!allShared)) }
+        share.state = allShared ? .on : .off
+        menu.addItem(share)
+        menu.addItem(MenuAction.item("Show Player Notes on World View", enabled: ids.count == 1) { action(ids, .showOnWorldView) })
+        menu.addItem(.separator())
+        let title = ids.count == 1 ? "Delete Note" : "Delete Notes"
         let delete = MenuAction.item(title) { action(ids, .delete) }
         delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
@@ -1348,7 +1411,7 @@ final class MapCanvasNSView: NSView {
         if event.keyCode == 49, responder is NSButton { return false }  // Space presses a focused button
         let keyCodes: Set<UInt16> = [49, 51, 53, 117]  // space, delete, escape, forward delete
         let arrows: Set<UInt16> = [123, 124, 125, 126]
-        let characters = Set("vmewdlri12345?+=-_")
+        let characters = Set("vmewdlnri12345?+=-_")
         let character = event.charactersIgnoringModifiers?.lowercased().first
         // Arrows reach the canvas from other controls only with the Door tool, so a slider or
         // picker keeps its arrows while a door happens to be selected.

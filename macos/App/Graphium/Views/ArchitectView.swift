@@ -3,7 +3,7 @@ import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The DM's window: map navigator sidebar, the editable canvas, and the token inspector.
+/// The DM's window: map navigator sidebar, the editable canvas, and the token or note inspector.
 struct ArchitectView: View {
     @ObservedObject var document: CampaignDocument
     @Environment(\.undoManager) private var undoManager
@@ -38,7 +38,7 @@ struct ArchitectView: View {
     @State private var showingDungeon = false
     @State private var editingLibraryItem: TokenLibraryItem?
     @State private var showingConsoleSettings = false
-    @State private var inspectorTab = InspectorTab.token
+    @State private var inspectorTab = InspectorTab.selection
     @State private var mapSettings: MapSettingsRequest?
     @State private var calibrating = false
     @State private var zoomRequest: ZoomRequest?
@@ -47,7 +47,8 @@ struct ArchitectView: View {
     @State private var toast: Toast?
 
     private enum InspectorTab: Hashable {
-        case token, console
+        /// The selected tokens, else the selected notes.
+        case selection, console
     }
     @State private var libraryUpload: ImportedImage?
     @State private var cropping: CropRequest?
@@ -121,21 +122,25 @@ struct ArchitectView: View {
             canvas
                 .inspector(isPresented: inspectorShown) {
                     VStack(spacing: 0) {
-                        if showingConsole && hasSelectedTokens {
+                        if showingConsole && hasInspectableSelection {
                             Picker("Panel", selection: $inspectorTab) {
-                                Text("Token").tag(InspectorTab.token)
+                                Text(hasSelectedTokens ? "Token" : "Note").tag(InspectorTab.selection)
                                 Text("Session Console").tag(InspectorTab.console)
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
                             .padding(8)
                         }
-                        if hasSelectedTokens && (inspectorTab == .token || !showingConsole) {
-                            TokenInspector(
-                            document: document, selection: selection,
-                            notify: { message, isError in showToast(message, isError ? .error : .success) },
-                            chooseImageFile: { importTarget = .tokenImage(selection) },
-                            useImageFile: { url in cropTokenImage(from: url, for: selection) })
+                        if hasInspectableSelection && (inspectorTab == .selection || !showingConsole) {
+                            if hasSelectedTokens {
+                                TokenInspector(
+                                    document: document, selection: selection,
+                                    notify: { message, isError in showToast(message, isError ? .error : .success) },
+                                    chooseImageFile: { importTarget = .tokenImage(selection) },
+                                    useImageFile: { url in cropTokenImage(from: url, for: selection) })
+                            } else {
+                                NoteInspector(document: document, selection: selection)
+                            }
                         } else {
                             SessionConsolePanel(document: document)
                         }
@@ -304,14 +309,19 @@ struct ArchitectView: View {
             }
         }
         .focusedSceneValue(\.campaignDocument, document)
-        .onChange(of: selection) { _, _ in if hasSelectedTokens { inspectorTab = .token } }
+        .onChange(of: selection) { _, _ in if hasInspectableSelection { inspectorTab = .selection } }
         .onChange(of: document.campaign) { _, campaign in
             // Undo/redo or a map switch can remove selected items.
             let map = campaign.activeMap
-            let live = Set(map.tokens.map(\.id) + map.drawings.map(\.id) + map.doors.map(\.id))
+            let live = Set(
+                map.tokens.map(\.id) + map.drawings.map(\.id) + map.doors.map(\.id) + map.lights.map(\.id)
+                    + map.notes.map(\.id))
             if !selection.isSubset(of: live) { selection.formIntersection(live) }
         }
-        .onChange(of: document.campaign.activeMapID) { _, _ in calibrating = false }
+        .onChange(of: document.campaign.activeMapID) { _, _ in
+            calibrating = false
+            document.worldNoteID = nil  // a note shown on the World View belongs to the map it is on
+        }
         .sheet(item: $mapSettings) { request in
             MapSettingsView(
                 document: document,
@@ -432,6 +442,12 @@ struct ArchitectView: View {
                     }
                 },
                 lightAction: { ids, action in performLightAction(ids, action) },
+                placeNote: { point in
+                    var placed: MapNote?
+                    document.edit("Add Note", undoManager: undoManager) { placed = $0.activeMap.placeNote(at: point) }
+                    if let placed { selection = [placed.id] }
+                },
+                noteAction: { ids, action in performNoteAction(ids, action) },
                 doorAction: { id, action in performDoorAction(id, action) },
                 wallAction: { ids, action in performWallAction(ids, action) },
                 setMeasurement: { setMeasurement($0) },
@@ -459,11 +475,18 @@ struct ArchitectView: View {
                 },
                 moveDrawings: { ids, dx, dy, duplicate in
                     var placed: [String] = []
-                    let onlyLights = document.campaign.activeMap.drawings.allSatisfy { !ids.contains($0.id) }
-                    let noun = onlyLights ? (ids.count == 1 ? "Light" : "Lights") : "Strokes"
+                    let map = document.campaign.activeMap
+                    let one = ids.count == 1
+                    let kinds = [
+                        map.drawings.contains { ids.contains($0.id) } ? "Strokes" : nil,
+                        map.lights.contains { ids.contains($0.id) } ? (one ? "Light" : "Lights") : nil,
+                        map.notes.contains { ids.contains($0.id) } ? (one ? "Note" : "Notes") : nil,
+                    ].compactMap { $0 }
+                    let noun = kinds.count == 1 ? kinds[0] : "Items"
                     document.edit(duplicate ? "Duplicate \(noun)" : "Move \(noun)", undoManager: undoManager) {
                         placed = $0.activeMap.moveDrawings(ids, dx: dx, dy: dy, duplicate: duplicate)
                             + $0.activeMap.moveLights(ids, dx: dx, dy: dy, duplicate: duplicate)
+                            + $0.activeMap.moveNotes(ids, dx: dx, dy: dy, duplicate: duplicate)
                     }
                     if duplicate { selection = selection.subtracting(ids).union(placed) }
                 },
@@ -563,7 +586,8 @@ struct ArchitectView: View {
     private func runCommand(_ command: PaletteCommand) {
         let tools: [String: CanvasTool] = [
             "tool-select": .select, "tool-marker": .marker, "tool-eraser": .eraser,
-            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-measure": .measure,
+            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-note": .note,
+            "tool-measure": .measure,
         ]
         if let tool = tools[command.id] {
             selectTool(tool)
@@ -835,6 +859,22 @@ struct ArchitectView: View {
         }
     }
 
+    private func performNoteAction(_ ids: Set<String>, _ action: NoteAction) {
+        let plural = ids.count == 1 ? "Note" : "Notes"
+        switch action {
+        case .share(let shared):
+            document.edit(shared ? "Share \(plural)" : "Unshare \(plural)", undoManager: undoManager) {
+                $0.activeMap.setNotesShared(ids, shared: shared)
+            }
+        case .showOnWorldView:
+            document.worldNoteID = ids.first
+        case .delete:
+            document.edit("Delete \(plural)", undoManager: undoManager) { $0.activeMap.removeItems(ids) }
+            selection.subtract(ids)
+            if let shown = document.worldNoteID, ids.contains(shown) { document.worldNoteID = nil }
+        }
+    }
+
     private func performDoorAction(_ id: String, _ action: DoorAction) {
         switch action {
         case .toggle:
@@ -863,7 +903,7 @@ struct ArchitectView: View {
 
     private var inspectorShown: Binding<Bool> {
         Binding(
-            get: { hasSelectedTokens || showingConsole },
+            get: { hasInspectableSelection || showingConsole },
             set: { shown in
                 if !shown {
                     selection = []
@@ -1171,11 +1211,19 @@ struct ArchitectView: View {
             : doorCount == ids.count ? (ids.count == 1 ? "Delete Door" : "Delete Doors") : "Delete Selection"
         document.edit(name, undoManager: undoManager) { $0.activeMap.removeItems(ids) }
         selection = []
+        if let shown = document.worldNoteID, ids.contains(shown) { document.worldNoteID = nil }
     }
 
     private var hasSelectedTokens: Bool {
         document.campaign.activeMap.tokens.contains { selection.contains($0.id) }
     }
+
+    private var hasSelectedNotes: Bool {
+        document.campaign.activeMap.notes.contains { selection.contains($0.id) }
+    }
+
+    /// Tokens or notes, which the inspector edits.
+    private var hasInspectableSelection: Bool { hasSelectedTokens || hasSelectedNotes }
 
     private func saveMapSettings(_ map: GameMap, isNew: Bool) {
         document.edit(isNew ? "Add Map" : "Map Settings", undoManager: undoManager) { campaign in

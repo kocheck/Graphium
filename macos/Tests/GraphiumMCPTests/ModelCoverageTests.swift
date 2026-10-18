@@ -14,12 +14,13 @@ final class ModelCoverageTests: XCTestCase {
         "Campaign": ["id", "name", "maps", "activeMapID", "tokenLibrary"],
         "GameMap": [
             "id", "name", "tokens", "drawings", "doors", "stairs", "background", "gridSize", "gridType", "gridColor",
-            "exploredRegions", "isDaylightMode", "lights", "ambientLight",
+            "exploredRegions", "isDaylightMode", "lights", "ambientLight", "notes",
         ],
         "Token": [
             "id", "x", "y", "src", "libraryItemId", "scale", "type", "visionRadius", "name", "movementSpeed", "darkvision",
         ],
         "LightSource": ["id", "x", "y", "bright", "dim", "isOn", "name"],
+        "MapNote": ["id", "x", "y", "title", "dmNotes", "playerNotes", "isShared"],
         "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay"],
         "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection"],
         "Stairs": ["id", "x", "y", "direction", "type", "width", "height"],
@@ -83,6 +84,7 @@ final class ModelCoverageTests: XCTestCase {
         check(MapBackground(src: "", width: 1, height: 1))
         check(TokenLibraryItem(name: "", src: "", thumbnailSrc: "", dateAdded: 0))
         check(LightSource(x: 0, y: 0, bright: 1, dim: 2))
+        check(MapNote(x: 0, y: 0))
     }
 
     func testEveryEnumCaseIsKnown() {
