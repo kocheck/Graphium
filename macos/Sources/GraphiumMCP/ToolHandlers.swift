@@ -487,15 +487,32 @@ extension GraphiumTools {
                 guard let centre = try spec.point("center").map(units.px) else {
                     throw ToolError("\(spec.context).center is required.")
                 }
+                let direction =
+                    try spec.enumValue("direction", CompassDirection.self, allowed: ["north", "south", "east", "west"])
+                    ?? .north
+                let type = try spec.enumValue("type", StairsType.self, allowed: ["up", "down"]) ?? .down
                 let stairs = Stairs(
-                    x: centre.x, y: centre.y,
-                    direction: try spec.enumValue("direction", CompassDirection.self, allowed: ["north", "south", "east", "west"])
-                        ?? .north,
-                    type: try spec.enumValue("type", StairsType.self, allowed: ["up", "down"]) ?? .down,
+                    x: centre.x, y: centre.y, direction: direction, type: type,
                     width: try spec.double("width").map(units.px) ?? cell,
                     height: try spec.double("height").map(units.px) ?? cell)
-                loaded.campaign.maps[index].stairs.append(stairs)
-                added.append(Describe.stairs(stairs, units: units))
+                var map = loaded.campaign.maps[index]
+                map.stairs.append(stairs)
+                var ids = [stairs.id]
+                if let sisterCentre = try spec.point("sister").map(units.px) {
+                    let sister = Stairs(
+                        x: sisterCentre.x, y: sisterCentre.y, direction: direction, type: type == .down ? .up : .down,
+                        width: cell, height: cell)
+                    map.stairs.append(sister)
+                    map.linkStairs(stairs.id, sister.id)
+                    ids.append(sister.id)
+                } else if let other = try spec.string("linked_to") {
+                    guard map.stairs.contains(where: { $0.id == other && $0.id != stairs.id }) else {
+                        throw ToolError("\(spec.context).linked_to: no stairs \(other) on \(map.name). Use get_map for ids.")
+                    }
+                    map.linkStairs(stairs.id, other)
+                }
+                loaded.campaign.maps[index] = map
+                added += ids.compactMap { id in map.stairs.first { $0.id == id } }.map { Describe.stairs($0, in: map, units: units) }
             }
             return ["added_stairs": .array(added)]
         }
@@ -833,6 +850,17 @@ extension GraphiumTools {
                     if take("type"), let t = try change.enumValue("type", StairsType.self, allowed: ["up", "down"]) {
                         map.stairs[i].type = t
                     }
+                    if take("linked_to") {
+                        let other = try change.string("linked_to") ?? ""
+                        if other.isEmpty {
+                            map.unlinkStairs([id])
+                        } else {
+                            guard other != id, map.stairs.contains(where: { $0.id == other }) else {
+                                throw ToolError("\(change.context).linked_to: no other stairs \(other) on \(map.name).")
+                            }
+                            map.linkStairs(id, other)
+                        }
+                    }
                 } else {
                     throw ToolError("\(change.context): no object \(id) on \(map.name). Use get_map for ids.")
                 }
@@ -857,7 +885,7 @@ extension GraphiumTools {
             let effectsBefore = map.effects.filter { !ids.contains($0.id) }.count
             let before = count(map)
             map.removeItems(ids)
-            map.stairs.removeAll { ids.contains($0.id) }
+            map.removeStairs(ids)
             // Effects the removed tokens carried go with them.
             let carried = effectsBefore - map.effects.count
             let removed = before - count(map) - carried

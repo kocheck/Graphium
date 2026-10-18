@@ -163,6 +163,8 @@ Manual door placement (`useCanvasInteraction.ts:248-267`): `snapToGrid(pointer.x
 `{ id: string; x: number; y: number /* centre */; direction: 'north'|'south'|'east'|'west'; type: 'up'|'down'; width: number; height: number }` — all required.
 Note: no UI creates stairs today; they are only added via sync (`SyncManager.tsx:244`). Keep the type + actions for file compatibility.
 
+**Native only:** `linkedStairsId` `string`, optional, written only when set: the id of the sister end. A drop whose primary token's centre lands on linked stairs it wasn't already on moves every dropped token by the distance between the two ends, each re-snapped with its own size (`GameMap.dropTokens`, `stairsTravel`). An id with no stairs on the map reads as unlinked; removing stairs clears their sister's link. TS ignores the field.
+
 ### 1.9 `ExploredRegion` — `archive/web/src/store/gameStore.ts:193`
 
 `{ points: Array<{x:number;y:number}>; timestamp: number }`. Each region is one full visibility polygon

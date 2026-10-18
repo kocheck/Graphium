@@ -28,6 +28,8 @@ struct ArchitectView: View {
     @State private var confirmingFogReset = false
     @State private var errorMessage: String?
     @State private var tools = ToolState()
+    /// The stairs the Stairs tool placed with its last click, waiting for its sister end.
+    @State private var pendingStairsID: String?
     @State private var recentColors = StrokeDefaults.recentMarkerColors
     @State private var measurement: MeasurementShape?
     // Off by default, as in TS: measurements stay on the DM's screen until broadcasting is turned on.
@@ -453,14 +455,19 @@ struct ArchitectView: View {
             selection: selection,
             editing: CanvasEditing(
                 setSelection: { selection = $0 },
-                dropTokens: { ids, primary, dx, dy, duplicate in
+                dropTokens: { ids, primary, dx, dy, duplicate, travel in
                     var placed: [String] = []
-                    document.edit(duplicate ? "Duplicate Tokens" : "Move Tokens", undoManager: undoManager) {
-                        campaign in
+                    let current = document.campaign
+                    let takesStairs =
+                        travel
+                        && current.activeMap.stairsTravel(forDropOf: primary, dx: dx, dy: dy, library: current.libraryIndex)
+                            != nil
+                    let name = duplicate ? "Duplicate Tokens" : takesStairs ? "Take Stairs" : "Move Tokens"
+                    document.edit(name, undoManager: undoManager) { campaign in
                         var map = campaign.activeMap
                         placed = map.dropTokens(
                             ids, primary: primary, dx: dx, dy: dy, duplicate: duplicate,
-                            library: campaign.libraryIndex)
+                            library: campaign.libraryIndex, travel: travel)
                         campaign.activeMap = map
                     }
                     if duplicate { selection = Set(placed) }
@@ -478,6 +485,9 @@ struct ArchitectView: View {
                         $0.activeMap.placeLight(tools.lightPreset, at: point)
                     }
                 },
+                placeStairs: { point in placeStairs(at: point) },
+                pickStairs: { id in pickStairs(id) },
+                stairsAction: { ids, action in performStairsAction(ids, action) },
                 lightAction: { ids, action in performLightAction(ids, action) },
                 placeNote: { point in
                     var placed: MapNote?
@@ -501,6 +511,11 @@ struct ArchitectView: View {
                 setTool: { selectTool($0) },
                 toggleDoorOrientation: {
                     tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
+                },
+                turnStairsTool: {
+                    let order: [CompassDirection] = [.north, .east, .south, .west]
+                    let i = order.firstIndex(of: tools.stairsDirection) ?? 0
+                    tools.stairsDirection = order[(i + 1) % order.count]
                 },
                 deleteDoors: { ids in
                     document.edit(ids.count == 1 ? "Delete Door" : "Delete Doors", undoManager: undoManager) {
@@ -529,6 +544,7 @@ struct ArchitectView: View {
                         map.lights.contains { ids.contains($0.id) } ? (one ? "Light" : "Lights") : nil,
                         map.notes.contains { ids.contains($0.id) } ? (one ? "Note" : "Notes") : nil,
                         map.effects.contains { ids.contains($0.id) } ? (one ? "Effect" : "Effects") : nil,
+                        map.stairs.contains { ids.contains($0.id) } ? "Stairs" : nil,
                     ].compactMap { $0 }
                     let noun = kinds.count == 1 ? kinds[0] : "Items"
                     document.edit(duplicate ? "Duplicate \(noun)" : "Move \(noun)", undoManager: undoManager) {
@@ -536,6 +552,7 @@ struct ArchitectView: View {
                             + $0.activeMap.moveLights(ids, dx: dx, dy: dy, duplicate: duplicate)
                             + $0.activeMap.moveNotes(ids, dx: dx, dy: dy, duplicate: duplicate)
                             + $0.activeMap.moveEffects(ids, dx: dx, dy: dy, duplicate: duplicate)
+                            + $0.activeMap.moveStairs(ids, dx: dx, dy: dy, duplicate: duplicate)
                     }
                     if duplicate { selection = selection.subtracting(ids).union(placed) }
                 },
@@ -667,7 +684,7 @@ struct ArchitectView: View {
     private func runCommand(_ command: PaletteCommand) {
         let tools: [String: CanvasTool] = [
             "tool-select": .select, "tool-marker": .marker, "tool-eraser": .eraser,
-            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-note": .note, "tool-effect": .effect, "tool-reveal": .reveal,
+            "tool-wall": .wall, "tool-door": .door, "tool-stairs": .stairs, "tool-light": .light, "tool-note": .note, "tool-effect": .effect, "tool-reveal": .reveal,
             "tool-measure": .measure,
         ]
         if let tool = tools[command.id] {
@@ -880,6 +897,7 @@ struct ArchitectView: View {
     private func selectTool(_ tool: CanvasTool) {
         guard tool != tools.tool else { return }
         tools.tool = tool
+        pendingStairsID = nil  // a lone end stays as plain stairs
         setMeasurement(nil)  // changing tool clears the measurement (TS)
         // A door picked under another tool shouldn't take R and the arrows under this one.
         let doorIDs = Set(document.campaign.activeMap.doors.map(\.id))
@@ -1032,6 +1050,46 @@ struct ArchitectView: View {
         case .delete:
             document.edit("Delete \(plural)", undoManager: undoManager) { $0.activeMap.removeItems(ids) }
             selection.subtract(ids)
+        }
+    }
+
+    // MARK: Stairs
+
+    /// A Stairs tool click on open ground: the first end of a pair, or its sister.
+    private func placeStairs(at point: Point2D) {
+        var placed: Stairs?
+        let sister = pendingStairsID
+        document.edit(sister == nil ? "Add Stairs" : "Link Stairs", undoManager: undoManager) {
+            placed = $0.activeMap.placeStairs(at: point, direction: tools.stairsDirection, linkingTo: sister)
+        }
+        guard let placed else { return }
+        selection = [placed.id]
+        pendingStairsID = placed.linkedStairsId == nil ? placed.id : nil
+    }
+
+    /// A Stairs tool click on stairs: links them to the end waiting for a sister, else selects them.
+    private func pickStairs(_ id: String) {
+        if let pending = pendingStairsID, pending != id,
+            document.campaign.activeMap.stairs.contains(where: { $0.id == pending })
+        {
+            document.edit("Link Stairs", undoManager: undoManager) { $0.activeMap.linkStairs(pending, id) }
+            pendingStairsID = nil
+        } else {
+            pendingStairsID = nil
+        }
+        selection = [id]
+    }
+
+    private func performStairsAction(_ ids: Set<String>, _ action: StairsAction) {
+        switch action {
+        case .rotate:
+            document.edit("Rotate Stairs", undoManager: undoManager) { $0.activeMap.rotateStairs(ids) }
+        case .unlink:
+            document.edit("Unlink Stairs", undoManager: undoManager) { $0.activeMap.unlinkStairs(ids) }
+        case .delete:
+            document.edit("Delete Stairs", undoManager: undoManager) { $0.activeMap.removeStairs(ids) }
+            selection.subtract(ids)
+            if let pending = pendingStairsID, ids.contains(pending) { pendingStairsID = nil }
         }
     }
 
@@ -1259,6 +1317,21 @@ struct ArchitectView: View {
                     systemImage: tools.doorOrientation == .horizontal ? "arrow.left.and.right" : "arrow.up.and.down")
             }
             .help("Door orientation (R or arrow keys)")
+        case .stairs:
+            HStack(spacing: 6) {
+                Picker("Facing", selection: $tools.stairsDirection) {
+                    Label("North", systemImage: "arrow.up").tag(CompassDirection.north)
+                    Label("East", systemImage: "arrow.right").tag(CompassDirection.east)
+                    Label("South", systemImage: "arrow.down").tag(CompassDirection.south)
+                    Label("West", systemImage: "arrow.left").tag(CompassDirection.west)
+                }
+                .pickerStyle(.segmented)
+                .labelStyle(.iconOnly)
+                .help("Which way the steps face (R turns them)")
+                Text(pendingStairsID == nil ? "Click the first end" : "Click the other end")
+                    .foregroundStyle(.secondary)
+                    .help("A token dropped on one end arrives at the other. Hold ⌘ while dropping to stop on the stairs.")
+            }
         case .light:
             Picker("Light", selection: $tools.lightPreset) {
                 ForEach(LightPreset.all) { preset in

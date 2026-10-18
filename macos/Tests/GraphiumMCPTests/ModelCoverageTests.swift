@@ -26,7 +26,7 @@ final class ModelCoverageTests: XCTestCase {
         "SpellEffect": ["id", "shape", "size", "width", "angle", "x", "y", "tokenID", "look", "color", "label", "isHidden"],
         "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay", "isDMOnly"],
         "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection", "isHidden"],
-        "Stairs": ["id", "x", "y", "direction", "type", "width", "height"],
+        "Stairs": ["id", "x", "y", "direction", "type", "width", "height", "linkedStairsId"],
         "MapBackground": ["src", "x", "y", "width", "height", "scale"],
         "TokenLibraryItem": [
             "id", "name", "src", "thumbnailSrc", "category", "tags", "dateAdded", "defaultScale", "defaultVisionRadius",

@@ -376,6 +376,44 @@ final class MCPServerTests: XCTestCase {
         XCTAssertNil(door.isHidden, "revealing leaves the flag out of the file")
     }
 
+    func testLinkedStairsPairTakeTokensBetweenFloors() throws {
+        try call("create_campaign", ["path": "Floors", "name": "Floors"])
+        let added = try call(
+            "add_stairs", ["campaign": "Floors", "stairs": [["center": [2.5, 2.5], "type": "down", "sister": [12.5, 2.5]]]])
+        let ends = try XCTUnwrap(added["added_stairs"]?.arrayValue)
+        XCTAssertEqual(ends.count, 2)
+        XCTAssertEqual(ends[0]["linked_to"], ends[1]["id"])
+        XCTAssertEqual(ends[0]["label"], "A")
+        XCTAssertEqual(ends[1]["type"], "up")
+
+        var map = try loadCampaign("Floors.graphiumcampaign").activeMap
+        map.tokens = [Token(id: "t", x: 50, y: 100, src: "")]
+        map.dropTokens(["t"], primary: "t", dx: 50, dy: 0, duplicate: false, library: [:])
+        XCTAssertEqual(map.tokens[0].x, 600, "arrives on the sister end")
+
+        // Removing one end leaves plain stairs, and check_map stays quiet about them.
+        let first = try XCTUnwrap(ends[0]["id"]?.stringValue)
+        try call("remove_objects", ["campaign": "Floors", "ids": [.string(first)]])
+        map = try loadCampaign("Floors.graphiumcampaign").activeMap
+        XCTAssertEqual(map.stairs.count, 1)
+        XCTAssertNil(map.stairs[0].linkedStairsId)
+        var check = try call("check_map", ["campaign": "Floors"])
+        XCTAssertFalse(check.serialized().contains("stairs_link"), check.serialized())
+
+        // A link to stairs that aren't there is reported.
+        let second = try XCTUnwrap(ends[1]["id"]?.stringValue)
+        try call("add_stairs", ["campaign": "Floors", "stairs": [["center": [5.5, 5.5], "linked_to": .string(second)]]])
+        map = try loadCampaign("Floors.graphiumcampaign").activeMap
+        XCTAssertEqual(map.stairsLabels.count, 2)
+        try call("update_objects", ["campaign": "Floors", "changes": [["id": .string(second), "linked_to": ""]]])
+        map = try loadCampaign("Floors.graphiumcampaign").activeMap
+        XCTAssertTrue(map.stairs.allSatisfy { $0.linkedStairsId == nil }, "unlinking clears both ends")
+        XCTAssertTrue(try callError("add_stairs", ["campaign": "Floors", "stairs": [["center": [1, 1], "linked_to": "nope"]]])
+            .contains("no stairs"))
+        check = try call("check_map", ["campaign": "Floors"])
+        XCTAssertFalse(check.serialized().contains("stairs_link"))
+    }
+
     func testLightsAndDarkvision() throws {
         try call("create_campaign", ["path": "Lit", "name": "Lit"])
         try call("add_rooms", ["campaign": "Lit", "rooms": [["x": 0, "y": 0, "width": 8, "height": 6]]])

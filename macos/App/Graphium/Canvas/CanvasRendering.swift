@@ -261,8 +261,9 @@ extension MapCanvasNSView {
         }
     }
 
-    /// Render-only stairs (PARITY §3.6): step lines plus a direction arrow; "down" is darker.
-    func drawStairs(_ stairs: [Stairs], context: CGContext) {
+    /// Stairs (PARITY §3.6): step lines plus a direction arrow; "down" is darker. A linked pair's
+    /// ends carry the same letter (decision 017), with the arrow moved to the edge it points at.
+    func drawStairs(_ stairs: [Stairs], labels: [String: String] = [:], context: CGContext) {
         for s in stairs {
             let rect = CGRect(x: s.x - s.width / 2, y: s.y - s.height / 2, width: s.width, height: s.height)
             context.saveGState()
@@ -291,7 +292,23 @@ extension MapCanvasNSView {
             case .east: arrow = "arrow.right"
             case .west: arrow = "arrow.left"
             }
-            drawSymbol(arrow, centredAt: CGPoint(x: rect.midX, y: rect.midY), size: min(s.width, s.height) * 0.5, context: context)
+            let side = min(s.width, s.height)
+            guard let label = labels[s.id] else {
+                drawSymbol(arrow, centredAt: CGPoint(x: rect.midX, y: rect.midY), size: side * 0.5, context: context)
+                continue
+            }
+            let edge = side * 0.3
+            let arrowCentre: CGPoint
+            switch s.direction {
+            case .north: arrowCentre = CGPoint(x: rect.midX, y: rect.minY + edge * 0.6)
+            case .south: arrowCentre = CGPoint(x: rect.midX, y: rect.maxY - edge * 0.6)
+            case .east: arrowCentre = CGPoint(x: rect.maxX - edge * 0.6, y: rect.midY)
+            case .west: arrowCentre = CGPoint(x: rect.minX + edge * 0.6, y: rect.midY)
+            }
+            drawSymbol(arrow, centredAt: arrowCentre, size: edge, context: context)
+            let text = NSAttributedString.mapLabel(label, font: NSFont.boldSystemFont(ofSize: side * 0.5))
+            let size = text.size()
+            text.draw(at: NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2))
         }
     }
 

@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.6.2"
+    public static let version = "1.7.0"
 
     struct Tool {
         var name: String
@@ -424,7 +424,11 @@ public final class GraphiumTools {
                 required: ["campaign", "tokens"], readOnly: false, run: addTokens),
             Tool(
                 name: "add_stairs", title: "Add stairs",
-                description: "Add stairs markers (centre, size, which way they lead).",
+                description:
+                    "Add stairs (centre, size, which way the steps face, up or down). Give sister (a point) to add the "
+                    + "other end too, linked: a token dropped on one end arrives at the other, so several floors can sit "
+                    + "side by side on one map. Or link to existing stairs with linked_to (an id). Both ends of a pair "
+                    + "show the same letter. Stairs without a sister are only drawn.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "stairs": Self.objects(
@@ -434,6 +438,8 @@ public final class GraphiumTools {
                             "width": Self.number("Width (default 1 cell)."), "height": Self.number("Height (default 1 cell)."),
                             "direction": Self.string("Which way the steps face.", enum: ["north", "south", "east", "west"]),
                             "type": Self.string("up or down.", enum: ["up", "down"]),
+                            "sister": Self.point("Centre of the other end, added and linked (one cell, the opposite type)."),
+                            "linked_to": Self.string("Id of existing stairs to link to (unlinks their old sister)."),
                         ], required: ["center"]),
                 ],
                 required: ["campaign", "stairs"], readOnly: false, run: addStairs),
@@ -539,7 +545,7 @@ public final class GraphiumTools {
                     + "(reverse the direction of a one-way wall), points. Markers: color, dm_only, points. Lights: center, bright_ft, dim_ft, on, name. "
                     + "Notes: center, title, dm_notes, player_notes, shared, sounds (replaces the list). Effects: origin, shape, size_ft, width_ft, "
                     + "direction_deg or toward, look, color (\"\" for the look's own), label, hidden, carried_by (token id or name; \"\" leaves it on "
-                    + "the map). Stairs: center, direction, type. Fields that don't apply are reported back.",
+                    + "the map). Stairs: center, direction, type, linked_to (id of the sister end; \"\" unlinks). Fields that don't apply are reported back.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "changes": [

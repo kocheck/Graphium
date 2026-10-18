@@ -346,8 +346,9 @@ public enum StairsType: String, Codable, Sendable {
     case up, down
 }
 
-/// Stairs (TS `Stairs`, CORE_SPEC §1.8). `x`/`y` is the centre. No TS UI creates
-/// these today; kept for file compatibility and the dungeon generator.
+/// Stairs (TS `Stairs`, CORE_SPEC §1.8). `x`/`y` is the centre. TS only drew them; the
+/// native Stairs tool links two ends so a token dropped on one arrives at the other
+/// (`StairsEditing.swift`, decision 017).
 public struct Stairs: Codable, Equatable, Identifiable, Sendable {
     public var id: String
     public var x: Double
@@ -356,10 +357,13 @@ public struct Stairs: Codable, Equatable, Identifiable, Sendable {
     public var type: StairsType
     public var width: Double
     public var height: Double
+    /// Native only: the sister end's id. Nil (and absent from the file) for stairs that are only
+    /// drawn, as in TS; an id with no stairs on the map reads as unlinked.
+    public var linkedStairsId: String?
 
     public init(
         id: String = newID(), x: Double, y: Double, direction: CompassDirection, type: StairsType,
-        width: Double, height: Double
+        width: Double, height: Double, linkedStairsId: String? = nil
     ) {
         self.id = id
         self.x = x
@@ -368,7 +372,10 @@ public struct Stairs: Codable, Equatable, Identifiable, Sendable {
         self.type = type
         self.width = width
         self.height = height
+        self.linkedStairsId = linkedStairsId
     }
+
+    public var bounds: Bounds { Bounds(x: x - width / 2, y: y - height / 2, width: width, height: height) }
 }
 
 /// A reusable token prototype (TS `TokenLibraryItem`, CORE_SPEC §1.10).

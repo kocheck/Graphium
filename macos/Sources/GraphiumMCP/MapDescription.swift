@@ -213,7 +213,7 @@ enum Describe {
                 })
         }
         if k.contains("stairs") {
-            out["stairs"] = .array(map.stairs.filter { filter.keeps(point($0.x, $0.y)) }.map { stairs($0, units: units) })
+            out["stairs"] = .array(map.stairs.filter { filter.keeps(point($0.x, $0.y)) }.map { stairs($0, in: map, units: units) })
         }
         if k.contains("markers") {
             out["markers"] = .array(
@@ -315,8 +315,8 @@ enum Describe {
         return .object(out)
     }
 
-    static func stairs(_ s: Stairs, units: Units) -> JSONValue {
-        [
+    static func stairs(_ s: Stairs, in map: GameMap, units: Units) -> JSONValue {
+        var out: [String: JSONValue] = [
             "id": .string(s.id),
             "center": units.out(Point2D(x: s.x, y: s.y)),
             "width": units.out(s.width),
@@ -324,6 +324,11 @@ enum Describe {
             "direction": .string(s.direction.rawValue),
             "type": .string(s.type.rawValue),
         ]
+        if let sister = map.sister(of: s) {
+            out["linked_to"] = .string(sister.id)
+            out["label"] = map.stairsLabels[s.id].map(JSONValue.string) ?? .null
+        }
+        return .object(out)
     }
 
     static func marker(_ d: Drawing, units: Units, includePoints: Bool) -> JSONValue {

@@ -29,6 +29,7 @@ struct MapChecks {
         issues += outsideBackground()
         issues += notes()
         issues += effects()
+        issues += stairsLinks()
         return issues
     }
 
@@ -117,6 +118,27 @@ struct MapChecks {
 
     /// Doors that aren't on any wall: when open there is nothing to walk through, and when
     /// closed they block only themselves.
+    /// A link to stairs that are gone, or one-sided: tokens wouldn't travel the way it reads.
+    func stairsLinks() -> [JSONValue] {
+        map.stairs.compactMap { s in
+            guard let link = s.linkedStairsId else { return nil }
+            let at = Point2D(x: s.x, y: s.y)
+            guard let sister = map.sister(of: s) else {
+                return issue(
+                    "warning", "stairs_link_broken",
+                    "These stairs are linked to stairs that aren't on this map (\(link)), so tokens stay put. Link them "
+                        + "again with update_objects linked_to, or \"\" to make them plain stairs.", ids: [s.id], at: at)
+            }
+            guard sister.linkedStairsId == s.id else {
+                return issue(
+                    "warning", "stairs_link_one_way",
+                    "These stairs lead to \(sister.id), but that end leads elsewhere. Link the pair again with "
+                        + "update_objects linked_to.", ids: [s.id, sister.id], at: at)
+            }
+            return nil
+        }
+    }
+
     func floatingDoors() -> [JSONValue] {
         let segments = wallSegments
         return map.doors.compactMap { door in
