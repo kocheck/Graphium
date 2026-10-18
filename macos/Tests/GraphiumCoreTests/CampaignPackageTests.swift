@@ -303,24 +303,13 @@ final class DamagedCampaignTests: XCTestCase {
         return message
     }
 
-    private func editFirstToken(_ root: inout [String: Any], _ change: (inout [String: Any]) -> Void) throws {
-        var campaign = try XCTUnwrap(root["campaign"] as? [String: Any])
-        var maps = try XCTUnwrap(campaign["maps"] as? [[String: Any]])
-        var tokens = try XCTUnwrap(maps[0]["tokens"] as? [[String: Any]])
-        change(&tokens[0])
-        maps[0]["tokens"] = tokens
-        campaign["maps"] = maps
-        root["campaign"] = campaign
-    }
-
-    func testAWrongTypeNamesTheObjectAndField() throws {
-        let message = try damaged { root in try editFirstToken(&root) { $0["x"] = "left" } }
-        XCTAssertEqual(message, "campaign › maps[0] › tokens[0] › x should be a number")
-    }
-
-    func testAMissingFieldIsNamed() throws {
-        let message = try damaged { root in try editFirstToken(&root) { $0["src"] = nil } }
-        XCTAssertEqual(message, "campaign › maps[0] › tokens[0] › src is missing")
+    func testACampaignLevelProblemNamesTheField() throws {
+        let message = try damaged { root in
+            var campaign = try XCTUnwrap(root["campaign"] as? [String: Any])
+            campaign["name"] = 7
+            root["campaign"] = campaign
+        }
+        XCTAssertEqual(message, "campaign › name should be text")
     }
 
     func testCutShortJSONSaysSo() throws {

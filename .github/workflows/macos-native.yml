@@ -39,6 +39,9 @@ jobs:
       - name: GraphiumCore and MCP server unit tests
         run: swift test --parallel
 
+      - name: Unit tests under Thread Sanitizer
+        run: swift test --sanitize=thread --filter 'GraphiumCoreTests|GraphiumMCPTests'
+
       - name: MCP server builds and answers over stdio
         run: |
           swift build -c release --product graphium-mcp
@@ -54,6 +57,9 @@ jobs:
           test "$(wc -l < mcp-out.jsonl)" -eq 4
           ! grep -q '"isError":true' mcp-out.jsonl
           test -f "$RUNNER_TEMP/campaigns/CI.graphiumcampaign/campaign.json"
+
+      - name: Save fault checks (concurrent writers, kill mid-save, full disk)
+        run: bash scripts/save-fault-checks.sh "$(swift build -c release --product graphium-mcp --show-bin-path)/graphium-mcp"
 
       - name: Generate Xcode project
         run: |

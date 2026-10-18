@@ -85,4 +85,31 @@ final class ConcurrentWriteTests: XCTestCase {
         XCTAssertEqual(token.x, 0)
         XCTAssertEqual(token.y, 0)
     }
+
+    func testADamagedTokenIsReportedAndKeptThroughAnEdit() throws {
+        _ = try store.create("Race", campaign: .makeDefault(name: "Race"))
+        _ = tools.call(
+            "add_tokens", arguments: ["campaign": "Race", "tokens": [["name": "Goblin", "position": [1, 1]]]])
+        var root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any])
+        var campaign = try XCTUnwrap(root["campaign"] as? [String: Any])
+        var maps = try XCTUnwrap(campaign["maps"] as? [[String: Any]])
+        var tokens = try XCTUnwrap(maps[0]["tokens"] as? [[String: Any]])
+        tokens[0]["x"] = "left"
+        maps[0]["tokens"] = tokens
+        campaign["maps"] = maps
+        root["campaign"] = campaign
+        try JSONSerialization.data(withJSONObject: root).write(to: manifestURL)
+
+        let described = tools.call("get_campaign", arguments: ["campaign": "Race"])
+        XCTAssertFalse(described.isError)
+        XCTAssertTrue("\(described)".contains("set_aside"), "\(described)")
+
+        let added = tools.call(
+            "add_tokens", arguments: ["campaign": "Race", "tokens": [["name": "Orc", "position": [2, 2]]]])
+        XCTAssertFalse(added.isError, "\(added)")
+        let text = try String(contentsOf: manifestURL, encoding: .utf8)
+        XCTAssertTrue(text.contains("\"setAside\""))
+        XCTAssertTrue(text.contains("\"left\""), "the unreadable goblin is still in the file")
+        XCTAssertEqual(try store.load("Race").campaign.activeMap.tokens.count, 1)
+    }
 }

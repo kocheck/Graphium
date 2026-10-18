@@ -33,7 +33,9 @@ extension GraphiumTools {
         }
         if let size = try args.double("cell_px") { campaign.maps[0].gridSize = try Self.cellSize(size) }
         let loaded = try store.create(try args.requiredString("path"), campaign: campaign)
-        return .json(Describe.campaign(loaded.campaign, path: loaded.url.path, assets: loaded.allAssetNames))
+        return .json(
+            Describe.campaign(
+                loaded.campaign, path: loaded.url.path, assets: loaded.allAssetNames, setAside: loaded.preserved.setAside))
     }
 
     /// `lighting` as the map's ambient light: nil is lighting off.
@@ -51,7 +53,9 @@ extension GraphiumTools {
 
     func getCampaign(_ args: Arguments) throws -> ToolResult {
         let loaded = try store.load(try args.requiredString("campaign"))
-        return .json(Describe.campaign(loaded.campaign, path: loaded.url.path, assets: loaded.allAssetNames))
+        return .json(
+            Describe.campaign(
+                loaded.campaign, path: loaded.url.path, assets: loaded.allAssetNames, setAside: loaded.preserved.setAside))
     }
 
     /// Which server this is, so a model (or the DM) can tell a stale install from a missing feature.
