@@ -1,6 +1,6 @@
 > **Archived.** This is the retired web and Electron version of Graphium. The product is now the
-> native macOS app in [`macos/`](../../macos/README.md). This code is kept for reference and still
-> builds the web version served at `/app/` on GitHub Pages. Paths in these docs are relative to
+> native macOS app in [`macos/`](../../macos/README.md). This code is frozen: kept for reference, not
+> supported or tested in CI, and its last build is served at `/app/` on GitHub Pages. Paths here are relative to
 > `archive/web/`; shared decision records moved to [`docs/decisions/`](../../docs/decisions/).
 > Develop here with `cd archive/web && npm ci`.
 
