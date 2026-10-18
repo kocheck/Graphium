@@ -264,6 +264,8 @@ struct ArchitectView: View {
                 selectTool: { selectTool($0) },
                 showMapSettings: { mapSettings = MapSettingsRequest(map: document.campaign.activeMap, isNew: false) },
                 newMap: { mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true) },
+                chooseMapImage: { importTarget = .mapImage },
+                addTokens: { importTarget = .tokens },
                 calibrate: canCalibrate ? { startCalibration() } : nil,
                 isDaylight: document.campaign.activeMap.isDaylightMode,
                 toggleDaylight: {
@@ -1087,6 +1089,8 @@ struct ArchitectView: View {
         ToolbarItem(id: "pause", placement: .primaryAction) {
             PauseToolbarButton(document: document)
         }
+        // Blanking the projector must always be one click away, so it can't be customised out.
+        .customizationBehavior(.disabled)
         ToolbarItem(id: "session-console", placement: .primaryAction) {
             Toggle(isOn: $showingConsole) {
                 Label("Session Console", systemImage: "music.note.list")

@@ -17,6 +17,8 @@ struct ArchitectActions {
     var selectTool: (CanvasTool) -> Void
     var showMapSettings: () -> Void
     var newMap: () -> Void
+    var chooseMapImage: () -> Void
+    var addTokens: () -> Void
     /// Nil when calibration isn't possible (no map image, or not a square grid).
     var calibrate: (() -> Void)?
     var isDaylight: Bool
@@ -232,6 +234,10 @@ struct EditorCommands: Commands {
             // ⇧⌘D, as on the Welcome card: ⇧⌘G is Edit > Find > Find Previous on macOS.
             Button("Generate Dungeon…") { actions?.showDungeon() }
                 .keyboardShortcut("d", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Button("Map Image…") { actions?.chooseMapImage() }
+                .disabled(actions == nil)
+            Button("Add Tokens…") { actions?.addTokens() }
                 .disabled(actions == nil)
             Button("Calibrate Map Image…") { actions?.calibrate?() }
                 .disabled(actions?.calibrate == nil)
