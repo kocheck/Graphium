@@ -26,6 +26,8 @@ struct CanvasEditing {
     var setMeasurement: ((MeasurementShape?) -> Void)?
     var setTool: ((CanvasTool) -> Void)?
     var toggleDoorOrientation: (() -> Void)?
+    /// Deletes the given doors in one undoable step (the door menu on a multi-door selection).
+    var deleteDoors: ((Set<String>) -> Void)?
     /// Turns the given doors by degrees, clockwise on screen.
     var rotateDoors: ((_ doorIDs: Set<String>, _ degrees: Double) -> Void)?
     /// A library item dragged from the sidebar or Library Manager, dropped at a map point.
@@ -591,8 +593,9 @@ final class MapCanvasNSView: NSView {
 
     /// Starts or stops the flame redraws. Off under Reduce Motion, where flames glow steady.
     private func updateFlicker() {
+        // Only the Metal fog draws flames; the Core Graphics fallback would redraw for nothing.
         let burning =
-            isPlayerView && fog.map { !flickeringLights($0).isEmpty } == true
+            isPlayerView && fogRenderer != nil && window != nil && fog.map { !flickeringLights($0).isEmpty } == true
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         if burning, flickerTimer == nil {
             let timer = Timer(timeInterval: 1 / TorchFlicker.framesPerSecond, repeats: true) { [weak self] _ in
@@ -763,7 +766,7 @@ final class MapCanvasNSView: NSView {
                 editing.setSelection(next)
             } else {
                 editing.setSelection([door.id])
-                if event.clickCount >= 2 { doorAction(door.id, .toggle) }
+                if event.clickCount == 2 { doorAction(door.id, .toggle) }
             }
         } else if editing.moveDrawings != nil, let stroke = map.drawing(at: point) {
             beginMovingStrokes(hit: stroke.id, at: point, map: map, shift: shift, editing: editing)
@@ -1041,9 +1044,16 @@ final class MapCanvasNSView: NSView {
             menu.addItem(MenuAction.item("Rotate 90°") { rotate(doorIDs, 90) })
         }
         menu.addItem(.separator())
-        let delete = MenuAction.item("Delete Door") { doorAction(door.id, .delete) }
+        let deleteTitle = doorIDs.count == 1 ? "Delete Door" : "Delete Doors"
+        let delete = MenuAction.item(deleteTitle) { [editing] in
+            if doorIDs.count > 1, let deleteDoors = editing?.deleteDoors {
+                deleteDoors(doorIDs)
+            } else {
+                doorAction(door.id, .delete)
+            }
+        }
         delete.attributedTitle = NSAttributedString(
-            string: "Delete Door", attributes: [.foregroundColor: NSColor.systemRed])
+            string: deleteTitle, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
         return menu
     }
@@ -1240,11 +1250,16 @@ final class MapCanvasNSView: NSView {
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         super.viewWillMove(toWindow: newWindow)
-        if newWindow == nil { stopWatchingWindow() }
+        if newWindow == nil {
+            stopWatchingWindow()
+            flickerTimer?.invalidate()
+            flickerTimer = nil
+        }
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        updateFlicker()
         guard let window else { return }
         let center = NotificationCenter.default
         center.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
@@ -1279,6 +1294,8 @@ final class MapCanvasNSView: NSView {
 
     @objc private func windowWillClose(_ notification: Notification) {
         stopWatchingWindow()
+        flickerTimer?.invalidate()
+        flickerTimer = nil
     }
 
     override func resignFirstResponder() -> Bool {
@@ -1317,8 +1334,9 @@ final class MapCanvasNSView: NSView {
         let arrows: Set<UInt16> = [123, 124, 125, 126]
         let characters = Set("vmewdlri12345?+=-_")
         let character = event.charactersIgnoringModifiers?.lowercased().first
-        let turnsDoors = toolState.tool == .door || map.map { !selectedDoorIDs(in: $0).isEmpty } == true
-        guard keyCodes.contains(event.keyCode) || (arrows.contains(event.keyCode) && turnsDoors)
+        // Arrows reach the canvas from other controls only with the Door tool, so a slider or
+        // picker keeps its arrows while a door happens to be selected.
+        guard keyCodes.contains(event.keyCode) || (arrows.contains(event.keyCode) && toolState.tool == .door)
             || (character.map { characters.contains($0) } ?? false)
         else { return false }
         keyDown(with: event)

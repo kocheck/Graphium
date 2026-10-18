@@ -124,6 +124,14 @@ final class FogRendererTests: XCTestCase {
 
         let (_, _, plain) = try render(map)
         XCTAssertEqual(plain(157, 100), 0, accuracy: tolerance, "off without walls to hatch")
+
+        // A closed door in the seen wall: rock either side of it, none across the doorway.
+        map.doors = [Door(x: 150, y: 160, orientation: .vertical, size: 50)]  // y 135…185
+        let (doorFrame, _, doorway) = try render(map, rock: true)
+        XCTAssertEqual(doorway(157, 160), 0, accuracy: tolerance, "the doorway stays dark, not rock")
+        XCTAssertEqual(doorway(157, 140), 0, accuracy: tolerance, "no rounded rock poking in past the cut")
+        let beside = (60..<120).flatMap { y in (155..<160).map { doorFrame.white(x: $0 + 20, y: y + 20) } }
+        XCTAssertEqual(beside.max()!, FogShading.paper, accuracy: 0.02, "rock still beside the door")
     }
 
     func testFlamesGlowWarmUnderTheFog() throws {

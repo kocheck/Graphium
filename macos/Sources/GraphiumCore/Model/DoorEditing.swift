@@ -46,6 +46,8 @@ extension GameMap {
                 oldEnds.contains { distance($0, drawings[i].worldPoint(at: index)) <= follow }
             }
             for index in [drawings[i].points.count - 2, 0] {
+                // A turn moves only the walls that met the door; placing reaches any near one.
+                if previous != nil, !followed.contains(index) { continue }
                 let p = drawings[i].worldPoint(at: index)
                 guard let to = target(for: p) else { continue }
                 // A wall that met the door moves with it; a nearby one reaches over to it.

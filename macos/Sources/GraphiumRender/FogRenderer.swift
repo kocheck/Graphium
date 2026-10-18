@@ -252,7 +252,7 @@ public final class FogRenderer {
         let bandWidth = scene.gridSize * FogShading.rockBand
         let bands = geometry.bands(scene.hatchWalls, width: bandWidth, within: viewQuadBounds(view, pad: bandWidth))
         guard let buffer = geometry.buffer(on: device) else { return nil }
-        let segments = geometry.segmentBuffer(on: device)
+        let segments = geometry.segmentBuffers(on: device)
         var viewUniform = [
             SIMD4<Float>(Float(view.origin.x), Float(view.origin.y), Float(view.scale), 0),
             SIMD4<Float>(Float(view.width), Float(view.height), 0, 0),
@@ -347,7 +347,8 @@ public final class FogRenderer {
                     Float(bandWidth), Float(scene.gridSize * FogShading.rockNudge), Float(view.width), Float(view.height)),
             ]
             b.setRenderPipelineState(banding)
-            b.setVertexBuffer(segments, offset: 0, index: 2)
+            b.setVertexBuffer(segments.segments, offset: 0, index: 2)
+            b.setVertexBuffer(segments.caps, offset: 0, index: 3)
             b.setFragmentTexture(targets.explored, index: 0)
             b.setFragmentTexture(targets.seen, index: 1)
             b.setFragmentBytes(&band, length: MemoryLayout<SIMD4<Float>>.stride * 2, index: 0)
@@ -446,6 +447,8 @@ private struct Geometry {
     /// For the band draws: each vertex's wall piece (a.xy, b.xy), at the vertex's index.
     /// Other vertices get zeros, so the two buffers line up.
     var segments: [SIMD4<Float>] = []
+    /// Whether each band vertex's piece is rounded at a and at b (1) or cut square (0).
+    var caps: [SIMD2<Float>] = []
 
     /// A triangle fan from the first vertex, for an even-odd stencil fill.
     mutating func fan(_ polygon: [Point2D]) -> Range<Int> {
@@ -532,6 +535,14 @@ private struct Geometry {
         let start = points.count
         guard !walls.isEmpty else { return start..<start }
         segments += Array(repeating: SIMD4<Float>(0, 0, 0, 0), count: points.count - segments.count)
+        caps += Array(repeating: SIMD2<Float>(0, 0), count: points.count - caps.count)
+        // An end shared with another piece is a corner and is rounded; a free end (cut under a
+        // door, or a wall that just stops) is not.
+        var ends: [Point2D: Int] = [:]
+        for wall in walls {
+            ends[wall.start, default: 0] += 1
+            ends[wall.end, default: 0] += 1
+        }
         for wall in walls {
             let a = wall.start
             let b = wall.end
@@ -547,21 +558,31 @@ private struct Geometry {
                 Point2D(x: b.x + ux - uy, y: b.y + uy + ux), Point2D(x: a.x - ux - uy, y: a.y - uy + ux),
             ].map { SIMD2<Float>(Float($0.x), Float($0.y)) }
             let seg = SIMD4<Float>(Float(a.x), Float(a.y), Float(b.x), Float(b.y))
+            let cap = SIMD2<Float>((ends[a] ?? 0) > 1 ? 1 : 0, (ends[b] ?? 0) > 1 ? 1 : 0)
             for i in [0, 1, 2, 0, 2, 3] {
                 points.append(corners[i])
                 segments.append(seg)
+                caps.append(cap)
             }
         }
         return start..<points.count
     }
 
-    func segmentBuffer(on device: MTLDevice) -> MTLBuffer? {
+    func segmentBuffers(on device: MTLDevice) -> (segments: MTLBuffer, caps: MTLBuffer)? {
         guard !segments.isEmpty else { return nil }
         var padded = segments
         padded += Array(repeating: SIMD4<Float>(0, 0, 0, 0), count: max(0, points.count - segments.count))
-        return padded.withUnsafeBytes {
-            device.makeBuffer(bytes: $0.baseAddress!, length: $0.count, options: .storageModeShared)
-        }
+        var paddedCaps = caps
+        paddedCaps += Array(repeating: SIMD2<Float>(0, 0), count: max(0, points.count - caps.count))
+        guard
+            let s = padded.withUnsafeBytes({
+                device.makeBuffer(bytes: $0.baseAddress!, length: $0.count, options: .storageModeShared)
+            }),
+            let c = paddedCaps.withUnsafeBytes({
+                device.makeBuffer(bytes: $0.baseAddress!, length: $0.count, options: .storageModeShared)
+            })
+        else { return nil }
+        return (s, c)
     }
 
     func buffer(on device: MTLDevice) -> MTLBuffer? {

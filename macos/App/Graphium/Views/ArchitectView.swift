@@ -414,6 +414,12 @@ struct ArchitectView: View {
                 toggleDoorOrientation: {
                     tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
                 },
+                deleteDoors: { ids in
+                    document.edit(ids.count == 1 ? "Delete Door" : "Delete Doors", undoManager: undoManager) {
+                        $0.activeMap.removeItems(ids)
+                    }
+                    selection.subtract(ids)
+                },
                 rotateDoors: { ids, degrees in
                     document.edit(ids.count == 1 ? "Rotate Door" : "Rotate Doors", undoManager: undoManager) {
                         $0.activeMap.rotateDoors(ids, by: degrees)
@@ -682,6 +688,9 @@ struct ArchitectView: View {
         guard tool != tools.tool else { return }
         tools.tool = tool
         setMeasurement(nil)  // changing tool clears the measurement (TS)
+        // A door picked under another tool shouldn't take R and the arrows under this one.
+        let doorIDs = Set(document.campaign.activeMap.doors.map(\.id))
+        if !selection.isDisjoint(with: doorIDs) { selection.subtract(doorIDs) }
     }
 
     private var markerColorBinding: Binding<Color> {

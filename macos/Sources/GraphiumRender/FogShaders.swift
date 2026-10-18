@@ -94,16 +94,19 @@ enum FogShaders {
             float4 position [[position]];
             float2 map;
             float4 seg [[flat]];
+            float2 caps [[flat]];
         };
 
         vertex BandOut bandVertex(uint vid [[vertex_id]], const device float2 *points [[buffer(0)]],
-                                  constant float4 *view [[buffer(1)]], const device float4 *segs [[buffer(2)]]) {
+                                  constant float4 *view [[buffer(1)]], const device float4 *segs [[buffer(2)]],
+                                  const device float2 *caps [[buffer(3)]]) {
             float2 m = points[vid];
             float2 px = (m - view[0].xy) * view[0].z;
             BandOut out;
             out.position = float4(px.x / view[1].x * 2 - 1, 1 - px.y / view[1].y * 2, 0, 1);
             out.map = m;
             out.seg = segs[vid];
+            out.caps = caps[vid];
             return out;
         }
 
@@ -111,13 +114,17 @@ enum FogShaders {
         // both in map units. Writes 1 − distance / band width, but only on the side of the wall
         // away from ground the party has explored or sees: the far side, mirrored across the
         // wall and `nudge` further, must be known. So a wall nobody has seen draws nothing.
+        // Only ends that meet another piece (`caps`, at a and at b) are rounded, so a wall cut
+        // under a door or left dangling stops square and the doorway stays open.
         fragment float band(BandOut in [[stage_in]], texture2d<float> explored [[texture(0)]],
                             texture2d<float> seen [[texture(1)]], constant float4 *u [[buffer(0)]]) {
             float2 a = in.seg.xy;
             float2 b = in.seg.zw;
             float2 ab = b - a;
             float len2 = max(dot(ab, ab), 1e-6);
-            float t = clamp(dot(in.map - a, ab) / len2, 0.0, 1.0);
+            float along = dot(in.map - a, ab) / len2;
+            if ((along < 0 && in.caps.x < 0.5) || (along > 1 && in.caps.y < 0.5)) { return 0; }
+            float t = clamp(along, 0.0, 1.0);
             float2 foot = a + t * ab;
             float d = distance(in.map, foot);
             float width = u[1].x;
@@ -128,8 +135,8 @@ enum FogShaders {
             for (int side = 0; side < (d > 1e-3 ? 1 : 2); side++) {
                 float2 dir = side == 0 ? away : -away;
                 float2 far = foot + dir * (d + u[1].y);
-                float2 px = (far - u[0].xy) * u[0].z;
-                if (px.x < 0 || px.y < 0 || px.x >= u[1].z || px.y >= u[1].w) { continue; }
+                // Just off screen, the nearest edge pixel stands in, so rock doesn't pop at the edges.
+                float2 px = clamp((far - u[0].xy) * u[0].z, float2(0), float2(u[1].z - 1, u[1].w - 1));
                 uint2 q = uint2(px);
                 known = max(known, max(explored.read(q).r, seen.read(q).r));
             }
