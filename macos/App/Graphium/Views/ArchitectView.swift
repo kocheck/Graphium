@@ -414,6 +414,17 @@ struct ArchitectView: View {
                 toggleDoorOrientation: {
                     tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
                 },
+                deleteDoors: { ids in
+                    document.edit(ids.count == 1 ? "Delete Door" : "Delete Doors", undoManager: undoManager) {
+                        $0.activeMap.removeItems(ids)
+                    }
+                    selection.subtract(ids)
+                },
+                rotateDoors: { ids, degrees in
+                    document.edit(ids.count == 1 ? "Rotate Door" : "Rotate Doors", undoManager: undoManager) {
+                        $0.activeMap.rotateDoors(ids, by: degrees)
+                    }
+                },
                 dropLibraryItem: { id, point in
                     if id == GenericToken.id {
                         placeGenericToken(at: point)
@@ -677,6 +688,9 @@ struct ArchitectView: View {
         guard tool != tools.tool else { return }
         tools.tool = tool
         setMeasurement(nil)  // changing tool clears the measurement (TS)
+        // A door picked under another tool shouldn't take R and the arrows under this one.
+        let doorIDs = Set(document.campaign.activeMap.doors.map(\.id))
+        if !selection.isDisjoint(with: doorIDs) { selection.subtract(doorIDs) }
     }
 
     private var markerColorBinding: Binding<Color> {
@@ -727,7 +741,11 @@ struct ArchitectView: View {
         case .eraser:
             name = "Erase"
         }
-        document.edit(name, undoManager: undoManager) { $0.activeMap.drawings.append(stroke) }
+        document.edit(name, undoManager: undoManager) {
+            $0.activeMap.drawings.append(stroke)
+            // A wall drawn up to a door meets its end, so no light slips past.
+            if stroke.tool == .wall { $0.activeMap.joinWallToDoors(id: stroke.id) }
+        }
     }
 
     private func performWallAction(_ ids: Set<String>, _ action: WallAction) {
@@ -778,6 +796,7 @@ struct ArchitectView: View {
             }
         case .delete:
             document.edit("Delete Door", undoManager: undoManager) { $0.activeMap.doors.removeAll { $0.id == id } }
+            selection.remove(id)
         }
     }
 
@@ -1089,9 +1108,13 @@ struct ArchitectView: View {
     /// Deletes selected tokens, strokes and doors in one undoable step.
     private func deleteSelection() {
         let ids = selection
-        let tokenCount = document.campaign.activeMap.tokens.filter { ids.contains($0.id) }.count
+        let map = document.campaign.activeMap
+        let tokenCount = map.tokens.filter { ids.contains($0.id) }.count
+        let doorCount = map.doors.filter { ids.contains($0.id) }.count
         let name =
-            tokenCount == ids.count ? (ids.count == 1 ? "Delete Token" : "Delete Tokens") : "Delete Selection"
+            tokenCount == ids.count
+            ? (ids.count == 1 ? "Delete Token" : "Delete Tokens")
+            : doorCount == ids.count ? (ids.count == 1 ? "Delete Door" : "Delete Doors") : "Delete Selection"
         document.edit(name, undoManager: undoManager) { $0.activeMap.removeItems(ids) }
         selection = []
     }

@@ -82,7 +82,8 @@ private struct WorldView: View {
             ? nil
             : FogState(
                 mapID: map.id, bounds: LineOfSight.fogBounds(of: map), explored: map.exploredRegions, vision: vision,
-                lit: visibility.sight.lit, ambient: visibility.sight.ambient)
+                lit: visibility.sight.lit, ambient: visibility.sight.ambient, hatchWalls: LineOfSight.hatchWalls(of: map),
+                gridSize: map.gridSize, flames: Set(map.lights.filter(\.isFlame).map(\.id)))
 
         ZStack(alignment: .bottomTrailing) {
             MapCanvas(

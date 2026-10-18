@@ -45,7 +45,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
 
     var help: String {
         switch self {
-        case .door: return "Door (D) — Arrow keys or R to rotate"
+        case .door: return "Door (D) — click a door to select it; R or arrow keys rotate"
         default: return "\(title) (\(key.uppercased()))"
         }
     }
