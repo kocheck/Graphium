@@ -234,6 +234,13 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(updated["updated"]?.arrayValue?.first?["ignored_fields"], ["open"])
         XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 200)
 
+        try call("remove_objects", ["campaign": "Edit", "ids": [.string(id)]])
+        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.count, 0)
+        try call("undo", ["campaign": "Edit"])
+        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 200)
+        try call("undo", ["campaign": "Edit"])
+        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 50)
+
         // New art from a file: only the picture changes.
         let art = folder.appendingPathComponent("ogre.png")
         try XCTUnwrap(TokenArt.disc(label: "Ogre", type: .npc, color: "#336699").png()).write(to: art)
@@ -248,13 +255,6 @@ final class MCPServerTests: XCTestCase {
         XCTAssertTrue(
             try callError("update_objects", ["campaign": "Edit", "changes": [["id": .string(id), "image_library_item": "Nobody"]]])
                 .contains("no token library item"))
-
-        try call("remove_objects", ["campaign": "Edit", "ids": [.string(id)]])
-        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.count, 0)
-        try call("undo", ["campaign": "Edit"])
-        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 200)
-        try call("undo", ["campaign": "Edit"])
-        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 50)
     }
 
     func testMapsAddUpdateDelete() throws {
