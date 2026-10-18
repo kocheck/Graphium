@@ -12,6 +12,9 @@ struct GraphiumApp: App {
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
+        // Window > Welcome to Graphium (⇧⌘1) is ShellCommands' own item; without this the
+        // window would be listed twice.
+        .commandsRemoved()
 
         // Document-based: New/Open/Open Recent/Save/Revert/autosave/versions and the
         // title-bar proxy icon all come from the system.
@@ -33,16 +36,21 @@ struct GraphiumApp: App {
             WorldWindow(sessionID: sessionID)
         }
         .defaultSize(width: 1280, height: 720)
+        // Opened for a campaign from View > World View; File > New would open one with no campaign.
+        .commandsRemoved()
 
         WindowGroup("Session Console", id: SessionConsoleWindow.id, for: UUID.self) { $sessionID in
             SessionConsoleWindow(sessionID: sessionID)
         }
         .defaultSize(width: 360, height: 720)
+        .commandsRemoved()
 
         Window("About Graphium", id: AboutView.windowID) {
             AboutView()
         }
         .windowResizability(.contentSize)
+        // Opened from Graphium > About and the Help menu, not listed in the Window menu.
+        .commandsRemoved()
 
         Settings {
             SettingsView()

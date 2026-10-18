@@ -183,26 +183,29 @@ struct ShortcutsList: View {
     private let groups: [ShortcutGroup] = [
         ShortcutGroup(title: "Tools", rows: [
             Row(keys: "V", action: "Select"), Row(keys: "M", action: "Marker"), Row(keys: "E", action: "Eraser"), Row(keys: "W", action: "Wall (blocks vision)"),
-            Row(keys: "D", action: "Door"), Row(keys: "L", action: "Light"), Row(keys: "F", action: "Reveal fog by hand"), Row(keys: "R", action: "Measure (rotates the door with the Door tool)"), Row(keys: "I", action: "Marker colour"),
-            Row(keys: "↑ ↓ ← →", action: "Rotate the door (Door tool)"),
+            Row(keys: "D", action: "Door"), Row(keys: "L", action: "Light"), Row(keys: "N", action: "Note pin"), Row(keys: "S", action: "Spell effect"),
+            Row(keys: "F", action: "Reveal fog by hand"), Row(keys: "R", action: "Measure (rotates the door with the Door tool)"), Row(keys: "I", action: "Marker colour"),
+            Row(keys: "↑ ↓ ← →", action: "Rotate the selected doors or spell effects (Shift: 45°)"),
         ]),
         ShortcutGroup(title: "Canvas", rows: [
             Row(keys: "Space-drag", action: "Pan"), Row(keys: "Scroll", action: "Pan"), Row(keys: "⌘-scroll / pinch", action: "Zoom at the pointer"),
             Row(keys: "+ / −", action: "Zoom around the centre"), Row(keys: "1 – 5", action: "Grid: Lines, Dots, Hex, Iso, Hidden"),
             Row(keys: "Shift (drawing)", action: "Lock to an axis"), Row(keys: "Shift-click / marquee", action: "Add to the selection"),
             Row(keys: "⌥-drag", action: "Duplicate tokens or strokes"), Row(keys: "Hold M", action: "Movement range of the selection"),
-            Row(keys: "Delete", action: "Remove the selection"), Row(keys: "Esc", action: "Clear measurement and selection; stop music"),
+            Row(keys: "⌘= / ⌘− / ⌘0", action: "Zoom in, out, to fit"),
+            Row(keys: "Delete / ⌘⌫", action: "Remove the selection"), Row(keys: "Esc", action: "Clear measurement and selection; stop music"),
         ]),
         ShortcutGroup(title: "Campaign", rows: [
             Row(keys: "⌘N", action: "New campaign"), Row(keys: "⌘O", action: "Open"), Row(keys: "⌘S", action: "Save"), Row(keys: "⇧⌘E", action: "Export as .graphium"),
             Row(keys: "⌘K / ⌘P", action: "Command palette"), Row(keys: "⇧⌘D", action: "Generate dungeon"), Row(keys: "⌘Z / ⇧⌘Z", action: "Undo / Redo"),
+            Row(keys: "⌥⌘N", action: "New map"), Row(keys: "⌥⌘,", action: "Map settings"), Row(keys: "⇧⌘1", action: "Welcome window"),
         ]),
         ShortcutGroup(title: "World View", rows: [
             Row(keys: "⇧⌘W", action: "Open World View"), Row(keys: "⇧⌘Y", action: "Show this view on World View"), Row(keys: "⇧⌘P", action: "Pause / resume players"), Row(keys: "⇧⌘M", action: "Performance monitor"),
             Row(keys: "?", action: "About Graphium"),
         ]),
         ShortcutGroup(title: "Initiative", rows: [Row(keys: "⌘]", action: "Next turn"), Row(keys: "⌘[", action: "Previous turn")]),
-        ShortcutGroup(title: "Session Console", rows: [Row(keys: "1 – 9", action: "Play a track"), Row(keys: "D", action: "Duck music"), Row(keys: "Esc", action: "Stop")]),
+        ShortcutGroup(title: "Session Console", rows: [Row(keys: "⌥⌘C", action: "Session Console window"), Row(keys: "1 – 9", action: "Play a track"), Row(keys: "D", action: "Duck music"), Row(keys: "Esc", action: "Stop")]),
     ]
 
     var body: some View {

@@ -66,6 +66,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MCPInstall.refresh()
     }
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+            MainActor.assumeIsolated { UIAudit.runIfRequested() }
+        #endif
+    }
+
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         false
     }

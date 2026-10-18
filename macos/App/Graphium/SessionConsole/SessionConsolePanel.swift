@@ -622,6 +622,6 @@ private struct DetachedSessionConsole: View {
         SessionConsolePanel(document: document, detached: true)
             .frame(minWidth: 300, idealWidth: 340, minHeight: 420)
             .navigationTitle("Session Console — \(document.campaign.name)")
-            .focusedSceneValue(\.campaignDocument, document)  // Pause World View works from here too
+            .focusedSceneValue(\.campaignDocument, document)
     }
 }
