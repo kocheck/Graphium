@@ -457,6 +457,7 @@ at 25%) as a pattern layer.
 - [x] NPCs outside party vision are hidden (see 3.7).
 - [x] **Native:** Shared note pins, over the fog, and a note card with a pin's title and player notes (Markdown, formatted; links don't open) when a player clicks the pin or the DM shows the note (decision 011). DM notes and unshared pins never appear.
 - [x] **Native:** Spell effects the DM hasn't hidden, over the fog and under the tokens, each look in its own colour and pattern with an 18 pt label; effects carried by an NPC the players can't see stay hidden with it (decision 015).
+- [x] **Native:** The initiative order at the top left, by the names players see, the current turn marked; never an NPC the players can't see, and no initiative numbers (decision 016).
 - [x] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
 - [x] Minimap (see 3.12).
 - [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2) **Native:** Open: Center on Party uses 18 pt and the pause text is large, but no automated legibility test exists.

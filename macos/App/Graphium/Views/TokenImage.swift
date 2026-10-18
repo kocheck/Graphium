@@ -59,7 +59,8 @@ enum TokenMenu {
     @MainActor
     static func make(
         tokenIDs: Set<String>, document: CampaignDocument, chooseFile: @escaping () -> Void,
-        pickLibraryItem: @escaping (TokenLibraryItem) -> Void, delete: @escaping () -> Void
+        pickLibraryItem: @escaping (TokenLibraryItem) -> Void, setInitiative: @escaping (_ add: Bool) -> Void,
+        delete: @escaping () -> Void
     ) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -78,6 +79,11 @@ enum TokenMenu {
         fromLibrary.submenu = submenu
         fromLibrary.isEnabled = !items.isEmpty
         menu.addItem(fromLibrary)
+
+        menu.addItem(.separator())
+        let initiative = document.campaign.activeMap.initiative
+        let inOrder = tokenIDs.allSatisfy { initiative.contains($0) }
+        menu.addItem(MenuAction.item(inOrder ? "Remove from Initiative" : "Add to Initiative") { setInitiative(!inOrder) })
 
         menu.addItem(.separator())
         let deleteTitle = tokenIDs.count == 1 ? "Delete Token" : "Delete Tokens"

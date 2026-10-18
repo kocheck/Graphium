@@ -267,7 +267,12 @@ struct ArchitectView: View {
                 zoomIn: { zoomCanvas(by: 1.25) },
                 zoomOut: { zoomCanvas(by: 0.8) },
                 zoomToFit: { zoomToFit() },
-                showViewOnWorld: { showViewOnWorld() }))
+                showViewOnWorld: { showViewOnWorld() },
+                addToInitiative: tokensWaitingForInitiative.isEmpty ? nil : { setInitiative(true, ids: tokensWaitingForInitiative) },
+                nextTurn: hasInitiative ? { nextTurn() } : nil,
+                previousTurn: hasInitiative ? { previousTurn() } : nil,
+                sortInitiative: hasInitiative ? { sortInitiative() } : nil,
+                clearInitiative: hasInitiative ? { clearInitiative() } : nil))
         .onAppear {
             document.adoptUndoManager(undoManager)
             dismissWindow(id: WelcomeView.windowID)
@@ -362,6 +367,7 @@ struct ArchitectView: View {
                 }
             }
             librarySection
+            initiativeSection
             let doors = document.campaign.activeMap.doors
             if !doors.isEmpty {
                 // Bulk door controls (PARITY §2.1).
@@ -548,6 +554,7 @@ struct ArchitectView: View {
                                 errorMessage = "“\(item.name)” is missing its image in the library."
                             }
                         },
+                        setInitiative: { add in setInitiative(add, ids: ids) },
                         delete: {
                             document.edit(ids.count == 1 ? "Delete Token" : "Delete Tokens", undoManager: undoManager) {
                                 $0.activeMap.removeItems(ids)
@@ -1328,6 +1335,118 @@ struct ArchitectView: View {
 
     /// Tokens, notes or effects, which the inspector edits.
     private var hasInspectableSelection: Bool { hasSelectedTokens || hasSelectedNotes || hasSelectedEffects }
+
+    // MARK: Initiative (issue #356)
+
+    private var hasInitiative: Bool { !document.campaign.activeMap.initiative.isEmpty }
+
+    /// Selected tokens not yet in the turn order.
+    private var tokensWaitingForInitiative: Set<String> {
+        let map = document.campaign.activeMap
+        return Set(map.tokens.lazy.map(\.id).filter { selection.contains($0) && !map.initiative.contains($0) })
+    }
+
+    /// Adds tokens to the active map's turn order, or takes them out.
+    private func setInitiative(_ add: Bool, ids: Set<String>) {
+        document.edit(add ? "Add to Initiative" : "Remove from Initiative", undoManager: undoManager) { campaign in
+            if add {
+                campaign.activeMap.addToInitiative(ids)
+            } else {
+                campaign.activeMap.initiative.remove(ids)
+            }
+        }
+    }
+
+    private func editInitiative(_ actionName: String, _ change: (inout Initiative) -> Void) {
+        document.edit(actionName, undoManager: undoManager) { change(&$0.activeMap.initiative) }
+    }
+
+    private func nextTurn() { editInitiative("Next Turn") { $0.next() } }
+    private func previousTurn() { editInitiative("Previous Turn") { $0.previous() } }
+    private func sortInitiative() { editInitiative("Sort Initiative") { $0.sort() } }
+    /// Ends the encounter.
+    private func clearInitiative() { editInitiative("Clear Initiative") { $0 = Initiative() } }
+
+    /// The active map's turn order: whose turn it is, each combatant's initiative, and the turn
+    /// controls. The World View lists the same order for players (decision 016).
+    @ViewBuilder
+    private var initiativeSection: some View {
+        let map = document.campaign.activeMap
+        let initiative = map.initiative
+        if !initiative.isEmpty {
+            let library = document.campaign.libraryIndex
+            Section {
+                ForEach(initiative.entries, id: \.tokenID) { entry in
+                    initiativeRow(entry, map: map, library: library, isCurrent: entry.tokenID == initiative.currentTokenID)
+                }
+                HStack(spacing: Spacing.md) {
+                    Button { previousTurn() } label: {
+                        Label("Previous Turn", systemImage: "backward.end.fill")
+                    }
+                    .help("Previous turn (⌘[)")
+                    Button { nextTurn() } label: {
+                        Label("Next Turn", systemImage: "forward.end.fill")
+                    }
+                    .help("Next turn (⌘])")
+                    Spacer(minLength: 0)
+                    Button { sortInitiative() } label: {
+                        Label("Sort", systemImage: "arrow.down.to.line")
+                    }
+                    .help("Sort by initiative, highest first")
+                    Button { clearInitiative() } label: {
+                        Label("Clear Initiative", systemImage: "xmark.circle")
+                    }
+                    .help("End the encounter: clear the turn order")
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+            } header: {
+                let round: String = initiative.currentTokenID == nil ? "" : " · Round \(initiative.round)"
+                Text("Initiative\(round)")
+            }
+        }
+    }
+
+    /// One combatant: a play glyph on the current turn, the token's real name (the DM's view)
+    /// and its initiative, editable in place.
+    private func initiativeRow(
+        _ entry: Initiative.Entry, map: GameMap, library: [String: TokenLibraryItem], isCurrent: Bool
+    ) -> some View {
+        let token = map.tokens.first { $0.id == entry.tokenID }
+        let name = token.map { ResolvedToken($0, library: library).name } ?? "Missing Token"
+        let id = entry.tokenID
+        return HStack(spacing: Spacing.sm) {
+            Image(systemName: "play.fill")
+                .font(.caption)
+                .opacity(isCurrent ? 1 : 0)
+                .accessibilityHidden(true)
+            Text(name)
+                .fontWeight(isCurrent ? .semibold : .regular)
+                .lineLimit(1)
+            Spacer(minLength: Spacing.xs)
+            TextField(
+                "Initiative",
+                value: Binding(
+                    get: { entry.value },
+                    set: { value in editInitiative("Change Initiative") { $0.setValue(value, for: id) } }),
+                format: .number
+            )
+            .labelsHidden()
+            .multilineTextAlignment(.trailing)
+            .monospacedDigit()
+            .frame(width: 44)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(isCurrent ? "Current turn" : "")
+        .contextMenu {
+            Button("Make Current Turn") { editInitiative("Change Turn") { $0.currentTokenID = id } }
+                .disabled(isCurrent)
+            Button("Select Token") { selection = [id] }
+                .disabled(token == nil)
+            Divider()
+            Button("Remove from Initiative") { setInitiative(false, ids: [id]) }
+        }
+    }
 
     private func saveMapSettings(_ map: GameMap, isNew: Bool) {
         document.edit(isNew ? "Add Map" : "Map Settings", undoManager: undoManager) { campaign in

@@ -24,7 +24,7 @@ public enum GridType: String, Codable, CaseIterable, Sendable {
 }
 
 /// One map: background, grid, tokens, drawings, doors, stairs, explored fog (and, native
-/// only, lights, note pins and spell effects).
+/// only, lights, note pins, spell effects and the initiative order).
 /// (TS `MapData`, CORE_SPEC §1.3.) Decoding applies the TS `loadCampaign`
 /// fallbacks for every field, so older files load.
 public struct GameMap: Codable, Equatable, Identifiable, Sendable {
@@ -61,10 +61,12 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
     /// Native only: areas the DM revealed by hand (`RevealedArea`), for tables whose party
     /// is miniatures rather than tokens. Written only when not empty.
     public var revealedAreas: [RevealedArea]
+    /// Native only: turn order (`Initiative`). Written only when not empty.
+    public var initiative: Initiative
 
     private enum CodingKeys: String, CodingKey {
         case id, name, tokens, drawings, doors, stairs, gridSize, gridType, gridColor
-        case exploredRegions, isDaylightMode, lights, ambientLight, notes, effects, revealedAreas
+        case exploredRegions, isDaylightMode, lights, ambientLight, notes, effects, revealedAreas, initiative
         case background = "map"
     }
 
@@ -85,7 +87,8 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         ambientLight: LightLevel? = nil,
         notes: [MapNote] = [],
         effects: [SpellEffect] = [],
-        revealedAreas: [RevealedArea] = []
+        revealedAreas: [RevealedArea] = [],
+        initiative: Initiative = Initiative()
     ) {
         self.id = id
         self.name = name
@@ -104,6 +107,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         self.notes = notes
         self.effects = effects
         self.revealedAreas = revealedAreas
+        self.initiative = initiative
     }
 
     public init(from decoder: Decoder) throws {
@@ -127,6 +131,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         notes = try c.decodeIfPresent([MapNote].self, forKey: .notes) ?? []
         effects = (try c.decodeIfPresent([SpellEffect.Lossy].self, forKey: .effects) ?? []).compactMap(\.effect)
         revealedAreas = try c.decodeIfPresent([RevealedArea].self, forKey: .revealedAreas) ?? []
+        initiative = try c.decodeIfPresent(Initiative.self, forKey: .initiative) ?? Initiative()
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -148,6 +153,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         if !notes.isEmpty { try c.encode(notes, forKey: .notes) }
         if !effects.isEmpty { try c.encode(effects, forKey: .effects) }
         if !revealedAreas.isEmpty { try c.encode(revealedAreas, forKey: .revealedAreas) }
+        if !initiative.isEmpty { try c.encode(initiative, forKey: .initiative) }
     }
 
     /// Appends an explored region, dropping the oldest beyond the cap.

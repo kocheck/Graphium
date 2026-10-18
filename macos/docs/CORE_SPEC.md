@@ -85,6 +85,8 @@ on decode for every map** (strictly more robust, no visible difference for valid
 
 **Native only:** `revealedAreas` `RevealedArea[]`, optional, absent = `[]`, written only when not empty. A `RevealedArea` is `{ id, points }`, a closed polygon in world px (the Reveal tool makes rectangles, snapped outward to whole cells on square grids unless Option is held). Ground the DM revealed by hand: with fog on, players see it as if a PC saw it, brightly lit, NPCs included, so a party of miniatures with no PC tokens still gets fog of war. Revealing also records it as explored, so hiding it again (a click with the Reveal tool) leaves it remembered; Reset Explored Fog clears revealed areas too.
 
+**Native only:** `initiative` `{ entries, currentTokenId?, round }`, optional, absent = no turn order, written only when `entries` is not empty. `entries` is `{ tokenId, value }[]` in turn order: tokens on this map with the initiative the DM typed (an integer, absent = 0). `currentTokenId` is whose turn it is, absent before the first turn (one that names no entry reads as absent); `round` counts from 1. Removing a token removes its entry, and if it was its turn, the turn passes to the next entry. The World View lists the order without NPCs the players can't see, by `playerName` ("Unknown" when that is empty), and without the values (decision 016).
+
 `GridType` (`gameStore.ts:113`): `'LINES' | 'DOTS' | 'HIDDEN' | 'HEXAGONAL' | 'ISOMETRIC'`.
 LINES/DOTS/HIDDEN are all square geometry (visual style only). HEXAGONAL = flat-top hex. ISOMETRIC = diamond.
 

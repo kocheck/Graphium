@@ -75,6 +75,8 @@ struct TokenInspector: View {
                     .foregroundStyle(.secondary)
             }
 
+            initiativeSection(tokens)
+
             Section("Vision", isExpanded: $visionExpanded) {
                 HStack {
                     ForEach(Self.visionPresets, id: \.self) { feet in
@@ -199,6 +201,45 @@ struct TokenInspector: View {
                 showsName
                     ? "Shown under the token on the World View. Leave it empty to show the token's name."
                     : "Players see the token with no name.")
+        }
+    }
+
+    /// Add to or Remove from Initiative for the selected tokens, and one token's initiative (issue #356).
+    private func initiativeSection(_ tokens: [ResolvedToken]) -> some View {
+        let initiative = document.campaign.activeMap.initiative
+        let ids = Set(tokens.map(\.token.id))
+        let inOrder = !ids.isEmpty && ids.allSatisfy { initiative.contains($0) }
+        return Section {
+            if tokens.count == 1, let id = ids.first, let value = initiative.value(of: id) {
+                LabeledContent("Initiative") {
+                    TextField(
+                        "Initiative",
+                        value: Binding(
+                            get: { value },
+                            set: { new in
+                                document.edit("Change Initiative", undoManager: undoManager) {
+                                    $0.activeMap.initiative.setValue(new, for: id)
+                                }
+                            }),
+                        format: .number
+                    )
+                    .labelsHidden()
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .frame(width: 64)
+                }
+            }
+            Button(inOrder ? "Remove from Initiative" : "Add to Initiative") {
+                document.edit(inOrder ? "Remove from Initiative" : "Add to Initiative", undoManager: undoManager) { campaign in
+                    if inOrder {
+                        campaign.activeMap.initiative.remove(ids)
+                    } else {
+                        campaign.activeMap.addToInitiative(ids)
+                    }
+                }
+            }
+        } footer: {
+            Text("The turn order is in the sidebar. The World View lists it for players, by the names they see, without NPCs they can't see.")
         }
     }
 

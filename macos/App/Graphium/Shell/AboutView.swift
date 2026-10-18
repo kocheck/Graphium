@@ -201,6 +201,7 @@ struct ShortcutsList: View {
             Row(keys: "⇧⌘W", action: "Open World View"), Row(keys: "⇧⌘Y", action: "Show this view on World View"), Row(keys: "⇧⌘P", action: "Pause / resume players"), Row(keys: "⇧⌘M", action: "Performance monitor"),
             Row(keys: "?", action: "About Graphium"),
         ]),
+        ShortcutGroup(title: "Initiative", rows: [Row(keys: "⌘]", action: "Next turn"), Row(keys: "⌘[", action: "Previous turn")]),
         ShortcutGroup(title: "Session Console", rows: [Row(keys: "1 – 9", action: "Play a track"), Row(keys: "D", action: "Duck music"), Row(keys: "Esc", action: "Stop")]),
     ]
 

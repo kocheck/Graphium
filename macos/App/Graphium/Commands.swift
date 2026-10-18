@@ -29,6 +29,13 @@ struct ArchitectActions {
     var zoomToFit: () -> Void
     /// Frames the World View on what the Architect canvas is showing.
     var showViewOnWorld: () -> Void
+    /// Nil when no selected token is waiting to join the initiative order.
+    var addToInitiative: (() -> Void)?
+    /// These four are nil while the active map has no initiative order.
+    var nextTurn: (() -> Void)?
+    var previousTurn: (() -> Void)?
+    var sortInitiative: (() -> Void)?
+    var clearInitiative: (() -> Void)?
 }
 
 struct FocusedArchitectActionsKey: FocusedValueKey {
@@ -244,6 +251,21 @@ struct EditorCommands: Commands {
             } else {
                 Button("Stop Music") {}.disabled(true)
             }
+            // Turn order on the active map (issue #356). ⌘] and ⌘[ step it, as Safari's
+            // Forward and Back do; text fields don't use them.
+            Divider()
+            Button("Add Selection to Initiative") { actions?.addToInitiative?() }
+                .disabled(actions?.addToInitiative == nil)
+            Button("Next Turn") { actions?.nextTurn?() }
+                .keyboardShortcut("]", modifiers: .command)
+                .disabled(actions?.nextTurn == nil)
+            Button("Previous Turn") { actions?.previousTurn?() }
+                .keyboardShortcut("[", modifiers: .command)
+                .disabled(actions?.previousTurn == nil)
+            Button("Sort Initiative") { actions?.sortInitiative?() }
+                .disabled(actions?.sortInitiative == nil)
+            Button("Clear Initiative") { actions?.clearInitiative?() }
+                .disabled(actions?.clearInitiative == nil)
         }
     }
 }

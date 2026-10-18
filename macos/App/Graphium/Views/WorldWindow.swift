@@ -143,6 +143,14 @@ private struct WorldView: View {
                 .disabled(party == nil)
                 .help(party == nil ? "No PC tokens on this map" : "Fit the view to every PC token")
                 .padding(20)
+
+                // Turn order (decision 016): never a hidden NPC, only names players may read.
+                let combatants = map.initiativeForPlayers(library: library, hiddenTokenIDs: hidden)
+                if !combatants.isEmpty {
+                    WorldInitiativeStrip(combatants: combatants)
+                        .padding(20)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
             }
 
             // Session Console plate covers the map (and Center on Party) while shown.
@@ -280,6 +288,49 @@ private struct WorldNoteCard: View {
         .frame(width: 560, alignment: .leading)
         .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Palette.worldRule.color, lineWidth: 2))
+        .environment(\.colorScheme, .dark)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// The initiative order for players (decision 016), on the etched plate the minimap uses but
+/// with `world-scrim` behind the names for 7:1. Projector-sized: nothing under 18 pt. The current
+/// combatant has a play glyph, bold type and a `world-action` band, so it reads without colour.
+private struct WorldInitiativeStrip: View {
+    let combatants: [PlayerInitiativeEntry]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Initiative")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Palette.worldInkDim.color)
+                .padding(.horizontal, 10)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(combatants, id: \.tokenID) { combatant in
+                HStack(spacing: 10) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .opacity(combatant.isCurrent ? 1 : 0)
+                    Text(combatant.name)
+                        .font(.system(size: 22, weight: combatant.isCurrent ? .bold : .regular))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(combatant.isCurrent ? Palette.worldInk.color : Palette.worldInkDim.color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    combatant.isCurrent ? Palette.worldAction.color : Color.clear,
+                    in: RoundedRectangle(cornerRadius: Radius.panel))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(combatant.name))
+                .accessibilityValue(combatant.isCurrent ? "Current turn" : "")
+            }
+        }
+        .padding(12)
+        .frame(width: 320, alignment: .leading)
+        .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: Radius.panel))
+        .overlay(RoundedRectangle(cornerRadius: Radius.panel).strokeBorder(Palette.worldRule.color, lineWidth: 2))
         .environment(\.colorScheme, .dark)
         .accessibilityElement(children: .contain)
     }
