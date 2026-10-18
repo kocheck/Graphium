@@ -71,14 +71,7 @@ extension GameMap {
     }
 
     public func doorIDs(intersecting rect: Bounds) -> [String] {
-        doors.filter { door in
-            let half = door.size / 2
-            let b =
-                door.orientation == .horizontal
-                ? Bounds(x: door.x - half, y: door.y - 4, width: door.size, height: 8)
-                : Bounds(x: door.x - 4, y: door.y - half, width: 8, height: door.size)
-            return b.intersects(rect)
-        }.map(\.id)
+        doors.filter { $0.bounds(padding: 4).intersects(rect) }.map(\.id)
     }
 
     /// Moves strokes by a map-space offset (no snapping, as TS). With `duplicate`,

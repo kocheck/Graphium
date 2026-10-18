@@ -256,7 +256,9 @@ final class MapCanvasNSView: NSView {
             }
             ink = duplicate ? ink + moved : ink.map { d in moved.first { $0.id == d.id } ?? d }
         }
-        drawInk(ink, live: liveStroke, context: context)
+        var inkMap = map
+        inkMap.drawings = ink
+        drawInk(ink, live: liveStroke, gaps: LineOfSight.wallGaps(of: inkMap), context: context)
         for drawing in ink where selection.contains(drawing.id) {
             context.strokeMark(
                 CGPath(rect: CGRect(bounds: map.drawingBounds(drawing)), transform: nil), width: 1.5 / viewport.zoom,

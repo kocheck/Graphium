@@ -6,24 +6,39 @@ import GraphiumCore
 extension MapCanvasNSView {
     /// Markers, erasers and walls share one transparency layer, so an eraser stroke
     /// removes ink (including wall lines) but never the map or tokens (PARITY §3.5).
-    /// Wall *geometry* for vision is unaffected by erasing.
-    func drawInk(_ drawings: [Drawing], live: Drawing?, context: CGContext) {
+    /// Wall *geometry* for vision is unaffected by erasing. Walls leave a gap under each
+    /// door in `gaps` (open doors on a wall, `LineOfSight.wallGaps`), as vision does.
+    func drawInk(_ drawings: [Drawing], live: Drawing?, gaps: [Door] = [], context: CGContext) {
         let all = live.map { drawings + [$0] } ?? drawings
         guard !all.isEmpty else { return }
+        var gapClip: CGPath?
+        if !gaps.isEmpty {
+            let path = CGMutablePath()
+            path.addRect(CGRect(x: -1e7, y: -1e7, width: 2e7, height: 2e7))
+            for door in gaps {
+                let transform = CGAffineTransform(translationX: door.x, y: door.y).rotated(by: door.radians)
+                path.addRect(CGRect(x: -door.size / 2, y: -12, width: door.size, height: 24), transform: transform)
+            }
+            gapClip = path
+        }
         context.saveGState()
         context.beginTransparencyLayer(auxiliaryInfo: nil)
         for drawing in all {
-            drawStroke(drawing, context: context)
+            drawStroke(drawing, gapClip: drawing.tool == .wall ? gapClip : nil, context: context)
         }
         context.endTransparencyLayer()
         context.restoreGState()
     }
 
-    private func drawStroke(_ drawing: Drawing, context: CGContext) {
+    private func drawStroke(_ drawing: Drawing, gapClip: CGPath?, context: CGContext) {
         let points = drawing.worldPoints
         guard let first = points.first else { return }
         let scale = drawing.scale ?? 1
         context.saveGState()
+        if let gapClip {
+            context.addPath(gapClip)
+            context.clip(using: .evenOdd)
+        }
         context.setLineCap(.round)
         context.setLineJoin(.round)
         switch drawing.tool {
@@ -110,12 +125,12 @@ extension MapCanvasNSView {
         for door in doors {
             let thickness = door.thickness ?? max(6, door.size * 0.16)
             let half = door.size / 2
-            let closed: CGRect =
-                door.orientation == .horizontal
-                ? CGRect(x: door.x - half, y: door.y - thickness / 2, width: door.size, height: thickness)
-                : CGRect(x: door.x - thickness / 2, y: door.y - half, width: thickness, height: door.size)
+            // Drawn in the door's own frame: centre at the origin, hinge at (−half, 0), latch along +x.
+            let frame = CGAffineTransform(translationX: door.x, y: door.y).rotated(by: door.radians)
+            let closed = CGRect(x: -half, y: -thickness / 2, width: door.size, height: thickness)
             let openFraction = CGFloat(doorSwings.openFraction(for: door, in: self))
             context.saveGState()
+            context.concatenate(frame)
             if isPlayerView {
                 // Projector legibility: white glow and a heavier outline.
                 context.setShadow(offset: .zero, blur: 8, color: NSColor.white.cgColor)
@@ -125,12 +140,9 @@ extension MapCanvasNSView {
             context.setLineWidth(isPlayerView ? 3 : 1.5)
             if openFraction > 0 {
                 // Swung up to 90° about the hinge end (animated, TS DoorShape), with the swing arc.
-                // The closed leaf points along +x (horizontal) or +y (vertical) and turns towards −y / +x.
-                let hinge =
-                    door.orientation == .horizontal
-                    ? CGPoint(x: door.x - half, y: door.y) : CGPoint(x: door.x, y: door.y - half)
-                let closedAngle: CGFloat = door.orientation == .horizontal ? 0 : .pi / 2
-                let leafAngle = closedAngle - .pi / 2 * openFraction
+                // The leaf turns towards the door's on-screen left (−y for a horizontal door, +x for a vertical one).
+                let hinge = CGPoint(x: -half, y: 0)
+                let leafAngle = -.pi / 2 * openFraction
                 context.saveGState()
                 context.translateBy(x: hinge.x, y: hinge.y)
                 context.rotate(by: leafAngle)
@@ -141,7 +153,7 @@ extension MapCanvasNSView {
                 context.restoreGState()
                 context.setLineDash(phase: 0, lengths: [4, 4])
                 context.setLineWidth(1)
-                context.addArc(center: hinge, radius: door.size, startAngle: leafAngle, endAngle: closedAngle, clockwise: false)
+                context.addArc(center: hinge, radius: door.size, startAngle: leafAngle, endAngle: 0, clockwise: false)
                 context.strokePath()
             } else {
                 context.setFillColor(fill.cgColor)
@@ -153,7 +165,9 @@ extension MapCanvasNSView {
                 drawSymbol("lock.fill", centredAt: CGPoint(x: door.x, y: door.y), size: max(12, door.size * 0.35), context: context)
             }
             if selectedDoorID == door.id || selection.contains(door.id) {
-                context.strokeMark(CGPath(rect: closed.insetBy(dx: -4, dy: -4), transform: nil), width: 2 / viewport.zoom)
+                var transform = frame
+                context.strokeMark(
+                    CGPath(rect: closed.insetBy(dx: -4, dy: -4), transform: &transform), width: 2 / viewport.zoom)
             }
         }
         doorSwings.finishFrame(doorIDs: Set(doors.map(\.id)))
@@ -193,15 +207,14 @@ extension MapCanvasNSView {
         }
     }
 
+    /// Where a click would place a door: the same `doorPlacement`, so it shows the wall alignment.
     func drawDoorGhost(at point: Point2D, map: GameMap, context: CGContext) {
-        let snapped = snapToGrid(point, gridSize: map.gridSize, gridType: map.gridType)
-        let half = map.gridSize / 2
-        let t = max(6, map.gridSize * 0.16)
-        let rect =
-            toolState.doorOrientation == .horizontal
-            ? CGRect(x: snapped.x - half, y: snapped.y - t / 2, width: map.gridSize, height: t)
-            : CGRect(x: snapped.x - t / 2, y: snapped.y - half, width: t, height: map.gridSize)
+        let door = map.doorPlacement(at: point, orientation: toolState.doorOrientation)
+        let t = max(6, door.size * 0.16)
+        let rect = CGRect(x: -door.size / 2, y: -t / 2, width: door.size, height: t)
         context.saveGState()
+        context.translateBy(x: door.x, y: door.y)
+        context.rotate(by: door.radians)
         context.setFillColor(NSColor.white.withAlphaComponent(0.6).cgColor)
         context.fill(rect)
         context.setStrokeColor(NSColor.black.withAlphaComponent(0.6).cgColor)

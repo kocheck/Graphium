@@ -36,12 +36,7 @@ extension MapCanvasNSView {
         }
         for door in map.doors {
             let state = door.isLocked ? "locked" : door.isOpen ? "open" : "closed"
-            let half = door.size / 2
-            let bounds =
-                door.orientation == .horizontal
-                ? Bounds(x: door.x - half, y: door.y - 6, width: door.size, height: 12)
-                : Bounds(x: door.x - 6, y: door.y - half, width: 12, height: door.size)
-            let element = makeElement(label: "Door, \(state)", bounds: bounds)
+            let element = makeElement(label: "Door, \(state)", bounds: door.bounds(padding: 6))
             if !isPlayerView, let doorAction = editing?.doorAction, !door.isLocked {
                 let id = door.id
                 element.onPress = { doorAction(id, .toggle) }
