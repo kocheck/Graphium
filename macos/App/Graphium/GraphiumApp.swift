@@ -20,8 +20,12 @@ struct GraphiumApp: App {
         // title-bar proxy icon all come from the system.
         DocumentGroup(newDocument: { CampaignDocument() }) { file in
             ArchitectView(document: file.document)
-                // Opening or saving a campaign brings back a recent hidden on Welcome (PARITY §1.2).
-                .task(id: file.fileURL) { HiddenRecents.unhide(file.fileURL) }
+                // Opening or saving a campaign brings back a recent hidden on Welcome (PARITY §1.2),
+                // and tells the Agent window where the file is.
+                .task(id: file.fileURL) {
+                    HiddenRecents.unhide(file.fileURL)
+                    file.document.fileURL = file.fileURL
+                }
                 .modifier(DocumentNoticeAlert(document: file.document))
         }
         .commands {
@@ -43,6 +47,13 @@ struct GraphiumApp: App {
             SessionConsoleWindow(sessionID: sessionID)
         }
         .defaultSize(width: 360, height: 720)
+        .commandsRemoved()
+
+        // Window > Agent, only while it's turned on in Settings > AI Tools.
+        WindowGroup("Agent", id: AgentWindow.id, for: UUID.self) { $sessionID in
+            AgentWindow(sessionID: sessionID)
+        }
+        .defaultSize(width: 420, height: 640)
         .commandsRemoved()
 
         Window("About Graphium", id: AboutView.windowID) {

@@ -24,6 +24,9 @@ final class CampaignDocument: ReferenceFileDocument {
 
     /// Identifies this open document to windows opened for it (World View).
     let sessionID = UUID()
+    /// Where the campaign is saved, nil until its first save. Set by its Architect window,
+    /// for the Agent window, which works on the file.
+    @Published var fileURL: URL?
     /// "Blank the projector": hides the map from players. Session-only, starts unpaused.
     @Published var isPaused = false
     /// The DM's measurement mirrored to the World View when broadcasting. Transient.
