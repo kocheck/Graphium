@@ -108,7 +108,7 @@ struct NoteInspector: View {
         } header: {
             Label("DM Notes", systemImage: "eye.slash")
         } footer: {
-            Text(reading ? "Only you see these." : "Only you see these. Markdown works: # Heading, - list, **bold**, *italic*, > quote.")
+            Text(verbatim: reading ? "Only you see these." : "Only you see these. Markdown works: # Heading, - list, **bold**, *italic*, > quote.")
         }
 
         Section {

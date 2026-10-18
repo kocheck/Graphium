@@ -47,6 +47,7 @@ final class NoteMarkdownTests: XCTestCase {
         XCTAssertEqual(NoteMarkdown.blocks(""), [])
         XCTAssertEqual(NoteMarkdown.blocks("#hashtag\n-5 hp\n2.5 ft"), [.paragraph("#hashtag\n-5 hp\n2.5 ft")])
         XCTAssertEqual(NoteMarkdown.blocks("#### Deep"), [.heading(level: 3, text: "Deep")])
+        XCTAssertEqual(NoteMarkdown.blocks("\t- tabbed"), [.bullet(text: "tabbed", depth: 1, checked: nil)], "Obsidian nests with tabs")
         XCTAssertEqual(NoteMarkdown.blocks("```\nunclosed"), [.code("unclosed")])
         XCTAssertEqual(String(NoteMarkdown.inline("**bold** and *it*").characters), "bold and it")
         XCTAssertEqual(String(NoteMarkdown.inline("2 * 3 = 6").characters), "2 * 3 = 6")

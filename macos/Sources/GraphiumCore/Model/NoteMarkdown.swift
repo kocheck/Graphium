@@ -9,7 +9,7 @@ public enum NoteMarkdown {
         case heading(level: Int, text: String)
         /// Consecutive lines, line breaks kept: DMs write room keys a line at a time.
         case paragraph(String)
-        /// `-`, `*` or `+`, or `- [ ]` / `- [x]` (`checked` set). `depth` counts two-space indents.
+        /// `-`, `*` or `+`, or `- [ ]` / `- [x]` (`checked` set). `depth` counts two-space indents (or tabs).
         case bullet(text: String, depth: Int, checked: Bool?)
         case numbered(number: Int, text: String, depth: Int)
         /// `>` lines, joined.
@@ -86,7 +86,7 @@ public enum NoteMarkdown {
         if compact.count >= 3, let mark = compact.first, "-*_".contains(mark), compact.allSatisfy({ $0 == mark }) {
             return .rule
         }
-        let indent = line.prefix { $0 == " " || $0 == "\t" }.reduce(0) { $0 + ($1 == "\t" ? 4 : 1) }
+        let indent = line.prefix { $0 == " " || $0 == "\t" }.reduce(0) { $0 + ($1 == "\t" ? 2 : 1) }
         let depth = min(indent / 2, 4)
         if let mark = trimmed.first, "-*+".contains(mark), trimmed.dropFirst().first == " " {
             let item = trimmed.dropFirst(2).trimmingCharacters(in: .whitespaces)

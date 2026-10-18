@@ -59,7 +59,8 @@ struct NoteMarkdownView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(ruleColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
         case .rule:
-            Rectangle().fill(ruleColor.opacity(0.6)).frame(height: 1).padding(.vertical, size * 0.2)
+            // 2 pt at projector sizes (world-view-player-safe: no hairlines).
+            Rectangle().fill(ruleColor).frame(height: size >= 18 ? 2 : 1).padding(.vertical, size * 0.2)
         }
     }
 
@@ -80,7 +81,7 @@ struct NoteMarkdownView: View {
         if !linksEnabled {
             for run in styled.runs where run.link != nil {
                 styled[run.range].link = nil
-                styled[run.range].underlineStyle = .single
+                styled[run.range].underlineStyle = Text.LineStyle.single
             }
         }
         return Text(styled)
