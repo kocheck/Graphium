@@ -111,9 +111,21 @@ final class CampaignDocument: ReferenceFileDocument {
                 assets[name] = data
             }
         }
-        var package = try CampaignPackage(manifest: manifest, assets: assets)
+        var package: CampaignPackage
+        do {
+            package = try CampaignPackage(manifest: manifest, assets: assets)
+        } catch {
+            Diagnostics.log(.error, "Couldn't open a campaign: \(error.localizedDescription)", category: "document")
+            throw error
+        }
         // Drop bytes the app orphaned in earlier sessions; the next save writes the smaller package.
-        package.pruneUnreferencedAssets(keeping: [GenericToken.assetName])
+        let pruned = package.pruneUnreferencedAssets(keeping: [GenericToken.assetName])
+        Diagnostics.log(
+            .info,
+            "Opened a campaign: \(package.campaign.maps.count) maps, \(assets.count) assets "
+                + "(\(assets.values.reduce(0) { $0 + $1.count } / 1024) KB), \(pruned.count) pruned, "
+                + "unknown keys kept: \(package.preserved.unknownFields == nil ? "no" : "yes")",
+            category: "document")
         self.campaign = package.campaign
         self.assets = package.assets
         self.unknownFields = package.preserved.unknownFields
@@ -132,7 +144,16 @@ final class CampaignDocument: ReferenceFileDocument {
 
     func fileWrapper(snapshot: CampaignPackage, configuration: WriteConfiguration) throws -> FileWrapper {
         // Saves and autosaves rewrite only campaign.json and new assets (see GraphiumCore).
-        try snapshot.fileWrapper(reusing: configuration.existingFile)
+        let started = Date()
+        do {
+            let wrapper = try snapshot.fileWrapper(reusing: configuration.existingFile)
+            let ms = Int(Date().timeIntervalSince(started) * 1000)
+            Diagnostics.log(.info, "Encoded a save: \(snapshot.assets.count) assets, \(ms) ms", category: "document")
+            return wrapper
+        } catch {
+            Diagnostics.log(.error, "Couldn't save a campaign: \(error)", category: "document")
+            throw error
+        }
     }
 
     /// Applies an edit and registers its undo. Registering with the window's

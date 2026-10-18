@@ -195,6 +195,7 @@ struct ShellCommands: Commands {
             AboutMenuItem(title: "Graphium Tutorial", tab: .tutorial)
             AboutMenuItem(title: "Keyboard Shortcuts", tab: .shortcuts)
             Divider()
+            Button("Collect Diagnostics…") { DiagnosticsReport.collectAndShow() }
             Link("Report a Bug…", destination: AppLinks.issues)
             Link("View Source on GitHub", destination: AppLinks.source)
         }

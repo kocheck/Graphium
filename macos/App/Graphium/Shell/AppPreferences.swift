@@ -58,6 +58,11 @@ enum Prefs {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
+        Diagnostics.startFileLog(name: "Graphium")
+        Diagnostics.log(
+            .info, "Graphium \(AppLinks.version) (\(AppLinks.build)) on \(ProcessInfo.processInfo.operatingSystemVersionString)",
+            category: "app")
+        MetricKitReceiver.shared.start()
         // Launch into the Welcome window rather than the system open panel (PARITY §1.2).
         UserDefaults.standard.register(defaults: [
             "NSShowAppCentricOpenPanelInsteadOfUntitledFile": false,

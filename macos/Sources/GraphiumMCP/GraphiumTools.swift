@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.6.0"
+    public static let version = "1.6.1"
 
     struct Tool {
         var name: String
@@ -49,17 +49,52 @@ public final class GraphiumTools {
         }
     }
 
+    /// Starts this process's log file (`~/Library/Logs/Graphium/graphium-mcp.log`), which
+    /// records tool names, timings and failures, never arguments or results.
+    public static func startFileLog() {
+        Diagnostics.startFileLog(name: "graphium-mcp")
+        Diagnostics.log(.info, "graphium-mcp \(version) started", category: "mcp")
+    }
+
     public func has(_ name: String) -> Bool { tools.contains { $0.name == name } }
+
+    /// How many times a tool runs when the campaign keeps changing under it (see `CampaignStore`).
+    static let maxAttempts = 3
 
     public func call(_ name: String, arguments: JSONValue) -> ToolResult {
         guard let tool = tools.first(where: { $0.name == name }) else { return .error("Unknown tool \(name).") }
-        do {
-            return try tool.run(Arguments(arguments))
-        } catch let error as ToolError {
-            return .error(error.message)
-        } catch {
-            return .error("\(name) failed: \(error)")
+        let started = Date()
+        let result = run(tool, arguments)
+        let ms = Int(Date().timeIntervalSince(started) * 1000)
+        // Tool names and timings only: arguments and results can hold campaign content.
+        if result.isError {
+            Diagnostics.log(.error, "\(name) returned an error after \(ms) ms", category: "mcp")
+        } else {
+            Diagnostics.log(.info, "\(name) ok in \(ms) ms", category: "mcp")
         }
+        return result
+    }
+
+    private func run(_ tool: Tool, _ arguments: JSONValue) -> ToolResult {
+        for attempt in 1...Self.maxAttempts {
+            do {
+                return try tool.run(Arguments(arguments))
+            } catch let changed as CampaignStore.ChangedOnDisk {
+                // Someone saved between this tool's load and save. Nothing was written, so run
+                // it again on the new file rather than overwrite their work.
+                Diagnostics.log(
+                    .info, "\(changed.url.lastPathComponent) changed during \(tool.name) (attempt \(attempt))",
+                    category: "mcp")
+                continue
+            } catch let error as ToolError {
+                return .error(error.message)
+            } catch {
+                return .error("\(tool.name) failed: \(error)")
+            }
+        }
+        return .error(
+            "The campaign kept changing while \(tool.name) ran (Graphium is probably saving it), so nothing was "
+                + "written. Try again in a moment.")
     }
 
     // MARK: Schema helpers

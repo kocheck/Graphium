@@ -41,6 +41,7 @@ for root in roots where !FileManager.default.fileExists(atPath: root.path) {
 FileHandle.standardError.write(
     Data("graphium-mcp \(GraphiumTools.version): folders \(roots.map(\.path).joined(separator: ", "))\n".utf8))
 
+GraphiumTools.startFileLog()
 let server = MCPServer(tools: GraphiumTools(store: CampaignStore(roots: roots))) { line in
     FileHandle.standardOutput.write(Data((line + "\n").utf8))
 }

@@ -9,6 +9,9 @@ import GraphiumCore
 ///   disk is always the truth, and Graphium (or a person) can edit it in between.
 /// - Reads and writes are coordinated (`NSFileCoordinator`), so a campaign open in
 ///   Graphium autosaves its edits before the server reads it and reloads after a write.
+/// - A save checks that `campaign.json` still holds what the load read. If Graphium (or
+///   anyone) saved in between, the save throws `ChangedOnDisk` instead of overwriting
+///   that work, and `GraphiumTools.call` runs the tool again on the fresh file.
 /// - Before each write the previous `campaign.json` is kept in the user's Caches folder
 ///   for `undo`. That copy is rebuildable app-private storage, never the campaign itself.
 public final class CampaignStore {
@@ -17,6 +20,13 @@ public final class CampaignStore {
 
     public let roots: [URL]
     let undoDirectory: URL
+    /// Runs just before a save takes its write lock. Tests use it to land a competing save there.
+    var willSave: ((URL) -> Void)?
+
+    /// The file changed between this server's load and its save, so the save didn't happen.
+    public struct ChangedOnDisk: Error {
+        public var url: URL
+    }
 
     public init(roots: [URL], undoDirectory: URL? = nil) {
         self.roots = roots.map(Self.canonical)
@@ -133,6 +143,8 @@ public final class CampaignStore {
         /// What the file held that this server doesn't own (keys from a newer Graphium,
         /// the app's orphan list), written back unchanged.
         public var preserved = CampaignPackage.Preserved()
+        /// `campaign.json` as loaded (nil if there was none), to tell whether someone saved since.
+        public internal(set) var loadedManifest: Data?
 
         public var allAssetNames: Set<String> { existingAssets.union(newAssets.keys) }
 
@@ -172,32 +184,42 @@ public final class CampaignStore {
                 "\(url.lastPathComponent) was saved by a newer Graphium (format \(found); this server reads \(supported)). "
                     + "Update Graphium and graphium-mcp; the file was not changed.")
         } catch {
-            throw ToolError("\(url.lastPathComponent) couldn't be read as a Graphium campaign: \(error)")
+            let reason = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+            throw ToolError("\(url.lastPathComponent) couldn't be read as a Graphium campaign. \(reason) The file was not changed.")
         }
         let assetsURL = url.appendingPathComponent(CampaignPackage.assetsDirectoryName)
         let names = (try? FileManager.default.contentsOfDirectory(atPath: assetsURL.path)) ?? []
         var loaded = Loaded(
             url: url, campaign: package.campaign, existingAssets: Set(names.filter(CampaignPackage.isValidAssetName)))
         loaded.preserved = package.preserved
+        loaded.loadedManifest = data
         return loaded
     }
 
     /// Writes new assets, then `campaign.json`, keeping the previous manifest for `undo`.
+    /// Throws `ChangedOnDisk`, having written nothing, when the file changed since the load.
     public func save(_ loaded: inout Loaded) throws {
         let url = loaded.url
         let manifest = try CampaignPackage(campaign: loaded.campaign, preserved: loaded.preserved).encodeManifest()
         let newAssets = loaded.newAssets
+        let expected = loaded.loadedManifest
+        willSave?(url)
         var failure: Error?
         coordinate(writing: url) {
             do {
                 let fm = FileManager.default
+                let manifestURL = url.appendingPathComponent(CampaignPackage.manifestFileName)
+                let previous = try? Data(contentsOf: manifestURL)
+                guard previous == expected else {
+                    failure = ChangedOnDisk(url: url)
+                    return
+                }
                 let assetsURL = url.appendingPathComponent(CampaignPackage.assetsDirectoryName, isDirectory: true)
                 try fm.createDirectory(at: assetsURL, withIntermediateDirectories: true)
                 for (name, data) in newAssets {
                     try data.write(to: assetsURL.appendingPathComponent(name), options: .atomic)
                 }
-                let manifestURL = url.appendingPathComponent(CampaignPackage.manifestFileName)
-                if let previous = try? Data(contentsOf: manifestURL) {
+                if let previous {
                     guard previous != manifest else { return }
                     self.keepForUndo(previous, written: manifest, of: url)
                 }
@@ -206,9 +228,15 @@ public final class CampaignStore {
                 failure = error
             }
         }
-        if let failure { throw ToolError("Couldn't save \(url.lastPathComponent): \(failure.localizedDescription)") }
+        if let failure = failure as? ChangedOnDisk { throw failure }
+        if let failure {
+            Diagnostics.log(
+                .error, "Save of \(url.lastPathComponent) failed: \(failure.localizedDescription)", category: "mcp")
+            throw ToolError("Couldn't save \(url.lastPathComponent): \(failure.localizedDescription)")
+        }
         loaded.existingAssets.formUnion(newAssets.keys)
         loaded.newAssets = [:]
+        loaded.loadedManifest = manifest
     }
 
     /// Makes a new package. Fails if something is already there.
