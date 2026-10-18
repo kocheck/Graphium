@@ -28,11 +28,14 @@ final class SoundscapePlayer {
     private static let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
 
     private final class Layer {
+        let id: String
         let mixer = AVAudioMixerNode()
         var voices: [AVAudioPlayerNode] = []
         var nextVoice = 0
         var schedule: ScatterSchedule?
         var timer: Timer?
+
+        init(id: String) { self.id = id }
     }
 
     init(engine: AVAudioEngine, ensureRunning: @escaping () -> Void, onError: @escaping (String) -> Void) {
@@ -91,7 +94,7 @@ final class SoundscapePlayer {
     private func build(_ scene: Soundscape, runtime: SessionConsoleRuntime) {
         ensureRunning()
         for layer in scene.layers {
-            let playing = Layer()
+            let playing = Layer(id: layer.id)
             engine.attach(playing.mixer)
             engine.connect(playing.mixer, to: bus, fromBus: 0, toBus: bus.nextAvailableInputBus, format: Self.format)
             playing.mixer.outputVolume = Float(runtime.ambience.level(of: layer) / 100)
@@ -123,9 +126,11 @@ final class SoundscapePlayer {
     private func scheduleNext(_ layer: Layer, firstWithin: Double? = nil) {
         guard let firing = layer.schedule?.next() else { return }
         let delay = firstWithin.map { Double.random(in: 0.5...max(0.5, $0)) } ?? firing.delay
-        layer.timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self, weak layer] _ in
+        // The timer looks the layer up by id: a torn-down scene's timer finds nothing.
+        let id = layer.id
+        layer.timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, let layer, !layer.voices.isEmpty else { return }
+                guard let self, let layer = self.layers[id], !layer.voices.isEmpty else { return }
                 if let buffer = self.buffer(for: firing.file) {
                     let voice = layer.voices[layer.nextVoice % layer.voices.count]
                     layer.nextVoice += 1
