@@ -331,6 +331,7 @@ struct ArchitectView: View {
         .onChange(of: document.campaign.activeMapID) { _, _ in
             calibrating = false
             document.worldNoteID = nil  // a note shown on the World View belongs to the map it is on
+            setMeasurement(nil)  // so a broadcast measurement doesn't carry onto the new map's TV
         }
         .sheet(item: $mapSettings) { request in
             MapSettingsView(
@@ -533,7 +534,9 @@ struct ArchitectView: View {
                     calibrating = false
                     var applied = false
                     document.edit("Calibrate Map", undoManager: undoManager) { applied = $0.activeMap.calibrate(to: box) }
-                    showToast(applied ? "Map calibrated to the grid" : "Drag a larger box around one grid cell")
+                    showToast(
+                        applied ? "Map calibrated to the grid" : "That box was too small. Zoom in and drag around one grid cell.",
+                        applied ? .success : .error)
                 },
                 cancelCalibration: {
                     calibrating = false
@@ -738,7 +741,7 @@ struct ArchitectView: View {
     }
 
     private func placeLibraryItem(_ item: TokenLibraryItem, at point: Point2D?) {
-        if let id = document.placeLibraryItem(item, centredAt: point, undoManager: undoManager) {
+        if let id = document.placeLibraryItem(item, centredAt: point ?? freePlacementPoint(), undoManager: undoManager) {
             selection = [id]
             showToast(SystemMessages.roll(.assetAddedToMapSuccess, ["itemName": item.name]), .success)
         } else {
@@ -769,12 +772,30 @@ struct ArchitectView: View {
     }
 
     private func placeGenericToken(at point: Point2D?) {
-        if let id = document.placeGenericToken(centredAt: point, undoManager: undoManager) { selection = [id] }
+        if let id = document.placeGenericToken(centredAt: point ?? freePlacementPoint(), undoManager: undoManager) {
+            selection = [id]
+        }
     }
 
-    /// Finder drops: one image goes through the 1:1 cropper (TS); several import directly.
+    /// Where a click-to-place token lands: the centre of what the DM is looking at, stepped a
+    /// cell right past tokens already there, so placing several doesn't stack them or drop them
+    /// off-screen. Nil before the canvas has a size (falls back to the map centre).
+    private func freePlacementPoint() -> Point2D? {
+        guard camera.size.width > 0, camera.size.height > 0 else { return nil }
+        let visible = camera.viewport.visibleBounds(viewWidth: camera.size.width, viewHeight: camera.size.height)
+        let map = document.campaign.activeMap
+        let library = document.campaign.libraryIndex
+        var point = Point2D(x: visible.x + visible.width / 2, y: visible.y + visible.height / 2)
+        for _ in 0..<12 where map.token(at: point, library: library) != nil { point.x += map.gridSize }
+        return point
+    }
+
+    /// Finder drops: on a map with no image yet, one image becomes the map; otherwise
+    /// one image goes through the 1:1 cropper (TS) and several import directly.
     private func dropImages(_ urls: [URL], at point: Point2D) {
-        if urls.count == 1, let url = urls.first,
+        if urls.count == 1, let url = urls.first, document.campaign.activeMap.background == nil {
+            setMapImage(from: url)
+        } else if urls.count == 1, let url = urls.first,
             let source = CGImageSourceCreateWithURL(url as CFURL, nil),
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         {
@@ -1279,6 +1300,10 @@ struct ArchitectView: View {
                     campaign.maps[i].background = MapBackground(
                         src: name, width: background.width, height: background.height)
                 }
+                // Same next step as Map Settings: show the whole image, then calibrate its grid.
+                guard document.campaign.activeMapID == mapID else { return }
+                zoomToFit()
+                if canCalibrate { startCalibration() }
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -1372,8 +1397,21 @@ struct ArchitectView: View {
         document.edit(actionName, undoManager: undoManager) { change(&$0.activeMap.initiative) }
     }
 
-    private func nextTurn() { editInitiative("Next Turn") { $0.next() } }
-    private func previousTurn() { editInitiative("Previous Turn") { $0.previous() } }
+    private func nextTurn() {
+        editInitiative("Next Turn") { $0.next() }
+        selectCurrentCombatant()
+    }
+    private func previousTurn() {
+        editInitiative("Previous Turn") { $0.previous() }
+        selectCurrentCombatant()
+    }
+    /// Selects whose turn it is, so the canvas rings them and the inspector and hold-M range
+    /// are already on them; the map otherwise doesn't show the current turn.
+    private func selectCurrentCombatant() {
+        let map = document.campaign.activeMap
+        guard let id = map.initiative.currentTokenID, map.tokens.contains(where: { $0.id == id }) else { return }
+        selection = [id]
+    }
     private func sortInitiative() { editInitiative("Sort Initiative") { $0.sort() } }
     /// Ends the encounter.
     private func clearInitiative() { editInitiative("Clear Initiative") { $0 = Initiative() } }
@@ -1400,14 +1438,12 @@ struct ArchitectView: View {
                     }
                     .help("Next turn (⌘])")
                     Spacer(minLength: 0)
+                    // Clear Initiative stays in the Session menu: a small icon next to Sort is
+                    // too easy to hit at a dim table.
                     Button { sortInitiative() } label: {
                         Label("Sort", systemImage: "arrow.down.to.line")
                     }
-                    .help("Sort by initiative, highest first")
-                    Button { clearInitiative() } label: {
-                        Label("Clear Initiative", systemImage: "xmark.circle")
-                    }
-                    .help("End the encounter: clear the turn order")
+                    .help("Sort by initiative, highest first (the first Next Turn sorts too)")
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
@@ -1434,7 +1470,12 @@ struct ArchitectView: View {
             Text(name)
                 .fontWeight(isCurrent ? .semibold : .regular)
                 .lineLimit(1)
-            Spacer(minLength: Spacing.xs)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { if token != nil { selection = [id] } }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Selects the token")
+                .accessibilityValue(isCurrent ? "Current turn" : "")
             TextField(
                 "Initiative",
                 value: Binding(
@@ -1447,8 +1488,8 @@ struct ArchitectView: View {
             .monospacedDigit()
             .frame(width: 44)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(isCurrent ? "Current turn" : "")
+        // Contain, not combine, so VoiceOver can still reach and edit the initiative field.
+        .accessibilityElement(children: .contain)
         .contextMenu {
             Button("Make Current Turn") { editInitiative("Change Turn") { $0.currentTokenID = id } }
                 .disabled(isCurrent)
@@ -1489,7 +1530,7 @@ struct ArchitectView: View {
         if calibrating {
             HStack(spacing: Spacing.md) {
                 Label {
-                    Text("Drag a box around one grid cell on the map image")
+                    Text("Zoom in, then drag a box around one grid cell")
                 } icon: {
                     Image(systemName: "square.dashed").foregroundStyle(Palette.accentText.color)
                 }
@@ -1524,7 +1565,24 @@ struct ArchitectView: View {
                 try? await Task.sleep(for: .seconds(5))
                 if self.toast?.id == toast.id { self.toast = nil }
             }
+        } else if isBlankMap {
+            // Empty state: a new map is blank paper, and nothing else says where the art goes.
+            HStack(spacing: Spacing.md) {
+                Label("Drop a map image here to start", systemImage: "photo")
+                    .foregroundStyle(Palette.inkSecondary.color)
+                Button("Choose…") { importTarget = .mapImage }
+            }
+            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+            .padding(.top, Spacing.md)
+            .transition(.opacity)
         }
+    }
+
+    /// A map with no art and nothing on it yet. Drawing, walls or tokens mean the DM chose paper.
+    private var isBlankMap: Bool {
+        let map = document.campaign.activeMap
+        return importsInFlight == 0 && map.background == nil && map.tokens.isEmpty && map.drawings.isEmpty
+            && map.doors.isEmpty && map.notes.isEmpty
     }
 
     private func zoomCanvas(by factor: Double) {

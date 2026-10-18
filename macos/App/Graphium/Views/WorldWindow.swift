@@ -170,18 +170,22 @@ private struct WorldView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
 
-            if document.isPaused {
-                PauseOverlay(line: pauseLine)
-            }
-
             HiddenWebView(webView: audio.youtube.webView)
                 .frame(width: 2, height: 2)
                 .opacity(0.01)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
+
+            // Last, so nothing (a plate the DM queues while paused included) draws over it.
+            if document.isPaused {
+                PauseOverlay(line: pauseLine)
+            }
         }
         .background(WindowAccessor(reference: window))
         .navigationTitle("World View — \(campaign.name)")
+        // Pause, Session Console and World View menu items keep working while this window is
+        // key (it is, once it goes full screen on the TV).
+        .focusedSceneValue(\.campaignDocument, document)
         .toolbar {
             ToolbarItem {
                 Menu {
@@ -347,6 +351,9 @@ private struct PauseOverlay: View {
 
     var body: some View {
         ZStack {
+            // world-scrim is translucent; the black under it keeps a plate or the map from
+            // showing through to the projector.
+            Color.black
             Palette.worldScrim.color
             VStack(spacing: 20) {
                 ProgressView()

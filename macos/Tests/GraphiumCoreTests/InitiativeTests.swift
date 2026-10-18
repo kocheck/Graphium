@@ -47,6 +47,17 @@ final class InitiativeTests: XCTestCase {
         XCTAssertEqual(empty, Initiative())
     }
 
+    func testFirstNextTurnSortsTheOrder() {
+        var initiative = order([("a", 8), ("b", 15), ("c", 20)])
+        initiative.next()
+        XCTAssertEqual(initiative.entries.map(\.tokenID), ["c", "b", "a"])
+        XCTAssertEqual(initiative.currentTokenID, "c", "starts with the highest initiative")
+        initiative.setValue(30, for: "a")
+        initiative.next()
+        XCTAssertEqual(initiative.entries.map(\.tokenID), ["c", "b", "a"], "later turns keep the order")
+        XCTAssertEqual(initiative.currentTokenID, "b")
+    }
+
     func testAddingSkipsCombatantsAlreadyInTheOrder() {
         var map = GameMap(id: "m")
         map.tokens = [Token(id: "a", x: 0, y: 0, src: ""), Token(id: "b", x: 0, y: 0, src: ""), Token(id: "c", x: 0, y: 0, src: "")]
