@@ -32,7 +32,7 @@ struct CommandPalette: View {
 
     private static func rowID(action id: String) -> String { "action:\(id)" }
     private static func rowID(asset id: String) -> String { "asset:\(id)" }
-    private static func rowBackground(_ highlighted: Bool) -> Color? { highlighted ? Color.accentColor.opacity(0.25) : nil }
+    private static func rowBackground(_ highlighted: Bool) -> Color? { highlighted ? Palette.accent.color.opacity(0.25) : nil }
 
     var body: some View {
         let actions = self.actions

@@ -89,10 +89,12 @@ public struct Initiative: Codable, Equatable, Sendable {
     }
 
     /// The next combatant's turn, wrapping to the first (and the next round) after the last.
-    /// Before the first turn, starts with the first combatant.
+    /// Before the first turn, sorts the order and starts with the highest initiative, so
+    /// starting combat doesn't depend on remembering Sort.
     public mutating func next() {
         guard !entries.isEmpty else { return }
         guard let index = currentIndex else {
+            sort()
             currentTokenID = entries[0].tokenID
             return
         }

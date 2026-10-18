@@ -121,10 +121,10 @@ private struct WorldView: View {
                     document.videoFiles.url(named: name, in: document.assets, ready: ready)
                 },
                 // Nothing plays to an empty projector.
-                animationPaused: document.isMapAnimationPaused || document.isPaused
+                animationPaused: document.isMapAnimationPaused || document.isPaused,
+                // Not drawn at all while paused, so nothing leaks or flashes on resume.
+                isBlanked: document.isPaused
             )
-            // Stop showing the map entirely while paused so nothing leaks to the projector.
-            .opacity(document.isPaused ? 0 : 1)
 
             if !document.isPaused {
                 Minimap(map: map, library: library, model: minimap) { point in
@@ -172,15 +172,16 @@ private struct WorldView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
 
-            if document.isPaused {
-                PauseOverlay(line: pauseLine)
-            }
-
             HiddenWebView(webView: audio.youtube.webView)
                 .frame(width: 2, height: 2)
                 .opacity(0.01)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
+
+            // Last, so nothing (a plate the DM queues while paused included) draws over it.
+            if document.isPaused {
+                PauseOverlay(line: pauseLine)
+            }
         }
         .background(WindowAccessor(reference: window))
         .navigationTitle("World View — \(campaign.name)")
@@ -335,7 +336,9 @@ private struct WorldInitiativeStrip: View {
             }
         }
         .padding(12)
-        .frame(width: 320, alignment: .leading)
+        // As wide as the longest name needs (so names aren't cut at a fixed width), within limits.
+        .frame(minWidth: 240, maxWidth: 440, alignment: .leading)
+        .fixedSize(horizontal: true, vertical: false)
         .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: Radius.panel))
         .overlay(RoundedRectangle(cornerRadius: Radius.panel).strokeBorder(Palette.worldRule.color, lineWidth: 2))
         .environment(\.colorScheme, .dark)
@@ -349,6 +352,9 @@ private struct PauseOverlay: View {
 
     var body: some View {
         ZStack {
+            // world-scrim is translucent; the black under it keeps a plate or the map from
+            // showing through to the projector.
+            Color.black
             Palette.worldScrim.color
             VStack(spacing: 20) {
                 ProgressView()

@@ -106,19 +106,29 @@ struct SessionConsolePanel: View {
         GroupBox { masterBarContent }
     }
 
+    /// Whether players see anything: paused wins over open, since a plate chosen now stays
+    /// behind "Please Wait" until the DM resumes.
+    private var worldStatus: some View {
+        let open = document.worldViewsOpen > 0
+        let paused = open && document.isPaused
+        return Label(
+            paused ? "World View paused" : open ? "World View open" : "World View closed",
+            systemImage: paused ? "pause.circle.fill" : open ? "tv.fill" : "tv.slash"
+        )
+        .font(.caption)
+        .foregroundStyle(paused ? Palette.accentText.color : open ? Palette.statusOk.color : Palette.inkSecondary.color)
+    }
+
     private var masterBarContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label(
-                    document.worldViewsOpen > 0 ? "World View open" : "World View closed",
-                    systemImage: document.worldViewsOpen > 0 ? "tv.fill" : "tv.slash"
-                )
-                .font(.caption)
-                .foregroundStyle(document.worldViewsOpen > 0 ? Palette.statusOk.color : Palette.inkSecondary.color)
+                worldStatus
                 Spacer()
-                Button { showingSettings = true } label: { Image(systemName: "gearshape") }
-                    .buttonStyle(.borderless)
-                    .help("Session Console settings")
+                Button { showingSettings = true } label: {
+                    Label("Session Console Settings", systemImage: "gearshape").labelStyle(.iconOnly)
+                }
+                .buttonStyle(.borderless)
+                .help("Session Console settings")
             }
             if let trackID = runtime.audio.trackId {
                 Text("\(runtime.audio.status == .playing ? "▶︎" : runtime.audio.status == .paused ? "❚❚" : "■") \(runtime.audio.title)")

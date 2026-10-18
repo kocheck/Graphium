@@ -273,7 +273,7 @@ struct TokenInspector: View {
                 .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.control))
                 .overlay {
                     if imageDropTargeted {
-                        RoundedRectangle(cornerRadius: Radius.control).strokeBorder(Color.accentColor, lineWidth: 2)
+                        RoundedRectangle(cornerRadius: Radius.control).strokeBorder(Palette.accent.color, lineWidth: 2)
                     }
                 }
                 .accessibilityLabel(sources.count > 1 ? "Different images" : "Token image")

@@ -144,7 +144,7 @@ extension MapCanvasNSView {
             let openFraction = CGFloat(doorSwings.openFraction(for: door, in: self))
             context.saveGState()
             context.concatenate(frame)
-            let fill = NSColor(srgbRed: 0.55, green: 0.36, blue: 0.2, alpha: hidden ? 0.45 : 1)
+            let fill = Palette.canvasDoor.nsColor.withAlphaComponent(hidden ? 0.45 : 1)
             context.setStrokeColor(NSColor.black.cgColor)
             context.setLineWidth(1.5)
             if hidden { context.setLineDash(phase: 0, lengths: [4, 3]) }
