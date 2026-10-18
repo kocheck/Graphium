@@ -510,6 +510,17 @@ extension GraphiumTools {
                     if take("vision_ft") { map.tokens[i].visionRadius = try change.double("vision_ft") }
                     if take("darkvision_ft") { map.tokens[i].darkvision = try change.double("darkvision_ft") }
                     if take("speed_ft") { map.tokens[i].movementSpeed = try change.double("speed_ft") }
+                    // New art only; name, stats and any library link stay (as Change Image in the app).
+                    if take("image_library_item"), let reference = try change.string("image_library_item") {
+                        guard let item = Self.libraryItem(reference, in: loaded.campaign.tokenLibrary) else {
+                            throw ToolError("\(change.context): no token library item \(reference). See list_token_library.")
+                        }
+                        map.tokens[i].src = item.src
+                    }
+                    if take("image_path"), let path = try change.string("image_path") {
+                        let image = try ImageImport.load(try store.resolve(path), kind: .token)
+                        map.tokens[i].src = loaded.addAsset(image.data, preferredName: image.preferredName)
+                    }
                 } else if let i = map.doors.firstIndex(where: { $0.id == id }) {
                     kind = "door"
                     if take("open"), let open = try change.bool("open") { map.doors[i].isOpen = open }

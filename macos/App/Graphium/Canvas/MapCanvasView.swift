@@ -40,6 +40,8 @@ struct CanvasEditing {
     /// Live (unsnapped) positions of tokens being dragged, for the World View; nil when done.
     var dragPreview: (([String: Point2D]?) -> Void)?
     var setGridType: ((GridType) -> Void)?
+    /// The right-click menu for these tokens (Change Image, Delete); nil in the World View.
+    var tokenMenu: ((_ tokenIDs: Set<String>) -> NSMenu)?
     /// `I` (PARITY §1.4).
     var openColorPicker: (() -> Void)?
     /// Esc with nothing else to cancel stops Session Console audio (PARITY §1.4).
@@ -1010,7 +1012,8 @@ final class MapCanvasNSView: NSView {
         needsDisplay = true
     }
 
-    /// Right-click (or Control-click) on a door: Open/Close, Lock/Unlock, Delete (PARITY §3.6).
+    /// Right-click (or Control-click) on a token: Change Image, Image from Library, Delete.
+    /// On a door: Open/Close, Lock/Unlock, Delete (PARITY §3.6).
     /// On a wall: its kind, one-way and direction, Delete (PARITY §3.5 Native).
     override func menu(for event: NSEvent) -> NSMenu? {
         guard let map else { return nil }
@@ -1020,8 +1023,9 @@ final class MapCanvasNSView: NSView {
         {
             return lightMenu(light, map: map, action: lightAction)
         }
+        // Lights and doors are small targets, so they win over a token standing on them.
         guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
-            return wallMenu(at: point, map: map)
+            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map)
         }
         // The menu acts on every selected door when the clicked one is among them.
         let doorIDs = selection.contains(door.id) ? selectedDoorIDs(in: map) : [door.id]
@@ -1056,6 +1060,18 @@ final class MapCanvasNSView: NSView {
             string: deleteTitle, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
         return menu
+    }
+
+    /// Change Image and Delete for the selected tokens when the clicked one is among them,
+    /// else for that token alone.
+    private func tokenMenu(at point: Point2D, map: GameMap) -> NSMenu? {
+        guard let tokenMenu = editing?.tokenMenu, let token = map.token(at: point, library: library),
+            !hiddenTokenIDs.contains(token.id)
+        else { return nil }
+        let ids = selection.contains(token.id) ? Set(map.tokens.map(\.id)).intersection(selection) : [token.id]
+        if !selection.contains(token.id) { editing?.setSelection([token.id]) }
+        needsDisplay = true
+        return tokenMenu(ids)
     }
 
     /// On, presets and Delete for the selected lights when the clicked one is among them,
