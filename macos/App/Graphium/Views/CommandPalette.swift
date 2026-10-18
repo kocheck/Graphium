@@ -163,6 +163,7 @@ struct DungeonDialog: View {
             Text("Rooms are drawn with the Wall tool and Door tool, so fog of war works straight away and everything stays editable.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)  // wraps instead of truncating
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }

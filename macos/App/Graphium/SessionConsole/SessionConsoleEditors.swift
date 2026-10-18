@@ -106,11 +106,14 @@ struct SessionConsoleSettings: View {
                 }
                 Section("Playback defaults") {
                     LabeledContent("Default volume") {
-                        Slider(
-                            value: Binding(
-                                get: { catalog.defaults.volume },
-                                set: { v in document.editConsole("Default Volume", undoManager: undo) { $0.updateDefaults(volume: v.rounded()) } }),
-                            in: 0...100)
+                        HStack {
+                            Slider(
+                                value: Binding(
+                                    get: { catalog.defaults.volume },
+                                    set: { v in document.editConsole("Default Volume", undoManager: undo) { $0.updateDefaults(volume: v.rounded()) } }),
+                                in: 0...100)
+                            Text("\(Int(catalog.defaults.volume))%").monospacedDigit()
+                        }
                     }
                     LabeledContent("Duck to") {
                         HStack {

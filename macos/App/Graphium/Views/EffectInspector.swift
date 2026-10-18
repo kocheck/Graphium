@@ -63,7 +63,8 @@ struct EffectInspector: View {
                     Text(shape.title).tag(shape)
                 }
             }
-            .pickerStyle(.segmented)
+            // A pop-up, like Look below: four segments overflow the inspector at its narrowest.
+            .pickerStyle(.menu)
         } header: {
             Text(effect.displayLabel).font(.headline)
         }
@@ -97,22 +98,21 @@ struct EffectInspector: View {
 
         Section("Look") {
             lookPicker([effect])
-            HStack {
-                ColorPicker("Colour", selection: $color, supportsOpacity: false)
-                    .onChange(of: color) { _, _ in colorEdited = true }
-                if effect.color != nil {
-                    Button("Use \(effect.look.title) Colour") {
-                        edit(effect, "Reset Colour") { $0.color = nil }
-                        resetDraft()
-                    }
-                    .buttonStyle(.link)
+            ColorPicker("Colour", selection: $color, supportsOpacity: false)
+                .onChange(of: color) { _, _ in colorEdited = true }
+            if effect.color != nil {
+                // Its own row: beside the well it pushed the swatch onto a second line.
+                Button("Use \(effect.look.title) Colour") {
+                    edit(effect, "Reset Colour") { $0.color = nil }
+                    resetDraft()
                 }
+                .buttonStyle(.link)
             }
         }
 
         Section {
             Picker("Carried by", selection: carrierBinding(effect)) {
-                Text("Nobody (stays on the map)").tag(String?.none)
+                Text("Nobody").tag(String?.none)
                 ForEach(carriers) { carrier in
                     Text(carrier.name).tag(String?.some(carrier.id))
                 }

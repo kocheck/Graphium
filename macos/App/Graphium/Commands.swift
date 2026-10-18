@@ -11,11 +11,14 @@ struct ArchitectActions {
     var showPalette: () -> Void
     var showDungeon: () -> Void
     var togglePerformanceMonitor: () -> Void
+    var isPerformanceMonitorShown: Bool
     var exportLegacy: () -> Void
     var tool: CanvasTool
     var selectTool: (CanvasTool) -> Void
     var showMapSettings: () -> Void
     var newMap: () -> Void
+    var chooseMapImage: () -> Void
+    var addTokens: () -> Void
     /// Nil when calibration isn't possible (no map image, or not a square grid).
     var calibrate: (() -> Void)?
     var isDaylight: Bool
@@ -55,7 +58,8 @@ extension FocusedValues {
     }
 }
 
-/// Command Palette (⌘K) and Insert > Generate Dungeon (PARITY §1.3, §1.5).
+/// Edit > Command Palette (⌘K, PARITY §1.3). The Architect window also answers ⌘P, as TS does
+/// (PARITY §1.4), without a second menu item of the same name.
 struct ArchitectCommands: Commands {
     @FocusedValue(\.architectActions) private var actions
 
@@ -64,19 +68,9 @@ struct ArchitectCommands: Commands {
             Button("Command Palette…") { actions?.showPalette() }
                 .keyboardShortcut("k")
                 .disabled(actions == nil)
-            // TS also binds ⌘P (PARITY §1.4); printing a map isn't supported.
-            Button("Command Palette") { actions?.showPalette() }
-                .keyboardShortcut("p")
-                .disabled(actions == nil)
         }
         // ⌘P is the palette and ⇧⌘P pauses the World View; maps aren't printable.
         CommandGroup(replacing: .printItem) {}
-        CommandMenu("Insert") {
-            // ⇧⌘D, as on the Welcome card: ⇧⌘G is Edit > Find > Find Previous on macOS.
-            Button("Generate Dungeon…") { actions?.showDungeon() }
-                .keyboardShortcut("d", modifiers: [.command, .shift])
-                .disabled(actions == nil)
-        }
     }
 }
 
@@ -180,9 +174,12 @@ struct ShellCommands: Commands {
             ) {
                 ForEach(AppTheme.allCases) { Text($0.title).tag($0.rawValue) }
             }
-            Button("Performance Monitor") { actions?.togglePerformanceMonitor() }
-                .keyboardShortcut("m", modifiers: [.command, .shift])
-                .disabled(actions == nil)
+            Toggle(
+                "Performance Monitor",
+                isOn: Binding(get: { actions?.isPerformanceMonitorShown ?? false }, set: { _ in actions?.togglePerformanceMonitor() })
+            )
+            .keyboardShortcut("m", modifiers: [.command, .shift])
+            .disabled(actions == nil)
             Divider()
         }
         CommandGroup(before: .windowList) {
@@ -234,6 +231,14 @@ struct EditorCommands: Commands {
             Button("New Map…") { actions?.newMap() }
                 .keyboardShortcut("n", modifiers: [.command, .option])
                 .disabled(actions == nil)
+            // ⇧⌘D, as on the Welcome card: ⇧⌘G is Edit > Find > Find Previous on macOS.
+            Button("Generate Dungeon…") { actions?.showDungeon() }
+                .keyboardShortcut("d", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Button("Map Image…") { actions?.chooseMapImage() }
+                .disabled(actions == nil)
+            Button("Add Tokens…") { actions?.addTokens() }
+                .disabled(actions == nil)
             Button("Calibrate Map Image…") { actions?.calibrate?() }
                 .disabled(actions?.calibrate == nil)
             Divider()
@@ -247,15 +252,34 @@ struct EditorCommands: Commands {
                 Toggle("Pause Animation", isOn: .constant(false)).disabled(true)
             }
             Divider()
-            Button("Delete Selection") { actions?.deleteSelection?() }
-                .keyboardShortcut(.delete, modifiers: [.command])
+            DoorsMenu(document: actions == nil ? nil : document)
+            Divider()
+            Button("Delete Selection") {
+                // ⌘⌫ in an inspector field is the text system's Delete to Beginning of Line, not
+                // a request to delete the token or note being edited.
+                if let text = NSApp.keyWindow?.firstResponder as? NSTextView, text.isEditable {
+                    text.deleteToBeginningOfLine(nil)
+                } else {
+                    actions?.deleteSelection?()
+                }
+            }
+            .keyboardShortcut(.delete, modifiers: [.command])
                 .disabled(actions?.deleteSelection == nil)
         }
         CommandMenu("Session") {
             if let document {
                 SessionMenuItems(document: document, showSettings: actions?.showConsoleSettings)
             } else {
+                // The same items, disabled, so the menu keeps its shape with no campaign open.
                 Button("Stop Music") {}.disabled(true)
+                Toggle("Duck Music", isOn: .constant(false)).disabled(true)
+                Button("Return to Map") {}.disabled(true)
+                Button("Play Test Tone") {}.disabled(true)
+                Divider()
+                Button("Session Console Window") {}
+                    .keyboardShortcut("c", modifiers: [.command, .option])
+                    .disabled(true)
+                Button("Session Console Settings…") {}.disabled(true)
             }
             // Turn order on the active map (issue #356). ⌘] and ⌘[ step it, as Safari's
             // Forward and Back do; text fields don't use them.
@@ -285,6 +309,55 @@ private struct MapAnimationMenuItem: View {
         let isVideo = document.campaign.activeMap.background.map { isVideoAsset($0.src) } ?? false
         Toggle("Pause Animation", isOn: $document.isMapAnimationPaused)
             .disabled(!isVideo)
+    }
+}
+
+/// Map > Doors: the sidebar's bulk door controls (PARITY §2.1), so they have a menu home and a
+/// place in Help search. Every item stays listed, disabled when there's nothing for it to do.
+private struct DoorsMenu: View {
+    let document: CampaignDocument?
+
+    var body: some View {
+        if let document {
+            Items(document: document)
+        } else {
+            Menu("Doors") {
+                Button("Open All Unlocked Doors") {}
+                Button("Close All Open Doors") {}
+                Button("Unlock All Doors") {}
+                Button("Reveal All Hidden Doors") {}
+            }
+            .disabled(true)
+        }
+    }
+
+    private struct Items: View {
+        @ObservedObject var document: CampaignDocument
+
+        var body: some View {
+            let doors = document.campaign.activeMap.doors
+            let hidden = Set(doors.filter { $0.isHidden == true }.map(\.id))
+            // A nil undo manager uses the Architect window's, as the World View's edits do.
+            Menu("Doors") {
+                Button("Open All Unlocked Doors") {
+                    document.edit("Open Doors", undoManager: nil) { $0.activeMap.setAllUnlockedDoors(open: true) }
+                }
+                .disabled(!doors.contains { !$0.isOpen && !$0.isLocked && $0.isHidden != true })
+                Button("Close All Open Doors") {
+                    document.edit("Close Doors", undoManager: nil) { $0.activeMap.setAllUnlockedDoors(open: false) }
+                }
+                .disabled(!doors.contains { $0.isOpen && !$0.isLocked })
+                Button("Unlock All Doors") {
+                    document.edit("Unlock Doors", undoManager: nil) { $0.activeMap.setAllDoorLocks(locked: false) }
+                }
+                .disabled(!doors.contains(where: \.isLocked))
+                Button("Reveal All Hidden Doors") {
+                    document.edit("Reveal Doors", undoManager: nil) { $0.activeMap.setDoorsHidden(hidden, hidden: false) }
+                }
+                .disabled(hidden.isEmpty)
+            }
+            .disabled(doors.isEmpty)
+        }
     }
 }
 
