@@ -18,6 +18,8 @@ struct CanvasEditing {
     /// Architect-only tool edits; nil in the World View.
     var addDrawing: ((Drawing) -> Void)?
     var placeDoor: ((Point2D) -> Void)?
+    var placeLight: ((Point2D) -> Void)?
+    var lightAction: ((_ lightIDs: Set<String>, LightAction) -> Void)?
     var doorAction: ((_ doorID: String, DoorAction) -> Void)?
     var wallAction: ((_ wallIDs: Set<String>, WallAction) -> Void)?
     var setMeasurement: ((MeasurementShape?) -> Void)?
@@ -25,7 +27,7 @@ struct CanvasEditing {
     var toggleDoorOrientation: (() -> Void)?
     /// A library item dragged from the sidebar or Library Manager, dropped at a map point.
     var dropLibraryItem: ((_ itemID: String, _ at: Point2D) -> Void)?
-    /// Marker/eraser strokes dragged by an offset (Option duplicates).
+    /// Strokes and lights dragged by an offset (Option duplicates).
     var moveDrawings: ((_ ids: Set<String>, _ dx: Double, _ dy: Double, _ duplicate: Bool) -> Void)?
     var resizeToken: ((_ id: String, _ scale: Double) -> Void)?
     var calibrate: ((Bounds) -> Void)?
@@ -46,6 +48,9 @@ struct FogState {
     var bounds: Bounds
     var explored: [ExploredRegion]
     var vision: [LineOfSight.VisionPolygon]
+    /// With lighting on (`ambient` set): where each light reaches.
+    var lit: [Lighting.LitArea] = []
+    var ambient: LightLevel?
 }
 
 /// Asks a canvas to frame a region once (e.g. Center on Party). A new `id` re-triggers.
@@ -285,6 +290,15 @@ final class MapCanvasNSView: NSView {
                 map: map, context: context)
         }
         drawTokens(map, context: context)
+        if !isPlayerView, editing != nil {
+            if case .movingStrokes(let ids, let start, let current, true) = interaction {
+                drawLights(
+                    map.lights, map: map, moving: ids, offset: CGSize(width: current.x - start.x, height: current.y - start.y),
+                    duplicate: NSEvent.modifierFlags.contains(.option), context: context)
+            } else {
+                drawLights(map.lights, map: map, context: context)
+            }
+        }
         if let handle = resizeHandle(in: map), case .idle = interaction {
             context.setFillColor(Palette.canvasSelection.nsColor.cgColor)
             context.fill(CGRect(bounds: handle.rect))
@@ -310,6 +324,9 @@ final class MapCanvasNSView: NSView {
         if let measurement { drawMeasurement(measurement, gridSize: map.gridSize, context: context) }
         if !isPlayerView, editing != nil, toolState.tool == .door, let hoverPoint {
             drawDoorGhost(at: hoverPoint, map: map, context: context)
+        }
+        if !isPlayerView, editing != nil, toolState.tool == .light, let hoverPoint {
+            drawLightGhost(at: hoverPoint, map: map, context: context)
         }
         if case .marquee(let start, let current, _) = interaction {
             let rect = CGRect(bounds: Bounds(corner: start, corner: current))
@@ -479,6 +496,12 @@ final class MapCanvasNSView: NSView {
             context.restoreGState()
         }
 
+        if let ambient = fog.ambient {
+            drawLitVision(fog, ambient: ambient, context: context)
+            context.endTransparencyLayer()
+            context.restoreGState()
+            return
+        }
         let colors = [
             NSColor.black.cgColor, NSColor.black.cgColor, NSColor.black.withAlphaComponent(0).cgColor,
         ] as CFArray
@@ -498,6 +521,53 @@ final class MapCanvasNSView: NSView {
         }
         context.endTransparencyLayer()
         context.restoreGState()
+    }
+
+    /// How much of the fog dim light clears; bright clears all of it.
+    private static let dimClearing = 0.65
+
+    /// Lighting on (native, 5e 2024): inside each PC's sight, the fog is cleared by the
+    /// ambient light, by each light (fully out to its bright radius, `dimClearing` out to its
+    /// dim radius, fading over the last tenth) and by darkvision (darkness seen as dim). The
+    /// clearings stack, so dim light within darkvision clears nearly all of it, as bright
+    /// would. Drawn with `.destinationOut` into the fog layer.
+    private func drawLitVision(_ fog: FogState, ambient: LightLevel, context: CGContext) {
+        let dim = Self.dimClearing
+        for entry in fog.vision where entry.polygon.count >= 3 {
+            context.saveGState()
+            let sight = CGMutablePath()
+            sight.addPolygon(entry.polygon)
+            context.addPath(sight)
+            context.clip()
+            if ambient > .dark {
+                context.setFillColor(NSColor.black.withAlphaComponent(ambient == .bright ? 1 : dim).cgColor)
+                context.fill(CGRect(bounds: fog.bounds))
+            }
+            for area in fog.lit where area.polygon.count >= 3 && area.dimRadius > 0 {
+                let edge = min(area.brightRadius / area.dimRadius, 0.9)
+                let colors = [1, 1, dim, dim, 0].map { NSColor.black.withAlphaComponent($0).cgColor } as CFArray
+                let locations: [CGFloat] = [0, max(0, edge - 0.02), edge, 0.9, 1]
+                guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: locations)
+                else { continue }
+                context.saveGState()
+                let reach = CGMutablePath()
+                reach.addPolygon(area.polygon)
+                context.addPath(reach)
+                context.clip()
+                let centre = CGPoint(area.centre)
+                context.drawRadialGradient(
+                    gradient, startCenter: centre, startRadius: 0, endCenter: centre, endRadius: area.dimRadius, options: [])
+                context.restoreGState()
+            }
+            if let darkvision = entry.darkvisionPolygon, darkvision.count >= 3 {
+                let path = CGMutablePath()
+                path.addPolygon(darkvision)
+                context.addPath(path)
+                context.setFillColor(NSColor.black.withAlphaComponent(dim).cgColor)
+                context.fillPath()
+            }
+            context.restoreGState()
+        }
     }
 
     /// TS `TokenNode` states: hover (Select tool) scales 1.02 with a soft shadow; a dragged
@@ -580,6 +650,11 @@ final class MapCanvasNSView: NSView {
             beginToolInteraction(at: point, map: map, event: event)
             return
         }
+        if editing.moveDrawings != nil, let light = map.light(at: point, tolerance: Self.lightHitRadius / viewport.zoom) {
+            // Light markers draw over tokens, so they take the click first.
+            beginMovingStrokes(hit: light.id, at: point, map: map, shift: shift, editing: editing)
+            return
+        }
         if let hit = map.token(at: point, library: library), !hiddenTokenIDs.contains(hit.id) {
             if shift {
                 var next = selection
@@ -599,18 +674,27 @@ final class MapCanvasNSView: NSView {
             selectedDoorID = door.id
             doorAction(door.id, .toggle)
         } else if editing.moveDrawings != nil, let stroke = map.drawing(at: point) {
-            var next = shift ? selection : []
-            if shift, next.contains(stroke.id) { next.remove(stroke.id) } else { next.insert(stroke.id) }
-            if !shift, selection.contains(stroke.id) { next = selection }
-            editing.setSelection(next)
-            let ids = Set(map.drawings.map(\.id)).intersection(next)
-            interaction = .movingStrokes(ids: ids, start: point, current: point, began: false)
+            beginMovingStrokes(hit: stroke.id, at: point, map: map, shift: shift, editing: editing)
         } else {
             let base = shift ? selection : []
             if !shift { editing.setSelection([]) }
             selectedDoorID = nil
             interaction = .marquee(start: point, current: point, base: base)
         }
+    }
+
+    /// The light hit radius in view points.
+    private static let lightHitRadius = lightMarkerRadius + 3
+
+    /// A press on a stroke or light: selects it (Shift toggles) and starts a move of every
+    /// selected stroke and light.
+    private func beginMovingStrokes(hit id: String, at point: Point2D, map: GameMap, shift: Bool, editing: CanvasEditing) {
+        var next = shift ? selection : []
+        if shift, next.contains(id) { next.remove(id) } else { next.insert(id) }
+        if !shift, selection.contains(id) { next = selection }
+        editing.setSelection(next)
+        let ids = Set(map.drawings.map(\.id) + map.lights.map(\.id)).intersection(next)
+        interaction = .movingStrokes(ids: ids, start: point, current: point, began: false)
     }
 
     private func pressure(of event: NSEvent) -> Double {
@@ -633,6 +717,10 @@ final class MapCanvasNSView: NSView {
                 editing.doorAction?(door.id, .delete)  // the eraser deletes doors it touches
                 return
             }
+            if let light = map.light(at: point, tolerance: Self.lightHitRadius / viewport.zoom) {
+                editing.lightAction?([light.id], .delete)  // and lights
+                return
+            }
             beginStroke(
                 Drawing(
                     tool: .eraser, points: [point.x, point.y], color: StrokeDefaults.eraserColor,
@@ -645,6 +733,8 @@ final class MapCanvasNSView: NSView {
                     oneWay: toolState.wallOneWay ? true : nil))
         case .door:
             editing.placeDoor?(point)
+        case .light:
+            editing.placeLight?(point)
         case .measure:
             interaction = .measuring(origin: point)
             editing.setMeasurement?(MeasurementShape(mode: toolState.measureMode, origin: point, pointer: point))
@@ -738,6 +828,7 @@ final class MapCanvasNSView: NSView {
                 if editing?.moveDrawings != nil {
                     hits.formUnion(map.drawingIDs(intersecting: rect))
                     hits.formUnion(map.doorIDs(intersecting: rect))
+                    hits.formUnion(map.lightIDs(intersecting: rect))
                 }
                 editing?.setSelection(base.union(hits))
             }
@@ -819,6 +910,11 @@ final class MapCanvasNSView: NSView {
     override func menu(for event: NSEvent) -> NSMenu? {
         guard let map else { return nil }
         let point = mapLocation(of: event)
+        if let lightAction = editing?.lightAction,
+            let light = map.light(at: point, tolerance: Self.lightHitRadius / viewport.zoom)
+        {
+            return lightMenu(light, map: map, action: lightAction)
+        }
         guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
             return wallMenu(at: point, map: map)
         }
@@ -838,6 +934,34 @@ final class MapCanvasNSView: NSView {
         let delete = MenuAction.item("Delete Door") { doorAction(door.id, .delete) }
         delete.attributedTitle = NSAttributedString(
             string: "Delete Door", attributes: [.foregroundColor: NSColor.systemRed])
+        menu.addItem(delete)
+        return menu
+    }
+
+    /// On, presets and Delete for the selected lights when the clicked one is among them,
+    /// else for that light alone.
+    private func lightMenu(_ light: LightSource, map: GameMap, action: @escaping (Set<String>, LightAction) -> Void) -> NSMenu {
+        let ids: Set<String> =
+            selection.contains(light.id) ? Set(map.lights.filter { selection.contains($0.id) }.map(\.id)) : [light.id]
+        if !selection.contains(light.id) { editing?.setSelection([light.id]) }
+        let targets = map.lights.filter { ids.contains($0.id) }
+        let allOn = targets.allSatisfy(\.isOn)
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.addItem(MenuAction.item(allOn ? "Turn Off" : "Turn On") { action(ids, .on(!allOn)) })
+        menu.addItem(.separator())
+        let names = Set(targets.compactMap(\.name))
+        for preset in LightPreset.all {
+            let item = MenuAction.item("\(preset.name) (\(jsNumber(preset.bright)) ft bright, \(jsNumber(preset.dim)) ft dim)") {
+                action(ids, .preset(preset))
+            }
+            item.state = names == Set([preset.name]) ? .on : .off
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
+        let title = ids.count == 1 ? "Delete Light" : "Delete Lights"
+        let delete = MenuAction.item(title) { action(ids, .delete) }
+        delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
         return menu
     }
@@ -1071,7 +1195,7 @@ final class MapCanvasNSView: NSView {
         if event.keyCode == 49, responder is NSButton { return false }  // Space presses a focused button
         let keyCodes: Set<UInt16> = [49, 51, 53, 117]  // space, delete, escape, forward delete
         let arrows: Set<UInt16> = [123, 124, 125, 126]
-        let characters = Set("vmewdri12345?+=-_")
+        let characters = Set("vmewdlri12345?+=-_")
         let character = event.charactersIgnoringModifiers?.lowercased().first
         guard keyCodes.contains(event.keyCode) || (arrows.contains(event.keyCode) && toolState.tool == .door)
             || (character.map { characters.contains($0) } ?? false)

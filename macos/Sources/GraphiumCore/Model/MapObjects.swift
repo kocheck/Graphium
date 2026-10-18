@@ -23,11 +23,13 @@ public struct Token: Codable, Equatable, Identifiable, Sendable {
     public var name: String?
     /// Feet.
     public var movementSpeed: Double?
+    /// Native only: darkvision range in feet, used on maps with lighting (`GameMap.ambientLight`).
+    public var darkvision: Double?
 
     public init(
         id: String = newID(), x: Double, y: Double, src: String, libraryItemId: String? = nil,
         scale: Double? = nil, type: CreatureType? = nil, visionRadius: Double? = nil,
-        name: String? = nil, movementSpeed: Double? = nil
+        name: String? = nil, movementSpeed: Double? = nil, darkvision: Double? = nil
     ) {
         self.id = id
         self.x = x
@@ -39,6 +41,7 @@ public struct Token: Codable, Equatable, Identifiable, Sendable {
         self.visionRadius = visionRadius
         self.name = name
         self.movementSpeed = movementSpeed
+        self.darkvision = darkvision
     }
 }
 
@@ -239,12 +242,15 @@ public struct TokenLibraryItem: Codable, Equatable, Identifiable, Sendable {
     public var defaultVisionRadius: Double?
     public var defaultType: CreatureType?
     public var defaultMovementSpeed: Double?
+    /// Native only (`Token.darkvision`).
+    public var defaultDarkvision: Double?
 
     public init(
         id: String = newID(), name: String, src: String, thumbnailSrc: String,
         category: String = "Monsters", tags: [String] = [], dateAdded: Double,
         defaultScale: Double? = nil, defaultVisionRadius: Double? = nil,
-        defaultType: CreatureType? = nil, defaultMovementSpeed: Double? = nil
+        defaultType: CreatureType? = nil, defaultMovementSpeed: Double? = nil,
+        defaultDarkvision: Double? = nil
     ) {
         self.id = id
         self.name = name
@@ -257,5 +263,6 @@ public struct TokenLibraryItem: Codable, Equatable, Identifiable, Sendable {
         self.defaultVisionRadius = defaultVisionRadius
         self.defaultType = defaultType
         self.defaultMovementSpeed = defaultMovementSpeed
+        self.defaultDarkvision = defaultDarkvision
     }
 }

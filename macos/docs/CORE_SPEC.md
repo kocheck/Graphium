@@ -77,6 +77,8 @@ Legacy/older files may lack `doors`, `stairs`, `gridColor`. `switchMap`/`deleteM
 `gridSize`, `map`, `isDaylightMode` are taken raw. **Swift: apply the full `loadCampaign` fallback set
 on decode for every map** (strictly more robust, no visible difference for valid files).
 
+**Native only** (TS ignores both): `lights` `LightSource[]`, optional, absent = `[]`, written only when not empty; `ambientLight` `'dark' | 'dim' | 'bright'`, optional, absent = lighting off. A `LightSource` is `{ id, x, y, bright, dim, isOn?, name? }`: `x`/`y` is the centre in world px, `bright` and `dim` are radii in feet (`dim` is the outer radius, never less than `bright`), `isOn` is absent when on, `name` is the preset it came from. With lighting off, vision is as in §3.3. With it on, every PC sees within its line of sight out to the map's edge, and a spot counts as seen when it is lit (ambient or a light whose own line of sight reaches it), or lies within the PC's darkvision (5e 2024: dim seen as bright, darkness as dim). Only seen ground is recorded as explored.
+
 `GridType` (`gameStore.ts:113`): `'LINES' | 'DOTS' | 'HIDDEN' | 'HEXAGONAL' | 'ISOMETRIC'`.
 LINES/DOTS/HIDDEN are all square geometry (visual style only). HEXAGONAL = flat-top hex. ISOMETRIC = diamond.
 
@@ -93,6 +95,8 @@ LINES/DOTS/HIDDEN are all square geometry (visual style only). HEXAGONAL = flat-
 | `visionRadius`  | `number` (feet) | yes | override; resolves `token.visionRadius ?? lib.defaultVisionRadius` (may stay undefined)         |
 | `name`          | `string`        | yes | override; resolves `token.name ?? lib.name ?? 'Token'`                                          |
 | `movementSpeed` | `number` (feet) | yes | resolves `token.movementSpeed ?? lib.defaultMovementSpeed ?? 30`                                |
+
+**Native only**: `darkvision` `number` (feet), optional, resolves `token.darkvision ?? lib.defaultDarkvision`; used only with lighting on (§1.3).
 
 Token footprint: `size = gridSize * resolvedScale` (square). Token centre: `(x + size/2, y + size/2)`.
 `TokenMetadata` (`gameStore.ts:32`) is just the shared optional subset `{name,type,visionRadius,scale,movementSpeed}`.

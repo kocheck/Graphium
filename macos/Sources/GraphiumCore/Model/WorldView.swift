@@ -42,8 +42,7 @@ extension GameMap {
     /// Recomputed from this map, so it never trusts a window's possibly stale copy.
     public func tokensHiddenFromPlayers(library: [String: TokenLibraryItem]) -> Set<String> {
         guard !isDaylightMode else { return [] }
-        let vision = LineOfSight.polygons(of: self, library: library)
-        return LineOfSight.hiddenNPCIDs(of: self, library: library, polygons: vision.map(\.polygon))
+        return LineOfSight.hiddenNPCIDs(of: self, library: library, sight: LineOfSight.partySight(of: self, library: library))
     }
 
     /// This map with some tokens at in-progress drag positions (top-left corners), so

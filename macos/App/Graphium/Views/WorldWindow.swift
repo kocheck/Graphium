@@ -81,7 +81,8 @@ private struct WorldView: View {
             map.isDaylightMode
             ? nil
             : FogState(
-                mapID: map.id, bounds: LineOfSight.fogBounds(of: map), explored: map.exploredRegions, vision: vision)
+                mapID: map.id, bounds: LineOfSight.fogBounds(of: map), explored: map.exploredRegions, vision: vision,
+                lit: visibility.sight.lit, ambient: visibility.sight.ambient)
 
         ZStack(alignment: .bottomTrailing) {
             MapCanvas(

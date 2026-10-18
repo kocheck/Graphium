@@ -13,11 +13,13 @@ public struct ResolvedToken: Equatable, Sendable {
     public var visionRadius: Double?
     public var scale: Double
     public var movementSpeed: Double
+    /// Feet; nil is none.
+    public var darkvision: Double?
     /// Which values came from the library item (category-inferred PC does not count).
     public var inherited: Set<Field>
 
     public enum Field: Hashable, Sendable {
-        case name, type, visionRadius, scale, movementSpeed
+        case name, type, visionRadius, scale, movementSpeed, darkvision
     }
 
     public init(_ token: Token, library: [String: TokenLibraryItem]) {
@@ -33,6 +35,7 @@ public struct ResolvedToken: Equatable, Sendable {
         scale = pick(token.scale, item?.defaultScale, .scale) ?? Self.defaultScale
         visionRadius = pick(token.visionRadius, item?.defaultVisionRadius, .visionRadius)
         movementSpeed = pick(token.movementSpeed, item?.defaultMovementSpeed, .movementSpeed) ?? Self.defaultMovementSpeed
+        darkvision = pick(token.darkvision, item?.defaultDarkvision, .darkvision)
         type = pick(token.type, item?.defaultType, .type) ?? (item?.category == "PC" ? .pc : nil)
         self.inherited = inherited
     }

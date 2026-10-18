@@ -1,9 +1,9 @@
 import AppKit
 import GraphiumCore
 
-/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R.
+/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light) is native.
 enum CanvasTool: String, CaseIterable, Identifiable {
-    case select, marker, eraser, wall, door, measure
+    case select, marker, eraser, wall, door, light, measure
 
     var id: Self { self }
 
@@ -14,6 +14,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .eraser: return "Eraser"
         case .wall: return "Wall"
         case .door: return "Door"
+        case .light: return "Light"
         case .measure: return "Measure"
         }
     }
@@ -25,6 +26,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .eraser: return "eraser"
         case .wall: return "line.diagonal"
         case .door: return "door.left.hand.closed"
+        case .light: return "lightbulb"
         case .measure: return "ruler"
         }
     }
@@ -36,6 +38,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .eraser: return "e"
         case .wall: return "w"
         case .door: return "d"
+        case .light: return "l"
         case .measure: return "r"
         }
     }
@@ -60,9 +63,16 @@ struct ToolState: Equatable {
     /// What new walls are (PARITY §3.5 Native).
     var wallKind: WallKind = .wall
     var wallOneWay = false
+    /// What the Light tool places (native).
+    var lightPreset: LightPreset = .torch
     var measureMode: MeasurementShape.Mode = .ruler
     var pressureCurve: PressureCurve = .normal
     var pressureEnabled = true
+}
+
+/// Right-click actions on lights (native).
+enum LightAction {
+    case on(Bool), preset(LightPreset), delete
 }
 
 /// Right-click actions on a door (PARITY §3.6).
