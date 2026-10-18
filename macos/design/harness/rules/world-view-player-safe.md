@@ -9,12 +9,12 @@ reviewed: 2026-10-17
 
 # The World View is player-safe and projector-legible
 
-**Rule.** The World View shows only what players may see, drawn for a TV across a room. No DM chrome or DM-only state (hidden NPCs, unexplored fog, local-only measurements, Architect selection). It uses the fixed `world-*` tokens and ignores Light/Dark. Any text a player reads is at least 18 pt at 1080p with 7:1 contrast on its backing. Strokes are at least 2 pt. No state is colour-only.
+**Rule.** The World View shows only what players may see, drawn for a TV across a room. No DM chrome or DM-only state (hidden NPCs, unexplored fog, local-only measurements, Architect selection). It uses the fixed `world-*` tokens and ignores Light/Dark. Any text a player reads is at least 24 pt at 1080p (about 1/45 of screen height, for reading from across the table; raised from 18 pt on 2026-10-18, #370) with 7:1 contrast on its backing. Strokes are at least 2 pt. No state is colour-only.
 
-**Test.** On a 1920 × 1080 World View screenshot: nothing names a DM tool or setting; every overlay label is at least 18 px text on a `world-*` backing; no 1 px lines in overlays; every coloured mark also differs by shape or label.
+**Test.** On a 1920 × 1080 World View screenshot: nothing names a DM tool or setting; every overlay label is at least 24 px text on a `world-*` backing; no 1 px lines in overlays; every coloured mark also differs by shape or label.
 
-**Good.** "Center on Party" at 18 pt semibold on `world-action`. The pause screen: `world-scrim`, large "Please Wait", no map pixels.
-**Bad.** A 12 pt caption, a 1 px hairline frame, the Architect's amber selection ring, or a toolbar button that only the DM should press.
+**Good.** "Center on Party" at 24 pt semibold on `world-action`. The pause screen: `world-scrim`, large "Please Wait", no map pixels.
+**Bad.** An 18 pt caption, a 1 px hairline frame, the Architect's amber selection ring, or a toolbar button that only the DM should press.
 
 **Also check.**
 

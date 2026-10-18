@@ -5,8 +5,8 @@ import GraphiumCore
 /// colours and a pattern of its own (flames, bubbles, waves, shards, bolts, clouds, wisps, rays,
 /// sparks), so looks never differ by colour alone, under a solid edge in the tint. The pattern is
 /// seeded by the effect's id, so it holds still from frame to frame. In the Architect every effect
-/// shows, the ones hidden from players with a dashed edge; the World View shows the rest, over
-/// the fog, as shared note pins are: the DM chose to show them.
+/// shows, the ones hidden from players with a dashed edge; the World View shows the rest under
+/// the fog, so only on ground the party has explored (#368).
 extension MapCanvasNSView {
     /// On-screen points: the origin handle's radius, and the hit slack around it.
     static let effectHandleRadius = 5.0
@@ -235,8 +235,8 @@ extension MapCanvasNSView {
     }
 
     private func drawEffectLabel(_ effect: SpellEffect, at point: Point2D, context: CGContext) {
-        // Projector legibility: 18 pt labels (world-view-player-safe).
-        let size = (isPlayerView ? 18 : 12) / viewport.zoom
+        // Projector legibility: 24 pt labels (world-view-player-safe).
+        let size = (isPlayerView ? 24 : 12) / viewport.zoom
         let text = effect.displayLabel
         let shown = text.count > 32 ? String(text.prefix(31)) + "…" : text
         let label = NSAttributedString.mapLabel(shown, font: NSFont.boldSystemFont(ofSize: size))

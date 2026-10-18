@@ -75,8 +75,8 @@ extension MapCanvasNSView {
         context.restoreGState()
         drawNoteSymbol(
             "text.bubble.fill", centredAt: CGPoint(x: note.x, y: note.y), size: 20 / zoom, color: Palette.worldInk.nsColor)
-        // Projector legibility: 18 pt labels (world-view-player-safe).
-        drawNoteTitle(note, below: rect, size: 18 / zoom)
+        // Projector legibility: 24 pt labels (world-view-player-safe).
+        drawNoteTitle(note, below: rect, size: 24 / zoom)
     }
 
     private func drawNoteTitle(_ note: MapNote, below rect: CGRect, size: CGFloat) {

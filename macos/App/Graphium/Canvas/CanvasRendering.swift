@@ -418,12 +418,12 @@ extension MapCanvasNSView {
         }
         context.restoreGState()
 
-        // A readout on a dark backing, constant on-screen size: 16 pt for the DM, 18 pt on the
+        // A readout on a dark backing, constant on-screen size: 16 pt for the DM, 24 pt on the
         // projector (design harness: world-view-player-safe, readouts-in-mono).
         let label = NSAttributedString(
             string: shape.label(gridSize: gridSize),
             attributes: [
-                .font: ReadoutFont.ns(size: (isPlayerView ? 18 : 16) / viewport.zoom, weight: .semibold),
+                .font: ReadoutFont.ns(size: (isPlayerView ? 24 : 16) / viewport.zoom, weight: .semibold),
                 .foregroundColor: NSColor.white,
             ])
         let size = label.size()

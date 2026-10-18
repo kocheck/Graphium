@@ -35,7 +35,7 @@ struct WorldStageView: View {
                                 Text(runtime.stage.title).font(.system(size: 34, weight: .bold))
                             }
                             if !runtime.stage.subtitle.isEmpty {
-                                Text(runtime.stage.subtitle).font(.system(size: 22))
+                                Text(runtime.stage.subtitle).font(.system(size: 26))
                             }
                         }
                         .foregroundStyle(.white)
