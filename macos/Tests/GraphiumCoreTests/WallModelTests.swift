@@ -68,7 +68,7 @@ final class WallModelTests: XCTestCase {
     }
 
     func testOldWallsDecodeAndUnknownKindsReadAsWalls() throws {
-        let old = #"{"id":"w","tool":"wall","points":[0,0,100,0],"color":"#ff0000","size":8}"#
+        let old = ##"{"id":"w","tool":"wall","points":[0,0,100,0],"color":"#ff0000","size":8}"##
         let decoded = try JSONDecoder().decode(Drawing.self, from: Data(old.utf8))
         XCTAssertNil(decoded.wallKind)
         XCTAssertTrue(decoded.blocksSight)
@@ -76,7 +76,7 @@ final class WallModelTests: XCTestCase {
         XCTAssertFalse(encoded.contains("wallKind"), "untouched walls write no new keys")
         XCTAssertFalse(encoded.contains("oneWay"))
 
-        let newer = #"{"id":"w","tool":"wall","points":[0,0,100,0],"color":"#ff0000","size":8,"wallKind":"forcefield"}"#
+        let newer = ##"{"id":"w","tool":"wall","points":[0,0,100,0],"color":"#ff0000","size":8,"wallKind":"forcefield"}"##
         XCTAssertEqual(try JSONDecoder().decode(Drawing.self, from: Data(newer.utf8)).wallKind, .wall)
     }
 
