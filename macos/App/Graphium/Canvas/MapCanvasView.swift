@@ -58,7 +58,7 @@ struct CanvasEditing {
     var stopAudio: (() -> Void)?
     /// Reveal tool: show this rectangle to players (map pixels; `snap` to whole cells).
     var revealArea: ((_ rect: Bounds, _ snap: Bool) -> Void)?
-    /// Reveal tool: a click on a revealed area hides it again.
+    /// Reveal tool: an Option-click on a revealed area hides it again.
     var hideRevealedArea: ((String) -> Void)?
 }
 
@@ -579,6 +579,13 @@ final class MapCanvasNSView: NSView {
             guard padded.intersects(Bounds(x: token.x, y: token.y + lift, width: size, height: size)) else { continue }
             let hovered = token.id == hoveredTokenID && toolState.tool == .select
             drawToken(token, in: rect, lift: lift, selected: isSelected, look: hovered ? .hovered : .idle, context: context)
+            // Whose turn it is, for the DM: a solid ring outside the dashed selection ring, so it
+            // reads without colour and without taking the selection. Players have the turn strip.
+            if !isPlayerView, token.id == map.initiative.currentTokenID {
+                context.strokeMark(
+                    CGPath(ellipseIn: rect.insetBy(dx: -7 / viewport.zoom, dy: -7 / viewport.zoom), transform: nil),
+                    width: 2 / viewport.zoom)
+            }
         }
     }
 
@@ -793,7 +800,7 @@ final class MapCanvasNSView: NSView {
         if let image = imageProvider(token.src) {
             draw(image, in: art, context: context)
         } else {
-            context.setFillColor(NSColor.systemGray.cgColor)
+            context.setFillColor(Palette.ruleStrong.nsColor.cgColor)  // missing art
             context.fillEllipse(in: art.insetBy(dx: art.width * 0.08, dy: art.height * 0.08))
         }
         context.restoreGState()
@@ -1148,8 +1155,11 @@ final class MapCanvasNSView: NSView {
         }
         if case .revealing(let start, let current) = interaction {
             if Measure.euclideanDistance(start, current) * viewport.zoom < Self.dragThreshold {
-                // A click: hide the revealed area under it, if any.
-                if let area = map?.revealedArea(at: start) { editing?.hideRevealedArea?(area.id) }
+                // Option-click hides the revealed area under it. A bare click does nothing: players
+                // are watching, and a stray click in a tool called Reveal shouldn't darken their ground.
+                if event.modifierFlags.contains(.option), let area = map?.revealedArea(at: start) {
+                    editing?.hideRevealedArea?(area.id)
+                }
             } else {
                 // Option reveals exactly what was dragged; otherwise whole cells on square grids.
                 let squareGrid = map.map { $0.gridType == .lines || $0.gridType == .dots } ?? false
@@ -1771,6 +1781,8 @@ struct MapCanvas: NSViewRepresentable {
     var videoProvider: (String, @escaping VideoFileReady) -> URL? = { _, _ in nil }
     /// Holds a video background on its current frame.
     var animationPaused = false
+    /// Draws nothing at all (World View paused) while keeping the camera for resume.
+    var isBlanked = false
 
     func makeNSView(context: Context) -> MapCanvasHostView {
         MapCanvasHostView(frame: .zero)
@@ -1799,6 +1811,7 @@ struct MapCanvas: NSViewRepresentable {
         view.videoProvider = videoProvider
         view.animationPaused = animationPaused
         view.syncVideoBackground()
+        host.isHidden = isBlanked
         view.needsDisplay = true
     }
 }

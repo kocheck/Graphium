@@ -790,10 +790,10 @@ struct ArchitectView: View {
         return point
     }
 
-    /// Finder drops: on a map with no image yet, one image becomes the map; otherwise
+    /// Finder drops: on an empty map, one image becomes the map; otherwise
     /// one image goes through the 1:1 cropper (TS) and several import directly.
     private func dropImages(_ urls: [URL], at point: Point2D) {
-        if urls.count == 1, let url = urls.first, document.campaign.activeMap.background == nil {
+        if urls.count == 1, let url = urls.first, isMapEmpty {
             setMapImage(from: url)
         } else if urls.count == 1, let url = urls.first,
             let source = CGImageSourceCreateWithURL(url as CFURL, nil),
@@ -1397,21 +1397,8 @@ struct ArchitectView: View {
         document.edit(actionName, undoManager: undoManager) { change(&$0.activeMap.initiative) }
     }
 
-    private func nextTurn() {
-        editInitiative("Next Turn") { $0.next() }
-        selectCurrentCombatant()
-    }
-    private func previousTurn() {
-        editInitiative("Previous Turn") { $0.previous() }
-        selectCurrentCombatant()
-    }
-    /// Selects whose turn it is, so the canvas rings them and the inspector and hold-M range
-    /// are already on them; the map otherwise doesn't show the current turn.
-    private func selectCurrentCombatant() {
-        let map = document.campaign.activeMap
-        guard let id = map.initiative.currentTokenID, map.tokens.contains(where: { $0.id == id }) else { return }
-        selection = [id]
-    }
+    private func nextTurn() { editInitiative("Next Turn") { $0.next() } }
+    private func previousTurn() { editInitiative("Previous Turn") { $0.previous() } }
     private func sortInitiative() { editInitiative("Sort Initiative") { $0.sort() } }
     /// Ends the encounter.
     private func clearInitiative() { editInitiative("Clear Initiative") { $0 = Initiative() } }
@@ -1578,12 +1565,15 @@ struct ArchitectView: View {
         }
     }
 
-    /// A map with no art and nothing on it yet. Drawing, walls or tokens mean the DM chose paper.
-    private var isBlankMap: Bool {
+    /// A map with no art and nothing on it yet. Drawing, walls or tokens mean the DM chose paper
+    /// (a generated dungeon, say), where a dropped image is a token, not the floor.
+    private var isMapEmpty: Bool {
         let map = document.campaign.activeMap
-        return importsInFlight == 0 && map.background == nil && map.tokens.isEmpty && map.drawings.isEmpty
-            && map.doors.isEmpty && map.notes.isEmpty
+        return map.background == nil && map.tokens.isEmpty && map.drawings.isEmpty && map.doors.isEmpty
+            && map.notes.isEmpty
     }
+
+    private var isBlankMap: Bool { importsInFlight == 0 && isMapEmpty }
 
     private func zoomCanvas(by factor: Double) {
         zoomRequest = ZoomRequest(factor: factor)

@@ -119,10 +119,10 @@ private struct WorldView: View {
                     document.videoFiles.url(named: name, in: document.assets, ready: ready)
                 },
                 // Nothing plays to an empty projector.
-                animationPaused: document.isMapAnimationPaused || document.isPaused
+                animationPaused: document.isMapAnimationPaused || document.isPaused,
+                // Not drawn at all while paused, so nothing leaks or flashes on resume.
+                isBlanked: document.isPaused
             )
-            // Stop showing the map entirely while paused so nothing leaks to the projector.
-            .opacity(document.isPaused ? 0 : 1)
 
             if !document.isPaused {
                 Minimap(map: map, library: library, model: minimap) { point in
