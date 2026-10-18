@@ -4,10 +4,22 @@ import Foundation
 public struct WallSegment: Equatable, Sendable {
     public var start: Point2D
     public var end: Point2D
+    /// Sight passes from the left of start → end as seen on screen (`Drawing.oneWay`).
+    public var oneWay: Bool
 
-    public init(start: Point2D, end: Point2D) {
+    public init(start: Point2D, end: Point2D, oneWay: Bool = false) {
         self.start = start
         self.end = end
+        self.oneWay = oneWay
+    }
+
+    /// Whether this segment lets sight from `origin` through. Map y points down, so the
+    /// on-screen left of start → end is where the cross product is negative; a viewer
+    /// exactly on the line is on the blocked side.
+    public func letsSightThrough(from origin: Point2D) -> Bool {
+        guard oneWay else { return false }
+        let cross = (end.x - start.x) * (origin.y - start.y) - (end.y - start.y) * (origin.x - start.x)
+        return cross < 0
     }
 }
 
@@ -24,15 +36,16 @@ public enum LineOfSight {
         return 360
     }
 
-    /// Segments that block sight: every wall stroke (transformed to world space) and
-    /// every closed door (open doors block nothing; lock state is irrelevant).
+    /// Segments that block sight: every wall stroke but windows (transformed to world space)
+    /// and every closed door (open doors block nothing; lock state is irrelevant).
     public static func walls(of map: GameMap) -> [WallSegment] {
         var segments: [WallSegment] = []
-        for drawing in map.drawings where drawing.tool == .wall {
+        for drawing in map.drawings where drawing.blocksSight {
             let points = drawing.worldPoints
             guard points.count >= 2 else { continue }
+            let oneWay = drawing.oneWay ?? false
             for i in 0..<(points.count - 1) {
-                segments.append(WallSegment(start: points[i], end: points[i + 1]))
+                segments.append(WallSegment(start: points[i], end: points[i + 1], oneWay: oneWay))
             }
         }
         for door in map.doors where !door.isOpen {

@@ -112,6 +112,8 @@ Token footprint: `size = gridSize * resolvedScale` (square). Token centre: `(x +
 
 World-space point = `(px * scale + x, py * scale + y)` (`FogOfWarLayer.tsx:263-285`).
 
+**Native only** (TS ignores both, so there a window or one-way wall is an ordinary wall): `wallKind` `'wall' | 'window'`, optional, absent = `'wall'`, unknown values read as `'wall'`; `oneWay` `boolean`, optional, absent = two-way, sight passes from the on-screen left of the points' order. Both are written only when they differ from the default.
+
 ### 1.6 `MapConfig` (background image) — `src/store/gameStore.ts:96`
 
 | Field             | Type     | Notes                                                       |

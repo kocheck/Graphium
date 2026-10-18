@@ -57,6 +57,9 @@ struct ToolState: Equatable {
     var tool: CanvasTool = .select
     var markerColor = StrokeDefaults.markerColor
     var doorOrientation: DoorOrientation = .horizontal
+    /// What new walls are (PARITY §3.5 Native).
+    var wallKind: WallKind = .wall
+    var wallOneWay = false
     var measureMode: MeasurementShape.Mode = .ruler
     var pressureCurve: PressureCurve = .normal
     var pressureEnabled = true
@@ -65,6 +68,20 @@ struct ToolState: Equatable {
 /// Right-click actions on a door (PARITY §3.6).
 enum DoorAction {
     case toggle, lock, unlock, delete
+}
+
+extension WallKind {
+    var title: String {
+        switch self {
+        case .wall: return "Wall"
+        case .window: return "Window"
+        }
+    }
+}
+
+/// Right-click actions on a wall (PARITY §3.5 Native).
+enum WallAction {
+    case kind(WallKind), oneWay(Bool), flip, delete
 }
 
 /// Lets an NSMenuItem run a closure.
