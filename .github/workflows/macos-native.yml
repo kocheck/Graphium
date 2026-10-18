@@ -76,6 +76,19 @@ jobs:
           codesign --verify --verbose=2 "$APP"
           lipo -archs "$APP/Contents/MacOS/Graphium"
 
+      - name: Check the bundled MCP server answers
+        run: |
+          MCP=DerivedData/Build/Products/Release/Graphium.app/Contents/MacOS/graphium-mcp
+          codesign --verify --verbose=2 "$MCP"
+          lipo -archs "$MCP"
+          "$MCP" --version
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | "$MCP" --root "$RUNNER_TEMP" | tee bundled-mcp.jsonl
+          test "$(wc -l < bundled-mcp.jsonl)" -eq 2
+          grep -q '"add_rooms"' bundled-mcp.jsonl
+
       - name: Package app
         run: ditto -c -k --keepParent DerivedData/Build/Products/Release/Graphium.app Graphium-macOS.zip
 

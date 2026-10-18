@@ -50,6 +50,8 @@ enum Prefs {
     static let pressureEnabled = "graphium.pressureEnabled"
     static let pressureCurve = "graphium.pressureCurve"
     static let hiddenRecents = "graphium.hiddenRecents"
+    static let mcpEnabled = "graphium.mcpEnabled"
+    static let mcpFolder = "graphium.mcpFolder"
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -60,6 +62,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ])
         let stored = UserDefaults.standard.string(forKey: Prefs.theme) ?? AppTheme.system.rawValue
         (AppTheme(rawValue: stored) ?? .system).apply()
+        // Point AI apps at this copy of the server, wherever the app now lives.
+        MCPInstall.refresh()
     }
 
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
