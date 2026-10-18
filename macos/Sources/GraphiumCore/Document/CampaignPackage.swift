@@ -18,10 +18,27 @@ public struct CampaignPackage: Equatable, Sendable {
     public var campaign: Campaign
     /// Asset file name → contents. Names are flat (no subdirectories).
     public var assets: [String: Data]
+    /// What the file held that this build doesn't own, written back unchanged.
+    public var preserved: Preserved
 
-    public init(campaign: Campaign, assets: [String: Data] = [:]) {
+    /// Parts of the file that pass through a read and a write untouched by this build.
+    public struct Preserved: Equatable, Sendable {
+        /// Keys in `campaign.json` this build couldn't read (see `UnknownFields`).
+        public var unknownFields: UnknownFields?
+        /// Assets the app stopped referencing in an earlier session. Only these are pruned
+        /// on open; a file someone else put in `assets/` is never in this list, so it stays.
+        public var orphanedAssets: [String]
+
+        public init(unknownFields: UnknownFields? = nil, orphanedAssets: [String] = []) {
+            self.unknownFields = unknownFields
+            self.orphanedAssets = orphanedAssets
+        }
+    }
+
+    public init(campaign: Campaign, assets: [String: Data] = [:], preserved: Preserved = Preserved()) {
         self.campaign = campaign
         self.assets = assets
+        self.preserved = preserved
     }
 
     public enum FormatError: Error, Equatable {
@@ -33,12 +50,19 @@ public struct CampaignPackage: Equatable, Sendable {
     private struct Manifest: Codable {
         var formatVersion: Int
         var campaign: Campaign
+        var orphanedAssets: [String]?
     }
 
     public func encodeManifest() throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(Manifest(formatVersion: Self.currentFormatVersion, campaign: campaign))
+        let orphaned = preserved.orphanedAssets.isEmpty ? nil : preserved.orphanedAssets.sorted()
+        let data = try encoder.encode(
+            Manifest(formatVersion: Self.currentFormatVersion, campaign: campaign, orphanedAssets: orphaned))
+        guard let unknown = preserved.unknownFields else { return data }
+        var tree = try JSONDecoder().decode(RawJSON.self, from: data)
+        unknown.merge(into: &tree)
+        return try encoder.encode(tree)
     }
 
     public init(manifest: Data?, assets: [String: Data]) throws {
@@ -53,20 +77,35 @@ public struct CampaignPackage: Equatable, Sendable {
         for name in assets.keys where !Self.isValidAssetName(name) {
             throw FormatError.invalidAssetName(name)
         }
-        self.campaign = try JSONDecoder().decode(Manifest.self, from: manifest).campaign
+        let decoded = try JSONDecoder().decode(Manifest.self, from: manifest)
+        self.campaign = decoded.campaign
         self.assets = assets
+        // Whatever this build drops when it decodes and encodes the file again is kept aside.
+        let original = try JSONDecoder().decode(RawJSON.self, from: manifest)
+        let known = try JSONDecoder().decode(RawJSON.self, from: JSONEncoder().encode(decoded))
+        self.preserved = Preserved(
+            unknownFields: UnknownFields.diff(original: original, known: known),
+            orphanedAssets: decoded.orphanedAssets ?? [])
     }
 
-    /// Removes assets the campaign no longer references (replaced backgrounds, deleted
-    /// tokens, plates and tracks), so a package doesn't grow forever. TS writes only
-    /// referenced assets at save time; the app prunes on open instead, because undo can
-    /// still bring back a reference during a session. `keeping` names survive regardless.
-    /// Returns the removed names, sorted.
+    /// Asset names the campaign doesn't reference, other than `keeping`.
+    public func unreferencedAssets(keeping: Set<String> = []) -> Set<String> {
+        let referenced = Set(campaign.assetReferences).union(keeping)
+        return Set(assets.keys.filter { !referenced.contains($0) })
+    }
+
+    /// Removes assets the app itself stopped referencing in an earlier session (replaced
+    /// backgrounds, deleted tokens, plates and tracks, listed in `preserved.orphanedAssets`
+    /// at save time), so a package doesn't grow forever. The app prunes on open, not at save
+    /// time, because undo can still bring back a reference during a session. Files the app
+    /// didn't orphan, such as one the DM copied into `assets/` by hand, are kept. `keeping`
+    /// names survive regardless. Returns the removed names, sorted.
     @discardableResult
     public mutating func pruneUnreferencedAssets(keeping: Set<String> = []) -> [String] {
-        let referenced = Set(campaign.assetReferences).union(keeping)
-        let removed = assets.keys.filter { !referenced.contains($0) }.sorted()
+        let orphaned = Set(preserved.orphanedAssets)
+        let removed = unreferencedAssets(keeping: keeping).filter { orphaned.contains($0) }.sorted()
         for name in removed { assets[name] = nil }
+        preserved.orphanedAssets = []
         return removed
     }
 

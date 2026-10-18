@@ -49,6 +49,11 @@ final class CampaignDocument: ReferenceFileDocument {
     private weak var lastUndoManager: UndoManager?
     /// Decoded images, shared by every window showing this document.
     let imageCache = AssetImageCache()
+    /// Keys in campaign.json this build couldn't read, written back on save (PRINCIPLES.md).
+    private var unknownFields: UnknownFields?
+    /// Unreferenced files that were already in `assets/` when the campaign opened: someone
+    /// else put them there, so they are never listed as orphaned and never pruned.
+    private var foreignAssets: Set<String> = []
 
     /// Stores asset bytes under a fresh package-safe name and returns that name.
     /// Not undoable on its own: callers reference it from an `edit`, and an
@@ -96,16 +101,22 @@ final class CampaignDocument: ReferenceFileDocument {
             }
         }
         var package = try CampaignPackage(manifest: manifest, assets: assets)
-        // Drop orphaned bytes left by earlier sessions; the next save writes the smaller package.
+        // Drop bytes the app orphaned in earlier sessions; the next save writes the smaller package.
         package.pruneUnreferencedAssets(keeping: [GenericToken.assetName])
         self.campaign = package.campaign
         self.assets = package.assets
+        self.unknownFields = package.preserved.unknownFields
+        self.foreignAssets = package.unreferencedAssets(keeping: [GenericToken.assetName])
         self.sessionRuntime = SessionConsoleRuntime(catalog: package.campaign.sessionConsole)
         DocumentRegistry.shared.register(self)
     }
 
     func snapshot(contentType: UTType) throws -> CampaignPackage {
-        CampaignPackage(campaign: campaign, assets: assets)
+        var package = CampaignPackage(campaign: campaign, assets: assets)
+        // Assets this session stopped referencing are pruned the next time the campaign opens.
+        let orphaned = package.unreferencedAssets(keeping: [GenericToken.assetName]).subtracting(foreignAssets)
+        package.preserved = .init(unknownFields: unknownFields, orphanedAssets: orphaned.sorted())
+        return package
     }
 
     func fileWrapper(snapshot: CampaignPackage, configuration: WriteConfiguration) throws -> FileWrapper {

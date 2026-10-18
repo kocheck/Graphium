@@ -265,6 +265,23 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(try loadCampaign("Shared.graphiumcampaign").activeMap.tokens.count, 0)
     }
 
+    func testKeepsFieldsFromANewerGraphium() throws {
+        try call("create_campaign", ["path": "Newer", "name": "Newer"])
+        let url = folder.appendingPathComponent("Newer.graphiumcampaign/campaign.json")
+        // A newer app wrote a field this server doesn't know about.
+        var root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        var campaign = try XCTUnwrap(root["campaign"] as? [String: Any])
+        campaign["fieldFromTheFuture"] = ["kept": true]
+        root["campaign"] = campaign
+        try JSONSerialization.data(withJSONObject: root).write(to: url)
+
+        try call("add_tokens", ["campaign": "Newer", "tokens": [["name": "Goblin", "position": [1, 1]]]])
+
+        let text = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertTrue(text.contains("fieldFromTheFuture"), text)
+        XCTAssertEqual(try loadCampaign("Newer.graphiumcampaign").activeMap.tokens.count, 1)
+    }
+
     func testReportsItsVersionAndWhereToStageImages() throws {
         let reply = try request("initialize", ["protocolVersion": "2025-06-18", "capabilities": [:]])
         XCTAssertTrue(reply["result"]?["instructions"]?.stringValue?.contains("graphium-mcp \(GraphiumTools.version)") == true)
