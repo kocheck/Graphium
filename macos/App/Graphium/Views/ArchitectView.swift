@@ -152,6 +152,14 @@ struct ArchitectView: View {
                     .inspectorColumnWidth(min: 260, ideal: 300)
                 }
                 .toolbar(id: "architect") { toolbarContent }
+                .background {
+                    // ⌘P also opens the palette, as in TS (PARITY §1.4); the menu lists ⌘K only.
+                    Button("Command Palette") { showingPalette = true }
+                        .keyboardShortcut("p")
+                        .opacity(0)
+                        .frame(width: 0, height: 0)
+                        .accessibilityHidden(true)
+                }
         }
         .fileImporter(
             isPresented: Binding(get: { importTarget != nil }, set: { if !$0 { importTarget = nil } }),
@@ -250,6 +258,7 @@ struct ArchitectView: View {
             ArchitectActions(
                 showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true },
                 togglePerformanceMonitor: { showingPerformance.toggle() },
+                isPerformanceMonitorShown: showingPerformance,
                 exportLegacy: { exportLegacy() },
                 tool: tools.tool,
                 selectTool: { selectTool($0) },
@@ -1095,7 +1104,7 @@ struct ArchitectView: View {
             Button {
                 confirmingFogReset = true
             } label: {
-                Label("Reset Explored Fog…", systemImage: "eye.slash")
+                Label("Reset Explored Fog", systemImage: "eye.slash")
             }
             .help("Forget what the party has explored on this map")
             .disabled(document.campaign.activeMap.exploredRegions.isEmpty)

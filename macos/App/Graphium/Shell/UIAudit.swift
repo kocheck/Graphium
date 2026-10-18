@@ -156,25 +156,37 @@
                 write("Couldn't write the sample campaign: \(error)\n", to: folder.appendingPathComponent("errors.txt"))
                 return
             }
-            _ = try? await NSDocumentController.shared.openDocument(withContentsOf: url, display: true)
+            guard let (opened, _) = try? await NSDocumentController.shared.openDocument(withContentsOf: url, display: true)
+            else { return }
+            // Menus follow the key window, so make the campaign window key before dumping them.
+            NSApp.activate(ignoringOtherApps: true)
+            opened.windowControllers.first?.window?.makeKeyAndOrderFront(nil)
         }
 
         private static func snapshotWindows(into folder: URL) async {
             for (index, window) in NSApp.windows.enumerated() where window.isVisible {
-                guard let frame = window.contentView?.superview ?? window.contentView else { continue }
-                for dark in [false, true] {
-                    window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-                    try? await Task.sleep(for: .seconds(0.6))
-                    frame.layoutSubtreeIfNeeded()
-                    guard let rep = frame.bitmapImageRepForCachingDisplay(in: frame.bounds) else { continue }
-                    frame.cacheDisplay(in: frame.bounds, to: rep)
-                    let name = window.title.isEmpty ? "window-\(index)" : window.title
-                    let safe = name.replacingOccurrences(of: "/", with: "-")
-                    try? rep.representation(using: .png, properties: [:])?
-                        .write(to: folder.appendingPathComponent("views/window-\(safe)-\(dark ? "dark" : "light").png"))
+                await snapshot(window, index: index, suffix: "", into: folder)
+                // Campaign windows again at a laptop-sized width, where the toolbar and sidebar crowd.
+                if window.windowController?.document != nil {
+                    window.setFrame(NSRect(origin: window.frame.origin, size: NSSize(width: 1000, height: 680)), display: true)
+                    await snapshot(window, index: index, suffix: "-narrow", into: folder)
                 }
-                window.appearance = nil
             }
+        }
+
+        private static func snapshot(_ window: NSWindow, index: Int, suffix: String, into folder: URL) async {
+            guard let frame = window.contentView?.superview ?? window.contentView else { return }
+            let name = (window.title.isEmpty ? "window-\(index)" : window.title).replacingOccurrences(of: "/", with: "-")
+            for dark in [false, true] {
+                window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+                try? await Task.sleep(for: .seconds(0.6))
+                frame.layoutSubtreeIfNeeded()
+                guard let rep = frame.bitmapImageRepForCachingDisplay(in: frame.bounds) else { continue }
+                frame.cacheDisplay(in: frame.bounds, to: rep)
+                try? rep.representation(using: .png, properties: [:])?
+                    .write(to: folder.appendingPathComponent("views/window-\(name)\(suffix)-\(dark ? "dark" : "light").png"))
+            }
+            window.appearance = nil
         }
 
         // MARK: Menus
@@ -190,13 +202,13 @@
                         lines.append("\(indent)---")
                         continue
                     }
-                    if item.isHidden { continue }
                     let key = shortcut(item)
                     let state = item.state == .on ? " [✓]" : ""
                     let enabled = item.isEnabled ? "" : " (disabled)"
                     let alternate = item.isAlternate ? " (alternate)" : ""
-                    lines.append("\(indent)\(item.title)\(key.isEmpty ? "" : "\t\(key)")\(state)\(enabled)\(alternate)")
-                    if !key.isEmpty { shortcuts[key, default: []].append("\(path) > \(item.title)") }
+                    let hidden = item.isHidden ? " (hidden)" : ""
+                    lines.append("\(indent)\(item.title)\(key.isEmpty ? "" : "\t\(key)")\(state)\(enabled)\(alternate)\(hidden)")
+                    if !key.isEmpty, !item.isHidden { shortcuts[key, default: []].append("\(path) > \(item.title)") }
                     if let submenu = item.submenu {
                         walk(submenu, path: path.isEmpty ? item.title : "\(path) > \(item.title)", depth: depth + 1)
                     }

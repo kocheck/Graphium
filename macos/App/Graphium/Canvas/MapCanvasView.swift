@@ -1462,7 +1462,7 @@ final class MapCanvasNSView: NSView {
         return menu
     }
 
-    /// Hide from Players / Show to Players and Delete for the clicked marker, or the selected
+    /// Show to Players and Delete for the clicked marker, or the selected
     /// markers when it is among them (decision 014).
     private func markerMenu(at point: Point2D, map: GameMap) -> NSMenu? {
         guard let markerAction = editing?.markerAction, let marker = map.drawing(at: point), marker.tool == .marker else {
@@ -1476,8 +1476,10 @@ final class MapCanvasNSView: NSView {
         let hidden = map.drawings.filter { ids.contains($0.id) }.allSatisfy(\.isHiddenFromPlayers)
         let menu = NSMenu()
         menu.autoenablesItems = false
-        menu.addItem(
-            MenuAction.item(hidden ? "Show to Players" : "Hide from Players") { markerAction(ids, .dmOnly(!hidden)) })
+        // A checked "Show to Players", as on spell effects and note pins.
+        let show = MenuAction.item("Show to Players") { markerAction(ids, .dmOnly(!hidden)) }
+        show.state = hidden ? .off : .on
+        menu.addItem(show)
         menu.addItem(.separator())
         let title = ids.count == 1 ? "Delete Marker" : "Delete Markers"
         let delete = MenuAction.item(title) { markerAction(ids, .delete) }
@@ -1705,7 +1707,8 @@ final class MapCanvasNSView: NSView {
         if event.keyCode == 49, responder is NSButton { return false }  // Space presses a focused button
         let keyCodes: Set<UInt16> = [49, 51, 53, 117]  // space, delete, escape, forward delete
         let arrows: Set<UInt16> = [123, 124, 125, 126]
-        let characters = Set("vmewdlnri12345?+=-_")
+        // Every tool key (so Spell Effect and Reveal work from the sidebar too), I, grid types and zoom.
+        let characters = Set(CanvasTool.allCases.map(\.key)).union("i12345?+=-_")
         let character = event.charactersIgnoringModifiers?.lowercased().first
         // Arrows reach the canvas from other controls only with the Door tool, so a slider or
         // picker keeps its arrows while a door happens to be selected.
