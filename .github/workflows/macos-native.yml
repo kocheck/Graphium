@@ -33,8 +33,24 @@ jobs:
       - name: Brand assets up to date
         run: python3 -I design/brand/make_brand_assets.py --check
 
-      - name: GraphiumCore unit tests
+      - name: GraphiumCore and MCP server unit tests
         run: swift test --parallel
+
+      - name: MCP server builds and answers over stdio
+        run: |
+          swift build -c release --product graphium-mcp
+          BIN="$(swift build -c release --product graphium-mcp --show-bin-path)/graphium-mcp"
+          mkdir -p "$RUNNER_TEMP/campaigns"
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"create_campaign","arguments":{"path":"CI","name":"CI"}}}' \
+            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"add_rooms","arguments":{"campaign":"CI","rooms":[{"x":1,"y":1,"width":5,"height":4,"doors":[{"side":"east"}]}]}}}' \
+            '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"check_map","arguments":{"campaign":"CI"}}}' \
+            | "$BIN" --root "$RUNNER_TEMP/campaigns" | tee mcp-out.jsonl
+          test "$(wc -l < mcp-out.jsonl)" -eq 4
+          ! grep -q '"isError":true' mcp-out.jsonl
+          test -f "$RUNNER_TEMP/campaigns/CI.graphiumcampaign/campaign.json"
 
       - name: Generate Xcode project
         run: |

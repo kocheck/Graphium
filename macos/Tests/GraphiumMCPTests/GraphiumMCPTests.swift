@@ -1,0 +1,280 @@
+import XCTest
+
+@testable import GraphiumCore
+@testable import GraphiumMCP
+
+final class JSONValueTests: XCTestCase {
+    func testKeepsNumbersAndBooleansApart() throws {
+        let value = try JSONValue.parse(#"{"a": 1, "b": true, "c": 0, "d": false, "e": 2.5, "f": null}"#)
+        XCTAssertEqual(value["a"], .number(1))
+        XCTAssertEqual(value["b"], .bool(true))
+        XCTAssertEqual(value["c"], .number(0))
+        XCTAssertEqual(value["d"], .bool(false))
+        XCTAssertEqual(value["e"], .number(2.5))
+        XCTAssertEqual(value["f"], .null)
+    }
+
+    func testStringsRoundTrip() throws {
+        let text = "Line \"one\"\n\ttab \\ é 🐉 \u{01}"
+        let value = JSONValue.object(["s": .string(text), "n": .array([1, 2.5, -3])])
+        XCTAssertEqual(try JSONValue.parse(value.serialized()), value)
+        XCTAssertEqual(try JSONValue.parse(#""🐉 é""#), .string("🐉 é"))
+    }
+
+    func testRejectsBrokenJSON() {
+        XCTAssertThrowsError(try JSONValue.parse(#"{"a": }"#))
+        XCTAssertThrowsError(try JSONValue.parse(#"[1, 2"#))
+        XCTAssertThrowsError(try JSONValue.parse("tru"))
+    }
+
+    func testWholeNumbersPrintWithoutFraction() {
+        XCTAssertEqual(JSONValue.array([3, 2.5, -0.25]).serialized(), "[3,2.5,-0.25]")
+    }
+}
+
+final class MCPServerTests: XCTestCase {
+    var folder: URL!
+    var server: MCPServer!
+
+    override func setUpWithError() throws {
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("graphium-mcp-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let store = CampaignStore(roots: [folder], undoDirectory: folder.appendingPathComponent(".undo"))
+        server = MCPServer(tools: GraphiumTools(store: store)) { _ in }
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    private func request(_ method: String, _ params: JSONValue = [:], id: Int = 1) throws -> JSONValue {
+        let line = JSONValue.object(["jsonrpc": "2.0", "id": .number(Double(id)), "method": .string(method), "params": params])
+        let reply = try XCTUnwrap(server.handle(line: line.serialized()))
+        return try JSONValue.parse(reply)
+    }
+
+    /// Calls a tool and returns its first text block parsed as JSON; fails on tool errors.
+    @discardableResult
+    private func call(_ tool: String, _ arguments: JSONValue, file: StaticString = #filePath, line: UInt = #line) throws -> JSONValue {
+        let reply = try request("tools/call", ["name": .string(tool), "arguments": arguments])
+        let result = try XCTUnwrap(reply["result"], "no result: \(reply.serialized())", file: file, line: line)
+        let text = try XCTUnwrap(result["content"]?.arrayValue?.first?["text"]?.stringValue, file: file, line: line)
+        XCTAssertEqual(result["isError"], .bool(false), text, file: file, line: line)
+        return (try? JSONValue.parse(text)) ?? .string(text)
+    }
+
+    private func callError(_ tool: String, _ arguments: JSONValue) throws -> String {
+        let reply = try request("tools/call", ["name": .string(tool), "arguments": arguments])
+        XCTAssertEqual(reply["result"]?["isError"], .bool(true))
+        return reply["result"]?["content"]?.arrayValue?.first?["text"]?.stringValue ?? ""
+    }
+
+    private func loadCampaign(_ name: String) throws -> Campaign {
+        let url = folder.appendingPathComponent(name).appendingPathComponent("campaign.json")
+        return try CampaignPackage(manifest: Data(contentsOf: url), assets: [:]).campaign
+    }
+
+    func testInitializeAdvertisesToolsResourcesAndPrompts() throws {
+        let reply = try request("initialize", ["protocolVersion": "2025-06-18", "capabilities": [:], "clientInfo": ["name": "test"]])
+        XCTAssertEqual(reply["result"]?["protocolVersion"], "2025-06-18")
+        XCTAssertNotNil(reply["result"]?["capabilities"]?["tools"])
+        XCTAssertTrue(reply["result"]?["instructions"]?.stringValue?.contains("1 cell = 5 ft") == true)
+
+        let tools = try XCTUnwrap(try request("tools/list")["result"]?["tools"]?.arrayValue)
+        let names = Set(tools.compactMap { $0["name"]?.stringValue })
+        for expected in ["create_campaign", "add_rooms", "draw_walls", "add_doors", "add_tokens", "render_map", "check_map", "undo"] {
+            XCTAssertTrue(names.contains(expected), expected)
+        }
+        for tool in tools {
+            XCTAssertEqual(tool["inputSchema"]?["type"], "object")
+            XCTAssertNotNil(tool["description"]?.stringValue)
+        }
+        XCTAssertEqual(try request("resources/list")["result"]?["resources"]?.arrayValue?.count, 2)
+        let guide = try request("resources/read", ["uri": "graphium://guide/map-building"])
+        XCTAssertTrue(guide["result"]?["contents"]?.arrayValue?.first?["text"]?.stringValue?.contains("Plan first") == true)
+        let prompt = try request("prompts/get", ["name": "build_map", "arguments": ["description": "a bandit camp"]])
+        XCTAssertTrue(
+            prompt["result"]?["messages"]?.arrayValue?.first?["content"]?["text"]?.stringValue?.contains("a bandit camp") == true)
+    }
+
+    func testUnknownMethodAndNotifications() throws {
+        XCTAssertEqual(try request("nope")["error"]?["code"], .number(-32601))
+        XCTAssertNil(server.handle(line: #"{"jsonrpc":"2.0","method":"notifications/initialized"}"#))
+        XCTAssertEqual(try JSONValue.parse(server.handle(line: "{broken")!)["error"]?["code"], .number(-32700))
+    }
+
+    func testBuildsARoomWithDoorTokensAndChecks() throws {
+        try call("create_campaign", ["path": "Test", "name": "Test Campaign", "map_name": "Keep"])
+        let room = try call(
+            "add_rooms",
+            [
+                "campaign": "Test",
+                "rooms": [
+                    [
+                        "x": 2, "y": 2, "width": 6, "height": 4,
+                        "doors": [["side": "south", "at": 3.5]],
+                        "openings": [["side": "north", "at": 1.5]],
+                    ]
+                ],
+            ])
+        XCTAssertEqual(room["rooms"]?.arrayValue?.first?["door_ids"]?.arrayValue?.count, 1)
+
+        try call(
+            "add_tokens",
+            [
+                "campaign": "Test",
+                "tokens": [
+                    ["name": "Aria", "type": "PC", "position": [3, 3], "vision_ft": 60],
+                    ["name": "Ogre", "type": "NPC", "position": [5, 3], "size": 2],
+                ],
+            ])
+
+        let campaign = try loadCampaign("Test.graphiumcampaign")
+        let map = campaign.activeMap
+        XCTAssertEqual(map.name, "Keep")
+        let walls = map.drawings.filter { $0.tool == .wall }
+        // The north opening splits the outline into one polyline from the gap's east end round to its west end.
+        XCTAssertEqual(walls.count, 1)
+        let points = try XCTUnwrap(walls.first?.worldPoints)
+        XCTAssertEqual(points.first, Point2D(x: 4 * 50, y: 2 * 50))
+        XCTAssertEqual(points.last, Point2D(x: 3 * 50, y: 2 * 50))
+        XCTAssertEqual(points.count, 6)
+
+        let door = try XCTUnwrap(map.doors.first)
+        XCTAssertEqual(door.x, 5.5 * 50)
+        XCTAssertEqual(door.y, 6 * 50)
+        XCTAssertEqual(door.orientation, .horizontal)
+        XCTAssertNil(door.angle)
+
+        XCTAssertEqual(map.tokens.count, 2)
+        XCTAssertEqual(map.tokens[1].scale, 2)
+        XCTAssertEqual(map.tokens[0].x, 150)
+        // Generated token art is written into the package.
+        let assets = folder.appendingPathComponent("Test.graphiumcampaign/assets")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: assets.appendingPathComponent(map.tokens[0].src).path))
+
+        let check = try call("check_map", ["campaign": "Test"])
+        XCTAssertEqual(check["ok"], .bool(true), check.serialized())
+
+        let described = try call("get_map", ["campaign": "Test"])
+        XCTAssertEqual(described["walls"]?.arrayValue?.first?["points"]?.arrayValue?.first, [4, 2])
+        XCTAssertEqual(described["tokens"]?.arrayValue?.last?["size"], .number(2))
+    }
+
+    func testCheckFindsLeaksFloatingDoorsAndBlindPCs() throws {
+        try call("create_campaign", ["path": "Leaky", "name": "Leaky"])
+        try call(
+            "draw_walls",
+            ["campaign": "Leaky", "walls": [["points": [[0, 0], [5, 0]]], ["points": [[5.3, 0], [5.3, 5]]]]])
+        try call("add_doors", ["campaign": "Leaky", "doors": [["center": [10, 10]]]])
+        try call("add_tokens", ["campaign": "Leaky", "tokens": [["name": "Blind", "type": "PC", "position": [1, 1]]]])
+        let check = try call("check_map", ["campaign": "Leaky"])
+        let kinds = Set(check["issues"]?.arrayValue?.compactMap { $0["kind"]?.stringValue } ?? [])
+        XCTAssertTrue(kinds.contains("wall_gap"), check.serialized())
+        XCTAssertTrue(kinds.contains("door_not_on_wall"), check.serialized())
+        XCTAssertTrue(kinds.contains("pc_without_vision"), check.serialized())
+    }
+
+    func testDoorLinesUpWithADiagonalWall() throws {
+        try call("create_campaign", ["path": "Diag", "name": "Diag"])
+        try call("draw_walls", ["campaign": "Diag", "walls": [["points": [[0, 0], [4, 4]]]]])
+        try call("add_doors", ["campaign": "Diag", "doors": [["center": [2, 2]]]])
+        let door = try XCTUnwrap(try loadCampaign("Diag.graphiumcampaign").activeMap.doors.first)
+        XCTAssertEqual(try XCTUnwrap(door.angle), 45, accuracy: 0.001)
+        XCTAssertEqual(door.orientation, .horizontal)
+    }
+
+    func testUpdateRemoveAndUndo() throws {
+        try call("create_campaign", ["path": "Edit", "name": "Edit"])
+        let added = try call("add_tokens", ["campaign": "Edit", "tokens": [["name": "Goblin", "type": "NPC", "position": [1, 1]]]])
+        let id = try XCTUnwrap(added["added_tokens"]?.arrayValue?.first?["id"]?.stringValue)
+        let updated = try call(
+            "update_objects", ["campaign": "Edit", "changes": [["id": .string(id), "position": [4, 5], "open": true]]])
+        XCTAssertEqual(updated["updated"]?.arrayValue?.first?["ignored_fields"], ["open"])
+        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 200)
+
+        try call("remove_objects", ["campaign": "Edit", "ids": [.string(id)]])
+        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.count, 0)
+        try call("undo", ["campaign": "Edit"])
+        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 200)
+        try call("undo", ["campaign": "Edit"])
+        XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 50)
+    }
+
+    func testMapsAddUpdateDelete() throws {
+        try call("create_campaign", ["path": "Maps", "name": "Maps"])
+        try call("add_map", ["campaign": "Maps", "name": "Town", "daylight": true, "grid_type": "hexagonal"])
+        var campaign = try loadCampaign("Maps.graphiumcampaign")
+        XCTAssertEqual(campaign.activeMap.name, "Town")
+        XCTAssertEqual(campaign.activeMap.gridType, .hexagonal)
+        XCTAssertTrue(campaign.activeMap.isDaylightMode)
+
+        try call("update_map", ["campaign": "Maps", "map": "Map 1", "name": "Dungeon", "make_active": true])
+        campaign = try loadCampaign("Maps.graphiumcampaign")
+        XCTAssertEqual(campaign.activeMap.name, "Dungeon")
+
+        try call("delete_map", ["campaign": "Maps", "map": "Dungeon"])
+        campaign = try loadCampaign("Maps.graphiumcampaign")
+        XCTAssertEqual(campaign.maps.map(\.name), ["Town"])
+        XCTAssertEqual(campaign.activeMap.name, "Town")
+        XCTAssertTrue(try callError("delete_map", ["campaign": "Maps", "map": "Town"]).contains("at least one map"))
+    }
+
+    func testGenerateDungeonIsRepeatableWithASeed() throws {
+        try call("create_campaign", ["path": "Gen", "name": "Gen"])
+        let first = try call("generate_dungeon", ["campaign": "Gen", "rooms": 5, "seed": 42])
+        let second = try call("generate_dungeon", ["campaign": "Gen", "rooms": 5, "seed": 42])
+        XCTAssertEqual(first["rooms"], second["rooms"])
+        XCTAssertGreaterThanOrEqual(first["rooms"]?.arrayValue?.count ?? 0, 1)
+        // replace (the default) swaps the layout rather than stacking a second one.
+        let map = try loadCampaign("Gen.graphiumcampaign").activeMap
+        XCTAssertEqual(Double(map.doors.count), second["doors_added"]?.doubleValue)
+    }
+
+    func testRendersImageAndAscii() throws {
+        try call("create_campaign", ["path": "Look", "name": "Look"])
+        try call(
+            "add_rooms", ["campaign": "Look", "rooms": [["x": 0, "y": 0, "width": 5, "height": 3, "doors": [["side": "east"]]]]])
+        try call("add_tokens", ["campaign": "Look", "tokens": [["name": "Aria", "type": "PC", "position": [1, 1], "vision_ft": 30]]])
+
+        let reply = try request("tools/call", ["name": "render_map", "arguments": ["campaign": "Look", "format": "both"]])
+        let content = try XCTUnwrap(reply["result"]?["content"]?.arrayValue)
+        XCTAssertEqual(reply["result"]?["isError"], .bool(false))
+        let image = try XCTUnwrap(content.first { $0["type"] == "image" })
+        let png = try XCTUnwrap(Data(base64Encoded: image["data"]?.stringValue ?? ""))
+        XCTAssertEqual(Array(png.prefix(4)), [0x89, 0x50, 0x4E, 0x47])
+        let ascii = try XCTUnwrap(content.last?["text"]?.stringValue)
+        XCTAssertTrue(ascii.contains("+---------+"), ascii)
+        XCTAssertTrue(ascii.contains("D"), ascii)
+        XCTAssertTrue(ascii.contains("A Aria (PC, vision 30 ft) at [1, 1]"), ascii)
+
+        let players = try request(
+            "tools/call", ["name": "render_map", "arguments": ["campaign": "Look", "view": "players", "max_px": 400]])
+        XCTAssertEqual(players["result"]?["isError"], .bool(false))
+    }
+
+    func testStaysInsideItsFolders() throws {
+        let message = try callError("create_campaign", ["path": "/tmp/../etc/Evil", "name": "Evil"])
+        XCTAssertTrue(message.contains("outside the folders"), message)
+        let escape = try callError("create_campaign", ["path": "../Escape", "name": "Escape"])
+        XCTAssertTrue(escape.contains("outside the folders"), escape)
+        XCTAssertTrue(try callError("get_campaign", ["campaign": "Missing"]).contains("No campaign"))
+    }
+
+    func testListsCampaigns() throws {
+        try call("create_campaign", ["path": "Sub/One", "name": "One"])
+        let list = try call("list_campaigns", [:])
+        XCTAssertEqual(list["campaigns"]?.arrayValue?.first?["name"], "One")
+    }
+
+    func testOpensInGraphiumCoreUnchanged() throws {
+        try call("create_campaign", ["path": "Round", "name": "Round"])
+        try call("add_doors", ["campaign": "Round", "doors": [["center": [1, 1], "angle": 30, "locked": true]]])
+        let url = folder.appendingPathComponent("Round.graphiumcampaign/campaign.json")
+        let data = try Data(contentsOf: url)
+        let package = try CampaignPackage(manifest: data, assets: [:])
+        // The server writes exactly what the app would: same encoder, same key order.
+        XCTAssertEqual(try package.encodeManifest(), data)
+        XCTAssertEqual(package.campaign.activeMap.doors.first?.angle, 30)
+    }
+}
