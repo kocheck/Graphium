@@ -138,11 +138,14 @@ public struct Door: Codable, Equatable, Identifiable, Sendable {
     public var size: Double
     public var thickness: Double?
     public var swingDirection: DoorSwing?
+    /// Native only: a secret door. Closed, it looks like plain wall on the World View until
+    /// the DM reveals it; open, players see it as a door. Nil (left out of the file) is false.
+    public var isHidden: Bool?
 
     public init(
         id: String = newID(), x: Double, y: Double, orientation: DoorOrientation,
         isOpen: Bool = false, isLocked: Bool = false, size: Double,
-        thickness: Double? = nil, swingDirection: DoorSwing? = nil, angle: Double? = nil
+        thickness: Double? = nil, swingDirection: DoorSwing? = nil, angle: Double? = nil, isHidden: Bool? = nil
     ) {
         self.id = id
         self.x = x
@@ -154,7 +157,11 @@ public struct Door: Codable, Equatable, Identifiable, Sendable {
         self.size = size
         self.thickness = thickness
         self.swingDirection = swingDirection
+        self.isHidden = isHidden
     }
+
+    /// Players see plain wall here: a hidden door that is shut.
+    public var looksLikeWall: Bool { isHidden == true && !isOpen }
 
     /// The direction in radians: `angle`, else 0 (horizontal) or π/2 (vertical).
     public var radians: Double {

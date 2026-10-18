@@ -195,6 +195,7 @@ enum Describe {
             "open": .bool(door.isOpen),
             "locked": .bool(door.isLocked),
         ]
+        if door.isHidden == true { out["hidden"] = .bool(true) }
         if let swing = door.swingDirection { out["swing"] = .string(swing.rawValue) }
         return .object(out)
     }

@@ -112,7 +112,7 @@ the installed version; the app sees the same number as the server's version.
 | `set_background`                                    | Import an image as the map, scaled so its squares match the grid                        |
 | `add_rooms`                                         | Rectangular rooms with doors and doorless openings                                      |
 | `draw_walls`                                        | Walls and windows as polylines, optionally one-way or closed                            |
-| `add_doors`                                         | Doors at any angle, lined up with the wall under them; open, closed, locked             |
+| `add_doors`                                         | Doors at any angle, lined up with the wall under them; open, closed, locked, hidden     |
 | `add_tokens`                                        | PCs, NPCs and monsters, from an image, the campaign's token library, or a lettered disc |
 | `add_lights`                                        | Torches, lanterns and other lights for maps with lighting on (5e bright and dim radii)  |
 | `add_notes`                                         | Note pins: DM-only notes, player notes the DM can share, and Session Console sounds     |

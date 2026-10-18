@@ -144,6 +144,8 @@ World-space point = `(px * scale + x, py * scale + y)` (`FogOfWarLayer.tsx:263-2
 
 **Native only** (TS ignores it and draws the door at `orientation`): `angle` `number`, optional, degrees clockwise from east (y points down) in (−90, 90]; absent = 0 for horizontal, 90 for vertical. When set, `orientation` is the nearest of the two. The hinge is the end at `centre − size/2 · (cos, sin)`.
 
+**Native only:** `isHidden` `boolean`, optional, written only when true. A hidden (secret) door behaves as any door for vision, but while it is shut the World View draws it as wall (wall line and rock hatching) and players can't find it; the DM sees it faded with a dashed edge and an eye-slash. Open, it shows as a door. TS ignores it and draws an ordinary door.
+
 Manual door placement (`useCanvasInteraction.ts:248-267`): `snapToGrid(pointer.x, pointer.y, gridSize, gridType)` in **legacy mode** (no width/height) → square grid rounds to the nearest intersection; hex/iso snap to a cell centre.
 
 ### 1.8 `Stairs` — `src/store/gameStore.ts:241`

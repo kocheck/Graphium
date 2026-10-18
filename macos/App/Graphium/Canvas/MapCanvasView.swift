@@ -107,7 +107,7 @@ final class MapCanvasNSView: NSView {
     private lazy var fogRenderer: FogRenderer? = FogRenderer()
     /// The last GPU fog, reused while nothing it shows changes.
     private var metalFog: (scene: FogScene, view: FogView, image: CGImage)?
-    /// Player-facing styling (walls black 6px, doors with glow) and no DM overlays.
+    /// Player-facing styling (walls black 6px, ink-on-paper doors) and no DM overlays.
     var isPlayerView = false
     var toolState = ToolState()
     var measurement: MeasurementShape?
@@ -189,6 +189,8 @@ final class MapCanvasNSView: NSView {
     private var liveStroke: Drawing?
     /// Door open/close swings in flight (PARITY §3.6); used by `drawDoors`.
     lazy var doorSwings = DoorSwingAnimator()
+    /// `LineOfSight.knownDoors` for the last doors and fog, reused while neither changes.
+    private var knownDoors: (key: KnownDoorsKey, ids: Set<String>)?
     private var lastBaked: (key: String, image: CGImage)?
     private var spaceHeld = false
 
@@ -301,11 +303,22 @@ final class MapCanvasNSView: NSView {
                 dash: [5 / viewport.zoom, 3 / viewport.zoom])
         }
         drawStairs(map.stairs, context: context)
-        drawDoors(map.doors, context: context)
-        // Fog covers the map, walls, stairs and doors, but not tokens: visible tokens stay
-        // crisp on top and only hidden NPCs are left out (TS CanvasManager layer order).
-        // Doors stay under it so unexplored fog doesn't reveal them (PARITY §3.7 Native).
-        if let fog { drawFog(fog, context: context) }
+        if isPlayerView {
+            // Shut hidden doors are wall to the players, under the fog with the walls. The
+            // doors they know go over the fog, like the rock behind seen walls; doors in
+            // unexplored fog stay unseen (PARITY §3.6 Native).
+            drawSecretDoorWalls(map.doors, context: context)
+            if let fog { drawFog(fog, context: context) }
+            let known = fog.map { knownDoorIDs(map.doors, fog: $0) }
+            drawWorldDoors(
+                map.doors.filter { !$0.looksLikeWall && (known?.contains($0.id) ?? true) }, context: context)
+        } else {
+            drawDoors(map.doors, context: context)
+            // Fog covers the map, walls, stairs and doors, but not tokens: visible tokens stay
+            // crisp on top and only hidden NPCs are left out (TS CanvasManager layer order).
+            if let fog { drawFog(fog, context: context) }
+        }
+        doorSwings.finishFrame(doorIDs: Set(map.doors.map(\.id)))
         if showMovementRange, !isPlayerView, selection.count == 1,
             let token = map.tokens.first(where: { selection.contains($0.id) })
         {
@@ -505,6 +518,26 @@ final class MapCanvasNSView: NSView {
             let hovered = token.id == hoveredTokenID && toolState.tool == .select
             drawToken(token, in: rect, lift: lift, selected: isSelected, look: hovered ? .hovered : .idle, context: context)
         }
+    }
+
+    struct KnownDoorsKey: Equatable {
+        var doors: [Door]
+        var exploredCount: Int
+        var exploredLast: Double?
+        var sight: PartySight
+        var gridSize: Double
+    }
+
+    /// The doors the players know about under `fog`, cached across frames.
+    func knownDoorIDs(_ doors: [Door], fog: FogState) -> Set<String> {
+        let sight = PartySight(vision: fog.vision, lit: fog.lit, ambient: fog.ambient)
+        let key = KnownDoorsKey(
+            doors: doors, exploredCount: fog.explored.count, exploredLast: fog.explored.last?.timestamp, sight: sight,
+            gridSize: fog.gridSize)
+        if let knownDoors, knownDoors.key == key { return knownDoors.ids }
+        let ids = LineOfSight.knownDoors(doors, explored: fog.explored, sight: sight, gridSize: fog.gridSize)
+        knownDoors = (key, ids)
+        return ids
     }
 
     /// TS compositing (CORE_SPEC §3.3 step 7): fog bounds filled black at 94%;
@@ -1082,6 +1115,12 @@ final class MapCanvasNSView: NSView {
         menu.addItem(
             MenuAction.item(door.isLocked ? "Unlock Door" : "Lock Door") {
                 doorAction(door.id, door.isLocked ? .unlock : .lock)
+            })
+        // A hidden door looks like wall to players while it is shut.
+        let hidden = door.isHidden == true
+        menu.addItem(
+            MenuAction.item(hidden ? "Reveal to Players" : "Hide from Players") {
+                doorAction(door.id, hidden ? .reveal : .hide)
             })
         if let rotate = editing?.rotateDoors {
             menu.addItem(.separator())
