@@ -79,6 +79,8 @@ on decode for every map** (strictly more robust, no visible difference for valid
 
 **Native only** (TS ignores both): `lights` `LightSource[]`, optional, absent = `[]`, written only when not empty; `ambientLight` `'dark' | 'dim' | 'bright'`, optional, absent = lighting off. A `LightSource` is `{ id, x, y, bright, dim, isOn?, name? }`: `x`/`y` is the centre in world px, `bright` and `dim` are radii in feet (`dim` is the outer radius, never less than `bright`), `isOn` is absent when on, `name` is the preset it came from. With lighting off, vision is as in §3.3. With it on, every PC sees within its line of sight out to the map's edge, and a spot counts as seen when it is lit (ambient or a light whose own line of sight reaches it), or lies within the PC's darkvision (5e 2024: dim seen as bright, darkness as dim). Only seen ground is recorded as explored.
 
+**Native only:** `notes` `MapNote[]`, optional, absent = `[]`, written only when not empty. A `MapNote` is `{ id, x, y, title?, dmNotes?, playerNotes?, isShared?, sounds? }`: `x`/`y` is the pin's point in world px; empty strings and `isShared` false are left out. `dmNotes` are the DM's alone. `playerNotes` are shown on the World View, with the title, when the DM shares the pin (`isShared`) and a player opens it, or when the DM shows the note there (decision 011). `sounds` is `NoteSound[]`, `{ kind: "track" | "sfx" | "soundscape", ref, playOnShow? }`: Session Console entries (or a built-in soundscape) by id, which the DM plays from the pin; `playOnShow` ones play when the note is shown on the World View. A `kind` the app doesn't know is skipped on read (decision 013).
+
 `GridType` (`gameStore.ts:113`): `'LINES' | 'DOTS' | 'HIDDEN' | 'HEXAGONAL' | 'ISOMETRIC'`.
 LINES/DOTS/HIDDEN are all square geometry (visual style only). HEXAGONAL = flat-top hex. ISOMETRIC = diamond.
 
@@ -141,6 +143,8 @@ World-space point = `(px * scale + x, py * scale + y)` (`FogOfWarLayer.tsx:263-2
 | `swingDirection` | `'left' \| 'right' \| 'up' \| 'down'` | yes | render only                               |
 
 **Native only** (TS ignores it and draws the door at `orientation`): `angle` `number`, optional, degrees clockwise from east (y points down) in (−90, 90]; absent = 0 for horizontal, 90 for vertical. When set, `orientation` is the nearest of the two. The hinge is the end at `centre − size/2 · (cos, sin)`.
+
+**Native only:** `isHidden` `boolean`, optional, written only when true. A hidden (secret) door behaves as any door for vision, but while it is shut the World View draws it as wall (wall line and rock hatching) and players can't find it; the DM sees it faded with a dashed edge and an eye-slash. Open, it shows as a door. TS ignores it and draws an ordinary door.
 
 Manual door placement (`useCanvasInteraction.ts:248-267`): `snapToGrid(pointer.x, pointer.y, gridSize, gridType)` in **legacy mode** (no width/height) → square grid rounds to the nearest intersection; hex/iso snap to a cell centre.
 

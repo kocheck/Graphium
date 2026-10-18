@@ -115,11 +115,12 @@ the installed version; the app sees the same number as the server's version.
 | `set_background`                                    | Import an image as the map, scaled so its squares match the grid                        |
 | `add_rooms`                                         | Rectangular rooms with doors and doorless openings                                      |
 | `draw_walls`                                        | Walls and windows as polylines, optionally one-way or closed                            |
-| `add_doors`                                         | Doors at any angle, lined up with the wall under them; open, closed, locked             |
+| `add_doors`                                         | Doors at any angle, lined up with the wall under them; open, closed, locked, hidden     |
 | `add_tokens`                                        | PCs, NPCs and monsters, from an image, the campaign's token library, or a lettered disc |
 | `add_lights`                                        | Torches, lanterns and other lights for maps with lighting on (5e bright and dim radii)  |
+| `add_notes`                                         | Note pins: DM-only notes, player notes the DM can share, and Session Console sounds     |
 | `add_stairs`, `draw_markers`                        | Stairs and freehand marker lines                                                        |
-| `update_objects`, `remove_objects`, `clear_map`     | Edit, remove or clear by id or layer                                                    |
+| `update_objects`, `remove_objects`, `clear_map`     | Edit (including new token art), remove or clear by id or layer                          |
 | `generate_dungeon`                                  | Graphium's room-and-corridor generator, repeatable with a seed                          |
 | `render_map`                                        | A PNG of the DM's or the players' view, and/or a text grid                              |
 | `check_map`                                         | Light leaks between walls, doors off walls, tokens in walls, PCs without vision         |
@@ -134,7 +135,8 @@ The server must grow with the app, so a change to the map model can't land witho
 about the MCP tools:
 
 - `Tests/GraphiumMCPTests/ModelCoverageTests.swift` lists every stored property of `Campaign`,
-  `GameMap`, `Token`, `Drawing`, `Door`, `Stairs`, `MapBackground` and `TokenLibraryItem`, and
+  `GameMap`, `Token`, `Drawing`, `Door`, `Stairs`, `LightSource`, `MapNote`, `MapBackground` and
+  `TokenLibraryItem`, and
   every case of `GridType`, `WallKind`, `DrawingTool` and `CreatureType`, as either exposed by a
   tool or left out with a reason. Add a property or case (lights, a new wall kind, a token
   sense) and `swift test` fails, in CI too, until the server is updated.

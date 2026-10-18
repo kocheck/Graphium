@@ -184,6 +184,24 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(door.orientation, .horizontal)
     }
 
+    func testHiddenDoorsShowAsWallToPlayersUntilRevealed() throws {
+        try call("create_campaign", ["path": "Secret", "name": "Secret"])
+        try call("draw_walls", ["campaign": "Secret", "walls": [["points": [[0, 2], [6, 2]]]]])
+        let added = try call("add_doors", ["campaign": "Secret", "doors": [["center": [3.5, 2], "hidden": true]]])
+        let entry = try XCTUnwrap(added["added_doors"]?.arrayValue?.first)
+        XCTAssertEqual(entry["hidden"], .bool(true))
+        var door = try XCTUnwrap(try loadCampaign("Secret.graphiumcampaign").activeMap.doors.first)
+        XCTAssertEqual(door.isHidden, true)
+        let text = AsciiMap(map: try loadCampaign("Secret.graphiumcampaign").activeMap, library: [:]).render(region: nil)
+        // A grid row (only wall, cell and door characters) carries the S.
+        let rows = text.split(separator: "\n").filter { $0.allSatisfy { " .-|+S".contains($0) } }
+        XCTAssertTrue(rows.contains { $0.contains("S") }, text)
+
+        try call("update_objects", ["campaign": "Secret", "changes": [["id": .string(door.id), "hidden": false]]])
+        door = try XCTUnwrap(try loadCampaign("Secret.graphiumcampaign").activeMap.doors.first)
+        XCTAssertNil(door.isHidden, "revealing leaves the flag out of the file")
+    }
+
     func testLightsAndDarkvision() throws {
         try call("create_campaign", ["path": "Lit", "name": "Lit"])
         try call("add_rooms", ["campaign": "Lit", "rooms": [["x": 0, "y": 0, "width": 8, "height": 6]]])
@@ -225,6 +243,61 @@ final class MCPServerTests: XCTestCase {
         XCTAssertTrue(try loadCampaign("Lit.graphiumcampaign").activeMap.lights.isEmpty)
     }
 
+    func testNotes() throws {
+        try call("create_campaign", ["path": "Notes", "name": "Notes"])
+        let added = try call(
+            "add_notes",
+            [
+                "campaign": "Notes",
+                "notes": [
+                    ["center": [2.5, 3.5], "title": "1. Guard Room", "dm_notes": "The sergeant has the key."],
+                    ["center": [6, 2], "title": "Mural", "shared": true],
+                ],
+            ])
+        let first = try XCTUnwrap(added["added_notes"]?.arrayValue?.first)
+        XCTAssertEqual(first["center"], [2.5, 3.5])
+        XCTAssertEqual(first["shared"], .bool(false))
+        var map = try loadCampaign("Notes.graphiumcampaign").activeMap
+        XCTAssertEqual(map.notes.map(\.title), ["1. Guard Room", "Mural"])
+        XCTAssertEqual(map.notes[0].x, 125)
+        XCTAssertEqual(map.notes[0].dmNotes, "The sergeant has the key.")
+        XCTAssertFalse(map.notes[0].isShared)
+
+        let check = try call("check_map", ["campaign": "Notes"])
+        let kinds = Set(check["issues"]?.arrayValue?.compactMap { $0["kind"]?.stringValue } ?? [])
+        XCTAssertTrue(kinds.contains("shared_note_without_player_notes"), check.serialized())
+
+        let mural = map.notes[1].id
+        try call(
+            "update_objects",
+            ["campaign": "Notes", "changes": [["id": .string(mural), "player_notes": "A dragon over a burning city."]]])
+        map = try loadCampaign("Notes.graphiumcampaign").activeMap
+        XCTAssertEqual(map.notes[1].playerNotes, "A dragon over a burning city.")
+
+        try call(
+            "update_objects",
+            ["campaign": "Notes", "changes": [["id": .string(mural), "sounds": [["name": "CHIME", "play_on_show": true], ["name": "Cave"]]]]])
+        map = try loadCampaign("Notes.graphiumcampaign").activeMap
+        XCTAssertEqual(
+            map.notes[1].sounds, [NoteSound(kind: .sfx, ref: "chime", playOnShow: true), NoteSound(kind: .soundscape, ref: "cave")],
+            "matched by name")
+        let missing = try callError(
+            "update_objects", ["campaign": "Notes", "changes": [["id": .string(mural), "sounds": [["name": "Gong"]]]]])
+        XCTAssertTrue(missing.contains("no track, effect or soundscape named Gong"), missing)
+
+        let described = try call("get_map", ["campaign": "Notes"])
+        XCTAssertEqual(described["notes"]?.arrayValue?.count, 2)
+        XCTAssertEqual(described["notes"]?.arrayValue?[1]["sounds"]?.arrayValue?.first?["name"], "Chime")
+        let text = try request(
+            "tools/call", ["name": "render_map", "arguments": ["campaign": "Notes", "view": "players", "format": "both"]])
+        XCTAssertEqual(text["result"]?["isError"], .bool(false))
+
+        try call("remove_objects", ["campaign": "Notes", "ids": [.string(mural)]])
+        XCTAssertEqual(try loadCampaign("Notes.graphiumcampaign").activeMap.notes.count, 1)
+        try call("clear_map", ["campaign": "Notes", "layers": ["notes"]])
+        XCTAssertTrue(try loadCampaign("Notes.graphiumcampaign").activeMap.notes.isEmpty)
+    }
+
     func testUpdateRemoveAndUndo() throws {
         try call("create_campaign", ["path": "Edit", "name": "Edit"])
         let added = try call("add_tokens", ["campaign": "Edit", "tokens": [["name": "Goblin", "type": "NPC", "position": [1, 1]]]])
@@ -240,6 +313,21 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 200)
         try call("undo", ["campaign": "Edit"])
         XCTAssertEqual(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first?.x, 50)
+
+        // New art from a file: only the picture changes.
+        let art = folder.appendingPathComponent("ogre.png")
+        try XCTUnwrap(TokenArt.disc(label: "Ogre", type: .npc, color: "#336699").png()).write(to: art)
+        let before = try XCTUnwrap(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first)
+        try call("update_objects", ["campaign": "Edit", "changes": [["id": .string(id), "image_path": .string(art.path)]]])
+        let after = try XCTUnwrap(try loadCampaign("Edit.graphiumcampaign").activeMap.tokens.first)
+        XCTAssertNotEqual(after.src, before.src)
+        XCTAssertEqual(after.name, "Goblin")
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: folder.appendingPathComponent("Edit.graphiumcampaign/assets/\(after.src)").path))
+        XCTAssertTrue(
+            try callError("update_objects", ["campaign": "Edit", "changes": [["id": .string(id), "image_library_item": "Nobody"]]])
+                .contains("no token library item"))
     }
 
     func testMapsAddUpdateDelete() throws {

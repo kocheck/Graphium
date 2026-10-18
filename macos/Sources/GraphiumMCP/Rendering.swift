@@ -177,8 +177,9 @@ struct MapRenderer {
                 + "y \(units.out(a.y).serialized())…\(units.out(a.y + a.height).serialized()) (\(units.name)); "
                 + "one cell ≈ \(Int(map.gridSize * s)) px in the image. Cell numbers are printed every 5 cells.",
             "Legend: red lines walls, blue dashed windows, orange one-way walls (tick on the side sight comes from), "
-                + "brown bars closed doors, green outline open doors, gold dot locked, yellow dots lights (solid ring bright, "
-                + "dashed ring dim), blue discs PCs, red discs NPCs.",
+                + "brown bars closed doors, purple dashed bars hidden doors (wall in the players' view), green outline open doors, gold dot locked, yellow dots lights (solid ring bright, "
+                + "dashed ring dim), white squares note pins (solid edge shared with players, dashed DM only; titles beside "
+                + "them), blue discs PCs, red discs NPCs.",
         ]
         if playersView {
             lines.append(
@@ -211,7 +212,7 @@ struct MapRenderer {
         drawMarkers(ctx)
         drawStairs(ctx)
         drawWalls(ctx)
-        drawDoors(ctx)
+        drawDoors(ctx, playersView: playersView)
         if !playersView { drawLights(ctx) }
         if playersView && !map.isDaylightMode {
             let sight = LineOfSight.partySight(of: map, library: library)
@@ -225,6 +226,8 @@ struct MapRenderer {
         } else {
             drawTokens(ctx, hidden: [], scale: s)
         }
+        // Over the fog: in the players' view, only the pins the DM shared.
+        drawNotes(ctx, sharedOnly: playersView, scale: s)
         drawCellNumbers(ctx, visible, scale: s)
         guard let image = ctx.makeImage() else { return nil }
         return ImageImport.encode(image, png: true)
@@ -348,13 +351,23 @@ struct MapRenderer {
         }
     }
 
-    private func drawDoors(_ ctx: CGContext) {
+    /// Shut hidden doors are drawn as wall (red) in the players' view and as purple dashed
+    /// bars otherwise.
+    private func drawDoors(_ ctx: CGContext, playersView: Bool) {
         for door in map.doors {
             let (hinge, latch) = door.ends
             let thickness = door.thickness ?? max(6, map.gridSize * 0.18)
             ctx.saveGState()
             ctx.setLineCap(.butt)
-            if door.isOpen {
+            if door.looksLikeWall && playersView {
+                ctx.setStrokeColor(CGColor(srgbRed: 0.95, green: 0.2, blue: 0.18, alpha: 1))
+                ctx.setLineWidth(max(3, map.gridSize * 0.1))
+                ctx.setLineCap(.round)
+            } else if door.looksLikeWall {
+                ctx.setStrokeColor(CGColor(srgbRed: 0.6, green: 0.35, blue: 0.85, alpha: 1))
+                ctx.setLineWidth(thickness)
+                ctx.setLineDash(phase: 0, lengths: [thickness * 0.6, thickness * 0.4])
+            } else if door.isOpen {
                 ctx.setStrokeColor(CGColor(srgbRed: 0.3, green: 0.85, blue: 0.4, alpha: 1))
                 ctx.setLineWidth(max(2, thickness * 0.3))
                 ctx.setLineDash(phase: 0, lengths: [thickness * 0.6, thickness * 0.4])
@@ -365,7 +378,7 @@ struct MapRenderer {
             path([hinge, latch], ctx)
             ctx.strokePath()
             ctx.restoreGState()
-            if door.isLocked {
+            if door.isLocked, !(playersView && door.looksLikeWall) {
                 let r = max(3, map.gridSize * 0.09)
                 ctx.setFillColor(CGColor(srgbRed: 1, green: 0.82, blue: 0.2, alpha: 1))
                 ctx.fillEllipse(in: CGRect(x: door.x - r, y: door.y - r, width: 2 * r, height: 2 * r))
@@ -441,6 +454,26 @@ struct MapRenderer {
             let r = max(4, map.gridSize * 0.15)
             ctx.setFillColor(CGColor(srgbRed: 1, green: 0.82, blue: 0.3, alpha: alpha))
             ctx.fillEllipse(in: CGRect(x: light.x - r, y: light.y - r, width: 2 * r, height: 2 * r))
+        }
+    }
+
+    /// Note pins: a white square with a dark edge, dashed for DM-only notes, and the title.
+    private func drawNotes(_ ctx: CGContext, sharedOnly: Bool, scale: Double) {
+        for note in map.notes where !sharedOnly || note.isShared {
+            let r = max(5, map.gridSize * 0.18)
+            let rect = CGRect(x: note.x - r, y: note.y - r, width: 2 * r, height: 2 * r)
+            ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+            ctx.fill(rect)
+            ctx.saveGState()
+            ctx.setStrokeColor(CGColor(gray: 0.1, alpha: 1))
+            ctx.setLineWidth(max(1.5, map.gridSize * 0.04))
+            if !note.isShared { ctx.setLineDash(phase: 0, lengths: [r * 0.4, r * 0.25]) }
+            ctx.stroke(rect)
+            ctx.restoreGState()
+            let size = CGFloat(12 / scale)
+            drawText(
+                note.displayTitle, in: ctx, centre: CGPoint(x: rect.midX, y: rect.maxY + size * 0.9), size: size,
+                color: CGColor(gray: 1, alpha: 1), flipped: true, outline: CGColor(gray: 0, alpha: 0.85))
         }
     }
 

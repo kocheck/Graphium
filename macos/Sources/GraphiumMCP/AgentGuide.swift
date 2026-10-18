@@ -16,7 +16,9 @@ public enum AgentGuide {
         walls and caves (corners must share the exact same point; use closed: true for loops), add_doors on wall \
         lines, kind "window" for walls you can see through. Or generate_dungeon for a random layout.
         4. Then contents: add_tokens (PCs, NPCs and monsters), add_lights, add_stairs, draw_markers for \
-        hazards and notes.
+        hazards, and add_notes for room keys: dm_notes for the DM's secrets, player_notes for read-aloud text, \
+        shared only when the DM wants players to see the pin. A note's sounds attach Session Console tracks, \
+        effects or soundscapes by name, for the DM to play from the pin.
         5. Check your work: render_map to see it, check_map to catch light leaks and misplaced doors and tokens. \
         Fix with update_objects or remove_objects; undo reverts this server's last change.
         6. Tell the DM the file path and what is on each map. They open it in Graphium, which also reloads it \
@@ -154,7 +156,7 @@ public enum AgentGuide {
         - Break up long sightlines with pillars (small closed walls) or corners, so ranged attackers and \
         stealth both matter.
         - Use doors to control what players see and when: closed doors block sight; locked doors make a \
-        decision. Windows (kind "window") show the next room without letting anyone walk through.
+        decision; a hidden door rewards searching. Windows (kind "window") show the next room without letting anyone walk through.
         - One-way walls are for secrets: a mirror, a hidden spy hole, a cliff edge you can see down from.
         - Put stairs where the map connects to other maps, and say which map they lead to in a marker.
         - Place monsters where they would really be, not in a line: guards at doors, a leader at the back.
@@ -217,12 +219,15 @@ public enum AgentGuide {
         line as drawn (walking from its first point to its last, with y pointing down).
         - Doors: a centre point, a width (default 1 cell) and an angle in degrees (0 horizontal, 90 vertical, \
         anything else diagonal). A closed door blocks sight and movement; an open door also cuts the wall \
-        underneath it, so a door can sit on top of a continuous wall. Locked doors can't be opened by clicking.
+        underneath it, so a door can sit on top of a continuous wall. Locked doors can't be opened by clicking. \
+        A hidden (secret) door looks like plain wall to players while it is shut, until the DM reveals it.
         - Tokens: position is the top-left corner; size is the footprint in cells (1 = one square).
         - Stairs: centre, width and height, which way they face, up or down.
         - Lights: a centre point and two radii in feet (bright_ft, then dim_ft as the outer edge). They only \
         matter on maps with lighting on.
         - Markers: freehand lines with a colour and width in pixels; they block nothing.
+        - Notes: a pin at a centre point with a title, dm_notes (never shown to players) and player_notes. \
+        shared puts the pin on the players' World View, where clicking it shows the title and player_notes.
         - add_rooms door and opening positions (at) are measured along the side from its top or left end to \
         the door's centre.
         - Hex and isometric maps use the same coordinates (cells = multiples of cell_px), but cells aren't \

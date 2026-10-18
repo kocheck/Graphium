@@ -34,12 +34,32 @@ extension MapCanvasNSView {
             }
             elements.append(element)
         }
+        // Players reach only the doors the World View draws: none that look like wall, and
+        // none still in unexplored fog.
+        let known = isPlayerView ? fog.map { knownDoorIDs(map.doors, fog: $0) } : nil
         for door in map.doors {
+            if isPlayerView, door.looksLikeWall || !(known?.contains(door.id) ?? true) { continue }
             let state = door.isLocked ? "locked" : door.isOpen ? "open" : "closed"
-            let element = makeElement(label: "Door, \(state)", bounds: door.bounds(padding: 6))
+            let hidden = !isPlayerView && door.isHidden == true ? ", hidden from players" : ""
+            let element = makeElement(label: "Door, \(state)\(hidden)", bounds: door.bounds(padding: 6))
             if !isPlayerView, let doorAction = editing?.doorAction, !door.isLocked {
                 let id = door.id
                 element.onPress = { doorAction(id, .toggle) }
+            }
+            elements.append(element)
+        }
+        // Players reach only the shared pins, and only their player notes.
+        for note in map.notes where !isPlayerView || note.isShared {
+            let r = (isPlayerView ? Self.worldNoteMarkerRadius : Self.noteMarkerRadius) / viewport.zoom
+            let sharing = isPlayerView ? "" : note.isShared ? ", shown to players" : ", DM only"
+            let element = makeElement(
+                label: "Note: \(note.displayTitle)\(sharing)\(selection.contains(note.id) ? ", selected" : "")",
+                bounds: Bounds(x: note.x - r, y: note.y - r, width: 2 * r, height: 2 * r))
+            let id = note.id
+            if isPlayerView, let openNote = editing?.openNote {
+                element.onPress = { openNote(id) }
+            } else if !isPlayerView, let editing {
+                element.onPress = { editing.setSelection([id]) }
             }
             elements.append(element)
         }

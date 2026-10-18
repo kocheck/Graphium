@@ -1,5 +1,6 @@
 import AppKit
 import GraphiumCore
+import GraphiumRender
 
 /// Map-layer rendering beyond the grid and tokens: ink, doors, stairs, and the
 /// Architect/World overlays. Everything draws in map coordinates.
@@ -121,23 +122,25 @@ extension MapCanvasNSView {
         context.strokePath()
     }
 
+    /// Doors in the Architect's look: wood with a black edge, swinging open about the hinge.
+    /// A hidden door is drawn faded with a dashed edge and an eye-slash, so the DM always
+    /// knows it is there and that players don't. The World View draws doors with
+    /// `drawWorldDoors` instead, and its shut hidden doors with `drawSecretDoorWalls`.
     func drawDoors(_ doors: [Door], context: CGContext) {
         for door in doors {
             let thickness = door.thickness ?? max(6, door.size * 0.16)
             let half = door.size / 2
+            let hidden = door.isHidden == true
             // Drawn in the door's own frame: centre at the origin, hinge at (−half, 0), latch along +x.
             let frame = CGAffineTransform(translationX: door.x, y: door.y).rotated(by: door.radians)
             let closed = CGRect(x: -half, y: -thickness / 2, width: door.size, height: thickness)
             let openFraction = CGFloat(doorSwings.openFraction(for: door, in: self))
             context.saveGState()
             context.concatenate(frame)
-            if isPlayerView {
-                // Projector legibility: white glow and a heavier outline.
-                context.setShadow(offset: .zero, blur: 8, color: NSColor.white.cgColor)
-            }
-            let fill = NSColor(srgbRed: 0.55, green: 0.36, blue: 0.2, alpha: 1)
+            let fill = NSColor(srgbRed: 0.55, green: 0.36, blue: 0.2, alpha: hidden ? 0.45 : 1)
             context.setStrokeColor(NSColor.black.cgColor)
-            context.setLineWidth(isPlayerView ? 3 : 1.5)
+            context.setLineWidth(1.5)
+            if hidden { context.setLineDash(phase: 0, lengths: [4, 3]) }
             if openFraction > 0 {
                 // Swung up to 90° about the hinge end (animated, TS DoorShape), with the swing arc.
                 // The leaf turns towards the door's on-screen left (−y for a horizontal door, +x for a vertical one).
@@ -147,7 +150,7 @@ extension MapCanvasNSView {
                 context.translateBy(x: hinge.x, y: hinge.y)
                 context.rotate(by: leafAngle)
                 let leaf = CGRect(x: 0, y: -thickness / 2, width: door.size, height: thickness)
-                context.setFillColor(fill.withAlphaComponent(1 - 0.15 * openFraction).cgColor)
+                context.setFillColor(fill.withAlphaComponent(fill.alphaComponent * (1 - 0.15 * openFraction)).cgColor)
                 context.fill(leaf)
                 context.stroke(leaf)
                 context.restoreGState()
@@ -161,16 +164,94 @@ extension MapCanvasNSView {
                 context.stroke(closed)
             }
             context.restoreGState()
-            if door.isLocked {
-                drawSymbol("lock.fill", centredAt: CGPoint(x: door.x, y: door.y), size: max(12, door.size * 0.35), context: context)
-            }
-            if selectedDoorID == door.id || selection.contains(door.id) {
+            drawDoorGlyphs(door, locked: door.isLocked, hidden: hidden, context: context)
+            if selection.contains(door.id) {
                 var transform = frame
                 context.strokeMark(
                     CGPath(rect: closed.insetBy(dx: -4, dy: -4), transform: &transform), width: 2 / viewport.zoom)
             }
         }
-        doorSwings.finishFrame(doorIDs: Set(doors.map(\.id)))
+    }
+
+    /// The World View's doors, drawn over the fog in the ink-on-paper look of its walls (an
+    /// old-school map door): a paper slab outlined in heavy ink across the wall, with a jamb at
+    /// each end so the doorway still reads when the door stands open. Only doors the players
+    /// know (`LineOfSight.knownDoors`) are passed in.
+    func drawWorldDoors(_ doors: [Door], context: CGContext) {
+        let ink = NSColor.black.cgColor
+        let paper = NSColor(white: FogShading.paper, alpha: 1).cgColor
+        for door in doors {
+            let half = door.size / 2
+            let slab = max(10, door.size * 0.26)
+            let jamb = slab * 0.75
+            let openFraction = CGFloat(doorSwings.openFraction(for: door, in: self))
+            context.saveGState()
+            context.concatenate(CGAffineTransform(translationX: door.x, y: door.y).rotated(by: door.radians))
+            context.setStrokeColor(ink)
+            context.setLineJoin(.miter)
+            // Jambs: short ink bars across the wall line at both ends of the doorway.
+            context.setLineCap(.butt)
+            context.setLineWidth(5)
+            for x in [-half, half] {
+                context.move(to: CGPoint(x: x, y: -jamb))
+                context.addLine(to: CGPoint(x: x, y: jamb))
+            }
+            context.strokePath()
+            context.setLineWidth(3)
+            if openFraction > 0 {
+                // The leaf swings about the hinge as in the Architect, with a dashed arc.
+                let hinge = CGPoint(x: -half, y: 0)
+                let leafAngle = -.pi / 2 * openFraction
+                context.saveGState()
+                context.translateBy(x: hinge.x, y: hinge.y)
+                context.rotate(by: leafAngle)
+                let leaf = CGRect(x: 0, y: -slab / 4, width: door.size, height: slab / 2)
+                context.setFillColor(paper)
+                context.fill(leaf)
+                context.stroke(leaf)
+                context.restoreGState()
+                context.setLineDash(phase: 0, lengths: [6, 5])
+                context.setLineWidth(2)
+                context.addArc(center: hinge, radius: door.size, startAngle: leafAngle, endAngle: 0, clockwise: false)
+                context.strokePath()
+            } else {
+                let rect = CGRect(x: -half, y: -slab / 2, width: door.size, height: slab)
+                context.setFillColor(paper)
+                context.fill(rect)
+                context.stroke(rect)
+            }
+            context.restoreGState()
+            drawDoorGlyphs(door, locked: door.isLocked, hidden: false, context: context)
+        }
+    }
+
+    /// Shut hidden doors on the World View: the same black 6-unit line as a wall, drawn under
+    /// the fog with the walls, so players can't tell them from wall.
+    func drawSecretDoorWalls(_ doors: [Door], context: CGContext) {
+        context.saveGState()
+        context.setStrokeColor(NSColor.black.cgColor)
+        context.setLineWidth(6)
+        context.setLineCap(.round)
+        for door in doors where door.looksLikeWall {
+            let (hinge, latch) = door.ends
+            context.move(to: CGPoint(hinge))
+            context.addLine(to: CGPoint(latch))
+        }
+        context.strokePath()
+        context.restoreGState()
+    }
+
+    /// The lock and hidden glyphs, side by side along the door when it has both.
+    private func drawDoorGlyphs(_ door: Door, locked: Bool, hidden: Bool, context: CGContext) {
+        let glyphs = [locked ? "lock.fill" : nil, hidden ? "eye.slash.fill" : nil].compactMap { $0 }
+        guard !glyphs.isEmpty else { return }
+        let size = max(12, door.size * 0.35)
+        let step = glyphs.count > 1 ? size * 0.7 : 0
+        for (i, name) in glyphs.enumerated() {
+            let along = (Double(i) - Double(glyphs.count - 1) / 2) * 2 * step
+            let centre = CGPoint(x: door.x + along * cos(door.radians), y: door.y + along * sin(door.radians))
+            drawSymbol(name, centredAt: centre, size: size, context: context)
+        }
     }
 
     /// Render-only stairs (PARITY §3.6): step lines plus a direction arrow; "down" is darker.

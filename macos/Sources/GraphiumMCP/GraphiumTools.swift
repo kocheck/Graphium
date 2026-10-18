@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.0.0"
+    public static let version = "1.4.0"
 
     struct Tool {
         var name: String
@@ -95,6 +95,19 @@ public final class GraphiumTools {
             ],
         ]
     }
+
+    static let noteSoundsProperty: JSONValue = [
+        "type": "array",
+        "description": "Session Console tracks, sound effects or soundscapes (Cave, Tavern…) the DM can play from this pin. Only names already in the campaign's Session Console work.",
+        "items": [
+            "type": "object",
+            "properties": [
+                "name": string("Track title, effect name or soundscape from the Session Console, e.g. Door Creak or Cave."),
+                "play_on_show": boolean("Play it by itself when the DM shows this note on the World View (default false)."),
+            ],
+            "required": ["name"],
+        ],
+    ]
 
     static let campaignProperty = string(
         "Path to the .graphiumcampaign package (absolute, ~/…, or relative to the server's first folder). "
@@ -276,6 +289,8 @@ public final class GraphiumTools {
                                     "width": Self.number("Door width (default 1 cell)."),
                                     "open": Self.boolean("Start open (default false)."),
                                     "locked": Self.boolean("Locked (default false)."),
+                                    "hidden": Self.boolean(
+                                        "Secret door: players see plain wall while it is shut (default false)."),
                                 ], required: ["side"]),
                             "openings": Self.objects(
                                 "Gaps with no door (archways, corridor mouths).",
@@ -304,6 +319,9 @@ public final class GraphiumTools {
                             "angle": Self.number("Degrees clockwise from east: 0 horizontal, 90 vertical."),
                             "open": Self.boolean("Start open (default false)."),
                             "locked": Self.boolean("Locked doors can't be opened by clicking (default false)."),
+                            "hidden": Self.boolean(
+                                "Secret door: players see plain wall while it is shut, until the DM reveals it "
+                                    + "(default false)."),
                         ], required: ["center"]),
                 ],
                 required: ["campaign", "doors"], readOnly: false, run: addDoors),
@@ -370,6 +388,28 @@ public final class GraphiumTools {
                 ],
                 required: ["campaign", "lights"], readOnly: false, run: addLights),
             Tool(
+                name: "add_notes", title: "Add note pins",
+                description:
+                    "Pin notes to the map: room keys, read-aloud text, clues, handouts. dm_notes are for the DM alone "
+                    + "and never reach players. player_notes are what players may read: with shared true the pin shows "
+                    + "on the World View and players can click it to read them. Notes are DM-only (shared false) unless "
+                    + "the DM asks otherwise. sounds attach Session Console tracks, effects or soundscapes (by name) for the DM to "
+                    + "play from the pin; play_on_show starts one when the DM shows the note on the World View.",
+                properties: [
+                    "campaign": c, "map": m, "units": u,
+                    "notes": Self.objects(
+                        "Notes to add.",
+                        [
+                            "center": Self.point("Where the pin goes, e.g. a room's centre."),
+                            "title": Self.string("Short title shown under the pin, e.g. 1. Guard Room."),
+                            "dm_notes": Self.string("Secrets, monster tactics, treasure: DM only."),
+                            "player_notes": Self.string("Read-aloud or handout text players may see."),
+                            "shared": Self.boolean("Show the pin to players on the World View (default false)."),
+                            "sounds": Self.noteSoundsProperty,
+                        ], required: ["center"]),
+                ],
+                required: ["campaign", "notes"], readOnly: false, run: addNotes),
+            Tool(
                 name: "draw_markers", title: "Draw markers",
                 description:
                     "Draw freehand marker lines (annotations, terrain outlines, paths). Markers don't block anything; "
@@ -389,9 +429,10 @@ public final class GraphiumTools {
                 name: "update_objects", title: "Update objects",
                 description:
                     "Change existing objects by id (from get_map). Tokens: position, name, type, size, vision_ft, "
-                    + "darkvision_ft, speed_ft. Doors: open, locked, center, width, angle. Walls: kind, one_way, flip "
+                    + "darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
+                    + "(a token library item id or name; only its picture is used). Doors: open, locked, hidden, center, width, angle. Walls: kind, one_way, flip "
                     + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
-                    + "Stairs: center, direction, type. Fields that don't apply are reported back.",
+                    + "Notes: center, title, dm_notes, player_notes, shared, sounds (replaces the list). Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "changes": [
@@ -403,7 +444,7 @@ public final class GraphiumTools {
                 required: ["campaign", "changes"], readOnly: false, run: updateObjects),
             Tool(
                 name: "remove_objects", title: "Remove objects",
-                description: "Remove tokens, walls, markers, doors, lights or stairs by id. Undo puts them back.",
+                description: "Remove tokens, walls, markers, doors, lights, notes or stairs by id. Undo puts them back.",
                 properties: [
                     "campaign": c, "map": m,
                     "ids": ["type": "array", "items": ["type": "string"], "minItems": 1, "description": "Ids from get_map."],
@@ -412,13 +453,13 @@ public final class GraphiumTools {
             Tool(
                 name: "clear_map", title: "Clear map layers",
                 description:
-                    "Remove whole layers from a map: walls, doors, tokens, markers, stairs, lights, fog (explored areas), "
+                    "Remove whole layers from a map: walls, doors, tokens, markers, stairs, lights, notes, fog (explored areas), "
                     + "background.",
                 properties: [
                     "campaign": c, "map": m,
                     "layers": [
                         "type": "array", "minItems": 1,
-                        "items": ["type": "string", "enum": ["walls", "doors", "tokens", "markers", "stairs", "lights", "fog", "background"]],
+                        "items": ["type": "string", "enum": ["walls", "doors", "tokens", "markers", "stairs", "lights", "notes", "fog", "background"]],
                     ],
                 ],
                 required: ["campaign", "layers"], readOnly: false, destructive: true, run: clearMap),

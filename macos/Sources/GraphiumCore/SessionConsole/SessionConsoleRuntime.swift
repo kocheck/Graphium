@@ -25,10 +25,23 @@ public struct SessionConsoleRuntime: Equatable, Sendable {
         public var volumeOffset = 0.0
     }
 
+    /// The soundscape playing under the music: which scene, and the DM's level and mute per layer.
+    public struct Ambience: Equatable, Sendable {
+        public var soundscapeId: String?
+        /// Layer id → 0…100. Starts at each layer's own level.
+        public var levels: [String: Double] = [:]
+        public var muted: Set<String> = []
+
+        public func level(of layer: SoundLayer) -> Double {
+            muted.contains(layer.id) ? 0 : levels[layer.id] ?? layer.level
+        }
+    }
+
     public var stageVisible = false
     public var activeImage: ActiveImage?
     public var stage: StageChrome
     public var audio = Audio()
+    public var ambience = Ambience()
     public var volume: Double
     public var ducked = false
     public var duckPercent: Double
@@ -52,11 +65,22 @@ public struct SessionConsoleRuntime: Equatable, Sendable {
         duckPercent = catalog.defaults.duckPercent
     }
 
+    /// Master level for the soundscape: the volume slider and duck, without a track's offset.
+    public var ambienceVolume: Double {
+        SessionConsoleAudio.effectiveVolume(volume: volume, ducked: ducked, duckPercent: duckPercent)
+    }
+
     /// Volume the World View should play at now.
     public var effectiveVolume: Double {
         SessionConsoleAudio.effectiveVolume(
             volume: volume, ducked: ducked, offset: audio.volumeOffset, duckPercent: duckPercent)
     }
+}
+
+extension SessionConsoleRuntime {
+    public var soundscape: Soundscape? { ambience.soundscapeId.flatMap(Soundscape.builtIn(id:)) }
+
+    func playingLayer(_ id: String) -> SoundLayer? { soundscape?.layers.first { $0.id == id } }
 }
 
 /// DM transport commands (TS `applyRuntimeCommand`, CORE_SPEC §3.9). Unknown ids and
@@ -69,6 +93,10 @@ public enum SessionCommand: Equatable, Sendable {
     case setVolume(Double)
     case setDucked(Bool)
     case fireSfx(sfxId: String)
+    case playSoundscape(id: String)
+    case stopSoundscape
+    case setLayerLevel(layerId: String, Double)
+    case setLayerMuted(layerId: String, Bool)
 
     @discardableResult
     public func apply(to runtime: inout SessionConsoleRuntime, catalog: SessionConsoleCatalog) -> Bool {
@@ -95,7 +123,9 @@ public enum SessionCommand: Equatable, Sendable {
                 runtime.audio.restartSeq += 1
             }
         case .stop:
+            // The hard cut: music and soundscape both.
             if runtime.audio.status != .stopped { runtime.audio.status = .stopped }
+            runtime.ambience.soundscapeId = nil
         case .setVolume(let v):
             runtime.volume = SessionConsoleAudio.clampVolume(v)
         case .setDucked(let d):
@@ -107,6 +137,17 @@ public enum SessionCommand: Equatable, Sendable {
             runtime.sfxKind = sfx.kind
             runtime.sfxSynthType = sfx.synthType
             runtime.sfxSrc = sfx.src
+        case .playSoundscape(let id):
+            guard Soundscape.builtIn(id: id) != nil, runtime.ambience.soundscapeId != id else { break }
+            runtime.ambience = .init(soundscapeId: id)
+        case .stopSoundscape:
+            runtime.ambience.soundscapeId = nil
+        case .setLayerLevel(let layerId, let level):
+            guard runtime.playingLayer(layerId) != nil else { break }
+            runtime.ambience.levels[layerId] = SessionConsoleAudio.clampVolume(level)
+        case .setLayerMuted(let layerId, let muted):
+            guard runtime.playingLayer(layerId) != nil else { break }
+            if muted { runtime.ambience.muted.insert(layerId) } else { runtime.ambience.muted.remove(layerId) }
         }
         return runtime != before
     }

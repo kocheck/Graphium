@@ -23,7 +23,8 @@ public enum GridType: String, Codable, CaseIterable, Sendable {
     public var isSquare: Bool { self == .lines || self == .dots || self == .hidden }
 }
 
-/// One map: background, grid, tokens, drawings, doors, stairs, explored fog.
+/// One map: background, grid, tokens, drawings, doors, stairs, explored fog (and, native
+/// only, lights and note pins).
 /// (TS `MapData`, CORE_SPEC §1.3.) Decoding applies the TS `loadCampaign`
 /// fallbacks for every field, so older files load.
 public struct GameMap: Codable, Equatable, Identifiable, Sendable {
@@ -53,10 +54,12 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
     /// radius (TS). Otherwise the light everywhere no light source reaches, and PCs see what is
     /// lit or within their darkvision (5e 2024 Vision and Light).
     public var ambientLight: LightLevel?
+    /// Native only: note pins (`MapNote`). Written only when not empty.
+    public var notes: [MapNote]
 
     private enum CodingKeys: String, CodingKey {
         case id, name, tokens, drawings, doors, stairs, gridSize, gridType, gridColor
-        case exploredRegions, isDaylightMode, lights, ambientLight
+        case exploredRegions, isDaylightMode, lights, ambientLight, notes
         case background = "map"
     }
 
@@ -74,7 +77,8 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         exploredRegions: [ExploredRegion] = [],
         isDaylightMode: Bool = false,
         lights: [LightSource] = [],
-        ambientLight: LightLevel? = nil
+        ambientLight: LightLevel? = nil,
+        notes: [MapNote] = []
     ) {
         self.id = id
         self.name = name
@@ -90,6 +94,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         self.isDaylightMode = isDaylightMode
         self.lights = lights
         self.ambientLight = ambientLight
+        self.notes = notes
     }
 
     public init(from decoder: Decoder) throws {
@@ -110,6 +115,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         isDaylightMode = try c.decodeIfPresent(Bool.self, forKey: .isDaylightMode) ?? false
         lights = try c.decodeIfPresent([LightSource].self, forKey: .lights) ?? []
         ambientLight = try c.decodeIfPresent(LightLevel.self, forKey: .ambientLight)
+        notes = try c.decodeIfPresent([MapNote].self, forKey: .notes) ?? []
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -128,6 +134,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         try c.encodeIfPresent(background, forKey: .background)
         if !lights.isEmpty { try c.encode(lights, forKey: .lights) }
         try c.encodeIfPresent(ambientLight, forKey: .ambientLight)
+        if !notes.isEmpty { try c.encode(notes, forKey: .notes) }
     }
 
     /// Appends an explored region, dropping the oldest beyond the cap.

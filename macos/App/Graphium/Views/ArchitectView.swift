@@ -3,7 +3,7 @@ import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The DM's window: map navigator sidebar, the editable canvas, and the token inspector.
+/// The DM's window: map navigator sidebar, the editable canvas, and the token or note inspector.
 struct ArchitectView: View {
     @ObservedObject var document: CampaignDocument
     @Environment(\.undoManager) private var undoManager
@@ -25,6 +25,7 @@ struct ArchitectView: View {
     @State private var renamingMapID: String?
     @State private var renameText = ""
     @State private var deletingMapID: String?
+    @State private var confirmingFogReset = false
     @State private var errorMessage: String?
     @State private var tools = ToolState()
     @State private var recentColors = StrokeDefaults.recentMarkerColors
@@ -37,7 +38,7 @@ struct ArchitectView: View {
     @State private var showingDungeon = false
     @State private var editingLibraryItem: TokenLibraryItem?
     @State private var showingConsoleSettings = false
-    @State private var inspectorTab = InspectorTab.token
+    @State private var inspectorTab = InspectorTab.selection
     @State private var mapSettings: MapSettingsRequest?
     @State private var calibrating = false
     @State private var zoomRequest: ZoomRequest?
@@ -46,18 +47,25 @@ struct ArchitectView: View {
     @State private var toast: Toast?
 
     private enum InspectorTab: Hashable {
-        case token, console
+        /// The selected tokens, else the selected notes.
+        case selection, console
     }
     @State private var libraryUpload: ImportedImage?
     @State private var cropping: CropRequest?
     @ObservedObject private var library = LibraryStore.shared
 
-    /// A Finder-dropped image waiting in the cropper.
+    /// An image waiting in the cropper: a Finder drop that becomes a new token, or the
+    /// new picture for existing tokens (Change Image).
     private struct CropRequest: Identifiable {
+        enum Purpose {
+            case newToken(centredAt: Point2D)
+            case tokenImage(Set<String>)
+        }
+
         let id = UUID()
         let image: CGImage
         let name: String
-        let point: Point2D
+        let purpose: Purpose
     }
 
     private struct MapSettingsRequest: Identifiable {
@@ -100,8 +108,10 @@ struct ArchitectView: View {
         let kind: Kind
     }
 
-    private enum ImportTarget: Identifiable {
+    private enum ImportTarget: Hashable, Identifiable {
         case mapImage, tokens, libraryUpload
+        /// Change Image for these tokens.
+        case tokenImage(Set<String>)
         var id: Self { self }
     }
 
@@ -112,18 +122,24 @@ struct ArchitectView: View {
             canvas
                 .inspector(isPresented: inspectorShown) {
                     VStack(spacing: 0) {
-                        if showingConsole && hasSelectedTokens {
+                        if showingConsole && hasInspectableSelection {
                             Picker("Panel", selection: $inspectorTab) {
-                                Text("Token").tag(InspectorTab.token)
+                                Text(hasSelectedTokens ? "Token" : "Note").tag(InspectorTab.selection)
                                 Text("Session Console").tag(InspectorTab.console)
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
                             .padding(8)
                         }
-                        if hasSelectedTokens && (inspectorTab == .token || !showingConsole) {
-                            TokenInspector(document: document, selection: selection) { message, isError in
-                                showToast(message, isError ? .error : .success)
+                        if hasInspectableSelection && (inspectorTab == .selection || !showingConsole) {
+                            if hasSelectedTokens {
+                                TokenInspector(
+                                    document: document, selection: selection,
+                                    notify: { message, isError in showToast(message, isError ? .error : .success) },
+                                    chooseImageFile: { importTarget = .tokenImage(selection) },
+                                    useImageFile: { url in cropTokenImage(from: url, for: selection) })
+                            } else {
+                                NoteInspector(document: document, selection: selection)
                             }
                         } else {
                             SessionConsolePanel(document: document)
@@ -142,7 +158,9 @@ struct ArchitectView: View {
             importTarget = nil
             switch result {
             case .success(let urls):
-                if target == .mapImage, let url = urls.first {
+                if case .tokenImage(let ids) = target, let url = urls.first {
+                    cropTokenImage(from: url, for: ids)
+                } else if target == .mapImage, let url = urls.first {
                     setMapImage(from: url)
                 } else if target == .libraryUpload, let url = urls.first {
                     do {
@@ -177,6 +195,11 @@ struct ArchitectView: View {
         } message: {
             Text("Its tokens, drawings and fog go with it. You can undo this.")
         }
+        .confirmationDialog("Reset what the party has seen?", isPresented: $confirmingFogReset) {
+            Button("Reset Explored Fog", role: .destructive) { resetExploredFog() }
+        } message: {
+            Text("The World View forgets everywhere the party has explored on this map, apart from what PCs can see right now. You can undo this.")
+        }
         .sheet(isPresented: $showingLibrary) {
             LibraryManagerView(
                 document: document,
@@ -188,7 +211,14 @@ struct ArchitectView: View {
         }
         .sheet(item: $cropping) { request in
             ImageCropperView(image: request.image) { cropped in
-                addCroppedToken(cropped, name: request.name, centredAt: request.point)
+                switch request.purpose {
+                case .newToken(let point):
+                    addCroppedToken(cropped, name: request.name, centredAt: point)
+                case .tokenImage(let ids):
+                    if let src = document.addCroppedTokenImage(cropped, name: request.name) {
+                        document.setTokenImage(src, for: ids, undoManager: undoManager)
+                    }
+                }
             }
         }
         .sheet(isPresented: $showingPalette) {
@@ -227,7 +257,7 @@ struct ArchitectView: View {
                     let daylight = daylightBinding
                     daylight.wrappedValue.toggle()
                 },
-                resetFog: document.campaign.activeMap.exploredRegions.isEmpty ? nil : { resetExploredFog() },
+                resetFog: document.campaign.activeMap.exploredRegions.isEmpty ? nil : { confirmingFogReset = true },
                 deleteSelection: selection.isEmpty ? nil : { deleteSelection() },
                 showConsoleSettings: { showingConsoleSettings = true },
                 zoomIn: { zoomCanvas(by: 1.25) },
@@ -279,14 +309,19 @@ struct ArchitectView: View {
             }
         }
         .focusedSceneValue(\.campaignDocument, document)
-        .onChange(of: selection) { _, _ in if hasSelectedTokens { inspectorTab = .token } }
+        .onChange(of: selection) { _, _ in if hasInspectableSelection { inspectorTab = .selection } }
         .onChange(of: document.campaign) { _, campaign in
             // Undo/redo or a map switch can remove selected items.
             let map = campaign.activeMap
-            let live = Set(map.tokens.map(\.id) + map.drawings.map(\.id) + map.doors.map(\.id))
+            let live = Set(
+                map.tokens.map(\.id) + map.drawings.map(\.id) + map.doors.map(\.id) + map.lights.map(\.id)
+                    + map.notes.map(\.id))
             if !selection.isSubset(of: live) { selection.formIntersection(live) }
         }
-        .onChange(of: document.campaign.activeMapID) { _, _ in calibrating = false }
+        .onChange(of: document.campaign.activeMapID) { _, _ in
+            calibrating = false
+            document.worldNoteID = nil  // a note shown on the World View belongs to the map it is on
+        }
         .sheet(item: $mapSettings) { request in
             MapSettingsView(
                 document: document,
@@ -331,6 +366,7 @@ struct ArchitectView: View {
                             $0.activeMap.setAllUnlockedDoors(open: true)
                         }
                     }
+                    .help("Locked and hidden doors stay shut")
                     Button("Close All Open Doors") {
                         document.edit("Close Doors", undoManager: undoManager) {
                             $0.activeMap.setAllUnlockedDoors(open: false)
@@ -340,6 +376,14 @@ struct ArchitectView: View {
                         Button("Unlock All") {
                             document.edit("Unlock Doors", undoManager: undoManager) {
                                 $0.activeMap.setAllDoorLocks(locked: false)
+                            }
+                        }
+                    }
+                    let hidden = Set(doors.filter { $0.isHidden == true }.map(\.id))
+                    if !hidden.isEmpty {
+                        Button("Reveal All Hidden Doors") {
+                            document.edit("Reveal Doors", undoManager: undoManager) {
+                                $0.activeMap.setDoorsHidden(hidden, hidden: false)
                             }
                         }
                     }
@@ -407,12 +451,29 @@ struct ArchitectView: View {
                     }
                 },
                 lightAction: { ids, action in performLightAction(ids, action) },
+                placeNote: { point in
+                    var placed: MapNote?
+                    document.edit("Add Note", undoManager: undoManager) { placed = $0.activeMap.placeNote(at: point) }
+                    if let placed { selection = [placed.id] }
+                },
+                noteAction: { ids, action in performNoteAction(ids, action) },
                 doorAction: { id, action in performDoorAction(id, action) },
                 wallAction: { ids, action in performWallAction(ids, action) },
                 setMeasurement: { setMeasurement($0) },
                 setTool: { selectTool($0) },
                 toggleDoorOrientation: {
                     tools.doorOrientation = tools.doorOrientation == .horizontal ? .vertical : .horizontal
+                },
+                deleteDoors: { ids in
+                    document.edit(ids.count == 1 ? "Delete Door" : "Delete Doors", undoManager: undoManager) {
+                        $0.activeMap.removeItems(ids)
+                    }
+                    selection.subtract(ids)
+                },
+                rotateDoors: { ids, degrees in
+                    document.edit(ids.count == 1 ? "Rotate Door" : "Rotate Doors", undoManager: undoManager) {
+                        $0.activeMap.rotateDoors(ids, by: degrees)
+                    }
                 },
                 dropLibraryItem: { id, point in
                     if id == GenericToken.id {
@@ -423,11 +484,18 @@ struct ArchitectView: View {
                 },
                 moveDrawings: { ids, dx, dy, duplicate in
                     var placed: [String] = []
-                    let onlyLights = document.campaign.activeMap.drawings.allSatisfy { !ids.contains($0.id) }
-                    let noun = onlyLights ? (ids.count == 1 ? "Light" : "Lights") : "Strokes"
+                    let map = document.campaign.activeMap
+                    let one = ids.count == 1
+                    let kinds = [
+                        map.drawings.contains { ids.contains($0.id) } ? "Strokes" : nil,
+                        map.lights.contains { ids.contains($0.id) } ? (one ? "Light" : "Lights") : nil,
+                        map.notes.contains { ids.contains($0.id) } ? (one ? "Note" : "Notes") : nil,
+                    ].compactMap { $0 }
+                    let noun = kinds.count == 1 ? kinds[0] : "Items"
                     document.edit(duplicate ? "Duplicate \(noun)" : "Move \(noun)", undoManager: undoManager) {
                         placed = $0.activeMap.moveDrawings(ids, dx: dx, dy: dy, duplicate: duplicate)
                             + $0.activeMap.moveLights(ids, dx: dx, dy: dy, duplicate: duplicate)
+                            + $0.activeMap.moveNotes(ids, dx: dx, dy: dy, duplicate: duplicate)
                     }
                     if duplicate { selection = selection.subtracting(ids).union(placed) }
                 },
@@ -453,6 +521,22 @@ struct ArchitectView: View {
                     guard type != document.campaign.activeMap.gridType else { return }
                     document.edit("Change Grid", undoManager: undoManager) { $0.activeMap.gridType = type }
                     showToast("Grid: \(type.title)")
+                },
+                tokenMenu: { ids in
+                    TokenMenu.make(
+                        tokenIDs: ids, document: document,
+                        chooseFile: { importTarget = .tokenImage(ids) },
+                        pickLibraryItem: { item in
+                            if !document.setTokenImage(from: item, for: ids, undoManager: undoManager) {
+                                errorMessage = "“\(item.name)” is missing its image in the library."
+                            }
+                        },
+                        delete: {
+                            document.edit(ids.count == 1 ? "Delete Token" : "Delete Tokens", undoManager: undoManager) {
+                                $0.activeMap.removeItems(ids)
+                            }
+                            selection.subtract(ids)
+                        })
                 },
                 openColorPicker: { openMarkerColorPicker() },
                 stopAudio: { document.dispatch(.stop) }
@@ -511,7 +595,8 @@ struct ArchitectView: View {
     private func runCommand(_ command: PaletteCommand) {
         let tools: [String: CanvasTool] = [
             "tool-select": .select, "tool-marker": .marker, "tool-eraser": .eraser,
-            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-measure": .measure,
+            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-note": .note,
+            "tool-measure": .measure,
         ]
         if let tool = tools[command.id] {
             selectTool(tool)
@@ -521,6 +606,9 @@ struct ArchitectView: View {
         case "world-view-toggle-pause": document.isPaused.toggle()
         case "world-view-launch": openWindow(id: WorldWindow.id, value: document.sessionID)
         case "dungeon-generate": showingDungeon = true
+        case "fog-reset":
+            // After the palette sheet has closed, so the dialog isn't dropped with it.
+            DispatchQueue.main.async { confirmingFogReset = !document.campaign.activeMap.exploredRegions.isEmpty }
         case "session-console-stop": document.dispatch(.stop)
         case "session-console-duck": document.dispatch(.setDucked(!document.sessionRuntime.ducked))
         case "session-console-return-to-map": document.dispatch(.returnToMap)
@@ -644,23 +732,30 @@ struct ArchitectView: View {
             let source = CGImageSourceCreateWithURL(url as CFURL, nil),
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         {
-            cropping = CropRequest(image: image, name: url.lastPathComponent, point: point)
+            cropping = CropRequest(image: image, name: url.lastPathComponent, purpose: .newToken(centredAt: point))
         } else {
             addTokens(from: urls, at: point, centred: true)
         }
     }
 
+    /// Change Image: the chosen file goes through the same 1:1 cropper as a Finder drop.
+    private func cropTokenImage(from url: URL, for ids: Set<String>) {
+        guard !ids.isEmpty else { return }
+        let image = withAccess(to: url) { () -> CGImage? in
+            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+            // Decoded now, while the file is still accessible.
+            return CGImageSourceCreateImageAtIndex(
+                source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
+        }
+        guard let image else {
+            errorMessage = ImportedImage.ImportError.unreadable(url.lastPathComponent).localizedDescription
+            return
+        }
+        cropping = CropRequest(image: image, name: url.lastPathComponent, purpose: .tokenImage(ids))
+    }
+
     private func addCroppedToken(_ image: CGImage, name: String, centredAt point: Point2D) {
-        let side = min(image.width, ImageKind.token.maxDimension)
-        guard let context = CGContext(
-            data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return }
-        context.interpolationQuality = .high
-        context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
-        guard let scaled = context.makeImage(), let png = NSBitmapImageRep(cgImage: scaled).representation(using: .png, properties: [:])
-        else { return }
-        let asset = document.addAsset(png, preferredName: (name as NSString).deletingPathExtension + ".png")
+        guard let asset = document.addCroppedTokenImage(image, name: name) else { return }
         let map = document.campaign.activeMap
         let size = map.gridSize
         let snapped = snapToGrid(
@@ -677,6 +772,9 @@ struct ArchitectView: View {
         guard tool != tools.tool else { return }
         tools.tool = tool
         setMeasurement(nil)  // changing tool clears the measurement (TS)
+        // A door picked under another tool shouldn't take R and the arrows under this one.
+        let doorIDs = Set(document.campaign.activeMap.doors.map(\.id))
+        if !selection.isDisjoint(with: doorIDs) { selection.subtract(doorIDs) }
     }
 
     private var markerColorBinding: Binding<Color> {
@@ -727,7 +825,11 @@ struct ArchitectView: View {
         case .eraser:
             name = "Erase"
         }
-        document.edit(name, undoManager: undoManager) { $0.activeMap.drawings.append(stroke) }
+        document.edit(name, undoManager: undoManager) {
+            $0.activeMap.drawings.append(stroke)
+            // A wall drawn up to a door meets its end, so no light slips past.
+            if stroke.tool == .wall { $0.activeMap.joinWallToDoors(id: stroke.id) }
+        }
     }
 
     private func performWallAction(_ ids: Set<String>, _ action: WallAction) {
@@ -766,6 +868,22 @@ struct ArchitectView: View {
         }
     }
 
+    private func performNoteAction(_ ids: Set<String>, _ action: NoteAction) {
+        let plural = ids.count == 1 ? "Note" : "Notes"
+        switch action {
+        case .share(let shared):
+            document.edit(shared ? "Share \(plural)" : "Unshare \(plural)", undoManager: undoManager) {
+                $0.activeMap.setNotesShared(ids, shared: shared)
+            }
+        case .showOnWorldView:
+            document.worldNoteID = ids.first
+        case .delete:
+            document.edit("Delete \(plural)", undoManager: undoManager) { $0.activeMap.removeItems(ids) }
+            selection.subtract(ids)
+            if let shown = document.worldNoteID, ids.contains(shown) { document.worldNoteID = nil }
+        }
+    }
+
     private func performDoorAction(_ id: String, _ action: DoorAction) {
         switch action {
         case .toggle:
@@ -776,8 +894,13 @@ struct ArchitectView: View {
                     campaign.activeMap.doors[i].isLocked = action == .lock
                 }
             }
+        case .hide, .reveal:
+            document.edit(action == .hide ? "Hide Door" : "Reveal Door", undoManager: undoManager) {
+                $0.activeMap.setDoorsHidden([id], hidden: action == .hide)
+            }
         case .delete:
             document.edit("Delete Door", undoManager: undoManager) { $0.activeMap.doors.removeAll { $0.id == id } }
+            selection.remove(id)
         }
     }
 
@@ -793,7 +916,7 @@ struct ArchitectView: View {
 
     private var inspectorShown: Binding<Bool> {
         Binding(
-            get: { hasSelectedTokens || showingConsole },
+            get: { hasInspectableSelection || showingConsole },
             set: { shown in
                 if !shown {
                     selection = []
@@ -882,9 +1005,9 @@ struct ArchitectView: View {
         }
         ToolbarItem(id: "reset-fog", placement: .secondaryAction) {
             Button {
-                resetExploredFog()
+                confirmingFogReset = true
             } label: {
-                Label("Reset Explored Fog", systemImage: "eye.slash")
+                Label("Reset Explored Fog…", systemImage: "eye.slash")
             }
             .help("Forget what the party has explored on this map")
             .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
@@ -1023,7 +1146,10 @@ struct ArchitectView: View {
     }
 
     private func resetExploredFog() {
-        document.edit("Reset Explored Fog", undoManager: undoManager) { $0.activeMap.exploredRegions = [] }
+        document.edit("Reset Explored Fog", undoManager: undoManager) { campaign in
+            let library = campaign.libraryIndex
+            campaign.activeMap.resetExploration(library: library, timestamp: Date().timeIntervalSince1970 * 1000)
+        }
     }
 
     // MARK: Actions
@@ -1089,16 +1215,28 @@ struct ArchitectView: View {
     /// Deletes selected tokens, strokes and doors in one undoable step.
     private func deleteSelection() {
         let ids = selection
-        let tokenCount = document.campaign.activeMap.tokens.filter { ids.contains($0.id) }.count
+        let map = document.campaign.activeMap
+        let tokenCount = map.tokens.filter { ids.contains($0.id) }.count
+        let doorCount = map.doors.filter { ids.contains($0.id) }.count
         let name =
-            tokenCount == ids.count ? (ids.count == 1 ? "Delete Token" : "Delete Tokens") : "Delete Selection"
+            tokenCount == ids.count
+            ? (ids.count == 1 ? "Delete Token" : "Delete Tokens")
+            : doorCount == ids.count ? (ids.count == 1 ? "Delete Door" : "Delete Doors") : "Delete Selection"
         document.edit(name, undoManager: undoManager) { $0.activeMap.removeItems(ids) }
         selection = []
+        if let shown = document.worldNoteID, ids.contains(shown) { document.worldNoteID = nil }
     }
 
     private var hasSelectedTokens: Bool {
         document.campaign.activeMap.tokens.contains { selection.contains($0.id) }
     }
+
+    private var hasSelectedNotes: Bool {
+        document.campaign.activeMap.notes.contains { selection.contains($0.id) }
+    }
+
+    /// Tokens or notes, which the inspector edits.
+    private var hasInspectableSelection: Bool { hasSelectedTokens || hasSelectedNotes }
 
     private func saveMapSettings(_ map: GameMap, isNew: Bool) {
         document.edit(isNew ? "Add Map" : "Map Settings", undoManager: undoManager) { campaign in

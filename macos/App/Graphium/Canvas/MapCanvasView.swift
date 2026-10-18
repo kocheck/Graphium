@@ -21,14 +21,23 @@ struct CanvasEditing {
     var placeDoor: ((Point2D) -> Void)?
     var placeLight: ((Point2D) -> Void)?
     var lightAction: ((_ lightIDs: Set<String>, LightAction) -> Void)?
+    /// Places a note pin; the owner selects it so the side panel opens on it.
+    var placeNote: ((Point2D) -> Void)?
+    var noteAction: ((_ noteIDs: Set<String>, NoteAction) -> Void)?
+    /// World View: a player clicked a shared pin, to read its player notes.
+    var openNote: ((String) -> Void)?
     var doorAction: ((_ doorID: String, DoorAction) -> Void)?
     var wallAction: ((_ wallIDs: Set<String>, WallAction) -> Void)?
     var setMeasurement: ((MeasurementShape?) -> Void)?
     var setTool: ((CanvasTool) -> Void)?
     var toggleDoorOrientation: (() -> Void)?
+    /// Deletes the given doors in one undoable step (the door menu on a multi-door selection).
+    var deleteDoors: ((Set<String>) -> Void)?
+    /// Turns the given doors by degrees, clockwise on screen.
+    var rotateDoors: ((_ doorIDs: Set<String>, _ degrees: Double) -> Void)?
     /// A library item dragged from the sidebar or Library Manager, dropped at a map point.
     var dropLibraryItem: ((_ itemID: String, _ at: Point2D) -> Void)?
-    /// Strokes and lights dragged by an offset (Option duplicates).
+    /// Strokes, lights and notes dragged by an offset (Option duplicates).
     var moveDrawings: ((_ ids: Set<String>, _ dx: Double, _ dy: Double, _ duplicate: Bool) -> Void)?
     var resizeToken: ((_ id: String, _ scale: Double) -> Void)?
     var calibrate: ((Bounds) -> Void)?
@@ -36,6 +45,8 @@ struct CanvasEditing {
     /// Live (unsnapped) positions of tokens being dragged, for the World View; nil when done.
     var dragPreview: (([String: Point2D]?) -> Void)?
     var setGridType: ((GridType) -> Void)?
+    /// The right-click menu for these tokens (Change Image, Delete); nil in the World View.
+    var tokenMenu: ((_ tokenIDs: Set<String>) -> NSMenu)?
     /// `I` (PARITY §1.4).
     var openColorPicker: (() -> Void)?
     /// Esc with nothing else to cancel stops Session Console audio (PARITY §1.4).
@@ -52,6 +63,11 @@ struct FogState {
     /// With lighting on (`ambient` set): where each light reaches.
     var lit: [Lighting.LitArea] = []
     var ambient: LightLevel?
+    /// Walls to hatch rock behind (`LineOfSight.hatchWalls`), and the cell size it is drawn at.
+    var hatchWalls: [WallSegment] = []
+    var gridSize: Double = 50
+    /// Ids of the lit lights that are flames (`LightSource.isFlame`): they flicker and glow.
+    var flames: Set<String> = []
 }
 
 /// Asks a canvas to frame a region once (e.g. Center on Party). A new `id` re-triggers.
@@ -79,7 +95,11 @@ final class MapCanvasNSView: NSView {
     var editing: CanvasEditing?
     /// Tokens players must not see or grab (NPCs outside party vision).
     var hiddenTokenIDs: Set<String> = []
-    var fog: FogState?
+    var fog: FogState? {
+        didSet { updateFlicker() }
+    }
+    /// Redraws the World View while flames burn in it (`TorchFlicker`); nil otherwise.
+    private var flickerTimer: Timer?
     /// The explored-fog union, stamped incrementally and reused across frames.
     private let exploredMask = ExploredFogMask()
     /// Draws the fog on the GPU, with hatching over remembered ground (decision 010); nil
@@ -87,11 +107,10 @@ final class MapCanvasNSView: NSView {
     private lazy var fogRenderer: FogRenderer? = FogRenderer()
     /// The last GPU fog, reused while nothing it shows changes.
     private var metalFog: (scene: FogScene, view: FogView, image: CGImage)?
-    /// Player-facing styling (walls black 6px, doors with glow) and no DM overlays.
+    /// Player-facing styling (walls black 6px, ink-on-paper doors) and no DM overlays.
     var isPlayerView = false
     var toolState = ToolState()
     var measurement: MeasurementShape?
-    var selectedDoorID: String?
     /// Map calibration mode: the next drag draws the one-cell box.
     var calibrating = false
     /// Positions of tokens another window is dragging (World View shows DM drags live).
@@ -148,6 +167,11 @@ final class MapCanvasNSView: NSView {
         case calibrating(start: Point2D, current: Point2D)
     }
 
+    /// The selected doors on `map`.
+    func selectedDoorIDs(in map: GameMap) -> Set<String> {
+        Set(map.doors.lazy.filter { self.selection.contains($0.id) }.map(\.id))
+    }
+
     /// The resize handle of a single selected token (Architect), in map space.
     private func resizeHandle(in map: GameMap) -> (token: Token, rect: Bounds)? {
         guard !isPlayerView, editing?.resizeToken != nil, toolState.tool == .select, selection.count == 1,
@@ -165,6 +189,8 @@ final class MapCanvasNSView: NSView {
     private var liveStroke: Drawing?
     /// Door open/close swings in flight (PARITY §3.6); used by `drawDoors`.
     lazy var doorSwings = DoorSwingAnimator()
+    /// `LineOfSight.knownDoors` for the last doors and fog, reused while neither changes.
+    private var knownDoors: (key: KnownDoorsKey, ids: Set<String>)?
     private var lastBaked: (key: String, image: CGImage)?
     private var spaceHeld = false
 
@@ -206,7 +232,8 @@ final class MapCanvasNSView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         let drawStarted = CACurrentMediaTime()
         defer { PerformanceStats.shared.recordDraw(started: drawStarted) }
-        NSColor.textBackgroundColor.setFill()
+        // The World View under fog is black past the map's edge too, as unexplored ground is.
+        (isPlayerView && fog != nil ? NSColor.black : NSColor.textBackgroundColor).setFill()
         dirtyRect.fill()
         guard let map, let context = NSGraphicsContext.current?.cgContext else { return }
 
@@ -276,11 +303,22 @@ final class MapCanvasNSView: NSView {
                 dash: [5 / viewport.zoom, 3 / viewport.zoom])
         }
         drawStairs(map.stairs, context: context)
-        drawDoors(map.doors, context: context)
-        // Fog covers the map, walls, stairs and doors, but not tokens: visible tokens stay
-        // crisp on top and only hidden NPCs are left out (TS CanvasManager layer order).
-        // Doors stay under it so unexplored fog doesn't reveal them (PARITY §3.7 Native).
-        if let fog { drawFog(fog, context: context) }
+        if isPlayerView {
+            // Shut hidden doors are wall to the players, under the fog with the walls. The
+            // doors they know go over the fog, like the rock behind seen walls; doors in
+            // unexplored fog stay unseen (PARITY §3.6 Native).
+            drawSecretDoorWalls(map.doors, context: context)
+            if let fog { drawFog(fog, context: context) }
+            let known = fog.map { knownDoorIDs(map.doors, fog: $0) }
+            drawWorldDoors(
+                map.doors.filter { !$0.looksLikeWall && (known?.contains($0.id) ?? true) }, context: context)
+        } else {
+            drawDoors(map.doors, context: context)
+            // Fog covers the map, walls, stairs and doors, but not tokens: visible tokens stay
+            // crisp on top and only hidden NPCs are left out (TS CanvasManager layer order).
+            if let fog { drawFog(fog, context: context) }
+        }
+        doorSwings.finishFrame(doorIDs: Set(map.doors.map(\.id)))
         if showMovementRange, !isPlayerView, selection.count == 1,
             let token = map.tokens.first(where: { selection.contains($0.id) })
         {
@@ -298,12 +336,17 @@ final class MapCanvasNSView: NSView {
         drawTokens(map, context: context)
         if !isPlayerView, editing != nil {
             if case .movingStrokes(let ids, let start, let current, true) = interaction {
-                drawLights(
-                    map.lights, map: map, moving: ids, offset: CGSize(width: current.x - start.x, height: current.y - start.y),
-                    duplicate: NSEvent.modifierFlags.contains(.option), context: context)
+                let offset = CGSize(width: current.x - start.x, height: current.y - start.y)
+                let duplicate = NSEvent.modifierFlags.contains(.option)
+                drawLights(map.lights, map: map, moving: ids, offset: offset, duplicate: duplicate, context: context)
+                drawNotes(map.notes, moving: ids, offset: offset, duplicate: duplicate, context: context)
             } else {
                 drawLights(map.lights, map: map, context: context)
+                drawNotes(map.notes, context: context)
             }
+        } else if isPlayerView {
+            // Shared pins sit over the fog, like tokens: the DM chose to show them (decision 011).
+            drawNotes(map.notes, context: context)
         }
         if let handle = resizeHandle(in: map), case .idle = interaction {
             context.setFillColor(Palette.canvasSelection.nsColor.cgColor)
@@ -328,7 +371,7 @@ final class MapCanvasNSView: NSView {
                 width: 2 / viewport.zoom, color: Palette.canvasMeasure.nsColor)
         }
         if let measurement { drawMeasurement(measurement, gridSize: map.gridSize, context: context) }
-        if !isPlayerView, editing != nil, toolState.tool == .door, let hoverPoint {
+        if !isPlayerView, editing != nil, toolState.tool == .door, let hoverPoint, map.door(at: hoverPoint) == nil {
             drawDoorGhost(at: hoverPoint, map: map, context: context)
         }
         if !isPlayerView, editing != nil, toolState.tool == .light, let hoverPoint {
@@ -477,6 +520,26 @@ final class MapCanvasNSView: NSView {
         }
     }
 
+    struct KnownDoorsKey: Equatable {
+        var doors: [Door]
+        var exploredCount: Int
+        var exploredLast: Double?
+        var sight: PartySight
+        var gridSize: Double
+    }
+
+    /// The doors the players know about under `fog`, cached across frames.
+    func knownDoorIDs(_ doors: [Door], fog: FogState) -> Set<String> {
+        let sight = PartySight(vision: fog.vision, lit: fog.lit, ambient: fog.ambient)
+        let key = KnownDoorsKey(
+            doors: doors, exploredCount: fog.explored.count, exploredLast: fog.explored.last?.timestamp, sight: sight,
+            gridSize: fog.gridSize)
+        if let knownDoors, knownDoors.key == key { return knownDoors.ids }
+        let ids = LineOfSight.knownDoors(doors, explored: fog.explored, sight: sight, gridSize: fog.gridSize)
+        knownDoors = (key, ids)
+        return ids
+    }
+
     /// TS compositing (CORE_SPEC §3.3 step 7): fog bounds filled black at 94%;
     /// explored areas erased down to 20% coverage; current vision erased with a
     /// radial falloff (clear to 60% of the radius, fading to fog at the edge).
@@ -496,7 +559,7 @@ final class MapCanvasNSView: NSView {
         }
         context.saveGState()
         context.beginTransparencyLayer(auxiliaryInfo: nil)
-        context.setFillColor(NSColor.black.withAlphaComponent(0.94).cgColor)
+        context.setFillColor(NSColor.black.withAlphaComponent(FogShading.base).cgColor)
         context.fill(CGRect(bounds: fog.bounds))
         context.setBlendMode(.destinationOut)
 
@@ -549,9 +612,15 @@ final class MapCanvasNSView: NSView {
             origin: viewport.origin, scale: viewport.zoom * pointScale,
             width: Int((bounds.width * pointScale).rounded(.up)), height: Int((bounds.height * pointScale).rounded(.up)),
             pointScale: pointScale)
+        let now = flickerTimer == nil ? nil : CACurrentMediaTime()
+        var flames: [String: TorchFlicker.Sample] = [:]
+        for id in flickeringLights(fog) {
+            flames[id] = now.map { TorchFlicker.sample(seed: id, time: $0) } ?? TorchFlicker.steady
+        }
         let scene = FogScene(
             bounds: fog.bounds, explored: fog.explored,
-            sight: PartySight(vision: fog.vision, lit: fog.lit, ambient: fog.ambient))
+            sight: PartySight(vision: fog.vision, lit: fog.lit, ambient: fog.ambient), gridSize: fog.gridSize,
+            hatchWalls: fog.hatchWalls, flames: flames)
         let rect = CGRect(
             x: view.origin.x, y: view.origin.y, width: Double(view.width) / view.scale,
             height: Double(view.height) / view.scale)
@@ -559,6 +628,31 @@ final class MapCanvasNSView: NSView {
         guard let image = renderer.render(scene, view: view)?.image else { return nil }
         metalFog = (scene, view, image)
         return (image, rect)
+    }
+
+    /// The lit flames that glow: none in bright ambient light, where a torch adds nothing.
+    private func flickeringLights(_ fog: FogState) -> [String] {
+        guard let ambient = fog.ambient, ambient < .bright else { return [] }
+        return fog.lit.map(\.lightID).filter { fog.flames.contains($0) }
+    }
+
+    /// Starts or stops the flame redraws. Off under Reduce Motion, where flames glow steady.
+    private func updateFlicker() {
+        // Only the Metal fog draws flames; the Core Graphics fallback would redraw for nothing.
+        let burning =
+            isPlayerView && fogRenderer != nil && window != nil && fog.map { !flickeringLights($0).isEmpty } == true
+            && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if burning, flickerTimer == nil {
+            let timer = Timer(timeInterval: 1 / TorchFlicker.framesPerSecond, repeats: true) { [weak self] _ in
+                guard let self, self.window?.occlusionState.contains(.visible) == true else { return }
+                self.needsDisplay = true
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            flickerTimer = timer
+        } else if !burning, let timer = flickerTimer {
+            timer.invalidate()
+            flickerTimer = nil
+        }
     }
 
     /// How much of the fog dim light clears; bright clears all of it.
@@ -676,6 +770,12 @@ final class MapCanvasNSView: NSView {
         }
         let point = mapLocation(of: event)
         let shift = event.modifierFlags.contains(.shift)
+        if isPlayerView, let openNote = editing.openNote,
+            let note = map.note(at: point, tolerance: noteHitRadius, sharedOnly: true)
+        {
+            openNote(note.id)
+            return
+        }
         if calibrating, editing.calibrate != nil {
             interaction = .calibrating(start: point, current: point)
             return
@@ -694,6 +794,11 @@ final class MapCanvasNSView: NSView {
             beginMovingStrokes(hit: light.id, at: point, map: map, shift: shift, editing: editing)
             return
         }
+        if !isPlayerView, editing.moveDrawings != nil, let note = map.note(at: point, tolerance: noteHitRadius) {
+            // Note pins draw over tokens too.
+            beginMovingStrokes(hit: note.id, at: point, map: map, shift: shift, editing: editing)
+            return
+        }
         if let hit = map.token(at: point, library: library), !hiddenTokenIDs.contains(hit.id) {
             if shift {
                 var next = selection
@@ -709,15 +814,21 @@ final class MapCanvasNSView: NSView {
             let ordered = map.draggedTokenIDs(selected: dragged, hidden: hiddenTokenIDs)
             interaction = .movingTokens(ids: ordered, primary: hit.id, start: point, current: point, began: false)
         } else if let door = map.door(at: point), let doorAction = editing.doorAction {
-            // Clicking a door opens or closes it (locked doors stay put).
-            selectedDoorID = door.id
-            doorAction(door.id, .toggle)
+            // A click selects a door (to delete or turn it); a double-click opens or closes it
+            // (locked doors stay put). Shift-click adds it to the selection.
+            if shift {
+                var next = selection
+                if next.contains(door.id) { next.remove(door.id) } else { next.insert(door.id) }
+                editing.setSelection(next)
+            } else {
+                editing.setSelection([door.id])
+                if event.clickCount == 2 { doorAction(door.id, .toggle) }
+            }
         } else if editing.moveDrawings != nil, let stroke = map.drawing(at: point) {
             beginMovingStrokes(hit: stroke.id, at: point, map: map, shift: shift, editing: editing)
         } else {
             let base = shift ? selection : []
             if !shift { editing.setSelection([]) }
-            selectedDoorID = nil
             interaction = .marquee(start: point, current: point, base: base)
         }
     }
@@ -725,14 +836,14 @@ final class MapCanvasNSView: NSView {
     /// The light hit radius in view points.
     private static let lightHitRadius = lightMarkerRadius + 3
 
-    /// A press on a stroke or light: selects it (Shift toggles) and starts a move of every
-    /// selected stroke and light.
+    /// A press on a stroke, light or note: selects it (Shift toggles) and starts a move of every
+    /// selected stroke, light and note.
     private func beginMovingStrokes(hit id: String, at point: Point2D, map: GameMap, shift: Bool, editing: CanvasEditing) {
         var next = shift ? selection : []
         if shift, next.contains(id) { next.remove(id) } else { next.insert(id) }
         if !shift, selection.contains(id) { next = selection }
         editing.setSelection(next)
-        let ids = Set(map.drawings.map(\.id) + map.lights.map(\.id)).intersection(next)
+        let ids = Set(map.drawings.map(\.id) + map.lights.map(\.id) + map.notes.map(\.id)).intersection(next)
         interaction = .movingStrokes(ids: ids, start: point, current: point, began: false)
     }
 
@@ -760,6 +871,10 @@ final class MapCanvasNSView: NSView {
                 editing.lightAction?([light.id], .delete)  // and lights
                 return
             }
+            if let note = map.note(at: point, tolerance: noteHitRadius) {
+                editing.noteAction?([note.id], .delete)  // and notes
+                return
+            }
             beginStroke(
                 Drawing(
                     tool: .eraser, points: [point.x, point.y], color: StrokeDefaults.eraserColor,
@@ -771,9 +886,33 @@ final class MapCanvasNSView: NSView {
                     size: StrokeDefaults.wallSize, wallKind: toolState.wallKind == .wall ? nil : toolState.wallKind,
                     oneWay: toolState.wallOneWay ? true : nil))
         case .door:
+            if let door = map.door(at: point) {
+                // Clicking a placed door selects it instead of stacking another on it.
+                if event.modifierFlags.contains(.shift) {
+                    var next = selection
+                    if next.contains(door.id) { next.remove(door.id) } else { next.insert(door.id) }
+                    editing.setSelection(next)
+                } else {
+                    editing.setSelection([door.id])
+                }
+                return
+            }
             editing.placeDoor?(point)
         case .light:
             editing.placeLight?(point)
+        case .note:
+            if let note = map.note(at: point, tolerance: noteHitRadius) {
+                // Clicking a pin opens it rather than stacking another on it.
+                if event.modifierFlags.contains(.shift) {
+                    var next = selection
+                    if next.contains(note.id) { next.remove(note.id) } else { next.insert(note.id) }
+                    editing.setSelection(next)
+                } else {
+                    editing.setSelection([note.id])
+                }
+                return
+            }
+            editing.placeNote?(point)
         case .measure:
             interaction = .measuring(origin: point)
             editing.setMeasurement?(MeasurementShape(mode: toolState.measureMode, origin: point, pointer: point))
@@ -868,6 +1007,7 @@ final class MapCanvasNSView: NSView {
                     hits.formUnion(map.drawingIDs(intersecting: rect))
                     hits.formUnion(map.doorIDs(intersecting: rect))
                     hits.formUnion(map.lightIDs(intersecting: rect))
+                    hits.formUnion(map.noteIDs(intersecting: rect))
                 }
                 editing?.setSelection(base.union(hits))
             }
@@ -944,7 +1084,8 @@ final class MapCanvasNSView: NSView {
         needsDisplay = true
     }
 
-    /// Right-click (or Control-click) on a door: Open/Close, Lock/Unlock, Delete (PARITY §3.6).
+    /// Right-click (or Control-click) on a token: Change Image, Image from Library, Delete.
+    /// On a door: Open/Close, Lock/Unlock, Delete (PARITY §3.6).
     /// On a wall: its kind, one-way and direction, Delete (PARITY §3.5 Native).
     override func menu(for event: NSEvent) -> NSMenu? {
         guard let map else { return nil }
@@ -954,10 +1095,16 @@ final class MapCanvasNSView: NSView {
         {
             return lightMenu(light, map: map, action: lightAction)
         }
-        guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
-            return wallMenu(at: point, map: map)
+        // Lights, notes and doors are small targets, so they win over a token standing on them.
+        if let noteAction = editing?.noteAction, let note = map.note(at: point, tolerance: noteHitRadius) {
+            return noteMenu(note, map: map, action: noteAction)
         }
-        selectedDoorID = door.id
+        guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
+            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map)
+        }
+        // The menu acts on every selected door when the clicked one is among them.
+        let doorIDs = selection.contains(door.id) ? selectedDoorIDs(in: map) : [door.id]
+        if !selection.contains(door.id) { editing?.setSelection([door.id]) }
         needsDisplay = true
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -969,12 +1116,43 @@ final class MapCanvasNSView: NSView {
             MenuAction.item(door.isLocked ? "Unlock Door" : "Lock Door") {
                 doorAction(door.id, door.isLocked ? .unlock : .lock)
             })
+        // A hidden door looks like wall to players while it is shut.
+        let hidden = door.isHidden == true
+        menu.addItem(
+            MenuAction.item(hidden ? "Reveal to Players" : "Hide from Players") {
+                doorAction(door.id, hidden ? .reveal : .hide)
+            })
+        if let rotate = editing?.rotateDoors {
+            menu.addItem(.separator())
+            menu.addItem(MenuAction.item("Rotate 45° Clockwise") { rotate(doorIDs, 45) })
+            menu.addItem(MenuAction.item("Rotate 45° Counterclockwise") { rotate(doorIDs, -45) })
+            menu.addItem(MenuAction.item("Rotate 90°") { rotate(doorIDs, 90) })
+        }
         menu.addItem(.separator())
-        let delete = MenuAction.item("Delete Door") { doorAction(door.id, .delete) }
+        let deleteTitle = doorIDs.count == 1 ? "Delete Door" : "Delete Doors"
+        let delete = MenuAction.item(deleteTitle) { [editing] in
+            if doorIDs.count > 1, let deleteDoors = editing?.deleteDoors {
+                deleteDoors(doorIDs)
+            } else {
+                doorAction(door.id, .delete)
+            }
+        }
         delete.attributedTitle = NSAttributedString(
-            string: "Delete Door", attributes: [.foregroundColor: NSColor.systemRed])
+            string: deleteTitle, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
         return menu
+    }
+
+    /// Change Image and Delete for the selected tokens when the clicked one is among them,
+    /// else for that token alone.
+    private func tokenMenu(at point: Point2D, map: GameMap) -> NSMenu? {
+        guard let tokenMenu = editing?.tokenMenu, let token = map.token(at: point, library: library),
+            !hiddenTokenIDs.contains(token.id)
+        else { return nil }
+        let ids = selection.contains(token.id) ? Set(map.tokens.map(\.id)).intersection(selection) : [token.id]
+        if !selection.contains(token.id) { editing?.setSelection([token.id]) }
+        needsDisplay = true
+        return tokenMenu(ids)
     }
 
     /// On, presets and Delete for the selected lights when the clicked one is among them,
@@ -999,6 +1177,27 @@ final class MapCanvasNSView: NSView {
         }
         menu.addItem(.separator())
         let title = ids.count == 1 ? "Delete Light" : "Delete Lights"
+        let delete = MenuAction.item(title) { action(ids, .delete) }
+        delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
+        menu.addItem(delete)
+        return menu
+    }
+
+    /// Share, show and Delete for the selected notes when the clicked one is among them, else
+    /// for that note alone.
+    private func noteMenu(_ note: MapNote, map: GameMap, action: @escaping (Set<String>, NoteAction) -> Void) -> NSMenu {
+        let ids: Set<String> =
+            selection.contains(note.id) ? Set(map.notes.filter { selection.contains($0.id) }.map(\.id)) : [note.id]
+        if !selection.contains(note.id) { editing?.setSelection([note.id]) }
+        let allShared = map.notes.filter { ids.contains($0.id) }.allSatisfy(\.isShared)
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let share = MenuAction.item("Show Pin to Players") { action(ids, .share(!allShared)) }
+        share.state = allShared ? .on : .off
+        menu.addItem(share)
+        menu.addItem(MenuAction.item("Show Player Notes on World View", enabled: ids.count == 1) { action(ids, .showOnWorldView) })
+        menu.addItem(.separator())
+        let title = ids.count == 1 ? "Delete Note" : "Delete Notes"
         let delete = MenuAction.item(title) { action(ids, .delete) }
         delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
@@ -1078,26 +1277,30 @@ final class MapCanvasNSView: NSView {
                 NSCursor.openHand.set()
             }
         case 51, 117:  // delete, forward delete
-            if !selection.isEmpty {
-                editing?.deleteSelection?()
-            } else if let door = selectedDoorID {
-                editing?.doorAction?(door, .delete)
-                selectedDoorID = nil
-            }
+            if !selection.isEmpty { editing?.deleteSelection?() }
         case 53:  // escape
             if calibrating {
                 editing?.cancelCalibration?()
                 return
             }
-            if measurement == nil, selection.isEmpty, selectedDoorID == nil {
+            if measurement == nil, selection.isEmpty {
                 editing?.stopAudio?()
                 return
             }
             editing?.setSelection([])
             editing?.setMeasurement?(nil)
-            selectedDoorID = nil
-        case 123, 124, 125, 126:  // arrows rotate the door while the Door tool is active
-            if toolState.tool == .door { editing?.toggleDoorOrientation?() } else { super.keyDown(with: event) }
+        case 123, 124, 125, 126:
+            // Arrows turn the selected doors 15° (Shift: 45°), left and up anticlockwise; with
+            // none selected they flip the Door tool's next door.
+            let doors = map.map { selectedDoorIDs(in: $0) } ?? []
+            if !doors.isEmpty, let rotate = editing?.rotateDoors {
+                let step = event.modifierFlags.contains(.shift) ? 45.0 : 15.0
+                rotate(doors, event.keyCode == 123 || event.keyCode == 126 ? -step : step)
+            } else if toolState.tool == .door {
+                editing?.toggleDoorOrientation?()
+            } else {
+                super.keyDown(with: event)
+            }
         default:
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             if event.charactersIgnoringModifiers == "?", flags.isDisjoint(with: [.command, .control, .option]) {
@@ -1118,7 +1321,13 @@ final class MapCanvasNSView: NSView {
                     return
                 }
                 if char == "r", toolState.tool == .door {
-                    editing?.toggleDoorOrientation?()
+                    // R turns the selected doors 45° (Shift-R back), else flips the next door.
+                    let doors = map.map { selectedDoorIDs(in: $0) } ?? []
+                    if !doors.isEmpty, let rotate = editing?.rotateDoors {
+                        rotate(doors, event.modifierFlags.contains(.shift) ? -45 : 45)
+                    } else {
+                        editing?.toggleDoorOrientation?()
+                    }
                     return
                 }
                 if let tool = CanvasTool.forKey(char) {
@@ -1159,11 +1368,16 @@ final class MapCanvasNSView: NSView {
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         super.viewWillMove(toWindow: newWindow)
-        if newWindow == nil { stopWatchingWindow() }
+        if newWindow == nil {
+            stopWatchingWindow()
+            flickerTimer?.invalidate()
+            flickerTimer = nil
+        }
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        updateFlicker()
         guard let window else { return }
         let center = NotificationCenter.default
         center.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
@@ -1198,6 +1412,8 @@ final class MapCanvasNSView: NSView {
 
     @objc private func windowWillClose(_ notification: Notification) {
         stopWatchingWindow()
+        flickerTimer?.invalidate()
+        flickerTimer = nil
     }
 
     override func resignFirstResponder() -> Bool {
@@ -1234,8 +1450,10 @@ final class MapCanvasNSView: NSView {
         if event.keyCode == 49, responder is NSButton { return false }  // Space presses a focused button
         let keyCodes: Set<UInt16> = [49, 51, 53, 117]  // space, delete, escape, forward delete
         let arrows: Set<UInt16> = [123, 124, 125, 126]
-        let characters = Set("vmewdlri12345?+=-_")
+        let characters = Set("vmewdlnri12345?+=-_")
         let character = event.charactersIgnoringModifiers?.lowercased().first
+        // Arrows reach the canvas from other controls only with the Door tool, so a slider or
+        // picker keeps its arrows while a door happens to be selected.
         guard keyCodes.contains(event.keyCode) || (arrows.contains(event.keyCode) && toolState.tool == .door)
             || (character.map { characters.contains($0) } ?? false)
         else { return false }
@@ -1304,8 +1522,8 @@ struct MapCanvas: NSViewRepresentable {
         view.selection = selection
         view.editing = editing
         view.hiddenTokenIDs = hiddenTokenIDs
-        view.fog = fog
         view.isPlayerView = isPlayerView
+        view.fog = fog
         view.toolState = toolState
         view.measurement = measurement
         view.fitRequest = fitRequest

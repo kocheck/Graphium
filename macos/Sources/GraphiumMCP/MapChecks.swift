@@ -6,6 +6,8 @@ struct MapChecks {
     var map: GameMap
     var library: [String: TokenLibraryItem]
     var units: Units
+    /// For note sounds, which refer to the campaign's Session Console.
+    var console: SessionConsoleCatalog? = nil
 
     private var g: Double { map.gridSize }
 
@@ -19,6 +21,7 @@ struct MapChecks {
         issues += vision()
         issues += lighting()
         issues += outsideBackground()
+        issues += notes()
         return issues
     }
 
@@ -201,6 +204,28 @@ struct MapChecks {
             }
         }
         return issues
+    }
+
+    /// A pin shared with players but with nothing for them to read.
+    func notes() -> [JSONValue] {
+        map.notes.filter { $0.isShared && $0.playerNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.map {
+            issue(
+                "info", "shared_note_without_player_notes",
+                "\($0.displayTitle) is shown to players but has no player_notes, so clicking it shows only its title. "
+                    + "Add player_notes, or set shared false if it is for the DM.", ids: [$0.id],
+                at: Point2D(x: $0.x, y: $0.y))
+        } + missingNoteSounds()
+    }
+
+    /// A pin sound whose Session Console track or effect was removed: its play button does nothing.
+    func missingNoteSounds() -> [JSONValue] {
+        guard let console else { return [] }
+        return map.notes.filter { note in note.sounds.contains { console.title(of: $0) == nil } }.map {
+            issue(
+                "info", "note_sound_missing",
+                "\($0.displayTitle) has a sound that is no longer in the Session Console. Set its sounds again with "
+                    + "update_objects.", ids: [$0.id], at: Point2D(x: $0.x, y: $0.y))
+        }
     }
 
     func outsideBackground() -> [JSONValue] {

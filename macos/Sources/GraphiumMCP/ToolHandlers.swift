@@ -256,9 +256,10 @@ extension GraphiumTools {
                     let width = try spec.double("width").map(units.px) ?? cell
                     let at = try spec.double("at").map(units.px) ?? sideLength(side) / 2
                     let centre = pointOn(side, min(max(at, 0), sideLength(side)))
-                    let door = Self.makeDoor(
+                    var door = Self.makeDoor(
                         centre: centre, width: width, degrees: side == .north || side == .south ? 0 : 90,
                         open: try spec.bool("open") ?? false, locked: try spec.bool("locked") ?? false)
+                    if try spec.bool("hidden") == true { door.isHidden = true }
                     loaded.campaign.maps[index].doors.append(door)
                     doorIDs.append(.string(door.id))
                 }
@@ -336,9 +337,10 @@ extension GraphiumTools {
                 guard width > 0 else { throw ToolError("\(spec.context).width must be more than 0.") }
                 let degrees =
                     try spec.double("angle") ?? Self.nearestWallAngle(map, to: centre, reach: map.gridSize * 0.25) ?? 0
-                let door = Self.makeDoor(
+                var door = Self.makeDoor(
                     centre: centre, width: width, degrees: degrees, open: try spec.bool("open") ?? false,
                     locked: try spec.bool("locked") ?? false)
+                if try spec.bool("hidden") == true { door.isHidden = true }
                 loaded.campaign.maps[index].doors.append(door)
                 added.append(Describe.door(door, units: units))
             }
@@ -462,6 +464,49 @@ extension GraphiumTools {
         }
     }
 
+    /// A note's `sounds`: Session Console tracks, effects and soundscapes, by name (or id). Nil when absent.
+    static func noteSounds(_ args: Arguments, console: SessionConsoleCatalog) throws -> [NoteSound]? {
+        guard let items = try args.array("sounds") else { return nil }
+        let choices = console.noteSoundChoices
+        var sounds: [NoteSound] = []
+        for (offset, item) in items.enumerated() {
+            let spec = Arguments(item, context: "\(args.context.isEmpty ? "" : args.context + ".")sounds[\(offset)]")
+            guard item.objectValue != nil else { throw ToolError("\(spec.context) must be an object.") }
+            let name = try spec.requiredString("name")
+            let byID = choices.filter { $0.sound.ref == name }
+            let matches = byID.isEmpty ? choices.filter { $0.title.caseInsensitiveCompare(name) == .orderedSame } : byID
+            guard matches.count == 1, var sound = matches.first?.sound else {
+                let available = choices.map(\.title).joined(separator: ", ")
+                throw ToolError(
+                    matches.isEmpty
+                        ? "\(spec.context): the Session Console has no track, effect or soundscape named \(name). It has: \(available)."
+                        : "\(spec.context): more than one track, effect or soundscape is named \(name); rename one in the Session Console.")
+            }
+            sound.playOnShow = try spec.bool("play_on_show") ?? false
+            if !sounds.contains(where: { $0.ref == sound.ref }) { sounds.append(sound) }
+        }
+        return sounds
+    }
+
+    func addNotes(_ args: Arguments) throws -> ToolResult {
+        try withMap(args, write: true) { loaded, index, units in
+            var added: [JSONValue] = []
+            for spec in try args.objects("notes") {
+                guard let centre = try spec.point("center").map(units.px) else {
+                    throw ToolError("\(spec.context).center is required.")
+                }
+                let console = loaded.campaign.sessionConsole
+                let note = MapNote(
+                    x: centre.x, y: centre.y, title: try spec.string("title") ?? "", dmNotes: try spec.string("dm_notes") ?? "",
+                    playerNotes: try spec.string("player_notes") ?? "", isShared: try spec.bool("shared") ?? false,
+                    sounds: try Self.noteSounds(spec, console: console) ?? [])
+                loaded.campaign.maps[index].notes.append(note)
+                added.append(Describe.note(note, console: console, units: units))
+            }
+            return ["added_notes": .array(added)]
+        }
+    }
+
     func drawMarkers(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: true) { loaded, index, units in
             var added: [JSONValue] = []
@@ -510,10 +555,22 @@ extension GraphiumTools {
                     if take("vision_ft") { map.tokens[i].visionRadius = try change.double("vision_ft") }
                     if take("darkvision_ft") { map.tokens[i].darkvision = try change.double("darkvision_ft") }
                     if take("speed_ft") { map.tokens[i].movementSpeed = try change.double("speed_ft") }
+                    // New art only; name, stats and any library link stay (as Change Image in the app).
+                    if take("image_library_item"), let reference = try change.string("image_library_item") {
+                        guard let item = Self.libraryItem(reference, in: loaded.campaign.tokenLibrary) else {
+                            throw ToolError("\(change.context): no token library item \(reference). See list_token_library.")
+                        }
+                        map.tokens[i].src = item.src
+                    }
+                    if take("image_path"), let path = try change.string("image_path") {
+                        let image = try ImageImport.load(try store.resolve(path), kind: .token)
+                        map.tokens[i].src = loaded.addAsset(image.data, preferredName: image.preferredName)
+                    }
                 } else if let i = map.doors.firstIndex(where: { $0.id == id }) {
                     kind = "door"
                     if take("open"), let open = try change.bool("open") { map.doors[i].isOpen = open }
                     if take("locked"), let locked = try change.bool("locked") { map.doors[i].isLocked = locked }
+                    if take("hidden"), let hidden = try change.bool("hidden") { map.doors[i].isHidden = hidden ? true : nil }
                     if take("center"), let p = try change.point("center").map(units.px) {
                         map.doors[i].x = p.x
                         map.doors[i].y = p.y
@@ -557,6 +614,19 @@ extension GraphiumTools {
                     map.lights[i].dim = max(map.lights[i].dim, map.lights[i].bright)
                     if take("on"), let on = try change.bool("on") { map.lights[i].isOn = on }
                     if take("name") { map.lights[i].name = try change.string("name") }
+                } else if let i = map.notes.firstIndex(where: { $0.id == id }) {
+                    kind = "note"
+                    if take("center"), let p = try change.point("center").map(units.px) {
+                        map.notes[i].x = p.x
+                        map.notes[i].y = p.y
+                    }
+                    if take("title") { map.notes[i].title = try change.string("title") ?? "" }
+                    if take("dm_notes") { map.notes[i].dmNotes = try change.string("dm_notes") ?? "" }
+                    if take("player_notes") { map.notes[i].playerNotes = try change.string("player_notes") ?? "" }
+                    if take("shared"), let shared = try change.bool("shared") { map.notes[i].isShared = shared }
+                    if take("sounds"), let sounds = try Self.noteSounds(change, console: loaded.campaign.sessionConsole) {
+                        map.notes[i].sounds = sounds
+                    }
                 } else if let i = map.stairs.firstIndex(where: { $0.id == id }) {
                     kind = "stairs"
                     if take("center"), let p = try change.point("center").map(units.px) {
@@ -589,12 +659,11 @@ extension GraphiumTools {
             let ids = Set(try args.strings("ids") ?? [])
             var map = loaded.campaign.maps[index]
             func count(_ m: GameMap) -> Int {
-                m.tokens.count + m.drawings.count + m.doors.count + m.stairs.count + m.lights.count
+                m.tokens.count + m.drawings.count + m.doors.count + m.stairs.count + m.lights.count + m.notes.count
             }
             let before = count(map)
             map.removeItems(ids)
             map.stairs.removeAll { ids.contains($0.id) }
-            map.lights.removeAll { ids.contains($0.id) }
             let removed = before - count(map)
             loaded.campaign.maps[index] = map
             var out: [String: JSONValue] = ["removed": .number(Double(removed))]
@@ -615,10 +684,11 @@ extension GraphiumTools {
                 case "tokens": map.tokens.removeAll()
                 case "stairs": map.stairs.removeAll()
                 case "lights": map.lights.removeAll()
+                case "notes": map.notes.removeAll()
                 case "fog": map.exploredRegions.removeAll()
                 case "background": map.background = nil
                 default:
-                    throw ToolError("Unknown layer \(layer). Use walls, doors, tokens, markers, stairs, lights, fog or background.")
+                    throw ToolError("Unknown layer \(layer). Use walls, doors, tokens, markers, stairs, lights, notes, fog or background.")
                 }
             }
             loaded.campaign.maps[index] = map
@@ -704,7 +774,10 @@ extension GraphiumTools {
 
     func checkMap(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: false) { loaded, index, units in
-            let issues = MapChecks(map: loaded.campaign.maps[index], library: loaded.campaign.libraryIndex, units: units).run()
+            let issues = MapChecks(
+                map: loaded.campaign.maps[index], library: loaded.campaign.libraryIndex, units: units,
+                console: loaded.campaign.sessionConsole
+            ).run()
             return [
                 "map": .string(loaded.campaign.maps[index].name),
                 "ok": .bool(issues.isEmpty),

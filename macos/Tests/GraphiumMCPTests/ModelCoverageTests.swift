@@ -14,14 +14,16 @@ final class ModelCoverageTests: XCTestCase {
         "Campaign": ["id", "name", "maps", "activeMapID", "tokenLibrary"],
         "GameMap": [
             "id", "name", "tokens", "drawings", "doors", "stairs", "background", "gridSize", "gridType", "gridColor",
-            "exploredRegions", "isDaylightMode", "lights", "ambientLight",
+            "exploredRegions", "isDaylightMode", "lights", "ambientLight", "notes",
         ],
         "Token": [
             "id", "x", "y", "src", "libraryItemId", "scale", "type", "visionRadius", "name", "movementSpeed", "darkvision",
         ],
         "LightSource": ["id", "x", "y", "bright", "dim", "isOn", "name"],
+        "MapNote": ["id", "x", "y", "title", "dmNotes", "playerNotes", "isShared", "sounds"],
+        "NoteSound": ["kind", "ref", "playOnShow"],
         "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay"],
-        "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection"],
+        "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection", "isHidden"],
         "Stairs": ["id", "x", "y", "direction", "type", "width", "height"],
         "MapBackground": ["src", "x", "y", "width", "height", "scale"],
         "TokenLibraryItem": [
@@ -44,6 +46,8 @@ final class ModelCoverageTests: XCTestCase {
         "DrawingTool": ["marker", "eraser", "wall"],
         "CreatureType": ["PC", "NPC"],
         "LightLevel": ["dark", "dim", "bright"],
+        // NoteSound.Kind: tools say "track", "effect" and "soundscape" and match by Session Console name.
+        "Kind": ["track", "sfx", "soundscape"],
     ]
 
     private func check(_ value: Any, file: StaticString = #filePath, line: UInt = #line) {
@@ -83,6 +87,8 @@ final class ModelCoverageTests: XCTestCase {
         check(MapBackground(src: "", width: 1, height: 1))
         check(TokenLibraryItem(name: "", src: "", thumbnailSrc: "", dateAdded: 0))
         check(LightSource(x: 0, y: 0, bright: 1, dim: 2))
+        check(MapNote(x: 0, y: 0))
+        check(NoteSound(kind: .track, ref: ""))
     }
 
     func testEveryEnumCaseIsKnown() {
@@ -91,6 +97,7 @@ final class ModelCoverageTests: XCTestCase {
         checkCases(DrawingTool.self)
         checkCases(CreatureType.self)
         checkCases(LightLevel.self)
+        checkCases(NoteSound.Kind.self)
     }
 
     func testToolSchemasOfferTheKnownCases() {
