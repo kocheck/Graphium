@@ -79,6 +79,7 @@ Audited against `macos/App` and `macos/Sources`:
 | Board pack import              | Meets the rules: before importing a pack with `https` files, Graphium names the hosts and asks (Download, Skip Remote Files, Cancel); skipping contacts no one (`BoardPack.remoteHosts`, `BoardPackIO`).                           |
 | Token library                  | Meets the rules: the library lives in `~/Library/Application Support/Graphium/Library/` as plain images plus `index.json`; the Library Manager has Show in Finder and Export…, and campaigns keep their own copies of used tokens. |
 | Sparkle updates (planned)      | Must be opt-in: ask on first launch, with "Check for updates" off until the DM says yes.                                                                                                                                           |
+| Campaigns in Finder            | Quick Look thumbnails and previews and a Spotlight importer show and index a campaign without opening Graphium. The three extensions are sandboxed, read only the package they are handed, and keep the index on the Mac.          |
 | App Sandbox                    | Off (`project.yml`). Turning it on would make the network and file promises enforceable by the OS. Tracked as a release item.                                                                                                      |
 
 ## Checking a change

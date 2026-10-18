@@ -308,6 +308,7 @@ GraphiumCore.
 - [x] Danger Zone "Reset Map Position & Scale" (edit mode) — Asks for confirmation, then resets to (0,0) at scale 1. (source: src/components/MapSettingsSheet.tsx:223-232, 418-430)
 - [x] The map is not directly draggable or selectable. It is a listening-false background layer. (source: src/components/Canvas/CanvasManager.tsx:1202-1219)
 - [x] Map cropping does not exist. The cropper is only used for image files dropped onto the canvas as tokens (see 3.4).
+- [x] **Native only:** Animated maps. An MP4, MOV or M4V video (H.264 or HEVC, with or without alpha) can be the map background, from Map Settings or the Map Image toolbar button. It is stored in `assets/` as-is, plays looped and muted under the canvas in the Architect and World View, and is placed like an image (natural size from the video track, rotation applied). Map > Pause Animation holds it still for the session; a paused World View pauses it too. WebM can't play on macOS, so choosing one says to convert it to MP4. No paper grain over video. Export as .graphium and the MCP server's render_map use the first frame.
 
 **Native mapping:** Use `NSOpenPanel` (UTType.image) or drag-and-drop. Downscale with
 ImageIO (`CGImageSourceCreateThumbnailAtIndex` with `kCGImageSourceThumbnailMaxPixelSize` 4096) off the main thread. HEIC or PNG storage is fine natively. WebP output is not required but

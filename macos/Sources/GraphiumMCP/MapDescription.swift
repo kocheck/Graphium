@@ -26,37 +26,6 @@ struct Units {
 }
 
 extension GameMap {
-    /// The box around everything on the map (background, walls, doors, tokens), in pixels.
-    func contentBounds(library: [String: TokenLibraryItem]) -> Bounds? {
-        var boxes: [Bounds] = []
-        if let bg = background { boxes.append(Bounds(x: bg.x, y: bg.y, width: bg.width * bg.scale, height: bg.height * bg.scale)) }
-        boxes += drawings.filter { !$0.points.isEmpty }.map { drawingBounds($0) }
-        boxes += doors.map { $0.bounds(padding: 0) }
-        boxes += tokens.map { tokenBounds($0, library: library) }
-        boxes += lights.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
-        boxes += notes.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
-        boxes += effects.map { effectBounds($0, library: library) }
-        boxes += stairs.map { Bounds(x: $0.x - $0.width / 2, y: $0.y - $0.height / 2, width: $0.width, height: $0.height) }
-        guard var minX = boxes.first?.x, var minY = boxes.first?.y else { return nil }
-        var maxX = minX, maxY = minY
-        for b in boxes {
-            minX = min(minX, b.x)
-            minY = min(minY, b.y)
-            maxX = max(maxX, b.x + b.width)
-            maxY = max(maxY, b.y + b.height)
-        }
-        return Bounds(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-    }
-
-    /// The box around an effect's area, in pixels.
-    func effectBounds(_ effect: SpellEffect, library: [String: TokenLibraryItem]) -> Bounds {
-        let points = effectPolygon(effect, library: library)
-        let xs = points.map(\.x)
-        let ys = points.map(\.y)
-        let minX = xs.min() ?? 0, minY = ys.min() ?? 0
-        return Bounds(x: minX, y: minY, width: (xs.max() ?? minX) - minX, height: (ys.max() ?? minY) - minY)
-    }
-
     var wallStrokes: [Drawing] { drawings.filter { $0.tool == .wall } }
     var markerStrokes: [Drawing] { drawings.filter { $0.tool != .wall } }
 }

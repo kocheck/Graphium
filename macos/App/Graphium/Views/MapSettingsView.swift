@@ -2,7 +2,7 @@ import GraphiumCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Create or edit a map (PARITY §3.2): name, grid, daylight, background image,
+/// Create or edit a map (PARITY §3.2): name, grid, daylight, background image or video,
 /// calibration and transform reset. Changes apply on Save as one undoable edit.
 struct MapSettingsView: View {
     @ObservedObject var document: CampaignDocument
@@ -80,7 +80,7 @@ struct MapSettingsView: View {
                 Section("Map image") {
                     HStack {
                         if let bg = map.background {
-                            Text("\(Int(bg.width)) × \(Int(bg.height)) px, scale \(bg.scale.formatted(.number.precision(.fractionLength(0...3))))")
+                            Text("\(isVideoAsset(bg.src) ? "Video, " : "")\(Int(bg.width)) × \(Int(bg.height)) px, scale \(bg.scale.formatted(.number.precision(.fractionLength(0...3))))")
                                 .foregroundStyle(.secondary)
                         } else {
                             Text("None").foregroundStyle(.secondary)
@@ -89,6 +89,15 @@ struct MapSettingsView: View {
                         if loadingImage { ProgressView().controlSize(.small) }
                         Button(map.background == nil ? "Choose…" : "Replace…") { choosingImage = true }
                             .disabled(loadingImage)
+                    }
+                    // AVFoundation plays MP4 and MOV; macOS has no WebM decoder.
+                    Text("An image, or an MP4 or MOV video (H.264 or HEVC) for an animated map. WebM can't play on a Mac: convert it to MP4 first.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let bg = map.background, isVideoAsset(bg.src) {
+                        Text("Plays looped and muted. Map > Pause Animation holds it still.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     if uploadedImage, map.gridType.isSquare {
                         Toggle("Calibrate to the grid after saving", isOn: $calibrateAfterSave)
@@ -142,7 +151,7 @@ struct MapSettingsView: View {
         }
         .padding(20)
         .frame(width: 460)
-        .fileImporter(isPresented: $choosingImage, allowedContentTypes: [.image]) { result in
+        .fileImporter(isPresented: $choosingImage, allowedContentTypes: ImportedBackground.contentTypes) { result in
             switch result {
             case .success(let url): loadImage(url)
             case .failure(let error): errorMessage = error.localizedDescription
@@ -211,9 +220,9 @@ struct MapSettingsView: View {
         Task { @MainActor in
             defer { loadingImage = false }
             do {
-                let image = try await ImportedImage.loadInBackground(from: url, kind: .map)
-                let name = document.addAsset(image.data, preferredName: image.preferredName)
-                map.background = MapBackground(src: name, width: Double(image.width), height: Double(image.height))
+                let background = try await ImportedBackground.load(from: url)
+                let name = document.addAsset(background.data, preferredName: background.preferredName)
+                map.background = MapBackground(src: name, width: background.width, height: background.height)
                 calibrateAfterSave = true
                 uploadedImage = true
             } catch {

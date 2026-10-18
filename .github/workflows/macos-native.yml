@@ -79,6 +79,17 @@ jobs:
           codesign --verify --verbose=2 "$APP"
           lipo -archs "$APP/Contents/MacOS/Graphium"
 
+      - name: Check the Quick Look and Spotlight extensions are embedded
+        run: |
+          PLUGINS=DerivedData/Build/Products/Release/Graphium.app/Contents/PlugIns
+          for ext in GraphiumThumbnail:com.apple.quicklook.thumbnail GraphiumPreview:com.apple.quicklook.preview \
+            GraphiumSpotlight:com.apple.spotlight.import; do
+            APPEX="$PLUGINS/${ext%%:*}.appex"
+            codesign --verify --verbose=2 "$APPEX"
+            plutil -extract NSExtension.NSExtensionPointIdentifier raw "$APPEX/Contents/Info.plist" | grep -qx "${ext#*:}"
+            plutil -p "$APPEX/Contents/Info.plist" | grep com.graphium.campaign-package >/dev/null
+          done
+
       - name: Check the bundled MCP server answers
         run: |
           MCP=DerivedData/Build/Products/Release/Graphium.app/Contents/MacOS/graphium-mcp

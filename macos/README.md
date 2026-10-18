@@ -133,3 +133,19 @@ hand edit) are kept and written back on save, by the app and by `graphium-mcp`. 
 Legacy `.graphium` ZIP campaigns from the Electron app open through an importer (the first
 save asks for a new `.graphiumcampaign` location). File > Export as .graphium (⇧⌘E) writes a
 ZIP the Electron and web apps can open.
+
+### Campaigns in Finder
+
+Graphium.app carries three sandboxed extensions in `Contents/PlugIns` (sources in `App/`), so a
+campaign is useful as a plain file, even one never opened in Graphium:
+
+- **Thumbnail** (`QuickLookThumbnail`): Finder's icon is the active map, drawn by
+  `MapRenderer` (`Sources/GraphiumRender`, the same picture graphium-mcp's `render_map` draws).
+- **Preview** (`QuickLookPreview`): the space bar shows the campaign name, a larger picture of
+  the active map and the list of maps.
+- **Spotlight** (`SpotlightImporter`): indexes the campaign, map, token and library names and
+  the note pins' titles and text (`CampaignSearchText`), so `mdfind "Brother Aldric"` finds the
+  campaign that mentions him.
+
+They read only the package they are handed, and the index stays on this Mac. macOS picks them
+up once Graphium.app has been launched; `qlmanage -r` and `mdimport <campaign>` refresh them.

@@ -12,14 +12,15 @@ let package = Package(
         .executable(name: "graphium-mcp", targets: ["graphium-mcp"]),
         // The server's library, so Graphium.app can build the bundled graphium-mcp and its AI Tools settings.
         .library(name: "GraphiumMCP", targets: ["GraphiumMCP"]),
-        // Metal drawing for the World View (fog, light); Metal and Core Graphics only, no AppKit.
+        // Metal drawing for the World View (fog, light), and MapRenderer, the Core Graphics map picture
+        // render_map and the Quick Look extensions draw. Metal and Core Graphics only, no AppKit.
         .library(name: "GraphiumRender", targets: ["GraphiumRender"]),
     ],
     targets: [
         .target(name: "GraphiumCore"),
         .target(name: "GraphiumRender", dependencies: ["GraphiumCore"]),
         .testTarget(name: "GraphiumCoreTests", dependencies: ["GraphiumCore"]),
-        .target(name: "GraphiumMCP", dependencies: ["GraphiumCore"]),
+        .target(name: "GraphiumMCP", dependencies: ["GraphiumCore", "GraphiumRender"]),
         .executableTarget(name: "graphium-mcp", dependencies: ["GraphiumMCP"]),
         .testTarget(name: "GraphiumMCPTests", dependencies: ["GraphiumMCP", "GraphiumCore"]),
         .testTarget(name: "GraphiumRenderTests", dependencies: ["GraphiumRender", "GraphiumCore"]),

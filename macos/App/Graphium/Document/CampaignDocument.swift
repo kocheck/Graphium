@@ -57,6 +57,11 @@ final class CampaignDocument: ReferenceFileDocument {
     /// Unreferenced files that were already in `assets/` when the campaign opened: someone
     /// else put them there, so they are never listed as orphaned and never pruned.
     private var foreignAssets: Set<String> = []
+    /// Video map backgrounds written to files for playback, shared by every window.
+    let videoFiles = VideoAssetFiles()
+    /// Map > Pause Animation: holds video map backgrounds on their frame in every window.
+    /// Session-only, starts playing.
+    @Published var isMapAnimationPaused = false
 
     /// Stores asset bytes under a fresh package-safe name and returns that name.
     /// Not undoable on its own: callers reference it from an `edit`, and an

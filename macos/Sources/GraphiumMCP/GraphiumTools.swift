@@ -257,12 +257,14 @@ public final class GraphiumTools {
                 description:
                     "Use an image file on this Mac (PNG, JPEG, WebP, HEIC…) as the map's background. It is copied "
                     + "into the campaign package (downscaled to 4096 px at most); the file must be inside the folders "
-                    + "list_campaigns shows. Line the image's grid up with "
+                    + "list_campaigns shows. An MP4, MOV or M4V video (H.264 or HEVC) makes an animated map: it is "
+                    + "copied as-is, plays looped and muted in the app, and render_map shows its first frame. WebM "
+                    + "can't play on macOS; convert it to MP4 first. Line the image's grid up with "
                     + "Graphium's by giving width_cells (how many squares wide the battlemap is) or image_cell_px "
                     + "(pixels per square in the image file). Pass remove: true to clear the background.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
-                    "image_path": Self.string("Image file to import."),
+                    "image_path": Self.string("Image or video file to import."),
                     "position": Self.point("Top-left corner of the image (default [0, 0])."),
                     "width_cells": Self.number("Scale the image so it is this many grid cells wide."),
                     "image_cell_px": Self.number("Pixels per grid square in the original image file (e.g. 70, 100, 140)."),

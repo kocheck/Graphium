@@ -100,6 +100,13 @@ final class MapCanvasNSView: NSView {
     var imageProvider: (String) -> CGImage? = { _ in nil }
     /// Identifies the document whose asset names `imageProvider` resolves (cache keys).
     var assetNamespace = ""
+    /// The file a video background's asset plays from; nil until it is written, when the
+    /// provider calls `ready` (`VideoAssetFiles`).
+    var videoProvider: (String, @escaping VideoFileReady) -> URL? = { _, _ in nil }
+    /// Map > Pause Animation (and a paused World View): holds the video on its frame.
+    var animationPaused = false
+    /// Plays a video background under this view (`MapCanvasHostView`); nil without a host.
+    weak var videoBackground: MapVideoBackgroundView?
     var selection: Set<String> = []
     var editing: CanvasEditing?
     /// Tokens players must not see or grab (NPCs outside party vision).
@@ -143,6 +150,8 @@ final class MapCanvasNSView: NSView {
         didSet {
             guard viewport != oldValue else { return }
             needsDisplay = true
+            // Moved in the same pass as the redraw, so the video never trails the map.
+            syncVideoBackground()
             reportViewport()
         }
     }
@@ -157,6 +166,7 @@ final class MapCanvasNSView: NSView {
 
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
+        syncVideoBackground()
         reportViewport()
     }
 
@@ -245,16 +255,24 @@ final class MapCanvasNSView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         let drawStarted = CACurrentMediaTime()
         defer { PerformanceStats.shared.recordDraw(started: drawStarted) }
-        // The World View under fog is black past the map's edge too, as unexplored ground is.
-        (isPlayerView && fog != nil ? NSColor.black : NSColor.textBackgroundColor).setFill()
-        dirtyRect.fill()
+        if videoBackground?.isShowingVideo == true {
+            // A video background plays under this view, which fills its own backdrop:
+            // leave this view clear so the video shows through.
+            NSGraphicsContext.current?.cgContext.clear(dirtyRect)
+        } else {
+            // The World View under fog is black past the map's edge too, as unexplored ground is.
+            backdropColor.setFill()
+            dirtyRect.fill()
+        }
         guard let map, let context = NSGraphicsContext.current?.cgContext else { return }
 
         context.saveGState()
         context.scaleBy(x: viewport.zoom, y: viewport.zoom)
         context.translateBy(x: -viewport.origin.x, y: -viewport.origin.y)
 
-        if let background = map.background, let image = imageProvider(background.src) {
+        if let background = map.background, isVideoAsset(background.src) {
+            // Played by `MapVideoBackgroundView` under this view, placed by `syncVideoBackground`.
+        } else if let background = map.background, let image = imageProvider(background.src) {
             let rect = CGRect(
                 x: background.x, y: background.y, width: background.width * background.scale,
                 height: background.height * background.scale)
@@ -1747,12 +1765,17 @@ struct MapCanvas: NSViewRepresentable {
     var calibrating = false
     /// Identifies the document whose asset names `imageProvider` resolves (cache keys).
     var assetNamespace = ""
+    /// The file a video background plays from (`VideoAssetFiles.url(named:in:ready:)`).
+    var videoProvider: (String, @escaping VideoFileReady) -> URL? = { _, _ in nil }
+    /// Holds a video background on its current frame.
+    var animationPaused = false
 
-    func makeNSView(context: Context) -> MapCanvasNSView {
-        MapCanvasNSView()
+    func makeNSView(context: Context) -> MapCanvasHostView {
+        MapCanvasHostView(frame: .zero)
     }
 
-    func updateNSView(_ view: MapCanvasNSView, context: Context) {
+    func updateNSView(_ host: MapCanvasHostView, context: Context) {
+        let view = host.canvas
         view.map = map
         view.library = library
         view.imageProvider = imageProvider
@@ -1771,6 +1794,9 @@ struct MapCanvas: NSViewRepresentable {
         }
         view.calibrating = calibrating
         view.assetNamespace = assetNamespace
+        view.videoProvider = videoProvider
+        view.animationPaused = animationPaused
+        view.syncVideoBackground()
         view.needsDisplay = true
     }
 }
