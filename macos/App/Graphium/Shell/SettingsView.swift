@@ -1,9 +1,21 @@
 import GraphiumCore
 import SwiftUI
 
-/// Graphium > Settings… (PARITY §6: the TS touch settings had no UI; this is the
-/// intended Settings pane, limited to what a Mac has: appearance and pen pressure).
+/// Graphium > Settings…: General, and AI Tools for the MCP server (docs/MCP.md).
 struct SettingsView: View {
+    var body: some View {
+        TabView {
+            GeneralSettings()
+                .tabItem { Label("General", systemImage: "gearshape") }
+            AIToolsSettings()
+                .tabItem { Label("AI Tools", systemImage: "sparkles") }
+        }
+    }
+}
+
+/// PARITY §6: the TS touch settings had no UI; this is the intended pane, limited to what
+/// a Mac has: appearance and pen pressure.
+struct GeneralSettings: View {
     @AppStorage(Prefs.theme) private var themeRaw = AppTheme.system.rawValue
     @AppStorage(Prefs.pressureEnabled) private var pressureEnabled = true
     @AppStorage(Prefs.pressureCurve) private var pressureCurve = PressureCurve.normal.rawValue

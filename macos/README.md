@@ -6,7 +6,8 @@ rest of this repository.
 - `Sources/GraphiumCore`: platform-independent model, `.graphiumcampaign` file format, and
   game logic (no AppKit/SwiftUI). Tested with `swift test`.
 - `Sources/GraphiumMCP`, `Sources/graphium-mcp`: an MCP server that lets AI tools (Claude,
-  Codex, Cursor) build maps in campaign files on your Mac. Setup in [docs/MCP.md](docs/MCP.md).
+  Codex, Cursor) build maps in campaign files on your Mac. It ships inside the app; turn it on in Settings > AI Tools.
+  Details in [docs/MCP.md](docs/MCP.md).
 - `App/`: the SwiftUI + AppKit app. `App/project.yml` is an [XcodeGen](https://github.com/yonaskolb/XcodeGen)
   spec; the `.xcodeproj` is generated, not committed.
 - `docs/`: porting spec (`CORE_SPEC.md`) and the feature-parity checklist (`PARITY.md`).

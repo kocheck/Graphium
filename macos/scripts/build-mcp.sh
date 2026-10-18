@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Builds graphium-mcp (the MCP server that lets AI tools build Graphium maps) and prints
 # the settings to paste into Claude, Codex or Cursor. See docs/MCP.md.
+# Graphium.app has the server built in (Settings > AI Tools); this is for working without the
+# app or on the server itself. While AI Tools is on, the app points the link back at its own copy.
 #
 #   bash scripts/build-mcp.sh [campaign folder]
 #

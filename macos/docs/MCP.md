@@ -22,31 +22,41 @@ cloud model receives them like anything else you type into it.
 
 ## Set up
 
-Needs macOS 14+ and Xcode 16+ (or the Swift toolchain).
+In Graphium, open **Graphium > Settings > AI Tools** and turn on **Let AI apps build maps**. It's
+off until you turn it on.
+
+- **Campaign folder** is the only place the AI apps may read and write (default
+  `~/Documents/Graphium`).
+- **Claude Desktop** and **Cursor**: click **Add**. Graphium adds itself to that app's MCP settings
+  and keeps the rest of them. Restart the app.
+- **Claude Code** and **Codex**: click **Copy Command**, paste it in Terminal, then restart the
+  app (in Claude Code, `/mcp` reconnects).
+
+The server is built into Graphium.app (`Contents/MacOS/graphium-mcp`). The apps start it
+through a link at `~/Library/Application Support/Graphium/bin/graphium-mcp`, which Graphium
+points at its own copy each time it opens, so moving or updating Graphium doesn't break them.
+Turning AI Tools off removes the link, and the apps can no longer start the server.
+
+### Without the app, or by hand
+
+From a checkout (needs Xcode 16+ or the Swift toolchain):
 
 ```sh
 cd macos
 bash scripts/build-mcp.sh ~/Documents/Graphium
 ```
 
-That builds the server, installs it in `~/Library/Application Support/Graphium/bin/`, and
-prints the settings for each app with the paths filled in. The folder argument is where your
-campaigns live (default `~/Documents/Graphium`); pass several `--root` options in the app
-settings to allow more than one folder.
-
-### Claude Code
+That builds the server into the same place and prints the settings for each app. Pass several
+`--root` options to allow more than one folder. The settings are:
 
 ```sh
+# Claude Code
 claude mcp add --scope user graphium -- "$HOME/Library/Application Support/Graphium/bin/graphium-mcp" --root ~/Documents/Graphium
-```
-
-### Codex CLI
-
-```sh
+# Codex CLI
 codex mcp add graphium -- "$HOME/Library/Application Support/Graphium/bin/graphium-mcp" --root ~/Documents/Graphium
 ```
 
-or in `~/.codex/config.toml`:
+Codex can also use `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.graphium]
@@ -54,10 +64,8 @@ command = "/Users/you/Library/Application Support/Graphium/bin/graphium-mcp"
 args = ["--root", "/Users/you/Documents/Graphium"]
 ```
 
-### Claude Desktop and Cursor
-
-Claude Desktop: Settings > Developer > Edit Config (`claude_desktop_config.json`). Cursor:
-`~/.cursor/mcp.json`. Then restart the app.
+Claude Desktop (Settings > Developer > Edit Config, `claude_desktop_config.json`) and Cursor
+(`~/.cursor/mcp.json`):
 
 ```json
 {
@@ -93,14 +101,9 @@ at the same moment, the last save wins; Graphium's File > Revert To keeps its ow
 
 ## Updating
 
-When Graphium gains map features, the server gains tools for them. To update your copy:
-
-```sh
-git pull
-cd macos && bash scripts/build-mcp.sh ~/Documents/Graphium
-```
-
-Then restart the AI app (in Claude Code, `/mcp` reconnects). `graphium-mcp --version` shows
+When Graphium gains map features, the server gains tools for them. Updating Graphium updates
+the server; restart the AI app to pick up new tools (in Claude Code, `/mcp` reconnects). With a
+build from `scripts/build-mcp.sh`, `git pull` and run the script again. `graphium-mcp --version` shows
 the installed version; the app sees the same number as the server's version.
 
 ## Tools
@@ -151,10 +154,13 @@ about the MCP tools:
 
 ## For developers
 
-- Code: `Sources/GraphiumMCP` (protocol, tools, rendering, checks) and `Sources/graphium-mcp`
-  (the executable). It uses GraphiumCore's model, file format, geometry and generator, so the
+- Code: `Sources/GraphiumMCP` (protocol, tools, rendering, checks, and `ClientSetup` for the
+  AI Tools settings) and `Sources/graphium-mcp` (the executable). The app's `MCPServer` target
+  in `App/project.yml` builds the same executable into the bundle; the settings pane is
+  `App/Graphium/Shell/AIToolsSettings.swift`. It uses GraphiumCore's model, file format, geometry and generator, so the
   files it writes are the files the app writes.
-- Tests: `swift test --filter GraphiumMCPTests`. CI builds the server and smoke-tests it over stdio.
+- Tests: `swift test --filter GraphiumMCPTests`. CI builds the server and smoke-tests it over stdio,
+  both on its own and inside the built app.
 - Try it by hand:
   `echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | swift run graphium-mcp --root /tmp`,
   or with the MCP Inspector: `npx @modelcontextprotocol/inspector .build/debug/graphium-mcp --root /tmp`.

@@ -24,6 +24,14 @@ targets:
       - package: GraphiumCore
       - package: GraphiumCore
         product: GraphiumRender
+      - package: GraphiumCore
+        product: GraphiumMCP
+      # The MCP server ships inside the app as Contents/MacOS/graphium-mcp (docs/MCP.md).
+      - target: MCPServer
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mac
@@ -68,6 +76,20 @@ targets:
             UTTypeConformsTo: [public.data, public.content]
             UTTypeTagSpecification:
               public.filename-extension: [graphium]
+  # graphium-mcp, built from the same sources as the package's executable.
+  MCPServer:
+    type: tool
+    platform: macOS
+    sources: [../Sources/graphium-mcp]
+    dependencies:
+      - package: GraphiumCore
+        product: GraphiumMCP
+    settings:
+      base:
+        PRODUCT_NAME: graphium-mcp
+        PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mcp
+        ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
 schemes:
   Graphium:
     build:

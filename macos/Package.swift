@@ -10,6 +10,8 @@ let package = Package(
     products: [
         .library(name: "GraphiumCore", targets: ["GraphiumCore"]),
         .executable(name: "graphium-mcp", targets: ["graphium-mcp"]),
+        // The server's library, so Graphium.app can build the bundled graphium-mcp and its AI Tools settings.
+        .library(name: "GraphiumMCP", targets: ["GraphiumMCP"]),
         // Metal drawing for the World View (fog, light); Metal and Core Graphics only, no AppKit.
         .library(name: "GraphiumRender", targets: ["GraphiumRender"]),
     ],
