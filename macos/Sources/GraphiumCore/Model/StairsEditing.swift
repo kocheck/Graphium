@@ -98,7 +98,7 @@ extension GameMap {
             case .south: stairs[i].direction = .west
             case .west: stairs[i].direction = .north
             }
-            swap(&stairs[i].width, &stairs[i].height)
+            (stairs[i].width, stairs[i].height) = (stairs[i].height, stairs[i].width)
         }
     }
 
