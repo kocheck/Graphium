@@ -21,6 +21,9 @@ final class WorldAudioEngine: ObservableObject {
     private var fadeStep = 0
     private var fadeCompletion: (() -> Void)?
     private var tempFiles: [URL] = []
+    private lazy var soundscape = SoundscapePlayer(
+        engine: engine, ensureRunning: { [weak self] in self?.ensureRunning() },
+        onError: { [weak self] message in self?.lastError = message })
 
     init() {
         engine.attach(music)
@@ -40,6 +43,7 @@ final class WorldAudioEngine: ObservableObject {
         musicGeneration += 1
         music.stop()
         effects.stop()
+        soundscape.shutdown()
         engine.stop()
         youtube.shutdown()
         closeMusicFile()
@@ -93,6 +97,7 @@ final class WorldAudioEngine: ObservableObject {
         if runtime.sfxSeq != previous?.sfxSeq ?? 0, runtime.sfxSeq > 0, let id = runtime.sfxId {
             playEffect(id: id, kind: runtime.sfxKind, synth: runtime.sfxSynthType, src: runtime.sfxSrc, assets: assets)
         }
+        soundscape.apply(runtime)
     }
 
     // MARK: Music

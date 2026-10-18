@@ -23,6 +23,7 @@ struct SessionConsolePanel: View {
     @AppStorage("graphium.console.platesExpanded") private var platesExpanded = true
     @AppStorage("graphium.console.tracksExpanded") private var tracksExpanded = true
     @AppStorage("graphium.console.sfxExpanded") private var sfxExpanded = true
+    @AppStorage("graphium.console.soundscapesExpanded") private var soundscapesExpanded = true
     @State private var renameText = ""
 
     private enum RenameTarget {
@@ -50,6 +51,7 @@ struct SessionConsolePanel: View {
                 addControls
                 section("Plates", isExpanded: $platesExpanded) { platesSection }
                 section("Music", isExpanded: $tracksExpanded) { tracksSection }
+                section("Soundscapes", isExpanded: $soundscapesExpanded) { soundscapesSection }
                 section("Sound Effects", isExpanded: $sfxExpanded) { sfxSection }
             }
             .padding(12)
@@ -424,6 +426,52 @@ struct SessionConsolePanel: View {
                 }
             }
         }
+    }
+
+    /// Built-in scenes (docs/planning/soundscapes/plan.md): one plays at a time under the
+    /// music, and each layer has its own level for this session.
+    private var soundscapesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 6)], spacing: 6) {
+                ForEach(Soundscape.builtIn) { scene in
+                    let playing = runtime.ambience.soundscapeId == scene.id
+                    Button {
+                        document.dispatch(playing ? .stopSoundscape : .playSoundscape(id: scene.id))
+                    } label: {
+                        Label(scene.title, systemImage: playing ? "speaker.wave.2.fill" : "play.circle")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .help(playing ? "Stop \(scene.title)" : "Play \(scene.title)")
+                    .accessibilityAddTraits(playing ? .isSelected : [])
+                }
+            }
+            if let scene = runtime.soundscape {
+                ForEach(scene.layers) { layer in
+                    let muted = runtime.ambience.muted.contains(layer.id)
+                    HStack {
+                        Button {
+                            document.dispatch(.setLayerMuted(layerId: layer.id, !muted))
+                        } label: {
+                            Image(systemName: muted ? "speaker.slash" : "speaker.wave.1")
+                        }
+                        .buttonStyle(.borderless)
+                        .help(muted ? "Unmute \(layer.title)" : "Mute \(layer.title)")
+                        Text(layer.title).lineLimit(1).frame(width: 96, alignment: .leading)
+                        Slider(
+                            value: Binding(
+                                get: { runtime.ambience.levels[layer.id] ?? layer.level },
+                                set: { document.dispatch(.setLayerLevel(layerId: layer.id, $0.rounded())) }),
+                            in: 0...100)
+                            .disabled(muted)
+                            .accessibilityLabel("\(layer.title) level")
+                    }
+                }
+            }
+            Text("CC0 recordings from Freesound, stored in the app.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .controlSize(.small)
     }
 
     // MARK: Helpers
