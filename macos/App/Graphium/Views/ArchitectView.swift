@@ -556,7 +556,16 @@ struct ArchitectView: View {
                         })
                 },
                 openColorPicker: { openMarkerColorPicker() },
-                stopAudio: { document.dispatch(.stop) }
+                stopAudio: { document.dispatch(.stop) },
+                revealArea: { rect, snap in
+                    document.edit("Reveal Area", undoManager: undoManager) { campaign in
+                        let map = campaign.activeMap
+                        campaign.activeMap.revealedAreas.append(RevealedArea(rect: rect, gridSize: map.gridSize, snap: snap))
+                    }
+                },
+                hideRevealedArea: { id in
+                    document.edit("Hide Area", undoManager: undoManager) { $0.activeMap.revealedAreas.removeAll { $0.id == id } }
+                }
             ),
             toolState: penAdjusted(tools),
             measurement: measurement,
@@ -614,7 +623,7 @@ struct ArchitectView: View {
     private func runCommand(_ command: PaletteCommand) {
         let tools: [String: CanvasTool] = [
             "tool-select": .select, "tool-marker": .marker, "tool-eraser": .eraser,
-            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-note": .note, "tool-effect": .effect,
+            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-note": .note, "tool-effect": .effect, "tool-reveal": .reveal,
             "tool-measure": .measure,
         ]
         if let tool = tools[command.id] {
