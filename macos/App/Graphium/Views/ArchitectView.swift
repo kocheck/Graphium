@@ -262,6 +262,8 @@ struct ArchitectView: View {
                 showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true },
                 togglePerformanceMonitor: { showingPerformance.toggle() },
                 isPerformanceMonitorShown: showingPerformance,
+                toggleFogPreview: { fogPreview.toggle() },
+                isFogPreviewShown: fogPreview,
                 exportLegacy: { exportLegacy() },
                 tool: tools.tool,
                 selectTool: { selectTool($0) },
@@ -1444,11 +1446,11 @@ struct ArchitectView: View {
     }
 
     private func nextTurn() {
-        editInitiative("Next Turn") { $0.next() }
+        document.stepTurn(forward: true, undoManager: undoManager)
         revealCurrentCombatant()
     }
     private func previousTurn() {
-        editInitiative("Previous Turn") { $0.previous() }
+        document.stepTurn(forward: false, undoManager: undoManager)
         revealCurrentCombatant()
     }
 
