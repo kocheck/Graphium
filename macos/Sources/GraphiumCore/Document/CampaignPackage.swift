@@ -20,6 +20,8 @@ public struct CampaignPackage: Equatable, Sendable {
     public var assets: [String: Data]
     /// What the file held that this build doesn't own, written back unchanged.
     public var preserved: Preserved
+    /// How many entries of `preserved.setAside` this read added (0 for a healthy file).
+    public var setAsideOnOpen = 0
 
     /// Parts of the file that pass through a read and a write untouched by this build.
     public struct Preserved: Equatable, Sendable {
@@ -28,10 +30,15 @@ public struct CampaignPackage: Equatable, Sendable {
         /// Assets the app stopped referencing in an earlier session. Only these are pruned
         /// on open; a file someone else put in `assets/` is never in this list, so it stays.
         public var orphanedAssets: [String]
+        /// Objects and fields this build couldn't read, moved out of the campaign so the rest
+        /// of it opens (see `CampaignSalvage.swift`). Written back under `setAside` so a save
+        /// loses nothing; each entry has `from` (where it was), `reason` and `value`.
+        public var setAside: [RawJSON]
 
-        public init(unknownFields: UnknownFields? = nil, orphanedAssets: [String] = []) {
+        public init(unknownFields: UnknownFields? = nil, orphanedAssets: [String] = [], setAside: [RawJSON] = []) {
             self.unknownFields = unknownFields
             self.orphanedAssets = orphanedAssets
+            self.setAside = setAside
         }
     }
 
@@ -72,10 +79,11 @@ public struct CampaignPackage: Equatable, Sendable {
     /// from matching any string a DM could type.
     static let nonFiniteMarker = "\u{0}graphium-non-finite"
 
-    private struct Manifest: Codable {
+    struct Manifest: Codable {
         var formatVersion: Int
         var campaign: Campaign
         var orphanedAssets: [String]?
+        var setAside: [RawJSON]?
     }
 
     public func encodeManifest() throws -> Data {
@@ -95,7 +103,9 @@ public struct CampaignPackage: Equatable, Sendable {
             positiveInfinity: marker, negativeInfinity: marker, nan: marker)
         let orphaned = preserved.orphanedAssets.isEmpty ? nil : preserved.orphanedAssets.sorted()
         let data = try encoder.encode(
-            Manifest(formatVersion: Self.currentFormatVersion, campaign: campaign, orphanedAssets: orphaned))
+            Manifest(
+                formatVersion: Self.currentFormatVersion, campaign: campaign, orphanedAssets: orphaned,
+                setAside: preserved.setAside.isEmpty ? nil : preserved.setAside))
         let hasNonFinite = data.range(of: Data("graphium-non-finite".utf8)) != nil
         guard preserved.unknownFields != nil || hasNonFinite else { return data }
         var tree = try JSONDecoder().decode(RawJSON.self, from: data)
@@ -143,15 +153,17 @@ public struct CampaignPackage: Equatable, Sendable {
         for name in assets.keys where !Self.isValidAssetName(name) {
             throw FormatError.invalidAssetName(name)
         }
-        let decoded = try Self.decodingManifest { try JSONDecoder().decode(Manifest.self, from: manifest) }
+        // Objects that don't decode are set aside rather than failing the whole campaign.
+        let (decoded, original, setAsideNow) = try Self.decodeSalvaging(manifest)
         self.campaign = decoded.campaign
         self.assets = assets
         // Whatever this build drops when it decodes and encodes the file again is kept aside.
-        let original = try JSONDecoder().decode(RawJSON.self, from: manifest)
         let known = try JSONDecoder().decode(RawJSON.self, from: JSONEncoder().encode(decoded))
         self.preserved = Preserved(
             unknownFields: UnknownFields.diff(original: original, known: known),
-            orphanedAssets: decoded.orphanedAssets ?? [])
+            orphanedAssets: decoded.orphanedAssets ?? [],
+            setAside: (decoded.setAside ?? []) + setAsideNow)
+        self.setAsideOnOpen = setAsideNow.count
     }
 
     /// Runs a decode of campaign.json, turning a `DecodingError` into `.damaged` with a

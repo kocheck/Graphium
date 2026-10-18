@@ -50,6 +50,8 @@ final class CampaignDocument: ReferenceFileDocument {
     /// Something the DM should know about the file that was just opened (e.g. assets a
     /// `.graphium` import couldn't find). Shown once by `DocumentNoticeAlert`.
     @Published var importNotice: String?
+    /// The title `DocumentNoticeAlert` gives `importNotice`.
+    var importNoticeTitle = "Some Files Are Missing"
     /// The Architect window's undo manager, so World View edits are undoable and
     /// mark the document edited too.
     private weak var lastUndoManager: UndoManager?
@@ -57,6 +59,8 @@ final class CampaignDocument: ReferenceFileDocument {
     let imageCache = AssetImageCache()
     /// Keys in campaign.json this build couldn't read, written back on save (PRINCIPLES.md).
     private var unknownFields: UnknownFields?
+    /// Objects that couldn't be read, kept in campaign.json under `setAside` (CampaignSalvage.swift).
+    private var setAside: [RawJSON] = []
     /// Unreferenced files that were already in `assets/` when the campaign opened: someone
     /// else put them there, so they are never listed as orphaned and never pruned.
     private var foreignAssets: Set<String> = []
@@ -129,6 +133,11 @@ final class CampaignDocument: ReferenceFileDocument {
         self.campaign = package.campaign
         self.assets = package.assets
         self.unknownFields = package.preserved.unknownFields
+        self.setAside = package.preserved.setAside
+        if !setAside.isEmpty {
+            importNoticeTitle = "Some Objects Couldn't Be Read"
+            importNotice = Self.setAsideNotice(setAside)
+        }
         self.foreignAssets = package.unreferencedAssets(keeping: [GenericToken.assetName])
         self.sessionRuntime = SessionConsoleRuntime(catalog: package.campaign.sessionConsole)
         DocumentRegistry.shared.register(self)
@@ -138,8 +147,20 @@ final class CampaignDocument: ReferenceFileDocument {
         var package = CampaignPackage(campaign: campaign, assets: assets)
         // Assets this session stopped referencing are pruned the next time the campaign opens.
         let orphaned = package.unreferencedAssets(keeping: [GenericToken.assetName]).subtracting(foreignAssets)
-        package.preserved = .init(unknownFields: unknownFields, orphanedAssets: orphaned.sorted())
+        package.preserved = .init(unknownFields: unknownFields, orphanedAssets: orphaned.sorted(), setAside: setAside)
         return package
+    }
+
+    /// What the DM reads when a campaign opened without some of its objects.
+    static func setAsideNotice(_ entries: [RawJSON]) -> String {
+        let listed = entries.prefix(5).map { entry in
+            "\(entry.field("from") ?? "?"): \(entry.field("reason") ?? "unreadable")"
+        }
+        let more = entries.count > 5 ? "\n…and \(entries.count - 5) more." : ""
+        return "The campaign opened without \(entries.count == 1 ? "this object" : "these \(entries.count) objects"), "
+            + "which Graphium couldn't read:\n\n\(listed.joined(separator: "\n"))\(more)\n\n"
+            + "Nothing was deleted. They're kept in campaign.json under \"setAside\", so saving loses nothing, "
+            + "and you can fix and move them back by hand."
     }
 
     func fileWrapper(snapshot: CampaignPackage, configuration: WriteConfiguration) throws -> FileWrapper {
@@ -241,7 +262,7 @@ struct DocumentNoticeAlert: ViewModifier {
 
     func body(content: Content) -> some View {
         content.alert(
-            "Some Files Are Missing",
+            document.importNoticeTitle,
             isPresented: Binding(get: { document.importNotice != nil }, set: { if !$0 { document.importNotice = nil } })
         ) {
             Button("OK", role: .cancel) {}

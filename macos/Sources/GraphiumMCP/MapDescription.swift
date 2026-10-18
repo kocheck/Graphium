@@ -32,7 +32,7 @@ extension GameMap {
 
 /// JSON views of the campaign for the model: ids, names and positions in the caller's units.
 enum Describe {
-    static func campaign(_ campaign: Campaign, path: String, assets: Set<String>) -> JSONValue {
+    static func campaign(_ campaign: Campaign, path: String, assets: Set<String>, setAside: [RawJSON] = []) -> JSONValue {
         let library = campaign.libraryIndex
         var out: [String: JSONValue] = [
             "server": GraphiumTools.serverInfo,
@@ -47,6 +47,12 @@ enum Describe {
         if campaign.maps.contains(where: { !$0.exploredRegions.isEmpty }) {
             out["fog_reset"] =
                 "explored_fog_regions counts fog the players have already uncovered; clear_map with layers [\"fog\"] resets it."
+        }
+        if !setAside.isEmpty {
+            out["set_aside"] = .array(setAside.map { .string("\($0.field("from") ?? "?"): \($0.field("reason") ?? "")") })
+            out["set_aside_note"] = .string(
+                "These objects couldn't be read, so the campaign opened without them. They're kept in campaign.json under "
+                    + "\"setAside\" and nothing was deleted. Tell the DM; don't recreate them unless asked.")
         }
         return .object(out)
     }
