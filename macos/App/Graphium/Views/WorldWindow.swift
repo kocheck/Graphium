@@ -337,7 +337,9 @@ private struct WorldInitiativeStrip: View {
             }
         }
         .padding(12)
-        .frame(width: 320, alignment: .leading)
+        // As wide as the longest name needs (so names aren't cut at a fixed width), within limits.
+        .frame(minWidth: 240, maxWidth: 440, alignment: .leading)
+        .fixedSize(horizontal: true, vertical: false)
         .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: Radius.panel))
         .overlay(RoundedRectangle(cornerRadius: Radius.panel).strokeBorder(Palette.worldRule.color, lineWidth: 2))
         .environment(\.colorScheme, .dark)
