@@ -283,7 +283,7 @@ final class MCPServerTests: XCTestCase {
             "matched by name")
         let missing = try callError(
             "update_objects", ["campaign": "Notes", "changes": [["id": .string(mural), "sounds": [["name": "Gong"]]]]])
-        XCTAssertTrue(missing.contains("no track or effect named Gong"), missing)
+        XCTAssertTrue(missing.contains("no track, effect or soundscape named Gong"), missing)
 
         let described = try call("get_map", ["campaign": "Notes"])
         XCTAssertEqual(described["notes"]?.arrayValue?.count, 2)
