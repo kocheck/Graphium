@@ -32,6 +32,7 @@ struct CanvasEditing {
     var openNote: ((String) -> Void)?
     var doorAction: ((_ doorID: String, DoorAction) -> Void)?
     var wallAction: ((_ wallIDs: Set<String>, WallAction) -> Void)?
+    var markerAction: ((_ markerIDs: Set<String>, MarkerAction) -> Void)?
     var setMeasurement: ((MeasurementShape?) -> Void)?
     var setTool: ((CanvasTool) -> Void)?
     var toggleDoorOrientation: (() -> Void)?
@@ -288,7 +289,8 @@ final class MapCanvasNSView: NSView {
         }
         var liveStroke: Drawing?
         if case .stroke = interaction { liveStroke = self.liveStroke }
-        var ink = map.drawings
+        // DM-only markers never reach the World View (decision 014).
+        var ink = isPlayerView ? map.drawings.filter { !$0.isHiddenFromPlayers } : map.drawings
         if case .movingStrokes(let ids, let start, let current, true) = interaction {
             let duplicate = NSEvent.modifierFlags.contains(.option)
             let moved = ink.filter { ids.contains($0.id) }.map { d -> Drawing in
@@ -762,7 +764,9 @@ final class MapCanvasNSView: NSView {
                 width: (highContrast ? 4.5 : 3) / viewport.zoom, dash: [8 / viewport.zoom, 4 / viewport.zoom])
         }
 
-        let name = ResolvedToken(token, library: library).name
+        let resolved = ResolvedToken(token, library: library)
+        // Players see the token's name for players, or none (decision 014).
+        guard let name = isPlayerView ? resolved.playerName : resolved.name else { return }
         let label = NSAttributedString.mapLabel(name, font: NSFont.boldSystemFont(ofSize: 12))
         let labelSize = label.size()
         label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY - lift + 8))
@@ -1169,7 +1173,8 @@ final class MapCanvasNSView: NSView {
         }
         guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
             // A spell's area lies under everything else, so it answers last.
-            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map) ?? effectAreaMenu(at: point, map: map)
+            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map) ?? markerMenu(at: point, map: map)
+                ?? effectAreaMenu(at: point, map: map)
         }
         // The menu acts on every selected door when the clicked one is among them.
         let doorIDs = selection.contains(door.id) ? selectedDoorIDs(in: map) : [door.id]
@@ -1396,6 +1401,30 @@ final class MapCanvasNSView: NSView {
         menu.addItem(.separator())
         let title = ids.count == 1 ? "Delete Wall" : "Delete Walls"
         let delete = MenuAction.item(title) { wallAction(ids, .delete) }
+        delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
+        menu.addItem(delete)
+        return menu
+    }
+
+    /// Hide from Players / Show to Players and Delete for the clicked marker, or the selected
+    /// markers when it is among them (decision 014).
+    private func markerMenu(at point: Point2D, map: GameMap) -> NSMenu? {
+        guard let markerAction = editing?.markerAction, let marker = map.drawing(at: point), marker.tool == .marker else {
+            return nil
+        }
+        let ids: Set<String> =
+            selection.contains(marker.id)
+            ? Set(map.drawings.filter { $0.tool == .marker && selection.contains($0.id) }.map(\.id)) : [marker.id]
+        if !selection.contains(marker.id) { editing?.setSelection([marker.id]) }
+        needsDisplay = true
+        let hidden = map.drawings.filter { ids.contains($0.id) }.allSatisfy(\.isHiddenFromPlayers)
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.addItem(
+            MenuAction.item(hidden ? "Show to Players" : "Hide from Players") { markerAction(ids, .dmOnly(!hidden)) })
+        menu.addItem(.separator())
+        let title = ids.count == 1 ? "Delete Marker" : "Delete Markers"
+        let delete = MenuAction.item(title) { markerAction(ids, .delete) }
         delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
         return menu

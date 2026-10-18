@@ -11,9 +11,15 @@ struct MapChecks {
 
     private var g: Double { map.gridSize }
 
+    /// Said with every result, so ok true isn't read as more than it is.
+    static let notChecked =
+        "Walls are checked against each other, not against the background art: a passage or room side the art shows "
+        + "but nobody traced passes. Render the players' view (render_map view players, with a region) to compare."
+
     func run() -> [JSONValue] {
         var issues: [JSONValue] = []
         issues += wallGaps()
+        issues += looseWallEnds()
         issues += floatingDoors()
         issues += stackedDoors()
         issues += tokensInWalls()
@@ -74,6 +80,39 @@ struct MapChecks {
             }
         }
         return issues
+    }
+
+    /// A wall end with no wall anywhere near it: an unwalled room side or a passage drawn
+    /// with one wall. Ends near each other (an opening, a corridor mouth) or at a door are fine.
+    func looseWallEnds() -> [JSONValue] {
+        let segments = wallSegments
+        var loose: [(id: String, at: Point2D)] = []
+        for d in map.drawings where d.tool == .wall {
+            let p = d.worldPoints
+            guard p.count >= 2, let first = p.first, let last = p.last else { continue }
+            guard hypot(first.x - last.x, first.y - last.y) >= 1e-6 else { continue }
+            for (end, adjacent) in [(first, 0), (last, p.count - 2)] {
+                // Every segment but the one this end belongs to, so a U-shaped wall's two ends see each other.
+                let others = segments.enumerated().filter { _, s in
+                    !(s.id == d.id && (s.a == p[adjacent] && s.b == p[adjacent + 1]))
+                }.map(\.element)
+                let nearest = others.map { segmentDistance(end, $0.a, $0.b) }.min() ?? .infinity
+                guard nearest > g * 2 else { continue }
+                if map.doors.contains(where: { hypot($0.x - end.x, $0.y - end.y) < $0.size + g * 0.25 }) { continue }
+                loose.append((d.id, end))
+            }
+        }
+        guard !loose.isEmpty else { return [] }
+        let shown = loose.prefix(8).map { units.out($0.at).serialized() }.joined(separator: ", ")
+        let more = loose.count > 8 ? " and \(loose.count - 8) more" : ""
+        return [
+            issue(
+                "warning", "open_wall_end",
+                "\(loose.count) wall end(s) stop in open space, more than 2 cells from any other wall: \(shown)\(more). "
+                    + "Sight and light pass round them, so a room side or passage there is unwalled. If the art shows a wall, "
+                    + "continue the wall to the next one (draw_walls with snap_tolerance helps); fine for a lone pillar or cliff.",
+                ids: Array(Set(loose.map(\.id))).sorted(), at: loose[0].at)
+        ]
     }
 
     /// Doors that aren't on any wall: when open there is nothing to walk through, and when
@@ -202,9 +241,42 @@ struct MapChecks {
                         "warning", "light_in_wall",
                         "\(light.name ?? "A light") sits on a wall, so it may light only one side. Move it half a "
                             + "cell into the room.", ids: [light.id], at: centre))
+            } else if let heading = escapeHeading(from: centre) {
+                issues.append(
+                    issue(
+                        ambient == .dark ? "warning" : "info", "light_not_enclosed",
+                        "\(light.name ?? "A light")'s light isn't closed in by walls: it reaches open map heading "
+                            + "\(heading). Either it sits outside every traced room (in solid rock, say) or its room has an "
+                            + "unwalled side or passage. Render that region, then move the light or trace the missing "
+                            + "wall. Fine for a campfire outdoors.", ids: [light.id], at: centre))
             }
         }
         return issues
+    }
+
+    /// Where sight from `origin` gets out past every wall and closed door, as a compass
+    /// heading, or nil when walls close it in. Nil on maps with no walls, where nothing is enclosed.
+    func escapeHeading(from origin: Point2D) -> String? {
+        let walls = LineOfSight.sightWalls(of: map)
+        guard !walls.isEmpty, let box = map.contentBounds(library: library) else { return nil }
+        let radius = hypot(box.width, box.height) + hypot(origin.x - box.x, origin.y - box.y) + g * 10
+        let rays = 180
+        var escaped: [Double] = []
+        for i in 0..<rays {
+            let angle = Double(i) / Double(rays) * 2 * .pi
+            let end = Point2D(x: origin.x + radius * cos(angle), y: origin.y + radius * sin(angle))
+            let hit = walls.contains { wall in
+                !wall.letsSightThrough(from: origin) && Self.crosses(origin, end, wall.start, wall.end)
+            }
+            if !hit { escaped.append(angle) }
+        }
+        guard !escaped.isEmpty else { return nil }
+        let x = escaped.map(cos).reduce(0, +)
+        let y = escaped.map(sin).reduce(0, +)
+        let degrees = (atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
+        // y points down, so 90 degrees is south.
+        let names = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"]
+        return names[Int((degrees / 45).rounded()) % 8]
     }
 
     /// A pin shared with players but with nothing for them to read.
@@ -260,6 +332,17 @@ struct MapChecks {
                 "\(ids.count) object(s) lie outside the background image. Fine if intended; otherwise check the "
                     + "background's position and scale against your coordinates.", ids: ids)
         ]
+    }
+
+    /// Whether p1→p2 crosses p3→p4, counting a touch at either end of p3→p4, so a ray through
+    /// the corner two walls share can't slip between them on rounding.
+    static func crosses(_ p1: Point2D, _ p2: Point2D, _ p3: Point2D, _ p4: Point2D) -> Bool {
+        let den = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x)
+        guard abs(den) >= 1e-10 else { return false }
+        let t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / den
+        let u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / den
+        let slack = 1e-6
+        return (0...1).contains(t) && (-slack...(1 + slack)).contains(u)
     }
 
     /// Whether segment a–b crosses or lies inside `box`.

@@ -18,6 +18,7 @@ extension GraphiumTools {
             items.append(.object(item))
         }
         return .json([
+            "server": Self.serverInfo,
             "folders": .array(store.roots.map { JSONValue.string($0.path) }),
             "campaigns": .array(items),
         ])
@@ -52,13 +53,38 @@ extension GraphiumTools {
         return .json(Describe.campaign(loaded.campaign, path: loaded.url.path, assets: loaded.allAssetNames))
     }
 
+    /// Which server this is, so a model (or the DM) can tell a stale install from a missing feature.
+    static var serverInfo: JSONValue {
+        ["name": "graphium-mcp", "version": .string(GraphiumTools.version)]
+    }
+
     // MARK: Maps
 
     func getMap(_ args: Arguments) throws -> ToolResult {
-        let includePoints = try args.bool("include_marker_points") ?? false
-        return try withMap(args, write: false) { loaded, index, units in
-            Describe.map(loaded.campaign.maps[index], campaign: loaded.campaign, units: units, includeMarkerPoints: includePoints)
+        try withMap(args, write: false) { loaded, index, units in
+            var filter = Describe.MapFilter()
+            filter.includeMarkerPoints = try args.bool("include_marker_points") ?? false
+            filter.summary = try args.bool("summary") ?? false
+            if let kinds = try args.strings("kinds") {
+                let unknown = kinds.filter { !Describe.MapFilter.kinds.contains($0) }
+                guard unknown.isEmpty else {
+                    throw ToolError(
+                        "kinds can't include \(unknown.joined(separator: ", ")). Use \(Describe.MapFilter.kinds.joined(separator: ", ")).")
+                }
+                filter.kinds = Set(kinds)
+            }
+            filter.region = try Self.region(args, units: units)
+            return Describe.map(loaded.campaign.maps[index], campaign: loaded.campaign, units: units, filter: filter)
         }
+    }
+
+    /// An optional `region` {x, y, width, height} in the call's units, as map pixels.
+    static func region(_ args: Arguments, units: Units) throws -> Bounds? {
+        guard let r = args.values["region"], !r.isNull else { return nil }
+        let ra = Arguments(r, context: "region")
+        return Bounds(
+            x: units.px(try ra.requiredDouble("x")), y: units.px(try ra.requiredDouble("y")),
+            width: units.px(try ra.requiredDouble("width")), height: units.px(try ra.requiredDouble("height")))
     }
 
     func addMap(_ args: Arguments) throws -> ToolResult {
@@ -116,8 +142,7 @@ extension GraphiumTools {
                 return ["background": .null]
             }
             let path = try args.requiredString("image_path")
-            let url = try store.resolve(path)
-            let image = try ImageImport.load(url, kind: .map)
+            let image = try ImageImport.load(try store.resolveImage(path), kind: .map)
             let name = loaded.addAsset(image.data, preferredName: image.preferredName)
             let position = units.px(try args.point("position") ?? .zero)
             let gridSize = loaded.campaign.maps[index].gridSize
@@ -158,17 +183,52 @@ extension GraphiumTools {
 
     func drawWalls(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: true) { loaded, index, units in
+            let tolerance = units.px(try args.double("snap_tolerance") ?? 0)
+            guard tolerance >= 0 else { throw ToolError("snap_tolerance must be 0 or more.") }
             var added: [JSONValue] = []
+            var snapped = 0
             for wall in try args.objects("walls") {
                 var points = try wall.points("points", minimum: 2).map { units.px($0) }
+                if tolerance > 0 {
+                    let result = Self.snap(points, to: loaded.campaign.maps[index], tolerance: tolerance)
+                    points = result.points
+                    snapped += result.moved
+                }
                 if try wall.bool("closed") == true, let first = points.first, points.last != first { points.append(first) }
                 let kind = try wall.enumValue("kind", WallKind.self, allowed: ["wall", "window"]) ?? .wall
                 let drawing = Self.wallStroke(points, kind: kind, oneWay: try wall.bool("one_way") ?? false)
                 loaded.campaign.maps[index].drawings.append(drawing)
                 added.append(.string(drawing.id))
             }
-            return ["added_wall_ids": .array(added)]
+            var out: [String: JSONValue] = ["added_wall_ids": .array(added)]
+            if tolerance > 0 { out["snapped_points"] = .number(Double(snapped)) }
+            return .object(out)
         }
+    }
+
+    /// Moves points onto the corners of walls already on the map (and, for a polyline's two
+    /// ends, onto the nearest point of a wall) when within `tolerance` pixels, so rooms close
+    /// without hand-matching coordinates.
+    static func snap(_ points: [Point2D], to map: GameMap, tolerance: Double) -> (points: [Point2D], moved: Int) {
+        let walls = map.wallStrokes.map(\.worldPoints)
+        let corners = walls.flatMap { $0 }
+        let segments = walls.flatMap { p in p.count < 2 ? [] : (1..<p.count).map { (p[$0 - 1], p[$0]) } }
+        var moved = 0
+        let result = points.enumerated().map { i, point -> Point2D in
+            if let corner = corners.min(by: { hypot($0.x - point.x, $0.y - point.y) < hypot($1.x - point.x, $1.y - point.y) }),
+                hypot(corner.x - point.x, corner.y - point.y) <= tolerance
+            {
+                if corner != point { moved += 1 }
+                return corner
+            }
+            guard i == 0 || i == points.count - 1 else { return point }
+            let nearest = segments.map { closestPoint(point, $0.0, $0.1) }
+                .min { hypot($0.x - point.x, $0.y - point.y) < hypot($1.x - point.x, $1.y - point.y) }
+            guard let nearest, hypot(nearest.x - point.x, nearest.y - point.y) <= tolerance else { return point }
+            if nearest != point { moved += 1 }
+            return nearest
+        }
+        return (result, moved)
     }
 
     static func wallStroke(_ points: [Point2D], kind: WallKind = .wall, oneWay: Bool = false) -> Drawing {
@@ -368,6 +428,7 @@ extension GraphiumTools {
                 token.visionRadius = try spec.double("vision_ft")
                 token.darkvision = try spec.double("darkvision_ft")
                 token.movementSpeed = try spec.double("speed_ft")
+                token.playerName = try spec.string("player_name")
 
                 if let reference = try spec.string("library_item") {
                     guard let item = Self.libraryItem(reference, in: loaded.campaign.tokenLibrary) else {
@@ -376,7 +437,7 @@ extension GraphiumTools {
                     token.libraryItemId = item.id
                     token.src = item.src
                 } else if let path = try spec.string("image_path") {
-                    let image = try ImageImport.load(try store.resolve(path), kind: .token)
+                    let image = try ImageImport.load(try store.resolveImage(path), kind: .token)
                     token.src = loaded.addAsset(image.data, preferredName: image.preferredName)
                 } else {
                     let label = token.name ?? (type == .pc ? "PC" : "NPC")
@@ -578,7 +639,8 @@ extension GraphiumTools {
                 let color = try spec.string("color").map { try Self.color($0, "\(spec.context).color") }
                 let drawing = Drawing(
                     tool: .marker, points: points.flatMap { [$0.x, $0.y] }, color: color ?? StrokeDefaults.markerColor,
-                    size: try spec.double("width_px") ?? StrokeDefaults.markerSize)
+                    size: try spec.double("width_px") ?? StrokeDefaults.markerSize,
+                    isDMOnly: try spec.bool("dm_only") == true ? true : nil)
                 loaded.campaign.maps[index].drawings.append(drawing)
                 added.append(.string(drawing.id))
             }
@@ -618,6 +680,11 @@ extension GraphiumTools {
                     if take("vision_ft") { map.tokens[i].visionRadius = try change.double("vision_ft") }
                     if take("darkvision_ft") { map.tokens[i].darkvision = try change.double("darkvision_ft") }
                     if take("speed_ft") { map.tokens[i].movementSpeed = try change.double("speed_ft") }
+                    // null goes back to the token's name; "" shows players no name.
+                    if take("player_name") || change.values["player_name"]?.isNull == true {
+                        used.insert("player_name")
+                        map.tokens[i].playerName = try change.string("player_name")
+                    }
                     // New art only; name, stats and any library link stay (as Change Image in the app).
                     if take("image_library_item"), let reference = try change.string("image_library_item") {
                         guard let item = Self.libraryItem(reference, in: loaded.campaign.tokenLibrary) else {
@@ -626,7 +693,7 @@ extension GraphiumTools {
                         map.tokens[i].src = item.src
                     }
                     if take("image_path"), let path = try change.string("image_path") {
-                        let image = try ImageImport.load(try store.resolve(path), kind: .token)
+                        let image = try ImageImport.load(try store.resolveImage(path), kind: .token)
                         map.tokens[i].src = loaded.addAsset(image.data, preferredName: image.preferredName)
                     }
                 } else if let i = map.doors.firstIndex(where: { $0.id == id }) {
@@ -665,6 +732,9 @@ extension GraphiumTools {
                     }
                     if !isWall, take("color"), let color = try change.string("color") {
                         map.drawings[i].color = try Self.color(color, "\(change.context).color")
+                    }
+                    if !isWall, take("dm_only"), let dmOnly = try change.bool("dm_only") {
+                        map.setMarkersDMOnly(dmOnly, ids: [id])
                     }
                 } else if let i = map.lights.firstIndex(where: { $0.id == id }) {
                     kind = "light"
@@ -782,6 +852,67 @@ extension GraphiumTools {
         }
     }
 
+    func moveObjects(_ args: Arguments) throws -> ToolResult {
+        try withMap(args, write: true) { loaded, index, units in
+            let ids = try args.strings("ids") ?? []
+            guard !ids.isEmpty else { throw ToolError("ids needs at least one id.") }
+            var map = loaded.campaign.maps[index]
+            var positions: [String: Point2D] = [:]
+            for id in ids {
+                if let t = map.tokens.first(where: { $0.id == id }) {
+                    positions[id] = Point2D(x: t.x, y: t.y)
+                } else if let l = map.lights.first(where: { $0.id == id }) {
+                    positions[id] = Point2D(x: l.x, y: l.y)
+                } else if let n = map.notes.first(where: { $0.id == id }) {
+                    positions[id] = Point2D(x: n.x, y: n.y)
+                } else if let e = map.effects.first(where: { $0.id == id }) {
+                    positions[id] = map.effectOrigin(e, library: loaded.campaign.libraryIndex)
+                } else {
+                    throw ToolError(
+                        "No token, light, note or effect \(id) on \(map.name). Use get_map for ids; move walls and doors with "
+                            + "update_objects.")
+                }
+            }
+            let by = try args.point("by").map(units.px)
+            let to = try args.point("to").map(units.px)
+            guard (by == nil) != (to == nil) else {
+                throw ToolError("Give either by [dx, dy] (how far to move) or to [x, y] (where the group's top-left goes).")
+            }
+            var offset = by ?? .zero
+            if let to {
+                let minX = positions.values.map(\.x).min() ?? 0
+                let minY = positions.values.map(\.y).min() ?? 0
+                offset = Point2D(x: to.x - minX, y: to.y - minY)
+            }
+            var moved: [JSONValue] = []
+            for id in ids {
+                if let i = map.tokens.firstIndex(where: { $0.id == id }) {
+                    map.tokens[i].x += offset.x
+                    map.tokens[i].y += offset.y
+                    moved.append(["id": .string(id), "kind": "token", "position": units.out(Point2D(x: map.tokens[i].x, y: map.tokens[i].y))])
+                } else if let i = map.lights.firstIndex(where: { $0.id == id }) {
+                    map.lights[i].x += offset.x
+                    map.lights[i].y += offset.y
+                    moved.append(["id": .string(id), "kind": "light", "center": units.out(Point2D(x: map.lights[i].x, y: map.lights[i].y))])
+                } else if let i = map.notes.firstIndex(where: { $0.id == id }) {
+                    map.notes[i].x += offset.x
+                    map.notes[i].y += offset.y
+                    moved.append(["id": .string(id), "kind": "note", "center": units.out(Point2D(x: map.notes[i].x, y: map.notes[i].y))])
+                } else if let i = map.effects.firstIndex(where: { $0.id == id }) {
+                    // An effect whose carrier moves in this group already went along with it.
+                    if !(map.effects[i].tokenID.map(ids.contains) ?? false) {
+                        map.effects[i].x += offset.x
+                        map.effects[i].y += offset.y
+                    }
+                    let origin = map.effectOrigin(map.effects[i], library: loaded.campaign.libraryIndex)
+                    moved.append(["id": .string(id), "kind": "effect", "origin": units.out(origin)])
+                }
+            }
+            loaded.campaign.maps[index] = map
+            return ["moved": .array(moved), "by": units.out(offset)]
+        }
+    }
+
     func clearMap(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: true) { loaded, index, _ in
             let layers = try args.strings("layers") ?? []
@@ -862,13 +993,7 @@ extension GraphiumTools {
         let format = try args.string("format") ?? "image"
         guard ["image", "ascii", "both"].contains(format) else { throw ToolError("format must be image, ascii or both.") }
         let players = (try args.string("view") ?? "dm") == "players"
-        var region: Bounds?
-        if let r = args.values["region"], !r.isNull {
-            let ra = Arguments(r, context: "region")
-            region = Bounds(
-                x: units.px(try ra.requiredDouble("x")), y: units.px(try ra.requiredDouble("y")),
-                width: units.px(try ra.requiredDouble("width")), height: units.px(try ra.requiredDouble("height")))
-        }
+        let region = try Self.region(args, units: units)
         let maxPx = min(max(try args.int("max_px") ?? 1200, 200), 2400)
         var content: [ToolResult.Content] = []
         if format != "ascii" {
@@ -895,6 +1020,7 @@ extension GraphiumTools {
                 "map": .string(loaded.campaign.maps[index].name),
                 "ok": .bool(issues.isEmpty),
                 "issues": .array(issues),
+                "not_checked": .string(MapChecks.notChecked),
             ]
         }
     }
@@ -910,7 +1036,7 @@ extension GraphiumTools {
     }
 
     func undo(_ args: Arguments) throws -> ToolResult {
-        let remaining = try store.undo(try args.requiredString("campaign"))
+        let remaining = try store.undo(try args.requiredString("campaign"), force: try args.bool("force") ?? false)
         return .json(["undone": true, "steps_left": .number(Double(remaining))])
     }
 
@@ -927,12 +1053,18 @@ extension GraphiumTools {
 
 /// Distance from `p` to the segment a–b.
 func segmentDistance(_ p: Point2D, _ a: Point2D, _ b: Point2D) -> Double {
+    let c = closestPoint(p, a, b)
+    return hypot(c.x - p.x, c.y - p.y)
+}
+
+/// The point of segment a–b nearest `p`.
+func closestPoint(_ p: Point2D, _ a: Point2D, _ b: Point2D) -> Point2D {
     let dx = b.x - a.x
     let dy = b.y - a.y
     let lengthSquared = dx * dx + dy * dy
     var t = lengthSquared > 0 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared : 0
     t = min(max(t, 0), 1)
-    return hypot(a.x + t * dx - p.x, a.y + t * dy - p.y)
+    return Point2D(x: a.x + t * dx, y: a.y + t * dy)
 }
 
 /// SplitMix64, so a seed gives the same dungeon every time.

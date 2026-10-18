@@ -470,6 +470,7 @@ struct ArchitectView: View {
                 effectAction: { ids, action in performEffectAction(ids, action) },
                 doorAction: { id, action in performDoorAction(id, action) },
                 wallAction: { ids, action in performWallAction(ids, action) },
+                markerAction: { ids, action in performMarkerAction(ids, action) },
                 setMeasurement: { setMeasurement($0) },
                 setTool: { selectTool($0) },
                 toggleDoorOrientation: {
@@ -858,6 +859,19 @@ struct ArchitectView: View {
             }
         case .flip:
             document.edit("Flip \(plural)", undoManager: undoManager) { $0.activeMap.flipWalls(ids) }
+        case .delete:
+            document.edit("Delete \(plural)", undoManager: undoManager) { $0.activeMap.removeItems(ids) }
+            selection.subtract(ids)
+        }
+    }
+
+    private func performMarkerAction(_ ids: Set<String>, _ action: MarkerAction) {
+        let plural = ids.count == 1 ? "Marker" : "Markers"
+        switch action {
+        case .dmOnly(let dmOnly):
+            document.edit(dmOnly ? "Hide \(plural) from Players" : "Show \(plural) to Players", undoManager: undoManager) {
+                $0.activeMap.setMarkersDMOnly(dmOnly, ids: ids)
+            }
         case .delete:
             document.edit("Delete \(plural)", undoManager: undoManager) { $0.activeMap.removeItems(ids) }
             selection.subtract(ids)

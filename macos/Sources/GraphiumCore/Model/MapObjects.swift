@@ -25,11 +25,14 @@ public struct Token: Codable, Equatable, Identifiable, Sendable {
     public var movementSpeed: Double?
     /// Native only: darkvision range in feet, used on maps with lighting (`GameMap.ambientLight`).
     public var darkvision: Double?
+    /// Native only: the name players see on the World View. Nil shows the token's name;
+    /// empty shows none (decision 014).
+    public var playerName: String?
 
     public init(
         id: String = newID(), x: Double, y: Double, src: String, libraryItemId: String? = nil,
         scale: Double? = nil, type: CreatureType? = nil, visionRadius: Double? = nil,
-        name: String? = nil, movementSpeed: Double? = nil, darkvision: Double? = nil
+        name: String? = nil, movementSpeed: Double? = nil, darkvision: Double? = nil, playerName: String? = nil
     ) {
         self.id = id
         self.x = x
@@ -42,6 +45,7 @@ public struct Token: Codable, Equatable, Identifiable, Sendable {
         self.name = name
         self.movementSpeed = movementSpeed
         self.darkvision = darkvision
+        self.playerName = playerName
     }
 }
 
@@ -82,11 +86,14 @@ public struct Drawing: Codable, Equatable, Identifiable, Sendable {
     /// Walls only: sight passes from the left of the stroke as drawn (on screen, facing from
     /// its first point to its last) and is blocked from the right. Nil is two-way.
     public var oneWay: Bool?
+    /// Native only, markers only: drawn in the Architect, never on the World View. Written
+    /// only when true (decision 014).
+    public var isDMOnly: Bool?
 
     public init(
         id: String = newID(), tool: DrawingTool, points: [Double], color: String, size: Double,
         pressures: [Double]? = nil, scale: Double? = nil, x: Double? = nil, y: Double? = nil,
-        wallKind: WallKind? = nil, oneWay: Bool? = nil
+        wallKind: WallKind? = nil, oneWay: Bool? = nil, isDMOnly: Bool? = nil
     ) {
         self.id = id
         self.tool = tool
@@ -99,7 +106,11 @@ public struct Drawing: Codable, Equatable, Identifiable, Sendable {
         self.y = y
         self.wallKind = wallKind
         self.oneWay = oneWay
+        self.isDMOnly = isDMOnly
     }
+
+    /// A marker the players never see.
+    public var isHiddenFromPlayers: Bool { tool == .marker && isDMOnly == true }
 
     /// A wall stroke that stops sight (any wall but a window).
     public var blocksSight: Bool { tool == .wall && (wallKind ?? .wall) == .wall }

@@ -116,6 +116,11 @@ enum WallAction {
     case kind(WallKind), oneWay(Bool), flip, delete
 }
 
+/// Right-click actions on a marker stroke (decision 014).
+enum MarkerAction {
+    case dmOnly(Bool), delete
+}
+
 /// Lets an NSMenuItem run a closure.
 final class MenuAction: NSObject {
     let run: () -> Void
