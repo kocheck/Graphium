@@ -1,6 +1,6 @@
 # Decision 009: Lighting in the World View
 
-Status: PROPOSED (Claude's default, built in the lights PR, waiting on Kyle)
+Status: DECIDED (Kyle chose lighter fog, 2026-10-18)
 
 ## Question
 
