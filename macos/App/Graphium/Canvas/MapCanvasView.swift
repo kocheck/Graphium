@@ -1552,8 +1552,8 @@ final class MapCanvasNSView: NSView {
         }
         drawStairs(stairs, labels: map.stairsLabels, context: context)
         guard !isPlayerView else { return }
-        let width = 1.5 / viewport.zoom
-        let dash = [5 / viewport.zoom, 3 / viewport.zoom]
+        let width = CGFloat(1.5 / viewport.zoom)
+        let dash: [CGFloat] = [5 / viewport.zoom, 3 / viewport.zoom]
         for s in stairs where selection.contains(s.id) {
             context.strokeMark(CGPath(rect: CGRect(bounds: s.bounds), transform: nil), width: width, dash: dash)
             guard let sister = map.sister(of: s), let end = stairs.first(where: { $0.id == sister.id }) else { continue }
