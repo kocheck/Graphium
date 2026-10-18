@@ -10,12 +10,16 @@ let package = Package(
     products: [
         .library(name: "GraphiumCore", targets: ["GraphiumCore"]),
         .executable(name: "graphium-mcp", targets: ["graphium-mcp"]),
+        // Metal drawing for the World View (fog, light); Metal and Core Graphics only, no AppKit.
+        .library(name: "GraphiumRender", targets: ["GraphiumRender"]),
     ],
     targets: [
         .target(name: "GraphiumCore"),
+        .target(name: "GraphiumRender", dependencies: ["GraphiumCore"]),
         .testTarget(name: "GraphiumCoreTests", dependencies: ["GraphiumCore"]),
         .target(name: "GraphiumMCP", dependencies: ["GraphiumCore"]),
         .executableTarget(name: "graphium-mcp", dependencies: ["GraphiumMCP"]),
         .testTarget(name: "GraphiumMCPTests", dependencies: ["GraphiumMCP", "GraphiumCore"]),
+        .testTarget(name: "GraphiumRenderTests", dependencies: ["GraphiumRender", "GraphiumCore"]),
     ]
 )

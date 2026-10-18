@@ -22,6 +22,8 @@ targets:
     sources: [Graphium]
     dependencies:
       - package: GraphiumCore
+      - package: GraphiumCore
+        product: GraphiumRender
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mac
