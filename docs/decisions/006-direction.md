@@ -4,10 +4,10 @@ Status: DECIDED
 
 ## Question
 
-The brief (`docs/planning/ui-redesign-brief.md` §10) names three directions. All three are
+The brief (`archive/web/docs/planning/ui-redesign-brief.md` §10) names three directions. All three are
 rendered at `/design-system` (switcher `playground-direction-a|b|c`), pass
 `npm run contrast -- --direction <x>` and the six direction `test:a11y` scans, and are
-screenshotted under `docs/planning/screenshots/006a-step2/` (six files, listed below). Which one
+screenshotted under `archive/web/docs/planning/screenshots/006a-step2/` (six files, listed below). Which one
 is applied by plan 006b, or which hybrid (named as "<base direction> + <one named element of
 another>")?
 

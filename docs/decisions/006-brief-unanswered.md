@@ -1,4 +1,4 @@
-# Decision 006-brief-unanswered: Has Kyle confirmed docs/planning/ui-redesign-brief.md?
+# Decision 006-brief-unanswered: Has Kyle confirmed archive/web/docs/planning/ui-redesign-brief.md?
 
 Status: DECIDED
 

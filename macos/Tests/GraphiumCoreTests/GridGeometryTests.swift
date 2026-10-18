@@ -2,7 +2,7 @@ import XCTest
 
 @testable import GraphiumCore
 
-/// Mirrors src/utils/grid.test.ts and gridGeometry.test.ts (CORE_SPEC §3.1).
+/// Mirrors archive/web/src/utils/grid.test.ts and gridGeometry.test.ts (CORE_SPEC §3.1).
 final class GridGeometryTests: XCTestCase {
     let square = SquareGrid(cellSize: 50)
 

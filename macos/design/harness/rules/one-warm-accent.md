@@ -3,8 +3,8 @@ id: one-warm-accent
 applies_to: [mac, architect, canvas, toolbar, overlay]
 sources:
   [
-    'docs/planning/decisions/006-direction.md',
-    'docs/planning/ui-redesign-brief.md#2-what-fresh-means-for-graphium',
+    'docs/decisions/006-direction.md',
+    'archive/web/docs/planning/ui-redesign-brief.md#2-what-fresh-means-for-graphium',
     'brief §9 rows 1 and 4',
   ]
 confidence: decided

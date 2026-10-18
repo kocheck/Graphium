@@ -37,8 +37,7 @@
     "test:e2e:functional": "playwright test tests/functional/ --config=playwright.config.ts",
     "test:e2e:ui": "playwright test --config=playwright.config.ts --ui",
     "test:e2e:debug": "playwright test --config=playwright.config.ts --debug",
-    "test:e2e:report": "playwright show-report",
-    "prepare": "husky"
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

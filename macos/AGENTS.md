@@ -1,6 +1,6 @@
 # Graphium for macOS: agent guide
 
-Start with [README.md](README.md) and [docs/PRINCIPLES.md](docs/PRINCIPLES.md) (privacy first, file over app).
+Start with [README.md](README.md) and [docs/PRINCIPLES.md](docs/PRINCIPLES.md) (privacy first, file over app). How builds, checks and PRs work across the repo is in the root [AGENTS.md](../AGENTS.md).
 
 | Task                                 | Read first                                                                                                                           |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |

@@ -1,7 +1,7 @@
 import Foundation
 
 /// A scene's ambience: looping beds plus pools of short clips fired at random
-/// (docs/planning/soundscapes/plan.md). The six built-in scenes play bundled CC0
+/// (macos/docs/planning/soundscapes/plan.md). The six built-in scenes play bundled CC0
 /// recordings listed in `App/Graphium/Sounds/ledger.json`; they aren't saved in the campaign.
 public struct Soundscape: Equatable, Identifiable, Sendable {
     public var id: String

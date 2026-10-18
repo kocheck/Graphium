@@ -3,7 +3,7 @@
 
     python3 scripts/sounds/process.py ORIGINALS_DIR OUT_DIR
 
-Reads docs/planning/soundscapes/v1-sounds.tsv (one row per chosen sound, licenses
+Reads macos/docs/planning/soundscapes/v1-sounds.tsv (one row per chosen sound, licenses
 checked on each Freesound page). Originals are named `<freesound id>__<author>__<name>.<ext>`,
 as Freesound downloads them, and are never committed.
 
@@ -151,7 +151,7 @@ def slug(title):
 def main():
     originals, out_dir = Path(sys.argv[1]), Path(sys.argv[2])
     out_dir.mkdir(parents=True, exist_ok=True)
-    table = Path(__file__).resolve().parents[3] / "docs/planning/soundscapes/v1-sounds.tsv"
+    table = Path(__file__).resolve().parents[3] / "macos/docs/planning/soundscapes/v1-sounds.tsv"
     rows = list(csv.DictReader(table.open(), delimiter="\t"))
     only = set(sys.argv[3:])
     delay = limiter_delay()

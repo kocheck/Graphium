@@ -2,7 +2,7 @@ import XCTest
 
 @testable import GraphiumCore
 
-/// Mirrors src/utils/measurement.test.ts and MovementRangeOverlay behaviour (CORE_SPEC §3.2, §3.4).
+/// Mirrors archive/web/src/utils/measurement.test.ts and MovementRangeOverlay behaviour (CORE_SPEC §3.2, §3.4).
 final class MeasurementTests: XCTestCase {
     func testEuclideanDistance() {
         XCTAssertEqual(Measure.euclideanDistance(Point2D(x: 0, y: 0), Point2D(x: 3, y: 4)), 5)

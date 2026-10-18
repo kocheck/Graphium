@@ -438,7 +438,7 @@ struct SessionConsolePanel: View {
         }
     }
 
-    /// Built-in scenes (docs/planning/soundscapes/plan.md): one plays at a time under the
+    /// Built-in scenes (macos/docs/planning/soundscapes/plan.md): one plays at a time under the
     /// music, and each layer has its own level for this session.
     private var soundscapesSection: some View {
         VStack(alignment: .leading, spacing: 8) {

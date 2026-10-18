@@ -1,7 +1,7 @@
 ---
 version: 1
 name: "Graphium native — A · Instrument panel"
-description: "Direction A (docs/planning/decisions/006-direction.md) carried into the native macOS app: native chrome, ink-on-dark-stock app surfaces, one warm amber accent, map-first glass overlays (decision 007), monospaced readouts, and a separate player-safe World View set."
+description: "Direction A (docs/decisions/006-direction.md) carried into the native macOS app: native chrome, ink-on-dark-stock app surfaces, one warm amber accent, map-first glass overlays (decision 007), monospaced readouts, and a separate player-safe World View set."
 colors:
   accent: "#FFC53D"
   accent-dark: "#FFC53D"
@@ -71,14 +71,14 @@ Overview · Colors · Typography · Layout · Depth · Shapes · Components · M
 
 ## Overview
 
-Graphium's look was decided for the web app in plan 006: the [brief](../../../docs/planning/ui-redesign-brief.md) (mood words **Etched · Instrument · Warm ink · Decisive · Quiet**) and [Direction A · Instrument panel](../../../docs/planning/decisions/006-direction.md). This file carries that decision into the native app. [Decision 007](../../../docs/planning/decisions/007-map-first-glass.md) (map-first glass, 2026-10-17) replaces 006's "etched, not floating" for overlays on the map; everything else from 006 stands.
+Graphium's look was decided for the web app in plan 006: the [brief](../../../archive/web/docs/planning/ui-redesign-brief.md) (mood words **Etched · Instrument · Warm ink · Decisive · Quiet**) and [Direction A · Instrument panel](../../../docs/decisions/006-direction.md). This file carries that decision into the native app. [Decision 007](../../../docs/decisions/007-map-first-glass.md) (map-first glass, 2026-10-17) replaces 006's "etched, not floating" for overlays on the map; everything else from 006 stands.
 
 Two owners split every screen:
 
 - **Apple owns native chrome**: window, toolbar, sidebar, inspector, menus, sheets, alerts, popovers, forms, pickers and their selection, focus and hover states. Leave their appearance, metrics and semantics alone. The app's `AccentColor` asset tints them (amber, not blue).
 - **Graphium owns its surfaces**: the map canvas and everything drawn on it, canvas overlays (map controls, the scale readout, toasts, banners, HUDs, the performance monitor), readouts, welcome cards and the World View. Tokens below apply only here.
 
-Values come from the web app's Radix scales (`src/styles/theme.css`) so both apps read as one product. Dark is the design lead; light is a faithful inversion (brief §7).
+Values come from the web app's Radix scales (`archive/web/src/styles/theme.css`) so both apps read as one product. Dark is the design lead; light is a faithful inversion (brief §7).
 
 ## Colors
 
