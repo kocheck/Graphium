@@ -35,6 +35,7 @@ extension GameMap {
         boxes += tokens.map { tokenBounds($0, library: library) }
         boxes += lights.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
         boxes += notes.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
+        boxes += effects.map { effectBounds($0, library: library) }
         boxes += stairs.map { Bounds(x: $0.x - $0.width / 2, y: $0.y - $0.height / 2, width: $0.width, height: $0.height) }
         guard var minX = boxes.first?.x, var minY = boxes.first?.y else { return nil }
         var maxX = minX, maxY = minY
@@ -45,6 +46,15 @@ extension GameMap {
             maxY = max(maxY, b.y + b.height)
         }
         return Bounds(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    /// The box around an effect's area, in pixels.
+    func effectBounds(_ effect: SpellEffect, library: [String: TokenLibraryItem]) -> Bounds {
+        let points = effectPolygon(effect, library: library)
+        let xs = points.map(\.x)
+        let ys = points.map(\.y)
+        let minX = xs.min() ?? 0, minY = ys.min() ?? 0
+        return Bounds(x: minX, y: minY, width: (xs.max() ?? minX) - minX, height: (ys.max() ?? minY) - minY)
     }
 
     var wallStrokes: [Drawing] { drawings.filter { $0.tool == .wall } }
@@ -87,6 +97,7 @@ enum Describe {
                 "stairs": .number(Double(map.stairs.count)),
                 "lights": .number(Double(map.lights.count)),
                 "notes": .number(Double(map.notes.count)),
+                "effects": .number(Double(map.effects.count)),
                 "markers": .number(Double(map.markerStrokes.count)),
                 "explored_fog_regions": .number(Double(map.exploredRegions.count)),
             ],
@@ -131,6 +142,28 @@ enum Describe {
         return .object(out)
     }
 
+    static func effect(_ effect: SpellEffect, map: GameMap, library: [String: TokenLibraryItem], units: Units) -> JSONValue {
+        var out: [String: JSONValue] = [
+            "id": .string(effect.id),
+            "shape": .string(effect.shape.rawValue),
+            "size_ft": .rounded(effect.size),
+            "origin": units.out(map.effectOrigin(effect, library: library)),
+            "look": .string(effect.look.rawValue),
+            "hidden": .bool(effect.isHidden),
+        ]
+        if effect.shape == .line { out["width_ft"] = .rounded(effect.width) }
+        if effect.shape.hasDirection { out["direction_deg"] = .rounded(effect.angle) }
+        if let tokenID = effect.tokenID {
+            out["carried_by"] = .string(tokenID)
+            if let token = map.tokens.first(where: { $0.id == tokenID }) {
+                out["carried_by_name"] = .string(ResolvedToken(token, library: library).name)
+            }
+        }
+        if let color = effect.color { out["color"] = .string(color) }
+        if !effect.label.isEmpty { out["label"] = .string(effect.label) }
+        return .object(out)
+    }
+
     static func sound(_ sound: NoteSound, console: SessionConsoleCatalog) -> JSONValue {
         var out: [String: JSONValue] = [
             "kind": .string(sound.kind == .sfx ? "effect" : sound.kind.rawValue),
@@ -147,7 +180,7 @@ enum Describe {
     /// What get_map returns: every kind, or only some; the whole map, or what touches `region`
     /// (pixels); walls with every point, or (summary) only their ids, size and ends.
     struct MapFilter {
-        static let kinds = ["walls", "doors", "tokens", "lights", "notes", "stairs", "markers", "background"]
+        static let kinds = ["walls", "doors", "tokens", "lights", "notes", "effects", "stairs", "markers", "background"]
         var kinds = Set(MapFilter.kinds)
         var region: Bounds?
         var summary = false
@@ -178,6 +211,12 @@ enum Describe {
             out["notes"] = .array(
                 map.notes.filter { filter.keeps(point($0.x, $0.y)) }.map {
                     note($0, console: campaign.sessionConsole, units: units)
+                })
+        }
+        if k.contains("effects") {
+            out["effects"] = .array(
+                map.effects.filter { filter.keeps(map.effectBounds($0, library: library)) }.map {
+                    effect($0, map: map, library: library, units: units)
                 })
         }
         if k.contains("walls") {
@@ -215,6 +254,7 @@ enum Describe {
                 "stairs": .number(Double(map.stairs.count)),
                 "lights": .number(Double(map.lights.count)),
                 "notes": .number(Double(map.notes.count)),
+                "effects": .number(Double(map.effects.count)),
                 "markers": .number(Double(map.markerStrokes.count)),
             ]
             out["filtered"] = .string(

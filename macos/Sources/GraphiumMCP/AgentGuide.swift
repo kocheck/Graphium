@@ -18,7 +18,9 @@ public enum AgentGuide {
         4. Then contents: add_tokens (PCs, NPCs and monsters), add_lights, add_stairs, draw_markers for \
         hazards, and add_notes for room keys: dm_notes for the DM's secrets, player_notes for read-aloud text, \
         shared only when the DM wants players to see the pin. A note's sounds attach Session Console tracks, \
-        effects or soundscapes by name, for the DM to play from the pin.
+        effects or soundscapes by name, for the DM to play from the pin. add_effects shows a spell's area of \
+        effect (circle, cone, line or cube in feet, with a look such as fire or ice), pinned to a point or \
+        carried_by a token so it moves with it.
         5. Check your work: render_map to see it, check_map to catch light leaks, open wall ends, lights outside \
         rooms and misplaced doors and tokens. check_map can't see the background art, so also render the players' \
         view. Fix with update_objects or remove_objects; undo reverts this server's last change.
@@ -242,6 +244,12 @@ public enum AgentGuide {
         - Notes: a pin at a centre point with a title, dm_notes (never shown to players) and player_notes. \
         shared puts the pin on the players' World View, where clicking it shows the title and player_notes. \
         Both are Markdown, shown formatted: use ## headings, - lists and **bold** to make a room key easy to scan.
+        - Spell effects: a 5e template at a point of origin, sized in feet. circle: origin is the centre, size_ft \
+        the radius (Fireball 20). cone: origin is the tip, size_ft its length (Burning Hands 15). line: size_ft \
+        long, width_ft wide (Lightning Bolt 100 by 5). cube: origin is the middle of one face, size_ft its side \
+        (Thunderwave 15). Cones, lines and cubes point along direction_deg (0 east, 90 south) or toward a point. \
+        carried_by a token keeps it on that token as it moves (Spirit Guardians). Players see effects unless \
+        hidden; they never block sight or movement.
         - add_rooms door and opening positions (at) are measured along the side from its top or left end to \
         the door's centre.
         - Hex and isometric maps use the same coordinates (cells = multiples of cell_px), but cells aren't \

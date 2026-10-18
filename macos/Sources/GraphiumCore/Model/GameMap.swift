@@ -24,7 +24,7 @@ public enum GridType: String, Codable, CaseIterable, Sendable {
 }
 
 /// One map: background, grid, tokens, drawings, doors, stairs, explored fog (and, native
-/// only, lights and note pins).
+/// only, lights, note pins and spell effects).
 /// (TS `MapData`, CORE_SPEC §1.3.) Decoding applies the TS `loadCampaign`
 /// fallbacks for every field, so older files load.
 public struct GameMap: Codable, Equatable, Identifiable, Sendable {
@@ -56,10 +56,12 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
     public var ambientLight: LightLevel?
     /// Native only: note pins (`MapNote`). Written only when not empty.
     public var notes: [MapNote]
+    /// Native only: spell areas of effect (`SpellEffect`). Written only when not empty.
+    public var effects: [SpellEffect]
 
     private enum CodingKeys: String, CodingKey {
         case id, name, tokens, drawings, doors, stairs, gridSize, gridType, gridColor
-        case exploredRegions, isDaylightMode, lights, ambientLight, notes
+        case exploredRegions, isDaylightMode, lights, ambientLight, notes, effects
         case background = "map"
     }
 
@@ -78,7 +80,8 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         isDaylightMode: Bool = false,
         lights: [LightSource] = [],
         ambientLight: LightLevel? = nil,
-        notes: [MapNote] = []
+        notes: [MapNote] = [],
+        effects: [SpellEffect] = []
     ) {
         self.id = id
         self.name = name
@@ -95,6 +98,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         self.lights = lights
         self.ambientLight = ambientLight
         self.notes = notes
+        self.effects = effects
     }
 
     public init(from decoder: Decoder) throws {
@@ -116,6 +120,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         lights = try c.decodeIfPresent([LightSource].self, forKey: .lights) ?? []
         ambientLight = try c.decodeIfPresent(LightLevel.self, forKey: .ambientLight)
         notes = try c.decodeIfPresent([MapNote].self, forKey: .notes) ?? []
+        effects = (try c.decodeIfPresent([SpellEffect.Lossy].self, forKey: .effects) ?? []).compactMap(\.effect)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -135,6 +140,7 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         if !lights.isEmpty { try c.encode(lights, forKey: .lights) }
         try c.encodeIfPresent(ambientLight, forKey: .ambientLight)
         if !notes.isEmpty { try c.encode(notes, forKey: .notes) }
+        if !effects.isEmpty { try c.encode(effects, forKey: .effects) }
     }
 
     /// Appends an explored region, dropping the oldest beyond the cap.

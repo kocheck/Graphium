@@ -65,6 +65,24 @@ extension MapCanvasNSView {
             }
             elements.append(element)
         }
+        // Spell areas: players reach only the ones drawn for them.
+        for effect in map.effects {
+            if isPlayerView, effect.isHidden || (effect.tokenID.map(hiddenTokenIDs.contains) ?? false) { continue }
+            let points = map.effectPolygon(effect, library: library)
+            guard let minX = points.map(\.x).min(), let maxX = points.map(\.x).max(), let minY = points.map(\.y).min(),
+                let maxY = points.map(\.y).max()
+            else { continue }
+            let what = effect.label.isEmpty ? effect.sizeDescription : "\(effect.label), \(effect.sizeDescription)"
+            let hidden = !isPlayerView && effect.isHidden ? ", hidden from players" : ""
+            let element = makeElement(
+                label: "Spell effect: \(what), \(effect.look.title)\(hidden)\(selection.contains(effect.id) ? ", selected" : "")",
+                bounds: Bounds(x: minX, y: minY, width: maxX - minX, height: maxY - minY))
+            if !isPlayerView, let editing {
+                let id = effect.id
+                element.onPress = { editing.setSelection([id]) }
+            }
+            elements.append(element)
+        }
         if !isPlayerView {
             // Lights are the DM's alone; players only see their effect.
             for light in map.lights {

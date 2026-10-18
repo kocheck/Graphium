@@ -568,6 +568,69 @@ extension GraphiumTools {
         }
     }
 
+    /// A token on `map` by id, else by name (the last one placed wins), for an effect to ride on.
+    static func token(_ reference: String, in map: GameMap, library: [String: TokenLibraryItem]) -> Token? {
+        map.tokens.last { $0.id == reference }
+            ?? map.tokens.last { ResolvedToken($0, library: library).name.caseInsensitiveCompare(reference) == .orderedSame }
+    }
+
+    static let effectShapes = SpellEffect.Shape.allCases.map(\.rawValue)
+    static let effectLooks = SpellEffect.Look.allCases.map(\.rawValue)
+
+    /// Degrees in [0, 360).
+    static func degrees(_ value: Double) -> Double {
+        let d = value.truncatingRemainder(dividingBy: 360)
+        return d < 0 ? d + 360 : d
+    }
+
+    /// The direction from `origin` toward `target`, or `direction_deg`, when either is given.
+    static func effectDirection(_ spec: Arguments, origin: Point2D, units: Units) throws -> Double? {
+        if let target = try spec.point("toward").map(units.px) {
+            return degrees(Measure.angleDegrees(from: origin, to: target))
+        }
+        return try spec.double("direction_deg").map(degrees)
+    }
+
+    func addEffects(_ args: Arguments) throws -> ToolResult {
+        try withMap(args, write: true) { loaded, index, units in
+            let library = loaded.campaign.libraryIndex
+            var map = loaded.campaign.maps[index]
+            var added: [JSONValue] = []
+            for spec in try args.objects("effects") {
+                guard let shape = try spec.enumValue("shape", SpellEffect.Shape.self, allowed: Self.effectShapes) else {
+                    throw ToolError("\(spec.context).shape is required: \(Self.effectShapes.joined(separator: ", ")).")
+                }
+                guard let size = try spec.double("size_ft"), size >= SpellEffect.minimumSize, size <= 1000 else {
+                    throw ToolError("\(spec.context).size_ft is required, from 5 to 1000.")
+                }
+                var origin = try spec.point("origin").map(units.px)
+                var carrier: Token?
+                if let reference = try spec.string("carried_by") {
+                    guard let token = Self.token(reference, in: map, library: library) else {
+                        throw ToolError("\(spec.context): no token \(reference) on \(map.name). Use get_map for token ids.")
+                    }
+                    carrier = token
+                    if origin == nil {
+                        let box = map.tokenBounds(token, library: library)
+                        origin = Point2D(x: box.x + box.width / 2, y: box.y + box.height / 2)
+                    }
+                }
+                guard let origin else { throw ToolError("\(spec.context) needs an origin, or carried_by.") }
+                var effect = SpellEffect(
+                    shape: shape, size: size, x: origin.x, y: origin.y, tokenID: carrier?.id,
+                    look: try spec.enumValue("look", SpellEffect.Look.self, allowed: Self.effectLooks) ?? .arcane,
+                    color: try spec.string("color").map { try Self.color($0, "\(spec.context).color") },
+                    label: try spec.string("label") ?? "", isHidden: try spec.bool("hidden") ?? false)
+                if let width = try spec.double("width_ft") { effect.width = max(1, width) }
+                if shape.hasDirection { effect.angle = try Self.effectDirection(spec, origin: origin, units: units) ?? 0 }
+                let placed = map.placeEffect(effect, library: library)
+                added.append(Describe.effect(placed, map: map, library: library, units: units))
+            }
+            loaded.campaign.maps[index] = map
+            return ["added_effects": .array(added)]
+        }
+    }
+
     func drawMarkers(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: true) { loaded, index, units in
             var added: [JSONValue] = []
@@ -697,6 +760,48 @@ extension GraphiumTools {
                     if take("sounds"), let sounds = try Self.noteSounds(change, console: loaded.campaign.sessionConsole) {
                         map.notes[i].sounds = sounds
                     }
+                } else if let i = map.effects.firstIndex(where: { $0.id == id }) {
+                    kind = "effect"
+                    let library = loaded.campaign.libraryIndex
+                    if take("carried_by"), let reference = try change.string("carried_by") {
+                        if reference.isEmpty {
+                            map.attachEffects([id], to: nil, library: library)
+                        } else {
+                            guard let token = Self.token(reference, in: map, library: library) else {
+                                throw ToolError("\(change.context): no token \(reference) on \(map.name).")
+                            }
+                            map.attachEffects([id], to: token.id, library: library)
+                        }
+                    }
+                    if take("origin"), let p = try change.point("origin").map(units.px) {
+                        // A carried effect keeps riding its token, from this point.
+                        let now = map.effectOrigin(map.effects[i], library: library)
+                        map.effects[i].x += p.x - now.x
+                        map.effects[i].y += p.y - now.y
+                    }
+                    if take("shape"),
+                        let shape = try change.enumValue("shape", SpellEffect.Shape.self, allowed: Self.effectShapes)
+                    {
+                        map.effects[i].shape = shape
+                    }
+                    if take("size_ft"), let size = try change.double("size_ft") {
+                        map.effects[i].size = min(1000, max(SpellEffect.minimumSize, size))
+                    }
+                    if take("width_ft"), let width = try change.double("width_ft") { map.effects[i].width = max(1, width) }
+                    if change.has("toward") || change.has("direction_deg") {
+                        used.formUnion(["toward", "direction_deg"].filter(change.has))
+                        let origin = map.effectOrigin(map.effects[i], library: library)
+                        if let angle = try Self.effectDirection(change, origin: origin, units: units) { map.effects[i].angle = angle }
+                    }
+                    if take("look"), let look = try change.enumValue("look", SpellEffect.Look.self, allowed: Self.effectLooks) {
+                        map.effects[i].look = look
+                    }
+                    if take("color") {
+                        let color = try change.string("color") ?? ""
+                        map.effects[i].color = color.isEmpty ? nil : try Self.color(color, "\(change.context).color")
+                    }
+                    if take("label") { map.effects[i].label = try change.string("label") ?? "" }
+                    if take("hidden"), let hidden = try change.bool("hidden") { map.effects[i].isHidden = hidden }
                 } else if let i = map.stairs.firstIndex(where: { $0.id == id }) {
                     kind = "stairs"
                     if take("center"), let p = try change.point("center").map(units.px) {
@@ -730,13 +835,18 @@ extension GraphiumTools {
             var map = loaded.campaign.maps[index]
             func count(_ m: GameMap) -> Int {
                 m.tokens.count + m.drawings.count + m.doors.count + m.stairs.count + m.lights.count + m.notes.count
+                    + m.effects.count
             }
+            let effectsBefore = map.effects.filter { !ids.contains($0.id) }.count
             let before = count(map)
             map.removeItems(ids)
             map.stairs.removeAll { ids.contains($0.id) }
-            let removed = before - count(map)
+            // Effects the removed tokens carried go with them.
+            let carried = effectsBefore - map.effects.count
+            let removed = before - count(map) - carried
             loaded.campaign.maps[index] = map
             var out: [String: JSONValue] = ["removed": .number(Double(removed))]
+            if carried > 0 { out["carried_effects_removed"] = .number(Double(carried)) }
             if removed < ids.count { out["not_found"] = .number(Double(ids.count - removed)) }
             return .object(out)
         }
@@ -755,9 +865,11 @@ extension GraphiumTools {
                     positions[id] = Point2D(x: l.x, y: l.y)
                 } else if let n = map.notes.first(where: { $0.id == id }) {
                     positions[id] = Point2D(x: n.x, y: n.y)
+                } else if let e = map.effects.first(where: { $0.id == id }) {
+                    positions[id] = map.effectOrigin(e, library: loaded.campaign.libraryIndex)
                 } else {
                     throw ToolError(
-                        "No token, light or note \(id) on \(map.name). Use get_map for ids; move walls and doors with "
+                        "No token, light, note or effect \(id) on \(map.name). Use get_map for ids; move walls and doors with "
                             + "update_objects.")
                 }
             }
@@ -786,6 +898,14 @@ extension GraphiumTools {
                     map.notes[i].x += offset.x
                     map.notes[i].y += offset.y
                     moved.append(["id": .string(id), "kind": "note", "center": units.out(Point2D(x: map.notes[i].x, y: map.notes[i].y))])
+                } else if let i = map.effects.firstIndex(where: { $0.id == id }) {
+                    // An effect whose carrier moves in this group already went along with it.
+                    if !(map.effects[i].tokenID.map(ids.contains) ?? false) {
+                        map.effects[i].x += offset.x
+                        map.effects[i].y += offset.y
+                    }
+                    let origin = map.effectOrigin(map.effects[i], library: loaded.campaign.libraryIndex)
+                    moved.append(["id": .string(id), "kind": "effect", "origin": units.out(origin)])
                 }
             }
             loaded.campaign.maps[index] = map
@@ -802,14 +922,17 @@ extension GraphiumTools {
                 case "walls": map.drawings.removeAll { $0.tool == .wall }
                 case "markers": map.drawings.removeAll { $0.tool != .wall }
                 case "doors": map.doors.removeAll()
-                case "tokens": map.tokens.removeAll()
+                case "tokens":
+                    map.effects.removeAll { $0.tokenID != nil }  // carried effects go with their tokens
+                    map.tokens.removeAll()
                 case "stairs": map.stairs.removeAll()
                 case "lights": map.lights.removeAll()
                 case "notes": map.notes.removeAll()
+                case "effects": map.effects.removeAll()
                 case "fog": map.exploredRegions.removeAll()
                 case "background": map.background = nil
                 default:
-                    throw ToolError("Unknown layer \(layer). Use walls, doors, tokens, markers, stairs, lights, notes, fog or background.")
+                    throw ToolError("Unknown layer \(layer). Use walls, doors, tokens, markers, stairs, lights, notes, effects, fog or background.")
                 }
             }
             loaded.campaign.maps[index] = map

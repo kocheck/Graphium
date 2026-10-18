@@ -3,7 +3,7 @@ import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The DM's window: map navigator sidebar, the editable canvas, and the token or note inspector.
+/// The DM's window: map navigator sidebar, the editable canvas, and the token, note or spell effect inspector.
 struct ArchitectView: View {
     @ObservedObject var document: CampaignDocument
     @Environment(\.undoManager) private var undoManager
@@ -47,7 +47,7 @@ struct ArchitectView: View {
     @State private var toast: Toast?
 
     private enum InspectorTab: Hashable {
-        /// The selected tokens, else the selected notes.
+        /// The selected tokens, else the selected notes, else the selected effects.
         case selection, console
     }
     @State private var libraryUpload: ImportedImage?
@@ -124,7 +124,7 @@ struct ArchitectView: View {
                     VStack(spacing: 0) {
                         if showingConsole && hasInspectableSelection {
                             Picker("Panel", selection: $inspectorTab) {
-                                Text(hasSelectedTokens ? "Token" : "Note").tag(InspectorTab.selection)
+                                Text(hasSelectedTokens ? "Token" : hasSelectedNotes ? "Note" : "Spell Effect").tag(InspectorTab.selection)
                                 Text("Session Console").tag(InspectorTab.console)
                             }
                             .pickerStyle(.segmented)
@@ -138,8 +138,10 @@ struct ArchitectView: View {
                                     notify: { message, isError in showToast(message, isError ? .error : .success) },
                                     chooseImageFile: { importTarget = .tokenImage(selection) },
                                     useImageFile: { url in cropTokenImage(from: url, for: selection) })
-                            } else {
+                            } else if hasSelectedNotes {
                                 NoteInspector(document: document, selection: selection)
+                            } else {
+                                EffectInspector(document: document, selection: selection)
                             }
                         } else {
                             SessionConsolePanel(document: document)
@@ -315,7 +317,7 @@ struct ArchitectView: View {
             let map = campaign.activeMap
             let live = Set(
                 map.tokens.map(\.id) + map.drawings.map(\.id) + map.doors.map(\.id) + map.lights.map(\.id)
-                    + map.notes.map(\.id))
+                    + map.notes.map(\.id) + map.effects.map(\.id))
             if !selection.isSubset(of: live) { selection.formIntersection(live) }
         }
         .onChange(of: document.campaign.activeMapID) { _, _ in
@@ -457,6 +459,15 @@ struct ArchitectView: View {
                     if let placed { selection = [placed.id] }
                 },
                 noteAction: { ids, action in performNoteAction(ids, action) },
+                placeEffect: { effect in
+                    var placed: SpellEffect?
+                    document.edit("Add \(effect.shape.title)", undoManager: undoManager) { campaign in
+                        let library = campaign.libraryIndex
+                        placed = campaign.activeMap.placeEffect(effect, library: library)
+                    }
+                    if let placed { selection = [placed.id] }
+                },
+                effectAction: { ids, action in performEffectAction(ids, action) },
                 doorAction: { id, action in performDoorAction(id, action) },
                 wallAction: { ids, action in performWallAction(ids, action) },
                 markerAction: { ids, action in performMarkerAction(ids, action) },
@@ -491,12 +502,14 @@ struct ArchitectView: View {
                         map.drawings.contains { ids.contains($0.id) } ? "Strokes" : nil,
                         map.lights.contains { ids.contains($0.id) } ? (one ? "Light" : "Lights") : nil,
                         map.notes.contains { ids.contains($0.id) } ? (one ? "Note" : "Notes") : nil,
+                        map.effects.contains { ids.contains($0.id) } ? (one ? "Effect" : "Effects") : nil,
                     ].compactMap { $0 }
                     let noun = kinds.count == 1 ? kinds[0] : "Items"
                     document.edit(duplicate ? "Duplicate \(noun)" : "Move \(noun)", undoManager: undoManager) {
                         placed = $0.activeMap.moveDrawings(ids, dx: dx, dy: dy, duplicate: duplicate)
                             + $0.activeMap.moveLights(ids, dx: dx, dy: dy, duplicate: duplicate)
                             + $0.activeMap.moveNotes(ids, dx: dx, dy: dy, duplicate: duplicate)
+                            + $0.activeMap.moveEffects(ids, dx: dx, dy: dy, duplicate: duplicate)
                     }
                     if duplicate { selection = selection.subtracting(ids).union(placed) }
                 },
@@ -596,7 +609,7 @@ struct ArchitectView: View {
     private func runCommand(_ command: PaletteCommand) {
         let tools: [String: CanvasTool] = [
             "tool-select": .select, "tool-marker": .marker, "tool-eraser": .eraser,
-            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-note": .note,
+            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-note": .note, "tool-effect": .effect,
             "tool-measure": .measure,
         ]
         if let tool = tools[command.id] {
@@ -898,6 +911,35 @@ struct ArchitectView: View {
         }
     }
 
+    private func performEffectAction(_ ids: Set<String>, _ action: EffectAction) {
+        let plural = ids.count == 1 ? "Effect" : "Effects"
+        switch action {
+        case .hide(let hidden):
+            document.edit(hidden ? "Hide \(plural) from Players" : "Show \(plural) to Players", undoManager: undoManager) {
+                $0.activeMap.setEffectsHidden(ids, hidden: hidden)
+            }
+        case .look(let look):
+            document.edit("Change \(plural) to \(look.title)", undoManager: undoManager) { campaign in
+                for id in ids {
+                    campaign.activeMap.updateEffect(id: id) {
+                        $0.look = look
+                        $0.color = nil
+                    }
+                }
+            }
+        case .rotate(let degrees):
+            document.edit("Rotate \(plural)", undoManager: undoManager) { $0.activeMap.rotateEffects(ids, by: degrees) }
+        case .detach:
+            document.edit("Leave \(plural) on the Map", undoManager: undoManager) { campaign in
+                let library = campaign.libraryIndex
+                campaign.activeMap.attachEffects(ids, to: nil, library: library)
+            }
+        case .delete:
+            document.edit("Delete \(plural)", undoManager: undoManager) { $0.activeMap.removeItems(ids) }
+            selection.subtract(ids)
+        }
+    }
+
     private func performDoorAction(_ id: String, _ action: DoorAction) {
         switch action {
         case .toggle:
@@ -1124,6 +1166,22 @@ struct ArchitectView: View {
             }
             .help(
                 "\(tools.lightPreset.name): \(jsNumber(tools.lightPreset.bright)) ft bright light, dim light out to \(jsNumber(tools.lightPreset.dim)) ft")
+        case .effect:
+            HStack(spacing: 6) {
+                Picker("Shape", selection: $tools.effectShape) {
+                    ForEach(SpellEffect.Shape.allCases) { shape in
+                        Text(shape.title).tag(shape)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .help("Drag from the point of origin to size and aim it; Shift snaps the direction to 45°")
+                Picker("Look", selection: $tools.effectLook) {
+                    ForEach(SpellEffect.Look.allCases) { look in
+                        Text(look.title).tag(look)
+                    }
+                }
+                .help("How the area looks: each has its own colour and pattern")
+            }
         case .measure:
             HStack(spacing: 6) {
                 Picker("Measure", selection: measureModeBinding) {
@@ -1249,8 +1307,12 @@ struct ArchitectView: View {
         document.campaign.activeMap.notes.contains { selection.contains($0.id) }
     }
 
-    /// Tokens or notes, which the inspector edits.
-    private var hasInspectableSelection: Bool { hasSelectedTokens || hasSelectedNotes }
+    private var hasSelectedEffects: Bool {
+        document.campaign.activeMap.effects.contains { selection.contains($0.id) }
+    }
+
+    /// Tokens, notes or effects, which the inspector edits.
+    private var hasInspectableSelection: Bool { hasSelectedTokens || hasSelectedNotes || hasSelectedEffects }
 
     private func saveMapSettings(_ map: GameMap, isNew: Bool) {
         document.edit(isNew ? "Add Map" : "Map Settings", undoManager: undoManager) { campaign in

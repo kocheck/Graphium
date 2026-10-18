@@ -1,9 +1,9 @@
 import AppKit
 import GraphiumCore
 
-/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light) and N (Note) are native.
+/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light), N (Note) and S (Spell) are native.
 enum CanvasTool: String, CaseIterable, Identifiable {
-    case select, marker, eraser, wall, door, light, note, measure
+    case select, marker, eraser, wall, door, light, note, effect, measure
 
     var id: Self { self }
 
@@ -16,6 +16,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .door: return "Door"
         case .light: return "Light"
         case .note: return "Note"
+        case .effect: return "Spell Effect"
         case .measure: return "Measure"
         }
     }
@@ -29,6 +30,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .door: return "door.left.hand.closed"
         case .light: return "lightbulb"
         case .note: return "note.text"
+        case .effect: return "sparkles"
         case .measure: return "ruler"
         }
     }
@@ -42,6 +44,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .door: return "d"
         case .light: return "l"
         case .note: return "n"
+        case .effect: return "s"
         case .measure: return "r"
         }
     }
@@ -50,6 +53,8 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         switch self {
         case .door: return "Door (D) — click a door to select it; R or arrow keys rotate"
         case .note: return "Note (N) — pin a note to the map; click a pin to open it in the side panel"
+        case .effect:
+            return "Spell Effect (S) — drag out a spell's area; start on a token to have it carry the effect"
         default: return "\(title) (\(key.uppercased()))"
         }
     }
@@ -69,6 +74,9 @@ struct ToolState: Equatable {
     var wallOneWay = false
     /// What the Light tool places (native).
     var lightPreset: LightPreset = .torch
+    /// What the Spell Effect tool places (native).
+    var effectShape: SpellEffect.Shape = .circle
+    var effectLook: SpellEffect.Look = .fire
     var measureMode: MeasurementShape.Mode = .ruler
     var pressureCurve: PressureCurve = .normal
     var pressureEnabled = true
@@ -82,6 +90,11 @@ enum LightAction {
 /// Right-click actions on note pins (native).
 enum NoteAction {
     case share(Bool), showOnWorldView, delete
+}
+
+/// Right-click actions on spell effects (native).
+enum EffectAction {
+    case hide(Bool), look(SpellEffect.Look), rotate(Double), detach, delete
 }
 
 /// Right-click actions on a door (PARITY §3.6).

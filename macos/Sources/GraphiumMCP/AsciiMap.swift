@@ -101,6 +101,10 @@ struct AsciiMap {
             let (x, y) = charPoint(Point2D(x: note.x, y: note.y))
             put(Int(x.rounded()), Int(y.rounded()), "!", over: [" ", "."])
         }
+        for effect in map.effects {
+            let (x, y) = charPoint(map.effectOrigin(effect, library: library))
+            put(Int(x.rounded()), Int(y.rounded()), "%", over: [" ", "."])
+        }
         for door in map.doors {
             let (x, y) = charPoint(Point2D(x: door.x, y: door.y))
             let ch: Character = door.looksLikeWall ? "S" : door.isLocked ? "L" : door.isOpen ? "o" : "D"
@@ -150,11 +154,20 @@ struct AsciiMap {
             \(map.name): cells x \(x0)…\(x0 + cols), y \(y0)…\(y0 + rows). Each cell is two characters wide; \
             "." is a cell centre and the rows and columns between are grid lines.
             Legend: - | + walls, ~ : windows, \\ / diagonal walls, D closed door, o open door, L locked door, \
-            S shut hidden door, < > stairs up/down, * light (, unlit), ! note pin, letters tokens.
+            S shut hidden door, < > stairs up/down, * light (, unlit), ! note pin, % spell effect origin, letters tokens.
 
             """
         text += lines.joined(separator: "\n")
         if !legend.isEmpty { text += "\n\nTokens (top-left cell):\n" + legend.joined(separator: "\n") }
+        if !map.effects.isEmpty {
+            let lines = map.effects.map { effect -> String in
+                let o = map.effectOrigin(effect, library: library)
+                let label = effect.label.isEmpty ? "" : "\(effect.label): "
+                let aim = effect.shape.hasDirection ? ", direction \(Int(effect.angle.rounded()))°" : ""
+                return "% \(label)\(effect.sizeDescription), \(effect.look.rawValue)\(aim) at [\(fmt(o.x / g)), \(fmt(o.y / g))]"
+            }
+            text += "\n\nSpell effects (point of origin):\n" + lines.joined(separator: "\n")
+        }
         return text + note
     }
 
