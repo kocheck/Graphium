@@ -24,7 +24,7 @@ public enum GridType: String, Codable, CaseIterable, Sendable {
 }
 
 /// One map: background, grid, tokens, drawings, doors, stairs, explored fog (and, native
-/// only, lights, note pins and spell effects).
+/// only, lights, note pins, spell effects and the initiative order).
 /// (TS `MapData`, CORE_SPEC §1.3.) Decoding applies the TS `loadCampaign`
 /// fallbacks for every field, so older files load.
 public struct GameMap: Codable, Equatable, Identifiable, Sendable {
@@ -58,10 +58,15 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
     public var notes: [MapNote]
     /// Native only: spell areas of effect (`SpellEffect`). Written only when not empty.
     public var effects: [SpellEffect]
+    /// Native only: areas the DM revealed by hand (`RevealedArea`), for tables whose party
+    /// is miniatures rather than tokens. Written only when not empty.
+    public var revealedAreas: [RevealedArea]
+    /// Native only: turn order (`Initiative`). Written only when not empty.
+    public var initiative: Initiative
 
     private enum CodingKeys: String, CodingKey {
         case id, name, tokens, drawings, doors, stairs, gridSize, gridType, gridColor
-        case exploredRegions, isDaylightMode, lights, ambientLight, notes, effects
+        case exploredRegions, isDaylightMode, lights, ambientLight, notes, effects, revealedAreas, initiative
         case background = "map"
     }
 
@@ -81,7 +86,9 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         lights: [LightSource] = [],
         ambientLight: LightLevel? = nil,
         notes: [MapNote] = [],
-        effects: [SpellEffect] = []
+        effects: [SpellEffect] = [],
+        revealedAreas: [RevealedArea] = [],
+        initiative: Initiative = Initiative()
     ) {
         self.id = id
         self.name = name
@@ -99,6 +106,8 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         self.ambientLight = ambientLight
         self.notes = notes
         self.effects = effects
+        self.revealedAreas = revealedAreas
+        self.initiative = initiative
     }
 
     public init(from decoder: Decoder) throws {
@@ -121,6 +130,8 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         ambientLight = try c.decodeIfPresent(LightLevel.self, forKey: .ambientLight)
         notes = try c.decodeIfPresent([MapNote].self, forKey: .notes) ?? []
         effects = (try c.decodeIfPresent([SpellEffect.Lossy].self, forKey: .effects) ?? []).compactMap(\.effect)
+        revealedAreas = try c.decodeIfPresent([RevealedArea].self, forKey: .revealedAreas) ?? []
+        initiative = try c.decodeIfPresent(Initiative.self, forKey: .initiative) ?? Initiative()
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -141,6 +152,8 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         try c.encodeIfPresent(ambientLight, forKey: .ambientLight)
         if !notes.isEmpty { try c.encode(notes, forKey: .notes) }
         if !effects.isEmpty { try c.encode(effects, forKey: .effects) }
+        if !revealedAreas.isEmpty { try c.encode(revealedAreas, forKey: .revealedAreas) }
+        if !initiative.isEmpty { try c.encode(initiative, forKey: .initiative) }
     }
 
     /// Appends an explored region, dropping the oldest beyond the cap.

@@ -1,9 +1,10 @@
 import AppKit
 import GraphiumCore
 
-/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light), N (Note) and S (Spell) are native.
+/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light), N (Note), S (Spell)
+/// and F (Reveal fog) are native.
 enum CanvasTool: String, CaseIterable, Identifiable {
-    case select, marker, eraser, wall, door, light, note, effect, measure
+    case select, marker, eraser, wall, door, light, note, effect, reveal, measure
 
     var id: Self { self }
 
@@ -17,6 +18,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .light: return "Light"
         case .note: return "Note"
         case .effect: return "Spell Effect"
+        case .reveal: return "Reveal"
         case .measure: return "Measure"
         }
     }
@@ -31,6 +33,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .light: return "lightbulb"
         case .note: return "note.text"
         case .effect: return "sparkles"
+        case .reveal: return "eye"
         case .measure: return "ruler"
         }
     }
@@ -45,6 +48,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .light: return "l"
         case .note: return "n"
         case .effect: return "s"
+        case .reveal: return "f"
         case .measure: return "r"
         }
     }
@@ -55,6 +59,8 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .note: return "Note (N) — pin a note to the map; click a pin to open it in the side panel"
         case .effect:
             return "Spell Effect (S) — drag out a spell's area; start on a token to have it carry the effect"
+        case .reveal:
+            return "Reveal (F) — drag over ground to show it to players without PC tokens; click a revealed area to hide it"
         default: return "\(title) (\(key.uppercased()))"
         }
     }

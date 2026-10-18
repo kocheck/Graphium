@@ -267,13 +267,31 @@ public enum LineOfSight {
         }
     }
 
-    /// What the party sees: vision polygons plus, with lighting on, the lit areas.
+    /// What the party sees: vision polygons plus, with lighting on, the lit areas. Areas the
+    /// DM revealed by hand count as seen and brightly lit.
     public static func partySight(of map: GameMap, library: [String: TokenLibraryItem]) -> PartySight {
         guard !map.isDaylightMode else { return .none }
         let segments = sightWalls(of: map)
-        let vision = polygons(of: map, library: library, walls: segments)
+        let revealed = revealedSight(of: map)
+        let vision = polygons(of: map, library: library, walls: segments) + revealed.map { $0.vision }
         guard let ambient = map.ambientLight else { return PartySight(vision: vision) }
-        return PartySight(vision: vision, lit: Lighting.litAreas(of: map, walls: segments), ambient: ambient)
+        return PartySight(
+            vision: vision, lit: Lighting.litAreas(of: map, walls: segments) + revealed.map { $0.lit }, ambient: ambient)
+    }
+
+    /// Each revealed area as a viewer that sees exactly that area, and a light that fills it.
+    /// Vision clears fully out to 60% of its radius (TS), so the radius reaches well past the
+    /// area's corners and the whole area is clear.
+    static func revealedSight(of map: GameMap) -> [(vision: VisionPolygon, lit: Lighting.LitArea)] {
+        map.revealedAreas.filter { $0.points.count >= 3 }.map { area in
+            let (centre, corner) = area.circle
+            let radius = corner / 0.6 + map.gridSize
+            let id = "revealed:\(area.id)"
+            return (
+                VisionPolygon(viewer: Viewer(tokenID: id, centre: centre, radius: radius), polygon: area.points),
+                Lighting.LitArea(lightID: id, centre: centre, brightRadius: radius, dimRadius: radius, polygon: area.points)
+            )
+        }
     }
 
     /// TS `isPointInPolygon` (even-odd ray cast; fewer than 3 vertices → false).
@@ -367,6 +385,10 @@ extension GameMap {
         previousLibrary: [String: TokenLibraryItem]? = nil, timestamp: Double
     ) -> Int {
         guard !isDaylightMode else { return 0 }
+        // Ground the DM reveals by hand is explored too, so hiding it again leaves it remembered.
+        for area in revealedAreas where area.points.count >= 3 && !previous.revealedAreas.contains(where: { $0.id == area.id }) {
+            addExploredRegion(ExploredRegion(points: area.points, timestamp: timestamp))
+        }
         let oldLibrary = previousLibrary ?? library
         let fogTurnedOn = previous.isDaylightMode
         let wallInputsChanged = drawings != previous.drawings || doors != previous.doors
@@ -414,6 +436,7 @@ extension GameMap {
     @discardableResult
     public mutating func resetExploration(library: [String: TokenLibraryItem], timestamp: Double) -> Int {
         exploredRegions = []
+        revealedAreas = []
         var fogOff = self
         fogOff.isDaylightMode = true
         return recordExploration(since: fogOff, library: library, timestamp: timestamp)

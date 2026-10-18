@@ -183,7 +183,7 @@ struct ShortcutsList: View {
     private let groups: [ShortcutGroup] = [
         ShortcutGroup(title: "Tools", rows: [
             Row(keys: "V", action: "Select"), Row(keys: "M", action: "Marker"), Row(keys: "E", action: "Eraser"), Row(keys: "W", action: "Wall (blocks vision)"),
-            Row(keys: "D", action: "Door"), Row(keys: "L", action: "Light"), Row(keys: "R", action: "Measure (rotates the door with the Door tool)"), Row(keys: "I", action: "Marker colour"),
+            Row(keys: "D", action: "Door"), Row(keys: "L", action: "Light"), Row(keys: "F", action: "Reveal fog by hand"), Row(keys: "R", action: "Measure (rotates the door with the Door tool)"), Row(keys: "I", action: "Marker colour"),
             Row(keys: "↑ ↓ ← →", action: "Rotate the door (Door tool)"),
         ]),
         ShortcutGroup(title: "Canvas", rows: [
@@ -201,6 +201,7 @@ struct ShortcutsList: View {
             Row(keys: "⇧⌘W", action: "Open World View"), Row(keys: "⇧⌘Y", action: "Show this view on World View"), Row(keys: "⇧⌘P", action: "Pause / resume players"), Row(keys: "⇧⌘M", action: "Performance monitor"),
             Row(keys: "?", action: "About Graphium"),
         ]),
+        ShortcutGroup(title: "Initiative", rows: [Row(keys: "⌘]", action: "Next turn"), Row(keys: "⌘[", action: "Previous turn")]),
         ShortcutGroup(title: "Session Console", rows: [Row(keys: "1 – 9", action: "Play a track"), Row(keys: "D", action: "Duck music"), Row(keys: "Esc", action: "Stop")]),
     ]
 

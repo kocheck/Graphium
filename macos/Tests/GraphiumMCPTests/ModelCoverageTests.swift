@@ -37,6 +37,10 @@ final class ModelCoverageTests: XCTestCase {
     /// Properties the server deliberately doesn't expose, and why.
     static let leftOut: [String: [String: String]] = [
         "Campaign": ["sessionConsole": "Session Console (music, plates) is table-time, not map building."],
+        "GameMap": [
+            "revealedAreas": "Revealing fog by hand is table-time, for parties played with miniatures.",
+            "initiative": "Initiative is table-time, not map building.",
+        ],
         "Drawing": ["pressures": "Pen pressure only matters for hand-drawn strokes."],
         "Door": ["thickness": "Drawing detail; the app's default is right for built maps."],
     ]

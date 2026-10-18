@@ -56,6 +56,10 @@ struct CanvasEditing {
     var openColorPicker: (() -> Void)?
     /// Esc with nothing else to cancel stops Session Console audio (PARITY §1.4).
     var stopAudio: (() -> Void)?
+    /// Reveal tool: show this rectangle to players (map pixels; `snap` to whole cells).
+    var revealArea: ((_ rect: Bounds, _ snap: Bool) -> Void)?
+    /// Reveal tool: a click on a revealed area hides it again.
+    var hideRevealedArea: ((String) -> Void)?
 }
 
 /// Fog of war to draw over the map (World View, when not in daylight).
@@ -172,6 +176,8 @@ final class MapCanvasNSView: NSView {
         case calibrating(start: Point2D, current: Point2D)
         /// Dragging out a new spell effect from its point of origin (on `tokenID` when it carries it).
         case placingEffect(origin: Point2D, tokenID: String?, current: Point2D)
+        /// Dragging out ground to reveal with the Reveal tool.
+        case revealing(start: Point2D, current: Point2D)
     }
 
     /// The selected doors on `map`.
@@ -391,6 +397,22 @@ final class MapCanvasNSView: NSView {
             context.strokeMark(
                 CGPath(rect: CGRect(bounds: Bounds(corner: start, corner: current)), transform: nil),
                 width: 2 / viewport.zoom, color: Palette.canvasMeasure.nsColor)
+        }
+        if !isPlayerView, editing != nil, toolState.tool == .reveal {
+            // The DM sees what is revealed while the tool is active.
+            let unit = CGFloat(viewport.zoom)
+            for area in map.revealedAreas where area.points.count >= 3 {
+                let path = CGMutablePath()
+                path.addLines(between: area.points.map { CGPoint(x: $0.x, y: $0.y) })
+                path.closeSubpath()
+                context.strokeMark(path, width: 2 / viewport.zoom, dash: [6 / unit, 4 / unit])
+            }
+        }
+        if case .revealing(let start, let current) = interaction {
+            let rect = CGRect(bounds: Bounds(corner: start, corner: current))
+            context.setFillColor(Palette.canvasHover.nsColor.cgColor)
+            context.fill(rect)
+            context.strokeMark(CGPath(rect: rect, transform: nil), width: 1 / viewport.zoom)
         }
         if let measurement { drawMeasurement(measurement, gridSize: map.gridSize, context: context) }
         if !isPlayerView, editing != nil, toolState.tool == .door, let hoverPoint, map.door(at: hoverPoint) == nil {
@@ -973,6 +995,9 @@ final class MapCanvasNSView: NSView {
                 interaction = .placingEffect(origin: origin, tokenID: nil, current: point)
             }
             needsDisplay = true
+        case .reveal:
+            interaction = .revealing(start: point, current: point)
+            needsDisplay = true
         case .measure:
             interaction = .measuring(origin: point)
             editing.setMeasurement?(MeasurementShape(mode: toolState.measureMode, origin: point, pointer: point))
@@ -1054,6 +1079,9 @@ final class MapCanvasNSView: NSView {
         case .calibrating(let start, _):
             interaction = .calibrating(start: start, current: mapLocation(of: event))
             needsDisplay = true
+        case .revealing(let start, _):
+            interaction = .revealing(start: start, current: mapLocation(of: event))
+            needsDisplay = true
         case .placingEffect(let origin, let tokenID, _):
             interaction = .placingEffect(origin: origin, tokenID: tokenID, current: mapLocation(of: event))
             needsDisplay = true
@@ -1097,6 +1125,16 @@ final class MapCanvasNSView: NSView {
         }
         if case .calibrating(let start, let current) = interaction {
             editing?.calibrate?(Bounds(corner: start, corner: current))
+        }
+        if case .revealing(let start, let current) = interaction {
+            if Measure.euclideanDistance(start, current) * viewport.zoom < Self.dragThreshold {
+                // A click: hide the revealed area under it, if any.
+                if let area = map?.revealedArea(at: start) { editing?.hideRevealedArea?(area.id) }
+            } else {
+                // Option reveals exactly what was dragged; otherwise whole cells on square grids.
+                let squareGrid = map.map { $0.gridType == .lines || $0.gridType == .dots } ?? false
+                editing?.revealArea?(Bounds(corner: start, corner: current), squareGrid && !event.modifierFlags.contains(.option))
+            }
         }
         if case .placingEffect = interaction, let map, let effect = effectPreview(in: map) {
             var placed = effect

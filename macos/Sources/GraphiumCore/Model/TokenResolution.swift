@@ -141,6 +141,7 @@ extension GameMap {
 
     public mutating func removeTokens(_ ids: Set<String>) {
         tokens.removeAll { ids.contains($0.id) }
+        initiative.remove(ids)
     }
 }
 

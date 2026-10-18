@@ -22,6 +22,7 @@ public final class VisibilityCache {
         var gridSize: Double
         var daylight: Bool
         var library: [String: TokenLibraryItem]
+        var revealedAreas: [RevealedArea]
     }
 
     private var key: Key?
@@ -35,7 +36,7 @@ public final class VisibilityCache {
         let next = Key(
             mapID: map.id, tokens: map.tokens, drawings: map.drawings, doors: map.doors,
             lights: map.lights, ambientLight: map.ambientLight,
-            gridSize: map.gridSize, daylight: map.isDaylightMode, library: library)
+            gridSize: map.gridSize, daylight: map.isDaylightMode, library: library, revealedAreas: map.revealedAreas)
         if next == key { return result }
         key = next
         computeCount += 1

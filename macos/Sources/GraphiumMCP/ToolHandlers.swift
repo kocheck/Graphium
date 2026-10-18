@@ -925,6 +925,7 @@ extension GraphiumTools {
                 case "tokens":
                     map.effects.removeAll { $0.tokenID != nil }  // carried effects go with their tokens
                     map.tokens.removeAll()
+                    map.initiative = Initiative()  // and so does the turn order
                 case "stairs": map.stairs.removeAll()
                 case "lights": map.lights.removeAll()
                 case "notes": map.notes.removeAll()
