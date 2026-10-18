@@ -20,6 +20,33 @@ final class MapNoteTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(GameMap.self, from: JSONEncoder().encode(map)), map)
     }
 
+    func testNoteSounds() throws {
+        let bare = String(decoding: try JSONEncoder().encode(MapNote(id: "n", x: 1, y: 2)), as: UTF8.self)
+        XCTAssertFalse(bare.contains("sounds"))
+        let note = MapNote(
+            id: "n", x: 1, y: 2,
+            sounds: [NoteSound(kind: .track, ref: "t1"), NoteSound(kind: .sfx, ref: "chime", playOnShow: true)])
+        XCTAssertEqual(try JSONDecoder().decode(MapNote.self, from: JSONEncoder().encode(note)), note)
+
+        // A sound kind from a newer app is dropped; the note and its other sounds survive.
+        let newer = #"{"id":"n","x":1,"y":2,"sounds":[{"kind":"soundscape","ref":"s"},{"kind":"sfx","ref":"chime"}]}"#
+        XCTAssertEqual(try JSONDecoder().decode(MapNote.self, from: Data(newer.utf8)).sounds, [NoteSound(kind: .sfx, ref: "chime")])
+
+        let track = Track(id: "t1", title: "Crypt Drone", source: .local, src: "a.m4a")
+        let console = SessionConsoleCatalog(
+            stage: StageChrome(title: "C"), trackGroups: [TrackGroup(title: "Dread", accent: .dread, tracks: [track])])
+        XCTAssertEqual(console.title(of: note.sounds[0]), "Crypt Drone")
+        XCTAssertEqual(console.title(of: note.sounds[1]), "Chime")
+        XCTAssertNil(console.title(of: NoteSound(kind: .track, ref: "gone")))
+        XCTAssertEqual(console.noteSoundChoices.first?.title, "Crypt Drone", "tracks first")
+
+        var runtime = SessionConsoleRuntime(catalog: console)
+        XCTAssertTrue(note.sounds[0].command.apply(to: &runtime, catalog: console))
+        XCTAssertEqual(runtime.audio.trackId, "t1")
+        XCTAssertTrue(note.sounds[1].command.apply(to: &runtime, catalog: console))
+        XCTAssertEqual(runtime.sfxId, "chime")
+    }
+
     func testPlacingAndEditingNotes() {
         var map = GameMap(gridSize: 50)
         let note = map.placeNote(at: Point2D(x: 62, y: 96))

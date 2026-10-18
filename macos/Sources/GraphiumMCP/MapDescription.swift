@@ -112,8 +112,8 @@ enum Describe {
         return .object(out)
     }
 
-    static func note(_ note: MapNote, units: Units) -> JSONValue {
-        [
+    static func note(_ note: MapNote, console: SessionConsoleCatalog, units: Units) -> JSONValue {
+        var out: [String: JSONValue] = [
             "id": .string(note.id),
             "center": units.out(Point2D(x: note.x, y: note.y)),
             "title": .string(note.title),
@@ -121,6 +121,17 @@ enum Describe {
             "player_notes": .string(note.playerNotes),
             "shared": .bool(note.isShared),
         ]
+        if !note.sounds.isEmpty { out["sounds"] = .array(note.sounds.map { sound($0, console: console) }) }
+        return .object(out)
+    }
+
+    static func sound(_ sound: NoteSound, console: SessionConsoleCatalog) -> JSONValue {
+        var out: [String: JSONValue] = [
+            "kind": .string(sound.kind == .track ? "track" : "effect"),
+            "play_on_show": .bool(sound.playOnShow),
+        ]
+        if let title = console.title(of: sound) { out["name"] = .string(title) } else { out["missing"] = .bool(true) }
+        return .object(out)
     }
 
     static func grid(_ map: GameMap) -> JSONValue {
@@ -138,7 +149,7 @@ enum Describe {
             "daylight": .bool(map.isDaylightMode),
             "lighting": lighting(map),
             "lights": .array(map.lights.map { light($0, units: units) }),
-            "notes": .array(map.notes.map { note($0, units: units) }),
+            "notes": .array(map.notes.map { note($0, console: campaign.sessionConsole, units: units) }),
             "walls": .array(map.wallStrokes.map { wall($0, units: units) }),
             "doors": .array(map.doors.map { door($0, units: units) }),
             "tokens": .array(map.tokens.map { token($0, map: map, library: library, units: units) }),

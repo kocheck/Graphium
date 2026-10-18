@@ -20,7 +20,8 @@ final class ModelCoverageTests: XCTestCase {
             "id", "x", "y", "src", "libraryItemId", "scale", "type", "visionRadius", "name", "movementSpeed", "darkvision",
         ],
         "LightSource": ["id", "x", "y", "bright", "dim", "isOn", "name"],
-        "MapNote": ["id", "x", "y", "title", "dmNotes", "playerNotes", "isShared"],
+        "MapNote": ["id", "x", "y", "title", "dmNotes", "playerNotes", "isShared", "sounds"],
+        "NoteSound": ["kind", "ref", "playOnShow"],
         "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay"],
         "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection"],
         "Stairs": ["id", "x", "y", "direction", "type", "width", "height"],
@@ -45,6 +46,8 @@ final class ModelCoverageTests: XCTestCase {
         "DrawingTool": ["marker", "eraser", "wall"],
         "CreatureType": ["PC", "NPC"],
         "LightLevel": ["dark", "dim", "bright"],
+        // NoteSound.Kind: tools say "track" and "effect" and match by Session Console name.
+        "Kind": ["track", "sfx"],
     ]
 
     private func check(_ value: Any, file: StaticString = #filePath, line: UInt = #line) {
@@ -85,6 +88,7 @@ final class ModelCoverageTests: XCTestCase {
         check(TokenLibraryItem(name: "", src: "", thumbnailSrc: "", dateAdded: 0))
         check(LightSource(x: 0, y: 0, bright: 1, dim: 2))
         check(MapNote(x: 0, y: 0))
+        check(NoteSound(kind: .track, ref: ""))
     }
 
     func testEveryEnumCaseIsKnown() {
@@ -93,6 +97,7 @@ final class ModelCoverageTests: XCTestCase {
         checkCases(DrawingTool.self)
         checkCases(CreatureType.self)
         checkCases(LightLevel.self)
+        checkCases(NoteSound.Kind.self)
     }
 
     func testToolSchemasOfferTheKnownCases() {

@@ -29,7 +29,9 @@ final class CampaignDocument: ReferenceFileDocument {
     /// The DM's measurement mirrored to the World View when broadcasting. Transient.
     @Published var broadcastMeasurement: MeasurementShape?
     /// The note whose player notes the World View is showing (never its DM notes). Transient.
-    @Published var worldNoteID: String?
+    @Published var worldNoteID: String? {
+        didSet { if worldNoteID != oldValue { playSoundsOnShow() } }
+    }
     /// The DM's in-progress token drag. Its own object, not `@Published` here, so a
     /// drag only re-renders the World View and not every view of the document.
     let liveDrag = LiveDragModel()
@@ -158,6 +160,20 @@ final class CampaignDocument: ReferenceFileDocument {
     func dispatch(_ command: SessionCommand) {
         var runtime = sessionRuntime
         if command.apply(to: &runtime, catalog: campaign.sessionConsole) { sessionRuntime = runtime }
+    }
+
+    /// Plays a note pin's sound (from its inspector), as the Session Console would.
+    func play(_ sound: NoteSound) {
+        dispatch(sound.command)
+    }
+
+    /// A note just put on the World View plays its "when shown" sounds. Only with a World
+    /// View open and unpaused: otherwise nobody hears it and a track would start later, unasked.
+    private func playSoundsOnShow() {
+        guard let id = worldNoteID, worldViewsOpen > 0, !isPaused,
+            let note = campaign.activeMap.notes.first(where: { $0.id == id })
+        else { return }
+        for sound in note.sounds where sound.playOnShow { play(sound) }
     }
 
     /// Undoable board edits; stage chrome and duck % follow into the runtime (TS).

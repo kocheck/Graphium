@@ -17,7 +17,8 @@ public enum AgentGuide {
         lines, kind "window" for walls you can see through. Or generate_dungeon for a random layout.
         4. Then contents: add_tokens (PCs, NPCs and monsters), add_lights, add_stairs, draw_markers for \
         hazards, and add_notes for room keys: dm_notes for the DM's secrets, player_notes for read-aloud text, \
-        shared only when the DM wants players to see the pin.
+        shared only when the DM wants players to see the pin. A note's sounds attach Session Console tracks or \
+        effects by name, for the DM to play from the pin.
         5. Check your work: render_map to see it, check_map to catch light leaks and misplaced doors and tokens. \
         Fix with update_objects or remove_objects; undo reverts this server's last change.
         6. Tell the DM the file path and what is on each map. They open it in Graphium, which also reloads it \

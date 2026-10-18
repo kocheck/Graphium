@@ -115,6 +115,8 @@ struct NoteInspector: View {
             Text("Read-aloud text, a handout or a clue. Players see only this, and only when you share it.")
         }
 
+        soundsSection(note)
+
         Section {
             sharingToggle([note])
             let showing = document.worldNoteID == note.id
@@ -134,6 +136,94 @@ struct NoteInspector: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func soundsSection(_ note: MapNote) -> some View {
+        let console = document.campaign.sessionConsole
+        Section {
+            ForEach(note.sounds, id: \.ref) { sound in
+                soundRow(note, sound: sound, title: console.title(of: sound))
+            }
+            let choices = console.noteSoundChoices.filter { choice in !note.sounds.contains { $0.ref == choice.sound.ref } }
+            Menu {
+                let tracks = choices.filter { $0.sound.kind == .track }
+                if !tracks.isEmpty {
+                    Section("Tracks") {
+                        ForEach(tracks, id: \.sound.ref) { choice in
+                            Button(choice.title) { editSounds(note, "Add Sound") { $0.append(choice.sound) } }
+                        }
+                    }
+                }
+                let effects = choices.filter { $0.sound.kind == .sfx }
+                if !effects.isEmpty {
+                    Section("Effects") {
+                        ForEach(effects, id: \.sound.ref) { choice in
+                            Button(choice.title) { editSounds(note, "Add Sound") { $0.append(choice.sound) } }
+                        }
+                    }
+                }
+            } label: {
+                Label("Add Sound", systemImage: "plus")
+            }
+            .disabled(choices.isEmpty)
+            .help("Attach a Session Console track or effect to this note")
+        } header: {
+            Label("Sounds", systemImage: "speaker.wave.2")
+        } footer: {
+            Text("Play these when the moment comes. Sounds set to play when shown start by themselves when you show this note on the World View.")
+        }
+    }
+
+    private func soundRow(_ note: MapNote, sound: NoteSound, title: String?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Label {
+                    Text(title ?? "Missing from the Session Console")
+                        .foregroundStyle(title == nil ? .secondary : .primary)
+                        .lineLimit(1)
+                } icon: {
+                    Image(systemName: sound.kind == .track ? "music.note" : "speaker.wave.2")
+                }
+                Spacer()
+                Button {
+                    document.play(sound)
+                } label: {
+                    Label("Play", systemImage: "play.fill")
+                }
+                .disabled(title == nil)
+                .help(document.worldViewsOpen == 0 ? "Play (the World View isn't open, so nobody will hear it)" : "Play on the World View")
+                Button {
+                    editSounds(note, "Remove Sound") { $0.removeAll { $0.ref == sound.ref } }
+                } label: {
+                    Label("Remove", systemImage: "minus.circle")
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .help("Remove this sound from the note")
+            }
+            Toggle(
+                "Play when shown",
+                isOn: Binding(
+                    get: { sound.playOnShow },
+                    set: { on in
+                        editSounds(note, "Edit Sound") { sounds in
+                            for i in sounds.indices where sounds[i].ref == sound.ref { sounds[i].playOnShow = on }
+                        }
+                    })
+            )
+            .controlSize(.small)
+            .help("Play this by itself when you show the note on the World View")
+        }
+    }
+
+    /// Undoable change to one note's sounds, on the map it is on.
+    private func editSounds(_ note: MapNote, _ actionName: String, _ change: (inout [NoteSound]) -> Void) {
+        let mapID = document.campaign.activeMapID
+        document.edit(actionName, undoManager: undoManager) { campaign in
+            guard let index = campaign.maps.firstIndex(where: { $0.id == mapID }) else { return }
+            campaign.maps[index].updateNote(id: note.id) { change(&$0.sounds) }
         }
     }
 

@@ -462,6 +462,30 @@ extension GraphiumTools {
         }
     }
 
+    /// A note's `sounds`: Session Console tracks and effects, by name (or id). Nil when absent.
+    static func noteSounds(_ args: Arguments, console: SessionConsoleCatalog) throws -> [NoteSound]? {
+        guard let items = try args.array("sounds") else { return nil }
+        let choices = console.noteSoundChoices
+        var sounds: [NoteSound] = []
+        for (offset, item) in items.enumerated() {
+            let spec = Arguments(item, context: "\(args.context.isEmpty ? "" : args.context + ".")sounds[\(offset)]")
+            guard item.objectValue != nil else { throw ToolError("\(spec.context) must be an object.") }
+            let name = try spec.requiredString("name")
+            let byID = choices.filter { $0.sound.ref == name }
+            let matches = byID.isEmpty ? choices.filter { $0.title.caseInsensitiveCompare(name) == .orderedSame } : byID
+            guard matches.count == 1, var sound = matches.first?.sound else {
+                let available = choices.map(\.title).joined(separator: ", ")
+                throw ToolError(
+                    matches.isEmpty
+                        ? "\(spec.context): the Session Console has no track or effect named \(name). It has: \(available)."
+                        : "\(spec.context): more than one track or effect is named \(name); rename one in the Session Console.")
+            }
+            sound.playOnShow = try spec.bool("play_on_show") ?? false
+            if !sounds.contains(where: { $0.ref == sound.ref }) { sounds.append(sound) }
+        }
+        return sounds
+    }
+
     func addNotes(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: true) { loaded, index, units in
             var added: [JSONValue] = []
@@ -469,11 +493,13 @@ extension GraphiumTools {
                 guard let centre = try spec.point("center").map(units.px) else {
                     throw ToolError("\(spec.context).center is required.")
                 }
+                let console = loaded.campaign.sessionConsole
                 let note = MapNote(
                     x: centre.x, y: centre.y, title: try spec.string("title") ?? "", dmNotes: try spec.string("dm_notes") ?? "",
-                    playerNotes: try spec.string("player_notes") ?? "", isShared: try spec.bool("shared") ?? false)
+                    playerNotes: try spec.string("player_notes") ?? "", isShared: try spec.bool("shared") ?? false,
+                    sounds: try Self.noteSounds(spec, console: console) ?? [])
                 loaded.campaign.maps[index].notes.append(note)
-                added.append(Describe.note(note, units: units))
+                added.append(Describe.note(note, console: console, units: units))
             }
             return ["added_notes": .array(added)]
         }
@@ -595,6 +621,9 @@ extension GraphiumTools {
                     if take("dm_notes") { map.notes[i].dmNotes = try change.string("dm_notes") ?? "" }
                     if take("player_notes") { map.notes[i].playerNotes = try change.string("player_notes") ?? "" }
                     if take("shared"), let shared = try change.bool("shared") { map.notes[i].isShared = shared }
+                    if take("sounds"), let sounds = try Self.noteSounds(change, console: loaded.campaign.sessionConsole) {
+                        map.notes[i].sounds = sounds
+                    }
                 } else if let i = map.stairs.firstIndex(where: { $0.id == id }) {
                     kind = "stairs"
                     if take("center"), let p = try change.point("center").map(units.px) {
@@ -742,7 +771,10 @@ extension GraphiumTools {
 
     func checkMap(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: false) { loaded, index, units in
-            let issues = MapChecks(map: loaded.campaign.maps[index], library: loaded.campaign.libraryIndex, units: units).run()
+            let issues = MapChecks(
+                map: loaded.campaign.maps[index], library: loaded.campaign.libraryIndex, units: units,
+                console: loaded.campaign.sessionConsole
+            ).run()
             return [
                 "map": .string(loaded.campaign.maps[index].name),
                 "ok": .bool(issues.isEmpty),
