@@ -532,7 +532,7 @@ final class MapCanvasNSView: NSView {
     /// clearings stack, so dim light within darkvision clears nearly all of it, as bright
     /// would. Drawn with `.destinationOut` into the fog layer.
     private func drawLitVision(_ fog: FogState, ambient: LightLevel, context: CGContext) {
-        let dim = Self.dimClearing
+        let dim = CGFloat(Self.dimClearing)
         for entry in fog.vision where entry.polygon.count >= 3 {
             context.saveGState()
             let sight = CGMutablePath()
@@ -545,7 +545,8 @@ final class MapCanvasNSView: NSView {
             }
             for area in fog.lit where area.polygon.count >= 3 && area.dimRadius > 0 {
                 let edge = min(area.brightRadius / area.dimRadius, 0.9)
-                let colors = [1, 1, dim, dim, 0].map { NSColor.black.withAlphaComponent($0).cgColor } as CFArray
+                let alphas: [CGFloat] = [1, 1, dim, dim, 0]
+                let colors = alphas.map { NSColor.black.withAlphaComponent($0).cgColor } as CFArray
                 let locations: [CGFloat] = [0, max(0, edge - 0.02), edge, 0.9, 1]
                 guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: locations)
                 else { continue }
