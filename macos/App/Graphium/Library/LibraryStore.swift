@@ -28,6 +28,18 @@ final class LibraryStore: ObservableObject {
         items = LibraryIndex.decode(try? Data(contentsOf: indexURL)).items
     }
 
+    /// Leaving is easy (PRINCIPLES.md): the library is an ordinary folder the DM can open.
+    func showInFinder() {
+        NSWorkspace.shared.activateFileViewerSelecting([folder])
+    }
+
+    /// Copies the whole library folder to `destination`, replacing anything there.
+    func export(to destination: URL) throws {
+        let fm = FileManager.default
+        if fm.fileExists(atPath: destination.path) { try fm.removeItem(at: destination) }
+        try fm.copyItem(at: folder, to: destination)
+    }
+
     func data(for fileName: String) -> Data? {
         guard CampaignPackage.isValidAssetName(fileName) else { return nil }
         return try? Data(contentsOf: folder.appendingPathComponent(fileName))

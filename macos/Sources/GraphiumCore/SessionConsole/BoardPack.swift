@@ -255,6 +255,22 @@ public enum BoardPack {
         case data(Data)
         case tooLarge
         case failed
+        /// The DM chose not to download remote files from this pack.
+        case declined
+    }
+
+    /// The hosts a pack would download from, sorted, so the app can name them and ask
+    /// before contacting any (PRINCIPLES.md: "Before contacting a host the DM didn't type,
+    /// Graphium names it"). YouTube tracks aren't listed: they aren't fetched on import.
+    public static func remoteHosts(in pack: Pack) -> [String] {
+        var srcs = pack.imageSets.flatMap { $0.images.map(\.src) }
+        srcs += pack.trackGroups.flatMap { $0.tracks.map(\.src) }
+        srcs += pack.sfx.compactMap { $0.kind == .local ? $0.src : nil }
+        var hosts = Set<String>()
+        for src in srcs {
+            if case .http(let url) = classify(src), let host = url.host?.lowercased() { hosts.insert(host) }
+        }
+        return hosts.sorted()
     }
 
     public struct Materialized: Sendable {
@@ -301,6 +317,8 @@ public enum BoardPack {
                     result = persist(data, url.lastPathComponent.isEmpty ? "remote" : url.lastPathComponent)
                 case .failed:
                     skipped.append("\(label): failed to fetch remote file")
+                case .declined:
+                    skipped.append("\(label): remote file not downloaded")
                 }
             case .relative(let path), .absolute(let path):
                 switch resolveFile(path) {

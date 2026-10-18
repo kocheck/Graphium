@@ -85,6 +85,14 @@ struct SessionConsoleSettings: View {
     @State private var packSummary: String?
     @State private var importMode: BoardPackIO.Mode?
     @State private var choosingExportFolder = false
+    /// A pack that downloads files: its hosts are named and the DM decides first.
+    @State private var remoteImport: RemoteImport?
+
+    private struct RemoteImport {
+        var url: URL
+        var mode: BoardPackIO.Mode
+        var hosts: [String]
+    }
 
     var body: some View {
         let catalog = document.campaign.sessionConsole
@@ -161,12 +169,35 @@ struct SessionConsoleSettings: View {
             importMode = nil
             switch result {
             case .success(let url):
-                Task { @MainActor in
-                    packSummary = await BoardPackIO.importPack(from: url, into: document, mode: mode, undoManager: undo)
+                let hosts = BoardPackIO.remoteHosts(in: url)
+                if hosts.isEmpty {
+                    runImport(url, mode: mode, download: false)
+                } else {
+                    remoteImport = RemoteImport(url: url, mode: mode, hosts: hosts)
                 }
             case .failure(let error):
                 packSummary = error.localizedDescription
             }
+        }
+        .alert(
+            "Download files from the internet?",
+            isPresented: Binding(get: { remoteImport != nil }, set: { if !$0 { remoteImport = nil } }),
+            presenting: remoteImport
+        ) { pending in
+            Button("Download") { runImport(pending.url, mode: pending.mode, download: true) }
+            Button("Skip Remote Files") { runImport(pending.url, mode: pending.mode, download: false) }
+            Button("Cancel", role: .cancel) {}
+        } message: { pending in
+            Text(
+                "This board pack lists files on \(pending.hosts.joined(separator: ", ")). Graphium contacts these sites only if you choose Download."
+            )
+        }
+    }
+
+    private func runImport(_ url: URL, mode: BoardPackIO.Mode, download: Bool) {
+        Task { @MainActor in
+            packSummary = await BoardPackIO.importPack(
+                from: url, into: document, mode: mode, downloadRemoteFiles: download, undoManager: undo)
         }
     }
 
