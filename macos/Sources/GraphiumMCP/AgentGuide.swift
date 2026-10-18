@@ -240,7 +240,8 @@ public enum AgentGuide {
         matter on maps with lighting on.
         - Markers: freehand lines with a colour and width in pixels; they block nothing.
         - Notes: a pin at a centre point with a title, dm_notes (never shown to players) and player_notes. \
-        shared puts the pin on the players' World View, where clicking it shows the title and player_notes.
+        shared puts the pin on the players' World View, where clicking it shows the title and player_notes. \
+        Both are Markdown, shown formatted: use ## headings, - lists and **bold** to make a room key easy to scan.
         - add_rooms door and opening positions (at) are measured along the side from its top or left end to \
         the door's centre.
         - Hex and isometric maps use the same coordinates (cells = multiples of cell_px), but cells aren't \

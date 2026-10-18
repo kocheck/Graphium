@@ -227,10 +227,8 @@ private struct WorldNoteCard: View {
             let text = note.playerNotes.trimmingCharacters(in: .whitespacesAndNewlines)
             if !text.isEmpty {
                 ScrollView {
-                    Text(text)
-                        .font(.system(size: 22))
-                        .lineSpacing(4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Markdown, at projector size: 22 pt body, headings larger, nothing under 18 pt.
+                    NoteMarkdownView(text: text, size: 22, ruleColor: Palette.worldRule.color, linksEnabled: false)
                         .textSelection(.disabled)
                 }
                 .frame(maxHeight: 420)

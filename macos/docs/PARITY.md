@@ -259,7 +259,7 @@ touch-bar-like floating HUD is optional.
 - [x] Prototype/instance resolution — Each token property falls back to the linked library item's defaults (name, type, visionRadius, scale, movementSpeed). (source: src/store/gameStore.ts:25-62, src/hooks/useTokenData.ts)
 - [x] Not editable anywhere in the UI: per-token `movementSpeed` (always the 30 ft default unless a library default sets it), token rotation, and explicit numeric scale. (source: src/components/Canvas/OverlayLayer.tsx:131, src/hooks/useTokenData.ts)
 
-**Native:** With notes selected and no tokens, the inspector shows the note instead: title, DM Notes ("Only you see these."), Player Notes, Show Pin to Players, and Show on World View. Typing is saved after a short pause, on focus loss and on selection change, so undo steps are phrases.
+**Native:** With notes selected and no tokens, the inspector shows the note instead: title, DM Notes ("Only you see these."), Player Notes, Show Pin to Players, and Show on World View. Typing is saved after a short pause, on focus loss and on selection change, so undo steps are phrases. Notes are Markdown: a Read/Edit switch shows them formatted (a note with text opens in Read, an empty one in Edit), and double-clicking formatted notes edits them.
 
 **Native mapping:** Use a trailing `.inspector` (macOS 14) with a `Form`, a `Picker(.segmented)` for
 type, and `Stepper`/`TextField(format: .number)` for vision. Multi-selection editing binds to
@@ -451,7 +451,7 @@ at 25%) as a pattern layer.
 - [x] The map background, paper noise, the grid in the map's grid colour, markers, wall lines (black, 6 px), doors with high-legibility styling, stairs, tokens with name labels, fog of war (unless Daylight mode is on), and the DM's measurement when broadcasting is on. (source: src/components/Canvas/CanvasManager.tsx:1201-1356, src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/DoorShape.tsx:182-217) **Native:** Only doors the players know are drawn, over the fog, and shut hidden doors look like wall (see 3.6 and 3.7 Layer order); tokens are above it as in TS.
 - [x] Not shown: the sidebar, toolbar, inspector, palette, resource monitor, transformer handles, hover-cell highlight, door preview and movement range. (source: src/App.tsx:516-618, src/components/Canvas/OverlayLayer.tsx:33, 119)
 - [x] NPCs outside party vision are hidden (see 3.7).
-- [x] **Native:** Shared note pins, over the fog, and a note card with a pin's title and player notes when a player clicks the pin or the DM shows the note (decision 011). DM notes and unshared pins never appear.
+- [x] **Native:** Shared note pins, over the fog, and a note card with a pin's title and player notes (Markdown, formatted; links don't open) when a player clicks the pin or the DM shows the note (decision 011). DM notes and unshared pins never appear.
 - [x] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
 - [x] Minimap (see 3.12).
 - [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2) **Native:** Open: Center on Party uses 18 pt and the pause text is large, but no automated legibility test exists.
