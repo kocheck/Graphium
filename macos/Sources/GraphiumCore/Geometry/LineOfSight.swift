@@ -75,11 +75,16 @@ public enum LineOfSight {
         return closest
     }
 
-    /// TS `calculateVisibilityPolygon`: `rays` evenly spaced rays from `origin`.
+    /// The walls sight is cast against: `walls(of:)` with near-miss seams welded shut.
+    public static func sightWalls(of map: GameMap) -> [WallSegment] {
+        WallWeld.weld(walls(of: map), tolerance: map.gridSize * WallWeld.toleranceInCells)
+    }
+
+    /// Visibility polygon from `origin`. TS `calculateVisibilityPolygon` cast only `rays` evenly
+    /// spaced rays; here they draw the arc, and `VisibilitySweep` adds the rays that make
+    /// the polygon exact at walls.
     public static func polygon(from origin: Point2D, radius: Double, walls: [WallSegment], rays: Int) -> [Point2D] {
-        (0..<rays).map { i in
-            castRay(from: origin, angle: Double(i) * 2 * .pi / Double(rays), radius: radius, walls: walls)
-        }
+        VisibilitySweep.polygon(from: origin, radius: radius, walls: walls, arcRays: rays)
     }
 
     /// A token that emits vision: resolved type PC with vision radius > 0.
@@ -113,7 +118,7 @@ public enum LineOfSight {
     public static func polygons(
         of map: GameMap, library: [String: TokenLibraryItem], zoom: Double = 1
     ) -> [VisionPolygon] {
-        let segments = Self.walls(of: map)
+        let segments = sightWalls(of: map)
         return viewers(of: map, library: library).map { viewer in
             VisionPolygon(
                 viewer: viewer,
@@ -196,10 +201,10 @@ extension GameMap {
         {
             return 0
         }
-        let segments = LineOfSight.walls(of: self)
+        let segments = LineOfSight.sightWalls(of: self)
         let current = LineOfSight.viewers(of: self, library: library)
         let pending: [LineOfSight.Viewer]
-        if fogTurnedOn || (wallInputsChanged && LineOfSight.walls(of: previous) != segments) {
+        if fogTurnedOn || (wallInputsChanged && LineOfSight.sightWalls(of: previous) != segments) {
             pending = current
         } else {
             let before = Set(LineOfSight.viewers(of: previous, library: oldLibrary).map(\.key))
