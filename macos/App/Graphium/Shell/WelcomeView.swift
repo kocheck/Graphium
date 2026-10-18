@@ -265,8 +265,8 @@ struct WelcomeView: View {
             Button("About") { ShowAbout(openWindow: openWindow)(.about) }.buttonStyle(.link)
             Link("Report Bug", destination: AppLinks.issues)
             Button("Help") { ShowAbout(openWindow: openWindow)(.shortcuts) }.buttonStyle(.link)
-                .keyboardShortcut("?", modifiers: [])
-                .help("Keyboard shortcuts (?)")
+                // No bare "?" key equivalent: it would fire while typing in the recents search.
+                .help("Keyboard shortcuts")
             Button {
                 themeRaw = theme.next.rawValue
                 theme.next.apply()

@@ -992,8 +992,12 @@ struct ArchitectView: View {
                 }
             }
         case .hide, .reveal:
-            document.edit(action == .hide ? "Hide Door" : "Reveal Door", undoManager: undoManager) {
-                $0.activeMap.setDoorsHidden([id], hidden: action == .hide)
+            document.edit(action == .hide ? "Hide Door" : "Reveal Door", undoManager: undoManager) { campaign in
+                campaign.activeMap.setDoorsHidden([id], hidden: action == .hide)
+                // A hidden door reads as wall only while shut, so hiding an open one shuts it.
+                if action == .hide, let i = campaign.activeMap.doors.firstIndex(where: { $0.id == id }) {
+                    campaign.activeMap.doors[i].isOpen = false
+                }
             }
         case .delete:
             document.edit("Delete Door", undoManager: undoManager) { $0.activeMap.doors.removeAll { $0.id == id } }

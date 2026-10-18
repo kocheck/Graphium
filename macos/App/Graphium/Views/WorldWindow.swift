@@ -13,6 +13,8 @@ struct WorldWindow: View {
     var body: some View {
         if let sessionID, let document = DocumentRegistry.shared.document(for: sessionID) {
             WorldView(document: document, liveDrag: document.liveDrag)
+                // So View > Pause World View (⇧⌘P) and the Session menu work with the projector window frontmost.
+                .focusedSceneValue(\.campaignDocument, document)
         } else {
             OrphanedWindow(
                 title: "No Campaign", systemImage: "map",

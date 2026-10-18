@@ -248,8 +248,16 @@ struct EditorCommands: Commands {
             Divider()
             DoorsMenu(document: actions == nil ? nil : document)
             Divider()
-            Button("Delete Selection") { actions?.deleteSelection?() }
-                .keyboardShortcut(.delete, modifiers: [.command])
+            Button("Delete Selection") {
+                // ⌘⌫ in an inspector field is the text system's Delete to Beginning of Line, not
+                // a request to delete the token or note being edited.
+                if let text = NSApp.keyWindow?.firstResponder as? NSTextView, text.isEditable {
+                    text.deleteToBeginningOfLine(nil)
+                } else {
+                    actions?.deleteSelection?()
+                }
+            }
+            .keyboardShortcut(.delete, modifiers: [.command])
                 .disabled(actions?.deleteSelection == nil)
         }
         CommandMenu("Session") {
