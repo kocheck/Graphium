@@ -211,8 +211,12 @@ struct TokenInspector: View {
         }
         guard provider.canLoadObject(ofClass: String.self) else { return false }
         _ = provider.loadObject(ofClass: String.self) { string, _ in
-            guard let id = string.flatMap(LibraryDrag.itemID) else { return }
-            DispatchQueue.main.async { _ = useLibraryItem(id: id) }
+            let id = string.flatMap(LibraryDrag.itemID)
+            DispatchQueue.main.async {
+                if id.map({ useLibraryItem(id: $0) }) != true {
+                    notify("Drop an image file or a library token.", true)
+                }
+            }
         }
         return true
     }

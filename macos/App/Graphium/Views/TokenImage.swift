@@ -9,6 +9,8 @@ import SwiftUI
 extension CampaignDocument {
     /// Points `ids` at `src` in one undoable step.
     func setTokenImage(_ src: String, for ids: Set<String>, undoManager: UndoManager?) {
+        // The tokens may be gone (deleted, or another map) by the time a picker closes.
+        guard campaign.activeMap.tokens.contains(where: { ids.contains($0.id) }) else { return }
         edit(ids.count == 1 ? "Change Token Image" : "Change Token Images", undoManager: undoManager) { campaign in
             for index in campaign.activeMap.tokens.indices where ids.contains(campaign.activeMap.tokens[index].id) {
                 campaign.activeMap.tokens[index].src = src
@@ -26,7 +28,8 @@ extension CampaignDocument {
         if let copy = campaign.tokenLibrary.first(where: { $0.id == item.id }), assets[copy.src] != nil {
             src = copy.src
         } else if let data = LibraryStore.shared.data(for: item.src) {
-            src = addAsset(data, preferredName: item.src)
+            // Picking the same item again reuses the copy already in the package.
+            src = assets.first(where: { $0.value == data })?.key ?? addAsset(data, preferredName: item.src)
         } else {
             return false
         }

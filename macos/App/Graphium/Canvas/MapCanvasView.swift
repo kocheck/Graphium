@@ -1018,23 +1018,14 @@ final class MapCanvasNSView: NSView {
     override func menu(for event: NSEvent) -> NSMenu? {
         guard let map else { return nil }
         let point = mapLocation(of: event)
-        if let tokenMenu = editing?.tokenMenu, let token = map.token(at: point, library: library),
-            !hiddenTokenIDs.contains(token.id)
-        {
-            // Acts on every selected token when the clicked one is among them.
-            let tokenIDs = Set(map.tokens.map(\.id)).intersection(selection)
-            let ids = selection.contains(token.id) ? tokenIDs : [token.id]
-            if !selection.contains(token.id) { editing?.setSelection([token.id]) }
-            needsDisplay = true
-            return tokenMenu(ids)
-        }
         if let lightAction = editing?.lightAction,
             let light = map.light(at: point, tolerance: Self.lightHitRadius / viewport.zoom)
         {
             return lightMenu(light, map: map, action: lightAction)
         }
+        // Lights and doors are small targets, so they win over a token standing on them.
         guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
-            return wallMenu(at: point, map: map)
+            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map)
         }
         // The menu acts on every selected door when the clicked one is among them.
         let doorIDs = selection.contains(door.id) ? selectedDoorIDs(in: map) : [door.id]
@@ -1069,6 +1060,18 @@ final class MapCanvasNSView: NSView {
             string: deleteTitle, attributes: [.foregroundColor: NSColor.systemRed])
         menu.addItem(delete)
         return menu
+    }
+
+    /// Change Image and Delete for the selected tokens when the clicked one is among them,
+    /// else for that token alone.
+    private func tokenMenu(at point: Point2D, map: GameMap) -> NSMenu? {
+        guard let tokenMenu = editing?.tokenMenu, let token = map.token(at: point, library: library),
+            !hiddenTokenIDs.contains(token.id)
+        else { return nil }
+        let ids = selection.contains(token.id) ? Set(map.tokens.map(\.id)).intersection(selection) : [token.id]
+        if !selection.contains(token.id) { editing?.setSelection([token.id]) }
+        needsDisplay = true
+        return tokenMenu(ids)
     }
 
     /// On, presets and Delete for the selected lights when the clicked one is among them,
