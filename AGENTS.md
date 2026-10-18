@@ -11,11 +11,11 @@ Graphium is a native macOS virtual tabletop for Dungeon Masters: an Architect wi
 | [`macos/`](macos/)                       | The app. Its own guide is [macos/AGENTS.md](macos/AGENTS.md): read it before touching anything in there |
 | [`macos/design/harness/`](macos/design/harness/INDEX.md) | Design harness: rule cards, taste, the build-and-screenshot loop                         |
 | [`macos/docs/design/DESIGN.md`](macos/docs/design/DESIGN.md) | Design system and tokens (front matter generates `Palette`)                           |
-| [`docs/decisions/`](docs/decisions/)     | Numbered product and design decisions, shared by both apps. Next number follows the highest           |
+| [`docs/decisions/`](docs/decisions/)     | Numbered product and design decisions, shared by both apps. `ls docs/decisions` and copy the newest one's format |
 | [`site/`](site/)                         | The "pardon our dust" page at the GitHub Pages root                                                     |
 | [`archive/web/`](archive/web/README.md)  | The retired web and Electron app. Read-only by default (see below)                                      |
 | `.claude/agents/`, `.claude/skills/`     | `design-advisor` (read-only critic) and `design-feedback` (turns Kyle's likes and misses into rules)    |
-| `.github/workflows/`                     | `macos-native` (build and tests), `docs-links`, `deploy-web`, `web-archive`                             |
+| `.github/workflows/`                     | `macos-native` (build and tests), `docs-links`, `deploy-web` (Pages: `site/` at the root, the web app at `/app/`), `web-archive` |
 
 ## Routing a task
 
@@ -31,7 +31,7 @@ Graphium is a native macOS virtual tabletop for Dungeon Masters: an Architect wi
 - **Checks that run anywhere** (run the ones your change touches before pushing):
   - `bash macos/scripts/check-design-docs.sh` after any change under `macos/design/` or `macos/docs/design/`.
   - `python3 macos/scripts/design-tokens.py` after editing tokens in DESIGN.md's front matter. Never hand-edit `macos/App/Graphium/Design/ColorTokens.swift`.
-  - `python3 -I .github/scripts/check-md-links.py` after moving files or editing Markdown. It fails on a dead relative link, a missing heading anchor, or a path in an agent entry file that doesn't exist.
+  - `python3 -I .github/scripts/check-md-links.py` after moving files or editing Markdown. It fails on a dead relative link, a missing heading anchor, or a path in an agent entry file that doesn't exist. It doesn't read code, so also `git grep -n <old path>` after a move.
 - **Screenshots and fixtures use synthetic campaigns only** (Welcome templates, Generate Dungeon). Never a real campaign's maps or names.
 - **Git**: branch per change, PR to `main`. Commit subjects start with the area (`macOS: ...`, `Docs: ...`). Kyle merges once CI is green. File judgment calls and parity or bug findings as GitHub issues rather than burying them in a PR.
 
@@ -40,5 +40,5 @@ Graphium is a native macOS virtual tabletop for Dungeon Masters: an Architect wi
 `archive/web/` holds the React/Electron app with its history (moved with `git mv`; use `git log --follow`). It is still built and served at `/app/` on GitHub Pages by `deploy-web`.
 
 - Don't edit it unless the task is about the web app. The importer test fixture is regenerated from it with `macos/Tests/make-ts-fixture.mts`.
-- A change there runs `web-archive` CI (lint, type-check, unit tests, web build). Its old E2E, accessibility and release workflows are kept, inactive, in `archive/web/.github/workflows/`.
+- A change there runs `web-archive` CI. Run the same checks first: `cd archive/web && npm ci && npm run lint:strict && npm run type-check && npm run test:run && npm run build:web` (the archive README's `npm run build` also packages Electron). Its old E2E, accessibility and release workflows are kept, inactive, in `archive/web/.github/workflows/`.
 - Paths inside the archive's docs are relative to `archive/web/`. Its rules files (`.cursorrules`, `.ai-rules.md`) apply to that code only.
