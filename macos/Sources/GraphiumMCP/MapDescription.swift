@@ -50,9 +50,9 @@ enum Describe {
         }
         if !setAside.isEmpty {
             out["set_aside"] = .array(setAside.map { .string("\($0.field("from") ?? "?"): \($0.field("reason") ?? "")") })
-            out["set_aside_note"] =
+            out["set_aside_note"] = .string(
                 "These objects couldn't be read, so the campaign opened without them. They're kept in campaign.json under "
-                + "\"setAside\" and nothing was deleted. Tell the DM; don't recreate them unless asked."
+                    + "\"setAside\" and nothing was deleted. Tell the DM; don't recreate them unless asked.")
         }
         return .object(out)
     }
