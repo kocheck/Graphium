@@ -106,6 +106,10 @@ LINES/DOTS/HIDDEN are all square geometry (visual style only). HEXAGONAL = flat-
 
 **Native only**: `darkvision` `number` (feet), optional, resolves `token.darkvision ?? lib.defaultDarkvision`; used only with lighting on (§1.3). `playerName` `string`, optional: the name the World View shows players (decision 014); absent shows the resolved name, empty shows none. Per token, never inherited. TS ignores it and shows the name.
 
+**Native only, DM only** (issue #369): `hitPoints` and `maxHitPoints` `integer`, optional, absent = untracked / no maximum. `conditions` `Condition[]`, optional, the 5e (2024) conditions in the order added (`blinded`, `charmed`, `deafened`, `exhausted`, `frightened`, `grappled`, `incapacitated`, `invisible`, `paralyzed`, `petrified`, `poisoned`, `prone`, `restrained`, `stunned`, `unconscious`), written only when not empty; unknown names are skipped on read. Damage and healing clamp hit points to `0…maxHitPoints` (floor 0 only, without a maximum); untracked hit points count from the maximum. A token at 0 is down. Per token, never inherited from the library. The Architect shows them in the inspector, as a badge on the token and to VoiceOver; the World View, `render_map` and the MCP tools never show them. TS ignores them.
+
+Option-drag copies (`dropTokens` with `duplicate`) set the copy's `name` to its resolved name numbered one past the highest number among tokens on the map with that base name: "Goblin" → "Goblin 2", then "Goblin 3"; a copy of a numbered "Goblin 2" continues the same count. An unnumbered name counts as 1.
+
 Token footprint: `size = gridSize * resolvedScale` (square). Token centre: `(x + size/2, y + size/2)`.
 `TokenMetadata` (`gameStore.ts:32`) is just the shared optional subset `{name,type,visionRadius,scale,movementSpeed}`.
 

@@ -9,6 +9,8 @@ colors:
   accent-text-dark: "#FFE7B3"
   canvas-door: "#8C5C33"
   canvas-door-dark: "#8C5C33"
+  canvas-grid: "#1C2024"
+  canvas-grid-dark: "#1C2024"
   canvas-halo: "#000000A6"
   canvas-halo-dark: "#000000A6"
   canvas-hover: "#FFC53D29"
@@ -84,7 +86,7 @@ Light/dark pairs: `name` / `name-dark`. A token without `-dark` is fixed (World 
 
 - `ink-primary` reads, `ink-secondary` labels and metadata. Neither is used on the canvas, where map art decides the background.
 - `accent` fills and glyphs only (active state, selection, broadcasting, paused); `accent-text` for readable amber text; `ink-on-accent` for text on an `accent` fill.
-- `canvas-*` draw on the map; `canvas-door` is the wooden door fill, the same in both windows. Anything thin on the map (selection, labels) sits on `canvas-halo` so it reads on light and dark map art.
+- `canvas-*` draw on the map; `canvas-door` is the wooden door fill, the same in both windows; `canvas-grid` is the default grid's ink, the same in Light and Dark because the map art, not the theme, decides what reads. Anything thin on the map (selection, labels) sits on `canvas-halo` so it reads on light and dark map art.
 - `status-*` pair with a glyph: `exclamationmark.triangle` critical/warning, `checkmark.circle` ok. Light `status-ok` and `status-warning` are one shade darker than Radix green-11 / amber-11, which measured 4.49 and 4.38 on `surface-panel`.
 - `world-*` are the World View's own set; see [World View](#world-view).
 
@@ -94,6 +96,7 @@ Light/dark pairs: `name` / `name-dark`. A token without `-dark` is fixed (World 
 | `accent` | `#FFC53D` | `#FFC53D` |
 | `accent-text` | `#4F3422` | `#FFE7B3` |
 | `canvas-door` | `#8C5C33` | `#8C5C33` |
+| `canvas-grid` | `#1C2024` | `#1C2024` |
 | `canvas-halo` | `#000000A6` | `#000000A6` |
 | `canvas-hover` | `#FFC53D29` | `#FFC53D29` |
 | `canvas-measure` | `#FFC53D` | `#FFC53D` |

@@ -28,11 +28,24 @@ public struct Token: Codable, Equatable, Identifiable, Sendable {
     /// Native only: the name players see on the World View. Nil shows the token's name;
     /// empty shows none (decision 014).
     public var playerName: String?
+    /// Native only, DM only: current hit points. Nil is untracked.
+    public var hitPoints: Int?
+    /// Native only, DM only: maximum hit points. Nil is no maximum.
+    public var maxHitPoints: Int?
+    /// Native only, DM only: active conditions, in the order added. Nil and empty are both
+    /// left out of the file.
+    public var conditions: [Condition]?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, x, y, src, libraryItemId, scale, type, visionRadius, name, movementSpeed, darkvision, playerName
+        case hitPoints, maxHitPoints, conditions
+    }
 
     public init(
         id: String = newID(), x: Double, y: Double, src: String, libraryItemId: String? = nil,
         scale: Double? = nil, type: CreatureType? = nil, visionRadius: Double? = nil,
-        name: String? = nil, movementSpeed: Double? = nil, darkvision: Double? = nil, playerName: String? = nil
+        name: String? = nil, movementSpeed: Double? = nil, darkvision: Double? = nil, playerName: String? = nil,
+        hitPoints: Int? = nil, maxHitPoints: Int? = nil, conditions: [Condition]? = nil
     ) {
         self.id = id
         self.x = x
@@ -46,6 +59,119 @@ public struct Token: Codable, Equatable, Identifiable, Sendable {
         self.movementSpeed = movementSpeed
         self.darkvision = darkvision
         self.playerName = playerName
+        self.hitPoints = hitPoints
+        self.maxHitPoints = maxHitPoints
+        self.conditions = conditions
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        x = try c.decode(Double.self, forKey: .x)
+        y = try c.decode(Double.self, forKey: .y)
+        src = try c.decode(String.self, forKey: .src)
+        libraryItemId = try c.decodeIfPresent(String.self, forKey: .libraryItemId)
+        scale = try c.decodeIfPresent(Double.self, forKey: .scale)
+        type = try c.decodeIfPresent(CreatureType.self, forKey: .type)
+        visionRadius = try c.decodeIfPresent(Double.self, forKey: .visionRadius)
+        name = try c.decodeIfPresent(String.self, forKey: .name)
+        movementSpeed = try c.decodeIfPresent(Double.self, forKey: .movementSpeed)
+        darkvision = try c.decodeIfPresent(Double.self, forKey: .darkvision)
+        playerName = try c.decodeIfPresent(String.self, forKey: .playerName)
+        hitPoints = try c.decodeIfPresent(Int.self, forKey: .hitPoints)
+        maxHitPoints = try c.decodeIfPresent(Int.self, forKey: .maxHitPoints)
+        // A condition this app doesn't know (from a newer one) is skipped, not fatal to the map.
+        let known = (try c.decodeIfPresent([String].self, forKey: .conditions) ?? []).compactMap(Condition.init(rawValue:))
+        conditions = known.isEmpty ? nil : known
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(x, forKey: .x)
+        try c.encode(y, forKey: .y)
+        try c.encode(src, forKey: .src)
+        try c.encodeIfPresent(libraryItemId, forKey: .libraryItemId)
+        try c.encodeIfPresent(scale, forKey: .scale)
+        try c.encodeIfPresent(type, forKey: .type)
+        try c.encodeIfPresent(visionRadius, forKey: .visionRadius)
+        try c.encodeIfPresent(name, forKey: .name)
+        try c.encodeIfPresent(movementSpeed, forKey: .movementSpeed)
+        try c.encodeIfPresent(darkvision, forKey: .darkvision)
+        try c.encodeIfPresent(playerName, forKey: .playerName)
+        try c.encodeIfPresent(hitPoints, forKey: .hitPoints)
+        try c.encodeIfPresent(maxHitPoints, forKey: .maxHitPoints)
+        if let conditions, !conditions.isEmpty { try c.encode(conditions, forKey: .conditions) }
+    }
+}
+
+/// A 5e (2024) condition on a token (native only). The DM tracks them; players never see them.
+public enum Condition: String, Codable, CaseIterable, Identifiable, Sendable {
+    case blinded, charmed, deafened, exhausted, frightened, grappled, incapacitated, invisible
+    case paralyzed, petrified, poisoned, prone, restrained, stunned, unconscious
+
+    public var id: Self { self }
+
+    public var title: String { rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
+
+    /// The SF Symbol shown beside the condition's name in the inspector and on the canvas badge.
+    public var symbolName: String {
+        switch self {
+        case .blinded: return "eye.slash"
+        case .charmed: return "heart"
+        case .deafened: return "ear.trianglebadge.exclamationmark"
+        case .exhausted: return "battery.25"
+        case .frightened: return "exclamationmark.triangle"
+        case .grappled: return "hand.raised"
+        case .incapacitated: return "nosign"
+        case .invisible: return "circle.dashed"
+        case .paralyzed: return "pause.circle"
+        case .petrified: return "mountain.2"
+        case .poisoned: return "drop"
+        case .prone: return "figure.fall"
+        case .restrained: return "link"
+        case .stunned: return "sparkles"
+        case .unconscious: return "zzz"
+        }
+    }
+}
+
+extension Token {
+    /// At 0 hit points.
+    public var isDown: Bool { hitPoints == 0 }
+
+    /// Whether `condition` is active.
+    public func has(_ condition: Condition) -> Bool { conditions?.contains(condition) ?? false }
+
+    /// Adds `condition` if it isn't active, else removes it. No conditions left is nil.
+    public mutating func toggle(_ condition: Condition) {
+        var list = conditions ?? []
+        if let index = list.firstIndex(of: condition) {
+            list.remove(at: index)
+        } else {
+            list.append(condition)
+        }
+        conditions = list.isEmpty ? nil : list
+    }
+
+    /// Takes `amount` damage, never below 0. Untracked hit points start from the maximum, if any.
+    public mutating func applyDamage(_ amount: Int) {
+        guard let current = hitPoints ?? maxHitPoints else { return }
+        hitPoints = clampedHitPoints(current - max(0, amount))
+    }
+
+    /// Heals `amount`, never above the maximum when there is one. Untracked hit points count
+    /// as the maximum, as for damage.
+    public mutating func heal(_ amount: Int) {
+        guard let current = hitPoints ?? maxHitPoints else { return }
+        hitPoints = clampedHitPoints(current + max(0, amount))
+    }
+
+    /// `value` clamped to 0…`maxHitPoints` (no upper bound without a maximum).
+    public func clampedHitPoints(_ value: Int) -> Int {
+        let floored = max(0, value)
+        guard let maxHitPoints else { return floored }
+        return min(floored, max(0, maxHitPoints))
     }
 }
 

@@ -12,6 +12,8 @@ struct ArchitectActions {
     var showDungeon: () -> Void
     var togglePerformanceMonitor: () -> Void
     var isPerformanceMonitorShown: Bool
+    var toggleFogPreview: () -> Void
+    var isFogPreviewShown: Bool
     var exportLegacy: () -> Void
     var tool: CanvasTool
     var selectTool: (CanvasTool) -> Void
@@ -115,6 +117,12 @@ private struct WorldViewMenuItems: View {
         Button("Show This View on World View") { actions?.showViewOnWorld() }
             .keyboardShortcut("y", modifiers: [.command, .shift])
             .disabled(actions == nil)
+        // The players' fog, dimmed, over the DM's map: check walls and doors without the TV (#370).
+        Toggle(
+            "Show Players' Fog",
+            isOn: Binding(get: { actions?.isFogPreviewShown ?? false }, set: { _ in actions?.toggleFogPreview() })
+        )
+        .disabled(actions == nil)
 
         if let document {
             PauseMenuItem(document: document)
@@ -124,6 +132,42 @@ private struct WorldViewMenuItems: View {
                 .disabled(true)
         }
         Divider()
+    }
+}
+
+/// Next and Previous Turn: from the Architect (which also pans to the combatant), or straight on
+/// the campaign from the World View and Session Console windows, so the DM can step turns
+/// with the projector frontmost (#370).
+private struct TurnMenuItems: View {
+    let document: CampaignDocument?
+    let actions: ArchitectActions?
+
+    var body: some View {
+        if let document {
+            Items(document: document, actions: actions)
+        } else {
+            Button("Next Turn") {}.keyboardShortcut("]", modifiers: .command).disabled(true)
+            Button("Previous Turn") {}.keyboardShortcut("[", modifiers: .command).disabled(true)
+        }
+    }
+
+    private struct Items: View {
+        @ObservedObject var document: CampaignDocument
+        let actions: ArchitectActions?
+
+        var body: some View {
+            let empty = document.campaign.activeMap.initiative.isEmpty
+            Button("Next Turn") {
+                if let next = actions?.nextTurn { next() } else { document.stepTurn(forward: true) }
+            }
+            .keyboardShortcut("]", modifiers: .command)
+            .disabled(empty)
+            Button("Previous Turn") {
+                if let previous = actions?.previousTurn { previous() } else { document.stepTurn(forward: false) }
+            }
+            .keyboardShortcut("[", modifiers: .command)
+            .disabled(empty)
+        }
     }
 }
 
@@ -287,12 +331,7 @@ struct EditorCommands: Commands {
             Divider()
             Button("Add Selection to Initiative") { actions?.addToInitiative?() }
                 .disabled(actions?.addToInitiative == nil)
-            Button("Next Turn") { actions?.nextTurn?() }
-                .keyboardShortcut("]", modifiers: .command)
-                .disabled(actions?.nextTurn == nil)
-            Button("Previous Turn") { actions?.previousTurn?() }
-                .keyboardShortcut("[", modifiers: .command)
-                .disabled(actions?.previousTurn == nil)
+            TurnMenuItems(document: document, actions: actions)
             Button("Sort Initiative") { actions?.sortInitiative?() }
                 .disabled(actions?.sortInitiative == nil)
             Button("Clear Initiative") { actions?.clearInitiative?() }

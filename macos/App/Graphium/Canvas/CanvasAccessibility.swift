@@ -30,6 +30,8 @@ extension MapCanvasNSView {
             let element = makeElement(
                 label: "\(name)\(kind)\(selection.contains(token.id) ? ", selected" : "")",
                 bounds: map.tokenDisplayBounds(token, library: library))
+            // Hit points and conditions are the DM's alone (issue #369).
+            if !isPlayerView, let state = tokenStateDescription(token) { element.setAccessibilityValue(state) }
             if let editing {
                 let id = token.id
                 element.onPress = { editing.setSelection([id]) }
@@ -98,6 +100,20 @@ extension MapCanvasNSView {
             }
         }
         return elements
+    }
+
+    /// "Down, 0 of 7 hit points, Prone, Poisoned", or nil when nothing is tracked.
+    private func tokenStateDescription(_ token: Token) -> String? {
+        var parts: [String] = []
+        if token.isDown { parts.append("Down") }
+        switch (token.hitPoints, token.maxHitPoints) {
+        case (let current?, let maximum?): parts.append("\(current) of \(maximum) hit points")
+        case (let current?, nil): parts.append("\(current) hit points")
+        case (nil, let maximum?): parts.append("\(maximum) maximum hit points")
+        case (nil, nil): break
+        }
+        parts += (token.conditions ?? []).map(\.title)
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 
     private func makeElement(label: String, bounds: Bounds) -> CanvasAccessibilityElement {

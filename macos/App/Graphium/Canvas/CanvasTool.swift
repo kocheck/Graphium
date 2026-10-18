@@ -60,7 +60,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .effect:
             return "Spell Effect (S) — drag out a spell's area; start on a token to have it carry the effect"
         case .reveal:
-            return "Reveal (F) — drag over ground to show it to players without PC tokens; Option-click a revealed area to hide it"
+            return "Reveal (F) — drag over ground to show it to players without PC tokens; Option-click a revealed area to hide it; click a token to select it"
         default: return "\(title) (\(key.uppercased()))"
         }
     }

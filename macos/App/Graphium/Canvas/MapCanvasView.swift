@@ -335,6 +335,10 @@ final class MapCanvasNSView: NSView {
                 dash: [5 / viewport.zoom, 3 / viewport.zoom])
         }
         drawStairs(map.stairs, context: context)
+        // Players see spell areas only on ground they've explored: under the fog, so an area the
+        // DM placed ahead of the party (a trap, a cloud in the next room) stays secret (#368).
+        let effectsUnderFog = isPlayerView && fog != nil
+        if effectsUnderFog { drawEffectsLayer(map, context: context) }
         if isPlayerView {
             // Shut hidden doors are wall to the players, under the fog with the walls. The
             // doors they know go over the fog, like the rock behind seen walls; doors in
@@ -348,23 +352,17 @@ final class MapCanvasNSView: NSView {
             drawDoors(map.doors, context: context)
             // Fog covers the map, walls, stairs and doors, but not tokens: visible tokens stay
             // crisp on top and only hidden NPCs are left out (TS CanvasManager layer order).
-            if let fog { drawFog(fog, context: context) }
-        }
-        doorSwings.finishFrame(doorIDs: Set(map.doors.map(\.id)))
-        // Spell areas lie on the ground: over the fog, under the tokens (decision 015).
-        if !map.effects.isEmpty || effectPreview(in: map) != nil {
-            let effectMap = mapWithLiveTokenDrag(map)
-            if case .movingStrokes(let ids, let start, let current, true) = interaction {
-                drawEffects(
-                    effectMap, moving: ids, offset: CGSize(width: current.x - start.x, height: current.y - start.y),
-                    duplicate: NSEvent.modifierFlags.contains(.option), context: context)
-            } else {
-                // The preview's point is in world pixels, even on a token.
-                var preview = effectPreview(in: map)
-                preview?.tokenID = nil
-                drawEffects(effectMap, preview: preview, context: context)
+            // The DM's preview of the players' fog is dimmed, so the map still reads under it.
+            if let fog {
+                context.saveGState()
+                context.setAlpha(0.6)
+                drawFog(fog, context: context)
+                context.restoreGState()
             }
         }
+        doorSwings.finishFrame(doorIDs: Set(map.doors.map(\.id)))
+        // The DM sees every spell area over the fog, under the tokens (decision 015).
+        if !effectsUnderFog { drawEffectsLayer(map, context: context) }
         if showMovementRange, !isPlayerView, selection.count == 1,
             let token = map.tokens.first(where: { selection.contains($0.id) })
         {
@@ -482,9 +480,10 @@ final class MapCanvasNSView: NSView {
         guard map.gridType != .hidden, map.gridSize * viewport.zoom >= 4 else { return }
         let color =
             map.gridColor.lowercased() == GameMap.defaultGridColor
-            // The default colour adapts to the theme, as in the TS app; a custom colour draws
+            // The default is ink, whatever the theme: maps are mostly light art, and a white grid
+            // on parchment in Dark Mode was hard to calibrate against (#370). A custom colour draws
             // at 50% like every TS grid (GridOverlay opacity), stronger with Increase Contrast.
-            ? NSColor.labelColor.withAlphaComponent(highContrast ? 0.55 : 0.25)
+            ? Palette.canvasGrid.nsColor.withAlphaComponent(highContrast ? 0.6 : 0.3)
             : (NSColor(hex: map.gridColor) ?? .separatorColor).withAlphaComponent(highContrast ? 0.8 : 0.5)
         context.setStrokeColor(color.cgColor)
         context.setFillColor(color.cgColor)
@@ -772,6 +771,22 @@ final class MapCanvasNSView: NSView {
         }
     }
 
+    /// Spell areas with any live move or placement preview (decision 015).
+    private func drawEffectsLayer(_ map: GameMap, context: CGContext) {
+        guard !map.effects.isEmpty || effectPreview(in: map) != nil else { return }
+        let effectMap = mapWithLiveTokenDrag(map)
+        if case .movingStrokes(let ids, let start, let current, true) = interaction {
+            drawEffects(
+                effectMap, moving: ids, offset: CGSize(width: current.x - start.x, height: current.y - start.y),
+                duplicate: NSEvent.modifierFlags.contains(.option), context: context)
+        } else {
+            // The preview's point is in world pixels, even on a token.
+            var preview = effectPreview(in: map)
+            preview?.tokenID = nil
+            drawEffects(effectMap, preview: preview, context: context)
+        }
+    }
+
     /// TS `TokenNode` states: hover (Select tool) scales 1.02 with a soft shadow; a dragged
     /// token is 50% opaque, scaled 1.05, with a strong shadow. Scaled about the centre.
     private enum TokenLook {
@@ -810,17 +825,49 @@ final class MapCanvasNSView: NSView {
                 CGPath(ellipseIn: rect.insetBy(dx: -2, dy: -2), transform: nil),
                 width: (highContrast ? 4.5 : 3) / viewport.zoom, dash: [8 / viewport.zoom, 4 / viewport.zoom])
         }
+        // Hit points and conditions are the DM's alone (issue #369, decision 014's spirit).
+        if !isPlayerView { drawTokenStateBadge(token, in: rect, context: context) }
 
         let resolved = ResolvedToken(token, library: library)
         // Players see the token's name for players, or none (decision 014).
         guard let name = isPlayerView ? resolved.playerName : resolved.name else { return }
         // Long names are cut short, as note titles are, so neighbouring tokens' labels don't run together.
         let shown = name.count > 20 ? String(name.prefix(19)).trimmingCharacters(in: .whitespaces) + "…" : name
-        // 12 map units, but never under 18 pt on the projector (world-view-player-safe).
-        let size: CGFloat = isPlayerView ? max(12, 18 / viewport.zoom) : 12
+        // 12 map units, but never under 24 pt on the projector (world-view-player-safe).
+        let size: CGFloat = isPlayerView ? max(12, 24 / viewport.zoom) : 12
         let label = NSAttributedString.mapLabel(shown, font: NSFont.boldSystemFont(ofSize: size))
         let labelSize = label.size()
         label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY - lift + 8))
+    }
+
+    /// The Architect's mark for a token that is down or has conditions, on its top-trailing
+    /// edge at a constant on-screen size: `heart.slash` at 0 hit points, else the first
+    /// condition's glyph, with the number of conditions when there are more. A glyph on a
+    /// dark backing, so it reads without colour on any map.
+    private func drawTokenStateBadge(_ token: Token, in rect: CGRect, context: CGContext) {
+        let conditions = token.conditions ?? []
+        guard token.isDown || !conditions.isEmpty else { return }
+        let zoom = CGFloat(viewport.zoom)
+        let height: CGFloat = 18 / zoom
+        let symbol = token.isDown ? "heart.slash" : conditions[0].symbolName
+        let count =
+            !token.isDown && conditions.count > 1
+            ? NSAttributedString(
+                string: "\(conditions.count)",
+                attributes: [.font: ReadoutFont.ns(size: 11 / zoom, weight: .semibold), .foregroundColor: NSColor.white])
+            : nil
+        let countSize: CGSize = count?.size() ?? .zero
+        let width: CGFloat = count == nil ? height : height + countSize.width + 3 / zoom
+        let badge = CGRect(x: rect.maxX - height * 0.8, y: rect.minY - height * 0.2, width: width, height: height)
+        context.saveGState()
+        let halo = Palette.canvasHalo.nsColor
+        context.setFillColor((highContrast ? halo.withAlphaComponent(1) : halo).cgColor)
+        context.addPath(CGPath(roundedRect: badge, cornerWidth: height / 2, cornerHeight: height / 2, transform: nil))
+        context.fillPath()
+        context.restoreGState()
+        let glyphCentre = CGPoint(x: badge.minX + height / 2, y: badge.midY)
+        drawNoteSymbol(symbol, centredAt: glyphCentre, size: 10 / zoom, color: .white)
+        count?.draw(at: NSPoint(x: badge.minX + height - 1 / zoom, y: badge.midY - countSize.height / 2))
     }
 
     // MARK: Pointer input
@@ -915,6 +962,17 @@ final class MapCanvasNSView: NSView {
             if !shift { editing.setSelection([]) }
             interaction = .marquee(start: point, current: point, base: base)
         }
+    }
+
+    /// A click (no drag) on a token in Measure or Reveal selects it, so the DM needn't switch to
+    /// Select and back between turns. Returns whether a token was there.
+    @discardableResult
+    private func selectToken(at point: Point2D) -> Bool {
+        guard !isPlayerView, let map, let token = map.token(at: point, library: library),
+            !hiddenTokenIDs.contains(token.id)
+        else { return false }
+        editing?.setSelection([token.id])
+        return true
     }
 
     /// The light hit radius in view points.
@@ -1161,12 +1219,20 @@ final class MapCanvasNSView: NSView {
                 // are watching, and a stray click in a tool called Reveal shouldn't darken their ground.
                 if event.modifierFlags.contains(.option), let area = map?.revealedArea(at: start) {
                     editing?.hideRevealedArea?(area.id)
+                } else {
+                    selectToken(at: start)
                 }
             } else {
                 // Option reveals exactly what was dragged; otherwise whole cells on square grids.
                 let squareGrid = map.map { $0.gridType == .lines || $0.gridType == .dots } ?? false
                 editing?.revealArea?(Bounds(corner: start, corner: current), squareGrid && !event.modifierFlags.contains(.option))
             }
+        }
+        if case .measuring(let origin) = interaction,
+            Measure.euclideanDistance(origin, mapLocation(of: event)) * viewport.zoom < Self.dragThreshold,
+            selectToken(at: origin)
+        {
+            editing?.setMeasurement?(nil)  // a click on a token picks it, rather than measuring nothing
         }
         if case .placingEffect = interaction, let map, let effect = effectPreview(in: map) {
             var placed = effect

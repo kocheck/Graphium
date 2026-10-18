@@ -141,7 +141,7 @@ private struct WorldView: View {
                     if let party { fitRequest = FitRequest(bounds: party) }
                 } label: {
                     Label("Center on Party", systemImage: "person.3.fill")
-                        .font(.system(size: 18, weight: .semibold))  // projector legibility: ≥18 px (PARITY §4.1)
+                        .font(.system(size: 24, weight: .semibold))  // projector legibility: ≥24 pt (world-view-player-safe)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 4)
                 }
@@ -257,7 +257,7 @@ private struct WorldView: View {
 }
 
 /// A note's title and player notes on the World View (decision 011). Never its DM notes.
-/// Projector-sized: 18 pt and up, `world-ink` on `world-scrim`.
+/// Projector-sized: 24 pt and up, `world-ink` on `world-scrim`.
 private struct WorldNoteCard: View {
     let note: MapNote
     let close: () -> Void
@@ -271,7 +271,7 @@ private struct WorldNoteCard: View {
                 Spacer(minLength: 12)
                 Button(action: close) {
                     Label("Close", systemImage: "xmark")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 24, weight: .semibold))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 4)
                 }
@@ -283,8 +283,8 @@ private struct WorldNoteCard: View {
             let text = note.playerNotes.trimmingCharacters(in: .whitespacesAndNewlines)
             if !text.isEmpty {
                 ScrollView {
-                    // Markdown, at projector size: 22 pt body, headings larger, nothing under 18 pt.
-                    NoteMarkdownView(text: text, size: 22, ruleColor: Palette.worldRule.color, linksEnabled: false)
+                    // Markdown, at projector size: 26 pt body, headings larger, nothing under 24 pt.
+                    NoteMarkdownView(text: text, size: 26, ruleColor: Palette.worldRule.color, linksEnabled: false)
                         .textSelection(.disabled)
                 }
                 .frame(maxHeight: 420)
@@ -302,7 +302,7 @@ private struct WorldNoteCard: View {
 }
 
 /// The initiative order for players (decision 016), on the etched plate the minimap uses but
-/// with `world-scrim` behind the names for 7:1. Projector-sized: nothing under 18 pt. The current
+/// with `world-scrim` behind the names for 7:1. Projector-sized: nothing under 24 pt. The current
 /// combatant has a play glyph, bold type and a `world-action` band, so it reads without colour.
 private struct WorldInitiativeStrip: View {
     let combatants: [PlayerInitiativeEntry]
@@ -310,17 +310,17 @@ private struct WorldInitiativeStrip: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Initiative")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(Palette.worldInkDim.color)
                 .padding(.horizontal, 10)
                 .accessibilityAddTraits(.isHeader)
             ForEach(combatants, id: \.tokenID) { combatant in
                 HStack(spacing: 10) {
                     Image(systemName: "play.fill")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 24, weight: .bold))
                         .opacity(combatant.isCurrent ? 1 : 0)
                     Text(combatant.name)
-                        .font(.system(size: 22, weight: combatant.isCurrent ? .bold : .regular))
+                        .font(.system(size: 26, weight: combatant.isCurrent ? .bold : .regular))
                         .lineLimit(1)
                 }
                 .foregroundStyle(combatant.isCurrent ? Palette.worldInk.color : Palette.worldInkDim.color)
@@ -363,7 +363,7 @@ private struct PauseOverlay: View {
                 Text("Please Wait")
                     .font(.system(size: 40, weight: .bold))
                 Text(line)
-                    .font(.system(size: 22))
+                    .font(.system(size: 26))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }

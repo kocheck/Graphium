@@ -266,3 +266,13 @@ final class LiveDragModel: ObservableObject {
         if new != positions { positions = new }
     }
 }
+
+extension CampaignDocument {
+    /// Next or Previous Turn on the active map, from any of the campaign's windows. The
+    /// Architect wraps this to also pan to the combatant.
+    func stepTurn(forward: Bool, undoManager: UndoManager? = nil) {
+        edit(forward ? "Next Turn" : "Previous Turn", undoManager: undoManager) { campaign in
+            if forward { campaign.activeMap.initiative.next() } else { campaign.activeMap.initiative.previous() }
+        }
+    }
+}

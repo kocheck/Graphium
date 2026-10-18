@@ -7,6 +7,7 @@ enum Palette: CaseIterable {
     case accent
     case accentText
     case canvasDoor
+    case canvasGrid
     case canvasHalo
     case canvasHover
     case canvasMeasure
@@ -37,6 +38,7 @@ enum Palette: CaseIterable {
         case .accent: return "accent"
         case .accentText: return "accent-text"
         case .canvasDoor: return "canvas-door"
+        case .canvasGrid: return "canvas-grid"
         case .canvasHalo: return "canvas-halo"
         case .canvasHover: return "canvas-hover"
         case .canvasMeasure: return "canvas-measure"
@@ -69,6 +71,7 @@ enum Palette: CaseIterable {
         case .accent: return Self.adaptive(light: (red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 1.0000), dark: (red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 1.0000))
         case .accentText: return Self.adaptive(light: (red: 0.3098, green: 0.2039, blue: 0.1333, alpha: 1.0000), dark: (red: 1.0000, green: 0.9059, blue: 0.7020, alpha: 1.0000))
         case .canvasDoor: return Self.adaptive(light: (red: 0.5490, green: 0.3608, blue: 0.2000, alpha: 1.0000), dark: (red: 0.5490, green: 0.3608, blue: 0.2000, alpha: 1.0000))
+        case .canvasGrid: return Self.adaptive(light: (red: 0.1098, green: 0.1255, blue: 0.1412, alpha: 1.0000), dark: (red: 0.1098, green: 0.1255, blue: 0.1412, alpha: 1.0000))
         case .canvasHalo: return Self.adaptive(light: (red: 0.0000, green: 0.0000, blue: 0.0000, alpha: 0.6510), dark: (red: 0.0000, green: 0.0000, blue: 0.0000, alpha: 0.6510))
         case .canvasHover: return Self.adaptive(light: (red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 0.1608), dark: (red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 0.1608))
         case .canvasMeasure: return Self.adaptive(light: (red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 1.0000), dark: (red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 1.0000))

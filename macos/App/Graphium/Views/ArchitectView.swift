@@ -46,6 +46,9 @@ struct ArchitectView: View {
     @State private var canvasZoom = 1.0
     /// The canvas camera, held without observing so panning doesn't redraw this view.
     @State private var camera = CanvasCamera()
+    /// View > Show Players' Fog: the players' fog, dimmed, over the DM's map while prepping walls.
+    @State private var fogPreview = false
+    @State private var fogPreviewCache = VisibilityCache()
     @State private var toast: Toast?
 
     private enum InspectorTab: Hashable {
@@ -259,6 +262,8 @@ struct ArchitectView: View {
                 showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true },
                 togglePerformanceMonitor: { showingPerformance.toggle() },
                 isPerformanceMonitorShown: showingPerformance,
+                toggleFogPreview: { fogPreview.toggle() },
+                isFogPreviewShown: fogPreview,
                 exportLegacy: { exportLegacy() },
                 tool: tools.tool,
                 selectTool: { selectTool($0) },
@@ -588,6 +593,7 @@ struct ArchitectView: View {
                     document.edit("Hide Area", undoManager: undoManager) { $0.activeMap.revealedAreas.removeAll { $0.id == id } }
                 }
             ),
+            fog: fogPreview ? playersFog(campaign) : nil,
             toolState: penAdjusted(tools),
             measurement: measurement,
             fitRequest: fitRequest,
@@ -619,6 +625,19 @@ struct ArchitectView: View {
         }
         .overlay(alignment: .topTrailing) {
             if showingPerformance { PerformanceOverlay(document: document).padding(Spacing.lg) }
+        }
+        .overlay(alignment: .bottom) {
+            // While the TV shows "Please Wait", say so where the DM is looking (#370), with the
+            // way back. Glyph and words, so it doesn't rely on the toolbar item's tint.
+            if document.isPaused, document.worldViewsOpen > 0 {
+                HStack(spacing: Spacing.md) {
+                    Label("Players see “Please Wait”", systemImage: "pause.circle.fill")
+                    Button("Resume") { document.isPaused = false }
+                }
+                .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+                .padding(Spacing.lg)
+                .transition(.opacity)
+            }
         }
         .overlay {
             if importsInFlight > 0 {
@@ -786,6 +805,18 @@ struct ArchitectView: View {
         if let id = document.placeGenericToken(centredAt: point ?? freePlacementPoint(), undoManager: undoManager) {
             selection = [id]
         }
+    }
+
+    /// The fog the World View draws (CORE_SPEC §3.3), for the DM's preview; none in daylight.
+    private func playersFog(_ campaign: Campaign) -> FogState? {
+        let map = campaign.activeMap
+        guard !map.isDaylightMode else { return nil }
+        let visibility = fogPreviewCache.visibility(of: map, library: campaign.libraryIndex)
+        return FogState(
+            mapID: map.id, bounds: LineOfSight.fogBounds(of: map), explored: map.exploredRegions,
+            vision: visibility.vision, lit: visibility.sight.lit, ambient: visibility.sight.ambient,
+            hatchWalls: LineOfSight.hatchWalls(of: map), gridSize: map.gridSize,
+            flames: Set(map.lights.filter(\.isFlame).map(\.id)))
     }
 
     /// Where a click-to-place token lands: the centre of what the DM is looking at, stepped a
@@ -1414,8 +1445,30 @@ struct ArchitectView: View {
         document.edit(actionName, undoManager: undoManager) { change(&$0.activeMap.initiative) }
     }
 
-    private func nextTurn() { editInitiative("Next Turn") { $0.next() } }
-    private func previousTurn() { editInitiative("Previous Turn") { $0.previous() } }
+    private func nextTurn() {
+        document.stepTurn(forward: true, undoManager: undoManager)
+        revealCurrentCombatant()
+    }
+    private func previousTurn() {
+        document.stepTurn(forward: false, undoManager: undoManager)
+        revealCurrentCombatant()
+    }
+
+    /// Pans (same zoom) to whose turn it is when their token is entirely off-screen, so the turn
+    /// ring is always in view. A token already partly visible doesn't move the camera.
+    private func revealCurrentCombatant() {
+        let map = document.campaign.activeMap
+        guard camera.size.width > 0, camera.size.height > 0, let id = map.initiative.currentTokenID,
+            let token = map.tokens.first(where: { $0.id == id })
+        else { return }
+        let visible = camera.viewport.visibleBounds(viewWidth: camera.size.width, viewHeight: camera.size.height)
+        let box = map.tokenDisplayBounds(token, library: document.campaign.libraryIndex)
+        guard !visible.intersects(box) else { return }
+        fitRequest = FitRequest(
+            bounds: Bounds(
+                x: box.x + box.width / 2 - visible.width / 2, y: box.y + box.height / 2 - visible.height / 2,
+                width: visible.width, height: visible.height))
+    }
     private func sortInitiative() { editInitiative("Sort Initiative") { $0.sort() } }
     /// Ends the encounter.
     private func clearInitiative() { editInitiative("Clear Initiative") { $0 = Initiative() } }

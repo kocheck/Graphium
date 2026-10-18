@@ -75,8 +75,8 @@ extension MapCanvasNSView {
         context.restoreGState()
         drawNoteSymbol(
             "text.bubble.fill", centredAt: CGPoint(x: note.x, y: note.y), size: 20 / zoom, color: Palette.worldInk.nsColor)
-        // Projector legibility: 18 pt labels (world-view-player-safe).
-        drawNoteTitle(note, below: rect, size: 18 / zoom)
+        // Projector legibility: 24 pt labels (world-view-player-safe).
+        drawNoteTitle(note, below: rect, size: 24 / zoom)
     }
 
     private func drawNoteTitle(_ note: MapNote, below rect: CGRect, size: CGFloat) {
@@ -88,7 +88,8 @@ extension MapCanvasNSView {
         label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY + size * 0.3))
     }
 
-    private func drawNoteSymbol(_ name: String, centredAt centre: CGPoint, size: CGFloat, color: NSColor) {
+    /// An SF Symbol in one colour, centred on `centre`. Token badges use it too.
+    func drawNoteSymbol(_ name: String, centredAt centre: CGPoint, size: CGFloat, color: NSColor) {
         let config = NSImage.SymbolConfiguration(pointSize: size, weight: .bold)
             .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
         guard let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(config)
