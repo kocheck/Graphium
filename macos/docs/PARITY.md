@@ -241,6 +241,7 @@ sidebar collapse is the system sidebar toggle.
 - [x] Measure (R) with mode buttons Ruler / Blast / Cone and a Broadcast toggle ("Broadcasting" / "Local Only"). The mode buttons are only visible while Measure is active. Changing mode clears the active measurement. (source: src/components/Toolbar.tsx:182-242, src/store/uiStore.ts:52-56)
 - [x] Marker colour HUD (bottom centre, Marker tool only) — A large swatch opens the colour picker. Three recent-colour swatches follow, most recent first and deduped. The default is `#df4b26`. (source: src/components/Toolbar.tsx:243-280, src/store/uiStore.ts:34-47)
 - [x] **Native:** Note (N) places a note pin at the centre of the cell clicked and opens it in the inspector. Clicking a pin with Note or Select selects it; pins drag, Option-duplicate, marquee-select and erase like lights. Right-click: Show Pin to Players, Show Player Notes on World View, Delete.
+- [x] **Native:** Spell Effect (S) drags out a 5e area of effect (circle, cone, line or cube, picked in the toolbar with its look) from its point of origin: the drag sets the size, in 5 ft steps, and the direction (Shift snaps to 45°); a click places the shape's usual size. Starting on a token makes the token carry it, from its centre. Effects select by their point of origin (or their area, under everything else), drag, Option-duplicate, marquee-select and erase by their point of origin; arrow keys turn the selected ones 15° (Shift 45°). Right-click: Show to Players, look, Rotate, Leave on the Map, Delete.
 - [x] Not in the toolbar: Save/Load, World View launch and Generate Dungeon. These live in menus and the palette. Older docstrings claim otherwise. (source: src/App.tsx:77-84 vs src/components/Toolbar.tsx) **Native:** Native: the toolbar also has World View, Add Tokens and Map Image, which is usual on macOS.
 
 **Native mapping:** Use a window `.toolbar` with a segmented `Picker` for tools, a `ControlGroup` for
@@ -260,6 +261,8 @@ touch-bar-like floating HUD is optional.
 - [x] Not editable anywhere in the UI: per-token `movementSpeed` (always the 30 ft default unless a library default sets it), token rotation, and explicit numeric scale. (source: src/components/Canvas/OverlayLayer.tsx:131, src/hooks/useTokenData.ts)
 
 **Native:** With notes selected and no tokens, the inspector shows the note instead: title, DM Notes ("Only you see these."), Player Notes, Show Pin to Players, and Show on World View. Typing is saved after a short pause, on focus loss and on selection change, so undo steps are phrases. Notes are Markdown: a Read/Edit switch shows them formatted (a note with text opens in Read, an empty one in Edit), and double-clicking formatted notes edits them.
+
+**Native:** With only spell effects selected, the inspector shows the effect: label, shape, size and width in 5 ft steps, direction, look and a custom colour, the token that carries it (or nobody), Show to Players, and Delete.
 
 **Native mapping:** Use a trailing `.inspector` (macOS 14) with a `Form`, a `Picker(.segmented)` for
 type, and `Stepper`/`TextField(format: .number)` for vision. Multi-selection editing binds to
@@ -452,6 +455,7 @@ at 25%) as a pattern layer.
 - [x] Not shown: the sidebar, toolbar, inspector, palette, resource monitor, transformer handles, hover-cell highlight, door preview and movement range. (source: src/App.tsx:516-618, src/components/Canvas/OverlayLayer.tsx:33, 119)
 - [x] NPCs outside party vision are hidden (see 3.7).
 - [x] **Native:** Shared note pins, over the fog, and a note card with a pin's title and player notes (Markdown, formatted; links don't open) when a player clicks the pin or the DM shows the note (decision 011). DM notes and unshared pins never appear.
+- [x] **Native:** Spell effects the DM hasn't hidden, over the fog and under the tokens, each look in its own colour and pattern with an 18 pt label; effects carried by an NPC the players can't see stay hidden with it (decision 015).
 - [x] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
 - [x] Minimap (see 3.12).
 - [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2) **Native:** Open: Center on Party uses 18 pt and the pause text is large, but no automated legibility test exists.

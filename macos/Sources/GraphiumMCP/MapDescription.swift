@@ -35,6 +35,13 @@ extension GameMap {
         boxes += tokens.map { tokenBounds($0, library: library) }
         boxes += lights.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
         boxes += notes.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
+        boxes += effects.map { effect in
+            let points = effectPolygon(effect, library: library)
+            let xs = points.map(\.x), ys = points.map(\.y)
+            return Bounds(
+                x: xs.min() ?? 0, y: ys.min() ?? 0, width: (xs.max() ?? 0) - (xs.min() ?? 0),
+                height: (ys.max() ?? 0) - (ys.min() ?? 0))
+        }
         boxes += stairs.map { Bounds(x: $0.x - $0.width / 2, y: $0.y - $0.height / 2, width: $0.width, height: $0.height) }
         guard var minX = boxes.first?.x, var minY = boxes.first?.y else { return nil }
         var maxX = minX, maxY = minY
@@ -81,6 +88,7 @@ enum Describe {
                 "stairs": .number(Double(map.stairs.count)),
                 "lights": .number(Double(map.lights.count)),
                 "notes": .number(Double(map.notes.count)),
+                "effects": .number(Double(map.effects.count)),
                 "markers": .number(Double(map.markerStrokes.count)),
                 "explored_fog_regions": .number(Double(map.exploredRegions.count)),
             ],
@@ -125,6 +133,28 @@ enum Describe {
         return .object(out)
     }
 
+    static func effect(_ effect: SpellEffect, map: GameMap, library: [String: TokenLibraryItem], units: Units) -> JSONValue {
+        var out: [String: JSONValue] = [
+            "id": .string(effect.id),
+            "shape": .string(effect.shape.rawValue),
+            "size_ft": .rounded(effect.size),
+            "origin": units.out(map.effectOrigin(effect, library: library)),
+            "look": .string(effect.look.rawValue),
+            "hidden": .bool(effect.isHidden),
+        ]
+        if effect.shape == .line { out["width_ft"] = .rounded(effect.width) }
+        if effect.shape.hasDirection { out["direction_deg"] = .rounded(effect.angle) }
+        if let tokenID = effect.tokenID {
+            out["carried_by"] = .string(tokenID)
+            if let token = map.tokens.first(where: { $0.id == tokenID }) {
+                out["carried_by_name"] = .string(ResolvedToken(token, library: library).name)
+            }
+        }
+        if let color = effect.color { out["color"] = .string(color) }
+        if !effect.label.isEmpty { out["label"] = .string(effect.label) }
+        return .object(out)
+    }
+
     static func sound(_ sound: NoteSound, console: SessionConsoleCatalog) -> JSONValue {
         var out: [String: JSONValue] = [
             "kind": .string(sound.kind == .sfx ? "effect" : sound.kind.rawValue),
@@ -150,6 +180,7 @@ enum Describe {
             "lighting": lighting(map),
             "lights": .array(map.lights.map { light($0, units: units) }),
             "notes": .array(map.notes.map { note($0, console: campaign.sessionConsole, units: units) }),
+            "effects": .array(map.effects.map { effect($0, map: map, library: library, units: units) }),
             "walls": .array(map.wallStrokes.map { wall($0, units: units) }),
             "doors": .array(map.doors.map { door($0, units: units) }),
             "tokens": .array(map.tokens.map { token($0, map: map, library: library, units: units) }),

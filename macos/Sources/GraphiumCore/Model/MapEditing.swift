@@ -118,8 +118,11 @@ extension GameMap {
         }
     }
 
-    /// Removes any tokens, strokes, doors, lights and notes whose ids are in `ids`.
+    /// Removes any tokens, strokes, doors, lights, notes and spell effects whose ids are in `ids`,
+    /// and the effects the removed tokens carried.
     public mutating func removeItems(_ ids: Set<String>) {
+        let removedTokens = Set(tokens.lazy.map(\.id).filter { ids.contains($0) })
+        effects.removeAll { ids.contains($0.id) || $0.tokenID.map(removedTokens.contains) == true }
         tokens.removeAll { ids.contains($0.id) }
         drawings.removeAll { ids.contains($0.id) }
         doors.removeAll { ids.contains($0.id) }

@@ -22,6 +22,7 @@ struct MapChecks {
         issues += lighting()
         issues += outsideBackground()
         issues += notes()
+        issues += effects()
         return issues
     }
 
@@ -207,6 +208,17 @@ struct MapChecks {
     }
 
     /// A pin shared with players but with nothing for them to read.
+    /// Effects whose carrier is gone: they would sit at their offset near the map's corner.
+    func effects() -> [JSONValue] {
+        let tokenIDs = Set(map.tokens.map(\.id))
+        return map.effects.filter { $0.tokenID.map { !tokenIDs.contains($0) } ?? false }.map {
+            issue(
+                "warning", "effect_carrier_missing",
+                "\($0.displayLabel) is carried by a token that is no longer on this map. Give it a carried_by token, or "
+                    + "an origin with carried_by \"\" to leave it on the map.", ids: [$0.id])
+        }
+    }
+
     func notes() -> [JSONValue] {
         map.notes.filter { $0.isShared && $0.playerNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.map {
             issue(

@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.4.0"
+    public static let version = "1.6.0"
 
     struct Tool {
         var name: String
@@ -411,6 +411,36 @@ public final class GraphiumTools {
                 ],
                 required: ["campaign", "notes"], readOnly: false, run: addNotes),
             Tool(
+                name: "add_effects", title: "Add spell effects",
+                description:
+                    "Show spells' areas of effect on the map with the 5e templates: circle (sphere, cylinder or emanation; "
+                    + "origin is the centre, size_ft the radius), cone (origin is the tip, size_ft its length; as wide as it is "
+                    + "long), line (size_ft long, width_ft wide, default 5), cube (origin is the middle of one face, size_ft its "
+                    + "side). Cones, lines and cubes spread in direction_deg (0 east/right, 90 south/down, 180 west, 270 north) "
+                    + "or toward a point. carried_by (a token id or name) makes the token carry the effect so it moves with it, "
+                    + "e.g. Spirit Guardians; it starts at the token's centre unless origin is given. look paints it: fire, acid, "
+                    + "water, ice, lightning, poison, necrotic, radiant or arcane (color overrides the tint). Players see effects "
+                    + "on the World View unless hidden is true. Effects never block sight or movement.",
+                properties: [
+                    "campaign": c, "map": m, "units": u,
+                    "effects": Self.objects(
+                        "Effects to add.",
+                        [
+                            "shape": Self.string("Template shape.", enum: SpellEffect.Shape.allCases.map(\.rawValue)),
+                            "size_ft": Self.number("Radius (circle), length (cone, line) or side (cube) in feet, e.g. 20 for Fireball."),
+                            "width_ft": Self.number("Line width in feet (default 5)."),
+                            "origin": Self.point("Point of origin: centre of a circle, tip of a cone, start of a line, middle of a cube's face."),
+                            "direction_deg": Self.number("Which way a cone, line or cube spreads: 0 east, 90 south, 180 west, 270 north."),
+                            "toward": Self.point("Aim a cone, line or cube at this point instead of giving direction_deg."),
+                            "carried_by": Self.string("Token id or name that carries the effect; it moves with the token."),
+                            "look": Self.string("How it is painted (default arcane).", enum: SpellEffect.Look.allCases.map(\.rawValue)),
+                            "color": Self.string("#rrggbb tint instead of the look's own."),
+                            "label": Self.string("Shown beside the area, e.g. Fireball."),
+                            "hidden": Self.boolean("Keep it off the players' World View (default false)."),
+                        ], required: ["shape", "size_ft"]),
+                ],
+                required: ["campaign", "effects"], readOnly: false, run: addEffects),
+            Tool(
                 name: "draw_markers", title: "Draw markers",
                 description:
                     "Draw freehand marker lines (annotations, terrain outlines, paths). Markers don't block anything; "
@@ -433,7 +463,9 @@ public final class GraphiumTools {
                     + "darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
                     + "(a token library item id or name; only its picture is used). Doors: open, locked, hidden, center, width, angle. Walls: kind, one_way, flip "
                     + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
-                    + "Notes: center, title, dm_notes, player_notes, shared, sounds (replaces the list). Stairs: center, direction, type. Fields that don't apply are reported back.",
+                    + "Notes: center, title, dm_notes, player_notes, shared, sounds (replaces the list). Effects: origin, shape, size_ft, width_ft, "
+                    + "direction_deg or toward, look, color (\"\" for the look's own), label, hidden, carried_by (token id or name; \"\" leaves it on "
+                    + "the map). Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "changes": [
@@ -445,7 +477,9 @@ public final class GraphiumTools {
                 required: ["campaign", "changes"], readOnly: false, run: updateObjects),
             Tool(
                 name: "remove_objects", title: "Remove objects",
-                description: "Remove tokens, walls, markers, doors, lights, notes or stairs by id. Undo puts them back.",
+                description:
+                    "Remove tokens, walls, markers, doors, lights, notes, effects or stairs by id. A removed token takes the "
+                    + "effects it carried with it. Undo puts them back.",
                 properties: [
                     "campaign": c, "map": m,
                     "ids": ["type": "array", "items": ["type": "string"], "minItems": 1, "description": "Ids from get_map."],
@@ -454,13 +488,14 @@ public final class GraphiumTools {
             Tool(
                 name: "clear_map", title: "Clear map layers",
                 description:
-                    "Remove whole layers from a map: walls, doors, tokens, markers, stairs, lights, notes, fog (explored areas), "
+                    "Remove whole layers from a map: walls, doors, tokens (and the effects they carry), markers, stairs, lights, notes, "
+                    + "effects, fog (explored areas), "
                     + "background.",
                 properties: [
                     "campaign": c, "map": m,
                     "layers": [
                         "type": "array", "minItems": 1,
-                        "items": ["type": "string", "enum": ["walls", "doors", "tokens", "markers", "stairs", "lights", "notes", "fog", "background"]],
+                        "items": ["type": "string", "enum": ["walls", "doors", "tokens", "markers", "stairs", "lights", "notes", "effects", "fog", "background"]],
                     ],
                 ],
                 required: ["campaign", "layers"], readOnly: false, destructive: true, run: clearMap),

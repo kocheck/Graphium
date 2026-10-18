@@ -25,6 +25,7 @@ public struct PaletteCommand: Equatable, Identifiable, Sendable {
             .init(id: "tool-door", label: "Door Tool", category: .tool, keywords: ["door", "entrance", "tool", "d"], shortcut: "D"),
             .init(id: "tool-light", label: "Light Tool", category: .tool, keywords: ["light", "torch", "lantern", "lamp", "candle", "tool", "l"], shortcut: "L"),
             .init(id: "tool-note", label: "Note Tool", category: .tool, keywords: ["note", "pin", "notes", "handout", "read-aloud", "clue", "tool", "n"], shortcut: "N"),
+            .init(id: "tool-effect", label: "Spell Effect Tool", category: .tool, keywords: ["spell", "effect", "aoe", "area", "fireball", "cone", "circle", "line", "cube", "template", "tool", "s"], shortcut: "S"),
             .init(id: "tool-measure", label: "Measure Tool", category: .tool, keywords: ["measure", "ruler", "distance", "aoe", "blast", "cone", "tool", "r"], shortcut: "R"),
             .init(
                 id: "world-view-toggle-pause", label: isPaused ? "Resume World View (Play)" : "Pause World View",

@@ -179,7 +179,7 @@ struct MapRenderer {
             "Legend: red lines walls, blue dashed windows, orange one-way walls (tick on the side sight comes from), "
                 + "brown bars closed doors, purple dashed bars hidden doors (wall in the players' view), green outline open doors, gold dot locked, yellow dots lights (solid ring bright, "
                 + "dashed ring dim), white squares note pins (solid edge shared with players, dashed DM only; titles beside "
-                + "them), blue discs PCs, red discs NPCs.",
+                + "them), tinted shapes spell effects (dashed edge hidden from players; labels inside), blue discs PCs, red discs NPCs.",
         ]
         if playersView {
             lines.append(
@@ -223,7 +223,10 @@ struct MapRenderer {
             } else {
                 drawLitFog(ctx, visible, sight: sight)
             }
+            // Over the fog, as in the app: the DM chose to show them (decision 015).
+            drawEffects(ctx, playersView: true, hiddenTokens: hidden, scale: s)
         } else {
+            drawEffects(ctx, playersView: playersView, hiddenTokens: [], scale: s)
             drawTokens(ctx, hidden: [], scale: s)
         }
         // Over the fog: in the players' view, only the pins the DM shared.
@@ -455,6 +458,45 @@ struct MapRenderer {
             ctx.setFillColor(CGColor(srgbRed: 1, green: 0.82, blue: 0.3, alpha: alpha))
             ctx.fillEllipse(in: CGRect(x: light.x - r, y: light.y - r, width: 2 * r, height: 2 * r))
         }
+    }
+
+    /// Spell effects: the area in its tint, a solid edge (dashed when hidden from players) and its label.
+    private func drawEffects(_ ctx: CGContext, playersView: Bool, hiddenTokens: Set<String>, scale: Double) {
+        for effect in map.effects {
+            if playersView, effect.isHidden || (effect.tokenID.map(hiddenTokens.contains) ?? false) { continue }
+            let origin = map.effectOrigin(effect, library: library)
+            let points = effect.polygon(origin: origin, gridSize: map.gridSize)
+            guard let first = points.first else { continue }
+            let (r, g, b) = rgb(effect.tint)
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: first.x, y: first.y))
+            for p in points.dropFirst() { path.addLine(to: CGPoint(x: p.x, y: p.y)) }
+            path.closeSubpath()
+            ctx.saveGState()
+            ctx.addPath(path)
+            ctx.setFillColor(CGColor(srgbRed: r, green: g, blue: b, alpha: 0.35))
+            ctx.fillPath()
+            ctx.addPath(path)
+            ctx.setStrokeColor(CGColor(srgbRed: r, green: g, blue: b, alpha: 1))
+            ctx.setLineWidth(max(2, map.gridSize * 0.05))
+            if effect.isHidden { ctx.setLineDash(phase: 0, lengths: [map.gridSize * 0.2, map.gridSize * 0.12]) }
+            ctx.strokePath()
+            ctx.restoreGState()
+            let at = effect.labelPoint(origin: origin, gridSize: map.gridSize)
+            drawText(
+                effect.displayLabel, in: ctx, centre: CGPoint(x: at.x, y: at.y), size: CGFloat(12 / scale),
+                color: CGColor(gray: 1, alpha: 1), flipped: true, outline: CGColor(gray: 0, alpha: 0.85))
+        }
+    }
+
+    /// `#rgb` or `#rrggbb` as sRGB components; grey when unreadable.
+    private func rgb(_ hex: String) -> (CGFloat, CGFloat, CGFloat) {
+        var digits = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+        if digits.count == 3 { digits = digits.map { "\($0)\($0)" }.joined() }
+        guard digits.count == 6, let value = UInt32(digits, radix: 16) else { return (0.6, 0.6, 0.6) }
+        return (
+            CGFloat((value >> 16) & 0xff) / 255, CGFloat((value >> 8) & 0xff) / 255, CGFloat(value & 0xff) / 255
+        )
     }
 
     /// Note pins: a white square with a dark edge, dashed for DM-only notes, and the title.

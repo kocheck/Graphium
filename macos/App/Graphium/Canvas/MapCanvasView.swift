@@ -24,6 +24,10 @@ struct CanvasEditing {
     /// Places a note pin; the owner selects it so the side panel opens on it.
     var placeNote: ((Point2D) -> Void)?
     var noteAction: ((_ noteIDs: Set<String>, NoteAction) -> Void)?
+    /// Places a spell effect (its point of origin in world pixels, even when a token carries it);
+    /// the owner selects it so the side panel opens on it.
+    var placeEffect: ((SpellEffect) -> Void)?
+    var effectAction: ((_ effectIDs: Set<String>, EffectAction) -> Void)?
     /// World View: a player clicked a shared pin, to read its player notes.
     var openNote: ((String) -> Void)?
     var doorAction: ((_ doorID: String, DoorAction) -> Void)?
@@ -37,7 +41,7 @@ struct CanvasEditing {
     var rotateDoors: ((_ doorIDs: Set<String>, _ degrees: Double) -> Void)?
     /// A library item dragged from the sidebar or Library Manager, dropped at a map point.
     var dropLibraryItem: ((_ itemID: String, _ at: Point2D) -> Void)?
-    /// Strokes, lights and notes dragged by an offset (Option duplicates).
+    /// Strokes, lights, notes and effects dragged by an offset (Option duplicates).
     var moveDrawings: ((_ ids: Set<String>, _ dx: Double, _ dy: Double, _ duplicate: Bool) -> Void)?
     var resizeToken: ((_ id: String, _ scale: Double) -> Void)?
     var calibrate: ((Bounds) -> Void)?
@@ -165,6 +169,8 @@ final class MapCanvasNSView: NSView {
         case movingStrokes(ids: Set<String>, start: Point2D, current: Point2D, began: Bool)
         case resizing(tokenID: String, baseSize: Double, start: Point2D, current: Point2D)
         case calibrating(start: Point2D, current: Point2D)
+        /// Dragging out a new spell effect from its point of origin (on `tokenID` when it carries it).
+        case placingEffect(origin: Point2D, tokenID: String?, current: Point2D)
     }
 
     /// The selected doors on `map`.
@@ -319,6 +325,20 @@ final class MapCanvasNSView: NSView {
             if let fog { drawFog(fog, context: context) }
         }
         doorSwings.finishFrame(doorIDs: Set(map.doors.map(\.id)))
+        // Spell areas lie on the ground: over the fog, under the tokens (decision 015).
+        if !map.effects.isEmpty || effectPreview(in: map) != nil {
+            let effectMap = mapWithLiveTokenDrag(map)
+            if case .movingStrokes(let ids, let start, let current, true) = interaction {
+                drawEffects(
+                    effectMap, moving: ids, offset: CGSize(width: current.x - start.x, height: current.y - start.y),
+                    duplicate: NSEvent.modifierFlags.contains(.option), context: context)
+            } else {
+                // The preview's point is in world pixels, even on a token.
+                var preview = effectPreview(in: map)
+                preview?.tokenID = nil
+                drawEffects(effectMap, preview: preview, context: context)
+            }
+        }
         if showMovementRange, !isPlayerView, selection.count == 1,
             let token = map.tokens.first(where: { selection.contains($0.id) })
         {
@@ -799,6 +819,11 @@ final class MapCanvasNSView: NSView {
             beginMovingStrokes(hit: note.id, at: point, map: map, shift: shift, editing: editing)
             return
         }
+        if !isPlayerView, editing.moveDrawings != nil, let effect = effectHandle(at: point, in: map) {
+            // A spell's point of origin is a small target too; the rest of its area is under the tokens.
+            beginMovingStrokes(hit: effect.id, at: point, map: map, shift: shift, editing: editing)
+            return
+        }
         if let hit = map.token(at: point, library: library), !hiddenTokenIDs.contains(hit.id) {
             if shift {
                 var next = selection
@@ -826,6 +851,10 @@ final class MapCanvasNSView: NSView {
             }
         } else if editing.moveDrawings != nil, let stroke = map.drawing(at: point) {
             beginMovingStrokes(hit: stroke.id, at: point, map: map, shift: shift, editing: editing)
+        } else if !isPlayerView, editing.moveDrawings != nil,
+            let effect = map.effect(at: point, tolerance: effectHitTolerance, library: library)
+        {
+            beginMovingStrokes(hit: effect.id, at: point, map: map, shift: shift, editing: editing)
         } else {
             let base = shift ? selection : []
             if !shift { editing.setSelection([]) }
@@ -836,14 +865,15 @@ final class MapCanvasNSView: NSView {
     /// The light hit radius in view points.
     private static let lightHitRadius = lightMarkerRadius + 3
 
-    /// A press on a stroke, light or note: selects it (Shift toggles) and starts a move of every
-    /// selected stroke, light and note.
+    /// A press on a stroke, light, note or effect: selects it (Shift toggles) and starts a move of
+    /// every selected stroke, light, note and effect.
     private func beginMovingStrokes(hit id: String, at point: Point2D, map: GameMap, shift: Bool, editing: CanvasEditing) {
         var next = shift ? selection : []
         if shift, next.contains(id) { next.remove(id) } else { next.insert(id) }
         if !shift, selection.contains(id) { next = selection }
         editing.setSelection(next)
-        let ids = Set(map.drawings.map(\.id) + map.lights.map(\.id) + map.notes.map(\.id)).intersection(next)
+        let ids = Set(map.drawings.map(\.id) + map.lights.map(\.id) + map.notes.map(\.id) + map.effects.map(\.id))
+            .intersection(next)
         interaction = .movingStrokes(ids: ids, start: point, current: point, began: false)
     }
 
@@ -873,6 +903,10 @@ final class MapCanvasNSView: NSView {
             }
             if let note = map.note(at: point, tolerance: noteHitRadius) {
                 editing.noteAction?([note.id], .delete)  // and notes
+                return
+            }
+            if let effect = effectHandle(at: point, in: map) {
+                editing.effectAction?([effect.id], .delete)  // and spell effects, by their point of origin
                 return
             }
             beginStroke(
@@ -913,6 +947,28 @@ final class MapCanvasNSView: NSView {
                 return
             }
             editing.placeNote?(point)
+        case .effect:
+            if let effect = effectHandle(at: point, in: map) {
+                // Pressing a point of origin selects that effect rather than starting another on it.
+                if event.modifierFlags.contains(.shift) {
+                    var next = selection
+                    if next.contains(effect.id) { next.remove(effect.id) } else { next.insert(effect.id) }
+                    editing.setSelection(next)
+                } else {
+                    editing.setSelection([effect.id])
+                }
+                return
+            }
+            // Starting on a token: the token carries the effect, from its centre.
+            if let token = map.token(at: point, library: library), !hiddenTokenIDs.contains(token.id) {
+                let box = map.tokenBounds(token, library: library)
+                let centre = Point2D(x: box.x + box.width / 2, y: box.y + box.height / 2)
+                interaction = .placingEffect(origin: centre, tokenID: token.id, current: point)
+            } else {
+                let origin = map.effectOriginSnap(point, shape: toolState.effectShape)
+                interaction = .placingEffect(origin: origin, tokenID: nil, current: point)
+            }
+            needsDisplay = true
         case .measure:
             interaction = .measuring(origin: point)
             editing.setMeasurement?(MeasurementShape(mode: toolState.measureMode, origin: point, pointer: point))
@@ -994,6 +1050,9 @@ final class MapCanvasNSView: NSView {
         case .calibrating(let start, _):
             interaction = .calibrating(start: start, current: mapLocation(of: event))
             needsDisplay = true
+        case .placingEffect(let origin, let tokenID, _):
+            interaction = .placingEffect(origin: origin, tokenID: tokenID, current: mapLocation(of: event))
+            needsDisplay = true
         case .measuring(let origin):
             editing?.setMeasurement?(
                 MeasurementShape(mode: toolState.measureMode, origin: origin, pointer: mapLocation(of: event)))
@@ -1008,6 +1067,7 @@ final class MapCanvasNSView: NSView {
                     hits.formUnion(map.doorIDs(intersecting: rect))
                     hits.formUnion(map.lightIDs(intersecting: rect))
                     hits.formUnion(map.noteIDs(intersecting: rect))
+                    hits.formUnion(map.effectIDs(intersecting: rect, library: library))
                 }
                 editing?.setSelection(base.union(hits))
             }
@@ -1033,6 +1093,11 @@ final class MapCanvasNSView: NSView {
         }
         if case .calibrating(let start, let current) = interaction {
             editing?.calibrate?(Bounds(corner: start, corner: current))
+        }
+        if case .placingEffect = interaction, let map, let effect = effectPreview(in: map) {
+            var placed = effect
+            placed.id = newID()
+            editing?.placeEffect?(placed)
         }
         if case .panning = interaction { clampViewport() }
         if case .stroke = interaction, let drawing = liveStroke {
@@ -1099,8 +1164,12 @@ final class MapCanvasNSView: NSView {
         if let noteAction = editing?.noteAction, let note = map.note(at: point, tolerance: noteHitRadius) {
             return noteMenu(note, map: map, action: noteAction)
         }
+        if let effectAction = editing?.effectAction, let effect = effectHandle(at: point, in: map) {
+            return effectMenu(effect, map: map, action: effectAction)
+        }
         guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
-            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map)
+            // A spell's area lies under everything else, so it answers last.
+            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map) ?? effectAreaMenu(at: point, map: map)
         }
         // The menu acts on every selected door when the clicked one is among them.
         let doorIDs = selection.contains(door.id) ? selectedDoorIDs(in: map) : [door.id]
@@ -1204,6 +1273,102 @@ final class MapCanvasNSView: NSView {
         return menu
     }
 
+    /// The effect whose area is under `point`, for its menu.
+    private func effectAreaMenu(at point: Point2D, map: GameMap) -> NSMenu? {
+        guard let effectAction = editing?.effectAction,
+            let effect = map.effect(at: point, tolerance: effectHitTolerance, library: library)
+        else { return nil }
+        return effectMenu(effect, map: map, action: effectAction)
+    }
+
+    /// Show or hide, look, rotation and Delete for the selected effects when the clicked one is
+    /// among them, else for that effect alone.
+    private func effectMenu(_ effect: SpellEffect, map: GameMap, action: @escaping (Set<String>, EffectAction) -> Void)
+        -> NSMenu
+    {
+        let ids: Set<String> =
+            selection.contains(effect.id) ? Set(map.effects.filter { selection.contains($0.id) }.map(\.id)) : [effect.id]
+        if !selection.contains(effect.id) { editing?.setSelection([effect.id]) }
+        let targets = map.effects.filter { ids.contains($0.id) }
+        let allShown = targets.allSatisfy { !$0.isHidden }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let show = MenuAction.item("Show to Players") { action(ids, .hide(allShown)) }
+        show.state = allShown ? .on : .off
+        menu.addItem(show)
+        menu.addItem(.separator())
+        let looks = Set(targets.map(\.look))
+        for look in SpellEffect.Look.allCases {
+            let item = MenuAction.item(look.title) { action(ids, .look(look)) }
+            item.state = looks == [look] ? .on : .off
+            menu.addItem(item)
+        }
+        if targets.contains(where: \.shape.hasDirection) {
+            menu.addItem(.separator())
+            menu.addItem(MenuAction.item("Rotate 45° Clockwise") { action(ids, .rotate(45)) })
+            menu.addItem(MenuAction.item("Rotate 45° Counterclockwise") { action(ids, .rotate(-45)) })
+        }
+        if targets.contains(where: { $0.tokenID != nil }) {
+            menu.addItem(.separator())
+            menu.addItem(MenuAction.item("Leave on the Map") { action(ids, .detach) })
+        }
+        menu.addItem(.separator())
+        let title = ids.count == 1 ? "Delete Effect" : "Delete Effects"
+        let delete = MenuAction.item(title) { action(ids, .delete) }
+        delete.attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
+        menu.addItem(delete)
+        return menu
+    }
+
+    /// The effect whose point of origin is under `point` (Architect).
+    func effectHandle(at point: Point2D, in map: GameMap) -> SpellEffect? {
+        map.effects.last {
+            let origin = map.effectOrigin($0, library: library)
+            return hypot(origin.x - point.x, origin.y - point.y) <= effectHitTolerance
+        }
+    }
+
+    /// The effect being dragged out with the Spell Effect tool, as it would be placed.
+    func effectPreview(in map: GameMap) -> SpellEffect? {
+        guard case .placingEffect(let origin, let tokenID, let current) = interaction else { return nil }
+        let shape = toolState.effectShape
+        let dragged = Measure.euclideanDistance(origin, current) * viewport.zoom >= Self.dragThreshold
+        let feet =
+            dragged
+            ? SpellEffect.roundedFeet(Measure.euclideanDistance(origin, current) / map.gridSize * 5)
+            : Self.defaultEffectSize(shape)
+        var angle = dragged ? Measure.angleDegrees(from: origin, to: current) : 0
+        if NSEvent.modifierFlags.contains(.shift) { angle = (angle / 45).rounded() * 45 }
+        // A carried effect's point stays in world pixels here; `GameMap.placeEffect` makes it an offset.
+        return SpellEffect(
+            id: "preview-effect", shape: shape, size: feet, angle: shape.hasDirection ? angle.truncatingRemainder(dividingBy: 360) : 0,
+            x: origin.x, y: origin.y, tokenID: tokenID, look: toolState.effectLook)
+    }
+
+    /// A click without a drag places the size most spells of that shape use.
+    static func defaultEffectSize(_ shape: SpellEffect.Shape) -> Double {
+        switch shape {
+        case .circle: return 20
+        case .cone: return 15
+        case .line: return 60
+        case .cube: return 15
+        }
+    }
+
+    /// `map` with the tokens this canvas is dragging at their live positions, so the effects they
+    /// carry follow them.
+    func mapWithLiveTokenDrag(_ map: GameMap) -> GameMap {
+        guard case .movingTokens(let ids, _, let start, let current, true) = interaction else { return map }
+        var live = map
+        let dx = current.x - start.x
+        let dy = current.y - start.y
+        for i in live.tokens.indices where ids.contains(live.tokens[i].id) {
+            live.tokens[i].x += dx
+            live.tokens[i].y += dy
+        }
+        return live
+    }
+
     /// Acts on the selected walls when the clicked wall is among them, else on that wall alone.
     private func wallMenu(at point: Point2D, map: GameMap) -> NSMenu? {
         guard let wallAction = editing?.wallAction, let wall = map.drawing(at: point), wall.tool == .wall else {
@@ -1293,9 +1458,14 @@ final class MapCanvasNSView: NSView {
             // Arrows turn the selected doors 15° (Shift: 45°), left and up anticlockwise; with
             // none selected they flip the Door tool's next door.
             let doors = map.map { selectedDoorIDs(in: $0) } ?? []
+            let effects = map.map { m in Set(m.effects.filter { selection.contains($0.id) && $0.shape.hasDirection }.map(\.id)) } ?? []
+            let step = event.modifierFlags.contains(.shift) ? 45.0 : 15.0
+            let turn = event.keyCode == 123 || event.keyCode == 126 ? -step : step
             if !doors.isEmpty, let rotate = editing?.rotateDoors {
-                let step = event.modifierFlags.contains(.shift) ? 45.0 : 15.0
-                rotate(doors, event.keyCode == 123 || event.keyCode == 126 ? -step : step)
+                rotate(doors, turn)
+            } else if !effects.isEmpty, let effectAction = editing?.effectAction {
+                // The same keys aim the selected cones, lines and cubes.
+                effectAction(effects, .rotate(turn))
             } else if toolState.tool == .door {
                 editing?.toggleDoorOrientation?()
             } else {

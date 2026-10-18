@@ -14,7 +14,7 @@ final class ModelCoverageTests: XCTestCase {
         "Campaign": ["id", "name", "maps", "activeMapID", "tokenLibrary"],
         "GameMap": [
             "id", "name", "tokens", "drawings", "doors", "stairs", "background", "gridSize", "gridType", "gridColor",
-            "exploredRegions", "isDaylightMode", "lights", "ambientLight", "notes",
+            "exploredRegions", "isDaylightMode", "lights", "ambientLight", "notes", "effects",
         ],
         "Token": [
             "id", "x", "y", "src", "libraryItemId", "scale", "type", "visionRadius", "name", "movementSpeed", "darkvision",
@@ -22,6 +22,7 @@ final class ModelCoverageTests: XCTestCase {
         "LightSource": ["id", "x", "y", "bright", "dim", "isOn", "name"],
         "MapNote": ["id", "x", "y", "title", "dmNotes", "playerNotes", "isShared", "sounds"],
         "NoteSound": ["kind", "ref", "playOnShow"],
+        "SpellEffect": ["id", "shape", "size", "width", "angle", "x", "y", "tokenID", "look", "color", "label", "isHidden"],
         "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay"],
         "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection", "isHidden"],
         "Stairs": ["id", "x", "y", "direction", "type", "width", "height"],
@@ -48,6 +49,8 @@ final class ModelCoverageTests: XCTestCase {
         "LightLevel": ["dark", "dim", "bright"],
         // NoteSound.Kind: tools say "track", "effect" and "soundscape" and match by Session Console name.
         "Kind": ["track", "sfx", "soundscape"],
+        "Shape": ["circle", "cone", "line", "cube"],
+        "Look": ["fire", "acid", "water", "ice", "lightning", "poison", "necrotic", "radiant", "arcane"],
     ]
 
     private func check(_ value: Any, file: StaticString = #filePath, line: UInt = #line) {
@@ -89,6 +92,7 @@ final class ModelCoverageTests: XCTestCase {
         check(LightSource(x: 0, y: 0, bright: 1, dim: 2))
         check(MapNote(x: 0, y: 0))
         check(NoteSound(kind: .track, ref: ""))
+        check(SpellEffect(shape: .circle, size: 20, x: 0, y: 0))
     }
 
     func testEveryEnumCaseIsKnown() {
@@ -98,11 +102,15 @@ final class ModelCoverageTests: XCTestCase {
         checkCases(CreatureType.self)
         checkCases(LightLevel.self)
         checkCases(NoteSound.Kind.self)
+        checkCases(SpellEffect.Shape.self)
+        checkCases(SpellEffect.Look.self)
     }
 
     func testToolSchemasOfferTheKnownCases() {
         let schemas = GraphiumTools(store: CampaignStore(roots: [])).definitions.map { $0.serialized() }.joined()
         for kind in Self.cases["WallKind"]! { XCTAssertTrue(schemas.contains("\"\(kind)\""), kind) }
         for grid in Self.cases["GridType"]! { XCTAssertTrue(schemas.contains("\"\(grid)\""), grid) }
+        for shape in Self.cases["Shape"]! { XCTAssertTrue(schemas.contains("\"\(shape)\""), shape) }
+        for look in Self.cases["Look"]! { XCTAssertTrue(schemas.contains("\"\(look)\""), look) }
     }
 }

@@ -119,6 +119,7 @@ the installed version; the app sees the same number as the server's version.
 | `add_tokens`                                        | PCs, NPCs and monsters, from an image, the campaign's token library, or a lettered disc |
 | `add_lights`                                        | Torches, lanterns and other lights for maps with lighting on (5e bright and dim radii)  |
 | `add_notes`                                         | Note pins: DM-only notes, player notes the DM can share (both Markdown), and sounds     |
+| `add_effects`                                       | Spell areas (circle, cone, line, cube) in a look, pinned or carried by a token          |
 | `add_stairs`, `draw_markers`                        | Stairs and freehand marker lines                                                        |
 | `update_objects`, `remove_objects`, `clear_map`     | Edit (including new token art), remove or clear by id or layer                          |
 | `generate_dungeon`                                  | Graphium's room-and-corridor generator, repeatable with a seed                          |
@@ -135,7 +136,7 @@ The server must grow with the app, so a change to the map model can't land witho
 about the MCP tools:
 
 - `Tests/GraphiumMCPTests/ModelCoverageTests.swift` lists every stored property of `Campaign`,
-  `GameMap`, `Token`, `Drawing`, `Door`, `Stairs`, `LightSource`, `MapNote`, `MapBackground` and
+  `GameMap`, `Token`, `Drawing`, `Door`, `Stairs`, `LightSource`, `MapNote`, `SpellEffect`, `MapBackground` and
   `TokenLibraryItem`, and
   every case of `GridType`, `WallKind`, `DrawingTool` and `CreatureType`, as either exposed by a
   tool or left out with a reason. Add a property or case (lights, a new wall kind, a token

@@ -406,4 +406,57 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(try package.encodeManifest(), data)
         XCTAssertEqual(package.campaign.activeMap.doors.first?.angle, 30)
     }
+
+    func testSpellEffects() throws {
+        try call("create_campaign", ["path": "Spells", "name": "Spells"])
+        let tokens = try call("add_tokens", ["campaign": "Spells", "tokens": [["position": [4, 4], "name": "Cleric", "type": "PC"]]])
+        let cleric = try XCTUnwrap(tokens["added_tokens"]?.arrayValue?.first?["id"]?.stringValue)
+        let added = try call(
+            "add_effects",
+            [
+                "campaign": "Spells",
+                "effects": [
+                    ["shape": "circle", "size_ft": 20, "origin": [10, 10], "look": "fire", "label": "Fireball"],
+                    ["shape": "cone", "size_ft": 15, "origin": [2, 2], "toward": [2, 5], "look": "ice"],
+                    ["shape": "circle", "size_ft": 15, "carried_by": "Cleric", "look": "radiant", "hidden": true],
+                ],
+            ])
+        let effects = try XCTUnwrap(added["added_effects"]?.arrayValue)
+        XCTAssertEqual(effects[0]["origin"], [10, 10])
+        XCTAssertEqual(effects[1]["direction_deg"], 90, "toward a point below")
+        XCTAssertEqual(effects[2]["origin"], [4.5, 4.5], "a carried effect starts at its token's centre")
+        XCTAssertEqual(effects[2]["carried_by"], .string(cleric))
+
+        var map = try loadCampaign("Spells.graphiumcampaign").activeMap
+        XCTAssertEqual(map.effects.map(\.look), [.fire, .ice, .radiant])
+        XCTAssertEqual(map.effects[0].x, 500)
+        XCTAssertTrue(map.effects[2].isHidden)
+
+        // The cleric walks; Spirit Guardians goes along.
+        try call("update_objects", ["campaign": "Spells", "changes": [["id": .string(cleric), "position": [8, 4]]]])
+        let got = try call("get_map", ["campaign": "Spells"])
+        XCTAssertEqual(got["effects"]?.arrayValue?[2]["origin"], [8.5, 4.5])
+
+        let fireball = map.effects[0].id
+        let updated = try call(
+            "update_objects",
+            ["campaign": "Spells", "changes": [["id": .string(fireball), "size_ft": 40, "look": "acid", "color": "#00ff00", "nope": 1]]])
+        XCTAssertEqual(updated["updated"]?.arrayValue?.first?["kind"], "effect")
+        XCTAssertEqual(updated["updated"]?.arrayValue?.first?["ignored_fields"], ["nope"])
+        map = try loadCampaign("Spells.graphiumcampaign").activeMap
+        XCTAssertEqual(map.effects[0].size, 40)
+        XCTAssertEqual(map.effects[0].color, "#00ff00")
+
+        let ascii = try call("render_map", ["campaign": "Spells", "format": "ascii"])
+        XCTAssertTrue(ascii.stringValue?.contains("Fireball") == true, ascii.serialized())
+        let image = try request(
+            "tools/call", ["name": "render_map", "arguments": ["campaign": "Spells", "view": "players", "format": "both"]])
+        XCTAssertEqual(image["result"]?["isError"], .bool(false))
+
+        let removed = try call("remove_objects", ["campaign": "Spells", "ids": [.string(cleric)]])
+        XCTAssertEqual(removed["removed"], 1)
+        XCTAssertEqual(removed["carried_effects_removed"], 1)
+        try call("clear_map", ["campaign": "Spells", "layers": ["effects"]])
+        XCTAssertTrue(try loadCampaign("Spells.graphiumcampaign").activeMap.effects.isEmpty)
+    }
 }
