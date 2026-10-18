@@ -31,8 +31,9 @@ struct NoteInspector: View {
     @State private var draft = Draft()
     /// What the fields were seeded with; an unchanged draft is never written back.
     @State private var origin = Draft()
-    /// The note the draft belongs to.
+    /// The note the draft belongs to, and its map (the active map can change before a commit).
     @State private var draftID: String?
+    @State private var draftMapID: String?
     @FocusState private var focus: Field?
 
     private var notes: [MapNote] {
@@ -55,12 +56,12 @@ struct NoteInspector: View {
         .formStyle(.grouped)
         .onAppear {
             resetDraft()
-            // A pin just placed: start on its title.
-            if let note = notes.first, notes.count == 1, Draft(note) == Draft() { focus = .title }
+            focusIfNew()
         }
         .onChange(of: selection) { _, _ in
             commit()
             resetDraft()
+            focusIfNew()
         }
         .onChange(of: focus) { _, field in
             if field == nil {
@@ -70,7 +71,10 @@ struct NoteInspector: View {
         }
         // Undo/redo and other edits: follow the note unless a field is being edited.
         .onChange(of: notes) { _, _ in
-            if focus == nil { resetDraft() }
+            if focus == nil {
+                commit()
+                resetDraft()
+            }
         }
         .task(id: draft) {
             try? await Task.sleep(for: .seconds(0.8))
@@ -149,24 +153,33 @@ struct NoteInspector: View {
         .help("Players see the pin on the World View and can click it to read the player notes")
     }
 
+    /// A pin just placed: start on its title.
+    private func focusIfNew() {
+        let notes = self.notes
+        if notes.count == 1, let note = notes.first, Draft(note) == Draft() { focus = .title }
+    }
+
     private func resetDraft() {
         let notes = self.notes
         if notes.count == 1, let note = notes.first {
             draft = Draft(note)
             draftID = note.id
+            draftMapID = document.campaign.activeMapID
         } else {
             draft = Draft()
             draftID = nil
+            draftMapID = nil
         }
         origin = draft
     }
 
     private func commit() {
-        guard let id = draftID, draft != origin else { return }
+        guard let id = draftID, let mapID = draftMapID, draft != origin else { return }
         let next = draft
         origin = next
         document.edit("Edit Note", undoManager: undoManager) { campaign in
-            campaign.activeMap.updateNote(id: id) { note in
+            guard let index = campaign.maps.firstIndex(where: { $0.id == mapID }) else { return }
+            campaign.maps[index].updateNote(id: id) { note in
                 note.title = next.title.trimmingCharacters(in: .whitespacesAndNewlines)
                 note.dmNotes = next.dmNotes
                 note.playerNotes = next.playerNotes

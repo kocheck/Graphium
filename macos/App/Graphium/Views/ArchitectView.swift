@@ -1157,6 +1157,7 @@ struct ArchitectView: View {
             : doorCount == ids.count ? (ids.count == 1 ? "Delete Door" : "Delete Doors") : "Delete Selection"
         document.edit(name, undoManager: undoManager) { $0.activeMap.removeItems(ids) }
         selection = []
+        if let shown = document.worldNoteID, ids.contains(shown) { document.worldNoteID = nil }
     }
 
     private var hasSelectedTokens: Bool {
