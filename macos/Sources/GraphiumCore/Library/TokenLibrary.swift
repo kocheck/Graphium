@@ -176,5 +176,6 @@ extension TokenLibraryItem {
         name = token.name
         defaultType = token.type
         defaultVisionRadius = token.visionRadius
+        defaultDarkvision = token.darkvision
     }
 }

@@ -47,10 +47,16 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
     public var gridColor: String
     public var exploredRegions: [ExploredRegion]
     public var isDaylightMode: Bool
+    /// Native only: light sources the DM placed (`Lighting`). Written only when not empty.
+    public var lights: [LightSource]
+    /// Native only: nil is lighting off, where a PC sees everything in sight out to its vision
+    /// radius (TS). Otherwise the light everywhere no light source reaches, and PCs see what is
+    /// lit or within their darkvision (5e 2024 Vision and Light).
+    public var ambientLight: LightLevel?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, tokens, drawings, doors, stairs, gridSize, gridType, gridColor
-        case exploredRegions, isDaylightMode
+        case exploredRegions, isDaylightMode, lights, ambientLight
         case background = "map"
     }
 
@@ -66,7 +72,9 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         gridType: GridType = .lines,
         gridColor: String = GameMap.defaultGridColor,
         exploredRegions: [ExploredRegion] = [],
-        isDaylightMode: Bool = false
+        isDaylightMode: Bool = false,
+        lights: [LightSource] = [],
+        ambientLight: LightLevel? = nil
     ) {
         self.id = id
         self.name = name
@@ -80,6 +88,8 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         self.gridColor = gridColor
         self.exploredRegions = exploredRegions
         self.isDaylightMode = isDaylightMode
+        self.lights = lights
+        self.ambientLight = ambientLight
     }
 
     public init(from decoder: Decoder) throws {
@@ -98,6 +108,26 @@ public struct GameMap: Codable, Equatable, Identifiable, Sendable {
         gridColor = try c.decodeIfPresent(String.self, forKey: .gridColor) ?? Self.defaultGridColor
         exploredRegions = try c.decodeIfPresent([ExploredRegion].self, forKey: .exploredRegions) ?? []
         isDaylightMode = try c.decodeIfPresent(Bool.self, forKey: .isDaylightMode) ?? false
+        lights = try c.decodeIfPresent([LightSource].self, forKey: .lights) ?? []
+        ambientLight = try c.decodeIfPresent(LightLevel.self, forKey: .ambientLight)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(tokens, forKey: .tokens)
+        try c.encode(drawings, forKey: .drawings)
+        try c.encode(doors, forKey: .doors)
+        try c.encode(stairs, forKey: .stairs)
+        try c.encode(gridSize, forKey: .gridSize)
+        try c.encode(gridType, forKey: .gridType)
+        try c.encode(gridColor, forKey: .gridColor)
+        try c.encode(exploredRegions, forKey: .exploredRegions)
+        try c.encode(isDaylightMode, forKey: .isDaylightMode)
+        try c.encodeIfPresent(background, forKey: .background)
+        if !lights.isEmpty { try c.encode(lights, forKey: .lights) }
+        try c.encodeIfPresent(ambientLight, forKey: .ambientLight)
     }
 
     /// Appends an explored region, dropping the oldest beyond the cap.

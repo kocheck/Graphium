@@ -43,6 +43,20 @@ extension MapCanvasNSView {
             }
             elements.append(element)
         }
+        if !isPlayerView {
+            // Lights are the DM's alone; players only see their effect.
+            for light in map.lights {
+                let r = Self.lightMarkerRadius / viewport.zoom
+                let element = makeElement(
+                    label: "\(light.name ?? "Light"), \(light.isOn ? "on" : "off")",
+                    bounds: Bounds(x: light.x - r, y: light.y - r, width: 2 * r, height: 2 * r))
+                if let editing {
+                    let id = light.id
+                    element.onPress = { editing.setSelection([id]) }
+                }
+                elements.append(element)
+            }
+        }
         return elements
     }
 

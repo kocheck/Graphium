@@ -183,7 +183,7 @@ struct ShortcutsList: View {
     private let groups: [ShortcutGroup] = [
         ShortcutGroup(title: "Tools", rows: [
             Row(keys: "V", action: "Select"), Row(keys: "M", action: "Marker"), Row(keys: "E", action: "Eraser"), Row(keys: "W", action: "Wall (blocks vision)"),
-            Row(keys: "D", action: "Door"), Row(keys: "R", action: "Measure (rotates the door with the Door tool)"), Row(keys: "I", action: "Marker colour"),
+            Row(keys: "D", action: "Door"), Row(keys: "L", action: "Light"), Row(keys: "R", action: "Measure (rotates the door with the Door tool)"), Row(keys: "I", action: "Marker colour"),
             Row(keys: "↑ ↓ ← →", action: "Rotate the door (Door tool)"),
         ]),
         ShortcutGroup(title: "Canvas", rows: [

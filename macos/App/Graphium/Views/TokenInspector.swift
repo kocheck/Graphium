@@ -77,6 +77,31 @@ struct TokenInspector: View {
                             .labelsHidden()
                     }
                 }
+                LabeledContent("Darkvision") {
+                    HStack(spacing: 4) {
+                        TextField(
+                            "Darkvision", value: darkvisionFieldBinding(tokens), format: .number, prompt: Text("Mixed")
+                        )
+                        .labelsHidden()
+                        .multilineTextAlignment(.trailing)
+                        .monospacedDigit()
+                        .frame(width: 64)
+                        Text("ft")
+                        Stepper(
+                            "Darkvision",
+                            value: Binding(get: { tokens.first?.darkvision ?? 0 }, set: { setDarkvision($0) }),
+                            in: 0...300, step: 30
+                        )
+                        .labelsHidden()
+                    }
+                }
+                Text(
+                    document.campaign.activeMap.ambientLight == nil
+                        ? "Lighting is off on this map, so PCs see out to their radius and darkvision does nothing."
+                        : "Lighting is on: PCs see what is lit, and darkness within their darkvision. The radius isn't used."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             if tokens.count == 1, let token = tokens.first, let itemID = token.token.libraryItemId,
@@ -85,7 +110,7 @@ struct TokenInspector: View {
                 Section {
                     Button("Save to Library") { saveToLibrary(token, itemID: itemID) }
                 } footer: {
-                    Text("Makes this token's name, type and vision the library defaults.")
+                    Text("Makes this token's name, type, vision and darkvision the library defaults.")
                 }
             }
 
@@ -137,6 +162,7 @@ struct TokenInspector: View {
                 campaign.activeMap.tokens[t].name = nil
                 campaign.activeMap.tokens[t].type = nil
                 campaign.activeMap.tokens[t].visionRadius = nil
+                campaign.activeMap.tokens[t].darkvision = nil
             }
         }
         resetDraft()
@@ -190,6 +216,20 @@ struct TokenInspector: View {
                 guard let newValue else { return }
                 update("Change Token Type") { $0.type = newValue }
             })
+    }
+
+    private func setDarkvision(_ feet: Double) {
+        update("Change Darkvision") { $0.darkvision = feet > 0 ? feet : nil }
+    }
+
+    /// The shared darkvision, or nil (shown as "Mixed") when the selection differs.
+    private func darkvisionFieldBinding(_ tokens: [ResolvedToken]) -> Binding<Double?> {
+        Binding(
+            get: {
+                let values = Set(tokens.map { $0.darkvision ?? 0 })
+                return values.count == 1 ? values.first : nil
+            },
+            set: { if let feet = $0 { setDarkvision(max(0, feet)) } })
     }
 
     private func setVision(_ feet: Double) {
