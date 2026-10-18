@@ -20,9 +20,11 @@ final class AssetImageCache: @unchecked Sendable {
         cache.object(forKey: name as NSString)
     }
 
+    /// Nil for a video asset: the canvas plays it (`MapVideoBackgroundView`), and places that
+    /// need a picture of one use its first frame (`VideoAsset.posterImage`).
     func image(named name: String, in assets: [String: Data]) -> CGImage? {
         if let hit = cached(named: name) { return hit }
-        guard let data = assets[name],
+        guard !isVideoAsset(name), let data = assets[name],
             let source = CGImageSourceCreateWithData(data as CFData, nil),
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else { return nil }

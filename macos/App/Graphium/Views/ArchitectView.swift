@@ -155,7 +155,7 @@ struct ArchitectView: View {
         }
         .fileImporter(
             isPresented: Binding(get: { importTarget != nil }, set: { if !$0 { importTarget = nil } }),
-            allowedContentTypes: [.image],
+            allowedContentTypes: importTarget == .mapImage ? ImportedBackground.contentTypes : [.image],
             allowsMultipleSelection: importTarget == .tokens
         ) { result in
             let target = importTarget
@@ -584,7 +584,11 @@ struct ArchitectView: View {
                 if canvasZoom != viewport.zoom { canvasZoom = viewport.zoom }
             },
             calibrating: calibrating,
-            assetNamespace: document.sessionID.uuidString
+            assetNamespace: document.sessionID.uuidString,
+            videoProvider: { [document] name, ready in
+                document.videoFiles.url(named: name, in: document.assets, ready: ready)
+            },
+            animationPaused: document.isMapAnimationPaused
         )
         .overlay(alignment: .top) {
             canvasBanner
@@ -751,10 +755,16 @@ struct ArchitectView: View {
 
     /// File > Export as .graphium… (PARITY §5.2).
     private func exportLegacy() {
-        do {
-            legacyExport = try LegacyGraphiumFile(package: CampaignPackage(campaign: document.campaign, assets: document.assets))
-        } catch {
-            showToast(error.localizedDescription, .error)
+        let package = CampaignPackage(campaign: document.campaign, assets: document.assets)
+        let files = document.videoFiles
+        Task { @MainActor in
+            // Video map backgrounds go out as their first frame: the web app shows images only.
+            let exported = await package.withVideoBackgroundsAsPosters(files: files)
+            do {
+                legacyExport = try LegacyGraphiumFile(package: exported)
+            } catch {
+                showToast(error.localizedDescription, .error)
+            }
         }
     }
 
@@ -1043,7 +1053,7 @@ struct ArchitectView: View {
             } label: {
                 Label("Map Image", systemImage: "photo")
             }
-            .help("Set this map's background image")
+            .help("Set this map's background: an image, or an MP4 or MOV video for an animated map")
         }
         ToolbarItem(id: "add-tokens", placement: .primaryAction) {
             Button {
@@ -1260,13 +1270,14 @@ struct ArchitectView: View {
         Task { @MainActor in
             defer { importsInFlight -= 1 }
             do {
-                let image = try await ImportedImage.loadInBackground(from: url, kind: .map)
-                let name = document.addAsset(image.data, preferredName: image.preferredName)
-                document.edit("Set Map Image", undoManager: undoManager) { campaign in
+                let background = try await ImportedBackground.load(from: url)
+                let name = document.addAsset(background.data, preferredName: background.preferredName)
+                document.edit(background.isVideo ? "Set Map Video" : "Set Map Image", undoManager: undoManager) {
+                    campaign in
                     // The map the user chose it for, even if they switched maps meanwhile.
                     guard let i = campaign.maps.firstIndex(where: { $0.id == mapID }) else { return }
                     campaign.maps[i].background = MapBackground(
-                        src: name, width: Double(image.width), height: Double(image.height))
+                        src: name, width: background.width, height: background.height)
                 }
             } catch {
                 errorMessage = error.localizedDescription

@@ -114,7 +114,12 @@ private struct WorldView: View {
                     minimap.viewport = viewport
                     minimap.viewSize = size
                 },
-                assetNamespace: document.sessionID.uuidString
+                assetNamespace: document.sessionID.uuidString,
+                videoProvider: { [document] name, ready in
+                    document.videoFiles.url(named: name, in: document.assets, ready: ready)
+                },
+                // Nothing plays to an empty projector.
+                animationPaused: document.isMapAnimationPaused || document.isPaused
             )
             // Stop showing the map entirely while paused so nothing leaks to the projector.
             .opacity(document.isPaused ? 0 : 1)

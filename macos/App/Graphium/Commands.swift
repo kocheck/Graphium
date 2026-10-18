@@ -1,3 +1,4 @@
+import GraphiumCore
 import SwiftUI
 
 /// The campaign whose window is frontmost, for menu commands.
@@ -240,6 +241,11 @@ struct EditorCommands: Commands {
                 .disabled(actions == nil)
             Button("Reset Explored Fog…") { actions?.resetFog?() }
                 .disabled(actions?.resetFog == nil)
+            if let document {
+                MapAnimationMenuItem(document: document)
+            } else {
+                Toggle("Pause Animation", isOn: .constant(false)).disabled(true)
+            }
             Divider()
             Button("Delete Selection") { actions?.deleteSelection?() }
                 .keyboardShortcut(.delete, modifiers: [.command])
@@ -267,6 +273,18 @@ struct EditorCommands: Commands {
             Button("Clear Initiative") { actions?.clearInitiative?() }
                 .disabled(actions?.clearInitiative == nil)
         }
+    }
+}
+
+/// Map > Pause Animation: holds a video map background on its frame in the Architect and
+/// World View. Session-only; available while the active map's background is a video.
+private struct MapAnimationMenuItem: View {
+    @ObservedObject var document: CampaignDocument
+
+    var body: some View {
+        let isVideo = document.campaign.activeMap.background.map { isVideoAsset($0.src) } ?? false
+        Toggle("Pause Animation", isOn: $document.isMapAnimationPaused)
+            .disabled(!isVideo)
     }
 }
 

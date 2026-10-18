@@ -143,7 +143,19 @@ extension GraphiumTools {
                 return ["background": .null]
             }
             let path = try args.requiredString("image_path")
-            let image = try ImageImport.load(try store.resolveImage(path), kind: .map)
+            let file = try store.resolveImage(path)
+            if isWebMVideo(file.lastPathComponent) {
+                throw ToolError(
+                    "\(file.lastPathComponent) is a WebM video, which macOS can't play. Convert it to MP4 (H.264 or "
+                        + "HEVC) and pass that instead.")
+            }
+            // An animated map (MP4, MOV, M4V) is copied as-is; images are downscaled and re-encoded.
+            let image: ImageImport
+            if isVideoAsset(file.lastPathComponent) {
+                image = try VideoImport.load(file)
+            } else {
+                image = try ImageImport.load(file, kind: .map)
+            }
             let name = loaded.addAsset(image.data, preferredName: image.preferredName)
             let position = units.px(try args.point("position") ?? .zero)
             let gridSize = loaded.campaign.maps[index].gridSize

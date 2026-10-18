@@ -301,6 +301,21 @@ final class MCPServerTests: XCTestCase {
         }
     }
 
+    func testVideoBackgroundsExplainWhatCantPlay() throws {
+        try call("create_campaign", ["path": "Animated", "name": "Animated"])
+        let webM = folder.appendingPathComponent("lava.webm")
+        try Data([0x1A, 0x45, 0xDF, 0xA3]).write(to: webM)
+        let webMError = try callError("set_background", ["campaign": "Animated", "image_path": .string(webM.path)])
+        XCTAssertTrue(webMError.contains("WebM"), webMError)
+        XCTAssertTrue(webMError.contains("MP4"), webMError)
+
+        let broken = folder.appendingPathComponent("river.mp4")
+        try Data("not a video".utf8).write(to: broken)
+        let brokenError = try callError("set_background", ["campaign": "Animated", "image_path": .string(broken.path)])
+        XCTAssertTrue(brokenError.contains("isn't a video Graphium can play"), brokenError)
+        XCTAssertNil(try loadCampaign("Animated.graphiumcampaign").activeMap.background)
+    }
+
     func testDMOnlyMarkersAndNamesForPlayers() throws {
         try call("create_campaign", ["path": "Secrets", "name": "Secrets"])
         let tokens = try call(

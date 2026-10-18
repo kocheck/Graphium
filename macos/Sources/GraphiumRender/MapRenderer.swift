@@ -161,6 +161,8 @@ public struct MapRenderer: Sendable {
     private func loadImage(_ src: String) -> CGImage? {
         guard AssetReference.isPackageAsset(src) else { return nil }
         let url = packageURL.appendingPathComponent(CampaignPackage.assetsDirectoryName).appendingPathComponent(src)
+        // A video map background renders as its first frame.
+        if isVideoAsset(src) { return VideoPoster.firstFrame(of: url) }
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }
