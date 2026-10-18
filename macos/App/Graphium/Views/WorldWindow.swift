@@ -181,6 +181,9 @@ private struct WorldView: View {
         .onChange(of: document.isPaused) { _, paused in
             if paused { pauseLine = SystemMessages.pauseOverlay.randomElement() ?? pauseLine }
         }
+        .onChange(of: document.worldFrameRequest) { _, request in
+            if let request { fitRequest = request }
+        }
         .onChange(of: campaign.activeMapID) { _, _ in
             selection = []
             playerDrag = [:]
