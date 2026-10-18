@@ -85,6 +85,22 @@ enum AgentLocator {
     }
 }
 
+/// Splits the CLI's output into lines. Used only from its pipe's handler, which runs one
+/// call at a time.
+private final class LineBuffer: @unchecked Sendable {
+    private var data = Data()
+
+    func lines(adding chunk: Data) -> [String] {
+        data.append(chunk)
+        var lines: [String] = []
+        while let newline = data.firstIndex(of: 0x0A) {
+            lines.append(String(decoding: data[data.startIndex..<newline], as: UTF8.self))
+            data.removeSubrange(data.startIndex...newline)
+        }
+        return lines
+    }
+}
+
 /// One line of the Agent window's conversation.
 struct AgentEntry: Identifiable, Equatable {
     enum Kind: Equatable {
@@ -214,17 +230,11 @@ final class AgentChatModel: ObservableObject {
 
         generation += 1
         let generation = generation
-        var buffer = Data()
+        let buffer = LineBuffer()
         output.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let chunk = handle.availableData
             guard !chunk.isEmpty else { return }
-            buffer.append(chunk)
-            var lines: [String] = []
-            while let newline = buffer.firstIndex(of: 0x0A) {
-                lines.append(String(decoding: buffer[buffer.startIndex..<newline], as: UTF8.self))
-                buffer.removeSubrange(buffer.startIndex...newline)
-            }
-            let events = lines.flatMap(run.events(in:))
+            let events = buffer.lines(adding: chunk).flatMap(run.events(in:))
             guard !events.isEmpty else { return }
             // The main queue keeps the events in order.
             DispatchQueue.main.async { self?.handle(events, generation: generation) }
