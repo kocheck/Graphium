@@ -52,12 +52,18 @@ struct ArchitectView: View {
     @State private var cropping: CropRequest?
     @ObservedObject private var library = LibraryStore.shared
 
-    /// A Finder-dropped image waiting in the cropper.
+    /// An image waiting in the cropper: a Finder drop that becomes a new token, or the
+    /// new picture for existing tokens (Change Image).
     private struct CropRequest: Identifiable {
+        enum Purpose {
+            case newToken(centredAt: Point2D)
+            case tokenImage(Set<String>)
+        }
+
         let id = UUID()
         let image: CGImage
         let name: String
-        let point: Point2D
+        let purpose: Purpose
     }
 
     private struct MapSettingsRequest: Identifiable {
@@ -100,8 +106,10 @@ struct ArchitectView: View {
         let kind: Kind
     }
 
-    private enum ImportTarget: Identifiable {
+    private enum ImportTarget: Hashable, Identifiable {
         case mapImage, tokens, libraryUpload
+        /// Change Image for these tokens.
+        case tokenImage(Set<String>)
         var id: Self { self }
     }
 
@@ -122,9 +130,11 @@ struct ArchitectView: View {
                             .padding(8)
                         }
                         if hasSelectedTokens && (inspectorTab == .token || !showingConsole) {
-                            TokenInspector(document: document, selection: selection) { message, isError in
-                                showToast(message, isError ? .error : .success)
-                            }
+                            TokenInspector(
+                            document: document, selection: selection,
+                            notify: { message, isError in showToast(message, isError ? .error : .success) },
+                            chooseImageFile: { importTarget = .tokenImage(selection) },
+                            useImageFile: { url in cropTokenImage(from: url, for: selection) })
                         } else {
                             SessionConsolePanel(document: document)
                         }
@@ -142,7 +152,9 @@ struct ArchitectView: View {
             importTarget = nil
             switch result {
             case .success(let urls):
-                if target == .mapImage, let url = urls.first {
+                if case .tokenImage(let ids) = target, let url = urls.first {
+                    cropTokenImage(from: url, for: ids)
+                } else if target == .mapImage, let url = urls.first {
                     setMapImage(from: url)
                 } else if target == .libraryUpload, let url = urls.first {
                     do {
@@ -188,7 +200,14 @@ struct ArchitectView: View {
         }
         .sheet(item: $cropping) { request in
             ImageCropperView(image: request.image) { cropped in
-                addCroppedToken(cropped, name: request.name, centredAt: request.point)
+                switch request.purpose {
+                case .newToken(let point):
+                    addCroppedToken(cropped, name: request.name, centredAt: point)
+                case .tokenImage(let ids):
+                    if let src = document.addCroppedTokenImage(cropped, name: request.name) {
+                        document.setTokenImage(src, for: ids, undoManager: undoManager)
+                    }
+                }
             }
         }
         .sheet(isPresented: $showingPalette) {
@@ -465,6 +484,22 @@ struct ArchitectView: View {
                     document.edit("Change Grid", undoManager: undoManager) { $0.activeMap.gridType = type }
                     showToast("Grid: \(type.title)")
                 },
+                tokenMenu: { ids in
+                    TokenMenu.make(
+                        tokenIDs: ids, document: document,
+                        chooseFile: { importTarget = .tokenImage(ids) },
+                        pickLibraryItem: { item in
+                            if !document.setTokenImage(from: item, for: ids, undoManager: undoManager) {
+                                errorMessage = "“\(item.name)” is missing its image in the library."
+                            }
+                        },
+                        delete: {
+                            document.edit(ids.count == 1 ? "Delete Token" : "Delete Tokens", undoManager: undoManager) {
+                                $0.activeMap.removeItems(ids)
+                            }
+                            selection.subtract(ids)
+                        })
+                },
                 openColorPicker: { openMarkerColorPicker() },
                 stopAudio: { document.dispatch(.stop) }
             ),
@@ -655,23 +690,30 @@ struct ArchitectView: View {
             let source = CGImageSourceCreateWithURL(url as CFURL, nil),
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         {
-            cropping = CropRequest(image: image, name: url.lastPathComponent, point: point)
+            cropping = CropRequest(image: image, name: url.lastPathComponent, purpose: .newToken(centredAt: point))
         } else {
             addTokens(from: urls, at: point, centred: true)
         }
     }
 
+    /// Change Image: the chosen file goes through the same 1:1 cropper as a Finder drop.
+    private func cropTokenImage(from url: URL, for ids: Set<String>) {
+        guard !ids.isEmpty else { return }
+        let image = withAccess(to: url) { () -> CGImage? in
+            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+            // Decoded now, while the file is still accessible.
+            return CGImageSourceCreateImageAtIndex(
+                source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
+        }
+        guard let image else {
+            errorMessage = ImportedImage.ImportError.unreadable(url.lastPathComponent).localizedDescription
+            return
+        }
+        cropping = CropRequest(image: image, name: url.lastPathComponent, purpose: .tokenImage(ids))
+    }
+
     private func addCroppedToken(_ image: CGImage, name: String, centredAt point: Point2D) {
-        let side = min(image.width, ImageKind.token.maxDimension)
-        guard let context = CGContext(
-            data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return }
-        context.interpolationQuality = .high
-        context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
-        guard let scaled = context.makeImage(), let png = NSBitmapImageRep(cgImage: scaled).representation(using: .png, properties: [:])
-        else { return }
-        let asset = document.addAsset(png, preferredName: (name as NSString).deletingPathExtension + ".png")
+        guard let asset = document.addCroppedTokenImage(image, name: name) else { return }
         let map = document.campaign.activeMap
         let size = map.gridSize
         let snapped = snapToGrid(

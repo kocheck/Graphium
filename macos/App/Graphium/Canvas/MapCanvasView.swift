@@ -40,6 +40,8 @@ struct CanvasEditing {
     /// Live (unsnapped) positions of tokens being dragged, for the World View; nil when done.
     var dragPreview: (([String: Point2D]?) -> Void)?
     var setGridType: ((GridType) -> Void)?
+    /// The right-click menu for these tokens (Change Image, Delete); nil in the World View.
+    var tokenMenu: ((_ tokenIDs: Set<String>) -> NSMenu)?
     /// `I` (PARITY §1.4).
     var openColorPicker: (() -> Void)?
     /// Esc with nothing else to cancel stops Session Console audio (PARITY §1.4).
@@ -1010,11 +1012,22 @@ final class MapCanvasNSView: NSView {
         needsDisplay = true
     }
 
-    /// Right-click (or Control-click) on a door: Open/Close, Lock/Unlock, Delete (PARITY §3.6).
+    /// Right-click (or Control-click) on a token: Change Image, Image from Library, Delete.
+    /// On a door: Open/Close, Lock/Unlock, Delete (PARITY §3.6).
     /// On a wall: its kind, one-way and direction, Delete (PARITY §3.5 Native).
     override func menu(for event: NSEvent) -> NSMenu? {
         guard let map else { return nil }
         let point = mapLocation(of: event)
+        if let tokenMenu = editing?.tokenMenu, let token = map.token(at: point, library: library),
+            !hiddenTokenIDs.contains(token.id)
+        {
+            // Acts on every selected token when the clicked one is among them.
+            let tokenIDs = Set(map.tokens.map(\.id)).intersection(selection)
+            let ids = selection.contains(token.id) ? tokenIDs : [token.id]
+            if !selection.contains(token.id) { editing?.setSelection([token.id]) }
+            needsDisplay = true
+            return tokenMenu(ids)
+        }
         if let lightAction = editing?.lightAction,
             let light = map.light(at: point, tolerance: Self.lightHitRadius / viewport.zoom)
         {
