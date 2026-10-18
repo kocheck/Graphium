@@ -193,8 +193,9 @@ final class MCPServerTests: XCTestCase {
         var door = try XCTUnwrap(try loadCampaign("Secret.graphiumcampaign").activeMap.doors.first)
         XCTAssertEqual(door.isHidden, true)
         let text = AsciiMap(map: try loadCampaign("Secret.graphiumcampaign").activeMap, library: [:]).render(region: nil)
-        let picture = text.components(separatedBy: "\n\n")[1]
-        XCTAssertTrue(picture.contains("S"), text)
+        // A grid row (only wall, cell and door characters) carries the S.
+        let rows = text.split(separator: "\n").filter { $0.allSatisfy { " .-|+S".contains($0) } }
+        XCTAssertTrue(rows.contains { $0.contains("S") }, text)
 
         try call("update_objects", ["campaign": "Secret", "changes": [["id": .string(door.id), "hidden": false]]])
         door = try XCTUnwrap(try loadCampaign("Secret.graphiumcampaign").activeMap.doors.first)
