@@ -3,7 +3,7 @@ import XCTest
 @testable import GraphiumCore
 
 /// Soundscapes: the runtime commands, the scatter schedule, and the bundled files
-/// (docs/planning/soundscapes/plan.md).
+/// (macos/docs/planning/soundscapes/plan.md).
 final class SoundscapeTests: XCTestCase {
     let catalog = SessionConsoleCatalog.empty(campaignName: "Crypt")
 

@@ -2,7 +2,7 @@
 // the Electron app's own serializer, so the Swift importer is tested against the real
 // writer rather than hand-built fixtures (issue #324).
 //
-//   npm ci   # for jszip
+//   npm ci --prefix archive/web   # for jszip, from the repo root
 //   node --experimental-strip-types macos/Tests/make-ts-fixture.mts
 //
 // main.ts imports electron, so the three small functions behind writeCampaignZip
@@ -14,15 +14,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { allocateUniqueZipBasename, isRealPathInsideAllowedRoots } from '../../electron/pathSecurity.ts';
-import { rewriteCampaignAssetSrcs } from '../../src/utils/campaignAssets.ts';
+import { allocateUniqueZipBasename, isRealPathInsideAllowedRoots } from '../../archive/web/electron/pathSecurity.ts';
+import { rewriteCampaignAssetSrcs } from '../../archive/web/src/utils/campaignAssets.ts';
 
 const require = createRequire(import.meta.url);
-const JSZip = require(process.env.JSZIP_PATH ?? 'jszip');
+const JSZip = require(process.env.JSZIP_PATH ?? '../../archive/web/node_modules/jszip');
 type JSZip = any;
 type SerializableCampaign = any;
 
-// --- Copied from electron/main.ts ------------------------------------------------
+// --- Copied from archive/web/electron/main.ts ------------------------------------
 
 async function processAssetForZip(
   src: string,

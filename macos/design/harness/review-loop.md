@@ -14,7 +14,7 @@ Builds need Xcode, so they run on Kyle's Mac: a cloud thread starts a Remote Con
 4. **Screenshot** each surface touched, light and dark, plus the states the brief names. For World View changes, also a 1920 × 1080 capture.
 5. **Critique.** Run the `design-advisor` agent in critique mode on each screenshot. Fix its findings.
 6. **Repeat** steps 3–5 at most three times, then stop and show Kyle what's left.
-7. **Record** a decision Kyle makes in `docs/planning/decisions/` (the web app's decision folder covers both apps).
+7. **Record** a decision Kyle makes in `docs/decisions/` at the repo root (shared by both apps).
 8. **Misses.** When a card was wrong or missing, or the advisor flagged a rule gap, file it as the `design-feedback` skill describes.
 
 ## Limits

@@ -12,7 +12,7 @@ Turns Kyle's examples and real misses into tested rules in `macos/design/harness
 1. Save the example card at `macos/design/harness/taste/examples/<yyyy-mm-dd>-<slug>.md` with: what Kyle liked, what he didn't (his words), a text description of the image, and its source URL if any. Items from his myMind collection are cited by title, as the 006 brief does.
 2. Images: only Graphium renders or synthetic mockups go in the repo, next to the card. A third-party screenshot stays out of git: in the claude.ai project folder (`/mnt/project-files/design-harness/refs/`) when the session has it, otherwise ask Kyle where to keep it. The card holds the description, source and that location instead; never drop the reference silently.
 3. Run the `design-advisor` agent in **distill** mode on the card, naming this SKILL.md for the card format.
-4. Show Kyle the candidate rules and which existing rules they strengthen, merge with or contradict. A contradiction waits for his choice. A rule that contradicts a decision in `docs/planning/decisions/` needs a new decision file, not just a card edit.
+4. Show Kyle the candidate rules and which existing rules they strengthen, merge with or contradict. A contradiction waits for his choice. A rule that contradicts a decision in `docs/decisions/` needs a new decision file, not just a card edit.
 5. On his OK, update `taste/principles.md` (or a rule card if the rule is about a specific surface), add the example to the rule's `sources`, and raise `confidence` only for an independent example.
 
 ## B. Miss (a card was wrong, missing, or the advisor reported a rule gap)

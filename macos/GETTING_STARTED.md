@@ -20,9 +20,7 @@ also lists what to check by hand.
 
 ```sh
 git clone https://github.com/kocheck/Graphium.git
-cd Graphium
-git checkout claude/swift-macos
-cd macos
+cd Graphium/macos
 ```
 
 ## 3. Run the core tests

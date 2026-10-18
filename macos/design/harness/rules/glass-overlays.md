@@ -3,7 +3,7 @@ id: glass-overlays
 applies_to: [mac, overlay, canvas, readout, motion]
 sources:
   [
-    'docs/planning/decisions/007-map-first-glass.md',
+    'docs/decisions/007-map-first-glass.md',
     'taste/examples/2026-10-17-round2-glass.md',
     'HIG Materials',
     'HIG Accessibility',

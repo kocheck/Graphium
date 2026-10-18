@@ -1,0 +1,34 @@
+name: Web archive
+
+# The web/Electron app lives in archive/web/ and is still deployed at /app/.
+# It is read-only by default, so these checks run only when someone changes it.
+# The full web suite (E2E, accessibility, releases) is kept, inactive, in
+# archive/web/.github/workflows/.
+on:
+  pull_request:
+    paths:
+      - 'archive/web/**'
+      - '.github/workflows/web-archive.yml'
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Lint, type-check, unit tests, web build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: archive/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: archive/web/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint:strict
+      - run: npm run type-check
+      - run: npm run test:run
+      - run: npm run build:web

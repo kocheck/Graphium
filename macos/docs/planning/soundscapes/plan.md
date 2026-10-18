@@ -15,7 +15,7 @@ The DM picks a scene, then nudges each layer with a slider or mutes it. That is 
 
 v1 is six scenes (Cave, Tavern, Forest night, Storm, Dungeon, Battle), each one bed and two scatter pools: about 6 beds and 40 one-shots, under 15 MB, bundled in the app. No downloads, no scene editor, no pitch or pan jitter. Those wait until the six scenes have been used at a real table.
 
-This reverses one v1 decision in [session-console-design.md](../session-console-design.md): "stacked beds" was out of scope. The rest holds: images and audio stay independent, World View owns playback, duck and stop apply to everything, and the World never receives the catalog.
+This reverses one v1 decision in [session-console-design.md](../../../../archive/web/docs/planning/session-console-design.md): "stacked beds" was out of scope. The rest holds: images and audio stay independent, World View owns playback, duck and stop apply to everything, and the World never receives the catalog.
 
 ## Sources and rights
 

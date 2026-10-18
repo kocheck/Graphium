@@ -1,0 +1,23 @@
+name: Docs links
+
+# Every relative Markdown link outside archive/ must resolve, and every path an
+# agent entry file (AGENTS.md, CLAUDE.md, the design harness index) names must exist.
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - '.github/scripts/check-md-links.py'
+      - '.github/workflows/docs-links.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  links:
+    name: Markdown links resolve
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -I .github/scripts/check-md-links.py

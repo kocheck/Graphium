@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'archive/web/**'
+      - 'site/**'
+      - '.github/workflows/deploy-web.yml'
   workflow_dispatch: # Allow manual deployment
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -30,11 +34,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: archive/web/package-lock.json
 
+      # The web app is archived in archive/web/ but still served at /app/.
       - name: Install dependencies
+        working-directory: archive/web
         run: npm ci
 
       - name: Build web app
+        working-directory: archive/web
         run: npm run build:web
 
       # The "pardon our dust" landing page in site/ is served at the root while
@@ -43,7 +51,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -R site/. _site/
-          cp -R dist-web _site/app
+          cp -R archive/web/dist-web _site/app
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

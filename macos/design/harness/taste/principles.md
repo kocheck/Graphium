@@ -1,6 +1,6 @@
 # Taste principles
 
-Kyle's likes and dislikes for Graphium, at most 15 rules. Seeded 2026-10-17 from the 006 brief he confirmed on 2026-09-06 ([brief](../../../../docs/planning/ui-redesign-brief.md), sections 2–5); new rules come only through the `design-feedback` skill with an example card in `examples/`.
+Kyle's likes and dislikes for Graphium, at most 15 rules. Seeded 2026-10-17 from the 006 brief he confirmed on 2026-09-06 ([brief](../../../../archive/web/docs/planning/ui-redesign-brief.md), sections 2–5); new rules come only through the `design-feedback` skill with an example card in `examples/`.
 
 1. **An instrument, not a dashboard.** Dense, labelled control surfaces with visible shortcuts. Test: every tool shows its key in its help or menu. Sources: brief §2.1; OP-1, Datapoint 3300.
 2. **Ink on dark stock, one warm accent.** Near-black and low-chroma greys; amber only for state. Test: see [one-warm-accent](../rules/one-warm-accent.md). Sources: brief §2.2; Osmo asterisk, amber CRT.

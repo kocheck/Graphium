@@ -1,7 +1,7 @@
 # Graphium for macOS (native Swift)
 
-A native rewrite of Graphium in Swift, aiming for full parity with the Electron app in the
-rest of this repository.
+A native rewrite of Graphium in Swift, and now the product. It is at near-full parity with
+the Electron app, which is archived in [`archive/web/`](../archive/web/README.md).
 
 - `Sources/GraphiumCore`: platform-independent model, `.graphiumcampaign` file format, and
   game logic (no AppKit/SwiftUI). Tested with `swift test`.

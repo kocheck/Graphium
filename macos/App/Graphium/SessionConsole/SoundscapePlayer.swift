@@ -2,7 +2,7 @@ import AVFoundation
 import AppKit
 import GraphiumCore
 
-/// Plays the current soundscape under the music (docs/planning/soundscapes/plan.md): one
+/// Plays the current soundscape under the music (macos/docs/planning/soundscapes/plan.md): one
 /// looping player per bed, and a few voices per scatter layer that fire clips on a timer.
 /// Everything runs through one bus, so the master volume and duck apply in one place.
 @MainActor
