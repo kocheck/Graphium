@@ -50,6 +50,22 @@ public final class CampaignStore {
         return resolved
     }
 
+    /// An image to import (backgrounds, token art). Like `resolve`, but when the file is
+    /// outside the folders the error says where to put it: the server copies the picture
+    /// into the campaign package, so the copy in the folder is only a staging step.
+    public func resolveImage(_ path: String) throws -> URL {
+        do {
+            return try resolve(path)
+        } catch let error as ToolError {
+            guard let root = roots.first else { throw error }
+            let staging = root.appendingPathComponent("Imports", isDirectory: true).path
+            throw ToolError(
+                "\(path) is outside the folders this server may read (\(roots.map(\.path).joined(separator: ", "))). "
+                    + "Copy the image into \(staging)/ (or anywhere in those folders) and pass that path; the server then "
+                    + "copies it into the campaign package, so the staged copy can be deleted afterwards.")
+        }
+    }
+
     /// Symlinks resolved through the deepest folder that exists, so a file that doesn't exist
     /// yet compares the same way as its root (`/var` vs `/private/var` on macOS).
     static func canonical(_ url: URL) -> URL {
@@ -177,7 +193,7 @@ public final class CampaignStore {
                 let manifestURL = url.appendingPathComponent(CampaignPackage.manifestFileName)
                 if let previous = try? Data(contentsOf: manifestURL) {
                     guard previous != manifest else { return }
-                    self.keepForUndo(previous, of: url)
+                    self.keepForUndo(previous, written: manifest, of: url)
                 }
                 try manifest.write(to: manifestURL, options: .atomic)
             } catch {
@@ -223,18 +239,30 @@ public final class CampaignStore {
         return names.filter { $0.hasSuffix(".json") }.sorted().map { folder.appendingPathComponent($0) }
     }
 
-    func keepForUndo(_ manifest: Data, of url: URL) {
+    /// Keeps `manifest` (the file before a change) as an undo step, with `written` (the file
+    /// after it) beside it, so undo can tell whether anyone changed the campaign since.
+    func keepForUndo(_ manifest: Data, written: Data, of url: URL) {
         let folder = undoFolder(for: url)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let stamp = String(format: "%016.0f", Date().timeIntervalSince1970 * 1_000_000)
         try? manifest.write(to: folder.appendingPathComponent("\(stamp).json"), options: .atomic)
+        try? written.write(to: Self.writtenURL(for: folder.appendingPathComponent("\(stamp).json")), options: .atomic)
         let steps = undoSteps(for: url)
-        for old in steps.dropLast(Self.maxUndoSteps) { try? FileManager.default.removeItem(at: old) }
+        for old in steps.dropLast(Self.maxUndoSteps) {
+            try? FileManager.default.removeItem(at: old)
+            try? FileManager.default.removeItem(at: Self.writtenURL(for: old))
+        }
+    }
+
+    static func writtenURL(for step: URL) -> URL {
+        step.deletingPathExtension().appendingPathExtension("after")
     }
 
     /// Puts back the `campaign.json` from before the last change. Returns how many
-    /// earlier steps remain.
-    public func undo(_ path: String) throws -> Int {
+    /// earlier steps remain. Undo swaps the whole file, so when the campaign changed after
+    /// this server's last change (the DM edited it in Graphium) it refuses unless `force`,
+    /// rather than throw those edits away too.
+    public func undo(_ path: String, force: Bool = false) throws -> Int {
         let url = try packageURL(path)
         var steps = undoSteps(for: url)
         guard let last = steps.popLast(), let data = try? Data(contentsOf: last) else {
@@ -242,6 +270,15 @@ public final class CampaignStore {
         }
         // Check it still decodes before putting it back.
         _ = try CampaignPackage(manifest: data, assets: [:])
+        if !force, let written = try? Data(contentsOf: Self.writtenURL(for: last)),
+            let current = try? load(path).campaign,
+            let expected = try? CampaignPackage(manifest: written, assets: [:]).campaign, current != expected
+        {
+            throw ToolError(
+                "\(url.lastPathComponent) changed after this server's last change (probably edited in Graphium). "
+                    + "Undo puts back the whole file, so it would throw those edits away too. Fix the problem with "
+                    + "update_objects or remove_objects instead, or pass force: true if the DM agrees to lose them.")
+        }
         var failure: Error?
         coordinate(writing: url) {
             do {
@@ -252,6 +289,7 @@ public final class CampaignStore {
         }
         if let failure { throw ToolError("Couldn't undo: \(failure.localizedDescription)") }
         try? FileManager.default.removeItem(at: last)
+        try? FileManager.default.removeItem(at: Self.writtenURL(for: last))
         return steps.count
     }
 

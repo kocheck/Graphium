@@ -4,8 +4,8 @@ import Foundation
 /// initialisation, longer guides as resources, and ready-made prompts.
 public enum AgentGuide {
     public static let instructions = """
-        Graphium is a privacy-first virtual tabletop for Mac. This server edits the DM's own campaign files \
-        (.graphiumcampaign packages) on their Mac. Nothing is uploaded anywhere.
+        Graphium is a privacy-first virtual tabletop for Mac. This server (graphium-mcp \(GraphiumTools.version)) \
+        edits the DM's own campaign files (.graphiumcampaign packages) on their Mac. Nothing is uploaded anywhere.
 
         How to build a map well:
         1. Find or make the campaign: list_campaigns, or create_campaign. get_campaign shows its maps. Prefer a \
@@ -19,8 +19,9 @@ public enum AgentGuide {
         hazards, and add_notes for room keys: dm_notes for the DM's secrets, player_notes for read-aloud text, \
         shared only when the DM wants players to see the pin. A note's sounds attach Session Console tracks, \
         effects or soundscapes by name, for the DM to play from the pin.
-        5. Check your work: render_map to see it, check_map to catch light leaks and misplaced doors and tokens. \
-        Fix with update_objects or remove_objects; undo reverts this server's last change.
+        5. Check your work: render_map to see it, check_map to catch light leaks, open wall ends, lights outside \
+        rooms and misplaced doors and tokens. check_map can't see the background art, so also render the players' \
+        view. Fix with update_objects or remove_objects; undo reverts this server's last change.
         6. Tell the DM the file path and what is on each map. They open it in Graphium, which also reloads it \
         if it is already open.
 
@@ -29,6 +30,18 @@ public enum AgentGuide {
         cell. Maps start with fog of war and lighting off: PCs reveal fog out to vision_ft, and NPCs stay hidden \
         until a PC sees them. For lights and darkvision, set update_map lighting "dark" (or "dim"), place \
         add_lights, and give PCs darkvision_ft. Turn daylight on for scenes with no fog at all.
+
+        What players see on the World View: walls, doors, stairs and markers wherever the fog is explored or a PC \
+        sees; PC tokens and their names always; NPC tokens and their names only while a PC sees them; lights only \
+        as the light they give. Only notes are DM-only (dm_notes always; the pin itself unless shared), so put room \
+        keys, trap DCs and hints in notes, never in markers or token names. A hidden door shows as wall while shut, \
+        until update_objects sets hidden false.
+
+        Where things are: reset explored fog with clear_map layers ["fog"]; move a party with move_objects (a \
+        light given with them moves too, but lights don't follow tokens on their own); read notes in get_map. \
+        Not in this server yet: lights carried by tokens, DM-only markers, hiding a token's name from players. \
+        Say so rather than working round them silently. If a tool named here is missing, the AI app is running \
+        an older graphium-mcp: get_campaign reports the version; restart the app to pick up a new one.
         Read graphium://guide/map-building for design advice.
         """
 
