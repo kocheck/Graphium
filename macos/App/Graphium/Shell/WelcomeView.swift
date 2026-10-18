@@ -166,7 +166,8 @@ struct WelcomeView: View {
     ) -> some View {
         Button(action: action) {
             VStack(spacing: Spacing.sm) {
-                Image(systemName: symbol).font(.system(size: 28))
+                // A fixed symbol box, so titles line up across cards whatever each symbol's height.
+                Image(systemName: symbol).font(.system(size: 28)).frame(height: 36)
                 Text(title).font(.headline)
                 Text(shortcut).readoutStyle(.caption).foregroundStyle(.secondary)
             }

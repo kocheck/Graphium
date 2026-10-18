@@ -807,7 +807,9 @@ final class MapCanvasNSView: NSView {
         let resolved = ResolvedToken(token, library: library)
         // Players see the token's name for players, or none (decision 014).
         guard let name = isPlayerView ? resolved.playerName : resolved.name else { return }
-        let label = NSAttributedString.mapLabel(name, font: NSFont.boldSystemFont(ofSize: 12))
+        // Long names are cut short, as note titles are, so neighbouring tokens' labels don't run together.
+        let shown = name.count > 20 ? String(name.prefix(19)).trimmingCharacters(in: .whitespaces) + "…" : name
+        let label = NSAttributedString.mapLabel(shown, font: NSFont.boldSystemFont(ofSize: 12))
         let labelSize = label.size()
         label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY - lift + 8))
     }
