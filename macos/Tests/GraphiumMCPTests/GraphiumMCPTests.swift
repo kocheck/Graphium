@@ -274,8 +274,20 @@ final class MCPServerTests: XCTestCase {
         map = try loadCampaign("Notes.graphiumcampaign").activeMap
         XCTAssertEqual(map.notes[1].playerNotes, "A dragon over a burning city.")
 
+        try call(
+            "update_objects",
+            ["campaign": "Notes", "changes": [["id": .string(mural), "sounds": [["name": "CHIME", "play_on_show": true], ["name": "Cave"]]]]])
+        map = try loadCampaign("Notes.graphiumcampaign").activeMap
+        XCTAssertEqual(
+            map.notes[1].sounds, [NoteSound(kind: .sfx, ref: "chime", playOnShow: true), NoteSound(kind: .soundscape, ref: "cave")],
+            "matched by name")
+        let missing = try callError(
+            "update_objects", ["campaign": "Notes", "changes": [["id": .string(mural), "sounds": [["name": "Gong"]]]]])
+        XCTAssertTrue(missing.contains("no track, effect or soundscape named Gong"), missing)
+
         let described = try call("get_map", ["campaign": "Notes"])
         XCTAssertEqual(described["notes"]?.arrayValue?.count, 2)
+        XCTAssertEqual(described["notes"]?.arrayValue?[1]["sounds"]?.arrayValue?.first?["name"], "Chime")
         let text = try request(
             "tools/call", ["name": "render_map", "arguments": ["campaign": "Notes", "view": "players", "format": "both"]])
         XCTAssertEqual(text["result"]?["isError"], .bool(false))

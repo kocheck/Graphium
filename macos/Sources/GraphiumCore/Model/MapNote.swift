@@ -15,14 +15,16 @@ public struct MapNote: Codable, Equatable, Identifiable, Sendable {
     public var playerNotes: String
     /// The pin shows on the World View, where players can open its player notes.
     public var isShared: Bool
+    /// Session Console tracks and effects the DM can play from the pin.
+    public var sounds: [NoteSound]
 
     private enum CodingKeys: String, CodingKey {
-        case id, x, y, title, dmNotes, playerNotes, isShared
+        case id, x, y, title, dmNotes, playerNotes, isShared, sounds
     }
 
     public init(
         id: String = newID(), x: Double, y: Double, title: String = "", dmNotes: String = "", playerNotes: String = "",
-        isShared: Bool = false
+        isShared: Bool = false, sounds: [NoteSound] = []
     ) {
         self.id = id
         self.x = x
@@ -31,6 +33,7 @@ public struct MapNote: Codable, Equatable, Identifiable, Sendable {
         self.dmNotes = dmNotes
         self.playerNotes = playerNotes
         self.isShared = isShared
+        self.sounds = sounds
     }
 
     public init(from decoder: Decoder) throws {
@@ -42,6 +45,8 @@ public struct MapNote: Codable, Equatable, Identifiable, Sendable {
         dmNotes = try c.decodeIfPresent(String.self, forKey: .dmNotes) ?? ""
         playerNotes = try c.decodeIfPresent(String.self, forKey: .playerNotes) ?? ""
         isShared = try c.decodeIfPresent(Bool.self, forKey: .isShared) ?? false
+        // A kind this app doesn't know (from a newer one) is skipped, not fatal to the map.
+        sounds = (try c.decodeIfPresent([NoteSound.Lossy].self, forKey: .sounds) ?? []).compactMap(\.sound)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -53,12 +58,85 @@ public struct MapNote: Codable, Equatable, Identifiable, Sendable {
         if !dmNotes.isEmpty { try c.encode(dmNotes, forKey: .dmNotes) }
         if !playerNotes.isEmpty { try c.encode(playerNotes, forKey: .playerNotes) }
         if isShared { try c.encode(isShared, forKey: .isShared) }
+        if !sounds.isEmpty { try c.encode(sounds, forKey: .sounds) }
     }
 
     /// The title, or "Note" when it has none.
     public var displayTitle: String {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "Note" : trimmed
+    }
+}
+
+/// A Session Console track, sound effect or soundscape attached to a note pin, for the DM to play when
+/// the moment comes (native only). It refers to the Session Console entry by id; the audio
+/// itself stays in the campaign's Session Console, never copied onto the pin.
+public struct NoteSound: Codable, Equatable, Sendable {
+    public enum Kind: String, Codable, CaseIterable, Sendable {
+        case track, sfx, soundscape
+    }
+
+    public var kind: Kind
+    /// The Session Console track, effect or built-in soundscape id.
+    public var ref: String
+    /// Plays by itself when the DM puts the note on the World View.
+    public var playOnShow: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case kind, ref, playOnShow
+    }
+
+    public init(kind: Kind, ref: String, playOnShow: Bool = false) {
+        self.kind = kind
+        self.ref = ref
+        self.playOnShow = playOnShow
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try c.decode(Kind.self, forKey: .kind)
+        ref = try c.decode(String.self, forKey: .ref)
+        playOnShow = try c.decodeIfPresent(Bool.self, forKey: .playOnShow) ?? false
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(kind, forKey: .kind)
+        try c.encode(ref, forKey: .ref)
+        if playOnShow { try c.encode(playOnShow, forKey: .playOnShow) }
+    }
+
+    /// The Session Console command that plays it.
+    public var command: SessionCommand {
+        switch kind {
+        case .track: .playTrack(trackId: ref)
+        case .sfx: .fireSfx(sfxId: ref)
+        case .soundscape: .playSoundscape(id: ref)
+        }
+    }
+
+    /// Decodes to nil instead of failing, so one unknown sound doesn't lose the note.
+    struct Lossy: Decodable {
+        let sound: NoteSound?
+        init(from decoder: Decoder) throws { sound = try? NoteSound(from: decoder) }
+    }
+}
+
+extension SessionConsoleCatalog {
+    /// The track title or effect label `sound` refers to; nil once it's gone from the Session Console.
+    public func title(of sound: NoteSound) -> String? {
+        switch sound.kind {
+        case .track: trackGroups.lazy.flatMap(\.tracks).first { $0.id == sound.ref }?.title
+        case .sfx: sfx.first { $0.id == sound.ref }?.label
+        case .soundscape: Soundscape.builtIn(id: sound.ref)?.title
+        }
+    }
+
+    /// Every track, effect and soundscape a note can play, in the Session Console's order.
+    public var noteSoundChoices: [(sound: NoteSound, title: String)] {
+        trackGroups.flatMap(\.tracks).map { (NoteSound(kind: .track, ref: $0.id), $0.title) }
+            + sfx.map { (NoteSound(kind: .sfx, ref: $0.id), $0.label) }
+            + Soundscape.builtIn.map { (NoteSound(kind: .soundscape, ref: $0.id), $0.title) }
     }
 }
 

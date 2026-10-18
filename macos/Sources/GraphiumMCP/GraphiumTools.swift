@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.3.0"
+    public static let version = "1.4.0"
 
     struct Tool {
         var name: String
@@ -95,6 +95,19 @@ public final class GraphiumTools {
             ],
         ]
     }
+
+    static let noteSoundsProperty: JSONValue = [
+        "type": "array",
+        "description": "Session Console tracks, sound effects or soundscapes (Cave, Tavern…) the DM can play from this pin. Only names already in the campaign's Session Console work.",
+        "items": [
+            "type": "object",
+            "properties": [
+                "name": string("Track title, effect name or soundscape from the Session Console, e.g. Door Creak or Cave."),
+                "play_on_show": boolean("Play it by itself when the DM shows this note on the World View (default false)."),
+            ],
+            "required": ["name"],
+        ],
+    ]
 
     static let campaignProperty = string(
         "Path to the .graphiumcampaign package (absolute, ~/…, or relative to the server's first folder). "
@@ -380,7 +393,8 @@ public final class GraphiumTools {
                     "Pin notes to the map: room keys, read-aloud text, clues, handouts. dm_notes are for the DM alone "
                     + "and never reach players. player_notes are what players may read: with shared true the pin shows "
                     + "on the World View and players can click it to read them. Notes are DM-only (shared false) unless "
-                    + "the DM asks otherwise.",
+                    + "the DM asks otherwise. sounds attach Session Console tracks, effects or soundscapes (by name) for the DM to "
+                    + "play from the pin; play_on_show starts one when the DM shows the note on the World View.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "notes": Self.objects(
@@ -391,6 +405,7 @@ public final class GraphiumTools {
                             "dm_notes": Self.string("Secrets, monster tactics, treasure: DM only."),
                             "player_notes": Self.string("Read-aloud or handout text players may see."),
                             "shared": Self.boolean("Show the pin to players on the World View (default false)."),
+                            "sounds": Self.noteSoundsProperty,
                         ], required: ["center"]),
                 ],
                 required: ["campaign", "notes"], readOnly: false, run: addNotes),
@@ -417,7 +432,7 @@ public final class GraphiumTools {
                     + "darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
                     + "(a token library item id or name; only its picture is used). Doors: open, locked, hidden, center, width, angle. Walls: kind, one_way, flip "
                     + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
-                    + "Notes: center, title, dm_notes, player_notes, shared. Stairs: center, direction, type. Fields that don't apply are reported back.",
+                    + "Notes: center, title, dm_notes, player_notes, shared, sounds (replaces the list). Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "changes": [

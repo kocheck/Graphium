@@ -115,7 +115,7 @@ the installed version; the app sees the same number as the server's version.
 | `add_doors`                                         | Doors at any angle, lined up with the wall under them; open, closed, locked, hidden     |
 | `add_tokens`                                        | PCs, NPCs and monsters, from an image, the campaign's token library, or a lettered disc |
 | `add_lights`                                        | Torches, lanterns and other lights for maps with lighting on (5e bright and dim radii)  |
-| `add_notes`                                         | Note pins: DM-only notes, and player notes the DM can share on the World View           |
+| `add_notes`                                         | Note pins: DM-only notes, player notes the DM can share, and Session Console sounds     |
 | `add_stairs`, `draw_markers`                        | Stairs and freehand marker lines                                                        |
 | `update_objects`, `remove_objects`, `clear_map`     | Edit (including new token art), remove or clear by id or layer                          |
 | `generate_dungeon`                                  | Graphium's room-and-corridor generator, repeatable with a seed                          |
