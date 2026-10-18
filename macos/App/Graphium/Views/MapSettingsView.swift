@@ -55,6 +55,21 @@ struct MapSettingsView: View {
                     }
                     Toggle("Daylight (no fog of war)", isOn: $map.isDaylightMode)
                 }
+                Section("Lighting") {
+                    Picker("Light", selection: $map.ambientLight) {
+                        Text("Off").tag(LightLevel?.none)
+                        Text("Darkness").tag(LightLevel?.some(.dark))
+                        Text("Dim").tag(LightLevel?.some(.dim))
+                        Text("Bright").tag(LightLevel?.some(.bright))
+                    }
+                    Text(
+                        map.ambientLight == nil
+                            ? "PCs see everything in sight out to their vision radius. Placing a light turns lighting on."
+                            : "The light wherever no light source reaches. PCs see what is lit, and darkness within their darkvision."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
                 Section("Map image") {
                     HStack {
                         if let bg = map.background {

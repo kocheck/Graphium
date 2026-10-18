@@ -207,6 +207,74 @@ extension MapCanvasNSView {
         }
     }
 
+    /// Light markers for the DM (Architect only, never the World View): a bulb on a disc, a
+    /// solid ring where bright light ends and a dashed ring where dim light ends. A light
+    /// that is off shows a hollow bulb on a grey disc and no rings. `offset` moves the ones
+    /// in `moving` during a drag; `duplicate` keeps the originals too.
+    func drawLights(
+        _ lights: [LightSource], map: GameMap, moving: Set<String> = [], offset: CGSize = .zero, duplicate: Bool = false,
+        context: CGContext
+    ) {
+        let feet = map.gridSize / 5
+        var drawn: [(light: LightSource, preview: Bool)] = lights.map { ($0, false) }
+        if !moving.isEmpty, offset != .zero {
+            let moved = lights.filter { moving.contains($0.id) }.map { light -> (light: LightSource, preview: Bool) in
+                var copy = light
+                copy.x += offset.width
+                copy.y += offset.height
+                return (copy, true)
+            }
+            drawn = duplicate ? drawn + moved : drawn.filter { !moving.contains($0.light.id) } + moved
+        }
+        for (light, _) in drawn {
+            let centre = CGPoint(x: light.x, y: light.y)
+            if light.isOn {
+                context.strokeMark(
+                    CGPath(ellipseIn: circle(centre, light.bright * feet), transform: nil), width: 1.5 / viewport.zoom,
+                    color: .white)
+                context.strokeMark(
+                    CGPath(ellipseIn: circle(centre, light.dim * feet), transform: nil), width: 1.5 / viewport.zoom,
+                    color: .white, dash: [6 / viewport.zoom, 4 / viewport.zoom])
+            }
+            let marker = circle(centre, Self.lightMarkerRadius / viewport.zoom)
+            context.saveGState()
+            context.setFillColor((light.isOn ? NSColor.white : NSColor.systemGray).cgColor)
+            context.fillEllipse(in: marker)
+            context.restoreGState()
+            context.strokeMark(CGPath(ellipseIn: marker, transform: nil), width: 1 / viewport.zoom, color: .black)
+            drawSymbol(
+                light.isOn ? "lightbulb.fill" : "lightbulb", centredAt: centre, size: 11 / viewport.zoom, context: context)
+            if selection.contains(light.id) {
+                context.strokeMark(
+                    CGPath(ellipseIn: marker.insetBy(dx: -4 / viewport.zoom, dy: -4 / viewport.zoom), transform: nil),
+                    width: 2 / viewport.zoom)
+            }
+        }
+    }
+
+    /// On-screen points; also the hit radius for clicks.
+    static let lightMarkerRadius = 11.0
+
+    /// Where a click with the Light tool would place a light, and how far it would reach.
+    func drawLightGhost(at point: Point2D, map: GameMap, context: CGContext) {
+        var trial = map
+        let light = trial.placeLight(toolState.lightPreset, at: point)
+        let centre = CGPoint(x: light.x, y: light.y)
+        let feet = map.gridSize / 5
+        context.saveGState()
+        context.setAlpha(0.6)
+        context.strokeMark(
+            CGPath(ellipseIn: circle(centre, light.bright * feet), transform: nil), width: 1 / viewport.zoom, color: .white)
+        context.strokeMark(
+            CGPath(ellipseIn: circle(centre, light.dim * feet), transform: nil), width: 1 / viewport.zoom, color: .white,
+            dash: [6 / viewport.zoom, 4 / viewport.zoom])
+        context.restoreGState()
+    }
+
+    private func circle(_ centre: CGPoint, _ radius: Double) -> CGRect {
+        CGRect(x: centre.x - radius, y: centre.y - radius, width: 2 * radius, height: 2 * radius)
+    }
+
     /// Where a click would place a door: the same `doorPlacement`, so it shows the wall alignment.
     func drawDoorGhost(at point: Point2D, map: GameMap, context: CGContext) {
         let door = map.doorPlacement(at: point, orientation: toolState.doorOrientation)

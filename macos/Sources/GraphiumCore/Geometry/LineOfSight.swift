@@ -144,45 +144,81 @@ public enum LineOfSight {
         VisibilitySweep.polygon(from: origin, radius: radius, walls: walls, arcRays: rays)
     }
 
-    /// A token that emits vision: resolved type PC with vision radius > 0.
+    /// A token that emits vision. Lighting off: resolved type PC with vision radius > 0 (TS).
+    /// Lighting on: every PC, seeing as far as the map reaches, plus its darkvision.
     public struct Viewer: Equatable, Sendable {
         public var tokenID: String
         public var centre: Point2D
         /// Pixels.
         public var radius: Double
+        /// Pixels; 0 is none. Only used with lighting on.
+        public var darkvision: Double = 0
 
         /// Changes when the polygon would (TS cache key "x:y:visionRadius:scale").
-        public var key: String { "\(tokenID):\(centre.x):\(centre.y):\(radius)" }
+        public var key: String { "\(tokenID):\(centre.x):\(centre.y):\(radius):\(darkvision)" }
     }
 
     public static func viewers(of map: GameMap, library: [String: TokenLibraryItem]) -> [Viewer] {
         map.tokens.compactMap { token in
             let resolved = ResolvedToken(token, library: library)
-            guard resolved.type == .pc, let feet = resolved.visionRadius, feet > 0 else { return nil }
+            guard resolved.type == .pc else { return nil }
             let size = map.gridSize * resolved.scale
-            return Viewer(
-                tokenID: token.id, centre: Point2D(x: token.x + size / 2, y: token.y + size / 2),
-                radius: feet / 5 * map.gridSize)
+            let centre = Point2D(x: token.x + size / 2, y: token.y + size / 2)
+            if map.ambientLight != nil {
+                return Viewer(
+                    tokenID: token.id, centre: centre, radius: sightLimit(from: centre, in: map),
+                    darkvision: max(0, resolved.darkvision ?? 0) / 5 * map.gridSize)
+            }
+            guard let feet = resolved.visionRadius, feet > 0 else { return nil }
+            return Viewer(tokenID: token.id, centre: centre, radius: feet / 5 * map.gridSize)
         }
+    }
+
+    /// With lighting on, sight has no range of its own: it reaches the far corner of the map.
+    static func sightLimit(from centre: Point2D, in map: GameMap) -> Double {
+        let b = fogBounds(of: map)
+        let corners = [(b.x, b.y), (b.x + b.width, b.y), (b.x, b.y + b.height), (b.x + b.width, b.y + b.height)]
+        return corners.map { hypot($0.0 - centre.x, $0.1 - centre.y) }.max().map { $0 + map.gridSize } ?? map.gridSize
     }
 
     public struct VisionPolygon: Equatable, Sendable {
         public var viewer: Viewer
         public var polygon: [Point2D]
+        /// Sight within darkvision range (lighting on, darkvision > 0).
+        public var darkvisionPolygon: [Point2D]? = nil
     }
 
     /// Current vision polygon per viewer.
     public static func polygons(
         of map: GameMap, library: [String: TokenLibraryItem], zoom: Double = 1
     ) -> [VisionPolygon] {
-        let segments = sightWalls(of: map)
-        return viewers(of: map, library: library).map { viewer in
+        polygons(of: map, library: library, walls: sightWalls(of: map), zoom: zoom)
+    }
+
+    static func polygons(
+        of map: GameMap, library: [String: TokenLibraryItem], walls segments: [WallSegment], zoom: Double = 1
+    ) -> [VisionPolygon] {
+        viewers(of: map, library: library).map { viewer in
             VisionPolygon(
                 viewer: viewer,
                 polygon: polygon(
                     from: viewer.centre, radius: viewer.radius, walls: segments,
-                    rays: rayCount(radius: viewer.radius, zoom: zoom)))
+                    rays: rayCount(radius: viewer.radius, zoom: zoom)),
+                darkvisionPolygon: viewer.darkvision > 0
+                    ? polygon(
+                        from: viewer.centre, radius: viewer.darkvision, walls: segments,
+                        rays: rayCount(radius: viewer.darkvision, zoom: zoom))
+                    : nil)
         }
+    }
+
+    /// What the party sees: vision polygons plus, with lighting on, the lit areas.
+    public static func partySight(of map: GameMap, library: [String: TokenLibraryItem]) -> PartySight {
+        guard !map.isDaylightMode else { return .none }
+        let segments = sightWalls(of: map)
+        let vision = polygons(of: map, library: library, walls: segments)
+        guard let ambient = map.ambientLight else { return PartySight(vision: vision) }
+        return PartySight(vision: vision, lit: Lighting.litAreas(of: map, walls: segments), ambient: ambient)
     }
 
     /// TS `isPointInPolygon` (even-odd ray cast; fewer than 3 vertices → false).
@@ -227,6 +263,32 @@ public enum LineOfSight {
             }.map(\.id))
     }
 
+    /// NPCs the party can't see: the TS test with lighting applied (a PC must see the
+    /// centre or a corner, and it must be lit or within the PC's darkvision).
+    /// Lighting off, this is the TS test above.
+    public static func hiddenNPCIDs(of map: GameMap, library: [String: TokenLibraryItem], sight: PartySight) -> Set<String> {
+        guard sight.ambient != nil else {
+            return hiddenNPCIDs(of: map, library: library, polygons: sight.vision.map(\.polygon))
+        }
+        return hiddenNPCIDs(of: map, library: library) { sight.sees($0) }
+    }
+
+    private static func hiddenNPCIDs(
+        of map: GameMap, library: [String: TokenLibraryItem], seen: (Point2D) -> Bool
+    ) -> Set<String> {
+        Set(
+            map.tokens.filter { token in
+                guard ResolvedToken(token, library: library).type == .npc else { return false }
+                let r = map.tokenBounds(token, library: library)
+                let points = [
+                    Point2D(x: r.x + r.width / 2, y: r.y + r.height / 2),
+                    Point2D(x: r.x, y: r.y), Point2D(x: r.x + r.width, y: r.y),
+                    Point2D(x: r.x, y: r.y + r.height), Point2D(x: r.x + r.width, y: r.y + r.height),
+                ]
+                return !points.contains(where: seen)
+            }.map(\.id))
+    }
+
     /// TS `getFogBounds`: the map image's extent, or a fixed area without one.
     public static func fogBounds(of map: GameMap) -> Bounds {
         guard let bg = map.background else { return noMapFogBounds }
@@ -253,7 +315,8 @@ extension GameMap {
         let oldLibrary = previousLibrary ?? library
         let fogTurnedOn = previous.isDaylightMode
         let wallInputsChanged = drawings != previous.drawings || doors != previous.doors
-        if !fogTurnedOn, !wallInputsChanged, tokens == previous.tokens, gridSize == previous.gridSize,
+        let lightingChanged = lights != previous.lights || ambientLight != previous.ambientLight
+        if !fogTurnedOn, !wallInputsChanged, !lightingChanged, tokens == previous.tokens, gridSize == previous.gridSize,
             previousLibrary == nil || oldLibrary == library
         {
             return 0
@@ -261,17 +324,30 @@ extension GameMap {
         let segments = LineOfSight.sightWalls(of: self)
         let current = LineOfSight.viewers(of: self, library: library)
         let pending: [LineOfSight.Viewer]
-        if fogTurnedOn || (wallInputsChanged && LineOfSight.sightWalls(of: previous) != segments) {
+        if fogTurnedOn || lightingChanged || (wallInputsChanged && LineOfSight.sightWalls(of: previous) != segments) {
             pending = current
         } else {
             let before = Set(LineOfSight.viewers(of: previous, library: oldLibrary).map(\.key))
             pending = current.filter { !before.contains($0.key) }
         }
+        let lit = ambientLight.map { _ in Lighting.litAreas(of: self, walls: segments) } ?? []
         for viewer in pending {
             let polygon = LineOfSight.polygon(
                 from: viewer.centre, radius: viewer.radius, walls: segments,
                 rays: LineOfSight.rayCount(radius: viewer.radius))
-            if !polygon.isEmpty { addExploredRegion(ExploredRegion(points: polygon, timestamp: timestamp)) }
+            guard let ambientLight else {
+                if !polygon.isEmpty { addExploredRegion(ExploredRegion(points: polygon, timestamp: timestamp)) }
+                continue
+            }
+            // Lighting on: only what the PC could make out is explored.
+            let darkvision =
+                viewer.darkvision > 0
+                ? LineOfSight.polygon(
+                    from: viewer.centre, radius: viewer.darkvision, walls: segments,
+                    rays: LineOfSight.rayCount(radius: viewer.darkvision)) : nil
+            for region in Lighting.seenRegions(sight: polygon, darkvision: darkvision, areas: lit, ambient: ambientLight) {
+                addExploredRegion(ExploredRegion(points: region, timestamp: timestamp))
+            }
         }
         return pending.count
     }

@@ -401,6 +401,12 @@ struct ArchitectView: View {
                         $0.activeMap.placeDoor(at: point, orientation: tools.doorOrientation)
                     }
                 },
+                placeLight: { point in
+                    document.edit("Place \(tools.lightPreset.name)", undoManager: undoManager) {
+                        $0.activeMap.placeLight(tools.lightPreset, at: point)
+                    }
+                },
+                lightAction: { ids, action in performLightAction(ids, action) },
                 doorAction: { id, action in performDoorAction(id, action) },
                 wallAction: { ids, action in performWallAction(ids, action) },
                 setMeasurement: { setMeasurement($0) },
@@ -417,8 +423,11 @@ struct ArchitectView: View {
                 },
                 moveDrawings: { ids, dx, dy, duplicate in
                     var placed: [String] = []
-                    document.edit(duplicate ? "Duplicate Strokes" : "Move Strokes", undoManager: undoManager) {
+                    let onlyLights = document.campaign.activeMap.drawings.allSatisfy { !ids.contains($0.id) }
+                    let noun = onlyLights ? (ids.count == 1 ? "Light" : "Lights") : "Strokes"
+                    document.edit(duplicate ? "Duplicate \(noun)" : "Move \(noun)", undoManager: undoManager) {
                         placed = $0.activeMap.moveDrawings(ids, dx: dx, dy: dy, duplicate: duplicate)
+                            + $0.activeMap.moveLights(ids, dx: dx, dy: dy, duplicate: duplicate)
                     }
                     if duplicate { selection = selection.subtracting(ids).union(placed) }
                 },
@@ -502,7 +511,7 @@ struct ArchitectView: View {
     private func runCommand(_ command: PaletteCommand) {
         let tools: [String: CanvasTool] = [
             "tool-select": .select, "tool-marker": .marker, "tool-eraser": .eraser,
-            "tool-wall": .wall, "tool-door": .door, "tool-measure": .measure,
+            "tool-wall": .wall, "tool-door": .door, "tool-light": .light, "tool-measure": .measure,
         ]
         if let tool = tools[command.id] {
             selectTool(tool)
@@ -740,6 +749,23 @@ struct ArchitectView: View {
         }
     }
 
+    private func performLightAction(_ ids: Set<String>, _ action: LightAction) {
+        let plural = ids.count == 1 ? "Light" : "Lights"
+        switch action {
+        case .on(let on):
+            document.edit(on ? "Turn On \(plural)" : "Turn Off \(plural)", undoManager: undoManager) {
+                $0.activeMap.setLights(ids, on: on)
+            }
+        case .preset(let preset):
+            document.edit("Change \(plural) to \(preset.name)", undoManager: undoManager) {
+                $0.activeMap.applyLightPreset(preset, to: ids)
+            }
+        case .delete:
+            document.edit("Delete \(plural)", undoManager: undoManager) { $0.activeMap.removeItems(ids) }
+            selection.subtract(ids)
+        }
+    }
+
     private func performDoorAction(_ id: String, _ action: DoorAction) {
         switch action {
         case .toggle:
@@ -953,6 +979,14 @@ struct ArchitectView: View {
                     systemImage: tools.doorOrientation == .horizontal ? "arrow.left.and.right" : "arrow.up.and.down")
             }
             .help("Door orientation (R or arrow keys)")
+        case .light:
+            Picker("Light", selection: $tools.lightPreset) {
+                ForEach(LightPreset.all) { preset in
+                    Text(preset.name).tag(preset)
+                }
+            }
+            .help(
+                "\(tools.lightPreset.name): \(jsNumber(tools.lightPreset.bright)) ft bright light, dim light out to \(jsNumber(tools.lightPreset.dim)) ft")
         case .measure:
             HStack(spacing: 6) {
                 Picker("Measure", selection: measureModeBinding) {
