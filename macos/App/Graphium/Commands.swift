@@ -184,6 +184,7 @@ struct ShellCommands: Commands {
         }
         CommandGroup(before: .windowList) {
             WelcomeMenuItem()
+            AgentMenuItem()
             Divider()
         }
     }

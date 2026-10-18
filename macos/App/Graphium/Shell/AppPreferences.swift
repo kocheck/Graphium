@@ -52,6 +52,8 @@ enum Prefs {
     static let hiddenRecents = "graphium.hiddenRecents"
     static let mcpEnabled = "graphium.mcpEnabled"
     static let mcpFolder = "graphium.mcpFolder"
+    static let agentEnabled = "graphium.agentEnabled"
+    static let agentKind = "graphium.agentKind"
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {

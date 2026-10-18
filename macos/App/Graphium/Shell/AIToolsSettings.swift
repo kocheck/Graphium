@@ -131,6 +131,7 @@ final class AIToolsModel: ObservableObject {
 /// Off until the DM turns it on (PRINCIPLES.md: network and outside access are opt-in).
 struct AIToolsSettings: View {
     @StateObject private var model = AIToolsModel()
+    @AppStorage(Prefs.agentEnabled) private var agentEnabled = false
 
     var body: some View {
         Form {
@@ -159,6 +160,18 @@ struct AIToolsSettings: View {
                 Text("AI apps can read and change campaigns only in this folder.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+            .disabled(!model.enabled)
+
+            Section {
+                Toggle("Chat with an agent in Graphium", isOn: $agentEnabled)
+            } footer: {
+                Text(
+                    "Adds Window > Agent (⌥⌘A), which runs Claude Code or Codex from this Mac with your own account. "
+                        + "It can change only the open campaign, through the map tools. What you type goes to Anthropic or OpenAI."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             .disabled(!model.enabled)
 

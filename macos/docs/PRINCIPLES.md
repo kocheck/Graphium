@@ -59,6 +59,10 @@ When goals conflict, earlier wins:
 - Any model features (notes, NPCs, rules lookup) run on-device, such as Apple's Foundation
   Models. No cloud inference fallback. Outputs are suggestions the DM accepts into the file;
   they never overwrite what the DM wrote.
+- The DM's own AI tools are different: Graphium can hand its map tools to an agent the DM
+  installed and signed in to (Claude Code, Codex, through `graphium-mcp`). That is off until
+  the DM turns it on, names the provider who receives the conversation before the first
+  message, and gives the agent only the open campaign and the map tools (MCP.md, Agent window).
 
 ### Content from others
 
@@ -70,17 +74,18 @@ When goals conflict, earlier wins:
 
 Audited against `macos/App` and `macos/Sources`:
 
-| Area                           | State                                                                                                                                                                                                                              |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Campaign format                | Meets the rules: package with `campaign.json` and `assets/` (`CampaignPackage.swift`).                                                                                                                                             |
-| Unknown keys and files         | Meets the rules: keys this build can't read are kept and written back (`UnknownFields.swift`, also in `graphium-mcp`), and only assets the app itself orphaned (`orphanedAssets` in `campaign.json`) are pruned on open.           |
-| Analytics, telemetry, accounts | None in the native app.                                                                                                                                                                                                            |
-| YouTube player                 | Fixed in this change: the hidden player loaded `youtube.com/iframe_api` every time the World View opened, even with no YouTube track. It now loads on the first YouTube play (`WorldAudioEngine.swift`, `YouTubePlayer`).          |
-| Board pack import              | Meets the rules: before importing a pack with `https` files, Graphium names the hosts and asks (Download, Skip Remote Files, Cancel); skipping contacts no one (`BoardPack.remoteHosts`, `BoardPackIO`).                           |
-| Token library                  | Meets the rules: the library lives in `~/Library/Application Support/Graphium/Library/` as plain images plus `index.json`; the Library Manager has Show in Finder and Export…, and campaigns keep their own copies of used tokens. |
-| Sparkle updates (planned)      | Must be opt-in: ask on first launch, with "Check for updates" off until the DM says yes.                                                                                                                                           |
-| Campaigns in Finder            | Quick Look thumbnails and previews and a Spotlight importer show and index a campaign without opening Graphium. The three extensions are sandboxed, read only the package they are handed, and keep the index on the Mac.          |
-| App Sandbox                    | Off (`project.yml`). Turning it on would make the network and file promises enforceable by the OS. Tracked as a release item.                                                                                                      |
+| Area                           | State                                                                                                                                                                                                                                                                  |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Campaign format                | Meets the rules: package with `campaign.json` and `assets/` (`CampaignPackage.swift`).                                                                                                                                                                                 |
+| Unknown keys and files         | Meets the rules: keys this build can't read are kept and written back (`UnknownFields.swift`, also in `graphium-mcp`), and only assets the app itself orphaned (`orphanedAssets` in `campaign.json`) are pruned on open.                                               |
+| Analytics, telemetry, accounts | None in the native app.                                                                                                                                                                                                                                                |
+| YouTube player                 | Fixed in this change: the hidden player loaded `youtube.com/iframe_api` every time the World View opened, even with no YouTube track. It now loads on the first YouTube play (`WorldAudioEngine.swift`, `YouTubePlayer`).                                              |
+| Board pack import              | Meets the rules: before importing a pack with `https` files, Graphium names the hosts and asks (Download, Skip Remote Files, Cancel); skipping contacts no one (`BoardPack.remoteHosts`, `BoardPackIO`).                                                               |
+| Token library                  | Meets the rules: the library lives in `~/Library/Application Support/Graphium/Library/` as plain images plus `index.json`; the Library Manager has Show in Finder and Export…, and campaigns keep their own copies of used tokens.                                     |
+| Sparkle updates (planned)      | Must be opt-in: ask on first launch, with "Check for updates" off until the DM says yes.                                                                                                                                                                               |
+| Campaigns in Finder            | Quick Look thumbnails and previews and a Spotlight importer show and index a campaign without opening Graphium. The three extensions are sandboxed, read only the package they are handed, and keep the index on the Mac.                                              |
+| Agent window                   | Meets the rules: off by default (Settings > AI Tools), finds and starts the DM's CLI only when used, names Anthropic or OpenAI before the first message, and limits the CLI to Graphium's server for the open campaign with no shell or file tools (`AgentCLI.swift`). |
+| App Sandbox                    | Off (`project.yml`). Turning it on would make the network and file promises enforceable by the OS. Tracked as a release item.                                                                                                                                          |
 
 ## Checking a change
 

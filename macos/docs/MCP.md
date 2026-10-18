@@ -146,6 +146,37 @@ DM-only: `dm_notes`, pins that aren't `shared`, and markers with `dm_only`. Hidd
 like wall while shut. The server's instructions tell the model this, and that lights carried by
 tokens aren't in Graphium yet (#349).
 
+## Agent window (chat inside Graphium)
+
+**Settings > AI Tools > Chat with an agent in Graphium** adds **Window > Agent** (⌥⌘A), a chat
+about the open campaign that runs Claude Code or Codex, whichever is installed (the DM picks when
+both are). It's off until turned on, and needs **Let AI apps build maps** on too.
+
+- **Your CLI, your account.** Graphium has no model and no key. It runs the `claude` or `codex`
+  you installed and signed in to, and the window says, before the first message, that what you
+  type and what the tools return go to Anthropic or OpenAI. It stores no transcript: the CLI
+  keeps its own history, and closing the window forgets Graphium's copy.
+- **Only this campaign, only the map tools.** Each message starts the CLI with Graphium's server
+  as its only MCP server, rooted at the open campaign's package, and nothing else:
+  - Claude Code: `--strict-mcp-config`, `--tools ""` (no shell, file or web tools; its start-up
+    report then lists only `mcp__graphium__*`), `--setting-sources ""` (none of the DM's hooks or
+    plugins), `--allowedTools mcp__graphium`.
+  - Codex: `--ignore-user-config`, `--disable shell_tool --disable unified_exec` (its read-only
+    sandbox alone still lets the shell read the whole disk), `sandbox_mode="read-only"`.
+- **Nothing runs until you use it.** Graphium looks for the CLIs (installer paths and your login
+  shell's `PATH`, each checked with `--version`) only when the window opens, and starts one
+  only when you send a message. Stop interrupts it.
+- **Undo Agent Change** in the window's toolbar puts back the campaign as it was before the
+  agent's last change, with the same undo the `undo` tool uses.
+- The campaign must be saved, since the agent works on the file; Graphium reloads it after each
+  change.
+
+How it reads the CLIs: `AgentCLI.swift` builds the command lines and maps both CLIs' JSON lines
+(`claude -p --output-format stream-json --verbose`, `codex exec --json`) into one event type.
+`AgentCLITests` replays lines recorded from Claude Code 2.1.302 and Codex 0.160.0, including not
+signed in, interrupted, and the map tools failing to start. When a new CLI version changes its
+output, record a run, add it to `AgentFixtures.swift`, and fix the parser until the tests pass.
+
 ## Keeping it up to date
 
 The server must grow with the app, so a change to the map model can't land without a decision
@@ -175,7 +206,7 @@ about the MCP tools:
 - Code: `Sources/GraphiumMCP` (protocol, tools, rendering, checks, and `ClientSetup` for the
   AI Tools settings) and `Sources/graphium-mcp` (the executable). The app's `MCPServer` target
   in `App/project.yml` builds the same executable into the bundle; the settings pane is
-  `App/Graphium/Shell/AIToolsSettings.swift`. It uses GraphiumCore's model, file format, geometry and generator, so the
+  `App/Graphium/Shell/AIToolsSettings.swift` and the Agent window `App/Graphium/Agent/AgentChat.swift`. It uses GraphiumCore's model, file format, geometry and generator, so the
   files it writes are the files the app writes.
 - Tests: `swift test --filter GraphiumMCPTests`. CI builds the server and smoke-tests it over stdio,
   both on its own and inside the built app.
