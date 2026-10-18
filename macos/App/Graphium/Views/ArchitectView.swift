@@ -538,7 +538,9 @@ struct ArchitectView: View {
         case "world-view-toggle-pause": document.isPaused.toggle()
         case "world-view-launch": openWindow(id: WorldWindow.id, value: document.sessionID)
         case "dungeon-generate": showingDungeon = true
-        case "fog-reset": confirmingFogReset = !document.campaign.activeMap.exploredRegions.isEmpty
+        case "fog-reset":
+            // After the palette sheet has closed, so the dialog isn't dropped with it.
+            DispatchQueue.main.async { confirmingFogReset = !document.campaign.activeMap.exploredRegions.isEmpty }
         case "session-console-stop": document.dispatch(.stop)
         case "session-console-duck": document.dispatch(.setDucked(!document.sessionRuntime.ducked))
         case "session-console-return-to-map": document.dispatch(.returnToMap)
