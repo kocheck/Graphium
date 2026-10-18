@@ -39,6 +39,8 @@ Six candidates are by `deleted_user_*` accounts (164472, 346682, 164670, 132929,
 
 2. **Curate and process.** Pick the six scenes' sounds from the candidates and Kenney. Kyle downloads the Freesound originals from a list of links while logged in (previews aren't good enough for beds); Kenney packs need no login. A checked-in ffmpeg script trims, loops beds with a 2–4 s equal-power crossfade at the seam, and normalizes. Encode beds with `afconvert` to AAC with gapless metadata (or ALAC if the seam still clicks), since the two-copy loop in `WorldAudioEngine.swift:118-121` clicks on AAC padding otherwise. Name files with UCS categories (`AMBCave_DripsDistant_….m4a`). Loudness targets are set in the validation below, not guessed here; one-shots in a pool are matched by momentary max and true peak, then trimmed by ear.
 
+   **Built (steps 1 and 2):** the 47 sounds in [v1-sounds.tsv](./v1-sounds.tsv) are processed by `macos/scripts/sounds/process.py` into `macos/App/Graphium/Sounds/` (11 MB, AAC at 128 kbps for beds and 96 kbps for one-shots), with `ledger.json` beside them. `macos/scripts/sounds/check-ledger.py` checks every file against the ledger offline. Beds came out within 1 LU of −23 LUFS. Six short, spiky one-shots sit 1.4–5 LU under −18 because the limiter caught their transients (two drips, a mug, the dice, a creak and the bones); they get trimmed by ear in the layer levels. Originals live in `macos/sound-originals/`, which git ignores.
+
 3. **Model.** Add to `SessionConsoleCatalog` (version 2, old files decode with no soundscapes):
 
    ```swift

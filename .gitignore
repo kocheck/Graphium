@@ -38,3 +38,6 @@ coverage/
 
 # Design review screenshots (macos/design/harness/review-loop.md)
 design-shots/
+
+# Soundscape originals (downloaded from Freesound, never committed)
+macos/sound-originals/
