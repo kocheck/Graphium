@@ -14,16 +14,19 @@ final class ModelCoverageTests: XCTestCase {
         "Campaign": ["id", "name", "maps", "activeMapID", "tokenLibrary"],
         "GameMap": [
             "id", "name", "tokens", "drawings", "doors", "stairs", "background", "gridSize", "gridType", "gridColor",
-            "exploredRegions", "isDaylightMode",
+            "exploredRegions", "isDaylightMode", "lights", "ambientLight",
         ],
-        "Token": ["id", "x", "y", "src", "libraryItemId", "scale", "type", "visionRadius", "name", "movementSpeed"],
+        "Token": [
+            "id", "x", "y", "src", "libraryItemId", "scale", "type", "visionRadius", "name", "movementSpeed", "darkvision",
+        ],
+        "LightSource": ["id", "x", "y", "bright", "dim", "isOn", "name"],
         "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay"],
         "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection"],
         "Stairs": ["id", "x", "y", "direction", "type", "width", "height"],
         "MapBackground": ["src", "x", "y", "width", "height", "scale"],
         "TokenLibraryItem": [
             "id", "name", "src", "thumbnailSrc", "category", "tags", "dateAdded", "defaultScale", "defaultVisionRadius",
-            "defaultType", "defaultMovementSpeed",
+            "defaultType", "defaultMovementSpeed", "defaultDarkvision",
         ],
     ]
 
@@ -40,6 +43,7 @@ final class ModelCoverageTests: XCTestCase {
         "WallKind": ["wall", "window"],
         "DrawingTool": ["marker", "eraser", "wall"],
         "CreatureType": ["PC", "NPC"],
+        "LightLevel": ["dark", "dim", "bright"],
     ]
 
     private func check(_ value: Any, file: StaticString = #filePath, line: UInt = #line) {
@@ -78,6 +82,7 @@ final class ModelCoverageTests: XCTestCase {
         check(Stairs(x: 0, y: 0, direction: .north, type: .up, width: 1, height: 1))
         check(MapBackground(src: "", width: 1, height: 1))
         check(TokenLibraryItem(name: "", src: "", thumbnailSrc: "", dateAdded: 0))
+        check(LightSource(x: 0, y: 0, bright: 1, dim: 2))
     }
 
     func testEveryEnumCaseIsKnown() {
@@ -85,6 +90,7 @@ final class ModelCoverageTests: XCTestCase {
         checkCases(WallKind.self)
         checkCases(DrawingTool.self)
         checkCases(CreatureType.self)
+        checkCases(LightLevel.self)
     }
 
     func testToolSchemasOfferTheKnownCases() {

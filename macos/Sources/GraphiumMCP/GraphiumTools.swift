@@ -100,6 +100,11 @@ public final class GraphiumTools {
         "Path to the .graphiumcampaign package (absolute, ~/…, or relative to the server's first folder). "
             + "The extension may be left off.")
     static let mapProperty = string("Map id or name. Leave out to use the campaign's active map.")
+    static let lightingProperty = string(
+        "Lighting: \"off\" uses the classic fog (PCs see out to vision_ft); \"dark\", \"dim\" or \"bright\" turns "
+            + "lighting on with that ambient light, so PCs see what lights reveal plus their darkvision. Dark for "
+            + "dungeons and night, dim for twilight or a gloomy cave mouth, bright for daytime with walls.",
+        enum: ["off", "dark", "dim", "bright"])
     static let unitsProperty = string(
         "Units for every position and length in this call: \"cells\" (grid squares, the default) or \"px\" "
             + "(map pixels).", enum: ["cells", "px"])
@@ -188,17 +193,20 @@ public final class GraphiumTools {
                     "cell_px": Self.number("Pixels per grid cell (default 50)."),
                     "grid_color": Self.string("Grid line colour as #rrggbb (default #222222)."),
                     "daylight": Self.boolean("Daylight turns fog of war off for this map (default false)."),
+                    "lighting": Self.lightingProperty,
                     "make_active": Self.boolean("Make it the active map (default true)."),
                 ],
                 required: ["campaign", "name"], readOnly: false, run: addMap),
             Tool(
                 name: "update_map", title: "Update map settings",
-                description: "Rename a map, change its grid style or colour, daylight, or make it the active map.",
+                description:
+                    "Rename a map, change its grid style or colour, daylight or lighting, or make it the active map.",
                 properties: [
                     "campaign": c, "map": m, "name": Self.string("New name."),
                     "grid_type": Self.string("Grid style.", enum: GridType.allCases.map(\.rawValue)),
                     "grid_color": Self.string("#rrggbb"),
                     "daylight": Self.boolean("true turns fog of war off; false turns it on."),
+                    "lighting": Self.lightingProperty,
                     "make_active": Self.boolean("Make this the map Graphium opens on."),
                 ],
                 required: ["campaign"], readOnly: false, run: updateMap),
@@ -303,9 +311,10 @@ public final class GraphiumTools {
                 name: "add_tokens", title: "Add tokens",
                 description:
                     "Place creature tokens. position is the token's top-left corner, so a 1-cell token at [3, 4] "
-                    + "fills the square from x 3–4, y 4–5. PCs reveal fog with vision_ft (give PCs vision on "
-                    + "maps without daylight, e.g. 60). NPCs are hidden from players until a PC can see them. "
-                    + "Art comes from image_path, a token library item, or a generated lettered disc.",
+                    + "fills the square from x 3–4, y 4–5. On maps with lighting off, PCs reveal fog out to vision_ft "
+                    + "(e.g. 60). On maps with lighting on, PCs see what is lit, plus darkness out to darkvision_ft. "
+                    + "NPCs are hidden from players until a PC can see them. Art comes from image_path, a token "
+                    + "library item, or a generated lettered disc.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "tokens": Self.objects(
@@ -315,7 +324,8 @@ public final class GraphiumTools {
                             "position": Self.point("Top-left corner."),
                             "type": Self.string("PC or NPC.", enum: ["PC", "NPC"]),
                             "size": Self.number("Footprint in cells: 1 Medium, 2 Large, 3 Huge, 4 Gargantuan, 0.5 Tiny."),
-                            "vision_ft": Self.number("Sight radius in feet (PCs; reveals fog)."),
+                            "vision_ft": Self.number("Sight radius in feet (PCs; reveals fog on maps with lighting off)."),
+                            "darkvision_ft": Self.number("Darkvision range in feet (used on maps with lighting on)."),
                             "speed_ft": Self.number("Walking speed in feet (default 30)."),
                             "image_path": Self.string("Image file for the token art."),
                             "library_item": Self.string("Token library item id or name (see list_token_library)."),
@@ -339,6 +349,27 @@ public final class GraphiumTools {
                 ],
                 required: ["campaign", "stairs"], readOnly: false, run: addStairs),
             Tool(
+                name: "add_lights", title: "Add lights",
+                description:
+                    "Place light sources (torches, lanterns, braziers, glowing crystals). Lights only matter on maps with "
+                    + "lighting on (update_map lighting dark or dim): bright light out to bright_ft, dim light out to "
+                    + "dim_ft, stopped by walls like sight. Use a preset (Candle 5/10 ft, Lamp 15/45, Torch 20/40, "
+                    + "Lantern 30/60, Light 20/40, Daylight 60/120) or give radii.",
+                properties: [
+                    "campaign": c, "map": m, "units": u,
+                    "lights": Self.objects(
+                        "Lights to add.",
+                        [
+                            "center": Self.point("Where the light is."),
+                            "preset": Self.string("Rules preset.", enum: LightPreset.all.map(\.name)),
+                            "bright_ft": Self.number("Bright light radius in feet."),
+                            "dim_ft": Self.number("Outer radius of dim light in feet (at least bright_ft)."),
+                            "on": Self.boolean("Lit (default true)."),
+                            "name": Self.string("Label, e.g. Brazier."),
+                        ], required: ["center"]),
+                ],
+                required: ["campaign", "lights"], readOnly: false, run: addLights),
+            Tool(
                 name: "draw_markers", title: "Draw markers",
                 description:
                     "Draw freehand marker lines (annotations, terrain outlines, paths). Markers don't block anything; "
@@ -358,9 +389,9 @@ public final class GraphiumTools {
                 name: "update_objects", title: "Update objects",
                 description:
                     "Change existing objects by id (from get_map). Tokens: position, name, type, size, vision_ft, "
-                    + "speed_ft. Doors: open, locked, center, width, angle. Walls: kind, one_way, flip (reverse the "
-                    + "direction of a one-way wall), points. Stairs: center, direction, type. Fields that don't "
-                    + "apply are reported back.",
+                    + "darkvision_ft, speed_ft. Doors: open, locked, center, width, angle. Walls: kind, one_way, flip "
+                    + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
+                    + "Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "changes": [
@@ -372,7 +403,7 @@ public final class GraphiumTools {
                 required: ["campaign", "changes"], readOnly: false, run: updateObjects),
             Tool(
                 name: "remove_objects", title: "Remove objects",
-                description: "Remove tokens, walls, markers, doors or stairs by id. Undo puts them back.",
+                description: "Remove tokens, walls, markers, doors, lights or stairs by id. Undo puts them back.",
                 properties: [
                     "campaign": c, "map": m,
                     "ids": ["type": "array", "items": ["type": "string"], "minItems": 1, "description": "Ids from get_map."],
@@ -380,12 +411,14 @@ public final class GraphiumTools {
                 required: ["campaign", "ids"], readOnly: false, destructive: true, run: removeObjects),
             Tool(
                 name: "clear_map", title: "Clear map layers",
-                description: "Remove whole layers from a map: walls, doors, tokens, markers, stairs, fog (explored areas), background.",
+                description:
+                    "Remove whole layers from a map: walls, doors, tokens, markers, stairs, lights, fog (explored areas), "
+                    + "background.",
                 properties: [
                     "campaign": c, "map": m,
                     "layers": [
                         "type": "array", "minItems": 1,
-                        "items": ["type": "string", "enum": ["walls", "doors", "tokens", "markers", "stairs", "fog", "background"]],
+                        "items": ["type": "string", "enum": ["walls", "doors", "tokens", "markers", "stairs", "lights", "fog", "background"]],
                     ],
                 ],
                 required: ["campaign", "layers"], readOnly: false, destructive: true, run: clearMap),
@@ -410,7 +443,7 @@ public final class GraphiumTools {
                 name: "render_map", title: "Render map",
                 description:
                     "Look at a map. image returns a PNG of the DM's view (background, grid, walls in red, windows in "
-                    + "blue, doors, tokens with names) or, with view \"players\", what the PCs can currently see. "
+                    + "blue, doors, lights, tokens with names) or, with view \"players\", what the PCs can currently see. "
                     + "ascii returns a character grid, one cell per character, with a legend. Render after building "
                     + "to check your work.",
                 properties: [
@@ -431,8 +464,8 @@ public final class GraphiumTools {
                 name: "check_map", title: "Check map",
                 description:
                     "Look for problems players would hit: gaps between walls that leak light, doors not on a wall, "
-                    + "tokens inside walls or on top of each other, PCs without vision on a dark map, things outside the "
-                    + "background. Run it after building and fix what it reports.",
+                    + "tokens inside walls or on top of each other, PCs who can't see anything on a dark map, lights "
+                    + "inside walls, things outside the background. Run it after building and fix what it reports.",
                 properties: ["campaign": c, "map": m, "units": u],
                 required: ["campaign"], readOnly: true, run: checkMap),
             Tool(

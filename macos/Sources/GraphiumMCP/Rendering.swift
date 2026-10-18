@@ -177,13 +177,17 @@ struct MapRenderer {
                 + "y \(units.out(a.y).serialized())…\(units.out(a.y + a.height).serialized()) (\(units.name)); "
                 + "one cell ≈ \(Int(map.gridSize * s)) px in the image. Cell numbers are printed every 5 cells.",
             "Legend: red lines walls, blue dashed windows, orange one-way walls (tick on the side sight comes from), "
-                + "brown bars closed doors, green outline open doors, gold dot locked, blue discs PCs, red discs NPCs.",
+                + "brown bars closed doors, green outline open doors, gold dot locked, yellow dots lights (solid ring bright, "
+                + "dashed ring dim), blue discs PCs, red discs NPCs.",
         ]
         if playersView {
             lines.append(
                 map.isDaylightMode
                     ? "Daylight is on, so players see the whole map."
-                    : "Players' view: black is unseen, dim is explored earlier, clear is what PCs see now.")
+                    : map.ambientLight == nil
+                        ? "Players' view: black is unseen, dim is explored earlier, clear is what PCs see now."
+                        : "Players' view with lighting: black is unseen, dark grey explored earlier, grey is dim "
+                            + "light, clear is bright light (darkvision counts).")
         }
         return lines.joined(separator: "\n")
     }
@@ -208,14 +212,18 @@ struct MapRenderer {
         drawStairs(ctx)
         drawWalls(ctx)
         drawDoors(ctx)
-        var hidden: Set<String> = []
+        if !playersView { drawLights(ctx) }
         if playersView && !map.isDaylightMode {
-            let polygons = LineOfSight.polygons(of: map, library: library).map(\.polygon)
-            hidden = LineOfSight.hiddenNPCIDs(of: map, library: library, polygons: polygons)
+            let sight = LineOfSight.partySight(of: map, library: library)
+            let hidden = LineOfSight.hiddenNPCIDs(of: map, library: library, sight: sight)
             drawTokens(ctx, hidden: hidden, scale: s)
-            drawFog(ctx, visible, polygons: polygons)
+            if map.ambientLight == nil {
+                drawFog(ctx, visible, polygons: sight.vision.map(\.polygon))
+            } else {
+                drawLitFog(ctx, visible, sight: sight)
+            }
         } else {
-            drawTokens(ctx, hidden: hidden, scale: s)
+            drawTokens(ctx, hidden: [], scale: s)
         }
         drawCellNumbers(ctx, visible, scale: s)
         guard let image = ctx.makeImage() else { return nil }
@@ -414,6 +422,51 @@ struct MapRenderer {
             drawText(
                 resolved.name, in: ctx, centre: CGPoint(x: rect.midX, y: rect.maxY + size * 0.9), size: size,
                 color: CGColor(gray: 1, alpha: 1), flipped: true, outline: CGColor(gray: 0, alpha: 0.85))
+        }
+    }
+
+    /// Lights in the DM's view: a dot, with rings at the bright and dim radii.
+    private func drawLights(_ ctx: CGContext) {
+        for light in map.lights {
+            let ftToPx = map.gridSize / 5
+            let alpha: CGFloat = light.isOn ? 1 : 0.35
+            ctx.setStrokeColor(CGColor(srgbRed: 1, green: 0.8, blue: 0.25, alpha: 0.7 * alpha))
+            ctx.setLineWidth(max(1.5, map.gridSize * 0.04))
+            for radius in [light.bright * ftToPx, light.dim * ftToPx] where radius > 0 {
+                ctx.saveGState()
+                if radius == light.dim * ftToPx { ctx.setLineDash(phase: 0, lengths: [map.gridSize * 0.2, map.gridSize * 0.15]) }
+                ctx.strokeEllipse(in: CGRect(x: light.x - radius, y: light.y - radius, width: 2 * radius, height: 2 * radius))
+                ctx.restoreGState()
+            }
+            let r = max(4, map.gridSize * 0.15)
+            ctx.setFillColor(CGColor(srgbRed: 1, green: 0.82, blue: 0.3, alpha: alpha))
+            ctx.fillEllipse(in: CGRect(x: light.x - r, y: light.y - r, width: 2 * r, height: 2 * r))
+        }
+    }
+
+    /// The players' view with lighting on, sampled on a fine grid: black where no PC sees,
+    /// dimmed where they see dim light, clear where it is bright to them.
+    private func drawLitFog(_ ctx: CGContext, _ visible: CGRect, sight: PartySight) {
+        let step = max(visible.width, visible.height) / 200
+        let explored = map.exploredRegions.map(\.points)
+        var y = visible.minY
+        while y < visible.maxY {
+            var x = visible.minX
+            while x < visible.maxX {
+                let p = Point2D(x: x + step / 2, y: y + step / 2)
+                let alpha: CGFloat
+                switch sight.perceived(at: p) {
+                case .bright?: alpha = 0
+                case .dim?: alpha = 0.4
+                default: alpha = LineOfSight.containsInAny(explored, p) ? 0.7 : 0.92
+                }
+                if alpha > 0 {
+                    ctx.setFillColor(CGColor(gray: 0, alpha: alpha))
+                    ctx.fill(CGRect(x: x, y: y, width: step + 0.5, height: step + 0.5))
+                }
+                x += step
+            }
+            y += step
         }
     }
 

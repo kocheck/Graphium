@@ -93,6 +93,10 @@ struct AsciiMap {
             let (x, y) = charPoint(Point2D(x: s.x, y: s.y))
             put(Int(x.rounded()), Int(y.rounded()), s.type == .up ? "<" : ">", over: [])
         }
+        for light in map.lights {
+            let (x, y) = charPoint(Point2D(x: light.x, y: light.y))
+            put(Int(x.rounded()), Int(y.rounded()), light.isOn ? "*" : ",", over: [" ", "."])
+        }
         for door in map.doors {
             let (x, y) = charPoint(Point2D(x: door.x, y: door.y))
             let ch: Character = door.isLocked ? "L" : door.isOpen ? "o" : "D"
@@ -142,7 +146,7 @@ struct AsciiMap {
             \(map.name): cells x \(x0)…\(x0 + cols), y \(y0)…\(y0 + rows). Each cell is two characters wide; \
             "." is a cell centre and the rows and columns between are grid lines.
             Legend: - | + walls, ~ : windows, \\ / diagonal walls, D closed door, o open door, L locked door, \
-            < > stairs up/down, letters tokens.
+            < > stairs up/down, * light (, unlit), letters tokens.
 
             """
         text += lines.joined(separator: "\n")

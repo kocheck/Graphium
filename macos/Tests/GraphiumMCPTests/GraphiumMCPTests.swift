@@ -184,6 +184,47 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(door.orientation, .horizontal)
     }
 
+    func testLightsAndDarkvision() throws {
+        try call("create_campaign", ["path": "Lit", "name": "Lit"])
+        try call("add_rooms", ["campaign": "Lit", "rooms": [["x": 0, "y": 0, "width": 8, "height": 6]]])
+        try call("add_tokens", ["campaign": "Lit", "tokens": [["name": "Aria", "type": "PC", "position": [1, 1]]]])
+        let added = try call("add_lights", ["campaign": "Lit", "lights": [["center": [6, 4], "preset": "torch"]]])
+        XCTAssertNotNil(added["note"], "lighting is still off, so the tool should say so")
+
+        try call("update_map", ["campaign": "Lit", "lighting": "dark"])
+        var map = try loadCampaign("Lit.graphiumcampaign").activeMap
+        XCTAssertEqual(map.ambientLight, .dark)
+        let light = try XCTUnwrap(map.lights.first)
+        XCTAssertEqual(light.bright, 20)
+        XCTAssertEqual(light.dim, 40)
+        XCTAssertEqual(light.x, 300)
+
+        let lightID = light.id
+        try call("update_objects", ["campaign": "Lit", "changes": [["id": .string(lightID), "on": false]]])
+        var check = try call("check_map", ["campaign": "Lit"])
+        let kinds = Set(check["issues"]?.arrayValue?.compactMap { $0["kind"]?.stringValue } ?? [])
+        XCTAssertTrue(kinds.contains("nothing_lit"), check.serialized())
+        XCTAssertFalse(kinds.contains("pc_without_vision"), "vision_ft doesn't apply with lighting on")
+
+        let token = try XCTUnwrap(map.tokens.first?.id)
+        try call("update_objects", ["campaign": "Lit", "changes": [["id": .string(token), "darkvision_ft": 60]]])
+        check = try call("check_map", ["campaign": "Lit"])
+        XCTAssertEqual(check["ok"], .bool(true), check.serialized())
+        map = try loadCampaign("Lit.graphiumcampaign").activeMap
+        XCTAssertEqual(map.tokens.first?.darkvision, 60)
+
+        let described = try call("get_map", ["campaign": "Lit"])
+        XCTAssertEqual(described["lighting"], "dark")
+        XCTAssertEqual(described["lights"]?.arrayValue?.first?["center"], [6, 4])
+
+        let players = try request(
+            "tools/call", ["name": "render_map", "arguments": ["campaign": "Lit", "view": "players", "format": "both"]])
+        XCTAssertEqual(players["result"]?["isError"], .bool(false))
+
+        try call("clear_map", ["campaign": "Lit", "layers": ["lights"]])
+        XCTAssertTrue(try loadCampaign("Lit.graphiumcampaign").activeMap.lights.isEmpty)
+    }
+
     func testUpdateRemoveAndUndo() throws {
         try call("create_campaign", ["path": "Edit", "name": "Edit"])
         let added = try call("add_tokens", ["campaign": "Edit", "tokens": [["name": "Goblin", "type": "NPC", "position": [1, 1]]]])

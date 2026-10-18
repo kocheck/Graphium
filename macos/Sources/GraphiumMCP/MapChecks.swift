@@ -17,6 +17,7 @@ struct MapChecks {
         issues += tokensInWalls()
         issues += overlappingTokens()
         issues += vision()
+        issues += lighting()
         issues += outsideBackground()
         return issues
     }
@@ -139,7 +140,8 @@ struct MapChecks {
     }
 
     func vision() -> [JSONValue] {
-        guard !map.isDaylightMode else { return [] }
+        // With lighting on, vision_ft isn't used; lighting() checks that map instead.
+        guard !map.isDaylightMode, map.ambientLight == nil else { return [] }
         let resolved = map.tokens.map { ($0, ResolvedToken($0, library: library)) }
         let pcs = resolved.filter { $0.1.type == .pc }
         if pcs.isEmpty {
@@ -158,6 +160,47 @@ struct MapChecks {
                 "\(r.name) is a PC with no vision, so it reveals no fog. Give it vision_ft (e.g. 60) with update_objects.",
                 ids: [token.id], at: Point2D(x: token.x, y: token.y))
         }
+    }
+
+    /// Lighting on: someone must be able to see. Lights on a lighting-off map do nothing.
+    func lighting() -> [JSONValue] {
+        guard !map.isDaylightMode else { return [] }
+        var issues: [JSONValue] = []
+        guard let ambient = map.ambientLight else {
+            if !map.lights.isEmpty {
+                issues.append(
+                    issue(
+                        "info", "lights_without_lighting",
+                        "This map has lights but lighting is off, so they do nothing. Turn it on with update_map "
+                            + "lighting \"dark\" if the lights should matter.", ids: map.lights.map(\.id)))
+            }
+            return issues
+        }
+        let pcs = map.tokens.filter { ResolvedToken($0, library: library).type == .pc }
+        let anyLight = map.lights.contains { $0.isOn && $0.dim > 0 }
+        let anyDarkvision = pcs.contains { (ResolvedToken($0, library: library).darkvision ?? 0) > 0 }
+        if ambient == .dark, !pcs.isEmpty, !anyLight, !anyDarkvision {
+            issues.append(
+                issue(
+                    "warning", "nothing_lit",
+                    "Lighting is dark, no light is on and no PC has darkvision, so the players will see nothing. Add "
+                        + "lights (add_lights, e.g. a torch where the party starts), give PCs darkvision_ft, or use "
+                        + "lighting \"dim\".", ids: pcs.map(\.id)))
+        }
+        let sightWalls = wallSegments.filter { segment in
+            map.drawings.first { $0.id == segment.id }?.blocksSight ?? false
+        }
+        for light in map.lights {
+            let centre = Point2D(x: light.x, y: light.y)
+            if sightWalls.contains(where: { segmentDistance(centre, $0.a, $0.b) < g * 0.1 }) {
+                issues.append(
+                    issue(
+                        "warning", "light_in_wall",
+                        "\(light.name ?? "A light") sits on a wall, so it may light only one side. Move it half a "
+                            + "cell into the room.", ids: [light.id], at: centre))
+            }
+        }
+        return issues
     }
 
     func outsideBackground() -> [JSONValue] {

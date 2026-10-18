@@ -114,6 +114,7 @@ the installed version; the app sees the same number as the server's version.
 | `draw_walls`                                        | Walls and windows as polylines, optionally one-way or closed                            |
 | `add_doors`                                         | Doors at any angle, lined up with the wall under them; open, closed, locked             |
 | `add_tokens`                                        | PCs, NPCs and monsters, from an image, the campaign's token library, or a lettered disc |
+| `add_lights`                                        | Torches, lanterns and other lights for maps with lighting on (5e bright and dim radii)  |
 | `add_stairs`, `draw_markers`                        | Stairs and freehand marker lines                                                        |
 | `update_objects`, `remove_objects`, `clear_map`     | Edit, remove or clear by id or layer                                                    |
 | `generate_dungeon`                                  | Graphium's room-and-corridor generator, repeatable with a seed                          |

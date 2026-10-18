@@ -33,6 +33,7 @@ extension GameMap {
         boxes += drawings.filter { !$0.points.isEmpty }.map { drawingBounds($0) }
         boxes += doors.map { $0.bounds(padding: 0) }
         boxes += tokens.map { tokenBounds($0, library: library) }
+        boxes += lights.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
         boxes += stairs.map { Bounds(x: $0.x - $0.width / 2, y: $0.y - $0.height / 2, width: $0.width, height: $0.height) }
         guard var minX = boxes.first?.x, var minY = boxes.first?.y else { return nil }
         var maxX = minX, maxY = minY
@@ -71,11 +72,13 @@ enum Describe {
             "active": .bool(active),
             "grid": grid(map),
             "daylight": .bool(map.isDaylightMode),
+            "lighting": lighting(map),
             "counts": [
                 "walls": .number(Double(map.wallStrokes.count)),
                 "doors": .number(Double(map.doors.count)),
                 "tokens": .number(Double(map.tokens.count)),
                 "stairs": .number(Double(map.stairs.count)),
+                "lights": .number(Double(map.lights.count)),
                 "markers": .number(Double(map.markerStrokes.count)),
                 "explored_fog_regions": .number(Double(map.exploredRegions.count)),
             ],
@@ -91,6 +94,22 @@ enum Describe {
         return .object(summary)
     }
 
+    static func lighting(_ map: GameMap) -> JSONValue {
+        .string(map.ambientLight?.rawValue ?? "off")
+    }
+
+    static func light(_ light: LightSource, units: Units) -> JSONValue {
+        var out: [String: JSONValue] = [
+            "id": .string(light.id),
+            "center": units.out(Point2D(x: light.x, y: light.y)),
+            "bright_ft": .rounded(light.bright),
+            "dim_ft": .rounded(light.dim),
+            "on": .bool(light.isOn),
+        ]
+        if let name = light.name { out["name"] = .string(name) }
+        return .object(out)
+    }
+
     static func grid(_ map: GameMap) -> JSONValue {
         ["type": .string(map.gridType.rawValue), "cell_px": .rounded(map.gridSize), "color": .string(map.gridColor)]
     }
@@ -104,6 +123,8 @@ enum Describe {
             "units": .string(units.name),
             "grid": grid(map),
             "daylight": .bool(map.isDaylightMode),
+            "lighting": lighting(map),
+            "lights": .array(map.lights.map { light($0, units: units) }),
             "walls": .array(map.wallStrokes.map { wall($0, units: units) }),
             "doors": .array(map.doors.map { door($0, units: units) }),
             "tokens": .array(map.tokens.map { token($0, map: map, library: library, units: units) }),
@@ -165,6 +186,7 @@ enum Describe {
             "image": .string(token.src),
         ]
         out["vision_ft"] = resolved.visionRadius.map { JSONValue.rounded($0) } ?? .null
+        out["darkvision_ft"] = resolved.darkvision.map { JSONValue.rounded($0) } ?? .null
         if let item = token.libraryItemId { out["library_item"] = .string(item) }
         return .object(out)
     }
@@ -207,6 +229,7 @@ enum Describe {
         if let t = item.defaultType { out["type"] = .string(t.rawValue) }
         if let s = item.defaultScale { out["size_cells"] = .rounded(s) }
         if let v = item.defaultVisionRadius { out["vision_ft"] = .rounded(v) }
+        if let d = item.defaultDarkvision { out["darkvision_ft"] = .rounded(d) }
         if let m = item.defaultMovementSpeed { out["speed_ft"] = .rounded(m) }
         return .object(out)
     }

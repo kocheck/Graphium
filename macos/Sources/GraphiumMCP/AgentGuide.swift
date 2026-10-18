@@ -15,7 +15,7 @@ public enum AgentGuide {
         3. Structure first: add_rooms for rectangular rooms (with doors and openings), draw_walls for irregular \
         walls and caves (corners must share the exact same point; use closed: true for loops), add_doors on wall \
         lines, kind "window" for walls you can see through. Or generate_dungeon for a random layout.
-        4. Then contents: add_tokens (PCs with vision_ft, NPCs and monsters), add_stairs, draw_markers for \
+        4. Then contents: add_tokens (PCs, NPCs and monsters), add_lights, add_stairs, draw_markers for \
         hazards and notes.
         5. Check your work: render_map to see it, check_map to catch light leaks and misplaced doors and tokens. \
         Fix with update_objects or remove_objects; undo reverts this server's last change.
@@ -24,8 +24,9 @@ public enum AgentGuide {
 
         Conventions: walls of square rooms lie on whole-number grid lines. A door's centre is on its wall, \
         usually at a half cell, e.g. [4.5, 2] on a horizontal wall at y = 2. A token's position is its top-left \
-        cell. Maps start with fog of war (daylight off): only PCs with vision_ft reveal it, and NPCs stay hidden \
-        until a PC sees them. Turn daylight on (update_map) for outdoor or lit scenes.
+        cell. Maps start with fog of war and lighting off: PCs reveal fog out to vision_ft, and NPCs stay hidden \
+        until a PC sees them. For lights and darkvision, set update_map lighting "dark" (or "dim"), place \
+        add_lights, and give PCs darkvision_ft. Turn daylight on for scenes with no fog at all.
         Read graphium://guide/map-building for design advice.
         """
 
@@ -173,15 +174,29 @@ public enum AgentGuide {
 
         - position is the top-left cell. size is in cells: Tiny 0.5, Small and Medium 1, Large 2, Huge 3, \
         Gargantuan 4.
-        - PCs: type PC and vision_ft (60 for darkvision, otherwise what their light gives, e.g. 30). Without \
-        vision a PC reveals nothing on a dark map.
+        - PCs: type PC. With lighting off, give vision_ft (e.g. 60); without it a PC reveals nothing. With \
+        lighting on, give darkvision_ft to races that have it (60 for most, 120 for some).
         - Monsters and NPCs: type NPC. They are hidden from players until a PC can see them.
         - Name tokens so the DM can tell them apart: "Goblin 1", "Goblin 2", "Bugbear Chief".
 
         ## Light and fog
 
-        Fog of war is on unless the map has daylight. Explored areas stay dimly visible. Light sources are \
-        coming to Graphium; until then, use daylight for lit or outdoor maps and PC vision for dark ones.
+        Each map has one of three modes:
+
+        - **Daylight**: no fog at all. Towns, open fields at noon.
+        - **Lighting off** (the default): classic fog. Each PC sees out to its vision_ft, through no walls.
+        - **Lighting on** (update_map lighting "dark", "dim" or "bright", the ambient light): the 5e rules. \
+        A PC sees what is lit (bright or dim) in its line of sight, and darkness within its darkvision as dim. \
+        Lights (add_lights) give bright light out to bright_ft and dim light out to dim_ft, and walls stop \
+        them. Presets: Candle 5/10 ft, Lamp 15/45, Torch 20/40, Lantern 30/60, Light 20/40, Daylight 60/120.
+
+        For dungeons use lighting "dark" and place lights where the story puts them: torches in sconces by \
+        doors (half a cell off the wall, not on it), a brazier in the throne room, glowing fungus in a cave. \
+        Leave some rooms dark so darkvision and carried light matter. Put a light where the party starts, or \
+        check that the PCs have darkvision, so the players see something on the first turn. Render the \
+        players' view to check.
+
+        Explored areas stay dimly visible either way.
 
         ## Respect the DM's work
 
@@ -205,6 +220,8 @@ public enum AgentGuide {
         underneath it, so a door can sit on top of a continuous wall. Locked doors can't be opened by clicking.
         - Tokens: position is the top-left corner; size is the footprint in cells (1 = one square).
         - Stairs: centre, width and height, which way they face, up or down.
+        - Lights: a centre point and two radii in feet (bright_ft, then dim_ft as the outer edge). They only \
+        matter on maps with lighting on.
         - Markers: freehand lines with a colour and width in pixels; they block nothing.
         - add_rooms door and opening positions (at) are measured along the side from its top or left end to \
         the door's centre.

@@ -34,6 +34,14 @@ extension GraphiumTools {
         return .json(Describe.campaign(loaded.campaign, path: loaded.url.path, assets: loaded.allAssetNames))
     }
 
+    /// `lighting` as the map's ambient light: nil is lighting off.
+    static func lighting(_ args: Arguments) throws -> LightLevel? {
+        let value = try args.string("lighting")?.lowercased() ?? "off"
+        if value == "off" { return nil }
+        guard let level = LightLevel(rawValue: value) else { throw ToolError("lighting must be off, dark, dim or bright.") }
+        return level
+    }
+
     static func cellSize(_ value: Double) throws -> Double {
         guard (10...500).contains(value) else { throw ToolError("cell_px must be between 10 and 500.") }
         return value
@@ -62,6 +70,7 @@ extension GraphiumTools {
         if let size = try args.double("cell_px") { map.gridSize = try Self.cellSize(size) }
         if let color = try args.string("grid_color") { map.gridColor = try Self.color(color, "grid_color") }
         if let daylight = try args.bool("daylight") { map.isDaylightMode = daylight }
+        if args.has("lighting") { map.ambientLight = try Self.lighting(args) }
         loaded.campaign.maps.append(map)
         if try args.bool("make_active") ?? true { loaded.campaign.activeMapID = map.id }
         try store.save(&loaded)
@@ -78,6 +87,7 @@ extension GraphiumTools {
                 loaded.campaign.maps[index].gridColor = try Self.color(color, "grid_color")
             }
             if let daylight = try args.bool("daylight") { loaded.campaign.maps[index].isDaylightMode = daylight }
+            if args.has("lighting") { loaded.campaign.maps[index].ambientLight = try Self.lighting(args) }
             if try args.bool("make_active") == true { loaded.campaign.activeMapID = loaded.campaign.maps[index].id }
             let map = loaded.campaign.maps[index]
             return Describe.mapSummary(map, active: loaded.campaign.activeMapID == map.id, library: loaded.campaign.libraryIndex)
@@ -354,6 +364,7 @@ extension GraphiumTools {
                     token.scale = cells == 1 ? nil : cells
                 }
                 token.visionRadius = try spec.double("vision_ft")
+                token.darkvision = try spec.double("darkvision_ft")
                 token.movementSpeed = try spec.double("speed_ft")
 
                 if let reference = try spec.string("library_item") {
@@ -410,6 +421,47 @@ extension GraphiumTools {
         }
     }
 
+    func addLights(_ args: Arguments) throws -> ToolResult {
+        try withMap(args, write: true) { loaded, index, units in
+            var added: [JSONValue] = []
+            for spec in try args.objects("lights") {
+                guard let centre = try spec.point("center").map(units.px) else {
+                    throw ToolError("\(spec.context).center is required.")
+                }
+                var light: LightSource
+                if let name = try spec.string("preset") {
+                    guard let preset = LightPreset.all.first(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame })
+                    else {
+                        let names = LightPreset.all.map(\.name).joined(separator: ", ")
+                        throw ToolError("\(spec.context).preset must be one of \(names).")
+                    }
+                    light = preset.light(at: centre)
+                } else {
+                    let bright = try spec.double("bright_ft")
+                    guard let dim = try spec.double("dim_ft") ?? bright.map({ $0 * 2 }) else {
+                        throw ToolError("\(spec.context) needs a preset, or bright_ft and dim_ft.")
+                    }
+                    light = LightSource(x: centre.x, y: centre.y, bright: bright ?? dim / 2, dim: dim)
+                }
+                if let bright = try spec.double("bright_ft") { light.bright = bright }
+                if let dim = try spec.double("dim_ft") { light.dim = dim }
+                light.bright = max(0, light.bright)
+                light.dim = max(light.dim, light.bright)
+                if let on = try spec.bool("on") { light.isOn = on }
+                if let name = try spec.string("name") { light.name = name }
+                loaded.campaign.maps[index].lights.append(light)
+                added.append(Describe.light(light, units: units))
+            }
+            var out: [String: JSONValue] = ["added_lights": .array(added)]
+            if loaded.campaign.maps[index].ambientLight == nil {
+                out["note"] = .string(
+                    "Lighting is off on this map, so lights have no effect yet. Turn it on with update_map lighting "
+                        + "\"dark\" (or \"dim\").")
+            }
+            return .object(out)
+        }
+    }
+
     func drawMarkers(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: true) { loaded, index, units in
             var added: [JSONValue] = []
@@ -456,6 +508,7 @@ extension GraphiumTools {
                         map.tokens[i].scale = cells
                     }
                     if take("vision_ft") { map.tokens[i].visionRadius = try change.double("vision_ft") }
+                    if take("darkvision_ft") { map.tokens[i].darkvision = try change.double("darkvision_ft") }
                     if take("speed_ft") { map.tokens[i].movementSpeed = try change.double("speed_ft") }
                 } else if let i = map.doors.firstIndex(where: { $0.id == id }) {
                     kind = "door"
@@ -493,6 +546,17 @@ extension GraphiumTools {
                     if !isWall, take("color"), let color = try change.string("color") {
                         map.drawings[i].color = try Self.color(color, "\(change.context).color")
                     }
+                } else if let i = map.lights.firstIndex(where: { $0.id == id }) {
+                    kind = "light"
+                    if take("center"), let p = try change.point("center").map(units.px) {
+                        map.lights[i].x = p.x
+                        map.lights[i].y = p.y
+                    }
+                    if take("bright_ft"), let bright = try change.double("bright_ft") { map.lights[i].bright = max(0, bright) }
+                    if take("dim_ft"), let dim = try change.double("dim_ft") { map.lights[i].dim = max(0, dim) }
+                    map.lights[i].dim = max(map.lights[i].dim, map.lights[i].bright)
+                    if take("on"), let on = try change.bool("on") { map.lights[i].isOn = on }
+                    if take("name") { map.lights[i].name = try change.string("name") }
                 } else if let i = map.stairs.firstIndex(where: { $0.id == id }) {
                     kind = "stairs"
                     if take("center"), let p = try change.point("center").map(units.px) {
@@ -524,10 +588,14 @@ extension GraphiumTools {
         try withMap(args, write: true) { loaded, index, _ in
             let ids = Set(try args.strings("ids") ?? [])
             var map = loaded.campaign.maps[index]
-            let before = map.tokens.count + map.drawings.count + map.doors.count + map.stairs.count
+            func count(_ m: GameMap) -> Int {
+                m.tokens.count + m.drawings.count + m.doors.count + m.stairs.count + m.lights.count
+            }
+            let before = count(map)
             map.removeItems(ids)
             map.stairs.removeAll { ids.contains($0.id) }
-            let removed = before - (map.tokens.count + map.drawings.count + map.doors.count + map.stairs.count)
+            map.lights.removeAll { ids.contains($0.id) }
+            let removed = before - count(map)
             loaded.campaign.maps[index] = map
             var out: [String: JSONValue] = ["removed": .number(Double(removed))]
             if removed < ids.count { out["not_found"] = .number(Double(ids.count - removed)) }
@@ -546,10 +614,11 @@ extension GraphiumTools {
                 case "doors": map.doors.removeAll()
                 case "tokens": map.tokens.removeAll()
                 case "stairs": map.stairs.removeAll()
+                case "lights": map.lights.removeAll()
                 case "fog": map.exploredRegions.removeAll()
                 case "background": map.background = nil
                 default:
-                    throw ToolError("Unknown layer \(layer). Use walls, doors, tokens, markers, stairs, fog or background.")
+                    throw ToolError("Unknown layer \(layer). Use walls, doors, tokens, markers, stairs, lights, fog or background.")
                 }
             }
             loaded.campaign.maps[index] = map
