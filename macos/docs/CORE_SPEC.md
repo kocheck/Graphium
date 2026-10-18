@@ -136,6 +136,8 @@ World-space point = `(px * scale + x, py * scale + y)` (`FogOfWarLayer.tsx:263-2
 | `thickness`      | `number`                              | yes | render only; dungeon generator sets 12    |
 | `swingDirection` | `'left' \| 'right' \| 'up' \| 'down'` | yes | render only                               |
 
+**Native only** (TS ignores it and draws the door at `orientation`): `angle` `number`, optional, degrees clockwise from east (y points down) in (−90, 90]; absent = 0 for horizontal, 90 for vertical. When set, `orientation` is the nearest of the two. The hinge is the end at `centre − size/2 · (cos, sin)`.
+
 Manual door placement (`useCanvasInteraction.ts:248-267`): `snapToGrid(pointer.x, pointer.y, gridSize, gridType)` in **legacy mode** (no width/height) → square grid rounds to the nearest intersection; hex/iso snap to a cell centre.
 
 ### 1.8 `Stairs` — `src/store/gameStore.ts:241`

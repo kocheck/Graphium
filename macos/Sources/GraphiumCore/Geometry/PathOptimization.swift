@@ -139,24 +139,50 @@ public enum StrokeDefaults {
 }
 
 extension GameMap {
-    /// Places a closed, unlocked, one-cell door at the snapped point (TS legacy snap:
-    /// square grids → nearest intersection; hex/iso → cell centre).
+    /// Places a closed, unlocked, one-cell door (`doorPlacement`).
     @discardableResult
     public mutating func placeDoor(at point: Point2D, orientation: DoorOrientation) -> Door {
-        let snapped = snapToGrid(point, gridSize: gridSize, gridType: gridType)
-        let door = Door(x: snapped.x, y: snapped.y, orientation: orientation, size: gridSize)
+        let door = doorPlacement(at: point, orientation: orientation)
         doors.append(door)
         return door
+    }
+
+    /// The door a click at `point` places. Away from walls: `orientation`, at the TS legacy
+    /// snap (square grids → nearest intersection; hex/iso → cell centre). On a wall stroke
+    /// (within a fifth of a cell): lined up with that wall at any angle (native, PARITY §3.6),
+    /// at the snapped point when it lies on the wall, else at the nearest point of the wall,
+    /// kept clear of the segment's ends when the segment is long enough.
+    public func doorPlacement(at point: Point2D, orientation: DoorOrientation) -> Door {
+        let snapped = snapToGrid(point, gridSize: gridSize, gridType: gridType)
+        let nearby = LineOfSight.strokeWalls(of: self)
+            .map { (wall: $0, distance: VisibilitySweep.distance(from: point, to: $0)) }
+            .filter { $0.distance <= gridSize * 0.2 }
+        guard let wall = nearby.min(by: { $0.distance < $1.distance })?.wall else {
+            return Door(x: snapped.x, y: snapped.y, orientation: orientation, size: gridSize)
+        }
+        let dx = wall.end.x - wall.start.x
+        let dy = wall.end.y - wall.start.y
+        var degrees = atan2(dy, dx) * 180 / .pi
+        if degrees > 90 { degrees -= 180 } else if degrees <= -90 { degrees += 180 }
+        let axis: DoorOrientation = abs(degrees) <= 45 ? .horizontal : .vertical
+        let isAxis = abs(degrees) < 0.5 || abs(abs(degrees) - 90) < 0.5
+        if isAxis, VisibilitySweep.distance(from: snapped, to: wall) <= 1 {
+            return Door(x: snapped.x, y: snapped.y, orientation: axis, size: gridSize)
+        }
+        let length = hypot(dx, dy)
+        var t = ((point.x - wall.start.x) * dx + (point.y - wall.start.y) * dy) / (length * length)
+        let half = gridSize / 2 / length
+        t = half <= 0.5 ? min(max(t, half), 1 - half) : 0.5
+        return Door(
+            x: wall.start.x + t * dx, y: wall.start.y + t * dy, orientation: axis, size: gridSize,
+            angle: isAxis ? nil : degrees)
     }
 
     /// The door under `point` (a thick hit area around the door line).
     public func door(at point: Point2D, tolerance: Double = 8) -> Door? {
         doors.last { door in
-            let half = door.size / 2
-            switch door.orientation {
-            case .horizontal: return abs(point.y - door.y) <= tolerance && abs(point.x - door.x) <= half
-            case .vertical: return abs(point.x - door.x) <= tolerance && abs(point.y - door.y) <= half
-            }
+            let p = door.local(point)
+            return abs(p.across) <= tolerance && abs(p.along) <= door.size / 2
         }
     }
 

@@ -37,8 +37,36 @@ public enum LineOfSight {
     }
 
     /// Segments that block sight: every wall stroke but windows (transformed to world space)
-    /// and every closed door (open doors block nothing; lock state is irrelevant).
+    /// and every closed door (open doors block nothing; lock state is irrelevant). An open
+    /// door also cuts the wall under it (native, PARITY §3.6), so a door dropped on a room's
+    /// wall opens a gap in it; in TS that wall went on blocking.
     public static func walls(of map: GameMap) -> [WallSegment] {
+        var segments = strokeWalls(of: map)
+        let open = map.doors.filter(\.isOpen)
+        if !open.isEmpty {
+            let tolerance = map.gridSize * WallWeld.toleranceInCells
+            segments = segments.flatMap { wall in
+                open.reduce([wall]) { pieces, door in pieces.flatMap { cut($0, under: door, tolerance: tolerance) } }
+            }
+        }
+        for door in map.doors where !door.isOpen {
+            let (hinge, latch) = door.ends
+            segments.append(WallSegment(start: hinge, end: latch))
+        }
+        return segments
+    }
+
+    /// Open doors that cut a wall (`walls(of:)`), so the canvas can leave the same gap.
+    public static func wallGaps(of map: GameMap) -> [Door] {
+        let open = map.doors.filter(\.isOpen)
+        guard !open.isEmpty else { return [] }
+        let walls = strokeWalls(of: map)
+        let tolerance = map.gridSize * WallWeld.toleranceInCells
+        return open.filter { door in walls.contains { cut($0, under: door, tolerance: tolerance) != [$0] } }
+    }
+
+    /// The segments of every wall stroke that blocks sight, in world space.
+    public static func strokeWalls(of map: GameMap) -> [WallSegment] {
         var segments: [WallSegment] = []
         for drawing in map.drawings where drawing.blocksSight {
             let points = drawing.worldPoints
@@ -48,18 +76,34 @@ public enum LineOfSight {
                 segments.append(WallSegment(start: points[i], end: points[i + 1], oneWay: oneWay))
             }
         }
-        for door in map.doors where !door.isOpen {
-            let half = door.size / 2
-            switch door.orientation {
-            case .horizontal:
-                segments.append(
-                    WallSegment(start: Point2D(x: door.x - half, y: door.y), end: Point2D(x: door.x + half, y: door.y)))
-            case .vertical:
-                segments.append(
-                    WallSegment(start: Point2D(x: door.x, y: door.y - half), end: Point2D(x: door.x, y: door.y + half)))
-            }
-        }
         return segments
+    }
+
+    /// `wall` less the stretch an open door covers. The door is on the wall when both its
+    /// ends are within `tolerance` of the wall's line; otherwise the wall is unchanged.
+    static func cut(_ wall: WallSegment, under door: Door, tolerance: Double) -> [WallSegment] {
+        let dx = wall.end.x - wall.start.x
+        let dy = wall.end.y - wall.start.y
+        let lengthSquared = dx * dx + dy * dy
+        guard lengthSquared > 1e-12 else { return [wall] }
+        let length = lengthSquared.squareRoot()
+        func onWall(_ p: Point2D) -> (t: Double, off: Double) {
+            let px = p.x - wall.start.x
+            let py = p.y - wall.start.y
+            return ((px * dx + py * dy) / lengthSquared, (px * dy - py * dx) / length)
+        }
+        let (hinge, latch) = door.ends
+        let a = onWall(hinge)
+        let b = onWall(latch)
+        guard abs(a.off) <= tolerance, abs(b.off) <= tolerance else { return [wall] }
+        let from = min(a.t, b.t)
+        let to = max(a.t, b.t)
+        guard to > 0, from < 1 else { return [wall] }
+        func point(_ t: Double) -> Point2D { Point2D(x: wall.start.x + t * dx, y: wall.start.y + t * dy) }
+        var pieces: [WallSegment] = []
+        if from > 0 { pieces.append(WallSegment(start: wall.start, end: point(from), oneWay: wall.oneWay)) }
+        if to < 1 { pieces.append(WallSegment(start: point(to), end: wall.end, oneWay: wall.oneWay)) }
+        return pieces
     }
 
     /// TS `lineSegmentIntersection`: the hit point of p1→p2 with p3→p4, or nil.

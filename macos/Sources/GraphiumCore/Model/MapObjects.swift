@@ -125,7 +125,11 @@ public struct Door: Codable, Equatable, Identifiable, Sendable {
     public var id: String
     public var x: Double
     public var y: Double
+    /// With `angle` set, the nearest of the two, so the web app still draws the door close by.
     public var orientation: DoorOrientation
+    /// Native only: the door's direction in degrees, clockwise from east (map y points down),
+    /// in (−90, 90]. Nil is `orientation`'s 0° or 90°.
+    public var angle: Double?
     public var isOpen: Bool
     public var isLocked: Bool
     public var size: Double
@@ -135,17 +139,55 @@ public struct Door: Codable, Equatable, Identifiable, Sendable {
     public init(
         id: String = newID(), x: Double, y: Double, orientation: DoorOrientation,
         isOpen: Bool = false, isLocked: Bool = false, size: Double,
-        thickness: Double? = nil, swingDirection: DoorSwing? = nil
+        thickness: Double? = nil, swingDirection: DoorSwing? = nil, angle: Double? = nil
     ) {
         self.id = id
         self.x = x
         self.y = y
         self.orientation = orientation
+        self.angle = angle
         self.isOpen = isOpen
         self.isLocked = isLocked
         self.size = size
         self.thickness = thickness
         self.swingDirection = swingDirection
+    }
+
+    /// The direction in radians: `angle`, else 0 (horizontal) or π/2 (vertical).
+    public var radians: Double {
+        if let angle { return angle * .pi / 180 }
+        return orientation == .horizontal ? 0 : .pi / 2
+    }
+
+    /// The unit vector from hinge to latch; exact for the axis doors.
+    private var direction: (x: Double, y: Double) {
+        if angle == nil { return orientation == .horizontal ? (1, 0) : (0, 1) }
+        return (cos(radians), sin(radians))
+    }
+
+    /// The hinge end (west or north for the axis doors), then the latch end.
+    public var ends: (hinge: Point2D, latch: Point2D) {
+        let half = size / 2
+        let dx = direction.x * half
+        let dy = direction.y * half
+        return (Point2D(x: x - dx, y: y - dy), Point2D(x: x + dx, y: y + dy))
+    }
+
+    /// `p` in the door's own frame: `along` from the centre towards the latch, `across` to
+    /// the on-screen right of that.
+    public func local(_ p: Point2D) -> (along: Double, across: Double) {
+        let (c, s) = direction
+        let dx = p.x - x
+        let dy = p.y - y
+        return (dx * c + dy * s, -dx * s + dy * c)
+    }
+
+    /// The bounding box of the door's line, padded by `pad` on every side.
+    public func bounds(padding pad: Double) -> Bounds {
+        let (a, b) = ends
+        return Bounds(
+            x: min(a.x, b.x) - pad, y: min(a.y, b.y) - pad,
+            width: abs(a.x - b.x) + 2 * pad, height: abs(a.y - b.y) + 2 * pad)
     }
 }
 
