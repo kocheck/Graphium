@@ -66,12 +66,58 @@ public enum LineOfSight {
     }
 
     /// The walls the World View hatches rock behind: every sight-blocking wall stroke, less
-    /// the stretch under any door (open or closed), so no rock is drawn across a doorway.
+    /// the stretch under any door (open or closed), so no rock is drawn across a doorway. A
+    /// shut hidden door is wall to the players: it cuts nothing and is hatched itself.
     public static func hatchWalls(of map: GameMap) -> [WallSegment] {
         let tolerance = map.gridSize * WallWeld.toleranceInCells
-        return strokeWalls(of: map).flatMap { wall in
-            map.doors.reduce([wall]) { pieces, door in pieces.flatMap { cut($0, under: door, tolerance: tolerance) } }
+        let doorways = map.doors.filter { !$0.looksLikeWall }
+        let secret = map.doors.filter(\.looksLikeWall).map { door -> WallSegment in
+            let (hinge, latch) = door.ends
+            return WallSegment(start: hinge, end: latch)
         }
+        return strokeWalls(of: map).flatMap { wall in
+            doorways.reduce([wall]) { pieces, door in pieces.flatMap { cut($0, under: door, tolerance: tolerance) } }
+        } + secret
+    }
+
+    /// The doors the players know are there, so the World View can draw them over the fog: a
+    /// point just off either face of the door, at its middle or towards either end, is explored
+    /// or in sight now. A shut hidden door is never known; it shows as wall.
+    public static func knownDoors(
+        _ doors: [Door], explored: [ExploredRegion], sight: PartySight, gridSize: Double
+    ) -> Set<String> {
+        let candidates = doors.filter { !$0.looksLikeWall }
+        guard !candidates.isEmpty else { return [] }
+        let regions = explored.compactMap { region -> (Bounds, [Point2D])? in
+            guard region.points.count >= 3 else { return nil }
+            var minX = Double.infinity, minY = Double.infinity, maxX = -Double.infinity, maxY = -Double.infinity
+            for p in region.points {
+                minX = min(minX, p.x)
+                minY = min(minY, p.y)
+                maxX = max(maxX, p.x)
+                maxY = max(maxY, p.y)
+            }
+            return (Bounds(x: minX, y: minY, width: maxX - minX, height: maxY - minY), region.points)
+        }
+        func isExplored(_ p: Point2D) -> Bool {
+            regions.contains { bounds, points in
+                p.x >= bounds.x && p.x <= bounds.x + bounds.width && p.y >= bounds.y && p.y <= bounds.y + bounds.height
+                    && contains(points, p)
+            }
+        }
+        var known: Set<String> = []
+        for door in candidates {
+            let off = (door.thickness ?? max(6, door.size * 0.16)) / 2 + gridSize * 0.15
+            let (c, s) = (cos(door.radians), sin(door.radians))
+            let samples = [-0.3, 0, 0.3].flatMap { t -> [Point2D] in
+                let along = t * door.size
+                return [-off, off].map { across in
+                    Point2D(x: door.x + along * c - across * s, y: door.y + along * s + across * c)
+                }
+            }
+            if samples.contains(where: { sight.sees($0) || isExplored($0) }) { known.insert(door.id) }
+        }
+        return known
     }
 
     /// The segments of every wall stroke that blocks sight, in world space.

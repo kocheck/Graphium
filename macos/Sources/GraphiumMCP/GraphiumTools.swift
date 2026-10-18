@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.2.0"
+    public static let version = "1.3.0"
 
     struct Tool {
         var name: String
@@ -276,6 +276,8 @@ public final class GraphiumTools {
                                     "width": Self.number("Door width (default 1 cell)."),
                                     "open": Self.boolean("Start open (default false)."),
                                     "locked": Self.boolean("Locked (default false)."),
+                                    "hidden": Self.boolean(
+                                        "Secret door: players see plain wall while it is shut (default false)."),
                                 ], required: ["side"]),
                             "openings": Self.objects(
                                 "Gaps with no door (archways, corridor mouths).",
@@ -304,6 +306,9 @@ public final class GraphiumTools {
                             "angle": Self.number("Degrees clockwise from east: 0 horizontal, 90 vertical."),
                             "open": Self.boolean("Start open (default false)."),
                             "locked": Self.boolean("Locked doors can't be opened by clicking (default false)."),
+                            "hidden": Self.boolean(
+                                "Secret door: players see plain wall while it is shut, until the DM reveals it "
+                                    + "(default false)."),
                         ], required: ["center"]),
                 ],
                 required: ["campaign", "doors"], readOnly: false, run: addDoors),
@@ -410,7 +415,7 @@ public final class GraphiumTools {
                 description:
                     "Change existing objects by id (from get_map). Tokens: position, name, type, size, vision_ft, "
                     + "darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
-                    + "(a token library item id or name; only its picture is used). Doors: open, locked, center, width, angle. Walls: kind, one_way, flip "
+                    + "(a token library item id or name; only its picture is used). Doors: open, locked, hidden, center, width, angle. Walls: kind, one_way, flip "
                     + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
                     + "Notes: center, title, dm_notes, player_notes, shared. Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [

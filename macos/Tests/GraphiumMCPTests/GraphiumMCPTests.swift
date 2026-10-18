@@ -184,6 +184,23 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(door.orientation, .horizontal)
     }
 
+    func testHiddenDoorsShowAsWallToPlayersUntilRevealed() throws {
+        try call("create_campaign", ["path": "Secret", "name": "Secret"])
+        try call("draw_walls", ["campaign": "Secret", "walls": [["points": [[0, 2], [6, 2]]]]])
+        let added = try call("add_doors", ["campaign": "Secret", "doors": [["center": [3.5, 2], "hidden": true]]])
+        let entry = try XCTUnwrap(added["added_doors"]?.arrayValue?.first)
+        XCTAssertEqual(entry["hidden"], .bool(true))
+        var door = try XCTUnwrap(try loadCampaign("Secret.graphiumcampaign").activeMap.doors.first)
+        XCTAssertEqual(door.isHidden, true)
+        let text = AsciiMap(map: try loadCampaign("Secret.graphiumcampaign").activeMap, library: [:]).render(region: nil)
+        let picture = text.components(separatedBy: "\n\n")[1]
+        XCTAssertTrue(picture.contains("S"), text)
+
+        try call("update_objects", ["campaign": "Secret", "changes": [["id": .string(door.id), "hidden": false]]])
+        door = try XCTUnwrap(try loadCampaign("Secret.graphiumcampaign").activeMap.doors.first)
+        XCTAssertNil(door.isHidden, "revealing leaves the flag out of the file")
+    }
+
     func testLightsAndDarkvision() throws {
         try call("create_campaign", ["path": "Lit", "name": "Lit"])
         try call("add_rooms", ["campaign": "Lit", "rooms": [["x": 0, "y": 0, "width": 8, "height": 6]]])

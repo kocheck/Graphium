@@ -366,6 +366,7 @@ struct ArchitectView: View {
                             $0.activeMap.setAllUnlockedDoors(open: true)
                         }
                     }
+                    .help("Locked and hidden doors stay shut")
                     Button("Close All Open Doors") {
                         document.edit("Close Doors", undoManager: undoManager) {
                             $0.activeMap.setAllUnlockedDoors(open: false)
@@ -375,6 +376,14 @@ struct ArchitectView: View {
                         Button("Unlock All") {
                             document.edit("Unlock Doors", undoManager: undoManager) {
                                 $0.activeMap.setAllDoorLocks(locked: false)
+                            }
+                        }
+                    }
+                    let hidden = Set(doors.filter { $0.isHidden == true }.map(\.id))
+                    if !hidden.isEmpty {
+                        Button("Reveal All Hidden Doors") {
+                            document.edit("Reveal Doors", undoManager: undoManager) {
+                                $0.activeMap.setDoorsHidden(hidden, hidden: false)
                             }
                         }
                     }
@@ -884,6 +893,10 @@ struct ArchitectView: View {
                 if let i = campaign.activeMap.doors.firstIndex(where: { $0.id == id }) {
                     campaign.activeMap.doors[i].isLocked = action == .lock
                 }
+            }
+        case .hide, .reveal:
+            document.edit(action == .hide ? "Hide Door" : "Reveal Door", undoManager: undoManager) {
+                $0.activeMap.setDoorsHidden([id], hidden: action == .hide)
             }
         case .delete:
             document.edit("Delete Door", undoManager: undoManager) { $0.activeMap.doors.removeAll { $0.id == id } }

@@ -34,9 +34,14 @@ extension MapCanvasNSView {
             }
             elements.append(element)
         }
+        // Players reach only the doors the World View draws: none that look like wall, and
+        // none still in unexplored fog.
+        let known = isPlayerView ? fog.map { knownDoorIDs(map.doors, fog: $0) } : nil
         for door in map.doors {
+            if isPlayerView, door.looksLikeWall || !(known?.contains(door.id) ?? true) { continue }
             let state = door.isLocked ? "locked" : door.isOpen ? "open" : "closed"
-            let element = makeElement(label: "Door, \(state)", bounds: door.bounds(padding: 6))
+            let hidden = !isPlayerView && door.isHidden == true ? ", hidden from players" : ""
+            let element = makeElement(label: "Door, \(state)\(hidden)", bounds: door.bounds(padding: 6))
             if !isPlayerView, let doorAction = editing?.doorAction, !door.isLocked {
                 let id = door.id
                 element.onPress = { doorAction(id, .toggle) }
