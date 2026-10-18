@@ -78,11 +78,13 @@ struct TokenInspector: View {
             initiativeSection(tokens)
 
             Section("Vision", isExpanded: $visionExpanded) {
-                HStack {
+                // Small buttons, so "120 ft" fits at the inspector's narrowest.
+                HStack(spacing: 6) {
                     ForEach(Self.visionPresets, id: \.self) { feet in
                         visionPresetButton(feet, active: commonVision(tokens) == feet)
                     }
                 }
+                .controlSize(.small)
                 LabeledContent("Radius") {
                     HStack(spacing: 4) {
                         TextField("Radius", value: visionFieldBinding(tokens), format: .number, prompt: Text("Mixed"))
@@ -280,7 +282,7 @@ struct TokenInspector: View {
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     Button("Change Image…") { chooseImageFile() }
-                    Button("Choose from Library…") { showingLibraryPicker = true }
+                    Button("From Library…") { showingLibraryPicker = true }
                         .popover(isPresented: $showingLibraryPicker, arrowEdge: .leading) {
                             TokenImageLibraryPicker(document: document) { item in
                                 showingLibraryPicker = false

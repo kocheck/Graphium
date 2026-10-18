@@ -152,6 +152,14 @@ struct ArchitectView: View {
                     .inspectorColumnWidth(min: 260, ideal: 300)
                 }
                 .toolbar(id: "architect") { toolbarContent }
+                .background {
+                    // ⌘P also opens the palette, as in TS (PARITY §1.4); the menu lists ⌘K only.
+                    Button("Command Palette") { showingPalette = true }
+                        .keyboardShortcut("p")
+                        .opacity(0)
+                        .frame(width: 0, height: 0)
+                        .accessibilityHidden(true)
+                }
         }
         .fileImporter(
             isPresented: Binding(get: { importTarget != nil }, set: { if !$0 { importTarget = nil } }),
@@ -250,11 +258,14 @@ struct ArchitectView: View {
             ArchitectActions(
                 showPalette: { showingPalette = true }, showDungeon: { showingDungeon = true },
                 togglePerformanceMonitor: { showingPerformance.toggle() },
+                isPerformanceMonitorShown: showingPerformance,
                 exportLegacy: { exportLegacy() },
                 tool: tools.tool,
                 selectTool: { selectTool($0) },
                 showMapSettings: { mapSettings = MapSettingsRequest(map: document.campaign.activeMap, isNew: false) },
                 newMap: { mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true) },
+                chooseMapImage: { importTarget = .mapImage },
+                addTokens: { importTarget = .tokens },
                 calibrate: canCalibrate ? { startCalibration() } : nil,
                 isDaylight: document.campaign.activeMap.isDaylightMode,
                 toggleDaylight: {
@@ -1004,8 +1015,12 @@ struct ArchitectView: View {
                 }
             }
         case .hide, .reveal:
-            document.edit(action == .hide ? "Hide Door" : "Reveal Door", undoManager: undoManager) {
-                $0.activeMap.setDoorsHidden([id], hidden: action == .hide)
+            document.edit(action == .hide ? "Hide Door" : "Reveal Door", undoManager: undoManager) { campaign in
+                campaign.activeMap.setDoorsHidden([id], hidden: action == .hide)
+                // A hidden door reads as wall only while shut, so hiding an open one shuts it.
+                if action == .hide, let i = campaign.activeMap.doors.firstIndex(where: { $0.id == id }) {
+                    campaign.activeMap.doors[i].isOpen = false
+                }
             }
         case .delete:
             document.edit("Delete Door", undoManager: undoManager) { $0.activeMap.doors.removeAll { $0.id == id } }
@@ -1095,6 +1110,8 @@ struct ArchitectView: View {
         ToolbarItem(id: "pause", placement: .primaryAction) {
             PauseToolbarButton(document: document)
         }
+        // Blanking the projector must always be one click away, so it can't be customised out.
+        .customizationBehavior(.disabled)
         ToolbarItem(id: "session-console", placement: .primaryAction) {
             Toggle(isOn: $showingConsole) {
                 Label("Session Console", systemImage: "music.note.list")
@@ -1116,7 +1133,7 @@ struct ArchitectView: View {
             Button {
                 confirmingFogReset = true
             } label: {
-                Label("Reset Explored Fog…", systemImage: "eye.slash")
+                Label("Reset Explored Fog", systemImage: "eye.slash")
             }
             .help("Forget what the party has explored on this map")
             .disabled(document.campaign.activeMap.exploredRegions.isEmpty)

@@ -13,6 +13,8 @@ struct WorldWindow: View {
     var body: some View {
         if let sessionID, let document = DocumentRegistry.shared.document(for: sessionID) {
             WorldView(document: document, liveDrag: document.liveDrag)
+                // So View > Pause World View (⇧⌘P) and the Session menu work with the projector window frontmost.
+                .focusedSceneValue(\.campaignDocument, document)
         } else {
             OrphanedWindow(
                 title: "No Campaign", systemImage: "map",
@@ -183,9 +185,6 @@ private struct WorldView: View {
         }
         .background(WindowAccessor(reference: window))
         .navigationTitle("World View — \(campaign.name)")
-        // Pause, Session Console and World View menu items keep working while this window is
-        // key (it is, once it goes full screen on the TV).
-        .focusedSceneValue(\.campaignDocument, document)
         .toolbar {
             ToolbarItem {
                 Menu {

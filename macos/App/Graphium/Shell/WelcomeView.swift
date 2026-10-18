@@ -166,7 +166,8 @@ struct WelcomeView: View {
     ) -> some View {
         Button(action: action) {
             VStack(spacing: Spacing.sm) {
-                Image(systemName: symbol).font(.system(size: 28))
+                // A fixed symbol box, so titles line up across cards whatever each symbol's height.
+                Image(systemName: symbol).font(.system(size: 28)).frame(height: 36)
                 Text(title).font(.headline)
                 Text(shortcut).readoutStyle(.caption).foregroundStyle(.secondary)
             }
@@ -265,8 +266,8 @@ struct WelcomeView: View {
             Button("About") { ShowAbout(openWindow: openWindow)(.about) }.buttonStyle(.link)
             Link("Report Bug", destination: AppLinks.issues)
             Button("Help") { ShowAbout(openWindow: openWindow)(.shortcuts) }.buttonStyle(.link)
-                .keyboardShortcut("?", modifiers: [])
-                .help("Keyboard shortcuts (?)")
+                // No bare "?" key equivalent: it would fire while typing in the recents search.
+                .help("Keyboard shortcuts")
             Button {
                 themeRaw = theme.next.rawValue
                 theme.next.apply()
