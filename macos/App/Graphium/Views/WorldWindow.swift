@@ -99,7 +99,8 @@ private struct WorldView: View {
                 // Players may select and move tokens and open shared note pins; nothing else (PARITY §4.2).
                 editing: CanvasEditing(
                     setSelection: { selection = $0 },
-                    dropTokens: { ids, primary, dx, dy, _ in
+                    // Players always take the stairs; only the DM can stop on them.
+                    dropTokens: { ids, primary, dx, dy, _, _ in
                         document.playerMoveTokens(ids, primary: primary, dx: dx, dy: dy)
                     },
                     allowsDuplicate: false,

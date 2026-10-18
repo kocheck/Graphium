@@ -1,10 +1,10 @@
 import AppKit
 import GraphiumCore
 
-/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light), N (Note), S (Spell)
-/// and F (Reveal fog) are native.
+/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light), N (Note), S (Spell),
+/// T (Stairs) and F (Reveal fog) are native.
 enum CanvasTool: String, CaseIterable, Identifiable {
-    case select, marker, eraser, wall, door, light, note, effect, reveal, measure
+    case select, marker, eraser, wall, door, stairs, light, note, effect, reveal, measure
 
     var id: Self { self }
 
@@ -15,6 +15,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .eraser: return "Eraser"
         case .wall: return "Wall"
         case .door: return "Door"
+        case .stairs: return "Stairs"
         case .light: return "Light"
         case .note: return "Note"
         case .effect: return "Spell Effect"
@@ -30,6 +31,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .eraser: return "eraser"
         case .wall: return "line.diagonal"
         case .door: return "door.left.hand.closed"
+        case .stairs: return "stairs"
         case .light: return "lightbulb"
         case .note: return "note.text"
         case .effect: return "sparkles"
@@ -45,6 +47,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .eraser: return "e"
         case .wall: return "w"
         case .door: return "d"
+        case .stairs: return "t"
         case .light: return "l"
         case .note: return "n"
         case .effect: return "s"
@@ -56,6 +59,8 @@ enum CanvasTool: String, CaseIterable, Identifiable {
     var help: String {
         switch self {
         case .door: return "Door (D) — click a door to select it; R or arrow keys rotate"
+        case .stairs:
+            return "Stairs (T) — click two places to link a pair; a token dropped on one end arrives at the other"
         case .note: return "Note (N) — pin a note to the map; click a pin to open it in the side panel"
         case .effect:
             return "Spell Effect (S) — drag out a spell's area; start on a token to have it carry the effect"
@@ -75,6 +80,8 @@ struct ToolState: Equatable {
     var tool: CanvasTool = .select
     var markerColor = StrokeDefaults.markerColor
     var doorOrientation: DoorOrientation = .horizontal
+    /// Which way new stairs face (native).
+    var stairsDirection: CompassDirection = .north
     /// What new walls are (PARITY §3.5 Native).
     var wallKind: WallKind = .wall
     var wallOneWay = false
@@ -101,6 +108,11 @@ enum NoteAction {
 /// Right-click actions on spell effects (native).
 enum EffectAction {
     case hide(Bool), look(SpellEffect.Look), rotate(Double), detach, delete
+}
+
+/// Right-click actions on stairs (native; decision 017).
+enum StairsAction {
+    case rotate, unlink, delete
 }
 
 /// Right-click actions on a door (PARITY §3.6).

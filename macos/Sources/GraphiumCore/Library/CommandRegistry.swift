@@ -23,6 +23,7 @@ public struct PaletteCommand: Equatable, Identifiable, Sendable {
             .init(id: "tool-eraser", label: "Eraser Tool", category: .tool, keywords: ["eraser", "erase", "remove", "tool", "e"], shortcut: "E"),
             .init(id: "tool-wall", label: "Wall Tool", category: .tool, keywords: ["wall", "barrier", "draw", "tool", "w"], shortcut: "W"),
             .init(id: "tool-door", label: "Door Tool", category: .tool, keywords: ["door", "entrance", "tool", "d"], shortcut: "D"),
+            .init(id: "tool-stairs", label: "Stairs Tool", category: .tool, keywords: ["stairs", "staircase", "steps", "floor", "level", "ladder", "link", "teleport", "tool", "t"], shortcut: "T"),
             .init(id: "tool-light", label: "Light Tool", category: .tool, keywords: ["light", "torch", "lantern", "lamp", "candle", "tool", "l"], shortcut: "L"),
             .init(id: "tool-note", label: "Note Tool", category: .tool, keywords: ["note", "pin", "notes", "handout", "read-aloud", "clue", "tool", "n"], shortcut: "N"),
             .init(id: "tool-effect", label: "Spell Effect Tool", category: .tool, keywords: ["spell", "effect", "aoe", "area", "fireball", "cone", "circle", "line", "cube", "template", "tool", "s"], shortcut: "S"),

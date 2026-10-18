@@ -322,6 +322,7 @@ public struct MapRenderer: Sendable {
     }
 
     private func drawStairs(_ ctx: CGContext) {
+        let labels = map.stairsLabels
         for s in map.stairs {
             let rect = CGRect(x: s.x - s.width / 2, y: s.y - s.height / 2, width: s.width, height: s.height)
             ctx.setFillColor(CGColor(gray: 0.85, alpha: 0.85))
@@ -341,6 +342,13 @@ public struct MapRenderer: Sendable {
             }
             ctx.strokePath()
             ctx.stroke(rect)
+            // Linked pairs share a letter, so it's clear which ends connect.
+            if let label = labels[s.id] {
+                let size = CGFloat(min(s.width, s.height) * 0.45)
+                MapRaster.drawText(
+                    label, in: ctx, centre: CGPoint(x: rect.midX, y: rect.midY), size: size,
+                    color: CGColor(gray: 1, alpha: 1), flipped: true, outline: CGColor(gray: 0, alpha: 0.85))
+            }
         }
     }
 

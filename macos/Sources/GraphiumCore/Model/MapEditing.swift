@@ -137,6 +137,7 @@ extension GameMap {
         doors.removeAll { ids.contains($0.id) }
         lights.removeAll { ids.contains($0.id) }
         notes.removeAll { ids.contains($0.id) }
+        removeStairs(ids)
     }
 }
 

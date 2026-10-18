@@ -98,6 +98,19 @@ extension MapCanvasNSView {
                 }
                 elements.append(element)
             }
+            // Stairs are under the fog on the World View, so only the DM reaches them here.
+            let labels = map.stairsLabels
+            for s in map.stairs {
+                let pair = labels[s.id].map { ", pair \($0)" } ?? ", not linked"
+                let element = makeElement(
+                    label: "Stairs \(s.type.rawValue)\(pair)\(selection.contains(s.id) ? ", selected" : "")",
+                    bounds: s.bounds)
+                if let editing {
+                    let id = s.id
+                    element.onPress = { editing.setSelection([id]) }
+                }
+                elements.append(element)
+            }
         }
         return elements
     }

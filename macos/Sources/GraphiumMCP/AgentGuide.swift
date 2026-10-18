@@ -173,7 +173,8 @@ public enum AgentGuide {
         - Use doors to control what players see and when: closed doors block sight; locked doors make a \
         decision; a hidden door rewards searching. Windows (kind "window") show the next room without letting anyone walk through.
         - One-way walls are for secrets: a mirror, a hidden spy hole, a cliff edge you can see down from.
-        - Put stairs where the map connects to other maps, and say which map they lead to in a marker.
+        - For floors on one map, lay them side by side and link each staircase's two ends with add_stairs \
+        sister. Where the map connects to other maps, put lone stairs and say which map they lead to in a marker.
         - Place monsters where they would really be, not in a line: guards at doors, a leader at the back.
 
         ## Build in this order
@@ -237,7 +238,9 @@ public enum AgentGuide {
         underneath it, so a door can sit on top of a continuous wall. Locked doors can't be opened by clicking. \
         A hidden (secret) door looks like plain wall to players while it is shut, until the DM reveals it.
         - Tokens: position is the top-left corner; size is the footprint in cells (1 = one square).
-        - Stairs: centre, width and height, which way they face, up or down.
+        - Stairs: centre, width and height, which way they face, up or down. Linked stairs (add_stairs with \
+        sister) are a pair: a token dropped on one end arrives at the other, so a dungeon's floors can sit side \
+        by side on one map with a pair where each staircase is. Both ends show the same letter to everyone.
         - Lights: a centre point and two radii in feet (bright_ft, then dim_ft as the outer edge). They only \
         matter on maps with lighting on.
         - Markers: freehand lines with a colour and width in pixels; they block nothing.

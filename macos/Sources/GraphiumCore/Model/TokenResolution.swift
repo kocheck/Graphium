@@ -99,12 +99,14 @@ extension GameMap {
     /// Drops dragged tokens (TS `useTokenDrag`, CORE_SPEC §3.1): the primary token is
     /// snapped with its own size; every other selected token gets the same offset and
     /// is then snapped again with its own size. With `duplicate` (Option-drag) the
-    /// originals stay and copies land at the destinations. Returns the ids now at the
+    /// originals stay and copies land at the destinations. With `travel`, a primary token
+    /// that steps onto linked stairs takes every dropped token to the sister end, in the
+    /// same formation (`stairsTravel`, decision 017). Returns the ids now at the
     /// destinations (the copies when duplicating).
     @discardableResult
     public mutating func dropTokens(
         _ ids: [String], primary: String, dx: Double, dy: Double, duplicate: Bool,
-        library: [String: TokenLibraryItem]
+        library: [String: TokenLibraryItem], travel: Bool = true
     ) -> [String] {
         guard let primaryToken = tokens.first(where: { $0.id == primary }) else { return [] }
         let grid = makeGridGeometry(gridType, cellSize: gridSize)
@@ -112,9 +114,15 @@ extension GameMap {
             let size = tokenSize(token, library: library)
             return grid.snapPoint(Point2D(x: x, y: y), width: size, height: size)
         }
-        let dragged = Point2D(x: primaryToken.x + dx, y: primaryToken.y + dy)
-        let primaryTarget = snapped(primaryToken, x: dragged.x, y: dragged.y)
-        let offset = Point2D(x: primaryTarget.x - primaryToken.x, y: primaryTarget.y - primaryToken.y)
+        var primaryTarget = snappedDrop(primaryToken, dx: dx, dy: dy, library: library)
+        var offset = Point2D(x: primaryTarget.x - primaryToken.x, y: primaryTarget.y - primaryToken.y)
+        if travel, let trip = stairsTravel(forDropOf: primary, dx: dx, dy: dy, library: library) {
+            // The whole group shifts by the distance between the two ends, then each re-snaps.
+            offset.x += trip.to.x - trip.from.x
+            offset.y += trip.to.y - trip.from.y
+            primaryTarget = snapped(primaryToken, x: primaryToken.x + offset.x, y: primaryToken.y + offset.y)
+            offset = Point2D(x: primaryTarget.x - primaryToken.x, y: primaryTarget.y - primaryToken.y)
+        }
 
         var placed: [String] = []
         for id in ids {

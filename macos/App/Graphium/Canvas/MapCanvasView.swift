@@ -10,7 +10,8 @@ import UniformTypeIdentifiers
 struct CanvasEditing {
     var setSelection: (Set<String>) -> Void
     /// Commits a token drag; `duplicate` is Option-drag (only when `allowsDuplicate`).
-    var dropTokens: (_ ids: [String], _ primary: String, _ dx: Double, _ dy: Double, _ duplicate: Bool) -> Void
+    /// `travel` false (⌘ held, DM only) stops tokens on linked stairs instead of taking them.
+    var dropTokens: (_ ids: [String], _ primary: String, _ dx: Double, _ dy: Double, _ duplicate: Bool, _ travel: Bool) -> Void
     var allowsDuplicate = true
     /// Nil where deleting isn't allowed (World View).
     var deleteSelection: (() -> Void)?
@@ -20,6 +21,10 @@ struct CanvasEditing {
     var addDrawing: ((Drawing) -> Void)?
     var placeDoor: ((Point2D) -> Void)?
     var placeLight: ((Point2D) -> Void)?
+    var placeStairs: ((Point2D) -> Void)?
+    /// A Stairs tool click on existing stairs.
+    var pickStairs: ((String) -> Void)?
+    var stairsAction: ((_ stairsIDs: Set<String>, StairsAction) -> Void)?
     var lightAction: ((_ lightIDs: Set<String>, LightAction) -> Void)?
     /// Places a note pin; the owner selects it so the side panel opens on it.
     var placeNote: ((Point2D) -> Void)?
@@ -36,6 +41,8 @@ struct CanvasEditing {
     var setMeasurement: ((MeasurementShape?) -> Void)?
     var setTool: ((CanvasTool) -> Void)?
     var toggleDoorOrientation: (() -> Void)?
+    /// R with the Stairs tool and no stairs selected: turns the facing of the next stairs.
+    var turnStairsTool: (() -> Void)?
     /// Deletes the given doors in one undoable step (the door menu on a multi-door selection).
     var deleteDoors: ((Set<String>) -> Void)?
     /// Turns the given doors by degrees, clockwise on screen.
@@ -334,7 +341,7 @@ final class MapCanvasNSView: NSView {
                 CGPath(rect: CGRect(bounds: map.drawingBounds(drawing)), transform: nil), width: 1.5 / viewport.zoom,
                 dash: [5 / viewport.zoom, 3 / viewport.zoom])
         }
-        drawStairs(map.stairs, context: context)
+        drawStairsLayer(map, context: context)
         // Players see spell areas only on ground they've explored: under the fog, so an area the
         // DM placed ahead of the party (a trap, a cloud in the next room) stays secret (#368).
         let effectsUnderFog = isPlayerView && fog != nil
@@ -545,7 +552,7 @@ final class MapCanvasNSView: NSView {
             var trial = map
             let placed = trial.dropTokens(
                 ids, primary: primary, dx: current.x - start.x, dy: current.y - start.y, duplicate: false,
-                library: library)
+                library: library, travel: takesStairs(NSEvent.modifierFlags))
             for id in placed {
                 if let t = trial.tokens.first(where: { $0.id == id }) { preview[id] = Point2D(x: t.x, y: t.y) }
             }
@@ -953,6 +960,8 @@ final class MapCanvasNSView: NSView {
             }
         } else if editing.moveDrawings != nil, let stroke = map.drawing(at: point) {
             beginMovingStrokes(hit: stroke.id, at: point, map: map, shift: shift, editing: editing)
+        } else if !isPlayerView, editing.stairsAction != nil, let stairs = map.stairs(at: point) {
+            beginMovingStrokes(hit: stairs.id, at: point, map: map, shift: shift, editing: editing)
         } else if !isPlayerView, editing.moveDrawings != nil,
             let effect = map.effect(at: point, tolerance: effectHitTolerance, library: library)
         {
@@ -962,6 +971,12 @@ final class MapCanvasNSView: NSView {
             if !shift { editing.setSelection([]) }
             interaction = .marquee(start: point, current: point, base: base)
         }
+    }
+
+    /// Whether a drop takes linked stairs: always for players, and for the DM unless ⌘ is held
+    /// (to stand a guard on the landing). The preview and the drop must agree.
+    private func takesStairs(_ flags: NSEvent.ModifierFlags) -> Bool {
+        isPlayerView || !flags.contains(.command)
     }
 
     /// A click (no drag) on a token in Measure or Reveal selects it, so the DM needn't switch to
@@ -985,8 +1000,11 @@ final class MapCanvasNSView: NSView {
         if shift, next.contains(id) { next.remove(id) } else { next.insert(id) }
         if !shift, selection.contains(id) { next = selection }
         editing.setSelection(next)
-        let ids = Set(map.drawings.map(\.id) + map.lights.map(\.id) + map.notes.map(\.id) + map.effects.map(\.id))
-            .intersection(next)
+        let ids = Set(
+            map.drawings.map(\.id) + map.lights.map(\.id) + map.notes.map(\.id) + map.effects.map(\.id)
+                + map.stairs.map(\.id)
+        )
+        .intersection(next)
         interaction = .movingStrokes(ids: ids, start: point, current: point, began: false)
     }
 
@@ -1022,6 +1040,10 @@ final class MapCanvasNSView: NSView {
                 editing.effectAction?([effect.id], .delete)  // and spell effects, by their point of origin
                 return
             }
+            if let stairs = map.stairs(at: point) {
+                editing.stairsAction?([stairs.id], .delete)  // and stairs, unlinking their sister
+                return
+            }
             beginStroke(
                 Drawing(
                     tool: .eraser, points: [point.x, point.y], color: StrokeDefaults.eraserColor,
@@ -1045,6 +1067,19 @@ final class MapCanvasNSView: NSView {
                 return
             }
             editing.placeDoor?(point)
+        case .stairs:
+            if let stairs = map.stairs(at: point) {
+                // Clicking placed stairs selects them, or links them to the end waiting for a sister.
+                if event.modifierFlags.contains(.shift) {
+                    var next = selection
+                    if next.contains(stairs.id) { next.remove(stairs.id) } else { next.insert(stairs.id) }
+                    editing.setSelection(next)
+                } else {
+                    editing.pickStairs?(stairs.id)
+                }
+                return
+            }
+            editing.placeStairs?(point)
         case .light:
             editing.placeLight?(point)
         case .note:
@@ -1187,6 +1222,7 @@ final class MapCanvasNSView: NSView {
                     hits.formUnion(map.lightIDs(intersecting: rect))
                     hits.formUnion(map.noteIDs(intersecting: rect))
                     hits.formUnion(map.effectIDs(intersecting: rect, library: library))
+                    hits.formUnion(map.stairsIDs(intersecting: rect))
                 }
                 editing?.setSelection(base.union(hits))
             }
@@ -1197,7 +1233,8 @@ final class MapCanvasNSView: NSView {
     override func mouseUp(with event: NSEvent) {
         if case .movingTokens(let ids, let primary, let start, let current, true) = interaction {
             let duplicate = event.modifierFlags.contains(.option) && editing?.allowsDuplicate == true
-            editing?.dropTokens(ids, primary, current.x - start.x, current.y - start.y, duplicate)
+            editing?.dropTokens(
+                ids, primary, current.x - start.x, current.y - start.y, duplicate, takesStairs(event.modifierFlags))
             editing?.dragPreview?(nil)
         }
         if case .movingStrokes(let ids, let start, let current, true) = interaction {
@@ -1309,8 +1346,8 @@ final class MapCanvasNSView: NSView {
         }
         guard let doorAction = editing?.doorAction, let door = map.door(at: point) else {
             // A spell's area lies under everything else, so it answers last.
-            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map) ?? markerMenu(at: point, map: map)
-                ?? effectAreaMenu(at: point, map: map)
+            return tokenMenu(at: point, map: map) ?? wallMenu(at: point, map: map) ?? stairsMenu(at: point, map: map)
+                ?? markerMenu(at: point, map: map) ?? effectAreaMenu(at: point, map: map)
         }
         // The menu acts on every selected door when the clicked one is among them.
         let doorIDs = selection.contains(door.id) ? selectedDoorIDs(in: map) : [door.id]
@@ -1498,6 +1535,35 @@ final class MapCanvasNSView: NSView {
 
     /// `map` with the tokens this canvas is dragging at their live positions, so the effects they
     /// carry follow them.
+    /// Stairs with their pair letters, moved with an in-progress drag. In the Architect, selected
+    /// stairs get a selection mark and a dashed line to their sister end.
+    private func drawStairsLayer(_ map: GameMap, context: CGContext) {
+        var stairs = map.stairs
+        if !isPlayerView, case .movingStrokes(let ids, let start, let current, true) = interaction {
+            let duplicate = NSEvent.modifierFlags.contains(.option)
+            let moved = stairs.filter { ids.contains($0.id) }.map { s -> Stairs in
+                var c = s
+                c.x += current.x - start.x
+                c.y += current.y - start.y
+                if duplicate { c.id = "preview-" + c.id }
+                return c
+            }
+            stairs = duplicate ? stairs + moved : stairs.map { s in moved.first { $0.id == s.id } ?? s }
+        }
+        drawStairs(stairs, labels: map.stairsLabels, context: context)
+        guard !isPlayerView else { return }
+        let width = 1.5 / viewport.zoom
+        let dash = [5 / viewport.zoom, 3 / viewport.zoom]
+        for s in stairs where selection.contains(s.id) {
+            context.strokeMark(CGPath(rect: CGRect(bounds: s.bounds), transform: nil), width: width, dash: dash)
+            guard let sister = map.sister(of: s), let end = stairs.first(where: { $0.id == sister.id }) else { continue }
+            let link = CGMutablePath()
+            link.move(to: CGPoint(x: s.x, y: s.y))
+            link.addLine(to: CGPoint(x: end.x, y: end.y))
+            context.strokeMark(link, width: width, dash: dash)
+        }
+    }
+
     func mapWithLiveTokenDrag(_ map: GameMap) -> GameMap {
         guard case .movingTokens(let ids, _, let start, let current, true) = interaction else { return map }
         var live = map
@@ -1508,6 +1574,25 @@ final class MapCanvasNSView: NSView {
             live.tokens[i].y += dy
         }
         return live
+    }
+
+    /// Rotate, Unlink and Delete for the clicked stairs (and the other selected stairs with them).
+    private func stairsMenu(at point: Point2D, map: GameMap) -> NSMenu? {
+        guard let action = editing?.stairsAction, let stairs = map.stairs(at: point) else { return nil }
+        let selected = Set(map.stairs.map(\.id)).intersection(selection)
+        let ids = selected.contains(stairs.id) ? selected : [stairs.id]
+        if !selection.contains(stairs.id) { editing?.setSelection([stairs.id]) }
+        needsDisplay = true
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.addItem(MenuAction.item("Rotate 90°") { action(ids, .rotate) })
+        let linked = map.stairs.contains { ids.contains($0.id) && map.sister(of: $0) != nil }
+        menu.addItem(MenuAction.item("Unlink Stairs", enabled: linked) { action(ids, .unlink) })
+        menu.addItem(.separator())
+        let delete = MenuAction.item("Delete Stairs") { action(ids, .delete) }
+        delete.attributedTitle = NSAttributedString(string: "Delete Stairs", attributes: [.foregroundColor: NSColor.systemRed])
+        menu.addItem(delete)
+        return menu
     }
 
     /// Acts on the selected walls when the clicked wall is among them, else on that wall alone.
@@ -1655,6 +1740,16 @@ final class MapCanvasNSView: NSView {
                 }
                 if char == "i", let openColorPicker = editing?.openColorPicker {
                     openColorPicker()
+                    return
+                }
+                if char == "r", toolState.tool == .stairs {
+                    // R turns the selected stairs a quarter turn, else the facing of the next ones.
+                    let stairs = Set(map?.stairs.map(\.id) ?? []).intersection(selection)
+                    if !stairs.isEmpty, let action = editing?.stairsAction {
+                        action(stairs, .rotate)
+                    } else {
+                        editing?.turnStairsTool?()
+                    }
                     return
                 }
                 if char == "r", toolState.tool == .door {
