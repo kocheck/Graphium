@@ -37,7 +37,8 @@ extension GameMap {
         background = edited.background
     }
 
-    // MARK: Drawings (every stroke is selectable, walls too: a native change, PARITY §3.5)
+    // MARK: Drawings (every stroke is selectable, walls too: a native change, PARITY §3.5).
+    // The canvas offers walls only to the Wall tool (decision 018) through `include`.
 
     public func drawingBounds(_ drawing: Drawing) -> Bounds {
         let points = drawing.worldPoints
@@ -54,8 +55,10 @@ extension GameMap {
     }
 
     /// The topmost selectable stroke within its line width (plus `tolerance`) of `point`.
-    public func drawing(at point: Point2D, tolerance: Double = 4) -> Drawing? {
+    /// Strokes `include` turns down are passed through to the ones under them.
+    public func drawing(at point: Point2D, tolerance: Double = 4, include: (Drawing) -> Bool = { _ in true }) -> Drawing? {
         drawings.last { drawing in
+            guard include(drawing) else { return false }
             let points = drawing.worldPoints
             let reach = drawing.size * (drawing.scale ?? 1) / 2 + tolerance
             if points.count == 1 { return Measure.euclideanDistance(points[0], point) <= reach }
@@ -67,8 +70,8 @@ extension GameMap {
         }
     }
 
-    public func drawingIDs(intersecting rect: Bounds) -> [String] {
-        drawings.filter { drawingBounds($0).intersects(rect) }.map(\.id)
+    public func drawingIDs(intersecting rect: Bounds, include: (Drawing) -> Bool = { _ in true }) -> [String] {
+        drawings.filter { include($0) && drawingBounds($0).intersects(rect) }.map(\.id)
     }
 
     public func doorIDs(intersecting rect: Bounds) -> [String] {

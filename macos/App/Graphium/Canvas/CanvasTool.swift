@@ -58,6 +58,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
 
     var help: String {
         switch self {
+        case .wall: return "Wall (W) — drag to draw a wall; click a wall to select it. Other tools pass through walls"
         case .door: return "Door (D) — click a door to select it; R or arrow keys rotate"
         case .stairs:
             return "Stairs (T) — click two places to link a pair; a token dropped on one end arrives at the other"

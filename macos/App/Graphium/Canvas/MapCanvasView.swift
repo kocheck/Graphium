@@ -958,7 +958,7 @@ final class MapCanvasNSView: NSView {
                 editing.setSelection([door.id])
                 if event.clickCount == 2 { doorAction(door.id, .toggle) }
             }
-        } else if editing.moveDrawings != nil, let stroke = map.drawing(at: point) {
+        } else if editing.moveDrawings != nil, let stroke = map.drawing(at: point, include: answersPointer) {
             beginMovingStrokes(hit: stroke.id, at: point, map: map, shift: shift, editing: editing)
         } else if !isPlayerView, editing.stairsAction != nil, let stairs = map.stairs(at: point) {
             beginMovingStrokes(hit: stairs.id, at: point, map: map, shift: shift, editing: editing)
@@ -992,6 +992,25 @@ final class MapCanvasNSView: NSView {
 
     /// The light hit radius in view points.
     private static let lightHitRadius = lightMarkerRadius + 3
+
+    /// Walls answer the pointer only in the Wall tool, or once picked there (decision 018), so a
+    /// press or right-click meant for a token, light or marker never grabs the wall beside it.
+    private func answersPointer(_ stroke: Drawing) -> Bool {
+        stroke.tool != .wall || toolState.tool == .wall || selection.contains(stroke.id)
+    }
+
+    /// A Wall tool click that never became a drag: picks the wall under it (Shift toggles), or
+    /// clears the selection on open ground, instead of saving a one-point wall.
+    private func pickWall(at point: Point2D, shift: Bool) {
+        guard let map, let editing else { return }
+        // Constant on-screen slack, so thin walls stay clickable when zoomed out.
+        let wall = map.drawing(at: point, tolerance: 4 / viewport.zoom, include: { $0.tool == .wall })
+        var next = shift ? selection : []
+        if let wall {
+            if next.contains(wall.id) { next.remove(wall.id) } else { next.insert(wall.id) }
+        }
+        editing.setSelection(next)
+    }
 
     /// A press on a stroke, light, note or effect: selects it (Shift toggles) and starts a move of
     /// every selected stroke, light, note and effect.
@@ -1217,7 +1236,7 @@ final class MapCanvasNSView: NSView {
                 let rect = Bounds(corner: start, corner: point)
                 var hits = Set(map.tokenIDs(intersecting: rect, library: library)).subtracting(hiddenTokenIDs)
                 if editing?.moveDrawings != nil {
-                    hits.formUnion(map.drawingIDs(intersecting: rect))
+                    hits.formUnion(map.drawingIDs(intersecting: rect, include: { $0.tool != .wall }))
                     hits.formUnion(map.doorIDs(intersecting: rect))
                     hits.formUnion(map.lightIDs(intersecting: rect))
                     hits.formUnion(map.noteIDs(intersecting: rect))
@@ -1278,7 +1297,15 @@ final class MapCanvasNSView: NSView {
         }
         if case .panning = interaction { clampViewport() }
         if case .stroke = interaction, let drawing = liveStroke {
-            editing?.addDrawing?(drawing)
+            let start = Point2D(x: drawing.points[0], y: drawing.points[1])
+            let reach = stride(from: 0, to: drawing.points.count - 1, by: 2).map {
+                Measure.euclideanDistance(start, Point2D(x: drawing.points[$0], y: drawing.points[$0 + 1]))
+            }.max() ?? 0
+            if drawing.tool == .wall, reach * viewport.zoom < Self.dragThreshold {
+                pickWall(at: start, shift: event.modifierFlags.contains(.shift))
+            } else {
+                editing?.addDrawing?(drawing)
+            }
         }
         liveStroke = nil
         // A measurement stays up after release until Esc or a tool change (TS).
@@ -1597,9 +1624,9 @@ final class MapCanvasNSView: NSView {
 
     /// Acts on the selected walls when the clicked wall is among them, else on that wall alone.
     private func wallMenu(at point: Point2D, map: GameMap) -> NSMenu? {
-        guard let wallAction = editing?.wallAction, let wall = map.drawing(at: point), wall.tool == .wall else {
-            return nil
-        }
+        guard let wallAction = editing?.wallAction,
+            let wall = map.drawing(at: point, include: { $0.tool == .wall && self.answersPointer($0) })
+        else { return nil }
         let ids: Set<String> =
             selection.contains(wall.id)
             ? Set(map.drawings.filter { $0.tool == .wall && selection.contains($0.id) }.map(\.id)) : [wall.id]
@@ -1630,9 +1657,9 @@ final class MapCanvasNSView: NSView {
     /// Show to Players and Delete for the clicked marker, or the selected
     /// markers when it is among them (decision 014).
     private func markerMenu(at point: Point2D, map: GameMap) -> NSMenu? {
-        guard let markerAction = editing?.markerAction, let marker = map.drawing(at: point), marker.tool == .marker else {
-            return nil
-        }
+        guard let markerAction = editing?.markerAction,
+            let marker = map.drawing(at: point, include: { $0.tool == .marker })
+        else { return nil }
         let ids: Set<String> =
             selection.contains(marker.id)
             ? Set(map.drawings.filter { $0.tool == .marker && selection.contains($0.id) }.map(\.id)) : [marker.id]
