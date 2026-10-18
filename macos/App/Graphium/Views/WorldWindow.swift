@@ -91,13 +91,14 @@ private struct WorldView: View {
                 library: library,
                 imageProvider: { [document] name in document.imageCache.image(named: name, in: document.assets) },
                 selection: selection,
-                // Players may select and move tokens; nothing else (PARITY §4.2).
+                // Players may select and move tokens and open shared note pins; nothing else (PARITY §4.2).
                 editing: CanvasEditing(
                     setSelection: { selection = $0 },
                     dropTokens: { ids, primary, dx, dy, _ in
                         document.playerMoveTokens(ids, primary: primary, dx: dx, dy: dy)
                     },
                     allowsDuplicate: false,
+                    openNote: { document.worldNoteID = $0 },
                     dragPreview: { playerDrag = $0 ?? [:] }),
                 hiddenTokenIDs: hidden,
                 fog: fog,
@@ -146,6 +147,13 @@ private struct WorldView: View {
                 runtime: document.sessionRuntime,
                 imageProvider: { [document] name in document.imageCache.image(named: name, in: document.assets) })
 
+            // A note the DM showed, or a shared pin a player opened: its player notes only.
+            if !document.isPaused, let id = document.worldNoteID, let note = map.notes.first(where: { $0.id == id }) {
+                WorldNoteCard(note: note) { document.worldNoteID = nil }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            }
+
             if document.isPaused {
                 PauseOverlay(line: pauseLine)
             }
@@ -189,6 +197,53 @@ private struct WorldView: View {
             document.worldViewsOpen -= 1
             audio.shutdown()  // nothing may keep playing once the window is gone
         }
+    }
+}
+
+/// A note's title and player notes on the World View (decision 011). Never its DM notes.
+/// Projector-sized: 18 pt and up, `world-ink` on `world-scrim`.
+private struct WorldNoteCard: View {
+    let note: MapNote
+    let close: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Label(note.displayTitle, systemImage: "text.bubble.fill")
+                    .font(.system(size: 28, weight: .bold))
+                    .lineLimit(2)
+                Spacer(minLength: 12)
+                Button(action: close) {
+                    Label("Close", systemImage: "xmark")
+                        .font(.system(size: 18, weight: .semibold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Palette.worldAction.color)
+                .keyboardShortcut(.cancelAction)
+                .help("Close this note")
+            }
+            let text = note.playerNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty {
+                ScrollView {
+                    Text(text)
+                        .font(.system(size: 22))
+                        .lineSpacing(4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.disabled)
+                }
+                .frame(maxHeight: 420)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .foregroundStyle(Palette.worldInk.color)
+        .padding(24)
+        .frame(width: 560, alignment: .leading)
+        .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Palette.worldRule.color, lineWidth: 2))
+        .environment(\.colorScheme, .dark)
+        .accessibilityElement(children: .contain)
     }
 }
 

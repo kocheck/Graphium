@@ -1,9 +1,9 @@
 import AppKit
 import GraphiumCore
 
-/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light) is native.
+/// Architect tools (PARITY §2.2). Keys follow TS: V, M, E, W, D, R; L (Light) and N (Note) are native.
 enum CanvasTool: String, CaseIterable, Identifiable {
-    case select, marker, eraser, wall, door, light, measure
+    case select, marker, eraser, wall, door, light, note, measure
 
     var id: Self { self }
 
@@ -15,6 +15,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .wall: return "Wall"
         case .door: return "Door"
         case .light: return "Light"
+        case .note: return "Note"
         case .measure: return "Measure"
         }
     }
@@ -27,6 +28,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .wall: return "line.diagonal"
         case .door: return "door.left.hand.closed"
         case .light: return "lightbulb"
+        case .note: return "note.text"
         case .measure: return "ruler"
         }
     }
@@ -39,6 +41,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
         case .wall: return "w"
         case .door: return "d"
         case .light: return "l"
+        case .note: return "n"
         case .measure: return "r"
         }
     }
@@ -46,6 +49,7 @@ enum CanvasTool: String, CaseIterable, Identifiable {
     var help: String {
         switch self {
         case .door: return "Door (D) — click a door to select it; R or arrow keys rotate"
+        case .note: return "Note (N) — pin a note to the map; click a pin to open it in the side panel"
         default: return "\(title) (\(key.uppercased()))"
         }
     }
@@ -73,6 +77,11 @@ struct ToolState: Equatable {
 /// Right-click actions on lights (native).
 enum LightAction {
     case on(Bool), preset(LightPreset), delete
+}
+
+/// Right-click actions on note pins (native).
+enum NoteAction {
+    case share(Bool), showOnWorldView, delete
 }
 
 /// Right-click actions on a door (PARITY §3.6).

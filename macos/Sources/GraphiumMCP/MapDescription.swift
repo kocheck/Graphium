@@ -34,6 +34,7 @@ extension GameMap {
         boxes += doors.map { $0.bounds(padding: 0) }
         boxes += tokens.map { tokenBounds($0, library: library) }
         boxes += lights.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
+        boxes += notes.map { Bounds(x: $0.x - gridSize / 2, y: $0.y - gridSize / 2, width: gridSize, height: gridSize) }
         boxes += stairs.map { Bounds(x: $0.x - $0.width / 2, y: $0.y - $0.height / 2, width: $0.width, height: $0.height) }
         guard var minX = boxes.first?.x, var minY = boxes.first?.y else { return nil }
         var maxX = minX, maxY = minY
@@ -79,6 +80,7 @@ enum Describe {
                 "tokens": .number(Double(map.tokens.count)),
                 "stairs": .number(Double(map.stairs.count)),
                 "lights": .number(Double(map.lights.count)),
+                "notes": .number(Double(map.notes.count)),
                 "markers": .number(Double(map.markerStrokes.count)),
                 "explored_fog_regions": .number(Double(map.exploredRegions.count)),
             ],
@@ -110,6 +112,17 @@ enum Describe {
         return .object(out)
     }
 
+    static func note(_ note: MapNote, units: Units) -> JSONValue {
+        [
+            "id": .string(note.id),
+            "center": units.out(Point2D(x: note.x, y: note.y)),
+            "title": .string(note.title),
+            "dm_notes": .string(note.dmNotes),
+            "player_notes": .string(note.playerNotes),
+            "shared": .bool(note.isShared),
+        ]
+    }
+
     static func grid(_ map: GameMap) -> JSONValue {
         ["type": .string(map.gridType.rawValue), "cell_px": .rounded(map.gridSize), "color": .string(map.gridColor)]
     }
@@ -125,6 +138,7 @@ enum Describe {
             "daylight": .bool(map.isDaylightMode),
             "lighting": lighting(map),
             "lights": .array(map.lights.map { light($0, units: units) }),
+            "notes": .array(map.notes.map { note($0, units: units) }),
             "walls": .array(map.wallStrokes.map { wall($0, units: units) }),
             "doors": .array(map.doors.map { door($0, units: units) }),
             "tokens": .array(map.tokens.map { token($0, map: map, library: library, units: units) }),

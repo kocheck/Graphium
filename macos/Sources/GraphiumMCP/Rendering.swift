@@ -178,7 +178,8 @@ struct MapRenderer {
                 + "one cell ≈ \(Int(map.gridSize * s)) px in the image. Cell numbers are printed every 5 cells.",
             "Legend: red lines walls, blue dashed windows, orange one-way walls (tick on the side sight comes from), "
                 + "brown bars closed doors, green outline open doors, gold dot locked, yellow dots lights (solid ring bright, "
-                + "dashed ring dim), blue discs PCs, red discs NPCs.",
+                + "dashed ring dim), white squares note pins (solid edge shared with players, dashed DM only; titles beside "
+                + "them), blue discs PCs, red discs NPCs.",
         ]
         if playersView {
             lines.append(
@@ -225,6 +226,8 @@ struct MapRenderer {
         } else {
             drawTokens(ctx, hidden: [], scale: s)
         }
+        // Over the fog: in the players' view, only the pins the DM shared.
+        drawNotes(ctx, sharedOnly: playersView, scale: s)
         drawCellNumbers(ctx, visible, scale: s)
         guard let image = ctx.makeImage() else { return nil }
         return ImageImport.encode(image, png: true)
@@ -441,6 +444,26 @@ struct MapRenderer {
             let r = max(4, map.gridSize * 0.15)
             ctx.setFillColor(CGColor(srgbRed: 1, green: 0.82, blue: 0.3, alpha: alpha))
             ctx.fillEllipse(in: CGRect(x: light.x - r, y: light.y - r, width: 2 * r, height: 2 * r))
+        }
+    }
+
+    /// Note pins: a white square with a dark edge, dashed for DM-only notes, and the title.
+    private func drawNotes(_ ctx: CGContext, sharedOnly: Bool, scale: Double) {
+        for note in map.notes where !sharedOnly || note.isShared {
+            let r = max(5, map.gridSize * 0.18)
+            let rect = CGRect(x: note.x - r, y: note.y - r, width: 2 * r, height: 2 * r)
+            ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+            ctx.fill(rect)
+            ctx.saveGState()
+            ctx.setStrokeColor(CGColor(gray: 0.1, alpha: 1))
+            ctx.setLineWidth(max(1.5, map.gridSize * 0.04))
+            if !note.isShared { ctx.setLineDash(phase: 0, lengths: [r * 0.4, r * 0.25]) }
+            ctx.stroke(rect)
+            ctx.restoreGState()
+            let size = CGFloat(12 / scale)
+            drawText(
+                note.displayTitle, in: ctx, centre: CGPoint(x: rect.midX, y: rect.maxY + size * 0.9), size: size,
+                color: CGColor(gray: 1, alpha: 1), flipped: true, outline: CGColor(gray: 0, alpha: 0.85))
         }
     }
 

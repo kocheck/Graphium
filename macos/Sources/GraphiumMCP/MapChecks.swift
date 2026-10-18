@@ -19,6 +19,7 @@ struct MapChecks {
         issues += vision()
         issues += lighting()
         issues += outsideBackground()
+        issues += notes()
         return issues
     }
 
@@ -201,6 +202,17 @@ struct MapChecks {
             }
         }
         return issues
+    }
+
+    /// A pin shared with players but with nothing for them to read.
+    func notes() -> [JSONValue] {
+        map.notes.filter { $0.isShared && $0.playerNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.map {
+            issue(
+                "info", "shared_note_without_player_notes",
+                "\($0.displayTitle) is shown to players but has no player_notes, so clicking it shows only its title. "
+                    + "Add player_notes, or set shared false if it is for the DM.", ids: [$0.id],
+                at: Point2D(x: $0.x, y: $0.y))
+        }
     }
 
     func outsideBackground() -> [JSONValue] {

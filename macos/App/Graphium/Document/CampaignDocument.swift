@@ -28,6 +28,8 @@ final class CampaignDocument: ReferenceFileDocument {
     @Published var isPaused = false
     /// The DM's measurement mirrored to the World View when broadcasting. Transient.
     @Published var broadcastMeasurement: MeasurementShape?
+    /// The note whose player notes the World View is showing (never its DM notes). Transient.
+    @Published var worldNoteID: String?
     /// The DM's in-progress token drag. Its own object, not `@Published` here, so a
     /// drag only re-renders the World View and not every view of the document.
     let liveDrag = LiveDragModel()

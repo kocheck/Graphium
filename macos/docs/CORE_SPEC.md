@@ -79,6 +79,8 @@ on decode for every map** (strictly more robust, no visible difference for valid
 
 **Native only** (TS ignores both): `lights` `LightSource[]`, optional, absent = `[]`, written only when not empty; `ambientLight` `'dark' | 'dim' | 'bright'`, optional, absent = lighting off. A `LightSource` is `{ id, x, y, bright, dim, isOn?, name? }`: `x`/`y` is the centre in world px, `bright` and `dim` are radii in feet (`dim` is the outer radius, never less than `bright`), `isOn` is absent when on, `name` is the preset it came from. With lighting off, vision is as in §3.3. With it on, every PC sees within its line of sight out to the map's edge, and a spot counts as seen when it is lit (ambient or a light whose own line of sight reaches it), or lies within the PC's darkvision (5e 2024: dim seen as bright, darkness as dim). Only seen ground is recorded as explored.
 
+**Native only:** `notes` `MapNote[]`, optional, absent = `[]`, written only when not empty. A `MapNote` is `{ id, x, y, title?, dmNotes?, playerNotes?, isShared? }`: `x`/`y` is the pin's point in world px; empty strings and `isShared` false are left out. `dmNotes` are the DM's alone. `playerNotes` are shown on the World View, with the title, when the DM shares the pin (`isShared`) and a player opens it, or when the DM shows the note there (decision 011).
+
 `GridType` (`gameStore.ts:113`): `'LINES' | 'DOTS' | 'HIDDEN' | 'HEXAGONAL' | 'ISOMETRIC'`.
 LINES/DOTS/HIDDEN are all square geometry (visual style only). HEXAGONAL = flat-top hex. ISOMETRIC = diamond.
 

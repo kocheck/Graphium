@@ -462,6 +462,23 @@ extension GraphiumTools {
         }
     }
 
+    func addNotes(_ args: Arguments) throws -> ToolResult {
+        try withMap(args, write: true) { loaded, index, units in
+            var added: [JSONValue] = []
+            for spec in try args.objects("notes") {
+                guard let centre = try spec.point("center").map(units.px) else {
+                    throw ToolError("\(spec.context).center is required.")
+                }
+                let note = MapNote(
+                    x: centre.x, y: centre.y, title: try spec.string("title") ?? "", dmNotes: try spec.string("dm_notes") ?? "",
+                    playerNotes: try spec.string("player_notes") ?? "", isShared: try spec.bool("shared") ?? false)
+                loaded.campaign.maps[index].notes.append(note)
+                added.append(Describe.note(note, units: units))
+            }
+            return ["added_notes": .array(added)]
+        }
+    }
+
     func drawMarkers(_ args: Arguments) throws -> ToolResult {
         try withMap(args, write: true) { loaded, index, units in
             var added: [JSONValue] = []
@@ -557,6 +574,16 @@ extension GraphiumTools {
                     map.lights[i].dim = max(map.lights[i].dim, map.lights[i].bright)
                     if take("on"), let on = try change.bool("on") { map.lights[i].isOn = on }
                     if take("name") { map.lights[i].name = try change.string("name") }
+                } else if let i = map.notes.firstIndex(where: { $0.id == id }) {
+                    kind = "note"
+                    if take("center"), let p = try change.point("center").map(units.px) {
+                        map.notes[i].x = p.x
+                        map.notes[i].y = p.y
+                    }
+                    if take("title") { map.notes[i].title = try change.string("title") ?? "" }
+                    if take("dm_notes") { map.notes[i].dmNotes = try change.string("dm_notes") ?? "" }
+                    if take("player_notes") { map.notes[i].playerNotes = try change.string("player_notes") ?? "" }
+                    if take("shared"), let shared = try change.bool("shared") { map.notes[i].isShared = shared }
                 } else if let i = map.stairs.firstIndex(where: { $0.id == id }) {
                     kind = "stairs"
                     if take("center"), let p = try change.point("center").map(units.px) {
@@ -589,12 +616,11 @@ extension GraphiumTools {
             let ids = Set(try args.strings("ids") ?? [])
             var map = loaded.campaign.maps[index]
             func count(_ m: GameMap) -> Int {
-                m.tokens.count + m.drawings.count + m.doors.count + m.stairs.count + m.lights.count
+                m.tokens.count + m.drawings.count + m.doors.count + m.stairs.count + m.lights.count + m.notes.count
             }
             let before = count(map)
             map.removeItems(ids)
             map.stairs.removeAll { ids.contains($0.id) }
-            map.lights.removeAll { ids.contains($0.id) }
             let removed = before - count(map)
             loaded.campaign.maps[index] = map
             var out: [String: JSONValue] = ["removed": .number(Double(removed))]
@@ -615,10 +641,11 @@ extension GraphiumTools {
                 case "tokens": map.tokens.removeAll()
                 case "stairs": map.stairs.removeAll()
                 case "lights": map.lights.removeAll()
+                case "notes": map.notes.removeAll()
                 case "fog": map.exploredRegions.removeAll()
                 case "background": map.background = nil
                 default:
-                    throw ToolError("Unknown layer \(layer). Use walls, doors, tokens, markers, stairs, lights, fog or background.")
+                    throw ToolError("Unknown layer \(layer). Use walls, doors, tokens, markers, stairs, lights, notes, fog or background.")
                 }
             }
             loaded.campaign.maps[index] = map

@@ -16,7 +16,8 @@ public enum AgentGuide {
         walls and caves (corners must share the exact same point; use closed: true for loops), add_doors on wall \
         lines, kind "window" for walls you can see through. Or generate_dungeon for a random layout.
         4. Then contents: add_tokens (PCs, NPCs and monsters), add_lights, add_stairs, draw_markers for \
-        hazards and notes.
+        hazards, and add_notes for room keys: dm_notes for the DM's secrets, player_notes for read-aloud text, \
+        shared only when the DM wants players to see the pin.
         5. Check your work: render_map to see it, check_map to catch light leaks and misplaced doors and tokens. \
         Fix with update_objects or remove_objects; undo reverts this server's last change.
         6. Tell the DM the file path and what is on each map. They open it in Graphium, which also reloads it \
@@ -223,6 +224,8 @@ public enum AgentGuide {
         - Lights: a centre point and two radii in feet (bright_ft, then dim_ft as the outer edge). They only \
         matter on maps with lighting on.
         - Markers: freehand lines with a colour and width in pixels; they block nothing.
+        - Notes: a pin at a centre point with a title, dm_notes (never shown to players) and player_notes. \
+        shared puts the pin on the players' World View, where clicking it shows the title and player_notes.
         - add_rooms door and opening positions (at) are measured along the side from its top or left end to \
         the door's centre.
         - Hex and isometric maps use the same coordinates (cells = multiples of cell_px), but cells aren't \

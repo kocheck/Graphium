@@ -240,6 +240,7 @@ sidebar collapse is the system sidebar toggle.
 - [x] Door orientation toggle button — Only visible while the Door tool is active. (source: src/components/Toolbar.tsx:167-180)
 - [x] Measure (R) with mode buttons Ruler / Blast / Cone and a Broadcast toggle ("Broadcasting" / "Local Only"). The mode buttons are only visible while Measure is active. Changing mode clears the active measurement. (source: src/components/Toolbar.tsx:182-242, src/store/uiStore.ts:52-56)
 - [x] Marker colour HUD (bottom centre, Marker tool only) — A large swatch opens the colour picker. Three recent-colour swatches follow, most recent first and deduped. The default is `#df4b26`. (source: src/components/Toolbar.tsx:243-280, src/store/uiStore.ts:34-47)
+- [x] **Native:** Note (N) places a note pin at the centre of the cell clicked and opens it in the inspector. Clicking a pin with Note or Select selects it; pins drag, Option-duplicate, marquee-select and erase like lights. Right-click: Show Pin to Players, Show Player Notes on World View, Delete.
 - [x] Not in the toolbar: Save/Load, World View launch and Generate Dungeon. These live in menus and the palette. Older docstrings claim otherwise. (source: src/App.tsx:77-84 vs src/components/Toolbar.tsx) **Native:** Native: the toolbar also has World View, Add Tokens and Map Image, which is usual on macOS.
 
 **Native mapping:** Use a window `.toolbar` with a segmented `Picker` for tools, a `ControlGroup` for
@@ -256,6 +257,8 @@ touch-bar-like floating HUD is optional.
 - [x] Read-only details — Scale (for example "1x") and rounded position. (source: src/components/TokenInspector.tsx:431-450)
 - [x] Prototype/instance resolution — Each token property falls back to the linked library item's defaults (name, type, visionRadius, scale, movementSpeed). (source: src/store/gameStore.ts:25-62, src/hooks/useTokenData.ts)
 - [x] Not editable anywhere in the UI: per-token `movementSpeed` (always the 30 ft default unless a library default sets it), token rotation, and explicit numeric scale. (source: src/components/Canvas/OverlayLayer.tsx:131, src/hooks/useTokenData.ts)
+
+**Native:** With notes selected and no tokens, the inspector shows the note instead: title, DM Notes ("Only you see these."), Player Notes, Show Pin to Players, and Show on World View. Typing is saved after a short pause, on focus loss and on selection change, so undo steps are phrases.
 
 **Native mapping:** Use a trailing `.inspector` (macOS 14) with a `Form`, a `Picker(.segmented)` for
 type, and `Stepper`/`TextField(format: .number)` for vision. Multi-selection editing binds to
@@ -446,6 +449,7 @@ at 25%) as a pattern layer.
 - [x] The map background, paper noise, the grid in the map's grid colour, markers, wall lines (black, 6 px), doors with high-legibility styling, stairs, tokens with name labels, fog of war (unless Daylight mode is on), and the DM's measurement when broadcasting is on. (source: src/components/Canvas/CanvasManager.tsx:1201-1356, src/components/Canvas/DrawingLayer.tsx:54-55, src/components/Canvas/DoorShape.tsx:182-217) **Native:** Doors are drawn under the fog rather than above it (see 3.7 Layer order); tokens are above it as in TS.
 - [x] Not shown: the sidebar, toolbar, inspector, palette, resource monitor, transformer handles, hover-cell highlight, door preview and movement range. (source: src/App.tsx:516-618, src/components/Canvas/OverlayLayer.tsx:33, 119)
 - [x] NPCs outside party vision are hidden (see 3.7).
+- [x] **Native:** Shared note pins, over the fog, and a note card with a pin's title and player notes when a player clicks the pin or the DM shows the note (decision 011). DM notes and unshared pins never appear.
 - [x] "Center on Party" button (bottom right) — Fits the camera to all PC tokens with 2 cells of padding. (source: src/components/Canvas/CanvasManager.tsx:1054-1108, 1403-1425)
 - [x] Minimap (see 3.12).
 - [ ] Projector legibility contract — Overlay text is at least 18 px with 7:1 contrast, strokes are at least 2 px, and there is no DM chrome. This is enforced by a Playwright test. (source: tests/world-legibility.spec.ts:2) **Native:** Open: Center on Party uses 18 pt and the pause text is large, but no automated legibility test exists.
@@ -456,6 +460,7 @@ at 25%) as a pattern layer.
 
 - [x] Pan and zoom independently: wheel, Ctrl+wheel, Space-drag, pinch, two-finger pan, `+`/`-`. (source: src/components/Canvas/CanvasManager.tsx:92-101)
 - [x] Select and drag visible tokens. Only x/y positions are sent back. The main process sanitises every World-to-Architect message down to `TOKEN_UPDATE {x,y}` or a single-level `BATCH`. Players cannot change any other property. Hidden NPCs cannot be grabbed. (source: src/utils/worldViewTokenSync.ts, electron/main.ts:1167-1173, src/components/SyncManager.tsx:307-330, 370-410)
+- [x] **Native:** Click a shared note pin to read its player notes; Close or Esc hides the card.
 - [x] Blocked: drawing tools, file drops, calibration, transform (scale/rotate), Alt-duplicate, delete, door toggling and door context menu, measurement, grid hotkeys, and tool hotkeys. `?` still opens About. (source: src/components/Canvas/CanvasManager.tsx:92-101, 823-836, src/components/Canvas/hooks/useCanvasInteraction.ts:248-305, src/components/Canvas/DoorShape.tsx:102-122, src/App.tsx:243-246)
 
 ### 4.3 Sync model
