@@ -44,6 +44,8 @@ struct ArchitectView: View {
     @State private var zoomRequest: ZoomRequest?
     @State private var fitRequest: FitRequest?
     @State private var canvasZoom = 1.0
+    /// The canvas camera, held without observing so panning doesn't redraw this view.
+    @State private var camera = CanvasCamera()
     @State private var toast: Toast?
 
     private enum InspectorTab: Hashable {
@@ -264,7 +266,8 @@ struct ArchitectView: View {
                 showConsoleSettings: { showingConsoleSettings = true },
                 zoomIn: { zoomCanvas(by: 1.25) },
                 zoomOut: { zoomCanvas(by: 0.8) },
-                zoomToFit: { zoomToFit() }))
+                zoomToFit: { zoomToFit() },
+                showViewOnWorld: { showViewOnWorld() }))
         .onAppear {
             document.adoptUndoManager(undoManager)
             dismissWindow(id: WelcomeView.windowID)
@@ -559,7 +562,9 @@ struct ArchitectView: View {
             measurement: measurement,
             fitRequest: fitRequest,
             zoomRequest: zoomRequest,
-            onViewportChange: { viewport, _ in
+            onViewportChange: { [camera] viewport, size in
+                camera.viewport = viewport
+                camera.size = size
                 if canvasZoom != viewport.zoom { canvasZoom = viewport.zoom }
             },
             calibrating: calibrating,
@@ -619,6 +624,7 @@ struct ArchitectView: View {
         switch command.id {
         case "world-view-toggle-pause": document.isPaused.toggle()
         case "world-view-launch": openWindow(id: WorldWindow.id, value: document.sessionID)
+        case "world-view-show-this-view": showViewOnWorld()
         case "dungeon-generate": showingDungeon = true
         case "fog-reset":
             // After the palette sheet has closed, so the dialog isn't dropped with it.
@@ -1386,6 +1392,21 @@ struct ArchitectView: View {
         zoomRequest = ZoomRequest(factor: factor)
     }
 
+    /// Sends the area the DM is looking at to the World View, so the TV can be framed
+    /// without reaching for the TV's window.
+    private func showViewOnWorld() {
+        guard camera.size.width > 0, camera.size.height > 0 else { return }
+        guard document.worldViewsOpen > 0 else {
+            showToast("Open the World View first (⇧⌘W), then show it this view.")
+            return
+        }
+        document.worldFrameRequest = FitRequest(
+            bounds: camera.viewport.visibleBounds(viewWidth: camera.size.width, viewHeight: camera.size.height))
+        if document.isPaused {
+            showToast("Framed. The World View is paused, so players will see it when you resume.")
+        }
+    }
+
     /// Frames the map image, else the party, else the default world (as the minimap does).
     private func zoomToFit() {
         let campaign = document.campaign
@@ -1422,3 +1443,8 @@ private struct PauseToolbarButton: View {
     }
 }
 
+/// The Architect canvas's last camera, for "Show This View on World View".
+final class CanvasCamera {
+    var viewport = Viewport()
+    var size = CGSize.zero
+}

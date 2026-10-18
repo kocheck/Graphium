@@ -30,6 +30,9 @@ public struct PaletteCommand: Equatable, Identifiable, Sendable {
             .init(
                 id: "world-view-toggle-pause", label: isPaused ? "Resume World View (Play)" : "Pause World View",
                 category: .worldView, keywords: ["pause", "play", "resume", "world", "view", "players", "loading"], shortcut: "⇧⌘P"),
+            .init(
+                id: "world-view-show-this-view", label: "Show This View on World View", category: .worldView,
+                keywords: ["world", "view", "show", "players", "tv", "projector", "frame", "send", "here", "sync", "camera"], shortcut: "⇧⌘Y"),
             .init(id: "world-view-launch", label: "Launch World View Window", category: .worldView, keywords: ["world", "view", "projector", "player", "window", "launch", "open"], shortcut: "⇧⌘W"),
             .init(id: "fog-reset", label: "Reset Explored Fog", category: .worldView, keywords: ["fog", "explored", "seen", "reset", "forget", "party", "vision", "clear"]),
             .init(id: "dungeon-generate", label: "Generate Dungeon", category: .generation, keywords: ["dungeon", "generator", "generate", "random", "map", "create"]),

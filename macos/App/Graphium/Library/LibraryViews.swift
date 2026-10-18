@@ -1,3 +1,4 @@
+import AppKit
 import GraphiumCore
 import SwiftUI
 import UniformTypeIdentifiers
@@ -71,6 +72,10 @@ struct LibraryManagerView: View {
             HStack {
                 Text("\(browsable.items.count) asset\(browsable.items.count == 1 ? "" : "s")")
                     .foregroundStyle(.secondary)
+                Button("Show in Finder") { store.showInFinder() }
+                    .help("The library is a folder of images and an index.json you can copy or back up")
+                Button("Export…") { exportLibrary() }
+                    .help("Copy the whole library to a folder you choose")
                 Spacer()
                 Button("Upload…") { showingImporter = true }
                 Button("Done") { dismiss() }
@@ -117,6 +122,19 @@ struct LibraryManagerView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
+        }
+    }
+
+    private func exportLibrary() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "Graphium Library"
+        panel.message = "Copies the library's images and index.json into a new folder."
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try store.export(to: url)
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 

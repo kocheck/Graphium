@@ -129,6 +129,22 @@ final class BoardPackTests: XCTestCase {
         ])
     }
 
+    func testRemoteHostsAreListedOnceAndDeclinedFilesAreSkipped() async {
+        var pack = BoardPack.Pack()
+        pack.imageSets = [.init(id: "s", title: "S", note: "", images: [
+            .init(id: "a", name: "a", cue: "", src: "https://CDN.example.com/a.png", alt: ""),
+            .init(id: "b", name: "b", cue: "", src: "https://cdn.example.com/b.png", alt: ""),
+            .init(id: "c", name: "c", cue: "", src: "plates/c.png", alt: ""),
+        ])]
+        pack.sfx = [.init(id: "boom", label: "Boom", kind: .local, synthType: nil, src: "https://audio.example.org/boom.mp3")]
+        XCTAssertEqual(BoardPack.remoteHosts(in: pack), ["audio.example.org", "cdn.example.com"])
+
+        let result = await BoardPack.materialize(
+            pack, resolveFile: { _ in .data(Data([1]), fileName: "c.png") }, fetch: { _ in .declined }, persist: { _, n in n })
+        XCTAssertEqual(result.catalog.imageSets[0].images.map(\.src), ["c.png"])
+        XCTAssertTrue(result.skipped.contains("Image \"a\": remote file not downloaded"))
+    }
+
     func testExportWritesWatchURLsAndSanitizedPaths() throws {
         var catalog = SessionConsoleCatalog.empty(campaignName: "x")
         catalog.imageSets = [ImageSet(title: "S", images: [StageImage(id: "../evil", name: "e", src: "e.webp", thumbnailSrc: "e.webp")])]

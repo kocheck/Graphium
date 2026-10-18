@@ -8,9 +8,20 @@ enum BoardPackIO {
         case replace, merge
     }
 
+    /// The hosts a chosen `board.json` would download from, so the DM can be asked first.
+    static func remoteHosts(in url: URL) -> [String] {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else { return [] }
+        return BoardPack.remoteHosts(in: BoardPack.parse(data).pack)
+    }
+
     /// Materialises a chosen `board.json` into this campaign and returns a summary.
+    /// Remote files are fetched only when `downloadRemoteFiles` is true (the DM agreed
+    /// after seeing the hosts); otherwise they're skipped without contacting anyone.
     static func importPack(
-        from url: URL, into document: CampaignDocument, mode: Mode, undoManager: UndoManager?
+        from url: URL, into document: CampaignDocument, mode: Mode, downloadRemoteFiles: Bool,
+        undoManager: UndoManager?
     ) async -> String {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
@@ -22,7 +33,10 @@ enum BoardPackIO {
         let result = await BoardPack.materialize(
             pack,
             resolveFile: { path in resolve(path, root: root) },
-            fetch: { url in await fetchCapped(url) },
+            fetch: { url in
+                guard downloadRemoteFiles else { return .declined }
+                return await fetchCapped(url)
+            },
             persist: { data, name in pending.add(data, preferredName: name) })
         // Plates get a MAP-sized image and a THUMB thumbnail, as the dropzone does
         // (TS `processImportedCatalogPlates`); a plate that can't be processed keeps its bytes.

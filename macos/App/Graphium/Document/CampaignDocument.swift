@@ -28,6 +28,9 @@ final class CampaignDocument: ReferenceFileDocument {
     @Published var isPaused = false
     /// The DM's measurement mirrored to the World View when broadcasting. Transient.
     @Published var broadcastMeasurement: MeasurementShape?
+    /// The DM asked the World View to show this map area ("Show This View on World View").
+    /// Transient; a new request (new id) re-frames even the same area.
+    @Published var worldFrameRequest: FitRequest?
     /// The note whose player notes the World View is showing (never its DM notes). Transient.
     @Published var worldNoteID: String? {
         didSet { if worldNoteID != oldValue { playSoundsOnShow() } }

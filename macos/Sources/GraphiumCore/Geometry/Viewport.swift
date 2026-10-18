@@ -20,6 +20,12 @@ public struct Viewport: Equatable, Sendable {
         Point2D(x: point.x / zoom + origin.x, y: point.y / zoom + origin.y)
     }
 
+    /// The map area a view of the given size shows (what "Show This View on World View"
+    /// sends to the players' screen).
+    public func visibleBounds(viewWidth: Double, viewHeight: Double) -> Bounds {
+        Bounds(x: origin.x, y: origin.y, width: viewWidth / zoom, height: viewHeight / zoom)
+    }
+
     /// Zooms by `factor` keeping the map point under `anchor` (view coordinates) fixed.
     public mutating func zoom(by factor: Double, around anchor: Point2D) {
         let pinned = mapPoint(fromView: anchor)

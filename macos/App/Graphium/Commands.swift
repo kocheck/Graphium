@@ -27,6 +27,8 @@ struct ArchitectActions {
     var zoomIn: () -> Void
     var zoomOut: () -> Void
     var zoomToFit: () -> Void
+    /// Frames the World View on what the Architect canvas is showing.
+    var showViewOnWorld: () -> Void
 }
 
 struct FocusedArchitectActionsKey: FocusedValueKey {
@@ -86,16 +88,18 @@ struct ExportCommands: Commands {
 /// View menu: World View and pause (PARITY §1.3, §1.12).
 struct WorldViewCommands: Commands {
     @FocusedValue(\.campaignDocument) private var document
+    @FocusedValue(\.architectActions) private var actions
 
     var body: some Commands {
         CommandGroup(after: .toolbar) {
-            WorldViewMenuItems(document: document)
+            WorldViewMenuItems(document: document, actions: actions)
         }
     }
 }
 
 private struct WorldViewMenuItems: View {
     let document: CampaignDocument?
+    let actions: ArchitectActions?
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -105,6 +109,10 @@ private struct WorldViewMenuItems: View {
         }
         .keyboardShortcut("w", modifiers: [.command, .shift])
         .disabled(document == nil)
+
+        Button("Show This View on World View") { actions?.showViewOnWorld() }
+            .keyboardShortcut("y", modifiers: [.command, .shift])
+            .disabled(actions == nil)
 
         if let document {
             PauseMenuItem(document: document)

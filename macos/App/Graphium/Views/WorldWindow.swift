@@ -46,6 +46,9 @@ private struct WorldView: View {
     @State private var playerDrag: [String: Point2D] = [:]
     @State private var fitRequest: FitRequest?
     @State private var pauseLine = SystemMessages.pauseOverlay[0]
+    /// "Set Screen Size…": the diagonal being typed, nil when the sheet is closed.
+    @State private var screenSizeText: String?
+    @State private var scaleMessage: String?
     /// This window owns the campaign's Session Console audio.
     @StateObject private var audio = WorldAudioEngine()
     /// Held without observing, so camera moves only redraw the minimap.
@@ -177,9 +180,46 @@ private struct WorldView: View {
                 }
                 .help("Move the World View to a display and make it full screen")
             }
+            ToolbarItem {
+                Menu {
+                    Button("1-Inch Squares") { zoomToInchSquares(map: map) }
+                    Button("Set Screen Size…") {
+                        let saved = window.window?.screen.map(TableScreen.savedDiagonal) ?? 0
+                        screenSizeText = saved > 0 ? String(format: "%g", saved) : ""
+                    }
+                } label: {
+                    Label("Table Scale", systemImage: "ruler")
+                } primaryAction: {
+                    zoomToInchSquares(map: map)
+                }
+                .help("Zoom so each grid square is one inch on this screen, for miniatures on a flat TV")
+            }
+        }
+        .alert(
+            "Screen size",
+            isPresented: Binding(get: { screenSizeText != nil }, set: { if !$0 { screenSizeText = nil } })
+        ) {
+            TextField("Diagonal in inches", text: Binding(get: { screenSizeText ?? "" }, set: { screenSizeText = $0 }))
+            Button("Save") {
+                if let screen = window.window?.screen {
+                    TableScreen.saveDiagonal(Double(screenSizeText ?? "") ?? 0, for: screen)
+                    zoomToInchSquares(map: map)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The TV's diagonal, as sold (for example 43). Leave empty to use the size the screen reports.")
+        }
+        .alert("Table Scale", isPresented: Binding(get: { scaleMessage != nil }, set: { if !$0 { scaleMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(scaleMessage ?? "")
         }
         .onChange(of: document.isPaused) { _, paused in
             if paused { pauseLine = SystemMessages.pauseOverlay.randomElement() ?? pauseLine }
+        }
+        .onChange(of: document.worldFrameRequest) { _, request in
+            if let request { fitRequest = request }
         }
         .onChange(of: campaign.activeMapID) { _, _ in
             selection = []
@@ -273,6 +313,52 @@ private struct PauseOverlay: View {
 
 /// Holds the hosting NSWindow so the World View can move itself between displays.
 @MainActor
+extension WorldView {
+    /// One grid square = one inch on the screen showing this window, centred where it is.
+    fileprivate func zoomToInchSquares(map: GameMap) {
+        guard let screen = window.window?.screen else { return }
+        guard let ppi = TableScreen.pointsPerInch(of: screen) else {
+            scaleMessage =
+                "\(screen.localizedName) doesn't report its size. Choose Set Screen Size… and type its diagonal in inches."
+            return
+        }
+        let size = minimap.viewSize
+        guard size.width > 0, size.height > 0, let zoom = PhysicalScale.inchGridZoom(gridSize: map.gridSize, pointsPerInch: ppi)
+        else { return }
+        let center = minimap.viewport.mapPoint(fromView: Point2D(x: size.width / 2, y: size.height / 2))
+        fitRequest = FitRequest(
+            bounds: PhysicalScale.bounds(center: center, zoom: zoom, viewWidth: size.width, viewHeight: size.height))
+    }
+}
+
+/// A display's physical size, for 1-inch squares (PhysicalScale).
+enum TableScreen {
+    private static func key(_ screen: NSScreen) -> String { "graphium.screenDiagonal.\(screen.localizedName)" }
+
+    /// The diagonal the DM typed for this display, in inches; 0 when none.
+    static func savedDiagonal(_ screen: NSScreen) -> Double { UserDefaults.standard.double(forKey: key(screen)) }
+
+    static func saveDiagonal(_ inches: Double, for screen: NSScreen) {
+        if inches > 0 { UserDefaults.standard.set(inches, forKey: key(screen)) } else { UserDefaults.standard.removeObject(forKey: key(screen)) }
+    }
+
+    /// Points per inch: the typed diagonal if any, else the size the display reports.
+    /// Projectors and some TVs report nothing or nonsense, so implausible sizes give nil.
+    static func pointsPerInch(of screen: NSScreen) -> Double? {
+        let frame = screen.frame
+        let diagonal = savedDiagonal(screen)
+        if diagonal > 0 {
+            return PhysicalScale.pointsPerInch(diagonalInches: diagonal, widthPoints: frame.width, heightPoints: frame.height)
+        }
+        guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else { return nil }
+        let millimeters = CGDisplayScreenSize(CGDirectDisplayID(number.uint32Value))
+        guard let ppi = PhysicalScale.pointsPerInch(widthPoints: frame.width, widthMillimeters: millimeters.width),
+            (10...400).contains(ppi)
+        else { return nil }
+        return ppi
+    }
+}
+
 final class WindowReference: ObservableObject {
     weak var window: NSWindow?
 

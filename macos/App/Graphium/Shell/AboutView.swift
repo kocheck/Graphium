@@ -198,7 +198,7 @@ struct ShortcutsList: View {
             Row(keys: "⌘K / ⌘P", action: "Command palette"), Row(keys: "⇧⌘D", action: "Generate dungeon"), Row(keys: "⌘Z / ⇧⌘Z", action: "Undo / Redo"),
         ]),
         ShortcutGroup(title: "World View", rows: [
-            Row(keys: "⇧⌘W", action: "Open World View"), Row(keys: "⇧⌘P", action: "Pause / resume players"), Row(keys: "⇧⌘M", action: "Performance monitor"),
+            Row(keys: "⇧⌘W", action: "Open World View"), Row(keys: "⇧⌘Y", action: "Show this view on World View"), Row(keys: "⇧⌘P", action: "Pause / resume players"), Row(keys: "⇧⌘M", action: "Performance monitor"),
             Row(keys: "?", action: "About Graphium"),
         ]),
         ShortcutGroup(title: "Session Console", rows: [Row(keys: "1 – 9", action: "Play a track"), Row(keys: "D", action: "Duck music"), Row(keys: "Esc", action: "Stop")]),

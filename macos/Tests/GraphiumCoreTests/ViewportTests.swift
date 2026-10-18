@@ -3,6 +3,17 @@ import XCTest
 
 @testable import GraphiumCore
 
+final class VisibleBoundsTests: XCTestCase {
+    func testVisibleBoundsIsTheViewInMapUnits() {
+        let viewport = Viewport(origin: Point2D(x: 100, y: 50), zoom: 2)
+        XCTAssertEqual(viewport.visibleBounds(viewWidth: 800, viewHeight: 600), Bounds(x: 100, y: 50, width: 400, height: 300))
+        // Fitting those bounds into a same-shaped view reproduces the viewport.
+        var other = Viewport()
+        other.fit(viewport.visibleBounds(viewWidth: 800, viewHeight: 600), viewWidth: 800, viewHeight: 600)
+        XCTAssertEqual(other.zoom, 2, accuracy: 1e-9)
+    }
+}
+
 final class ViewportTests: XCTestCase {
     func testMapAndViewPointsRoundTrip() {
         let viewport = Viewport(origin: Point2D(x: 120, y: -40), zoom: 2.5)
