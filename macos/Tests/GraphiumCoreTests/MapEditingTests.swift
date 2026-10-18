@@ -58,6 +58,23 @@ final class MapEditingTests: XCTestCase {
         XCTAssertEqual(map.drawingIDs(intersecting: Bounds(x: -10, y: -10, width: 200, height: 200)), ["m", "w"])
     }
 
+    /// Outside the Wall tool the canvas passes through walls (decision 018): a wall drawn over a
+    /// marker must not catch the click or the box meant for the marker.
+    func testStrokeHitTestingCanPassThroughWalls() {
+        var map = GameMap()
+        map.drawings = [
+            Drawing(id: "m", tool: .marker, points: [0, 50, 100, 50], color: "#000", size: 6),
+            Drawing(id: "w", tool: .wall, points: [0, 50, 100, 50], color: "#f00", size: 8),
+            Drawing(id: "w2", tool: .wall, points: [0, 90, 100, 90], color: "#f00", size: 8),
+        ]
+        let notWalls: (Drawing) -> Bool = { $0.tool != .wall }
+        XCTAssertEqual(map.drawing(at: Point2D(x: 50, y: 50))?.id, "w", "the wall is on top")
+        XCTAssertEqual(map.drawing(at: Point2D(x: 50, y: 50), include: notWalls)?.id, "m")
+        XCTAssertNil(map.drawing(at: Point2D(x: 50, y: 90), include: notWalls), "a lone wall is not there")
+        XCTAssertEqual(
+            map.drawingIDs(intersecting: Bounds(x: -10, y: -10, width: 200, height: 200), include: notWalls), ["m"])
+    }
+
     func testMoveAndDuplicateStrokes() {
         var map = GameMap()
         map.drawings = [Drawing(id: "m", tool: .marker, points: [0, 0, 10, 0], color: "#000", size: 5)]
