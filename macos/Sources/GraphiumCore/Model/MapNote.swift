@@ -68,16 +68,16 @@ public struct MapNote: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-/// A Session Console track or sound effect attached to a note pin, for the DM to play when
+/// A Session Console track, sound effect or soundscape attached to a note pin, for the DM to play when
 /// the moment comes (native only). It refers to the Session Console entry by id; the audio
 /// itself stays in the campaign's Session Console, never copied onto the pin.
 public struct NoteSound: Codable, Equatable, Sendable {
     public enum Kind: String, Codable, CaseIterable, Sendable {
-        case track, sfx
+        case track, sfx, soundscape
     }
 
     public var kind: Kind
-    /// The Session Console track or effect id.
+    /// The Session Console track, effect or built-in soundscape id.
     public var ref: String
     /// Plays by itself when the DM puts the note on the World View.
     public var playOnShow: Bool
@@ -111,6 +111,7 @@ public struct NoteSound: Codable, Equatable, Sendable {
         switch kind {
         case .track: .playTrack(trackId: ref)
         case .sfx: .fireSfx(sfxId: ref)
+        case .soundscape: .playSoundscape(id: ref)
         }
     }
 
@@ -127,13 +128,15 @@ extension SessionConsoleCatalog {
         switch sound.kind {
         case .track: trackGroups.lazy.flatMap(\.tracks).first { $0.id == sound.ref }?.title
         case .sfx: sfx.first { $0.id == sound.ref }?.label
+        case .soundscape: Soundscape.builtIn(id: sound.ref)?.title
         }
     }
 
-    /// Every track and effect a note can play, tracks first, as the Session Console lists them.
+    /// Every track, effect and soundscape a note can play, in the Session Console's order.
     public var noteSoundChoices: [(sound: NoteSound, title: String)] {
         trackGroups.flatMap(\.tracks).map { (NoteSound(kind: .track, ref: $0.id), $0.title) }
             + sfx.map { (NoteSound(kind: .sfx, ref: $0.id), $0.label) }
+            + Soundscape.builtIn.map { (NoteSound(kind: .soundscape, ref: $0.id), $0.title) }
     }
 }
 

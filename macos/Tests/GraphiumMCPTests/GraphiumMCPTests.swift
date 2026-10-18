@@ -276,9 +276,11 @@ final class MCPServerTests: XCTestCase {
 
         try call(
             "update_objects",
-            ["campaign": "Notes", "changes": [["id": .string(mural), "sounds": [["name": "CHIME", "play_on_show": true]]]]])
+            ["campaign": "Notes", "changes": [["id": .string(mural), "sounds": [["name": "CHIME", "play_on_show": true], ["name": "Cave"]]]]])
         map = try loadCampaign("Notes.graphiumcampaign").activeMap
-        XCTAssertEqual(map.notes[1].sounds, [NoteSound(kind: .sfx, ref: "chime", playOnShow: true)], "matched by name")
+        XCTAssertEqual(
+            map.notes[1].sounds, [NoteSound(kind: .sfx, ref: "chime", playOnShow: true), NoteSound(kind: .soundscape, ref: "cave")],
+            "matched by name")
         let missing = try callError(
             "update_objects", ["campaign": "Notes", "changes": [["id": .string(mural), "sounds": [["name": "Gong"]]]]])
         XCTAssertTrue(missing.contains("no track or effect named Gong"), missing)

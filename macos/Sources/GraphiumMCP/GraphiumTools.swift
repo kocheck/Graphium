@@ -98,11 +98,11 @@ public final class GraphiumTools {
 
     static let noteSoundsProperty: JSONValue = [
         "type": "array",
-        "description": "Session Console tracks or sound effects the DM can play from this pin. Only names already in the campaign's Session Console work.",
+        "description": "Session Console tracks, sound effects or soundscapes (Cave, Tavern…) the DM can play from this pin. Only names already in the campaign's Session Console work.",
         "items": [
             "type": "object",
             "properties": [
-                "name": string("Track title or effect name from the Session Console, e.g. Door Creak."),
+                "name": string("Track title, effect name or soundscape from the Session Console, e.g. Door Creak or Cave."),
                 "play_on_show": boolean("Play it by itself when the DM shows this note on the World View (default false)."),
             ],
             "required": ["name"],
@@ -393,7 +393,7 @@ public final class GraphiumTools {
                     "Pin notes to the map: room keys, read-aloud text, clues, handouts. dm_notes are for the DM alone "
                     + "and never reach players. player_notes are what players may read: with shared true the pin shows "
                     + "on the World View and players can click it to read them. Notes are DM-only (shared false) unless "
-                    + "the DM asks otherwise. sounds attach Session Console tracks or effects (by name) for the DM to "
+                    + "the DM asks otherwise. sounds attach Session Console tracks, effects or soundscapes (by name) for the DM to "
                     + "play from the pin; play_on_show starts one when the DM shows the note on the World View.",
                 properties: [
                     "campaign": c, "map": m, "units": u,

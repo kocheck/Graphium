@@ -464,7 +464,7 @@ extension GraphiumTools {
         }
     }
 
-    /// A note's `sounds`: Session Console tracks and effects, by name (or id). Nil when absent.
+    /// A note's `sounds`: Session Console tracks, effects and soundscapes, by name (or id). Nil when absent.
     static func noteSounds(_ args: Arguments, console: SessionConsoleCatalog) throws -> [NoteSound]? {
         guard let items = try args.array("sounds") else { return nil }
         let choices = console.noteSoundChoices
@@ -479,8 +479,8 @@ extension GraphiumTools {
                 let available = choices.map(\.title).joined(separator: ", ")
                 throw ToolError(
                     matches.isEmpty
-                        ? "\(spec.context): the Session Console has no track or effect named \(name). It has: \(available)."
-                        : "\(spec.context): more than one track or effect is named \(name); rename one in the Session Console.")
+                        ? "\(spec.context): the Session Console has no track, effect or soundscape named \(name). It has: \(available)."
+                        : "\(spec.context): more than one track, effect or soundscape is named \(name); rename one in the Session Console.")
             }
             sound.playOnShow = try spec.bool("play_on_show") ?? false
             if !sounds.contains(where: { $0.ref == sound.ref }) { sounds.append(sound) }

@@ -127,7 +127,7 @@ enum Describe {
 
     static func sound(_ sound: NoteSound, console: SessionConsoleCatalog) -> JSONValue {
         var out: [String: JSONValue] = [
-            "kind": .string(sound.kind == .track ? "track" : "effect"),
+            "kind": .string(sound.kind == .sfx ? "effect" : sound.kind.rawValue),
             "play_on_show": .bool(sound.playOnShow),
         ]
         if let title = console.title(of: sound) { out["name"] = .string(title) } else { out["missing"] = .bool(true) }

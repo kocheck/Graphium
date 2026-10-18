@@ -156,6 +156,14 @@ struct NoteInspector: View {
                         }
                     }
                 }
+                let soundscapes = choices.filter { $0.sound.kind == .soundscape }
+                if !soundscapes.isEmpty {
+                    Section("Soundscapes") {
+                        ForEach(soundscapes, id: \.sound.ref) { choice in
+                            Button(choice.title) { editSounds(note, "Add Sound") { $0.append(choice.sound) } }
+                        }
+                    }
+                }
                 let effects = choices.filter { $0.sound.kind == .sfx }
                 if !effects.isEmpty {
                     Section("Effects") {
@@ -168,7 +176,7 @@ struct NoteInspector: View {
                 Label("Add Sound", systemImage: "plus")
             }
             .disabled(choices.isEmpty)
-            .help("Attach a Session Console track or effect to this note")
+            .help("Attach a Session Console track, soundscape or effect to this note")
         } header: {
             Label("Sounds", systemImage: "speaker.wave.2")
         } footer: {
@@ -184,7 +192,7 @@ struct NoteInspector: View {
                         .foregroundStyle(title == nil ? .secondary : .primary)
                         .lineLimit(1)
                 } icon: {
-                    Image(systemName: sound.kind == .track ? "music.note" : "speaker.wave.2")
+                    Image(systemName: Self.symbol(sound.kind))
                 }
                 Spacer()
                 Button {
@@ -215,6 +223,14 @@ struct NoteInspector: View {
             )
             .controlSize(.small)
             .help("Play this by itself when you show the note on the World View")
+        }
+    }
+
+    private static func symbol(_ kind: NoteSound.Kind) -> String {
+        switch kind {
+        case .track: "music.note"
+        case .sfx: "speaker.wave.2"
+        case .soundscape: "waveform"
         }
     }
 

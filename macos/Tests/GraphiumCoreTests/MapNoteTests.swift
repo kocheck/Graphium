@@ -29,7 +29,7 @@ final class MapNoteTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(MapNote.self, from: JSONEncoder().encode(note)), note)
 
         // A sound kind from a newer app is dropped; the note and its other sounds survive.
-        let newer = #"{"id":"n","x":1,"y":2,"sounds":[{"kind":"soundscape","ref":"s"},{"kind":"sfx","ref":"chime"}]}"#
+        let newer = #"{"id":"n","x":1,"y":2,"sounds":[{"kind":"jukebox","ref":"s"},{"kind":"sfx","ref":"chime"}]}"#
         XCTAssertEqual(try JSONDecoder().decode(MapNote.self, from: Data(newer.utf8)).sounds, [NoteSound(kind: .sfx, ref: "chime")])
 
         let track = Track(id: "t1", title: "Crypt Drone", source: .local, src: "a.m4a")
@@ -45,6 +45,12 @@ final class MapNoteTests: XCTestCase {
         XCTAssertEqual(runtime.audio.trackId, "t1")
         XCTAssertTrue(note.sounds[1].command.apply(to: &runtime, catalog: console))
         XCTAssertEqual(runtime.sfxId, "chime")
+
+        let cave = NoteSound(kind: .soundscape, ref: "cave")
+        XCTAssertEqual(console.title(of: cave), "Cave")
+        XCTAssertTrue(console.noteSoundChoices.contains { $0.sound == cave })
+        XCTAssertTrue(cave.command.apply(to: &runtime, catalog: console))
+        XCTAssertEqual(runtime.ambience.soundscapeId, "cave")
     }
 
     func testPlacingAndEditingNotes() {

@@ -46,8 +46,8 @@ final class ModelCoverageTests: XCTestCase {
         "DrawingTool": ["marker", "eraser", "wall"],
         "CreatureType": ["PC", "NPC"],
         "LightLevel": ["dark", "dim", "bright"],
-        // NoteSound.Kind: tools say "track" and "effect" and match by Session Console name.
-        "Kind": ["track", "sfx"],
+        // NoteSound.Kind: tools say "track", "effect" and "soundscape" and match by Session Console name.
+        "Kind": ["track", "sfx", "soundscape"],
     ]
 
     private func check(_ value: Any, file: StaticString = #filePath, line: UInt = #line) {
