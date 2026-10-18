@@ -125,6 +125,11 @@ campaign.json   { "formatVersion": 1, "campaign": { ... } }
 assets/         images and audio referenced by the campaign
 ```
 
+Keys in `campaign.json` that a build doesn't know (from a newer Graphium, another tool or a
+hand edit) are kept and written back on save, by the app and by `graphium-mcp`. Files in
+`assets/` are pruned on open only when the app itself stopped using them; it lists those in
+`orphanedAssets` when it saves. A file you put in `assets/` yourself stays.
+
 Legacy `.graphium` ZIP campaigns from the Electron app open through an importer (the first
 save asks for a new `.graphiumcampaign` location). File > Export as .graphium (⇧⌘E) writes a
 ZIP the Electron and web apps can open.

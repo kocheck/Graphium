@@ -71,21 +71,123 @@ final class AssetPruningTests: XCTestCase {
             campaign: campaign,
             assets: [
                 "goblin.png": Data([1]), "rain.mp3": Data([2]), "old-map.jpg": Data([3]),
-                "deleted.png": Data([4]), "generic-token.png": Data([5]),
-            ])
+                "deleted.png": Data([4]), "generic-token.png": Data([5]), "dm-added.png": Data([6]),
+            ],
+            preserved: .init(orphanedAssets: ["deleted.png", "old-map.jpg", "generic-token.png", "goblin.png"]))
 
         let removed = package.pruneUnreferencedAssets(keeping: ["generic-token.png"])
 
         XCTAssertEqual(removed, ["deleted.png", "old-map.jpg"])
-        XCTAssertEqual(Set(package.assets.keys), ["goblin.png", "rain.mp3", "generic-token.png"])
+        // A file the app never orphaned, like one the DM copied in by hand, stays.
+        XCTAssertEqual(Set(package.assets.keys), ["goblin.png", "rain.mp3", "generic-token.png", "dm-added.png"])
+        XCTAssertTrue(package.preserved.orphanedAssets.isEmpty)
+    }
+
+    func testOrphanListRoundTripsThroughTheManifest() throws {
+        let package = CampaignPackage(
+            campaign: .makeDefault(), assets: ["old.png": Data([1])], preserved: .init(orphanedAssets: ["old.png"]))
+        var reopened = try CampaignPackage(manifest: package.encodeManifest(), assets: package.assets)
+        XCTAssertEqual(reopened.preserved.orphanedAssets, ["old.png"])
+        XCTAssertEqual(reopened.pruneUnreferencedAssets(), ["old.png"])
     }
 
     func testPruneDropsAssetsOnlyNamedByExternalURLs() {
         var campaign = Campaign.makeDefault()
         campaign.activeMap.tokens.append(Token(x: 0, y: 0, src: "https://example.com/a.png", type: .npc, name: "A"))
-        var package = CampaignPackage(campaign: campaign, assets: ["a.png": Data([1])])
+        var package = CampaignPackage(
+            campaign: campaign, assets: ["a.png": Data([1])], preserved: .init(orphanedAssets: ["a.png"]))
         XCTAssertEqual(package.pruneUnreferencedAssets(), ["a.png"])
         XCTAssertTrue(package.assets.isEmpty)
+    }
+}
+
+final class UnknownFieldTests: XCTestCase {
+    private func manifest(_ json: String) -> Data { Data(json.utf8) }
+
+    private func object(_ data: Data) throws -> [String: Any] {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+
+    /// A campaign.json written by this build, with extra keys spliced in where a newer
+    /// Graphium (or a hand edit) might put them.
+    private func manifestWithExtras() throws -> (Data, tokenID: String) {
+        var campaign = Campaign.makeDefault()
+        let token = Token(x: 0, y: 0, src: "goblin.png", type: .npc, name: "Goblin")
+        campaign.activeMap.tokens.append(token)
+        var root = try object(CampaignPackage(campaign: campaign).encodeManifest())
+        root["futureTopLevel"] = ["a": 1]
+        var campaignObject = try XCTUnwrap(root["campaign"] as? [String: Any])
+        campaignObject["futureCampaignField"] = "kept"
+        var maps = try XCTUnwrap(campaignObject["maps"] as? [[String: Any]])
+        var tokens = try XCTUnwrap(maps[0]["tokens"] as? [[String: Any]])
+        tokens[0]["futureTokenField"] = ["hp": 7]
+        maps[0]["tokens"] = tokens
+        campaignObject["maps"] = maps
+        root["campaign"] = campaignObject
+        return (try JSONSerialization.data(withJSONObject: root), token.id)
+    }
+
+    func testUnknownKeysSurviveASave() throws {
+        let (data, _) = try manifestWithExtras()
+        let package = try CampaignPackage(manifest: data, assets: [:])
+        XCTAssertNotNil(package.preserved.unknownFields)
+
+        let saved = try object(package.encodeManifest())
+        XCTAssertEqual((saved["futureTopLevel"] as? [String: Int])?["a"], 1)
+        let campaign = try XCTUnwrap(saved["campaign"] as? [String: Any])
+        XCTAssertEqual(campaign["futureCampaignField"] as? String, "kept")
+        let token = try XCTUnwrap(((campaign["maps"] as? [[String: Any]])?[0]["tokens"] as? [[String: Any]])?[0])
+        XCTAssertEqual((token["futureTokenField"] as? [String: Int])?["hp"], 7)
+    }
+
+    func testUnknownTokenFieldsFollowTheTokenById() throws {
+        let (data, tokenID) = try manifestWithExtras()
+        var package = try CampaignPackage(manifest: data, assets: [:])
+        // Another token goes in front; the kept field still belongs to the goblin.
+        package.campaign.activeMap.tokens.insert(Token(x: 5, y: 5, src: "orc.png", type: .npc, name: "Orc"), at: 0)
+
+        let saved = try object(package.encodeManifest())
+        let tokens = try XCTUnwrap(
+            ((saved["campaign"] as? [String: Any])?["maps"] as? [[String: Any]])?[0]["tokens"] as? [[String: Any]])
+        XCTAssertNil(tokens[0]["futureTokenField"])
+        XCTAssertEqual(tokens[1]["id"] as? String, tokenID)
+        XCTAssertNotNil(tokens[1]["futureTokenField"])
+    }
+
+    func testDeletedObjectTakesItsUnknownFieldsWithIt() throws {
+        let (data, _) = try manifestWithExtras()
+        var package = try CampaignPackage(manifest: data, assets: [:])
+        package.campaign.activeMap.tokens.removeAll()
+        let text = String(decoding: try package.encodeManifest(), as: UTF8.self)
+        XCTAssertFalse(text.contains("futureTokenField"))
+        XCTAssertTrue(text.contains("futureCampaignField"))
+    }
+
+    func testAKnownFieldClearedByTheDMIsNotBroughtBack() throws {
+        var campaign = Campaign.makeDefault()
+        campaign.activeMap.tokens.append(Token(x: 0, y: 0, src: "a.png", type: .pc, name: "Ash", darkvision: 60))
+        var package = try CampaignPackage(manifest: CampaignPackage(campaign: campaign).encodeManifest(), assets: [:])
+        XCTAssertNil(package.preserved.unknownFields)
+        package.campaign.activeMap.tokens[0].darkvision = nil
+        let reopened = try CampaignPackage(manifest: package.encodeManifest(), assets: [:])
+        XCTAssertNil(reopened.campaign.activeMap.tokens[0].darkvision)
+    }
+
+    func testAFileWithNothingUnknownIsWrittenExactlyAsBefore() throws {
+        let package = CampaignPackage(campaign: .makeDefault(name: "Plain"))
+        let first = try package.encodeManifest()
+        let reopened = try CampaignPackage(manifest: first, assets: [:])
+        XCTAssertNil(reopened.preserved.unknownFields)
+        XCTAssertEqual(try reopened.encodeManifest(), first)
+    }
+
+    func testSavingWithUnknownFieldsKeepsTheStableFormat() throws {
+        let (data, _) = try manifestWithExtras()
+        let package = try CampaignPackage(manifest: data, assets: [:])
+        let once = try package.encodeManifest()
+        let twice = try CampaignPackage(manifest: once, assets: [:]).encodeManifest()
+        XCTAssertEqual(once, twice)
+        XCTAssertTrue(String(decoding: once, as: UTF8.self).contains("\"formatVersion\" : 1"))
     }
 }
 

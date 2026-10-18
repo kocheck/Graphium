@@ -130,6 +130,9 @@ public final class CampaignStore {
         public var campaign: Campaign
         public var existingAssets: Set<String>
         public var newAssets: [String: Data] = [:]
+        /// What the file held that this server doesn't own (keys from a newer Graphium,
+        /// the app's orphan list), written back unchanged.
+        public var preserved = CampaignPackage.Preserved()
 
         public var allAssetNames: Set<String> { existingAssets.union(newAssets.keys) }
 
@@ -173,13 +176,16 @@ public final class CampaignStore {
         }
         let assetsURL = url.appendingPathComponent(CampaignPackage.assetsDirectoryName)
         let names = (try? FileManager.default.contentsOfDirectory(atPath: assetsURL.path)) ?? []
-        return Loaded(url: url, campaign: package.campaign, existingAssets: Set(names.filter(CampaignPackage.isValidAssetName)))
+        var loaded = Loaded(
+            url: url, campaign: package.campaign, existingAssets: Set(names.filter(CampaignPackage.isValidAssetName)))
+        loaded.preserved = package.preserved
+        return loaded
     }
 
     /// Writes new assets, then `campaign.json`, keeping the previous manifest for `undo`.
     public func save(_ loaded: inout Loaded) throws {
         let url = loaded.url
-        let manifest = try CampaignPackage(campaign: loaded.campaign).encodeManifest()
+        let manifest = try CampaignPackage(campaign: loaded.campaign, preserved: loaded.preserved).encodeManifest()
         let newAssets = loaded.newAssets
         var failure: Error?
         coordinate(writing: url) {
