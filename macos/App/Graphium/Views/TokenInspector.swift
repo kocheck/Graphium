@@ -26,6 +26,8 @@ struct TokenInspector: View {
     @State private var playerNameDraft = ""
     @State private var playerNameOrigin = ""
     @FocusState private var playerNameFocused: Bool
+    /// The amount the Damage and Heal buttons apply.
+    @State private var hitPointAmount: Int?
     // Collapsible sections, remembered across launches.
     @AppStorage("graphium.inspector.visionExpanded") private var visionExpanded = true
     @AppStorage("graphium.inspector.detailsExpanded") private var detailsExpanded = true
@@ -76,6 +78,10 @@ struct TokenInspector: View {
             }
 
             initiativeSection(tokens)
+
+            if tokens.count == 1, let token = tokens.first {
+                hitPointsSection(token.token)
+            }
 
             Section("Vision", isExpanded: $visionExpanded) {
                 HStack {
@@ -240,6 +246,110 @@ struct TokenInspector: View {
             }
         } footer: {
             Text("The turn order is in the sidebar. The World View lists it for players, by the names they see, without NPCs they can't see.")
+        }
+    }
+
+    /// One token's hit points and conditions, for the DM alone: players never see them (issue #369).
+    private func hitPointsSection(_ token: Token) -> some View {
+        let ids: Set<String> = [token.id]
+        let amount = max(0, hitPointAmount ?? 0)
+        let canChange = amount > 0 && (token.hitPoints ?? token.maxHitPoints) != nil
+        return Section {
+            LabeledContent("Current / Max") {
+                HStack(spacing: 4) {
+                    TextField(
+                        "Current",
+                        value: Binding(
+                            get: { token.hitPoints },
+                            set: { new in
+                                update("Set Hit Points", ids: ids) { t in
+                                    // Cleared is untracked; a typed value stays within 0…max.
+                                    let clamped = new.map { t.clampedHitPoints($0) }
+                                    t.hitPoints = clamped
+                                }
+                            }),
+                        format: .number, prompt: Text("—")
+                    )
+                    .labelsHidden()
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .frame(width: 48)
+                    Text("/").foregroundStyle(.secondary)
+                    TextField(
+                        "Max",
+                        value: Binding(
+                            get: { token.maxHitPoints },
+                            set: { new in
+                                update("Set Hit Points", ids: ids) { t in
+                                    t.maxHitPoints = new.map { max(0, $0) }
+                                    // A new maximum starts an untracked token at full; current never exceeds it.
+                                    if let current = t.hitPoints ?? t.maxHitPoints { t.hitPoints = t.clampedHitPoints(current) }
+                                }
+                            }),
+                        format: .number, prompt: Text("—")
+                    )
+                    .labelsHidden()
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .frame(width: 48)
+                }
+            }
+            LabeledContent("Amount") {
+                HStack(spacing: 4) {
+                    TextField("Amount", value: $hitPointAmount, format: .number, prompt: Text("0"))
+                        .labelsHidden()
+                        .multilineTextAlignment(.trailing)
+                        .monospacedDigit()
+                        .frame(width: 48)
+                    Button("Damage") { update("Damage Token", ids: ids) { $0.applyDamage(amount) } }
+                        .disabled(!canChange)
+                    Button("Heal") { update("Heal Token", ids: ids) { $0.heal(amount) } }
+                        .disabled(!canChange)
+                }
+            }
+            Menu("Add Condition") {
+                ForEach(Condition.allCases) { condition in
+                    Toggle(
+                        isOn: Binding(
+                            get: { token.has(condition) },
+                            set: { on in setCondition(condition, on: on, ids: ids) })
+                    ) {
+                        Label(condition.title, systemImage: condition.symbolName)
+                    }
+                }
+            }
+            if let conditions = token.conditions, !conditions.isEmpty {
+                // Each chip names its condition beside the glyph; a click removes it.
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), alignment: .leading)], alignment: .leading, spacing: 6) {
+                    ForEach(conditions) { condition in
+                        Button {
+                            setCondition(condition, on: false, ids: ids)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Label(condition.title, systemImage: condition.symbolName)
+                                Image(systemName: "xmark").font(.caption2).foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .help("Remove \(condition.title)")
+                        .accessibilityLabel("\(condition.title), remove")
+                    }
+                }
+            }
+        } header: {
+            Text("Hit Points")
+        } footer: {
+            Text(
+                token.isDown
+                    ? "Down at 0 hit points. Only you see hit points and conditions."
+                    : "Only you see hit points and conditions; the World View never shows them.")
+        }
+    }
+
+    private func setCondition(_ condition: Condition, on: Bool, ids: Set<String>) {
+        update(on ? "Add Condition" : "Remove Condition", ids: ids) { token in
+            if token.has(condition) != on { token.toggle(condition) }
         }
     }
 

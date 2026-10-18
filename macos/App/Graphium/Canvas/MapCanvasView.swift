@@ -810,6 +810,8 @@ final class MapCanvasNSView: NSView {
                 CGPath(ellipseIn: rect.insetBy(dx: -2, dy: -2), transform: nil),
                 width: (highContrast ? 4.5 : 3) / viewport.zoom, dash: [8 / viewport.zoom, 4 / viewport.zoom])
         }
+        // Hit points and conditions are the DM's alone (issue #369, decision 014's spirit).
+        if !isPlayerView { drawTokenStateBadge(token, in: rect, context: context) }
 
         let resolved = ResolvedToken(token, library: library)
         // Players see the token's name for players, or none (decision 014).
@@ -819,6 +821,36 @@ final class MapCanvasNSView: NSView {
         let label = NSAttributedString.mapLabel(name, font: NSFont.boldSystemFont(ofSize: size))
         let labelSize = label.size()
         label.draw(at: NSPoint(x: rect.midX - labelSize.width / 2, y: rect.maxY - lift + 8))
+    }
+
+    /// The Architect's mark for a token that is down or has conditions, on its top-trailing
+    /// edge at a constant on-screen size: `heart.slash` at 0 hit points, else the first
+    /// condition's glyph, with the number of conditions when there are more. A glyph on a
+    /// dark backing, so it reads without colour on any map.
+    private func drawTokenStateBadge(_ token: Token, in rect: CGRect, context: CGContext) {
+        let conditions = token.conditions ?? []
+        guard token.isDown || !conditions.isEmpty else { return }
+        let zoom = CGFloat(viewport.zoom)
+        let height: CGFloat = 18 / zoom
+        let symbol = token.isDown ? "heart.slash" : conditions[0].symbolName
+        let count =
+            !token.isDown && conditions.count > 1
+            ? NSAttributedString(
+                string: "\(conditions.count)",
+                attributes: [.font: ReadoutFont.ns(size: 11 / zoom, weight: .semibold), .foregroundColor: NSColor.white])
+            : nil
+        let countSize: CGSize = count?.size() ?? .zero
+        let width: CGFloat = count == nil ? height : height + countSize.width + 3 / zoom
+        let badge = CGRect(x: rect.maxX - height * 0.8, y: rect.minY - height * 0.2, width: width, height: height)
+        context.saveGState()
+        let halo = Palette.canvasHalo.nsColor
+        context.setFillColor((highContrast ? halo.withAlphaComponent(1) : halo).cgColor)
+        context.addPath(CGPath(roundedRect: badge, cornerWidth: height / 2, cornerHeight: height / 2, transform: nil))
+        context.fillPath()
+        context.restoreGState()
+        let glyphCentre = CGPoint(x: badge.minX + height / 2, y: badge.midY)
+        drawNoteSymbol(symbol, centredAt: glyphCentre, size: 10 / zoom, color: .white)
+        count?.draw(at: NSPoint(x: badge.minX + height - 1 / zoom, y: badge.midY - countSize.height / 2))
     }
 
     // MARK: Pointer input
