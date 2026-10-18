@@ -209,7 +209,7 @@ struct MapRenderer {
         ctx.fill(visible)
         drawBackground(ctx)
         drawGrid(ctx, visible)
-        drawMarkers(ctx)
+        drawMarkers(ctx, playersView: playersView)
         drawStairs(ctx)
         drawWalls(ctx)
         drawDoors(ctx, playersView: playersView)
@@ -217,14 +217,14 @@ struct MapRenderer {
         if playersView && !map.isDaylightMode {
             let sight = LineOfSight.partySight(of: map, library: library)
             let hidden = LineOfSight.hiddenNPCIDs(of: map, library: library, sight: sight)
-            drawTokens(ctx, hidden: hidden, scale: s)
+            drawTokens(ctx, hidden: hidden, scale: s, playersView: true)
             if map.ambientLight == nil {
                 drawFog(ctx, visible, polygons: sight.vision.map(\.polygon))
             } else {
                 drawLitFog(ctx, visible, sight: sight)
             }
         } else {
-            drawTokens(ctx, hidden: [], scale: s)
+            drawTokens(ctx, hidden: [], scale: s, playersView: playersView)
         }
         // Over the fog: in the players' view, only the pins the DM shared.
         drawNotes(ctx, sharedOnly: playersView, scale: s)
@@ -299,14 +299,22 @@ struct MapRenderer {
         for p in points.dropFirst() { ctx.addLine(to: CGPoint(x: p.x, y: p.y)) }
     }
 
-    private func drawMarkers(_ ctx: CGContext) {
+    /// Markers; DM-only ones are dashed in the DM's view and left out of the players'.
+    private func drawMarkers(_ ctx: CGContext, playersView: Bool) {
         ctx.setLineCap(.round)
         ctx.setLineJoin(.round)
-        for d in map.drawings where d.tool == .marker {
+        for d in map.drawings where d.tool == .marker && !(playersView && d.isHiddenFromPlayers) {
+            let width = d.size * (d.scale ?? 1)
+            ctx.saveGState()
             ctx.setStrokeColor(color(d.color))
-            ctx.setLineWidth(d.size * (d.scale ?? 1))
+            ctx.setLineWidth(width)
+            if d.isHiddenFromPlayers {
+                ctx.setAlpha(0.55)
+                ctx.setLineDash(phase: 0, lengths: [max(width * 2, 6), max(width * 1.5, 4)])
+            }
             path(d.worldPoints, ctx)
             ctx.strokePath()
+            ctx.restoreGState()
         }
     }
 
@@ -409,7 +417,7 @@ struct MapRenderer {
         }
     }
 
-    private func drawTokens(_ ctx: CGContext, hidden: Set<String>, scale: Double) {
+    private func drawTokens(_ ctx: CGContext, hidden: Set<String>, scale: Double, playersView: Bool) {
         for token in map.tokens where !hidden.contains(token.id) {
             let resolved = ResolvedToken(token, library: library)
             let b = map.tokenDisplayBounds(token, library: library)
@@ -430,10 +438,12 @@ struct MapRenderer {
                     : resolved.type == .npc ? CGColor(srgbRed: 1, green: 0.35, blue: 0.3, alpha: 1) : CGColor(gray: 0.9, alpha: 1))
             ctx.setLineWidth(max(2, b.width * 0.06))
             ctx.strokeEllipse(in: rect)
-            // Names stay readable whatever the zoom: about 13 image pixels tall.
+            // Names stay readable whatever the zoom: about 13 image pixels tall. Players see the
+            // name for players, or none.
+            guard let name = playersView ? resolved.playerName : resolved.name else { continue }
             let size = CGFloat(13 / scale)
             drawText(
-                resolved.name, in: ctx, centre: CGPoint(x: rect.midX, y: rect.maxY + size * 0.9), size: size,
+                name, in: ctx, centre: CGPoint(x: rect.midX, y: rect.maxY + size * 0.9), size: size,
                 color: CGColor(gray: 1, alpha: 1), flipped: true, outline: CGColor(gray: 0, alpha: 0.85))
         }
     }

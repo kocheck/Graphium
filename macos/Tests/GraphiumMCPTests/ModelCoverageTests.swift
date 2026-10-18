@@ -18,11 +18,12 @@ final class ModelCoverageTests: XCTestCase {
         ],
         "Token": [
             "id", "x", "y", "src", "libraryItemId", "scale", "type", "visionRadius", "name", "movementSpeed", "darkvision",
+            "playerName",
         ],
         "LightSource": ["id", "x", "y", "bright", "dim", "isOn", "name"],
         "MapNote": ["id", "x", "y", "title", "dmNotes", "playerNotes", "isShared", "sounds"],
         "NoteSound": ["kind", "ref", "playOnShow"],
-        "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay"],
+        "Drawing": ["id", "tool", "points", "color", "size", "scale", "x", "y", "wallKind", "oneWay", "isDMOnly"],
         "Door": ["id", "x", "y", "orientation", "angle", "isOpen", "isLocked", "size", "swingDirection", "isHidden"],
         "Stairs": ["id", "x", "y", "direction", "type", "width", "height"],
         "MapBackground": ["src", "x", "y", "width", "height", "scale"],

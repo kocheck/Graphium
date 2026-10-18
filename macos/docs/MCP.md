@@ -13,8 +13,10 @@ It follows [PRINCIPLES.md](PRINCIPLES.md):
 - **Only the folders you name.** It reads and writes only inside the folders passed with
   `--root`. Paths outside them are refused.
 - **Undoable.** Before each change it keeps the previous `campaign.json` in
-  `~/Library/Caches/Graphium MCP/undo` (30 steps per campaign), and the `undo` tool puts it
-  back. That folder is a cache; deleting it never loses a campaign.
+  `~/Library/Caches/Graphium MCP/undo` (30 steps per campaign, kept across restarts), and the
+  `undo` tool puts it back. Undo swaps the whole file, so if the campaign was edited in Graphium
+  after the server's last change, it refuses unless the model passes `force` (Graphium's own
+  edits have Edit > Undo). That folder is a cache; deleting it never loses a campaign.
 
 What the AI app does with your map descriptions is up to that app and its provider: the server
 sends the tool results (map contents and rendered images) to the app that called it, and a
@@ -108,26 +110,40 @@ the installed version; the app sees the same number as the server's version.
 
 ## Tools
 
-| Tool                                                | What it does                                                                            |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `list_campaigns`, `create_campaign`, `get_campaign` | Find, make and summarise campaigns                                                      |
-| `add_map`, `update_map`, `delete_map`, `get_map`    | Maps and their grid, daylight and active map; `get_map` lists every object with its id  |
-| `set_background`                                    | Import an image as the map, scaled so its squares match the grid                        |
-| `add_rooms`                                         | Rectangular rooms with doors and doorless openings                                      |
-| `draw_walls`                                        | Walls and windows as polylines, optionally one-way or closed                            |
-| `add_doors`                                         | Doors at any angle, lined up with the wall under them; open, closed, locked, hidden     |
-| `add_tokens`                                        | PCs, NPCs and monsters, from an image, the campaign's token library, or a lettered disc |
-| `add_lights`                                        | Torches, lanterns and other lights for maps with lighting on (5e bright and dim radii)  |
-| `add_notes`                                         | Note pins: DM-only notes, player notes the DM can share (both Markdown), and sounds     |
-| `add_stairs`, `draw_markers`                        | Stairs and freehand marker lines                                                        |
-| `update_objects`, `remove_objects`, `clear_map`     | Edit (including new token art), remove or clear by id or layer                          |
-| `generate_dungeon`                                  | Graphium's room-and-corridor generator, repeatable with a seed                          |
-| `render_map`                                        | A PNG of the DM's or the players' view, and/or a text grid                              |
-| `check_map`                                         | Light leaks between walls, doors off walls, tokens in walls, PCs without vision         |
-| `list_token_library`, `undo`                        | The campaign's token library; undo the server's last change                             |
+| Tool                                                | What it does                                                                                                                                                                |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_campaigns`, `create_campaign`, `get_campaign` | Find, make and summarise campaigns                                                                                                                                          |
+| `add_map`, `update_map`, `delete_map`, `get_map`    | Maps and their grid, daylight and active map; `get_map` lists objects with ids (`summary`, `kinds`, `region` keep it short)                                                 |
+| `set_background`                                    | Import an image as the map, scaled so its squares match the grid                                                                                                            |
+| `add_rooms`                                         | Rectangular rooms with doors and doorless openings                                                                                                                          |
+| `draw_walls`                                        | Walls and windows as polylines, optionally one-way, closed, or snapped onto existing walls                                                                                  |
+| `add_doors`                                         | Doors at any angle, lined up with the wall under them; open, closed, locked, hidden                                                                                         |
+| `add_tokens`                                        | PCs, NPCs and monsters, from an image, the campaign's token library, or a lettered disc                                                                                     |
+| `add_lights`                                        | Torches, lanterns and other lights for maps with lighting on (5e bright and dim radii)                                                                                      |
+| `add_notes`                                         | Note pins: DM-only notes, player notes the DM can share (both Markdown), and sounds                                                                                         |
+| `add_stairs`, `draw_markers`                        | Stairs and freehand marker lines                                                                                                                                            |
+| `update_objects`, `remove_objects`, `clear_map`     | Edit (including new token art), remove or clear by id or layer (`fog` resets explored fog)                                                                                  |
+| `move_objects`                                      | Move tokens, lights and notes together, keeping their formation                                                                                                             |
+| `generate_dungeon`                                  | Graphium's room-and-corridor generator, repeatable with a seed                                                                                                              |
+| `render_map`                                        | A PNG of the DM's or the players' view, and/or a text grid                                                                                                                  |
+| `check_map`                                         | Light leaks, open wall ends, lights outside rooms, doors off walls, tokens in walls, PCs without vision. It checks walls against each other, not against the background art |
+| `list_token_library`, `undo`                        | The campaign's token library; undo the server's last change                                                                                                                 |
 
 Positions are in grid cells by default (1 cell = 5 ft, x right, y down), which models place far
 more reliably than pixels. Every tool also takes `units: "px"`.
+
+Images for `set_background` and token art are copied into the campaign package, but the server
+can only read them from inside its folders; the error for a file elsewhere names an `Imports`
+folder to copy it into first. `get_campaign` and the server's instructions report its version.
+
+### What players see
+
+On the World View, players see walls, doors, stairs and markers wherever the fog is explored or a
+PC sees, PC tokens always and NPC tokens only while a PC sees them, each labelled with its
+`player_name` (by default its name; `""` shows none), and lights only as the light they give.
+DM-only: `dm_notes`, pins that aren't `shared`, and markers with `dm_only`. Hidden doors look
+like wall while shut. The server's instructions tell the model this, and that lights carried by
+tokens aren't in Graphium yet (#349).
 
 ## Keeping it up to date
 

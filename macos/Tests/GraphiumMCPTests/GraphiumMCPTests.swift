@@ -175,6 +175,148 @@ final class MCPServerTests: XCTestCase {
         XCTAssertTrue(kinds.contains("pc_without_vision"), check.serialized())
     }
 
+    func testCheckFindsOpenRoomsAndLightsOutsideThem() throws {
+        try call("create_campaign", ["path": "Open", "name": "Open"])
+        try call("update_map", ["campaign": "Open", "lighting": "dark"])
+        // A room with its east side missing, a torch inside it and one out in the rock.
+        try call("draw_walls", ["campaign": "Open", "walls": [["points": [[6, 0], [0, 0], [0, 6], [6, 6]]]]])
+        try call(
+            "add_lights",
+            ["campaign": "Open", "lights": [["center": [2, 3], "preset": "torch"], ["center": [-4, 3], "preset": "torch"]]])
+        var check = try call("check_map", ["campaign": "Open"])
+        var issues = check["issues"]?.arrayValue ?? []
+        XCTAssertTrue(issues.contains { $0["kind"] == "open_wall_end" }, check.serialized())
+        XCTAssertEqual(issues.filter { $0["kind"] == "light_not_enclosed" }.count, 2, check.serialized())
+        XCTAssertEqual(issues.first { $0["kind"] == "light_not_enclosed" }?["severity"], "warning")
+        XCTAssertNotNil(check["not_checked"]?.stringValue)
+
+        // Close the room: the inside torch is fine, the one in the rock still isn't.
+        let added = try call(
+            "draw_walls", ["campaign": "Open", "walls": [["points": [[5.8, 0.1], [5.9, 6.2]]]], "snap_tolerance": 0.5])
+        XCTAssertEqual(added["snapped_points"], .number(2))
+        let wall = try XCTUnwrap(try loadCampaign("Open.graphiumcampaign").activeMap.drawings.last?.worldPoints)
+        XCTAssertEqual(wall, [Point2D(x: 300, y: 0), Point2D(x: 300, y: 300)])
+        check = try call("check_map", ["campaign": "Open"])
+        issues = check["issues"]?.arrayValue ?? []
+        XCTAssertFalse(issues.contains { $0["kind"] == "open_wall_end" }, check.serialized())
+        let lights = issues.filter { $0["kind"] == "light_not_enclosed" }
+        XCTAssertEqual(lights.count, 1, check.serialized())
+        XCTAssertEqual(lights.first?["at"], [-4, 3])
+    }
+
+    func testGetMapSummaryKindsAndRegion() throws {
+        try call("create_campaign", ["path": "Big", "name": "Big"])
+        let cave = (0..<100).map { i -> JSONValue in [.number(Double(i) / 10), .number(Double(i % 2))] }
+        try call("draw_walls", ["campaign": "Big", "walls": [["points": .array(cave)], ["points": [[20, 20], [24, 20]]]]])
+        try call(
+            "add_tokens",
+            ["campaign": "Big", "tokens": [["name": "Near", "position": [1, 1]], ["name": "Far", "position": [30, 30]]]])
+
+        let summary = try call("get_map", ["campaign": "Big", "summary": true])
+        let walls = try XCTUnwrap(summary["walls"]?.arrayValue)
+        XCTAssertNil(walls.first?["points"])
+        XCTAssertEqual(walls.first?["point_count"], .number(100))
+        XCTAssertEqual(summary["counts"]?["tokens"], .number(2))
+
+        let tokens = try call("get_map", ["campaign": "Big", "kinds": ["tokens"]])
+        XCTAssertNil(tokens["walls"])
+        XCTAssertEqual(tokens["tokens"]?.arrayValue?.count, 2)
+
+        let area = try call("get_map", ["campaign": "Big", "region": ["x": 18, "y": 18, "width": 8, "height": 4]])
+        XCTAssertEqual(area["walls"]?.arrayValue?.count, 1)
+        XCTAssertEqual(area["tokens"]?.arrayValue?.count, 0)
+        XCTAssertTrue(try callError("get_map", ["campaign": "Big", "kinds": ["rocks"]]).contains("kinds can't include rocks"))
+    }
+
+    func testMovesAGroupKeepingItsFormation() throws {
+        try call("create_campaign", ["path": "Party", "name": "Party"])
+        let tokens = try call(
+            "add_tokens",
+            ["campaign": "Party", "tokens": [["name": "A", "type": "PC", "position": [2, 2]], ["name": "B", "type": "PC", "position": [3, 4]]]])
+        let light = try call("add_lights", ["campaign": "Party", "lights": [["center": [2.5, 2.5], "preset": "torch"]]])
+        var ids = tokens["added_tokens"]?.arrayValue?.compactMap { $0["id"] } ?? []
+        ids += light["added_lights"]?.arrayValue?.compactMap { $0["id"] } ?? []
+        XCTAssertEqual(ids.count, 3)
+
+        try call("move_objects", ["campaign": "Party", "ids": .array(ids), "to": [20, 10]])
+        var map = try loadCampaign("Party.graphiumcampaign").activeMap
+        XCTAssertEqual(map.tokens.map { Point2D(x: $0.x / 50, y: $0.y / 50) }, [Point2D(x: 20, y: 10), Point2D(x: 21, y: 12)])
+        XCTAssertEqual(map.lights.first.map { Point2D(x: $0.x / 50, y: $0.y / 50) }, Point2D(x: 20.5, y: 10.5))
+
+        try call("move_objects", ["campaign": "Party", "ids": .array(ids), "by": [-1, 0]])
+        map = try loadCampaign("Party.graphiumcampaign").activeMap
+        XCTAssertEqual(map.tokens.first?.x, 19 * 50)
+        XCTAssertTrue(try callError("move_objects", ["campaign": "Party", "ids": .array(ids)]).contains("either by"))
+        XCTAssertTrue(try callError("move_objects", ["campaign": "Party", "ids": ["nope"], "by": [1, 1]]).contains("get_map"))
+    }
+
+    func testUndoKeepsEditsMadeInTheApp() throws {
+        try call("create_campaign", ["path": "Shared", "name": "Shared"])
+        try call("add_tokens", ["campaign": "Shared", "tokens": [["name": "Goblin", "position": [1, 1]]]])
+        // The DM renames the campaign in Graphium after the server's change.
+        let url = folder.appendingPathComponent("Shared.graphiumcampaign/campaign.json")
+        var package = try CampaignPackage(manifest: Data(contentsOf: url), assets: [:])
+        package.campaign.name = "Renamed in Graphium"
+        try package.encodeManifest().write(to: url)
+
+        XCTAssertTrue(try callError("undo", ["campaign": "Shared"]).contains("changed after this server's last change"))
+        XCTAssertEqual(try loadCampaign("Shared.graphiumcampaign").activeMap.tokens.count, 1)
+        try call("undo", ["campaign": "Shared", "force": true])
+        XCTAssertEqual(try loadCampaign("Shared.graphiumcampaign").activeMap.tokens.count, 0)
+    }
+
+    func testReportsItsVersionAndWhereToStageImages() throws {
+        let reply = try request("initialize", ["protocolVersion": "2025-06-18", "capabilities": [:]])
+        XCTAssertTrue(reply["result"]?["instructions"]?.stringValue?.contains("graphium-mcp \(GraphiumTools.version)") == true)
+        try call("create_campaign", ["path": "Art", "name": "Art"])
+        XCTAssertEqual(try call("get_campaign", ["campaign": "Art"])["server"]?["version"], .string(GraphiumTools.version))
+        let message = try callError(
+            "add_tokens", ["campaign": "Art", "tokens": [["position": [1, 1], "image_path": "/etc/hosts.png"]]])
+        XCTAssertTrue(message.contains("Imports/"), message)
+
+        let tools = try XCTUnwrap(try request("tools/list")["result"]?["tools"]?.arrayValue)
+        func hint(_ name: String, _ key: String) -> JSONValue? { tools.first { $0["name"] == .string(name) }?["annotations"]?[key] }
+        for name in ["get_campaign", "get_map", "list_campaigns", "list_token_library", "render_map", "check_map"] {
+            XCTAssertEqual(hint(name, "readOnlyHint"), .bool(true), name)
+        }
+        for name in ["clear_map", "delete_map", "remove_objects", "undo"] {
+            XCTAssertEqual(hint(name, "destructiveHint"), .bool(true), name)
+        }
+    }
+
+    func testDMOnlyMarkersAndNamesForPlayers() throws {
+        try call("create_campaign", ["path": "Secrets", "name": "Secrets"])
+        let tokens = try call(
+            "add_tokens",
+            ["campaign": "Secrets", "tokens": [["name": "Vecna", "player_name": "Hooded figure", "type": "NPC", "position": [2, 2]]]])
+        let id = try XCTUnwrap(tokens["added_tokens"]?.arrayValue?.first?["id"])
+        XCTAssertEqual(tokens["added_tokens"]?.arrayValue?.first?["player_name"], "Hooded figure")
+        let markers = try call(
+            "draw_markers", ["campaign": "Secrets", "strokes": [["points": [[1, 1], [4, 1]], "dm_only": true]]])
+        let marker = try XCTUnwrap(markers["added_marker_ids"]?.arrayValue?.first)
+
+        var map = try loadCampaign("Secrets.graphiumcampaign").activeMap
+        XCTAssertEqual(ResolvedToken(map.tokens[0], library: [:]).playerName, "Hooded figure")
+        XCTAssertEqual(ResolvedToken(map.tokens[0], library: [:]).name, "Vecna")
+        XCTAssertTrue(map.drawings[0].isHiddenFromPlayers)
+        let described = try call("get_map", ["campaign": "Secrets"])
+        XCTAssertEqual(described["markers"]?.arrayValue?.first?["dm_only"], .bool(true))
+        let players = try request(
+            "tools/call", ["name": "render_map", "arguments": ["campaign": "Secrets", "view": "players", "format": "image"]])
+        XCTAssertEqual(players["result"]?["isError"], .bool(false))
+
+        try call("update_objects", ["campaign": "Secrets", "changes": [["id": id, "player_name": ""], ["id": marker, "dm_only": false]]])
+        map = try loadCampaign("Secrets.graphiumcampaign").activeMap
+        XCTAssertNil(ResolvedToken(map.tokens[0], library: [:]).playerName, "an empty name shows players none")
+        XCTAssertNil(map.drawings[0].isDMOnly, "showing leaves the flag out of the file")
+
+        let cleared = try call("update_objects", ["campaign": "Secrets", "changes": [["id": id, "player_name": .null]]])
+        XCTAssertNil(cleared["updated"]?.arrayValue?.first?["ignored_fields"])
+        map = try loadCampaign("Secrets.graphiumcampaign").activeMap
+        XCTAssertNil(map.tokens[0].playerName)
+        XCTAssertEqual(ResolvedToken(map.tokens[0], library: [:]).playerName, "Vecna")
+    }
+
     func testDoorLinesUpWithADiagonalWall() throws {
         try call("create_campaign", ["path": "Diag", "name": "Diag"])
         try call("draw_walls", ["campaign": "Diag", "walls": [["points": [[0, 0], [4, 4]]]]])

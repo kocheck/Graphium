@@ -22,6 +22,10 @@ struct TokenInspector: View {
     /// What the field was seeded with; an unchanged draft is never written back.
     @State private var nameOrigin = ""
     @FocusState private var nameFocused: Bool
+    /// The name players see (decision 014); same draft rules as the name.
+    @State private var playerNameDraft = ""
+    @State private var playerNameOrigin = ""
+    @FocusState private var playerNameFocused: Bool
     // Collapsible sections, remembered across launches.
     @AppStorage("graphium.inspector.visionExpanded") private var visionExpanded = true
     @AppStorage("graphium.inspector.detailsExpanded") private var detailsExpanded = true
@@ -52,6 +56,8 @@ struct TokenInspector: View {
                 Text(tokens.count == 1 ? tokens[0].name : "\(tokens.count) Tokens Selected")
                     .font(.headline)
             }
+
+            playersSection(tokens)
 
             imageSection(tokens)
 
@@ -145,15 +151,63 @@ struct TokenInspector: View {
         .onChange(of: nameFocused) { _, focused in
             if !focused { commitName(ids: selection) }
         }
+        .onChange(of: playerNameFocused) { _, focused in
+            if !focused { commitPlayerName(ids: selection) }
+        }
         .onChange(of: selection) { old, _ in
             commitName(ids: old)
+            commitPlayerName(ids: old)
             resetDraft()
         }
         // Undo/redo and other windows: follow the tokens' names unless the field is being edited.
         .onChange(of: tokens.map(\.name)) { _, _ in
             if !nameFocused { resetDraft() }
         }
-        .onDisappear { commitName(ids: selection) }
+        .onChange(of: tokens.map(\.token.playerName)) { _, _ in
+            if !playerNameFocused, !nameFocused { resetDraft() }
+        }
+        .onDisappear {
+            commitName(ids: selection)
+            commitPlayerName(ids: selection)
+        }
+    }
+
+    /// What players read under the token on the World View: its name, another name, or none.
+    private func playersSection(_ tokens: [ResolvedToken]) -> some View {
+        let showsName = !tokens.contains { $0.token.playerName == "" }
+        return Section {
+            Toggle(
+                "Show Name to Players",
+                isOn: Binding(
+                    get: { showsName },
+                    set: { show in
+                        commitPlayerName(ids: selection)
+                        update(show ? "Show Token Name to Players" : "Hide Token Name from Players") {
+                            $0.playerName = show ? nil : ""
+                        }
+                    }))
+            if showsName {
+                TextField(
+                    "Players See", text: $playerNameDraft,
+                    prompt: Text(tokens.count == 1 ? tokens[0].name : "Each token's name")
+                )
+                .focused($playerNameFocused)
+                .onSubmit { commitPlayerName(ids: selection) }
+            }
+        } footer: {
+            Text(
+                showsName
+                    ? "Shown under the token on the World View. Leave it empty to show the token's name."
+                    : "Players see the token with no name.")
+        }
+    }
+
+    /// Writes the players' name draft to `ids` if it was edited; empty goes back to the name.
+    private func commitPlayerName(ids: Set<String>) {
+        guard playerNameDraft != playerNameOrigin else { return }
+        playerNameOrigin = playerNameDraft
+        let trimmed = playerNameDraft.trimmingCharacters(in: .whitespaces)
+        update("Change Name for Players", ids: ids) { $0.playerName = trimmed.isEmpty ? nil : trimmed }
     }
 
     /// The current picture (or a placeholder when the selection's differ), Change Image…
@@ -276,6 +330,8 @@ struct TokenInspector: View {
         let tokens = selected
         nameDraft = tokens.count == 1 ? tokens[0].name : ""
         nameOrigin = nameDraft
+        playerNameDraft = tokens.count == 1 ? tokens[0].token.playerName ?? "" : ""
+        playerNameOrigin = playerNameDraft
     }
 
     private func update(_ actionName: String, ids: Set<String>? = nil, _ change: @escaping (inout Token) -> Void) {

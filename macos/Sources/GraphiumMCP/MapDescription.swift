@@ -55,7 +55,8 @@ extension GameMap {
 enum Describe {
     static func campaign(_ campaign: Campaign, path: String, assets: Set<String>) -> JSONValue {
         let library = campaign.libraryIndex
-        return [
+        var out: [String: JSONValue] = [
+            "server": GraphiumTools.serverInfo,
             "path": .string(path),
             "id": .string(campaign.id),
             "name": .string(campaign.name),
@@ -64,6 +65,11 @@ enum Describe {
             "token_library": .number(Double(campaign.tokenLibrary.count)),
             "asset_files": .number(Double(assets.count)),
         ]
+        if campaign.maps.contains(where: { !$0.exploredRegions.isEmpty }) {
+            out["fog_reset"] =
+                "explored_fog_regions counts fog the players have already uncovered; clear_map with layers [\"fog\"] resets it."
+        }
+        return .object(out)
     }
 
     static func mapSummary(_ map: GameMap, active: Bool, library: [String: TokenLibraryItem]) -> JSONValue {
@@ -138,8 +144,22 @@ enum Describe {
         ["type": .string(map.gridType.rawValue), "cell_px": .rounded(map.gridSize), "color": .string(map.gridColor)]
     }
 
-    static func map(_ map: GameMap, campaign: Campaign, units: Units, includeMarkerPoints: Bool) -> JSONValue {
+    /// What get_map returns: every kind, or only some; the whole map, or what touches `region`
+    /// (pixels); walls with every point, or (summary) only their ids, size and ends.
+    struct MapFilter {
+        static let kinds = ["walls", "doors", "tokens", "lights", "notes", "stairs", "markers", "background"]
+        var kinds = Set(MapFilter.kinds)
+        var region: Bounds?
+        var summary = false
+        var includeMarkerPoints = false
+
+        func keeps(_ bounds: Bounds) -> Bool { region.map { $0.intersects(bounds) } ?? true }
+    }
+
+    static func map(_ map: GameMap, campaign: Campaign, units: Units, filter: MapFilter = MapFilter()) -> JSONValue {
         let library = campaign.libraryIndex
+        let g = map.gridSize
+        func point(_ x: Double, _ y: Double) -> Bounds { Bounds(x: x - g / 2, y: y - g / 2, width: g, height: g) }
         var out: [String: JSONValue] = [
             "id": .string(map.id),
             "name": .string(map.name),
@@ -148,16 +168,59 @@ enum Describe {
             "grid": grid(map),
             "daylight": .bool(map.isDaylightMode),
             "lighting": lighting(map),
-            "lights": .array(map.lights.map { light($0, units: units) }),
-            "notes": .array(map.notes.map { note($0, console: campaign.sessionConsole, units: units) }),
-            "walls": .array(map.wallStrokes.map { wall($0, units: units) }),
-            "doors": .array(map.doors.map { door($0, units: units) }),
-            "tokens": .array(map.tokens.map { token($0, map: map, library: library, units: units) }),
-            "stairs": .array(map.stairs.map { stairs($0, units: units) }),
-            "markers": .array(map.markerStrokes.map { marker($0, units: units, includePoints: includeMarkerPoints) }),
             "explored_fog_regions": .number(Double(map.exploredRegions.count)),
         ]
-        if let bg = map.background {
+        let k = filter.kinds
+        if k.contains("lights") {
+            out["lights"] = .array(map.lights.filter { filter.keeps(point($0.x, $0.y)) }.map { light($0, units: units) })
+        }
+        if k.contains("notes") {
+            out["notes"] = .array(
+                map.notes.filter { filter.keeps(point($0.x, $0.y)) }.map {
+                    note($0, console: campaign.sessionConsole, units: units)
+                })
+        }
+        if k.contains("walls") {
+            out["walls"] = .array(
+                map.wallStrokes.filter { d in
+                    guard let region = filter.region else { return true }
+                    let p = d.worldPoints
+                    guard p.count >= 2 else { return p.first.map { region.intersects(point($0.x, $0.y)) } ?? false }
+                    return (1..<p.count).contains { MapChecks.segment(p[$0 - 1], p[$0], intersects: region) }
+                }.map { filter.summary ? wallSummary($0, map: map, units: units) : wall($0, units: units) })
+        }
+        if k.contains("doors") {
+            out["doors"] = .array(map.doors.filter { filter.keeps($0.bounds(padding: 0)) }.map { door($0, units: units) })
+        }
+        if k.contains("tokens") {
+            out["tokens"] = .array(
+                map.tokens.filter { filter.keeps(map.tokenBounds($0, library: library)) }.map {
+                    token($0, map: map, library: library, units: units)
+                })
+        }
+        if k.contains("stairs") {
+            out["stairs"] = .array(map.stairs.filter { filter.keeps(point($0.x, $0.y)) }.map { stairs($0, units: units) })
+        }
+        if k.contains("markers") {
+            out["markers"] = .array(
+                map.markerStrokes.filter { filter.keeps(map.drawingBounds($0)) }.map {
+                    marker($0, units: units, includePoints: filter.includeMarkerPoints && !filter.summary)
+                })
+        }
+        if filter.summary || filter.region != nil || k.count < MapFilter.kinds.count {
+            out["counts"] = [
+                "walls": .number(Double(map.wallStrokes.count)),
+                "doors": .number(Double(map.doors.count)),
+                "tokens": .number(Double(map.tokens.count)),
+                "stairs": .number(Double(map.stairs.count)),
+                "lights": .number(Double(map.lights.count)),
+                "notes": .number(Double(map.notes.count)),
+                "markers": .number(Double(map.markerStrokes.count)),
+            ]
+            out["filtered"] = .string(
+                "Only part of the map is listed (summary, kinds or region); counts are for the whole map.")
+        }
+        if k.contains("background"), let bg = map.background {
             out["background"] = [
                 "asset": .string(bg.src),
                 "position": units.out(Point2D(x: bg.x, y: bg.y)),
@@ -166,7 +229,7 @@ enum Describe {
                 "image_px": .point(bg.width, bg.height),
                 "scale": .rounded(bg.scale),
             ]
-        } else {
+        } else if k.contains("background") {
             out["background"] = .null
         }
         if let b = map.contentBounds(library: library) {
@@ -184,6 +247,25 @@ enum Describe {
             "kind": .string((d.wallKind ?? .wall).rawValue),
             "one_way": .bool(d.oneWay ?? false),
         ]
+    }
+
+    /// A wall without its points: enough to find it and decide whether to read it in full.
+    static func wallSummary(_ d: Drawing, map: GameMap, units: Units) -> JSONValue {
+        let points = d.worldPoints
+        let b = map.drawingBounds(d)
+        var out: [String: JSONValue] = [
+            "id": .string(d.id),
+            "kind": .string((d.wallKind ?? .wall).rawValue),
+            "one_way": .bool(d.oneWay ?? false),
+            "point_count": .number(Double(points.count)),
+            "bounds": ["x": units.out(b.x), "y": units.out(b.y), "width": units.out(b.width), "height": units.out(b.height)],
+        ]
+        if let first = points.first, let last = points.last {
+            out["from"] = units.out(first)
+            out["to"] = units.out(last)
+            out["closed"] = .bool(points.count > 2 && hypot(first.x - last.x, first.y - last.y) < 1e-6)
+        }
+        return .object(out)
     }
 
     static func door(_ door: Door, units: Units) -> JSONValue {
@@ -214,6 +296,7 @@ enum Describe {
         out["vision_ft"] = resolved.visionRadius.map { JSONValue.rounded($0) } ?? .null
         out["darkvision_ft"] = resolved.darkvision.map { JSONValue.rounded($0) } ?? .null
         if let item = token.libraryItemId { out["library_item"] = .string(item) }
+        if let playerName = token.playerName { out["player_name"] = .string(playerName) }
         return .object(out)
     }
 
@@ -236,6 +319,7 @@ enum Describe {
             "color": .string(d.color),
             "point_count": .number(Double(points.count)),
         ]
+        if d.isHiddenFromPlayers { out["dm_only"] = true }
         if includePoints || points.count <= 12 {
             out["points"] = .array(points.map { units.out($0) })
         } else if let first = points.first, let last = points.last {

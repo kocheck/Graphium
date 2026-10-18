@@ -25,8 +25,10 @@ extension MapCanvasNSView {
         for token in map.tokens where !hiddenTokenIDs.contains(token.id) {
             let resolved = ResolvedToken(token, library: library)
             let kind = resolved.type == .pc ? "PC" : resolved.type == .npc ? "NPC" : "token"
+            // Players hear the name they would see, or just the kind (decision 014).
+            let name = isPlayerView ? resolved.playerName.map { "\($0), " } ?? "" : "\(resolved.name), "
             let element = makeElement(
-                label: "\(resolved.name), \(kind)\(selection.contains(token.id) ? ", selected" : "")",
+                label: "\(name)\(kind)\(selection.contains(token.id) ? ", selected" : "")",
                 bounds: map.tokenDisplayBounds(token, library: library))
             if let editing {
                 let id = token.id

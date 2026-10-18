@@ -5,7 +5,7 @@ import GraphiumCore
 /// disk: it loads the file, makes the change and saves before returning, so the DM can
 /// open the campaign in Graphium at any point and see the work.
 public final class GraphiumTools {
-    public static let version = "1.4.0"
+    public static let version = "1.5.0"
 
     struct Tool {
         var name: String
@@ -109,6 +109,20 @@ public final class GraphiumTools {
         ],
     ]
 
+    static func regionProperty(_ description: String) -> JSONValue {
+        [
+            "type": "object", "description": .string(description),
+            "properties": [
+                "x": ["type": "number"], "y": ["type": "number"], "width": ["type": "number"], "height": ["type": "number"],
+            ],
+            "required": ["x", "y", "width", "height"],
+        ]
+    }
+
+    static let imagePathNote =
+        "The file is copied into the campaign package, so it must be readable by this server: inside the folders "
+        + "list_campaigns shows. Copy images from elsewhere into an Imports folder there first."
+
     static let campaignProperty = string(
         "Path to the .graphiumcampaign package (absolute, ~/…, or relative to the server's first folder). "
             + "The extension may be left off.")
@@ -183,17 +197,27 @@ public final class GraphiumTools {
                 name: "get_campaign", title: "Get campaign",
                 description:
                     "Summarise a campaign: its maps (ids, names, grid, counts, extent in cells), which map is active, "
-                    + "and the size of its token library.",
+                    + "the size of its token library, and this server's version.",
                 properties: ["campaign": c], required: ["campaign"], readOnly: true, run: getCampaign),
             Tool(
                 name: "get_map", title: "Get map",
                 description:
                     "Everything on one map with ids: walls (polyline points), doors (centre, width, angle, open, "
-                    + "locked), tokens (top-left position, size, type, vision), stairs, markers and the background. "
-                    + "Positions are in grid cells unless units is \"px\". Read this before editing a map you didn't "
-                    + "just build.",
+                    + "locked, hidden), tokens (top-left position, size, type, vision), lights, notes, stairs, markers "
+                    + "and the background. Positions are in grid cells unless units is \"px\". Read this before editing "
+                    + "a map you didn't just build. Traced maps can have walls with hundreds of points: use summary "
+                    + "(walls without their points), kinds (only some layers) or region (only what touches an area) to "
+                    + "keep the reply short, then read the part you are editing in full.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
+                    "summary": Self.boolean(
+                        "Walls as id, kind, point count, ends and bounds instead of every point; markers without points "
+                            + "(default false)."),
+                    "kinds": [
+                        "type": "array", "description": "Only these layers (default all).",
+                        "items": ["type": "string", "enum": .array(Describe.MapFilter.kinds.map { JSONValue.string($0) })],
+                    ],
+                    "region": Self.regionProperty("Only objects touching this area {x, y, width, height}."),
                     "include_marker_points": Self.boolean("Include every point of long marker strokes (default false)."),
                 ],
                 required: ["campaign"], readOnly: true, run: getMap),
@@ -232,7 +256,8 @@ public final class GraphiumTools {
                 name: "set_background", title: "Set map background",
                 description:
                     "Use an image file on this Mac (PNG, JPEG, WebP, HEIC…) as the map's background. It is copied "
-                    + "into the campaign package (downscaled to 4096 px at most). Line the image's grid up with "
+                    + "into the campaign package (downscaled to 4096 px at most); the file must be inside the folders "
+                    + "list_campaigns shows. Line the image's grid up with "
                     + "Graphium's by giving width_cells (how many squares wide the battlemap is) or image_cell_px "
                     + "(pixels per square in the image file). Pass remove: true to clear the background.",
                 properties: [
@@ -252,7 +277,9 @@ public final class GraphiumTools {
                     + "through. one_way walls let sight pass from the left of the line as drawn (facing from its "
                     + "first point to its last; y points down) and block it from the right. Make corners share the "
                     + "exact same point so light can't leak; set closed to join the last point back to the first. "
-                    + "For rectangular rooms prefer add_rooms.",
+                    + "When tracing a map piece by piece, snap_tolerance (e.g. 0.5) moves new points onto existing "
+                    + "wall corners, and new ends onto existing walls, so rooms close. For rectangular rooms prefer "
+                    + "add_rooms.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "walls": Self.objects(
@@ -263,6 +290,9 @@ public final class GraphiumTools {
                             "one_way": Self.boolean("Sight passes only from the left side (default false)."),
                             "closed": Self.boolean("Join the last point back to the first (default false)."),
                         ], required: ["points"]),
+                    "snap_tolerance": Self.number(
+                        "Snap new points within this distance onto existing wall corners, and new wall ends onto "
+                            + "existing walls (default 0, off)."),
                 ],
                 required: ["campaign", "walls"], readOnly: false, run: drawWalls),
             Tool(
@@ -331,21 +361,25 @@ public final class GraphiumTools {
                     "Place creature tokens. position is the token's top-left corner, so a 1-cell token at [3, 4] "
                     + "fills the square from x 3–4, y 4–5. On maps with lighting off, PCs reveal fog out to vision_ft "
                     + "(e.g. 60). On maps with lighting on, PCs see what is lit, plus darkness out to darkvision_ft. "
-                    + "NPCs are hidden from players until a PC can see them. Art comes from image_path, a token "
-                    + "library item, or a generated lettered disc.",
+                    + "NPCs are hidden from players until a PC can see them. Players see each visible token's name, "
+                    + "or its player_name when set (\"\" shows none), so give monsters the party hasn't identified a "
+                    + "player_name such as \"Hooded figure\". Art comes from image_path (copied "
+                    + "into the campaign package), a token library item, or a generated lettered disc.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "tokens": Self.objects(
                         "Tokens to add.",
                         [
-                            "name": Self.string("Name shown in Graphium."),
+                            "name": Self.string("Name the DM sees in Graphium."),
+                            "player_name": Self.string(
+                                "Name players see on the World View instead (default: the name). \"\" shows no name."),
                             "position": Self.point("Top-left corner."),
                             "type": Self.string("PC or NPC.", enum: ["PC", "NPC"]),
                             "size": Self.number("Footprint in cells: 1 Medium, 2 Large, 3 Huge, 4 Gargantuan, 0.5 Tiny."),
                             "vision_ft": Self.number("Sight radius in feet (PCs; reveals fog on maps with lighting off)."),
                             "darkvision_ft": Self.number("Darkvision range in feet (used on maps with lighting on)."),
                             "speed_ft": Self.number("Walking speed in feet (default 30)."),
-                            "image_path": Self.string("Image file for the token art."),
+                            "image_path": Self.string("Image file for the token art. " + Self.imagePathNote),
                             "library_item": Self.string("Token library item id or name (see list_token_library)."),
                             "color": Self.string("Disc colour #rrggbb for generated art."),
                         ], required: ["position"]),
@@ -414,7 +448,7 @@ public final class GraphiumTools {
                 name: "draw_markers", title: "Draw markers",
                 description:
                     "Draw freehand marker lines (annotations, terrain outlines, paths). Markers don't block anything; "
-                    + "players see them on the World View.",
+                    + "players see them on the World View unless dm_only is true.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "strokes": Self.objects(
@@ -423,16 +457,19 @@ public final class GraphiumTools {
                             "points": Self.points("Points [[x, y], …].", minItems: 2),
                             "color": Self.string("#rrggbb (default #df4b26)."),
                             "width_px": Self.number("Line width in pixels (default 5)."),
+                            "dm_only": Self.boolean(
+                                "Only the DM sees it, e.g. a trap's area or a patrol route (default false)."),
                         ], required: ["points"]),
                 ],
                 required: ["campaign", "strokes"], readOnly: false, run: drawMarkers),
             Tool(
                 name: "update_objects", title: "Update objects",
                 description:
-                    "Change existing objects by id (from get_map). Tokens: position, name, type, size, vision_ft, "
-                    + "darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
-                    + "(a token library item id or name; only its picture is used). Doors: open, locked, hidden, center, width, angle. Walls: kind, one_way, flip "
-                    + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
+                    "Change existing objects by id (from get_map). Tokens: position, name, player_name (null for the "
+                    + "name, \"\" for none), type, size, vision_ft, darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
+                    + "(a token library item id or name; only its picture is used). Doors: open, locked, hidden (false "
+                    + "reveals a secret door), center, width, angle. Walls: kind, one_way, flip "
+                    + "(reverse the direction of a one-way wall), points. Markers: color, dm_only, points. Lights: center, bright_ft, dim_ft, on, name. "
                     + "Notes: center, title, dm_notes, player_notes, shared, sounds (replaces the list). Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
@@ -452,10 +489,23 @@ public final class GraphiumTools {
                 ],
                 required: ["campaign", "ids"], readOnly: false, destructive: true, run: removeObjects),
             Tool(
+                name: "move_objects", title: "Move objects together",
+                description:
+                    "Move tokens, lights and notes as a group, keeping their formation: the party to another part of "
+                    + "the map, or a party's torch along with them. Give by (how far) or to (where the group's top-left "
+                    + "goes). Walls and doors move with update_objects.",
+                properties: [
+                    "campaign": c, "map": m, "units": u,
+                    "ids": ["type": "array", "items": ["type": "string"], "minItems": 1, "description": "Ids from get_map."],
+                    "by": Self.point("Offset [dx, dy]."),
+                    "to": Self.point("Where the top-left of the group's positions goes."),
+                ],
+                required: ["campaign", "ids"], readOnly: false, run: moveObjects),
+            Tool(
                 name: "clear_map", title: "Clear map layers",
                 description:
-                    "Remove whole layers from a map: walls, doors, tokens, markers, stairs, lights, notes, fog (explored areas), "
-                    + "background.",
+                    "Remove whole layers from a map: walls, doors, tokens, markers, stairs, lights, notes, fog (explored "
+                    + "areas: resets the fog players have uncovered), background.",
                 properties: [
                     "campaign": c, "map": m,
                     "layers": [
@@ -487,27 +537,24 @@ public final class GraphiumTools {
                     "Look at a map. image returns a PNG of the DM's view (background, grid, walls in red, windows in "
                     + "blue, doors, lights, tokens with names) or, with view \"players\", what the PCs can currently see. "
                     + "ascii returns a character grid, one cell per character, with a legend. Render after building "
-                    + "to check your work.",
+                    + "to check your work. Read-only: it changes nothing, not even the explored fog.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "format": Self.string("image (default), ascii, or both.", enum: ["image", "ascii", "both"]),
                     "view": Self.string("dm (default) or players (fog from PC vision).", enum: ["dm", "players"]),
-                    "region": [
-                        "type": "object", "description": "Only this area {x, y, width, height}; default is the whole map.",
-                        "properties": [
-                            "x": ["type": "number"], "y": ["type": "number"], "width": ["type": "number"],
-                            "height": ["type": "number"],
-                        ],
-                    ],
+                    "region": Self.regionProperty("Only this area {x, y, width, height}; default is the whole map."),
                     "max_px": Self.integer("Longest side of the image in pixels (default 1200, at most 2400)."),
                 ],
                 required: ["campaign"], readOnly: true, run: renderMap),
             Tool(
                 name: "check_map", title: "Check map",
                 description:
-                    "Look for problems players would hit: gaps between walls that leak light, doors not on a wall, "
-                    + "tokens inside walls or on top of each other, PCs who can't see anything on a dark map, lights "
-                    + "inside walls, things outside the background. Run it after building and fix what it reports.",
+                    "Look for problems players would hit: gaps between walls that leak light, wall ends left open, "
+                    + "lights whose light escapes past every wall (in rock, or in a room with an unwalled side), doors "
+                    + "not on a wall, tokens inside walls or on top of each other, PCs who can't see anything, lights "
+                    + "on walls, things outside the background. It checks the walls you drew, not the background art: "
+                    + "ok true doesn't mean the walls match the picture. Run it after building, fix what it reports, "
+                    + "and render the players' view to confirm.",
                 properties: ["campaign": c, "map": m, "units": u],
                 required: ["campaign"], readOnly: true, run: checkMap),
             Tool(
@@ -519,8 +566,13 @@ public final class GraphiumTools {
                 name: "undo", title: "Undo last change",
                 description:
                     "Put back the campaign as it was before this server's last change. Repeat to go further back "
-                    + "(up to 30 steps). Doesn't undo edits made in the Graphium app.",
-                properties: ["campaign": c], required: ["campaign"], readOnly: false, destructive: true, run: undo),
+                    + "(up to 30 steps, kept across restarts in the Mac's Caches folder). Graphium's own edits have their "
+                    + "own Edit > Undo; if the campaign was changed in Graphium after this server's last change, undo "
+                    + "refuses rather than lose those edits, unless force is true.",
+                properties: [
+                    "campaign": c,
+                    "force": Self.boolean("Undo even though the campaign changed since, losing those changes (default false)."),
+                ], required: ["campaign"], readOnly: false, destructive: true, run: undo),
         ]
     }
 }
