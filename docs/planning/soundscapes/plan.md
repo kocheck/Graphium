@@ -41,6 +41,10 @@ Six candidates are by `deleted_user_*` accounts (164472, 346682, 164670, 132929,
 
    **Built (steps 1 and 2):** the 47 sounds in [v1-sounds.tsv](./v1-sounds.tsv) are processed by `macos/scripts/sounds/process.py` into `macos/App/Graphium/Sounds/` (11 MB, AAC at 128 kbps for beds and 96 kbps for one-shots), with `ledger.json` beside them. `macos/scripts/sounds/check-ledger.py` checks every file against the ledger offline. Beds came out within 1 LU of −23 LUFS. Six short, spiky one-shots sit 1.4–5 LU under −18 because the limiter caught their transients (two drips, a mug, the dice, a creak and the bones); they get trimmed by ear in the layer levels. Originals live in `macos/sound-originals/`, which git ignores.
 
+   **Built (steps 3, 4 and 6, first cut):** six built-in scenes in `Sources/GraphiumCore/SessionConsole/Soundscape.swift`, runtime-only (not saved in the campaign, so no catalog version bump yet; saving custom scenes is still the step 3 design below). `SoundscapePlayer.swift` plays them on their own bus under the music in the World View, following master volume and duck; the Session Console has a Soundscapes section with per-layer level and mute. AVAudioFile trims the AAC priming and remainder frames, so beds loop gaplessly from a decoded buffer; the cave bed's seam step (0.048) is under half the clip's 99th-percentile sample-to-sample step.
+
+   **Step 0 result:** Ogg Vorbis decodes and plays through Core Audio on macOS 27 (afinfo, AVAudioFile and afplay all read a test file), so `.ogg` stays allowed. Not yet checked on macOS 14, the package's minimum.
+
 3. **Model.** Add to `SessionConsoleCatalog` (version 2, old files decode with no soundscapes):
 
    ```swift
