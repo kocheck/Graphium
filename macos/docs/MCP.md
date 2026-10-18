@@ -98,8 +98,13 @@ apps show in their prompt menus (in Claude Code, `/mcp__graphium__build_map`), a
 
 Every tool call reads the file fresh and saves straight away. Reads and writes are coordinated
 with macOS file coordination, so a campaign open in Graphium saves its pending edits before the
-server reads it and reloads after the server writes. If you're editing the same map by hand
-at the same moment, the last save wins; Graphium's File > Revert To keeps its own versions.
+server reads it and reloads after the server writes. A save checks that `campaign.json` still
+holds what the tool read; if Graphium saved in between, the server writes nothing and runs the
+tool again on the new file (up to three times), so neither side's work is thrown away. Graphium's
+File > Revert To keeps its own versions.
+
+The server logs tool names, timings and failures (never arguments or results) to
+`~/Library/Logs/Graphium/graphium-mcp.log`, which Help > Collect Diagnostics includes.
 
 ## Updating
 

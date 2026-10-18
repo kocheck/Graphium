@@ -251,3 +251,100 @@ final class PackageFileWrapperTests: XCTestCase {
         XCTAssertEqual(Set(assetWrappers(wrapper).keys), ["a.png"])
     }
 }
+
+/// One bad value must neither block saving nor hide what's wrong when a file won't open.
+final class DamagedCampaignTests: XCTestCase {
+    func testNaNAndInfinitySaveAsZeroAndAreReported() throws {
+        var campaign = Campaign.makeDefault()
+        let token = Token(x: .nan, y: 3, src: "a.png", type: .pc, visionRadius: -.infinity, name: "Ash")
+        campaign.activeMap.tokens.append(token)
+        var repaired: [String] = []
+        let data = try CampaignPackage(campaign: campaign).encodeManifest(repaired: &repaired)
+
+        let reopened = try CampaignPackage(manifest: data, assets: [:])
+        XCTAssertEqual(reopened.campaign.activeMap.tokens[0].x, 0)
+        XCTAssertEqual(reopened.campaign.activeMap.tokens[0].y, 3)
+        XCTAssertEqual(reopened.campaign.activeMap.tokens[0].visionRadius, 0)
+        let mapID = campaign.activeMapID
+        XCTAssertEqual(
+            repaired,
+            ["campaign.maps[id \(mapID)].tokens[id \(token.id)].visionRadius", "campaign.maps[id \(mapID)].tokens[id \(token.id)].x"])
+        XCTAssertNil(reopened.preserved.unknownFields, "the marker never reaches the file")
+    }
+
+    func testAFileWithoutNaNIsUnchangedByTheRepairPath() throws {
+        let package = CampaignPackage(campaign: .makeDefault(name: "Plain"))
+        var repaired: [String] = []
+        XCTAssertEqual(try package.encodeManifest(repaired: &repaired), try package.encodeManifest())
+        XCTAssertTrue(repaired.isEmpty)
+    }
+
+    func testAStringThatLooksLikeAMarkerIsLeftAlone() throws {
+        var campaign = Campaign.makeDefault(name: "NaN")
+        campaign.activeMap.name = "graphium-non-finite"
+        let reopened = try CampaignPackage(manifest: CampaignPackage(campaign: campaign).encodeManifest(), assets: [:])
+        XCTAssertEqual(reopened.campaign.name, "NaN")
+        XCTAssertEqual(reopened.campaign.activeMap.name, "graphium-non-finite")
+    }
+
+    private func damaged(_ edit: (inout [String: Any]) throws -> Void) throws -> String {
+        var campaign = Campaign.makeDefault()
+        campaign.activeMap.tokens.append(Token(x: 1, y: 1, src: "a.png", type: .npc, name: "Goblin"))
+        let data = try CampaignPackage(campaign: campaign).encodeManifest()
+        var root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        try edit(&root)
+        var message = ""
+        XCTAssertThrowsError(try CampaignPackage(manifest: JSONSerialization.data(withJSONObject: root), assets: [:])) {
+            guard case .damaged(let detail)? = $0 as? CampaignPackage.FormatError else {
+                return XCTFail("expected .damaged, got \($0)")
+            }
+            message = detail
+        }
+        return message
+    }
+
+    private func editFirstToken(_ root: inout [String: Any], _ change: (inout [String: Any]) -> Void) throws {
+        var campaign = try XCTUnwrap(root["campaign"] as? [String: Any])
+        var maps = try XCTUnwrap(campaign["maps"] as? [[String: Any]])
+        var tokens = try XCTUnwrap(maps[0]["tokens"] as? [[String: Any]])
+        change(&tokens[0])
+        maps[0]["tokens"] = tokens
+        campaign["maps"] = maps
+        root["campaign"] = campaign
+    }
+
+    func testAWrongTypeNamesTheObjectAndField() throws {
+        let message = try damaged { root in try editFirstToken(&root) { $0["x"] = "left" } }
+        XCTAssertEqual(message, "campaign › maps[0] › tokens[0] › x should be a number")
+    }
+
+    func testAMissingFieldIsNamed() throws {
+        let message = try damaged { root in try editFirstToken(&root) { $0["src"] = nil } }
+        XCTAssertEqual(message, "campaign › maps[0] › tokens[0] › src is missing")
+    }
+
+    func testCutShortJSONSaysSo() throws {
+        let data = try CampaignPackage(campaign: .makeDefault()).encodeManifest()
+        XCTAssertThrowsError(try CampaignPackage(manifest: data.prefix(data.count / 2), assets: [:])) {
+            XCTAssertEqual(
+                $0 as? CampaignPackage.FormatError,
+                .damaged("it isn't valid JSON (it may have been cut short or edited by hand)"))
+            XCTAssertNotNil(($0 as? LocalizedError)?.recoverySuggestion)
+        }
+    }
+
+    /// Every way of cutting the file short fails with `.damaged`, never a crash or another error.
+    func testEveryTruncationFailsCleanly() throws {
+        var campaign = Campaign.makeDefault()
+        campaign.activeMap.tokens.append(Token(x: 1, y: 1, src: "a.png", type: .npc, name: "Goblin"))
+        let data = try CampaignPackage(campaign: campaign).encodeManifest()
+        for length in stride(from: 0, to: data.count - 1, by: 7) {
+            do {
+                _ = try CampaignPackage(manifest: data.prefix(length), assets: [:])
+                XCTFail("opened a file cut to \(length) bytes")
+            } catch let error as CampaignPackage.FormatError {
+                guard case .damaged = error else { return XCTFail("\(length): \(error)") }
+            }
+        }
+    }
+}

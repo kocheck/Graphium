@@ -261,9 +261,11 @@ final class AgentChatModel: ObservableObject {
         do {
             try process.run()
         } catch {
+            Diagnostics.log(.error, "Couldn't start \(agent.kind.name): \(error.localizedDescription)", category: "agent")
             append(.notice("Couldn't start \(agent.kind.name): \(error.localizedDescription)"))
             return
         }
+        Diagnostics.log(.info, "Started \(agent.kind.name) (\(agent.executable.lastPathComponent))", category: "agent")
         self.process = process
         running = true
         input.fileHandleForWriting.write(Data(message.utf8))
@@ -309,6 +311,10 @@ final class AgentChatModel: ObservableObject {
 
     private func ended(status: Int32, generation: Int) {
         guard generation == self.generation else { return }
+        // How it ended, never the conversation (stderr can echo it).
+        Diagnostics.log(
+            status == 0 || stopRequested ? .info : .error,
+            "\(kind.name) exited with status \(status)\(stopRequested ? " (stopped by the DM)" : "")", category: "agent")
         running = false
         process = nil
         for index in entries.indices {

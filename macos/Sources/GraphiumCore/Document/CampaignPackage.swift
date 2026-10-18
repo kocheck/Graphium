@@ -41,11 +41,36 @@ public struct CampaignPackage: Equatable, Sendable {
         self.preserved = preserved
     }
 
-    public enum FormatError: Error, Equatable {
+    public enum FormatError: Error, Equatable, LocalizedError {
         case missingManifest
         case newerFormat(found: Int, supported: Int)
         case invalidAssetName(String)
+        /// campaign.json can't be read; the text says where and why (see `describe`).
+        case damaged(String)
+
+        public var errorDescription: String? {
+            switch self {
+            case .missingManifest: "The campaign has no campaign.json."
+            case .newerFormat(let found, let supported):
+                "The campaign was saved by a newer Graphium (format \(found); this version reads \(supported))."
+            case .invalidAssetName(let name): "The campaign's assets folder holds a file Graphium won't read: \(name)."
+            case .damaged(let detail): "campaign.json is damaged: \(detail)."
+            }
+        }
+
+        public var recoverySuggestion: String? {
+            switch self {
+            case .newerFormat: "Update Graphium to open it. The file was not changed."
+            default:
+                "The file was not changed. File > Revert To > Browse All Versions can bring back an earlier copy, "
+                    + "and Help > Collect Diagnostics gathers what a bug report needs."
+            }
+        }
     }
+
+    /// Stands in for NaN and infinity while encoding (see `encodeManifest`). The NUL keeps it
+    /// from matching any string a DM could type.
+    static let nonFiniteMarker = "\u{0}graphium-non-finite"
 
     private struct Manifest: Codable {
         var formatVersion: Int
@@ -54,15 +79,56 @@ public struct CampaignPackage: Equatable, Sendable {
     }
 
     public func encodeManifest() throws -> Data {
+        var repaired: [String] = []
+        return try encodeManifest(repaired: &repaired)
+    }
+
+    /// The manifest, with the path of every number that was NaN or infinite in `repaired`.
+    /// JSON can't hold those, and a plain `JSONEncoder` throws on them, which would make every
+    /// later save and autosave fail. They are written as 0 instead, so one bad value never
+    /// blocks saving the rest of the campaign.
+    public func encodeManifest(repaired: inout [String]) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let marker = Self.nonFiniteMarker
+        encoder.nonConformingFloatEncodingStrategy = .convertToString(
+            positiveInfinity: marker, negativeInfinity: marker, nan: marker)
         let orphaned = preserved.orphanedAssets.isEmpty ? nil : preserved.orphanedAssets.sorted()
         let data = try encoder.encode(
             Manifest(formatVersion: Self.currentFormatVersion, campaign: campaign, orphanedAssets: orphaned))
-        guard let unknown = preserved.unknownFields else { return data }
+        let hasNonFinite = data.range(of: Data("graphium-non-finite".utf8)) != nil
+        guard preserved.unknownFields != nil || hasNonFinite else { return data }
         var tree = try JSONDecoder().decode(RawJSON.self, from: data)
-        unknown.merge(into: &tree)
+        if hasNonFinite {
+            let before = repaired.count
+            Self.replaceNonFinite(in: &tree, path: "", found: &repaired)
+            Diagnostics.log(
+                .error, "Saved 0 for NaN or infinite numbers at \(repaired[before...].joined(separator: ", "))",
+                category: "document")
+        }
+        preserved.unknownFields?.merge(into: &tree)
         return try encoder.encode(tree)
+    }
+
+    static func replaceNonFinite(in value: inout RawJSON, path: String, found: inout [String]) {
+        switch value {
+        case .string(nonFiniteMarker):
+            value = .integer(0)
+            found.append(path)
+        case .array(var items):
+            for index in items.indices {
+                let label = items[index].id.map { "id \($0)" } ?? String(index)
+                replaceNonFinite(in: &items[index], path: "\(path)[\(label)]", found: &found)
+            }
+            value = .array(items)
+        case .object(var fields):
+            for key in fields.keys.sorted() {
+                replaceNonFinite(in: &fields[key]!, path: path.isEmpty ? key : "\(path).\(key)", found: &found)
+            }
+            value = .object(fields)
+        default:
+            break
+        }
     }
 
     public init(manifest: Data?, assets: [String: Data]) throws {
@@ -70,14 +136,14 @@ public struct CampaignPackage: Equatable, Sendable {
         // Read the version on its own first so a newer file fails with a clear error,
         // not a decoding error from fields this build doesn't know.
         struct VersionOnly: Decodable { var formatVersion: Int }
-        let version = try JSONDecoder().decode(VersionOnly.self, from: manifest).formatVersion
+        let version = try Self.decodingManifest { try JSONDecoder().decode(VersionOnly.self, from: manifest).formatVersion }
         guard version <= Self.currentFormatVersion else {
             throw FormatError.newerFormat(found: version, supported: Self.currentFormatVersion)
         }
         for name in assets.keys where !Self.isValidAssetName(name) {
             throw FormatError.invalidAssetName(name)
         }
-        let decoded = try JSONDecoder().decode(Manifest.self, from: manifest)
+        let decoded = try Self.decodingManifest { try JSONDecoder().decode(Manifest.self, from: manifest) }
         self.campaign = decoded.campaign
         self.assets = assets
         // Whatever this build drops when it decodes and encodes the file again is kept aside.
@@ -86,6 +152,55 @@ public struct CampaignPackage: Equatable, Sendable {
         self.preserved = Preserved(
             unknownFields: UnknownFields.diff(original: original, known: known),
             orphanedAssets: decoded.orphanedAssets ?? [])
+    }
+
+    /// Runs a decode of campaign.json, turning a `DecodingError` into `.damaged` with a
+    /// message that names the object and field, so the DM (or a bug report) can find it.
+    static func decodingManifest<T>(_ body: () throws -> T) throws -> T {
+        do {
+            return try body()
+        } catch let error as DecodingError {
+            let detail = describe(error)
+            Diagnostics.log(.error, "campaign.json didn't decode: \(detail)", category: "document")
+            throw FormatError.damaged(detail)
+        }
+    }
+
+    /// "maps[2] › tokens[5] › x: expected a number" from a `DecodingError`.
+    public static func describe(_ error: DecodingError) -> String {
+        func place(_ path: [CodingKey]) -> String {
+            var parts: [String] = []
+            for key in path {
+                if let index = key.intValue, !parts.isEmpty {
+                    parts[parts.count - 1] += "[\(index)]"
+                } else {
+                    parts.append(key.stringValue)
+                }
+            }
+            return parts.isEmpty ? "the top level" : parts.joined(separator: " › ")
+        }
+        func kind(_ type: Any.Type) -> String {
+            switch type {
+            case is String.Type: "text"
+            case is Bool.Type: "true or false"
+            case is Int.Type, is Int64.Type, is Double.Type, is Float.Type: "a number"
+            default: "\(type)"
+            }
+        }
+        switch error {
+        case .keyNotFound(let key, let context):
+            return "\(place(context.codingPath + [key])) is missing"
+        case .typeMismatch(let type, let context):
+            return "\(place(context.codingPath)) should be \(kind(type))"
+        case .valueNotFound(let type, let context):
+            return "\(place(context.codingPath)) is empty but should be \(kind(type))"
+        case .dataCorrupted(let context) where context.codingPath.isEmpty:
+            return "it isn't valid JSON (it may have been cut short or edited by hand)"
+        case .dataCorrupted(let context):
+            return "\(place(context.codingPath)): \(context.debugDescription)"
+        @unknown default:
+            return "\(error)"
+        }
     }
 
     /// Asset names the campaign doesn't reference, other than `keeping`.
