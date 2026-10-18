@@ -394,7 +394,8 @@ public final class GraphiumTools {
                     + "and never reach players. player_notes are what players may read: with shared true the pin shows "
                     + "on the World View and players can click it to read them. Notes are DM-only (shared false) unless "
                     + "the DM asks otherwise. sounds attach Session Console tracks, effects or soundscapes (by name) for the DM to "
-                    + "play from the pin; play_on_show starts one when the DM shows the note on the World View.",
+                    + "play from the pin; play_on_show starts one when the DM shows the note on the World View. dm_notes and "
+                    + "player_notes are Markdown: # headings, - lists, - [ ] checkboxes, **bold**, *italic*, > quotes.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "notes": Self.objects(
@@ -402,8 +403,8 @@ public final class GraphiumTools {
                         [
                             "center": Self.point("Where the pin goes, e.g. a room's centre."),
                             "title": Self.string("Short title shown under the pin, e.g. 1. Guard Room."),
-                            "dm_notes": Self.string("Secrets, monster tactics, treasure: DM only."),
-                            "player_notes": Self.string("Read-aloud or handout text players may see."),
+                            "dm_notes": Self.string("Secrets, monster tactics, treasure: DM only. Markdown."),
+                            "player_notes": Self.string("Read-aloud or handout text players may see. Markdown."),
                             "shared": Self.boolean("Show the pin to players on the World View (default false)."),
                             "sounds": Self.noteSoundsProperty,
                         ], required: ["center"]),

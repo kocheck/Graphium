@@ -35,6 +35,8 @@ struct NoteInspector: View {
     @State private var draftID: String?
     @State private var draftMapID: String?
     @FocusState private var focus: Field?
+    /// Notes show formatted (Markdown) until the DM switches to Edit; a new, empty note starts in Edit.
+    @State private var reading = false
 
     private var notes: [MapNote] {
         document.campaign.activeMap.notes.filter { selection.contains($0.id) }
@@ -56,11 +58,13 @@ struct NoteInspector: View {
         .formStyle(.grouped)
         .onAppear {
             resetDraft()
+            resetMode()
             focusIfNew()
         }
         .onChange(of: selection) { _, _ in
             commit()
             resetDraft()
+            resetMode()
             focusIfNew()
         }
         .onChange(of: focus) { _, field in
@@ -89,26 +93,26 @@ struct NoteInspector: View {
             TextField("Title", text: $draft.title, prompt: Text("Note"))
                 .focused($focus, equals: .title)
                 .onSubmit { commit() }
+            Picker("Notes", selection: $reading) {
+                Text("Read").tag(true)
+                Text("Edit").tag(false)
+            }
+            .pickerStyle(.segmented)
+            .help("Read the notes formatted, or edit them as Markdown")
         } header: {
             Text(note.displayTitle).font(.headline)
         }
 
         Section {
-            TextEditor(text: $draft.dmNotes)
-                .focused($focus, equals: .dm)
-                .frame(minHeight: 120)
-                .accessibilityLabel("DM notes")
+            notesField($draft.dmNotes, field: .dm, label: "DM notes", empty: "No DM notes yet.")
         } header: {
             Label("DM Notes", systemImage: "eye.slash")
         } footer: {
-            Text("Only you see these.")
+            Text(verbatim: reading ? "Only you see these." : "Only you see these. Markdown works: # Heading, - list, **bold**, *italic*, > quote.")
         }
 
         Section {
-            TextEditor(text: $draft.playerNotes)
-                .focused($focus, equals: .player)
-                .frame(minHeight: 120)
-                .accessibilityLabel("Player notes")
+            notesField($draft.playerNotes, field: .player, label: "Player notes", empty: "No player notes yet.")
         } header: {
             Label("Player Notes", systemImage: "person.2")
         } footer: {
@@ -136,6 +140,46 @@ struct NoteInspector: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    /// Formatted text to read, or the Markdown to edit. Double-clicking the formatted text edits it.
+    @ViewBuilder
+    private func notesField(_ text: Binding<String>, field: Field, label: String, empty: String) -> some View {
+        if reading {
+            Group {
+                if text.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(empty).foregroundStyle(.secondary)
+                } else {
+                    NoteMarkdownView(text: text.wrappedValue)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture(count: 2) { edit(field) }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(label)
+            .accessibilityAction(named: "Edit") { edit(field) }
+        } else {
+            TextEditor(text: text)
+                .font(.body)
+                .focused($focus, equals: field)
+                .frame(minHeight: 120)
+                .accessibilityLabel(label)
+        }
+    }
+
+    private func edit(_ field: Field) {
+        reading = false
+        // The editor exists from the next update on.
+        DispatchQueue.main.async { focus = field }
+    }
+
+    /// Read a note that has notes; write a note that has none.
+    private func resetMode() {
+        let notes = self.notes
+        if notes.count == 1, let note = notes.first {
+            reading = !(note.dmNotes + note.playerNotes).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
