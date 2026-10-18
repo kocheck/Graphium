@@ -428,6 +428,7 @@ extension GraphiumTools {
                 token.visionRadius = try spec.double("vision_ft")
                 token.darkvision = try spec.double("darkvision_ft")
                 token.movementSpeed = try spec.double("speed_ft")
+                token.playerName = try spec.string("player_name")
 
                 if let reference = try spec.string("library_item") {
                     guard let item = Self.libraryItem(reference, in: loaded.campaign.tokenLibrary) else {
@@ -575,7 +576,8 @@ extension GraphiumTools {
                 let color = try spec.string("color").map { try Self.color($0, "\(spec.context).color") }
                 let drawing = Drawing(
                     tool: .marker, points: points.flatMap { [$0.x, $0.y] }, color: color ?? StrokeDefaults.markerColor,
-                    size: try spec.double("width_px") ?? StrokeDefaults.markerSize)
+                    size: try spec.double("width_px") ?? StrokeDefaults.markerSize,
+                    isDMOnly: try spec.bool("dm_only") == true ? true : nil)
                 loaded.campaign.maps[index].drawings.append(drawing)
                 added.append(.string(drawing.id))
             }
@@ -615,6 +617,11 @@ extension GraphiumTools {
                     if take("vision_ft") { map.tokens[i].visionRadius = try change.double("vision_ft") }
                     if take("darkvision_ft") { map.tokens[i].darkvision = try change.double("darkvision_ft") }
                     if take("speed_ft") { map.tokens[i].movementSpeed = try change.double("speed_ft") }
+                    // null goes back to the token's name; "" shows players no name.
+                    if take("player_name") || change.values["player_name"]?.isNull == true {
+                        used.insert("player_name")
+                        map.tokens[i].playerName = try change.string("player_name")
+                    }
                     // New art only; name, stats and any library link stay (as Change Image in the app).
                     if take("image_library_item"), let reference = try change.string("image_library_item") {
                         guard let item = Self.libraryItem(reference, in: loaded.campaign.tokenLibrary) else {
@@ -662,6 +669,9 @@ extension GraphiumTools {
                     }
                     if !isWall, take("color"), let color = try change.string("color") {
                         map.drawings[i].color = try Self.color(color, "\(change.context).color")
+                    }
+                    if !isWall, take("dm_only"), let dmOnly = try change.bool("dm_only") {
+                        map.setMarkersDMOnly(dmOnly, ids: [id])
                     }
                 } else if let i = map.lights.firstIndex(where: { $0.id == id }) {
                     kind = "light"

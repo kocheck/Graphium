@@ -361,15 +361,18 @@ public final class GraphiumTools {
                     "Place creature tokens. position is the token's top-left corner, so a 1-cell token at [3, 4] "
                     + "fills the square from x 3–4, y 4–5. On maps with lighting off, PCs reveal fog out to vision_ft "
                     + "(e.g. 60). On maps with lighting on, PCs see what is lit, plus darkness out to darkvision_ft. "
-                    + "NPCs are hidden from players until a PC can see them. Players see the name under every token "
-                    + "they can see, so name monsters as the party would know them. Art comes from image_path (copied "
+                    + "NPCs are hidden from players until a PC can see them. Players see each visible token's name, "
+                    + "or its player_name when set (\"\" shows none), so give monsters the party hasn't identified a "
+                    + "player_name such as \"Hooded figure\". Art comes from image_path (copied "
                     + "into the campaign package), a token library item, or a generated lettered disc.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "tokens": Self.objects(
                         "Tokens to add.",
                         [
-                            "name": Self.string("Name shown in Graphium."),
+                            "name": Self.string("Name the DM sees in Graphium."),
+                            "player_name": Self.string(
+                                "Name players see on the World View instead (default: the name). \"\" shows no name."),
                             "position": Self.point("Top-left corner."),
                             "type": Self.string("PC or NPC.", enum: ["PC", "NPC"]),
                             "size": Self.number("Footprint in cells: 1 Medium, 2 Large, 3 Huge, 4 Gargantuan, 0.5 Tiny."),
@@ -444,7 +447,7 @@ public final class GraphiumTools {
                 name: "draw_markers", title: "Draw markers",
                 description:
                     "Draw freehand marker lines (annotations, terrain outlines, paths). Markers don't block anything; "
-                    + "players see them on the World View.",
+                    + "players see them on the World View unless dm_only is true.",
                 properties: [
                     "campaign": c, "map": m, "units": u,
                     "strokes": Self.objects(
@@ -453,17 +456,19 @@ public final class GraphiumTools {
                             "points": Self.points("Points [[x, y], …].", minItems: 2),
                             "color": Self.string("#rrggbb (default #df4b26)."),
                             "width_px": Self.number("Line width in pixels (default 5)."),
+                            "dm_only": Self.boolean(
+                                "Only the DM sees it, e.g. a trap's area or a patrol route (default false)."),
                         ], required: ["points"]),
                 ],
                 required: ["campaign", "strokes"], readOnly: false, run: drawMarkers),
             Tool(
                 name: "update_objects", title: "Update objects",
                 description:
-                    "Change existing objects by id (from get_map). Tokens: position, name, type, size, vision_ft, "
-                    + "darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
+                    "Change existing objects by id (from get_map). Tokens: position, name, player_name (null for the "
+                    + "name, \"\" for none), type, size, vision_ft, darkvision_ft, speed_ft, and new art from image_path (an image file) or image_library_item "
                     + "(a token library item id or name; only its picture is used). Doors: open, locked, hidden (false "
                     + "reveals a secret door), center, width, angle. Walls: kind, one_way, flip "
-                    + "(reverse the direction of a one-way wall), points. Lights: center, bright_ft, dim_ft, on, name. "
+                    + "(reverse the direction of a one-way wall), points. Markers: color, dm_only, points. Lights: center, bright_ft, dim_ft, on, name. "
                     + "Notes: center, title, dm_notes, player_notes, shared, sounds (replaces the list). Stairs: center, direction, type. Fields that don't apply are reported back.",
                 properties: [
                     "campaign": c, "map": m, "units": u,

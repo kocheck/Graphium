@@ -39,6 +39,13 @@ public struct ResolvedToken: Equatable, Sendable {
         type = pick(token.type, item?.defaultType, .type) ?? (item?.category == "PC" ? .pc : nil)
         self.inherited = inherited
     }
+
+    /// The name players see under the token: `Token.playerName` when set, nil when that is
+    /// empty (no name), else the token's name.
+    public var playerName: String? {
+        guard let custom = token.playerName else { return name }
+        return custom.isEmpty ? nil : custom
+    }
 }
 
 extension Campaign {

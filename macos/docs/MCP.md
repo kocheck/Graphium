@@ -136,14 +136,14 @@ Images for `set_background` and token art are copied into the campaign package, 
 can only read them from inside its folders; the error for a file elsewhere names an `Imports`
 folder to copy it into first. `get_campaign` and the server's instructions report its version.
 
-### What players see, and what has no tool yet
+### What players see
 
 On the World View, players see walls, doors, stairs and markers wherever the fog is explored or a
-PC sees, PC tokens and their names always, NPC tokens and their names only while a PC sees them,
-and lights only as the light they give. Notes are the only DM-only objects: `dm_notes` never
-reach players, and a pin shows only when `shared`. Hidden doors look like wall while shut. The
-server's instructions tell the model this, and that these have no tool yet: lights carried by
-tokens, DM-only markers, and token names hidden from players.
+PC sees, PC tokens always and NPC tokens only while a PC sees them, each labelled with its
+`player_name` (by default its name; `""` shows none), and lights only as the light they give.
+DM-only: `dm_notes`, pins that aren't `shared`, and markers with `dm_only`. Hidden doors look
+like wall while shut. The server's instructions tell the model this, and that lights carried by
+tokens aren't in Graphium yet (#349).
 
 ## Keeping it up to date
 

@@ -284,6 +284,39 @@ final class MCPServerTests: XCTestCase {
         }
     }
 
+    func testDMOnlyMarkersAndNamesForPlayers() throws {
+        try call("create_campaign", ["path": "Secrets", "name": "Secrets"])
+        let tokens = try call(
+            "add_tokens",
+            ["campaign": "Secrets", "tokens": [["name": "Vecna", "player_name": "Hooded figure", "type": "NPC", "position": [2, 2]]]])
+        let id = try XCTUnwrap(tokens["added_tokens"]?.arrayValue?.first?["id"])
+        XCTAssertEqual(tokens["added_tokens"]?.arrayValue?.first?["player_name"], "Hooded figure")
+        let markers = try call(
+            "draw_markers", ["campaign": "Secrets", "strokes": [["points": [[1, 1], [4, 1]], "dm_only": true]]])
+        let marker = try XCTUnwrap(markers["added_marker_ids"]?.arrayValue?.first)
+
+        var map = try loadCampaign("Secrets.graphiumcampaign").activeMap
+        XCTAssertEqual(ResolvedToken(map.tokens[0], library: [:]).playerName, "Hooded figure")
+        XCTAssertEqual(ResolvedToken(map.tokens[0], library: [:]).name, "Vecna")
+        XCTAssertTrue(map.drawings[0].isHiddenFromPlayers)
+        let described = try call("get_map", ["campaign": "Secrets"])
+        XCTAssertEqual(described["markers"]?.arrayValue?.first?["dm_only"], .bool(true))
+        let players = try request(
+            "tools/call", ["name": "render_map", "arguments": ["campaign": "Secrets", "view": "players", "format": "image"]])
+        XCTAssertEqual(players["result"]?["isError"], .bool(false))
+
+        try call("update_objects", ["campaign": "Secrets", "changes": [["id": id, "player_name": ""], ["id": marker, "dm_only": false]]])
+        map = try loadCampaign("Secrets.graphiumcampaign").activeMap
+        XCTAssertNil(ResolvedToken(map.tokens[0], library: [:]).playerName, "an empty name shows players none")
+        XCTAssertNil(map.drawings[0].isDMOnly, "showing leaves the flag out of the file")
+
+        let cleared = try call("update_objects", ["campaign": "Secrets", "changes": [["id": id, "player_name": .null]]])
+        XCTAssertNil(cleared["updated"]?.arrayValue?.first?["ignored_fields"])
+        map = try loadCampaign("Secrets.graphiumcampaign").activeMap
+        XCTAssertNil(map.tokens[0].playerName)
+        XCTAssertEqual(ResolvedToken(map.tokens[0], library: [:]).playerName, "Vecna")
+    }
+
     func testDoorLinesUpWithADiagonalWall() throws {
         try call("create_campaign", ["path": "Diag", "name": "Diag"])
         try call("draw_walls", ["campaign": "Diag", "walls": [["points": [[0, 0], [4, 4]]]]])

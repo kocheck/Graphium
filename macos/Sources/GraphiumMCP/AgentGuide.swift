@@ -32,15 +32,15 @@ public enum AgentGuide {
         add_lights, and give PCs darkvision_ft. Turn daylight on for scenes with no fog at all.
 
         What players see on the World View: walls, doors, stairs and markers wherever the fog is explored or a PC \
-        sees; PC tokens and their names always; NPC tokens and their names only while a PC sees them; lights only \
-        as the light they give. Only notes are DM-only (dm_notes always; the pin itself unless shared), so put room \
-        keys, trap DCs and hints in notes, never in markers or token names. A hidden door shows as wall while shut, \
-        until update_objects sets hidden false.
+        sees; PC tokens always and NPC tokens only while a PC sees them, each with its player_name (default its \
+        name; "" shows none); lights only as the light they give. DM-only: notes' dm_notes, unshared pins, and \
+        markers with dm_only. Put room keys, trap DCs and hints in notes; mark a trap's area with a dm_only marker; \
+        give an unidentified monster a player_name. A hidden door shows as wall while shut, until update_objects \
+        sets hidden false.
 
         Where things are: reset explored fog with clear_map layers ["fog"]; move a party with move_objects (a \
         light given with them moves too, but lights don't follow tokens on their own); read notes in get_map. \
-        Not in this server yet: lights carried by tokens, DM-only markers, hiding a token's name from players. \
-        Say so rather than working round them silently. If a tool named here is missing, the AI app is running \
+        Not in Graphium yet: lights carried by tokens. Say so rather than working round them silently. If a tool named here is missing, the AI app is running \
         an older graphium-mcp: get_campaign reports the version; restart the app to pick up a new one.
         Read graphium://guide/map-building for design advice.
         """

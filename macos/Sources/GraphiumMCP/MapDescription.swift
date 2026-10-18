@@ -296,6 +296,7 @@ enum Describe {
         out["vision_ft"] = resolved.visionRadius.map { JSONValue.rounded($0) } ?? .null
         out["darkvision_ft"] = resolved.darkvision.map { JSONValue.rounded($0) } ?? .null
         if let item = token.libraryItemId { out["library_item"] = .string(item) }
+        if let playerName = token.playerName { out["player_name"] = .string(playerName) }
         return .object(out)
     }
 
@@ -318,6 +319,7 @@ enum Describe {
             "color": .string(d.color),
             "point_count": .number(Double(points.count)),
         ]
+        if d.isHiddenFromPlayers { out["dm_only"] = true }
         if includePoints || points.count <= 12 {
             out["points"] = .array(points.map { units.out($0) })
         } else if let first = points.first, let last = points.last {

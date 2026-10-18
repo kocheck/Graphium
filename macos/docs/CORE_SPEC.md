@@ -98,7 +98,7 @@ LINES/DOTS/HIDDEN are all square geometry (visual style only). HEXAGONAL = flat-
 | `name`          | `string`        | yes | override; resolves `token.name ?? lib.name ?? 'Token'`                                          |
 | `movementSpeed` | `number` (feet) | yes | resolves `token.movementSpeed ?? lib.defaultMovementSpeed ?? 30`                                |
 
-**Native only**: `darkvision` `number` (feet), optional, resolves `token.darkvision ?? lib.defaultDarkvision`; used only with lighting on (§1.3).
+**Native only**: `darkvision` `number` (feet), optional, resolves `token.darkvision ?? lib.defaultDarkvision`; used only with lighting on (§1.3). `playerName` `string`, optional: the name the World View shows players (decision 014); absent shows the resolved name, empty shows none. Per token, never inherited. TS ignores it and shows the name.
 
 Token footprint: `size = gridSize * resolvedScale` (square). Token centre: `(x + size/2, y + size/2)`.
 `TokenMetadata` (`gameStore.ts:32`) is just the shared optional subset `{name,type,visionRadius,scale,movementSpeed}`.
@@ -118,7 +118,7 @@ Token footprint: `size = gridSize * resolvedScale` (square). Token centre: `(x +
 
 World-space point = `(px * scale + x, py * scale + y)` (`FogOfWarLayer.tsx:263-285`).
 
-**Native only** (TS ignores both, so there a window or one-way wall is an ordinary wall): `wallKind` `'wall' | 'window'`, optional, absent = `'wall'`, unknown values read as `'wall'`; `oneWay` `boolean`, optional, absent = two-way, sight passes from the on-screen left of the points' order. Both are written only when they differ from the default.
+**Native only** (TS ignores both, so there a window or one-way wall is an ordinary wall): `wallKind` `'wall' | 'window'`, optional, absent = `'wall'`, unknown values read as `'wall'`; `oneWay` `boolean`, optional, absent = two-way, sight passes from the on-screen left of the points' order. Both are written only when they differ from the default. `isDMOnly` `boolean`, markers only, optional, written only when true: the Architect draws the marker faded and dashed and the World View leaves it out (decision 014). TS ignores it and shows the marker.
 
 ### 1.6 `MapConfig` (background image) — `src/store/gameStore.ts:96`
 

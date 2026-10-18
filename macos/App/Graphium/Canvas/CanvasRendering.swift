@@ -74,6 +74,13 @@ extension MapCanvasNSView {
             return
         case .marker:
             context.setStrokeColor((NSColor(hex: drawing.color) ?? .labelColor).cgColor)
+            if drawing.isHiddenFromPlayers {
+                // The Architect shows DM-only markers faded and dashed, state by shape (decision 014).
+                let width = drawing.size * scale
+                context.setAlpha(0.55)
+                context.setLineCap(.butt)
+                context.setLineDash(phase: 0, lengths: [max(width * 2, 6), max(width * 1.5, 4)])
+            }
         }
         // Marker and eraser.
         if let pressures = drawing.pressures, pressures.count == points.count, points.count > 1 {

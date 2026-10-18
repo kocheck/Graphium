@@ -103,6 +103,14 @@ extension GameMap {
         }
     }
 
+    /// Hides the given markers from players (World View) or shows them again. Showing
+    /// leaves the flag out of the file.
+    public mutating func setMarkersDMOnly(_ dmOnly: Bool, ids: Set<String>) {
+        for i in drawings.indices where drawings[i].tool == .marker && ids.contains(drawings[i].id) {
+            drawings[i].isDMOnly = dmOnly ? true : nil
+        }
+    }
+
     /// Makes the given walls one-way or two-way.
     public mutating func setOneWay(_ oneWay: Bool, ids: Set<String>) {
         for i in drawings.indices where drawings[i].tool == .wall && ids.contains(drawings[i].id) {
