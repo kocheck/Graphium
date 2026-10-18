@@ -11,12 +11,26 @@ public struct FogScene: Equatable, Sendable {
     public var sight: PartySight
     /// Decision 010: fine hatching over ground the party remembers but can't see now.
     public var hatchRemembered: Bool
+    /// Map units per cell; the wall hatching is sized in cells.
+    public var gridSize: Double
+    /// Walls to draw rock hatching behind (`LineOfSight.hatchWalls`). Only the side away from
+    /// ground the party knows is drawn, so walls nobody has seen draw nothing. Empty: none.
+    public var hatchWalls: [WallSegment]
+    /// Lit flame lights by id (`LightSource.isFlame`) and how they flicker right now: they
+    /// glow warm and their reach breathes. Other lights are steady and give no glow.
+    public var flames: [String: TorchFlicker.Sample]
 
-    public init(bounds: Bounds, explored: [ExploredRegion], sight: PartySight, hatchRemembered: Bool = true) {
+    public init(
+        bounds: Bounds, explored: [ExploredRegion], sight: PartySight, hatchRemembered: Bool = true,
+        gridSize: Double = 50, hatchWalls: [WallSegment] = [], flames: [String: TorchFlicker.Sample] = [:]
+    ) {
         self.bounds = bounds
         self.explored = explored
         self.sight = sight
         self.hatchRemembered = hatchRemembered
+        self.gridSize = gridSize
+        self.hatchWalls = hatchWalls
+        self.flames = flames
     }
 }
 
@@ -41,8 +55,9 @@ public struct FogView: Equatable, Sendable {
 
 /// The fog compositing rules, shared by the GPU and the app's Core Graphics fallback.
 public enum FogShading {
-    /// Fog over unexplored ground (TS 94%).
-    public static let base = 0.94
+    /// Fog over unexplored ground: solid black, so players learn nothing of where they
+    /// haven't been (TS was 94%).
+    public static let base = 1.0
     /// How much of the fog explored ground clears (TS: down to 20%).
     public static let exploredClearing = 0.8
     /// How much of the fog dim light, or darkness within darkvision, clears (decision 009).
@@ -51,6 +66,22 @@ public enum FogShading {
     public static let hatchPeriod = 12.0
     public static let hatchWidth = 2.0
     public static let hatchAlpha = 0.28
+    /// Torchlight: amber, at most 14% over the map at the flame, fading out at the dim radius.
+    public static let glowColor = (red: 1.0, green: 0.62, blue: 0.25)
+    public static let glowStrength = 0.14
+    /// Rock hatching behind seen walls (Dyson style), in cells: how far it reaches past the
+    /// wall, how far past the wall a point must be known for its wall to count as seen, and
+    /// the patches, line spacing, line width and gap between patches.
+    public static let rockBand = 0.4
+    public static let rockNudge = 0.15
+    public static let rockPatch = 0.3
+    public static let rockPeriod = 1.0 / 9
+    public static let rockLine = 1.0 / 45
+    public static let rockGap = 1.0 / 60
+    /// Half the World View's 6-unit wall line, in map units, inked along the hatched side.
+    public static let wallInk = 3.0
+    /// The paper the hatching is drawn on.
+    public static let paper = 0.93
 }
 
 /// Draws the World View's fog with Metal, light and darkvision included, into premultiplied
@@ -92,6 +123,7 @@ public final class FogRenderer {
     private let fogBase: MTLRenderPipelineState
     private let fogClearing: MTLRenderPipelineState
     private let compositor: MTLRenderPipelineState
+    private let banding: MTLRenderPipelineState
     private let fill: [UInt32: MTLDepthStencilState]
     private let test: [UInt32: MTLDepthStencilState]
     private let zero: [UInt32: MTLDepthStencilState]
@@ -104,6 +136,8 @@ public final class FogRenderer {
         var explored: MTLTexture
         var remaining: MTLTexture
         var seen: MTLTexture
+        var warmth: MTLTexture
+        var band: MTLTexture
         var stencil: MTLTexture
         var output: MTLTexture
         var readback: MTLBuffer
@@ -113,14 +147,15 @@ public final class FogRenderer {
     public init?(device: MTLDevice? = MTLCreateSystemDefaultDevice()) {
         guard let device, let queue = device.makeCommandQueue(),
             let library = try? device.makeLibrary(source: FogShaders.source, options: nil),
-            let vertex = library.makeFunction(name: "fogVertex")
+            let vertex = library.makeFunction(name: "fogVertex"),
+            let bandVertex = library.makeFunction(name: "bandVertex")
         else { return nil }
         func pipeline(
             _ fragment: String, colors: [(MTLPixelFormat, MTLColorWriteMask, ((MTLRenderPipelineColorAttachmentDescriptor) -> Void)?)],
-            stencil: Bool = true
+            stencil: Bool = true, vertexFunction: MTLFunction? = nil
         ) -> MTLRenderPipelineState? {
             let d = MTLRenderPipelineDescriptor()
-            d.vertexFunction = vertex
+            d.vertexFunction = vertexFunction ?? vertex
             d.fragmentFunction = library.makeFunction(name: fragment)
             for (i, color) in colors.enumerated() {
                 d.colorAttachments[i].pixelFormat = color.0
@@ -146,9 +181,13 @@ public final class FogRenderer {
         }
         guard let exploredStencil = pipeline("one", colors: [(.r8Unorm, [], nil)]),
             let exploredCover = pipeline("one", colors: [(.r8Unorm, .all, maximum)]),
-            let fogStencil = pipeline("nothing", colors: [(.r16Float, [], nil), (.r8Unorm, [], nil)]),
-            let fogBase = pipeline("fogBase", colors: [(.r16Float, .all, nil), (.r8Unorm, [], nil)]),
-            let fogClearing = pipeline("clearing", colors: [(.r16Float, .all, multiply), (.r8Unorm, .all, maximum)]),
+            let fogStencil = pipeline("nothing", colors: [(.r16Float, [], nil), (.r8Unorm, [], nil), (.r8Unorm, [], nil)]),
+            let fogBase = pipeline(
+                "fogBase", colors: [(.r16Float, .all, nil), (.r8Unorm, [], nil), (.r8Unorm, [], nil)]),
+            let fogClearing = pipeline(
+                "clearing", colors: [(.r16Float, .all, multiply), (.r8Unorm, .all, maximum), (.r8Unorm, .all, maximum)]),
+            let banding = pipeline(
+                "band", colors: [(.r8Unorm, .all, maximum)], stencil: false, vertexFunction: bandVertex),
             let compositor = pipeline("composite", colors: [(.rgba8Unorm, .all, nil)], stencil: false)
         else { return nil }
         func state(_ compare: MTLCompareFunction, pass: MTLStencilOperation, read: UInt32, write: UInt32)
@@ -187,6 +226,7 @@ public final class FogRenderer {
         self.fogBase = fogBase
         self.fogClearing = fogClearing
         self.compositor = compositor
+        self.banding = banding
         self.fill = fill
         self.test = test
         self.zero = zero
@@ -208,8 +248,11 @@ public final class FogRenderer {
             guard region.points.count >= 3 else { return nil }
             return (geometry.fan(region.points), geometry.quad(region.points))
         }
-        let plan = geometry.plan(scene.sight)
+        let plan = geometry.plan(scene.sight, flames: scene.flames)
+        let bandWidth = scene.gridSize * FogShading.rockBand
+        let bands = geometry.bands(scene.hatchWalls, width: bandWidth, within: viewQuadBounds(view, pad: bandWidth))
         guard let buffer = geometry.buffer(on: device) else { return nil }
+        let segments = geometry.segmentBuffer(on: device)
         var viewUniform = [
             SIMD4<Float>(Float(view.origin.x), Float(view.origin.y), Float(view.scale), 0),
             SIMD4<Float>(Float(view.width), Float(view.height), 0, 0),
@@ -253,7 +296,7 @@ public final class FogRenderer {
 
         // 2. The fog left after the explored ground and everything seen now.
         let fogPass = MTLRenderPassDescriptor()
-        for (i, texture) in [targets.remaining, targets.seen].enumerated() {
+        for (i, texture) in [targets.remaining, targets.seen, targets.warmth].enumerated() {
             fogPass.colorAttachments[i].texture = texture
             fogPass.colorAttachments[i].loadAction = .clear
             fogPass.colorAttachments[i].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
@@ -290,24 +333,56 @@ public final class FogRenderer {
         }
         f.endEncoding()
 
-        // 3. Black fog, with hatching over remembered ground.
+        // 3. Where to hatch rock behind the walls the party has seen.
+        let bandPass = MTLRenderPassDescriptor()
+        bandPass.colorAttachments[0].texture = targets.band
+        bandPass.colorAttachments[0].loadAction = .clear
+        bandPass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        bandPass.colorAttachments[0].storeAction = .store
+        guard let b = begin(bandPass) else { return nil }
+        if !bands.isEmpty, let segments {
+            var band = [
+                viewUniform[0],
+                SIMD4<Float>(
+                    Float(bandWidth), Float(scene.gridSize * FogShading.rockNudge), Float(view.width), Float(view.height)),
+            ]
+            b.setRenderPipelineState(banding)
+            b.setVertexBuffer(segments, offset: 0, index: 2)
+            b.setFragmentTexture(targets.explored, index: 0)
+            b.setFragmentTexture(targets.seen, index: 1)
+            b.setFragmentBytes(&band, length: MemoryLayout<SIMD4<Float>>.stride * 2, index: 0)
+            draw(b, bands)
+        }
+        b.endEncoding()
+
+        // 4. Black fog, with hatching over remembered ground and rock behind seen walls, and
+        // the warm glow of flames under it.
         let outPass = MTLRenderPassDescriptor()
         outPass.colorAttachments[0].texture = targets.output
         outPass.colorAttachments[0].loadAction = .clear
         outPass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
         outPass.colorAttachments[0].storeAction = .store
         guard let c = begin(outPass) else { return nil }
+        let g = scene.gridSize
+        let glow = FogShading.glowColor
         var hatch = [
             viewUniform[0],
             SIMD4<Float>(
                 Float(FogShading.hatchPeriod * view.pointScale), Float(FogShading.hatchWidth * view.pointScale),
                 Float(FogShading.hatchAlpha), scene.hatchRemembered ? 1 : 0),
+            SIMD4<Float>(Float(glow.red), Float(glow.green), Float(glow.blue), bands.isEmpty ? 0 : 1),
+            SIMD4<Float>(Float(bandWidth), Float(FogShading.wallInk), Float(FogShading.paper), 0),
+            SIMD4<Float>(
+                Float(g * FogShading.rockPatch), Float(g * FogShading.rockPeriod), Float(g * FogShading.rockLine),
+                Float(g * FogShading.rockGap)),
         ]
         c.setRenderPipelineState(compositor)
         c.setFragmentTexture(targets.remaining, index: 0)
         c.setFragmentTexture(targets.seen, index: 1)
         c.setFragmentTexture(targets.explored, index: 2)
-        c.setFragmentBytes(&hatch, length: MemoryLayout<SIMD4<Float>>.stride * 2, index: 0)
+        c.setFragmentTexture(targets.warmth, index: 3)
+        c.setFragmentTexture(targets.band, index: 4)
+        c.setFragmentBytes(&hatch, length: MemoryLayout<SIMD4<Float>>.stride * hatch.count, index: 0)
         draw(c, viewQuad)
         c.endEncoding()
 
@@ -327,6 +402,12 @@ public final class FogRenderer {
             gpuTime: max(0, commands.gpuEndTime - commands.gpuStartTime))
     }
 
+    private func viewQuadBounds(_ view: FogView, pad: Double) -> Bounds {
+        Bounds(
+            x: view.origin.x - pad, y: view.origin.y - pad, width: Double(view.width) / view.scale + 2 * pad,
+            height: Double(view.height) / view.scale + 2 * pad)
+    }
+
     private func targets(for view: FogView) -> Targets? {
         if let targets, targets.width == view.width, targets.height == view.height { return targets }
         func texture(_ format: MTLPixelFormat, _ usage: MTLTextureUsage) -> MTLTexture? {
@@ -339,13 +420,15 @@ public final class FogRenderer {
         guard let explored = texture(.r8Unorm, [.renderTarget, .shaderRead]),
             let remaining = texture(.r16Float, [.renderTarget, .shaderRead]),
             let seen = texture(.r8Unorm, [.renderTarget, .shaderRead]),
+            let warmth = texture(.r8Unorm, [.renderTarget, .shaderRead]),
+            let band = texture(.r8Unorm, [.renderTarget, .shaderRead]),
             let stencil = texture(.stencil8, [.renderTarget]),
             let output = texture(.rgba8Unorm, [.renderTarget]),
             let readback = device.makeBuffer(length: view.width * view.height * 4, options: .storageModeShared)
         else { return nil }
         targets = Targets(
             width: view.width, height: view.height, explored: explored, remaining: remaining, seen: seen,
-            stencil: stencil, output: output, readback: readback)
+            warmth: warmth, band: band, stencil: stencil, output: output, readback: readback)
         return targets
     }
 }
@@ -360,6 +443,9 @@ private struct Geometry {
     }
 
     var points: [SIMD2<Float>] = []
+    /// For the band draws: each vertex's wall piece (a.xy, b.xy), at the vertex's index.
+    /// Other vertices get zeros, so the two buffers line up.
+    var segments: [SIMD4<Float>] = []
 
     /// A triangle fan from the first vertex, for an even-odd stencil fill.
     mutating func fan(_ polygon: [Point2D]) -> Range<Int> {
@@ -392,7 +478,7 @@ private struct Geometry {
 
     /// The draws that clear the fog for what the party sees, in order. Each PC's sight is
     /// stencil bit 1; a light's reach or the PC's darkvision is bit 2, tested together with it.
-    mutating func plan(_ sight: PartySight) -> [Step] {
+    mutating func plan(_ sight: PartySight, flames: [String: TorchFlicker.Sample] = [:]) -> [Step] {
         var steps: [Step] = []
         let dim = Float(FogShading.dimClearing)
         for entry in sight.vision where entry.polygon.count >= 3 {
@@ -415,13 +501,17 @@ private struct Geometry {
             for area in sight.lit where area.polygon.count >= 3 && area.dimRadius > 0 {
                 let reach = fan(area.polygon)
                 let reachBox = quad(area.polygon)
+                // A flame's reach breathes inside its wall-clipped area (never past it) and it glows.
+                let flame = flames[area.lightID]
+                let r = Float(flame?.radius ?? 1)
+                let glow = flame.map { Float(FogShading.glowStrength * $0.glow) } ?? 0
                 steps.append(.fill(reach, 0x02))
                 steps.append(
                     .clear(
                         reachBox, 0x03,
                         [
-                            SIMD4(2, Float(area.centre.x), Float(area.centre.y), Float(area.brightRadius)),
-                            SIMD4(Float(area.dimRadius), 0, dim, 0),
+                            SIMD4(2, Float(area.centre.x), Float(area.centre.y), Float(area.brightRadius) * r),
+                            SIMD4(Float(area.dimRadius) * r, 0, dim, glow),
                         ]))
                 steps.append(.zero(reachBox, 0x02))
             }
@@ -435,6 +525,43 @@ private struct Geometry {
             steps.append(.zero(box, 0x01))
         }
         return steps
+    }
+
+    /// One quad per wall piece near the view, `width` wider than it all round, for the band pass.
+    mutating func bands(_ walls: [WallSegment], width: Double, within view: Bounds) -> Range<Int> {
+        let start = points.count
+        guard !walls.isEmpty else { return start..<start }
+        segments += Array(repeating: SIMD4<Float>(0, 0, 0, 0), count: points.count - segments.count)
+        for wall in walls {
+            let a = wall.start
+            let b = wall.end
+            guard max(a.x, b.x) >= view.x, min(a.x, b.x) <= view.x + view.width, max(a.y, b.y) >= view.y,
+                min(a.y, b.y) <= view.y + view.height
+            else { continue }
+            let length = hypot(b.x - a.x, b.y - a.y)
+            let ux = length > 1e-9 ? (b.x - a.x) / length * width : width
+            let uy = length > 1e-9 ? (b.y - a.y) / length * width : 0
+            // Along (u) and across (n = u turned 90°), each `width` long.
+            let corners = [
+                Point2D(x: a.x - ux + uy, y: a.y - uy - ux), Point2D(x: b.x + ux + uy, y: b.y + uy - ux),
+                Point2D(x: b.x + ux - uy, y: b.y + uy + ux), Point2D(x: a.x - ux - uy, y: a.y - uy + ux),
+            ].map { SIMD2<Float>(Float($0.x), Float($0.y)) }
+            let seg = SIMD4<Float>(Float(a.x), Float(a.y), Float(b.x), Float(b.y))
+            for i in [0, 1, 2, 0, 2, 3] {
+                points.append(corners[i])
+                segments.append(seg)
+            }
+        }
+        return start..<points.count
+    }
+
+    func segmentBuffer(on device: MTLDevice) -> MTLBuffer? {
+        guard !segments.isEmpty else { return nil }
+        var padded = segments
+        padded += Array(repeating: SIMD4<Float>(0, 0, 0, 0), count: max(0, points.count - segments.count))
+        return padded.withUnsafeBytes {
+            device.makeBuffer(bytes: $0.baseAddress!, length: $0.count, options: .storageModeShared)
+        }
     }
 
     func buffer(on device: MTLDevice) -> MTLBuffer? {

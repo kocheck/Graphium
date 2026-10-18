@@ -144,6 +144,7 @@ extension GameMap {
     public mutating func placeDoor(at point: Point2D, orientation: DoorOrientation) -> Door {
         let door = doorPlacement(at: point, orientation: orientation)
         doors.append(door)
+        joinWalls(to: door)
         return door
     }
 

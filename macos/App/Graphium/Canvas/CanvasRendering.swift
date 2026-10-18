@@ -164,7 +164,7 @@ extension MapCanvasNSView {
             if door.isLocked {
                 drawSymbol("lock.fill", centredAt: CGPoint(x: door.x, y: door.y), size: max(12, door.size * 0.35), context: context)
             }
-            if selectedDoorID == door.id || selection.contains(door.id) {
+            if selection.contains(door.id) {
                 var transform = frame
                 context.strokeMark(
                     CGPath(rect: closed.insetBy(dx: -4, dy: -4), transform: &transform), width: 2 / viewport.zoom)

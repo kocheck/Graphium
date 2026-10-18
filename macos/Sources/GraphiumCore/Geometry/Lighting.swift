@@ -229,3 +229,50 @@ public struct PartySight: Equatable, Sendable {
 
     public func sees(_ p: Point2D) -> Bool { perceived(at: p) != nil }
 }
+
+extension LightSource {
+    /// A burning light (candle, lamp, torch, lantern, or one with no preset name): it
+    /// flickers and glows warm on the World View. Magical and daylight light is steady.
+    public var isFlame: Bool {
+        guard let name else { return true }
+        return [LightPreset.candle, .lamp, .torch, .lantern].contains { $0.name == name }
+    }
+}
+
+/// How a flame flickers, for the World View only: what the players see breathes, while who
+/// sees what (exploration, hidden tokens) keeps the steady radii from the rules.
+public enum TorchFlicker {
+    public struct Sample: Equatable, Sendable {
+        /// Multiplies the light's radii, 0.93…1, so a flame never reaches past its walls.
+        public var radius: Double
+        /// Multiplies the warm glow, about 0.8…1.1.
+        public var glow: Double
+
+        public init(radius: Double, glow: Double) {
+            self.radius = radius
+            self.glow = glow
+        }
+    }
+
+    public static let steady = Sample(radius: 1, glow: 1)
+
+    /// Redraws a second while flames flicker: fire reads as fire at this rate.
+    public static let framesPerSecond = 15.0
+
+    /// The flame `seed` (a light id) at `time` seconds: sums of slow sines, each light out of
+    /// step with the others. Every frequency is under 6 Hz and the swing is small, so it is
+    /// a shimmer, not the flashing that troubles photosensitive players (WCAG 2.3.1).
+    public static func sample(seed: String, time: Double) -> Sample {
+        var hash: UInt64 = 0xcbf2_9ce4_8422_2325
+        for byte in seed.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100_0000_01b3
+        }
+        func phase(_ i: UInt64) -> Double { Double((hash >> (i * 8)) & 0xff) / 255 * 2 * .pi }
+        let wobble =
+            (sin(time * 2 * .pi * 1.7 + phase(0)) * 0.5 + sin(time * 2 * .pi * 3.1 + phase(1)) * 0.3
+                + sin(time * 2 * .pi * 5.3 + phase(2)) * 0.2)
+        let breath = sin(time * 2 * .pi * 0.9 + phase(3)) * 0.6 + sin(time * 2 * .pi * 2.3 + phase(4)) * 0.4
+        return Sample(radius: 0.965 + 0.035 * breath, glow: 0.95 + 0.15 * wobble)
+    }
+}

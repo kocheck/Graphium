@@ -25,13 +25,17 @@ final class FogRendererTests: XCTestCase {
     }
 
     /// Renders one map pixel per map unit, with a 20-unit margin around the fog bounds.
-    private func render(_ map: GameMap, explored: [ExploredRegion] = [], hatch: Bool = true) throws -> (
+    private func render(
+        _ map: GameMap, explored: [ExploredRegion] = [], hatch: Bool = true, rock: Bool = false,
+        flames: [String: TorchFlicker.Sample] = [:]
+    ) throws -> (
         FogRenderer.Frame, (Double, Double) -> Double, (Double, Double) -> Double
     ) {
         let bounds = LineOfSight.fogBounds(of: map)
         let scene = FogScene(
             bounds: bounds, explored: explored, sight: LineOfSight.partySight(of: map, library: [:]),
-            hatchRemembered: hatch)
+            hatchRemembered: hatch, gridSize: map.gridSize, hatchWalls: rock ? LineOfSight.hatchWalls(of: map) : [],
+            flames: flames)
         let view = FogView(
             origin: Point2D(x: bounds.x - 20, y: bounds.y - 20), scale: 1, width: Int(bounds.width) + 40,
             height: Int(bounds.height) + 40)
@@ -93,6 +97,53 @@ final class FogRendererTests: XCTestCase {
         var walled = dark
         walled.drawings = [Drawing(tool: .wall, points: [900, -200, 900, 250], color: "#f00", size: 8)]
         XCTAssertEqual(try render(walled).1(875, 25), FogShading.base, accuracy: tolerance, "a wall stops the light")
+    }
+
+    func testRockIsHatchedBehindSeenWallsOnly() throws {
+        // Vision 10 ft around (100, 100); a seen wall at x = 150 and an unseen one at x = 350.
+        var map = map(width: 400, height: 300, pc: Point2D(x: 75, y: 75), vision: 10)
+        map.drawings = [
+            Drawing(tool: .wall, points: [150, 0, 150, 300], color: "#f00", size: 8),
+            Drawing(tool: .wall, points: [350, 0, 350, 300], color: "#f00", size: 8),
+        ]
+        let (frame, alpha, white) = try render(map, rock: true)
+        XCTAssertEqual(alpha(151, 100), 1, accuracy: tolerance, "the wall's ink on the far side")
+        XCTAssertEqual(white(151, 100), 0, accuracy: tolerance)
+        // Just past the wall: paper with hatch lines on it, opaque.
+        var band: [Double] = []
+        for y in 60..<140 {
+            for x in 155..<160 { band.append(frame.white(x: x + 20, y: y + 20)) }
+        }
+        XCTAssertEqual(band.max()!, FogShading.paper, accuracy: 0.02, "paper")
+        XCTAssertLessThan(band.min()!, 0.3, "with ink lines")
+        XCTAssertEqual(alpha(157, 100), 1, accuracy: tolerance)
+        XCTAssertEqual(white(185, 100), 0, accuracy: tolerance, "black again past the band")
+        XCTAssertEqual(white(140, 100), 0, accuracy: tolerance, "nothing on the side the party sees")
+        XCTAssertEqual(white(360, 100), 0, accuracy: tolerance, "a wall nobody has seen draws nothing")
+        XCTAssertEqual(alpha(360, 100), FogShading.base, accuracy: tolerance)
+
+        let (_, _, plain) = try render(map)
+        XCTAssertEqual(plain(157, 100), 0, accuracy: tolerance, "off without walls to hatch")
+    }
+
+    func testFlamesGlowWarmUnderTheFog() throws {
+        var dark = map(width: 1200, height: 400, pc: .zero)
+        dark.ambientLight = .dark
+        let torch = LightPreset.torch.light(at: Point2D(x: 1025, y: 25))
+        dark.lights = [torch]
+        let (frame, alpha, white) = try render(dark, flames: [torch.id: TorchFlicker.steady])
+        // 15 ft out: bright, so no fog; the glow is 14% × (1 − 150/400)².
+        let glow = FogShading.glowStrength * pow(1 - 150.0 / 400, 2)
+        XCTAssertEqual(alpha(875, 25), glow, accuracy: tolerance)
+        XCTAssertEqual(white(875, 25), glow, accuracy: tolerance, "red at full strength")
+        let blue = Double(frame.pixels[(45 * frame.width + 895) * 4 + 2]) / 255
+        XCTAssertEqual(blue, glow * FogShading.glowColor.blue, accuracy: tolerance, "amber, not white")
+        XCTAssertEqual(alpha(575, 25), FogShading.base, accuracy: tolerance, "nothing past its reach")
+
+        // A dimmer moment of the flame pulls its edge in, never out.
+        let (_, flickered, _) = try render(dark, flames: [torch.id: TorchFlicker.Sample(radius: 0.93, glow: 1)])
+        XCTAssertEqual(flickered(1025 - 395, 25), FogShading.base, accuracy: tolerance)
+        XCTAssertEqual(try render(dark).1(875, 25), 0, accuracy: tolerance, "lights that aren't flames don't glow")
     }
 
     func testDarkvisionStacksWithDimLight() throws {

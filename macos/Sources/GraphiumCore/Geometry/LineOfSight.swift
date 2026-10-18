@@ -65,6 +65,15 @@ public enum LineOfSight {
         return open.filter { door in walls.contains { cut($0, under: door, tolerance: tolerance) != [$0] } }
     }
 
+    /// The walls the World View hatches rock behind: every sight-blocking wall stroke, less
+    /// the stretch under any door (open or closed), so no rock is drawn across a doorway.
+    public static func hatchWalls(of map: GameMap) -> [WallSegment] {
+        let tolerance = map.gridSize * WallWeld.toleranceInCells
+        return strokeWalls(of: map).flatMap { wall in
+            map.doors.reduce([wall]) { pieces, door in pieces.flatMap { cut($0, under: door, tolerance: tolerance) } }
+        }
+    }
+
     /// The segments of every wall stroke that blocks sight, in world space.
     public static func strokeWalls(of map: GameMap) -> [WallSegment] {
         var segments: [WallSegment] = []
