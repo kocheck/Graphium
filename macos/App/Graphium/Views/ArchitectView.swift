@@ -1670,6 +1670,8 @@ struct ArchitectView: View {
             .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
             .padding(.top, Spacing.md)
             .transition(.opacity)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("calibration-banner")
         } else if let toast {
             HStack(spacing: Spacing.sm + 2) {
                 Image(systemName: toast.kind.symbol)
@@ -1706,6 +1708,8 @@ struct ArchitectView: View {
             .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
             .padding(.top, Spacing.md)
             .transition(.opacity)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("empty-map-banner")
         }
     }
 

@@ -191,6 +191,10 @@ jobs:
           xcrun xcresulttool get test-results tests --path "$OUT/personas.xcresult" > "$OUT/report/tests.json" || true
           xcrun xcresulttool get test-results summary --path "$OUT/personas.xcresult" > "$OUT/report/summary.json" || true
           cp "$OUT"/network-on-launch.txt "$OUT"/log-errors.txt "$OUT"/crash-reports.txt "$OUT/report/"
+          # The app's own log: activation lines (category qa), saves and import faults.
+          log show --last 2h --info --style compact --predicate 'subsystem == "com.graphium"' > "$OUT/report/app-log.txt" 2>&1 || true
+          { echo "activation lines:"; grep -h "activation:" "$OUT/report/app-log.txt" "$OUT"/*.log 2>/dev/null || echo "(none)"; } > "$OUT/report/activation.txt"
+          cat "$OUT/report/activation.txt"
 
       # The traces and screenshots also go to the qa-results branch (one commit, replaced each
       # run), so they can be read from a checkout without the artifact store.

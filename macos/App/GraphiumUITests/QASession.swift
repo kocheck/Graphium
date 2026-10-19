@@ -144,6 +144,11 @@ final class QASession {
         app.descendants(matching: .any).matching(Self.labelContains(text)).firstMatch
     }
 
+    /// An element the app tags for these scripts (the empty-map and calibration banners).
+    func tagged(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
     /// A token with this name on the Architect canvas.
     func canvasToken(_ name: String) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", name + ",")).firstMatch
@@ -203,8 +208,10 @@ final class QASession {
     @discardableResult
     func newCampaign() -> Bool {
         button("New Campaign").click()
-        let ok = text("Drop a map image here").waitForExistence(timeout: 15)
-        return record(2, "new-campaign", ok: ok, ok ? "Architect window with the empty-map banner" : "No empty-map banner")
+        let ok = tagged("empty-map-banner").waitForExistence(timeout: 15)
+        return record(
+            2, "new-campaign", ok: ok,
+            ok ? "Architect window with the empty-map banner" : "No empty-map banner. Campaign windows: \(architectWindows.count)")
     }
 
     /// Fills an open panel by typing a path (Go to Folder), as a DM could.
@@ -222,14 +229,15 @@ final class QASession {
     /// Step 3 through the banner's Choose… button.
     @discardableResult
     func chooseMapImage(_ path: String = QASession.mapImage) -> Bool {
-        let chooseButton = button("Choose")
+        let banner = tagged("empty-map-banner")
+        let chooseButton = banner.exists ? banner.buttons.firstMatch : button("Choose")
         guard chooseButton.waitForExistence(timeout: 5) else {
             return record(3, "map-image", ok: false, "No Choose… button")
         }
         chooseButton.click()
         choose(file: path)
-        let calibrating = text("drag a box around one grid cell").waitForExistence(timeout: 30)
-        let gone = !text("Drop a map image here").exists
+        let calibrating = tagged("calibration-banner").waitForExistence(timeout: 30)
+        let gone = !tagged("empty-map-banner").exists
         let becameToken = canvasToken("New Token").exists
         return record(
             3, "map-image", ok: gone && !becameToken,
@@ -288,8 +296,12 @@ final class QASession {
     /// Step 7: View > World View (⇧⌘W), then what the players' window shows.
     @discardableResult
     func openWorldView(viaToolbar: Bool = false) -> Bool {
+        let toolbarButton = app.toolbars.buttons.matching(Self.labelContains("World View")).firstMatch
         if viaToolbar {
-            app.toolbars.buttons.matching(Self.labelContains("World View")).firstMatch.click()
+            // A DM looks for the TV button first; when it's behind », they find the menu item.
+            let visible = toolbarButton.exists && toolbarButton.isHittable
+            record(7, "find-world-view-button", ok: visible, "World View button visible in the toolbar: \(visible)", shot: !visible)
+            if visible { toolbarButton.click() } else { app.typeKey("w", modifierFlags: [.command, .shift]) }
         } else {
             app.typeKey("w", modifierFlags: [.command, .shift])
         }
@@ -331,6 +343,21 @@ final class QASession {
             if luma < 40 { dark += 1 }
         }
         return Double(dark) / Double(side * side)
+    }
+
+    /// Brings the first campaign window forward through the Window menu, which works even when the
+    /// World View covers it.
+    func focusArchitect() {
+        let title = architect.title
+        app.menuBars.menuBarItems["Window"].click()
+        let item = app.menuItems.matching(NSPredicate(format: "title == %@", title)).firstMatch
+        if !title.isEmpty, item.waitForExistence(timeout: 2) {
+            item.click()
+        } else {
+            app.typeKey(.escape, modifierFlags: [])
+            if architect.isHittable { architect.click() }
+        }
+        sleep(1)
     }
 
     /// Closes every campaign without saving, so the next test starts clean.

@@ -65,7 +65,7 @@ final class PersonaTests: XCTestCase {
         qa.openWorldView()
         qa.checkPlayersSeeMap()
         // Step 9: ⌘S on an untitled campaign asks for a name.
-        qa.architect.click()
+        qa.focusArchitect()
         qa.app.typeKey("s", modifierFlags: .command)
         let panel = qa.app.sheets.firstMatch.waitForExistence(timeout: 5)
         qa.record(9, "save", ok: panel, "Save sheet shown: \(panel)")
@@ -89,7 +89,7 @@ final class PersonaTests: XCTestCase {
         if classic.exists {
             classic.click()
             sleep(3)
-            let blank = qa.text("Drop a map image here").exists
+            let blank = qa.tagged("empty-map-banner").exists
             let doors = qa.text("Doors").exists
             let toast = qa.anyToast() ?? "no toast"
             qa.record(
@@ -188,8 +188,15 @@ final class PersonaTests: XCTestCase {
             sleep(1)
         }
 
-        // Double-click the toolbar's World View.
-        qa.app.toolbars.buttons.matching(QASession.labelContains("World View")).firstMatch.doubleClick()
+        // Double-trigger the World View: the toolbar button when it's visible, else ⇧⌘W twice.
+        let worldButton = qa.app.toolbars.buttons.matching(QASession.labelContains("World View")).firstMatch
+        if worldButton.exists && worldButton.isHittable {
+            worldButton.doubleClick()
+        } else {
+            qa.note("world-view-trigger", "Toolbar button behind », used ⇧⌘W twice")
+            qa.app.typeKey("w", modifierFlags: [.command, .shift])
+            qa.app.typeKey("w", modifierFlags: [.command, .shift])
+        }
         sleep(2)
         let worlds = qa.app.windows.matching(NSPredicate(format: "title BEGINSWITH %@", "World View")).count
         qa.record(7, "double-click-world-view", ok: worlds == 1, "World View windows: \(worlds)")
@@ -199,7 +206,7 @@ final class PersonaTests: XCTestCase {
         }
 
         // Naughty map names through Rename….
-        qa.architect.click()
+        qa.focusArchitect()
         for (i, name) in NaughtyStrings.sample.enumerated() {
             let row = qa.architect.outlines.cells.firstMatch.exists
                 ? qa.architect.outlines.cells.element(boundBy: 0) : qa.architect.tables.cells.element(boundBy: 0)
@@ -229,7 +236,8 @@ final class PersonaTests: XCTestCase {
         }
 
         // Quit in the middle of a huge image import.
-        let choose = qa.button("Choose")
+        let banner = qa.tagged("empty-map-banner")
+        let choose = banner.exists ? banner.buttons.firstMatch : qa.button("Choose")
         if !choose.exists {
             // The map has no art yet, but a rename doesn't change that; the banner should be there.
             qa.record(3, "quit-mid-import", ok: false, "No Choose… button to start an import")
@@ -243,7 +251,7 @@ final class PersonaTests: XCTestCase {
             let cancel = qa.app.buttons.matching(NSPredicate(format: "label == %@", "Cancel")).firstMatch
             if cancel.exists { cancel.click() }
             sleep(10)
-            let set = !qa.text("Drop a map image here").exists
+            let set = !qa.tagged("empty-map-banner").exists
             qa.record(3, "after-quit-cancel", ok: qa.app.state == .runningForeground && set, "Import finished after the cancelled quit: \(set)")
         }
 
@@ -263,13 +271,13 @@ final class PersonaTests: XCTestCase {
         audit(qa, "welcome")
 
         qa.app.typeKey("n", modifierFlags: .command)
-        let opened = qa.text("Drop a map image here").waitForExistence(timeout: 15)
+        let opened = qa.tagged("empty-map-banner").waitForExistence(timeout: 15)
         qa.record(2, "cmd-n", ok: opened, "⌘N from the Welcome window opened a campaign: \(opened)")
         if !opened {
             qa.app.menuBars.menuBarItems["File"].click()
             qa.app.menuItems.matching(NSPredicate(format: "title BEGINSWITH %@", "New")).firstMatch.click()
             qa.note("pointer-used", "File > New (⌘N did nothing)")
-            _ = qa.text("Drop a map image here").waitForExistence(timeout: 15)
+            _ = qa.tagged("empty-map-banner").waitForExistence(timeout: 15)
         }
 
         // Tab through the Architect, noting what takes focus, until the banner's Choose… does.
@@ -286,7 +294,7 @@ final class PersonaTests: XCTestCase {
             qa.choose(file: QASession.mapImage)
             qa.note("pointer-used", "Map > Map Image… (no keyboard shortcut)")
         }
-        let calibrating = qa.text("drag a box around one grid cell").waitForExistence(timeout: 30)
+        let calibrating = qa.tagged("calibration-banner").waitForExistence(timeout: 30)
         qa.record(4, "calibration-by-keyboard", ok: false, "Calibration banner: \(calibrating). Only Esc (Cancel) works from the keyboard; the box needs a drag.")
         qa.app.typeKey(.escape, modifierFlags: [])
 
