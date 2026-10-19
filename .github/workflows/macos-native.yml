@@ -184,7 +184,16 @@ jobs:
             echo "error and fault lines in the app log:"
             grep -hE '\[(error|fault)\]' "$OUT"/*.log || echo "(none)"
           } > "$OUT/log-errors.txt"
-          cat "$OUT/crash-reports.txt" "$OUT/log-errors.txt"
+          cat "$OUT/crash-reports.txt" "$OUT/log-errors.txt" "$OUT/network-on-launch.txt"
+          # The traces and small copies of the step screenshots go in the log too, so a reviewer
+          # without access to the artifact store can read them.
+          for f in "$OUT"/trace-*.json; do echo "=== $(basename "$f")"; cat "$f"; done
+          mkdir -p "$OUT/small"
+          for f in "$OUT"/*-[0-9][0-9]-*.png; do
+            [ -e "$f" ] || continue
+            sips -s format jpeg -s formatOptions 45 -Z 900 "$f" --out "$OUT/small/$(basename "${f%.png}").jpg" > /dev/null
+          done
+          for f in "$OUT"/small/*.jpg; do echo "=== IMG $(basename "$f")"; base64 -b 0 < "$f"; echo; done
 
       - uses: actions/upload-artifact@v4
         if: always()
