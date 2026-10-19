@@ -188,6 +188,8 @@ jobs:
           } > "$OUT/log-errors.txt"
           cat "$OUT/crash-reports.txt" "$OUT/log-errors.txt" "$OUT/network-on-launch.txt"
           python3 -I scripts/qa/collect-attachments.py "$OUT/attachments" "$OUT/report"
+          xcrun xcresulttool get test-results tests --path "$OUT/personas.xcresult" > "$OUT/report/tests.json" || true
+          xcrun xcresulttool get test-results summary --path "$OUT/personas.xcresult" > "$OUT/report/summary.json" || true
           cp "$OUT"/network-on-launch.txt "$OUT"/log-errors.txt "$OUT"/crash-reports.txt "$OUT/report/"
 
       # The traces and screenshots also go to the qa-results branch (one commit, replaced each

@@ -8,6 +8,11 @@ final class PersonaTests: XCTestCase {
         continueAfterFailure = true
     }
 
+    override func tearDown() {
+        QASession.current?.finish()
+        QASession.current = nil
+    }
+
     /// 1. Impatient: does the least each screen asks for, as fast as it can, and stops at the first
     /// error state. Logs time to first action and time to value.
     func testImpatient() {
@@ -259,7 +264,13 @@ final class PersonaTests: XCTestCase {
 
         qa.app.typeKey("n", modifierFlags: .command)
         let opened = qa.text("Drop a map image here").waitForExistence(timeout: 15)
-        qa.record(2, "cmd-n", ok: opened, "⌘N opened a campaign: \(opened)")
+        qa.record(2, "cmd-n", ok: opened, "⌘N from the Welcome window opened a campaign: \(opened)")
+        if !opened {
+            qa.app.menuBars.menuBarItems["File"].click()
+            qa.app.menuItems.matching(NSPredicate(format: "title BEGINSWITH %@", "New")).firstMatch.click()
+            qa.note("pointer-used", "File > New (⌘N did nothing)")
+            _ = qa.text("Drop a map image here").waitForExistence(timeout: 15)
+        }
 
         // Tab through the Architect, noting what takes focus, until the banner's Choose… does.
         let order = tabOrder(qa, until: "Choose", limit: 40)

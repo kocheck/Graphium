@@ -32,6 +32,9 @@ final class QASession {
     private(set) var trace: Trace
     private var start = Date()
     private var shots = 0
+    private var finished = false
+    /// The run in progress, so tearDown can still attach its trace when a test stops early.
+    static var current: QASession?
 
     /// Synthetic map images made by `scripts/qa/make-fixtures.swift` (never a real campaign).
     static var fixtures: String {
@@ -46,6 +49,7 @@ final class QASession {
     init(_ persona: String, test: XCTestCase, arguments: [String] = []) {
         self.test = test
         trace = Trace(persona: persona, arguments: arguments)
+        Self.current = self
         app.launchArguments = [
             "-ApplePersistenceIgnoreState", "YES",
             "-NSQuitAlwaysKeepsWindows", "NO",
@@ -104,6 +108,8 @@ final class QASession {
     }
 
     func finish() {
+        guard !finished else { return }
+        finished = true
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         guard let data = try? encoder.encode(trace) else { return }
@@ -133,8 +139,14 @@ final class QASession {
         app.buttons.matching(Self.labelContains(text)).firstMatch
     }
 
+    /// Any element showing this text (a SwiftUI Label in a glass capsule isn't always a static text).
     func text(_ text: String) -> XCUIElement {
-        app.staticTexts.matching(Self.labelContains(text)).firstMatch
+        app.descendants(matching: .any).matching(Self.labelContains(text)).firstMatch
+    }
+
+    /// A token with this name on the Architect canvas.
+    func canvasToken(_ name: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", name + ",")).firstMatch
     }
 
     /// The message of a visible error toast, if any.
@@ -218,9 +230,10 @@ final class QASession {
         choose(file: path)
         let calibrating = text("drag a box around one grid cell").waitForExistence(timeout: 30)
         let gone = !text("Drop a map image here").exists
+        let becameToken = canvasToken("New Token").exists
         return record(
-            3, "map-image", ok: gone,
-            "Image set: \(gone). Calibration banner shown on its own: \(calibrating).")
+            3, "map-image", ok: gone && !becameToken,
+            "Banner gone: \(gone). Calibration started on its own: \(calibrating). The image became a token instead: \(becameToken).")
     }
 
     /// The canvas zoom the readout reports, as a fraction.
