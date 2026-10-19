@@ -1691,6 +1691,7 @@ struct ArchitectView: View {
             .padding(.top, Spacing.md)
             .transition(.opacity)
             .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("toast-\(toast.kind)")
             .task(id: toast.id) {
                 try? await Task.sleep(for: .seconds(5))
                 if self.toast?.id == toast.id { self.toast = nil }
