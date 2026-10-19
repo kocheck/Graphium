@@ -1,0 +1,121 @@
+{
+  "arguments" : [
+
+  ],
+  "notes" : {
+    "about-text" : [
+      "About Graphium",
+      "Untitled",
+      "New Campaign",
+      "Welcome to Graphium",
+      "Graphium",
+      "Version 1.0 · macOS Edition",
+      "May your rolls be ever in your favor, Dungeon Master. ⚔️🎲",
+      "Virtual Tabletop for Dice Rollers",
+      "Two windows, fog of war, your files. No accounts, no subscriptions.",
+      "Recent Campaigns",
+      "Version 1.0 · macOS Edition",
+      "🎲 World Given Form",
+      "Greetings, Master of Dungeons! Graphium (Latin: graphium, “a writing stylus”) is your arcane battlemat—a local-first virtual tabletop designed to replace your physical grid with digital sorcery.",
+      "Project your campaign map onto a second monitor or share your screen, maintaining total control over what your players see while you orchestrate the chaos from your Architect’s throne.",
+      "🌟 The Sacred Philosophy",
+      "Graphium is a digital stylus for the discerning World Builder. It handles maps, tokens, and fog of war without demanding tribute to corporate overlords. Your campaigns are sacred .graphiumcampaign tomes saved wherever you put them, and Graphium sends nothing anywhere. Simple, powerful, and yours.",
+      "Version 1.0",
+      "Classic Dungeon",
+      "Maps",
+      "Library",
+      "Doors"
+    ],
+    "template-text" : [
+      "Welcome to Graphium",
+      "Virtual Tabletop for Dice Rollers",
+      "Two windows, fog of war, your files. No accounts, no subscriptions.",
+      "Recent Campaigns",
+      "Version 1.0 · macOS Edition",
+      "Campaign Templates"
+    ],
+    "tutorial-text" : [
+      "About Graphium",
+      "Untitled",
+      "New Campaign",
+      "Welcome to Graphium",
+      "Graphium",
+      "Version 1.0 · macOS Edition",
+      "May your rolls be ever in your favor, Dungeon Master. ⚔️🎲",
+      "Virtual Tabletop for Dice Rollers",
+      "Two windows, fog of war, your files. No accounts, no subscriptions.",
+      "Recent Campaigns",
+      "Version 1.0 · macOS Edition",
+      "Your First Session",
+      "1. Choose New Campaign (⌘N), then drop a map image on the map.",
+      "2. Drag a box around one grid cell so the grid fits the image, or press Esc to skip.",
+      "3. Click Generic Token in the sidebar, then set Type to PC in the inspector. Players see only what PCs see.",
+      "4. Open the World View (⇧⌘W), then choose Show on Display to put it on the TV.",
+      "5. Save with ⌘S. The campaign is one file on your Mac.",
+      "⚔️ Core Powers",
+      "•  Dual-Window Enchantment: Architect View for you, pristine World View for your players",
+      "•  Fog of War: Players see what their PCs see, and walls and closed doors block it",
+      "•  Drawing Tools: Markers, erasers, and vision-blocking walls (Shift to lock axes!)",
+      "•  Local-First: Your data stays yours: .graphiumcampaign files, no account and no cloud required",
+      "Designed for Dungeon Masters",
+      "See Graphium in Action",
+      "Dual-window architecture with fog of war",
+      "Dynamic lighting and shadows",
+      "Classic Dungeon",
+      "Maps",
+      "Library",
+      "Doors"
+    ],
+    "welcome-text" : [
+      "Welcome to Graphium",
+      "Virtual Tabletop for Dice Rollers",
+      "Two windows, fog of war, your files. No accounts, no subscriptions.",
+      "Recent Campaigns",
+      "Version 1.0 · macOS Edition"
+    ]
+  },
+  "persona" : "skeptic",
+  "steps" : [
+    {
+      "action" : "read-welcome",
+      "observation" : "Welcome copy recorded in notes",
+      "ok" : true,
+      "pathStep" : 1,
+      "screenshot" : "skeptic-01-1-read-welcome",
+      "seconds" : 2.5
+    },
+    {
+      "action" : "read-templates",
+      "observation" : "Templates sheet",
+      "ok" : false,
+      "pathStep" : 2,
+      "screenshot" : "skeptic-02-2-read-templates",
+      "seconds" : 9.1
+    },
+    {
+      "action" : "apply-classic-dungeon",
+      "observation" : "Promised a 5-room dungeon with fog of war. Empty-map banner: false. Doors section: true. Toast: success: ",
+      "ok" : true,
+      "pathStep" : 2,
+      "screenshot" : "skeptic-03-2-apply-classic-dungeon",
+      "seconds" : 15.7
+    },
+    {
+      "action" : "read-about",
+      "observation" : "About copy recorded in notes",
+      "ok" : true,
+      "pathStep" : 0,
+      "screenshot" : "skeptic-04-0-read-about",
+      "seconds" : 21.6
+    },
+    {
+      "action" : "read-tutorial",
+      "observation" : "Tutorial copy recorded in notes",
+      "ok" : true,
+      "pathStep" : 0,
+      "screenshot" : "skeptic-05-0-read-tutorial",
+      "seconds" : 28.4
+    }
+  ],
+  "timeToFirstAction" : 1.7860339879989624
+}

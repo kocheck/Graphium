@@ -1,0 +1,95 @@
+{
+  "arguments" : [
+    "-NSDoubleLocalizedStrings",
+    "YES"
+  ],
+  "notes" : {
+    "jargon" : [
+      "welcome: fog in “Two windows, fog of war, your files. No accounts, no subscriptions. Two windows,”",
+      "token-inspector: World View in “Shown under the token on the World View. Leave it empty to show the token's name”",
+      "token-inspector: PC in “The turn order is in the sidebar. The World View lists it for players, by the na”",
+      "token-inspector: NPC in “The turn order is in the sidebar. The World View lists it for players, by the na”",
+      "token-inspector: World View in “The turn order is in the sidebar. The World View lists it for players, by the na”",
+      "token-inspector: World View in “Only you see hit points and conditions; the World View never shows them. Only yo”",
+      "token-inspector: PC in “Players see only what PCs see. Make your players’ tokens PCs. Players see only w”",
+      "token-inspector: PC in “Lighting is off on this map, so PCs see out to their radius and darkvision does ”",
+      "world-view: World View in “World View — @ World View — New Campaign”",
+      "world-view: PC in “Players see only fog: no PC on this map Players see only fog: no PC on this map”",
+      "world-view: fog in “Players see only fog: no PC on this map Players see only fog: no PC on this map”",
+      "world-view: World View in “Shown under the token on the World View. Leave it empty to show the token's name”",
+      "world-view: PC in “The turn order is in the sidebar. The World View lists it for players, by the na”",
+      "world-view: NPC in “The turn order is in the sidebar. The World View lists it for players, by the na”",
+      "world-view: World View in “The turn order is in the sidebar. The World View lists it for players, by the na”",
+      "world-view: World View in “Only you see hit points and conditions; the World View never shows them. Only yo”",
+      "world-view: PC in “Players see only what PCs see. Make your players’ tokens PCs. Players see only w”",
+      "world-view: PC in “Lighting is off on this map, so PCs see out to their radius and darkvision does ”"
+    ]
+  },
+  "persona" : "non-native",
+  "steps" : [
+    {
+      "action" : "launch",
+      "observation" : "Welcome with doubled strings",
+      "ok" : true,
+      "pathStep" : 1,
+      "screenshot" : "non-native-01-1-launch",
+      "seconds" : 2.5
+    },
+    {
+      "action" : "new-campaign",
+      "observation" : "Architect window with the empty-map banner",
+      "ok" : true,
+      "pathStep" : 2,
+      "screenshot" : "non-native-02-2-new-campaign",
+      "seconds" : 6.7
+    },
+    {
+      "action" : "map-image",
+      "observation" : "Banner gone: true. Calibration started on its own: true. The image became a token instead: false.",
+      "ok" : true,
+      "pathStep" : 3,
+      "screenshot" : "non-native-03-3-map-image",
+      "seconds" : 25
+    },
+    {
+      "action" : "calibrate-careful",
+      "observation" : "Zoom 100%, dragged 70 pt. Toast: success: ",
+      "ok" : false,
+      "pathStep" : 4,
+      "screenshot" : "non-native-04-4-calibrate-careful",
+      "seconds" : 31
+    },
+    {
+      "action" : "place-token",
+      "observation" : "Token on the canvas: false",
+      "ok" : false,
+      "pathStep" : 5,
+      "screenshot" : "non-native-05-5-place-token",
+      "seconds" : 34.6
+    },
+    {
+      "action" : "find-world-view-button",
+      "observation" : "World View button visible in the toolbar: false",
+      "ok" : false,
+      "pathStep" : 7,
+      "screenshot" : "non-native-06-7-find-world-view-button",
+      "seconds" : 41.3
+    },
+    {
+      "action" : "world-view",
+      "observation" : "World View window open",
+      "ok" : true,
+      "pathStep" : 7,
+      "screenshot" : "non-native-07-7-world-view",
+      "seconds" : 45.4
+    },
+    {
+      "action" : "players-see-map",
+      "observation" : "PC on the World View: false. Near-black share of the window: 89%. Screenshot non-native-08-8-world-view.",
+      "ok" : false,
+      "pathStep" : 8,
+      "seconds" : 54.1
+    }
+  ],
+  "timeToFirstAction" : 2.1510120630264282
+}

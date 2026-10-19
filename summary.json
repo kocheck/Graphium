@@ -1,0 +1,49 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "61d5d918d2b264466c710d30bf433a6ded75cb14",
+        "deviceName" : "My Mac",
+        "modelName" : "Apple Virtual Machine 1",
+        "osBuildNumber" : "24G830",
+        "osVersion" : "15.7.9",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 6,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Graphium · Built with macOS 15.7.9",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1792374739.678,
+  "passedTests" : 6,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1792374148.365,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "Failed to get matching snapshot: Application com.graphium.mac is not running",
+      "targetName" : "GraphiumUITests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "PersonaTests/testBreaker()",
+      "testIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testBreaker",
+      "testName" : "testBreaker()"
+    }
+  ],
+  "title" : "Test - Graphium",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 7
+}
