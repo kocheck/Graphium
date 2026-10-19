@@ -1,0 +1,53 @@
+{
+  "aborted" : "Stalled at place-token: Token on the canvas: false",
+  "arguments" : [
+
+  ],
+  "notes" : {
+
+  },
+  "persona" : "impatient",
+  "steps" : [
+    {
+      "action" : "launch",
+      "observation" : "Welcome window ready",
+      "ok" : true,
+      "pathStep" : 1,
+      "screenshot" : "impatient-01-1-launch",
+      "seconds" : 3.9
+    },
+    {
+      "action" : "new-campaign",
+      "observation" : "Architect window with the empty-map banner",
+      "ok" : true,
+      "pathStep" : 2,
+      "screenshot" : "impatient-02-2-new-campaign",
+      "seconds" : 8.6
+    },
+    {
+      "action" : "map-image",
+      "observation" : "Banner gone: true. Calibration started on its own: true. The image became a token instead: false.",
+      "ok" : true,
+      "pathStep" : 3,
+      "screenshot" : "impatient-03-3-map-image",
+      "seconds" : 29.4
+    },
+    {
+      "action" : "calibrate-quick",
+      "observation" : "20 pt drag at fit zoom. Toast: success: ",
+      "ok" : true,
+      "pathStep" : 4,
+      "screenshot" : "impatient-04-4-calibrate-quick",
+      "seconds" : 33.4
+    },
+    {
+      "action" : "place-token",
+      "observation" : "Token on the canvas: false",
+      "ok" : false,
+      "pathStep" : 5,
+      "screenshot" : "impatient-05-5-place-token",
+      "seconds" : 37.9
+    }
+  ],
+  "timeToFirstAction" : 3.385228991508484
+}
