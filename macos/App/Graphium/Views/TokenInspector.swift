@@ -72,7 +72,7 @@ struct TokenInspector: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                Text("Only PC tokens emit vision for Fog of War.")
+                Text("Players see only what PCs see. Make your players’ tokens PCs.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

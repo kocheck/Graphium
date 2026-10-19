@@ -209,6 +209,8 @@ jobs:
           git add .
           git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Launch-QA persona run ${{ github.run_id }} on ${{ github.sha }}"
           git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}" qa-results
+          # Also kept per commit, so a before-and-after pair of runs can't overwrite each other.
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}" "qa-results:qa-results-${GITHUB_SHA::7}"
 
       - uses: actions/upload-artifact@v4
         if: always()

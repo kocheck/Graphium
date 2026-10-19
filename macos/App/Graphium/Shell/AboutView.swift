@@ -95,7 +95,7 @@ struct AboutView: View {
             }
             section("🌟 The Sacred Philosophy") {
                 Text(
-                    "Graphium is a **digital stylus** for the discerning World Builder. It handles maps, tokens, and fog of war without demanding tribute to corporate overlords. Your campaigns are stored locally in sacred `.graphiumcampaign` tomes that no cloud wizard can touch. Simple, powerful, and *yours*."
+                    "Graphium is a **digital stylus** for the discerning World Builder. It handles maps, tokens, and fog of war without demanding tribute to corporate overlords. Your campaigns are sacred `.graphiumcampaign` tomes saved wherever you put them, and Graphium sends nothing anywhere. Simple, powerful, and *yours*."
                 )
             }
             HStack {
@@ -112,16 +112,25 @@ struct AboutView: View {
 
     private var tutorialTab: some View {
         VStack(alignment: .leading, spacing: 20) {
+            // The critical path to the players seeing the map (docs/qa/LAUNCH_QA.md), so "Learn the
+            // basics" teaches the steps, not only the features.
+            section("Your First Session") {
+                Text("1. Choose New Campaign (⌘N), then drop a map image on the map.")
+                Text("2. Drag a box around one grid cell so the grid fits the image, or press Esc to skip.")
+                Text("3. Click Generic Token in the sidebar, then set Type to PC in the inspector. Players see only what PCs see.")
+                Text("4. Open the World View (⇧⌘W), then choose Show on Display to put it on the TV.")
+                Text("5. Save with ⌘S. The campaign is one file on your Mac.")
+            }
             section("⚔️ Core Powers") {
                 bullet("Dual-Window Enchantment", "Architect View for you, pristine World View for your players")
-                bullet("Fog of War", "Dynamic vision with raycasting, wall occlusion, and blurred aesthetics")
+                bullet("Fog of War", "Players see what their PCs see, and walls and closed doors block it")
                 bullet("Drawing Tools", "Markers, erasers, and vision-blocking walls (Shift to lock axes!)")
-                bullet("Local-First", "Your data stays yours—saved as .graphiumcampaign files, no cloud required")
+                bullet("Local-First", "Your data stays yours: .graphiumcampaign files, no account and no cloud required")
             }
             section("Designed for Dungeon Masters") {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
                     FeatureCard(symbol: "rectangle.on.rectangle", title: "Dual Windows", text: "Architect view for you, clean world view for players")
-                    FeatureCard(symbol: "eye.slash", title: "Fog of War", text: "Hardware-accelerated raycasting with dynamic vision")
+                    FeatureCard(symbol: "eye.slash", title: "Fog of War", text: "Line of sight from every PC, drawn with Metal")
                     FeatureCard(symbol: "square.grid.3x3.topleft.filled", title: "Dungeon Generator", text: "Procedural dungeons with rooms, corridors, and doors")
                     FeatureCard(symbol: "internaldrive", title: "Local-First", text: "Your campaigns live on your drive, no cloud required")
                     FeatureCard(symbol: "pencil.tip", title: "Drawing Tools", text: "Markers, walls, doors, and tactical annotations")
