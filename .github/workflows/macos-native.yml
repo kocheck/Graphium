@@ -124,6 +124,8 @@ jobs:
   persona-ui:
     name: Launch QA personas (macOS)
     runs-on: macos-15
+    permissions:
+      contents: write
     timeout-minutes: 60
     defaults:
       run:
@@ -185,15 +187,22 @@ jobs:
             grep -hE '\[(error|fault)\]' "$OUT"/*.log || echo "(none)"
           } > "$OUT/log-errors.txt"
           cat "$OUT/crash-reports.txt" "$OUT/log-errors.txt" "$OUT/network-on-launch.txt"
-          # The traces and small copies of the step screenshots go in the log too, so a reviewer
-          # without access to the artifact store can read them.
-          for f in "$OUT"/trace-*.json; do echo "=== $(basename "$f")"; cat "$f"; done
-          mkdir -p "$OUT/small"
-          for f in "$OUT"/*-[0-9][0-9]-*.png; do
-            [ -e "$f" ] || continue
-            sips -s format jpeg -s formatOptions 45 -Z 900 "$f" --out "$OUT/small/$(basename "${f%.png}").jpg" > /dev/null
-          done
-          for f in "$OUT"/small/*.jpg; do echo "=== IMG $(basename "$f")"; base64 -b 0 < "$f"; echo; done
+          python3 -I scripts/qa/collect-attachments.py "$OUT/attachments" "$OUT/report"
+          cp "$OUT"/network-on-launch.txt "$OUT"/log-errors.txt "$OUT"/crash-reports.txt "$OUT/report/"
+
+      # The traces and screenshots also go to the qa-results branch (one commit, replaced each
+      # run), so they can be read from a checkout without the artifact store.
+      - name: Publish results to the qa-results branch
+        if: always() && github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$RUNNER_TEMP/qa-out/report"
+          echo "run ${{ github.run_id }} on ${{ github.sha }}" >> README.txt
+          git init -q -b qa-results
+          git add .
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Launch-QA persona run ${{ github.run_id }} on ${{ github.sha }}"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}" qa-results
 
       - uses: actions/upload-artifact@v4
         if: always()
