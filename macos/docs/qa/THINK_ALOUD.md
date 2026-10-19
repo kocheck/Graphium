@@ -66,10 +66,29 @@ Answer each from 1 (strongly disagree) to 5 (strongly agree).
 Score: for odd items subtract 1 from the answer; for even items subtract the answer from 5. Add
 the ten results and multiply by 2.5 (0 to 100; 68 is average).
 
+## VoiceOver checklist
+
+For Kyle, once, on the fixed build (⌘F5 turns VoiceOver on). Write pass or fail and what was heard
+next to each line in the same sheet.
+
+1. Welcome: VO-arrow through the window. Every button says what it does; nothing reads as
+   "button" alone.
+2. ⌘N (or File > New). VoiceOver says a new window opened and names it.
+3. ⌘K, type "map image", Return. The open panel appears; choose a map. You hear "Map calibrated"
+   or the calibration instructions.
+4. Press Esc to skip calibration. ⌘K, "generic token", Return. You hear the token was added.
+5. ⌘K, "make selected", Return. The token is now a PC. VO into the canvas: the token reads
+   "Generic Token, PC, selected".
+6. ⇧⌘W. VoiceOver names the World View window. VO into its map: the PC is listed.
+7. Click empty canvas to deselect, then ⌘K, "make selected", Return. "Select a token first, then
+   make it a PC." is spoken at once.
+8. Tab from the canvas. Note where focus goes and whether it reaches the sidebar and inspector
+   (known to fail: issue #384).
+
 ## Baseline and report
 
 There is no human baseline yet: no stranger has used the native app. Run one session on the build
-from before the QA fixes (the commit before the QA PR) if you can, so P1 is the baseline, and
+from before the QA fixes (`main` at 6318674, before the QA PR) if you can, so P1 is the baseline, and
 P2 to P5 use the fixed build. Report completion rate, median time on task and mean SUS for each,
 and every stall the agents' runs didn't predict or find, in LAUNCH_QA_RESULTS.md under "What the
 agents got wrong".
