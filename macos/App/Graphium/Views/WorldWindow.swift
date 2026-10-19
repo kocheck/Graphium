@@ -186,6 +186,9 @@ private struct WorldView: View {
         }
         .background(WindowAccessor(reference: window))
         .navigationTitle("World View — \(campaign.name)")
+        .onChange(of: Activation.reached(map, library: library, paused: document.isPaused), initial: true) { _, reached in
+            if reached { Activation.logOnce() }
+        }
         .toolbar {
             ToolbarItem {
                 Menu {

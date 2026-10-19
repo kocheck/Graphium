@@ -112,7 +112,7 @@ struct SessionConsoleSettings: View {
                                     get: { catalog.defaults.volume },
                                     set: { v in document.editConsole("Default Volume", undoManager: undo) { $0.updateDefaults(volume: v.rounded()) } }),
                                 in: 0...100)
-                            Text("\(Int(catalog.defaults.volume))%").monospacedDigit()
+                            Text(catalog.defaults.volume.rounded() / 100, format: .percent.precision(.fractionLength(0))).monospacedDigit()
                         }
                     }
                     LabeledContent("Duck to") {
@@ -122,7 +122,7 @@ struct SessionConsoleSettings: View {
                                     get: { catalog.defaults.duckPercent },
                                     set: { v in document.editConsole("Duck Percent", undoManager: undo) { $0.updateDefaults(duckPercent: v.rounded()) } }),
                                 in: 1...100)
-                            Text("\(Int(catalog.defaults.duckPercent))%").monospacedDigit()
+                            Text(catalog.defaults.duckPercent.rounded() / 100, format: .percent.precision(.fractionLength(0))).monospacedDigit()
                         }
                     }
                 }

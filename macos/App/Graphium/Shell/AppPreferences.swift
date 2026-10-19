@@ -58,6 +58,7 @@ enum Prefs {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
+        MainActor.assumeIsolated { Activation.launchedAt = Date() }
         Diagnostics.startFileLog(name: "Graphium")
         Diagnostics.log(
             .info, "Graphium \(AppLinks.version) (\(AppLinks.build)) on \(ProcessInfo.processInfo.operatingSystemVersionString)",

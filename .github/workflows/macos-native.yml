@@ -117,3 +117,107 @@ jobs:
           name: Graphium-macOS
           path: macos/Graphium-macOS.zip
           retention-days: 14
+
+  # Launch-QA persona runs (macos/docs/qa/LAUNCH_QA.md): scripted XCUITest sessions on the real
+  # app. A stall is a finding, not a failure, so this job is informational; its artifact holds
+  # the traces, screenshots, accessibility audits, the app's log and a network check.
+  persona-ui:
+    name: Launch QA personas (macOS)
+    runs-on: macos-15
+    permissions:
+      contents: write
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: macos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate Xcode project and fixtures
+        run: |
+          brew install xcodegen
+          (cd App && xcodegen generate)
+          swift scripts/qa/make-fixtures.swift "$RUNNER_TEMP/qa-fixtures"
+          mkdir -p "$RUNNER_TEMP/qa-out"
+
+      - name: Build for testing
+        run: |
+          xcodebuild build-for-testing \
+            -project App/Graphium.xcodeproj -scheme Graphium -configuration Debug \
+            -destination 'platform=macOS' -derivedDataPath DerivedData -quiet \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
+
+      - name: Network on launch (should be none)
+        run: |
+          APP=DerivedData/Build/Products/Debug/Graphium.app
+          "$APP/Contents/MacOS/Graphium" -ApplePersistenceIgnoreState YES > /dev/null 2>&1 &
+          PID=$!
+          sleep 15
+          {
+            echo "Sockets held by Graphium 15 s after launch (lsof -i):"
+            lsof -a -i -p "$PID" || echo "(none)"
+          } | tee "$RUNNER_TEMP/qa-out/network-on-launch.txt"
+          kill "$PID" || true
+          sleep 2
+
+      - name: Persona runs
+        continue-on-error: true
+        env:
+          TEST_RUNNER_QA_FIXTURES: ${{ runner.temp }}/qa-fixtures
+          TEST_RUNNER_QA_OUT: ${{ runner.temp }}/qa-out
+        run: |
+          defaults write -g AppleKeyboardUIMode -int 2
+          xcodebuild test-without-building \
+            -project App/Graphium.xcodeproj -scheme Graphium -configuration Debug \
+            -destination 'platform=macOS' -derivedDataPath DerivedData \
+            -resultBundlePath "$RUNNER_TEMP/qa-out/personas.xcresult" \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= 2>&1 | tail -80
+
+      - name: Collect traces, logs and crash reports
+        if: always()
+        run: |
+          OUT="$RUNNER_TEMP/qa-out"
+          mkdir -p "$OUT/attachments"
+          xcrun xcresulttool export attachments --path "$OUT/personas.xcresult" --output-path "$OUT/attachments" || true
+          cp ~/Library/Logs/Graphium/*.log "$OUT/" 2>/dev/null || true
+          ls ~/Library/Logs/DiagnosticReports/ | grep -i graphium > "$OUT/crash-reports.txt" || echo "none" > "$OUT/crash-reports.txt"
+          cp ~/Library/Logs/DiagnosticReports/Graphium* "$OUT/" 2>/dev/null || true
+          {
+            echo "error and fault lines in the app log:"
+            grep -hE '\[(error|fault)\]' "$OUT"/*.log || echo "(none)"
+          } > "$OUT/log-errors.txt"
+          cat "$OUT/crash-reports.txt" "$OUT/log-errors.txt" "$OUT/network-on-launch.txt"
+          python3 -I scripts/qa/collect-attachments.py "$OUT/attachments" "$OUT/report"
+          xcrun xcresulttool get test-results tests --path "$OUT/personas.xcresult" > "$OUT/report/tests.json" || true
+          xcrun xcresulttool get test-results summary --path "$OUT/personas.xcresult" > "$OUT/report/summary.json" || true
+          cp "$OUT"/network-on-launch.txt "$OUT"/log-errors.txt "$OUT"/crash-reports.txt "$OUT/report/"
+          # The app's own log: activation lines (category qa), saves and import faults.
+          log show --last 2h --info --style compact --predicate 'subsystem == "com.graphium"' > "$OUT/report/app-log.txt" 2>&1 || true
+          { echo "activation lines:"; grep -h "activation:" "$OUT/report/app-log.txt" "$OUT"/*.log 2>/dev/null || echo "(none)"; } > "$OUT/report/activation.txt"
+          cat "$OUT/report/activation.txt"
+
+      # The traces and screenshots also go to the qa-results branch (one commit, replaced each
+      # run), so they can be read from a checkout without the artifact store.
+      - name: Publish results to the qa-results branch
+        if: always() && github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$RUNNER_TEMP/qa-out/report"
+          echo "run ${{ github.run_id }} on ${{ github.sha }}" >> README.txt
+          git init -q -b qa-results
+          git add .
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Launch-QA persona run ${{ github.run_id }} on ${{ github.sha }}"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}" qa-results
+          # Also kept per commit on feature branches, so a before-and-after pair of runs can't
+          # overwrite each other. Delete these branches once the comparison is written up.
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}" "qa-results:qa-results-${GITHUB_SHA::7}"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launch-qa-personas
+          path: ${{ runner.temp }}/qa-out
+          retention-days: 14

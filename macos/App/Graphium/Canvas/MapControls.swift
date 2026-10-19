@@ -44,7 +44,8 @@ struct MapScaleReadout: View {
         let percent = Int((zoom * 100).rounded())
         let cell = gridSize * zoom
         HStack(spacing: Spacing.md) {
-            Text("\(percent)%")
+            // A formatted percent, not "\(percent)%": a bare % in a string key breaks once it is localised.
+            Text(Double(percent) / 100, format: .percent.precision(.fractionLength(0)))
             // One grid cell is 5 ft (Measure.cellCount); hide the bar when it would be unreadable.
             if (8...160).contains(cell) {
                 HStack(spacing: 6) {

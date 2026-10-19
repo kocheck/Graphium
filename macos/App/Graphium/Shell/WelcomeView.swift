@@ -49,21 +49,24 @@ enum HiddenRecents {
     }
 }
 
-/// TS home-screen templates (PARITY §1.2): a new campaign with 50 px cells. The
-/// native app also names the first map after the template.
+/// TS home-screen templates (PARITY §1.2): a new campaign with 50 px cells, its first map named
+/// after the template. Classic Dungeon also generates its dungeon. The descriptions say only what
+/// a template makes (voice.md: never more than the code does).
 struct CampaignTemplate: Identifiable, Hashable {
     let id: String
     let name: String
     let symbol: String
     let description: String
-    let cells: Int
 
     static let all = [
-        CampaignTemplate(id: "dungeon", name: "Classic Dungeon", symbol: "building.columns", description: "5-room dungeon with fog of war", cells: 30),
-        CampaignTemplate(id: "wilderness", name: "Wilderness Map", symbol: "tree", description: "Large outdoor exploration area", cells: 40),
-        CampaignTemplate(id: "tavern", name: "Starting Tavern", symbol: "wineglass", description: "Small indoor social encounter", cells: 20),
-        CampaignTemplate(id: "arena", name: "Combat Arena", symbol: "shield.lefthalf.filled", description: "Tactical battle grid", cells: 25),
+        CampaignTemplate(id: "dungeon", name: "Classic Dungeon", symbol: "building.columns", description: "A random 5-room dungeon with walls and doors, ready for fog of war"),
+        CampaignTemplate(id: "wilderness", name: "Wilderness Map", symbol: "tree", description: "A blank 50 px grid for an outdoor map image"),
+        CampaignTemplate(id: "tavern", name: "Starting Tavern", symbol: "wineglass", description: "A blank 50 px grid for an indoor map image"),
+        CampaignTemplate(id: "arena", name: "Combat Arena", symbol: "shield.lefthalf.filled", description: "A blank 50 px grid for a battle map"),
     ]
+
+    /// Classic Dungeon's rooms (the generator's own default is 10).
+    var dungeonRooms: Int? { id == "dungeon" ? 5 : nil }
 
     func apply(to campaign: inout Campaign) {
         campaign.activeMap.gridSize = 50
@@ -299,7 +302,6 @@ private struct TemplatesSheet: View {
                             Image(systemName: template.symbol).font(.title)
                             Text(template.name).font(.headline)
                             Text(template.description).foregroundStyle(.secondary)
-                            Text("\(template.cells) × \(template.cells) cells · 50 px").font(.caption).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(8)

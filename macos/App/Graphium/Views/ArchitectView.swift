@@ -22,6 +22,8 @@ struct ArchitectView: View {
 
     @State private var selection: Set<String> = []
     @State private var importTarget: ImportTarget?
+    /// What the open panel was for, kept once it closes until its result arrives.
+    @State private var closedImportTarget: ImportTarget?
     @State private var renamingMapID: String?
     @State private var renameText = ""
     @State private var deletingMapID: String?
@@ -157,6 +159,8 @@ struct ArchitectView: View {
                     .inspectorColumnWidth(min: 260, ideal: 300)
                 }
                 .toolbar(id: "architect") { toolbarContent }
+                // The window could shrink to its traffic lights, with no canvas left (persona runs).
+                .frame(minWidth: 560, minHeight: 420)
                 .background {
                     // ⌘P also opens the palette, as in TS (PARITY §1.4); the menu lists ⌘K only.
                     Button("Command Palette") { showingPalette = true }
@@ -167,12 +171,22 @@ struct ArchitectView: View {
                 }
         }
         .fileImporter(
-            isPresented: Binding(get: { importTarget != nil }, set: { if !$0 { importTarget = nil } }),
-            allowedContentTypes: importTarget == .mapImage ? ImportedBackground.contentTypes : [.image],
-            allowsMultipleSelection: importTarget == .tokens
+            isPresented: Binding(
+                get: { importTarget != nil },
+                set: {
+                    // The panel can report itself closed before it hands over the file; keep what it
+                    // was opened for, or a chosen map image lands as a token (docs/qa/LAUNCH_QA_RESULTS.md).
+                    if !$0, let target = importTarget {
+                        closedImportTarget = target
+                        importTarget = nil
+                    }
+                }),
+            allowedContentTypes: (importTarget ?? closedImportTarget) == .mapImage ? ImportedBackground.contentTypes : [.image],
+            allowsMultipleSelection: (importTarget ?? closedImportTarget) == .tokens
         ) { result in
-            let target = importTarget
+            let target = importTarget ?? closedImportTarget
             importTarget = nil
+            closedImportTarget = nil
             switch result {
             case .success(let urls):
                 if case .tokenImage(let ids) = target, let url = urls.first {
@@ -300,7 +314,10 @@ struct ArchitectView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showingDungeon = true }
             case .template(let template):
                 document.edit("Apply Template", undoManager: undoManager) { template.apply(to: &$0) }
-                showToast("🎲 Created \(template.name) campaign!", .success)
+                if let rooms = template.dungeonRooms {
+                    generateDungeon(DungeonOptions(numRooms: rooms), clearFirst: true)
+                }
+                showToast("New campaign from the \(template.name) template", .success)
             case nil:
                 break
             }
@@ -418,7 +435,8 @@ struct ArchitectView: View {
                         }
                     }
                 }
-                .buttonStyle(.link)
+                .buttonStyle(.borderless)
+                .foregroundStyle(Palette.accentText.color)
             }
         }
         .navigationSplitViewColumnWidth(min: 180, ideal: 220)
@@ -654,6 +672,22 @@ struct ArchitectView: View {
                 .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
                 .padding(Spacing.lg)
                 .transition(.opacity)
+            } else if document.worldViewsOpen > 0, playersSeeOnlyFog {
+                // Fog on and no PC: the TV is all black and nothing there may say why (players'
+                // screen), so the DM hears it here, with both ways out (docs/qa/LAUNCH_QA.md, I1).
+                HStack(spacing: Spacing.md) {
+                    Label("Players see only fog: no PC on this map can see", systemImage: "eye.slash")
+                    if hasSelectedTokens {
+                        Button("Make PC") { makeSelectedTokensPCs() }
+                    }
+                    Button("Turn On Daylight") { daylightBinding.wrappedValue = true }
+                        .help("Daylight: no fog of war on this map")
+                }
+                .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+                .padding(Spacing.lg)
+                .transition(.opacity)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("fog-only-warning")
             }
         }
         .overlay {
@@ -696,6 +730,10 @@ struct ArchitectView: View {
         case "world-view-launch": openWindow(id: WorldWindow.id, value: document.sessionID)
         case "world-view-show-this-view": showViewOnWorld()
         case "dungeon-generate": showingDungeon = true
+        // After the palette sheet has closed, so the open panel isn't dropped with it.
+        case "map-image": DispatchQueue.main.async { importTarget = .mapImage }
+        case "place-generic-token": placeGenericToken(at: nil)
+        case "selection-make-pc": makeSelectedTokensPCs()
         case "fog-reset":
             // After the palette sheet has closed, so the dialog isn't dropped with it.
             DispatchQueue.main.async { confirmingFogReset = !document.campaign.activeMap.exploredRegions.isEmpty }
@@ -735,7 +773,10 @@ struct ArchitectView: View {
                 Button("Add…") { importTarget = .libraryUpload }
                 Button("Manage…") { showingLibrary = true }
             }
-            .buttonStyle(.link)
+            // Not .link: in the sidebar it drew near-white on the light sidebar (persona runs,
+            // contrast audit). Borderless with the accent text colour reads in both themes.
+            .buttonStyle(.borderless)
+            .foregroundStyle(Palette.accentText.color)
             Button {
                 placeGenericToken(at: nil)
             } label: {
@@ -815,6 +856,19 @@ struct ArchitectView: View {
             } catch {
                 showToast(error.localizedDescription, .error)
             }
+        }
+    }
+
+    /// Players see only what PCs see, so this is what turns an all-fog World View into the map.
+    private func makeSelectedTokensPCs() {
+        let ids = Set(document.campaign.activeMap.tokens.map(\.id)).intersection(selection)
+        guard !ids.isEmpty else {
+            showToast("Select a token first, then make it a PC.")
+            return
+        }
+        document.edit(ids.count == 1 ? "Make PC" : "Make PCs", undoManager: undoManager) { campaign in
+            let library = campaign.libraryIndex
+            campaign.activeMap.makePCs(ids, library: library)
         }
     }
 
@@ -1645,6 +1699,13 @@ struct ArchitectView: View {
     /// One toast at a time; a new one replaces it (PARITY §1.6).
     private func showToast(_ message: String, _ kind: Toast.Kind = .info) {
         toast = Toast(message: message, kind: kind)
+        // VoiceOver hears what the toast says, errors first (docs/qa/LAUNCH_QA.md, K2).
+        NSAccessibility.post(
+            element: NSApp as Any, notification: .announcementRequested,
+            userInfo: [
+                .announcement: "\(kind.accessibilityLabel): \(message)",
+                .priority: (kind == .error ? NSAccessibilityPriorityLevel.high : .medium).rawValue,
+            ])
     }
 
     private func penAdjusted(_ state: ToolState) -> ToolState {
@@ -1670,6 +1731,8 @@ struct ArchitectView: View {
             .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
             .padding(.top, Spacing.md)
             .transition(.opacity)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("calibration-banner")
         } else if let toast {
             HStack(spacing: Spacing.sm + 2) {
                 Image(systemName: toast.kind.symbol)
@@ -1691,6 +1754,7 @@ struct ArchitectView: View {
             .padding(.top, Spacing.md)
             .transition(.opacity)
             .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("toast-\(toast.kind)")
             .task(id: toast.id) {
                 try? await Task.sleep(for: .seconds(5))
                 if self.toast?.id == toast.id { self.toast = nil }
@@ -1705,6 +1769,8 @@ struct ArchitectView: View {
             .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
             .padding(.top, Spacing.md)
             .transition(.opacity)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("empty-map-banner")
         }
     }
 
@@ -1717,6 +1783,13 @@ struct ArchitectView: View {
     }
 
     private var isBlankMap: Bool { importsInFlight == 0 && isMapEmpty }
+
+    /// Fog of war is on and nothing lets the players see: no PC, and no ground revealed by hand.
+    private var playersSeeOnlyFog: Bool {
+        let campaign = document.campaign
+        let map = campaign.activeMap
+        return !map.isDaylightMode && map.revealedAreas.isEmpty && !map.hasSightedPC(library: campaign.libraryIndex)
+    }
 
     private func zoomCanvas(by factor: Double) {
         zoomRequest = ZoomRequest(factor: factor)

@@ -193,10 +193,27 @@ targets:
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ImportExtension"
           NSExtensionAttributes:
             CSSupportedContentTypes: [com.graphium.campaign-package]
+  # Launch-QA persona runs on the real app (docs/qa/LAUNCH_QA.md). CI runs them in its own job.
+  GraphiumUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources: [GraphiumUITests]
+    dependencies:
+      - target: Graphium
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.graphium.mac.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Graphium
+        ENABLE_HARDENED_RUNTIME: NO
 schemes:
   Graphium:
     build:
       targets:
         Graphium: all
+        GraphiumUITests: [test]
+    test:
+      targets:
+        - GraphiumUITests
     run:
       config: Debug

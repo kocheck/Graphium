@@ -37,6 +37,11 @@ public struct PaletteCommand: Equatable, Identifiable, Sendable {
                 keywords: ["world", "view", "show", "players", "tv", "projector", "frame", "send", "here", "sync", "camera"], shortcut: "⇧⌘Y"),
             .init(id: "world-view-launch", label: "Launch World View Window", category: .worldView, keywords: ["world", "view", "projector", "player", "window", "launch", "open"], shortcut: "⇧⌘W"),
             .init(id: "fog-reset", label: "Reset Explored Fog", category: .worldView, keywords: ["fog", "explored", "seen", "reset", "forget", "party", "vision", "clear"]),
+            // Keyboard routes for the first-run path (docs/qa/LAUNCH_QA.md, K1): no pointer needed
+            // to set the map, place a token or make it a PC.
+            .init(id: "map-image", label: "Choose Map Image…", category: .generation, keywords: ["map", "image", "background", "picture", "battlemap", "video", "import"]),
+            .init(id: "place-generic-token", label: "Place Generic Token", category: .generation, keywords: ["token", "generic", "place", "add", "character", "player", "pc"]),
+            .init(id: "selection-make-pc", label: "Make Selected Tokens PCs", category: .generation, keywords: ["pc", "player", "character", "vision", "type", "token"]),
             .init(id: "dungeon-generate", label: "Generate Dungeon", category: .generation, keywords: ["dungeon", "generator", "generate", "random", "map", "create"]),
             .init(id: "session-console-stop", label: "Session Console: Stop", category: .worldView, keywords: ["session", "console", "stop", "audio", "escape"], shortcut: "Esc"),
             .init(id: "session-console-duck", label: "Session Console: Duck", category: .worldView, keywords: ["session", "console", "duck", "volume"], shortcut: "D (Console)"),
