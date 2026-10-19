@@ -92,7 +92,7 @@ final class QASession {
         shots += 1
         let safe = label.map { $0.isLetter || $0.isNumber ? $0 : "-" }
         let name = "\(trace.persona)-" + String(format: "%02d", shots) + "-" + String(String(safe).prefix(40))
-        let shot = (element ?? XCUIScreen.main).screenshot()
+        let shot: XCUIScreenshot = element.map { $0.screenshot() } ?? XCUIScreen.main.screenshot()
         let attachment = XCTAttachment(screenshot: shot)
         attachment.name = name
         attachment.lifetime = .keepAlways
@@ -210,11 +210,11 @@ final class QASession {
     /// Step 3 through the banner's Choose… button.
     @discardableResult
     func chooseMapImage(_ path: String = QASession.mapImage) -> Bool {
-        let choose = button("Choose")
-        guard choose.waitForExistence(timeout: 5) else {
+        let chooseButton = button("Choose")
+        guard chooseButton.waitForExistence(timeout: 5) else {
             return record(3, "map-image", ok: false, "No Choose… button")
         }
-        choose.click()
+        chooseButton.click()
         choose(file: path)
         let calibrating = text("drag a box around one grid cell").waitForExistence(timeout: 30)
         let gone = !text("Drop a map image here").exists
