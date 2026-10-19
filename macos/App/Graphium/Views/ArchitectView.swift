@@ -676,7 +676,7 @@ struct ArchitectView: View {
                 // Fog on and no PC: the TV is all black and nothing there may say why (players'
                 // screen), so the DM hears it here, with both ways out (docs/qa/LAUNCH_QA.md, I1).
                 HStack(spacing: Spacing.md) {
-                    Label("Players see only fog: no PC on this map", systemImage: "eye.slash")
+                    Label("Players see only fog: no PC on this map can see", systemImage: "eye.slash")
                     if hasSelectedTokens {
                         Button("Make PC") { makeSelectedTokensPCs() }
                     }
@@ -867,9 +867,8 @@ struct ArchitectView: View {
             return
         }
         document.edit(ids.count == 1 ? "Make PC" : "Make PCs", undoManager: undoManager) { campaign in
-            for i in campaign.activeMap.tokens.indices where ids.contains(campaign.activeMap.tokens[i].id) {
-                campaign.activeMap.tokens[i].type = .pc
-            }
+            let library = campaign.libraryIndex
+            campaign.activeMap.makePCs(ids, library: library)
         }
     }
 
@@ -1265,18 +1264,15 @@ struct ArchitectView: View {
         }
     }
 
-    /// Primary placement too: on macOS 15, secondary-action items showed inline before the tool
-    /// picker, ignoring `.defaultCustomization(.hidden)`, and pushed the tool picker, World View
-    /// and Pause into the » menu at the default window size (persona runs, LAUNCH_QA_RESULTS.md).
     @ToolbarContentBuilder
     private var secondaryItems: some CustomizableToolbarContent {
-        ToolbarItem(id: "daylight", placement: .primaryAction) {
+        ToolbarItem(id: "daylight", placement: .secondaryAction) {
             Toggle(isOn: daylightBinding) {
                 Label("Daylight", systemImage: "sun.max")
             }
             .help("Daylight: no fog of war on this map")
         }
-        ToolbarItem(id: "reset-fog", placement: .primaryAction) {
+        ToolbarItem(id: "reset-fog", placement: .secondaryAction) {
             Button {
                 confirmingFogReset = true
             } label: {
@@ -1285,10 +1281,8 @@ struct ArchitectView: View {
             .help("Forget what the party has explored on this map")
             .disabled(document.campaign.activeMap.exploredRegions.isEmpty)
         }
-        // In the Map menu; hidden by default so the World View and tool picker keep their room.
-        .defaultCustomization(.hidden)
         // Off by default; add them with Customize Toolbar.
-        ToolbarItem(id: "console-window", placement: .primaryAction) {
+        ToolbarItem(id: "console-window", placement: .secondaryAction) {
             Button {
                 openWindow(id: SessionConsoleWindow.id, value: document.sessionID)
             } label: {
@@ -1297,7 +1291,7 @@ struct ArchitectView: View {
             .help("Open the Session Console in its own window")
         }
         .defaultCustomization(.hidden)
-        ToolbarItem(id: "palette", placement: .primaryAction) {
+        ToolbarItem(id: "palette", placement: .secondaryAction) {
             Button {
                 showingPalette = true
             } label: {
@@ -1306,7 +1300,7 @@ struct ArchitectView: View {
             .help("Search actions and assets (⌘K)")
         }
         .defaultCustomization(.hidden)
-        ToolbarItem(id: "dungeon", placement: .primaryAction) {
+        ToolbarItem(id: "dungeon", placement: .secondaryAction) {
             Button {
                 showingDungeon = true
             } label: {
@@ -1315,7 +1309,7 @@ struct ArchitectView: View {
             .help("Generate a random dungeon (⇧⌘D)")
         }
         .defaultCustomization(.hidden)
-        ToolbarItem(id: "performance", placement: .primaryAction) {
+        ToolbarItem(id: "performance", placement: .secondaryAction) {
             Toggle(isOn: $showingPerformance) {
                 Label("Performance Monitor", systemImage: "gauge.with.dots.needle.33percent")
             }
@@ -1794,7 +1788,7 @@ struct ArchitectView: View {
     private var playersSeeOnlyFog: Bool {
         let campaign = document.campaign
         let map = campaign.activeMap
-        return !map.isDaylightMode && map.revealedAreas.isEmpty && map.partyBounds(library: campaign.libraryIndex) == nil
+        return !map.isDaylightMode && map.revealedAreas.isEmpty && !map.hasSightedPC(library: campaign.libraryIndex)
     }
 
     private func zoomCanvas(by factor: Double) {

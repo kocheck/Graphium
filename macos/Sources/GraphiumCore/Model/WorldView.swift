@@ -78,3 +78,25 @@ extension GameMap {
             ids.filter { !hidden.contains($0) }, primary: primary, dx: dx, dy: dy, duplicate: false, library: library)
     }
 }
+
+extension GameMap {
+    /// Sight given to a token that becomes a PC with no vision set, in feet. Without it a new PC
+    /// sees nothing and the players' screen stays black (docs/qa/LAUNCH_QA.md, I1).
+    public static let newPCVision: Double = 60
+
+    /// Makes these tokens PCs. One with no vision radius of its own or from the library gets
+    /// `newPCVision`; an explicit radius, 0 included, is kept.
+    public mutating func makePCs(_ ids: Set<String>, library: [String: TokenLibraryItem]) {
+        for i in tokens.indices where ids.contains(tokens[i].id) {
+            tokens[i].type = .pc
+            if ResolvedToken(tokens[i], library: library).visionRadius == nil {
+                tokens[i].visionRadius = Self.newPCVision
+            }
+        }
+    }
+
+    /// Whether any PC on this map can see, so the World View shows more than fog.
+    public func hasSightedPC(library: [String: TokenLibraryItem]) -> Bool {
+        !LineOfSight.viewers(of: self, library: library).isEmpty
+    }
+}

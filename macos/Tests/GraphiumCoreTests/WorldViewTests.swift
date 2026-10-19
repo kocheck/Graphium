@@ -13,6 +13,27 @@ final class WorldViewTests: XCTestCase {
         XCTAssertEqual(map.partyBounds(library: [:]), Bounds(x: 0, y: 0, width: 450, height: 350))
     }
 
+    func testMakePCsGivesUnsetVisionSoPlayersSeeSomething() {
+        let scout = TokenLibraryItem(
+            id: "scout", name: "Scout", src: "", thumbnailSrc: "", dateAdded: 0, defaultVisionRadius: 120)
+        var map = GameMap(gridSize: 50)
+        map.tokens = [
+            Token(id: "generic", x: 0, y: 0, src: "", type: .npc),
+            Token(id: "blind", x: 0, y: 0, src: "", type: .npc, visionRadius: 0),
+            Token(id: "scout", x: 0, y: 0, src: "", libraryItemId: "scout"),
+            Token(id: "other", x: 0, y: 0, src: "", type: .npc),
+        ]
+        let library = ["scout": scout]
+        XCTAssertFalse(map.hasSightedPC(library: library))
+
+        map.makePCs(["generic", "blind", "scout"], library: library)
+        XCTAssertEqual(map.tokens.map(\.type), [.pc, .pc, .pc, .npc])
+        XCTAssertEqual(map.tokens[0].visionRadius, GameMap.newPCVision, "unset vision gets the default")
+        XCTAssertEqual(map.tokens[1].visionRadius, 0, "an explicit None is kept")
+        XCTAssertNil(map.tokens[2].visionRadius, "library vision is inherited, not overridden")
+        XCTAssertTrue(map.hasSightedPC(library: library))
+    }
+
     func testPartyBoundsNilWithoutPCs() {
         var map = GameMap()
         map.tokens = [Token(x: 0, y: 0, src: "", type: .npc)]

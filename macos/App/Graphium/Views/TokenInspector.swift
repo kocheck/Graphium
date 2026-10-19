@@ -511,7 +511,12 @@ struct TokenInspector: View {
             get: { Set(tokens.map(\.type)).count == 1 ? tokens.first?.type : nil },
             set: { newValue in
                 guard let newValue else { return }
-                update("Change Token Type") { $0.type = newValue }
+                // A new PC with no vision would leave the players' screen black, so it gets some.
+                let unsighted = Set(tokens.filter { $0.visionRadius == nil }.map(\.token.id))
+                update("Change Token Type") { token in
+                    token.type = newValue
+                    if newValue == .pc, unsighted.contains(token.id) { token.visionRadius = GameMap.newPCVision }
+                }
             })
     }
 
