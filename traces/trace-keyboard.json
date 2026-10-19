@@ -1,0 +1,166 @@
+{
+  "arguments" : [
+    "-AppleKeyboardUIMode",
+    "2"
+  ],
+  "notes" : {
+    "audit-architect-token-selected" : [
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Unknown role [1 “Zoom 45 percent. One grid cell is 5 feet”]",
+      "Element has no description [3 “”]",
+      "Element has no description [14 “more toolbar items”]",
+      "Parent\/Child mismatch [3 “”]",
+      "Element has no description [81 “”]"
+    ],
+    "audit-welcome" : [
+      "Element has no description [3 “”]",
+      "Contrast failed [48 “”]",
+      "Contrast nearly passed [48 “”]",
+      "Parent\/Child mismatch [3 “”]",
+      "Element has no description [81 “”]"
+    ],
+    "audit-world-view" : [
+      "Parent\/Child mismatch [3 “”]",
+      "Element has no description [3 “”]",
+      "Unknown role [1 “Minimap”]",
+      "Element has no description [14 “”]",
+      "Action is missing [14 “”]",
+      "Element has no description [14 “”]",
+      "Element has no description [14 “”]",
+      "Action is missing [14 “”]",
+      "Element has no description [16 “”]",
+      "Parent\/Child mismatch [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Element has no description [3 “”]",
+      "Unknown role [1 “Zoom 45 percent. One grid cell is 5 feet”]",
+      "Element has no description [3 “”]",
+      "Contrast failed [48 “”]",
+      "Contrast failed [48 “”]",
+      "Contrast failed [48 “”]",
+      "Contrast failed [48 “”]",
+      "Contrast failed [48 “”]",
+      "Contrast failed [48 “”]",
+      "Contrast failed [48 “”]",
+      "Element has no description [14 “more toolbar items”]",
+      "Parent\/Child mismatch [3 “”]",
+      "Contrast failed [48 “”]",
+      "Contrast failed [48 “”]",
+      "Element has no description [81 “”]"
+    ],
+    "pointer-used" : [
+      "File > New (⌘N did nothing)",
+      "Map > Map Image… (no keyboard shortcut)",
+      "Generic Token clicked",
+      "Type > PC clicked"
+    ],
+    "tab-order-architect" : [
+      "(3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1"
+    ],
+    "tab-order-to-pc" : [
+      "Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1"
+    ],
+    "tab-order-to-token" : [
+      "(3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (3) → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → (4) → Sidebar → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1 → Zoom In → Zoom Out → Zoom to Fit → Map canvas: Map 1"
+    ]
+  },
+  "persona" : "keyboard",
+  "steps" : [
+    {
+      "action" : "audit-welcome",
+      "observation" : "5 accessibility audit issues",
+      "ok" : false,
+      "pathStep" : 0,
+      "screenshot" : "keyboard-01-0-audit-welcome",
+      "seconds" : 2.9
+    },
+    {
+      "action" : "cmd-n",
+      "observation" : "⌘N from the Welcome window opened a campaign: false",
+      "ok" : false,
+      "pathStep" : 2,
+      "screenshot" : "keyboard-02-2-cmd-n",
+      "seconds" : 18.3
+    },
+    {
+      "action" : "tab-to-choose",
+      "observation" : "Tab presses to reach Choose…: not reached in 40",
+      "ok" : false,
+      "pathStep" : 3,
+      "screenshot" : "keyboard-03-3-tab-to-choose",
+      "seconds" : 30.9
+    },
+    {
+      "action" : "calibration-by-keyboard",
+      "observation" : "Calibration banner: true. Only Esc (Cancel) works from the keyboard; the box needs a drag.",
+      "ok" : false,
+      "pathStep" : 4,
+      "screenshot" : "keyboard-04-4-calibration-by-keyboard",
+      "seconds" : 41.8
+    },
+    {
+      "action" : "tab-to-generic-token",
+      "observation" : "Tab presses to reach Generic Token: not reached in 60",
+      "ok" : false,
+      "pathStep" : 5,
+      "screenshot" : "keyboard-05-5-tab-to-generic-token",
+      "seconds" : 54.8
+    },
+    {
+      "action" : "place-token",
+      "observation" : "Token on the canvas: false",
+      "ok" : false,
+      "pathStep" : 5,
+      "screenshot" : "keyboard-06-5-place-token",
+      "seconds" : 58.1
+    },
+    {
+      "action" : "audit-architect-token-selected",
+      "observation" : "11 accessibility audit issues",
+      "ok" : false,
+      "pathStep" : 0,
+      "screenshot" : "keyboard-07-0-audit-architect-token-selected",
+      "seconds" : 62.1
+    },
+    {
+      "action" : "tab-to-pc",
+      "observation" : "Tab presses to reach Type > PC: not reached in 60",
+      "ok" : false,
+      "pathStep" : 6,
+      "screenshot" : "keyboard-08-6-tab-to-pc",
+      "seconds" : 76.4
+    },
+    {
+      "action" : "make-pc",
+      "observation" : "Canvas says the token is a PC: false",
+      "ok" : false,
+      "pathStep" : 6,
+      "screenshot" : "keyboard-09-6-make-pc",
+      "seconds" : 79.5
+    },
+    {
+      "action" : "players-see-map",
+      "observation" : "PC on the World View: false. Near-black share of the window: 17%. Screenshot keyboard-10-8-world-view.",
+      "ok" : false,
+      "pathStep" : 8,
+      "seconds" : 83.6
+    },
+    {
+      "action" : "audit-world-view",
+      "observation" : "30 accessibility audit issues",
+      "ok" : false,
+      "pathStep" : 0,
+      "screenshot" : "keyboard-11-0-audit-world-view",
+      "seconds" : 91.2
+    }
+  ],
+  "timeToFirstAction" : 1.7830519676208496
+}
