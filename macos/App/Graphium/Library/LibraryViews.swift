@@ -30,9 +30,15 @@ struct LibraryManagerView: View {
     var body: some View {
         let browsable = self.browsable
         VStack(spacing: 0) {
-            HStack {
-                TextField("Search library", text: $query)
-                    .textFieldStyle(.roundedBorder)
+            HStack(spacing: Spacing.md) {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary).accessibilityHidden(true)
+                    TextField("Search library", text: $query)
+                        .textFieldStyle(.plain)
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
+                .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
                 Picker("Category", selection: $category) {
                     Text("All").tag("All")
                     ForEach(TokenLibrarySearch.categories(browsable.items), id: \.self) { Text($0).tag($0) }
