@@ -781,7 +781,9 @@ struct ArchitectView: View {
                 placeGenericToken(at: nil)
             } label: {
                 HStack {
-                    Image(systemName: "person.crop.circle.fill").frame(width: 24, height: 24)
+                    Image(systemName: "person.crop.circle.fill")
+                        .frame(width: 32, height: 32)
+                        .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
                     Text(GenericToken.name)
                 }
             }
@@ -811,7 +813,9 @@ struct ArchitectView: View {
                         Image(systemName: "person.crop.circle")
                     }
                 }
-                .frame(width: 24, height: 24)
+                .frame(width: 32, height: 32)
+                .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
                 Text(item.name).lineLimit(1)
             }
         }
