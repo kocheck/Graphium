@@ -39,6 +39,8 @@ colors:
   status-warning-dark: "#FFCA16"
   surface-panel: "#F9F9FB"
   surface-panel-dark: "#18191B"
+  surface-raised: "#FFFFFF"
+  surface-raised-dark: "#1F2023"
   surface-sunken: "#F0F0F3"
   surface-sunken-dark: "#212225"
   world-action: "#003362"
@@ -52,12 +54,14 @@ colors:
 rounded:
   control: 4px
   panel: 4px
+  tile: 12px
 spacing:
   xs: 4px
   sm: 8px
   md: 12px
   lg: 16px
   xl: 24px
+  xxl: 32px
   hit-min: 44px
 ---
 
@@ -78,12 +82,13 @@ Two owners split every screen:
 - **Apple owns native chrome**: window, toolbar, sidebar, inspector, menus, sheets, alerts, popovers, forms, pickers and their selection, focus and hover states. Leave their appearance, metrics and semantics alone. The app's `AccentColor` asset tints them (amber, not blue).
 - **Graphium owns its surfaces**: the map canvas and everything drawn on it, canvas overlays (map controls, the scale readout, toasts, banners, HUDs, the performance monitor), readouts, welcome cards and the World View. Tokens below apply only here.
 
-Values come from the web app's Radix scales (`archive/web/src/styles/theme.css`) so both apps read as one product. Dark is the design lead; light is a faithful inversion (brief §7).
+Values come from the web app's Radix scales (`archive/web/src/styles/theme.css`) so both apps read as one product. Light and dark are equals (decision 019): the same layout, calm neutral stock, one warm accent.
 
 ## Colors
 
 Light/dark pairs: `name` / `name-dark`. A token without `-dark` is fixed (World View). In code use `Palette.<camelName>`; never a hex literal or a `system*` colour on an app-owned surface.
 
+- `surface-raised` is a tile on `surface-panel` (white in Light, one step up in Dark); `surface-sunken` stays for wells.
 - `ink-primary` reads, `ink-secondary` labels and metadata. Neither is used on the canvas, where map art decides the background.
 - `accent` fills and glyphs only (active state, selection, broadcasting, paused); `accent-text` for readable amber text; `ink-on-accent` for text on an `accent` fill.
 - `canvas-*` draw on the map; `canvas-door` is the wooden door fill, the same in both windows; `canvas-grid` is the default grid's ink, the same in Light and Dark because the map art, not the theme, decides what reads. Anything thin on the map (selection, labels) sits on `canvas-halo` so it reads on light and dark map art.
@@ -111,6 +116,7 @@ Light/dark pairs: `name` / `name-dark`. A token without `-dark` is fixed (World 
 | `status-ok` | `#1D7A4F` | `#3DD68C` |
 | `status-warning` | `#9A5A00` | `#FFCA16` |
 | `surface-panel` | `#F9F9FB` | `#18191B` |
+| `surface-raised` | `#FFFFFF` | `#1F2023` |
 | `surface-sunken` | `#F0F0F3` | `#212225` |
 | `world-action` | `#003362` | — |
 | `world-frame` | `#FFC53D` | — |
@@ -129,6 +135,8 @@ Light/dark pairs: `name` / `name-dark`. A token without `-dark` is fixed (World 
 | light | `ink-primary` | `surface-sunken` | 14.41 | 4.5 |
 | light | `ink-secondary` | `surface-panel` | 5.65 | 4.5 |
 | light | `ink-secondary` | `surface-sunken` | 5.22 | 4.5 |
+| light | `ink-primary` | `surface-raised` | 16.39 | 4.5 |
+| light | `ink-secondary` | `surface-raised` | 5.94 | 4.5 |
 | light | `accent-text` | `surface-panel` | 10.81 | 4.5 |
 | light | `status-critical` | `surface-panel` | 4.96 | 4.5 |
 | light | `status-ok` | `surface-panel` | 5.06 | 4.5 |
@@ -139,6 +147,8 @@ Light/dark pairs: `name` / `name-dark`. A token without `-dark` is fixed (World 
 | dark | `ink-primary` | `surface-sunken` | 13.70 | 4.5 |
 | dark | `ink-secondary` | `surface-panel` | 8.45 | 4.5 |
 | dark | `ink-secondary` | `surface-sunken` | 7.64 | 4.5 |
+| dark | `ink-primary` | `surface-raised` | 14.03 | 4.5 |
+| dark | `ink-secondary` | `surface-raised` | 7.82 | 4.5 |
 | dark | `accent-text` | `surface-panel` | 14.52 | 4.5 |
 | dark | `status-critical` | `surface-panel` | 8.35 | 4.5 |
 | dark | `status-ok` | `surface-panel` | 9.38 | 4.5 |
@@ -167,7 +177,7 @@ The brief names IBM Plex; the native app uses SF and SF Mono instead so it bundl
 
 ## Layout
 
-App-owned spacing: 4 / 8 / 12 / 16 / 24 pt (`Spacing.xs…xl`). Custom pointer and pen targets at least 28 pt; anything a DM taps with a pen or on a touch display at least 44 pt (`Spacing.hitMin`). Native controls keep their own metrics. Canvas overlays sit 12 pt from the canvas edge, top-centre for messages, bottom-trailing for HUDs.
+App-owned spacing: 4 / 8 / 12 / 16 / 24 / 32 pt (`Spacing.xs…xxl`); `xxl` is for hero and section breathing room on Welcome. Custom pointer and pen targets at least 28 pt; anything a DM taps with a pen or on a touch display at least 44 pt (`Spacing.hitMin`). Native controls keep their own metrics. Canvas overlays sit 12 pt from the canvas edge, top-centre for messages, bottom-trailing for HUDs.
 
 ## Depth
 
@@ -175,7 +185,7 @@ Map first (decision 007). The map runs under the whole detail area and is the on
 
 ## Shapes
 
-Glass overlays are capsules when they hold one line or a column of buttons, and 20 pt continuous cards (`Radius.card`) when they hold more. Small marks on the map and badges keep 4 pt (`Radius.control`); hairlines are 1 pt. Native controls own their shapes.
+Glass overlays are capsules when they hold one line or a column of buttons, and 20 pt continuous cards (`Radius.card`) when they hold more. Tiles for thumbnails and cards inside app-owned panels are 12 pt (`Radius.tile`). Small marks on the map and badges keep 4 pt (`Radius.control`); hairlines are 1 pt. Native controls own their shapes.
 
 ## Components
 
@@ -183,7 +193,7 @@ Glass overlays are capsules when they hold one line or a column of buttons, and 
 - **HUD** (performance monitor top-trailing, import progress centred): glass card, readout rows (label in `ink-secondary`, value in readout style).
 - **Map controls**: bottom-trailing, as in Maps: a glass capsule with Zoom In and Zoom Out over a round Zoom to Fit button; 32 pt hit areas; each also in the View menu (⌘=, ⌘-, ⌘0).
 - **Scale readout**: bottom-leading glass capsule: zoom percent and a one-cell scale bar labelled 5 ft, in readout style.
-- **Welcome card**: bordered native button with a 4 pt etched panel look, SF Symbol, title, shortcut shown in Meta.
+- **Tile** (Welcome cards and recents, library and console thumbnails): `surface-raised` fill, `rule-hairline` edge, 12 pt, no shadow; may lift a few points on hover but never reveals a control; SF Symbol or image, title, shortcut in Meta.
 - **Selection on the canvas**: `canvas-selection` dashed ring over a `canvas-halo` ring; no glow.
 - **Measurement**: `canvas-measure` stroke and fill, label as a readout on `canvas-halo`.
 - **Pause control**: label and symbol change (`Pause` / `Resume`); only the paused state carries the accent.

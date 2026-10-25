@@ -26,6 +26,8 @@ PAIRS = [
     ("ink-primary", "surface-sunken", 4.5),
     ("ink-secondary", "surface-panel", 4.5),
     ("ink-secondary", "surface-sunken", 4.5),
+    ("ink-primary", "surface-raised", 4.5),
+    ("ink-secondary", "surface-raised", 4.5),
     ("accent-text", "surface-panel", 4.5),
     ("status-critical", "surface-panel", 4.5),
     ("status-ok", "surface-panel", 4.5),

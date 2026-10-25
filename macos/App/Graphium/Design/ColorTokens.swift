@@ -22,6 +22,7 @@ enum Palette: CaseIterable {
     case statusOk
     case statusWarning
     case surfacePanel
+    case surfaceRaised
     case surfaceSunken
     case worldAction
     case worldFrame
@@ -53,6 +54,7 @@ enum Palette: CaseIterable {
         case .statusOk: return "status-ok"
         case .statusWarning: return "status-warning"
         case .surfacePanel: return "surface-panel"
+        case .surfaceRaised: return "surface-raised"
         case .surfaceSunken: return "surface-sunken"
         case .worldAction: return "world-action"
         case .worldFrame: return "world-frame"
@@ -86,6 +88,7 @@ enum Palette: CaseIterable {
         case .statusOk: return Self.adaptive(light: (red: 0.1137, green: 0.4784, blue: 0.3098, alpha: 1.0000), dark: (red: 0.2392, green: 0.8392, blue: 0.5490, alpha: 1.0000))
         case .statusWarning: return Self.adaptive(light: (red: 0.6039, green: 0.3529, blue: 0.0000, alpha: 1.0000), dark: (red: 1.0000, green: 0.7922, blue: 0.0863, alpha: 1.0000))
         case .surfacePanel: return Self.adaptive(light: (red: 0.9765, green: 0.9765, blue: 0.9843, alpha: 1.0000), dark: (red: 0.0941, green: 0.0980, blue: 0.1059, alpha: 1.0000))
+        case .surfaceRaised: return Self.adaptive(light: (red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000), dark: (red: 0.1216, green: 0.1255, blue: 0.1373, alpha: 1.0000))
         case .surfaceSunken: return Self.adaptive(light: (red: 0.9412, green: 0.9412, blue: 0.9529, alpha: 1.0000), dark: (red: 0.1294, green: 0.1333, blue: 0.1451, alpha: 1.0000))
         case .worldAction: return Self.fixed((red: 0.0000, green: 0.2000, blue: 0.3843, alpha: 1.0000))
         case .worldFrame: return Self.fixed((red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 1.0000))
