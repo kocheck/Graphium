@@ -1,0 +1,77 @@
+{
+  "arguments" : [
+
+  ],
+  "notes" : {
+    "window-frame" : [
+      "741 × 524 pt"
+    ]
+  },
+  "persona" : "small-window",
+  "steps" : [
+    {
+      "action" : "new-campaign",
+      "observation" : "Architect window with the empty-map banner",
+      "ok" : true,
+      "pathStep" : 2,
+      "screenshot" : "small-window-01-2-new-campaign",
+      "seconds" : 5.1
+    },
+    {
+      "action" : "toolbar-at-min-size",
+      "observation" : "Window 741×524. World View button hittable: false. Pause hittable: false.",
+      "ok" : false,
+      "pathStep" : 7,
+      "screenshot" : "small-window-02-7-toolbar-at-min-size",
+      "seconds" : 10.5
+    },
+    {
+      "action" : "map-image",
+      "observation" : "Banner gone: true. Calibration started on its own: true. The image became a token instead: false.",
+      "ok" : true,
+      "pathStep" : 3,
+      "screenshot" : "small-window-03-3-map-image",
+      "seconds" : 22.7
+    },
+    {
+      "action" : "calibrate-careful",
+      "observation" : "Zoom 100%, dragged 70 pt. Toast: success: ",
+      "ok" : false,
+      "pathStep" : 4,
+      "screenshot" : "small-window-04-4-calibrate-careful",
+      "seconds" : 27.8
+    },
+    {
+      "action" : "place-token",
+      "observation" : "Token on the canvas: false",
+      "ok" : false,
+      "pathStep" : 5,
+      "screenshot" : "small-window-05-5-place-token",
+      "seconds" : 31.6
+    },
+    {
+      "action" : "make-pc",
+      "observation" : "Canvas says the token is a PC: false",
+      "ok" : false,
+      "pathStep" : 6,
+      "screenshot" : "small-window-06-6-make-pc",
+      "seconds" : 34.8
+    },
+    {
+      "action" : "world-view",
+      "observation" : "World View window open",
+      "ok" : true,
+      "pathStep" : 7,
+      "screenshot" : "small-window-07-7-world-view",
+      "seconds" : 39
+    },
+    {
+      "action" : "players-see-map",
+      "observation" : "PC on the World View: false. Near-black share of the window: 40%. Screenshot small-window-08-8-world-view.",
+      "ok" : false,
+      "pathStep" : 8,
+      "seconds" : 39.4
+    }
+  ],
+  "timeToFirstAction" : 1.8523600101470947
+}

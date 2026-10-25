@@ -1,0 +1,2 @@
+Sockets held by Graphium 15 s after launch (lsof -i):
+(none)
