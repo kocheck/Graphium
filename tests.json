@@ -1,0 +1,114 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "cf1592b6fde8b92b52099df4f54d694d318f091e",
+      "deviceName" : "My Mac",
+      "modelName" : "Apple Virtual Machine 1",
+      "osBuildNumber" : "24G830",
+      "osVersion" : "15.7.9",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "PersonaTests.swift:259: Failed to get matching snapshot: Application com.graphium.mac is not running",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "3m 47s",
+                  "durationInSeconds" : 227.5586689710617,
+                  "name" : "testBreaker()",
+                  "nodeIdentifier" : "PersonaTests/testBreaker()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testBreaker",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "duration" : "33s",
+                  "durationInSeconds" : 33.87145805358887,
+                  "name" : "testImpatient()",
+                  "nodeIdentifier" : "PersonaTests/testImpatient()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testImpatient",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "2m 5s",
+                  "durationInSeconds" : 125.65226697921753,
+                  "name" : "testKeyboardAndAudit()",
+                  "nodeIdentifier" : "PersonaTests/testKeyboardAndAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testKeyboardAndAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1m 2s",
+                  "durationInSeconds" : 62.18342304229736,
+                  "name" : "testNonNative()",
+                  "nodeIdentifier" : "PersonaTests/testNonNative()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testNonNative",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "53s",
+                  "durationInSeconds" : 53.57303500175476,
+                  "name" : "testReferencePath()",
+                  "nodeIdentifier" : "PersonaTests/testReferencePath()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testReferencePath",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "38s",
+                  "durationInSeconds" : 38.87155902385712,
+                  "name" : "testSkeptic()",
+                  "nodeIdentifier" : "PersonaTests/testSkeptic()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testSkeptic",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "56s",
+                  "durationInSeconds" : 56.689399003982544,
+                  "name" : "testSmallWindow()",
+                  "nodeIdentifier" : "PersonaTests/testSmallWindow()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testSmallWindow",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PersonaTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests",
+              "nodeType" : "Test Suite",
+              "result" : "Failed"
+            }
+          ],
+          "name" : "GraphiumUITests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests",
+          "nodeType" : "UI test bundle",
+          "result" : "Failed"
+        }
+      ],
+      "name" : "Graphium",
+      "nodeType" : "Test Plan",
+      "result" : "Failed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}
