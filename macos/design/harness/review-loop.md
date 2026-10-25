@@ -17,6 +17,10 @@ Builds need Xcode, so they run on Kyle's Mac: a cloud thread starts a Remote Con
 7. **Record** a decision Kyle makes in `docs/decisions/` at the repo root (shared by both apps).
 8. **Misses.** When a card was wrong or missing, or the advisor flagged a rule gap, file it as the `design-feedback` skill describes.
 
+## Before a UI PR
+
+No control may disappear in a restyle. Run the app with `-GraphiumUIAudit <folder>` and diff `controls.txt` and `menus.txt` against `docs/qa/ui-audit-baseline/`. Paste the diff in the PR: empty, or each line explained. Refresh the baseline in the PR that changes a control on purpose.
+
 ## Limits
 
 - A screenshot is visual inspection, not an accessibility or performance check; say which one you did.

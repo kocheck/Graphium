@@ -8,7 +8,9 @@
     /// - `menus.txt`: the main menu bar with key equivalents, and any shortcut used twice;
     /// - `views/<name>-<light|dark>.png`: panels and sheets rendered offscreen at the widths
     ///   they get in the app (inspector at its minimum and ideal widths);
-    /// - `widths.txt`: views whose content wants more width than the app gives them (clipping).
+    /// - `widths.txt`: views whose content wants more width than the app gives them (clipping);
+    /// - `controls.txt`: every toolbar item and accessible control of each open window, sorted, so a
+    ///   redesign PR can diff it against `docs/qa/ui-audit-baseline/controls.txt` and see a lost control.
     /// Uses a synthetic campaign only (review-loop.md).
     @MainActor
     enum UIAudit {
@@ -35,6 +37,7 @@
                 await openSampleDocument(in: folder)
                 try? await Task.sleep(for: .seconds(2.5))
                 write(menuReport(), to: folder.appendingPathComponent("menus.txt"))
+                writeControlInventory(into: folder)
                 await snapshotWindows(into: folder)
                 NSApp.terminate(nil)
             }
@@ -187,6 +190,58 @@
                     .write(to: folder.appendingPathComponent("views/window-\(name)\(suffix)-\(dark ? "dark" : "light").png"))
             }
             window.appearance = nil
+        }
+
+        // MARK: Controls
+
+        /// Accessibility roles that are something a DM can operate. Containers and static text are skipped
+        /// so the inventory only changes when a control is added, removed or relabelled.
+        private static let operableRoles: Set<NSAccessibility.Role> = [
+            .button, .checkBox, .radioButton, .popUpButton, .menuButton, .slider, .textField, .comboBox,
+            .incrementor, .disclosureTriangle, .segmentedControl,
+        ]
+
+        private static let maximumAccessibilityDepth = 40
+
+        /// One line per control: `window<TAB>role<TAB>label<TAB>enabled`, sorted. A window that exposes no
+        /// controls is an error when it has a toolbar or a document (an empty tree there means the walk failed).
+        static func writeControlInventory(into folder: URL) {
+            var lines: [String] = []
+            var errors: [String] = []
+            let visibleWindows = NSApp.windows.filter(\.isVisible)
+            if visibleWindows.isEmpty { errors.append("No visible window to inventory.") }
+            for window in visibleWindows {
+                let windowName = window.title.isEmpty ? "untitled window" : window.title
+                var controlCount = 0
+                for item in window.toolbar?.items ?? [] {
+                    let label = item.label.isEmpty ? (item.toolTip ?? "") : item.label
+                    lines.append("\(windowName)\ttoolbar item \(item.itemIdentifier.rawValue)\t\(label)\t\(item.isEnabled)")
+                    controlCount += 1
+                }
+                if let content = window.contentView {
+                    collectOperableControls(from: content, windowName: windowName, depth: 0, into: &lines, count: &controlCount)
+                }
+                let isOperableWindow = window.toolbar != nil || window.windowController?.document != nil
+                if controlCount == 0, isOperableWindow { errors.append("\(windowName): the accessibility walk found no controls.") }
+            }
+            write(lines.sorted().joined(separator: "\n") + "\n", to: folder.appendingPathComponent("controls.txt"))
+            if !errors.isEmpty {
+                write(errors.joined(separator: "\n") + "\n", to: folder.appendingPathComponent("errors.txt"))
+            }
+        }
+
+        private static func collectOperableControls(
+            from element: Any, windowName: String, depth: Int, into lines: inout [String], count: inout Int
+        ) {
+            guard depth < maximumAccessibilityDepth, let node = element as? NSAccessibilityProtocol else { return }
+            if let role = node.accessibilityRole(), operableRoles.contains(role) {
+                let label = node.accessibilityLabel() ?? node.accessibilityTitle() ?? ""
+                lines.append("\(windowName)\t\(role.rawValue)\t\(label)\t\(node.isAccessibilityEnabled())")
+                count += 1
+            }
+            for child in node.accessibilityChildren() ?? [] {
+                collectOperableControls(from: child, windowName: windowName, depth: depth + 1, into: &lines, count: &count)
+            }
         }
 
         // MARK: Menus
