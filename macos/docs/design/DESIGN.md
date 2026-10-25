@@ -27,8 +27,8 @@ colors:
   ink-primary-dark: "#EDEEF0"
   ink-secondary: "#60646C"
   ink-secondary-dark: "#B0B4BA"
-  rule-hairline: "#D9D9E0"
-  rule-hairline-dark: "#363A3F"
+  rule-hairline: "#DADDE3"
+  rule-hairline-dark: "#2E3138"
   rule-strong: "#8B8D98"
   rule-strong-dark: "#696E77"
   status-critical: "#CE2C31"
@@ -37,12 +37,12 @@ colors:
   status-ok-dark: "#3DD68C"
   status-warning: "#9A5A00"
   status-warning-dark: "#FFCA16"
-  surface-panel: "#F9F9FB"
-  surface-panel-dark: "#18191B"
+  surface-panel: "#F5F6F8"
+  surface-panel-dark: "#141518"
   surface-raised: "#FFFFFF"
-  surface-raised-dark: "#1F2023"
-  surface-sunken: "#F0F0F3"
-  surface-sunken-dark: "#212225"
+  surface-raised-dark: "#1B1C20"
+  surface-sunken: "#ECEEF1"
+  surface-sunken-dark: "#202228"
   world-action: "#003362"
   world-frame: "#FFC53D"
   world-ink: "#FFFFFF"
@@ -54,7 +54,7 @@ colors:
 rounded:
   control: 4px
   panel: 4px
-  tile: 12px
+  tile: 8px
 spacing:
   xs: 4px
   sm: 8px
@@ -82,7 +82,7 @@ Two owners split every screen:
 - **Apple owns native chrome**: window, toolbar, sidebar, inspector, menus, sheets, alerts, popovers, forms, pickers and their selection, focus and hover states. Leave their appearance, metrics and semantics alone. The app's `AccentColor` asset tints them (amber, not blue).
 - **Graphium owns its surfaces**: the map canvas and everything drawn on it, canvas overlays (map controls, the scale readout, toasts, banners, HUDs, the performance monitor), readouts, welcome cards and the World View. Tokens below apply only here.
 
-Values come from the web app's Radix scales (`archive/web/src/styles/theme.css`) so both apps read as one product. Light and dark are equals (decision 019): the same layout, calm neutral stock, one warm accent.
+Values come from the web app's Radix scales (`archive/web/src/styles/theme.css`) so both apps read as one product. Light and dark are equals (decision 019): the same layout on cool graphite neutrals, tight radii, one warm accent. Direction "Graphite" (Figma/Linear-like tool calm), chosen 2026-10-25.
 
 ## Colors
 
@@ -110,14 +110,14 @@ Light/dark pairs: `name` / `name-dark`. A token without `-dark` is fixed (World 
 | `ink-on-accent` | `#1C2024` | `#111113` |
 | `ink-primary` | `#1C2024` | `#EDEEF0` |
 | `ink-secondary` | `#60646C` | `#B0B4BA` |
-| `rule-hairline` | `#D9D9E0` | `#363A3F` |
+| `rule-hairline` | `#DADDE3` | `#2E3138` |
 | `rule-strong` | `#8B8D98` | `#696E77` |
 | `status-critical` | `#CE2C31` | `#FF9592` |
 | `status-ok` | `#1D7A4F` | `#3DD68C` |
 | `status-warning` | `#9A5A00` | `#FFCA16` |
-| `surface-panel` | `#F9F9FB` | `#18191B` |
-| `surface-raised` | `#FFFFFF` | `#1F2023` |
-| `surface-sunken` | `#F0F0F3` | `#212225` |
+| `surface-panel` | `#F5F6F8` | `#141518` |
+| `surface-raised` | `#FFFFFF` | `#1B1C20` |
+| `surface-sunken` | `#ECEEF1` | `#202228` |
 | `world-action` | `#003362` | — |
 | `world-frame` | `#FFC53D` | — |
 | `world-ink` | `#FFFFFF` | — |
@@ -131,30 +131,30 @@ Light/dark pairs: `name` / `name-dark`. A token without `-dark` is fixed (World 
 <!-- generated:start id=contrast -->
 | mode | foreground | background | ratio | min |
 |---|---|---|---|---|
-| light | `ink-primary` | `surface-panel` | 15.58 | 4.5 |
-| light | `ink-primary` | `surface-sunken` | 14.41 | 4.5 |
-| light | `ink-secondary` | `surface-panel` | 5.65 | 4.5 |
-| light | `ink-secondary` | `surface-sunken` | 5.22 | 4.5 |
+| light | `ink-primary` | `surface-panel` | 15.15 | 4.5 |
+| light | `ink-primary` | `surface-sunken` | 14.10 | 4.5 |
+| light | `ink-secondary` | `surface-panel` | 5.49 | 4.5 |
+| light | `ink-secondary` | `surface-sunken` | 5.11 | 4.5 |
 | light | `ink-primary` | `surface-raised` | 16.39 | 4.5 |
 | light | `ink-secondary` | `surface-raised` | 5.94 | 4.5 |
-| light | `accent-text` | `surface-panel` | 10.81 | 4.5 |
-| light | `status-critical` | `surface-panel` | 4.96 | 4.5 |
-| light | `status-ok` | `surface-panel` | 5.06 | 4.5 |
-| light | `status-warning` | `surface-panel` | 5.21 | 4.5 |
+| light | `accent-text` | `surface-panel` | 10.52 | 4.5 |
+| light | `status-critical` | `surface-panel` | 4.82 | 4.5 |
+| light | `status-ok` | `surface-panel` | 4.92 | 4.5 |
+| light | `status-warning` | `surface-panel` | 5.06 | 4.5 |
 | light | `ink-on-accent` | `accent` | 10.38 | 4.5 |
-| light | `rule-strong` | `surface-panel` | 3.14 | 3.0 |
-| dark | `ink-primary` | `surface-panel` | 15.15 | 4.5 |
-| dark | `ink-primary` | `surface-sunken` | 13.70 | 4.5 |
-| dark | `ink-secondary` | `surface-panel` | 8.45 | 4.5 |
-| dark | `ink-secondary` | `surface-sunken` | 7.64 | 4.5 |
-| dark | `ink-primary` | `surface-raised` | 14.03 | 4.5 |
-| dark | `ink-secondary` | `surface-raised` | 7.82 | 4.5 |
-| dark | `accent-text` | `surface-panel` | 14.52 | 4.5 |
-| dark | `status-critical` | `surface-panel` | 8.35 | 4.5 |
-| dark | `status-ok` | `surface-panel` | 9.38 | 4.5 |
-| dark | `status-warning` | `surface-panel` | 11.49 | 4.5 |
+| light | `rule-strong` | `surface-panel` | 3.05 | 3.0 |
+| dark | `ink-primary` | `surface-panel` | 15.73 | 4.5 |
+| dark | `ink-primary` | `surface-sunken` | 13.69 | 4.5 |
+| dark | `ink-secondary` | `surface-panel` | 8.77 | 4.5 |
+| dark | `ink-secondary` | `surface-sunken` | 7.63 | 4.5 |
+| dark | `ink-primary` | `surface-raised` | 14.66 | 4.5 |
+| dark | `ink-secondary` | `surface-raised` | 8.17 | 4.5 |
+| dark | `accent-text` | `surface-panel` | 15.07 | 4.5 |
+| dark | `status-critical` | `surface-panel` | 8.66 | 4.5 |
+| dark | `status-ok` | `surface-panel` | 9.73 | 4.5 |
+| dark | `status-warning` | `surface-panel` | 11.92 | 4.5 |
 | dark | `ink-on-accent` | `accent` | 11.95 | 4.5 |
-| dark | `rule-strong` | `surface-panel` | 3.43 | 3.0 |
+| dark | `rule-strong` | `surface-panel` | 3.56 | 3.0 |
 | fixed | `world-ink` | `world-scrim` | 21.00 | 7.0 |
 | fixed | `world-ink-dim` | `world-scrim` | 10.08 | 7.0 |
 | fixed | `world-ink` | `world-action` | 12.73 | 7.0 |
@@ -185,7 +185,7 @@ Map first (decision 007). The map runs under the whole detail area and is the on
 
 ## Shapes
 
-Glass overlays are capsules when they hold one line or a column of buttons, and 20 pt continuous cards (`Radius.card`) when they hold more. Tiles for thumbnails and cards inside app-owned panels are 12 pt (`Radius.tile`). Small marks on the map and badges keep 4 pt (`Radius.control`); hairlines are 1 pt. Native controls own their shapes.
+Glass overlays are capsules when they hold one line or a column of buttons, and 12 pt continuous cards (`Radius.card`) when they hold more. Tiles for thumbnails and cards inside app-owned panels are 8 pt (`Radius.tile`). Small marks on the map and badges keep 4 pt (`Radius.control`); hairlines are 1 pt. Native controls own their shapes.
 
 ## Components
 
@@ -193,7 +193,7 @@ Glass overlays are capsules when they hold one line or a column of buttons, and 
 - **HUD** (performance monitor top-trailing, import progress centred): glass card, readout rows (label in `ink-secondary`, value in readout style).
 - **Map controls**: bottom-trailing, as in Maps: a glass capsule with Zoom In and Zoom Out over a round Zoom to Fit button; 32 pt hit areas; each also in the View menu (⌘=, ⌘-, ⌘0).
 - **Scale readout**: bottom-leading glass capsule: zoom percent and a one-cell scale bar labelled 5 ft, in readout style.
-- **Tile** (Welcome cards and recents, library and console thumbnails): `surface-raised` fill, `rule-hairline` edge, 12 pt, no shadow; may lift a few points on hover but never reveals a control; SF Symbol or image, title, shortcut in Meta.
+- **Tile** (Welcome cards and recents, library and console thumbnails): `surface-raised` fill, `rule-hairline` edge, 8 pt, no shadow; may lift a few points on hover but never reveals a control; SF Symbol or image, title, shortcut in Meta.
 - **Selection on the canvas**: `canvas-selection` dashed ring over a `canvas-halo` ring; no glow.
 - **Measurement**: `canvas-measure` stroke and fill, label as a readout on `canvas-halo`.
 - **Pause control**: label and symbol change (`Pause` / `Resume`); only the paused state carries the accent.
