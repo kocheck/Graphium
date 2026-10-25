@@ -50,6 +50,7 @@ struct ArchitectView: View {
     @State private var canvasZoom = 1.0
     /// The canvas camera, held without observing so panning doesn't redraw this view.
     @State private var camera = CanvasCamera()
+    @State private var canvasViewportModel = CanvasViewportModel()
     /// View > Show Players' Fog: the players' fog, dimmed, over the DM's map while prepping walls.
     @State private var fogPreview = false
     @State private var fogPreviewCache = VisibilityCache()
@@ -306,6 +307,14 @@ struct ArchitectView: View {
                 sortInitiative: hasInitiative ? { sortInitiative() } : nil,
                 clearInitiative: hasInitiative ? { clearInitiative() } : nil))
         .onAppear {
+            #if DEBUG
+                // UI audit screenshots: `-GraphiumAuditSelectFirstToken YES` selects the first token on launch.
+                if UserDefaults.standard.bool(forKey: "GraphiumAuditSelectFirstToken"),
+                    let firstTokenID = document.campaign.activeMap.tokens.first?.id
+                {
+                    selection = [firstTokenID]
+                }
+            #endif
             document.adoptUndoManager(undoManager)
             dismissWindow(id: WelcomeView.windowID)
             switch LaunchIntent.shared.take() {
@@ -636,6 +645,7 @@ struct ArchitectView: View {
             onViewportChange: { [camera] viewport, size in
                 camera.viewport = viewport
                 camera.size = size
+                canvasViewportModel.viewport = viewport
                 if canvasZoom != viewport.zoom { canvasZoom = viewport.zoom }
             },
             calibrating: calibrating,
@@ -649,6 +659,13 @@ struct ArchitectView: View {
             canvasBanner
                 .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: toast)
                 .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: calibrating)
+        }
+        .overlay {
+            TokenSelectionPill(
+                viewportModel: canvasViewportModel,
+                selectionBoundsInMapUnits: selectedTokenBounds,
+                addToInitiative: tokensWaitingForInitiative.isEmpty ? nil : { setInitiative(true, ids: tokensWaitingForInitiative) },
+                deleteSelection: { deleteSelection() })
         }
         .overlay(alignment: .bottomTrailing) {
             MapZoomControls(zoomIn: { zoomCanvas(by: 1.25) }, zoomOut: { zoomCanvas(by: 0.8) }, zoomToFit: { zoomToFit() })
@@ -1534,6 +1551,19 @@ struct ArchitectView: View {
         document.edit(name, undoManager: undoManager) { $0.activeMap.removeItems(ids) }
         selection = []
         if let shown = document.worldNoteID, ids.contains(shown) { document.worldNoteID = nil }
+    }
+
+    /// The selected tokens' combined footprint in map units, for the selection pill.
+    private var selectedTokenBounds: Bounds? {
+        let map = document.campaign.activeMap
+        let library = document.campaign.libraryIndex
+        let footprints = map.tokens.filter { selection.contains($0.id) }.map { map.tokenBounds($0, library: library) }
+        guard let first = footprints.first else { return nil }
+        let left = footprints.map(\.x).min() ?? first.x
+        let top = footprints.map(\.y).min() ?? first.y
+        let right = footprints.map { $0.x + $0.width }.max() ?? first.x + first.width
+        let bottom = footprints.map { $0.y + $0.height }.max() ?? first.y + first.height
+        return Bounds(x: left, y: top, width: right - left, height: bottom - top)
     }
 
     private var hasSelectedTokens: Bool {
