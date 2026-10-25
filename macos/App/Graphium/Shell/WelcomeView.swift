@@ -100,9 +100,9 @@ struct WelcomeView: View {
     private var theme: AppTheme { AppTheme(rawValue: themeRaw) ?? .system }
 
     var body: some View {
-        VStack(spacing: 28) {
+        VStack(spacing: Spacing.xl) {
             hero
-            HStack(spacing: 14) {
+            HStack(spacing: Spacing.md) {
                 card("New Campaign", "doc.badge.plus", "⌘N", "Start a fresh campaign (⌘N)") {
                     NSDocumentController.shared.newDocument(nil)
                 }
@@ -125,8 +125,9 @@ struct WelcomeView: View {
             Spacer(minLength: 0)
             footer
         }
-        .padding(32)
+        .padding(Spacing.xxl)
         .frame(minWidth: 760, minHeight: 600)
+        .background(Palette.surfacePanel.color)
         .onAppear(perform: reloadRecents)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             reloadRecents()
@@ -149,7 +150,7 @@ struct WelcomeView: View {
     }
 
     private var hero: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: Spacing.sm + 2) {
             BrandMark()
                 .foregroundStyle(Palette.inkPrimary.color)
                 .frame(width: 72, height: 72)
@@ -163,7 +164,7 @@ struct WelcomeView: View {
         }
     }
 
-    /// Instrument-panel card: symbol, title and its shortcut as a readout (taste rule 1: visible shortcuts).
+    /// Tile: symbol, title and its shortcut as a readout (taste rule 1: visible shortcuts).
     private func card(
         _ title: String, _ symbol: String, _ shortcut: String, _ help: String, action: @escaping () -> Void
     ) -> some View {
@@ -175,9 +176,10 @@ struct WelcomeView: View {
                 Text(shortcut).readoutStyle(.caption).foregroundStyle(.secondary)
             }
             .frame(width: 150, height: 108)
+            .tileSurface()
             .contentShape(Rectangle())
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
         .help(help)
         .accessibilityLabel(title)
         .accessibilityHint(help)
@@ -228,37 +230,50 @@ struct WelcomeView: View {
                         TextField("Search", text: $recentsQuery).textFieldStyle(.roundedBorder).frame(width: 200)
                     }
                 }
-                ForEach(shown) { recent in
-                    HStack {
-                        Button {
-                            NSDocumentController.shared.openDocument(withContentsOf: recent.url, display: true) { _, _, error in
-                                if let error { openError = error.localizedDescription }
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "map")
-                                Text(recent.name).lineLimit(1)
-                                Spacer()
-                                if let opened = recent.opened {
-                                    Text(opened.formatted(date: .abbreviated, time: .shortened)).foregroundStyle(.secondary)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        Button {
-                            hide(recent)
-                        } label: {
-                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Remove \(recent.name) from recent campaigns")
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: Spacing.md)], spacing: Spacing.md) {
+                    ForEach(shown) { recent in
+                        recentTile(recent)
                     }
-                    .padding(.vertical, 4)
                 }
             }
-            .frame(maxWidth: 560)
+            .frame(maxWidth: 720)
         }
+    }
+
+    /// A campaign tile: the open button fills it, and the remove button is always visible (never hover-only).
+    private func recentTile(_ recent: RecentCampaign) -> some View {
+        HStack(spacing: Spacing.sm) {
+            Button {
+                NSDocumentController.shared.openDocument(withContentsOf: recent.url, display: true) { _, _, error in
+                    if let error { openError = error.localizedDescription }
+                }
+            } label: {
+                HStack(spacing: Spacing.md) {
+                    Image(systemName: "map")
+                        .frame(width: 32, height: 32)
+                        .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(recent.name).lineLimit(1)
+                        if let opened = recent.opened {
+                            Text(opened.formatted(date: .abbreviated, time: .shortened))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            Button {
+                hide(recent)
+            } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Remove \(recent.name) from recent campaigns")
+        }
+        .padding(Spacing.md)
+        .tileSurface()
     }
 
     // MARK: Footer
@@ -304,10 +319,11 @@ private struct TemplatesSheet: View {
                             Text(template.description).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
+                        .padding(Spacing.md)
+                        .tileSurface()
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                 }
             }
             HStack {

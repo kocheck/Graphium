@@ -62,6 +62,12 @@ extension View {
         self.font(font.monospaced().weight(.medium))
     }
 
+    /// A raised tile on `surface-panel` (DESIGN.md#components): hairline edge, no shadow, a small lift on hover.
+    /// Hover only moves the tile; it never reveals a control.
+    func tileSurface() -> some View {
+        modifier(TileSurface())
+    }
+
     /// Floating glass over the map (DESIGN.md#depth). Only for overlays Graphium draws on the
     /// canvas; never inside the sidebar, inspector, a sheet or another glass surface.
     func glassPanel(
@@ -118,5 +124,20 @@ private struct GlassPanel: ViewModifier {
         view
             .background(.regularMaterial, in: outline)
             .shadow(color: .black.opacity(0.3), radius: 14, y: 6)
+    }
+}
+
+private struct TileSurface: ViewModifier {
+    @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        let outline = RoundedRectangle(cornerRadius: Radius.tile, style: .continuous)
+        content
+            .background(Palette.surfaceRaised.color, in: outline)
+            .overlay(outline.strokeBorder(Palette.ruleHairline.color, lineWidth: 1))
+            .offset(y: isHovering ? -2 : 0)
+            .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: isHovering)
+            .onHover { isHovering = $0 }
     }
 }
