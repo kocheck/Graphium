@@ -1,0 +1,149 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "55d97646daab98dd717b1d3e8473e7cf9a75cf90",
+      "deviceName" : "My Mac",
+      "modelName" : "Apple Virtual Machine 1",
+      "osBuildNumber" : "24G830",
+      "osVersion" : "15.7.9",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "PersonaTests.swift:217: Not hittable: Cell, {{72.0, 194.0}, {220.0, 0.0}}",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "25s",
+                  "durationInSeconds" : 25.69688093662262,
+                  "name" : "testBreaker()",
+                  "nodeIdentifier" : "PersonaTests/testBreaker()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testBreaker",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "QASession.swift:368: Element Button, {{646.0, 375.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "33s",
+                  "durationInSeconds" : 33.43544089794159,
+                  "name" : "testImpatient()",
+                  "nodeIdentifier" : "PersonaTests/testImpatient()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testImpatient",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "QASession.swift:368: Element Button, {{646.0, 375.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "2m 1s",
+                  "durationInSeconds" : 121.382404088974,
+                  "name" : "testKeyboardAndAudit()",
+                  "nodeIdentifier" : "PersonaTests/testKeyboardAndAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testKeyboardAndAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "QASession.swift:368: Element Button, {{651.0, 364.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "55s",
+                  "durationInSeconds" : 55.56767404079437,
+                  "name" : "testNonNative()",
+                  "nodeIdentifier" : "PersonaTests/testNonNative()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testNonNative",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "QASession.swift:368: Element Button, {{651.0, 364.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "49s",
+                  "durationInSeconds" : 49.19679796695709,
+                  "name" : "testReferencePath()",
+                  "nodeIdentifier" : "PersonaTests/testReferencePath()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testReferencePath",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "duration" : "31s",
+                  "durationInSeconds" : 31.77838909626007,
+                  "name" : "testSkeptic()",
+                  "nodeIdentifier" : "PersonaTests/testSkeptic()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testSkeptic",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "QASession.swift:368: Element Button, {{512.0, 366.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "46s",
+                  "durationInSeconds" : 46.95440101623535,
+                  "name" : "testSmallWindow()",
+                  "nodeIdentifier" : "PersonaTests/testSmallWindow()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testSmallWindow",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                }
+              ],
+              "name" : "PersonaTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests",
+              "nodeType" : "Test Suite",
+              "result" : "Failed"
+            }
+          ],
+          "name" : "GraphiumUITests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests",
+          "nodeType" : "UI test bundle",
+          "result" : "Failed"
+        }
+      ],
+      "name" : "Graphium",
+      "nodeType" : "Test Plan",
+      "result" : "Failed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}
