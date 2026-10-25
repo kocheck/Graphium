@@ -317,6 +317,7 @@ struct ArchitectView: View {
                 {
                     selection = [firstTokenID]
                 }
+                if UserDefaults.standard.bool(forKey: "GraphiumAuditShowConsole") { showingConsole = true }
             #endif
             document.adoptUndoManager(undoManager)
             dismissWindow(id: WelcomeView.windowID)

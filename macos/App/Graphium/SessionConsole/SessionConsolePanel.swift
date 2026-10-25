@@ -124,6 +124,23 @@ struct SessionConsolePanel: View {
             HStack {
                 worldStatus
                 Spacer()
+                // Less-used actions, all also in the Session menu or one click away in the panel's own sections.
+                Menu {
+                    Button("Return to Map") { document.dispatch(.returnToMap) }
+                        .disabled(!runtime.stageVisible)
+                    Button("Test Tone") { document.dispatch(.fireSfx(sfxId: "test-tone")) }
+                    Divider()
+                    Button("Copy Current Link") { copyCurrentLink() }.disabled(runtime.audio.trackId == nil)
+                    Button("Copy All Links") { copy(catalog.fallbackLinks, "Copied \(catalog.allTracks.count) links") }
+                        .disabled(catalog.allTracks.isEmpty)
+                } label: {
+                    Image(systemName: "ellipsis").frame(width: 24, height: 24).contentShape(Rectangle())
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Return to Map, Test Tone and links")
+                .accessibilityLabel("More session actions")
                 Button { showingSettings = true } label: {
                     Label("Session Console Settings", systemImage: "gearshape").labelStyle(.iconOnly)
                 }
@@ -155,17 +172,6 @@ struct SessionConsolePanel: View {
                 Button { document.dispatch(.stop) } label: { Image(systemName: "stop.fill") }.help("Stop (Esc)")
                 Spacer()
             }
-            HStack(spacing: 6) {
-                Button("Return to Map") { document.dispatch(.returnToMap) }
-                    .disabled(!runtime.stageVisible)
-                Button("Test Tone") { document.dispatch(.fireSfx(sfxId: "test-tone")) }
-            }
-            HStack(spacing: 6) {
-                Button("Copy Current Link") { copyCurrentLink() }.disabled(runtime.audio.trackId == nil)
-                Button("Copy All Links") { copy(catalog.fallbackLinks, "Copied \(catalog.allTracks.count) links") }
-                    .disabled(catalog.allTracks.isEmpty)
-            }
-            .controlSize(.small)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -173,25 +179,29 @@ struct SessionConsolePanel: View {
     // MARK: Adding
 
     private var addControls: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        HStack(spacing: Spacing.sm) {
             TextField("Paste YouTube link", text: $youtubeText)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { addYouTube() }
                 .onChange(of: youtubeText) { old, new in
                     if new.count - old.count > 5 { addYouTube() }  // pasted
                 }
-            HStack(spacing: 6) {
+            Menu {
                 Button("Add Files…") { importing = .files }
                 Button("Add Folder…") { importing = .folder }
-            }
-            HStack(spacing: 6) {
+                Divider()
                 Button("New Image Set") {
                     document.editConsole("New Image Set", undoManager: undo) { $0.addNewImageSet() }
                 }
                 Button("New Track Group") {
                     document.editConsole("New Track Group", undoManager: undo) { $0.addNewTrackGroup() }
                 }
+            } label: {
+                Label("Add", systemImage: "plus")
             }
+            .menuStyle(.button)
+            .fixedSize()
+            .help("Add files or a folder, or start a new image set or track group")
         }
         .controlSize(.small)
     }
