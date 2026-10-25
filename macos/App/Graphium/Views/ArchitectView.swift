@@ -53,6 +53,7 @@ struct ArchitectView: View {
     @State private var canvasViewportModel = CanvasViewportModel()
     @StateObject private var mapThumbnails = MapThumbnailStore()
     @SceneStorage("architect.sidebar.mapsExpanded") private var mapsExpanded = true
+    @AppStorage("graphium.sidebar.sectionOrder") private var sidebarSectionOrderStored = ""
     @SceneStorage("architect.sidebar.libraryExpanded") private var libraryExpanded = true
     /// View > Show Players' Fog: the players' fog, dimmed, over the DM's map while prepping walls.
     @State private var fogPreview = false
@@ -416,7 +417,49 @@ struct ArchitectView: View {
                 .selectionDisabled()
             }
             .listRowSeparator(.hidden)
-            Section("Maps", isExpanded: $mapsExpanded) {
+            ForEach(sidebarSectionOrder) { kind in
+                switch kind {
+                case .maps: mapsSection
+                case .library: librarySection
+                case .initiative: initiativeSection
+                case .doors: doorsSection
+                }
+            }
+        }
+        .navigationSplitViewColumnWidth(min: 200, ideal: 240)
+        .task(id: mapThumbnailFingerprint) {
+            await mapThumbnails.refresh(campaign: document.campaign, packageURL: document.fileURL)
+        }
+        .toolbar(id: "sidebar") {
+            ToolbarItem(id: "add-map") {
+                Button {
+                    mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true)
+                } label: {
+                    Label("Add Map", systemImage: "plus")
+                }
+                .help("Add a map to this campaign")
+            }
+        }
+    }
+
+    /// Changes when something that shows in a map's thumbnail changes, so thumbnails redraw then and not on every edit.
+    private var mapThumbnailFingerprint: [String] {
+        document.campaign.maps.map { map in
+            "\(map.id)|\(map.gridSize)|\(map.tokens.count)|\(map.doors.count)|\(map.drawings.count)|\(map.background?.src ?? "")"
+        }
+    }
+
+    private var sidebarSectionOrder: [SidebarSectionKind] { SidebarSectionKind.order(fromStored: sidebarSectionOrderStored) }
+
+    private func sectionHeader(_ title: String, _ kind: SidebarSectionKind) -> some View {
+        SidebarSectionHeader(title: title, kind: kind, order: sidebarSectionOrder) {
+            sidebarSectionOrderStored = SidebarSectionKind.stored($0)
+        }
+    }
+
+    @ViewBuilder
+    private var mapsSection: some View {
+            Section(isExpanded: $mapsExpanded) {
                 // Alphabetical, as TS (PARITY §2.1).
                 ForEach(document.campaign.maps.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) { map in
                     SidebarMapRow(name: map.name, thumbnail: mapThumbnails.thumbnailsByMapID[map.id])
@@ -431,13 +474,17 @@ struct ArchitectView: View {
                                 .disabled(document.campaign.maps.count == 1)
                         }
                 }
-            }
-            librarySection
-            initiativeSection
+        } header: {
+            sectionHeader("Maps", .maps)
+        }
+    }
+
+    @ViewBuilder
+    private var doorsSection: some View {
             let doors = document.campaign.activeMap.doors
             if !doors.isEmpty {
                 // Bulk door controls (PARITY §2.1).
-                Section("Doors") {
+                Section {
                     Button("Open All Unlocked Doors") {
                         document.edit("Open Doors", undoManager: undoManager) {
                             $0.activeMap.setAllUnlockedDoors(open: true)
@@ -464,32 +511,12 @@ struct ArchitectView: View {
                             }
                         }
                     }
+                } header: {
+                    sectionHeader("Doors", .doors)
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(Palette.accentText.color)
             }
-        }
-        .navigationSplitViewColumnWidth(min: 200, ideal: 240)
-        .task(id: mapThumbnailFingerprint) {
-            await mapThumbnails.refresh(campaign: document.campaign, packageURL: document.fileURL)
-        }
-        .toolbar(id: "sidebar") {
-            ToolbarItem(id: "add-map") {
-                Button {
-                    mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true)
-                } label: {
-                    Label("Add Map", systemImage: "plus")
-                }
-                .help("Add a map to this campaign")
-            }
-        }
-    }
-
-    /// Changes when something that shows in a map's thumbnail changes, so thumbnails redraw then and not on every edit.
-    private var mapThumbnailFingerprint: [String] {
-        document.campaign.maps.map { map in
-            "\(map.id)|\(map.gridSize)|\(map.tokens.count)|\(map.doors.count)|\(map.drawings.count)|\(map.background?.src ?? "")"
-        }
     }
 
     private var activeMapBinding: Binding<String?> {
@@ -815,7 +842,7 @@ struct ArchitectView: View {
         let campaignLibrary = document.campaign.tokenLibrary
         let recent = TokenLibrarySearch.recent(tokens: document.campaign.activeMap.tokens, library: campaignLibrary)
         let party = TokenLibrarySearch.party(library: document.browsableLibrary.items, excluding: recent)
-        Section("Library", isExpanded: $libraryExpanded) {
+        Section(isExpanded: $libraryExpanded) {
             SidebarActionRow(title: "Place Token…", symbolName: "person.crop.circle.badge.plus") { showingPalette = true }
                 .selectionDisabled()
             SidebarActionRow(title: "Add to Library…", symbolName: "square.and.arrow.down") { importTarget = .libraryUpload }
@@ -845,6 +872,8 @@ struct ArchitectView: View {
                 Text("Party").font(.caption).foregroundStyle(.secondary)
                 ForEach(party) { item in quickToken(item, image: document.libraryThumbnail(item)) }
             }
+        } header: {
+            sectionHeader("Library", .library)
         }
     }
 
@@ -1695,7 +1724,7 @@ struct ArchitectView: View {
                 .buttonStyle(.borderless)
             } header: {
                 let round: String = initiative.currentTokenID == nil ? "" : " · Round \(initiative.round)"
-                Text("Initiative\(round)")
+                sectionHeader("Initiative\(round)", .initiative)
             }
         }
     }

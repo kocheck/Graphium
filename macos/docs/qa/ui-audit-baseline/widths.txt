@@ -1,0 +1,12 @@
+token-inspector-260: content wants 686 pt, gets 260 pt
+tokens-inspector-260: content wants 686 pt, gets 260 pt
+note-inspector-260: content wants 744 pt, gets 260 pt
+effect-inspector-260: content wants 490 pt, gets 260 pt
+line-effect-inspector-260: content wants 490 pt, gets 260 pt
+session-console-260: content wants 270 pt, gets 260 pt
+token-inspector-300: content wants 686 pt, gets 300 pt
+tokens-inspector-300: content wants 686 pt, gets 300 pt
+note-inspector-300: content wants 744 pt, gets 300 pt
+effect-inspector-300: content wants 490 pt, gets 300 pt
+line-effect-inspector-300: content wants 490 pt, gets 300 pt
+about: content wants 640 pt, gets 560 pt

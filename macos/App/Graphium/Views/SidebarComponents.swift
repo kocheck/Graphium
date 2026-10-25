@@ -117,3 +117,66 @@ final class MapThumbnailStore: ObservableObject {
         thumbnailsByMapID = Dictionary(drawn, uniquingKeysWith: { first, _ in first })
     }
 }
+
+/// The sidebar's reorderable sections. The DM's order is a preference kept across campaigns.
+enum SidebarSectionKind: String, CaseIterable, Identifiable {
+    case maps, library, initiative, doors
+
+    var id: String { rawValue }
+    fileprivate static let dragPrefix = "graphium-sidebar-section:"
+    fileprivate var dragPayload: String { Self.dragPrefix + rawValue }
+
+    fileprivate init?(dragPayload: String) {
+        guard dragPayload.hasPrefix(Self.dragPrefix) else { return nil }
+        self.init(rawValue: String(dragPayload.dropFirst(Self.dragPrefix.count)))
+    }
+
+    /// Stored as comma-separated raw values. Unknown names are dropped and missing sections appended, so a
+    /// preference from an older or newer build still shows every section once.
+    static func order(fromStored stored: String) -> [SidebarSectionKind] {
+        var seen = Set<SidebarSectionKind>()
+        var order = stored.split(separator: ",").compactMap { SidebarSectionKind(rawValue: String($0)) }.filter { seen.insert($0).inserted }
+        order += allCases.filter { !seen.contains($0) }
+        return order
+    }
+
+    static func stored(_ order: [SidebarSectionKind]) -> String {
+        order.map(\.rawValue).joined(separator: ",")
+    }
+
+    /// `dragged` moved to sit where `target` is.
+    static func moving(_ dragged: SidebarSectionKind, onto target: SidebarSectionKind, in order: [SidebarSectionKind]) -> [SidebarSectionKind] {
+        guard dragged != target, let from = order.firstIndex(of: dragged), let to = order.firstIndex(of: target) else { return order }
+        var moved = order
+        moved.remove(at: from)
+        moved.insert(dragged, at: to)
+        return moved
+    }
+}
+
+/// A section title that can be dragged onto another section's title to reorder, or moved with its menu
+/// (the keyboard and VoiceOver route to the same change).
+struct SidebarSectionHeader: View {
+    let title: String
+    let kind: SidebarSectionKind
+    let order: [SidebarSectionKind]
+    let setOrder: ([SidebarSectionKind]) -> Void
+
+    var body: some View {
+        Text(title)
+            .draggable(kind.dragPayload) { Text(title).padding(Spacing.xs) }
+            .dropDestination(for: String.self) { payloads, _ in
+                guard let payload = payloads.first, let dragged = SidebarSectionKind(dragPayload: payload) else { return false }
+                setOrder(SidebarSectionKind.moving(dragged, onto: kind, in: order))
+                return true
+            }
+            .contextMenu {
+                if let index = order.firstIndex(of: kind) {
+                    Button("Move Section Up") { setOrder(SidebarSectionKind.moving(kind, onto: order[index - 1], in: order)) }
+                        .disabled(index == 0)
+                    Button("Move Section Down") { setOrder(SidebarSectionKind.moving(kind, onto: order[index + 1], in: order)) }
+                        .disabled(index == order.count - 1)
+                }
+            }
+    }
+}

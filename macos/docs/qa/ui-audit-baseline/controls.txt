@@ -1,0 +1,139 @@
+UI Audit.graphiumcampaign	AppKitTextField		true
+UI Audit.graphiumcampaign	AppKitTextField		true
+UI Audit.graphiumcampaign	NSButton	Hide	true
+UI Audit.graphiumcampaign	NSButton	Hide	true
+UI Audit.graphiumcampaign	SwiftUIAppKitButton		true
+UI Audit.graphiumcampaign	SwiftUIAppKitButton		true
+UI Audit.graphiumcampaign	SwiftUIAppKitButton		true
+UI Audit.graphiumcampaign	SwiftUIOutlineListView		true
+UI Audit.graphiumcampaign	SwiftUIPopupButton		true
+UI Audit.graphiumcampaign	toolbar item NSToolbarFlexibleSpaceItem		true
+UI Audit.graphiumcampaign	toolbar item NSToolbarFlexibleSpaceItem		true
+UI Audit.graphiumcampaign	toolbar item add-map	Add Map	true
+UI Audit.graphiumcampaign	toolbar item add-tokens	Add Tokens	true
+UI Audit.graphiumcampaign	toolbar item com.apple.SwiftUI.navigationSplitView.toggleSidebar	Hide Sidebar	true
+UI Audit.graphiumcampaign	toolbar item com.apple.SwiftUI.splitViewSeparator-0		true
+UI Audit.graphiumcampaign	toolbar item console-window	Session Console Window	true
+UI Audit.graphiumcampaign	toolbar item daylight	Daylight	true
+UI Audit.graphiumcampaign	toolbar item dungeon	Generate Dungeon	true
+UI Audit.graphiumcampaign	toolbar item map-image	Map Image	true
+UI Audit.graphiumcampaign	toolbar item map-settings	Map Settings	true
+UI Audit.graphiumcampaign	toolbar item palette	Command Palette	true
+UI Audit.graphiumcampaign	toolbar item pause	Pause	true
+UI Audit.graphiumcampaign	toolbar item performance	Performance Monitor	true
+UI Audit.graphiumcampaign	toolbar item reset-fog	Reset Explored Fog	true
+UI Audit.graphiumcampaign	toolbar item session-console	Session Console	true
+UI Audit.graphiumcampaign	toolbar item tool	Tool	true
+UI Audit.graphiumcampaign	toolbar item world-view	World View	true
+view: about	SwiftUIAppKitButton		true
+view: about	SwiftUIAppKitButton		true
+view: about	SwiftUISegmentedControl		true
+view: command-palette	AppKitTextField		true
+view: command-palette	SwiftUIOutlineListView		true
+view: console-settings	AppKitTextField		true
+view: console-settings	AppKitTextField		true
+view: console-settings	PlatformSwitch		true
+view: dungeon-dialog	EditTrackingStepper		true
+view: dungeon-dialog	EditTrackingStepper		true
+view: dungeon-dialog	EditTrackingStepper		true
+view: effect-inspector-260	AppKitTextField		true
+view: effect-inspector-260	EditTrackingStepper		true
+view: effect-inspector-260	EditTrackingStepper		true
+view: effect-inspector-260	PlatformColorWell		true
+view: effect-inspector-260	PlatformSwitch		true
+view: effect-inspector-260	SwiftUIAppKitButton		true
+view: effect-inspector-300	AppKitTextField		true
+view: effect-inspector-300	EditTrackingStepper		true
+view: effect-inspector-300	EditTrackingStepper		true
+view: effect-inspector-300	PlatformColorWell		true
+view: effect-inspector-300	PlatformSwitch		true
+view: effect-inspector-300	SwiftUIAppKitButton		true
+view: line-effect-inspector-260	AppKitTextField		true
+view: line-effect-inspector-260	EditTrackingStepper		true
+view: line-effect-inspector-260	EditTrackingStepper		true
+view: line-effect-inspector-260	EditTrackingStepper		true
+view: line-effect-inspector-260	PlatformColorWell		true
+view: line-effect-inspector-260	PlatformSwitch		true
+view: line-effect-inspector-300	AppKitTextField		true
+view: line-effect-inspector-300	EditTrackingStepper		true
+view: line-effect-inspector-300	EditTrackingStepper		true
+view: line-effect-inspector-300	EditTrackingStepper		true
+view: line-effect-inspector-300	PlatformColorWell		true
+view: line-effect-inspector-300	PlatformSwitch		true
+view: map-settings	AppKitTextField		true
+view: map-settings	PlatformColorWell		true
+view: map-settings	PlatformSwitch		true
+view: new-map	AppKitTextField		true
+view: new-map	PlatformColorWell		true
+view: new-map	PlatformSwitch		true
+view: note-inspector-260	AppKitTextField		true
+view: note-inspector-260	PlatformSwitch		true
+view: note-inspector-260	SwiftUISegmentedControl		true
+view: note-inspector-300	AppKitTextField		true
+view: note-inspector-300	PlatformSwitch		true
+view: note-inspector-300	SwiftUISegmentedControl		true
+view: plate-editor	AppKitTextField		true
+view: plate-editor	AppKitTextField		true
+view: plate-editor	AppKitTextField		true
+view: session-console-260	AppKitTextField		true
+view: session-console-260	SwiftUIAppKitButton		true
+view: session-console-260	SwiftUIPopupButton		true
+view: session-console-300	AppKitTextField		true
+view: session-console-300	SwiftUIAppKitButton		true
+view: session-console-300	SwiftUIPopupButton		true
+view: settings	NSTabViewSegmentedControl		true
+view: settings	PlatformSwitch		true
+view: token-inspector-260	AppKitTextField		true
+view: token-inspector-260	AppKitTextField		true
+view: token-inspector-260	AppKitTextField		true
+view: token-inspector-260	AppKitTextField		true
+view: token-inspector-260	AppKitTextField		true
+view: token-inspector-260	AppKitTextField		true
+view: token-inspector-260	AppKitTextField		true
+view: token-inspector-260	AppKitTextField		true
+view: token-inspector-260	EditTrackingStepper		true
+view: token-inspector-260	EditTrackingStepper		true
+view: token-inspector-260	NSButtonTextField		true
+view: token-inspector-260	PlatformSwitch		true
+view: token-inspector-260	SwiftUIPopupButton	Image	true
+view: token-inspector-260	SwiftUISegmentedControl		true
+view: token-inspector-300	AppKitTextField		true
+view: token-inspector-300	AppKitTextField		true
+view: token-inspector-300	AppKitTextField		true
+view: token-inspector-300	AppKitTextField		true
+view: token-inspector-300	AppKitTextField		true
+view: token-inspector-300	AppKitTextField		true
+view: token-inspector-300	AppKitTextField		true
+view: token-inspector-300	AppKitTextField		true
+view: token-inspector-300	EditTrackingStepper		true
+view: token-inspector-300	EditTrackingStepper		true
+view: token-inspector-300	NSButtonTextField		true
+view: token-inspector-300	PlatformSwitch		true
+view: token-inspector-300	SwiftUIPopupButton	Image	true
+view: token-inspector-300	SwiftUISegmentedControl		true
+view: tokens-inspector-260	AppKitTextField		true
+view: tokens-inspector-260	AppKitTextField		true
+view: tokens-inspector-260	AppKitTextField		true
+view: tokens-inspector-260	AppKitTextField		true
+view: tokens-inspector-260	EditTrackingStepper		true
+view: tokens-inspector-260	EditTrackingStepper		true
+view: tokens-inspector-260	NSButtonTextField		true
+view: tokens-inspector-260	PlatformSwitch		true
+view: tokens-inspector-260	SwiftUIPopupButton	Image	true
+view: tokens-inspector-260	SwiftUISegmentedControl		true
+view: tokens-inspector-300	AppKitTextField		true
+view: tokens-inspector-300	AppKitTextField		true
+view: tokens-inspector-300	AppKitTextField		true
+view: tokens-inspector-300	AppKitTextField		true
+view: tokens-inspector-300	EditTrackingStepper		true
+view: tokens-inspector-300	EditTrackingStepper		true
+view: tokens-inspector-300	NSButtonTextField		true
+view: tokens-inspector-300	PlatformSwitch		true
+view: tokens-inspector-300	SwiftUIPopupButton	Image	true
+view: tokens-inspector-300	SwiftUISegmentedControl		true
+view: welcome	SwiftUIAppKitButton		true
+view: welcome	SwiftUIAppKitButton		true
+view: welcome	SwiftUIAppKitButton		true
+view: welcome	SwiftUIAppKitButton		true
+view: welcome	SwiftUIAppKitButton		true
+view: welcome	SwiftUIAppKitButton		true

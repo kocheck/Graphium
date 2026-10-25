@@ -19,6 +19,9 @@
             return URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true)
         }
 
+        /// Controls found in the offscreen surfaces, written into `controls.txt` with the windows' own.
+        private static var surfaceControlLines: [String] = []
+
         static func runIfRequested() {
             guard let folder else { return }
             try? FileManager.default.createDirectory(
@@ -137,6 +140,10 @@
             window.orderFrontRegardless()
             try? await Task.sleep(for: .seconds(0.6))
             hosting.layoutSubtreeIfNeeded()
+            if !dark {
+                var count = 0
+                collectOperableControls(from: hosting, windowName: "view: \(surface.name)", depth: 0, into: &surfaceControlLines, count: &count)
+            }
             let suffix = dark ? "dark" : "light"
             if let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) {
                 hosting.cacheDisplay(in: hosting.bounds, to: rep)
@@ -194,14 +201,7 @@
 
         // MARK: Controls
 
-        /// Accessibility roles that are something a DM can operate. Containers and static text are skipped
-        /// so the inventory only changes when a control is added, removed or relabelled.
-        private static let operableRoles: Set<NSAccessibility.Role> = [
-            .button, .checkBox, .radioButton, .popUpButton, .menuButton, .slider, .textField, .comboBox,
-            .incrementor, .disclosureTriangle, .radioGroup,
-        ]
-
-        private static let maximumAccessibilityDepth = 40
+        private static let maximumAccessibilityDepth = 60
 
         /// One line per control: `window<TAB>role<TAB>label<TAB>enabled`, sorted. A window that exposes no
         /// controls is an error when it has a toolbar or a document (an empty tree there means the walk failed).
@@ -224,22 +224,26 @@
                 let isOperableWindow = window.toolbar != nil || window.windowController?.document != nil
                 if controlCount == 0, isOperableWindow { errors.append("\(windowName): the accessibility walk found no controls.") }
             }
-            write(lines.sorted().joined(separator: "\n") + "\n", to: folder.appendingPathComponent("controls.txt"))
+            write((lines + surfaceControlLines).sorted().joined(separator: "\n") + "\n", to: folder.appendingPathComponent("controls.txt"))
             if !errors.isEmpty {
                 write(errors.joined(separator: "\n") + "\n", to: folder.appendingPathComponent("errors.txt"))
             }
         }
 
+        /// Walks the view tree for AppKit controls (buttons, pop-ups, segmented controls, sliders, text fields).
+        /// Not every SwiftUI control is an AppKit view and the accessibility tree is not built for a process
+        /// no assistive client is attached to, so this is a floor, not the whole inventory: a control that
+        /// disappears from here has gone, but one that was never listed is not covered.
         private static func collectOperableControls(
-            from element: Any, windowName: String, depth: Int, into lines: inout [String], count: inout Int
+            from view: NSView, windowName: String, depth: Int, into lines: inout [String], count: inout Int
         ) {
-            guard depth < maximumAccessibilityDepth, let node = element as? NSAccessibilityProtocol else { return }
-            if let role = node.accessibilityRole(), operableRoles.contains(role) {
-                let label = node.accessibilityLabel() ?? node.accessibilityTitle() ?? ""
-                lines.append("\(windowName)\t\(role.rawValue)\t\(label)\t\(node.isAccessibilityEnabled())")
+            guard depth < maximumAccessibilityDepth else { return }
+            if let control = view as? NSControl, !(control is NSScroller) {
+                let label = control.accessibilityLabel() ?? (control as? NSButton)?.title ?? control.toolTip ?? ""
+                lines.append("\(windowName)\t\(String(describing: type(of: control)))\t\(label)\t\(control.isEnabled)")
                 count += 1
             }
-            for child in node.accessibilityChildren() ?? [] {
+            for child in view.subviews {
                 collectOperableControls(from: child, windowName: windowName, depth: depth + 1, into: &lines, count: &count)
             }
         }
