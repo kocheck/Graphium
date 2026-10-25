@@ -56,8 +56,24 @@ struct EffectInspector: View {
     @ViewBuilder
     private func single(_ effect: SpellEffect) -> some View {
         Section {
-            TextField("Label", text: $label, prompt: Text(effect.sizeDescription))
-                .onSubmit { commit() }
+            HStack(spacing: Spacing.md) {
+                Image(systemName: "sparkles")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 44, height: 44)
+                    .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    TextField("Label", text: $label, prompt: Text(effect.sizeDescription))
+                        .labelsHidden()
+                        .textFieldStyle(.plain)
+                        .font(.title3.weight(.semibold))
+                        .onSubmit { commit() }
+                    Text("Spell effect")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Picker("Shape", selection: binding(effect, \.shape, "Change Shape")) {
                 ForEach(SpellEffect.Shape.allCases) { shape in
                     Text(shape.title).tag(shape)
@@ -65,8 +81,6 @@ struct EffectInspector: View {
             }
             // A pop-up, like Look below: four segments overflow the inspector at its narrowest.
             .pickerStyle(.menu)
-        } header: {
-            Text(effect.displayLabel).font(.headline)
         }
 
         Section("Size") {

@@ -1,5 +1,6 @@
 import AppKit
 import GraphiumCore
+import GraphiumRender
 import SwiftUI
 
 /// Something to do in the next new Architect window (Welcome's Generate Dungeon and
@@ -86,6 +87,8 @@ struct WelcomeView: View {
     @State private var showingTemplates = false
     @State private var recentsQuery = ""
     @State private var recents: [RecentCampaign] = []
+    /// The active map of each recent campaign, drawn from the file on this Mac as the DM sees it.
+    @State private var recentMapArt: [URL: CGImage] = [:]
     @State private var openError: String?
 
     /// Fixed for the session, like the TS `useState` initializer.
@@ -100,9 +103,9 @@ struct WelcomeView: View {
     private var theme: AppTheme { AppTheme(rawValue: themeRaw) ?? .system }
 
     var body: some View {
-        VStack(spacing: 28) {
+        VStack(spacing: Spacing.xl) {
             hero
-            HStack(spacing: 14) {
+            HStack(spacing: Spacing.md) {
                 card("New Campaign", "doc.badge.plus", "⌘N", "Start a fresh campaign (⌘N)") {
                     NSDocumentController.shared.newDocument(nil)
                 }
@@ -125,8 +128,9 @@ struct WelcomeView: View {
             Spacer(minLength: 0)
             footer
         }
-        .padding(32)
+        .padding(Spacing.xxl)
         .frame(minWidth: 760, minHeight: 600)
+        .background(Palette.surfacePanel.color)
         .onAppear(perform: reloadRecents)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             reloadRecents()
@@ -149,7 +153,7 @@ struct WelcomeView: View {
     }
 
     private var hero: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: Spacing.sm + 2) {
             BrandMark()
                 .foregroundStyle(Palette.inkPrimary.color)
                 .frame(width: 72, height: 72)
@@ -163,7 +167,7 @@ struct WelcomeView: View {
         }
     }
 
-    /// Instrument-panel card: symbol, title and its shortcut as a readout (taste rule 1: visible shortcuts).
+    /// Tile: symbol, title and its shortcut as a readout (taste rule 1: visible shortcuts).
     private func card(
         _ title: String, _ symbol: String, _ shortcut: String, _ help: String, action: @escaping () -> Void
     ) -> some View {
@@ -175,9 +179,10 @@ struct WelcomeView: View {
                 Text(shortcut).readoutStyle(.caption).foregroundStyle(.secondary)
             }
             .frame(width: 150, height: 108)
+            .tileSurface()
             .contentShape(Rectangle())
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
         .help(help)
         .accessibilityLabel(title)
         .accessibilityHint(help)
@@ -208,6 +213,22 @@ struct WelcomeView: View {
                 let values = try? url.resourceValues(forKeys: [.contentAccessDateKey])
                 return RecentCampaign(url: url, opened: values?.contentAccessDate)
             }
+        loadMapArt(for: recents)
+    }
+
+    /// Draws each recent campaign's active map once, off the main thread. Reads only the package on disk;
+    /// a campaign that can't be read keeps the plain map symbol.
+    private func loadMapArt(for campaigns: [RecentCampaign]) {
+        let missing = campaigns.map(\.url).filter { recentMapArt[$0] == nil }
+        guard !missing.isEmpty else { return }
+        Task.detached(priority: .utility) {
+            for url in missing {
+                guard let renderer = MapRenderer(activeMapOfPackageAt: url),
+                    let art = renderer.image(region: nil, maxPixels: 480, playersView: false, labels: false)
+                else { continue }
+                await MainActor.run { recentMapArt[url] = art }
+            }
+        }
     }
 
     private func hide(_ recent: RecentCampaign) {
@@ -228,37 +249,68 @@ struct WelcomeView: View {
                         TextField("Search", text: $recentsQuery).textFieldStyle(.roundedBorder).frame(width: 200)
                     }
                 }
-                ForEach(shown) { recent in
-                    HStack {
-                        Button {
-                            NSDocumentController.shared.openDocument(withContentsOf: recent.url, display: true) { _, _, error in
-                                if let error { openError = error.localizedDescription }
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "map")
-                                Text(recent.name).lineLimit(1)
-                                Spacer()
-                                if let opened = recent.opened {
-                                    Text(opened.formatted(date: .abbreviated, time: .shortened)).foregroundStyle(.secondary)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        Button {
-                            hide(recent)
-                        } label: {
-                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Remove \(recent.name) from recent campaigns")
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), spacing: Spacing.md)], spacing: Spacing.md) {
+                    ForEach(shown) { recent in
+                        recentTile(recent)
                     }
-                    .padding(.vertical, 4)
                 }
             }
-            .frame(maxWidth: 560)
+            .frame(maxWidth: 880)
         }
+    }
+
+    /// A campaign tile: its map art, name and date. The open button is the whole tile; the remove button
+    /// sits on the art and is always visible (never hover-only).
+    private func recentTile(_ recent: RecentCampaign) -> some View {
+        Button {
+            NSDocumentController.shared.openDocument(withContentsOf: recent.url, display: true) { _, _, error in
+                if let error { openError = error.localizedDescription }
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                mapArt(for: recent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(recent.name).font(.headline).lineLimit(1)
+                    if let opened = recent.opened {
+                        Text(opened.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, Spacing.xs)
+            }
+            .padding(Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .tileSurface()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            Button {
+                hide(recent)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(Palette.inkPrimary.color, Palette.surfaceRaised.color)
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+            .padding(Spacing.md)
+            .help("Remove from recent campaigns")
+            .accessibilityLabel("Remove \(recent.name) from recent campaigns")
+        }
+    }
+
+    private func mapArt(for recent: RecentCampaign) -> some View {
+        ZStack {
+            Palette.surfaceSunken.color
+            if let art = recentMapArt[recent.url] {
+                Image(decorative: art, scale: 1).resizable().scaledToFill()
+            } else {
+                Image(systemName: "map").font(.title2).foregroundStyle(.secondary)
+            }
+        }
+        .frame(height: 112)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
     }
 
     // MARK: Footer
@@ -304,10 +356,11 @@ private struct TemplatesSheet: View {
                             Text(template.description).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
+                        .padding(Spacing.md)
+                        .tileSurface()
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                 }
             }
             HStack {

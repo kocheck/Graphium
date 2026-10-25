@@ -42,8 +42,8 @@ struct Minimap: View {
             context.stroke(Path(rect), with: .color(Palette.worldFrame.color), lineWidth: 2)
         }
         .frame(width: side, height: side)
-        .background(Palette.worldPanel.color, in: RoundedRectangle(cornerRadius: Radius.panel))
-        .overlay(RoundedRectangle(cornerRadius: Radius.panel).strokeBorder(Palette.worldRule.color, lineWidth: 2))
+        .background(Palette.worldPanel.color, in: RoundedRectangle(cornerRadius: Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Palette.worldRule.color, lineWidth: 2))
         .contentShape(Rectangle())
         .onTapGesture { location in
             guard world.width > 0, world.height > 0 else { return }

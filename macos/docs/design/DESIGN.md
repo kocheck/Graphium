@@ -53,7 +53,6 @@ colors:
   world-scrim: "#000000E6"
 rounded:
   control: 4px
-  panel: 4px
   tile: 8px
 spacing:
   xs: 4px
@@ -181,7 +180,7 @@ App-owned spacing: 4 / 8 / 12 / 16 / 24 / 32 pt (`Spacing.xs…xxl`); `xxl` is f
 
 ## Depth
 
-Map first (decision 007). The map runs under the whole detail area and is the only content layer. Overlays Graphium draws over it float as system glass (`.glassPanel()`): Liquid Glass on macOS 26, `.regularMaterial` with a soft shadow on macOS 14 and 15, a 0.5 pt light edge, opaque `surface-panel` under Reduce Transparency. Glass is never stacked: nothing app-drawn sits on the sidebar, inspector, toolbar, sheets or another overlay, and inside the inspector a grouped block is a native `GroupBox`. The World View keeps its etched `world-*` plates until its own decision. On the canvas, depth for tokens (hover lift, drag shadow) is part of the map and stays.
+Map first (decision 007). The map runs under the whole detail area and is the only content layer. Overlays Graphium draws over it float as system glass (`.glassPanel()`): Liquid Glass on macOS 26, `.regularMaterial` with a soft shadow on macOS 14 and 15, a 0.5 pt light edge, opaque `surface-panel` under Reduce Transparency. Glass is never stacked: nothing app-drawn sits on the sidebar, inspector, toolbar, sheets or another overlay, and inside the inspector a grouped block is a native `GroupBox`. The World View keeps its opaque `world-*` plates, now with the same 12 pt corners as glass cards (decision 020). On the canvas, depth for tokens (hover lift, drag shadow) is part of the map and stays.
 
 ## Shapes
 

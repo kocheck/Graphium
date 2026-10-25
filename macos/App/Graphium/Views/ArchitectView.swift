@@ -50,6 +50,10 @@ struct ArchitectView: View {
     @State private var canvasZoom = 1.0
     /// The canvas camera, held without observing so panning doesn't redraw this view.
     @State private var camera = CanvasCamera()
+    @State private var canvasViewportModel = CanvasViewportModel()
+    @StateObject private var mapThumbnails = MapThumbnailStore()
+    @SceneStorage("architect.sidebar.mapsExpanded") private var mapsExpanded = true
+    @SceneStorage("architect.sidebar.libraryExpanded") private var libraryExpanded = true
     /// View > Show Players' Fog: the players' fog, dimmed, over the DM's map while prepping walls.
     @State private var fogPreview = false
     @State private var fogPreviewCache = VisibilityCache()
@@ -306,6 +310,15 @@ struct ArchitectView: View {
                 sortInitiative: hasInitiative ? { sortInitiative() } : nil,
                 clearInitiative: hasInitiative ? { clearInitiative() } : nil))
         .onAppear {
+            #if DEBUG
+                // UI audit screenshots: `-GraphiumAuditSelectFirstToken YES` selects the first token on launch.
+                if UserDefaults.standard.bool(forKey: "GraphiumAuditSelectFirstToken"),
+                    let firstTokenID = document.campaign.activeMap.tokens.first?.id
+                {
+                    selection = [firstTokenID]
+                }
+                if UserDefaults.standard.bool(forKey: "GraphiumAuditShowConsole") { showingConsole = true }
+            #endif
             document.adoptUndoManager(undoManager)
             dismissWindow(id: WelcomeView.windowID)
             switch LaunchIntent.shared.take() {
@@ -386,10 +399,27 @@ struct ArchitectView: View {
 
     private var mapList: some View {
         List(selection: activeMapBinding) {
-            Section("Maps") {
+            Section {
+                SidebarCampaignHeader(
+                    campaignName: document.campaign.name,
+                    mapCount: document.campaign.maps.count,
+                    newMap: { mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true) },
+                    openMapSettings: { mapSettings = MapSettingsRequest(map: document.campaign.activeMap, isNew: false) },
+                    openCommandPalette: { showingPalette = true })
+                SidebarActionRow(title: "Commands", symbolName: "magnifyingglass", shortcutHint: "⌘P") {
+                    showingPalette = true
+                }
+                .selectionDisabled()
+                SidebarActionRow(title: "New Map", symbolName: "plus.square") {
+                    mapSettings = MapSettingsRequest(map: GameMap(name: "Untitled Map"), isNew: true)
+                }
+                .selectionDisabled()
+            }
+            .listRowSeparator(.hidden)
+            Section("Maps", isExpanded: $mapsExpanded) {
                 // Alphabetical, as TS (PARITY §2.1).
                 ForEach(document.campaign.maps.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) { map in
-                    Text(map.name)
+                    SidebarMapRow(name: map.name, thumbnail: mapThumbnails.thumbnailsByMapID[map.id])
                         .tag(map.id)
                         .contextMenu {
                             Button("Map Settings…") { mapSettings = MapSettingsRequest(map: map, isNew: false) }
@@ -439,7 +469,10 @@ struct ArchitectView: View {
                 .foregroundStyle(Palette.accentText.color)
             }
         }
-        .navigationSplitViewColumnWidth(min: 180, ideal: 220)
+        .navigationSplitViewColumnWidth(min: 200, ideal: 240)
+        .task(id: mapThumbnailFingerprint) {
+            await mapThumbnails.refresh(campaign: document.campaign, packageURL: document.fileURL)
+        }
         .toolbar(id: "sidebar") {
             ToolbarItem(id: "add-map") {
                 Button {
@@ -449,6 +482,13 @@ struct ArchitectView: View {
                 }
                 .help("Add a map to this campaign")
             }
+        }
+    }
+
+    /// Changes when something that shows in a map's thumbnail changes, so thumbnails redraw then and not on every edit.
+    private var mapThumbnailFingerprint: [String] {
+        document.campaign.maps.map { map in
+            "\(map.id)|\(map.gridSize)|\(map.tokens.count)|\(map.doors.count)|\(map.drawings.count)|\(map.background?.src ?? "")"
         }
     }
 
@@ -636,6 +676,7 @@ struct ArchitectView: View {
             onViewportChange: { [camera] viewport, size in
                 camera.viewport = viewport
                 camera.size = size
+                canvasViewportModel.viewport = viewport
                 if canvasZoom != viewport.zoom { canvasZoom = viewport.zoom }
             },
             calibrating: calibrating,
@@ -649,6 +690,13 @@ struct ArchitectView: View {
             canvasBanner
                 .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: toast)
                 .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: calibrating)
+        }
+        .overlay {
+            TokenSelectionPill(
+                viewportModel: canvasViewportModel,
+                selectionBoundsInMapUnits: selectedTokenBounds,
+                addToInitiative: tokensWaitingForInitiative.isEmpty ? nil : { setInitiative(true, ids: tokensWaitingForInitiative) },
+                deleteSelection: { deleteSelection() })
         }
         .overlay(alignment: .bottomTrailing) {
             MapZoomControls(zoomIn: { zoomCanvas(by: 1.25) }, zoomOut: { zoomCanvas(by: 0.8) }, zoomToFit: { zoomToFit() })
@@ -669,7 +717,7 @@ struct ArchitectView: View {
                     Label("Players see “Please Wait”", systemImage: "pause.circle.fill")
                     Button("Resume") { document.isPaused = false }
                 }
-                .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+                .glassPanel(.capsule, padding: GlassPadding.message)
                 .padding(Spacing.lg)
                 .transition(.opacity)
             } else if document.worldViewsOpen > 0, playersSeeOnlyFog {
@@ -683,7 +731,7 @@ struct ArchitectView: View {
                     Button("Turn On Daylight") { daylightBinding.wrappedValue = true }
                         .help("Daylight: no fog of war on this map")
                 }
-                .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+                .glassPanel(.capsule, padding: GlassPadding.message)
                 .padding(Spacing.lg)
                 .transition(.opacity)
                 .accessibilityElement(children: .contain)
@@ -767,21 +815,20 @@ struct ArchitectView: View {
         let campaignLibrary = document.campaign.tokenLibrary
         let recent = TokenLibrarySearch.recent(tokens: document.campaign.activeMap.tokens, library: campaignLibrary)
         let party = TokenLibrarySearch.party(library: document.browsableLibrary.items, excluding: recent)
-        Section("Library") {
-            HStack {
-                Button("Place…") { showingPalette = true }
-                Button("Add…") { importTarget = .libraryUpload }
-                Button("Manage…") { showingLibrary = true }
-            }
-            // Not .link: in the sidebar it drew near-white on the light sidebar (persona runs,
-            // contrast audit). Borderless with the accent text colour reads in both themes.
-            .buttonStyle(.borderless)
-            .foregroundStyle(Palette.accentText.color)
+        Section("Library", isExpanded: $libraryExpanded) {
+            SidebarActionRow(title: "Place Token…", symbolName: "person.crop.circle.badge.plus") { showingPalette = true }
+                .selectionDisabled()
+            SidebarActionRow(title: "Add to Library…", symbolName: "square.and.arrow.down") { importTarget = .libraryUpload }
+                .selectionDisabled()
+            SidebarActionRow(title: "Manage Library…", symbolName: "square.grid.2x2") { showingLibrary = true }
+                .selectionDisabled()
             Button {
                 placeGenericToken(at: nil)
             } label: {
                 HStack {
-                    Image(systemName: "person.crop.circle.fill").frame(width: 24, height: 24)
+                    Image(systemName: "person.crop.circle.fill")
+                        .frame(width: 32, height: 32)
+                        .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
                     Text(GenericToken.name)
                 }
             }
@@ -811,7 +858,9 @@ struct ArchitectView: View {
                         Image(systemName: "person.crop.circle")
                     }
                 }
-                .frame(width: 24, height: 24)
+                .frame(width: 32, height: 32)
+                .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
                 Text(item.name).lineLimit(1)
             }
         }
@@ -1532,6 +1581,19 @@ struct ArchitectView: View {
         if let shown = document.worldNoteID, ids.contains(shown) { document.worldNoteID = nil }
     }
 
+    /// The selected tokens' combined footprint in map units, for the selection pill.
+    private var selectedTokenBounds: Bounds? {
+        let map = document.campaign.activeMap
+        let library = document.campaign.libraryIndex
+        let footprints = map.tokens.filter { selection.contains($0.id) }.map { map.tokenBounds($0, library: library) }
+        guard let first = footprints.first else { return nil }
+        let left = footprints.map(\.x).min() ?? first.x
+        let top = footprints.map(\.y).min() ?? first.y
+        let right = footprints.map { $0.x + $0.width }.max() ?? first.x + first.width
+        let bottom = footprints.map { $0.y + $0.height }.max() ?? first.y + first.height
+        return Bounds(x: left, y: top, width: right - left, height: bottom - top)
+    }
+
     private var hasSelectedTokens: Bool {
         document.campaign.activeMap.tokens.contains { selection.contains($0.id) }
     }
@@ -1728,7 +1790,7 @@ struct ArchitectView: View {
                 Button("Cancel") { calibrating = false }
                     .keyboardShortcut(.cancelAction)
             }
-            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+            .glassPanel(.capsule, padding: GlassPadding.message)
             .padding(.top, Spacing.md)
             .transition(.opacity)
             .accessibilityElement(children: .contain)
@@ -1749,7 +1811,7 @@ struct ArchitectView: View {
                 .foregroundStyle(Palette.inkSecondary.color)
                 .accessibilityLabel("Close notification")
             }
-            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+            .glassPanel(.capsule, padding: GlassPadding.message)
             .frame(maxWidth: 560)
             .padding(.top, Spacing.md)
             .transition(.opacity)
@@ -1766,7 +1828,7 @@ struct ArchitectView: View {
                     .foregroundStyle(Palette.inkSecondary.color)
                 Button("Choose…") { importTarget = .mapImage }
             }
-            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+            .glassPanel(.capsule, padding: GlassPadding.message)
             .padding(.top, Spacing.md)
             .transition(.opacity)
             .accessibilityElement(children: .contain)

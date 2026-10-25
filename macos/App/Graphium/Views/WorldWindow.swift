@@ -298,8 +298,8 @@ private struct WorldNoteCard: View {
         .foregroundStyle(Palette.worldInk.color)
         .padding(24)
         .frame(width: 560, alignment: .leading)
-        .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Palette.worldRule.color, lineWidth: 2))
+        .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Palette.worldRule.color, lineWidth: 2))
         .environment(\.colorScheme, .dark)
         .accessibilityElement(children: .contain)
     }
@@ -333,7 +333,7 @@ private struct WorldInitiativeStrip: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     combatant.isCurrent ? Palette.worldAction.color : Color.clear,
-                    in: RoundedRectangle(cornerRadius: Radius.panel))
+                    in: RoundedRectangle(cornerRadius: Radius.control))
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(combatant.name))
                 .accessibilityValue(combatant.isCurrent ? "Current turn" : "")
@@ -343,8 +343,8 @@ private struct WorldInitiativeStrip: View {
         // As wide as the longest name needs (so names aren't cut at a fixed width), within limits.
         .frame(minWidth: 240, maxWidth: 440, alignment: .leading)
         .fixedSize(horizontal: true, vertical: false)
-        .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: Radius.panel))
-        .overlay(RoundedRectangle(cornerRadius: Radius.panel).strokeBorder(Palette.worldRule.color, lineWidth: 2))
+        .background(Palette.worldScrim.color, in: RoundedRectangle(cornerRadius: Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Palette.worldRule.color, lineWidth: 2))
         .environment(\.colorScheme, .dark)
         .accessibilityElement(children: .contain)
     }

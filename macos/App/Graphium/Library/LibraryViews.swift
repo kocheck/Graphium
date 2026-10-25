@@ -47,7 +47,7 @@ struct LibraryManagerView: View {
                     description: Text(browsable.items.isEmpty ? "Upload an image to start your library." : "Try another search."))
             } else {
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 12)], spacing: 12) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 124), spacing: Spacing.md)], spacing: Spacing.md) {
                         ForEach(results) { item in
                             let campaignOnly = browsable.campaignOnly.contains(item.id)
                             LibraryCard(item: item, image: document.libraryThumbnail(item), campaignOnly: campaignOnly)
@@ -173,7 +173,7 @@ struct LibraryCard: View {
                 }
             }
             .frame(width: 96, height: 96)
-            .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.control))
+            .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile))
             .overlay(alignment: .topTrailing) {
                 if campaignOnly {
                     Image(systemName: "doc.fill")
@@ -188,6 +188,8 @@ struct LibraryCard: View {
             Text(campaignOnly ? "\(item.category) · this campaign" : item.category)
                 .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
         }
+        .padding(Spacing.sm)
+        .tileSurface()
         .help(
             (item.tags.isEmpty ? item.name : "\(item.name) — \(item.tags.joined(separator: ", "))")
                 + (campaignOnly ? "\nCame with this campaign; not in your library." : ""))

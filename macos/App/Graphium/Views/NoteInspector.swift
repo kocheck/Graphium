@@ -90,17 +90,31 @@ struct NoteInspector: View {
     @ViewBuilder
     private func single(_ note: MapNote) -> some View {
         Section {
-            TextField("Title", text: $draft.title, prompt: Text("Note"))
-                .focused($focus, equals: .title)
-                .onSubmit { commit() }
+            HStack(spacing: Spacing.md) {
+                Image(systemName: "text.bubble")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 44, height: 44)
+                    .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    TextField("Title", text: $draft.title, prompt: Text("Note"))
+                        .labelsHidden()
+                        .textFieldStyle(.plain)
+                        .font(.title3.weight(.semibold))
+                        .focused($focus, equals: .title)
+                        .onSubmit { commit() }
+                    Text(note.isShared ? "Shared with players" : "DM only")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Picker("Notes", selection: $reading) {
                 Text("Read").tag(true)
                 Text("Edit").tag(false)
             }
             .pickerStyle(.segmented)
             .help("Read the notes formatted, or edit them as Markdown")
-        } header: {
-            Text(note.displayTitle).font(.headline)
         }
 
         Section {

@@ -18,8 +18,6 @@ enum Spacing {
 /// capsules or 12 pt cards, concentric with the window corners.
 enum Radius {
     static let control: CGFloat = 4
-    /// World View panels keep the etched plate look (world-view-player-safe).
-    static let panel: CGFloat = 4
     static let card: CGFloat = 12
     /// Thumbnails and cards inside app-owned panels (decision 019).
     static let tile: CGFloat = 8
@@ -31,6 +29,12 @@ enum GlassShape {
     case capsule
     /// Multi-line overlays: HUDs, progress.
     case card
+}
+
+/// Padding for a one-line glass message (toast, banner, pause and fog capsules), set in from the
+/// leading edge to clear the capsule's curve and tighter on the trailing side for its close or action button.
+enum GlassPadding {
+    static let message = EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md)
 }
 
 /// Fast, decisive, no bounce (DESIGN.md#motion). Reduce Motion drops the animation, not the change.
@@ -54,6 +58,12 @@ extension View {
     /// A number as a display element: monospaced, medium weight.
     func readoutStyle(_ font: Font = .body) -> some View {
         self.font(font.monospaced().weight(.medium))
+    }
+
+    /// A raised tile on `surface-panel` (DESIGN.md#components): hairline edge, no shadow, a small lift on hover.
+    /// Hover only moves the tile; it never reveals a control.
+    func tileSurface() -> some View {
+        modifier(TileSurface())
     }
 
     /// Floating glass over the map (DESIGN.md#depth). Only for overlays Graphium draws on the
@@ -112,5 +122,20 @@ private struct GlassPanel: ViewModifier {
         view
             .background(.regularMaterial, in: outline)
             .shadow(color: .black.opacity(0.3), radius: 14, y: 6)
+    }
+}
+
+private struct TileSurface: ViewModifier {
+    @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        let outline = RoundedRectangle(cornerRadius: Radius.tile, style: .continuous)
+        content
+            .background(Palette.surfaceRaised.color, in: outline)
+            .overlay(outline.strokeBorder(Palette.ruleHairline.color, lineWidth: 1))
+            .offset(y: isHovering ? -2 : 0)
+            .animation(Motion.animation(Motion.quick, reduceMotion: reduceMotion), value: isHovering)
+            .onHover { isHovering = $0 }
     }
 }
