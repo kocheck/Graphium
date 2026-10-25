@@ -1,0 +1,30 @@
+{
+  "arguments" : [
+
+  ],
+  "notes" : {
+    "world-view-trigger" : [
+      "Toolbar button behind », used ⇧⌘W twice"
+    ]
+  },
+  "persona" : "breaker",
+  "steps" : [
+    {
+      "action" : "double-click-new-campaign",
+      "observation" : "Campaign windows open: 1",
+      "ok" : true,
+      "pathStep" : 2,
+      "screenshot" : "breaker-01-2-double-click-new-campaign",
+      "seconds" : 9.1
+    },
+    {
+      "action" : "double-click-world-view",
+      "observation" : "World View windows: 1",
+      "ok" : true,
+      "pathStep" : 7,
+      "screenshot" : "breaker-02-7-double-click-world-view",
+      "seconds" : 13.7
+    }
+  ],
+  "timeToFirstAction" : 2.4625179767608643
+}

@@ -1,0 +1,98 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "bc8fc5b2a296d285a0c8c70fca12c60764910590",
+        "deviceName" : "My Mac",
+        "modelName" : "Apple Virtual Machine 1",
+        "osBuildNumber" : "24G830",
+        "osVersion" : "15.7.9",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 6,
+      "passedTests" : 1,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Graphium · Built with macOS 15.7.9",
+  "expectedFailures" : 0,
+  "failedTests" : 6,
+  "finishTime" : 1792960268.515,
+  "passedTests" : 1,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1792959830.151,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "Not hittable: Cell, {{72.0, 194.0}, {220.0, 0.0}}",
+      "targetName" : "GraphiumUITests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "PersonaTests/testBreaker()",
+      "testIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testBreaker",
+      "testName" : "testBreaker()"
+    },
+    {
+      "failureText" : "Element Button, {{646.0, 375.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+      "targetName" : "GraphiumUITests",
+      "testIdentifier" : 2,
+      "testIdentifierString" : "PersonaTests/testImpatient()",
+      "testIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testImpatient",
+      "testName" : "testImpatient()"
+    },
+    {
+      "failureText" : "Element Button, {{646.0, 375.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+      "targetName" : "GraphiumUITests",
+      "testIdentifier" : 3,
+      "testIdentifierString" : "PersonaTests/testKeyboardAndAudit()",
+      "testIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testKeyboardAndAudit",
+      "testName" : "testKeyboardAndAudit()"
+    },
+    {
+      "failureText" : "Element Button, {{651.0, 364.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+      "targetName" : "GraphiumUITests",
+      "testIdentifier" : 4,
+      "testIdentifierString" : "PersonaTests/testNonNative()",
+      "testIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testNonNative",
+      "testName" : "testNonNative()"
+    },
+    {
+      "failureText" : "Element Button, {{651.0, 364.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+      "targetName" : "GraphiumUITests",
+      "testIdentifier" : 5,
+      "testIdentifierString" : "PersonaTests/testReferencePath()",
+      "testIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testReferencePath",
+      "testName" : "testReferencePath()"
+    },
+    {
+      "failureText" : "Element Button, {{512.0, 366.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable",
+      "targetName" : "GraphiumUITests",
+      "testIdentifier" : 7,
+      "testIdentifierString" : "PersonaTests/testSmallWindow()",
+      "testIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testSmallWindow",
+      "testName" : "testSmallWindow()"
+    }
+  ],
+  "title" : "Test - Graphium",
+  "topInsights" : [
+    {
+      "category" : "Common Failures",
+      "impact" : "33% of failures",
+      "text" : "2 runs of 2 tests failed with Element Button, {{651.0, 364.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable"
+    },
+    {
+      "category" : "Common Failures",
+      "impact" : "33% of failures",
+      "text" : "2 runs of 2 tests failed with Element Button, {{646.0, 375.0}, {32.0, 32.0}}, identifier: 'trash', label: 'Delete' is not hittable"
+    }
+  ],
+  "totalTestCount" : 7
+}

@@ -1,0 +1,13 @@
+Timestamp               Ty Process[PID:TID]
+2026-10-25 20:23:27.040 I  Graphium[3540:3985] [com.graphium:app] Graphium 1.0 (1) on Version 15.7.9 (Build 24G830)
+2026-10-25 20:23:59.931 I  Graphium[4131:427e] [com.graphium:app] Graphium 1.0 (1) on Version 15.7.9 (Build 24G830)
+2026-10-25 20:24:27.363 I  Graphium[5417:50eb] [com.graphium:app] Graphium 1.0 (1) on Version 15.7.9 (Build 24G830)
+2026-10-25 20:25:04.735 I  Graphium[6307:5f38] [com.graphium:app] Graphium 1.0 (1) on Version 15.7.9 (Build 24G830)
+2026-10-25 20:26:58.615 I  Graphium[6307:5f38] [com.graphium:qa] activation: players see the map with a PC, 113.9 s after launch
+2026-10-25 20:27:14.462 I  Graphium[6307:66c6] [com.graphium:document] Encoded a save: 2 assets, 6 ms
+2026-10-25 20:27:28.666 I  Graphium[10937:9196] [com.graphium:app] Graphium 1.0 (1) on Version @ (Build @) Version 15.7.9 (Build 24G830)
+2026-10-25 20:28:33.491 I  Graphium[13238:ab62] [com.graphium:app] Graphium 1.0 (1) on Version 15.7.9 (Build 24G830)
+2026-10-25 20:29:06.954 I  Graphium[13238:ab62] [com.graphium:qa] activation: players see the map with a PC, 33.5 s after launch
+2026-10-25 20:29:31.954 I  Graphium[15260:c19d] [com.graphium:app] Graphium 1.0 (1) on Version 15.7.9 (Build 24G830)
+2026-10-25 20:30:14.752 I  Graphium[16118:ccc1] [com.graphium:app] Graphium 1.0 (1) on Version 15.7.9 (Build 24G830)
+2026-10-25 20:30:51.392 I  Graphium[16118:ccc1] [com.graphium:qa] activation: players see the map with a PC, 36.6 s after launch
