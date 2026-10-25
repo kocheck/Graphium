@@ -1,0 +1,134 @@
+Graphium
+  About Graphium
+  ---
+  Settings…	⌘,
+  ---
+  Services
+  ---
+  Hide Graphium	⌘H
+  Hide Others	⌥⌘H
+  Show All (disabled)
+  ---
+  Quit Graphium	⌘Q
+File
+  New
+  ---
+  Open…	⌘O
+  Open Recent
+    Clear Menu
+  ---
+  Close	⌘W (disabled)
+  Close All	⌥⌘W (alternate)
+  Save	⌘S (disabled)
+  Save As…	⌥⇧⌘S (disabled)
+  Duplicate	⇧⌘S (disabled) (alternate)
+  Rename… (disabled)
+  Move To… (disabled)
+  Revert To Saved (disabled) (hidden)
+  Revert To
+  ---
+  Share
+  ---
+  Export as .graphium…	⇧⌘E (disabled)
+  ---
+Edit
+  Undo	⌘Z (disabled)
+  Redo	⇧⌘Z (disabled)
+  ---
+  Cut	⌘X (disabled)
+  Copy	⌘C (disabled)
+  Paste	⌘V (disabled)
+  Delete (disabled)
+  Select All	⌘A (disabled)
+  ---
+  Command Palette…	⌘K (disabled)
+  ---
+  AutoFill
+    Contact… (disabled)
+    Passwords… (disabled)
+    Credit Card… (disabled)
+  Start Dictation…	🎤
+  Start Dictation…	D (hidden)
+  Emoji & Symbols	⌘Space
+  Emoji & Symbols	⌃⌘Space (hidden)
+  Emoji & Symbols	E (hidden)
+View
+  Zoom In	⌘= (disabled)
+  Zoom Out	⌘- (disabled)
+  Zoom to Fit	⌘0 (disabled)
+  ---
+  Theme
+    Light
+    Dark
+    System [✓]
+  Performance Monitor	⇧⌘M (disabled)
+  ---
+  ---
+  World View (Projector)	⇧⌘W (disabled)
+  Show This View on World View	⇧⌘Y (disabled)
+  Show Players' Fog (disabled)
+  Pause World View	⇧⌘P (disabled)
+  ---
+Tools
+  Select (V) (disabled)
+  Marker (M) (disabled)
+  Eraser (E) (disabled)
+  Wall (W) (disabled)
+  Door (D) (disabled)
+  Stairs (T) (disabled)
+  Light (L) (disabled)
+  Note (N) (disabled)
+  Spell Effect (S) (disabled)
+  Reveal (F) (disabled)
+  Measure (R) (disabled)
+Map
+  Map Settings…	⌥⌘, (disabled)
+  New Map…	⌥⌘N (disabled)
+  Generate Dungeon…	⇧⌘D (disabled)
+  Map Image… (disabled)
+  Add Tokens… (disabled)
+  Calibrate Map Image… (disabled)
+  ---
+  Daylight (disabled)
+  Reset Explored Fog… (disabled)
+  Pause Animation (disabled)
+  ---
+  Doors
+    Open All Unlocked Doors (disabled)
+    Close All Open Doors (disabled)
+    Unlock All Doors (disabled)
+    Reveal All Hidden Doors (disabled)
+  ---
+  Delete Selection	⌘⌫ (disabled)
+Session
+  Stop Music (disabled)
+  Duck Music (disabled)
+  Return to Map (disabled)
+  Play Test Tone (disabled)
+  ---
+  Session Console Window	⌥⌘C (disabled)
+  Session Console Settings… (disabled)
+  ---
+  Add Selection to Initiative (disabled)
+  Next Turn	⌘] (disabled)
+  Previous Turn	⌘[ (disabled)
+  Sort Initiative (disabled)
+  Clear Initiative (disabled)
+Window
+  Minimize	⌘M (disabled)
+  Zoom (disabled)
+  ---
+  Welcome to Graphium	⇧⌘1
+  ---
+  Bring All to Front
+  ---
+  UI Audit.graphiumcampaign (UI Audit)
+Help
+  Graphium Tutorial
+  Keyboard Shortcuts
+  ---
+  Collect Diagnostics…
+  Report a Bug…
+  View Source on GitHub
+
+No shortcut is used twice.
