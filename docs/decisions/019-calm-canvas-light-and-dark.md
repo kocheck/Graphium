@@ -21,6 +21,13 @@ Kyle wants a cleaner, mymind-inspired canvas UI (calm, content-first, soft surfa
 - `AccentColor` in the asset catalog stays darker than `Palette.accent` on purpose: native controls need the contrast. Do not "fix" it.
 - Native chrome keeps system shapes; the large radii apply only to app-owned surfaces.
 
+## Welcome options (mockups in gitignored design-shots/calm-canvas/)
+
+- **Soft Canvas, flat (welcome-v2 B):** New York serif headline, borderless map-art tiles in a staggered wall, pills for metadata, neutral stock.
+- **Soft Canvas, bloom (welcome-v2 A):** the same with a faint amber glow behind the hero.
+- **Day/night (welcome-v3):** inspired by Kyle's AFK Brand Inspiration space ("earth by day, space by night"): cream stock in Light, near-black with a grainy ember glow in Dark, large mono map counts. Grain would be a pre-rendered texture; amber stands in for Kyle's orange until an accent change is decided.
+- Inspiration kept as reference only; no third-party art ships in the app.
+
 ## Not decided yet
 
 The World View's plate styling (decision 020 when that phase starts; it stays opaque, 24 pt text, 7:1 contrast). Welcome recents with campaign thumbnails (needs a thumbnail cache).
