@@ -1,0 +1,7 @@
+activation lines:
+2026-10-25 21:43:09.939 I  Graphium[13480:a8ca] [com.graphium:qa] activation: players see the map with a PC, 113.1 s after launch
+2026-10-25 21:45:17.928 I  Graphium[21410:fa83] [com.graphium:qa] activation: players see the map with a PC, 37.7 s after launch
+2026-10-25 21:47:04.431 I  Graphium[24973:1223e] [com.graphium:qa] activation: players see the map with a PC, 36.0 s after launch
+2026-10-25T21:43:09.942Z [info] qa: activation: players see the map with a PC, 113.1 s after launch
+2026-10-25T21:45:17.930Z [info] qa: activation: players see the map with a PC, 37.7 s after launch
+2026-10-25T21:47:04.432Z [info] qa: activation: players see the map with a PC, 36.0 s after launch
