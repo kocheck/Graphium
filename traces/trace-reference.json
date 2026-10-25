@@ -1,0 +1,83 @@
+{
+  "arguments" : [
+
+  ],
+  "notes" : {
+
+  },
+  "persona" : "reference",
+  "steps" : [
+    {
+      "action" : "launch",
+      "observation" : "Welcome window ready",
+      "ok" : true,
+      "pathStep" : 1,
+      "screenshot" : "reference-01-1-launch",
+      "seconds" : 2.2
+    },
+    {
+      "action" : "new-campaign",
+      "observation" : "Architect window with the empty-map banner",
+      "ok" : true,
+      "pathStep" : 2,
+      "screenshot" : "reference-02-2-new-campaign",
+      "seconds" : 5.8
+    },
+    {
+      "action" : "map-image",
+      "observation" : "Banner gone: true. Calibration started on its own: true. The image became a token instead: false.",
+      "ok" : true,
+      "pathStep" : 3,
+      "screenshot" : "reference-03-3-map-image",
+      "seconds" : 19.2
+    },
+    {
+      "action" : "calibrate-careful",
+      "observation" : "Zoom 100%, dragged 70 pt. Toast: success: ",
+      "ok" : false,
+      "pathStep" : 4,
+      "screenshot" : "reference-04-4-calibrate-careful",
+      "seconds" : 24
+    },
+    {
+      "action" : "place-token",
+      "observation" : "Token on the canvas: false",
+      "ok" : false,
+      "pathStep" : 5,
+      "screenshot" : "reference-05-5-place-token",
+      "seconds" : 27.5
+    },
+    {
+      "action" : "make-pc",
+      "observation" : "Canvas says the token is a PC: false",
+      "ok" : false,
+      "pathStep" : 6,
+      "screenshot" : "reference-06-6-make-pc",
+      "seconds" : 30.7
+    },
+    {
+      "action" : "world-view",
+      "observation" : "World View window open",
+      "ok" : true,
+      "pathStep" : 7,
+      "screenshot" : "reference-07-7-world-view",
+      "seconds" : 34.8
+    },
+    {
+      "action" : "players-see-map",
+      "observation" : "PC on the World View: false. Near-black share of the window: 31%. Screenshot reference-08-8-world-view.",
+      "ok" : false,
+      "pathStep" : 8,
+      "seconds" : 35.1
+    },
+    {
+      "action" : "save",
+      "observation" : "Save sheet shown: false",
+      "ok" : false,
+      "pathStep" : 9,
+      "screenshot" : "reference-09-9-save",
+      "seconds" : 45.8
+    }
+  ],
+  "timeToFirstAction" : 1.938818097114563
+}

@@ -1,0 +1,170 @@
+{
+  "arguments" : [
+
+  ],
+  "notes" : {
+    "world-view-trigger" : [
+      "Toolbar button behind », used ⇧⌘W twice"
+    ]
+  },
+  "persona" : "breaker",
+  "steps" : [
+    {
+      "action" : "double-click-new-campaign",
+      "observation" : "Campaign windows open: 1",
+      "ok" : true,
+      "pathStep" : 2,
+      "screenshot" : "breaker-01-2-double-click-new-campaign",
+      "seconds" : 8.8
+    },
+    {
+      "action" : "double-click-world-view",
+      "observation" : "World View windows: 1",
+      "ok" : true,
+      "pathStep" : 7,
+      "screenshot" : "breaker-02-7-double-click-world-view",
+      "seconds" : 13
+    },
+    {
+      "action" : "rename-0",
+      "observation" : "Typed 0 characters (empty). Window title now 23 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "screenshot" : "breaker-03-0-rename-0",
+      "seconds" : 27.7
+    },
+    {
+      "action" : "rename-1",
+      "observation" : "Typed 3 characters (whitespace). Window title now 18 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 37.1
+    },
+    {
+      "action" : "rename-2",
+      "observation" : "Typed 9 characters (ascii). Window title now 24 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 45.9
+    },
+    {
+      "action" : "rename-3",
+      "observation" : "Typed 4 characters (ascii). Window title now 19 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 54.4
+    },
+    {
+      "action" : "rename-4",
+      "observation" : "Typed 8 characters (ascii). Window title now 23 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "screenshot" : "breaker-04-0-rename-4",
+      "seconds" : 63.1
+    },
+    {
+      "action" : "rename-5",
+      "observation" : "Typed 6 characters (ascii). Window title now 21 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 72
+    },
+    {
+      "action" : "rename-6",
+      "observation" : "Typed 25 characters (ascii). Window title now 40 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 80.6
+    },
+    {
+      "action" : "rename-7",
+      "observation" : "Typed 16 characters (ascii). Window title now 21 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 93.4
+    },
+    {
+      "action" : "rename-8",
+      "observation" : "Typed 16 characters (ascii). Window title now 31 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "screenshot" : "breaker-05-0-rename-8",
+      "seconds" : 102.6
+    },
+    {
+      "action" : "rename-9",
+      "observation" : "Typed 16 characters (unicode). Window title now 23 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 116.7
+    },
+    {
+      "action" : "rename-10",
+      "observation" : "Typed 13 characters (ascii). Window title now 31 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 125.6
+    },
+    {
+      "action" : "rename-11",
+      "observation" : "Typed 23 characters (ascii). Window title now 38 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 135.7
+    },
+    {
+      "action" : "rename-12",
+      "observation" : "Typed 3 characters (unicode). Window title now 18 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "screenshot" : "breaker-06-0-rename-12",
+      "seconds" : 144.3
+    },
+    {
+      "action" : "rename-13",
+      "observation" : "Typed 11 characters (unicode). Window title now 26 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 152.7
+    },
+    {
+      "action" : "rename-14",
+      "observation" : "Typed 10 characters (unicode). Window title now 25 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 161.2
+    },
+    {
+      "action" : "rename-15",
+      "observation" : "Typed 22 characters (ascii). Window title now 37 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "seconds" : 169.8
+    },
+    {
+      "action" : "rename-16",
+      "observation" : "Typed 1000 characters (1000 characters). Window title now 37 characters. App running: true",
+      "ok" : true,
+      "pathStep" : 0,
+      "screenshot" : "breaker-07-0-rename-16",
+      "seconds" : 187.3
+    },
+    {
+      "action" : "quit-mid-import",
+      "observation" : "Save prompt shown: false",
+      "ok" : false,
+      "pathStep" : 3,
+      "screenshot" : "breaker-08-3-quit-mid-import",
+      "seconds" : 214.2
+    },
+    {
+      "action" : "after-quit-cancel",
+      "observation" : "Import finished after the cancelled quit: true",
+      "ok" : false,
+      "pathStep" : 3,
+      "screenshot" : "breaker-09-3-after-quit-cancel",
+      "seconds" : 230.3
+    }
+  ],
+  "timeToFirstAction" : 2.20380699634552
+}
