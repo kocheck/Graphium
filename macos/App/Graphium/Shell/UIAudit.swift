@@ -198,7 +198,7 @@
         /// so the inventory only changes when a control is added, removed or relabelled.
         private static let operableRoles: Set<NSAccessibility.Role> = [
             .button, .checkBox, .radioButton, .popUpButton, .menuButton, .slider, .textField, .comboBox,
-            .incrementor, .disclosureTriangle, .segmentedControl,
+            .incrementor, .disclosureTriangle, .radioGroup,
         ]
 
         private static let maximumAccessibilityDepth = 40
