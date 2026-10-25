@@ -1,0 +1,121 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "99df8bd8c104e7aaaceca833534076d0e1b4879a",
+      "deviceName" : "My Mac",
+      "modelName" : "Apple Virtual Machine 1",
+      "osBuildNumber" : "24G830",
+      "osVersion" : "15.7.9",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "PersonaTests.swift:259: Failed to get matching snapshot: Application com.graphium.mac is not running",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "3m 17s",
+                  "durationInSeconds" : 197.60697400569916,
+                  "name" : "testBreaker()",
+                  "nodeIdentifier" : "PersonaTests/testBreaker()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testBreaker",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "duration" : "30s",
+                  "durationInSeconds" : 30.582298040390015,
+                  "name" : "testImpatient()",
+                  "nodeIdentifier" : "PersonaTests/testImpatient()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testImpatient",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1m 28s",
+                  "durationInSeconds" : 88.94327008724213,
+                  "name" : "testKeyboardAndAudit()",
+                  "nodeIdentifier" : "PersonaTests/testKeyboardAndAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testKeyboardAndAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "QASession.swift:200: Failed to get matching snapshot: No matches found for Descendants matching type StaticText from input {(\n    Application, pid: 22004\n)}\nPossibly caused by runtime issues:\nAutomation type mismatch: computed Other from legacy attributes vs StaticText from modern attribute. Input attributes and values: {\n    AXAutomationType = 48;\n    AXRole = AXHeading;\n}\nSee test report attachments for more detail.",
+                      "nodeType" : "Failure Message",
+                      "result" : "Failed"
+                    }
+                  ],
+                  "duration" : "31s",
+                  "durationInSeconds" : 31.433982014656067,
+                  "name" : "testNonNative()",
+                  "nodeIdentifier" : "PersonaTests/testNonNative()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testNonNative",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "duration" : "44s",
+                  "durationInSeconds" : 44.888267993927,
+                  "name" : "testReferencePath()",
+                  "nodeIdentifier" : "PersonaTests/testReferencePath()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testReferencePath",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "32s",
+                  "durationInSeconds" : 32.50945603847504,
+                  "name" : "testSkeptic()",
+                  "nodeIdentifier" : "PersonaTests/testSkeptic()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testSkeptic",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "38s",
+                  "durationInSeconds" : 38.086365938186646,
+                  "name" : "testSmallWindow()",
+                  "nodeIdentifier" : "PersonaTests/testSmallWindow()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests/testSmallWindow",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PersonaTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests/PersonaTests",
+              "nodeType" : "Test Suite",
+              "result" : "Failed"
+            }
+          ],
+          "name" : "GraphiumUITests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Graphium/GraphiumUITests",
+          "nodeType" : "UI test bundle",
+          "result" : "Failed"
+        }
+      ],
+      "name" : "Graphium",
+      "nodeType" : "Test Plan",
+      "result" : "Failed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}
