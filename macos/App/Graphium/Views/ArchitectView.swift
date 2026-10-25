@@ -669,7 +669,7 @@ struct ArchitectView: View {
                     Label("Players see “Please Wait”", systemImage: "pause.circle.fill")
                     Button("Resume") { document.isPaused = false }
                 }
-                .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+                .glassPanel(.capsule, padding: GlassPadding.message)
                 .padding(Spacing.lg)
                 .transition(.opacity)
             } else if document.worldViewsOpen > 0, playersSeeOnlyFog {
@@ -683,7 +683,7 @@ struct ArchitectView: View {
                     Button("Turn On Daylight") { daylightBinding.wrappedValue = true }
                         .help("Daylight: no fog of war on this map")
                 }
-                .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+                .glassPanel(.capsule, padding: GlassPadding.message)
                 .padding(Spacing.lg)
                 .transition(.opacity)
                 .accessibilityElement(children: .contain)
@@ -1728,7 +1728,7 @@ struct ArchitectView: View {
                 Button("Cancel") { calibrating = false }
                     .keyboardShortcut(.cancelAction)
             }
-            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+            .glassPanel(.capsule, padding: GlassPadding.message)
             .padding(.top, Spacing.md)
             .transition(.opacity)
             .accessibilityElement(children: .contain)
@@ -1749,7 +1749,7 @@ struct ArchitectView: View {
                 .foregroundStyle(Palette.inkSecondary.color)
                 .accessibilityLabel("Close notification")
             }
-            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+            .glassPanel(.capsule, padding: GlassPadding.message)
             .frame(maxWidth: 560)
             .padding(.top, Spacing.md)
             .transition(.opacity)
@@ -1766,7 +1766,7 @@ struct ArchitectView: View {
                     .foregroundStyle(Palette.inkSecondary.color)
                 Button("Choose…") { importTarget = .mapImage }
             }
-            .glassPanel(.capsule, padding: EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md))
+            .glassPanel(.capsule, padding: GlassPadding.message)
             .padding(.top, Spacing.md)
             .transition(.opacity)
             .accessibilityElement(children: .contain)

@@ -33,6 +33,12 @@ enum GlassShape {
     case card
 }
 
+/// Padding for a one-line glass message (toast, banner, pause and fog capsules), set in from the
+/// leading edge to clear the capsule's curve and tighter on the trailing side for its close or action button.
+enum GlassPadding {
+    static let message = EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.md)
+}
+
 /// Fast, decisive, no bounce (DESIGN.md#motion). Reduce Motion drops the animation, not the change.
 enum Motion {
     static let quick = Animation.easeOut(duration: 0.15)
