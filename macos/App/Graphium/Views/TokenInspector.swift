@@ -45,37 +45,9 @@ struct TokenInspector: View {
     var body: some View {
         let tokens = selected
         Form {
-            Section {
-                TextField(
-                    "Name", text: $nameDraft, prompt: Text(tokens.count > 1 ? "Multiple tokens" : "Token")
-                )
-                .focused($nameFocused)
-                .onSubmit {
-                    commitName(ids: selection)
-                    if tokens.count == 1 { resetDraft() }
-                }
-            } header: {
-                Text(tokens.count == 1 ? tokens[0].name : "\(tokens.count) Tokens Selected")
-                    .font(.headline)
-            }
+            identitySection(tokens)
 
             playersSection(tokens)
-
-            imageSection(tokens)
-
-            Section {
-                Picker("Type", selection: typeBinding(tokens)) {
-                    Text("PC").tag(CreatureType?.some(.pc))
-                    Text("NPC").tag(CreatureType?.some(.npc))
-                    if tokens.contains(where: { $0.type == nil }) || Set(tokens.map(\.type)).count > 1 {
-                        Text("—").tag(CreatureType?.none)
-                    }
-                }
-                .pickerStyle(.segmented)
-                Text("Players see only what PCs see. Make your players’ tokens PCs.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
 
             initiativeSection(tokens)
 
@@ -365,11 +337,12 @@ struct TokenInspector: View {
 
     /// The current picture (or a placeholder when the selection's differ), Change Image…
     /// and the library picker. The well takes dropped image files and library items.
-    private func imageSection(_ tokens: [ResolvedToken]) -> some View {
+    /// Who this is: the picture, the name and the type together at the top, the way a card header reads.
+    private func identitySection(_ tokens: [ResolvedToken]) -> some View {
         let sources = Set(tokens.map(\.token.src))
         let image = sources.count == 1 ? sources.first.flatMap { document.imageCache.image(named: $0, in: document.assets) } : nil
         return Section {
-            HStack(spacing: 12) {
+            HStack(alignment: .center, spacing: Spacing.md) {
                 Group {
                     if let image {
                         Image(decorative: image, scale: 1).resizable().scaledToFit()
@@ -379,7 +352,7 @@ struct TokenInspector: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .frame(width: 56, height: 56)
+                .frame(width: 64, height: 64)
                 .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile))
                 .overlay {
                     if imageDropTargeted {
@@ -387,22 +360,48 @@ struct TokenInspector: View {
                     }
                 }
                 .accessibilityLabel(sources.count > 1 ? "Different images" : "Token image")
+                .help("Drop an image file or a library token here. The image is kept in this campaign file.")
                 .onDrop(of: [.fileURL, .plainText], isTargeted: $imageDropTargeted) { providers in
                     handleImageDrop(providers)
                 }
-                VStack(alignment: .leading, spacing: 6) {
-                    Button("Change Image…") { chooseImageFile() }
-                    Button("From Library…") { showingLibraryPicker = true }
-                        .popover(isPresented: $showingLibraryPicker, arrowEdge: .leading) {
-                            TokenImageLibraryPicker(document: document) { item in
-                                showingLibraryPicker = false
-                                useLibraryItem(item)
-                            }
-                        }
+                .popover(isPresented: $showingLibraryPicker, arrowEdge: .leading) {
+                    TokenImageLibraryPicker(document: document) { item in
+                        showingLibraryPicker = false
+                        useLibraryItem(item)
+                    }
+                }
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    TextField(
+                        "Name", text: $nameDraft, prompt: Text(tokens.count > 1 ? "Multiple tokens" : "Token")
+                    )
+                    .labelsHidden()
+                    .textFieldStyle(.plain)
+                    .font(.title3.weight(.semibold))
+                    .focused($nameFocused)
+                    .onSubmit {
+                        commitName(ids: selection)
+                        if tokens.count == 1 { resetDraft() }
+                    }
+                    Text(tokens.count == 1 ? "Token" : "\(tokens.count) tokens selected")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Menu("Image") {
+                        Button("Change Image…") { chooseImageFile() }
+                        Button("From Library…") { showingLibraryPicker = true }
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
                 }
             }
-        } footer: {
-            Text("Or drop an image file or a library token on the picture. The image is kept in this campaign file.")
+            Picker("Type", selection: typeBinding(tokens)) {
+                Text("PC").tag(CreatureType?.some(.pc))
+                Text("NPC").tag(CreatureType?.some(.npc))
+                if tokens.contains(where: { $0.type == nil }) || Set(tokens.map(\.type)).count > 1 {
+                    Text("—").tag(CreatureType?.none)
+                }
+            }
+            .pickerStyle(.segmented)
+            .help("Players see only what PCs see. Make your players' tokens PCs.")
         }
     }
 
