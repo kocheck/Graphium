@@ -1,5 +1,6 @@
 import AppKit
 import GraphiumCore
+import GraphiumRender
 import SwiftUI
 
 /// Something to do in the next new Architect window (Welcome's Generate Dungeon and
@@ -86,6 +87,8 @@ struct WelcomeView: View {
     @State private var showingTemplates = false
     @State private var recentsQuery = ""
     @State private var recents: [RecentCampaign] = []
+    /// The active map of each recent campaign, drawn from the file on this Mac as the DM sees it.
+    @State private var recentMapArt: [URL: CGImage] = [:]
     @State private var openError: String?
 
     /// Fixed for the session, like the TS `useState` initializer.
@@ -210,6 +213,22 @@ struct WelcomeView: View {
                 let values = try? url.resourceValues(forKeys: [.contentAccessDateKey])
                 return RecentCampaign(url: url, opened: values?.contentAccessDate)
             }
+        loadMapArt(for: recents)
+    }
+
+    /// Draws each recent campaign's active map once, off the main thread. Reads only the package on disk;
+    /// a campaign that can't be read keeps the plain map symbol.
+    private func loadMapArt(for campaigns: [RecentCampaign]) {
+        let missing = campaigns.map(\.url).filter { recentMapArt[$0] == nil }
+        guard !missing.isEmpty else { return }
+        Task.detached(priority: .utility) {
+            for url in missing {
+                guard let renderer = MapRenderer(activeMapOfPackageAt: url),
+                    let art = renderer.image(region: nil, maxPixels: 480, playersView: false, labels: false)
+                else { continue }
+                await MainActor.run { recentMapArt[url] = art }
+            }
+        }
     }
 
     private func hide(_ recent: RecentCampaign) {
@@ -230,50 +249,68 @@ struct WelcomeView: View {
                         TextField("Search", text: $recentsQuery).textFieldStyle(.roundedBorder).frame(width: 200)
                     }
                 }
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: Spacing.md)], spacing: Spacing.md) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), spacing: Spacing.md)], spacing: Spacing.md) {
                     ForEach(shown) { recent in
                         recentTile(recent)
                     }
                 }
             }
-            .frame(maxWidth: 720)
+            .frame(maxWidth: 880)
         }
     }
 
-    /// A campaign tile: the open button fills it, and the remove button is always visible (never hover-only).
+    /// A campaign tile: its map art, name and date. The open button is the whole tile; the remove button
+    /// sits on the art and is always visible (never hover-only).
     private func recentTile(_ recent: RecentCampaign) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Button {
-                NSDocumentController.shared.openDocument(withContentsOf: recent.url, display: true) { _, _, error in
-                    if let error { openError = error.localizedDescription }
-                }
-            } label: {
-                HStack(spacing: Spacing.md) {
-                    Image(systemName: "map")
-                        .frame(width: 32, height: 32)
-                        .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(recent.name).lineLimit(1)
-                        if let opened = recent.opened {
-                            Text(opened.formatted(date: .abbreviated, time: .shortened))
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
+        Button {
+            NSDocumentController.shared.openDocument(withContentsOf: recent.url, display: true) { _, _, error in
+                if let error { openError = error.localizedDescription }
             }
-            .buttonStyle(.plain)
+        } label: {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                mapArt(for: recent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(recent.name).font(.headline).lineLimit(1)
+                    if let opened = recent.opened {
+                        Text(opened.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, Spacing.xs)
+            }
+            .padding(Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .tileSurface()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
             Button {
                 hide(recent)
             } label: {
-                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                Image(systemName: "xmark.circle.fill")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(Palette.inkPrimary.color, Palette.surfaceRaised.color)
+                    .font(.title3)
             }
             .buttonStyle(.plain)
+            .padding(Spacing.md)
+            .help("Remove from recent campaigns")
             .accessibilityLabel("Remove \(recent.name) from recent campaigns")
         }
-        .padding(Spacing.md)
-        .tileSurface()
+    }
+
+    private func mapArt(for recent: RecentCampaign) -> some View {
+        ZStack {
+            Palette.surfaceSunken.color
+            if let art = recentMapArt[recent.url] {
+                Image(decorative: art, scale: 1).resizable().scaledToFill()
+            } else {
+                Image(systemName: "map").font(.title2).foregroundStyle(.secondary)
+            }
+        }
+        .frame(height: 112)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
     }
 
     // MARK: Footer
