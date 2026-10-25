@@ -18,7 +18,7 @@ reviewed: 2026-10-17
 
 **Also check.**
 
-- Nothing new appears in the World View without a decision recorded in `docs/decisions/`.
+- Nothing new appears in the World View without a decision recorded in `docs/decisions/`. Plates are opaque with 12 pt corners (`Radius.card`, decision 020); never glass.
 - While paused, the canvas is not drawn at all (opacity 0 is not enough if it can flash on resume).
 - Window toolbar items in the World View window are for whoever moves it to the projector (display placement); keep it to that.
 

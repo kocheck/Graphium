@@ -18,8 +18,6 @@ enum Spacing {
 /// capsules or 12 pt cards, concentric with the window corners.
 enum Radius {
     static let control: CGFloat = 4
-    /// World View panels keep the etched plate look (world-view-player-safe).
-    static let panel: CGFloat = 4
     static let card: CGFloat = 12
     /// Thumbnails and cards inside app-owned panels (decision 019).
     static let tile: CGFloat = 8
