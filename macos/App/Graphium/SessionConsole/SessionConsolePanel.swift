@@ -360,8 +360,8 @@ struct SessionConsolePanel: View {
         }
         .frame(width: 70, height: 50)
         .clipped()
-        .overlay(RoundedRectangle(cornerRadius: Radius.control).strokeBorder(active ? Palette.accent.color : .clear, lineWidth: 3))
-        .clipShape(RoundedRectangle(cornerRadius: Radius.control))
+        .overlay(RoundedRectangle(cornerRadius: Radius.tile).strokeBorder(active ? Palette.accent.color : .clear, lineWidth: 3))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.tile))
         .accessibilityAddTraits(active ? .isSelected : [])
     }
 
