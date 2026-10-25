@@ -32,7 +32,11 @@ struct CommandPalette: View {
 
     private static func rowID(action id: String) -> String { "action:\(id)" }
     private static func rowID(asset id: String) -> String { "asset:\(id)" }
-    private static func rowBackground(_ highlighted: Bool) -> Color? { highlighted ? Palette.accent.color.opacity(0.25) : nil }
+    private static func rowBackground(_ highlighted: Bool) -> some View {
+        RoundedRectangle(cornerRadius: Radius.tile, style: .continuous)
+            .fill(highlighted ? Palette.accent.color.opacity(0.25) : .clear)
+            .padding(.horizontal, Spacing.sm)
+    }
 
     var body: some View {
         let actions = self.actions
@@ -40,15 +44,20 @@ struct CommandPalette: View {
         let count = actions.count + assets.count
         let selected = current(count: count)
         VStack(spacing: 0) {
-            TextField("Search actions and assets…", text: $query)
-                .textFieldStyle(.plain)
-                .font(.title3)
-                .padding(14)
-                .focused($focused)
-                .onSubmit { runHighlighted(actions: actions, assets: assets) }
-                .onKeyPress(.upArrow) { move(by: -1, count: count) }
-                .onKeyPress(.downArrow) { move(by: 1, count: count) }
-            Divider()
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary).accessibilityHidden(true)
+                TextField("Search actions and assets…", text: $query)
+                    .textFieldStyle(.plain)
+                    .font(.title3)
+                    .focused($focused)
+                    .onSubmit { runHighlighted(actions: actions, assets: assets) }
+                    .onKeyPress(.upArrow) { move(by: -1, count: count) }
+                    .onKeyPress(.downArrow) { move(by: 1, count: count) }
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm + 2)
+            .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+            .padding(Spacing.md)
             ScrollViewReader { proxy in
                 List {
                     if !actions.isEmpty {
@@ -59,7 +68,12 @@ struct CommandPalette: View {
                                         Text(command.label)
                                         Spacer()
                                         if let shortcut = command.shortcut {
-                                            Text(shortcut).font(.caption.monospaced()).foregroundStyle(.secondary)
+                                            Text(shortcut)
+                                                .font(.caption.monospaced())
+                                                .foregroundStyle(.secondary)
+                                                .padding(.horizontal, Spacing.sm - 2)
+                                                .padding(.vertical, 1)
+                                                .background(Palette.surfaceSunken.color, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
                                         }
                                     }
                                     .contentShape(Rectangle())
@@ -67,6 +81,7 @@ struct CommandPalette: View {
                                 .buttonStyle(.plain)
                                 .id(Self.rowID(action: command.id))
                                 .listRowBackground(Self.rowBackground(selected == index))
+                                .listRowSeparator(.hidden)
                             }
                         }
                     }
@@ -96,6 +111,7 @@ struct CommandPalette: View {
                                 }
                                 .id(Self.rowID(asset: item.id))
                                 .listRowBackground(Self.rowBackground(selected == actions.count + index))
+                                .listRowSeparator(.hidden)
                             }
                         }
                     }
