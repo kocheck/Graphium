@@ -113,6 +113,7 @@ final class MapThumbnailStore: ObservableObject {
                 return (map.id, image)
             }
         }.value
-        thumbnailsByMapID = Dictionary(uniqueKeysWithValues: drawn)
+        // A damaged or hand-edited campaign can repeat a map id; keep the first picture rather than trap.
+        thumbnailsByMapID = Dictionary(drawn, uniquingKeysWith: { first, _ in first })
     }
 }
