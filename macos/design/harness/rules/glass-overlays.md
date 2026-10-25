@@ -14,9 +14,9 @@ reviewed: 2026-10-17
 
 # Overlays float over the map as glass; content never does
 
-**Rule.** Controls, readouts, toasts and HUDs Graphium draws over the canvas use `.glassPanel()`: system glass (Liquid Glass on macOS 26, `.regularMaterial` before), a 0.5 pt light edge, capsule for one line, 20 pt card for more. Text inside uses system `primary`/`secondary` so it stays vibrant; amber only for state. Map, tokens and marks are content and are never glass.
+**Rule.** Controls, readouts, toasts and HUDs Graphium draws over the canvas use `.glassPanel()`: system glass (Liquid Glass on macOS 26, `.regularMaterial` before), a 0.5 pt light edge, capsule for one line, 12 pt card for more. Text inside uses system `primary`/`secondary` so it stays vibrant; amber only for state. Map, tokens and marks are content and are never glass.
 
-**Test.** In a screenshot, every app-drawn overlay is a capsule or 20 pt card that shows the map softly through it; none sits on the sidebar, inspector, a sheet or another glass surface.
+**Test.** In a screenshot, every app-drawn overlay is a capsule or 12 pt card that shows the map softly through it; none sits on the sidebar, inspector, a sheet or another glass surface.
 
 **Good.** Bottom-trailing zoom capsule and Zoom to Fit circle; bottom-leading zoom and scale readout; a top-centre toast capsule.
 **Bad.** Glass inside the inspector (use `GroupBox`), a glass map list replacing the native sidebar, a tinted or gradient glass fill, a 4 pt square overlay with a drop shadow.

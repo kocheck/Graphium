@@ -22,6 +22,7 @@ enum Palette: CaseIterable {
     case statusOk
     case statusWarning
     case surfacePanel
+    case surfaceRaised
     case surfaceSunken
     case worldAction
     case worldFrame
@@ -53,6 +54,7 @@ enum Palette: CaseIterable {
         case .statusOk: return "status-ok"
         case .statusWarning: return "status-warning"
         case .surfacePanel: return "surface-panel"
+        case .surfaceRaised: return "surface-raised"
         case .surfaceSunken: return "surface-sunken"
         case .worldAction: return "world-action"
         case .worldFrame: return "world-frame"
@@ -80,13 +82,14 @@ enum Palette: CaseIterable {
         case .inkOnAccent: return Self.adaptive(light: (red: 0.1098, green: 0.1255, blue: 0.1412, alpha: 1.0000), dark: (red: 0.0667, green: 0.0667, blue: 0.0745, alpha: 1.0000))
         case .inkPrimary: return Self.adaptive(light: (red: 0.1098, green: 0.1255, blue: 0.1412, alpha: 1.0000), dark: (red: 0.9294, green: 0.9333, blue: 0.9412, alpha: 1.0000))
         case .inkSecondary: return Self.adaptive(light: (red: 0.3765, green: 0.3922, blue: 0.4235, alpha: 1.0000), dark: (red: 0.6902, green: 0.7059, blue: 0.7294, alpha: 1.0000))
-        case .ruleHairline: return Self.adaptive(light: (red: 0.8510, green: 0.8510, blue: 0.8784, alpha: 1.0000), dark: (red: 0.2118, green: 0.2275, blue: 0.2471, alpha: 1.0000))
+        case .ruleHairline: return Self.adaptive(light: (red: 0.8549, green: 0.8667, blue: 0.8902, alpha: 1.0000), dark: (red: 0.1804, green: 0.1922, blue: 0.2196, alpha: 1.0000))
         case .ruleStrong: return Self.adaptive(light: (red: 0.5451, green: 0.5529, blue: 0.5961, alpha: 1.0000), dark: (red: 0.4118, green: 0.4314, blue: 0.4667, alpha: 1.0000))
         case .statusCritical: return Self.adaptive(light: (red: 0.8078, green: 0.1725, blue: 0.1922, alpha: 1.0000), dark: (red: 1.0000, green: 0.5843, blue: 0.5725, alpha: 1.0000))
         case .statusOk: return Self.adaptive(light: (red: 0.1137, green: 0.4784, blue: 0.3098, alpha: 1.0000), dark: (red: 0.2392, green: 0.8392, blue: 0.5490, alpha: 1.0000))
         case .statusWarning: return Self.adaptive(light: (red: 0.6039, green: 0.3529, blue: 0.0000, alpha: 1.0000), dark: (red: 1.0000, green: 0.7922, blue: 0.0863, alpha: 1.0000))
-        case .surfacePanel: return Self.adaptive(light: (red: 0.9765, green: 0.9765, blue: 0.9843, alpha: 1.0000), dark: (red: 0.0941, green: 0.0980, blue: 0.1059, alpha: 1.0000))
-        case .surfaceSunken: return Self.adaptive(light: (red: 0.9412, green: 0.9412, blue: 0.9529, alpha: 1.0000), dark: (red: 0.1294, green: 0.1333, blue: 0.1451, alpha: 1.0000))
+        case .surfacePanel: return Self.adaptive(light: (red: 0.9608, green: 0.9647, blue: 0.9725, alpha: 1.0000), dark: (red: 0.0784, green: 0.0824, blue: 0.0941, alpha: 1.0000))
+        case .surfaceRaised: return Self.adaptive(light: (red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000), dark: (red: 0.1059, green: 0.1098, blue: 0.1255, alpha: 1.0000))
+        case .surfaceSunken: return Self.adaptive(light: (red: 0.9255, green: 0.9333, blue: 0.9451, alpha: 1.0000), dark: (red: 0.1255, green: 0.1333, blue: 0.1569, alpha: 1.0000))
         case .worldAction: return Self.fixed((red: 0.0000, green: 0.2000, blue: 0.3843, alpha: 1.0000))
         case .worldFrame: return Self.fixed((red: 1.0000, green: 0.7725, blue: 0.2392, alpha: 1.0000))
         case .worldInk: return Self.fixed((red: 1.0000, green: 1.0000, blue: 1.0000, alpha: 1.0000))
